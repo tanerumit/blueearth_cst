@@ -395,7 +395,7 @@ def analyse_wflow_historical(
                 climate_source=(f"{climate_source}")
             ).expand_dims(["climate_source"])
             ds_clim_sub_annual.append(ds_clim_sub_annual_source)
-        ds_clim_sub_annual = xr.merge(ds_clim_sub_annual)
+        ds_clim_sub_annual = xr.merge(ds_clim_sub_annual, compat='override')
 
         # plot budyko with different sources.
         plot_budyko(ds_clim_sub_annual, plot_dir, color=color)

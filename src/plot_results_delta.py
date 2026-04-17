@@ -173,8 +173,8 @@ def analyse_wflow_delta(
         ).expand_dims(["horizon", "model", "scenario"])
         qsim_delta.append(qsim_delta_run)
         ds_basin_delta.append(ds_basin_delta_run)
-    qsim_delta = xr.merge(qsim_delta)
-    ds_basin_delta = xr.merge(ds_basin_delta)
+    qsim_delta = xr.merge(qsim_delta, compat='override')
+    ds_basin_delta = xr.merge(ds_basin_delta, compat='override')
 
     # Slice historical reference run (may be longer than the future one) before plotting
     qsim_hist = qsim_hist.sel(time=slice(qsim_delta["time"][0], qsim_delta["time"][-1]))

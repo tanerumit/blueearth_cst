@@ -342,8 +342,8 @@ def plot_climate_projections(
         ds_fut.append(ds_rcp)
 
     # 3. Merge and write all timeseries to a single netcdf file
-    ds_all = xr.merge(ds_fut)
-    ds_all = xr.merge([ds_all, ds_hist])
+    ds_all = xr.merge(ds_fut, compat='override')
+    ds_all = xr.merge([ds_all, ds_hist], compat='override')
     # make sure we have two digits still
     for var in ds_all.data_vars:
         ds_all[var] = ds_all[var].round(decimals=2)
@@ -483,7 +483,7 @@ def plot_climate_projections(
                     ds_rcp_hz.append(ds_reproj)
 
         # Merge all datasets to find the total min and max values for color scaling
-        ds_rcp_hz = xr.merge(ds_rcp_hz)
+        ds_rcp_hz = xr.merge(ds_rcp_hz, compat='override')
         # Compute the median over the models
         ds_rcp_hz_med = ds_rcp_hz.median(dim="model").squeeze(drop=True)
         vmin_m_pr = ds_rcp_hz_med["precip"].min().values

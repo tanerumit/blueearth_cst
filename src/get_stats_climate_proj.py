@@ -21,6 +21,10 @@ CLIM_PROJECT_TIME_TUPLE = {
         "historical": ("1950-01-01", "2014-12-31"),
         "future": ("2015-01-01", "2100-12-31"),
     },
+    "singv": {
+        "historical": ("1950-01-01", "2014-12-31"),
+        "future": ("2015-01-01", "2100-12-31"),
+    },
     "cmip5": {
         "historical": ("1950-01-01", "2005-12-31"),
         "future": ("2006-01-01", "2100-12-31"),
@@ -315,7 +319,7 @@ def get_stats_clim_projections(
                 ds.append(var_mm.to_dataset())
 
     # mean stats over grid and time
-    mean_stats_time = xr.merge(ds_scalar)
+    mean_stats_time = xr.merge(ds_scalar, compat='override')
 
     # todo: convert press_msl to press for pet and tdew computation - need orography
     # if needed compute pet
@@ -351,7 +355,7 @@ def get_stats_clim_projections(
     )
 
     if save_grids:
-        mean_stats = xr.merge(ds)
+        mean_stats = xr.merge(ds, compat='override')
         # todo: convert press_msl to press for pet and tdew computation - need orography
         # if needed compute pet
         if compute_pet:
@@ -606,7 +610,7 @@ def extract_climate_projections_statistics(
                     except:
                         print(f"{scenario}", f"{model_entry}", f"{var} not found")
                 # merge all variables back to data
-                data = xr.merge(ds_list)
+                data = xr.merge(ds_list, compat='override')
 
             # bug #677 in hydromt: attrs for non selected variables
             # update the attrs
@@ -644,10 +648,10 @@ def extract_climate_projections_statistics(
         ds_members_mean_stats_time.append(mean_stats_time)
 
     if save_grids:
-        nc_mean_stats = xr.merge(ds_members_mean_stats)
+        nc_mean_stats = xr.merge(ds_members_mean_stats, compat='override')
     else:
         nc_mean_stats = xr.Dataset()
-    nc_mean_stats_time = xr.merge(ds_members_mean_stats_time)
+    nc_mean_stats_time = xr.merge(ds_members_mean_stats_time, compat='override')
 
     # write netcdf
     # use hydromt function instead to write to netcdf?

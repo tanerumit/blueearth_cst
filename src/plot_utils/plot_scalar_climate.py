@@ -16,7 +16,17 @@ import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
 import seaborn as sns
 
+from collections import OrderedDict
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+
+
 __all__ = ["plot_scalar_climate_statistics"]
+
+def unique_legend(handles, labels):
+    """Remove duplicate legend entries while preserving order"""
+    by_label = OrderedDict(zip(labels, handles))
+    return by_label.values(), by_label.keys()
 
 
 def add_inset_map(figure, gdf, gdf_region=None):
@@ -124,7 +134,7 @@ def plot_scalar_climate_statistics(
     if geods_obs is not None:
         geods_obs = geods_obs.expand_dims(dim={"source": np.array(["observed"])})
         geods_index = geods.index.values
-        geods = xr.merge([geods, geods_obs])
+        geods = xr.merge([geods, geods_obs], compat='override')
         # only keep the index that are in geods_index
         geods = geods.sel(index=geods_index)
         if colors is not None:
@@ -207,6 +217,7 @@ def plot_precipitation_per_location(
     geoda = geoda.dropna(dim="source", how="all")
     # Get the geoda geometry now before reducing st and loading
     gdf = geoda.vector.geometry
+    geoda = geoda.drop("ogc_wkt")
     geoda = geoda.sel(index=st).load()
 
     # Remove the years with missing data
@@ -236,14 +247,26 @@ def plot_precipitation_per_location(
 
     # Start the subplots for precipitation
     fig, axes = plt.subplots(
-        5, 1, figsize=(16 / 2.54, 24 / 2.54)
+        6, 1, 
+        figsize=(16 / 2.54, 24 / 2.54),
+        gridspec_kw={"height_ratios": [1, 1, 1, 1, 1, 0.8]},
     )  # , subplot_kw={'projection': ccrs.PlateCarree()})
     axes = axes.flatten()
+    legend_ax = axes[-1]
+    axes = axes[:-1]
+    legend_ax.axis("off")
     fig.suptitle(f"Precipitation analysis for location {st}", fontsize="10")
 
     # Figure 2 for extra statistics
-    fig2, axes2 = plt.subplots(3, 1, figsize=(16 / 2.54, 21 / 2.54))
+    fig2, axes2 = plt.subplots(
+        4, 1, 
+        figsize=(16 / 2.54, 21 / 2.54),
+        gridspec_kw={"height_ratios": [1, 1, 1, 0.8]},
+    )
     axes2 = axes2.flatten()
+    legend_ax2 = axes2[-1]
+    axes2 = axes2[:-1]
+    legend_ax2.axis("off")
     ax_twin = axes2[2].twinx()
     fig2.suptitle(f"Precipitation analysis for location {st}", fontsize="10")
 
@@ -324,7 +347,7 @@ def plot_precipitation_per_location(
             prec_m_25,
             prec_m_75,
             alpha=0.2,
-            label=f"{source} 25%-75%",
+            #label=f"{source} 25%-75%",
             color=c,
         )
         prec_m["month"] = prec_month
@@ -367,7 +390,8 @@ def plot_precipitation_per_location(
                 linestyle=":",
                 markersize=fs / 2,
                 color=c,
-                label=f"{source}: {len(peak)} peaks",
+                #label=f"{source}: {len(peak)} peaks",
+                label=f"{len(peak)} peaks",
             )
 
         # 3. Number of dry days (dailyP < 0.2mm) per year
@@ -414,6 +438,52 @@ def plot_precipitation_per_location(
         )
 
     ### Add legends ###
+    # Figure 1 - all
+    handles, labels = axes[0].get_legend_handles_labels()
+    handles, labels = unique_legend(handles, labels)
+
+    legend_ax.legend(
+        handles,
+        labels,
+        loc="center",
+        ncol=2,                # long labels → fewer columns
+        fontsize=fs,
+        frameon=False,
+        columnspacing=2,
+        handlelength=3,
+    )
+    # Figure 1 - axes[2] for the mean and quantiles
+    style_handles = [
+        Line2D([0], [0], color="black", lw=2, label="Monthly mean"),
+        Patch(facecolor="black", alpha=0.25, label="25-75% interval"),
+    ]
+    axes[2].legend(
+        handles=style_handles,
+        fontsize=fs,
+        frameon=False,
+    )
+
+    # Figure 2 - all
+    legend_ax2.legend(
+        handles,
+        labels,
+        loc="center",
+        ncol=2,                # long labels → fewer columns
+        fontsize=fs,
+        frameon=False,
+        columnspacing=2,
+        handlelength=3,
+    )
+    # Figure 2 - axes[2] for the dry days and dry spell distinction
+    style_handles = [
+        Line2D([0], [0], color="black", marker="o", linestyle=":", label="Number of dry days"),
+        Line2D([0], [0], color="black", marker="+", linestyle="", label="Longest dry spell"),
+    ]
+    ax_twin.legend(
+        handles=style_handles,
+        fontsize=fs,
+        frameon=False,
+    )
 
     ### Figure 1 ###
     # 1. Plot per year
@@ -421,35 +491,35 @@ def plot_precipitation_per_location(
     axes[0].set_ylabel("Precipitation\n[mm/yr]", fontsize=fs)
     axes[0].set_xlabel("", fontsize=fs)
     axes[0].tick_params(axis="both", labelsize=fs)
-    axes[0].legend(fontsize=fs)
+    #axes[0].legend(fontsize=fs)
 
     # 2. Plot the cumulative
     axes[1].set_title("", fontsize=fs)
     axes[1].set_ylabel("Cumulative precipitation\n[mm]", fontsize=fs)
     axes[1].set_xlabel("", fontsize=fs)
     axes[1].tick_params(axis="both", labelsize=fs)
-    axes[1].legend(fontsize=fs)
+    #axes[1].legend(fontsize=fs)
 
     # 3. Plot the monthly mean
     axes[2].set_title("", fontsize=fs)
     axes[2].set_ylabel("Monthly averaged\nprecipitation [mm/month]", fontsize=fs)
     axes[2].set_xlabel("", fontsize=fs)
     axes[2].tick_params(axis="both", labelsize=fs)
-    axes[2].legend(fontsize=fs)
+    #axes[2].legend(fontsize=fs)
 
     # 4. Select the wettest year and do daily plot
     axes[3].set_title("", fontsize=fs)
     axes[3].set_xlabel("", fontsize=fs)
     axes[3].set_ylabel("Precipitation of the\nwettest year [mm/week]", fontsize=fs)
     axes[3].tick_params(axis="both", labelsize=fs)
-    axes[3].legend(fontsize=fs)
+    #axes[3].legend(fontsize=fs)
 
     # 5. Select the driest year and do daily plot
     axes[4].set_title("", fontsize=fs)
     axes[4].set_xlabel("", fontsize=fs)
     axes[4].set_ylabel("Precipitation of the\ndriest year [mm/week]", fontsize=fs)
     axes[4].tick_params(axis="both", labelsize=fs)
-    axes[4].legend(fontsize=fs)
+    #axes[4].legend(fontsize=fs)
 
     ### Figure 2 ###
     # 1. SPI index
@@ -457,7 +527,7 @@ def plot_precipitation_per_location(
     axes2[0].set_ylabel("Standarized Precipitation Index\n(SPI)", fontsize=fs)
     axes2[0].set_xlabel("", fontsize=fs)
     axes2[0].tick_params(axis="both", labelsize=fs)
-    axes2[0].legend(fontsize=fs)
+    #axes2[0].legend(fontsize=fs)
     # Add the thresholds
     axes2[0].axhline(y=2, color="darkblue", linestyle="--", label="Extremely wet")
     axes2[0].axhline(y=1.5, color="blue", linestyle="--", label="Very wet")
@@ -504,7 +574,7 @@ def plot_precipitation_per_location(
     # axes2[2].get_legend().remove()
     handles, labels = axes2[2].get_legend_handles_labels()
     handles2, labels2 = ax_twin.get_legend_handles_labels()
-    axes2[2].legend(handles + handles2, labels + labels2, fontsize=fs)
+    #axes2[2].legend(handles + handles2, labels + labels2, fontsize=fs)
 
     ### A. Location plot ###
     if add_map:
@@ -533,11 +603,19 @@ def plot_temperature_per_location(
     geoda = geoda.dropna(dim="source", how="all")
     # Get the geoda geometry now before reducing st and loading
     gdf = geoda.vector.geometry
+    geoda = geoda.drop("ogc_wkt")
     geoda = geoda.sel(index=st).load()
 
     # Start the subplots for temperature
-    fig, axes = plt.subplots(4, 1, figsize=(16 / 2.54, 21 / 2.54))
+    fig, axes = plt.subplots(
+        5, 1, 
+        figsize=(16 / 2.54, 21 / 2.54),
+        gridspec_kw={"height_ratios": [1, 1, 1, 1, 0.8]},
+    )
     axes = axes.flatten()
+    legend_ax = axes[-1]
+    axes = axes[:-1]
+    legend_ax.axis("off")
     fig.suptitle(f"Temperature analysis for location {st}", fontsize="10")
 
     ### Do the plots ###
@@ -563,7 +641,7 @@ def plot_temperature_per_location(
             temp_min,
             temp_max,
             alpha=0.2,
-            label=f"{source} min-max",
+            #label=f"{source} min-max",
             color=c,
         )
         temp_mean.plot.line(ax=axes[0], label=source, color=c)
@@ -594,7 +672,7 @@ def plot_temperature_per_location(
             temp_min,
             temp_max,
             alpha=0.2,
-            label=f"{source} 25%-75%",
+            #label=f"{source} 25%-75%",
             color=c,
         )
         temp_mean["month"] = month_names
@@ -625,26 +703,61 @@ def plot_temperature_per_location(
         )
 
     ### Add legends ###
+    # all
+    handles, labels = axes[0].get_legend_handles_labels()
+    handles, labels = unique_legend(handles, labels)
+
+    legend_ax.legend(
+        handles,
+        labels,
+        loc="center",
+        ncol=2,                # long labels → fewer columns
+        fontsize=fs,
+        frameon=False,
+        columnspacing=2,
+        handlelength=3,
+    )
+    # axes[0]
+    style_handles = [
+        Line2D([0], [0], color="black", lw=2, label="mean"),
+        Patch(facecolor="black", alpha=0.25, label="min-max interval"),
+    ]
+    axes[0].legend(
+        handles=style_handles,
+        fontsize=fs,
+        frameon=False,
+    )
+    # axes[1]
+    style_handles = [
+        Line2D([0], [0], color="black", lw=2, label="mean"),
+        Patch(facecolor="black", alpha=0.25, label="25-75% interval"),
+    ]
+    axes[1].legend(
+        handles=style_handles,
+        fontsize=fs,
+        frameon=False,
+    )
+
     # 1. Plot with mean, min, max per month filled in between
     axes[0].set_title("", fontsize=fs)
     axes[0].set_ylabel("Average temperature\n[$\degree$C/month]", fontsize=fs)
     axes[0].set_xlabel("", fontsize=fs)
     axes[0].tick_params(axis="both", labelsize=fs)
-    axes[0].legend(fontsize=fs)
+    #axes[0].legend(fontsize=fs)
 
     # 2. Plot with mean, min, max per year filled in between long term average
     axes[1].set_title("", fontsize=fs)
     axes[1].set_ylabel("Monthly averaged temperature\n[$\degree$C/month]", fontsize=fs)
     axes[1].set_xlabel("", fontsize=fs)
     axes[1].tick_params(axis="both", labelsize=fs)
-    axes[1].legend(fontsize=fs)
+    #axes[1].legend(fontsize=fs)
 
     # 3. Number of frost days per year
     axes[2].set_title("", fontsize=fs)
     axes[2].set_ylabel("Number of frost days\n(T < 0$\degree$C)", fontsize=fs)
     axes[2].set_xlabel("", fontsize=fs)
     axes[2].tick_params(axis="both", labelsize=fs)
-    axes[2].legend(fontsize=fs)
+    #axes[2].legend(fontsize=fs)
 
     # 4. Number of heat days per year
     axes[3].set_title("", fontsize=fs)
@@ -653,7 +766,7 @@ def plot_temperature_per_location(
     )
     axes[3].set_xlabel("", fontsize=fs)
     axes[3].tick_params(axis="both", labelsize=fs)
-    axes[3].legend(fontsize=fs)
+    #axes[3].legend(fontsize=fs)
 
     # A. Location plot
     # Add an inset map on the top right corner of the figure

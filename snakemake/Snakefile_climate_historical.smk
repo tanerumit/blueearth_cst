@@ -52,7 +52,7 @@ rule select_region:
 # Plot the reagion and subbasin/locations of interest
 rule plot_region_and_location:
     input:
-        region_file = f"{project_dir}/region/region.geojson",
+        region_file = ancient(f"{project_dir}/region/region.geojson"),
     params:
         data_catalog = data_catalog,
         subregion_file = get_config(config, "climate_subregions", default=None),

@@ -153,7 +153,7 @@ def sample_climate_historical(
         ds_subregions = ds_subregions.expand_dims(source=[clim_source])
 
         # Merge region and subregions datasets
-        ds_region = xr.merge([ds_region, ds_subregions])
+        ds_region = xr.merge([ds_region, ds_subregions], compat='override')
         # Merge the gdf
         region_all = gpd.GeoDataFrame(
             pd.concat([region, subregions], ignore_index=False)

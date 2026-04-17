@@ -112,14 +112,16 @@ def get_wflow_results(
                 mod.results["P_subcatchment"],
                 mod.results["T_subcatchment"],
                 mod.results["EP_subcatchment"],
-            ]
+            ],
+        compat='override'
         )
     else:
         ds_clim = None
 
     # Other catchment average outputs
     ds_basin = xr.merge(
-        [mod.results[dvar] for dvar in mod.results if "_basavg" in dvar]
+        [mod.results[dvar] for dvar in mod.results if "_basavg" in dvar],
+        compat='override'
     )
     # glacier and other variables may have a different index value introducing nan's in ds_basin
     ds_basin = ds_basin.mean("index")
@@ -213,8 +215,8 @@ def get_wflow_results_delta(
         qsim_delta.append(qsim_delta_run)
         ds_clim_delta.append(ds_clim_delta_run)
         ds_basin_delta.append(ds_basin_delta_run)
-    qsim_delta = xr.merge(qsim_delta)
-    ds_clim_delta = xr.merge(ds_clim_delta)
-    ds_basin_delta = xr.merge(ds_basin_delta)
+    qsim_delta = xr.merge(qsim_delta, compat='override')
+    ds_clim_delta = xr.merge(ds_clim_delta, compat='override')
+    ds_basin_delta = xr.merge(ds_basin_delta, compat='override')
 
     return qsim_delta, ds_clim_delta, ds_basin_delta

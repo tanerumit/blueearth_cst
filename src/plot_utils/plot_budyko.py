@@ -103,7 +103,7 @@ def get_upstream_clim_basin(
     gdf_basins = gdf_basins[(gdf_basins["area"] >= 0)]
 
     # zonal stats:
-    ds_clim_grid = xr.merge([mod.forcing["precip"], mod.forcing["pet"]])
+    ds_clim_grid = xr.merge([mod.forcing["precip"], mod.forcing["pet"]], compat='override')
     ds_clim_sub = ds_clim_grid.raster.zonal_stats(gdf_basins, stats=["mean"])
     print("Computing zonal statistics for clim, this can take a while")
     ds_clim_sub = ds_clim_sub.compute()
@@ -118,7 +118,7 @@ def get_upstream_clim_basin(
     qobs = qobs.assign(specific_Q=qobs["Q"] / qobs.area * timestep * 1000.0)
 
     # merge with clim
-    ds_clim_sub = xr.merge([qobs, ds_clim_sub])
+    ds_clim_sub = xr.merge([qobs, ds_clim_sub], compat='override')
 
     # annual sum
     ds_clim_sub_annual = (

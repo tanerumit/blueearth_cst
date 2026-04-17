@@ -142,7 +142,7 @@ def get_change_clim_projections(
 
         ds.append(change.to_dataset())
 
-    monthly_change_mean_grid = xr.merge(ds)
+    monthly_change_mean_grid = xr.merge(ds, compat='override')
 
     return monthly_change_mean_grid
 
@@ -267,7 +267,7 @@ def get_change_annual_clim_proj(
                 change = change.drop_vars("quantile")
             ds.append(change.to_dataset())
 
-    stats_annual_change = xr.merge(ds)
+    stats_annual_change = xr.merge(ds, compat='override', join="override")
     return stats_annual_change
 
 

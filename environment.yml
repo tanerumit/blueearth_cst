@@ -40,6 +40,7 @@ dependencies:
   - r-tibble
   - r-tidyr
   - r-waveslim
+  - r-yaml
   # base R (stats, utils, parallel) ships with r-base — no separate entry needed
   - scipy
   - seaborn # plot

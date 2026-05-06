@@ -5,8 +5,15 @@ Created on Tue Feb  1 14:34:58 2022
 @author: bouaziz
 """
 
-import hydromt
 import os
+
+# gcsfs >= 2026.4 enables an experimental Extended filesystem by default that
+# probes the bucket storage layout via an authenticated control-plane API. For
+# public CMIP6 reads we have no credentials, so the probe fails and spams a
+# warning per call before falling back. Disable the probe; reads still work.
+os.environ.setdefault("GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT", "false")
+
+import hydromt
 import glob
 import matplotlib.pyplot as plt
 import pandas as pd

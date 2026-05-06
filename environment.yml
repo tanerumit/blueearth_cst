@@ -2,7 +2,9 @@ name: cst
 
 channels:
   - conda-forge
-  - r
+  - nodefaults
+
+channel_priority: strict
 
 # notes R packages stats and utils were not found
 dependencies:
@@ -19,38 +21,38 @@ dependencies:
   - hydromt_wflow>=0.4.1, <0.6
   - jupyter # to run examples
   - matplotlib
-  - numpy
+  - numpy<2
   - pandas>=2.0.0
   - pip
   - python>=3.9, <3.12
-  - r-base
-  - r-essentials
-  - r-akima
-  - r-patchwork
-  - r-doparallel
-  - r-devtools
-  - r-dplyr
-  - r-e1071
-  - r-fitdistrplus
-  - r-forecast
-  - r-ggplot2
-  - r-MASS
-  - r-ncdf4
-  - r-scales
-  - r-sf
-  - r-tibble
-  - r-tidyr
-  - r-r.utils
-  - r-yaml
-  - rpy2
-  - rtools  # only needed for windows
+  # - r-base
+  # - r-essentials
+  # - r-akima
+  # - r-patchwork
+  # - r-doparallel
+  # - r-devtools
+  # - r-dplyr
+  # - r-e1071
+  # - r-fitdistrplus
+  # - r-forecast
+  # - r-ggplot2
+  # - r-MASS
+  # - r-ncdf4
+  # - r-scales
+  # - r-sf
+  # - r-tibble
+  # - r-tidyr
+  # - r-r.utils
+  # - r-yaml
+  # - rpy2
+  # - rtools  # only needed for windows
   - scipy
   - seaborn # plot
   - shapely>=2.0.0
   - tabulate==0.8.10 # snakemake dependency, bug in v0.9.0
-  - xarray<=2024.3.0
+  - xarray>=2023.1,<=2024.3.0
   - xclim
-  - zarr
+  - zarr<3   # xarray 2024.3 predates zarr 3; pin v2 for compatibility
   - pip:
     - hydroengine
     - gwwapi

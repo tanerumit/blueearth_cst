@@ -15,13 +15,13 @@ data_sources_climate: config/cmip6_data.yml
 # Info on the historical climate data is used in the historic model run + reference data for the weather generator
 # Time horizon of the historical period
 starttime: "2000-01-01T00:00:00"
-endtime: "2020-12-31T00:00:00"
+endtime: "2005-12-31T00:00:00"
 
 # Historical climate data source (name as available in the data_sources catalog file). Either [era5, chirps_global, chirps, eobs].
 clim_historical: era5
 
 # List of wflow output variables to save
-wflow_outvars: ['river discharge', 'precipitation', 'overland flow', 'actual evapotranspiration', 'groundwater recharge', 'snow']
+wflow_outvars: ['river discharge']
 
 ###########################################################################################
 #################################### Model building #######################################
@@ -32,22 +32,22 @@ wflow_outvars: ['river discharge', 'precipitation', 'overland flow', 'actual eva
 # For wflow please use either 'basin' or 'subbasin' keywords
 model_region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
 # Grid resolution of the model in degrees
-model_resolution: 0.0062475
+model_resolution: 0.00833 #0.0062475
 # Path to model build configuration
 model_build_config: "config/wflow_build_model.yml"
 
 # If available, please here put the path to the available observation stations locations files
 # csv file containing three columns: station_ID, x, y
-output_locations: "data/observations/output-locations-test.csv" # If set to None, will default to the wflow outlets
+output_locations: None #"data/observations/output-locations-test.csv" # If set to None, will default to the wflow outlets
 # Path to the file with observed discharge timeseries per station 
-observations_timeseries: "data/observations/observations_timeseries_test.csv" 
+observations_timeseries: None #"data/observations/observations_timeseries_test.csv" 
 
 ###########################################################################################
 ################################## Climate projections ####################################
 # climate models and scenarios
 clim_project: cmip6
-#models: ['NOAA-GFDL/GFDL-ESM4', 'INM/INM-CM4-8' ,'INM/INM-CM5-0','NIMS-KMA/KACE-1-0-G','NCC/NorESM2-MM','NCC/NorESM2-LM','CMCC/CMCC-CM2-SR5','CMCC/CMCC-ESM2']
-models: ['NOAA-GFDL/GFDL-ESM4', 'CMCC/CMCC-ESM2', 'INM/INM-CM5-0']
+models: ['NOAA-GFDL/GFDL-ESM4', 'INM/INM-CM4-8' ,'INM/INM-CM5-0','NIMS-KMA/KACE-1-0-G','NCC/NorESM2-MM','NCC/NorESM2-LM','CMCC/CMCC-CM2-SR5','CMCC/CMCC-ESM2']
+#models: ['NOAA-GFDL/GFDL-ESM4', 'CMCC/CMCC-ESM2', 'INM/INM-CM5-0']
 #scenarios: [ssp126, ssp245, ssp370, ssp585]
 scenarios: [ssp245, ssp585]
 members: [r1i1p1f1]

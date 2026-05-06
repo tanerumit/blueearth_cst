@@ -1,8 +1,8 @@
-# General R settings and prequisites
+# General R settings and prerequisites
 source("./src/weathergen/global.R")
 
-# Install required packages -- ONLY ONCE!
-# weathergen is assumed to be installed in R-environment
+# weathergenr is assumed to be installed in R-environment.
+# See dev/scripts/install_weathergenr.R for the install path.
 library(yaml)
 
 args <- commandArgs(trailingOnly = TRUE)
@@ -16,55 +16,53 @@ historical_realizations_num <- yaml$generateWeatherSeries$realizations_num
 weathergen_output_path <- yaml$generateWeatherSeries$output.path
 
 # Step 1) Read weather data from the netcdf file
-ncdata <- weathergenr::readNetcdf(weathergen_input_ncfile)
+ncdata <- weathergenr::read_netcdf(weathergen_input_ncfile)
 
 # Step 2) Generate new weather realizations
-stochastic_weather <- weathergenr::generateWeatherSeries(
-    weather.data = ncdata$data,
-    weather.grid = ncdata$grid,
-    weather.date = ncdata$date,
-    variable.names = yaml$general$variables,
-    sim.year.num = yaml$generateWeatherSeries$sim.year.num,
-    sim.year.start = yaml$generateWeatherSeries$sim.year.start,
-    month.start = yaml$generateWeatherSeries$month.start,
-    realization.num = historical_realizations_num,
-    warm.variable = yaml$generateWeatherSeries$warm.variable,
-    warm.signif.level = yaml$generateWeatherSeries$warm.signif.level,
-    warm.sample.num = yaml$generateWeatherSeries$warm.sample.num,
-    # warm.subset.criteria = yaml$generateWeatherSeries$warm.subset.criteria, #not needeed
-    knn.sample.num = yaml$generateWeatherSeries$knn.sample.num,
-    mc.wet.quantile = yaml$generateWeatherSeries$mc.wet.quantile,
-    mc.extreme.quantile = yaml$generateWeatherSeries$mc.extreme.quantile,
-    dry.spell.change = yaml$generateWeatherSeries$dry.spell.change,
-    wet.spell.change = yaml$generateWeatherSeries$wet.spell.change,
-    evaluate.model = yaml$generateWeatherSeries$evaluate.model,
-    evaluate.grid.num = yaml$generateWeatherSeries$evaluate.grid.num,
-    output.path = weathergen_output_path,
-    seed = yaml$generateWeatherSeries$seed,
-    compute.parallel = yaml$generateWeatherSeries$compute.parallel
+stochastic_weather <- weathergenr::generate_weather(
+    obs_data         = ncdata$data,
+    obs_grid         = ncdata$grid,
+    obs_dates        = ncdata$date,
+    vars             = yaml$general$variables,
+    n_years          = yaml$generateWeatherSeries$sim.year.num,
+    start_year       = yaml$generateWeatherSeries$sim.year.start,
+    year_start_month = yaml$generateWeatherSeries$month.start,
+    n_realizations   = historical_realizations_num,
+    warm_var         = yaml$generateWeatherSeries$warm.variable,
+    warm_signif      = yaml$generateWeatherSeries$warm.signif.level,
+    warm_pool_size   = yaml$generateWeatherSeries$warm.sample.num,
+    annual_knn_n     = yaml$generateWeatherSeries$knn.sample.num,
+    wet_q            = yaml$generateWeatherSeries$mc.wet.quantile,
+    extreme_q        = yaml$generateWeatherSeries$mc.extreme.quantile,
+    dry_spell_factor = yaml$generateWeatherSeries$dry.spell.change,
+    wet_spell_factor = yaml$generateWeatherSeries$wet.spell.change,
+    out_dir          = weathergen_output_path,
+    seed             = yaml$generateWeatherSeries$seed,
+    parallel         = yaml$generateWeatherSeries$compute.parallel
 )
 
 # STEP 3) Save each stochastic realization back to a netcdf file
 for (n in 1:historical_realizations_num) {
 
-  # Resample order
-  day_order <- match(stochastic_weather$resampled[[n]], ncdata$date)
+  # New return: $resampled is a data.frame with columns rlz_1, rlz_2, ...
+  rlz_dates <- stochastic_weather$resampled[[paste0("rlz_", n)]]
+  day_order <- match(rlz_dates, ncdata$date)
 
   # Obtain stochastic series by re-ordering historical data
-  stochastic_rlz <- lapply(ncdata$data, function(x) x[day_order,])
+  stochastic_rlz <- lapply(ncdata$data, function(x) x[day_order, ])
 
   # save to netcdf
-  weathergenr::writeNetcdf(
-        data = stochastic_rlz,
-        coord.grid = ncdata$grid,
-        output.path = paste0(weathergen_output_path,"realization_",n,"/"),
-        origin.date =  stochastic_weather$dates[1],
-        calendar.type = "noleap",
-        nc.template.file = weathergen_input_ncfile,
-        nc.compression = 4,
-        nc.spatial.ref = "spatial_ref",
-        nc.file.prefix = yaml$generateWeatherSeries$nc.file.prefix,
-        nc.file.suffix = paste0(n,"_cst_0")
+  weathergenr::write_netcdf(
+        data          = stochastic_rlz,
+        grid          = ncdata$grid,
+        out_dir       = paste0(weathergen_output_path, "realization_", n, "/"),
+        origin_date   = stochastic_weather$dates[1],
+        calendar      = "noleap",
+        template_path = weathergen_input_ncfile,
+        compression   = 4,
+        spatial_ref   = "spatial_ref",
+        file_prefix   = yaml$generateWeatherSeries$nc.file.prefix,
+        file_suffix   = paste0(n, "_cst_0")
   )
 
 }

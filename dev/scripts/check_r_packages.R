@@ -2,7 +2,7 @@ pkgs <- c(
   "doParallel", "dplyr", "e1071", "fitdistrplus", "foreach",
   "ggplot2", "ncdf4", "parallel", "patchwork", "stats",
   "rlang", "tidyr", "utils", "tibble", "scales",
-  "waveslim", "forecast", "yaml"
+  "waveslim", "forecast", "yaml", "weathergenr"
 )
 for (p in pkgs) {
   res <- tryCatch(

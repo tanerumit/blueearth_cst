@@ -25,27 +25,22 @@ dependencies:
   - pandas>=2.0.0
   - pip
   - python>=3.9, <3.12
-  # - r-base
-  # - r-essentials
-  # - r-akima
-  # - r-patchwork
-  # - r-doparallel
-  # - r-devtools
-  # - r-dplyr
-  # - r-e1071
-  # - r-fitdistrplus
-  # - r-forecast
-  # - r-ggplot2
-  # - r-MASS
-  # - r-ncdf4
-  # - r-scales
-  # - r-sf
-  # - r-tibble
-  # - r-tidyr
-  # - r-r.utils
-  # - r-yaml
-  # - rpy2
-  # - rtools  # only needed for windows
+  - r-base
+  - r-doparallel
+  - r-dplyr
+  - r-e1071
+  - r-fitdistrplus
+  - r-foreach
+  - r-forecast
+  - r-ggplot2
+  - r-ncdf4
+  - r-patchwork
+  - r-rlang
+  - r-scales
+  - r-tibble
+  - r-tidyr
+  - r-waveslim
+  # base R (stats, utils, parallel) ships with r-base — no separate entry needed
   - scipy
   - seaborn # plot
   - shapely>=2.0.0

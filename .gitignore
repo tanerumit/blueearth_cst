@@ -132,3 +132,11 @@ examples/
 
 # Tests
 tests/test_project
+
+# AI tooling local state (per-user; never committed)
+.claude/
+.agents/
+.codex/
+
+# Local-only config variants (per-user; never committed)
+*_local.yml

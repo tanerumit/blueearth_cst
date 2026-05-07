@@ -16,7 +16,7 @@ if (!requireNamespace("devtools", quietly = TRUE)) {
 
 devtools::install_github(
   "tanerumit/weathergenr",
-  ref = "master",
+  ref = "v1.2.0",
   upgrade = "never",
   quiet = FALSE
 )

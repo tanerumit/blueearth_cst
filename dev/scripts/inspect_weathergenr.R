@@ -8,7 +8,7 @@ exports <- ls("package:weathergenr")
 print(exports)
 
 # Functions used in generate_weather.R
-target_fns <- c("read_netcdf", "generate_weather", "run_weather_generator", "write_netcdf", "resample_weather_dates")
+target_fns <- c("read_netcdf", "apply_climate_perturbations", "write_netcdf")
 
 for (fn in target_fns) {
   cat(sprintf("\n=== %s ===\n", fn))

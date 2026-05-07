@@ -16,6 +16,8 @@ bbox: [8.5, -0.5, 11.0, 1.5]
 #   type : raster | raster_glob | vector | zarr | netcdf
 #   path : path relative to source_root (mirrored under target_root)
 #   pattern : glob, only for type=raster_glob (defaults to "*.tif")
+#   workers : optional parallel file workers for raster_glob (default: 4 for >5 files)
+#   columns : optional vector columns to read/write for type=vector
 datasets:
   - name: vito
     type: raster
@@ -50,6 +52,11 @@ datasets:
     # The wflow forcing build only uses 2000-2020 (see snake config).
     # Limiting the time slice avoids streaming the full ~73-year zarr over SMB.
     time_range: ["2000-01-01", "2020-12-31"]
+    # Only stage the variables the wflow forcing actually uses. Cuts both
+    # download bytes and the size of the staged zarr. Names are the zarr's
+    # native ERA5 short names: tp = total precip, t2m = 2m mean temp,
+    # tmin/tmax = 2m daily min/max temp.
+    #variables: [tp, t2m, tmin, tmax]
 
   - name: era5_orography
     type: netcdf

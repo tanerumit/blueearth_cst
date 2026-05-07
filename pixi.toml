@@ -1,0 +1,64 @@
+[project]
+name = "blueearth-cst"
+description = "BlueEarth Climate Stress Test toolbox"
+authors = ["Umit Taner <tanerumit@gmail.com>"]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64"]
+
+# Python + scientific stack — mirrors environment.yml.
+[dependencies]
+python = ">=3.9,<3.12"
+pip = "*"
+cartopy = "*"
+datrie = "*"        # snakemake dep
+dvc = "*"
+descartes = "*"
+flit = ">=3.2"
+gcsfs = ">=2023.12.1"
+gdal = ">=3.1"
+geopandas = ">=0.10"
+graphviz = "*"      # snakemake DAG renderer
+hydromt = ">=0.9.4"
+hydromt_wflow = ">=0.4.1,<0.6"
+jupyter = "*"       # examples notebooks
+matplotlib = "*"
+numpy = "<2"
+pandas = ">=2.0.0"
+scipy = "*"
+seaborn = "*"
+shapely = ">=2.0.0"
+tabulate = "==0.8.10"   # snakemake dep, 0.9.0 has a known bug
+xarray = ">=2023.1,<=2024.3.0"
+xclim = "*"
+zarr = "<3"             # xarray 2024.3 predates zarr 3
+
+# R toolchain — weathergenr itself is handled separately (see [tasks]).
+r-base = "*"
+r-devtools = "*"        # weathergenr install from GitHub or local
+r-doparallel = "*"
+r-dplyr = "*"
+r-e1071 = "*"
+r-fitdistrplus = "*"
+r-foreach = "*"
+r-forecast = "*"
+r-ggplot2 = "*"
+r-ncdf4 = "*"
+r-patchwork = "*"
+r-rlang = "*"
+r-scales = "*"
+r-tibble = "*"
+r-tidyr = "*"
+r-waveslim = "*"
+r-yaml = "*"
+
+# pip-only packages (not on conda-forge or simpler from PyPI)
+[pypi-dependencies]
+hydroengine = "*"
+gwwapi = "*"
+snakemake = "*"
+
+# Tasks to be filled in by later M2 deliverables:
+# - install-rdeps: weathergenr install (M2.4)
+# - install-julia-deps: Julia + Wflow.jl pin (M2.3)
+# - install:        wraps the above for the single-command install story (M2.5)
+[tasks]

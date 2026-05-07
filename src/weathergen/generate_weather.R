@@ -52,10 +52,11 @@ for (n in 1:historical_realizations_num) {
   stochastic_rlz <- lapply(ncdata$data, function(x) x[day_order, ])
 
   # save to netcdf
+  rlz_out_dir <- paste0(weathergen_output_path, "realization_", n, "/")
   weathergenr::write_netcdf(
         data          = stochastic_rlz,
         grid          = ncdata$grid,
-        out_dir       = paste0(weathergen_output_path, "realization_", n, "/"),
+        out_dir       = rlz_out_dir,
         origin_date   = stochastic_weather$dates[1],
         calendar      = "noleap",
         template_path = weathergen_input_ncfile,
@@ -64,5 +65,27 @@ for (n in 1:historical_realizations_num) {
         file_prefix   = yaml$generateWeatherSeries$nc.file.prefix,
         file_suffix   = paste0(n, "_cst_0")
   )
+
+  # Workaround: weathergenr::write_netcdf does NOT propagate spatial_ref
+  # attributes from template_path to the output. Downstream steps
+  # (impose_climate_change.R) use the realization file as their own template
+  # and need `x_dim` / `y_dim` on its spatial_ref. Copy them here from the
+  # historical template. Drop this block when weathergenr ships the fix.
+  rlz_files <- list.files(
+    rlz_out_dir, pattern = "_cst_0\\.nc$", full.names = TRUE
+  )
+  if (length(rlz_files) >= 1) {
+    src <- ncdf4::nc_open(weathergen_input_ncfile)
+    dst <- ncdf4::nc_open(rlz_files[1], write = TRUE)
+    src_atts <- ncdf4::ncatt_get(src, "spatial_ref")
+    for (an in names(src_atts)) {
+      try(
+        ncdf4::ncatt_put(dst, "spatial_ref", an, src_atts[[an]]),
+        silent = TRUE
+      )
+    }
+    ncdf4::nc_close(src)
+    ncdf4::nc_close(dst)
+  }
 
 }

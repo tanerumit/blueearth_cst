@@ -149,8 +149,8 @@ if __name__ == "__main__":
             fn_out=sm.output.climate_nc,
             data_libs=sm.params.data_sources,
             clim_source=sm.params.clim_source,
-            starttime="1980-01-01T00:00:00",
-            endtime="2010-12-31T00:00:00",
+            starttime="2000-01-01T00:00:00",
+            endtime="2020-12-31T00:00:00",
         )
     else:
         prep_historical_climate(
@@ -172,6 +172,6 @@ if __name__ == "__main__":
             ),
             data_libs="deltares_data",
             clim_source="era5",
-            starttime="1980-01-01T00:00:00",
-            endtime="2010-12-31T00:00:00",
+            starttime="2000-01-01T00:00:00",
+            endtime="2020-12-31T00:00:00",
         )

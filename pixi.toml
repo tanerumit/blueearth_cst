@@ -57,8 +57,10 @@ hydroengine = "*"
 gwwapi = "*"
 snakemake = "*"
 
-# Tasks to be filled in by later M2 deliverables:
-# - install-rdeps: weathergenr install (M2.4)
-# - install-julia-deps: Julia + Wflow.jl pin (M2.3)
-# - install:        wraps the above for the single-command install story (M2.5)
+# Single-command install for a fresh clone:
+#     pixi install         # native deps from pixi.toml
+#     pixi run install     # R + Julia layers wired below
 [tasks]
+install-rdeps = { cmd = "Rscript --vanilla dev/scripts/install_weathergenr.R", description = "Install weathergenr from tanerumit/weathergenr@v1.2.0" }
+install-julia = { cmd = "julia --project=. -e 'using Pkg; Pkg.instantiate()'", description = "Instantiate the Julia env from Manifest.toml" }
+install       = { depends-on = ["install-rdeps", "install-julia"], description = "One-shot R + Julia install on top of pixi install" }

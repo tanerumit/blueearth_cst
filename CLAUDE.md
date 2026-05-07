@@ -11,7 +11,7 @@ This is a multi-language scientific workflow toolbox (BlueEarth Climate Stress T
 - **Julia** runs the Wflow.jl hydrological model, invoked via `julia --threads 4 -e "using Wflow; Wflow.run()" <toml>` from Snakemake `shell:` directives.
 - **Snakemake** stitches everything together. The three `Snakefile_*` files at the repo root are the entry points — there is no Python package CLI.
 
-The conda env name in `environment.yml` is `cst`, but the README's instructions assume the env is named `blueearth-cst`. Both names appear in scripts. Activate whichever was actually created locally.
+The conda env is named `cst` (set in `environment.yml`). Activate with `conda activate cst`.
 
 ## Common commands
 

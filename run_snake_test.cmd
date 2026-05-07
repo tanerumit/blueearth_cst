@@ -1,4 +1,4 @@
-call activate blueearth-cst
+call activate cst
 
 rem Snakefile_model_creation
 snakemake -s Snakefile_model_creation --configfile config/snake_config_model_test.yml  --dag | dot -Tpng > dag_model.png

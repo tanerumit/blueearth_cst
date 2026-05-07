@@ -46,27 +46,27 @@ lock file with fixed dependency that you can decide to use (eg environment_0.1.0
 Windows
 ~~~~~~~
 
-4. Make and activate a new blueearth-cst conda environment based either on the provided lock file. This will install all python and R dependencies to run the 
+4. Make and activate a new cst conda environment based either on the provided lock file. This will install all python and R dependencies to run the 
 tool. For this open your terminal and navigate to the folder where the lock file is located (using cd command to change directory) and run the following commands.
 The last line will install the weathergenr package:
 
 .. code-block:: console
 
     $ conda env create -f environment.yml
-    $ conda activate blueearth-cst
+    $ conda activate cst
     $ Rscript src/weathergen/install_rpackages.R
 
 Linux
 ~~~~~
 
-4. Make and activate a new blueearth-cst conda environment based either on the provided lock file. This will install all python and R dependencies to run the 
+4. Make and activate a new cst conda environment based either on the provided lock file. This will install all python and R dependencies to run the 
 tool. For this open your terminal and navigate to the folder where the lock file is located (using cd command to change directory) and run the following commands.
 The last line will install the weathergenr package:
 
 .. code-block:: console
 
     $ conda env create -f environment_linux.yml
-    $ conda activate blueearth-cst
+    $ conda activate cst
     $ Rscript src/weathergen/install_rpackages.R
 
 Docker
@@ -96,25 +96,25 @@ the code folder (where the environment.yml file is located):
 Windows
 ~~~~~~~
 
-4. Make and activate a new blueearth-cst conda environment based on the environment.yml file contained in the repository. This will install all python and R dependencies to run the 
+4. Make and activate a new cst conda environment based on the environment.yml file contained in the repository. This will install all python and R dependencies to run the 
 tool:
 
 .. code-block:: console
 
     $ conda env create -f environment.yml
-    $ conda activate blueearth-cst
+    $ conda activate cst
     $ Rscript src/weathergen/install_rpackages.R
 
 Linux
 ~~~~~
 
-4. Make and activate a new blueearth-cst conda environment based on the environment.yml file contained in the repository. This will install all python and R dependencies to run the 
+4. Make and activate a new cst conda environment based on the environment.yml file contained in the repository. This will install all python and R dependencies to run the 
 tool:
 
 .. code-block:: console
 
     $ conda env create -f environment_linux.yml
-    $ conda activate blueearth-cst
+    $ conda activate cst
     $ Rscript src/weathergen/install_rpackages.R
 
 Running
@@ -128,7 +128,7 @@ BlueEarth CST toolbox is based on several workflows developed using Snakemake_ .
 To prepare these workflows, you can select the different options for your model region and climate scenario using a config file. An example is available in the folder 
 config/snake_config_model_test.yml.
 
-You can run each workflow using the snakemake command line, after activating your blueearth_cst conda environment.
+You can run each workflow using the snakemake command line, after activating your cst conda environment.
 
 Running from conda environment
 ------------------------------
@@ -137,7 +137,7 @@ snakefiles are located:
 
 .. code-block:: console
 
-    $ conda activate blueearth-cst
+    $ conda activate cst
     $ cd blueearth_cst
 
 Then you can run the workflows using the snakemake commands detailed below.

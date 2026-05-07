@@ -11,7 +11,7 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
 import hydromt
-from hydromt_wflow import WflowModel
+from hydromt_wflow import WflowSbmModel
 
 from typing import Union
 
@@ -108,7 +108,7 @@ def analyse_wflow_historical(
     ### 3. Read the wflow model and results ###
     # Instantiate wflow model
     Folder_run = f"{project_dir}/hydrology_model"
-    mod = WflowModel(root=Folder_run, mode="r")
+    mod = WflowSbmModel(root=Folder_run, mode="r")
 
     # Read the results
     # Discharge at the outlet(s)

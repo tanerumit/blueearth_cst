@@ -1,5 +1,5 @@
 """Function to update a wflow model and add gauges and outputs"""
-from hydromt_wflow import WflowModel
+from hydromt_wflow import WflowSbmModel
 import os
 from os.path import join
 from pathlib import Path
@@ -46,7 +46,7 @@ def update_wflow_gauges_outputs(
     """
 
     # Instantiate wflow model
-    mod = WflowModel(wflow_root, mode="r+", data_libs=data_catalog)
+    mod = WflowSbmModel(wflow_root, mode="r+", data_libs=data_catalog)
 
     # Add outlets
     mod.setup_outlets(

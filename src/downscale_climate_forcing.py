@@ -1,4 +1,4 @@
-from hydromt_wflow import WflowModel
+from hydromt_wflow import WflowSbmModel
 from pathlib import Path
 import os
 import numpy as np
@@ -37,7 +37,7 @@ config_out_root = os.path.dirname(config_out_fn)
 config_out_name = os.path.basename(config_out_fn)
 
 # Instantiate model
-mod = WflowModel(root=model_root, mode="r+", data_libs=data_libs)
+mod = WflowSbmModel(root=model_root, mode="r+", data_libs=data_libs)
 
 # For large / small model domains adjust chunksize to compute forcing
 size = mod.grid.raster.size

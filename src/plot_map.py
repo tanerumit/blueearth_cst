@@ -22,7 +22,7 @@ import cartopy.crs as ccrs
 # import descartes  # required to plot polygons
 import cartopy.io.img_tiles as cimgt
 
-from hydromt_wflow import WflowModel
+from hydromt_wflow import WflowSbmModel
 
 project_dir = snakemake.params.project_dir
 gauges_fn = snakemake.params.output_locations
@@ -35,7 +35,7 @@ Folder_plots = f"{project_dir}/plots/wflow_model_performance"
 root = f"{project_dir}/hydrology_model"
 
 
-mod = WflowModel(root, mode="r")
+mod = WflowSbmModel(root, mode="r")
 
 # read and mask the model elevation
 da = mod.grid["wflow_dem"].raster.mask_nodata()

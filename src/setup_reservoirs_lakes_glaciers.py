@@ -1,5 +1,5 @@
 """Function to update a wflow model and add gauges and outputs"""
-from hydromt_wflow import WflowModel
+from hydromt_wflow import WflowSbmModel
 from hydromt.exceptions import NoDataException
 from hydromt.cli.cli_utils import parse_config
 
@@ -30,7 +30,7 @@ def update_wflow_waterbodies_glaciers(
     """
 
     # Instantiate wflow model
-    mod = WflowModel(wflow_root, mode="r+", data_libs=data_catalog)
+    mod = WflowSbmModel(wflow_root, mode="r+", data_libs=data_catalog)
 
     # Read the config file
     config = parse_config(config_fn)

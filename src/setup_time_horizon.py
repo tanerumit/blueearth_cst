@@ -1,7 +1,7 @@
 """Prepare a hydromt config file to be able to add forcing to a wflow model"""
 
 import hydromt
-from hydromt_wflow import WflowModel
+from hydromt_wflow import WflowSbmModel
 from pathlib import Path
 from typing import Union, Optional
 
@@ -41,7 +41,7 @@ def prep_hydromt_update_forcing_config(
 
     # Check if wflow_root is provided and adjust the forcing computation chunksizes
     if wflow_root is not None:
-        mod = WflowModel(root=wflow_root, mode="r")
+        mod = WflowSbmModel(root=wflow_root, mode="r")
         size = mod.grid.raster.size
         if size > 1e6:
             chunksize = 1

@@ -23,7 +23,7 @@ import cartopy.crs as ccrs
 # import descartes  # required to plot polygons
 import cartopy.io.img_tiles as cimgt
 
-from hydromt_wflow import WflowModel
+from hydromt_wflow import WflowSbmModel
 
 
 def plot_map_model(mod, da, figname, gauges_name):
@@ -153,7 +153,7 @@ def plot_forcing(
     gauges_name : str, optional
         Name of the gauges to plot. If None (default), no gauges are plot.
     """
-    mod = WflowModel(wflow_root, mode="r")
+    mod = WflowSbmModel(wflow_root, mode="r")
 
     # If plotting dir is None, create
     if plot_dir is None:

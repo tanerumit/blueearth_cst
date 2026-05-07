@@ -1,0 +1,47 @@
+# Default: auto-detect text files, normalize to LF in repo, native EOL on checkout
+* text=auto
+
+# Source / config (let Git auto-detect; LF in repo)
+*.py     text
+*.R      text
+*.Rproj  text
+*.toml   text
+*.yml    text
+*.yaml   text
+*.md     text
+*.rst    text
+*.csv    text
+*.ipynb  text
+.gitignore   text
+.gitattributes text
+
+# Snakemake / Docker / Make — extensionless, but text
+Snakefile*   text
+Dockerfile   text
+Makefile     text
+LICENSE      text
+
+# Must be LF (executed in Linux/Docker)
+*.sh         text eol=lf
+
+# Must be CRLF (Windows-only scripts)
+*.cmd        text eol=crlf
+*.bat        text eol=crlf
+
+# Binary — never touch line endings
+*.png   binary
+*.jpg   binary
+*.jpeg  binary
+*.gif   binary
+*.pdf   binary
+*.nc    binary
+*.tif   binary
+*.tiff  binary
+*.zip   binary
+*.gz    binary
+*.tar   binary
+*.parquet binary
+*.xlsx  binary
+*.xls   binary
+*.RData binary
+*.rds   binary

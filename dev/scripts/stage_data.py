@@ -15,8 +15,9 @@ All knobs live in a YAML file (default: ``dev/scripts/stage_data.yml``):
     bbox: [8.5, -0.5, 11.0, 1.5]   # west, south, east, north
     datasets:
       - {name: vito,  type: raster,      path: landuse/vito/.../foo.tif}
-      - {name: tiles, type: raster_glob, path: topography/.../30sec, pattern: "*.tif"}
-      - {name: idx,   type: vector,      path: topography/.../basin_index.gpkg}
+      - {name: tiles, type: raster_glob, path: topography/.../30sec, pattern: "*.tif", workers: 4}
+      - {name: idx,   type: vector,      path: topography/.../basin_index.gpkg,
+         columns: [geometry, id]}
       - {name: era5,  type: zarr,        path: meteo/era5_daily.zarr}
       - {name: orog,  type: netcdf,      path: meteo/.../era5_orography_2018.nc}
 
@@ -30,11 +31,30 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
+import re
 import shutil
 import sys
 import traceback
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import contextmanager
+from datetime import datetime
 from pathlib import Path
+from time import perf_counter
+
+# GDAL/SMB performance tuning. Set as defaults so a user-set env wins.
+# Must be set BEFORE geopandas/rasterio import — GDAL reads these once at
+# library init.
+# - GDAL_CACHEMAX: raster block cache size (MB).
+# - VSI_CACHE / VSI_CACHE_SIZE: read-side cache for any VSI handler.
+# - GDAL_DISABLE_READDIR_ON_OPEN=EMPTY_DIR: skip the per-open directory scan
+#   GDAL does looking for sidecars (.aux.xml, .ovr, etc.). Each scan is
+#   another SMB round-trip; on a network drive this is the single biggest
+#   per-file overhead reduction.
+os.environ.setdefault("GDAL_CACHEMAX", "512")
+os.environ.setdefault("VSI_CACHE", "TRUE")
+os.environ.setdefault("VSI_CACHE_SIZE", "10000000")
+os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
 
 import geopandas as gpd
 import rasterio
@@ -61,11 +81,18 @@ CONFIG_DEFAULT = Path(__file__).resolve().parent / "stage_data.yml"
 # Outcome status names.
 WRITTEN, EXISTS, SKIPPED, FAILED = "written", "exists", "skipped", "failed"
 
-# (status, name, detail) per processed file/dataset.
-_results: list[tuple[str, str, str]] = []
+# (status, name, detail, size_bytes) per processed file/dataset.
+_results: list[tuple[str, str, str, int]] = []
+_run_started: float | None = None
 
 
-def _print_entry(status: str, name: str, detail: str = "") -> None:
+def _print_entry(
+    status: str,
+    name: str,
+    detail: str = "",
+    *,
+    size_bytes: int = 0,
+) -> None:
     """Print a glyph-prefixed entry line and record it for the TOTAL recap."""
     glyph_color = {
         WRITTEN: ("+", green),
@@ -74,9 +101,10 @@ def _print_entry(status: str, name: str, detail: str = "") -> None:
         FAILED:  ("x", red),
     }[status]
     glyph, color = glyph_color
-    line = f"    {color(glyph)} {pad(name, 44)}  {dim(detail)}" if detail else f"    {color(glyph)} {name}"
-    print(line)
-    _results.append((status, name, detail))
+    print(f"    {color(glyph)} {name}")
+    if detail:
+        print(f"      {dim(detail)}")
+    _results.append((status, name, detail, size_bytes))
 
 
 def _remove(path: Path) -> None:
@@ -89,6 +117,15 @@ def _remove(path: Path) -> None:
             path.unlink()
         except OSError:
             pass
+
+
+def _path_size(path: Path) -> int:
+    """Return file or directory size in bytes."""
+    if not path.exists():
+        return 0
+    if path.is_file():
+        return path.stat().st_size
+    return sum(p.stat().st_size for p in path.rglob("*") if p.is_file())
 
 
 @contextmanager
@@ -116,6 +153,9 @@ def _zarr_complete(dst: Path) -> bool:
 # exists" actually safe across YAML edits.
 
 MANIFEST_VERSION = 1
+DEFAULT_RASTER_GLOB_WORKERS = 4
+RASTER_TILE_SIZE = 256
+RASTER_TILE_MIN_SIZE = 16
 
 
 def _manifest_path(dst: Path) -> Path:
@@ -154,12 +194,20 @@ def _is_fresh(dst: Path, fingerprint: dict, *, is_zarr: bool = False) -> bool:
     return all(m.get(k) == v for k, v in fingerprint.items())
 
 
-def _fingerprint(*, src: Path, bbox, time_range=None, variables=None) -> dict:
+def _fingerprint(
+    *,
+    src: Path,
+    bbox,
+    time_range=None,
+    variables=None,
+    columns=None,
+) -> dict:
     return {
         "src": str(src).replace("\\", "/"),
         "bbox": list(bbox),
         "time_range": list(time_range) if time_range else None,
         "variables": list(variables) if variables else None,
+        "columns": list(columns) if columns else None,
     }
 
 
@@ -173,7 +221,169 @@ def _dask_progress():
         yield
 
 
+def _format_elapsed(seconds: float) -> str:
+    """Return a compact human-readable duration."""
+    if seconds < 60:
+        return f"{seconds:.1f}s"
+    minutes, remaining = divmod(int(round(seconds)), 60)
+    hours, minutes = divmod(minutes, 60)
+    if hours:
+        return f"{hours}h{minutes:02d}m{remaining:02d}s"
+    return f"{minutes}m{remaining:02d}s"
+
+
+def _format_bytes(size_bytes: int) -> str:
+    """Return a compact human-readable byte size."""
+    if size_bytes < 1_000:
+        return f"{size_bytes} B"
+    value = float(size_bytes)
+    for unit in ("KB", "MB", "GB", "TB"):
+        value /= 1_000
+        if value < 1_000 or unit == "TB":
+            return f"{value:.1f} {unit}"
+    return f"{value:.1f} TB"
+
+
+def _completion_detail(detail: str, finished_at: datetime, elapsed: float) -> str:
+    """Append completion timestamp and elapsed time to a detail string."""
+    suffix = (
+        f"completed: {finished_at:%H:%M:%S}; "
+        f"elapsed: {_format_elapsed(elapsed)}"
+    )
+    return f"{detail}; {suffix}" if detail else suffix
+
+
+def _total_output_bytes(results) -> int:
+    """Return bytes for outputs that were written or already fresh."""
+    return sum(size for status, *_rest, size in results if status in (WRITTEN, EXISTS))
+
+
 # --- Worker functions: each returns (status, detail). ---
+
+
+def _validate_lonlat_crs(crs, kind: str, src: Path) -> None:
+    """Raise if a lon/lat bbox is being applied to a projected dataset."""
+    if crs is None:
+        return
+    if isinstance(crs, str):
+        try:
+            parsed_crs = rasterio.crs.CRS.from_user_input(crs)
+        except Exception:
+            parsed_crs = None
+        if parsed_crs is not None:
+            crs = parsed_crs
+        elif crs.upper() in ("EPSG:4326", "OGC:CRS84", "WGS84", "WGS 84"):
+            return
+    is_geographic = getattr(crs, "is_geographic", None)
+    if is_geographic:
+        return
+    crs_name = crs.to_string() if hasattr(crs, "to_string") else str(crs)
+    raise ValueError(
+        f"{kind} source {src} has CRS {crs_name}; bbox is lon/lat. "
+        "Reproject the bbox or stage from a geographic source."
+    )
+
+
+def _raster_tile_size(size: int) -> int | None:
+    """Return a GeoTIFF tile size for a clipped dimension."""
+    if size < RASTER_TILE_MIN_SIZE:
+        return None
+    return min(
+        RASTER_TILE_SIZE,
+        (size // RASTER_TILE_MIN_SIZE) * RASTER_TILE_MIN_SIZE,
+    )
+
+
+def _raster_output_profile(profile: dict, *, height: int, width: int, transform) -> dict:
+    """Return a clipped raster output profile with efficient GeoTIFF tiling."""
+    out = profile.copy()
+    out.pop("blockxsize", None)
+    out.pop("blockysize", None)
+    out.update(
+        height=height,
+        width=width,
+        transform=transform,
+        compress=out.get("compress") or "deflate",
+    )
+    if out.get("driver", "GTiff").lower() == "gtiff":
+        blockxsize = _raster_tile_size(width)
+        blockysize = _raster_tile_size(height)
+        if blockxsize is not None and blockysize is not None:
+            out.update(tiled=True, blockxsize=blockxsize, blockysize=blockysize)
+        else:
+            out.update(tiled=False)
+    return out
+
+
+# --- Filename-based tile pre-filter (raster_glob) ---
+#
+# Many global tiled rasters embed lat/lon corner info in the filename:
+# MERIT/GMTED-style "n00e009_30sec.tif" or MODIS sinusoidal "h21v08.tif".
+# When a known pattern matches we can skip files whose nominal bounds do
+# not overlap the bbox, avoiding a slow SMB open per non-overlapping tile.
+# Filenames that don't match any known pattern fall through to the slow
+# (open-then-check) path safely.
+
+_GEO_TILE_RE = re.compile(
+    r"(?:^|[^a-zA-Z0-9])([ns])(\d{1,3})([ew])(\d{1,3})(?=[^a-zA-Z0-9]|$)",
+    re.IGNORECASE,
+)
+
+_MODIS_RE = re.compile(
+    r"(?:^|[^a-zA-Z0-9])h(\d{2})v(\d{2})(?=[^a-zA-Z0-9]|$)",
+    re.IGNORECASE,
+)
+
+
+def _tile_bounds_from_name(name: str) -> tuple[float, float, float, float] | None:
+    """Return (W, S, E, N) lon/lat bounds for a recognised tile filename.
+
+    Returning None means "unknown pattern, fall back to opening the file".
+    """
+    m = _GEO_TILE_RE.search(name)
+    if m:
+        lat_hem, lat_deg, lon_hem, lon_deg = m.groups()
+        lat_n_val, lon_n_val = int(lat_deg), int(lon_deg)
+        if 0 <= lat_n_val <= 90 and 0 <= lon_n_val <= 180:
+            lat = lat_n_val * (-1 if lat_hem.lower() == "s" else 1)
+            lon = lon_n_val * (-1 if lon_hem.lower() == "w" else 1)
+            # Tile labelled by SW corner; spans 1° unless we have other info.
+            return float(lon), float(lat), float(lon + 1), float(lat + 1)
+
+    m = _MODIS_RE.search(name)
+    if m:
+        v = int(m.group(2))
+        if 0 <= v <= 17:
+            lat_n = 90.0 - v * 10.0
+            lat_s = lat_n - 10.0
+            # Sinusoidal lon span varies with lat; use full lon for safety
+            # (lat-only filter — still cuts most non-overlapping tiles).
+            return -180.0, lat_s, 180.0, lat_n
+
+    return None
+
+
+def _bbox_overlap(a, b) -> bool:
+    """True if two (W, S, E, N) bboxes overlap (touching edges = no overlap)."""
+    aw, as_, ae, an = a
+    bw, bs, be, bn = b
+    return aw < be and ae > bw and as_ < bn and an > bs
+
+
+def _vector_read_kwargs(bbox, columns=None) -> dict:
+    """Return geopandas read_file kwargs for a clipped vector subset."""
+    kwargs = {"bbox": bbox}
+    if columns:
+        kwargs["columns"] = list(columns)
+    return kwargs
+
+
+def _raster_glob_workers(entry: dict, *, file_count: int) -> int:
+    """Return bounded worker count for independent raster-glob staging."""
+    if file_count <= 5:
+        return 1
+    requested = entry.get("workers", DEFAULT_RASTER_GLOB_WORKERS)
+    return max(1, min(int(requested), file_count))
 
 
 def subset_raster(src: Path, dst: Path, bbox) -> tuple[str, str]:
@@ -186,21 +396,18 @@ def subset_raster(src: Path, dst: Path, bbox) -> tuple[str, str]:
     dst.parent.mkdir(parents=True, exist_ok=True)
     with _cleanup_on_error(dst):
         with rasterio.open(src) as ds:
+            _validate_lonlat_crs(ds.crs, "raster", src)
             win = rasterio.windows.from_bounds(*bbox, transform=ds.transform)
             win = win.round_offsets().round_lengths()
             win = win.intersection(rasterio.windows.Window(0, 0, ds.width, ds.height))
             if win.width <= 0 or win.height <= 0:
                 return SKIPPED, "no overlap"
             data = ds.read(window=win)
-            profile = ds.profile.copy()
-            profile.pop("blockxsize", None)
-            profile.pop("blockysize", None)
-            profile.update(
+            profile = _raster_output_profile(
+                ds.profile,
                 height=int(win.height),
                 width=int(win.width),
                 transform=ds.window_transform(win),
-                compress=profile.get("compress") or "deflate",
-                tiled=False,
             )
             with rasterio.open(dst, "w", **profile) as out:
                 out.write(data)
@@ -208,8 +415,8 @@ def subset_raster(src: Path, dst: Path, bbox) -> tuple[str, str]:
     return WRITTEN, f"{dst.stat().st_size / 1e6:.1f} MB"
 
 
-def subset_vector(src: Path, dst: Path, bbox) -> tuple[str, str]:
-    fp = _fingerprint(src=src, bbox=bbox)
+def subset_vector(src: Path, dst: Path, bbox, *, columns=None) -> tuple[str, str]:
+    fp = _fingerprint(src=src, bbox=bbox, columns=columns)
     if _is_fresh(dst, fp):
         return EXISTS, ""
     if dst.exists():
@@ -217,7 +424,14 @@ def subset_vector(src: Path, dst: Path, bbox) -> tuple[str, str]:
         _remove(_manifest_path(dst))
     dst.parent.mkdir(parents=True, exist_ok=True)
     with _cleanup_on_error(dst):
-        gdf = gpd.read_file(src, bbox=bbox)
+        # Single open: bbox read first, validate CRS from the result. If the
+        # CRS turns out projected, the bbox (lon/lat scale) will match no
+        # features and the validation below raises before any write — so the
+        # cost of the wasted query is bounded and no bad output is produced.
+        gdf = gpd.read_file(src, **_vector_read_kwargs(bbox, columns))
+        _validate_lonlat_crs(gdf.crs, "vector", src)
+        if len(gdf) == 0:
+            return SKIPPED, "no overlap"
         gdf.to_file(dst, driver="GPKG")
     _write_manifest(dst, fp)
     return WRITTEN, f"{len(gdf)} features"
@@ -255,6 +469,56 @@ def _apply_variables(ds: xr.Dataset, variables) -> xr.Dataset:
     return ds[keep] if keep else ds
 
 
+ZARR_TIME_CHUNK = 365
+ZARR_ENCODING_KEYS = {
+    "_FillValue",
+    "add_offset",
+    "compressor",
+    "dtype",
+    "filters",
+    "scale_factor",
+}
+
+
+def _zarr_subset_chunks(ds: xr.Dataset) -> dict[str, int]:
+    """Return output chunk sizes suited to a clipped daily meteo subset."""
+    chunks = {}
+    for array in ds.data_vars.values():
+        for dim in array.dims:
+            dim_lower = dim.lower()
+            if dim_lower in ("time", "t"):
+                chunks[dim] = min(array.sizes[dim], ZARR_TIME_CHUNK)
+            elif dim_lower in ("lat", "latitude", "y", "lon", "longitude", "x"):
+                chunks[dim] = array.sizes[dim]
+    return chunks
+
+
+def _zarr_subset_encoding(ds: xr.Dataset, chunks: dict[str, int]) -> dict:
+    """Build zarr encoding that preserves codecs but replaces source chunks."""
+    encoding = {}
+    for name, array in ds.data_vars.items():
+        var_encoding = {
+            key: value
+            for key, value in array.encoding.items()
+            if key in ZARR_ENCODING_KEYS
+        }
+        var_chunks = tuple(chunks[dim] for dim in array.dims if dim in chunks)
+        if len(var_chunks) == len(array.dims) and var_chunks:
+            var_encoding["chunks"] = var_chunks
+        if var_encoding:
+            encoding[name] = var_encoding
+    return encoding
+
+
+def _zarr_subset_write_plan(ds: xr.Dataset) -> tuple[xr.Dataset, dict]:
+    """Return a rechunked subset and matching zarr write encoding."""
+    chunks = _zarr_subset_chunks(ds)
+    if not chunks:
+        return ds, _zarr_subset_encoding(ds, chunks)
+    rechunked = ds.chunk(chunks)
+    return rechunked, _zarr_subset_encoding(rechunked, chunks)
+
+
 def subset_zarr(src: Path, dst: Path, bbox, *, time_range=None, variables=None) -> tuple[str, str]:
     fp = _fingerprint(src=src, bbox=bbox, time_range=time_range, variables=variables)
     if _is_fresh(dst, fp, is_zarr=True):
@@ -266,22 +530,22 @@ def subset_zarr(src: Path, dst: Path, bbox, *, time_range=None, variables=None) 
     lat, lon, lat_slice, lon_slice = _spatial_slices(ds, bbox)
     sub = ds.sel({lat: lat_slice, lon: lon_slice})
     sub = _apply_time_range(sub, time_range)
-    # Preserve the source's encoding (codec, chunking, fill_value) so writes
-    # round-trip cleanly.  Earlier workarounds that cleared encoding + forced
-    # uniform chunks were needed for zarr 3 only and corrupted variables whose
-    # source chunking/dtype differed from the homogenised target.
+    sub, encoding = _zarr_subset_write_plan(sub)
     dst.parent.mkdir(parents=True, exist_ok=True)
     with _cleanup_on_error(dst), _dask_progress():
-        # `safe_chunks=False`: the source's encoding["chunks"] (sized for the
-        # global grid) does not align with our spatially-clipped dask chunks.
-        # That alignment only matters for parallel multi-writer writes; our
-        # write is a single dask compute so the check is a false positive.
-        sub.to_zarr(dst, mode="w", consolidated=True, safe_chunks=False)
+        sub.to_zarr(dst, mode="w", consolidated=True, encoding=encoding)
     _write_manifest(dst, fp)
     return WRITTEN, "x".join(f"{sub.sizes[d]}" for d in sub.sizes)
 
 
-def subset_netcdf(src: Path, dst: Path, bbox, *, time_range=None, variables=None) -> tuple[str, str]:
+def subset_netcdf(
+    src: Path,
+    dst: Path,
+    bbox,
+    *,
+    time_range=None,
+    variables=None,
+) -> tuple[str, str]:
     fp = _fingerprint(src=src, bbox=bbox, time_range=time_range, variables=variables)
     if _is_fresh(dst, fp):
         return EXISTS, ""
@@ -308,22 +572,70 @@ SUBSETTERS = {
 }
 
 
-def _run_worker(label: str, fn, src: Path, dst: Path, bbox, *, _verbose=True, _counts=None, **kwargs) -> None:
+def _worker_result(
+    label: str,
+    fn,
+    src: Path,
+    dst: Path,
+    bbox,
+    **kwargs,
+) -> tuple[str, str, str, int]:
+    """Run one staging worker and return a printable result tuple."""
+    started = perf_counter()
     try:
         status, detail = fn(src, dst, bbox, **kwargs)
     except Exception as exc:
         status, detail = FAILED, str(exc).splitlines()[0][:80]
         sys.stderr.write(traceback.format_exc())
+    detail = _completion_detail(detail, datetime.now(), perf_counter() - started)
+    size_bytes = _path_size(dst) if status in (WRITTEN, EXISTS) else 0
+    return status, label, detail, size_bytes
+
+
+def _record_worker_result(
+    status: str,
+    label: str,
+    detail: str,
+    size_bytes: int,
+    *,
+    _verbose=True,
+    _counts=None,
+) -> None:
+    """Record and optionally print one worker result."""
     if _counts is not None:
         _counts[status] = _counts.get(status, 0) + 1
     # In quiet mode (tqdm-driven loops) only break out of the bar for
     # failures and skipped entries — those are the lines a user needs to
     # see. Successful writes / existing files are summarised after the bar.
     if _verbose or status in (FAILED, SKIPPED):
-        _print_entry(status, label, detail)
+        _print_entry(status, label, detail, size_bytes=size_bytes)
     else:
         # Still record for the TOTAL recap, just don't print per-line.
-        _results.append((status, label, detail))
+        _results.append((status, label, detail, size_bytes))
+
+
+def _run_worker(
+    label: str,
+    fn,
+    src: Path,
+    dst: Path,
+    bbox,
+    *,
+    _verbose=True,
+    _counts=None,
+    **kwargs,
+) -> None:
+    status, result_label, detail, size_bytes = _worker_result(
+        label, fn, src, dst, bbox, **kwargs
+    )
+    _record_worker_result(
+        status,
+        result_label,
+        detail,
+        size_bytes,
+        _verbose=_verbose,
+        _counts=_counts,
+    )
 
 
 def _print_metadata(lines) -> None:
@@ -343,12 +655,9 @@ def _describe_raster(src: Path) -> list[str]:
             res_x = abs(ds.transform.a)
             res_y = abs(ds.transform.e)
             crs = ds.crs.to_string() if ds.crs else "<none>"
-            nodata = ds.nodata
             return [
                 f"crs: {crs}   res: {res_x:.6g}° x {res_y:.6g}°   "
-                f"size: {ds.width}x{ds.height}   bands: {ds.count}",
-                f"dtype: {ds.dtypes[0]}   nodata: {nodata}   "
-                f"bounds: {_fmt_bbox(*ds.bounds)}",
+                f"size: {ds.width}x{ds.height}",
             ]
     except Exception as exc:
         return [f"(could not read raster metadata: {exc})"]
@@ -438,40 +747,103 @@ def _stage_dataset(entry: dict, source_root: Path, target_root: Path, bbox) -> N
         rel = Path(entry["path"])
     except KeyError as exc:
         print(f"  {red('x')} <invalid entry>  missing key {exc}: {entry!r}")
-        _results.append((FAILED, str(entry), f"missing key {exc}"))
+        _results.append((FAILED, str(entry), f"missing key {exc}", 0))
         return
 
     src, dst = source_root / rel, target_root / rel
-    print(f"  {cyan('▸')} {bold(name)}  {dim(kind)}  {dim(fmt_path(src))}")
+    dataset_started = perf_counter()
+    print(f"  {cyan('▸')} {bold(name)}")
 
     if kind == "raster_glob":
         pattern = entry.get("pattern", "*.tif")
         if not src.exists():
             _print_entry(FAILED, name, f"source dir missing: {fmt_path(src)}")
             return
-        files = sorted(src.glob(pattern))
-        if not files:
+        all_files = sorted(src.glob(pattern))
+        if not all_files:
             _print_entry(SKIPPED, name, f"no files match {pattern}")
             return
-        _print_metadata([f"{len(files)} files matching {pattern}   sample: {files[0].name}"])
+
+        # Filename-based pre-filter: drop tiles whose name-encoded bounds
+        # cannot overlap the bbox without paying a per-file SMB open.
+        # Filenames matching no known tile pattern fall through to the
+        # slow path (open-then-check inside subset_raster).
+        files = []
+        prefiltered = 0
+        for f in all_files:
+            tb = _tile_bounds_from_name(f.name)
+            if tb is not None and not _bbox_overlap(tb, bbox):
+                prefiltered += 1
+                continue
+            files.append(f)
+        if not files:
+            _print_entry(
+                SKIPPED, name, f"all {len(all_files)} tiles filtered out by bbox"
+            )
+            return
+
+        suffix = f"   ({prefiltered} pre-filtered)" if prefiltered else ""
+        _print_metadata([
+            f"{len(all_files)} files matching {pattern}{suffix}   "
+            f"sample: {files[0].name}"
+        ])
         _print_metadata(_describe_raster(files[0]))
         # Emit per-file glyphs only on the slow path (verbose) or when there
         # are few files; otherwise let tqdm carry the progress signal and
         # only break out for failures/skips.
-        verbose = tqdm is None or len(files) <= 5
-        bar = tqdm(files, desc=f"    {name}", unit="file", leave=False) if (tqdm and not verbose) else files
+        workers = _raster_glob_workers(entry, file_count=len(files))
+        verbose = workers == 1 and (tqdm is None or len(files) <= 5)
+        progress_items = files if workers == 1 else range(len(files))
+        bar = (
+            tqdm(progress_items, desc=f"    {name}", unit="file", leave=False)
+            if (tqdm and not verbose)
+            else progress_items
+        )
         counts = {WRITTEN: 0, EXISTS: 0, SKIPPED: 0, FAILED: 0}
-        for f in bar:
-            _run_worker(
-                f.name, subset_raster, f, dst / f.name, bbox,
-                _verbose=verbose, _counts=counts,
-            )
+        if workers == 1:
+            for f in bar:
+                _run_worker(
+                    f.name, subset_raster, f, dst / f.name, bbox,
+                    _verbose=verbose, _counts=counts,
+                )
+        else:
+            with ThreadPoolExecutor(max_workers=workers) as executor:
+                futures = [
+                    executor.submit(
+                        _worker_result,
+                        f.name,
+                        subset_raster,
+                        f,
+                        dst / f.name,
+                        bbox,
+                    )
+                    for f in files
+                ]
+                for future, _ in zip(as_completed(futures), bar):
+                    status, result_label, detail, size_bytes = future.result()
+                    _record_worker_result(
+                        status,
+                        result_label,
+                        detail,
+                        size_bytes,
+                        _verbose=False,
+                        _counts=counts,
+                    )
         if not verbose:
             summary = (
                 f"{counts[WRITTEN]} written, {counts[EXISTS]} existing, "
                 f"{counts[SKIPPED]} skipped, {counts[FAILED]} failed"
             )
-            print(f"    {green('+')} {pad(name, 44)}  {dim(summary)}")
+            if workers > 1:
+                summary = f"{summary}; workers: {workers}"
+            summary = _completion_detail(
+                summary,
+                datetime.now(),
+                perf_counter() - dataset_started,
+            )
+            print()
+            print(f"    {green('+')} {pad(name, 44)}")
+            print(f"      {dim(summary)}")
         return
 
     fn = SUBSETTERS.get(kind)
@@ -484,6 +856,8 @@ def _stage_dataset(entry: dict, source_root: Path, target_root: Path, bbox) -> N
             extra["time_range"] = entry["time_range"]
         if "variables" in entry:
             extra["variables"] = entry["variables"]
+    elif kind == "vector" and "columns" in entry:
+        extra["columns"] = entry["columns"]
 
     # Per-type metadata block under the header line.
     if kind == "raster":
@@ -527,26 +901,41 @@ def load_config(path: Path) -> dict:
 
 def _print_description() -> None:
     print(banner("DESCRIPTION"))
-    print("Stage a bbox-clipped subset of a remote data root onto local storage.")
+    print(
+        "Stage a bbox-clipped subset of a remote data root onto local storage, "
+        "mirroring the source tree so an existing data catalog can point to "
+        "the local copy. Re-runs use per-output manifests to skip fresh "
+        "outputs and restage stale ones."
+    )
     print()
 
 
 def _print_parameters(cfg: dict, config_path: Path) -> None:
     print(banner("PARAMETERS"))
+
     print(bold("inputs:"))
     rows = [
-        ("config",   fmt_path(config_path)),
+        ("config",      fmt_path(config_path)),
         ("source_root", fmt_path(cfg["source_root"])),
         ("target_root", fmt_path(cfg["target_root"])),
-        ("datasets", f"{len(cfg.get('datasets', []))} entries"),
     ]
     for label, value in rows:
-        print(f"  {pad(label, 10, dim)}  {value}")
+        print(f"  {pad(label, 12, dim)}  {value}")
     print()
+
+    datasets = cfg.get("datasets", [])
+    name_width = max((len(d.get("name", "?")) for d in datasets), default=0) + 2
+    print(bold(f"datasets ({len(datasets)}):"))
+    for d in datasets:
+        name = d.get("name", "?")
+        kind = d.get("type", "?")
+        print(f"  {pad(name, name_width, cyan)}  {dim(kind)}")
+    print()
+
     print(bold("flags:"))
     w, s, e, n = cfg["bbox"]
     print(
-        f"  {pad('bbox', 10, dim)} "
+        f"  {pad('bbox', 12, dim)} "
         f"{pad(f'{w} {s} {e} {n}', 22, cyan)} "
         f"{dim('west south east north (lon/lat)')}"
     )
@@ -555,7 +944,7 @@ def _print_parameters(cfg: dict, config_path: Path) -> None:
 
 def _print_total() -> None:
     counts = {WRITTEN: 0, EXISTS: 0, SKIPPED: 0, FAILED: 0}
-    for status, _name, _detail in _results:
+    for status, *_rest in _results:
         counts[status] = counts.get(status, 0) + 1
 
     print(banner("TOTAL"))
@@ -569,6 +958,16 @@ def _print_total() -> None:
         f"{red(f'failed: {counts[FAILED]}')}"
     )
     print(pill)
+    elapsed = (
+        _format_elapsed(perf_counter() - _run_started)
+        if _run_started is not None
+        else "?"
+    )
+    print(
+        f"{dim('elapsed:')} {elapsed}"
+        f" {dim('·')} "
+        f"{dim('size:')} {_format_bytes(_total_output_bytes(_results))}"
+    )
 
     total_ok = counts[WRITTEN] + counts[EXISTS]
     if counts[FAILED] == 0 and total_ok > 0:
@@ -581,14 +980,14 @@ def _print_total() -> None:
         print()
         print(red(bold(f"FAILED — {counts[FAILED]} dataset(s) did not stage; see recap below.")))
 
-    failures = [(n, d) for s, n, d in _results if s == FAILED]
+    failures = [(n, d) for s, n, d, _size in _results if s == FAILED]
     if failures:
         print()
         print(f"{bold('failed')} ({len(failures)}):")
         for name, detail in failures:
             print(f"  {red('x')} {name}  {dim(detail)}")
 
-    skips = [(n, d) for s, n, d in _results if s == SKIPPED]
+    skips = [(n, d) for s, n, d, _size in _results if s == SKIPPED]
     if skips:
         print()
         print(f"{bold('skipped')} ({len(skips)}):")
@@ -597,6 +996,9 @@ def _print_total() -> None:
 
 
 def main() -> None:
+    global _run_started
+
+    _run_started = perf_counter()
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )

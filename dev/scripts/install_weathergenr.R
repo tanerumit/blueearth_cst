@@ -1,11 +1,15 @@
 # Install weathergenr from the user's GitHub fork into the active R env.
 #
-# Pre-M1 helper. weathergenr is not on conda-forge, so the conda env file
-# can't declare it. M2 (per dev/roadmap.md) will replace this with a
-# pinned commit/tag or a vendored source tree.
+# Canonical R-side install for M2. Invoked once per fresh env via the
+# pixi task `pixi run install-rdeps`; not used at workflow runtime.
+# weathergenr is not on conda-forge, so the env file can't declare it
+# directly. The decision to pin via this script (vs. vendor under
+# vendor/weathergenr/) is documented in dev/m02_decisions.md.
 #
-# Run via:
-#     conda run -n cst Rscript --vanilla dev/scripts/install_weathergenr.R
+# Manual invocation (for debugging):
+#     pixi run install-rdeps
+#     # or, equivalently:
+#     pixi run Rscript --vanilla dev/scripts/install_weathergenr.R
 
 if (!requireNamespace("devtools", quietly = TRUE)) {
   stop(

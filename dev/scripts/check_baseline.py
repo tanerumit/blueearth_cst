@@ -177,7 +177,17 @@ def diff_png(rec: dict, cur: dict) -> list[str]:
     return []
 
 
-def diff_nc(rec: dict, cur: dict) -> list[str]:
+NUMERIC_STATS = ("min", "max", "mean", "std")
+
+
+def _within_tol(r: float | None, c: float | None, tol: float) -> bool:
+    if r is None or c is None or tol <= 0:
+        return False
+    denom = max(abs(r), abs(c), 1e-300)
+    return abs(c - r) / denom <= tol
+
+
+def diff_nc(rec: dict, cur: dict, tolerance: float = 0.0) -> list[str]:
     diffs: list[str] = []
     rec_summary = rec.get("summary", {})
     cur_summary = cur.get("summary", {})
@@ -190,8 +200,11 @@ def diff_nc(rec: dict, cur: dict) -> list[str]:
             continue
         for stat in ("shape", "dtype", "count_non_nan", "min", "max", "mean", "std", "attrs"):
             r, c = rec_summary[var].get(stat), cur_summary[var].get(stat)
-            if r != c:
-                diffs.append(f"variable {var} {stat}: {c} vs {r}")
+            if r == c:
+                continue
+            if stat in NUMERIC_STATS and _within_tol(r, c, tolerance):
+                continue
+            diffs.append(f"variable {var} {stat}: {c} vs {r}")
     return diffs
 
 
@@ -201,11 +214,11 @@ def diff_hashed(rec: dict, cur: dict) -> list[str]:
     return []
 
 
-def diff_records(rec: dict, cur: dict) -> list[str]:
+def diff_records(rec: dict, cur: dict, tolerance: float = 0.0) -> list[str]:
     if rec["type"] == "png":
         return diff_png(rec, cur)
     if rec["type"] == "netcdf":
-        return diff_nc(rec, cur)
+        return diff_nc(rec, cur, tolerance)
     return diff_hashed(rec, cur)
 
 
@@ -243,16 +256,17 @@ def cmd_check(args: argparse.Namespace) -> int:
     for path, rec in rec_targets.items():
         if path not in current:
             continue
-        diffs = diff_records(rec, current[path])
+        diffs = diff_records(rec, current[path], args.tolerance)
         if diffs:
             failures.append((path, diffs))
     for path in sorted(set(current) - set(rec_targets)):
         failures.append((path, ["target present but not in manifest"]))
 
+    tol_note = f" (tolerance {args.tolerance:g})" if args.tolerance > 0 else ""
     if not failures:
-        print(f"OK — {len(rec_targets)} target(s) match manifest.")
+        print(f"OK — {len(rec_targets)} target(s) match manifest{tol_note}.")
         return 0
-    print(f"FAIL — {len(failures)} target(s) differ from manifest:")
+    print(f"FAIL — {len(failures)} target(s) differ from manifest{tol_note}:")
     for path, diffs in failures:
         print(f"  {path}")
         for d in diffs:
@@ -273,7 +287,11 @@ def main() -> None:
     )
     sub = p.add_subparsers(dest="cmd", required=True)
     _add_common(sub.add_parser("record", help="Record fingerprints to manifest"))
-    _add_common(sub.add_parser("check", help="Check current outputs against manifest"))
+    check_p = sub.add_parser("check", help="Check current outputs against manifest")
+    _add_common(check_p)
+    check_p.add_argument("--tolerance", type=float, default=0.0,
+                         help="Relative tolerance for netCDF numeric stats "
+                              "(default 0 = exact). Use 1e-9 for cross-env comparison.")
     args = p.parse_args()
     sys.exit(cmd_record(args) if args.cmd == "record" else cmd_check(args))
 

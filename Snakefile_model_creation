@@ -65,14 +65,26 @@ rule copy_config:
     script:
         "src/copy_config_files.py"
 
-# Rule to build model hydromt build wflow
+# Rule to merge snake-config values (model_resolution) into the build config.
+# hydromt 1.3 dropped the `--opt` CLI flag, so we generate a runtime config.
+rule prepare_build_config:
+    input:
+        template = model_build_config,
+    output:
+        merged = f"{project_dir}/config/wflow_build_model_run.yml",
+    params:
+        model_resolution = model_resolution,
+    script:
+        "src/prepare_build_config.py"
+
+# Rule to build model hydromt build wflow_sbm
 rule create_model:
     input:
-        hydromt_ini = model_build_config,
+        hydromt_ini = f"{project_dir}/config/wflow_build_model_run.yml",
     output:
         basin_nc = f"{basin_dir}/staticmaps.nc",
     shell:
-        """hydromt build wflow "{basin_dir}" --region "{model_region}" --opt setup_basemaps.res="{model_resolution}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv"""
+        """hydromt build wflow_sbm "{basin_dir}" --region "{model_region}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv"""
 
 # Rule to add reservoirs, lakes and glaciers to the built model (temporary hydromt fix)
 # Can be moved back to create_model rule when hydromt is updated
@@ -121,7 +133,7 @@ rule add_forcing:
     output:
         forcing_fid = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
     shell:
-        """hydromt update wflow "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv"""
+        """hydromt update wflow_sbm "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv"""
 
 # Rule to run the wflow model
 rule run_wflow:

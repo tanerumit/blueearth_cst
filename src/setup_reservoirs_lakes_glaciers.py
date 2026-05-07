@@ -49,6 +49,7 @@ def update_wflow_waterbodies_glaciers(
 
     if successful_methods:
         mod.write()
+        mod.close()  # commits deferred staticmaps writes
 
     text_out = join(wflow_root, "staticgeoms", "reservoirs_lakes_glaciers.txt")
     with open(text_out, "w") as f:

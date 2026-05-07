@@ -10,7 +10,8 @@ from os.path import join
 from pathlib import Path
 import matplotlib.pyplot as plt
 import pandas as pd
-import hydromt
+from hydromt.gis import GeoDataset
+from hydromt.readers import open_timeseries_from_table, open_vector
 from hydromt_wflow import WflowSbmModel
 
 from typing import Union
@@ -94,13 +95,11 @@ def analyse_wflow_historical(
         has_observations = True
 
         # Read
-        gdf_obs = hydromt.io.open_vector(gauges_locs, crs=4326, sep=",")
-        da_ts_obs = hydromt.io.open_timeseries_from_table(
+        gdf_obs = open_vector(gauges_locs, crs=4326, sep=",")
+        da_ts_obs = open_timeseries_from_table(
             observations_fn, name="Q", index_dim="wflow_id", sep=";"
         )
-        ds_obs = hydromt.vector.GeoDataset.from_gdf(
-            gdf_obs, da_ts_obs, merge_index = "inner"
-        )
+        ds_obs = GeoDataset.from_gdf(gdf_obs, da_ts_obs, merge_index="inner")
         # Rename wflow_id to index
         ds_obs = ds_obs.rename({"wflow_id": "index"})
         qobs = ds_obs["Q"].load()
@@ -115,11 +114,13 @@ def analyse_wflow_historical(
 
     # Discharge at the outlet(s) (was Q_gauges in 0.x; now Q_outlets).
     qsim = results["Q_outlets"].rename("Q")
-    # add station_name
+    # In hydromt_wflow 1.x outlet ids come from the subcatchment map
+    # (e.g. 130000086) instead of the 1..N counter that 0.x used. Keep the
+    # 1..N station_name so rule_all and downstream plots stay stable.
     qsim = qsim.assign_coords(
         station_name=(
             "index",
-            ["wflow_" + x for x in list(qsim["index"].values.astype(str))],
+            [f"wflow_{i + 1}" for i in range(qsim["index"].size)],
         )
     )
     # Discharge at the gauges_locs if present

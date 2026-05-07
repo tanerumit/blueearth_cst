@@ -26,7 +26,10 @@ steps:
       soil_fn: soilgrids                # source for soilmaps: {soilgrids}
       ptf_ksatver: brakensiek           # pedotransfer function to calculate hydraulic conductivity: {brakensiek, cosby}
 
-# NOTE: setup_constant_pars in hydromt_wflow 1.x requires CSDMS-style
-# Wflow.jl variable names (the old KsatHorFrac/Cfmax/InfiltCapSoil/...
-# short names are no longer accepted). Block dropped pending M3
-# remapping; model uses Wflow.jl 1.x defaults until then.
+  # Wflow.jl 1.x requires KsatHorFrac (now subsurface_water__horizontal_to_
+  # vertical_saturated_hydraulic_conductivity_ratio) explicitly. Other old
+  # constant_pars (Cfmax, TT, TTI, WHC, etc.) fall back to Wflow.jl 1.x
+  # defaults — close enough for M2b's intentional re-baseline. Re-add if a
+  # specific run errors on a missing CSDMS-renamed parameter.
+  - setup_constant_pars:
+      subsurface_water__horizontal_to_vertical_saturated_hydraulic_conductivity_ratio: 100

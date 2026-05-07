@@ -94,3 +94,4 @@ mod.config.write(
     filename=config_out_name,
     config_root=Path(config_out_root).resolve(),
 )
+mod.close()  # commit any deferred writes

@@ -65,6 +65,10 @@ def update_wflow_gauges_outputs(
         )
 
     mod.write()
+    # mod.close() commits deferred staticmaps writes — without it,
+    # hydromt 1.x leaves the new variables in `staticmaps_<hash>.nc`
+    # temp files instead of swapping them into the real file.
+    mod.close()
 
 
 if __name__ == "__main__":

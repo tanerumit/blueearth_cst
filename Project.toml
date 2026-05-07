@@ -3,4 +3,7 @@ Wflow = "d48b7d99-76e7-47ae-b1d5-ff0c1cf9a818"
 
 [compat]
 Wflow = "1"
-julia = "1.12"
+# Wflow.jl v1.0.x has a JIT compilation hang under Julia 1.12.x at the
+# leaf_area_index loading step (Wflow.jl#884). Pin to 1.11.x until upstream
+# resolves it.
+julia = "1.11"

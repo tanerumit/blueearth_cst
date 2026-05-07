@@ -9,12 +9,13 @@ Milestones are **stacked**: each one builds on the previous tag.
 
 ```text
 base/<start-point>
-  └── milestone/01-replication       →  tag: m01-replication
-        └── milestone/02-pixi         →  tag: m02-pixi
-              └── milestone/03-model-builder  →  tag: m03-model-builder
-                    └── milestone/04-projections →  tag: m04-projections
-                          └── milestone/05-experiment →  tag: m05-experiment
-                                └── milestone/06-refactor →  tag: m06-refactor
+  └── milestone/01-replication              →  tag: m01-replication
+        └── milestone/02-pixi-installation  →  tag: m02-pixi
+              └── milestone/02b-library-upgrades  →  tag: m02b-upgrades
+                    └── milestone/03-model-builder  →  tag: m03-model-builder
+                          └── milestone/04-projections →  tag: m04-projections
+                                └── milestone/05-experiment →  tag: m05-experiment
+                                      └── milestone/06-refactor →  tag: m06-refactor
 ```
 
 The structure is **vertical-by-workflow**: M3, M4, M5 each take one
@@ -163,6 +164,75 @@ hypothesis.
   surface those pins in the env file too.
 
 **Tag.** `m02-pixi`.
+
+---
+
+## M2b — Library upgrades
+
+**Goal.** Upgrade the four load-bearing libraries to current stable
+versions in one disciplined pass before any workflow-level cleanup
+starts. Originally absent from the roadmap; inserted between M2 and M3
+because library API/behaviour drift is exactly the kind of risk that
+should land *before* M3-M5 start refactoring against an aging API.
+
+**Scope.** Four libraries:
+1. **hydromt** — currently `>=0.9.4`. Latest stable line is 1.x; major
+   version bump with documented API breaks.
+2. **hydromt_wflow** — currently `>=0.4.1,<0.6`. Lift the cap to the
+   latest stable. Schema and API changes likely.
+3. **Wflow.jl** — currently `0.8.1` pinned via `Manifest.toml`. May
+   change scientific output.
+4. **Python stack caps** — `numpy<2`, `xarray<=2024.3.0`, `zarr<3`,
+   `tabulate==0.8.10`, `python<3.12`. Lift them where the upgraded
+   hydromt/hydromt_wflow allows.
+
+**Method.** Audit-first, not iterate-first.
+
+1. Read each library's CHANGELOG / release notes between current pin
+   and latest stable. List target versions, breaking changes that
+   touch this repo, and code locations that need fixing. Output:
+   `dev/m02b_audit.md`.
+2. Bump versions in `pixi.toml` (refresh `pixi.lock`) and
+   `Project.toml` (refresh `Manifest.toml`).
+3. Apply the code fixes the audit identified.
+4. Force-rerun all three workflows on the upgraded env.
+5. Re-baseline `dev/baseline/manifest.json` against the new outputs.
+   Document drift in `dev/m02b_baseline_diffs.md` per target →
+   variable → statistic where notable. The new manifest is the
+   contract for M3 onward.
+
+**Drift policy.** Aggressive re-baseline. Any drift > 1e-9 from the
+M1 baseline is *expected* — this milestone explicitly changes
+scientific output. Document what shifted and by how much in the
+diffs note; don't gate the milestone on understanding each one. M3,
+M4, M5 then preserve the M2b baseline within their own slice or
+own a documented diff for it.
+
+**Exit criteria.**
+- Fresh `pixi install && pixi run install` produces a working env on
+  Windows with the bumped versions.
+- All three workflows complete end-to-end on the upgraded env.
+- `pytest tests/` exits 0 (preserved from M2 — 13 passed + 2 xfailed).
+- `dev/baseline/manifest.json` re-recorded; `check_baseline.py check`
+  reports zero diffs against itself (re-run determinism preserved).
+- `dev/m02b_audit.md` and `dev/m02b_baseline_diffs.md` checked in.
+
+**Out of scope.**
+- Snakefile/workflow logic refactoring (M3, M4, M5).
+- Repo-wide directory restructuring (M6).
+- Lifting the deferred Linux/Docker validation (still deferred).
+
+**Risks / open questions.**
+- hydromt 0.x → 1.x is a documented breaking transition. The audit
+  may surface enough breakage to suggest doing hydromt as one minor
+  bump at a time rather than 0.9 → 1.x in one shot. Decision lands in
+  the audit.
+- Wflow.jl behaviour changes can shift discharge time series in ways
+  that look like real signal. Not a regression; just a new baseline.
+- Python<3.12 cap exists for a reason (likely a transitive dep);
+  audit should identify it before we lift naively.
+
+**Tag.** `m02b-upgrades`.
 
 ---
 

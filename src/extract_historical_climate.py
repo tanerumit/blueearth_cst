@@ -56,7 +56,7 @@ def prep_historical_climate(
         ds = data_catalog.get_rasterdataset(
             clim_source,
             bbox=region.geometry.total_bounds,
-            time_tuple=(starttime, endtime),
+            time_range=(starttime, endtime),
             buffer=1,
             variables=["precip"],
         ).to_dataset()
@@ -64,7 +64,7 @@ def prep_historical_climate(
         ds_clim = data_catalog.get_rasterdataset(
             "era5",
             bbox=region.geometry.total_bounds,
-            time_tuple=(starttime, endtime),
+            time_range=(starttime, endtime),
             buffer=1,
             variables=["temp", "temp_min", "temp_max", "kin", "kout", "press_msl"],
         )
@@ -76,7 +76,7 @@ def prep_historical_climate(
         dem = data_catalog.get_rasterdataset(
             "merit_hydro",
             bbox=region.geometry.total_bounds,
-            time_tuple=(starttime, endtime),
+            time_range=(starttime, endtime),
             buffer=1,
             variables=["elevtn"],
         )
@@ -119,7 +119,7 @@ def prep_historical_climate(
         ds = data_catalog.get_rasterdataset(
             clim_source,
             bbox=region.geometry.total_bounds,
-            time_tuple=(starttime, endtime),
+            time_range=(starttime, endtime),
             buffer=1,
             variables=[
                 "precip",

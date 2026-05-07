@@ -185,7 +185,7 @@ for name_member in name_members:
                 entry,
                 bbox=bbox,
                 buffer=buffer,
-                time_tuple=time_tuple_all,
+                time_range=time_tuple_all,
                 variables=variables,
             )
             # needed for cmip5/cmip6 cftime.Datetime360Day which is not picked up before.
@@ -199,7 +199,7 @@ for name_member in name_members:
                         entry,
                         bbox=bbox,
                         buffer=buffer,
-                        time_tuple=time_tuple_all,
+                        time_range=time_tuple_all,
                         variables=[var],
                     )
                     # drop duplicates if any

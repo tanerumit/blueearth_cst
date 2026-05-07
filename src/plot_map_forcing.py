@@ -31,6 +31,7 @@ def plot_map_model(mod, da, figname, gauges_name):
     gdf_riv = mod.rivers
     # read/derive model basin boundary
     gdf_bas = mod.basins
+    geoms = mod.geoms.data
     plt.style.use("seaborn-v0_8-whitegrid")  # set nice style
     # we assume the model maps are in the geographic CRS EPSG:4326
     proj = ccrs.PlateCarree()
@@ -81,12 +82,12 @@ def plot_map_model(mod, da, figname, gauges_name):
     # plot the basin boundary
     gdf_bas.boundary.plot(ax=ax, color="k", linewidth=0.3)
     # plot various vector layers if present
-    if "gauges" in mod.geoms:
-        mod.geoms["gauges"].plot(
-            ax=ax, marker="d", markersize=25, facecolor="k", zorder=5, label="gauges"
+    if "outlets" in geoms:
+        geoms["outlets"].plot(
+            ax=ax, marker="d", markersize=25, facecolor="k", zorder=5, label="outlets"
         )
-    if gauges_name in mod.geoms:
-        mod.geoms[gauges_name].plot(
+    if gauges_name in geoms:
+        geoms[gauges_name].plot(
             ax=ax,
             marker="d",
             markersize=25,
@@ -97,21 +98,21 @@ def plot_map_model(mod, da, figname, gauges_name):
     patches = (
         []
     )  # manual patches for legend, see https://github.com/geopandas/geopandas/issues/660
-    if "lakes" in mod.geoms:
+    if "lakes" in geoms:
         kwargs = dict(
             facecolor="lightblue", edgecolor="black", linewidth=1, label="lakes"
         )
-        mod.geoms["lakes"].plot(ax=ax, zorder=4, **kwargs)
+        geoms["lakes"].plot(ax=ax, zorder=4, **kwargs)
         patches.append(mpatches.Patch(**kwargs))
-    if "reservoirs" in mod.geoms:
+    if "reservoirs" in geoms:
         kwargs = dict(
             facecolor="blue", edgecolor="black", linewidth=1, label="reservoirs"
         )
-        mod.geoms["reservoirs"].plot(ax=ax, zorder=4, **kwargs)
+        geoms["reservoirs"].plot(ax=ax, zorder=4, **kwargs)
         patches.append(mpatches.Patch(**kwargs))
-    if "glaciers" in mod.geoms:
+    if "glaciers" in geoms:
         kwargs = dict(facecolor="grey", edgecolor="grey", linewidth=1, label="glaciers")
-        mod.geoms["glaciers"].plot(ax=ax, zorder=4, **kwargs)
+        geoms["glaciers"].plot(ax=ax, zorder=4, **kwargs)
         patches.append(mpatches.Patch(**kwargs))
 
     ax.xaxis.set_visible(True)
@@ -168,15 +169,18 @@ def plot_forcing(
         "temp": {"long_name": "temperature", "unit": "degC"},
     }
 
+    forcing_data = mod.forcing.data
+    staticmaps = mod.staticmaps.data
+
     # plot mean annual precip temp and potential evap.
     for forcing_var, forcing_char in forcing_vars.items():
         print(forcing_var, forcing_char)
         if forcing_var == "temp":
-            da = mod.forcing[forcing_var].resample(time="A").mean("time").mean("time")
+            da = forcing_data[forcing_var].resample(time="YE").mean("time").mean("time")
         else:
-            da = mod.forcing[forcing_var].resample(time="A").sum("time").mean("time")
+            da = forcing_data[forcing_var].resample(time="YE").sum("time").mean("time")
             da = da.where(da > 0)
-        da = da.where(mod.grid["wflow_subcatch"] >= 0)
+        da = da.where(staticmaps["subcatchment"] >= 0)
         da.attrs.update(long_name=forcing_char["long_name"], units=forcing_char["unit"])
         figname = f"{forcing_var}"
         plot_map_model(mod, da, figname, gauges_name)

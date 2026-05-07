@@ -109,10 +109,12 @@ def analyse_wflow_historical(
     # Instantiate wflow model
     Folder_run = f"{project_dir}/hydrology_model"
     mod = WflowSbmModel(root=Folder_run, mode="r")
+    mod.output_csv.read()
+    results = mod.output_csv.data
+    geoms = mod.geoms.data
 
-    # Read the results
-    # Discharge at the outlet(s)
-    qsim = mod.results["Q_gauges"].rename("Q")
+    # Discharge at the outlet(s) (was Q_gauges in 0.x; now Q_outlets).
+    qsim = results["Q_outlets"].rename("Q")
     # add station_name
     qsim = qsim.assign_coords(
         station_name=(
@@ -122,13 +124,11 @@ def analyse_wflow_historical(
     )
     # Discharge at the gauges_locs if present
     if gauges_locs is not None and os.path.exists(gauges_locs):
-        # Get name of gauges dataset from the gauges locations file
         gauges_output_name = os.path.basename(gauges_locs).split(".")[0]
-        if f"Q_gauges_{gauges_output_name}" in mod.results:
-            qsim_gauges = mod.results[f"Q_gauges_{gauges_output_name}"].rename("Q")
-            # Add station_name
+        if f"Q_gauges_{gauges_output_name}" in results:
+            qsim_gauges = results[f"Q_gauges_{gauges_output_name}"].rename("Q")
             gdf_gauges = (
-                mod.geoms[f"gauges_{gauges_output_name}"]
+                geoms[f"gauges_{gauges_output_name}"]
                 .rename(columns={"wflow_id": "index"})
                 .set_index("index")
             )
@@ -138,30 +138,29 @@ def analyse_wflow_historical(
                     list(gdf_gauges["station_name"][qsim_gauges.index.values].values),
                 )
             )
-            # Merge with qsim
             qsim = xr.merge([qsim, qsim_gauges])["Q"]
 
-    # Climate data P, EP, T for wflow_subcatch
-    ds_clim = xr.merge(
-        [
-            mod.results["P_subcatchment"],
-            mod.results["T_subcatchment"],
-            mod.results["EP_subcatchment"],
-        ]
-    )
+    # Climate data P, EP, T at the subcatchment scale — only present if those
+    # outputs were configured in setup_gauges_and_outputs / wflow_outvars. With
+    # the M2b CSDMS rename, configuring them is M3 territory; skip cleanly when
+    # absent so the hydrograph plot still ships.
+    clim_keys = ("P_subcatchment", "T_subcatchment", "EP_subcatchment")
+    if all(k in results for k in clim_keys):
+        ds_clim = xr.merge([results[k] for k in clim_keys])
+    else:
+        ds_clim = xr.Dataset()
 
-    # Other catchment average outputs
-    ds_basin = xr.merge(
-        [mod.results[dvar] for dvar in mod.results if "_basavg" in dvar]
-    )
-    ds_basin = ds_basin.squeeze(drop=True)
-    # If precipitation, skip as this will be plotted with the other climate data
-    if "precipitation_basavg" in ds_basin:
-        ds_basin = ds_basin.drop_vars("precipitation_basavg")
+    basavg_vars = [dvar for dvar in results if "_basavg" in dvar]
+    if basavg_vars:
+        ds_basin = xr.merge([results[dvar] for dvar in basavg_vars]).squeeze(drop=True)
+        if "precipitation_basavg" in ds_basin:
+            ds_basin = ds_basin.drop_vars("precipitation_basavg")
+    else:
+        ds_basin = xr.Dataset()
 
     ### 4. Plot climate data ###
     # No plots of climate data if wflow run is less than a year
-    if len(ds_clim.time) < 365:
+    if "time" not in ds_clim.dims or len(ds_clim.time) < 365:
         print("less than 1 year of data is available " "no yearly clim plots are made.")
     else:
         for index in ds_clim.index.values:
@@ -175,9 +174,12 @@ def analyse_wflow_historical(
             plt.close()
 
     ### 5. Plot other basin average outputs ###
-    print("Plot basin average wflow outputs")
-    plot_basavg(ds_basin, Folder_plots)
-    plt.close()
+    if ds_basin.data_vars:
+        print("Plot basin average wflow outputs")
+        plot_basavg(ds_basin, Folder_plots)
+        plt.close()
+    else:
+        print("No basin-average outputs configured; skipping plot_basavg.")
 
     ### 6. Plot hydrographs and compute performance metrics ###
     # Initialise the output performance table

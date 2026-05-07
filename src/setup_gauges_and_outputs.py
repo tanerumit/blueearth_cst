@@ -1,19 +1,22 @@
-"""Function to update a wflow model and add gauges and outputs"""
-from hydromt_wflow import WflowSbmModel
+"""Function to update a wflow model and add gauges and outputs."""
 import os
 from os.path import join
 from pathlib import Path
-from typing import Union, List
+from typing import List, Union
+
+from hydromt_wflow import WflowSbmModel
 
 
-# Supported wflow outputs
+# Map user-facing semantic names to Wflow.jl 1.x CSDMS variable names.
+# Mapping derived from
+# .pixi/envs/default/Lib/site-packages/hydromt_wflow/version_upgrade.py.
 WFLOW_VARS = {
-    "river discharge": "lateral.river.q_av",
-    "precipitation": "vertical.precipitation",
-    "overland flow": "lateral.land.q_av",
-    "actual evapotranspiration": "vertical.actevap",
-    "groundwater recharge": "vertical.recharge",
-    "snow": "vertical.snowwater",
+    "river discharge": "river_water__volume_flow_rate",
+    "precipitation": "atmosphere_water__precipitation_volume_flux",
+    "overland flow": "land_surface_water__volume_flow_rate",
+    "actual evapotranspiration": "land_surface__evapotranspiration_volume_flux",
+    "groundwater recharge": "soil_water_saturated_zone_top__net_recharge_volume_flux",
+    "snow": "snowpack_liquid_water__depth",
 }
 
 
@@ -24,38 +27,18 @@ def update_wflow_gauges_outputs(
     outputs: List[str] = ["river discharge"],
 ):
     """
-    Update wflow model with output and optionnally gauges locations
-
-    Parameters
-    ----------
-    wflow_root : Union[str, Path]
-        Path to the wflow model root folder
-    data_catalog : str
-        Name of the data catalog to use
-    gauges_fn : Union[str, Path, None], optional
-        Path to the gauges locations file, by default None
-    outputs : List[str], optional
-        List of outputs to add to the model, by default ["river discharge"]
-        Available outputs are:
-            - "river discharge"
-            - "precipitation"
-            - "overland flow"
-            - "actual evapotranspiration"
-            - "groundwater recharge"
-            - "snow"
+    Update wflow model with output and optionally gauges locations
     """
-
-    # Instantiate wflow model
     mod = WflowSbmModel(wflow_root, mode="r+", data_libs=data_catalog)
 
-    # Add outlets
+    river_q_csdms = WFLOW_VARS["river discharge"]
+
     mod.setup_outlets(
         river_only=True,
         gauge_toml_header=["Q"],
-        gauge_toml_param=["lateral.river.q_av"],
+        gauge_toml_param=[river_q_csdms],
     )
 
-    # Add gauges
     if gauges_fn is not None and os.path.isfile(gauges_fn):
         mod.setup_gauges(
             gauges_fn=gauges_fn,
@@ -63,23 +46,23 @@ def update_wflow_gauges_outputs(
             derive_subcatch=True,
             toml_output="csv",
             gauge_toml_header=["Q", "P"],
-            gauge_toml_param=["lateral.river.q_av", "vertical.precipitation"],
+            gauge_toml_param=[
+                river_q_csdms,
+                WFLOW_VARS["precipitation"],
+            ],
         )
 
-    # Add additional outputs to the config
-    # For now assumes basin-average timeseries apart for river.q_av which is saved by default for all outlets and gauges
-    if "river discharge" in outputs:
-        outputs.remove("river discharge")
-
-    for var in outputs:
-        if var in WFLOW_VARS:
-            mod.config["csv"]["column"].append(
-                {
-                    "header": f"{var}_basavg",
-                    "reducer": "mean",
-                    "parameter": WFLOW_VARS[var],
-                }
-            )
+    # Basin-average timeseries for any extra outputs (river discharge already
+    # covered above for outlets/gauges).
+    extras = [v for v in outputs if v != "river discharge" and v in WFLOW_VARS]
+    if extras:
+        mod.setup_config_output_timeseries(
+            mapname="subcatchment",
+            toml_output="csv",
+            header=[f"{v}_basavg" for v in extras],
+            param=[WFLOW_VARS[v] for v in extras],
+            reducer=["mean"] * len(extras),
+        )
 
     mod.write()
 

@@ -38,7 +38,7 @@ root = f"{project_dir}/hydrology_model"
 mod = WflowSbmModel(root, mode="r")
 
 # read and mask the model elevation
-da = mod.grid["wflow_dem"].raster.mask_nodata()
+da = mod.staticmaps.data["land_elevation"].raster.mask_nodata()
 da.attrs.update(long_name="elevation", units="m")
 # read/derive river geometries
 gdf_riv = mod.rivers
@@ -97,12 +97,13 @@ gdf_riv.plot(
 # plot the basin boundary
 gdf_bas.boundary.plot(ax=ax, color="k", linewidth=0.3)
 # plot various vector layers if present
-if "gauges" in mod.geoms:
-    mod.geoms["gauges"].plot(
-        ax=ax, marker="d", markersize=25, facecolor="k", zorder=5, label="gauges"
+geoms = mod.geoms.data
+if "outlets" in geoms:
+    geoms["outlets"].plot(
+        ax=ax, marker="d", markersize=25, facecolor="k", zorder=5, label="outlets"
     )
-if gauges_name is not None and gauges_name in mod.geoms:
-    mod.geoms[gauges_name].plot(
+if gauges_name is not None and gauges_name in geoms:
+    geoms[gauges_name].plot(
         ax=ax,
         marker="d",
         markersize=25,
@@ -110,8 +111,8 @@ if gauges_name is not None and gauges_name in mod.geoms:
         zorder=5,
         label="output locs",
     )
-    if "station_name" in mod.geoms[gauges_name].columns:
-        mod.geoms[gauges_name].apply(
+    if "station_name" in geoms[gauges_name].columns:
+        geoms[gauges_name].apply(
             lambda x: ax.annotate(
                 text=x["station_name"],
                 xy=x.geometry.coords[0],
@@ -130,17 +131,17 @@ if gauges_name is not None and gauges_name in mod.geoms:
 patches = (
     []
 )  # manual patches for legend, see https://github.com/geopandas/geopandas/issues/660
-if "lakes" in mod.geoms:
+if "lakes" in geoms:
     kwargs = dict(facecolor="lightblue", edgecolor="black", linewidth=1, label="lakes")
-    mod.geoms["lakes"].plot(ax=ax, zorder=4, **kwargs)
+    geoms["lakes"].plot(ax=ax, zorder=4, **kwargs)
     patches.append(mpatches.Patch(**kwargs))
-if "reservoirs" in mod.geoms:
+if "reservoirs" in geoms:
     kwargs = dict(facecolor="blue", edgecolor="black", linewidth=1, label="reservoirs")
-    mod.geoms["reservoirs"].plot(ax=ax, zorder=4, **kwargs)
+    geoms["reservoirs"].plot(ax=ax, zorder=4, **kwargs)
     patches.append(mpatches.Patch(**kwargs))
-if "glaciers" in mod.geoms:
+if "glaciers" in geoms:
     kwargs = dict(facecolor="grey", edgecolor="grey", linewidth=1, label="glaciers")
-    mod.geoms["glaciers"].plot(ax=ax, zorder=4, **kwargs)
+    geoms["glaciers"].plot(ax=ax, zorder=4, **kwargs)
     patches.append(mpatches.Patch(**kwargs))
 
 ax.xaxis.set_visible(True)

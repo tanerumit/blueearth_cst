@@ -140,3 +140,6 @@ tests/test_project
 
 # Local-only config variants (per-user; never committed)
 *_local.yml
+
+# v0 → v1 catalog migration safety copies (left during M2b)
+*.v0bak

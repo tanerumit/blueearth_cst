@@ -1,9 +1,11 @@
-"""Prepare a hydromt config file to be able to add forcing to a wflow model"""
+"""Prepare a hydromt build/update workflow YAML for adding forcing to wflow."""
 
-import hydromt
-from hydromt_wflow import WflowSbmModel
 from pathlib import Path
-from typing import Union, Optional
+from typing import Optional, Union
+
+import yaml
+
+from hydromt_wflow import WflowSbmModel
 
 
 def prep_hydromt_update_forcing_config(
@@ -13,36 +15,19 @@ def prep_hydromt_update_forcing_config(
     precip_source: str = "era5",
     wflow_root: Optional[Union[str, Path]] = None,
 ):
-    """Prepare a hydromt config file to be able to add forcing to a wflow model
-
-    Parameters
-    ----------
-    starttime : str
-        Start time of the forcing, format YYYY-MM-DDTHH:MM:SS
-    endtime : str
-        End time of the forcing, format YYYY-MM-DDTHH:MM:SS
-    fn_yml : str, Path
-        Path to the output hydromt config file
-    precip_source : str
-        Name of the precipitation source to use
-    wflow_root : str, Path
-        Path to the wflow model root directory, if provided reads the model
-        and adjust the forcing computation chunksizes depending on model size.
-    """
-    # Check precip source and set options accordingly
+    """Write a hydromt 1.x `steps:`-format YAML to add forcing to a wflow model."""
     if precip_source == "eobs":
         clim_source = "eobs"
         oro_source = "eobs_orography"
         pet_method = "makkink"
-    else:  # (chirps is precip only)
+    else:
         clim_source = "era5"
         oro_source = "era5_orography"
         pet_method = "debruin"
 
-    # Check if wflow_root is provided and adjust the forcing computation chunksizes
     if wflow_root is not None:
         mod = WflowSbmModel(root=wflow_root, mode="r")
-        size = mod.grid.raster.size
+        size = mod.staticmaps.data.raster.size
         if size > 1e6:
             chunksize = 1
         elif size > 2.5e5:
@@ -54,32 +39,43 @@ def prep_hydromt_update_forcing_config(
     else:
         chunksize = 30
 
-    forcing_options = {
-        "setup_config": {
-            "starttime": starttime,
-            "endtime": endtime,
-            "timestepsecs": 86400,
-            "input.path_forcing": "../climate_historical/wflow_data/inmaps_historical.nc",
-        },
-        "setup_precip_forcing": {
-            "precip_fn": precip_source,
-            "chunksize": chunksize,
-        },
-        "setup_temp_pet_forcing": {
-            "temp_pet_fn": clim_source,
-            "press_correction": True,
-            "temp_correction": True,
-            "dem_forcing_fn": oro_source,
-            "pet_method": pet_method,
-            "skip_pet": False,
-            "chunksize": chunksize,
-        },
-        "write_config": {},
-        "write_forcing": {},
+    workflow = {
+        "modeltype": "wflow_sbm",
+        "steps": [
+            {
+                "setup_config": {
+                    "data": {
+                        "time.starttime": starttime,
+                        "time.endtime": endtime,
+                        "time.timestepsecs": 86400,
+                        "input.path_forcing": "../climate_historical/wflow_data/inmaps_historical.nc",
+                    }
+                }
+            },
+            {
+                "setup_precip_forcing": {
+                    "precip_fn": precip_source,
+                    "chunksize": chunksize,
+                }
+            },
+            {
+                "setup_temp_pet_forcing": {
+                    "temp_pet_fn": clim_source,
+                    "press_correction": True,
+                    "temp_correction": True,
+                    "dem_forcing_fn": oro_source,
+                    "pet_method": pet_method,
+                    "skip_pet": False,
+                    "chunksize": chunksize,
+                }
+            },
+        ],
     }
 
-    # Save it to a hydroMT ini file
-    hydromt.config.configwrite(fn_yml, forcing_options)
+    fn_yml = Path(fn_yml)
+    fn_yml.parent.mkdir(parents=True, exist_ok=True)
+    with fn_yml.open("w") as f:
+        yaml.safe_dump(workflow, f, sort_keys=False)
 
 
 if __name__ == "__main__":

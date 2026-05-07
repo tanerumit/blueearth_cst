@@ -1,7 +1,11 @@
-from hydromt_wflow import WflowSbmModel
-from pathlib import Path
+"""Update a wflow model with downscaled climate forcing for one realization."""
 import os
+from pathlib import Path
+
 import numpy as np
+
+from hydromt_wflow import WflowSbmModel
+
 
 # Snakemake parameters
 config_out_fn = snakemake.output.toml
@@ -12,35 +16,28 @@ model_root = snakemake.params.model_dir
 
 precip_source = snakemake.params.clim_source
 
-# Time horizon climate experiment and number of hydrological model run
 horizontime_climate = snakemake.params.horizontime_climate
 wflow_run_length = snakemake.params.run_length
-# Get start and end year
 startyear = int(horizontime_climate - np.ceil(wflow_run_length / 2))
 endyear = int(horizontime_climate + np.round(wflow_run_length / 2))
 starttime = f"{startyear}-01-01T00:00:00"
 endtime = f"{endyear}-12-31T00:00:00"
 
 oro_source = f"{precip_source}_orography"
-if precip_source == "eobs":
-    pet_method = "makkink"
-else:  # (chirps is precip only so combined with era5)
-    pet_method = "debruin"
+pet_method = "makkink" if precip_source == "eobs" else "debruin"
 
-# Get name of climate scenario (rlz_*_cst_*)
 fn_in_path = Path(fn_in, resolve_path=True)
 climate_name = os.path.basename(fn_in_path).split(".")[0]
 
-# Get options for toml file name
 config_out_fn = Path(config_out_fn)
 config_out_root = os.path.dirname(config_out_fn)
 config_out_name = os.path.basename(config_out_fn)
 
-# Instantiate model
+# Instantiate model in r+ on the source root, then redirect writes to the
+# per-realization run directory by rebinding root.
 mod = WflowSbmModel(root=model_root, mode="r+", data_libs=data_libs)
 
-# For large / small model domains adjust chunksize to compute forcing
-size = mod.grid.raster.size
+size = mod.staticmaps.data.raster.size
 if size > 1e6:
     chunksize = 1
 elif size > 2.5e5:
@@ -50,61 +47,50 @@ elif size > 1e5:
 else:
     chunksize = 365
 
-# Hydromt ini dictionnaries for update options
-update_options = {
-    "setup_config": {
-        "calendar": "noleap",
-        "starttime": starttime,
-        "endtime": endtime,
-        "timestepsecs": 86400,
+mod.setup_config(
+    data={
+        "time.calendar": "noleap",
+        "time.starttime": starttime,
+        "time.endtime": endtime,
+        "time.timestepsecs": 86400,
         "state.path_input": os.path.join("..", "instate", "instates.nc"),
         "state.path_output": f"outstates_{climate_name}.nc",
         "input.path_static": os.path.join("..", "staticmaps.nc"),
-        "input.path_forcing": os.path.join("..", "..", "..", "..", fn_out),
-        "csv.path": f"output_{climate_name}.csv",
-    },
-    "set_root": {
-        "root": config_out_root,
-        "mode": "r+",
-    },
-    "setup_precip_forcing": {
-        "precip_fn": climate_name,
-        "precip_clim_fn": None,
-        "chunksize": chunksize,
-    },
-    "setup_temp_pet_forcing": {
-        "temp_pet_fn": climate_name,
-        "press_correction": True,
-        "temp_correction": True,
-        "dem_forcing_fn": oro_source,
-        "pet_method": pet_method,
-        "chunksize": chunksize,
-    },
-    # "write_forcing": {},
-    "write_config": {
-        "config_name": config_out_name,
-        "config_root": config_out_root,
-    },
-}
+        "input.path_forcing": os.path.relpath(fn_out.resolve(), Path(config_out_root).resolve()),
+        "output.csv.path": f"output_{climate_name}.csv",
+    }
+)
 
-### Run Hydromt update using update_options dict ###
-# Update
-mod.update(opt=update_options)
+mod.setup_precip_forcing(
+    precip_fn=climate_name,
+    precip_clim_fn=None,
+    chunksize=chunksize,
+)
+mod.setup_temp_pet_forcing(
+    temp_pet_fn=climate_name,
+    press_correction=True,
+    temp_correction=True,
+    dem_forcing_fn=oro_source,
+    pet_method=pet_method,
+    chunksize=chunksize,
+)
 
-# The slicing of DateTimeNoLeap is not so well done by hydromt
-# Implement here
-for var in mod.forcing.keys():
-    da = mod.forcing[var]
-    da = da.sel(time=slice(starttime, endtime))
-    mod.forcing[var] = da
+# weagen has off-by-one timestamps at the year boundaries; clip the forcing
+# in place via the component's data.
+forcing = mod.forcing.data
+for var in list(forcing.data_vars):
+    forcing[var] = forcing[var].sel(time=slice(starttime, endtime))
 
-# Write forcing
-mod.write_forcing()
+# Refresh starttime/endtime from the actual forcing axis (weagen quirk).
+last_var = next(iter(forcing.data_vars))
+times = forcing[last_var].time.values
+mod.config.set("time.starttime", str(times[0])[:19])
+mod.config.set("time.endtime", str(times[-1])[:19])
 
-# Weagen has strange timestamps, update in the wflow config
-start = da.time.values[0].strftime(format="%Y-%m-%dT%H:%M:%S")
-end = da.time.values[-1].strftime(format="%Y-%m-%dT%H:%M:%S")
-
-mod.set_config("starttime", start)
-mod.set_config("endtime", end)
-mod.write_config(config_name=config_out_name, config_root=config_out_root)
+# Write forcing + per-realization toml to absolute paths so the model root
+# (which is the source hydrology_model dir) doesn't have to be moved.
+mod.forcing.write(filename=str(fn_out.resolve()))
+mod.config.write(
+    filename=config_out_name,
+    config_root=Path(config_out_root).resolve(),
+)

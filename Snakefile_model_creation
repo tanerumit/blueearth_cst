@@ -74,6 +74,7 @@ rule prepare_build_config:
         merged = f"{project_dir}/config/wflow_build_model_run.yml",
     params:
         model_resolution = model_resolution,
+        model_region = model_region,
     script:
         "src/prepare_build_config.py"
 
@@ -84,7 +85,7 @@ rule create_model:
     output:
         basin_nc = f"{basin_dir}/staticmaps.nc",
     shell:
-        """hydromt build wflow_sbm "{basin_dir}" --region "{model_region}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv"""
+        """hydromt build wflow_sbm "{basin_dir}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv"""
 
 # Rule to add reservoirs, lakes and glaciers to the built model (temporary hydromt fix)
 # Can be moved back to create_model rule when hydromt is updated
@@ -105,7 +106,7 @@ rule add_gauges_and_outputs:
         basin_nc = ancient(f"{basin_dir}/staticmaps.nc"),
         text = f"{basin_dir}/staticgeoms/reservoirs_lakes_glaciers.txt"
     output:
-        gauges_fid = f"{basin_dir}/staticgeoms/gauges.geojson"
+        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
     params:
         output_locs = output_locations,
         outputs = wflow_outvars,
@@ -116,7 +117,7 @@ rule add_gauges_and_outputs:
 # Rule to prepare the time horizon
 rule setup_runtime:
     input:
-        gauges_fid = f"{basin_dir}/staticgeoms/gauges.geojson"
+        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
         forcing_yml = f"{project_dir}/config/wflow_build_forcing_historical.yml"
     params:
@@ -162,7 +163,7 @@ rule plot_results:
 # Rule to plot the wflow basin, rivers, gauges and DEM on a map
 rule plot_map:
     input:
-        gauges_fid = f"{basin_dir}/staticgeoms/gauges.geojson"
+        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
         output_map_png = f"{project_dir}/plots/wflow_model_performance/basin_area.png",
     params:
@@ -178,5 +179,5 @@ rule plot_forcing:
         output_forcing_map = f"{project_dir}/plots/wflow_model_performance/precip.png",
     params:
         project_dir = f"{project_dir}",
-        gauges_fid = f"{basin_dir}/staticgeoms/gauges.geojson"
+        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
     script: "src/plot_map_forcing.py"

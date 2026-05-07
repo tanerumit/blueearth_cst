@@ -1,12 +1,12 @@
-"""Function to update a wflow model and add gauges and outputs"""
-from hydromt_wflow import WflowSbmModel
-from hydromt.exceptions import NoDataException
-from hydromt.cli.cli_utils import parse_config
-
+"""Function to update a wflow model and add reservoirs, lakes and glaciers."""
 import os
 from os.path import join
 from pathlib import Path
 from typing import Union
+
+import yaml
+from hydromt_wflow import WflowSbmModel
+from hydromt.error import NoDataException
 
 
 def update_wflow_waterbodies_glaciers(
@@ -29,33 +29,27 @@ def update_wflow_waterbodies_glaciers(
         Name of the data catalog to use
     """
 
-    # Instantiate wflow model
     mod = WflowSbmModel(wflow_root, mode="r+", data_libs=data_catalog)
 
-    # Read the config file
-    config = parse_config(config_fn)
+    with open(config_fn, "r") as f:
+        config = yaml.safe_load(f) or {}
 
-    # List of methods that ran successfully
     successful_methods = []
-    # List of methods that failed
     failed_methods = []
     reasons = []
 
-    # Loop over reservoirs, lakes and glaciers methods
-    for method in config:
-        kwargs = {} if config[method] is None else config[method]
+    for method, kwargs in config.items():
+        kwargs = kwargs or {}
         try:
-            mod._run_log_method(method, **kwargs)
+            getattr(mod, method)(**kwargs)
             successful_methods.append(method)
         except (NoDataException, FileNotFoundError) as error:
             failed_methods.append(method)
             reasons.append(error)
 
-    # Write model if there is any data to add
-    if len(successful_methods) > 0:
+    if successful_methods:
         mod.write()
 
-    # Write a file when everything is done for snakemake tracking
     text_out = join(wflow_root, "staticgeoms", "reservoirs_lakes_glaciers.txt")
     with open(text_out, "w") as f:
         f.write(f"Successful methods: {successful_methods}\n")

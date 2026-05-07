@@ -1,0 +1,204 @@
+{
+  "project_dir": "examples/test_local",
+  "targets": {
+    "examples/test_local/climate_experiment/model_results/Qstats.csv": {
+      "sha256": "ed41679f9ee6f1db6b7446710998a5afa42be5ab17c34f630545464d2a9ece15",
+      "size_bytes": 3796,
+      "type": "csv"
+    },
+    "examples/test_local/climate_experiment/model_results/basin.csv": {
+      "sha256": "6ece285f41f2aa9eeeb8a33a68dc5ee508889f4d69b8dbc0ffc2516347e2c9fd",
+      "size_bytes": 71,
+      "type": "csv"
+    },
+    "examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary.csv": {
+      "sha256": "49e3ade524d9fcbefae8c32c15d08e50e648279441fc9684d4823b4aa4485628",
+      "size_bytes": 8627,
+      "type": "csv"
+    },
+    "examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary.nc": {
+      "summary": {
+        "clim_project": {
+          "attrs": {},
+          "count_non_nan": 1,
+          "dtype": "<U5",
+          "max": null,
+          "mean": null,
+          "min": null,
+          "shape": [
+            1
+          ],
+          "std": null
+        },
+        "horizon": {
+          "attrs": {},
+          "count_non_nan": 2,
+          "dtype": "<U3",
+          "max": null,
+          "mean": null,
+          "min": null,
+          "shape": [
+            2
+          ],
+          "std": null
+        },
+        "member": {
+          "attrs": {},
+          "count_non_nan": 1,
+          "dtype": "<U8",
+          "max": null,
+          "mean": null,
+          "min": null,
+          "shape": [
+            1
+          ],
+          "std": null
+        },
+        "model": {
+          "attrs": {},
+          "count_non_nan": 3,
+          "dtype": "<U14",
+          "max": null,
+          "mean": null,
+          "min": null,
+          "shape": [
+            3
+          ],
+          "std": null
+        },
+        "precip": {
+          "attrs": {},
+          "count_non_nan": 96,
+          "dtype": "float64",
+          "max": 29.16902795,
+          "mean": 1.065216967,
+          "min": -40.05957334,
+          "shape": [
+            8,
+            1,
+            3,
+            2,
+            2,
+            1
+          ],
+          "std": 12.54485464
+        },
+        "scenario": {
+          "attrs": {},
+          "count_non_nan": 2,
+          "dtype": "<U6",
+          "max": null,
+          "mean": null,
+          "min": null,
+          "shape": [
+            2
+          ],
+          "std": null
+        },
+        "spatial_ref": {
+          "attrs": {
+            "crs_wkt": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+            "geographic_crs_name": "WGS 84",
+            "grid_mapping_name": "latitude_longitude",
+            "horizontal_datum_name": "World Geodetic System 1984 ensemble",
+            "inverse_flattening": "298.257223563",
+            "longitude_of_prime_meridian": "0.0",
+            "prime_meridian_name": "Greenwich",
+            "reference_ellipsoid_name": "WGS 84",
+            "semi_major_axis": "6378137.0",
+            "semi_minor_axis": "6356752.314245179",
+            "spatial_ref": "GEOGCRS[\"WGS 84\",ENSEMBLE[\"World Geodetic System 1984 ensemble\",MEMBER[\"World Geodetic System 1984 (Transit)\"],MEMBER[\"World Geodetic System 1984 (G730)\"],MEMBER[\"World Geodetic System 1984 (G873)\"],MEMBER[\"World Geodetic System 1984 (G1150)\"],MEMBER[\"World Geodetic System 1984 (G1674)\"],MEMBER[\"World Geodetic System 1984 (G1762)\"],MEMBER[\"World Geodetic System 1984 (G2139)\"],MEMBER[\"World Geodetic System 1984 (G2296)\"],ELLIPSOID[\"WGS 84\",6378137,298.257223563,LENGTHUNIT[\"metre\",1]],ENSEMBLEACCURACY[2.0]],PRIMEM[\"Greenwich\",0,ANGLEUNIT[\"degree\",0.0174532925199433]],CS[ellipsoidal,2],AXIS[\"geodetic latitude (Lat)\",north,ORDER[1],ANGLEUNIT[\"degree\",0.0174532925199433]],AXIS[\"geodetic longitude (Lon)\",east,ORDER[2],ANGLEUNIT[\"degree\",0.0174532925199433]],USAGE[SCOPE[\"Horizontal component of 3D system.\"],AREA[\"World.\"],BBOX[-90,-180,90,180]],ID[\"EPSG\",4326]]",
+            "x_dim": "lon",
+            "y_dim": "lat"
+          },
+          "count_non_nan": 1,
+          "dtype": "int32",
+          "max": 0.0,
+          "mean": 0.0,
+          "min": 0.0,
+          "shape": [],
+          "std": 0.0
+        },
+        "stats": {
+          "attrs": {},
+          "count_non_nan": 8,
+          "dtype": "<U6",
+          "max": null,
+          "mean": null,
+          "min": null,
+          "shape": [
+            8
+          ],
+          "std": null
+        },
+        "temp": {
+          "attrs": {},
+          "count_non_nan": 96,
+          "dtype": "float64",
+          "max": 3.80783596,
+          "mean": 1.27728956,
+          "min": -0.09643431753,
+          "shape": [
+            8,
+            1,
+            3,
+            2,
+            2,
+            1
+          ],
+          "std": 0.9945073705
+        }
+      },
+      "summary_sha256": "3cd9bb217280af14e05e474119f0619e9dbed3c159bfd073405747c398369e85",
+      "type": "netcdf"
+    },
+    "examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary_mean.csv": {
+      "sha256": "da0903e343f999784967eb5703ad74ef2f5d0802dd9f2ed29ced7ec4fdeeafc1",
+      "size_bytes": 1138,
+      "type": "csv"
+    },
+    "examples/test_local/climate_projections/cmip6/plots/precipitation_anomaly_projections_abs.png": {
+      "exists": true,
+      "size_bytes": 605459,
+      "type": "png"
+    },
+    "examples/test_local/climate_projections/cmip6/plots/projected_climate_statistics.png": {
+      "exists": true,
+      "size_bytes": 44483,
+      "type": "png"
+    },
+    "examples/test_local/climate_projections/cmip6/plots/temperature_anomaly_projections_abs.png": {
+      "exists": true,
+      "size_bytes": 377489,
+      "type": "png"
+    },
+    "examples/test_local/config/snake_config_climate_experiment.yml": {
+      "sha256": "5710d30d642f734f94ebea26caba0f6cb6bac6ceda0f1c21a421134c10514805",
+      "type": "yaml"
+    },
+    "examples/test_local/config/snake_config_climate_projections.yml": {
+      "sha256": "8bf0baafef8b95a38af3aa98192799d4054a61ccf80ae688b83b64018b8eddba",
+      "type": "yaml"
+    },
+    "examples/test_local/config/snake_config_model_creation.yml": {
+      "sha256": "8bf0baafef8b95a38af3aa98192799d4054a61ccf80ae688b83b64018b8eddba",
+      "type": "yaml"
+    },
+    "examples/test_local/plots/wflow_model_performance/basin_area.png": {
+      "exists": true,
+      "size_bytes": 253490,
+      "type": "png"
+    },
+    "examples/test_local/plots/wflow_model_performance/hydro_wflow_1.png": {
+      "exists": true,
+      "size_bytes": 320244,
+      "type": "png"
+    },
+    "examples/test_local/plots/wflow_model_performance/precip.png": {
+      "exists": true,
+      "size_bytes": 244254,
+      "type": "png"
+    }
+  },
+  "version": 1
+}

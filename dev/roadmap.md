@@ -9,12 +9,17 @@ Milestones are **stacked**: each one builds on the previous tag.
 
 ```text
 base/<start-point>
-  └── milestone/01-replication-baseline   →  tag: m01-replication
-        └── milestone/02-environment       →  tag: m02-environment
-              └── milestone/03-orchestration →  tag: m03-orchestration
-                    └── milestone/04-scripts  →  tag: m04-scripts
-                          └── milestone/05-refactor →  tag: m05-refactor
+  └── milestone/01-replication       →  tag: m01-replication
+        └── milestone/02-pixi         →  tag: m02-pixi
+              └── milestone/03-model-builder  →  tag: m03-model-builder
+                    └── milestone/04-projections →  tag: m04-projections
+                          └── milestone/05-experiment →  tag: m05-experiment
+                                └── milestone/06-refactor →  tag: m06-refactor
 ```
+
+The structure is **vertical-by-workflow**: M3, M4, M5 each take one
+Snakemake workflow end-to-end (orchestration *plus* the analytical scripts
+it calls). M6 then does the cross-cutting structural refactor on top.
 
 ---
 
@@ -69,6 +74,10 @@ regression fixtures for every later milestone.
   byte-hash — matplotlib / font / anti-aliasing drift would cause false
   positives, and plots are the weakest regression signal.
 
+The full discipline (anti-patterns, helper-script shape, tolerance rules)
+lives in the `pipeline-regression-testing` skill — load it whenever you
+touch `check_baseline.py` or the manifest.
+
 **Tolerance policy.**
 
 - *Within M1* (same machine, same env): fingerprints must match exactly.
@@ -79,9 +88,11 @@ regression fixtures for every later milestone.
   and the manifest is updated. Anything larger requires a written
   justification (in `dev/mNN_baseline_diffs.md`) before the manifest is
   updated.
-- Only M4 is allowed to *intentionally* change scientific output. Other
-  milestones must preserve the manifest or document why a change is
-  numerical noise rather than a behavioral regression.
+- M3, M4, M5 are each allowed to *intentionally* change scientific output
+  for their own workflow's slice of the manifest. Each milestone owns the
+  diff note for its slice. Other milestones must preserve the manifest or
+  document why a change is numerical noise rather than a behavioral
+  regression.
 
 **Exit criteria.**
 - `pytest tests/` passes.
@@ -108,7 +119,7 @@ regression fixtures for every later milestone.
 
 ---
 
-## M2 — Environment & install
+## M2 — Pixi env + install
 
 **Goal.** Replace the current conda + ad-hoc R + Julia setup with a single
 declarative environment that reproduces M1 outputs. Pixi is the working
@@ -151,86 +162,133 @@ hypothesis.
 - Julia + Wflow versions are currently pinned by the Dockerfile only —
   surface those pins in the env file too.
 
-**Tag.** `m02-environment`.
+**Tag.** `m02-pixi`.
 
 ---
 
-## M3 — Workflow orchestration
+## M3 — Workflow 1: model builder
 
-**Goal.** Clean up the Snakemake layer — remove duplication and load-
-bearing tricks — without changing what the underlying scripts do.
+**Goal.** Clean up `Snakefile_model_creation` and the scripts it calls —
+orchestration *and* analytical code. Establish the cross-cutting Snakefile
+patterns that M4 and M5 inherit.
+
+**Cross-cutting deliverables (done once here, reused by M4 and M5).**
+- Collapse the duplicated `get_config(config, key, default, optional)`
+  helper from all three Snakefiles into one shared module at
+  `src/snake_utils.py`. Update *all three* Snakefiles to import from it.
+  Behavior of M4/M5's Snakefiles unchanged; only the helper sourcing moves.
+- Replace the `--configfile` `sys.argv` re-parsing trick in *all three*
+  Snakefiles with a cleaner mechanism (e.g. `workflow.configfiles[0]`),
+  documented in `src/snake_utils.py` so the next contributor can tell why.
+
+**Workflow-1 deliverables.**
+- Any load-bearing `ruleorder:` in `Snakefile_model_creation` either
+  tightened (preferred) or commented in-place with the reason.
+- Per-rule `log:` and `benchmark:` directives on every non-trivial rule
+  in this Snakefile.
+- Resolve or properly encapsulate the "temporary hydromt fix" in
+  `src/setup_reservoirs_lakes_glaciers.py` — either upstream the fix or
+  isolate it with a comment that names the upstream issue and a removal
+  trigger.
+- Review `src/setup_gauges_and_outputs.py` for correctness, vectorization,
+  and units handling.
+- Add unit tests under `tests/` for the Python helpers in this workflow's
+  scope (currently `tests/` is workflow-level only).
+
+**Exit criteria.**
+- `pytest tests/test_cli.py` (dry-run sanity check) still passes for all
+  three Snakefiles.
+- The model-creation workflow runs end-to-end and matches its slice of
+  the M1 baseline — preserved, or intentionally updated with a documented
+  diff in `dev/m03_baseline_diffs.md`.
+- New unit tests added and passing.
+
+**Out of scope.**
+- Snakefile_climate_projections content changes (M4) — except the shared
+  helper import that comes with the cross-cutting deliverables.
+- Snakefile_climate_experiment content changes (M5) — same caveat.
+- Repo-wide directory restructuring (M6).
+
+**Tag.** `m03-model-builder`.
+
+---
+
+## M4 — Workflow 2: climate projections
+
+**Goal.** Clean up `Snakefile_climate_projections` and the scripts it
+calls. Inherit the patterns established in M3 (shared helper, configfile
+mechanism, log/benchmark conventions).
 
 **Deliverables.**
-- The duplicated `get_config(config, key, default, optional)` helper
-  collapsed into one shared module at `src/snake_utils.py`, imported by
-  all three Snakefiles.
-- The `--configfile` re-parsing trick (Snakefiles re-read `sys.argv` to
-  pass the config path to R scripts) replaced with a cleaner mechanism
-  (e.g. `workflow.configfiles[0]`) and documented.
 - The load-bearing `ruleorder:` directive in
-  `Snakefile_climate_projections` either removed (by tightening wildcard
-  patterns) or commented in-place with the reason it must stay.
-- Per-rule `log:` and `benchmark:` directives on every non-trivial rule.
-
-**Exit criteria.**
-- `pytest tests/test_cli.py` (the dry-run sanity check) still passes for
-  all three Snakefiles.
-- Full M1 baseline re-run produces zero diffs.
-
-**Out of scope.**
-- Behavioral changes to scripts. Signature / arg changes are allowed where
-  M3 deliverables require them, but scientific output must not change.
-- Schema validation, DAG image commits, and OS-specific catalog dedup —
-  considered and dropped as gold-plating. Catalog dedup belongs with the
-  deferred Linux work; the others can be revisited later if needed.
-- Any package / directory restructuring (M5).
-
-**Tag.** `m03-orchestration`.
-
----
-
-## M4 — Script improvements
-
-**Goal.** Improve the analytical code itself — model building, climate
-projection processing, stress-test design and execution — now that the
-workflow scaffolding is reliable.
-
-**Deliverables (scope to be locked at start of M4).** Candidates:
-- The `setup_reservoirs_lakes_glaciers.py` "temporary hydromt fix"
-  resolved upstream or properly encapsulated.
-- `src/get_stats_climate_proj.py` reviewed for correctness, vectorization,
+  `Snakefile_climate_projections` either tightened or commented in-place
+  with the reason.
+- Per-rule `log:` and `benchmark:` on every non-trivial rule in this
+  Snakefile.
+- Review `src/get_stats_climate_proj.py` for correctness, vectorization,
   and units handling.
-- The R weathergen pipeline: cleaner argument parsing, fewer positional
-  args, consistent logging.
-- Stress-test grid construction (`ST_NUM = (temp.step_num + 1) *
-  (precip.step_num + 1)`) extracted into a single tested helper instead of
-  living in Snakefile expressions.
-- Unit tests for the Python helpers under `src/`. Currently `tests/` is
-  almost entirely workflow-level; add module-level coverage for the
-  non-trivial pure functions.
+- Audit the `monthly_stats_hist` → `monthly_stats_fut` → `monthly_change`
+  chain end-to-end for unit consistency, calendar handling, and missing-
+  data behavior.
+- Add unit tests for the Python helpers in this workflow's scope.
 
 **Exit criteria.**
+- `pytest tests/test_cli.py` still passes.
+- The projections workflow runs end-to-end and matches its slice of the
+  M1 baseline — preserved, or intentionally updated with a documented
+  diff in `dev/m04_baseline_diffs.md`.
 - New unit tests added and passing.
-- Where M4 changes the *intended* output (e.g. a corrected formula),
-  the M1 baseline is updated *deliberately*, with a documented diff and
-  rationale in `dev/m04_baseline_diffs.md`. Where M4 is meant to be
-  behavior-preserving, the baseline still matches.
 
 **Out of scope.**
-- Repo-wide directory restructuring (deferred to M5).
-- Any change to the orchestration layer (locked by M3).
+- Workflow-1 or workflow-3 changes (other than shared helper inheritance).
+- Repo-wide directory restructuring (M6).
 
-**Tag.** `m04-scripts`.
+**Tag.** `m04-projections`.
 
 ---
 
-## M5 — Structural refactor
+## M5 — Workflow 3: climate experiment
 
-**Goal.** Reorganize the repository so that source code, configuration,
-data catalogs, generated outputs, and documentation are cleanly separated
-and discoverable.
+**Goal.** Clean up `Snakefile_climate_experiment` and the scripts it
+calls — including the R weathergen layer. Inherit the patterns from M3.
 
-**Concrete pain points to address (lock list at start of M5).**
+**Deliverables.**
+- Per-rule `log:` and `benchmark:` on every non-trivial rule in this
+  Snakefile.
+- The R weathergen pipeline (`src/weathergen/*.R`): cleaner argument
+  parsing, fewer positional args, consistent logging. Migration to the
+  current weathergenr API is already done pre-M1; revisit any drift here.
+- Stress-test grid construction (`ST_NUM = (temp.step_num + 1) *
+  (precip.step_num + 1)`) extracted from Snakefile expressions into a
+  single tested Python helper.
+- Review `src/weathergen/impose_climate_change.R` and the downscaling
+  rules.
+- Add unit tests for Python helpers in this workflow. R testthat
+  coverage is a separate decision, locked at start of M5.
+
+**Exit criteria.**
+- `pytest tests/test_cli.py` still passes.
+- The experiment workflow runs end-to-end and matches its slice of the
+  M1 baseline — preserved, or intentionally updated with a documented
+  diff in `dev/m05_baseline_diffs.md`.
+- New unit tests added and passing.
+
+**Out of scope.**
+- Workflow-1 or workflow-2 changes (other than shared helper inheritance).
+- Repo-wide directory restructuring (M6).
+
+**Tag.** `m05-experiment`.
+
+---
+
+## M6 — Structural refactor
+
+**Goal.** Reorganize the repository so source code, configuration, data
+catalogs, generated outputs, and documentation are cleanly separated and
+discoverable. M3/M4/M5 already cleaned up *within* each workflow; M6 sets
+the cross-cutting layout.
+
+**Concrete pain points to address (lock list at start of M6).**
 1. `src/` is flat — split into a package (`blueearth_cst/`) with submodules
    per workflow stage (model, projections, experiment, weathergen).
 2. `config/` mixes canonical example configs with local / test variants and
@@ -241,8 +299,9 @@ and discoverable.
    user-facing reference. Decide whether dev helpers stay under
    `dev/scripts/` or whether a top-level `scripts/` is introduced for
    production runners.
-4. Data catalogs: OS-specific variants already collapsed in M3, but the
-   directory layout under `config/catalogs/` should be settled here.
+4. Data catalogs: OS-specific variants already collapsed in deferred
+   Linux work, but the directory layout under `config/catalogs/` should
+   be settled here.
 5. Output layout under `project_dir/` already mostly clean — leave alone
    unless a concrete pain point emerges.
 6. Remaining top-level runners (`run_snake_test.cmd`,
@@ -252,15 +311,15 @@ and discoverable.
 
 **Exit criteria.**
 - New layout documented in an updated CLAUDE.md and README.
-- All three workflows still run and match the M4 baseline.
+- All three workflows still run and match the M5 baseline.
 - `pytest tests/` passes.
-- A `MIGRATION.md` (or section in the changelog) maps every moved file from
-  old → new path so downstream forks can rebase.
+- A `MIGRATION.md` (or section in the changelog) maps every moved file
+  from old → new path so downstream forks can rebase.
 
 **Out of scope.**
 - Any further behavioral change.
 
-**Tag.** `m05-refactor`.
+**Tag.** `m06-refactor`.
 
 ---
 
@@ -268,14 +327,15 @@ and discoverable.
 
 - **Every milestone ends with a tag.** Tags are the rollback points.
 - **Every milestone preserves the M1 baseline** unless it is *intentionally*
-  changing behavior (only M4 is allowed to). Where it changes, the diff
-  is documented, not hidden.
+  changing behavior. M3, M4, M5 are each allowed to change their own
+  workflow's slice of the manifest — with a documented diff. M2 and M6
+  must preserve, modulo the M2-onward `1e-9` numerical-noise tolerance.
 - **Manifest updates are part of the merge.** Each milestone updates
   `dev/baseline/manifest.json` if (and only if) changes meet that
   milestone's tolerance / justification rules. No silent updates.
 - **No milestone touches the next milestone's territory.** If you find
-  yourself wanting to fix env issues during M3, write it down in
-  `dev/m02_followups.md` and keep going.
+  yourself wanting to fix a workflow-2 issue while in M3, write it down
+  in `dev/m04_followups.md` and keep going.
 - **PRs back to upstream** (if any) are prepared from `pr/<NN>-<topic>`
   branches per the existing fork workflow guide — not from milestone
   branches directly.
@@ -293,7 +353,8 @@ matches the milestone the commit belongs to. Examples:
 - `m01: record baseline manifest for test config`
 - `m02: replace environment.yml with pixi.toml`
 - `m03: collapse get_config into src/snake_utils.py`
-- `m04: fix off-by-one in stress-test grid expansion`
+- `m04: fix calendar handling in get_stats_climate_proj.py`
+- `m05: extract stress-test grid into tested helper`
 
 **Body.** Optional. Include only when the *why* isn't obvious from the
 diff. Wrap at ~72 chars. Don't restate what the diff shows.
@@ -317,7 +378,7 @@ history if the commit hasn't been pushed.
 
 **Merges and tags.** Default merge-commit messages are fine — don't
 hand-craft them. Tag messages should restate the milestone goal in one
-line (e.g. `m01-replication: workflows green on Windows test config`).
+line (e.g. `m03-model-builder: model creation workflow + scripts cleaned`).
 
 ---
 
@@ -332,8 +393,12 @@ passing as the relevant milestone starts.
 - **Wflow.jl pinning under pixi.** Needs a 1-hour spike at the start of
   M2 to confirm pixi can manage Julia + Wflow together; if not, fall back
   to a hybrid (pixi for Python+R, Project.toml for Julia).
-- **Unit-test scope in M4.** Python helpers only by default. R/Julia
-  testing infrastructure is a separate decision, locked at M4 start.
+- **R testthat coverage.** Decided at the start of M5 — Python helpers
+  only by default; adding R testing infrastructure is a separate call.
+- **`channel_priority: strict` in `environment.yml`.** Currently silently
+  ignored by conda (not a valid env-file key). Either drop the line as a
+  `chore:` cleanup or move the setting to `.condarc`. M2 makes the
+  question moot.
 
 ---
 
@@ -359,9 +424,9 @@ P-drive mount becomes available.
   ones in `dev/baseline/` (separate manifest, not a replacement).
 
 **Where it slots in.** Likely a small dedicated milestone between M2 and
-M3 (e.g. `milestone/02b-linux-parity`) so that M3+ can assume both
-platforms work. Renumber later milestones accordingly, or keep it as a
-side branch tagged `m02b-linux-parity`.
+M3 (e.g. `milestone/02b-linux-parity`) so M3+ can assume both platforms
+work. Renumber later milestones accordingly, or keep it as a side branch
+tagged `m02b-linux-parity`.
 
 **Until then.** All milestone exit criteria refer to Windows only.
 Linux-specific files (`*_linux.yml`, `run_snake_docker.sh`, the

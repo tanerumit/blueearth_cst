@@ -179,7 +179,7 @@ ds_members_mean_stats_time = []
 for name_member in name_members:
     print(name_member)
     entry = f"{name_clim_project}_{name_model}_{name_scenario}_{name_member}"
-    if entry in data_catalog:
+    if entry in data_catalog.sources:
         try:  # todo can this be replaced by if statement?
             data = data_catalog.get_rasterdataset(
                 entry,

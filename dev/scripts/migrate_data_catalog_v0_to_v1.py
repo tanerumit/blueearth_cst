@@ -75,8 +75,13 @@ def _migrate_source(name: str, v0: dict) -> dict:
     if "path" in v0:
         out["uri"] = v0.pop("path")
 
-    # driver + driver.options
+    # driver + driver.options + driver.filesystem
     driver = _migrate_driver(v0.pop("driver", None), data_type, v0.pop("kwargs", None))
+    filesystem = v0.pop("filesystem", None)
+    if filesystem is not None:
+        if driver is None:
+            driver = {}
+        driver["filesystem"] = filesystem
     if driver is not None:
         out["driver"] = driver
 

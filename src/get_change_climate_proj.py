@@ -116,7 +116,7 @@ def get_change_annual_clim_proj(
             hist = (
                 ds_hist_time[var]
                 .sel(time=slice(start_hyd_year_hist, end_hyd_year_hist))
-                .resample(time=f"AS-{start_month_hyd_year}")
+                .resample(time=f"YS-{start_month_hyd_year.upper()[:3]}")
                 .sum("time")
                 .sel(
                     scenario=ds_hist_time.scenario.values[0],
@@ -125,7 +125,7 @@ def get_change_annual_clim_proj(
             clim = (
                 ds_clim_time[var]
                 .sel(time=slice(start_hyd_year_clim, end_hyd_year_clim))
-                .resample(time=f"AS-{start_month_hyd_year}")
+                .resample(time=f"YS-{start_month_hyd_year.upper()[:3]}")
                 .sum("time")
             )
             # change = (ds_clim[var] - ds_hist[var].sel(horizon = ds_hist.horizon.values[0], scenario = ds_hist.scenario.values[0])) / ds_hist[var].sel(horizon = ds_hist.horizon.values[0], scenario = ds_hist.scenario.values[0]) * 100
@@ -134,7 +134,7 @@ def get_change_annual_clim_proj(
             hist = (
                 ds_hist_time[var]
                 .sel(time=slice(start_hyd_year_hist, end_hyd_year_hist))
-                .resample(time=f"AS-{start_month_hyd_year}")
+                .resample(time=f"YS-{start_month_hyd_year.upper()[:3]}")
                 .mean("time")
                 .sel(
                     scenario=ds_hist_time.scenario.values[0],
@@ -143,7 +143,7 @@ def get_change_annual_clim_proj(
             clim = (
                 ds_clim_time[var]
                 .sel(time=slice(start_hyd_year_clim, end_hyd_year_clim))
-                .resample(time=f"AS-{start_month_hyd_year}")
+                .resample(time=f"YS-{start_month_hyd_year.upper()[:3]}")
                 .mean("time")
             )
 

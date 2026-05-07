@@ -11,6 +11,14 @@ context so future-you can confirm the issue still applies before fixing.
 
 ## M3 — Workflow 1: model builder
 
+- **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
+  triage (`dev/m01_warnings.md`) because most rules don't write stderr
+  to disk. Once M3's cross-cutting deliverable adds `log:` directives
+  to every non-trivial rule across all three Snakefiles, re-run all
+  three workflows, sweep the captured logs, and fix any bucket-2
+  (config/data-catalog) or bucket-3 (our-code) warnings that surface.
+  Update `dev/m01_warnings.md` (or supersede it with an `m03_*` doc).
+
 - **`extract_climate_grid` silently truncates the historical range.**
   When the snake config's `historical:` window asks for years that the
   staged source doesn't cover, the rule produces a shorter `extract_historical.nc`

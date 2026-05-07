@@ -26,96 +26,64 @@ The Climate Stress Tester is part of the BlueEarth_ initiative and uses weatherg
 
 Installation
 ============
-BlueEarth CST is a python package that makes use of BlueEarth HydroMT to build the model (python), weathergenr to prepare the weather realization and stress tests (R), and Wlfow 
-hydrological model (Julia). We have three types of installation available: conda, docker and developer installation.
+BlueEarth CST is a Python + R + Julia toolbox. Python and R dependencies
+are managed with pixi_; Julia and Wflow.jl are managed via the standard
+``Project.toml`` / ``Manifest.toml``. A single ``pixi run install`` task
+wires both layers together.
 
-Conda installation
-------------------
-This installation allows you to install a released version of the toolbox using conda/mamba package manager. The installation steps are as follow:
+Prerequisites
+-------------
+1. **pixi** (manages Python + R via conda-forge).
 
-1. For both python and R installation we recommend using either conda and `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_ 
-or conda/mamba and `Miniforge <https://github.com/conda-forge/miniforge>`_.
+   Windows (PowerShell):
 
-2. Install Julia from https://julialang.org/downloads/ and Wflow following the instructions from the 
-`installation documentation <https://deltares.github.io/Wflow.jl/dev/user_guide/install/#Installing-as-Julia-package>`_.
+   .. code-block:: powershell
 
-3. Go to the `release page <https://github.com/Deltares/blueearth_cst/releases>`_ of the toolbox and download the version you wish to install 
-(under Assets, folder "Source code.zip"). Unzip the downloaded folder in the folder of your choice. For Windows users, you also have an environment 
-lock file with fixed dependency that you can decide to use (eg environment_0.1.0_win-64.yml for release 0.1.0)
+       iwr -useb https://pixi.sh/install.ps1 | iex
 
-Windows
-~~~~~~~
+   Or via winget: ``winget install prefix-dev.pixi``. Restart your shell after install.
 
-4. Make and activate a new cst conda environment based either on the provided lock file. This will install all python and R dependencies to run the 
-tool. For this open your terminal and navigate to the folder where the lock file is located (using cd command to change directory) and run the following commands.
-The last line will install the weathergenr package:
+2. **Julia 1.12+** from https://julialang.org/downloads/. Make sure ``julia`` is on ``PATH``.
 
-.. code-block:: console
+3. Clone the repo:
 
-    $ conda env create -f environment.yml
-    $ conda activate cst
-    $ Rscript src/weathergen/install_rpackages.R
+   .. code-block:: console
 
-Linux
-~~~~~
+       git clone https://github.com/tanerumit/blueearth_cst.git
+       cd blueearth_cst
 
-4. Make and activate a new cst conda environment based either on the provided lock file. This will install all python and R dependencies to run the 
-tool. For this open your terminal and navigate to the folder where the lock file is located (using cd command to change directory) and run the following commands.
-The last line will install the weathergenr package:
+Install
+-------
 
 .. code-block:: console
 
-    $ conda env create -f environment_linux.yml
-    $ conda activate cst
-    $ Rscript src/weathergen/install_rpackages.R
+    pixi install         # Python + R toolchain (conda-forge)
+    pixi run install     # weathergenr (R) + Wflow.jl (Julia)
+
+The first command installs everything declared in ``pixi.toml`` into a
+local ``.pixi/`` env. The second runs ``dev/scripts/install_weathergenr.R``
+(installs ``tanerumit/weathergenr@v1.2.0``) and
+``julia --project=. -e 'Pkg.instantiate()'`` (locks Wflow.jl and 130
+transitive Julia deps from ``Manifest.toml``).
+
+To enter the pixi shell with the env activated:
+
+.. code-block:: console
+
+    pixi shell
 
 Docker
 ------
-The workflow is also available as a docker image, with all dependencies preinstalled.
+A pixi-based image is defined in ``Dockerfile``. End-to-end Linux/Docker
+validation is currently deferred per ``dev/roadmap.md`` ("Deferred:
+Linux replication"); the file builds but is not exercised. A pre-built
+image of an earlier (conda-based) release remains available at:
 
 .. code-block:: console
+
     docker pull https://containers.deltares.nl/CST/cst_workflows:0.1.0
 
-Developer installation
-----------------------
-This installation allows you to install the latest version of the toolbox using conda/mamba package manager. The installation steps are as follows:
-
-1. For both python and R installation we recommend using conda and `Miniconda <https://docs.conda.io/en/latest/miniconda.html>`_.
-
-2. Install Julia from https://julialang.org/downloads/ and Wflow following the instructions from the 
-`installation documentation <https://deltares.github.io/Wflow.jl/dev/user_guide/install/#Installing-as-Julia-package>`_.
-
-3. Download (clone) the BlueEarth_cst ``git`` repo from `github <https://github.com/Deltares/blueearth_cst>`_, then navigate into the 
-the code folder (where the environment.yml file is located):
-
-.. code-block:: console
-
-    $ git clone https://github.com/Deltares/blueearth_cst.git
-    $ cd blueearth_cst
-
-Windows
-~~~~~~~
-
-4. Make and activate a new cst conda environment based on the environment.yml file contained in the repository. This will install all python and R dependencies to run the 
-tool:
-
-.. code-block:: console
-
-    $ conda env create -f environment.yml
-    $ conda activate cst
-    $ Rscript src/weathergen/install_rpackages.R
-
-Linux
-~~~~~
-
-4. Make and activate a new cst conda environment based on the environment.yml file contained in the repository. This will install all python and R dependencies to run the 
-tool:
-
-.. code-block:: console
-
-    $ conda env create -f environment_linux.yml
-    $ conda activate cst
-    $ Rscript src/weathergen/install_rpackages.R
+.. _pixi: https://pixi.sh/
 
 Running
 =======
@@ -128,19 +96,18 @@ BlueEarth CST toolbox is based on several workflows developed using Snakemake_ .
 To prepare these workflows, you can select the different options for your model region and climate scenario using a config file. An example is available in the folder 
 config/snake_config_model_test.yml.
 
-You can run each workflow using the snakemake command line, after activating your cst conda environment.
+You can run each workflow using the ``snakemake`` command line, from within the pixi shell.
 
-Running from conda environment
-------------------------------
-Before running the workflows, you need to activate your conda environment where you installed the necessary packages and navigate into the folder where the
-snakefiles are located:
+Running from pixi shell
+-----------------------
+Activate the pixi env and ``cd`` into the repo:
 
 .. code-block:: console
 
-    $ conda activate cst
+    $ pixi shell
     $ cd blueearth_cst
 
-Then you can run the workflows using the snakemake commands detailed below.
+Then run the workflows using the snakemake commands detailed below.
 
 Running from docker image
 -------------------------

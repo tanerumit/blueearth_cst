@@ -24,6 +24,7 @@ jupyter = "*"       # examples notebooks
 matplotlib = "*"
 numpy = "<2"
 pandas = ">=2.0.0"
+pytest = "*"        # tests/ — was missing from environment.yml
 scipy = "*"
 seaborn = "*"
 shapely = ">=2.0.0"

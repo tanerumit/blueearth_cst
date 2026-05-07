@@ -11,6 +11,28 @@ context so future-you can confirm the issue still applies before fixing.
 
 ## M3 — Workflow 1: model builder
 
+- **Resolve test_cli xfails.** Two of the three parametrizations in
+  `tests/test_cli.py` are marked `xfail` since M2:
+  - `Snakefile_climate_projections`: dry-run trips
+    `MissingInputException` because the workflow expects
+    `staticgeoms/region.geojson` (produced by Snakefile_model_creation)
+    even when only dry-running. Either change the test fixture to
+    pre-stage that file, or refactor `Snakefile_climate_projections` so
+    `--dry-run` doesn't require it.
+  - `Snakefile_climate_experiment`: dry-run trips
+    `CyclicGraphException` at `rule generate_climate_stress_test`. The
+    rule's wildcard pattern `rlz_{rlz_num}_cst_{st_num}.nc` overlaps
+    with `generate_weather_realization`'s output `rlz_{rlz_num}_cst_0.nc`.
+    Production configs (`config/snake_config_model_test_local.yml`) work
+    fine because Snakemake disambiguates from concrete paths in
+    `expand(...)`, but the `--dry-run` resolver flags the cycle on the
+    test config. Add a wildcard constraint (`{st_num,[1-9][0-9]*}` or
+    similar) or a `ruleorder:` directive.
+
+  These are pre-M2 failures masked by the fact that M1 closure didn't
+  actually run pytest. Both belong to M3's "tighten ruleorder + Snakefile
+  hygiene" deliverables.
+
 - **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
   triage (`dev/m01_warnings.md`) because most rules don't write stderr
   to disk. Once M3's cross-cutting deliverable adds `log:` directives

@@ -13,10 +13,11 @@ base/<start-point>
   └── milestone/01-replication              →  tag: m01-replication
         └── milestone/02-pixi-installation  →  tag: m02-pixi
               └── milestone/02b-library-upgrades  →  tag: m02b-upgrades
-                    └── milestone/03-model-builder  →  tag: m03-model-builder
-                          └── milestone/04-projections →  tag: m04-projections
-                                └── milestone/05-experiment →  tag: m05-experiment
-                                      └── milestone/06-refactor →  tag: m06-refactor
+                    └── milestone/02c-tests             →  tag: m02c-tests
+                          └── milestone/03-model-builder  →  tag: m03-model-builder
+                                └── milestone/04-projections →  tag: m04-projections
+                                      └── milestone/05-experiment →  tag: m05-experiment
+                                            └── milestone/06-refactor →  tag: m06-refactor
 ```
 
 The structure is **vertical-by-workflow**: M3, M4, M5 each take one
@@ -45,9 +46,9 @@ scope.
 stay alive after their tag for late patches or PR prep.
 
 **Stacked, not parallel.** Each milestone branches from the previous
-milestone's tip (not from `base/`). M2b is the only intra-milestone
-variant — it lives between M2 and M3 because the library upgrades had
-to land before the workflow refactors.
+milestone's tip (not from `base/`). M2b and M2c are intra-milestone
+variants between M2 and M3 — library upgrades and pre-M3 test coverage
+respectively, both landing before the workflow refactors begin.
 
 **Remotes.**
 - `origin` — your fork (`github.com/<you>/blueearth_cst`).
@@ -280,6 +281,51 @@ own a documented diff for it.
   audit should identify it before we lift naively.
 
 **Tag.** `m02b-upgrades`.
+
+---
+
+## M2c — Test coverage (pre-M3)
+
+**Goal.** Establish unit-test infrastructure and convert documented bugs
+into regression coverage before M3-M5 begin refactoring workflow scripts.
+Inserted between M2b and M3 because writing tests for code about to be
+refactored is wasted effort, but writing tests for *stable utilities*
+that M3-M5 will depend on is not — and the resulting test pattern gives
+M3-M5 a template to follow rather than re-inventing fixtures and mocking
+in each milestone.
+
+**Scope.** Five small, stable modules where bugs are already documented
+and that M3-M5 are unlikely to substantially rewrite:
+`prepare_climate_data_catalog.py`, `extract_historical_climate.py`,
+`setup_time_horizon.py`, `prepare_build_config.py`,
+`metrics_definition.py`. ~520 lines of source code total.
+
+**Approach.** Replicate `tests/test_stage_data.py` — one test file per
+source module, heavy deps stubbed via `sys.modules.setdefault`, inline
+fixtures per file. Bug-driven `pytest.mark.xfail(strict=True)` tests for
+documented issues that aren't fixed yet (three of them: hydromt `to_yml`
+preprocess strip, `extract_climate_grid` silent truncation,
+`extract_climate_grid` ignored config keys).
+
+**Exit criteria.**
+- Five new test files in `tests/`, one per target module.
+- `pytest tests/` passes with the three new xfails marked `strict=True`.
+- All existing tests still pass.
+- M02c section in `dev/roadmap.md` flipped to `**Status.** Sealed <date>`.
+
+**Out of scope.** Plotting modules, workflow-orchestration scripts that
+M3-M5 will rewrite, R weathergenr testthat (parked at M5),
+coverage-percentage targets, CI workflow setup.
+
+**Risks / open questions.**
+- If `extract_historical_climate.py`'s coupling to hydromt makes the
+  `sys.modules` stub impractical, fall back to a tiny real netCDF
+  fixture (~1 KB) under `tests/data/`. Decision in passing.
+- xfail tests starting to pass accidentally are caught by
+  `strict=True` — no silent decay.
+
+**Tag.** `m02c-tests`. Full design lives in
+`dev/m02c/test-coverage-design.md`.
 
 ---
 

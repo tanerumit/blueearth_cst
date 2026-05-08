@@ -286,6 +286,9 @@ own a documented diff for it.
 
 ## M2c — Test coverage (pre-M3)
 
+**Status.** Sealed 2026-05-08 — four new test files (32 new passing tests,
+2 strict xfails for documented bugs). Suite total: 45 passed, 4 xfailed.
+
 **Goal.** Establish unit-test infrastructure and convert documented bugs
 into regression coverage before M3-M5 begin refactoring workflow scripts.
 Inserted between M2b and M3 because writing tests for code about to be

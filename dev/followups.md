@@ -33,6 +33,26 @@ context so future-you can confirm the issue still applies before fixing.
   actually run pytest. Both belong to M3's "tighten ruleorder + Snakefile
   hygiene" deliverables.
 
+- **`Path(fn, resolve_path=True)` is a non-existent kwarg in
+  `src/prepare_climate_data_catalog.py:76,85`.** Surfaced 2026-05-08 by
+  M02c tests via pytest deprecation warnings:
+  *"support for supplying keyword arguments to pathlib.PurePath is
+  deprecated and scheduled for removal in Python 3.14"*. `Path()` does
+  not accept `resolve_path`; it is silently swallowed today, which means
+  the orography-path resolution the author intended **is not happening**.
+  The two lines:
+  ```python
+  fn_oro = Path(fns[0], resolve_path=True)
+  ...
+  fn_oro = Path(fn_oro, resolve_path=True)
+  ```
+  *Fix:* replace with `Path(fns[0]).resolve()` and `Path(fn_oro).resolve()`.
+  Hard deadline: Python 3.14 (currently capped at 3.12 in `pixi.toml`,
+  but the cap will lift eventually). Existing M02c tests
+  (`test_chirps_source_adds_orography_entry`,
+  `test_processing_metadata_mentions_chirps_and_era5_for_chirps_source`)
+  exercise the affected path and will catch behavior changes.
+
 - **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
   triage (`dev/m01/warnings.md`) because most rules don't write stderr
   to disk. Once M3's cross-cutting deliverable adds `log:` directives
@@ -137,6 +157,35 @@ context so future-you can confirm the issue still applies before fixing.
   *Note:* this fix lives in the weathergenr package, not this repo. Mention
   in M5 deliverables if M5 is also touching the R layer; otherwise track as
   a separate weathergenr issue.
+
+---
+
+## M3+ — Surfaced during M02c (test coverage)
+
+Lessons learned writing the M02c unit tests. Not bugs — testing-discipline
+notes for M3-M5 to inherit when they add their own test files.
+
+- **Test pollution between `sys.modules.setdefault` files.** pytest collects
+  test files in alphabetical order. The first file to call
+  `sys.modules.setdefault("hydromt", <stub>)` (or any heavy dep) wins, and
+  later files using `setdefault` for the same key get a silent no-op —
+  their import of the source module then binds to the *previous* test
+  file's stub. Symptom: tests pass when run in isolation, fail in the full
+  suite with `KeyError` on fixture-set catalog data.
+
+  *Pattern:* don't rely on `setdefault` alone for shared keys. Use
+  `monkeypatch.setattr(<source_module>.<dep>, "<attr>", <fake>)` inside
+  fixtures so each test gets a clean override regardless of collection
+  order. See `tests/test_prepare_climate_data_catalog.py` for the
+  reference implementation; commit `f65244e` for the diagnosis.
+
+- **dask cannot be stubbed at module level.** pandas does a lazy
+  `import dask` and accesses `dask.__spec__` during type compatibility
+  checks. A `types.SimpleNamespace` stub for dask there raises
+  `ValueError: dask.__spec__ is not set` during collection of *any* test
+  file that imports pandas. dask is in the env via pixi; let it import
+  normally. If the cost matters, mock the specific dask object at call
+  time within the test, not at module level.
 
 ---
 

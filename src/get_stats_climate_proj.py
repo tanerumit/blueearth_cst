@@ -190,6 +190,12 @@ for name_member in name_members:
             )
             # needed for cmip5/cmip6 cftime.Datetime360Day which is not picked up before.
             data = data.sel(time=slice(*time_tuple_all))
+            # hydromt 1.x leaves get_rasterdataset lazy-backed by the remote
+            # GCS chunks; without an eager .load() the downstream resample +
+            # to_netcdf round-trip rechunks via dask and ran for ~5 h per
+            # source on M2b. After bbox/time slicing the residual is small,
+            # so loading into memory is fine.
+            data = data.load()
         except:
             # if it is not possible to open all variables at once, loop over each one, remove duplicates and then merge:
             ds_list = []
@@ -203,7 +209,7 @@ for name_member in name_members:
                         variables=[var],
                     )
                     # drop duplicates if any
-                    data_ = data_.drop_duplicates(dim="time", keep="first")
+                    data_ = data_.drop_duplicates(dim="time", keep="first").load()
                     ds_list.append(data_)
                 except:
                     print(f"{name_scenario}", f"{name_model}", f"{var} not found")

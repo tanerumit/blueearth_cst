@@ -1,45 +1,50 @@
-# Verify weathergenr v1.2.0 is present and loadable in the active R env.
+# Install weathergenr v1.2.0 from GitHub via pak.
 #
-# As of M2b, this script is install-disabled: it only checks the install,
-# it does not attempt to (re)install. The conda r-base toolchain on
-# Windows currently fails to build weathergenr from source against the
-# pixi-managed R 4.5; until that's resolved, weathergenr v1.2.0 must be
-# installed manually into the user library:
+# Invoked at env-setup time by:
+#     pixi run install-rdeps
+# (also pulled in transitively by `pixi run install`).
 #
-#     # Once, in a system R 4.5+ session (NOT the conda one):
-#     install.packages("devtools")
-#     devtools::install_github("tanerumit/weathergenr", ref = "v1.2.0")
+# Where it lands:
+#   - Linux/macOS: conda env's R site-lib (.libPaths()[1] under pixi)
+#   - Windows:     user-level R lib (~/AppData/Local/R/win-library/<R-version>)
 #
-# At workflow runtime, src/weathergen/global.R keeps both the conda
-# site-lib and the user lib on .libPaths() so the user-installed
-# weathergenr remains visible.
+# We don't force lib=R_HOME/library because on Windows the conda r-base
+# toolchain hits a `Mingw-w64 runtime failure: 32 bit pseudo relocation
+# ... out of range` error when byte-compiling weathergenr against
+# conda's r-* deps (specifically when the package's namespace is loaded
+# with .libPaths() restricted to the conda site-lib). Installing into
+# the default .libPaths()[1] dodges that path on Windows by loading
+# deps from the user lib (built against system R), and is a no-op on
+# Linux where the conda site-lib is .libPaths()[1] by default.
 #
-# M3 followup: build weathergenr against the conda env (likely needs
-# m2w64-toolchain in pixi.toml, plus install-into-R_HOME/library) so the
-# user-lib dependency goes away and everything lives under a single
-# pixi-managed environment.
-
-source("./src/weathergen/global.R")
+# Idempotent: returns early if weathergenr at the right version is
+# already present anywhere visible to R.
 
 required_version <- "1.2.0"
 
-if (!requireNamespace("weathergenr", quietly = TRUE)) {
-  stop(
-    "weathergenr is not installed in any libPath visible to this R env.\n",
-    "Install manually (see header of this script for the command).\n",
-    "Searched libPaths:\n  ", paste(.libPaths(), collapse = "\n  ")
+if (requireNamespace("weathergenr", quietly = TRUE)) {
+  found_version <- as.character(packageVersion("weathergenr"))
+  if (found_version == required_version) {
+    cat("weathergenr ", found_version, " already installed at\n", sep = "")
+    cat("  ", find.package("weathergenr"), "\n", sep = "")
+    quit(save = "no", status = 0)
+  }
+  cat(
+    "weathergenr ", found_version, " present but ", required_version,
+    " required; reinstalling.\n", sep = ""
   )
 }
 
-found_version <- as.character(packageVersion("weathergenr"))
-if (found_version != required_version) {
-  stop(
-    "weathergenr is installed at version ", found_version,
-    " but the workflow requires ", required_version, ".\n",
-    "Reinstall via the manual command in this script's header."
-  )
+if (!requireNamespace("pak", quietly = TRUE)) {
+  stop("r-pak is missing from the env. Declare it in pixi.toml [dependencies].")
 }
 
-cat("--- weathergenr verified ---\n")
-cat("Version:    ", found_version, "\n", sep = "")
+pak::pkg_install(
+  "tanerumit/weathergenr@v1.2.0",
+  ask = FALSE,
+  upgrade = FALSE
+)
+
+cat("--- weathergenr installed via pak ---\n")
+cat("Version:    ", as.character(packageVersion("weathergenr")), "\n", sep = "")
 cat("Location:   ", find.package("weathergenr"), "\n", sep = "")

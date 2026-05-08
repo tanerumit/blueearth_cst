@@ -22,8 +22,10 @@ Generated 2026-05-08, against `milestone/02b-library-upgrades` HEAD.
   candidates for removal** (devtools no longer used; forecast is a
   weathergenr Suggests, not Imports).
 - **Julia:** Wflow only — already minimal.
-- **Outside pixi:** Julia binary (juliaup) and weathergenr (user-lib).
-  These are the two real "single-env via pixi" violations.
+- **Outside pixi:** Julia binary (juliaup; conda-forge has no win-64
+  build). weathergenr is installed via `pixi run install-rdeps` (pak
+  from GitHub) but on Windows the artifact lands in the user-lib due
+  to a conda r-base toolchain ABI issue.
 - **Rtools:** **Not a declared dependency.** mingw is pulled
   transitively by conda's r-base on Windows; the only mentions in the
   repo are two M3 followup comments.
@@ -136,14 +138,12 @@ handles them). No other top-level Julia deps to track.
 
 ---
 
-## Not in pixi — manual setup required
+## Not fully in pixi
 
-These are the two real "single-env via pixi" violations:
-
-| Item             | Where it currently lives                                                                                                                                              | What it would take to move to pixi                                                                                                                                           |
-| ---------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Julia 1.11.7     | Managed by `juliaup` outside pixi. Snakefiles call `julia +1.11.7 ...`.                                                                                              | Add `julia = "1.11.*"` to `pixi.toml` `[dependencies]` (conda-forge ships it). Drop `+1.11.7` from Snakefile invocations and update `dev/m02b_handoff.md` decision #1.       |
-| weathergenr 1.2.0 | User-level R lib at `C:/Users/taner/AppData/Local/R/win-library/4.5/weathergenr/`. `pixi run verify-rdeps` checks it; `dev/scripts/install_weathergenr.R` is a no-op. | Either (a) get it to compile against conda r-base — the M2b session hit a `Mingw-w64 runtime failure` doing this; would need a working compiler stack inside pixi; (b) vendor weathergenr under `vendor/weathergenr/` and install via a pixi task with `R CMD INSTALL`. |
+| Item             | Status                                                                                                                                                                                                                                     | Notes                                                                                                                                                                                                                                                                                                                                                          |
+| ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Julia 1.11.7      | Managed by `juliaup` outside pixi. Snakefiles call `julia +1.11.7 ...`.                                                                                                                                                                    | conda-forge does **not** ship win-64 julia (linux-64 / osx-64 only, and even there it skips 1.11.x — 1.10 and 1.12 only, 1.12 broken for Wflow.jl per #884). Staying on juliaup is the only working setup until conda-forge ships 1.11 for Windows. M3 followup.                                                                                              |
+| weathergenr 1.2.0 | Installed via `pixi run install-rdeps` (calls `dev/scripts/install_weathergenr.R` → `pak::pkg_install("tanerumit/weathergenr@v1.2.0")`). Lands in `.libPaths()[1]` — user lib on Windows, conda site-lib on Linux. Idempotent on rerun. | The install **command** is pixi-driven (so "everything upfront via pixi" holds at the command level). On Windows the **package itself** ends up in user lib because the conda r-base toolchain hits `Mingw-w64 runtime failure` when byte-compiling weathergenr's namespace against conda r-* deps. Loaded at workflow runtime via R's default `.libPaths()`. |
 
 ---
 

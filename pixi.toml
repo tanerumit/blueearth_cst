@@ -38,8 +38,9 @@ xclim = "*"
 zarr = "*"
 
 # R toolchain — weathergenr itself is handled separately (see [tasks]).
-r-base = "*"
-r-devtools = "*"        # weathergenr install from GitHub or local
+r-base = "4.5.*"        # 4.5 series (currently 4.5.3); pin avoids slipping to 4.6 when conda-forge ships it
+r-pak = "*"             # weathergenr install from GitHub via pak::pkg_install
+r-devtools = "*"        # weathergenr install from GitHub or local (legacy path)
 r-doparallel = "*"
 r-dplyr = "*"
 r-e1071 = "*"
@@ -66,6 +67,6 @@ snakemake = "*"
 #     pixi install         # native deps from pixi.toml
 #     pixi run install     # R + Julia layers wired below
 [tasks]
-verify-rdeps  = { cmd = "Rscript --vanilla dev/scripts/install_weathergenr.R", description = "Verify weathergenr v1.2.0 is installed and loadable (no install attempt)" }
-install-julia = { cmd = "julia --project=. -e 'using Pkg; Pkg.instantiate()'", description = "Instantiate the Julia env from Manifest.toml" }
-install       = { depends-on = ["verify-rdeps", "install-julia"], description = "Verify R deps + instantiate Julia env on top of pixi install" }
+install-rdeps = { cmd = "Rscript --vanilla dev/scripts/install_weathergenr.R", description = "Install weathergenr v1.2.0 via pak (idempotent; lands in .libPaths()[1])" }
+install-julia = { cmd = "julia --project=. -e 'using Pkg; Pkg.instantiate()'", description = "Instantiate the Julia env from Manifest.toml (assumes juliaup-managed Julia 1.11.7 on PATH; conda-forge has no win-64 julia build)" }
+install       = { depends-on = ["install-rdeps", "install-julia"], description = "Install weathergenr + instantiate Julia env on top of pixi install" }

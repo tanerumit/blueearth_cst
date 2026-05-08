@@ -1,9 +1,10 @@
 # Fork Roadmap
 
-Milestone plan for the personal fork of `blueearth_cst`. Branching mechanics
-(base / milestone / exp / feat / pr layout, tagging, PR-back strategy) live
-in `fork_milestone_experiment_workflow_guidance.md` — this document only
-covers *what* each milestone delivers, not *how* the branches are arranged.
+Source of truth for the personal fork of `blueearth_cst`: milestone scope,
+deliverables, exit criteria, branching/tagging conventions, commit
+discipline, and deferred work. Per-milestone detail (audits, plans, drift
+reports, run logs) lives under `dev/m01/`, `dev/m02/`, `dev/m02b/`, etc.
+Open M3+ items live in `dev/followups.md`.
 
 Milestones are **stacked**: each one builds on the previous tag.
 
@@ -21,6 +22,43 @@ base/<start-point>
 The structure is **vertical-by-workflow**: M3, M4, M5 each take one
 Snakemake workflow end-to-end (orchestration *plus* the analytical scripts
 it calls). M6 then does the cross-cutting structural refactor on top.
+
+---
+
+## Branching and tagging conventions
+
+What this fork actually uses. Generic git workflow guidance is out of
+scope.
+
+| Branch type   | Pattern                       | Purpose                                                               |
+| ------------- | ----------------------------- | --------------------------------------------------------------------- |
+| Frozen base   | `base/<start-point>`          | Historical starting point of the fork (e.g. `base/v0.1.0-alpha`).     |
+| Milestone     | `milestone/<NN>-<topic>`      | Stable checkpoint per milestone (e.g. `milestone/02b-library-upgrades`). |
+| Experiment    | `exp/m<NN>-<topic>`           | Messy trial branch off a milestone.                                   |
+| Feature       | `feat/m<NN>-<topic>`          | Cleaner implementation off a milestone, intended to be merged in.     |
+| Pull request  | `pr/<NN>-<topic>`             | Clean branch prepared for upstream review.                            |
+
+**Tags.** One per milestone, named after the milestone topic without the
+`milestone/` prefix or numeric: `m01-replication`, `m02-pixi`,
+`m02b-upgrades`, `m03-model-builder`, `m04-projections`, `m05-experiment`,
+`m06-refactor`. Tags are permanent rollback points; milestone branches
+stay alive after their tag for late patches or PR prep.
+
+**Stacked, not parallel.** Each milestone branches from the previous
+milestone's tip (not from `base/`). M2b is the only intra-milestone
+variant — it lives between M2 and M3 because the library upgrades had
+to land before the workflow refactors.
+
+**Remotes.**
+- `origin` — your fork (`github.com/<you>/blueearth_cst`).
+- `upstream` — the original Deltares repo
+  (`github.com/Deltares/blueearth_cst`).
+
+**PRs back to upstream** go from `pr/<NN>-<topic>` branches, not directly
+from milestone branches. One PR per milestone is the default; only stack
+PRs when maintainers explicitly agree to review them in series. PR target
+branch follows the base — work started from `v0.1.0-alpha` likely targets
+a maintenance branch for that release, not `upstream/main`.
 
 ---
 
@@ -414,7 +452,7 @@ the cross-cutting layout.
 
 ## Commit strategy
 
-Branch and tag naming live in `fork_milestone_experiment_workflow_guidance.md`.
+Branch and tag naming live in "Branching and tagging conventions" above.
 This section covers commit messages only.
 
 **Subject format.** `m<NN>: <imperative subject, ≤72 chars>`. `m<NN>`

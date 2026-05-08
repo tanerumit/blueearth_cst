@@ -66,5 +66,5 @@ directly with `--configfile config/snake_config_model_test.yml`.
   the silent truncation and the hardcoded date range are tracked in
   `dev/followups.md` for resolution in M3 / M5.
 - weathergenr `spatial_ref` attribute workaround in
-  `src/weathergen/generate_weather.R` — see commit 75d455f and
-  `dev/weathergenr_bugs.md`.
+  `src/weathergen/generate_weather.R` — see commit 75d455f and the
+  weathergenr items in `dev/followups.md` (M5 section).

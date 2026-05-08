@@ -1,5 +1,7 @@
 import os
+import yaml
 import hydromt
+from copy import deepcopy
 from pathlib import Path
 from typing import Union, List
 
@@ -33,37 +35,44 @@ def prepare_clim_data_catalog(
     """
 
     data_catalog = hydromt.DataCatalog(data_libs=data_libs_like)
-    dc_like = data_catalog[source_like].to_dict()
+    dc_like = data_catalog.to_dict()[source_like]
 
-    climate_data_catalog = hydromt.DataCatalog()
     climate_data_dict = dict()
 
     for fn in fns:
-        fn = Path(fn, resolve_path=True)
+        fn = Path(fn).resolve()
         name = os.path.basename(fn).split(".")[0]
-        dc_fn = dc_like.copy()
-        dc_fn["path"] = fn
-        dc_fn["driver"] = "netcdf"
-        if "driver_kwargs" not in dc_fn:
-            dc_fn["driver_kwargs"] = dict()
-        dc_fn["driver_kwargs"]["preprocess"] = "transpose_dims"
-        dc_fn["driver_kwargs"]["lock"] = False
-        if source_like == "chirps" or source_like == "chirps_global":  # precip only
-            dc_fn["meta"][
-                "processing"
-            ] = f"Climate data generated from {source_like} for precipitation and era5 using Deltares/weathergenr"
+        dc_fn = deepcopy(dc_like)
+        dc_fn["uri"] = str(fn)
+        # The R-generated NetCDFs are written one realization per file with
+        # variables already in their standard units, so override the inherited
+        # driver to the netcdf-friendly raster_xarray with a harmonise pass
+        # and drop any unit/rename adapters that came from the source.
+        dc_fn["driver"] = {
+            "name": "raster_xarray",
+            "options": {
+                "preprocess": "harmonise_dims",
+                "lock": False,
+            },
+        }
+        dc_fn.pop("data_adapter", None)
+        dc_fn.pop("root", None)
+
+        metadata = dc_fn.setdefault("metadata", {})
+        if source_like in ("chirps", "chirps_global"):
+            metadata["processing"] = (
+                f"Climate data generated from {source_like} for precipitation "
+                "and era5 using Deltares/weathergenr"
+            )
         else:
-            dc_fn["meta"][
-                "processing"
-            ] = f"Climate data generated from {source_like} using Deltares/weathergenr"
-        # remove entries that have already been processed while reading in the data:
-        for v in ["unit_mult", "unit_add", "rename"]:
-            if v in dc_fn:
-                dc_fn.pop(v)
+            metadata["processing"] = (
+                f"Climate data generated from {source_like} using Deltares/weathergenr"
+            )
+
         climate_data_dict[name] = dc_fn
 
     # Add local orography for chirps resolution
-    if source_like == "chirps" or source_like == "chirps_global":
+    if source_like in ("chirps", "chirps_global"):
         fn_oro = Path(fns[0], resolve_path=True)
         fn_oro = os.path.join(
             os.path.dirname(fn_oro),
@@ -74,28 +83,35 @@ def prepare_clim_data_catalog(
             f"{source_like}_orography.nc",
         )
         fn_oro = Path(fn_oro, resolve_path=True)
-        dc_oro = {
-            "crs": 4326,
+        climate_data_dict[f"{source_like}_orography"] = {
             "data_type": "RasterDataset",
-            "driver": "netcdf",
-            "kwargs": {
-                "chunks": {
-                    "latitude": 100,
-                    "longitude": 100,
+            "uri": str(fn_oro),
+            "driver": {
+                "name": "raster_xarray",
+                "options": {
+                    "chunks": {"latitude": 100, "longitude": 100},
+                    "lock": False,
                 },
-                "lock": False,
             },
-            "meta": {
+            "metadata": {
                 "category": "topography",
-                "processing": f"Resampled DEM from MERIT Hydro to the resolution of {source_like}",
+                "processing": (
+                    f"Resampled DEM from MERIT Hydro to the resolution of {source_like}"
+                ),
+                "crs": 4326,
             },
-            "path": fn_oro,
         }
-        climate_data_dict[f"{source_like}_orography"] = dc_oro
 
-    climate_data_catalog.from_dict(climate_data_dict)
     if fn_out is not None:
-        climate_data_catalog.to_yml(fn_out)
+        # Dump the dict directly with PyYAML rather than via
+        # `DataCatalog().from_dict(...).to_yml(...)` because hydromt 1.3
+        # silently strips driver.options.preprocess on `to_dict`/`to_yml`,
+        # which would lose the `harmonise_dims` step the R-generated nc
+        # files rely on (their dim order is longitude/latitude/time).
+        # The downstream reader (DataCatalog(data_libs=...)) parses YAML
+        # via from_dict, which DOES preserve preprocess.
+        with open(fn_out, "w") as f:
+            yaml.safe_dump(climate_data_dict, f, sort_keys=False)
 
 
 if __name__ == "__main__":

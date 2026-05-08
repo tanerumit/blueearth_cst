@@ -49,10 +49,19 @@ else:
 
 mod.setup_config(
     data={
-        "time.calendar": "noleap",
+        # The R weathergen writes netcdfs with calendar=noleap. Keeping
+        # noleap here would cause hydromt_wflow 1.x's forcing validation
+        # to fail comparing cftime.DatetimeNoLeap against datetime.datetime.
+        # Convert forcing time axis to standard calendar below and keep
+        # the TOML in sync.
+        "time.calendar": "standard",
         "time.starttime": starttime,
         "time.endtime": endtime,
         "time.timestepsecs": 86400,
+        # Snakefile_climate_experiment expects per-stress-test outputs
+        # flat under run_climate_<experiment>/ (no run_default subdir),
+        # so override Wflow.jl's default dir_output.
+        "dir_output": ".",
         "state.path_input": os.path.join("..", "instate", "instates.nc"),
         "state.path_output": f"outstates_{climate_name}.nc",
         "input.path_static": os.path.join("..", "staticmaps.nc"),
@@ -75,9 +84,16 @@ mod.setup_temp_pet_forcing(
     chunksize=chunksize,
 )
 
+# Convert forcing time axis from cftime.DatetimeNoLeap (R weathergen
+# default) to numpy datetime64 so hydromt_wflow 1.x's timespan
+# validation can compare it against datetime.datetime config values.
+# noleap doesn't have Feb 29, so the conversion is lossless.
+forcing = mod.forcing.data
+if hasattr(forcing.indexes["time"], "to_datetimeindex"):
+    forcing["time"] = forcing.indexes["time"].to_datetimeindex(time_unit="ns")
+
 # weagen has off-by-one timestamps at the year boundaries; clip the forcing
 # in place via the component's data.
-forcing = mod.forcing.data
 for var in list(forcing.data_vars):
     forcing[var] = forcing[var].sel(time=slice(starttime, endtime))
 

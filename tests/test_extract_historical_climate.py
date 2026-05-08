@@ -128,15 +128,11 @@ sys.modules.setdefault(
 sys.modules.setdefault("hydromt.model.processes.meteo", _meteo_stub)
 
 
-class _NoopCtx:
-    def __enter__(self): return self
-    def __exit__(self, *exc): return False
-
-
-_dask_diag_stub = types.SimpleNamespace(ProgressBar=lambda: _NoopCtx())
-sys.modules.setdefault("dask", types.SimpleNamespace(diagnostics=_dask_diag_stub))
-sys.modules.setdefault("dask.diagnostics", _dask_diag_stub)
-
+# Note: dask is NOT stubbed because pandas does a lazy `import dask` and
+# accesses dask.__spec__ during type checks. A SimpleNamespace stub there
+# breaks unrelated test files that import pandas during collection. dask
+# is in the env (pixi-installed), and dask.diagnostics.ProgressBar is a
+# cheap context manager — let the real one run.
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src import extract_historical_climate as ehc  # noqa: E402

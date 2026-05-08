@@ -33,6 +33,12 @@ class _FakeDataCatalog:
         return self
 
 
+# NOTE: don't rely on sys.modules.setdefault('hydromt', ...) here. Other test
+# files (test_extract_historical_climate.py) install their own hydromt stub
+# during collection, so setdefault becomes a no-op and pcdc ends up bound to
+# the wrong DataCatalog. Each fixture below monkeypatches pcdc.hydromt
+# directly per test — guarantees isolation regardless of collection order.
+
 sys.modules.setdefault(
     "hydromt", types.SimpleNamespace(DataCatalog=_FakeDataCatalog)
 )
@@ -42,7 +48,7 @@ from src import prepare_climate_data_catalog as pcdc  # noqa: E402
 
 
 @pytest.fixture
-def era5_like_catalog():
+def era5_like_catalog(monkeypatch):
     """A minimal era5 source dict shaped like hydromt 1.x DataCatalog.to_dict()."""
     _FakeDataCatalog._CATALOG = {
         "era5": {
@@ -57,12 +63,13 @@ def era5_like_catalog():
             "metadata": {"crs": 4326, "category": "meteo"},
         }
     }
+    monkeypatch.setattr(pcdc.hydromt, "DataCatalog", _FakeDataCatalog)
     yield
     _FakeDataCatalog._CATALOG = {}
 
 
 @pytest.fixture
-def chirps_like_catalog():
+def chirps_like_catalog(monkeypatch):
     _FakeDataCatalog._CATALOG = {
         "chirps_global": {
             "data_type": "RasterDataset",
@@ -71,6 +78,7 @@ def chirps_like_catalog():
             "metadata": {"category": "meteo"},
         }
     }
+    monkeypatch.setattr(pcdc.hydromt, "DataCatalog", _FakeDataCatalog)
     yield
     _FakeDataCatalog._CATALOG = {}
 

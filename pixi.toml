@@ -62,6 +62,6 @@ snakemake = "*"
 #     pixi install         # native deps from pixi.toml
 #     pixi run install     # R + Julia layers wired below
 [tasks]
-install-rdeps = { cmd = "Rscript --vanilla dev/scripts/install_weathergenr.R", description = "Install weathergenr from tanerumit/weathergenr@v1.2.0" }
+verify-rdeps  = { cmd = "Rscript --vanilla dev/scripts/install_weathergenr.R", description = "Verify weathergenr v1.2.0 is installed and loadable (no install attempt)" }
 install-julia = { cmd = "julia --project=. -e 'using Pkg; Pkg.instantiate()'", description = "Instantiate the Julia env from Manifest.toml" }
-install       = { depends-on = ["install-rdeps", "install-julia"], description = "One-shot R + Julia install on top of pixi install" }
+install       = { depends-on = ["verify-rdeps", "install-julia"], description = "Verify R deps + instantiate Julia env on top of pixi install" }

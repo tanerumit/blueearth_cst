@@ -1,7 +1,12 @@
 #################### GLOBAL R SETTINGS #########################################
 
-# Set library location (prevents errors if another R.exe is already installed in the system)
-.libPaths(paste0(Sys.getenv("R_HOME"),"/library"))
+# Trust R's default .libPaths(): user lib first (where weathergenr +
+# its native-code dependencies are installed against the system
+# toolchain), then the conda site lib. Forcing conda site lib first
+# breaks weathergenr's load on Windows because its imports resolve
+# from a conda r-base build with an incompatible mingw runtime ABI.
+# M3 followup: build weathergenr against the conda toolchain so the
+# user-lib dependency goes away.
 
 # General options
 options(warn = -1) # Disable warnings

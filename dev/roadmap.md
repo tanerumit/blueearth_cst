@@ -64,6 +64,8 @@ a maintenance branch for that release, not `upstream/main`.
 
 ## M1 — Replication baseline
 
+**Status.** Sealed 2026-05-07. Tag `m01-replication` on `9765e56`.
+
 **Goal.** Get all three Snakemake workflows running end-to-end on the test
 config, on the existing conda environment, and capture their outputs as
 regression fixtures for every later milestone.
@@ -160,6 +162,8 @@ touch `check_baseline.py` or the manifest.
 
 ## M2 — Pixi env + install
 
+**Status.** Sealed 2026-05-07. Tag `m02-pixi` on `681b06b`.
+
 **Goal.** Replace the current conda + ad-hoc R + Julia setup with a single
 declarative environment that reproduces M1 outputs. Pixi is the working
 hypothesis.
@@ -206,6 +210,11 @@ hypothesis.
 ---
 
 ## M2b — Library upgrades
+
+**Status.** Sealed 2026-05-08 — all three workflows validated end-to-end
+on a fresh `pixi install && pixi run install` clone (Windows). Tag
+`m02b-upgrades` lives on `159e197` (baseline re-record); later commits
+are dev-doc refinements only.
 
 **Goal.** Upgrade the four load-bearing libraries to current stable
 versions in one disciplined pass before any workflow-level cleanup

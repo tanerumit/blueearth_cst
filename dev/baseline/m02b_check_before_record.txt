@@ -1,0 +1,27 @@
+FAIL — 8 target(s) differ from manifest:
+  examples/test_local/climate_experiment/model_results/Qstats.csv
+    - sha256 ec425b63484c7a649602e7012f59d06304b8740f3f810f48b7300a76b29bc5e0 vs ed41679f9ee6f1db6b7446710998a5afa42be5ab17c34f630545464d2a9ece15
+  examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary.csv
+    - sha256 7f1ebc87e29f056c0d0b04713e24254b286ed9f7c7d9aec9a47f50afbb0d50a4 vs 49e3ade524d9fcbefae8c32c15d08e50e648279441fc9684d4823b4aa4485628
+  examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary.nc
+    - variable precip min: -44.80647278 vs -40.05957334
+    - variable precip max: 87.6075592 vs 29.16902795
+    - variable precip mean: 3.95689594 vs 1.065216967
+    - variable precip std: 16.12213486 vs 12.54485464
+    - variable precip attrs: {'cell_measures': 'area: areacella', 'cell_methods': 'area: time: mean', 'comment': 'includes both liquid and solid phases', 'long_name': 'Precipitation', 'original_name': 'PRECT', 'standard_name': 'precipitation_flux', 'units': 'kg m-2 s-1'} vs {}
+    - variable spatial_ref dtype: int64 vs int32
+    - variable temp min: -0.02716787159 vs -0.09643431753
+    - variable temp max: 3.491833305 vs 3.80783596
+    - variable temp mean: 1.053504936 vs 1.27728956
+    - variable temp std: 0.8787676807 vs 0.9945073705
+    - variable temp attrs: {'cell_measures': 'area: areacella', 'cell_methods': 'area: time: mean', 'comment': 'near-surface (usually, 2 meter) air temperature', 'long_name': 'Near-Surface Air Temperature', 'original_name': 'TREFHT', 'standard_name': 'air_temperature', 'units': 'K'} vs {}
+  examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary_mean.csv
+    - sha256 89e83942873550c12cd13f8f6d2438b2cf2ae382b32ebc7fa1fde12cbbae4191 vs da0903e343f999784967eb5703ad74ef2f5d0802dd9f2ed29ced7ec4fdeeafc1
+  examples/test_local/config/snake_config_climate_experiment.yml
+    - sha256 ded15183f34c27b5846cca5b8e3061993808e8dc3898778d7ae59145c88aa814 vs 5710d30d642f734f94ebea26caba0f6cb6bac6ceda0f1c21a421134c10514805
+  examples/test_local/config/snake_config_climate_projections.yml
+    - sha256 ded15183f34c27b5846cca5b8e3061993808e8dc3898778d7ae59145c88aa814 vs 8bf0baafef8b95a38af3aa98192799d4054a61ccf80ae688b83b64018b8eddba
+  examples/test_local/config/snake_config_model_creation.yml
+    - sha256 ded15183f34c27b5846cca5b8e3061993808e8dc3898778d7ae59145c88aa814 vs 8bf0baafef8b95a38af3aa98192799d4054a61ccf80ae688b83b64018b8eddba
+  examples/test_local/plots/wflow_model_performance/hydro_wflow_1.png
+    - size 287212 vs 320244 (10.3% drift > 10%)

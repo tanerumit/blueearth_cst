@@ -34,12 +34,12 @@ context so future-you can confirm the issue still applies before fixing.
   hygiene" deliverables.
 
 - **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
-  triage (`dev/m01_warnings.md`) because most rules don't write stderr
+  triage (`dev/m01/warnings.md`) because most rules don't write stderr
   to disk. Once M3's cross-cutting deliverable adds `log:` directives
   to every non-trivial rule across all three Snakefiles, re-run all
   three workflows, sweep the captured logs, and fix any bucket-2
   (config/data-catalog) or bucket-3 (our-code) warnings that surface.
-  Update `dev/m01_warnings.md` (or supersede it with an `m03_*` doc).
+  Update `dev/m01/warnings.md` (or supersede it with an `m03_*` doc).
 
 - **`extract_climate_grid` silently truncates the historical range.**
   When the snake config's `historical:` window asks for years that the
@@ -137,3 +137,80 @@ context so future-you can confirm the issue still applies before fixing.
   *Note:* this fix lives in the weathergenr package, not this repo. Mention
   in M5 deliverables if M5 is also touching the R layer; otherwise track as
   a separate weathergenr issue.
+
+---
+
+## M3+ — Surfaced during M2b (library upgrades)
+
+Items surfaced during the hydromt 0.x → 1.x / hydromt_wflow 0.x → 1.x /
+Wflow.jl 0.7 → 1.0.2 / pandas 3.x / Python 3.12 jump. See `dev/m02b/`
+for the full M2b record.
+
+- **`hydromt 1.x` `to_dict` / `to_yml` silently strips `driver.options.preprocess`.**
+  Round-tripping a catalog dict through `DataCatalog().from_dict(...).to_yml(path)`
+  loses the preprocess hook even though `from_dict` preserves it on read.
+  *Workaround applied:* `src/prepare_climate_data_catalog.py` bypasses
+  `to_yml` and uses `yaml.safe_dump` directly.
+  *Proper fix:* file upstream against `hydromt`. Reproducer is the
+  three-line snippet in `dev/m02b/handoff.md` decision section.
+
+- **conda-forge does not ship `julia` for win-64 at all.** linux-64 / osx-64
+  have 1.10.x and 1.12.x but skip 1.11.x; win-64 has nothing. This blocks the
+  "single env via pixi" goal on Windows for the Julia layer. Today juliaup
+  manages Julia 1.11.7 outside pixi.
+  *Possible fixes:* (a) wait for conda-forge to ship win-64 Julia; (b) wrap
+  juliaup in a pixi `[tasks]` step that calls `juliaup install 1.11.7` at
+  env-setup time; (c) move to a different distribution channel.
+
+- **weathergenr cannot be installed into the conda r-base site-lib on
+  Windows.** `pak::pkg_install(..., lib=R_HOME/library)` and
+  `install.packages(..., lib=R_HOME/library)` both fail at the byte-compile /
+  lazy-load step with `Mingw-w64 runtime failure: 32 bit pseudo relocation
+  ... out of range`. The conda r-base toolchain's mingw runtime is
+  ABI-incompatible with one or more of weathergenr's Imports (likely
+  `ncdf4`) when loaded inside the install transaction. The package itself
+  is pure R; the failure is in the deps it loads at install-time lazy
+  binding.
+  *Workaround applied:* `dev/scripts/install_weathergenr.R` installs without
+  `lib=` so the package lands in `.libPaths()[1]` (user lib on Windows,
+  conda site-lib on Linux). `src/weathergen/global.R` trusts R's default
+  libPaths so the user-lib install is visible at workflow runtime.
+  *Proper fix:* either (a) get weathergenr to compile cleanly against
+  conda r-base on Windows (probably needs an upstream conda-forge fix to
+  the ncdf4 / r-base mingw build), or (b) vendor weathergenr under
+  `vendor/weathergenr/` and install via `R CMD INSTALL` skipping the
+  lazy-load test.
+
+- **`setup_constant_pars` short names → CSDMS Standard Names.** hydromt_wflow
+  1.x's `setup_constant_pars` rejects the short parameter names from 0.x
+  (`Cfmax`, `KsatHorFrac`, `TT`, `TTI`, `TTM`, `WHC`, `G_Cfmax`, `MaxLeakage`,
+  `InfiltCapPath`, …) and requires CSDMS Standard Names instead. M2b dropped
+  13 of the 14 originally-set constants under the "intentional drift,
+  re-baseline aggressively" policy and kept only `KsatHorFrac` (which the
+  build errors without). M3 should map the other 13 to CSDMS names and
+  decide whether to restore them. CSDMS lookup tables in
+  `hydromt_wflow.naming` and `hydromt_wflow.version_upgrade`. Concrete
+  remap in `dev/m02b/handoff.md` decision #3.
+
+- **CMIP6 `precip` / `temp` `.attrs` lost on `monthly_change_scalar_merge`.**
+  Pre-M2b, `annual_change_scalar_stats_summary.nc` carried `cell_measures`,
+  `cell_methods`, `comment`, `long_name`, `original_name`, `standard_name`,
+  `units` on each data variable; under hydromt 1.3, those are now `{}` on
+  the merged output. Documented in `dev/m02b/baseline_diffs.md`.
+  *Investigation:* identify whether `get_change_climate_proj.py` or hydromt
+  drops the attrs during the merge; restore them.
+
+- **Outlet station naming convention decision.** hydromt_wflow 1.x's
+  `setup_outlets` uses subcatchment IDs (e.g. `130000086`, `1`, `2`, …) for
+  outlet stations rather than the contiguous `1..N` of 0.x. The CSV column
+  also renamed `Q_gauges` → `Q_outlets`. M2b's `src/plot_results.py`
+  rebuilds `station_name` as `1..N` to keep `hydro_wflow_1.png` visually
+  stable; M3 should pick a consistent project-wide convention (real
+  subcatchment IDs vs `1..N` rebuild) and document it.
+
+- **Retire the "CMIP6 GCS throughput regression" follow-up.** The original
+  M2b mid-flight estimate was ~6 h for the full 3-model × 2-scenario fetch;
+  the as-shipped run completed in 24 min after the eager `.load()` patch
+  in `src/get_stats_climate_proj.py`. The followup line item was based on
+  the slow path and no longer applies. (No file currently lists it
+  separately — leaving this here as a reminder if it resurfaces.)

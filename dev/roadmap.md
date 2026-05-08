@@ -36,7 +36,7 @@ regression fixtures for every later milestone.
   `config/snake_config_model_test_linux.yml` is **deferred** — see
   "Deferred: Linux replication" at the end of this document.
 - Test-data provenance documented in one bullet at the top of
-  `dev/m01_setup.md`: where the test data lives, how a fresh clone gets
+  `dev/m01/setup.md`: where the test data lives, how a fresh clone gets
   it, and any external mounts or downloads required.
 - A `dev/baseline/` directory containing `manifest.json` — a fingerprint
   of every artifact declared as a `rule all` target across the three
@@ -49,7 +49,7 @@ regression fixtures for every later milestone.
     the committed manifest. Exits non-zero on any mismatch; prints the
     offending variable / statistic so the failure is immediately useful.
 - Triage of warnings emitted during a run, classified into three buckets in
-  a single `dev/m01_warnings.md`. Bucket assignment by stack-frame origin:
+  a single `dev/m01/warnings.md`. Bucket assignment by stack-frame origin:
   1. **Upstream** — frame originates inside any `site-packages/` or
      vendored third-party path (hydromt, xarray, R packages, Julia).
      Accept.
@@ -191,13 +191,13 @@ should land *before* M3-M5 start refactoring against an aging API.
 1. Read each library's CHANGELOG / release notes between current pin
    and latest stable. List target versions, breaking changes that
    touch this repo, and code locations that need fixing. Output:
-   `dev/m02b_audit.md`.
+   `dev/m02b/audit.md`.
 2. Bump versions in `pixi.toml` (refresh `pixi.lock`) and
    `Project.toml` (refresh `Manifest.toml`).
 3. Apply the code fixes the audit identified.
 4. Force-rerun all three workflows on the upgraded env.
 5. Re-baseline `dev/baseline/manifest.json` against the new outputs.
-   Document drift in `dev/m02b_baseline_diffs.md` per target →
+   Document drift in `dev/m02b/baseline_diffs.md` per target →
    variable → statistic where notable. The new manifest is the
    contract for M3 onward.
 
@@ -215,7 +215,7 @@ own a documented diff for it.
 - `pytest tests/` exits 0 (preserved from M2 — 13 passed + 2 xfailed).
 - `dev/baseline/manifest.json` re-recorded; `check_baseline.py check`
   reports zero diffs against itself (re-run determinism preserved).
-- `dev/m02b_audit.md` and `dev/m02b_baseline_diffs.md` checked in.
+- `dev/m02b/audit.md` and `dev/m02b/baseline_diffs.md` checked in.
 
 **Out of scope.**
 - Snakefile/workflow logic refactoring (M3, M4, M5).

@@ -126,6 +126,8 @@ examples/
 
 # R-related files
 /config/reticulate_config.R
+.Rhistory
+.RData
 
 # Images
 *.png

@@ -40,15 +40,31 @@ Not-chosen alternatives, for the record:
 
 ## Scope: target modules
 
-Five modules, ~520 lines of source code total.
+Four modules, ~480 lines of source code total. (Originally five; see
+"Scope adjustments during planning" below.)
 
 | Module                              | Lines | Reason to test now                                                                |
 | ----------------------------------- | ----- | --------------------------------------------------------------------------------- |
 | `prepare_climate_data_catalog.py`   | 132   | Regression test for M2b's `to_yml` workaround (`yaml.safe_dump` bypass).          |
-| `extract_historical_climate.py`     | 181   | Two bugs in followups.md: silent truncation (M3), hardcoded date range (M5).      |
-| `setup_time_horizon.py`             |  97   | Pure date/window math. Deterministic, no I/O. Ideal exemplar.                     |
-| `prepare_build_config.py`           |  42   | Tiny config builder. Cheap pattern demo.                                          |
+| `extract_historical_climate.py`     | 181   | One unit-shaped bug in followups.md: silent truncation (M3 followup).             |
+| `setup_time_horizon.py`             |  97   | Forcing-config YAML builder with chunksize branching. Pure logic + thin hydromt wrap. |
 | `metrics_definition.py`             |  69   | Pure scoring functions. Edge cases (NaN, empty, single-element) are unit-shaped.  |
+
+### Scope adjustments during planning
+
+- **Dropped `prepare_build_config.py`.** Inspecting the source revealed
+  it's a script (top-level code using `snakemake.input.template` etc.),
+  not a function — not unit-testable without an extract-to-function
+  refactor that lives in M3's territory. Defer.
+- **Updated `setup_time_horizon.py` themes.** Module name suggests
+  "date math" but the function `prep_hydromt_update_forcing_config` is
+  actually a forcing-config YAML builder. Real testable logic is the
+  chunksize branches (>1e6 → 1, >2.5e5 → 30, >1e5 → 100, else 365)
+  and the precip-source branching (era5 vs eobs).
+- **Dropped one of three xfails.** The "rule ignores `starttime`/
+  `endtime` from config" issue (M5 followup) is a Snakefile-wiring bug,
+  not a function bug — `prep_historical_climate` itself does honor its
+  params. That belongs in an M5 integration test, not an M02c unit test.
 
 **Out of scope** (deferred to owning milestone):
 
@@ -99,13 +115,12 @@ implementation plan.
 
 | Module                              | Themes                                                                                                                |
 | ----------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `prepare_climate_data_catalog.py`   | preprocess-hook round-trip (xfail), valid model/scenario lookup, missing key handling, output YAML structure          |
-| `extract_historical_climate.py`     | window honored, truncation warning (xfail), starttime/endtime params honored (xfail), missing variable handling       |
-| `setup_time_horizon.py`             | start<end, single-year, multi-year, leap-year boundaries, invalid input rejection                                     |
-| `prepare_build_config.py`           | config dict shape, missing optional keys, nested overrides                                                            |
-| `metrics_definition.py`             | each metric happy path, NaN propagation, empty input, single-element input, mismatched lengths                        |
+| `prepare_climate_data_catalog.py`   | preprocess-hook preserved on write (regression), driver/metadata structure, chirps adds orography, hydromt to_yml round-trip (xfail) |
+| `extract_historical_climate.py`     | era5 path patches chunks under driver.options, driver-as-string conversion, chirps takes precip-only branch, params honored, truncation warning (xfail) |
+| `setup_time_horizon.py`             | precip_source branching (era5/eobs), chunksize branches by staticmaps size, default chunksize without wflow_root, output YAML structure |
+| `metrics_definition.py`             | Q7d_min / Q7d_maxyear on synthetic series, highpulse / lowpulse quantile thresholds, wetmonth_mean / drymonth_mean month-finding, BFI ratio |
 
-Estimated total: **~30–40 tests across five new files.**
+Estimated total: **~30 tests across four new files, two strict xfails.**
 
 ## Bug-driven xfail discipline
 
@@ -115,21 +130,26 @@ fixed in M3 or M5, the test starts passing, `strict=True` flips it to a
 CI failure, and whoever fixed it must remove the marker. This keeps
 known bugs visible without letting the suite rot.
 
-Three xfails introduced by M02c:
+Two xfails introduced by M02c:
 
 | Test                                                                          | xfail until fixed in   | Reference                |
 | ----------------------------------------------------------------------------- | ---------------------- | ------------------------ |
 | `prepare_climate_data_catalog`: `to_yml` round-trip preserves `preprocess`    | M3+ (upstream hydromt) | `dev/followups.md` M2b   |
 | `extract_historical_climate`: warns when extracted window is shorter than ask | M3                     | `dev/followups.md` M3    |
-| `extract_historical_climate`: honors `starttime`/`endtime` params from config | M5                     | `dev/followups.md` M5    |
+
+The third originally-planned xfail (`extract_historical_climate` honors
+`starttime`/`endtime` from config) was dropped during planning — it's
+a Snakefile-wiring bug, not a function bug. The function already honors
+its params; the rule definition hardcodes them. That regression test
+belongs in an M5 integration test.
 
 Pattern follows `tests/test_cli.py` precedent — that file has two strict
 xfails for the same reason (Snakefile cleanups parked for M3).
 
 ## Exit criteria
 
-- Five new test files in `tests/`, one per target module.
-- `pytest tests/` passes, with the three xfails marked strict.
+- Four new test files in `tests/`, one per target module.
+- `pytest tests/` passes, with the two xfails marked strict.
 - All existing tests still pass (`test_cli.py`, `test_model_creation.py`,
   `test_stage_data.py`).
 - The `test_stage_data.py` mocking pattern is documented in a short

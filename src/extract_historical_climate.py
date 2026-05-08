@@ -9,7 +9,7 @@ import hydromt
 from typing import Union
 
 from dask.diagnostics import ProgressBar
-from hydromt.workflows.forcing import temp
+from hydromt.model.processes.meteo import temp
 
 
 def prep_historical_climate(
@@ -108,12 +108,16 @@ def prep_historical_climate(
         dem.to_netcdf(fn_dem, mode="w")
 
     else:
-        # Here we can afford larger chunks as we only extract and save
+        # Here we can afford larger chunks as we only extract and save.
+        # In hydromt 1.x the source schema changed: chunks lives under
+        # driver.options instead of the old top-level driver_kwargs.
         data_catalog_temp = data_catalog.to_dict()
-        if "driver_kwargs" not in data_catalog_temp[clim_source]:
-            data_catalog_temp[clim_source]["driver_kwargs"] = {"chunks": "auto"}
-        else:
-            data_catalog_temp[clim_source]["driver_kwargs"]["chunks"] = "auto"
+        source = data_catalog_temp[clim_source]
+        driver = source.setdefault("driver", {})
+        if isinstance(driver, str):
+            driver = {"name": driver}
+            source["driver"] = driver
+        driver.setdefault("options", {})["chunks"] = "auto"
         data_catalog = hydromt.DataCatalog().from_dict(data_catalog_temp)
 
         ds = data_catalog.get_rasterdataset(

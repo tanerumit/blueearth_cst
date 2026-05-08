@@ -14,10 +14,11 @@ base/<start-point>
         └── milestone/02-pixi-installation  →  tag: m02-pixi
               └── milestone/02b-library-upgrades  →  tag: m02b-upgrades
                     └── milestone/02c-tests             →  tag: m02c-tests
-                          └── milestone/03-model-builder  →  tag: m03-model-builder
-                                └── milestone/04-projections →  tag: m04-projections
-                                      └── milestone/05-experiment →  tag: m05-experiment
-                                            └── milestone/06-refactor →  tag: m06-refactor
+                          └── milestone/02d-contracts       →  tag: m02d-contracts
+                                └── milestone/03-model-builder  →  tag: m03-model-builder
+                                      └── milestone/04-projections →  tag: m04-projections
+                                            └── milestone/05-experiment →  tag: m05-experiment
+                                                  └── milestone/06-refactor →  tag: m06-refactor
 ```
 
 The structure is **vertical-by-workflow**: M3, M4, M5 each take one
@@ -46,9 +47,10 @@ scope.
 stay alive after their tag for late patches or PR prep.
 
 **Stacked, not parallel.** Each milestone branches from the previous
-milestone's tip (not from `base/`). M2b and M2c are intra-milestone
-variants between M2 and M3 — library upgrades and pre-M3 test coverage
-respectively, both landing before the workflow refactors begin.
+milestone's tip (not from `base/`). M2b, M2c, and M2d are
+intra-milestone variants between M2 and M3 — library upgrades, pre-M3
+test coverage, and modularity contracts respectively. All land before
+the workflow refactors begin so that M3-M5 inherit a stable foundation.
 
 **Remotes.**
 - `origin` — your fork (`github.com/<you>/blueearth_cst`).
@@ -329,6 +331,65 @@ coverage-percentage targets, CI workflow setup.
 
 **Tag.** `m02c-tests`. Full design lives in
 `dev/m02c/test-coverage-design.md`.
+
+---
+
+## M2d — Modularity contracts (pre-M3)
+
+**Goal.** Establish per-workflow config contracts so workflows can be
+added, disabled, or replaced in the future without touching others.
+Phase 1 of modularity — formalize boundaries without restructuring
+code. Inserted between M2c and M3 because M3-M5 each refactor a
+workflow's Snakefile and scripts; doing those refactors against a flat
+single-namespace config means each milestone has to decide on the fly
+which keys belong to which workflow. Locking the contract first lets
+M3-M5 inherit it.
+
+**Scope.** Reorganize the snake config into three top-level sections
+(`project`, `shared`, `workflows.<name>`); each Snakefile reads only
+its own section + shared. Per-workflow contract docs at
+`dev/workflows/<name>.md` document owned config keys, input/output
+contracts, and downstream consumers. `enabled:` flag in each workflow
+section as a forward-compat marker (documentary today; operational
+when M6+ adds module composition or a wrapper script).
+
+**Approach.** Distinguish *contracts* (cheap to formalize, last
+forever) from *structure* (expensive to change, defer until needed).
+M02d invests in contracts. Structure stays as-is — still 3 separate
+Snakefiles, still flat `src/`, no Snakemake module composition or
+plugin registry. Migration affects three config files
+(`tests/snake_config_model_test.yml`,
+`config/snake_config_model_test.yml`,
+`config/snake_config_model_test_linux.yml`); user-local `_local.yml`
+files migrate manually via the documented mapping.
+
+**Exit criteria.**
+- Three top-level config sections in place with a checked-in template
+  at `config/snake_config.template.yml`.
+- Three contract docs under `dev/workflows/`.
+- All three Snakefiles read sectioned config; old flat reads removed.
+- Three migrated config files committed.
+- All workflows still run end-to-end on the migrated test config.
+- `check_baseline.py check` reports zero diff (config restructure is
+  organizational only, no scientific change).
+- `pytest tests/` unchanged: 45 passed, 4 xfailed.
+
+**Out of scope.** Operational `enabled:` skip behavior (deferred to M6
+structural refactor); pydantic/jsonschema validation (M3+); cross-
+workflow data path decoupling (M6); Linux/Docker config rewrites
+(deferred per Linux replication parking lot).
+
+**Risks / open questions.**
+- A renamed key the Snakefile still reads under its old name → silent
+  default → baseline drift. Mitigation: per-Snakefile commit
+  boundaries with baseline check between commits; baseline manifest
+  catches any output drift.
+- `workflow.configfiles[0]` requires `--configfile` on the CLI. Verify
+  each invocation path during implementation. (Side benefit: this also
+  delivers part of M3a's "configfile mechanism" sub-item early.)
+
+**Tag.** `m02d-contracts`. Full design lives in
+`dev/m02d/modularity-contracts-design.md`.
 
 ---
 

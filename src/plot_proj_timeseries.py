@@ -65,7 +65,7 @@ gcm_pr_mnref = gcm_pr_mnmn.mean()
 gcm_pr_mnanom = (gcm_pr_mnmn - gcm_pr_mnref) / gcm_pr_mnref * 100
 q_pr_mnanom = gcm_pr_mnanom.quantile([0.05, 0.5, 0.95], axis=1).transpose()
 # annual mean
-gcm_pr_annmn = gcm_pr.resample("A").mean()
+gcm_pr_annmn = gcm_pr.resample("YE").mean()
 q_pr_annmn = gcm_pr_annmn.quantile([0.05, 0.5, 0.95], axis=1).transpose()
 gcm_pr_ref = gcm_pr_annmn.mean()
 gcm_pr_anom = (gcm_pr_annmn - gcm_pr_ref) / gcm_pr_ref * 100
@@ -83,7 +83,7 @@ gcm_tas_mnref = gcm_tas_mnmn.mean()
 gcm_tas_mnanom = gcm_tas_mnmn - gcm_tas_mnref
 q_tas_mnanom = gcm_tas_mnanom.quantile([0.05, 0.5, 0.95], axis=1).transpose()
 # annual mean
-gcm_tas_annmn = gcm_tas.resample("A").mean()
+gcm_tas_annmn = gcm_tas.resample("YE").mean()
 q_tas_annmn = gcm_tas_annmn.quantile([0.05, 0.5, 0.95], axis=1).transpose()
 gcm_tas_ref = gcm_tas_annmn.mean()
 gcm_tas_anom = gcm_tas_annmn - gcm_tas_ref
@@ -191,15 +191,15 @@ for i in range(len(qpr_futmonth)):
 # annual
 for i in range(len(anom_pr_fut)):
     qpr_fut[i] = (
-        pr_fut[i].resample("A").mean().quantile([0.05, 0.5, 0.95], axis=1).transpose()
+        pr_fut[i].resample("YE").mean().quantile([0.05, 0.5, 0.95], axis=1).transpose()
     )
-    anom_pr_fut[i] = (pr_fut[i].resample("A").mean() - fut_pr_ref) / fut_pr_ref * 100
+    anom_pr_fut[i] = (pr_fut[i].resample("YE").mean() - fut_pr_ref) / fut_pr_ref * 100
     qanom_pr_fut[i] = anom_pr_fut[i].quantile([0.05, 0.5, 0.95], axis=1).transpose()
 
     qtas_fut[i] = (
-        tas_fut[i].resample("A").mean().quantile([0.05, 0.5, 0.95], axis=1).transpose()
+        tas_fut[i].resample("YE").mean().quantile([0.05, 0.5, 0.95], axis=1).transpose()
     )
-    anom_tas_fut[i] = tas_fut[i].resample("A").mean() - fut_tas_ref
+    anom_tas_fut[i] = tas_fut[i].resample("YE").mean() - fut_tas_ref
     qanom_tas_fut[i] = anom_tas_fut[i].quantile([0.05, 0.5, 0.95], axis=1).transpose()
 
 # %% Merge and write all timeseries to a single netcdf file

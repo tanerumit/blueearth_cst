@@ -11,40 +11,44 @@ BlueEarth Climate Stress Test toolbox
    Workflow refactoring (R1–R6) starts after this release. See
    ``dev/roadmap.md`` and ``CHANGELOG.md`` for the full picture.
 
-The BlueEarth Climate Stress Test toolbox (blueearth_cst) is a free, open-source, and online toolbox for interactive climate risk assessment based on bottom-up analysis principles.
-The toolbox will enable end-users to: 
+The BlueEarth Climate Stress Test toolbox (``blueearth_cst``) is a
+free, open-source toolkit for interactive climate risk assessment
+based on bottom-up analysis principles. It enables end-users to:
 
- - Explore the range of hydro-climatic uncertainty in a selected geographic area of choice, including natural variability and climate change signals.  
+- Explore the range of hydro-climatic uncertainty in a chosen
+  geographic area, including natural variability and climate-change
+  signals.
+- Design and execute climate stress tests against user-defined
+  thresholds and metrics.
+- Assess the plausibility of identified vulnerabilities using climate
+  model projections — i.e. estimate how sensitive a chosen metric is
+  to climate change.
+- Visualize results for non-specialist audiences.
 
- - Design and execute a climate stress test for the response and vulnerabilities of user-defined thresholds and metrics.  
-
- - Make a judgment on the plausibility of vulnerabilities identified using climate model projections. As such, users should be able to estimate up to what extent the chosen metric or parameter may be sensitive to climate change. 
-
- - Provide a user-friendly tool with visualization elements that satisfy the needs and expectations of non-specialized audiences 
-
-The Climate Stress Tester is part of the BlueEarth_ initiative and uses weathergenr_ as weather generator and Wflow_ for hydrological modelling.
+The toolbox is part of the BlueEarth_ initiative and uses weathergenr_
+as its weather generator and Wflow_ for hydrological modelling.
 
 .. image:: docs/_images/CST_scheme.png
 
-
 .. _BlueEarth: https://blueearth.deltares.org/
-
 .. _weathergenr: https://github.com/Deltares/weathergenr
-
 .. _Wflow: https://github.com/Deltares/Wflow.jl
 
 
 Installation
 ============
-BlueEarth CST is a Python + R + Julia toolbox. Python and R dependencies
-are managed with pixi_; Julia and Wflow.jl are managed via the standard
-``Project.toml`` / ``Manifest.toml``. A single ``pixi run install`` task
-wires both layers together.
 
-For a step-by-step walkthrough of a fresh install, also see ``dev/install.md``.
+``blueearth_cst`` is a Python + R + Julia toolbox. Python and R
+dependencies are managed with pixi_; Julia and Wflow.jl are managed
+via the standard ``Project.toml`` / ``Manifest.toml``. A single
+``pixi run install`` task wires both layers together.
+
+For a step-by-step walkthrough of a fresh install, see
+``dev/install.md``.
 
 Prerequisites
 -------------
+
 1. **pixi** (manages Python 3.14 + R 4.5 via conda-forge).
 
    Windows (PowerShell):
@@ -53,17 +57,19 @@ Prerequisites
 
        iwr -useb https://pixi.sh/install.ps1 | iex
 
-   Or via winget: ``winget install prefix-dev.pixi``. Restart your shell after install.
+   Or via winget: ``winget install prefix-dev.pixi``. Restart your
+   shell after install.
 
-2. **Julia 1.11.x** via juliaup_. conda-forge has no win-64 Julia build, and
-   Wflow.jl 1.0.x deadlocks under Julia 1.12. After installing juliaup:
+2. **Julia 1.11.x** via juliaup_. conda-forge has no win-64 Julia
+   build, and Wflow.jl 1.0.x deadlocks under Julia 1.12. After
+   installing juliaup:
 
    .. code-block:: console
 
        juliaup add 1.11
        juliaup default 1.11
 
-   Verify with ``julia --version`` (expect 1.11.x).
+   Verify with ``julia --version`` (expect ``1.11.x``).
 
 3. Clone the repo:
 
@@ -80,13 +86,14 @@ Install
     pixi install         # Python + R toolchain (conda-forge)
     pixi run install     # weathergenr (R) + Wflow.jl (Julia)
 
-The first command installs everything declared in ``pixi.toml`` into a
-local ``.pixi/`` env. The second runs ``dev/scripts/install_weathergenr.R``
-(installs ``tanerumit/weathergenr@v1.2.0``) and
-``julia --project=. -e 'Pkg.instantiate()'`` (locks Wflow.jl and 130
-transitive Julia deps from ``Manifest.toml``).
+The first command installs everything declared in ``pixi.toml`` into
+a local ``.pixi/`` env. The second runs
+``dev/scripts/install_weathergenr.R`` (installs
+``tanerumit/weathergenr@v1.2.0``) and
+``julia --project=. -e 'using Pkg; Pkg.instantiate()'`` (locks
+Wflow.jl and ~130 transitive Julia deps from ``Manifest.toml``).
 
-To enter the pixi shell with the env activated:
+To activate the env in your shell:
 
 .. code-block:: console
 
@@ -106,8 +113,8 @@ Docker
 
    The instructions below describe the **v0.1.0-alpha** (upstream
    conda-based) Docker workflow and remain valid for users of that
-   release. They do **not** apply to v0.2.0-alpha or later pixi-based
-   releases.
+   release. They do **not** apply to v0.2.0-alpha or later
+   pixi-based releases.
 
 A pre-built image of the v0.1.0-alpha conda-based stack remains
 available at ``containers.deltares.nl/CST/cst_workflows:0.1.0``:
@@ -119,29 +126,56 @@ available at ``containers.deltares.nl/CST/cst_workflows:0.1.0``:
 .. _pixi: https://pixi.sh/
 .. _juliaup: https://github.com/JuliaLang/juliaup
 
+
 Running
 =======
-BlueEarth CST toolbox is based on several workflows developed using Snakemake_ . Three workflows are available:
 
- - **Snakefile_model_creation**: creates a Wflow model based on global data for the selected region and run and analyse the model results for a historical period.
- - **Snakefile_climate_projections**: derives future climate statistics (expected temperature and precipitation change) for different RCPs and GCMs (from CMIP dataset).
- - **Snakefile_climate_experiment**: prepares future weather realizations and climate stress tests and run the realizations with the hydrological model.
+The toolbox provides three Snakemake_ workflows:
 
-To prepare these workflows, you can select the different options for your model region and climate scenario using a config file. An example is available in the folder 
-config/snake_config_model_test.yml.
+- **Snakefile_model_creation** — builds a Wflow model from global
+  data for the selected region and runs / analyses it for a
+  historical period.
+- **Snakefile_climate_projections** — derives future climate
+  statistics (temperature and precipitation change) for a chosen set
+  of CMIP scenarios and GCMs.
+- **Snakefile_climate_experiment** — generates future weather
+  realizations, applies stress-test perturbations, and runs the
+  hydrological model on each realization × stress combination.
 
-You can run each workflow using the ``snakemake`` command line, from within the pixi shell.
+Configuration is YAML-driven. An example is at
+``config/snake_config_model_test.yml``.
 
 Running from pixi shell
 -----------------------
-Activate the pixi env and ``cd`` into the repo:
+
+Activate the env, then invoke ``snakemake`` against the Snakefile and
+config of your choice:
 
 .. code-block:: console
 
     $ pixi shell
     $ cd blueearth_cst
+    $ snakemake all -c 1 -s Snakefile_model_creation \
+        --configfile config/snake_config_model_test.yml
 
-Then run the workflows using the snakemake commands detailed below.
+See the per-workflow sections below for the recommended sequences
+(DAG visualization, unlocking, full run).
+
+Common ``snakemake`` flags:
+
+- ``-s``: which Snakefile to run.
+- ``--configfile``: path to the YAML config.
+- ``-c``: number of cores (more than 1 enables parallelism).
+- ``--dry-run`` (``-n``): list rule executions without running them.
+- ``--unlock``: clear the working-directory lock left by a crash.
+- ``--keep-going`` (``-k``): keep running independent jobs after a
+  failure.
+
+For all options see the
+`Snakemake CLI documentation <https://snakemake.readthedocs.io/en/stable/executing/cli.html>`_.
+More example invocations are in ``run_snake_test.cmd``.
+
+.. _Snakemake: https://snakemake.github.io/
 
 Running from docker image
 -------------------------
@@ -153,71 +187,72 @@ Running from docker image
    fork; deferred per "Deferred: Linux replication" in
    ``dev/roadmap.md``.
 
-A script is available to run via docker: ``run_snake_docker.sh``
+A script is available to run via Docker: ``run_snake_docker.sh``.
 
 Snakefile_model_creation
 ------------------------
-This workflow creates a hydrological wflow model, based on global data for the selected region, and runs and analyses the model results for a historical period.
+
+Builds a hydrological Wflow model and runs / analyses it for a
+historical period.
 
 .. code-block:: console
 
-    $ snakemake -s Snakefile_model_creation --configfile config/snake_config_model_test.yml  --dag | dot -Tpng > dag_all.png
+    $ snakemake -s Snakefile_model_creation --configfile config/snake_config_model_test.yml --dag | dot -Tpng > dag_model.png
     $ snakemake --unlock -s Snakefile_model_creation --configfile config/snake_config_model_test.yml
     $ snakemake all -c 1 -s Snakefile_model_creation --configfile config/snake_config_model_test.yml
 
-The first line will activate your environment, the second creates a picture file recapitulating the different steps of the workflow, the third will if needed unlock your directory 
-in order to save the future results of the workflow, and the fourth line runs the workflow (here for model creation).
-
-With snakemake command line, you can use different options:
-
-- **-s**: selection of the snakefile (workflow) to run (see list above).
-- **--config-file**: name of the config file with the model and climate options.
-- **-c**: number of cores to use to run the workflows (if more than 1, the workflow will be parallelized).
-- **--dry-run**: returns the list of steps (rules) in the workflow that will be run, without actually running it.
-
-There are many other options available, you can learn more in the `Snakemake CLI documentation <https://snakemake.readthedocs.io/en/stable/executing/cli.html>`_
-
-More examples of how to run the workflows are available in the file run_snake_test.cmd .
-
-.. _Snakemake: https://snakemake.github.io/
+The first command generates a DAG visualization (requires Graphviz's
+``dot``). The second clears any leftover working-directory lock from
+a prior crash. The third runs the workflow.
 
 Snakefile_climate_projections
 -----------------------------
-This workflow derives future climate statistics (expected temperature and precipitation change) for different RCPs and GCMs (from CMIP dataset).
+
+Derives future climate statistics (expected temperature and
+precipitation change) for selected CMIP scenarios and GCMs.
 
 .. code-block:: console
 
-    $ snakemake --unlock -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml
     $ snakemake -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --dag | dot -Tpng > dag_projections.png
-    $ snakemake all -c 1 -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --keep-going 
+    $ snakemake --unlock -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml
+    $ snakemake all -c 1 -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --keep-going
 
 Snakefile_climate_experiment
 ----------------------------
-This workflow prepares future weather realizations and climate stress tests and run the realizations with the hydrological model.
-Finally it derives the results of the stress test and the model run.
+
+Prepares future weather realizations and stress-test perturbations,
+runs them through the hydrological model, and aggregates the
+discharge statistics.
 
 .. code-block:: console
 
-    $ snakemake -s Snakefile_climate_experiment --configfile config/snake_config_model_test.yml  --dag | dot -Tpng > dag_climate.png
+    $ snakemake -s Snakefile_climate_experiment --configfile config/snake_config_model_test.yml --dag | dot -Tpng > dag_experiment.png
     $ snakemake --unlock -s Snakefile_climate_experiment --configfile config/snake_config_model_test.yml
     $ snakemake all -c 1 -s Snakefile_climate_experiment --configfile config/snake_config_model_test.yml
+
 
 Documentation
 =============
 
-User-facing documentation:
+User-facing:
 
-- Jupyter notebooks explaining each workflow are in ``docs/notebooks/``
-  (inherited from `upstream <https://github.com/Deltares/blueearth_cst/tree/main/docs/notebooks>`_).
-- ``docs/`` also contains hydromt architecture and user guide content.
+- **Notebooks** — Jupyter notebooks explaining each workflow live
+  under ``docs/notebooks/`` (inherited from the
+  `upstream repository <https://github.com/Deltares/blueearth_cst/tree/main/docs/notebooks>`_).
+- **HydroMT references** — ``docs/`` also contains HydroMT
+  architecture and user-guide content.
 
-Fork-specific development docs:
+Fork-specific (development):
 
-- ``dev/roadmap.md`` — milestone roadmap, branching/tagging conventions, commit strategy.
+- ``dev/roadmap.md`` — milestone roadmap, branching / tagging
+  conventions, commit strategy.
 - ``dev/install.md`` — step-by-step install walkthrough.
-- ``dev/phase-1/`` — sealed foundation milestone artifacts (audits, plans, baseline diffs).
-- ``dev/r01/``, ``dev/r02/`` — active Phase 2 milestone designs (modularity contracts, naming conventions).
+- ``dev/phase-1/`` — sealed foundation milestone artifacts (audits,
+  plans, baseline diffs).
+- ``dev/r01/``, ``dev/r02/`` — active Phase 2 milestone designs
+  (modularity contracts, naming conventions).
 - ``CHANGELOG.md`` — release history.
+
 
 Publishing
 ==========
@@ -228,20 +263,19 @@ Docker
 .. warning::
 
    **v0.1.0-alpha only.** The build / tag / push instructions below
-   correspond to the upstream Deltares container registry workflow
-   for the conda-based stack. Docker publishing is **deferred** in
-   the v0.2.0-alpha pixi-based fork — see "Deferred: Linux replication"
-   in ``dev/roadmap.md``. They will be re-introduced in a later Phase 2
+   describe the upstream Deltares container registry workflow for
+   the conda-based stack. Docker publishing is **deferred** in the
+   v0.2.0-alpha pixi-based fork — see "Deferred: Linux replication"
+   in ``dev/roadmap.md``. It will be re-introduced in a later Phase 2
    milestone.
 
-The entire workflow is contained in one docker image at the base level.
-Build it using:
+The entire workflow is contained in one Docker image. Build it:
 
 .. code-block:: console
 
     docker build -t cst-workflow:0.0.1 .
 
-Tag and push the image to a new ``<<Tag>>`` using:
+Tag and push it under a new ``<<Tag>>``:
 
 .. code-block:: console
 
@@ -249,20 +283,21 @@ Tag and push the image to a new ``<<Tag>>`` using:
     docker tag cst-workflow:0.0.1 containers.deltares.nl/CST/cst_workflows:<<Tag>>
     docker push containers.deltares.nl/CST/cst_workflows:<<Tag>>
 
+
 License
 =======
 
-Copyright (c) 2021, Deltares
+Copyright (c) 2021, Deltares.
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
 the Free Software Foundation, either version 3 of the License, or
 (at your option) any later version.
 
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+General Public License for more details.
 
 You should have received a copy of the GNU General Public License
-along with this program.  If not, see <https://www.gnu.org/licenses/>.
+along with this program. If not, see https://www.gnu.org/licenses/.

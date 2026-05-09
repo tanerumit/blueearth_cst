@@ -216,12 +216,35 @@ plan will produce a complete table; this is a sample.
 
 ## Verification
 
-- All three workflows run end-to-end on the migrated test config.
-- `pixi run python dev/scripts/check_baseline.py check` →
-  **zero diff**. Config restructure is organizational only; no
-  scientific change.
-- `pixi run pytest tests/` → 45 passed, 4 xfailed (unchanged from
-  M02c). The 2 test_cli xfails stay until M3a fixes them.
+Three independent checks. Each validates a different layer.
+
+**1. Parse + dry-run.** Each Snakefile parses cleanly under the new
+schema and dry-runs without `KeyError`.
+
+**2. Unit tests.** `pixi run pytest tests/` → 45 passed, 4 xfailed
+(unchanged from M02c). Catches the `tests/conftest.py` fixture
+migration and any test that loads the test config dict.
+
+**3. Scientific-output baseline.** Run all three workflows end-to-end
+against the migrated test config (passing `--project-dir` explicitly).
+`pixi run python dev/scripts/check_baseline.py check --project-dir <dir>`
+must report **zero diff on scientific targets** (netCDF / CSV / PNG
+artifacts).
+
+### Expected diff: copied config snapshots
+
+`Snakefile_*` each have a `rule copy_config` that writes the raw snake
+config text into `{project_dir}/config/snake_config_<workflow>.yml`,
+and `dev/scripts/check_baseline.py` includes those YAML files as
+manifest targets (lines 58, 66, 70). Because M02d changes the config
+schema, those copied YAML hashes change. **This is expected
+organizational drift, not scientific drift.** Document it in
+`dev/m02d/baseline_diffs.md` and re-record the manifest with the new
+YAML hashes; the netCDF / CSV / PNG hashes remain identical.
+
+This is the same policy M2b used: scientific targets gate the
+milestone; organizational targets are re-baselined with a written
+diff note.
 
 ## Out of scope
 

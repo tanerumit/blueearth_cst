@@ -1,7 +1,17 @@
 BlueEarth Climate Stress Test toolbox
 #####################################
 
-The BlueEarth Climate Stress Test toolbox (blueearth_cst) is a free, open-source, and online toolbox for interactive climate risk assessment based on bottom-up analysis principles. 
+.. note::
+
+   **Fork status (v0.2.0-alpha).** This is a personal fork of
+   `Deltares/blueearth_cst <https://github.com/Deltares/blueearth_cst>`_
+   under active refactoring. Foundation work — replication baseline,
+   pixi-based env, library upgrades (hydromt 1.x, Wflow.jl 1.0.x),
+   Python 3.14, and unit-test coverage — is sealed at ``v0.2.0-alpha``.
+   Workflow refactoring (R1–R6) starts after this release. See
+   ``dev/roadmap.md`` and ``CHANGELOG.md`` for the full picture.
+
+The BlueEarth Climate Stress Test toolbox (blueearth_cst) is a free, open-source, and online toolbox for interactive climate risk assessment based on bottom-up analysis principles.
 The toolbox will enable end-users to: 
 
  - Explore the range of hydro-climatic uncertainty in a selected geographic area of choice, including natural variability and climate change signals.  
@@ -31,9 +41,11 @@ are managed with pixi_; Julia and Wflow.jl are managed via the standard
 ``Project.toml`` / ``Manifest.toml``. A single ``pixi run install`` task
 wires both layers together.
 
+For a step-by-step walkthrough of a fresh install, also see ``dev/install.md``.
+
 Prerequisites
 -------------
-1. **pixi** (manages Python + R via conda-forge).
+1. **pixi** (manages Python 3.14 + R 4.5 via conda-forge).
 
    Windows (PowerShell):
 
@@ -43,7 +55,15 @@ Prerequisites
 
    Or via winget: ``winget install prefix-dev.pixi``. Restart your shell after install.
 
-2. **Julia 1.12+** from https://julialang.org/downloads/. Make sure ``julia`` is on ``PATH``.
+2. **Julia 1.11.x** via juliaup_. conda-forge has no win-64 Julia build, and
+   Wflow.jl 1.0.x deadlocks under Julia 1.12. After installing juliaup:
+
+   .. code-block:: console
+
+       juliaup add 1.11
+       juliaup default 1.11
+
+   Verify with ``julia --version`` (expect 1.11.x).
 
 3. Clone the repo:
 
@@ -74,16 +94,18 @@ To enter the pixi shell with the env activated:
 
 Docker
 ------
-A pixi-based image is defined in ``Dockerfile``. End-to-end Linux/Docker
-validation is currently deferred per ``dev/roadmap.md`` ("Deferred:
-Linux replication"); the file builds but is not exercised. A pre-built
-image of an earlier (conda-based) release remains available at:
+A pixi-based ``Dockerfile`` is included but Docker / Linux end-to-end
+validation is currently **deferred** in this fork — see
+"Deferred: Linux replication" in ``dev/roadmap.md``. The file builds
+against the pixi env but is not exercised in CI.
 
-.. code-block:: console
-
-    docker pull https://containers.deltares.nl/CST/cst_workflows:0.1.0
+A pre-built image of an earlier (conda-based) Deltares release remains
+available at ``containers.deltares.nl/CST/cst_workflows:0.1.0`` and
+corresponds to the upstream conda-based stack, not this fork's
+pixi-based v0.2.x line.
 
 .. _pixi: https://pixi.sh/
+.. _juliaup: https://github.com/JuliaLang/juliaup
 
 Running
 =======
@@ -163,25 +185,19 @@ Finally it derives the results of the stress test and the model run.
 Documentation
 =============
 
-We do not yet have a detailed documentation but you can find Jupyter Notebooks explaining in details how to run each workflow and
-what are the expected inputs and outputs. You can find these examples in the folder **docs/notebooks** or your downloaded version of the toolbox.
-Or online for the `latest version <https://github.com/Deltares/blueearth_cst/tree/main/docs/notebooks>`_.
+User-facing documentation:
 
-Publishing
-==========
+- Jupyter notebooks explaining each workflow are in ``docs/notebooks/``
+  (inherited from `upstream <https://github.com/Deltares/blueearth_cst/tree/main/docs/notebooks>`_).
+- ``docs/`` also contains hydromt architecture and user guide content.
 
-Docker
-------
+Fork-specific development docs:
 
-The entire workflow is contained in one docker image at the base level. Build it using:
-.. code-block:: console
-    docker build -t cst-workflow:0.0.1 .
-
-Tag and push the image to a new <<Tag>> using:
-.. code-block:: console
-    docker login -u <<deltares_email>> -p <<cli_secret>> https://containers.deltares.nl
-    docker tag cst-workflow:0.0.1 https://containers.deltares.nl/CST/cst_workflows:<<Tag>>
-    docker push https://containers.deltares.nl/CST/cst_workflows:<<Tag>>
+- ``dev/roadmap.md`` — milestone roadmap, branching/tagging conventions, commit strategy.
+- ``dev/install.md`` — step-by-step install walkthrough.
+- ``dev/phase-1/`` — sealed foundation milestone artifacts (audits, plans, baseline diffs).
+- ``dev/r01/``, ``dev/r02/`` — active Phase 2 milestone designs (modularity contracts, naming conventions).
+- ``CHANGELOG.md`` — release history.
 
 License
 =======

@@ -15,10 +15,11 @@ base/<start-point>
               └── milestone/02b-library-upgrades  →  tag: m02b-upgrades
                     └── milestone/02c-tests             →  tag: m02c-tests
                           └── milestone/02d-contracts       →  tag: m02d-contracts
-                                └── milestone/03-model-builder  →  tag: m03-model-builder
-                                      └── milestone/04-projections →  tag: m04-projections
-                                            └── milestone/05-experiment →  tag: m05-experiment
-                                                  └── milestone/06-refactor →  tag: m06-refactor
+                                └── milestone/02e-naming        →  tag: m02e-naming
+                                      └── milestone/03-model-builder  →  tag: m03-model-builder
+                                            └── milestone/04-projections →  tag: m04-projections
+                                                  └── milestone/05-experiment →  tag: m05-experiment
+                                                        └── milestone/06-refactor →  tag: m06-refactor
 ```
 
 The structure is **vertical-by-workflow**: M3, M4, M5 each take one
@@ -47,10 +48,11 @@ scope.
 stay alive after their tag for late patches or PR prep.
 
 **Stacked, not parallel.** Each milestone branches from the previous
-milestone's tip (not from `base/`). M2b, M2c, and M2d are
+milestone's tip (not from `base/`). M2b, M2c, M2d, and M2e are
 intra-milestone variants between M2 and M3 — library upgrades, pre-M3
-test coverage, and modularity contracts respectively. All land before
-the workflow refactors begin so that M3-M5 inherit a stable foundation.
+test coverage, modularity contracts, and naming conventions
+respectively. All land before the workflow refactors begin so that
+M3-M5 inherit a stable foundation.
 
 **Remotes.**
 - `origin` — your fork (`github.com/<you>/blueearth_cst`).
@@ -390,6 +392,58 @@ workflow data path decoupling (M6); Linux/Docker config rewrites
 
 **Tag.** `m02d-contracts`. Full design lives in
 `dev/m02d/modularity-contracts-design.md`.
+
+---
+
+## M2e — Naming conventions (pre-M3)
+
+**Goal.** Single prescriptive style guide at `dev/conventions/naming.md`
+for naming identifiers and files across the repo. Pure docs; no code
+refactoring. M3+ apply the conventions when touching code; existing
+names are grandfathered. Inserted between M2d and M3 because M3-M5 add
+new identifiers along the way (helper functions, fixtures, wildcards,
+config keys), and locking the convention first prevents each milestone
+from re-deciding naming on the fly.
+
+**Scope.** `dev/conventions/naming.md` (< 250 lines, prescriptive
+`MUST` / `SHOULD` / `MAY` voice) + a one-line pointer in `CLAUDE.md`.
+Covers: universal case (snake_case, lowercase acronyms,
+`UPPER_SNAKE_CASE` constants), per-language rules (Python PEP 8, R
+snake_case not dot.case, Snakemake snake_case rules, YAML snake_case
+keys), path-identifier suffix (`_path` canonical; `_fn`/`_fid`/`_file`
+deprecated), Snakemake wildcard vocabulary (`model`, `scenario`,
+`horizon`, `rlz_num`, `st_num`), suffix vocabulary (`_dir`, `_path`,
+`_nc`, `_csv`, etc.), domain identifiers that DO NOT get normalized
+(Wflow / HydroMT / CMIP / CSDMS / weathergenr / scientific variable
+names), and a "do not rename without migration note" list.
+
+**Approach.** Prescriptive but lenient: opinionated where the
+codebase is currently mixed, lenient where external conventions take
+precedence. Two framings: (1) local style vs upstream contract —
+local style does not apply to identifiers governed by external
+systems; (2) grandfathered today, applied tomorrow — M2e itself
+produces zero code diffs.
+
+**Exit criteria.**
+- `dev/conventions/naming.md` exists, < 250 lines, prescriptive.
+- `CLAUDE.md` has a one-line pointer to the naming doc.
+- `pixi run pytest tests/` unchanged (no behavior change).
+- No code files modified in M2e.
+
+**Out of scope.** Branch / commit / PR conventions (in this roadmap);
+output path conventions (in M02d contract docs); refactoring existing
+names to conform (M3+); linter / CI enforcement (future M3+ followup);
+per-language style guides (function lengths, comment conventions).
+
+**Risks / open questions.**
+- Style guide rot if not enforced. Mitigation: M3-M5 reference
+  `dev/conventions/naming.md` in commit messages when adding new
+  identifiers; future linter is a possible followup.
+- Section 6 (domain identifiers) and section 4 (wildcard vocabulary)
+  will grow as new tools / workflows enter scope. Doc is living.
+
+**Tag.** `m02e-naming`. Full design lives in
+`dev/m02e/naming-conventions-design.md`.
 
 ---
 

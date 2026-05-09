@@ -94,15 +94,27 @@ To enter the pixi shell with the env activated:
 
 Docker
 ------
-A pixi-based ``Dockerfile`` is included but Docker / Linux end-to-end
-validation is currently **deferred** in this fork — see
-"Deferred: Linux replication" in ``dev/roadmap.md``. The file builds
-against the pixi env but is not exercised in CI.
 
-A pre-built image of an earlier (conda-based) Deltares release remains
-available at ``containers.deltares.nl/CST/cst_workflows:0.1.0`` and
-corresponds to the upstream conda-based stack, not this fork's
-pixi-based v0.2.x line.
+.. warning::
+
+   **Not supported in v0.2.0-alpha.** Docker / Linux end-to-end
+   validation is **deferred** in this fork — see
+   "Deferred: Linux replication" in ``dev/roadmap.md``. The
+   ``Dockerfile`` builds against the pixi env but is not exercised
+   in CI. Docker support will be re-introduced in a later Phase 2
+   milestone.
+
+   The instructions below describe the **v0.1.0-alpha** (upstream
+   conda-based) Docker workflow and remain valid for users of that
+   release. They do **not** apply to v0.2.0-alpha or later pixi-based
+   releases.
+
+A pre-built image of the v0.1.0-alpha conda-based stack remains
+available at ``containers.deltares.nl/CST/cst_workflows:0.1.0``:
+
+.. code-block:: console
+
+    docker pull containers.deltares.nl/CST/cst_workflows:0.1.0
 
 .. _pixi: https://pixi.sh/
 .. _juliaup: https://github.com/JuliaLang/juliaup
@@ -133,7 +145,15 @@ Then run the workflows using the snakemake commands detailed below.
 
 Running from docker image
 -------------------------
-A script is available to run via docker: `run_snake_docker.sh`
+
+.. warning::
+
+   **v0.1.0-alpha only.** ``run_snake_docker.sh`` targets the upstream
+   conda-based image. Not supported on the v0.2.0-alpha pixi-based
+   fork; deferred per "Deferred: Linux replication" in
+   ``dev/roadmap.md``.
+
+A script is available to run via docker: ``run_snake_docker.sh``
 
 Snakefile_model_creation
 ------------------------
@@ -198,6 +218,36 @@ Fork-specific development docs:
 - ``dev/phase-1/`` — sealed foundation milestone artifacts (audits, plans, baseline diffs).
 - ``dev/r01/``, ``dev/r02/`` — active Phase 2 milestone designs (modularity contracts, naming conventions).
 - ``CHANGELOG.md`` — release history.
+
+Publishing
+==========
+
+Docker
+------
+
+.. warning::
+
+   **v0.1.0-alpha only.** The build / tag / push instructions below
+   correspond to the upstream Deltares container registry workflow
+   for the conda-based stack. Docker publishing is **deferred** in
+   the v0.2.0-alpha pixi-based fork — see "Deferred: Linux replication"
+   in ``dev/roadmap.md``. They will be re-introduced in a later Phase 2
+   milestone.
+
+The entire workflow is contained in one docker image at the base level.
+Build it using:
+
+.. code-block:: console
+
+    docker build -t cst-workflow:0.0.1 .
+
+Tag and push the image to a new ``<<Tag>>`` using:
+
+.. code-block:: console
+
+    docker login -u <<deltares_email>> -p <<cli_secret>> https://containers.deltares.nl
+    docker tag cst-workflow:0.0.1 containers.deltares.nl/CST/cst_workflows:<<Tag>>
+    docker push containers.deltares.nl/CST/cst_workflows:<<Tag>>
 
 License
 =======

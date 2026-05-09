@@ -73,7 +73,7 @@ def prepare_clim_data_catalog(
 
     # Add local orography for chirps resolution
     if source_like in ("chirps", "chirps_global"):
-        fn_oro = Path(fns[0], resolve_path=True)
+        fn_oro = Path(fns[0]).resolve()
         fn_oro = os.path.join(
             os.path.dirname(fn_oro),
             "..",
@@ -82,7 +82,7 @@ def prepare_clim_data_catalog(
             "raw_data",
             f"{source_like}_orography.nc",
         )
-        fn_oro = Path(fn_oro, resolve_path=True)
+        fn_oro = Path(fn_oro).resolve()
         climate_data_dict[f"{source_like}_orography"] = {
             "data_type": "RasterDataset",
             "uri": str(fn_oro),

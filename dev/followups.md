@@ -33,26 +33,6 @@ context so future-you can confirm the issue still applies before fixing.
   actually run pytest. Both belong to R3's "tighten ruleorder + Snakefile
   hygiene" deliverables.
 
-- **`Path(fn, resolve_path=True)` is a non-existent kwarg in
-  `src/prepare_climate_data_catalog.py:76,85`.** Surfaced 2026-05-08 by
-  M02c tests via pytest deprecation warnings:
-  *"support for supplying keyword arguments to pathlib.PurePath is
-  deprecated and scheduled for removal in Python 3.14"*. `Path()` does
-  not accept `resolve_path`; it is silently swallowed today, which means
-  the orography-path resolution the author intended **is not happening**.
-  The two lines:
-  ```python
-  fn_oro = Path(fns[0], resolve_path=True)
-  ...
-  fn_oro = Path(fn_oro, resolve_path=True)
-  ```
-  *Fix:* replace with `Path(fns[0]).resolve()` and `Path(fn_oro).resolve()`.
-  Hard deadline: Python 3.14 (currently capped at 3.12 in `pixi.toml`,
-  but the cap will lift eventually). Existing M02c tests
-  (`test_chirps_source_adds_orography_entry`,
-  `test_processing_metadata_mentions_chirps_and_era5_for_chirps_source`)
-  exercise the affected path and will catch behavior changes.
-
 - **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
   triage (`dev/phase-1/m01/warnings.md`) because most rules don't write stderr
   to disk. Once R3's cross-cutting deliverable adds `log:` directives

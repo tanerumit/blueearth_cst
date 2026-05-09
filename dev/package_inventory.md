@@ -28,7 +28,7 @@ Generated 2026-05-08, against `milestone/02b-library-upgrades` HEAD.
   to a conda r-base toolchain ABI issue.
 - **Rtools:** **Not a declared dependency.** mingw is pulled
   transitively by conda's r-base on Windows; the only mentions in the
-  repo are two M3 followup comments.
+  repo are two R3 followup comments.
 
 ---
 
@@ -142,7 +142,7 @@ handles them). No other top-level Julia deps to track.
 
 | Item             | Status                                                                                                                                                                                                                                     | Notes                                                                                                                                                                                                                                                                                                                                                          |
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Julia 1.11.7      | Managed by `juliaup` outside pixi. Snakefiles call `julia +1.11.7 ...`.                                                                                                                                                                    | conda-forge does **not** ship win-64 julia (linux-64 / osx-64 only, and even there it skips 1.11.x — 1.10 and 1.12 only, 1.12 broken for Wflow.jl per #884). Staying on juliaup is the only working setup until conda-forge ships 1.11 for Windows. M3 followup.                                                                                              |
+| Julia 1.11.7      | Managed by `juliaup` outside pixi. Snakefiles call `julia +1.11.7 ...`.                                                                                                                                                                    | conda-forge does **not** ship win-64 julia (linux-64 / osx-64 only, and even there it skips 1.11.x — 1.10 and 1.12 only, 1.12 broken for Wflow.jl per #884). Staying on juliaup is the only working setup until conda-forge ships 1.11 for Windows. R3 followup.                                                                                              |
 | weathergenr 1.2.0 | Installed via `pixi run install-rdeps` (calls `dev/scripts/install_weathergenr.R` → `pak::pkg_install("tanerumit/weathergenr@v1.2.0")`). Lands in `.libPaths()[1]` — user lib on Windows, conda site-lib on Linux. Idempotent on rerun. | The install **command** is pixi-driven (so "everything upfront via pixi" holds at the command level). On Windows the **package itself** ends up in user lib because the conda r-base toolchain hits `Mingw-w64 runtime failure` when byte-compiling weathergenr's namespace against conda r-* deps. Loaded at workflow runtime via R's default `.libPaths()`. |
 
 ---
@@ -156,7 +156,7 @@ handles them). No other top-level Julia deps to track.
 The only references are two M2b-era comments noting it as a future
 followup:
 
-- `dev/scripts/install_weathergenr.R:18` — comment about a possible M3
+- `dev/scripts/install_weathergenr.R:18` — comment about a possible R3
   refactor "build weathergenr against the conda toolchain (likely
   needs `m2w64-toolchain` in pixi.toml)".
 - `src/weathergen/global.R:7` — comment explaining why we trust

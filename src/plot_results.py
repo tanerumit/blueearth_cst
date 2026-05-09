@@ -143,7 +143,7 @@ def analyse_wflow_historical(
 
     # Climate data P, EP, T at the subcatchment scale — only present if those
     # outputs were configured in setup_gauges_and_outputs / wflow_outvars. With
-    # the M2b CSDMS rename, configuring them is M3 territory; skip cleanly when
+    # the M2b CSDMS rename, configuring them is R3 territory; skip cleanly when
     # absent so the hydrograph plot still ships.
     clim_keys = ("P_subcatchment", "T_subcatchment", "EP_subcatchment")
     if all(k in results for k in clim_keys):

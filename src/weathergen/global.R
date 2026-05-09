@@ -5,7 +5,7 @@
 # toolchain), then the conda site lib. Forcing conda site lib first
 # breaks weathergenr's load on Windows because its imports resolve
 # from a conda r-base build with an incompatible mingw runtime ABI.
-# M3 followup: build weathergenr against the conda toolchain so the
+# R3 followup: build weathergenr against the conda toolchain so the
 # user-lib dependency goes away.
 
 # General options

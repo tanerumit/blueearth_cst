@@ -14,14 +14,14 @@ config_fn = join(TESTDIR, "snake_config_model_test.yml")
 # dry-run on the test config — climate_projections needs region.geojson
 # from model_creation (cross-Snakefile dependency); climate_experiment
 # trips a CyclicGraphException at rule generate_climate_stress_test.
-# Both are pre-M2 failures and live in M3's territory (Snakefile cleanup,
-# ruleorder). Tracked in dev/followups.md under M3.
+# Both are pre-M2 failures and live in R3's territory (Snakefile cleanup,
+# ruleorder). Tracked in dev/followups.md under R3.
 _snakefiles = [
     "Snakefile_model_creation",
     pytest.param("Snakefile_climate_projections",
-                 marks=pytest.mark.xfail(reason="M3 followup: missing input cross-Snakefile dep", strict=True)),
+                 marks=pytest.mark.xfail(reason="R3 followup: missing input cross-Snakefile dep", strict=True)),
     pytest.param("Snakefile_climate_experiment",
-                 marks=pytest.mark.xfail(reason="M3 followup: cyclic dependency at generate_climate_stress_test", strict=True)),
+                 marks=pytest.mark.xfail(reason="R3 followup: cyclic dependency at generate_climate_stress_test", strict=True)),
 ]
 
 

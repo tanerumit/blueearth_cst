@@ -3,7 +3,7 @@
 Note: module name is misleading. The function builds a hydromt update YAML
 for adding forcing to a wflow model; testable surface is the chunksize
 branching by staticmaps size and the precip-source branching (era5/eobs).
-M3 may rename the module; tests pin behavior, not names.
+R3 may rename the module; tests pin behavior, not names.
 """
 from __future__ import annotations
 

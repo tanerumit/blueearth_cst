@@ -3,13 +3,13 @@
 **Date.** 2026-05-09.
 
 **Scope.** Review of `dev/r02/naming-conventions-design.md` against the
-current repository, the R01 config-contract plan, and the M3-M6 cleanup
+current repository, the R01 config-contract plan, and the R3-R6 cleanup
 roadmap.
 
 ## Summary
 
 The R02 design is useful and well-timed. A short prescriptive naming guide
-before M3-M5 will prevent workflow refactors from inventing local conventions
+before R3-R5 will prevent workflow refactors from inventing local conventions
 one file at a time. The strongest parts are the grandfathering policy, the
 explicit upstream/domain escape hatch, the `_path` direction for new path
 variables, and the "do not rename without migration note" rule for baseline
@@ -38,9 +38,9 @@ I recommend tightening the design before execution in four areas:
   catalog source names, CMIP IDs, CSDMS names, and weathergenr names should
   remain externally compatible even when they violate local style.
 - **`_path` as the new canonical path suffix is a good direction.** The
-  current code mixes `_fn`, `_fid`, `_file`, and unlabeled strings. M3-M5 can
+  current code mixes `_fn`, `_fid`, `_file`, and unlabeled strings. R3-R5 can
   improve readability incrementally without broad renames.
-- **The wildcard vocabulary table is valuable.** It gives M3-M5 a target for
+- **The wildcard vocabulary table is valuable.** It gives R3-R5 a target for
   cleaning the existing `st_num` / `st_num2` inconsistency and for avoiding
   new ad hoc wildcard names.
 - **The migration-note requirement is exactly the right safeguard.** Rule-all
@@ -66,7 +66,7 @@ But the existing dev docs use hyphenated names:
 Recommendation: make the final guide explicit:
 
 - Python modules and R scripts: `snake_case`.
-- Snakemake entry points: keep existing `Snakefile_<workflow>` until M6
+- Snakemake entry points: keep existing `Snakefile_<workflow>` until R6
   decides on workflow layout.
 - Markdown planning docs under `dev/`: allow `kebab-case` because that is
   already the dominant milestone-doc convention.
@@ -93,7 +93,7 @@ Recommendation: distinguish:
   `climate_catalog_path`.
 
 Existing `RLZ_NUM`, `ST_NUM`, and `DATA_SOURCES` can remain grandfathered.
-For new M3+ code, avoid blessing that pattern.
+For new R3+ code, avoid blessing that pattern.
 
 ### 3. Do not let suffixes mean both path and object
 
@@ -192,7 +192,7 @@ readers.
   unused wildcard rather than waiting for a later workflow to invent it.
 - The outlet station naming decision in `dev/followups.md` is not purely a
   style issue; it affects output filenames and user interpretation. Keep that
-  as an M3 behavioral/contract decision, not a naming-guide-only decision.
+  as an R3 behavioral/contract decision, not a naming-guide-only decision.
 - The guide should say that external scientific abbreviations are allowed in
   user-facing output filenames when they are established domain vocabulary,
   e.g. `Qstats.csv`, `Tlow`, `Tpeak`.

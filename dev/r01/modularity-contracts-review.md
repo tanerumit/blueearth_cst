@@ -14,7 +14,7 @@ The roadmap is directionally strong. The sequence is risk-aware:
 replicate and fingerprint first, migrate the environment second, upgrade
 load-bearing libraries before refactoring, add unit tests before touching
 workflow internals, then formalize config contracts before the workflow-by-
-workflow cleanup in M3-M5. That is the right order for a scientific
+workflow cleanup in R3-R5. That is the right order for a scientific
 workflow where output drift is expensive to diagnose after the fact.
 
 The main adjustment I recommend is tightening R01 before execution. The
@@ -67,7 +67,7 @@ Snakefiles. These scripts parse the snake config directly:
 
 Tests currently include fast unit coverage for selected stable utilities,
 plus `tests/test_cli.py` dry-runs the three Snakefiles. Two Snakefile dry-
-runs are strict xfails, intentionally deferred to M3.
+runs are strict xfails, intentionally deferred to R3.
 
 ## Roadmap review
 
@@ -75,25 +75,25 @@ The milestone decomposition is sound. The strongest parts are:
 
 - Baseline-first discipline in M1, with output fingerprints rather than
   large reference artifacts.
-- M2b inserted before refactoring, so M3-M5 do not target obsolete HydroMT /
+- M2b inserted before refactoring, so R3-R5 do not target obsolete HydroMT /
   Wflow APIs.
-- M2c inserted before workflow cleanup, giving M3-M5 a pattern for unit
+- M2c inserted before workflow cleanup, giving R3-R5 a pattern for unit
   tests and strict xfails.
-- R1 inserted before M3-M5, which prevents each workflow cleanup from
+- R1 inserted before R3-R5, which prevents each workflow cleanup from
   inventing its own config ownership rules.
-- Vertical-by-workflow cleanup in M3-M5, which limits blast radius and
+- Vertical-by-workflow cleanup in R3-R5, which limits blast radius and
   gives each milestone an owned baseline slice.
 
-The main roadmap-level suggestion is to make M3 explicitly absorb the
+The main roadmap-level suggestion is to make R3 explicitly absorb the
 R01 side effects that are already becoming cross-cutting:
 
 - If R01 replaces the `sys.argv` configfile recovery with
-  `workflow.configfiles[0]`, remove that from M3 deliverables or mark it
+  `workflow.configfiles[0]`, remove that from R3 deliverables or mark it
   already completed by R01.
-- If R01 introduces `project/shared/workflows`, M3 should introduce a
+- If R01 introduces `project/shared/workflows`, R3 should introduce a
   small config-access helper rather than letting three Snakefiles build
   independent local patterns again.
-- M3 should include a dedicated "direct config-file readers" audit before
+- R3 should include a dedicated "direct config-file readers" audit before
   further refactors. Otherwise the old flat schema can survive invisibly
   inside scripts.
 
@@ -269,7 +269,7 @@ intentionally added.
 5. Make every baseline command pass `--project-dir` explicitly.
 6. Update the roadmap R01 exit criteria so "zero diff" means zero
    scientific-output diff, not zero copied-config hash diff.
-7. Adjust the M3 roadmap after R01 lands so already-completed configfile
+7. Adjust the R3 roadmap after R01 lands so already-completed configfile
    handling is not listed as future work.
 
 ## Recommended next step

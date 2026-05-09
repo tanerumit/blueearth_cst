@@ -9,7 +9,7 @@ context so future-you can confirm the issue still applies before fixing.
 
 ---
 
-## M3 — Workflow 1: model builder
+## R3 — Workflow 1: model builder
 
 - **Resolve test_cli xfails.** Two of the three parametrizations in
   `tests/test_cli.py` are marked `xfail` since M2:
@@ -30,7 +30,7 @@ context so future-you can confirm the issue still applies before fixing.
     similar) or a `ruleorder:` directive.
 
   These are pre-M2 failures masked by the fact that M1 closure didn't
-  actually run pytest. Both belong to M3's "tighten ruleorder + Snakefile
+  actually run pytest. Both belong to R3's "tighten ruleorder + Snakefile
   hygiene" deliverables.
 
 - **`Path(fn, resolve_path=True)` is a non-existent kwarg in
@@ -55,7 +55,7 @@ context so future-you can confirm the issue still applies before fixing.
 
 - **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
   triage (`dev/phase-1/m01/warnings.md`) because most rules don't write stderr
-  to disk. Once M3's cross-cutting deliverable adds `log:` directives
+  to disk. Once R3's cross-cutting deliverable adds `log:` directives
   to every non-trivial rule across all three Snakefiles, re-run all
   three workflows, sweep the captured logs, and fix any bucket-2
   (config/data-catalog) or bucket-3 (our-code) warnings that surface.
@@ -93,10 +93,10 @@ context so future-you can confirm the issue still applies before fixing.
 
 ---
 
-## M5 — Workflow 3: climate experiment
+## R5 — Workflow 3: climate experiment
 
 - **`extract_climate_grid` ignores the `historical:` config and hardcodes
-  the date range.** Pre-M5 unblocking edit on 2026-05-07 changed the
+  the date range.** Pre-R5 unblocking edit on 2026-05-07 changed the
   hardcoded `starttime="2000-01-01"` / `endtime="2020-12-31"` in
   `src/extract_historical_climate.py`. The snake config's `historical:`
   key is read by `Snakefile_climate_projections` (workflow 2) but never
@@ -111,7 +111,7 @@ context so future-you can confirm the issue still applies before fixing.
   drop the misleading function defaults at lines 20–21 (currently still
   say `1980` / `2010`).
 
-  *Also touches the M3 followup:* this is the same shape as the
+  *Also touches the R3 followup:* this is the same shape as the
   config-key-not-wired pattern — fixing it should be paired with a
   general audit of every rule whose behavior depends on a config key
   that isn't actually read.
@@ -155,15 +155,15 @@ context so future-you can confirm the issue still applies before fixing.
   wavelet decomposition depth."*
 
   *Note:* this fix lives in the weathergenr package, not this repo. Mention
-  in M5 deliverables if M5 is also touching the R layer; otherwise track as
+  in R5 deliverables if R5 is also touching the R layer; otherwise track as
   a separate weathergenr issue.
 
 ---
 
-## M3+ — Surfaced during M02c (test coverage)
+## R3+ — Surfaced during M02c (test coverage)
 
 Lessons learned writing the M02c unit tests. Not bugs — testing-discipline
-notes for M3-M5 to inherit when they add their own test files.
+notes for R3-R5 to inherit when they add their own test files.
 
 - **Test pollution between `sys.modules.setdefault` files.** pytest collects
   test files in alphabetical order. The first file to call
@@ -189,7 +189,7 @@ notes for M3-M5 to inherit when they add their own test files.
 
 ---
 
-## M3+ — Surfaced during M2b (library upgrades)
+## R3+ — Surfaced during M2b (library upgrades)
 
 Items surfaced during the hydromt 0.x → 1.x / hydromt_wflow 0.x → 1.x /
 Wflow.jl 0.7 → 1.0.2 / pandas 3.x / Python 3.12 jump. See `dev/phase-1/m02b/`
@@ -236,7 +236,7 @@ for the full M2b record.
   `InfiltCapPath`, …) and requires CSDMS Standard Names instead. M2b dropped
   13 of the 14 originally-set constants under the "intentional drift,
   re-baseline aggressively" policy and kept only `KsatHorFrac` (which the
-  build errors without). M3 should map the other 13 to CSDMS names and
+  build errors without). R3 should map the other 13 to CSDMS names and
   decide whether to restore them. CSDMS lookup tables in
   `hydromt_wflow.naming` and `hydromt_wflow.version_upgrade`. Concrete
   remap in `dev/phase-1/m02b/handoff.md` decision #3.
@@ -254,7 +254,7 @@ for the full M2b record.
   outlet stations rather than the contiguous `1..N` of 0.x. The CSV column
   also renamed `Q_gauges` → `Q_outlets`. M2b's `src/plot_results.py`
   rebuilds `station_name` as `1..N` to keep `hydro_wflow_1.png` visually
-  stable; M3 should pick a consistent project-wide convention (real
+  stable; R3 should pick a consistent project-wide convention (real
   subcatchment IDs vs `1..N` rebuild) and document it.
 
 - **Retire the "CMIP6 GCS throughput regression" follow-up.** The original

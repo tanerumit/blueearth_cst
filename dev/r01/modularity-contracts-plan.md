@@ -53,7 +53,7 @@
 #   workflows.<n>:  per-workflow opts (only that workflow reads)
 #
 # Each workflows.<name> section has an `enabled:` flag (documentary in
-# R01; will become operational at M6+ structural refactor).
+# R01; will become operational at R6+ structural refactor).
 #
 # Per-workflow contract docs at dev/workflows/<name>.md describe owned
 # keys, input contract, and output contract.
@@ -251,7 +251,7 @@ Under `{project_dir}/`:
 
 ## Notes
 
-- The "temporary hydromt fix" in `src/setup_reservoirs_lakes_glaciers.py` is a known M3 followup.
+- The "temporary hydromt fix" in `src/setup_reservoirs_lakes_glaciers.py` is a known R3 followup.
 - Outlet station naming convention (`subcatchment IDs` vs `1..N` rebuild) is undecided — see `dev/followups.md` M2b carryover.
 ```
 
@@ -402,10 +402,10 @@ Plus `{project_dir}/config/snake_config_climate_experiment.yml` snapshot.
 
 ## Notes
 
-- `extract_climate_grid` silent truncation when staged data is shorter than requested window — M3 followup.
-- `extract_climate_grid` ignores `historical_window.starttime/endtime` (currently hardcoded in script) — M5 followup.
-- `weathergenr::write_netcdf` `spatial_ref` attr propagation issue — M5 followup with workaround in `generate_weather.R`.
-- weathergenr's 16-year wavelet minimum is enforced in `wavelet_cwt.R` with a cryptic error — M5 weathergenr issue.
+- `extract_climate_grid` silent truncation when staged data is shorter than requested window — R3 followup.
+- `extract_climate_grid` ignores `historical_window.starttime/endtime` (currently hardcoded in script) — R5 followup.
+- `weathergenr::write_netcdf` `spatial_ref` attr propagation issue — R5 followup with workaround in `generate_weather.R`.
+- weathergenr's 16-year wavelet minimum is enforced in `wavelet_cwt.R` with a cryptic error — R5 weathergenr issue.
 ```
 
 ### Step 2.4: Verify all 3 docs exist
@@ -1468,7 +1468,7 @@ hashes via:
 pixi run python dev/scripts/check_baseline.py record --project-dir tests/test_project
 ```
 
-The new manifest is the R01 contract. M3+ milestones are bound by
+The new manifest is the R01 contract. R3+ milestones are bound by
 the new manifest.
 ```
 
@@ -1487,7 +1487,7 @@ the new manifest.
 - [ ] In `dev/roadmap.md`, find:
 
 ```markdown
-## R1 — Modularity contracts (pre-M3)
+## R1 — Modularity contracts (pre-R3)
 
 **Goal.** Establish per-workflow config contracts so workflows can be
 ```
@@ -1495,7 +1495,7 @@ the new manifest.
 - [ ] Insert a status line between heading and goal:
 
 ```markdown
-## R1 — Modularity contracts (pre-M3)
+## R1 — Modularity contracts (pre-R3)
 
 **Status.** Sealed YYYY-MM-DD — three top-level config sections in
 place; three contract docs under dev/workflows/; all 3 Snakefiles +
@@ -1510,18 +1510,18 @@ not scientific).
 
 Replace `YYYY-MM-DD` with today's date.
 
-### Step 7.8: Add an M3 roadmap note (configfile mechanism already done)
+### Step 7.8: Add an R3 roadmap note (configfile mechanism already done)
 
-M3a's roadmap section currently lists `workflow.configfiles[0]` as a deliverable. R01 delivers it. Mark accordingly so M3 doesn't redo it.
+R3's roadmap section currently lists `workflow.configfiles[0]` as a deliverable. R01 delivers it. Mark accordingly so R3 doesn't redo it.
 
-- [ ] In `dev/roadmap.md`, find the M3 section's "Cross-cutting deliverables" block:
+- [ ] In `dev/roadmap.md`, find the R3 section's "Cross-cutting deliverables" block:
 
 ```markdown
-**Cross-cutting deliverables (done once here, reused by M4 and M5).**
+**Cross-cutting deliverables (done once here, reused by R4 and R5).**
 - Collapse the duplicated `get_config(config, key, default, optional)`
   helper from all three Snakefiles into one shared module at
   `src/snake_utils.py`. Update *all three* Snakefiles to import from it.
-  Behavior of M4/M5's Snakefiles unchanged; only the helper sourcing moves.
+  Behavior of R4/R5's Snakefiles unchanged; only the helper sourcing moves.
 - Replace the `--configfile` `sys.argv` re-parsing trick in *all three*
   Snakefiles with a cleaner mechanism (e.g. `workflow.configfiles[0]`),
   documented in `src/snake_utils.py` so the next contributor can tell why.
@@ -1530,11 +1530,11 @@ M3a's roadmap section currently lists `workflow.configfiles[0]` as a deliverable
 - [ ] Replace with:
 
 ```markdown
-**Cross-cutting deliverables (done once here, reused by M4 and M5).**
+**Cross-cutting deliverables (done once here, reused by R4 and R5).**
 - Collapse the duplicated `get_config(config, key, default, optional)`
   helper from all three Snakefiles into one shared module at
   `src/snake_utils.py`. Update *all three* Snakefiles to import from it.
-  Behavior of M4/M5's Snakefiles unchanged; only the helper sourcing moves.
+  Behavior of R4/R5's Snakefiles unchanged; only the helper sourcing moves.
 - ~~Replace the `--configfile` `sys.argv` re-parsing trick in all three
   Snakefiles with `workflow.configfiles[0]`.~~ **Done by R01.**
 ```
@@ -1549,13 +1549,13 @@ m02d: mark milestone sealed in roadmap; re-baseline config snapshots
 
 Three sectioned config sections, three contract docs, three migrated
 config files, three updated Snakefiles, three updated src/ scripts.
-Pattern established for M3-M5 to inherit.
+Pattern established for R3-R5 to inherit.
 
 Scientific baseline preserved exactly. Config-snapshot YAML hashes
 re-recorded as expected organizational drift (not scientific) per
 dev/r01/baseline_diffs.md. The new manifest is the R01 contract.
 
-Marks M3a's configfile mechanism deliverable as already-done by R01
+Marks R3's configfile mechanism deliverable as already-done by R01
 to prevent rework.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
@@ -1585,7 +1585,7 @@ EOF
 - **If you discover a config key I missed** (the migration mapping in `dev/r01/modularity-contracts-design.md` and Task 6's table is what the Snakefiles depend on), stop and surface it. Don't silently extend the mapping — the user reviewed the design with the documented mapping.
 - **The `historical_year_range` format change** is intentional. Old: `"1980, 2010"` (a string). New: `[1980, 2010]` (a list). Snakefile_climate_projections's `time_horizon_hist` variable now receives a list. If downstream Python code in `src/get_change_climate_proj.py` or similar parses it as a string, that's a separate bug to flag (not fix in R01).
 - **Don't migrate `*_local.yml` files automatically.** They're gitignored. Task 6's guide is what the user follows manually.
-- **The `enabled: true` flag is documentary in R01.** Don't add Snakefile-side logic that respects it; that's M6+ work.
+- **The `enabled: true` flag is documentary in R01.** Don't add Snakefile-side logic that respects it; that's R6+ work.
 
 ## Quick reference: file inventory
 

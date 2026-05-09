@@ -1,4 +1,4 @@
-# R01 — Modularity Contracts (pre-M3) — design
+# R01 — Modularity Contracts (pre-R3) — design
 
 **Date.** 2026-05-08.
 
@@ -13,13 +13,13 @@ registry) waits for a real second use case (a 4th workflow, an
 alternative hydrological model). R01's job is to make sure that future
 refactor is mechanical rather than archaeological.
 
-## Why now (and why before M3)
+## Why now (and why before R3)
 
-M3-M5 each refactor a workflow's Snakefile and scripts. Doing those
+R3-R5 each refactor a workflow's Snakefile and scripts. Doing those
 refactors against a flat single-namespace config means each milestone
 has to decide on the fly which keys belong to which workflow — and the
 decisions accumulate inconsistently. Locking in the contract first lets
-M3-M5 inherit it without negotiation.
+R3-R5 inherit it without negotiation.
 
 The user-facing motivation: enable future workflows like data-only
 analysis, alt hydrological models, and partial pipelines (e.g.,
@@ -107,8 +107,8 @@ output_locations = my_cfg.get('output_locations')
 Errors loudly on missing required keys (existing
 `get_config(...optional=False)` pattern, retained per Snakefile).
 
-Notable side effect: this also delivers part of M3a's "configfile
-mechanism" sub-item early. M3a's scope shrinks accordingly when we get
+Notable side effect: this also delivers part of R3's "configfile
+mechanism" sub-item early. R3's scope shrinks accordingly when we get
 there.
 
 ### 3. `enabled:` flag — documentary in R01
@@ -117,7 +117,7 @@ Setting `enabled: false` does NOT auto-skip the workflow today. The
 user still invokes (or doesn't invoke) the relevant Snakefile manually.
 
 The flag is a **forward-compat marker**: when a future structural
-milestone (M6 or beyond) adds Snakemake module composition or a wrapper
+milestone (R6 or beyond) adds Snakemake module composition or a wrapper
 script, `enabled: false` becomes operational. Today its job is to
 declare intent so the future refactor knows which workflows the user
 considers active for a given config.
@@ -208,9 +208,9 @@ plan will produce a complete table; this is a sample.
 - Code structure: still 3 separate Snakefiles, still flat `src/`.
 - Cross-workflow data dependencies: `Snakefile_climate_projections` still
   needs `region.geojson` from `Snakefile_model_creation`. (True data
-  decoupling = M6 territory.)
+  decoupling = R6 territory.)
 - No schema validation library (pydantic, jsonschema) — schemas live in
-  contract docs, not enforced at runtime. Can add later as M3+ work.
+  contract docs, not enforced at runtime. Can add later as R3+ work.
 - No Snakemake `module:` composition.
 - No plugin/registry pattern.
 
@@ -250,9 +250,9 @@ diff note.
 
 | Item                                       | Why deferred                              | Where  |
 | ------------------------------------------ | ----------------------------------------- | ------ |
-| `enabled: false` actually skips workflow   | Needs orchestrator or module composition  | M6+    |
-| Pydantic / jsonschema validation           | Adds dep + churn; nice-to-have            | M3+    |
-| Decouple cross-workflow data path defaults | Real refactor, requires inputs-as-config  | M6     |
+| `enabled: false` actually skips workflow   | Needs orchestrator or module composition  | R6+    |
+| Pydantic / jsonschema validation           | Adds dep + churn; nice-to-have            | R3+    |
+| Decouple cross-workflow data path defaults | Real refactor, requires inputs-as-config  | R6     |
 | Auto-generate contract docs from config    | Premature                                 | Never  |
 | Rewrite Linux/Docker configs               | Linux work is generally deferred per      | Deferred |
 |                                            | "Deferred: Linux replication" in roadmap  |        |

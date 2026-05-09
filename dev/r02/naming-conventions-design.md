@@ -1,4 +1,4 @@
-# R02 — Naming conventions (pre-M3) — design
+# R02 — Naming conventions (pre-R3) — design
 
 **Date.** 2026-05-09.
 
@@ -7,25 +7,25 @@
 Single prescriptive style guide for naming identifiers and files
 across the repo, delivered as `dev/conventions/naming.md`. Pure docs
 addition. **No code refactoring in R2** — existing names are
-grandfathered. M3+ apply the conventions when touching code; M6 may
+grandfathered. R3+ apply the conventions when touching code; R6 may
 do bulk file moves under the structural-refactor milestone.
 
 The intent is: when a future workflow, agent, or contributor adds new
 identifiers, the style guide tells them what to choose without re-
 arguing the convention each time.
 
-## Why now (and why before M3)
+## Why now (and why before R3)
 
-M3-M5 each refactor a workflow's scripts and add new identifiers
+R3-R5 each refactor a workflow's scripts and add new identifiers
 along the way (helper functions in `snake_utils.py`, new fixtures,
 new wildcards, new config keys under R01's sectioned schema). Doing
 those refactors against an undocumented convention means each
 milestone has to re-decide naming on the fly — and the decisions
-accumulate inconsistently. Locking the convention first lets M3-M5
+accumulate inconsistently. Locking the convention first lets R3-R5
 inherit it.
 
 This doc does not refactor existing names. It is the contract for
-*new* code from M3 onward.
+*new* code from R3 onward.
 
 ## Approach
 
@@ -129,12 +129,12 @@ Wildcards used across Snakefiles MUST come from this list:
 Adding a new wildcard requires updating `dev/conventions/naming.md`
 in the same commit. The current `st_num2` variant in
 `Snakefile_climate_experiment` is a known inconsistency — fold into
-`st_num` during M3-M5 Snakefile cleanup.
+`st_num` during R3-R5 Snakefile cleanup.
 
 ### 5. Suffix vocabulary — split paths from data objects
 
 A suffix means EITHER a filesystem path OR a loaded object. Not both.
-This is the single biggest readability improvement M3+ can make
+This is the single biggest readability improvement R3+ can make
 incrementally.
 
 **Paths (filesystem strings):**
@@ -253,7 +253,7 @@ guide's table sparse so the doc stays under 250 lines.
   contract docs).
 - Refactoring existing names to conform — explicitly grandfathered.
 - Linter or CI enforcement — manual review for now. A future linter
-  is a possible M3+ followup.
+  is a possible R3+ followup.
 - Per-language style guides (e.g., function-length limits, comment
   conventions). Future `dev/conventions/python-style.md`,
   `dev/conventions/r-style.md` if needed.
@@ -268,24 +268,24 @@ guide's table sparse so the doc stays under 250 lines.
 ## Migration notes for existing names
 
 R2 writes the contract; it does not enforce it on existing code.
-M3-M5 may opportunistically rename when refactoring nearby code.
-M6 (structural refactor) may do bulk file / module moves with a
+R3-R5 may opportunistically rename when refactoring nearby code.
+R6 (structural refactor) may do bulk file / module moves with a
 `MIGRATION.md` mapping per the existing roadmap.
 
 The deprecated path suffixes (`_fn`, `_fid`, `_file`) are the most
-visible non-conformance. The roadmap entry for M3 should note that
-incidental renames from these to `_path` are acceptable under M3's
+visible non-conformance. The roadmap entry for R3 should note that
+incidental renames from these to `_path` are acceptable under R3's
 "shared helper" deliverable when touching the affected code.
 
 ## Risks and open questions
 
 - **Style guide rot**: prescriptive guides drift if not enforced.
-  Mitigation: M3-M5 commit messages reference `dev/conventions/
+  Mitigation: R3-R5 commit messages reference `dev/conventions/
   naming.md` when adding new identifiers. A future linter would
   catch drift mechanically; defer until needed.
 - **Domain-identifier boundary**: section 6's list will grow as new
   upstream tools enter scope (e.g., adding a different climate model
-  family). Keep the list living; M3-M5 update it as new external
+  family). Keep the list living; R3-R5 update it as new external
   identifiers appear.
 - **Wildcard vocabulary growth**: section 4's table is small today.
   Future workflows may need new wildcards (e.g., a `member` wildcard
@@ -317,5 +317,5 @@ incidental renames from these to `_path` are acceptable under M3's
 
 - The outlet station naming decision in `dev/followups.md` (M2b
   carryover) affects output filenames and downstream interpretation.
-  It's a behavioral / contract decision for M3, not a naming-guide
+  It's a behavioral / contract decision for R3, not a naming-guide
   decision.

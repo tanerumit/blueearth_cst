@@ -7,11 +7,10 @@ platforms = ["win-64", "linux-64"]
 
 # Python + scientific stack — mirrors environment.yml.
 [dependencies]
-python = ">=3.12,<3.13"
+python = ">=3.14,<3.15"
 pip = "*"
 cartopy = "*"
 dask = "*"          # used directly via dask.diagnostics in extract/get_stats scripts
-datrie = "*"        # snakemake dep
 dvc = "*"
 descartes = "*"
 flit = ">=3.2"

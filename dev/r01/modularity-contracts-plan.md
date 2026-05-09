@@ -1,4 +1,4 @@
-# M02d Modularity Contracts Implementation Plan
+# R01 Modularity Contracts Implementation Plan
 
 > **For agentic workers:** Steps use checkbox (`- [ ]`) syntax for tracking. Implement task-by-task and check off as you go. Do not skip the verification commands — they are the contract that catches migration drift.
 
@@ -8,9 +8,9 @@
 
 **Tech Stack:** YAML schema, Snakemake `workflow` global, pytest, pixi env, existing `dev/scripts/check_baseline.py`.
 
-**Branch:** `milestone/02d-contracts` (already on it; off `m02c-tests` tag).
+**Branch:** `milestone/r01-contracts` (already on it; off `m02c-tests` tag).
 
-**Spec:** `dev/m02d/modularity-contracts-design.md`. Read it first if you haven't.
+**Spec:** `dev/r01/modularity-contracts-design.md`. Read it first if you haven't.
 
 ---
 
@@ -18,7 +18,7 @@
 
 ### Step 0.1: Verify branch and clean tree
 
-- [ ] Run: `git branch --show-current` → expect `milestone/02d-contracts`
+- [ ] Run: `git branch --show-current` → expect `milestone/r01-contracts`
 - [ ] Run: `git status --short` → expect empty output. (This plan file should already be committed before execution starts; if you see it as untracked, commit it first.)
 
 ### Step 0.2: Verify baseline test suite passes
@@ -38,14 +38,14 @@
 **Files:**
 - Create: `config/snake_config.template.yml`
 
-**Purpose:** A checked-in canonical schema example. Anyone authoring a new project config copies this template and edits values. Shows the exact section structure M02d locks in.
+**Purpose:** A checked-in canonical schema example. Anyone authoring a new project config copies this template and edits values. Shows the exact section structure R01 locks in.
 
 ### Step 1.1: Create the template
 
 - [ ] Write `config/snake_config.template.yml` with this content:
 
 ```yaml
-# Snake config template for blueearth_cst (M02d schema).
+# Snake config template for blueearth_cst (R01 schema).
 #
 # Three top-level sections:
 #   project:        paths and external resources (every workflow reads)
@@ -53,7 +53,7 @@
 #   workflows.<n>:  per-workflow opts (only that workflow reads)
 #
 # Each workflows.<name> section has an `enabled:` flag (documentary in
-# M02d; will become operational at M6+ structural refactor).
+# R01; will become operational at M6+ structural refactor).
 #
 # Per-workflow contract docs at dev/workflows/<name>.md describe owned
 # keys, input contract, and output contract.
@@ -161,7 +161,7 @@ git add config/snake_config.template.yml
 git commit -m "$(cat <<'EOF'
 m02d: add canonical sectioned config template
 
-config/snake_config.template.yml is the M02d schema in checked-in form:
+config/snake_config.template.yml is the R01 schema in checked-in form:
 project / shared / workflows.<name> sections, with the enabled: flag
 on each workflow as a forward-compat marker. Anyone authoring a new
 project config copies this template and edits values.
@@ -180,7 +180,7 @@ EOF
 - Create: `dev/workflows/climate_projections.md`
 - Create: `dev/workflows/climate_experiment.md`
 
-**Purpose:** Per-workflow contracts. Each doc declares owned config keys, input/output contracts, downstream consumers. The modularity contract per the M02d spec.
+**Purpose:** Per-workflow contracts. Each doc declares owned config keys, input/output contracts, downstream consumers. The modularity contract per the R01 spec.
 
 ### Step 2.1: Create dev/workflows/model_creation.md
 
@@ -198,7 +198,7 @@ Snakefile: `Snakefile_model_creation`.
 ## Owned config keys
 
 Under `workflows.model_creation`:
-- `enabled: bool` — forward-compat flag (documentary in M02d).
+- `enabled: bool` — forward-compat flag (documentary in R01).
 - `model_build_config: path` — hydromt build YAML template (required).
 - `waterbodies_config: path` — hydromt update YAML for reservoirs/lakes/glaciers (optional).
 - `output_locations: path|None` — csv with observation station coords (cols: station_ID, x, y). None → use wflow outlets.
@@ -442,7 +442,7 @@ EOF
 - Modify: `Snakefile_climate_projections`
 - Modify: `Snakefile_climate_experiment`
 
-**Purpose:** This is the load-bearing commit of M02d. The test config and all three Snakefiles flip from flat to sectioned in one atomic step. After this commit, `pytest tests/` passes against sectioned config; before, it doesn't.
+**Purpose:** This is the load-bearing commit of R01. The test config and all three Snakefiles flip from flat to sectioned in one atomic step. After this commit, `pytest tests/` passes against sectioned config; before, it doesn't.
 
 **Why atomic:** Several keys are read by multiple Snakefiles (`project_dir`, `data_sources`, `clim_historical`, etc.). A staged migration would need either dual-key fallback logic in the Snakefiles (extra code to remove later) or a hybrid config that's hard to reason about. Atomic is simpler.
 
@@ -453,7 +453,7 @@ EOF
 - [ ] Write the full new content (replaces existing 112 lines):
 
 ```yaml
-# Test config for blueearth_cst — M02d sectioned schema.
+# Test config for blueearth_cst — R01 sectioned schema.
 # Used by tests/test_cli.py (Snakefile dry-runs) and any pytest cases
 # that load a real config via tests/conftest.py.
 
@@ -555,7 +555,7 @@ def get_config(config, arg, default=None, optional=True):
     else:
         raise ValueError(f"Argument {arg} not found in config")
 
-# M02d schema — three top-level sections. Read each into a local dict.
+# R01 schema — three top-level sections. Read each into a local dict.
 project_cfg = config["project"]
 shared_cfg = config["shared"]
 my_cfg = config["workflows"]["model_creation"]
@@ -629,7 +629,7 @@ def get_config(config, arg, default=None, optional=True):
     else:
         raise ValueError(f"Argument {arg} not found in config")
 
-# M02d schema
+# R01 schema
 project_cfg = config["project"]
 my_cfg = config["workflows"]["climate_projections"]
 
@@ -680,7 +680,7 @@ def get_config(config, arg, default=None, optional=True):
     else:
         raise ValueError(f"Argument {arg} not found in config")
 
-# M02d schema
+# R01 schema
 project_cfg = config["project"]
 shared_cfg = config["shared"]
 my_cfg = config["workflows"]["climate_experiment"]
@@ -813,7 +813,7 @@ def model_build_config(config):
 
 - [ ] Run: `pixi run pytest tests/ 2>&1 | tail -3`
 - [ ] Expect: `45 passed, 4 xfailed` (unchanged from baseline)
-- [ ] If counts differ: a config key migration is wrong. Diff the failures and trace back to the migration mapping in `dev/m02d/modularity-contracts-design.md`.
+- [ ] If counts differ: a config key migration is wrong. Diff the failures and trace back to the migration mapping in `dev/r01/modularity-contracts-design.md`.
 
 ### Step 3.10: Commit the atomic migration
 
@@ -823,7 +823,7 @@ git add tests/snake_config_model_test.yml tests/conftest.py Snakefile_model_crea
 git commit -m "$(cat <<'EOF'
 m02d: migrate test config + conftest + all 3 Snakefiles to sectioned schema (atomic)
 
-Atomic migration: tests/snake_config_model_test.yml flips to the M02d
+Atomic migration: tests/snake_config_model_test.yml flips to the R01
 schema (project / shared / workflows.<name>); tests/conftest.py
 fixtures (project_dir, data_sources, model_build_config) follow the
 new key paths; and all three Snakefiles update their config-key reads
@@ -864,7 +864,7 @@ EOF
 
 ### Step 3a.1: Update src/prepare_cst_parameters.py
 
-The script opens `config_path` and reads `yml["temp"]` / `yml["precip"]`. Under M02d those live under `yml["workflows"]["climate_experiment"]["stress_test"]`.
+The script opens `config_path` and reads `yml["temp"]` / `yml["precip"]`. Under R01 those live under `yml["workflows"]["climate_experiment"]["stress_test"]`.
 
 - [ ] In `src/prepare_cst_parameters.py`, find the block at lines 27-41:
 
@@ -889,7 +889,7 @@ The script opens `config_path` and reads `yml["temp"]` / `yml["precip"]`. Under 
 - [ ] Replace with:
 
 ```python
-    # Read the yaml config (M02d sectioned schema)
+    # Read the yaml config (R01 sectioned schema)
     with open(config_fn, "r") as stream:
         yml = yaml.load(stream, Loader=yaml.FullLoader)
 
@@ -908,7 +908,7 @@ The script opens `config_path` and reads `yml["temp"]` / `yml["precip"]`. Under 
     precip_step_num = stress_test_cfg["precip"]["step_num"] + 1
 ```
 
-Note: line 40 `delta_precip_variance_max = yml["precip"]["variance"]["min"]` reads `min` for the max — preserved verbatim because it's an existing pre-M02d bug, not within M02d's scope to fix.
+Note: line 40 `delta_precip_variance_max = yml["precip"]["variance"]["min"]` reads `min` for the max — preserved verbatim because it's an existing pre-R01 bug, not within R01's scope to fix.
 
 ### Step 3a.2: Update src/prepare_weagen_config.py
 
@@ -949,7 +949,7 @@ else:  # stress test
 ```python
     # arguments from the default weagen config file
     yml_dict = read_yml(snakemake.params.default_config)
-    # add new arguments from snakemake and yml_snake (M02d sectioned schema)
+    # add new arguments from snakemake and yml_snake (R01 sectioned schema)
     experiment_cfg = yml_snake["workflows"]["climate_experiment"]
     yml_add = {
         "output.path": snakemake.params.output_path,
@@ -970,7 +970,7 @@ else:  # stress test
             "nc.file.suffix": snakemake.params.nc_file_suffix,
         }
     }
-    # arguments from yml_snake (M02d sectioned schema)
+    # arguments from yml_snake (R01 sectioned schema)
     stress_test_cfg = yml_snake["workflows"]["climate_experiment"]["stress_test"]
     yml_dict["temp"] = stress_test_cfg["temp"]
     yml_dict["precip"] = stress_test_cfg["precip"]
@@ -978,7 +978,7 @@ else:  # stress test
 
 ### Step 3a.3: Update src/get_change_climate_proj.py
 
-The script receives `time_horizon_hist` and `time_horizon_fut` as Snakemake params and calls `.split(", ")` on them. After M02d those values are lists (`[1980, 2010]`), not comma-separated strings (`"1980, 2010"`). The `.split` call raises `AttributeError` on a list.
+The script receives `time_horizon_hist` and `time_horizon_fut` as Snakemake params and calls `.split(", ")` on them. After R01 those values are lists (`[1980, 2010]`), not comma-separated strings (`"1980, 2010"`). The `.split` call raises `AttributeError` on a list.
 
 - [ ] In `src/get_change_climate_proj.py`, find lines 189-193:
 
@@ -994,7 +994,7 @@ time_tuple_fut = tuple(map(str, time_tuple_fut.split(", ")))
 
 ```python
 # Time tuples for comparison hist-fut.
-# M02d schema delivers these as lists ([1980, 2010]). Pre-M02d configs
+# R01 schema delivers these as lists ([1980, 2010]). Pre-R01 configs
 # delivered them as comma-separated strings ("1980, 2010"). Accept both.
 def _to_str_tuple(value):
     if isinstance(value, str):
@@ -1024,7 +1024,7 @@ git commit -m "$(cat <<'EOF'
 m02d: migrate src/ scripts that read snake config directly
 
 Three scripts parse the snake config (or receive params whose format
-changed under M02d) and break against the sectioned schema:
+changed under R01) and break against the sectioned schema:
 
 - prepare_cst_parameters.py: yml["temp"]/["precip"] →
   yml["workflows"]["climate_experiment"]["stress_test"]["temp"]/...
@@ -1108,7 +1108,7 @@ for p in patterns:
 - [ ] Replace the entire file with:
 
 ```yaml
-# Canonical example config for blueearth_cst — M02d sectioned schema.
+# Canonical example config for blueearth_cst — R01 sectioned schema.
 # This is the "small bbox, light models" example used to verify the
 # stack works on a fresh install. Mirror this structure in your own
 # project configs.
@@ -1207,7 +1207,7 @@ git add config/snake_config_model_test.yml
 git commit -m "$(cat <<'EOF'
 m02d: migrate canonical example config to sectioned schema
 
-config/snake_config_model_test.yml flipped to the M02d schema. This is
+config/snake_config_model_test.yml flipped to the R01 schema. This is
 the human-facing example config (the test variant lives at
 tests/snake_config_model_test.yml and migrated in the previous commit).
 The Snakefiles are already sectioned; this aligns the example.
@@ -1268,21 +1268,21 @@ EOF
 ## Task 6: Add user-facing migration guide for _local.yml configs
 
 **Files:**
-- Create: `dev/m02d/local-config-migration.md`
+- Create: `dev/r01/local-config-migration.md`
 
 **Purpose:** `_local.yml` configs are gitignored per-machine. The user (or any contributor with their own local config) needs a documented mapping to migrate manually.
 
 ### Step 6.1: Create the migration guide
 
-- [ ] Write `dev/m02d/local-config-migration.md`:
+- [ ] Write `dev/r01/local-config-migration.md`:
 
 ```markdown
-# Migrating a local snake config to M02d sectioned schema
+# Migrating a local snake config to R01 sectioned schema
 
 If you have a `*_local.yml` config (gitignored, per-machine), it still
-uses the old flat schema after M02d lands. Migrate it manually using
+uses the old flat schema after R01 lands. Migrate it manually using
 the mapping below. The Snakefiles read sectioned config only after
-M02d, so old configs will fail with `KeyError`.
+R01, so old configs will fail with `KeyError`.
 
 ## Mapping table
 
@@ -1324,7 +1324,7 @@ M02d, so old configs will fail with `KeyError`.
 ## New keys (no old equivalent)
 
 For each workflow, add `enabled: true` (forward-compat marker;
-documentary in M02d). Default `true` for all three workflows.
+documentary in R01). Default `true` for all three workflows.
 
 ## Format change for `historical`
 
@@ -1359,12 +1359,12 @@ For a clean sectioned config, see:
 
 - [ ] Run:
 ```
-git add dev/m02d/local-config-migration.md
+git add dev/r01/local-config-migration.md
 git commit -m "$(cat <<'EOF'
 m02d: add migration guide for user-local configs
 
 Per-machine *_local.yml configs are gitignored and must be migrated
-manually. dev/m02d/local-config-migration.md provides the full
+manually. dev/r01/local-config-migration.md provides the full
 old→new key mapping table plus the format change for historical
 year_range (string → list).
 
@@ -1378,13 +1378,13 @@ EOF
 ## Task 7: Final verification, seal, and tag
 
 **Files:**
-- Create: `dev/m02d/baseline_diffs.md` (documents expected config-snapshot drift)
+- Create: `dev/r01/baseline_diffs.md` (documents expected config-snapshot drift)
 - Modify: `dev/baseline/manifest.json` (re-recorded with new config-yaml hashes)
 - Modify: `dev/roadmap.md` (status line)
 
 **Purpose:** Three independent verifications, an expected diff documentation, then seal + tag.
 
-**Critical context:** `dev/scripts/check_baseline.py` includes the copied snake-config YAMLs as manifest targets (lines 58, 66, 70). After M02d, those YAML hashes change because the schema changed. This is **expected organizational drift, not scientific drift** — the netCDF / CSV / PNG hashes remain identical. Document in `dev/m02d/baseline_diffs.md` and re-record the manifest.
+**Critical context:** `dev/scripts/check_baseline.py` includes the copied snake-config YAMLs as manifest targets (lines 58, 66, 70). After R01, those YAML hashes change because the schema changed. This is **expected organizational drift, not scientific drift** — the netCDF / CSV / PNG hashes remain identical. Document in `dev/r01/baseline_diffs.md` and re-record the manifest.
 
 `check_baseline.py` defaults to `PROJECT_DIR_DEFAULT = "examples/test_local"`. Every verification command in this task passes `--project-dir` explicitly so the run dir and check dir match.
 
@@ -1420,16 +1420,16 @@ If scientific targets show diffs: a config migration changed numerical output. M
 
 ### Step 7.4: Document the expected config-snapshot drift
 
-- [ ] Create `dev/m02d/baseline_diffs.md` with this content:
+- [ ] Create `dev/r01/baseline_diffs.md` with this content:
 
 ```markdown
-# M02d baseline diffs
+# R01 baseline diffs
 
 **Date.** 2026-05-09.
 
 ## Summary
 
-Three baseline-manifest entries change as a result of M02d's config
+Three baseline-manifest entries change as a result of R01's config
 schema migration. None reflect scientific drift — they are purely the
 result of `src/copy_config_files.py` writing the new sectioned YAML
 (instead of the old flat YAML) into `{project_dir}/config/` per
@@ -1444,7 +1444,7 @@ workflow's `rule copy_config`.
 | `{project_dir}/config/snake_config_climate_experiment.yml`                 | Sectioned schema → different bytes  |
 
 These three YAMLs are full copies of the input snake config (whatever
-the user passed via `--configfile`). M02d changes the input config
+the user passed via `--configfile`). R01 changes the input config
 shape, so the copied output also changes shape. The hash diff is
 deterministic.
 
@@ -1468,7 +1468,7 @@ hashes via:
 pixi run python dev/scripts/check_baseline.py record --project-dir tests/test_project
 ```
 
-The new manifest is the M02d contract. M3+ milestones are bound by
+The new manifest is the R01 contract. M3+ milestones are bound by
 the new manifest.
 ```
 
@@ -1482,12 +1482,12 @@ the new manifest.
 - [ ] Run: `pixi run python dev/scripts/check_baseline.py check --project-dir tests/test_project 2>&1 | tail -10`
 - [ ] Expect: all targets verified, zero diff. (Now passes because the manifest holds the new YAML hashes.)
 
-### Step 7.7: Edit roadmap.md to seal M2d
+### Step 7.7: Edit roadmap.md to seal R1
 
 - [ ] In `dev/roadmap.md`, find:
 
 ```markdown
-## M2d — Modularity contracts (pre-M3)
+## R1 — Modularity contracts (pre-M3)
 
 **Goal.** Establish per-workflow config contracts so workflows can be
 ```
@@ -1495,14 +1495,14 @@ the new manifest.
 - [ ] Insert a status line between heading and goal:
 
 ```markdown
-## M2d — Modularity contracts (pre-M3)
+## R1 — Modularity contracts (pre-M3)
 
 **Status.** Sealed YYYY-MM-DD — three top-level config sections in
 place; three contract docs under dev/workflows/; all 3 Snakefiles +
 3 src/ scripts read sectioned config; migration guide for user-local
-configs at dev/m02d/local-config-migration.md. Suite: 45 passed, 4
+configs at dev/r01/local-config-migration.md. Suite: 45 passed, 4
 xfailed. Scientific baseline: zero diff. Config-snapshot YAML hashes
-re-baselined per dev/m02d/baseline_diffs.md (organizational drift,
+re-baselined per dev/r01/baseline_diffs.md (organizational drift,
 not scientific).
 
 **Goal.** Establish per-workflow config contracts so workflows can be
@@ -1512,7 +1512,7 @@ Replace `YYYY-MM-DD` with today's date.
 
 ### Step 7.8: Add an M3 roadmap note (configfile mechanism already done)
 
-M3a's roadmap section currently lists `workflow.configfiles[0]` as a deliverable. M02d delivers it. Mark accordingly so M3 doesn't redo it.
+M3a's roadmap section currently lists `workflow.configfiles[0]` as a deliverable. R01 delivers it. Mark accordingly so M3 doesn't redo it.
 
 - [ ] In `dev/roadmap.md`, find the M3 section's "Cross-cutting deliverables" block:
 
@@ -1536,14 +1536,14 @@ M3a's roadmap section currently lists `workflow.configfiles[0]` as a deliverable
   `src/snake_utils.py`. Update *all three* Snakefiles to import from it.
   Behavior of M4/M5's Snakefiles unchanged; only the helper sourcing moves.
 - ~~Replace the `--configfile` `sys.argv` re-parsing trick in all three
-  Snakefiles with `workflow.configfiles[0]`.~~ **Done by M02d.**
+  Snakefiles with `workflow.configfiles[0]`.~~ **Done by R01.**
 ```
 
 ### Step 7.9: Commit roadmap update + baseline_diffs + manifest
 
 - [ ] Run:
 ```
-git add dev/roadmap.md dev/m02d/baseline_diffs.md dev/baseline/manifest.json
+git add dev/roadmap.md dev/r01/baseline_diffs.md dev/baseline/manifest.json
 git commit -m "$(cat <<'EOF'
 m02d: mark milestone sealed in roadmap; re-baseline config snapshots
 
@@ -1553,9 +1553,9 @@ Pattern established for M3-M5 to inherit.
 
 Scientific baseline preserved exactly. Config-snapshot YAML hashes
 re-recorded as expected organizational drift (not scientific) per
-dev/m02d/baseline_diffs.md. The new manifest is the M02d contract.
+dev/r01/baseline_diffs.md. The new manifest is the R01 contract.
 
-Marks M3a's configfile mechanism deliverable as already-done by M02d
+Marks M3a's configfile mechanism deliverable as already-done by R01
 to prevent rework.
 
 Co-Authored-By: Claude Opus 4.7 (1M context) <noreply@anthropic.com>
@@ -1565,13 +1565,13 @@ EOF
 
 ### Step 7.10: Tag the milestone
 
-- [ ] Run: `git tag -a m02d-contracts -m "m02d-contracts: per-workflow config contracts"`
-- [ ] Verify: `git tag -l "m0*"` should now include `m02d-contracts`
+- [ ] Run: `git tag -a r01-contracts -m "r01-contracts: per-workflow config contracts"`
+- [ ] Verify: `git tag -l "m0*"` should now include `r01-contracts`
 
 ### Step 7.11: Report
 
 - [ ] Summarize to the user:
-  - Branch `milestone/02d-contracts` complete, tagged `m02d-contracts`.
+  - Branch `milestone/r01-contracts` complete, tagged `r01-contracts`.
   - Suite: `45 passed, 4 xfailed` (unchanged).
   - Baseline check: zero diff.
   - Files added: 1 template + 3 contract docs + 1 migration guide.
@@ -1582,10 +1582,10 @@ EOF
 ## Notes for the executing engineer
 
 - **The Step 3.10 commit is the load-bearing one.** Everything before it (template + contract docs) is additive; everything after it (canonical config + Linux config) is downstream of the Snakefiles already being sectioned. If Step 3.10 lands cleanly, the rest is mechanical.
-- **If you discover a config key I missed** (the migration mapping in `dev/m02d/modularity-contracts-design.md` and Task 6's table is what the Snakefiles depend on), stop and surface it. Don't silently extend the mapping — the user reviewed the design with the documented mapping.
-- **The `historical_year_range` format change** is intentional. Old: `"1980, 2010"` (a string). New: `[1980, 2010]` (a list). Snakefile_climate_projections's `time_horizon_hist` variable now receives a list. If downstream Python code in `src/get_change_climate_proj.py` or similar parses it as a string, that's a separate bug to flag (not fix in M02d).
+- **If you discover a config key I missed** (the migration mapping in `dev/r01/modularity-contracts-design.md` and Task 6's table is what the Snakefiles depend on), stop and surface it. Don't silently extend the mapping — the user reviewed the design with the documented mapping.
+- **The `historical_year_range` format change** is intentional. Old: `"1980, 2010"` (a string). New: `[1980, 2010]` (a list). Snakefile_climate_projections's `time_horizon_hist` variable now receives a list. If downstream Python code in `src/get_change_climate_proj.py` or similar parses it as a string, that's a separate bug to flag (not fix in R01).
 - **Don't migrate `*_local.yml` files automatically.** They're gitignored. Task 6's guide is what the user follows manually.
-- **The `enabled: true` flag is documentary in M02d.** Don't add Snakefile-side logic that respects it; that's M6+ work.
+- **The `enabled: true` flag is documentary in R01.** Don't add Snakefile-side logic that respects it; that's M6+ work.
 
 ## Quick reference: file inventory
 
@@ -1605,8 +1605,8 @@ EOF
 | `src/get_change_climate_proj.py` | Modify (Task 3a) |
 | `config/snake_config_model_test.yml` | Modify (Task 4) |
 | `config/snake_config_model_test_linux.yml` | Modify (Task 5) |
-| `dev/m02d/local-config-migration.md` | Create (Task 6) |
-| `dev/m02d/baseline_diffs.md` | Create (Task 7) |
+| `dev/r01/local-config-migration.md` | Create (Task 6) |
+| `dev/r01/baseline_diffs.md` | Create (Task 7) |
 | `dev/baseline/manifest.json` | Modify (Task 7) |
 | `dev/roadmap.md` | Modify (Task 7) |
 
@@ -1622,4 +1622,4 @@ EOF
 5. Linux example config (Task 5)
 6. Local-config migration guide (Task 6)
 7. Seal: roadmap + baseline_diffs + re-recorded manifest (Task 7.9)
-8. Tag `m02d-contracts` (Task 7.10)
+8. Tag `r01-contracts` (Task 7.10)

@@ -1,4 +1,4 @@
-# M02d — Modularity Contracts (pre-M3) — design
+# R01 — Modularity Contracts (pre-M3) — design
 
 **Date.** 2026-05-08.
 
@@ -10,7 +10,7 @@ of modularity** — formalize boundaries without restructuring code.
 
 The structural refactor (Snakemake `module:` composition, plugin
 registry) waits for a real second use case (a 4th workflow, an
-alternative hydrological model). M02d's job is to make sure that future
+alternative hydrological model). R01's job is to make sure that future
 refactor is mechanical rather than archaeological.
 
 ## Why now (and why before M3)
@@ -24,7 +24,7 @@ M3-M5 inherit it without negotiation.
 The user-facing motivation: enable future workflows like data-only
 analysis, alt hydrological models, and partial pipelines (e.g.,
 projections without stress test). Today the workflows are runnable in
-isolation but config-coupled; M02d separates the two.
+isolation but config-coupled; R01 separates the two.
 
 ## Approach
 
@@ -36,7 +36,7 @@ plugins vs hardcoded). Contracts are cheap to formalize and last
 forever. Structure is expensive to change and worth deferring until
 demand is concrete.
 
-M02d invests in contracts. Structure stays as-is.
+R01 invests in contracts. Structure stays as-is.
 
 ## What changes
 
@@ -111,7 +111,7 @@ Notable side effect: this also delivers part of M3a's "configfile
 mechanism" sub-item early. M3a's scope shrinks accordingly when we get
 there.
 
-### 3. `enabled:` flag — documentary in M02d
+### 3. `enabled:` flag — documentary in R01
 
 Setting `enabled: false` does NOT auto-skip the workflow today. The
 user still invokes (or doesn't invoke) the relevant Snakefile manually.
@@ -177,7 +177,7 @@ In scope:
 
 Out of scope:
 - `config/*_local.yml` files — gitignored, per-machine. The user
-  migrates manually using a documented mapping table in the M02d
+  migrates manually using a documented mapping table in the R01
   handoff (a section in this design doc, see "Migration mapping" below).
 
 ## Migration mapping
@@ -203,7 +203,7 @@ plan will produce a complete table; this is a sample.
 | `temp.step_num` etc.          | `workflows.climate_experiment.stress_test.temp.step_num` |
 | `run_historical`              | `workflows.climate_experiment.run_historical`          |
 
-## What does NOT change in M02d
+## What does NOT change in R01
 
 - Code structure: still 3 separate Snakefiles, still flat `src/`.
 - Cross-workflow data dependencies: `Snakefile_climate_projections` still
@@ -236,10 +236,10 @@ artifacts).
 `Snakefile_*` each have a `rule copy_config` that writes the raw snake
 config text into `{project_dir}/config/snake_config_<workflow>.yml`,
 and `dev/scripts/check_baseline.py` includes those YAML files as
-manifest targets (lines 58, 66, 70). Because M02d changes the config
+manifest targets (lines 58, 66, 70). Because R01 changes the config
 schema, those copied YAML hashes change. **This is expected
 organizational drift, not scientific drift.** Document it in
-`dev/m02d/baseline_diffs.md` and re-record the manifest with the new
+`dev/r01/baseline_diffs.md` and re-record the manifest with the new
 YAML hashes; the netCDF / CSV / PNG hashes remain identical.
 
 This is the same policy M2b used: scientific targets gate the
@@ -272,7 +272,7 @@ diff note.
 
 ## Tag
 
-`m02d-contracts`.
+`r01-contracts`.
 
 ## Estimated commit decomposition (~7-9 commits)
 

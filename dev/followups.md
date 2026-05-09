@@ -54,12 +54,12 @@ context so future-you can confirm the issue still applies before fixing.
   exercise the affected path and will catch behavior changes.
 
 - **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
-  triage (`dev/m01/warnings.md`) because most rules don't write stderr
+  triage (`dev/phase-1/m01/warnings.md`) because most rules don't write stderr
   to disk. Once M3's cross-cutting deliverable adds `log:` directives
   to every non-trivial rule across all three Snakefiles, re-run all
   three workflows, sweep the captured logs, and fix any bucket-2
   (config/data-catalog) or bucket-3 (our-code) warnings that surface.
-  Update `dev/m01/warnings.md` (or supersede it with an `m03_*` doc).
+  Update `dev/phase-1/m01/warnings.md` (or supersede it with an `m03_*` doc).
 
 - **`extract_climate_grid` silently truncates the historical range.**
   When the snake config's `historical:` window asks for years that the
@@ -192,7 +192,7 @@ notes for M3-M5 to inherit when they add their own test files.
 ## M3+ — Surfaced during M2b (library upgrades)
 
 Items surfaced during the hydromt 0.x → 1.x / hydromt_wflow 0.x → 1.x /
-Wflow.jl 0.7 → 1.0.2 / pandas 3.x / Python 3.12 jump. See `dev/m02b/`
+Wflow.jl 0.7 → 1.0.2 / pandas 3.x / Python 3.12 jump. See `dev/phase-1/m02b/`
 for the full M2b record.
 
 - **`hydromt 1.x` `to_dict` / `to_yml` silently strips `driver.options.preprocess`.**
@@ -201,7 +201,7 @@ for the full M2b record.
   *Workaround applied:* `src/prepare_climate_data_catalog.py` bypasses
   `to_yml` and uses `yaml.safe_dump` directly.
   *Proper fix:* file upstream against `hydromt`. Reproducer is the
-  three-line snippet in `dev/m02b/handoff.md` decision section.
+  three-line snippet in `dev/phase-1/m02b/handoff.md` decision section.
 
 - **conda-forge does not ship `julia` for win-64 at all.** linux-64 / osx-64
   have 1.10.x and 1.12.x but skip 1.11.x; win-64 has nothing. This blocks the
@@ -239,13 +239,13 @@ for the full M2b record.
   build errors without). M3 should map the other 13 to CSDMS names and
   decide whether to restore them. CSDMS lookup tables in
   `hydromt_wflow.naming` and `hydromt_wflow.version_upgrade`. Concrete
-  remap in `dev/m02b/handoff.md` decision #3.
+  remap in `dev/phase-1/m02b/handoff.md` decision #3.
 
 - **CMIP6 `precip` / `temp` `.attrs` lost on `monthly_change_scalar_merge`.**
   Pre-M2b, `annual_change_scalar_stats_summary.nc` carried `cell_measures`,
   `cell_methods`, `comment`, `long_name`, `original_name`, `standard_name`,
   `units` on each data variable; under hydromt 1.3, those are now `{}` on
-  the merged output. Documented in `dev/m02b/baseline_diffs.md`.
+  the merged output. Documented in `dev/phase-1/m02b/baseline_diffs.md`.
   *Investigation:* identify whether `get_change_climate_proj.py` or hydromt
   drops the attrs during the merge; restore them.
 

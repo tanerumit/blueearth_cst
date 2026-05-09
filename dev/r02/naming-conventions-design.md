@@ -1,4 +1,4 @@
-# M02e — Naming conventions (pre-M3) — design
+# R02 — Naming conventions (pre-M3) — design
 
 **Date.** 2026-05-09.
 
@@ -6,7 +6,7 @@
 
 Single prescriptive style guide for naming identifiers and files
 across the repo, delivered as `dev/conventions/naming.md`. Pure docs
-addition. **No code refactoring in M2e** — existing names are
+addition. **No code refactoring in R2** — existing names are
 grandfathered. M3+ apply the conventions when touching code; M6 may
 do bulk file moves under the structural-refactor milestone.
 
@@ -18,7 +18,7 @@ arguing the convention each time.
 
 M3-M5 each refactor a workflow's scripts and add new identifiers
 along the way (helper functions in `snake_utils.py`, new fixtures,
-new wildcards, new config keys under M02d's sectioned schema). Doing
+new wildcards, new config keys under R01's sectioned schema). Doing
 those refactors against an undocumented convention means each
 milestone has to re-decide naming on the fly — and the decisions
 accumulate inconsistently. Locking the convention first lets M3-M5
@@ -41,9 +41,9 @@ external conventions take precedence. Two important framings:
    conventions even when they conflict with the local rules.
 2. **Grandfathered today, applied tomorrow.** Existing names that
    don't conform stay as-is until the owning milestone refactors
-   them. M2e itself produces zero code diffs.
+   them. R2 itself produces zero code diffs.
 
-## Decisions baked in (from brainstorming + M2e review)
+## Decisions baked in (from brainstorming + R2 review)
 
 | Topic                          | Decision                                                                |
 | ------------------------------ | ----------------------------------------------------------------------- |
@@ -63,7 +63,7 @@ external conventions take precedence. Two important framings:
 
 ## Style guide outline (`dev/conventions/naming.md`)
 
-The guide itself gets authored during M2e execution. Section list:
+The guide itself gets authored during R2 execution. Section list:
 
 ### 1. Universal rules
 
@@ -86,7 +86,7 @@ rules (`build_model`, `add_gauges`, `run_wflow`) (SHOULD). Noun-only
 acceptable for non-action rules (`rule all`) (MAY).
 
 **YAML**: snake_case keys for BlueEarth-owned configs. Group under
-M02d sections: `project`, `shared`, `workflows.<name>`. Lowercase
+R01 sections: `project`, `shared`, `workflows.<name>`. Lowercase
 booleans (`true` / `false`).
 
 **YAML — upstream tool configs are exempt.** Configs consumed by
@@ -151,7 +151,7 @@ incrementally.
 | `_ds`    | xarray Dataset                | `forcing_ds`, `change_ds`                 |
 | `_df`    | pandas DataFrame              | `qstats_df`, `signature_df`               |
 | `_gdf`   | geopandas GeoDataFrame        | `region_gdf`, `outlets_gdf`               |
-| `_cfg`   | parsed config dict (M02d)     | `project_cfg`, `shared_cfg`, `my_cfg`     |
+| `_cfg`   | parsed config dict (R01)     | `project_cfg`, `shared_cfg`, `my_cfg`     |
 
 **Snakemake input/output labels (grandfathered, not for new Python):**
 
@@ -224,7 +224,7 @@ guide does not unify these.
 | Markdown planning docs under `dev/`         | kebab-case   | `naming-conventions-design.md`, `modularity-contracts-plan.md` |
 | Standard root-level files                   | upstream     | `CLAUDE.md`, `README.rst`, `Dockerfile`, `LICENSE`        |
 | Config / data / catalog YAML                | tool contract | `snake_config_model_test.yml`, `deltares_data.yml` (rename only with migration note) |
-| Generated outputs under `project_dir/`      | governed by owning workflow contract (M02d) | varies                     |
+| Generated outputs under `project_dir/`      | governed by owning workflow contract (R01) | varies                     |
 
 The `kebab-case` rule for `dev/*.md` recognizes the dominant
 convention already in use across milestone planning docs. Don't
@@ -246,10 +246,10 @@ guide's table sparse so the doc stays under 250 lines.
 | `cmip6Models` | `cmip6_models`           | Lowercase acronym + snake_case.          |
 | `TRUE` / `FALSE` (in BE-owned YAML) | `true` / `false` | Lowercase YAML booleans.            |
 
-## Out of scope (what M2e does not deliver)
+## Out of scope (what R2 does not deliver)
 
 - Branch / commit / PR conventions (already in `dev/roadmap.md`).
-- Output path conventions inside `project_dir` (in M02d workflow
+- Output path conventions inside `project_dir` (in R01 workflow
   contract docs).
 - Refactoring existing names to conform — explicitly grandfathered.
 - Linter or CI enforcement — manual review for now. A future linter
@@ -263,11 +263,11 @@ guide's table sparse so the doc stays under 250 lines.
 - `dev/conventions/naming.md` exists and is < 250 lines.
 - `CLAUDE.md` has a one-line pointer to the naming doc.
 - `pixi run pytest tests/` unchanged (no behavior change).
-- No code files modified in M2e.
+- No code files modified in R2.
 
 ## Migration notes for existing names
 
-M2e writes the contract; it does not enforce it on existing code.
+R2 writes the contract; it does not enforce it on existing code.
 M3-M5 may opportunistically rename when refactoring nearby code.
 M6 (structural refactor) may do bulk file / module moves with a
 `MIGRATION.md` mapping per the existing roadmap.
@@ -294,24 +294,24 @@ incidental renames from these to `_path` are acceptable under M3's
 
 ## Tag
 
-`m02e-naming`. Sequenced after M02d seals (branch
-`milestone/02e-naming` off `m02d-contracts` tag).
+`r02-naming`. Sequenced after R01 seals (branch
+`milestone/r02-naming` off `r01-contracts` tag).
 
 ## Estimated commits (~3)
 
 1. `m02e: open naming-conventions milestone with design spec`
 2. `m02e: add dev/conventions/naming.md + CLAUDE.md pointer`
-3. `m02e: mark milestone sealed in roadmap` (+ tag `m02e-naming`)
+3. `m02e: mark milestone sealed in roadmap` (+ tag `r02-naming`)
 
 ## Reference
 
-- User review at `dev/m02e/naming-conventions-review.md` (substantive
+- User review at `dev/r02/naming-conventions-review.md` (substantive
   review of the first design draft; surfaced the file-class table,
   the suffix path/object split, the YAML upstream exceptions, the
   examples table, and the lowercase-boolean policy). Supersedes the
   earlier blocker note that previously lived at
   `dev/conventions-review.md`.
-- M02d sectioned config schema: `dev/m02d/modularity-contracts-design.md`.
+- R01 sectioned config schema: `dev/r01/modularity-contracts-design.md`.
 
 ## Related but separate
 

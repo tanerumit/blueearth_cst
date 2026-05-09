@@ -1,14 +1,14 @@
-# M02e Naming Conventions Review
+# R02 Naming Conventions Review
 
 **Date.** 2026-05-09.
 
-**Scope.** Review of `dev/m02e/naming-conventions-design.md` against the
-current repository, the M02d config-contract plan, and the M3-M6 cleanup
+**Scope.** Review of `dev/r02/naming-conventions-design.md` against the
+current repository, the R01 config-contract plan, and the M3-M6 cleanup
 roadmap.
 
 ## Summary
 
-The M02e design is useful and well-timed. A short prescriptive naming guide
+The R02 design is useful and well-timed. A short prescriptive naming guide
 before M3-M5 will prevent workflow refactors from inventing local conventions
 one file at a time. The strongest parts are the grandfathering policy, the
 explicit upstream/domain escape hatch, the `_path` direction for new path
@@ -30,7 +30,7 @@ I recommend tightening the design before execution in four areas:
 
 ## What works well
 
-- **Grandfathering is the right policy.** M02e should not perform renames.
+- **Grandfathering is the right policy.** R02 should not perform renames.
   The repo has baseline-tracked output filenames, copied config snapshots,
   cross-language scripts, and user-facing examples. A pure docs milestone
   avoids accidental churn.
@@ -59,9 +59,9 @@ The design currently says:
 
 But the existing dev docs use hyphenated names:
 
-- `dev/m02d/modularity-contracts-design.md`
-- `dev/m02d/modularity-contracts-plan.md`
-- `dev/m02e/naming-conventions-design.md`
+- `dev/r01/modularity-contracts-design.md`
+- `dev/r01/modularity-contracts-plan.md`
+- `dev/r02/naming-conventions-design.md`
 
 Recommendation: make the final guide explicit:
 
@@ -123,7 +123,7 @@ labels such as `climate_nc` and `st_csv` to be grandfathered.
 
 ### 4. Expand YAML exceptions
 
-"YAML keys snake_case throughout" is correct for the new M02d snake config,
+"YAML keys snake_case throughout" is correct for the new R01 snake config,
 but not for all YAML in this repo. `config/weathergen_config.yml` is consumed
 by weathergenr conventions and currently uses dotted keys:
 
@@ -141,12 +141,12 @@ Recommendation: write the rule as:
 - Upstream tool config keys MUST preserve upstream spelling.
 - Data catalog source names and adapter fields follow HydroMT's schema.
 
-This also protects future M02d config work from accidentally normalizing
+This also protects future R01 config work from accidentally normalizing
 external schemas.
 
 ### 5. Include boolean casing in config guidance
 
-Existing YAML uses uppercase `TRUE` / `FALSE` in places; the M02d template
+Existing YAML uses uppercase `TRUE` / `FALSE` in places; the R01 template
 uses lowercase `true` / `false`. YAML accepts both, but a style guide should
 pick one for BlueEarth-owned configs.
 
@@ -199,7 +199,7 @@ readers.
 
 ## Suggested design edits
 
-Before M02e execution, update `dev/m02e/naming-conventions-design.md` to:
+Before R02 execution, update `dev/r02/naming-conventions-design.md` to:
 
 1. Replace "files snake_case" with a file-class table.
 2. Reclassify `RLZ_NUM`, `ST_NUM`, and `DATA_SOURCES` as grandfathered
@@ -210,11 +210,11 @@ Before M02e execution, update `dev/m02e/naming-conventions-design.md` to:
 5. Add lowercase YAML boolean guidance for BlueEarth-owned configs.
 6. Add a compact "instead of / use / reason" examples table.
 7. Clarify whether `dev/conventions-review.md` remains a live reference or
-   is superseded by this M02e review.
+   is superseded by this R02 review.
 
 ## Bottom line
 
-Proceed with M02e, but tighten the guide boundaries before writing
+Proceed with R02, but tighten the guide boundaries before writing
 `dev/conventions/naming.md`. The naming guide should be strict for new
 BlueEarth-owned code and config keys, but careful not to normalize external
 schemas, generated products, or scientific identifiers that are already part

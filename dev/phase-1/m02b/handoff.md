@@ -3,13 +3,13 @@
 > **STATUS: SUPERSEDED — M2b shipped at tag `m02b-upgrades` (commit `16df134`).**
 > Do **not** "resume" the steps below; they were a mid-flight resume guide for
 > one paused session and have been fully executed. The as-shipped state is
-> documented in `dev/m02b/baseline_diffs.md`. Outstanding items surfaced
+> documented in `dev/phase-1/m02b/baseline_diffs.md`. Outstanding items surfaced
 > during execution have been folded into `dev/followups.md`. This file is
 > kept as historical record of the M2b decision log only.
 
 Self-contained handoff so a fresh Claude Code session can pick up where the
-previous one paused. Pair with `dev/m02b/plan.md` (the original step plan)
-and `dev/m02b/audit.md` (upstream API breaks). This file overrides the plan
+previous one paused. Pair with `dev/phase-1/m02b/plan.md` (the original step plan)
+and `dev/phase-1/m02b/audit.md` (upstream API breaks). This file overrides the plan
 where they conflict — the plan is from before execution started; reality
 diverged in several places that are documented below.
 

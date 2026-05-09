@@ -1,12 +1,12 @@
-# Roadmap and M02d Review
+# Roadmap and R01 Review
 
 **Date.** 2026-05-09.
 
 **Scope.** Review of the cleanup roadmap in `dev/roadmap.md`, with
-special attention to the high-level plan and current M02d modularity
+special attention to the high-level plan and current R01 modularity
 contracts phase. This review is based on the current repository structure,
 the three root Snakefiles, the `src/` scripts they call, the test suite,
-and the M02d design / implementation plan.
+and the R01 design / implementation plan.
 
 ## Executive summary
 
@@ -17,12 +17,12 @@ workflow internals, then formalize config contracts before the workflow-by-
 workflow cleanup in M3-M5. That is the right order for a scientific
 workflow where output drift is expensive to diagnose after the fact.
 
-The main adjustment I recommend is tightening M02d before execution. The
+The main adjustment I recommend is tightening R01 before execution. The
 design says "contract only, no behavior change", but the implementation
 plan currently changes the config shape without updating every code path
 that reads the config file directly. In particular, scripts invoked by
 Snakemake receive `config_path` and parse the YAML themselves; several of
-those scripts still expect flat keys. If M02d migrates only the Snakefiles,
+those scripts still expect flat keys. If R01 migrates only the Snakefiles,
 `climate_projections` and `climate_experiment` can parse successfully at
 the Snakefile layer and still fail later inside the called scripts.
 
@@ -30,7 +30,7 @@ The second important correction is verification semantics. The baseline
 checker includes copied snake-config snapshots as formal `rule all` targets.
 Changing the config schema will change those YAML hashes even if scientific
 outputs are bit-for-bit identical. A literal "zero baseline diff" is
-therefore not a valid M02d exit criterion unless the checker or manifest
+therefore not a valid R01 exit criterion unless the checker or manifest
 policy is adjusted.
 
 ## Current structure and behavior
@@ -54,7 +54,7 @@ its own copy of `get_config()`, reads the same global `config` namespace,
 and re-parses `sys.argv` to recover `--configfile` so downstream scripts
 can copy or parse the original YAML.
 
-The important detail for M02d is that not all config reads live in the
+The important detail for R01 is that not all config reads live in the
 Snakefiles. These scripts parse the snake config directly:
 
 - `src/prepare_cst_parameters.py` reads `yml["temp"]` and `yml["precip"]`.
@@ -79,27 +79,27 @@ The milestone decomposition is sound. The strongest parts are:
   Wflow APIs.
 - M2c inserted before workflow cleanup, giving M3-M5 a pattern for unit
   tests and strict xfails.
-- M2d inserted before M3-M5, which prevents each workflow cleanup from
+- R1 inserted before M3-M5, which prevents each workflow cleanup from
   inventing its own config ownership rules.
 - Vertical-by-workflow cleanup in M3-M5, which limits blast radius and
   gives each milestone an owned baseline slice.
 
 The main roadmap-level suggestion is to make M3 explicitly absorb the
-M02d side effects that are already becoming cross-cutting:
+R01 side effects that are already becoming cross-cutting:
 
-- If M02d replaces the `sys.argv` configfile recovery with
+- If R01 replaces the `sys.argv` configfile recovery with
   `workflow.configfiles[0]`, remove that from M3 deliverables or mark it
-  already completed by M02d.
-- If M02d introduces `project/shared/workflows`, M3 should introduce a
+  already completed by R01.
+- If R01 introduces `project/shared/workflows`, M3 should introduce a
   small config-access helper rather than letting three Snakefiles build
   independent local patterns again.
 - M3 should include a dedicated "direct config-file readers" audit before
   further refactors. Otherwise the old flat schema can survive invisibly
   inside scripts.
 
-## M02d design review
+## R01 design review
 
-The contract-first approach is good. Keeping structure unchanged in M02d is
+The contract-first approach is good. Keeping structure unchanged in R01 is
 pragmatic because the repo does not yet have a fourth workflow, a module
 registry, or an alternate hydrological backend. Formalizing ownership now
 and deferring Snakemake `module:` composition keeps this phase small.
@@ -125,7 +125,7 @@ ambiguous:
   is reasonable if the intent is "external catalogs live under project";
   document that convention to avoid future bikeshedding.
 
-## M02d implementation-plan issues
+## R01 implementation-plan issues
 
 ### 1. Direct config-file readers will break after sectioning
 
@@ -148,10 +148,10 @@ Concrete breakages:
   changes these to lists. That requires either preserving string values in
   config or updating this script to accept lists.
 
-Recommendation: add a M02d task before final verification: update the
+Recommendation: add a R01 task before final verification: update the
 direct config-file readers, or pass already-sectioned values from Snakemake
 instead of giving scripts the whole config path. The lower-risk option for
-M02d is a tiny compatibility helper local to the affected scripts:
+R01 is a tiny compatibility helper local to the affected scripts:
 
 - `experiment_cfg = yml["workflows"]["climate_experiment"]`
 - `stress_cfg = experiment_cfg["stress_test"]`
@@ -170,15 +170,15 @@ the Python/R scripts.
 - `{project_dir}/config/snake_config_climate_projections.yml`
 - `{project_dir}/config/snake_config_climate_experiment.yml`
 
-`src/copy_config_files.py` copies the raw snake config text. After M02d,
+`src/copy_config_files.py` copies the raw snake config text. After R01,
 those copied YAML files will hash differently because the schema changed.
 That is expected organizational drift, not scientific drift.
 
-Recommendation: change the M02d exit criterion from "baseline check reports
+Recommendation: change the R01 exit criterion from "baseline check reports
 zero diff" to one of these explicit policies:
 
 - Preferred: scientific targets match exactly; config snapshot YAML diffs
-  are documented in `dev/m02d/baseline_diffs.md`, then the manifest is
+  are documented in `dev/r01/baseline_diffs.md`, then the manifest is
   re-recorded as the new contract.
 - Alternative: teach `check_baseline.py` an `--ignore-config-snapshots`
   mode for contract-only migrations, and run the normal full check after
@@ -189,7 +189,7 @@ look like a regression.
 
 ### 3. Baseline project directory is inconsistent across the plan
 
-`check_baseline.py` defaults to `examples/test_local`, while the M02d plan
+`check_baseline.py` defaults to `examples/test_local`, while the R01 plan
 asks for workflow runs against `tests/snake_config_model_test.yml` and
 `config/snake_config_model_test.yml`, whose project dirs are
 `tests/test_project` and `examples/test`.
@@ -210,7 +210,7 @@ checker inspects another.
 ### 4. Pre-task clean-tree expectation conflicts with current state
 
 The plan says `git status --short` should be empty, but
-`dev/m02d/modularity-contracts-plan.md` is currently untracked. That is not
+`dev/r01/modularity-contracts-plan.md` is currently untracked. That is not
 a technical problem, but it will confuse an executing worker.
 
 Recommendation: either commit the plan first, or change Step 0.1 to expect
@@ -252,7 +252,7 @@ intermediates" in the contract docs. The baseline manifest should continue
 to track only formal end targets unless a representative fan-out sample is
 intentionally added.
 
-## Suggested M02d plan edits
+## Suggested R01 plan edits
 
 1. Add a "Task 3a: update direct config-file readers" after the Snakefile
    migration. Include `prepare_cst_parameters.py`, `prepare_weagen_config.py`,
@@ -264,17 +264,17 @@ intentionally added.
    - unit tests,
    - scientific-output baseline check,
    - expected config-snapshot diff handling.
-4. Add `dev/m02d/baseline_diffs.md` as an expected artifact if the copied
+4. Add `dev/r01/baseline_diffs.md` as an expected artifact if the copied
    config YAML hashes change.
 5. Make every baseline command pass `--project-dir` explicitly.
-6. Update the roadmap M02d exit criteria so "zero diff" means zero
+6. Update the roadmap R01 exit criteria so "zero diff" means zero
    scientific-output diff, not zero copied-config hash diff.
-7. Adjust the M3 roadmap after M02d lands so already-completed configfile
+7. Adjust the M3 roadmap after R01 lands so already-completed configfile
    handling is not listed as future work.
 
 ## Recommended next step
 
-Before executing M02d, revise `dev/m02d/modularity-contracts-plan.md` to
+Before executing R01, revise `dev/r01/modularity-contracts-plan.md` to
 cover the direct config readers and the baseline-snapshot policy. Those are
 small changes to the plan, but they prevent the milestone from producing a
 schema that parses in Snakemake while failing inside scripts, or a baseline

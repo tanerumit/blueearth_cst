@@ -10,7 +10,7 @@
 
 **Branch:** `milestone/02c-tests` (already created off `m02b-upgrades` tip).
 
-**Spec:** `dev/m02c/test-coverage-design.md`. Read it first if you haven't.
+**Spec:** `dev/phase-1/m02c/test-coverage-design.md`. Read it first if you haven't.
 
 ---
 
@@ -46,7 +46,7 @@
 ```python
 """Unit tests for src/metrics_definition.py — pure-pandas streamflow metrics.
 
-Testing pattern (M02c convention; see dev/m02c/test-coverage-design.md):
+Testing pattern (M02c convention; see dev/phase-1/m02c/test-coverage-design.md):
 - One test file per source module: tests/test_<module>.py
 - Heavy deps (hydromt, xarray, geopandas) stubbed via sys.modules.setdefault
   at the top of the file. See tests/test_stage_data.py for the canonical
@@ -749,7 +749,7 @@ def test_chirps_source_adds_orography_entry(tmp_path, chirps_like_catalog):
         "src/prepare_climate_data_catalog.py works around this with "
         "yaml.safe_dump. When upstream fixes to_yml, this test will pass, "
         "strict=True will fail CI, and the workaround can be removed. "
-        "See dev/m02b/handoff.md for the upstream reproducer."
+        "See dev/phase-1/m02b/handoff.md for the upstream reproducer."
     ),
 )
 def test_hydromt_to_yml_round_trip_preserves_preprocess(tmp_path):

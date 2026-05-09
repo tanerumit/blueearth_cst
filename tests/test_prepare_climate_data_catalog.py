@@ -253,7 +253,7 @@ def test_chirps_source_adds_orography_entry(tmp_path, chirps_like_catalog):
         "src/prepare_climate_data_catalog.py works around this with "
         "yaml.safe_dump. When upstream fixes to_yml, this test will pass, "
         "strict=True will fail CI, and the workaround can be removed. "
-        "See dev/m02b/handoff.md for the upstream reproducer."
+        "See dev/phase-1/m02b/handoff.md for the upstream reproducer."
     ),
 )
 def test_hydromt_to_yml_round_trip_preserves_preprocess(tmp_path):

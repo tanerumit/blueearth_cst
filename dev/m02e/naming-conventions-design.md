@@ -43,20 +43,23 @@ external conventions take precedence. Two important framings:
    don't conform stay as-is until the owning milestone refactors
    them. M2e itself produces zero code diffs.
 
-## Decisions baked in (from brainstorming)
+## Decisions baked in (from brainstorming + M2e review)
 
 | Topic                          | Decision                                                                |
 | ------------------------------ | ----------------------------------------------------------------------- |
 | Voice                          | `MUST` / `SHOULD` / `MAY`                                               |
-| Universal case                 | snake_case for variables, functions, modules, files                     |
+| Universal case                 | snake_case for variables, functions, modules                            |
 | Acronyms in identifiers        | Always lowercase (`cmip6_models`, `era5_orography`, `csdms_name`)       |
-| True constants                 | `UPPER_SNAKE_CASE` (`RLZ_NUM`, `ST_NUM`, `DATA_SOURCES`)                |
-| Python                         | PEP 8: snake_case, PascalCase classes, UPPER constants                  |
+| True constants                 | `UPPER_SNAKE_CASE` for immutable lookups: `WFLOW_VARS`, `XDIMS`, `YDIMS`, `VOLATILE_NC_ATTRS` |
+| Config-derived run settings    | lowercase snake_case for new code (`rlz_count`, `stress_test_count`, `data_sources_path`). Existing `RLZ_NUM`, `ST_NUM`, `DATA_SOURCES` grandfathered. |
+| Python                         | PEP 8: snake_case, PascalCase classes, UPPER_SNAKE for true constants only |
 | R                              | snake_case (not `dot.case`); aligns with tidyverse + weathergenr        |
 | Snakemake rule names           | snake_case; verb_noun for action rules; noun-only acceptable for `rule all` |
-| YAML keys                      | snake_case throughout                                                   |
-| File names                     | snake_case for `.py` and `.R`; exceptions: `Snakefile_*`, `CLAUDE.md`, `README.*`, `Dockerfile`, `LICENSE` |
+| YAML keys (BlueEarth-owned)    | snake_case for BlueEarth-authored configs (snake config sections, generated catalogs) |
+| YAML keys (upstream tools)     | preserve upstream spelling — e.g., weathergenr's `warm.signif.level`, HydroMT/Wflow parameter names |
+| YAML booleans                  | lowercase `true` / `false` for BlueEarth-owned configs (existing `TRUE`/`FALSE` grandfathered) |
 | Path-identifier suffix         | `_path` is canonical for new code; `_fn`, `_fid`, `_file` deprecated    |
+| File names by class            | See "File naming by class" section below                                |
 
 ## Style guide outline (`dev/conventions/naming.md`)
 
@@ -82,8 +85,23 @@ and the weathergenr package conventions. Verb-noun for functions
 rules (`build_model`, `add_gauges`, `run_wflow`) (SHOULD). Noun-only
 acceptable for non-action rules (`rule all`) (MAY).
 
-**YAML**: snake_case keys. Group under M02d sections: `project`,
-`shared`, `workflows.<name>`.
+**YAML**: snake_case keys for BlueEarth-owned configs. Group under
+M02d sections: `project`, `shared`, `workflows.<name>`. Lowercase
+booleans (`true` / `false`).
+
+**YAML — upstream tool configs are exempt.** Configs consumed by
+external tools preserve upstream key spelling even when it conflicts
+with snake_case:
+
+- `config/weathergen_config.yml` uses dotted keys (`warm.signif.level`,
+  `warm.sample.num`, `knn.sample.num`, `evaluate.model`) per
+  weathergenr conventions.
+- HydroMT / Wflow build and update configs use upstream method names
+  and parameter names.
+- Data catalog source names and adapter fields follow HydroMT's
+  schema.
+
+These are external-API contracts; do not normalize.
 
 ### 3. Path-identifier suffix (`_path` canonical)
 
@@ -99,31 +117,62 @@ Python's pathlib convention.
 
 Wildcards used across Snakefiles MUST come from this list:
 
-| Wildcard      | Meaning                                          |
-| ------------- | ------------------------------------------------ |
-| `model`       | climate model id (CMIP6 model name)              |
-| `scenario`    | climate scenario (`historical`, `ssp245`, ...)   |
-| `horizon`     | future horizon name (`near`, `far`)              |
-| `rlz_num`     | weather realization number (1..RLZ_NUM)          |
-| `st_num`      | stress test combination number (0..ST_NUM)       |
+| Wildcard      | Status                  | Meaning                                          |
+| ------------- | ----------------------- | ------------------------------------------------ |
+| `model`       | active                  | climate model id (CMIP6 model name)              |
+| `scenario`    | active                  | climate scenario (`historical`, `ssp245`, ...)   |
+| `horizon`     | active                  | future horizon name (`near`, `far`)              |
+| `rlz_num`     | active                  | weather realization number (1..RLZ_NUM)          |
+| `st_num`      | active                  | stress test combination number (0..ST_NUM)       |
+| `member`      | reserved (CMIP ensemble)| ensemble member id (`r1i1p1f1`, ...). Currently config-only; will become a wildcard if ensemble per-member rules are added. |
 
 Adding a new wildcard requires updating `dev/conventions/naming.md`
-in the same commit.
+in the same commit. The current `st_num2` variant in
+`Snakefile_climate_experiment` is a known inconsistency — fold into
+`st_num` during M3-M5 Snakefile cleanup.
 
-### 5. Established suffix vocabulary
+### 5. Suffix vocabulary — split paths from data objects
 
-| Suffix   | Meaning                            | Example                                   |
-| -------- | ---------------------------------- | ----------------------------------------- |
-| `_dir`   | directory path                     | `project_dir`, `basin_dir`, `exp_dir`     |
-| `_path`  | file path (canonical)              | `region_path`, `forcing_path`             |
-| `_nc`    | netCDF file path / dataset object  | `climate_nc`, `rlz_nc`                    |
-| `_csv`   | CSV file path / DataFrame          | `st_csv`, `Qstats.csv`                    |
-| `_yml`   | YAML file path / dict              | `weagen_config_yml`                       |
-| `_png`   | PNG file path                      | `output_png`, `precip_plt`                |
-| `_cfg`   | config dict (M02d sectioned)       | `project_cfg`, `shared_cfg`, `my_cfg`     |
-| `_fn`    | DEPRECATED. Use `_path`            | (`region_fn`, `csv_fn` — grandfathered)   |
-| `_fid`   | DEPRECATED. Use `_path`            | (`gauges_fid`, `region_fid` — grandfathered) |
-| `_file`  | DEPRECATED. Use `_path`            | (`csv_file` — grandfathered)              |
+A suffix means EITHER a filesystem path OR a loaded object. Not both.
+This is the single biggest readability improvement M3+ can make
+incrementally.
+
+**Paths (filesystem strings):**
+
+| Suffix   | Use for                       | Example                                   |
+| -------- | ----------------------------- | ----------------------------------------- |
+| `_dir`   | directory path                | `project_dir`, `basin_dir`, `exp_dir`     |
+| `_path`  | file path (any extension)     | `region_path`, `forcing_path`, `summary_path`, `catalog_path` |
+
+**Loaded data objects:**
+
+| Suffix   | Use for                       | Example                                   |
+| -------- | ----------------------------- | ----------------------------------------- |
+| `_ds`    | xarray Dataset                | `forcing_ds`, `change_ds`                 |
+| `_df`    | pandas DataFrame              | `qstats_df`, `signature_df`               |
+| `_gdf`   | geopandas GeoDataFrame        | `region_gdf`, `outlets_gdf`               |
+| `_cfg`   | parsed config dict (M02d)     | `project_cfg`, `shared_cfg`, `my_cfg`     |
+
+**Snakemake input/output labels (grandfathered, not for new Python):**
+
+| Suffix   | Status                                              | Example       |
+| -------- | --------------------------------------------------- | ------------- |
+| `_nc`    | Reserved for Snakemake `input:`/`output:` labels mirroring a netCDF product | `climate_nc`, `rlz_nc` |
+| `_csv`   | Same, for CSV products                              | `st_csv`      |
+| `_yml`   | Same, for YAML products                             | `weagen_config_yml` |
+| `_png`   | Same, for PNG products                              | `output_png`, `precip_plt` |
+
+In new Python code, prefer `_path` (for the path string) or `_ds`/`_df`
+(for the loaded object) over the file-extension suffixes. The
+extension suffixes are for Snakemake label hygiene only.
+
+**Deprecated path suffixes (grandfathered; do not use in new code):**
+
+| Suffix   | Replacement | Example of grandfathered usage              |
+| -------- | ----------- | ------------------------------------------- |
+| `_fn`    | `_path`     | `region_fn`, `csv_fn`                       |
+| `_fid`   | `_path`     | `gauges_fid`, `region_fid`, `forcing_fid`   |
+| `_file`  | `_path`     | `csv_file`                                  |
 
 ### 6. Domain identifiers — DO NOT normalize
 
@@ -156,6 +205,46 @@ listing the old → new mapping:
 - Wflow / HydroMT / CMIP / weathergenr external identifiers.
 - Test fixture paths referenced by `tests/conftest.py`,
   `dev/scripts/check_baseline.py`, or other scripts.
+
+**Scientific abbreviations in user-facing output filenames are
+allowed.** `Qstats.csv`, `Tlow`, `Tpeak`, `BFI`, return-period
+`T2` / `T10` etc. are established domain vocabulary. They violate the
+acronym-lowercase rule but are user-facing and well understood;
+keep as-is.
+
+### 8. File naming by class
+
+Different file classes follow different conventions. The local style
+guide does not unify these.
+
+| File class                                  | Convention   | Examples                                                 |
+| ------------------------------------------- | ------------ | -------------------------------------------------------- |
+| Python modules / R scripts                  | snake_case   | `prepare_climate_data_catalog.py`, `generate_weather.R`  |
+| Snakemake entry points                      | `Snakefile_<workflow>` (existing) | `Snakefile_model_creation`             |
+| Markdown planning docs under `dev/`         | kebab-case   | `naming-conventions-design.md`, `modularity-contracts-plan.md` |
+| Standard root-level files                   | upstream     | `CLAUDE.md`, `README.rst`, `Dockerfile`, `LICENSE`        |
+| Config / data / catalog YAML                | tool contract | `snake_config_model_test.yml`, `deltares_data.yml` (rename only with migration note) |
+| Generated outputs under `project_dir/`      | governed by owning workflow contract (M02d) | varies                     |
+
+The `kebab-case` rule for `dev/*.md` recognizes the dominant
+convention already in use across milestone planning docs. Don't
+rename existing dev docs.
+
+### 9. Examples
+
+Compact "instead of / use" table to anchor the rules. Keep the final
+guide's table sparse so the doc stays under 250 lines.
+
+| Instead of   | Use                       | Reason                                   |
+| ------------ | ------------------------- | ---------------------------------------- |
+| `config_fn`  | `config_path`             | Canonical path suffix.                   |
+| `stats_nc` (when it's a path) | `stats_path` | Path/object distinction.                  |
+| `stats_nc` (when it's a Dataset) | `stats_ds` | Path/object distinction.                  |
+| `ST_NUM`     | `stress_test_count`       | Config-derived setting, not a true constant. |
+| `RLZ_NUM`    | `rlz_count`               | Same.                                    |
+| `st_num2`    | `st_num`                  | Stable wildcard vocabulary.              |
+| `cmip6Models` | `cmip6_models`           | Lowercase acronym + snake_case.          |
+| `TRUE` / `FALSE` (in BE-owned YAML) | `true` / `false` | Lowercase YAML booleans.            |
 
 ## Out of scope (what M2e does not deliver)
 
@@ -216,6 +305,17 @@ incidental renames from these to `_path` are acceptable under M3's
 
 ## Reference
 
-- User review at `dev/conventions-review.md` (pre-design feedback;
-  surfaced sections 4, 6, 7 above plus the path-suffix decision).
+- User review at `dev/m02e/naming-conventions-review.md` (substantive
+  review of the first design draft; surfaced the file-class table,
+  the suffix path/object split, the YAML upstream exceptions, the
+  examples table, and the lowercase-boolean policy). Supersedes the
+  earlier blocker note that previously lived at
+  `dev/conventions-review.md`.
 - M02d sectioned config schema: `dev/m02d/modularity-contracts-design.md`.
+
+## Related but separate
+
+- The outlet station naming decision in `dev/followups.md` (M2b
+  carryover) affects output filenames and downstream interpretation.
+  It's a behavioral / contract decision for M3, not a naming-guide
+  decision.

@@ -145,3 +145,7 @@ tests/test_project
 
 # v0 → v1 catalog migration safety copies (left during M2b)
 *.v0bak
+
+# dev-process scratch (disposable machine-local outputs)
+dev/tmp/*
+!dev/tmp/.gitkeep

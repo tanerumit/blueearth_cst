@@ -62,6 +62,18 @@ hydroengine = "*"
 gwwapi = "*"
 snakemake = "*"
 
+# Env activation. Applied on every `pixi shell` / `pixi run`, so these no longer
+# have to be re-created by hand after each env rebuild (see docs/env_setup_notes.md).
+[activation.env]
+# HDF5 takes an flock-style lock by default; the Deltares P: SMB share rejects
+# it, so netCDF4 reads fail mid-op. Disabling locking is also safe/recommended
+# on network filesystems generally, hence set cross-platform.
+HDF5_USE_FILE_LOCKING = "FALSE"
+
+# Windows-only: recreate the ffi.dll / cairo.dll aliases graphviz needs.
+[target.win-64.activation]
+scripts = ["dev/scripts/pixi_activate.bat"]
+
 # Single-command install for a fresh clone:
 #     pixi install         # native deps from pixi.toml
 #     pixi run install     # R + Julia layers wired below

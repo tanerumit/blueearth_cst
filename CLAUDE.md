@@ -11,9 +11,15 @@ This is a multi-language scientific workflow toolbox (BlueEarth Climate Stress T
 - **Julia** runs the Wflow.jl hydrological model, invoked via `julia --threads 4 -e "using Wflow; Wflow.run()" <toml>` from Snakemake `shell:` directives.
 - **Snakemake** stitches everything together. The three `Snakefile_*` files at the repo root are the entry points — there is no Python package CLI.
 
-The conda env is named `cst` (set in `environment.yml`). Activate with `conda activate cst`.
+The environment is managed by **pixi** (`pixi.toml` + `pixi.lock`), a single env named `default`. Enter it with `pixi shell`, or prefix one-off commands with `pixi run <cmd>`.
+
+- `pixi install` — resolve/install the conda-forge + PyPI deps (Python stack, R toolchain, snakemake).
+- `pixi run install` — layers on top of that: `install-rdeps` (weathergenr v1.2.0 via `pak`) and `install-julia` (`Pkg.instantiate()` the Julia env).
+- **Julia is not in the pixi env.** It's juliaup-managed and must already be on `PATH` (conda-forge has no win-64 Julia build).
 
 ## Common commands
+
+Run all commands below inside `pixi shell` (or prefix each with `pixi run`, e.g. `pixi run pytest tests/`) so `snakemake`, `python`, and `Rscript` resolve to the pixi env.
 
 All workflows take `--configfile config/snake_config_model_test.yml` (the canonical example config). Use `_linux.yml` variants on Linux because data catalog paths differ.
 

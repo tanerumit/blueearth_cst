@@ -470,12 +470,12 @@ def _apply_variables(ds: xr.Dataset, variables) -> xr.Dataset:
 
 
 ZARR_TIME_CHUNK = 365
+# Only CF packing keys are carried from the source encoding; the source zarr
+# codec objects are stripped separately (see `_strip_source_codecs`).
 ZARR_ENCODING_KEYS = {
     "_FillValue",
     "add_offset",
-    "compressor",
     "dtype",
-    "filters",
     "scale_factor",
 }
 
@@ -510,12 +510,28 @@ def _zarr_subset_encoding(ds: xr.Dataset, chunks: dict[str, int]) -> dict:
     return encoding
 
 
+def _strip_source_codecs(ds: xr.Dataset) -> None:
+    """Drop v2 numcodecs codec objects inherited from the source encoding.
+
+    `xr.open_zarr` attaches the source `.encoding` (including a `numcodecs`
+    `compressor`/`filters` for a zarr v2 store) to every variable *and*
+    coordinate. On write, `to_zarr` reuses that per-variable encoding for any
+    variable we do not override, so the v2 codec reaches the zarr 3.x writer and
+    it raises "Expected a BytesBytesCodec. Got numcodecs.blosc.Blosc instead."
+    Clearing these lets zarr 3 apply its own default compressor. Mutates in place.
+    Both the v2 (`compressor`) and v3 (`compressors`, plural tuple) key spellings
+    are dropped, along with `filters`, since either can carry legacy codecs.
+    """
+    for variable in ds.variables.values():
+        for key in ("compressor", "compressors", "filters"):
+            variable.encoding.pop(key, None)
+
+
 def _zarr_subset_write_plan(ds: xr.Dataset) -> tuple[xr.Dataset, dict]:
     """Return a rechunked subset and matching zarr write encoding."""
     chunks = _zarr_subset_chunks(ds)
-    if not chunks:
-        return ds, _zarr_subset_encoding(ds, chunks)
-    rechunked = ds.chunk(chunks)
+    rechunked = ds if not chunks else ds.chunk(chunks)
+    _strip_source_codecs(rechunked)
     return rechunked, _zarr_subset_encoding(rechunked, chunks)
 
 

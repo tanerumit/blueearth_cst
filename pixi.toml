@@ -37,9 +37,14 @@ xclim = "*"
 zarr = "*"
 
 # R toolchain — weathergenr itself is handled separately (see [tasks]).
-r-base = "4.5.*"        # 4.5 series (currently 4.5.3); pin avoids slipping to 4.6 when conda-forge ships it
-r-pak = "*"             # weathergenr install from GitHub via pak::pkg_install
-r-devtools = "*"        # weathergenr install from GitHub or local (legacy path)
+r-base = "4.4.*"        # pinned to 4.4: conda-forge's r45 r-waveslim build is broken on win-64
+                        # (mingw "32 bit pseudo relocation out of range" crashes library(weathergenr));
+                        # the r44 build loads fine. Pin is intentionally global (not win-64-only) to keep
+                        # R at one version across platforms for reproducibility parity — linux-64 is
+                        # unaffected by the bug but rides the same 4.4 for consistency. Revisit when
+                        # conda-forge fixes the r45 Fortran build (see dev/followups.md).
+r-remotes = ">=2.5.0,<3" # weathergenr install from GitHub (conda-forge r-pak is broken on win-64)
+r-devtools = "*"        # dev convenience / local install fallback
 r-doparallel = "*"
 r-dplyr = "*"
 r-e1071 = "*"
@@ -78,7 +83,13 @@ scripts = ["dev/scripts/pixi_activate.bat"]
 #     pixi install         # native deps from pixi.toml
 #     pixi run install     # R + Julia layers wired below
 [tasks]
-install-rdeps = { cmd = "Rscript --vanilla dev/scripts/install_weathergenr.R", description = "Install weathergenr v1.2.0 via pak (idempotent; lands in .libPaths()[1])" }
+# SSL_CERT_DIR/SSL_CERT_FILE are cleared for this task only: conda-forge's
+# openssl activation points them at the pixi env cert store, but that store's
+# certs/ subdir is empty on win-64, so every Rscript call warns
+# "ignoring SSL_CERT_DIR: no certificates found". Empty is treated as unset, so
+# R's libcurl (Schannel on Windows) falls back to the OS trust store for the
+# GitHub tarball download. Task-scoped so Python/hydromt TLS keep their certs.
+install-rdeps = { cmd = "Rscript --vanilla dev/scripts/install_weathergenr.R", description = "Install weathergenr v1.2.0 via remotes (idempotent; lands in .libPaths()[1])", env = { SSL_CERT_DIR = "", SSL_CERT_FILE = "" } }
 # SSL_CERT_DIR/SSL_CERT_FILE are cleared for this task only: conda-forge's
 # openssl activation (etc/conda/activate.d/openssl_activate-win.*) points them at
 # the pixi env cert store, and Julia forwards SSL_CERT_DIR to libcurl as CAPATH.

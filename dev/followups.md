@@ -191,24 +191,27 @@ for the full M2b record.
   juliaup in a pixi `[tasks]` step that calls `juliaup install 1.11.7` at
   env-setup time; (c) move to a different distribution channel.
 
-- **weathergenr cannot be installed into the conda r-base site-lib on
-  Windows.** `pak::pkg_install(..., lib=R_HOME/library)` and
-  `install.packages(..., lib=R_HOME/library)` both fail at the byte-compile /
-  lazy-load step with `Mingw-w64 runtime failure: 32 bit pseudo relocation
-  ... out of range`. The conda r-base toolchain's mingw runtime is
-  ABI-incompatible with one or more of weathergenr's Imports (likely
-  `ncdf4`) when loaded inside the install transaction. The package itself
-  is pure R; the failure is in the deps it loads at install-time lazy
-  binding.
-  *Workaround applied:* `dev/scripts/install_weathergenr.R` installs without
-  `lib=` so the package lands in `.libPaths()[1]` (user lib on Windows,
-  conda site-lib on Linux). `src/weathergen/global.R` trusts R's default
-  libPaths so the user-lib install is visible at workflow runtime.
-  *Proper fix:* either (a) get weathergenr to compile cleanly against
-  conda r-base on Windows (probably needs an upstream conda-forge fix to
-  the ncdf4 / r-base mingw build), or (b) vendor weathergenr under
-  `vendor/weathergenr/` and install via `R CMD INSTALL` skipping the
-  lazy-load test.
+- **[RESOLVED 2026-07-17] weathergenr crashed loading on Windows —
+  root cause was conda-forge's r45 `r-waveslim` build, not `ncdf4`.**
+  `library(weathergenr)` (and the install's lazy-load step) died with
+  `Mingw-w64 runtime failure: 32 bit pseudo relocation ... out of range`.
+  Isolated by loading each Import in turn: the first 15 loaded fine and
+  only `waveslim` overflowed — its Fortran DLL carries a 32-bit
+  pseudo-relocation to libgfortran that lands ~2.7 GB away (past the
+  signed 2 GB range), so load order can't dodge it. The earlier "likely
+  ncdf4" and "user lib on Windows" notes were both wrong: under pixi
+  `Rscript --vanilla` the only libPath is the conda site-lib, and ncdf4
+  is fine. The bug is specific to the **r45** (R 4.5) waveslim build; the
+  **r44** build loads and runs `modwt` cleanly.
+  *Fix applied:* pin `r-base = "4.4.*"` in `pixi.toml` so the solver picks
+  the working r44 waveslim (and r44 builds of the other Fortran deps).
+  Also switched `install_weathergenr.R` from `pak` (conda-forge `r-pak` is
+  separately broken on win-64 — "Wrong OS or architecture") to
+  `remotes::install_github(dependencies=FALSE, upgrade="never")`, which
+  touches nothing but weathergenr itself. Verified: `pixi run install-rdeps`
+  installs and `library(weathergenr)` loads.
+  *Revisit when:* conda-forge ships a fixed r45 `r-waveslim` (or R 4.6)
+  Fortran build — then the `r-base` pin can move forward again.
 
 - **`setup_constant_pars` short names → CSDMS Standard Names.** hydromt_wflow
   1.x's `setup_constant_pars` rejects the short parameter names from 0.x

@@ -62,7 +62,7 @@ Run everything inside `pixi shell`, or prefix each command with `pixi run`, so
 
 ```bash
 pixi install          # conda-forge + PyPI deps (Python stack, R toolchain, snakemake)
-pixi run install      # + weathergenr (R, via pak) and Julia env (Pkg.instantiate)
+pixi run install      # + weathergenr (R, via remotes) and Julia env (Pkg.instantiate)
 
 # Run the three workflows IN ORDER (climate_experiment needs model_creation artifacts):
 snakemake all -c 1 -s Snakefile_model_creation      --configfile config/snake_config_model_test.yml

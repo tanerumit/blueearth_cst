@@ -35,6 +35,32 @@ def get_config(config, arg, default=None, optional=True):
         raise ValueError(f"Argument {arg} not found in config file")
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+        "--run-integration",
+        action="store_true",
+        default=False,
+        help="run slow end-to-end workflow tests (need the data mirror + Julia)",
+    )
+
+
+def pytest_configure(config):
+    config.addinivalue_line(
+        "markers",
+        "integration: end-to-end workflow test; opt-in via --run-integration",
+    )
+
+
+def pytest_collection_modifyitems(config, items):
+    """Skip integration-marked tests unless --run-integration is passed."""
+    if config.getoption("--run-integration"):
+        return
+    skip_integration = pytest.mark.skip(reason="needs --run-integration")
+    for item in items:
+        if "integration" in item.keywords:
+            item.add_marker(skip_integration)
+
+
 @pytest.fixture()
 def config():
     """Return config dictionary"""

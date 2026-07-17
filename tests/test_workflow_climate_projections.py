@@ -35,21 +35,11 @@ pytestmark = pytest.mark.integration
 
 
 def _cfg(key):
+    # Read lazily (inside the test), never at import time: the R1 config-schema
+    # migration must not be able to break collection of the whole suite through
+    # a module-level read here.
     with open(join(SNAKEDIR, CONFIG)) as f:
         return yaml.safe_load(f)[key]
-
-
-_PROJECT_DIR = _cfg("project_dir")
-_CLIM_PROJECT = _cfg("clim_project")
-
-REGION = join(SNAKEDIR, _PROJECT_DIR, "hydrology_model", "staticgeoms", "region.geojson")
-SUMMARY_CSV = join(
-    SNAKEDIR,
-    _PROJECT_DIR,
-    "climate_projections",
-    _CLIM_PROJECT,
-    "annual_change_scalar_stats_summary.csv",
-)
 
 
 def _gcs_reachable():
@@ -60,16 +50,27 @@ def _gcs_reachable():
         return False
 
 
-@pytest.mark.skipif(
-    not exists(REGION),
-    reason=f"missing {REGION}; run the model-creation workflow first",
-)
-@pytest.mark.skipif(
-    not _gcs_reachable(),
-    reason="Google Cloud Storage (storage.googleapis.com:443) not reachable",
-)
 def test_climate_projections_end_to_end():
     """Force a full rebuild of workflow 2 and assert the change summary is produced."""
+    project_dir = _cfg("project_dir")
+    clim_project = _cfg("clim_project")
+    region = join(
+        SNAKEDIR, project_dir, "hydrology_model", "staticgeoms", "region.geojson"
+    )
+    summary_csv = join(
+        SNAKEDIR,
+        project_dir,
+        "climate_projections",
+        clim_project,
+        "annual_change_scalar_stats_summary.csv",
+    )
+    if not exists(region):
+        pytest.skip(f"missing {region}; run the model-creation workflow first")
+    if not _gcs_reachable():
+        pytest.skip(
+            "Google Cloud Storage (storage.googleapis.com:443) not reachable"
+        )
+
     os.chdir(SNAKEDIR)
     cmd = (
         f"snakemake all -c 1 -s Snakefile_climate_projections "
@@ -81,5 +82,5 @@ def test_climate_projections_end_to_end():
         f"snakemake exited {result.returncode}\n"
         f"--- stderr (tail) ---\n{(result.stderr or '')[-4000:]}"
     )
-    assert exists(SUMMARY_CSV), f"expected output not created: {SUMMARY_CSV}"
-    assert getsize(SUMMARY_CSV) > 0, f"output is empty: {SUMMARY_CSV}"
+    assert exists(summary_csv), f"expected output not created: {summary_csv}"
+    assert getsize(summary_csv) > 0, f"output is empty: {summary_csv}"

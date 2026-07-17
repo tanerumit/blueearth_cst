@@ -39,7 +39,12 @@ pytestmark = pytest.mark.integration
 
 
 def _catalog_root():
-    """First data root declared by the config's data catalog, or None."""
+    """First data root declared by the config's data catalog, or None.
+
+    Read lazily (inside the test), never at import time: the R1 config-schema
+    migration must not be able to break collection of the whole suite through a
+    module-level read here.
+    """
     with open(join(SNAKEDIR, CONFIG)) as f:
         cfg = yaml.safe_load(f)
     with open(join(SNAKEDIR, cfg["data_sources"])) as f:
@@ -49,19 +54,14 @@ def _catalog_root():
     return roots[0] if roots else None
 
 
-_ROOT = _catalog_root()
-
-
-@pytest.mark.skipif(
-    _ROOT is None or not exists(_ROOT),
-    reason=f"data mirror not found (catalog root: {_ROOT})",
-)
-@pytest.mark.skipif(
-    shutil.which("julia") is None,
-    reason="julia not on PATH (juliaup-managed Julia 1.11.7 required)",
-)
 def test_model_creation_end_to_end():
     """Force a full rebuild of workflow 1 and assert Wflow output is produced."""
+    root = _catalog_root()
+    if root is None or not exists(root):
+        pytest.skip(f"data mirror not found (catalog root: {root})")
+    if shutil.which("julia") is None:
+        pytest.skip("julia not on PATH (juliaup-managed Julia 1.11.7 required)")
+
     os.chdir(SNAKEDIR)
     cmd = (
         f"snakemake all -c 1 -s Snakefile_model_creation "

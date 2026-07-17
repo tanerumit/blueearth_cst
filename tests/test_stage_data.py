@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import sys
 import types
-from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -41,6 +40,12 @@ class _FakeDataset:
     def __getitem__(self, name):
         return self.data_vars[name]
 
+    @property
+    def variables(self):
+        # `_zarr_subset_write_plan` -> `_strip_source_codecs` iterates
+        # `ds.variables.values()` to drop inherited source codecs.
+        return self.data_vars
+
     def chunk(self, chunks):
         for array in self.data_vars.values():
             array.chunks = tuple(
@@ -63,9 +68,14 @@ class _FakeDataset:
 def test_zarr_subset_write_plan_rechunks_daily_meteo_subset() -> None:
     rechunked, encoding = stage_data._zarr_subset_write_plan(_FakeDataset())
 
+    # Daily time dim (800) is split into ZARR_TIME_CHUNK-sized pieces; the two
+    # spatial dims stay whole. Encoding chunks mirror the rechunking.
     assert rechunked["tp"].chunks == ((365, 365, 70), (5,), (7,))
     assert encoding["tp"]["chunks"] == (365, 5, 7)
-    assert encoding["tp"]["compressor"] == "source-compressor"
+    # The source zarr-v2 `compressor` codec is stripped (not carried into the
+    # write encoding) so zarr 3.x can apply its own default codec — see
+    # `_strip_source_codecs`. Only CF packing keys (ZARR_ENCODING_KEYS) survive.
+    assert "compressor" not in encoding["tp"]
     assert encoding["tp"]["_FillValue"] == np.float32(-9999)
     assert "station_id" not in encoding
 
@@ -138,20 +148,18 @@ def test_raster_glob_workers_are_bounded_and_configurable() -> None:
     assert stage_data._raster_glob_workers({}, file_count=2) == 1
 
 
-def test_completion_detail_appends_timestamp_and_elapsed_time() -> None:
-    finished_at = datetime(2026, 5, 7, 12, 34, 56)
-
-    assert stage_data._completion_detail("12.3 MB", finished_at, 1.24) == (
-        "12.3 MB; completed: 12:34:56; elapsed: 1.2s"
-    )
+def test_completion_detail_appends_elapsed_time() -> None:
+    # The wall-clock `completed:` stamp was dropped; the signature is now
+    # (detail, elapsed, *, status). A WRITTEN entry always appends elapsed.
+    assert stage_data._completion_detail(
+        "12.3 MB", 1.24, status=stage_data.WRITTEN
+    ) == "12.3 MB; elapsed: 1.2s"
 
 
 def test_completion_detail_handles_empty_detail() -> None:
-    finished_at = datetime(2026, 5, 7, 12, 34, 56)
-
-    assert stage_data._completion_detail("", finished_at, 61.0) == (
-        "completed: 12:34:56; elapsed: 1m01s"
-    )
+    assert stage_data._completion_detail(
+        "", 61.0, status=stage_data.WRITTEN
+    ) == "elapsed: 1m01s"
 
 
 def test_format_bytes_uses_readable_units() -> None:
@@ -162,11 +170,12 @@ def test_format_bytes_uses_readable_units() -> None:
 
 
 def test_total_output_bytes_sums_written_and_existing_results() -> None:
-    results = [
-        ("written", "a", "detail", 1_000),
-        ("exists", "b", "detail", 2_000),
-        ("skipped", "c", "detail", 4_000),
-        ("failed", "d", "detail", 8_000),
-    ]
+    # `_total_output_bytes` was folded into `RunReport.total_output_bytes()`;
+    # it still sums only WRITTEN + EXISTS (skipped/failed produce no bytes).
+    report = stage_data.RunReport()
+    report.record("written", "a", "detail", 1_000)
+    report.record("exists", "b", "detail", 2_000)
+    report.record("skipped", "c", "detail", 4_000)
+    report.record("failed", "d", "detail", 8_000)
 
-    assert stage_data._total_output_bytes(results) == 3_000
+    assert report.total_output_bytes() == 3_000

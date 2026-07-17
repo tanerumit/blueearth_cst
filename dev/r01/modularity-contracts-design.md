@@ -128,6 +128,14 @@ isn't justified until a 4th workflow appears.
 
 ### 4. Contract docs per workflow
 
+> **Amended 2026-07-17.** The three contract docs are deferred out of
+> R01: each is written as the opening act of the milestone that
+> refactors that workflow (R3 → model_creation, R4 →
+> climate_projections, R5 → climate_experiment). R01 ships only the
+> format specification below. Rationale: a doc written when its
+> workflow is freshly in focus is better-informed, and R01 shrinks to
+> mostly mechanical config migration. Roadmap updated accordingly.
+
 New: `dev/workflows/model_creation.md`,
 `dev/workflows/climate_projections.md`,
 `dev/workflows/climate_experiment.md`. Each is short (target < 100
@@ -274,10 +282,12 @@ diff note.
 
 `r01-contracts`.
 
-## Estimated commit decomposition (~7-9 commits)
+## Estimated commit decomposition (~6-8 commits)
 
 1. `m02d: add config template + contract convention doc`
-2. `m02d: write contract docs for the three workflows (dev/workflows/)`
+2. ~~`m02d: write contract docs for the three workflows
+   (dev/workflows/)`~~ — moved to the R3/R4/R5 openings
+   (2026-07-17 amendment, §4).
 3. `m02d: migrate tests/snake_config_model_test.yml to sectioned schema`
 4. `m02d: migrate config/snake_config_model_test.yml + _linux.yml`
 5. `m02d: update Snakefile_model_creation to sectioned config reads`

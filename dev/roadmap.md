@@ -143,11 +143,19 @@ accumulate inconsistently.
 
 **Scope.** Reorganize the snake config into three top-level sections
 (`project`, `shared`, `workflows.<name>`); each Snakefile reads only
-its own section + shared. Per-workflow contract docs at
-`dev/workflows/<name>.md` documenting owned config keys, input/output
-contracts, and downstream consumers. `enabled:` flag in each workflow
+its own section + shared. The contract-doc *format* is specified in
+the R1 design doc (§4); the per-workflow docs themselves are deferred
+to R3–R5 (see amendment note below). `enabled:` flag in each workflow
 section as a forward-compat marker (documentary today; operational
 when R6 adds module composition or a wrapper script).
+
+> **Amended 2026-07-17.** The three per-workflow contract docs
+> (`dev/workflows/<name>.md`) are moved out of R1: each is written as
+> the opening act of the milestone that refactors that workflow
+> (R3 → model_creation, R4 → climate_projections, R5 →
+> climate_experiment). Rationale: a contract doc written when its
+> workflow is freshly in focus is better-informed, and R1 shrinks to
+> mostly mechanical config migration.
 
 **Approach.** Distinguish *contracts* (cheap to formalize, last
 forever) from *structure* (expensive to change, defer until needed).
@@ -158,7 +166,6 @@ plugin registry.
 **Exit criteria.**
 - Three top-level config sections in place with a checked-in template
   at `config/snake_config.template.yml`.
-- Three contract docs under `dev/workflows/`.
 - All three Snakefiles read sectioned config; old flat reads removed.
 - `src/` scripts that read config directly (`prepare_cst_parameters`,
   `prepare_weagen_config`, `get_change_climate_proj`) migrated.
@@ -169,10 +176,11 @@ plugin registry.
   `dev/r01/baseline_diffs.md` (organizational drift, not scientific).
 - `pytest tests/` unchanged: 45 passed, 4 xfailed.
 
-**Out of scope.** Operational `enabled:` skip behavior (R6); pydantic
-/ jsonschema validation; cross-workflow data path decoupling (R6);
-Linux/Docker config rewrites (deferred per Linux replication parking
-lot).
+**Out of scope.** Per-workflow contract docs (deferred to the opening
+act of R3/R4/R5, per the 2026-07-17 amendment above); operational
+`enabled:` skip behavior (R6); pydantic / jsonschema validation;
+cross-workflow data path decoupling (R6); Linux/Docker config rewrites
+(deferred per Linux replication parking lot).
 
 **Risks / open questions.**
 - A renamed key the Snakefile still reads under its old name → silent
@@ -209,6 +217,13 @@ identifiers that DO NOT get normalized (Wflow / HydroMT / CMIP /
 CSDMS / weathergenr / scientific variable names), file naming by file
 class (Python/R = snake_case; `dev/*.md` = kebab-case; etc.), and a
 "do not rename without migration note" list.
+
+**Timing (added 2026-07-17).** R2 is pure docs and deliberately light —
+it must not become a scheduling gate. It may be drafted in parallel
+with R1's tail or as R3's opening act; the only hard requirement is
+that `dev/conventions/naming.md` is committed and tagged
+(`r02-naming`) before R3's first *code* commit, so R3–R5 mint new
+identifiers against a locked convention.
 
 **Approach.** Prescriptive but lenient: opinionated where the codebase
 is currently mixed, lenient where external conventions take
@@ -254,6 +269,9 @@ cross-cutting Snakefile patterns that R4 and R5 inherit.
   three Snakefiles with `workflow.configfiles[0]`.~~ **Done by R1.**
 
 **Workflow-1 deliverables.**
+- Opening act, before code changes: write
+  `dev/workflows/model_creation.md` (contract doc deferred from R1;
+  format in `dev/r01/modularity-contracts-design.md` §4).
 - Any load-bearing `ruleorder:` in `Snakefile_model_creation` either
   tightened (preferred) or commented in-place with the reason.
 - Per-rule `log:` and `benchmark:` directives on every non-trivial
@@ -274,6 +292,7 @@ cross-cutting Snakefile patterns that R4 and R5 inherit.
   of the M1 baseline — preserved, or intentionally updated with a
   documented diff in `dev/r03/baseline_diffs.md`.
 - New unit tests added and passing.
+- `dev/workflows/model_creation.md` contract doc committed.
 
 **Out of scope.**
 - `Snakefile_climate_projections` content changes (R4) — except the
@@ -290,6 +309,9 @@ calls. Inherit the patterns established in R3 (shared helper,
 configfile mechanism, log/benchmark conventions).
 
 **Deliverables.**
+- Opening act, before code changes: write
+  `dev/workflows/climate_projections.md` (contract doc deferred from
+  R1; format in `dev/r01/modularity-contracts-design.md` §4).
 - The load-bearing `ruleorder:` directive in
   `Snakefile_climate_projections` either tightened or commented
   in-place with the reason.
@@ -308,6 +330,7 @@ configfile mechanism, log/benchmark conventions).
   the M1 baseline — preserved, or intentionally updated with a
   documented diff in `dev/r04/baseline_diffs.md`.
 - New unit tests added and passing.
+- `dev/workflows/climate_projections.md` contract doc committed.
 
 **Out of scope.**
 - Workflow-1 or workflow-3 changes (other than shared helper
@@ -323,6 +346,9 @@ calls — including the R weathergen layer. Inherit the patterns from
 R3.
 
 **Deliverables.**
+- Opening act, before code changes: write
+  `dev/workflows/climate_experiment.md` (contract doc deferred from
+  R1; format in `dev/r01/modularity-contracts-design.md` §4).
 - Per-rule `log:` and `benchmark:` on every non-trivial rule in this
   Snakefile.
 - The R weathergen pipeline (`src/weathergen/*.R`): cleaner argument
@@ -343,6 +369,7 @@ R3.
   the M1 baseline — preserved, or intentionally updated with a
   documented diff in `dev/r05/baseline_diffs.md`.
 - New unit tests added and passing.
+- `dev/workflows/climate_experiment.md` contract doc committed.
 
 **Out of scope.**
 - Workflow-1 or workflow-2 changes (other than shared helper

@@ -174,7 +174,7 @@ plugin registry.
 - `check_baseline.py check` reports zero diff on scientific targets;
   copied config snapshots re-baselined per
   `dev/r01/baseline_diffs.md` (organizational drift, not scientific).
-- `pytest tests/` unchanged: 45 passed, 4 xfailed.
+- `pytest tests/` unchanged: 47 passed, 2 skipped, 2 xfailed.
 
 **Out of scope.** Per-workflow contract docs (deferred to the opening
 act of R3/R4/R5, per the 2026-07-17 amendment above); operational

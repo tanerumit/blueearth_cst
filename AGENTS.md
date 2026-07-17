@@ -11,6 +11,35 @@ workflow toolbox stitched together by **Snakemake**. The three `Snakefile_*` fil
 at the repo root are the only entry points; there is no package CLI. Full
 narrative in `README.rst`.
 
+## Background
+
+Method context that changes how code here should be edited (full rationale:
+`docs/cst-toolbox-technical-note-2025.md`, §1):
+
+- CST implements **bottom-up climate stress testing** (decision-scaling / DMDU):
+  instead of running selected GCM scenarios through the system ("top-down"), it
+  systematically perturbs local climate across a temperature × precipitation grid
+  and maps where system performance degrades. Stress-test scenarios come from the
+  stochastic weather generator, **not** from climate projections — never couple
+  the experiment workflow to CMIP scenarios.
+- CMIP6 output (workflow 2) is a **plausibility overlay only**: its change factors
+  situate the perturbation grid in projection space; they never drive stress-test
+  runs.
+- Pipeline ↔ method: workflow 1 builds a distributed Wflow-SBM model from global
+  datasets via hydromt and runs it once on historical forcing (rapid deployment,
+  no local calibration); workflow 2 computes per-(model, scenario, horizon)
+  monthly change factors from CMIP6; workflow 3 is the stress test proper —
+  weathergenr generates `RLZ_NUM` stochastic realizations, each perturbed across
+  `ST_NUM` temp/precip combinations (`cst_0` = unperturbed baseline), run through
+  Wflow, and reduced to hydrological indicators (e.g. mean/max discharge, 7-day
+  low flow) that form the response surface.
+- This repo is the **workflow engine** of a three-part platform (BlueEarth-CST
+  workflows + CST-API backend + CST-frontend GUI). No web/API code belongs here;
+  the GUI drives these Snakefiles server-side.
+- CST targets rapid, first-order basin assessments on global data — not detailed
+  engineering design. Prefer robustness and automation over site-specific
+  sophistication.
+
 ## Repo Map
 
 - `Snakefile_model_creation` / `Snakefile_climate_projections` / `Snakefile_climate_experiment` — the three workflow entry points, run in that order.

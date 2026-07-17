@@ -1,15 +1,61 @@
 ---
-title: architecture
-ingest-source: hydromt-architecture
-source: https://deltares.github.io/hydromt/latest/dev/architecture/architecture.html
-repo-source: https://github.com/Deltares/hydromt/blob/4b6ce64a7ed082740766e466a1861860f5150322/docs/dev/architecture/architecture.rst
-upstream-repo: Deltares/hydromt
-upstream-commit: 4b6ce64a7ed082740766e466a1861860f5150322
-pulled: 2026-05-04
-doc-type: architecture
-license: MIT
+title: HydroMT — Architecture and conventions
+source: "https://deltares.github.io/hydromt/latest/dev/architecture/index.html"
+reference: "HydroMT team. (n.d.). *Architecture and conventions*. HydroMT documentation. Retrieved May 10, 2026, from sources/tools/hydromt/hydromt-architecture.md"
+topic: tools
+type: documentation
+promoted: 2026-05-10
+tags:
+  - tools
+  - hydromt
+accessed: 2026-05-10
 ---
-# Architecture
+
+# HydroMT — Architecture and conventions
+
+_Merged from 3 upstream page(s) at commit `4b6ce64a`, pulled 2026-05-04. Page boundaries are preserved as `## ` headings._
+
+
+---
+
+## index
+
+Explore HydroMT's core architecture components and their relationships. Click on each card to jump to the detailed documentation.
+
+
+Model
+
+
+ModelComponent
+
+
+DataCatalog
+
+
+DataSource
+
+
+URIResolver
+
+
+Driver
+
+
+DataAdapter
+
+
+Extensibility
+
+
+Conventions
+
+
+architecture conventions
+
+
+---
+
+## architecture
 
 HydroMT provides a modular and extensible framework for building and managing environmental and hydrological models. Its architecture is organized around a few core abstractions that define how models, data, and workflows interact.
 
@@ -17,7 +63,7 @@ At its core, HydroMT connects model components and data sources through a consis
 
 The diagram below summarizes the relationships between these components.
 
-<img src="/_static/hydromt_architecture.jpeg" width="800" alt="HydroMT main architecture diagram" />
+<img src="https://deltares.github.io/hydromt/latest/_images/hydromt_architecture.jpeg" width="800" alt="HydroMT main architecture diagram" />
 
 ## Model
 
@@ -113,21 +159,15 @@ See also:
 - `API <uri_resolver_api>`
 - `Implement your own <custom_resolver>`
 
-<div id="driver_architecture">
-
-<div class="currentmodule">
 
 hydromt.data_catalog.drivers
 
-</div>
-
-</div>
 
 ## Driver
 
 The `Driver` reads resolved data into memory as Python objects such as `xarray.Dataset` or `geopandas.GeoDataFrame`. Each HydroMT data type (e.g., raster, vector) has a dedicated driver interface.
 
-Drivers handle the complexity of I/O operations, including merging multiple files and managing filesystem access through <span class="title-ref">fsspec</span>. New drivers can be added through HydroMT's plugin system to support custom formats.
+Drivers handle the complexity of I/O operations, including merging multiple files and managing filesystem access through `fsspec`. New drivers can be added through HydroMT's plugin system to support custom formats.
 
 Existing drivers in HydroMT core include:
 
@@ -169,3 +209,34 @@ HydroMT's architecture is fully extensible. Developers can subclass models, comp
 See also:
 
 - `register_plugins`
+
+
+---
+
+## conventions
+
+## General
+
+- HydroMT follows consistent `naming and unit conventions <data_convention>` for frequently used variables to ensure clarity and interoperability.
+- Code and documentation should adhere to Pythonic naming standards (PEP8), and public API elements should have clear docstrings following the NumPy style.
+
+## Data
+
+- HydroMT supports a range of `data types <data_types>`, which can be extended as needed.
+- Input data is defined in a `data catalog <data_yaml>` and parsed by HydroMT to its associated Python type through the `DataSource` class.
+- The goal of the `DataAdapter` is to standardize internal data representation — including variable names, units, and structure — with minimal preprocessing.
+- When accessing data from the catalog via any `DataCatalog.get_<data_type>` method, the adapter ensures a consistent and unified format.
+- The `get_*` methods also support arguments to define spatial or temporal subsets of datasets, ensuring efficient and targeted data access.
+
+## Model Class
+
+The HydroMT `Model class <model_api>` defines the structure and behavior of models within the framework. To implement HydroMT for a specific model kernel or software, create a subclass named `<Name>Model` (e.g., `SfincsModel` for SFINCS) with model-specific readers, writers, and setup methods.
+
+- `Model components <model_components>` are data attributes that together define a model instance. Each component represents a specific aspect (file/data) of the model and is parsed into a Python class and data object with predefined specifications. For example, the `GridComponent` data represents static regular grids of a model as an `xarray.Dataset`.
+- Most model components include both `read` and `write` methods for handling model-specific formats. These methods may include optional keyword arguments but **must not** require positional arguments. Model outputs can also be handled through components but should not implement a `write` method.
+- The `Model` should contain high level methods that go from raw data into model inputs and parameters. These methods are decorated with `@hydromt_step` to indicate they are part of the model workflow. Each method should have a clear purpose, and documented inputs and outputs.
+- All public model methods, defined with `hydromt_step` may only accept arguments of basic Python types: `str`, `int`, `float`, `bool`, `None`, `list`, or `dict`. This restriction ensures methods can be fully defined in a `workflow YAML file <model_workflow>`.
+- Model methods access data through the `Model.data_catalog` attribute — an instance of `hydromt.DataCatalog`. Any argument ending with `_fn` (short for *filename*) refers either to a source in the data catalog or to a file path. Inside the method, data can be read with any `DataCatalog.get_<data_type>` method, which handles both catalog entries and local file paths transparently.
+- The Model class defines two high-level methods — `~hydromt.Model.build` and `~hydromt.Model.update` — which are available across all model plugins and exposed via the CLI. Additional high-level methods may be added in future releases.
+- A model subclass can be exposed as a HydroMT plugin by declaring a `hydromt.models` [entry point](https://packaging.python.org/en/latest/specifications/entry-points/) in the package's `pyproject.toml`. For detailed instructions, refer to the `register_plugins` section.
+- We strongly recommend writing integration and unit tests for all model classes and components to ensure correctness and maintain stability across releases.

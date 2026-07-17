@@ -7,7 +7,7 @@ platforms = ["win-64", "linux-64"]
 
 # Python + scientific stack — mirrors environment.yml.
 [dependencies]
-python = ">=3.14,<3.15"
+python = ">=3.12,<3.13"
 pip = "*"
 cartopy = "*"
 dask = "*"          # used directly via dask.diagnostics in extract/get_stats scripts
@@ -62,10 +62,29 @@ hydroengine = "*"
 gwwapi = "*"
 snakemake = "*"
 
+# Env activation. Applied on every `pixi shell` / `pixi run`, so these no longer
+# have to be re-created by hand after each env rebuild (see docs/env_setup_notes.md).
+[activation.env]
+# HDF5 takes an flock-style lock by default; the Deltares P: SMB share rejects
+# it, so netCDF4 reads fail mid-op. Disabling locking is also safe/recommended
+# on network filesystems generally, hence set cross-platform.
+HDF5_USE_FILE_LOCKING = "FALSE"
+
+# Windows-only: recreate the ffi.dll / cairo.dll aliases graphviz needs.
+[target.win-64.activation]
+scripts = ["dev/scripts/pixi_activate.bat"]
+
 # Single-command install for a fresh clone:
 #     pixi install         # native deps from pixi.toml
 #     pixi run install     # R + Julia layers wired below
 [tasks]
 install-rdeps = { cmd = "Rscript --vanilla dev/scripts/install_weathergenr.R", description = "Install weathergenr v1.2.0 via pak (idempotent; lands in .libPaths()[1])" }
-install-julia = { cmd = "julia --project=. -e 'using Pkg; Pkg.instantiate()'", description = "Instantiate the Julia env from Manifest.toml (assumes juliaup-managed Julia 1.11.7 on PATH; conda-forge has no win-64 julia build)" }
+# SSL_CERT_DIR/SSL_CERT_FILE are cleared for this task only: conda-forge's
+# openssl activation (etc/conda/activate.d/openssl_activate-win.*) points them at
+# the pixi env cert store, and Julia forwards SSL_CERT_DIR to libcurl as CAPATH.
+# Julia's Windows libcurl uses the Schannel backend, which does NOT support CAPATH
+# -> a `curl_easy_setopt: 4` (CURLE_NOT_BUILT_IN) error on every Pkg download.
+# Empty is treated as unset by NetworkOptions, so Julia falls back to its bundled
+# CA (share/julia/cert.pem). Task-scoped so Python/hydromt TLS keep their certs.
+install-julia = { cmd = "julia +1.11.7 --project=. -e 'using Pkg; Pkg.instantiate()'", description = "Instantiate the Julia env from Manifest.toml (needs juliaup-managed Julia 1.11.7 on PATH: `juliaup add 1.11.7`; conda-forge has no win-64 julia build)", env = { SSL_CERT_DIR = "", SSL_CERT_FILE = "" } }
 install       = { depends-on = ["install-rdeps", "install-julia"], description = "Install weathergenr + instantiate Julia env on top of pixi install" }

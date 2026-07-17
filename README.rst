@@ -44,7 +44,7 @@ via the standard ``Project.toml`` / ``Manifest.toml``. A single
 ``pixi run install`` task wires both layers together.
 
 For a step-by-step walkthrough of a fresh install, see
-``dev/install.md``.
+``docs/install.md``.
 
 Prerequisites
 -------------
@@ -246,7 +246,7 @@ Fork-specific (development):
 
 - ``dev/roadmap.md`` — milestone roadmap, branching / tagging
   conventions, commit strategy.
-- ``dev/install.md`` — step-by-step install walkthrough.
+- ``docs/install.md`` — step-by-step install walkthrough.
 - ``dev/phase-1/`` — sealed foundation milestone artifacts (audits,
   plans, baseline diffs).
 - ``dev/r01/``, ``dev/r02/`` — active Phase 2 milestone designs

@@ -1,180 +1,99 @@
 # Environment setup notes
 
-Notes on local fixes applied to the `cst` conda environment on Windows. These
-are workarounds for upstream packaging issues, not project-specific bugs.
+The environment is managed by **pixi** (`pixi.toml` + `pixi.lock`), a single
+conda-forge-only env named `default`. Enter it with `pixi shell` or run one-off
+commands via `pixi run <cmd>`. Julia is *not* in the pixi env — it is
+juliaup-managed and must be on `PATH`; its packages are pinned by the Julia
+`Manifest.toml` and installed via `pixi run install-julia`.
 
-## 2026-05-05 — Windows env repair
+This file records local fixes for upstream packaging issues (not project bugs).
+They fall in two groups:
 
-### Symptom 1: Graphviz `dot` warnings, fonts fall back to Times
+- **Live workarounds**, now wired into pixi activation so they apply on every
+  `pixi shell` / `pixi run` with no manual steps.
+- **Superseded conda-era notes**, kept only as historical diagnosis. The old
+  `cst` conda env pulled packages from the anaconda `defaults` channel and was
+  repaired by hand-edited `environment.yml` pins. pixi resolves a modern,
+  conda-forge-only, locked stack, so those pins no longer apply — do **not**
+  carry them forward.
 
-Running `snakemake --dag | dot -Tpng` printed:
+## Live workarounds (automated via pixi activation)
+
+### Graphviz `dot` — missing `ffi.dll` / `cairo.dll` aliases (Windows)
+
+`snakemake --dag | dot -Tpng` printed warnings and rendered fonts as Times
+instead of `sans`:
 
 ```
-Warning: Could not load "...\envs\cst\Library\bin\gvplugin_pango.dll" -
-It was found, so perhaps one of its dependents was not.  Try ldd.
+Warning: Could not load "...\Library\bin\gvplugin_pango.dll" - ...
 Warning: no hard-coded metrics for 'sans'.  Falling back to 'Times' metrics
 ```
 
-The PNG rendered, but with Times instead of `sans`.
+**Root cause.** Two name-mismatch bugs in conda-forge's Windows graphviz/glib
+build (diagnosed by walking the PE import table with `pefile`):
 
-### Root cause
+- `gobject-2.0-0.dll` imports `ffi.dll`, but conda-forge libffi ships `ffi-8.dll`.
+- `gvplugin_pango.dll` imports `cairo.dll`, but conda-forge cairo (historically)
+  shipped `cairo-2.dll`.
 
-Two name-mismatch bugs in conda-forge's Windows graphviz/glib build:
+**Fix.** `dev/scripts/pixi_activate.bat` recreates the missing alias DLLs from
+whatever is shipped. It is registered as a Windows activation script in
+`pixi.toml`:
 
-- `gobject-2.0-0.dll` imports `ffi.dll`, but conda-forge libffi 3.5 ships
-  `ffi-8.dll`.
-- `gvplugin_pango.dll` imports `cairo.dll`, but conda-forge cairo ships
-  `cairo-2.dll`.
-
-Diagnosed by walking the PE import table with `pefile`.
-
-### Fix
-
-Created an activation script that recreates the missing alias DLLs every time
-the env is activated (so reinstalls of libffi/cairo/graphviz can't silently
-break things again):
-
-```
-C:\Users\taner\AppData\Local\miniconda3\envs\cst\etc\conda\activate.d\graphviz_dll_shims.bat
+```toml
+[target.win-64.activation]
+scripts = ["dev/scripts/pixi_activate.bat"]
 ```
 
-```bat
-@echo off
-set "BIN=%CONDA_PREFIX%\Library\bin"
-if not exist "%BIN%\ffi.dll"   if exist "%BIN%\ffi-8.dll"   copy /Y "%BIN%\ffi-8.dll"   "%BIN%\ffi.dll"   >nul
-if not exist "%BIN%\cairo.dll" if exist "%BIN%\cairo-2.dll" copy /Y "%BIN%\cairo-2.dll" "%BIN%\cairo.dll" >nul
-```
+pixi runs it on every activation, so — unlike the old conda `activate.d`
+approach — it survives env rebuilds with no manual re-creation. The script is
+idempotent (guarded by `if not exist`). The current build already ships
+`cairo.dll`, so in practice only the `ffi.dll` alias is created today; the cairo
+branch is kept as a guard against a future regression.
 
-The script lives **inside the env**, so it does not survive
-`conda env remove` / re-create. After every fresh env build on Windows,
-re-create this file.
-
-To verify after a fresh `conda activate cst`:
+Verify after `pixi shell`:
 
 ```powershell
-dir $env:CONDA_PREFIX\Library\bin\ffi.dll, $env:CONDA_PREFIX\Library\bin\cairo.dll
+Test-Path (Join-Path $env:CONDA_PREFIX 'Library\bin\ffi.dll')   # -> True
 ```
 
-### Symptom 2: `np.unicode_` AttributeError when running hydromt
+### netCDF4 `RuntimeError: Invalid argument` reading off the Deltares P: share
 
-```
-AttributeError: `np.unicode_` was removed in the NumPy 2.0 release.
-Use `np.str_` instead.
-```
+Reading ERA5 netCDF/HDF5 from `p:\wflow_global\hydromt\meteo\...` failed
+mid-read inside `xarray`/`netCDF4`.
 
-Triggered by `import xarray` inside hydromt.
+**Root cause.** HDF5 takes an `flock`-style lock on the source file by default.
+The Deltares `P:` SMB share rejects that lock call, so the read fails.
 
-### Root cause
+**Fix.** `HDF5_USE_FILE_LOCKING=FALSE`, set cross-platform via pixi so it applies
+to every shell (also generally safe/recommended on network filesystems):
 
-The env had `numpy 2.4.3` together with `xarray 0.20.1` (an extremely old
-build pulled from anaconda main, not conda-forge). The `xarray<=2024.3.0`
-pin in `environment.yml` was satisfied by the ancient main-channel build
-because channel priority was not strict and `defaults` was implicitly
-included.
-
-### Fix
-
-`environment.yml` updated:
-
-- Added `nodefaults` channel and `channel_priority: strict`.
-- Pinned `numpy<2` (xarray 2024.3.0 requires numpy < 2).
-- Tightened xarray pin to `>=2023.1,<=2024.3.0` so a working version is
-  selected.
-
-In-place repair of the existing env:
-
-```
-conda install -n cst -c conda-forge --override-channels "numpy<2" "xarray>=2023.1,<=2024.3.0"
+```toml
+[activation.env]
+HDF5_USE_FILE_LOCKING = "FALSE"
 ```
 
-Result: `numpy 1.26.4`, `xarray 2024.3.0` (conda-forge build).
+Verify: `pixi run pwsh -NoProfile -Command '$env:HDF5_USE_FILE_LOCKING'` → `FALSE`.
 
-### Symptom 4: zarr write errors when staging ERA5 (`Got None instead`, `BytesBytesCodec`)
+The local data-staging path below (mirroring a bbox subset onto local SSD)
+avoids the SMB read entirely and is the more robust option for repeated runs.
 
-`xarray.to_zarr` failed with codec / chunk errors (`Expected a BytesBytesCodec`,
-`Expected an integer ... Got None instead`) when writing the staged ERA5 zarr
-subset.
+## Superseded conda-era notes (historical)
 
-### Root cause
+These were repairs to the old `cst` conda env (recorded 2026-05-05). They are
+retained for context only; pixi resolves the versions shown below from
+conda-forge with a lockfile, so the symptoms and their hand-pin fixes no longer
+apply.
 
-`xarray 2024.3.0` (March 2024) predates `zarr 3.0` (Nov 2024). The env had
-`zarr 3.1.x` installed, and xarray's older zarr backend cannot drive v3
-encoding paths cleanly — the source's v2 Blosc codec is unreadable by v3,
-and clearing encoding leaves no valid v3 chunk hint.
+| Symptom (conda era) | Old fix | Status under pixi |
+|---------------------|---------|-------------------|
+| `np.unicode_` AttributeError in hydromt — env had `numpy 2.x` beside an ancient `xarray 0.20.1` from anaconda `defaults`. | Pin `numpy<2`, `xarray<=2024.3.0`; add `nodefaults` + strict priority. | Gone. conda-forge-only lock resolves `numpy 2.4.6` + `xarray 2026.4.0` (compatible). Do **not** re-pin `numpy<2`. |
+| `to_zarr` codec/chunk errors — `xarray 2024.3.0` predates `zarr 3.0` but env had `zarr 3.1`. | Pin `zarr<3`. | Gone. Modern `xarray 2026.4.0` + `zarr 3.2.1` interoperate. Do **not** re-pin `zarr<3`. |
+| Wflow.jl `Invalid value kinematic-wave in the TOML` — `hydromt_wflow 0.5.0` emitted pre-1.0 TOML, local Wflow.jl was 1.0.x. | Pin Wflow.jl to `0.8.1` to match `hydromt_wflow 0.5.0`. | **Obsolete and now wrong.** pixi ships `hydromt_wflow 1.0.2`, which emits Wflow.jl **1.x** TOML. The Julia env (`Manifest.toml`) must track a matching Wflow.jl 1.x — not 0.8.1. |
 
-### Fix
-
-Pin `zarr<3` in `environment.yml` and reinstall:
-
-```
-conda install -n cst -c conda-forge --override-channels "zarr<3"
-```
-
-Result: `zarr 2.18.7`. The staging script then writes ERA5 cleanly.
-
-### Symptom 3: `RuntimeError: Invalid argument` in netCDF4 during `add_forcing`
-
-Reading ERA5 netCDF/HDF5 files from `p:\wflow_global\hydromt\meteo\...` while
-writing `inmaps_historical.nc` raised:
-
-```
-File "...\xarray\backends\netCDF4_.py", line 114, in _getitem
-    array = getitem(original_array, key)
-RuntimeError: Invalid argument
-```
-
-### Root cause
-
-HDF5's default Windows behaviour is to take an `flock`-style file lock on the
-source file. The Deltares `P:` SMB share rejects that lock call, and netCDF4
-fails the read mid-operation.
-
-### Fix
-
-Set `HDF5_USE_FILE_LOCKING=FALSE` for the env. Added to the same activation
-script so it follows every shell that activates `cst`:
-
-```bat
-set "HDF5_USE_FILE_LOCKING=FALSE"
-```
-
-(Same recovery rule applies: re-create the activation script after a fresh
-env build.)
-
-### Symptom 5: `Invalid value kinematic-wave in the TOML` from Wflow.jl
-
-`run_wflow` failed with errors like
-
-```
-ArgumentError: Invalid value kinematic-wave in the TOML,
-  must be one of ("kinematic_wave", "local_inertial").
-```
-
-plus warnings that fields `time_units`, `starttime`, `glacier`, `reinit`,
-`kw_river_tstep`, `kin_wave_iteration`, `masswasting`, `lakes`, ... are
-"not recognized as a valid field of the [input] section".
-
-### Root cause
-
-`hydromt_wflow 0.5.0` (pinned in `environment.yml` as `<0.6`) emits the
-pre-1.0 Wflow.jl TOML format. The locally installed Wflow.jl had upgraded
-to 1.0.x, which renamed everything to snake_case and rejects unknown
-fields strictly.
-
-### Fix
-
-Pin Wflow.jl to 0.8.1 in the user's Julia environment:
-
-```
-julia -e 'using Pkg; Pkg.add(name="Wflow", version="0.8.1")'
-```
-
-This matches what `hydromt_wflow 0.5.0` was developed and tested against.
-Re-run snakemake; the wflow run step should clear without TOML rewrites.
-
-A future migration option is to upgrade `hydromt_wflow` to 1.x and adopt
-Wflow.jl 1.x; that would touch the build configs and likely the Snakefile
-script signatures, so it is out of scope here.
+If the Wflow TOML/version mismatch resurfaces under the 1.x stack, that is a new
+issue to diagnose against `hydromt_wflow 1.0.2` / Wflow.jl 1.x — the 0.8.1 note
+above will not help.
 
 ## Local data staging (P-drive bypass)
 
@@ -208,10 +127,9 @@ list of datasets) from `dev/scripts/stage_data.yml`. Edit that file to add or
 remove datasets, change paths, or shift the bbox.
 
 ```powershell
-conda activate cst
-python dev/scripts/stage_data.py                    # uses dev/scripts/stage_data.yml
-python dev/scripts/stage_data.py --config <path>    # alternate config
-python dev/scripts/stage_data.py --bbox 8 -1 12 2   # one-off bbox override
+pixi run python dev/scripts/stage_data.py                    # uses dev/scripts/stage_data.yml
+pixi run python dev/scripts/stage_data.py --config <path>    # alternate config
+pixi run python dev/scripts/stage_data.py --bbox 8 -1 12 2   # one-off bbox override
 ```
 
 Supported dataset `type` values:
@@ -247,9 +165,12 @@ mirrored — extend the script when you need those flows.
 
 ## Recovering from a fresh env build
 
-After `conda env create -f environment.yml` on Windows:
+`pixi install` (native deps) then `pixi run install` (R + Julia layers) rebuilds
+everything. The graphviz DLL shim and `HDF5_USE_FILE_LOCKING` are applied
+automatically by pixi activation — no manual `activate.d` re-creation is needed
+anymore. Sanity-check inside `pixi shell`:
 
-1. Recreate `etc/conda/activate.d/graphviz_dll_shims.bat` (see above).
-2. Deactivate and reactivate the env so the script runs once.
-3. Sanity-check: `python -c "import xarray, numpy; print(xarray.__version__, numpy.__version__)"`
-   should report `2024.3.0` and `1.26.x`.
+```powershell
+python -c "import xarray, numpy; print(xarray.__version__, numpy.__version__)"
+Test-Path (Join-Path $env:CONDA_PREFIX 'Library\bin\ffi.dll')
+```

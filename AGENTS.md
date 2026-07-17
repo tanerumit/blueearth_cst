@@ -42,11 +42,17 @@ Method context that changes how code here should be edited (full rationale:
 
 ## Repo Map
 
-- `Snakefile_model_creation` / `Snakefile_climate_projections` / `Snakefile_climate_experiment` — the three workflow entry points, run in that order.
-- `src/*.py` — analysis/orchestration steps, invoked from Snakemake `script:` directives (not standalone CLIs).
-- `src/weathergen/*.R` — R weather generator, invoked via `Rscript --vanilla` from Snakemake `shell:`.
-- `config/` — `snake_config_*.yml` workflow configs + hydromt data-catalog YAMLs (`deltares_data*.yml`, `cmip6_data.yml`).
-- `tests/` — `test_cli.py` is the cheap dry-run gate; `test_model_creation.py` is a heavy full build.
+- `Snakefile_model_creation` / `Snakefile_climate_projections` /
+  `Snakefile_climate_experiment` — the three workflow entry points, run in that
+  order.
+- `src/*.py` — analysis/orchestration steps, invoked from Snakemake `script:`
+  directives (not standalone CLIs).
+- `src/weathergen/*.R` — R weather generator, invoked via `Rscript --vanilla`
+  from Snakemake `shell:`.
+- `config/` — `snake_config_*.yml` workflow configs + hydromt data-catalog
+  YAMLs (`deltares_data*.yml`, `cmip6_data.yml`).
+- `tests/` — `test_cli.py` is the cheap dry-run gate; `test_model_creation.py`
+  is a heavy full build.
 - Outputs land under `project_dir` (set in the config), **not** in the repo tree.
 
 ## Key Commands
@@ -97,8 +103,10 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
 
 - Before running or after editing any rule, `--dry-run` first to validate the DAG.
 - After editing a Snakefile or a script signature, run `pytest tests/test_cli.py`.
-- If a run crashed and re-running reports a locked directory, `--unlock` before retry.
-- Keep edits surgical; follow the existing script/rule patterns before adding new structure.
+- If a run crashed and re-running reports a locked directory, `--unlock` before
+  retry.
+- Keep edits surgical; follow the existing script/rule patterns before adding
+  new structure.
 
 ## Hard Constraints
 
@@ -110,9 +118,16 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
 
 ## References
 
-- `README.rst` — the overall pipeline and how the three workflows fit together; start here.
-- `docs/cst-toolbox-technical-note-2025.md` — stress-test method and design rationale; read before changing *what* a workflow computes.
-- `docs/env_setup_notes.md`, `docs/install.md` — read when pixi / R / Julia setup or env activation misbehaves.
-- `docs/hydromt-user-guide/00-index.md`, `docs/hydromt-architecture.md` — read when editing model-build config, data catalogs, or region setup.
-- `docs/hydromt-wflow/getting-started.md`, `docs/hydromt-wflow/user-guide.md`, `docs/hydromt-wflow/api.md` — read when a build/update/clip step touches the hydromt_wflow plugin (`api.md` for exact signatures).
-- `docs/wflow-user-guide/00-index.md` — read when editing `wflow_sbm.toml`, warm states, or Wflow run config.
+- `README.rst` — the overall pipeline and how the three workflows fit together;
+  start here.
+- `docs/cst-toolbox-technical-note-2025.md` — stress-test method and design
+  rationale; read before changing *what* a workflow computes.
+- `docs/env_setup_notes.md`, `docs/install.md` — read when pixi / R / Julia
+  setup or env activation misbehaves.
+- `docs/hydromt-user-guide/00-index.md`, `docs/hydromt-architecture.md` — read
+  when editing model-build config, data catalogs, or region setup.
+- `docs/hydromt-wflow/getting-started.md`, `docs/hydromt-wflow/user-guide.md`,
+  `docs/hydromt-wflow/api.md` — read when a build/update/clip step touches the
+  hydromt_wflow plugin (`api.md` for exact signatures).
+- `docs/wflow-user-guide/00-index.md` — read when editing `wflow_sbm.toml`,
+  warm states, or Wflow run config.

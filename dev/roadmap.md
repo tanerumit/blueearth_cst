@@ -59,9 +59,13 @@ milestone's tip (not from `base/`). Phase 2 starts from the
 that R3-R5 inherit; R6 is the cross-cutting structural refactor.
 
 **Remotes.**
-- `origin` — your fork (`github.com/<you>/blueearth_cst`).
+- `origin` — your fork (`github.com/tanerumit/blueearth_cst`).
 - `upstream` — the original Deltares repo
-  (`github.com/Deltares/blueearth_cst`).
+  (`github.com/Deltares/blueearth_cst`), fetch-only.
+
+The branch `upstream-deltares` (formerly `main`) freezes the upstream
+Deltares state the fork tracked at renaming time; never commit to it.
+`main` is the moving trunk and the GitHub default branch.
 
 **PRs back to upstream** go from `pr/<NN>-<topic>` branches, not
 directly from milestone branches. One PR per milestone is the default;

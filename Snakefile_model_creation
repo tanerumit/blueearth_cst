@@ -1,45 +1,39 @@
-import sys
+# read path of the config file (Snakemake records it from --configfile) so
+# downstream R scripts can be handed the same path. Forwarding config_path is
+# a repo convention — keep it even though the Snakefile itself uses `config`.
+config_path = workflow.configfiles[0]
 
-# Get the snake_config file from the command line
-args = sys.argv
-config_path = args[args.index("--configfile") + 1]
-
-# Parsing the Snakemake config file (options for basins to build, data catalog, model output directory)
-# Function to get argument from config file and return default value if not found
+# Function to get argument from config file and return default value if not found.
+# Required keys raise on missing; optional keys return default.
 def get_config(config, arg, default=None, optional=True):
-    """
-    Function to get argument from config file and return default value if not found
-
-    Parameters
-    ----------
-    config : dict
-        config file
-    arg : str   
-        argument to get from config file
-    default : str/int/float/list, optional
-        default value if argument not found, by default None
-    optional : bool, optional
-        if True, argument is optional, by default True
-    """
+    """Read a config key with optional default; raises on missing required keys."""
     if arg in config:
         return config[arg]
     elif optional:
         return default
     else:
-        raise ValueError(f"Argument {arg} not found in config file")
+        raise ValueError(f"Argument {arg} not found in config")
 
-project_dir = get_config(config, 'project_dir', optional=False)
-static_dir = get_config(config, 'static_dir', optional=False)
-model_region = get_config(config, 'model_region', optional=False)
-model_resolution = get_config(config, 'model_resolution', 0.00833333)
-model_build_config = get_config(config, 'model_build_config', f'{static_dir}/wflow_build_model.yml')
-waterbodies_config = get_config(config, 'waterbodies_config', f'{static_dir}/wflow_update_waterbodies.yml')
-DATA_SOURCES = get_config(config, "data_sources", optional=False)
+# R01 schema — three top-level sections. Read each into a local dict.
+project_cfg = config["project"]
+shared_cfg = config["shared"]
+my_cfg = config["workflows"]["model_creation"]
 
-output_locations = get_config(config, "output_locations", None)
-observations_timeseries = get_config(config, "observations_timeseries", None)
+# Project — paths and external resources
+project_dir = get_config(project_cfg, "project_dir", optional=False)
+static_dir = get_config(project_cfg, "static_dir", optional=False)
+DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
 
-wflow_outvars = get_config(config, "wflow_outvars", ['river discharge'])
+# Shared — multi-workflow scientific knobs
+model_region = get_config(shared_cfg["basin"], "region", optional=False)
+model_resolution = get_config(shared_cfg["basin"], "resolution", 0.00833333)
+
+# Workflow-owned
+wflow_outvars = get_config(my_cfg, "wflow_outvars", ['river discharge'])
+model_build_config = get_config(my_cfg, "model_build_config", f"{static_dir}/wflow_build_model.yml")
+waterbodies_config = get_config(my_cfg, "waterbodies_config", f"{static_dir}/wflow_update_waterbodies.yml")
+output_locations = get_config(my_cfg, "output_locations", None)
+observations_timeseries = get_config(my_cfg, "observations_timeseries", None)
 
 basin_dir = f"{project_dir}/hydrology_model"
 
@@ -121,9 +115,9 @@ rule setup_runtime:
     output:
         forcing_yml = f"{project_dir}/config/wflow_build_forcing_historical.yml"
     params:
-        starttime = get_config(config, "starttime", optional=False),
-        endtime = get_config(config, "endtime", optional=False),
-        clim_source = get_config(config, "clim_historical", optional=False),
+        starttime = get_config(shared_cfg["historical_window"], "starttime", optional=False),
+        endtime = get_config(shared_cfg["historical_window"], "endtime", optional=False),
+        clim_source = get_config(shared_cfg, "clim_historical", optional=False),
         basin_dir = basin_dir,
     script: "src/setup_time_horizon.py"
 

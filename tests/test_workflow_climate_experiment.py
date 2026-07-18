@@ -52,7 +52,8 @@ def _load_cfg():
 
 def _catalog_root(cfg):
     """First data root declared by the config's data catalog, or None."""
-    with open(join(SNAKEDIR, cfg["data_sources"])) as f:
+    # R01 sectioned schema: data_sources lives under project.
+    with open(join(SNAKEDIR, cfg["project"]["data_sources"])) as f:
         cat = yaml.safe_load(f)
     meta = cat.get("meta", {}) or {}
     roots = meta.get("roots") or ([meta["root"]] if "root" in meta else [])
@@ -76,8 +77,10 @@ def _weathergenr_available():
 def test_climate_experiment_end_to_end():
     """Force a full rebuild of workflow 3 and assert the indicator tables are produced."""
     cfg = _load_cfg()
-    project_dir = cfg["project_dir"]
-    experiment = cfg["experiment_name"]
+    # R01 sectioned schema: project_dir under project, experiment_name under
+    # workflows.climate_experiment.
+    project_dir = cfg["project"]["project_dir"]
+    experiment = cfg["workflows"]["climate_experiment"]["experiment_name"]
 
     root = _catalog_root(cfg)
     if root is None or not exists(root):

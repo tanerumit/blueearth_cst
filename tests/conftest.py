@@ -72,7 +72,7 @@ def config():
 @pytest.fixture()
 def project_dir(config):
     """Return project directory"""
-    project_dir = get_config(config, "project_dir", optional=False)
+    project_dir = get_config(config["project"], "project_dir", optional=False)
     project_dir = join(SNAKEDIR, project_dir)
     return project_dir
 
@@ -80,7 +80,7 @@ def project_dir(config):
 @pytest.fixture()
 def data_sources(config):
     """Return data sources"""
-    data_sources = get_config(config, "data_sources", optional=False)
+    data_sources = get_config(config["project"], "data_sources", optional=False)
     data_sources = join(SNAKEDIR, data_sources)
     return data_sources
 
@@ -88,6 +88,8 @@ def data_sources(config):
 @pytest.fixture()
 def model_build_config(config):
     """Return model build config"""
-    model_build_config = get_config(config, "model_build_config", optional=False)
+    model_build_config = get_config(
+        config["workflows"]["model_creation"], "model_build_config", optional=False
+    )
     model_build_config = join(SNAKEDIR, model_build_config)
     return model_build_config

@@ -85,8 +85,9 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
 - Snakefiles are config-driven: each parses one `--configfile` YAML via a shared
   `get_config(config, key, default, optional)` helper. Adding a config key: mirror
   that helper's contract (raise on missing required, return default for optional).
-- Each Snakefile re-reads the `--configfile` path from `sys.argv` to forward it to
-  downstream R scripts — do not break that pattern.
+- Each Snakefile obtains the `--configfile` path from `workflow.configfiles[0]`
+  and forwards it (as `config_path`) to downstream R scripts — keep that
+  forwarding pattern even though the Snakefile itself reads the parsed `config`.
 - The `ruleorder:` directive in `Snakefile_climate_projections` is load-bearing;
   wildcard inference is ambiguous without it.
 - Register new data sources in a `config/*_data*.yml` catalog and pass it to hydromt

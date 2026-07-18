@@ -37,15 +37,15 @@ workflows:
     clim_project: cmip6
     models:
       - NOAA-GFDL/GFDL-ESM4
+      - INM/INM-CM4-8
       - INM/INM-CM5-0
     scenarios: [ssp245, ssp585]
     members: [r1i1p1f1]
     variables: [precip, temp]
     start_month_hyd_year: Jan
-    historical_year_range: [2000, 2010]
+    historical_year_range: [1990, 2010]
     future_horizons:
-      near: [2050, 2060]
-      far:  [2090, 2100]
+      far:  [2070, 2090]
     save_grids: false
 
   climate_experiment:

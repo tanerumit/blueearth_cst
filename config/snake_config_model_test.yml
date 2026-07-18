@@ -1,12 +1,15 @@
 # Canonical example config for blueearth_cst — R01 sectioned schema.
-# This is the "small bbox, light models" example used to verify the
-# stack works on a fresh install. Mirror this structure in your own
-# project configs.
+# Doubles as the TRACKED baseline seed: dev/baseline/manifest.json is
+# recorded from a fresh run of this config into project.project_dir
+# (examples/test_local). Keep it reproducible — never point the baseline
+# at an untracked *_local.yml again.
 #
-# For a clean template see config/snake_config.template.yml.
+# Small/fast test setup: 3 CMIP6 models, a single "far" horizon, matched
+# 20-year historical/future windows. For a clean template see
+# config/snake_config.template.yml.
 
 project:
-  project_dir: examples/test
+  project_dir: examples/test_local
   static_dir: config
   data_sources: config/deltares_data.yml
   data_sources_climate: config/cmip6_data.yml
@@ -17,7 +20,7 @@ shared:
     resolution: 0.00833
   historical_window:
     starttime: "2000-01-01T00:00:00"
-    endtime: "2005-12-31T00:00:00"
+    endtime: "2020-12-31T00:00:00"
   clim_historical: era5
 
 workflows:
@@ -36,26 +39,20 @@ workflows:
       - NOAA-GFDL/GFDL-ESM4
       - INM/INM-CM4-8
       - INM/INM-CM5-0
-      - NIMS-KMA/KACE-1-0-G
-      - NCC/NorESM2-MM
-      - NCC/NorESM2-LM
-      - CMCC/CMCC-CM2-SR5
-      - CMCC/CMCC-ESM2
     scenarios: [ssp245, ssp585]
     members: [r1i1p1f1]
     variables: [precip, temp]
     start_month_hyd_year: Jan
-    historical_year_range: [1980, 2010]
+    historical_year_range: [1990, 2010]
     future_horizons:
-      near: [2030, 2060]
-      far:  [2070, 2100]
+      far:  [2070, 2090]
     save_grids: false
 
   climate_experiment:
     enabled: true
     experiment_name: experiment
     realizations_num: 2
-    horizontime_climate: 2050
+    horizontime_climate: 2080
     run_length: 20
     run_historical: false
     stress_test:

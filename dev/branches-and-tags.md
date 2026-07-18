@@ -18,7 +18,7 @@ Last updated: 2026-07-18.
 | `milestone/02-pixi-installation` | Sealed Phase 1 milestone.                                                                  |
 | `milestone/02b-library-upgrades` | Sealed Phase 1 milestone.                                                                  |
 | `milestone/02c-tests`            | Sealed Phase 1 milestone (local tip carries a late followups patch).                       |
-| `milestone/r01-contracts`        | **Sealed** 2026-07-18 (tag `r01-contracts`) — R1 config-contract migration landed; awaits merge to `main`. |
+| `milestone/r01-contracts`        | **Sealed** 2026-07-18 (tag `r01-contracts`) — R1 config-contract migration; merged to `main` 2026-07-18. Kept alive as a durable phase marker. |
 | `origin/fao` (remote-only)       | Inherited upstream project branch (FAO / DCRM work, ~32 commits off-trunk). Not tracked locally; review before ever deleting. |
 
 ## Tags

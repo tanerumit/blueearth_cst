@@ -19,7 +19,7 @@ Last updated: 2026-07-19.
 | `milestone/02b-library-upgrades` | Sealed Phase 1 milestone.                                                                  |
 | `milestone/02c-tests`            | Sealed Phase 1 milestone (local tip carries a late followups patch).                       |
 | `milestone/r01-contracts`        | **Sealed** 2026-07-18 (tag `r01-contracts`) — R1 config-contract migration; merged to `main` 2026-07-18. Kept alive as a durable phase marker. |
-| `milestone/r02-naming`           | **Sealed** 2026-07-19 (tag `r02-naming`) — R2 naming style guide (off `main`). Awaits merge to `main`. Kept alive as a durable phase marker. |
+| `milestone/r02-naming`           | **Sealed** 2026-07-19 (tag `r02-naming`) — R2 naming style guide; merged to `main` 2026-07-19. Kept alive as a durable phase marker. |
 | `origin/fao` (remote-only)       | Inherited upstream project branch (FAO / DCRM work, ~32 commits off-trunk). Not tracked locally; review before ever deleting. |
 
 ## Tags

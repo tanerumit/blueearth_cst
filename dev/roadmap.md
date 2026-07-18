@@ -219,7 +219,14 @@ cross-workflow data path decoupling (R6); Linux/Docker config rewrites
 **Tag.** `r01-contracts`. Full design lives in
 `dev/r01/modularity-contracts-design.md`.
 
-### R2 — Naming conventions (designed)
+### R2 — Naming conventions (sealed 2026-07-19)
+
+**Status.** Sealed 2026-07-19 — `dev/conventions/naming.md` (187 lines,
+< 250) authored and pointed to from `AGENTS.md`; the design was tightened
+after independent GPT-5.6 and Fable reviews
+(`dev/r02/naming-conventions-review-{gpt-20260718,fable-20260719}.md`).
+Docs-only; suite unchanged (51/3/2); existing names grandfathered (zero
+code diffs).
 
 **Goal.** Single prescriptive style guide at `dev/conventions/naming.md`
 for naming identifiers and files across the repo. Pure docs; no code
@@ -230,7 +237,8 @@ convention first prevents each milestone from re-deciding naming on
 the fly.
 
 **Scope.** `dev/conventions/naming.md` (< 250 lines, prescriptive
-`MUST` / `SHOULD` / `MAY` voice) + a one-line pointer in `CLAUDE.md`.
+`MUST` / `SHOULD` / `MAY` voice) + a one-line pointer in `AGENTS.md`
+(canonical; `CLAUDE.md` inherits via `@AGENTS.md`).
 Covers: universal case (snake_case, lowercase acronyms, true
 constants), per-language rules (Python PEP 8, R snake_case not
 dot.case, Snakemake snake_case rules, YAML snake_case keys), path-

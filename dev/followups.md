@@ -11,6 +11,18 @@ context so future-you can confirm the issue still applies before fixing.
 
 ## Cross-cutting — baseline manifest integrity
 
+- **[RESOLVED 2026-07-18] Baseline rebuilt from a tracked seed config.**
+  `dev/baseline/manifest.json` was re-recorded from the now-tracked
+  `config/snake_config_model_test.yml` (project_dir `examples/test_local`,
+  3 models, single `far` horizon, current libraries), after a fresh run of
+  all three workflows. `record` → `check` round-trips clean (14/14). The
+  untracked `snake_config_model_test_local.yml` that seeded the stale M2b
+  baseline is retired, so the divergence cannot recur. The model-independent
+  workflow-1 PNG drift noted below was not separately investigated — it is
+  moot now that the whole baseline is re-recorded from a known, tracked
+  config; revisit only if a future `check` shows unexplained PNG drift.
+  Original diagnosis retained below for provenance.
+
 - **Rebuild `dev/baseline/manifest.json` against current libraries with a
   tracked seed config.** *Surfaced 2026-07-18 during R01 Task 5.* The M2b
   manifest (last recorded 2026-05-08, commit `159e197`) was recorded from

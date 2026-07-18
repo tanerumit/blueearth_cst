@@ -2,6 +2,16 @@
 
 **Date.** 2026-07-18 (sealing date).
 
+> **Update 2026-07-18 (post-seal).** The baseline has since been **rebuilt**
+> from a now-tracked, simplified config (`config/snake_config_model_test.yml`:
+> project_dir `examples/test_local`, 3 models, single `far` horizon). All
+> three workflows were re-run and `dev/baseline/manifest.json` re-recorded;
+> `record` → `check` round-trips clean. The "stale M2b, left untouched"
+> narrative below is now historical — it explains why R01 *itself* sealed on
+> invariance-by-construction rather than re-recording. The untracked
+> `*_local.yml` seed that caused the divergence is retired. See
+> `dev/followups.md` → "Cross-cutting — baseline manifest integrity".
+
 ## Summary
 
 R01 seals on **scientific invariance by construction**, not on a manifest

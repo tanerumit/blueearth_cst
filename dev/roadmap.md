@@ -132,7 +132,22 @@ purpose. R1 and R2 establish contracts that R3-R5 inherit; R3-R5 do
 the actual workflow cleanup; R6 is the cross-cutting structural
 refactor.
 
-### R1 — Modularity contracts (in flight)
+### R1 — Modularity contracts (sealed 2026-07-18)
+
+**Status.** Sealed 2026-07-18 — three top-level config sections in place;
+all 3 Snakefiles + 4 `src/` scripts + conftest + all three integration
+tests read sectioned config; config path via `workflow.configfiles[0]`;
+migration guide for user-local configs at
+`dev/r01/local-config-migration.md`. Per-workflow contract docs deferred
+to R3/R4/R5 (2026-07-17 amendment). Suite: 51 passed, 3 skipped, 2 xfailed
+(the pre-R01 47 plus 4 focused R01 reader/normalization tests). Scientific
+invariance established **by construction** (value-preservation on every
+migrated leaf + identity-preserving list/string normalization + green
+suite + clean dry-runs), **not** by a manifest re-record: Task 5 found the
+M2b `dev/baseline/manifest.json` stale (recorded from an untracked 3-model
+config while the canonical uses 8; plus model-independent drift), so it is
+left untouched and a clean rebuild is deferred. Full rationale + evidence:
+`dev/r01/baseline_diffs.md`.
 
 **Goal.** Establish per-workflow config contracts so workflows can be
 added, disabled, or replaced in the future without touching others.
@@ -168,13 +183,22 @@ plugin registry.
   at `config/snake_config.template.yml`.
 - All three Snakefiles read sectioned config; old flat reads removed.
 - `src/` scripts that read config directly (`prepare_cst_parameters`,
-  `prepare_weagen_config`, `get_change_climate_proj`) migrated.
+  `prepare_weagen_config`, `get_change_climate_proj`,
+  `get_change_climate_proj_summary`) migrated.
 - Three migrated config files committed (`tests/`, canonical, Linux).
-- All workflows still run end-to-end on the migrated test config.
-- `check_baseline.py check` reports zero diff on scientific targets;
-  copied config snapshots re-baselined per
-  `dev/r01/baseline_diffs.md` (organizational drift, not scientific).
-- `pytest tests/` unchanged: 47 passed, 2 skipped, 2 xfailed.
+- All three workflows run end-to-end on the migrated canonical config
+  (verified 2026-07-18 into `examples/test_local`).
+- Scientific invariance established by construction (value-preservation
+  on every migrated leaf + identity-preserving list/string normalization
+  + green suite + clean dry-runs). The planned manifest re-record was
+  **not** performed: Task 5 exposed that the M2b
+  `dev/baseline/manifest.json` is stale (recorded from an untracked
+  3-model config while the canonical uses 8; plus model-independent
+  drift), so it is left untouched and a clean rebuild is deferred to a
+  dedicated task. Full rationale + evidence: `dev/r01/baseline_diffs.md`.
+- `pytest tests/`: 51 passed, 3 skipped, 2 xfailed (the pre-R01 47 plus
+  4 focused R01 reader/normalization tests; no pre-existing test changes
+  outcome).
 
 **Out of scope.** Per-workflow contract docs (deferred to the opening
 act of R3/R4/R5, per the 2026-07-17 amendment above); operational

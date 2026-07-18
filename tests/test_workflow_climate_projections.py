@@ -34,12 +34,22 @@ CONFIG = "config/snake_config_model_test.yml"
 pytestmark = pytest.mark.integration
 
 
+# R01 sectioned schema: project_dir lives under `project`, clim_project under
+# `workflows.climate_projections`. Read lazily (inside the test), never at
+# import time, so the migration cannot break collection of the whole suite.
+_CFG_PATHS = {
+    "project_dir": ("project", "project_dir"),
+    "clim_project": ("workflows", "climate_projections", "clim_project"),
+}
+
+
 def _cfg(key):
-    # Read lazily (inside the test), never at import time: the R1 config-schema
-    # migration must not be able to break collection of the whole suite through
-    # a module-level read here.
     with open(join(SNAKEDIR, CONFIG)) as f:
-        return yaml.safe_load(f)[key]
+        cfg = yaml.safe_load(f)
+    node = cfg
+    for part in _CFG_PATHS[key]:
+        node = node[part]
+    return node
 
 
 def _gcs_reachable():

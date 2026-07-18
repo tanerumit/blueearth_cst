@@ -24,21 +24,23 @@ def prep_cst_parameters(
         config_fn and names from stress test parameters.
     """
 
-    # Read the yaml config
+    # Read the yaml config (R01 sectioned schema)
     with open(config_fn, "r") as stream:
         yml = yaml.load(stream, Loader=yaml.FullLoader)
 
+    stress_test_cfg = yml["workflows"]["climate_experiment"]["stress_test"]
+
     # Temperature change attributes
-    delta_temp_mean_min = yml["temp"]["mean"]["min"]
-    delta_temp_mean_max = yml["temp"]["mean"]["max"]
-    temp_step_num = yml["temp"]["step_num"] + 1
+    delta_temp_mean_min = stress_test_cfg["temp"]["mean"]["min"]
+    delta_temp_mean_max = stress_test_cfg["temp"]["mean"]["max"]
+    temp_step_num = stress_test_cfg["temp"]["step_num"] + 1
 
     # Precip change attributes
-    delta_precip_mean_min = yml["precip"]["mean"]["min"]
-    delta_precip_mean_max = yml["precip"]["mean"]["max"]
-    delta_precip_variance_min = yml["precip"]["variance"]["min"]
-    delta_precip_variance_max = yml["precip"]["variance"]["min"]
-    precip_step_num = yml["precip"]["step_num"] + 1
+    delta_precip_mean_min = stress_test_cfg["precip"]["mean"]["min"]
+    delta_precip_mean_max = stress_test_cfg["precip"]["mean"]["max"]
+    delta_precip_variance_min = stress_test_cfg["precip"]["variance"]["min"]
+    delta_precip_variance_max = stress_test_cfg["precip"]["variance"]["min"]
+    precip_step_num = stress_test_cfg["precip"]["step_num"] + 1
 
     # Number of stress tests
     ST_NUM = temp_step_num * precip_step_num

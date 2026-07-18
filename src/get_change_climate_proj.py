@@ -186,11 +186,17 @@ name_scenario = snakemake.params.name_scenario
 name_model = snakemake.params.name_model
 save_grids = snakemake.params.save_grids
 
-# Time tuples for comparison hist-fut
-time_tuple_hist = snakemake.params.time_horizon_hist
-time_tuple_hist = tuple(map(str, time_tuple_hist.split(", ")))
-time_tuple_fut = snakemake.params.time_horizon_fut
-time_tuple_fut = tuple(map(str, time_tuple_fut.split(", ")))
+# Time tuples for comparison hist-fut.
+# R01 schema delivers these as lists ([1980, 2010]) for both the historical
+# window and the future horizons. Pre-R01 configs delivered them as
+# comma-separated strings ("1980, 2010"). Accept both.
+def _to_str_tuple(value):
+    if isinstance(value, str):
+        return tuple(map(str, value.split(", ")))
+    return tuple(map(str, value))
+
+time_tuple_hist = _to_str_tuple(snakemake.params.time_horizon_hist)
+time_tuple_fut = _to_str_tuple(snakemake.params.time_horizon_fut)
 
 # open datasets and slice times
 ds_hist_time = xr.open_dataset(stats_time_nc_hist)

@@ -9,6 +9,46 @@ context so future-you can confirm the issue still applies before fixing.
 
 ---
 
+## Cross-cutting — baseline manifest integrity
+
+- **[RESOLVED 2026-07-18] Baseline rebuilt from a tracked seed config.**
+  `dev/baseline/manifest.json` was re-recorded from the now-tracked
+  `config/snake_config_model_test.yml` (project_dir `examples/test_local`,
+  3 models, single `far` horizon, current libraries), after a fresh run of
+  all three workflows. `record` → `check` round-trips clean (14/14). The
+  untracked `snake_config_model_test_local.yml` that seeded the stale M2b
+  baseline is retired, so the divergence cannot recur. The model-independent
+  workflow-1 PNG drift noted below was not separately investigated — it is
+  moot now that the whole baseline is re-recorded from a known, tracked
+  config; revisit only if a future `check` shows unexplained PNG drift.
+  Original diagnosis retained below for provenance.
+
+- **Rebuild `dev/baseline/manifest.json` against current libraries with a
+  tracked seed config.** *Surfaced 2026-07-18 during R01 Task 5.* The M2b
+  manifest (last recorded 2026-05-08, commit `159e197`) was recorded from
+  an **untracked, 3-model local config**, while the tracked canonical
+  (`config/snake_config_model_test.yml`) has used an **8-model** list since
+  before `pre-r01`. The two have been silently divergent since M2b — the
+  workflow smoke tests never compare against the manifest, so nobody caught
+  it. R01 Task 5 was the first `check_baseline check` against the canonical
+  model set and exposed the mismatch (see `dev/r01/baseline_diffs.md`).
+
+  A fresh 8-model canonical run also shows **model-independent** drift on
+  workflow-1 plots (`basin_area/hydro_wflow_1/precip.png`, 19–32% size) —
+  workflow 1 never reads the climate model list, so the M2b local config
+  must have differed from the canonical in ways beyond model count, and
+  **cannot be reconstructed**.
+
+  *Fix:* choose a deliberate model set, commit a **tracked** seed config
+  (or parameterize `check_baseline` with one) so the baseline is
+  reproducible, run all three workflows on current libraries, and record a
+  fresh manifest. Investigate whether the workflow-1 PNG drift is
+  rendering-only (matplotlib) or real content before blessing it. Until
+  then the M2b manifest remains the contract of record, with R01 sealed on
+  invariance-by-construction rather than a re-record.
+
+---
+
 ## R3 — Workflow 1: model builder
 
 - **Resolve test_cli xfails.** Two of the three parametrizations in

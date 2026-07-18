@@ -65,9 +65,9 @@ pixi install          # conda-forge + PyPI deps (Python stack, R toolchain, snak
 pixi run install      # + weathergenr (R, via remotes) and Julia env (Pkg.instantiate)
 
 # Run the three workflows IN ORDER (climate_experiment needs model_creation artifacts):
-snakemake all -c 1 -s Snakefile_model_creation      --configfile config/snake_config_model_test.yml
-snakemake all -c 1 -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --keep-going
-snakemake all -c 1 -s Snakefile_climate_experiment  --configfile config/snake_config_model_test.yml
+snakemake all -c 3 -s Snakefile_model_creation      --configfile config/snake_config_model_test.yml
+snakemake all -c 3 -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --keep-going
+snakemake all -c 3 -s Snakefile_climate_experiment  --configfile config/snake_config_model_test.yml
 
 snakemake ... --dry-run           # inspect the DAG before running or after editing rules
 snakemake --unlock -s <Snakefile> --configfile <cfg>   # Snakemake locks the workdir on crash
@@ -85,8 +85,9 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
 - Snakefiles are config-driven: each parses one `--configfile` YAML via a shared
   `get_config(config, key, default, optional)` helper. Adding a config key: mirror
   that helper's contract (raise on missing required, return default for optional).
-- Each Snakefile re-reads the `--configfile` path from `sys.argv` to forward it to
-  downstream R scripts — do not break that pattern.
+- Each Snakefile obtains the `--configfile` path from `workflow.configfiles[0]`
+  and forwards it (as `config_path`) to downstream R scripts — keep that
+  forwarding pattern even though the Snakefile itself reads the parsed `config`.
 - The `ruleorder:` directive in `Snakefile_climate_projections` is load-bearing;
   wildcard inference is ambiguous without it.
 - Register new data sources in a `config/*_data*.yml` catalog and pass it to hydromt

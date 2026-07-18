@@ -5,7 +5,7 @@ Conventions and lifecycle rules live in `dev/roadmap.md` ("Branching and
 tagging conventions"); this file only answers "what is this ref?".
 Transient branches (`exp/*`, `feat/*`, `pr/*`) don't belong here.
 
-Last updated: 2026-07-18.
+Last updated: 2026-07-19.
 
 ## Durable branches
 
@@ -19,6 +19,7 @@ Last updated: 2026-07-18.
 | `milestone/02b-library-upgrades` | Sealed Phase 1 milestone.                                                                  |
 | `milestone/02c-tests`            | Sealed Phase 1 milestone (local tip carries a late followups patch).                       |
 | `milestone/r01-contracts`        | **Sealed** 2026-07-18 (tag `r01-contracts`) — R1 config-contract migration; merged to `main` 2026-07-18. Kept alive as a durable phase marker. |
+| `milestone/r02-naming`           | **Sealed** 2026-07-19 (tag `r02-naming`) — R2 naming style guide (off `main`). Awaits merge to `main`. Kept alive as a durable phase marker. |
 | `origin/fao` (remote-only)       | Inherited upstream project branch (FAO / DCRM work, ~32 commits off-trunk). Not tracked locally; review before ever deleting. |
 
 ## Tags
@@ -35,8 +36,9 @@ Tags are permanent rollback points; they never move.
 | `m02c-tests`      | 2026-07-17 | Phase 1 seal: unit-test coverage for 4 `src/` modules.                            |
 | `pre-r01`         | 2026-07-18 | Checkpoint before R1: last flat-config-schema commit; green suite (47/3/2); all three workflow smoke tests verified. |
 | `r01-contracts`   | 2026-07-18 | Phase 2 seal: sectioned config schema (project/shared/workflows); suite 51/3/2. Sealed on invariance-by-construction — M2b baseline left untouched (stale; see `dev/r01/baseline_diffs.md`). |
+| `r02-naming`      | 2026-07-19 | Phase 2 seal: naming style guide (`dev/conventions/naming.md`). Docs-only; existing names grandfathered; suite 51/3/2. |
 
-Planned (cut at each Phase 2 milestone seal): `r02-naming`,
+Planned (cut at each Phase 2 milestone seal):
 `r03-model-builder`, `r04-projections`, `r05-experiment`, `r06-refactor`.
 
 ## Using a checkpoint tag (e.g. `pre-r01`)

@@ -82,6 +82,10 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
 
 ## Conventions
 
+- Name new identifiers and files per `dev/conventions/naming.md` (snake_case,
+  lowercase acronyms, `_path`/`_dir` for paths vs `_ds`/`_df`/`_cfg` for objects,
+  three-tier domain-identifier exemptions). Existing names are grandfathered;
+  rename a contract surface only with a migration note.
 - Snakefiles are config-driven: each parses one `--configfile` YAML via a shared
   `get_config(config, key, default, optional)` helper. Adding a config key: mirror
   that helper's contract (raise on missing required, return default for optional).

@@ -1,6 +1,6 @@
 # R02 — Naming conventions (pre-R3) — design
 
-**Date.** 2026-05-09.
+**Date.** 2026-05-09 (revised 2026-07-19 after internal + GPT-5.6 + Fable reviews).
 
 ## Goal
 
@@ -33,12 +33,12 @@ Prescriptive style guide with `MUST` / `SHOULD` / `MAY` voice,
 opinionated where the codebase is currently mixed and lenient where
 external conventions take precedence. Two important framings:
 
-1. **Local style vs upstream contract.** The local style guide does
-   not apply to identifiers governed by external systems (Wflow
-   variables, HydroMT data catalog keys, CMIP model IDs, weathergenr
-   function names, CSDMS Standard Names, scientific variable names
-   like `precip` / `temp` / `Qstats`). Those follow their upstream
-   conventions even when they conflict with the local rules.
+1. **Local style vs external / established contracts.** The local style
+   guide bends for identifiers that carry an external or established
+   contract — upstream tool identifiers (Wflow/CSDMS names, HydroMT
+   catalog keys, CMIP model IDs, weathergenr functions) and
+   BlueEarth-owned-but-established names (`precip`, `temp`, `Qstats`).
+   §6 splits these into three tiers; none are normalized casually.
 2. **Grandfathered today, applied tomorrow.** Existing names that
    don't conform stay as-is until the owning milestone refactors
    them. R2 itself produces zero code diffs.
@@ -50,13 +50,13 @@ external conventions take precedence. Two important framings:
 | Voice                          | `MUST` / `SHOULD` / `MAY`                                               |
 | Universal case                 | snake_case for variables, functions, modules                            |
 | Acronyms in identifiers        | Always lowercase (`cmip6_models`, `era5_orography`, `csdms_name`)       |
-| True constants                 | `UPPER_SNAKE_CASE` for immutable lookups: `WFLOW_VARS`, `XDIMS`, `YDIMS`, `VOLATILE_NC_ATTRS` |
+| True constants                 | `UPPER_SNAKE_CASE` for fixed, non-config-derived values / lookup tables not reassigned or mutated at runtime (`WFLOW_VARS`, `XDIMS`, `YDIMS`, `VOLATILE_NC_ATTRS`). `WFLOW_VARS` is a mutable dict used read-only, so the rule is intent (read-only lookups), not language enforcement; `XDIMS`/`YDIMS` (tuples) and `VOLATILE_NC_ATTRS` (frozenset) are genuinely immutable. |
 | Config-derived run settings    | lowercase snake_case for new code (`rlz_count`, `stress_test_count`, `data_sources_path`). Existing `RLZ_NUM`, `ST_NUM`, `DATA_SOURCES` grandfathered. |
 | Python                         | PEP 8: snake_case, PascalCase classes, UPPER_SNAKE for true constants only |
 | R                              | snake_case (not `dot.case`); aligns with tidyverse + weathergenr        |
 | Snakemake rule names           | snake_case; verb_noun for action rules; noun-only acceptable for `rule all` |
-| YAML keys (BlueEarth-owned)    | snake_case for BlueEarth-authored configs (snake config sections, generated catalogs) |
-| YAML keys (upstream tools)     | preserve upstream spelling — e.g., weathergenr's `warm.signif.level`, HydroMT/Wflow parameter names |
+| YAML keys (by consuming contract) | snake_case for BlueEarth-owned configs consumed locally (the R01 snake config sections). Discriminate by the *consuming contract*, not authorship. |
+| YAML keys (upstream schema)    | preserve upstream spelling for any YAML consumed under an upstream schema — weathergenr's `warm.signif.level`, HydroMT/Wflow parameter names, and HydroMT data catalogs **even when BlueEarth-generated** |
 | YAML booleans                  | lowercase `true` / `false` for BlueEarth-owned configs (existing `TRUE`/`FALSE` grandfathered) |
 | Path-identifier suffix         | `_path` is canonical for new code; `_fn`, `_fid`, `_file` deprecated    |
 | File names by class            | See "File naming by class" section below                                |
@@ -67,7 +67,8 @@ The guide itself gets authored during R2 execution. Section list:
 
 ### 1. Universal rules
 
-- snake_case for variables, functions, modules, files (MUST).
+- snake_case for variables, functions, and modules (MUST). File names
+  are governed by class — see §8, not this universal rule.
 - Lowercase acronyms in identifiers (MUST).
 - `UPPER_SNAKE_CASE` for true constants (MUST).
 - Verbs for functions, nouns for variables / data (SHOULD).
@@ -99,9 +100,12 @@ with snake_case:
 - HydroMT / Wflow build and update configs use upstream method names
   and parameter names.
 - Data catalog source names and adapter fields follow HydroMT's
-  schema.
+  schema — including catalogs BlueEarth generates (e.g. the CMIP6
+  catalog): the consuming contract governs, not who authored the file.
 
-These are external-API contracts; do not normalize.
+These are external-API contracts; do not normalize. The discriminator
+is the consuming contract (upstream schema vs. BlueEarth-local), never
+authorship or whether the file is checked in vs. generated.
 
 ### 3. Path-identifier suffix (`_path` canonical)
 
@@ -110,8 +114,8 @@ New code MUST use `_path` for variables holding file path strings:
 present in the codebase (`_fn`, `_fid`, `_file`) are grandfathered;
 do not rename existing usages without a migration note.
 
-Document why `_path` was chosen: explicit, language-neutral, matches
-Python's pathlib convention.
+Document why `_path` was chosen: explicit, language-neutral, and works
+naturally with `pathlib.Path`.
 
 ### 4. Snakemake wildcards (stable vocabulary)
 
@@ -122,14 +126,17 @@ Wildcards used across Snakefiles MUST come from this list:
 | `model`       | active                  | climate model id (CMIP6 model name)              |
 | `scenario`    | active                  | climate scenario (`historical`, `ssp245`, ...)   |
 | `horizon`     | active                  | future horizon name (`near`, `far`)              |
-| `rlz_num`     | active                  | weather realization number (1..RLZ_NUM)          |
-| `st_num`      | active                  | stress test combination number (0..ST_NUM)       |
+| `rlz_num`     | active                  | weather realization number (1..rlz_count)        |
+| `st_num`      | active                  | stress test combination number. `1..stress_test_count` = perturbed combinations; `0` = reserved unperturbed baseline (`cst_0`), run through Wflow only when `run_historical` sets `ST_START = 0`. |
 | `member`      | reserved (CMIP ensemble)| ensemble member id (`r1i1p1f1`, ...). Currently config-only; will become a wildcard if ensemble per-member rules are added. |
 
 Adding a new wildcard requires updating `dev/conventions/naming.md`
 in the same commit. The current `st_num2` variant in
-`Snakefile_climate_experiment` is a known inconsistency — fold into
-`st_num` during R3-R5 Snakefile cleanup.
+`Snakefile_climate_experiment` (it admits `0` under `run_historical`,
+where `st_num` starts at `1`) is a known inconsistency — fold into
+`st_num` during **R5** Snakefile cleanup. `Snakefile_climate_experiment`
+is R5 territory; per the roadmap, no milestone touches another's
+Snakefile.
 
 ### 5. Suffix vocabulary — split paths from data objects
 
@@ -153,14 +160,18 @@ incrementally.
 | `_gdf`   | geopandas GeoDataFrame        | `region_gdf`, `outlets_gdf`               |
 | `_cfg`   | parsed config dict (R01)     | `project_cfg`, `shared_cfg`, `my_cfg`     |
 
+> `my_cfg` is the blessed idiom for a Snakefile's own workflow section
+> (`config["workflows"][<name>]`) — established in R01 and uniform across
+> all three Snakefiles. Use it; don't invent a per-workflow variant.
+
 **Snakemake input/output labels (grandfathered, not for new Python):**
 
 | Suffix   | Status                                              | Example       |
 | -------- | --------------------------------------------------- | ------------- |
 | `_nc`    | Reserved for Snakemake `input:`/`output:` labels mirroring a netCDF product | `climate_nc`, `rlz_nc` |
 | `_csv`   | Same, for CSV products                              | `st_csv`      |
-| `_yml`   | Same, for YAML products                             | `weagen_config_yml` |
-| `_png`   | Same, for PNG products                              | `output_png`, `precip_plt` |
+| `_yml`   | Same, for YAML products                             | `weathergen_config_yml` |
+| `_png`   | Same, for PNG products                              | `output_png` (the existing `precip_plt` label is grandfathered non-conforming) |
 
 In new Python code, prefer `_path` (for the path string) or `_ds`/`_df`
 (for the loaded object) over the file-extension suffixes. The
@@ -174,24 +185,48 @@ extension suffixes are for Snakemake label hygiene only.
 | `_fid`   | `_path`     | `gauges_fid`, `region_fid`, `forcing_fid`   |
 | `_file`  | `_path`     | `csv_file`                                  |
 
-### 6. Domain identifiers — DO NOT normalize
+### 6. Domain identifiers — three tiers, none normalized casually
 
-The local style guide does NOT apply to:
+Domain identifiers carry different kinds of contract, so the guide
+treats them in three tiers rather than one flat "external API" bucket.
 
-- **Wflow output variables** (preserve upstream casing / phrasing,
-  e.g. `actual evapotranspiration`, `groundwater recharge`).
-- **HydroMT data catalog source names** (`era5`, `merit_hydro`,
-  `cmip6_<model>_<scenario>_<member>`).
+**Tier 1 — opaque upstream identifiers (preserve verbatim).** Owned by
+an external system; renaming breaks downstream tools or catalog lookups.
+
+- **Wflow / CSDMS variable names** consumed by hydromt_wflow (e.g. the
+  `land_surface__evapotranspiration_volume_flux`-style Standard Names in
+  `setup_constant_pars`).
+- **HydroMT data-catalog *schema*** — adapter fields and structure follow
+  HydroMT's schema (the source-*name* strings are tier 2, below).
 - **CMIP model IDs** (`NOAA-GFDL/GFDL-ESM4`, `INM/INM-CM5-0` —
   preserve hyphens, slashes, mixed case).
-- **CSDMS Standard Names** (when consumed by hydromt_wflow's
-  `setup_constant_pars`).
-- **weathergenr R function names** (preserve upstream).
-- **Scientific variable names** with cross-tool meaning: `precip`,
-  `temp`, `Qstats`, `Tlow`, `Tpeak`.
+- **weathergenr R function names.**
 
-Rationale: these are API contracts with external systems. Renaming
-them locally breaks downstream tools or data catalog lookups.
+Tier 1 has no local rename path at all — not even a migration note.
+
+**Tier 2 — established BlueEarth cross-tool / output / scientific
+contracts (grandfather + migration-gate).** BlueEarth-owned, but already
+a contract with baseline manifests, downstream consumers, or users. Keep
+as-is; rename only with a migration note (§7).
+
+- User-facing output / config names: `Qstats`, `Tlow`, `Tpeak`.
+- **HydroMT data-catalog source names** (`era5`, `merit_hydro`,
+  `cmip6_<model>_<scenario>_<member>`) — BlueEarth-minted lookup keys (the
+  CMIP6 ones are generated by `prepare_climate_data_catalog.py`) that form
+  a catalog-lookup contract: migration-gated, not verbatim-frozen. The
+  catalog *schema* they sit in is tier 1.
+- The user-facing Wflow output *labels* mapped to CSDMS names in
+  `setup_gauges_and_outputs.py` (`actual evapotranspiration`,
+  `groundwater recharge`) — semantic display names, not the upstream IDs.
+- Cross-tool scientific variable names: `precip`, `temp`.
+
+**Tier 3 — new locally owned scientific identifiers.** Follow local
+naming (snake_case, lowercase acronyms) unless an explicit external
+schema dictates a spelling.
+
+Rationale: tier 1 renames break external tools/catalogs; tier 2 renames
+break baseline or user contracts (hence the migration gate); tier 3 is
+free to follow local style because nothing downstream depends on it yet.
 
 ### 7. Do not rename without migration note
 
@@ -201,10 +236,13 @@ listing the old → new mapping:
 
 - `rule all` output filenames (baseline manifest contract).
 - Checked-in example config keys (user-facing).
-- Data catalog source names in `config/*.yml` (catalog contract).
-- Wflow / HydroMT / CMIP / weathergenr external identifiers.
+- Data catalog source names in `config/*.yml` (§6 tier 2 — catalog contract).
 - Test fixture paths referenced by `tests/conftest.py`,
   `dev/scripts/check_baseline.py`, or other scripts.
+
+(§6 tier-1 identifiers — CMIP IDs, Wflow/CSDMS names, weathergenr
+function names — are not renameable at all, not even with a migration
+note, so they are deliberately omitted from this list.)
 
 **Scientific abbreviations in user-facing output filenames are
 allowed.** `Qstats.csv`, `Tlow`, `Tpeak`, `BFI`, return-period
@@ -235,6 +273,10 @@ rename existing dev docs.
 Compact "instead of / use" table to anchor the rules. Keep the final
 guide's table sparse so the doc stays under 250 lines.
 
+> **Illustrative future targets only.** R2 renames nothing — every
+> existing identifier is grandfathered until its owning milestone touches
+> it. Do not read this table as an R2 rename list.
+
 | Instead of   | Use                       | Reason                                   |
 | ------------ | ------------------------- | ---------------------------------------- |
 | `config_fn`  | `config_path`             | Canonical path suffix.                   |
@@ -261,9 +303,17 @@ guide's table sparse so the doc stays under 250 lines.
 ## Verification
 
 - `dev/conventions/naming.md` exists and is < 250 lines.
-- `CLAUDE.md` has a one-line pointer to the naming doc.
-- `pixi run pytest tests/` unchanged (no behavior change).
-- No code files modified in R2.
+- `AGENTS.md` has a one-line pointer to the naming doc (canonical
+  instruction source; `CLAUDE.md` inherits it via its `@AGENTS.md`
+  import — do not add the rule only to `CLAUDE.md`).
+- `pixi run pytest tests/` unchanged: 51 passed, 3 skipped, 2 xfailed
+  (the sealed R01 state).
+- The R2 changeset touches documentation only — `dev/`, the new guide,
+  `AGENTS.md`, `dev/roadmap.md`, `dev/branches-and-tags.md`. No
+  `Snakefile_*`, `src/`, `tests/`, config YAML, lockfile, manifest, or
+  generated output appears in the diff.
+- `dev/branches-and-tags.md` records the `r02-naming` branch/tag at seal
+  (it currently lists `r02-naming` as planned).
 
 ## Migration notes for existing names
 
@@ -294,14 +344,18 @@ incidental renames from these to `_path` are acceptable under R3's
 
 ## Tag
 
-`r02-naming`. Sequenced after R01 seals (branch
-`milestone/r02-naming` off `r01-contracts` tag).
+`r02-naming`. Sequenced after R01 seals. Branch `milestone/r02-naming`
+off `main` (which carries the post-R01 baseline rebuild), not the bare
+`r01-contracts` tag.
 
 ## Estimated commits (~3)
 
-1. `m02e: open naming-conventions milestone with design spec`
-2. `m02e: add dev/conventions/naming.md + CLAUDE.md pointer`
-3. `m02e: mark milestone sealed in roadmap` (+ tag `r02-naming`)
+1. `r02: tighten naming design after independent review`
+2. `r02: add naming guide and agent-instruction pointers`
+3. `r02: seal naming milestone in roadmap and durable refs` (+ tag `r02-naming`)
+
+(The old first commit, "open milestone with design spec", is dropped:
+the design already exists in the `r01-contracts` ancestry.)
 
 ## Reference
 

@@ -258,9 +258,11 @@ produces zero code diffs.
 
 **Exit criteria.**
 - `dev/conventions/naming.md` exists, < 250 lines, prescriptive.
-- `CLAUDE.md` has a one-line pointer to the naming doc.
-- `pixi run pytest tests/` unchanged (no behavior change).
-- No code files modified in R2.
+- `AGENTS.md` has a one-line pointer to the naming doc (canonical;
+  `CLAUDE.md` inherits it via `@AGENTS.md` — not a CLAUDE.md-only edit).
+- `pixi run pytest tests/` unchanged: 51 passed, 3 skipped, 2 xfailed.
+- R2 changeset is documentation-only (no `Snakefile_*`, `src/`, `tests/`,
+  config YAML, lockfile, manifest, or generated output in the diff).
 
 **Out of scope.** Branch / commit / PR conventions (in this roadmap);
 output path conventions (in R1 contract docs); refactoring existing

@@ -83,8 +83,11 @@ def summary_climate_proj(
     # Rename horizon names to the middle year of the period
     hz_list = df.index.levels[df.index.names.index("horizon")].tolist()
     for hz in horizons:
-        # Get start and end year
-        period = horizons[hz].split(",")
+        # Get start and end year.
+        # R01 delivers future_horizons as lists ([2030, 2060]); pre-R01 configs
+        # delivered comma-separated strings ("2030, 2060"). Accept both.
+        period = horizons[hz]
+        period = period.split(",") if isinstance(period, str) else period
         period = [int(i) for i in period]
         horizon_year = int((period[0] + period[1]) / 2)
         # Replace hz values by horizon_year in hz_list

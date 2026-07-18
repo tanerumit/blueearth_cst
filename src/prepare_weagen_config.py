@@ -29,13 +29,14 @@ if cftype == "generate":
 
     # arguments from the default weagen config file
     yml_dict = read_yml(snakemake.params.default_config)
-    # add new arguments from snakemake and yml_snake
+    # add new arguments from snakemake and yml_snake (R01 sectioned schema)
+    experiment_cfg = yml_snake["workflows"]["climate_experiment"]
     yml_add = {
         "output.path": snakemake.params.output_path,
         "sim.year.start": 2010,
         "sim.year.num": nr_years_weagen,
         "nc.file.prefix": snakemake.params.nc_file_prefix,
-        "realizations_num": yml_snake["realizations_num"],
+        "realizations_num": experiment_cfg["realizations_num"],
     }
     for k, v in yml_add.items():
         yml_dict["generateWeatherSeries"][k] = v
@@ -49,9 +50,10 @@ else:  # stress test
             "nc.file.suffix": snakemake.params.nc_file_suffix,
         }
     }
-    # arguments from yml_snake
-    yml_dict["temp"] = yml_snake["temp"]
-    yml_dict["precip"] = yml_snake["precip"]
+    # arguments from yml_snake (R01 sectioned schema)
+    stress_test_cfg = yml_snake["workflows"]["climate_experiment"]["stress_test"]
+    yml_dict["temp"] = stress_test_cfg["temp"]
+    yml_dict["precip"] = stress_test_cfg["precip"]
 
 # Write the new weagen config
 if not os.path.isdir(os.path.dirname(weagen_config)):

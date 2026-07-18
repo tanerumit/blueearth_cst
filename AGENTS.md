@@ -65,9 +65,9 @@ pixi install          # conda-forge + PyPI deps (Python stack, R toolchain, snak
 pixi run install      # + weathergenr (R, via remotes) and Julia env (Pkg.instantiate)
 
 # Run the three workflows IN ORDER (climate_experiment needs model_creation artifacts):
-snakemake all -c 1 -s Snakefile_model_creation      --configfile config/snake_config_model_test.yml
-snakemake all -c 1 -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --keep-going
-snakemake all -c 1 -s Snakefile_climate_experiment  --configfile config/snake_config_model_test.yml
+snakemake all -c 3 -s Snakefile_model_creation      --configfile config/snake_config_model_test.yml
+snakemake all -c 3 -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --keep-going
+snakemake all -c 3 -s Snakefile_climate_experiment  --configfile config/snake_config_model_test.yml
 
 snakemake ... --dry-run           # inspect the DAG before running or after editing rules
 snakemake --unlock -s <Snakefile> --configfile <cfg>   # Snakemake locks the workdir on crash

@@ -2,8 +2,8 @@
   "project_dir": "examples/test_local",
   "targets": {
     "examples/test_local/climate_experiment/model_results/Qstats.csv": {
-      "sha256": "ec425b63484c7a649602e7012f59d06304b8740f3f810f48b7300a76b29bc5e0",
-      "size_bytes": 3773,
+      "sha256": "f8816ab6c325933ae2c71c9df9d7de35d3855de12039ff20f2811cb53a454f08",
+      "size_bytes": 1821,
       "type": "csv"
     },
     "examples/test_local/climate_experiment/model_results/basin.csv": {
@@ -12,8 +12,8 @@
       "type": "csv"
     },
     "examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary.csv": {
-      "sha256": "7f1ebc87e29f056c0d0b04713e24254b286ed9f7c7d9aec9a47f50afbb0d50a4",
-      "size_bytes": 8601,
+      "sha256": "c6e15e7dcd90a82887a80c52e4339baa4479432d69a0de007ab511b762cf9f8d",
+      "size_bytes": 4306,
       "type": "csv"
     },
     "examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary.nc": {
@@ -32,13 +32,13 @@
         },
         "horizon": {
           "attrs": {},
-          "count_non_nan": 2,
+          "count_non_nan": 1,
           "dtype": "<U3",
           "max": null,
           "mean": null,
           "min": null,
           "shape": [
-            2
+            1
           ],
           "std": null
         },
@@ -57,7 +57,7 @@
         "model": {
           "attrs": {},
           "count_non_nan": 3,
-          "dtype": "<U14",
+          "dtype": "<U13",
           "max": null,
           "mean": null,
           "min": null,
@@ -69,27 +69,27 @@
         "precip": {
           "attrs": {
             "cell_measures": "area: areacella",
-            "cell_methods": "area: time: mean",
+            "cell_methods": "area: time: mean (interval: 1 month)",
             "comment": "includes both liquid and solid phases",
             "long_name": "Precipitation",
-            "original_name": "PRECT",
+            "original_name": "pr",
             "standard_name": "precipitation_flux",
             "units": "kg m-2 s-1"
           },
-          "count_non_nan": 96,
+          "count_non_nan": 48,
           "dtype": "float64",
-          "max": 87.6075592,
-          "mean": 3.95689594,
-          "min": -44.80647278,
+          "max": 83.438797,
+          "mean": 12.54277532,
+          "min": -40.16902542,
           "shape": [
             8,
             1,
             3,
             2,
-            2,
+            1,
             1
           ],
-          "std": 16.12213486
+          "std": 20.00744164
         },
         "scenario": {
           "attrs": {},
@@ -142,77 +142,77 @@
         "temp": {
           "attrs": {
             "cell_measures": "area: areacella",
-            "cell_methods": "area: time: mean",
+            "cell_methods": "area: time: mean (interval: 1 month)",
             "comment": "near-surface (usually, 2 meter) air temperature",
             "long_name": "Near-Surface Air Temperature",
-            "original_name": "TREFHT",
+            "original_name": "tas",
             "standard_name": "air_temperature",
             "units": "K"
           },
-          "count_non_nan": 96,
+          "count_non_nan": 48,
           "dtype": "float64",
-          "max": 3.491833305,
-          "mean": 1.053504936,
-          "min": -0.02716787159,
+          "max": 2.829372883,
+          "mean": 1.332610508,
+          "min": -0.09610955417,
           "shape": [
             8,
             1,
             3,
             2,
-            2,
+            1,
             1
           ],
-          "std": 0.8787676807
+          "std": 0.9244911308
         }
       },
-      "summary_sha256": "8603fa7a2968424f1e5f19d7c88ab47a84d53281a9e76c91afd16d16ea8bea2c",
+      "summary_sha256": "59cb82020c91a9b429abc6a97ccdc0df1223172ad2d94bd68f8004aa883c4a70",
       "type": "netcdf"
     },
     "examples/test_local/climate_projections/cmip6/annual_change_scalar_stats_summary_mean.csv": {
-      "sha256": "89e83942873550c12cd13f8f6d2438b2cf2ae382b32ebc7fa1fde12cbbae4191",
-      "size_bytes": 1136,
+      "sha256": "90a57ec1f7619756da6895826fcdcf7ec8841ff29a30414573d0c6d97b714582",
+      "size_bytes": 598,
       "type": "csv"
     },
     "examples/test_local/climate_projections/cmip6/plots/precipitation_anomaly_projections_abs.png": {
       "exists": true,
-      "size_bytes": 578393,
+      "size_bytes": 562783,
       "type": "png"
     },
     "examples/test_local/climate_projections/cmip6/plots/projected_climate_statistics.png": {
       "exists": true,
-      "size_bytes": 40955,
+      "size_bytes": 40090,
       "type": "png"
     },
     "examples/test_local/climate_projections/cmip6/plots/temperature_anomaly_projections_abs.png": {
       "exists": true,
-      "size_bytes": 353192,
+      "size_bytes": 324377,
       "type": "png"
     },
     "examples/test_local/config/snake_config_climate_experiment.yml": {
-      "sha256": "ded15183f34c27b5846cca5b8e3061993808e8dc3898778d7ae59145c88aa814",
+      "sha256": "b41ca4445227e0456c9fed1b3f1803fe2b4f78b573015b6f65fdd62d41a2b775",
       "type": "yaml"
     },
     "examples/test_local/config/snake_config_climate_projections.yml": {
-      "sha256": "ded15183f34c27b5846cca5b8e3061993808e8dc3898778d7ae59145c88aa814",
+      "sha256": "b41ca4445227e0456c9fed1b3f1803fe2b4f78b573015b6f65fdd62d41a2b775",
       "type": "yaml"
     },
     "examples/test_local/config/snake_config_model_creation.yml": {
-      "sha256": "ded15183f34c27b5846cca5b8e3061993808e8dc3898778d7ae59145c88aa814",
+      "sha256": "b41ca4445227e0456c9fed1b3f1803fe2b4f78b573015b6f65fdd62d41a2b775",
       "type": "yaml"
     },
     "examples/test_local/plots/wflow_model_performance/basin_area.png": {
       "exists": true,
-      "size_bytes": 239830,
+      "size_bytes": 286188,
       "type": "png"
     },
     "examples/test_local/plots/wflow_model_performance/hydro_wflow_1.png": {
       "exists": true,
-      "size_bytes": 287212,
+      "size_bytes": 300043,
       "type": "png"
     },
     "examples/test_local/plots/wflow_model_performance/precip.png": {
       "exists": true,
-      "size_bytes": 230771,
+      "size_bytes": 302701,
       "type": "png"
     }
   },

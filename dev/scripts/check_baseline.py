@@ -232,7 +232,7 @@ def diff_records(rec: dict, cur: dict, tolerance: float = 0.0) -> list[str]:
 def cmd_record(args: argparse.Namespace) -> int:
     manifest, missing = compute_manifest(args.project_dir)
     if missing:
-        sys.stderr.write("Missing targets — refusing to record an incomplete manifest:\n")
+        sys.stderr.write("Missing targets -- refusing to record an incomplete manifest:\n")
         for p in missing:
             sys.stderr.write(f"  - {p}\n")
         return 1
@@ -243,7 +243,7 @@ def cmd_record(args: argparse.Namespace) -> int:
     }
     args.manifest.parent.mkdir(parents=True, exist_ok=True)
     args.manifest.write_text(json.dumps(payload, indent=2, sort_keys=True))
-    print(f"Recorded {len(manifest)} target(s) → {args.manifest}")
+    print(f"Recorded {len(manifest)} target(s) -> {args.manifest}")
     return 0
 
 
@@ -271,9 +271,9 @@ def cmd_check(args: argparse.Namespace) -> int:
 
     tol_note = f" (tolerance {args.tolerance:g})" if args.tolerance > 0 else ""
     if not failures:
-        print(f"OK — {len(rec_targets)} target(s) match manifest{tol_note}.")
+        print(f"OK - {len(rec_targets)} target(s) match manifest{tol_note}.")
         return 0
-    print(f"FAIL — {len(failures)} target(s) differ from manifest{tol_note}:")
+    print(f"FAIL - {len(failures)} target(s) differ from manifest{tol_note}:")
     for path, diffs in failures:
         print(f"  {path}")
         for d in diffs:

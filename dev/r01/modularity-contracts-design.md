@@ -200,14 +200,15 @@ plan will produce a complete table; this is a sample.
 | `static_dir`                  | `project.static_dir`                                   |
 | `model_region`                | `shared.basin.region`                                  |
 | `model_resolution`            | `shared.basin.resolution`                              |
-| `historical: [1980, 2010]`    | `shared.historical_window: [1980, 2010]`               |
+| `starttime` / `endtime` (ISO) | `shared.historical_window.starttime` / `.endtime`      |
+| `historical: 1980, 2010` (str)| `workflows.climate_projections.historical_year_range: [1980, 2010]` (list) — distinct from `shared.historical_window` (year-pair precision vs ISO datetimes) |
 | `output_locations`            | `workflows.model_creation.output_locations`            |
 | `observations_timeseries`     | `workflows.model_creation.observations_timeseries`    |
 | `wflow_outvars`               | `workflows.model_creation.wflow_outvars`               |
 | `models` (CMIP6)              | `workflows.climate_projections.models`                 |
 | `scenarios`                   | `workflows.climate_projections.scenarios`              |
 | `experiment_name`             | `workflows.climate_experiment.experiment_name`         |
-| `realizations_num`            | `workflows.climate_experiment.realizations`            |
+| `realizations_num`            | `workflows.climate_experiment.realizations_num`        |
 | `temp.step_num` etc.          | `workflows.climate_experiment.stress_test.temp.step_num` |
 | `run_historical`              | `workflows.climate_experiment.run_historical`          |
 

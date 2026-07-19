@@ -4,8 +4,6 @@ from os.path import join
 from pathlib import Path
 from typing import List, Union
 
-from hydromt_wflow import WflowSbmModel
-
 
 # Map user-facing semantic names to Wflow.jl 1.x CSDMS variable names.
 # Mapping derived from
@@ -29,6 +27,21 @@ def update_wflow_gauges_outputs(
     """
     Update wflow model with output and optionally gauges locations
     """
+    # Validate up front: an unknown output name used to be silently dropped
+    # (the `extras` filter skipped it), producing no output and no error. Fail
+    # loudly on a config typo instead. Output-neutral on a valid config.
+    unknown = [v for v in outputs if v not in WFLOW_VARS]
+    if unknown:
+        raise ValueError(
+            f"Unknown wflow_outvars {unknown!r}; valid names are "
+            f"{sorted(WFLOW_VARS)}. Fix the wflow_outvars config key."
+        )
+
+    # Lazy import: hydromt_wflow is heavy and only needed once we actually
+    # touch the model, so importing this module (e.g. for the validation above)
+    # stays light and does not require the plugin to be importable.
+    from hydromt_wflow import WflowSbmModel
+
     mod = WflowSbmModel(wflow_root, mode="r+", data_libs=data_catalog)
 
     river_q_csdms = WFLOW_VARS["river discharge"]
@@ -53,8 +66,9 @@ def update_wflow_gauges_outputs(
         )
 
     # Basin-average timeseries for any extra outputs (river discharge already
-    # covered above for outlets/gauges).
-    extras = [v for v in outputs if v != "river discharge" and v in WFLOW_VARS]
+    # covered above for outlets/gauges). `outputs` is validated above, so every
+    # entry is a known WFLOW_VARS key.
+    extras = [v for v in outputs if v != "river discharge"]
     if extras:
         mod.setup_config_output_timeseries(
             mapname="subcatchment",
@@ -74,12 +88,15 @@ def update_wflow_gauges_outputs(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        update_wflow_gauges_outputs(
-            wflow_root=os.path.dirname(sm.input.basin_nc),
-            data_catalog=sm.params.data_catalog,
-            gauges_fn=sm.params.output_locs,
-            outputs=sm.params.outputs,
-        )
+        from src.snake_utils import tee_to_log
+
+        with tee_to_log(sm.log[0]):
+            update_wflow_gauges_outputs(
+                wflow_root=os.path.dirname(sm.input.basin_nc),
+                data_catalog=sm.params.data_catalog,
+                gauges_fn=sm.params.output_locs,
+                outputs=sm.params.outputs,
+            )
     else:
         update_wflow_gauges_outputs(
             wflow_root=join(os.getcwd(), "examples", "my_project", "hydrology_model"),

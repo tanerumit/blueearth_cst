@@ -1,18 +1,16 @@
+import sys
+from pathlib import Path
+
+# Shared helpers live in src/; make them importable regardless of the working
+# directory by prepending this Snakefile's own directory to sys.path.
+# See dev/r03/model-builder-design.md §3.
+sys.path.insert(0, str(Path(workflow.basedir)))
+from src.snake_utils import get_config
+
 # read path of the config file (Snakemake records it from --configfile) so
 # downstream R scripts can be handed the same path. Forwarding config_path is
 # a repo convention — keep it even though the Snakefile itself uses `config`.
 config_path = workflow.configfiles[0]
-
-# Function to get argument from config file and return default value if not found.
-# Required keys raise on missing; optional keys return default.
-def get_config(config, arg, default=None, optional=True):
-    """Read a config key with optional default; raises on missing required keys."""
-    if arg in config:
-        return config[arg]
-    elif optional:
-        return default
-    else:
-        raise ValueError(f"Argument {arg} not found in config")
 
 # R01 schema — three top-level sections. Read each into a local dict.
 project_cfg = config["project"]
@@ -44,6 +42,7 @@ rule all:
         f"{project_dir}/plots/wflow_model_performance/basin_area.png",
         f"{project_dir}/plots/wflow_model_performance/precip.png",
         f"{project_dir}/config/snake_config_model_creation.yml",
+        f"{basin_dir}/staticgeoms/outlet_index.csv",
 
 # Rule to copy config files to the project_dir/config folder
 rule copy_config:
@@ -69,6 +68,10 @@ rule prepare_build_config:
     params:
         model_resolution = model_resolution,
         model_region = model_region,
+    log:
+        f"{project_dir}/logs/prepare_build_config.log",
+    benchmark:
+        f"{project_dir}/benchmarks/prepare_build_config.tsv",
     script:
         "src/prepare_build_config.py"
 
@@ -78,8 +81,12 @@ rule create_model:
         hydromt_ini = f"{project_dir}/config/wflow_build_model_run.yml",
     output:
         basin_nc = f"{basin_dir}/staticmaps.nc",
+    log:
+        f"{project_dir}/logs/create_model.log",
+    benchmark:
+        f"{project_dir}/benchmarks/create_model.tsv",
     shell:
-        """hydromt build wflow_sbm "{basin_dir}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv"""
+        """hydromt build wflow_sbm "{basin_dir}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv 2>&1 | tee {log}"""
 
 # Rule to add reservoirs, lakes and glaciers to the built model (temporary hydromt fix)
 # Can be moved back to create_model rule when hydromt is updated
@@ -91,6 +98,10 @@ rule add_reservoirs_lakes_glaciers:
     params:
         data_catalog = DATA_SOURCES,
         config = waterbodies_config,
+    log:
+        f"{project_dir}/logs/add_reservoirs_lakes_glaciers.log",
+    benchmark:
+        f"{project_dir}/benchmarks/add_reservoirs_lakes_glaciers.tsv",
     script:
         "src/setup_reservoirs_lakes_glaciers.py"
 
@@ -100,18 +111,35 @@ rule add_gauges_and_outputs:
         basin_nc = ancient(f"{basin_dir}/staticmaps.nc"),
         text = f"{basin_dir}/staticgeoms/reservoirs_lakes_glaciers.txt"
     output:
-        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+        gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     params:
         output_locs = output_locations,
         outputs = wflow_outvars,
         data_catalog = DATA_SOURCES
+    log:
+        f"{project_dir}/logs/add_gauges_and_outputs.log",
+    benchmark:
+        f"{project_dir}/benchmarks/add_gauges_and_outputs.tsv",
     script:
         "src/setup_gauges_and_outputs.py"
+
+# Rule to write the outlet position -> subcatchment-ID mapping (R3 section 4)
+rule write_outlet_index:
+    input:
+        outlets_path = f"{basin_dir}/staticgeoms/outlets.geojson"
+    output:
+        outlet_index_path = f"{basin_dir}/staticgeoms/outlet_index.csv"
+    log:
+        f"{project_dir}/logs/write_outlet_index.log",
+    benchmark:
+        f"{project_dir}/benchmarks/write_outlet_index.tsv",
+    script:
+        "src/write_outlet_index.py"
 
 # Rule to prepare the time horizon
 rule setup_runtime:
     input:
-        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+        gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
         forcing_yml = f"{project_dir}/config/wflow_build_forcing_historical.yml"
     params:
@@ -119,6 +147,10 @@ rule setup_runtime:
         endtime = get_config(shared_cfg["historical_window"], "endtime", optional=False),
         clim_source = get_config(shared_cfg, "clim_historical", optional=False),
         basin_dir = basin_dir,
+    log:
+        f"{project_dir}/logs/setup_runtime.log",
+    benchmark:
+        f"{project_dir}/benchmarks/setup_runtime.tsv",
     script: "src/setup_time_horizon.py"
 
 # Rule to add forcing to the updated model
@@ -126,52 +158,72 @@ rule add_forcing:
     input:
         forcing_ini = f"{project_dir}/config/wflow_build_forcing_historical.yml"
     output:
-        forcing_fid = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
+        forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
+    log:
+        f"{project_dir}/logs/add_forcing.log",
+    benchmark:
+        f"{project_dir}/benchmarks/add_forcing.tsv",
     shell:
-        """hydromt update wflow_sbm "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv"""
+        """hydromt update wflow_sbm "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv 2>&1 | tee {log}"""
 
 # Rule to run the wflow model
 rule run_wflow:
     input:
-        forcing_fid = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
+        forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
     output:
-        csv_file = f"{basin_dir}/run_default/output.csv"
+        csv_path = f"{basin_dir}/run_default/output.csv"
     params:
-        toml_fid = f"{basin_dir}/wflow_sbm.toml"
+        toml_path = f"{basin_dir}/wflow_sbm.toml"
+    log:
+        f"{project_dir}/logs/run_wflow.log",
+    benchmark:
+        f"{project_dir}/benchmarks/run_wflow.tsv",
     shell:
-        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_fid}" """
+        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_path}" 2>&1 | tee {log} """
 
 # Rule to analyse and plot wflow model run results --> final output
 rule plot_results:
    input:
-       csv_file = f"{basin_dir}/run_default/output.csv",
+       csv_path = f"{basin_dir}/run_default/output.csv",
        script = "src/plot_results.py"
    output: 
        output_png = f"{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png",
    params:
        project_dir = f"{project_dir}",
        observations_file = observations_timeseries,
-       gauges_output_fid = output_locations,
+       gauges_output_path = output_locations,
+   log:
+       f"{project_dir}/logs/plot_results.log",
+   benchmark:
+       f"{project_dir}/benchmarks/plot_results.tsv",
    script: "src/plot_results.py"
 
 # Rule to plot the wflow basin, rivers, gauges and DEM on a map
 rule plot_map:
     input:
-        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+        gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
         output_map_png = f"{project_dir}/plots/wflow_model_performance/basin_area.png",
     params:
         project_dir = f"{project_dir}",
         output_locations = output_locations,
+    log:
+        f"{project_dir}/logs/plot_map.log",
+    benchmark:
+        f"{project_dir}/benchmarks/plot_map.tsv",
     script: "src/plot_map.py"
 
 # Rule to plot the forcing on a map
 rule plot_forcing:
     input:
-        forcing_fid = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
+        forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
     output:
         output_forcing_map = f"{project_dir}/plots/wflow_model_performance/precip.png",
     params:
         project_dir = f"{project_dir}",
-        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+        gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
+    log:
+        f"{project_dir}/logs/plot_forcing.log",
+    benchmark:
+        f"{project_dir}/benchmarks/plot_forcing.tsv",
     script: "src/plot_map_forcing.py"

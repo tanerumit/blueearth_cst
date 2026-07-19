@@ -1,38 +1,19 @@
 """Global test attributes and fixtures"""
 
 import os
+import sys
 from os.path import join, dirname, realpath
+from pathlib import Path
 import yaml
 import pytest
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from src.snake_utils import get_config  # noqa: E402  shared helper (R3 §3)
 
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 
 config_fn = join(TESTDIR, "snake_config_model_test.yml")
-
-
-# Function to get argument from config file and return default value if not found
-def get_config(config, arg, default=None, optional=True):
-    """
-    Function to get argument from config file and return default value if not found
-
-    Parameters
-    ----------
-    config : dict
-        config file
-    arg : str
-        argument to get from config file
-    default : str/int/float/list, optional
-        default value if argument not found, by default None
-    optional : bool, optional
-        if True, argument is optional, by default True
-    """
-    if arg in config:
-        return config[arg]
-    elif optional:
-        return default
-    else:
-        raise ValueError(f"Argument {arg} not found in config file")
 
 
 def pytest_addoption(parser):

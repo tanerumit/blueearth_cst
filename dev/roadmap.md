@@ -287,7 +287,23 @@ guides (function lengths, comment conventions).
 **Tag.** `r02-naming`. Full design lives in
 `dev/r02/naming-conventions-design.md`.
 
-### R3 — Workflow 1: model builder
+### R3 — Workflow 1: model builder (sealed 2026-07-19)
+
+**Status.** Sealed 2026-07-19 — `Snakefile_model_creation` + its scripts
+cleaned up: shared `get_config` and `tee_to_log` in `src/snake_utils.py`
+(the cross-cutting patterns R4/R5 inherit), per-rule `log:`/`benchmark:` on
+every non-trivial rule, deprecated path labels renamed, `setup_gauges` hardened
+(raises on unknown `wflow_outvars`), the waterbodies rule encapsulated with a
+removal trigger + structured sentinel, and a new `outlet_index.csv` rule-all
+output settling the outlet-naming contract. R2 naming applied to workflow-1
+identifiers; the deferred R1 contract doc `dev/workflows/model_creation.md`
+written. **Behavior-preserving**, verified by a full `--forceall` WF1 rebuild:
+`check_baseline` 14/14, all per-rule logs written, `outlet_index.csv` and the
+structured sentinel correct. Suite 73 passed, 3 skipped, 2 xfailed. Constant-
+parameter restoration split out to task `t260719a` (a scientific decision +
+baseline move); the workflow-3 `CyclicGraphException` `test_cli` ratchet is
+retained for R5. Full design, external GPT-5.6 review, and integration-
+verification record in `dev/r03/`. Merged to `main` 2026-07-19.
 
 **Goal.** Clean up `Snakefile_model_creation` and the scripts it
 calls — orchestration *and* analytical code. Establish the

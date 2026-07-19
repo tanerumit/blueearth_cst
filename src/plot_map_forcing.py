@@ -189,20 +189,22 @@ def plot_forcing(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
+        from src.snake_utils import tee_to_log
 
-        # Parse snake options
-        project_dir = sm.params.project_dir
-        gauges_fn = sm.params.gauges_fid
-        gauges_name = basename(gauges_fn).split(".")[0]
+        with tee_to_log(sm.log[0]):
+            # Parse snake options
+            project_dir = sm.params.project_dir
+            gauges_fn = sm.params.gauges_path
+            gauges_name = basename(gauges_fn).split(".")[0]
 
-        Folder_plots = f"{project_dir}/plots/wflow_model_performance"
-        root = f"{project_dir}/hydrology_model"
+            Folder_plots = f"{project_dir}/plots/wflow_model_performance"
+            root = f"{project_dir}/hydrology_model"
 
-        plot_forcing(
-            wflow_root=root,
-            plot_dir=Folder_plots,
-            gauges_name=gauges_name,
-        )
+            plot_forcing(
+                wflow_root=root,
+                plot_dir=Folder_plots,
+                gauges_name=gauges_name,
+            )
     else:
         plot_forcing(
             wflow_root=join(os.getcwd(), "examples", "my_project", "hydrology_model")

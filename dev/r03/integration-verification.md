@@ -1,5 +1,12 @@
 # R3 — deferred integration verification (before seal)
 
+> **COMPLETED 2026-07-19.** Ran a full `--forceall` WF1 rebuild into
+> `examples/test_local`: `check_baseline` 14/14, every per-rule log written
+> (silent scripts leave 0-byte logs, as expected), all `benchmark` TSVs
+> present, `outlet_index.csv` and the structured sentinel correct, and
+> `plot_map` wired + refactored without moving `basin_area.png`. R3 sealed
+> and tagged `r03-model-builder`. Retained below as the executed record.
+
 R3 is **code-complete but not sealed**. Per the 2026-07-19 decision to defer
 the build batch, several changes are verified only by dry-run + hermetic unit
 tests; their *runtime* behavior needs one real model build/run before the

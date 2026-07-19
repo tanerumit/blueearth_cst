@@ -42,6 +42,7 @@ rule all:
         f"{project_dir}/plots/wflow_model_performance/basin_area.png",
         f"{project_dir}/plots/wflow_model_performance/precip.png",
         f"{project_dir}/config/snake_config_model_creation.yml",
+        f"{basin_dir}/staticgeoms/outlet_index.csv",
 
 # Rule to copy config files to the project_dir/config folder
 rule copy_config:
@@ -121,6 +122,19 @@ rule add_gauges_and_outputs:
         f"{project_dir}/benchmarks/add_gauges_and_outputs.tsv",
     script:
         "src/setup_gauges_and_outputs.py"
+
+# Rule to write the outlet position -> subcatchment-ID mapping (R3 section 4)
+rule write_outlet_index:
+    input:
+        outlets_path = f"{basin_dir}/staticgeoms/outlets.geojson"
+    output:
+        outlet_index_path = f"{basin_dir}/staticgeoms/outlet_index.csv"
+    log:
+        f"{project_dir}/logs/write_outlet_index.log",
+    benchmark:
+        f"{project_dir}/benchmarks/write_outlet_index.tsv",
+    script:
+        "src/write_outlet_index.py"
 
 # Rule to prepare the time horizon
 rule setup_runtime:

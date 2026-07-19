@@ -192,7 +192,7 @@ if __name__ == "__main__":
 
         # Parse snake options
         project_dir = sm.params.project_dir
-        gauges_fn = sm.params.gauges_fid
+        gauges_fn = sm.params.gauges_path
         gauges_name = basename(gauges_fn).split(".")[0]
 
         Folder_plots = f"{project_dir}/plots/wflow_model_performance"

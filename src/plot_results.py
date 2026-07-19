@@ -276,7 +276,7 @@ if __name__ == "__main__":
         analyse_wflow_historical(
             project_dir=sm.params.project_dir,
             observations_fn=sm.params.observations_file,
-            gauges_locs=sm.params.gauges_output_fid,
+            gauges_locs=sm.params.gauges_output_path,
         )
     else:
         analyse_wflow_historical(

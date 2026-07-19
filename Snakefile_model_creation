@@ -110,7 +110,7 @@ rule add_gauges_and_outputs:
         basin_nc = ancient(f"{basin_dir}/staticmaps.nc"),
         text = f"{basin_dir}/staticgeoms/reservoirs_lakes_glaciers.txt"
     output:
-        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+        gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     params:
         output_locs = output_locations,
         outputs = wflow_outvars,
@@ -125,7 +125,7 @@ rule add_gauges_and_outputs:
 # Rule to prepare the time horizon
 rule setup_runtime:
     input:
-        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+        gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
         forcing_yml = f"{project_dir}/config/wflow_build_forcing_historical.yml"
     params:
@@ -144,7 +144,7 @@ rule add_forcing:
     input:
         forcing_ini = f"{project_dir}/config/wflow_build_forcing_historical.yml"
     output:
-        forcing_fid = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
+        forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
     log:
         f"{project_dir}/logs/add_forcing.log",
     benchmark:
@@ -155,29 +155,29 @@ rule add_forcing:
 # Rule to run the wflow model
 rule run_wflow:
     input:
-        forcing_fid = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
+        forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
     output:
-        csv_file = f"{basin_dir}/run_default/output.csv"
+        csv_path = f"{basin_dir}/run_default/output.csv"
     params:
-        toml_fid = f"{basin_dir}/wflow_sbm.toml"
+        toml_path = f"{basin_dir}/wflow_sbm.toml"
     log:
         f"{project_dir}/logs/run_wflow.log",
     benchmark:
         f"{project_dir}/benchmarks/run_wflow.tsv",
     shell:
-        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_fid}" > {log} 2>&1 """
+        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_path}" > {log} 2>&1 """
 
 # Rule to analyse and plot wflow model run results --> final output
 rule plot_results:
    input:
-       csv_file = f"{basin_dir}/run_default/output.csv",
+       csv_path = f"{basin_dir}/run_default/output.csv",
        script = "src/plot_results.py"
    output: 
        output_png = f"{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png",
    params:
        project_dir = f"{project_dir}",
        observations_file = observations_timeseries,
-       gauges_output_fid = output_locations,
+       gauges_output_path = output_locations,
    log:
        f"{project_dir}/logs/plot_results.log",
    benchmark:
@@ -187,7 +187,7 @@ rule plot_results:
 # Rule to plot the wflow basin, rivers, gauges and DEM on a map
 rule plot_map:
     input:
-        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+        gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
         output_map_png = f"{project_dir}/plots/wflow_model_performance/basin_area.png",
     params:
@@ -202,12 +202,12 @@ rule plot_map:
 # Rule to plot the forcing on a map
 rule plot_forcing:
     input:
-        forcing_fid = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
+        forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
     output:
         output_forcing_map = f"{project_dir}/plots/wflow_model_performance/precip.png",
     params:
         project_dir = f"{project_dir}",
-        gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+        gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     log:
         f"{project_dir}/logs/plot_forcing.log",
     benchmark:

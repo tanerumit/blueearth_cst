@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.snake_utils import get_config  # noqa: E402
+from src.snake_utils import get_config, tee_to_log  # noqa: E402
 
 
 def test_missing_required_raises():
@@ -45,3 +45,30 @@ def test_none_value_returned_not_treated_as_missing():
 def test_falsey_values_returned_as_is(falsey):
     result = get_config({"k": falsey}, "k", default="fallback")
     assert result == falsey and type(result) is type(falsey)
+
+
+# --- tee_to_log (R3 §6) ------------------------------------------------------
+
+
+def test_tee_to_log_writes_and_restores_streams(tmp_path):
+    log = tmp_path / "sub" / "rule.log"  # parent does not exist yet
+    out0, err0 = sys.stdout, sys.stderr
+    with tee_to_log(log):
+        print("hello-stdout")
+        print("hello-stderr", file=sys.stderr)
+    # streams restored to exactly what they were on entry
+    assert sys.stdout is out0 and sys.stderr is err0
+    text = log.read_text(encoding="utf-8")
+    assert "hello-stdout" in text and "hello-stderr" in text
+
+
+def test_tee_to_log_reraises_and_still_restores(tmp_path):
+    log = tmp_path / "rule.log"
+    out0, err0 = sys.stdout, sys.stderr
+    with pytest.raises(RuntimeError, match="boom"):
+        with tee_to_log(log):
+            print("before-error")
+            raise RuntimeError("boom")
+    # exception propagated (not swallowed) AND streams restored in finally
+    assert sys.stdout is out0 and sys.stderr is err0
+    assert "before-error" in log.read_text(encoding="utf-8")

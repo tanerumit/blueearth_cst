@@ -70,8 +70,16 @@ context so future-you can confirm the issue still applies before fixing.
     similar) or a `ruleorder:` directive.
 
   These are pre-M2 failures masked by the fact that M1 closure didn't
-  actually run pytest. Both belong to R3's "tighten ruleorder + Snakefile
-  hygiene" deliverables.
+  actually run pytest.
+
+  *Split 2026-07-19 (`dev/r03/model-builder-design.md` §2), by where the fix
+  lives:* the `MissingInputException` is a workflow-2 **test-fixture** defect
+  (dry-run against an empty project dir) — **fixed in R3** by pre-staging a
+  minimal valid `region.geojson` and flipping that ratchet. The
+  `CyclicGraphException` fix is a `wildcard_constraints`/`ruleorder` edit
+  **inside `Snakefile_climate_experiment`** (R5 territory, entangled with the
+  `st_num2 → st_num` fold that `dev/conventions/naming.md` §4 already assigns
+  to R5) — **deferred to R5**; the ratchet is retained until then.
 
 - **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
   triage (`dev/phase-1/m01/warnings.md`) because most rules don't write stderr
@@ -253,16 +261,41 @@ for the full M2b record.
   *Revisit when:* conda-forge ships a fixed r45 `r-waveslim` (or R 4.6)
   Fortran build — then the `r-base` pin can move forward again.
 
-- **`setup_constant_pars` short names → CSDMS Standard Names.** hydromt_wflow
-  1.x's `setup_constant_pars` rejects the short parameter names from 0.x
-  (`Cfmax`, `KsatHorFrac`, `TT`, `TTI`, `TTM`, `WHC`, `G_Cfmax`, `MaxLeakage`,
-  `InfiltCapPath`, …) and requires CSDMS Standard Names instead. M2b dropped
-  13 of the 14 originally-set constants under the "intentional drift,
-  re-baseline aggressively" policy and kept only `KsatHorFrac` (which the
-  build errors without). R3 should map the other 13 to CSDMS names and
-  decide whether to restore them. CSDMS lookup tables in
-  `hydromt_wflow.naming` and `hydromt_wflow.version_upgrade`. Concrete
-  remap in `dev/phase-1/m02b/handoff.md` decision #3.
+- **`setup_constant_pars` short names → CSDMS Standard Names.**
+  *Re-tagged 2026-07-19: standalone scientific-review task `t260719a`, split
+  out of R3.* hydromt_wflow 1.x's `setup_constant_pars` rejects the short
+  parameter names from 0.x and requires CSDMS Standard Names instead. M2b
+  dropped **14 of the 15** originally-set constants under the "intentional
+  drift, re-baseline aggressively" policy and kept only `KsatHorFrac` (which
+  the build errors without).
+
+  **Authoritative inventory (the handoff prose miscounts — its explicit
+  parenthesized list of 15 names controls, not its "14 constant pars / other
+  13" prose):** 15 original / 1 retained (`KsatHorFrac`) / **14 dropped**,
+  where the 14 dropped = **8 known CSDMS mappings** (`Cfmax`, `WHC`, `TT`,
+  `TTI`, `TTM`, `G_Cfmax`, `MaxLeakage`, `InfiltCapPath`) + **`InfiltCapSoil`**
+  (deprecated, `wflow_v1: None` in `hydromt_wflow.naming` → stays dropped) +
+  **5 unresolved** (`cf_soil`, `EoverR`, `rootdistpar`, `G_SIfrac`, `G_TT`)
+  whose CSDMS mapping or deprecation status is not yet confirmed.
+
+  Restoring physics parameters is a scientific decision, not a mechanical
+  rename, so it is **out of R3** (which is a behavior-preserving refactor,
+  per `dev/r03/model-builder-design.md`). The dedicated task owns
+  `config/wflow_build_model.yml` and the resulting baseline move. Its scope
+  must carry: a **parameter-reconciliation table** (per param: old value,
+  Wflow 1.x effective default, units, semantics, storage location, observed
+  built value, and a restore / adopt-new-default / drop-deprecated
+  classification); a **direct staticmaps.nc/TOML assertion** that each
+  restored value actually lands (a name accepted but silently no-op'd is the
+  failure mode); a **data-level workflow-1 discharge comparison** (not PNG
+  size — the manifest does not fingerprint discharge); and a **clean
+  dedicated project-dir re-record** with a freshness check on every recorded
+  target (existence-based Snakemake timestamps + `ancient()` inputs can bless
+  stale artifacts). The task should also ADD staticmaps/TOML fingerprints to
+  the manifest, since workflow 1's slice is currently only 3 size-only PNGs +
+  a snake-config snapshot. CSDMS lookup tables in `hydromt_wflow.naming` and
+  `hydromt_wflow.version_upgrade`. Concrete 8-mapping remap in
+  `dev/phase-1/m02b/handoff.md` decision #3.
 
 - **CMIP6 `precip` / `temp` `.attrs` lost on `monthly_change_scalar_merge`.**
   Pre-M2b, `annual_change_scalar_stats_summary.nc` carried `cell_measures`,

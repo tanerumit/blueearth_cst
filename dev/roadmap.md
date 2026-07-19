@@ -303,7 +303,7 @@ structured sentinel correct. Suite 73 passed, 3 skipped, 2 xfailed. Constant-
 parameter restoration split out to task `t260719a` (a scientific decision +
 baseline move); the workflow-3 `CyclicGraphException` `test_cli` ratchet is
 retained for R5. Full design, external GPT-5.6 review, and integration-
-verification record in `dev/r03/`. Not yet merged to `main`.
+verification record in `dev/r03/`. Merged to `main` 2026-07-19.
 
 **Goal.** Clean up `Snakefile_model_creation` and the scripts it
 calls — orchestration *and* analytical code. Establish the

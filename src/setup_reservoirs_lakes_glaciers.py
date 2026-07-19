@@ -98,11 +98,14 @@ def update_wflow_waterbodies_glaciers(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        update_wflow_waterbodies_glaciers(
-            wflow_root=os.path.dirname(sm.input.basin_nc),
-            data_catalog=sm.params.data_catalog,
-            config_fn=sm.params.config,
-        )
+        from src.snake_utils import tee_to_log
+
+        with tee_to_log(sm.log[0]):
+            update_wflow_waterbodies_glaciers(
+                wflow_root=os.path.dirname(sm.input.basin_nc),
+                data_catalog=sm.params.data_catalog,
+                config_fn=sm.params.config,
+            )
     else:
         update_wflow_waterbodies_glaciers(
             wflow_root=join(os.getcwd(), "examples", "my_project", "hydrology_model"),

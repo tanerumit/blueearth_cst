@@ -41,7 +41,10 @@ def write_outlet_index(outlets_path, out_path):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        write_outlet_index(sm.input.outlets_path, sm.output.outlet_index_path)
+        from src.snake_utils import tee_to_log
+
+        with tee_to_log(sm.log[0]):
+            write_outlet_index(sm.input.outlets_path, sm.output.outlet_index_path)
     else:
         write_outlet_index(
             os.path.join(

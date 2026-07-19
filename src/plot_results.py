@@ -273,11 +273,14 @@ def analyse_wflow_historical(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        analyse_wflow_historical(
-            project_dir=sm.params.project_dir,
-            observations_fn=sm.params.observations_file,
-            gauges_locs=sm.params.gauges_output_path,
-        )
+        from src.snake_utils import tee_to_log
+
+        with tee_to_log(sm.log[0]):
+            analyse_wflow_historical(
+                project_dir=sm.params.project_dir,
+                observations_fn=sm.params.observations_file,
+                gauges_locs=sm.params.gauges_output_path,
+            )
     else:
         analyse_wflow_historical(
             project_dir=join(os.getcwd(), "examples", "my_project"),

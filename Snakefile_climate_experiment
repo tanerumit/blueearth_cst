@@ -1,19 +1,17 @@
 import numpy as np
+import sys
+from pathlib import Path
+
+# Shared helpers live in src/; make them importable regardless of the working
+# directory by prepending this Snakefile's own directory to sys.path.
+# See dev/r03/model-builder-design.md §3.
+sys.path.insert(0, str(Path(workflow.basedir)))
+from src.snake_utils import get_config
 
 # read path of the config file (Snakemake records it from --configfile) so
 # downstream R scripts can be handed the same path. Forwarding config_path is
 # a repo convention.
 config_path = workflow.configfiles[0]
-
-# Function to get argument from config file and return default value if not found.
-def get_config(config, arg, default=None, optional=True):
-    """Read a config key with optional default; raises on missing required keys."""
-    if arg in config:
-        return config[arg]
-    elif optional:
-        return default
-    else:
-        raise ValueError(f"Argument {arg} not found in config")
 
 # R01 schema
 project_cfg = config["project"]

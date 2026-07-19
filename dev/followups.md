@@ -49,6 +49,22 @@ context so future-you can confirm the issue still applies before fixing.
 
 ---
 
+## Cross-cutting — workflow ergonomics
+
+- **[PARKED 2026-07-19] Per-rule progress messages.** Add `message:`
+  directives to the long-running rules so each announces itself in plain
+  language when it starts (e.g. "Building Wflow model from global data…"),
+  layered on top of Snakemake's built-in `N of M steps (X%) done` counter and
+  the per-rule timestamps. Snakemake cannot show progress *inside* an external
+  step (hydromt build, Julia) — only start/end — but the tool's own streamed
+  output (now visible via `tee`) covers the in-between. Cross-cutting: apply
+  across all three `Snakefile_*` as a consistent pattern; R4/R5 would inherit
+  it. Per-rule wall-clock is already captured by the `benchmark:` TSVs added in
+  R3. Deferred by choice, not a blocker — pick up when convenient (a natural
+  fit alongside R4/R5 Snakefile work or R6 polish).
+
+---
+
 ## R3 — Workflow 1: model builder
 
 - **Resolve test_cli xfails.** Two of the three parametrizations in

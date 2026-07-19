@@ -67,6 +67,10 @@ rule prepare_build_config:
     params:
         model_resolution = model_resolution,
         model_region = model_region,
+    log:
+        f"{project_dir}/logs/prepare_build_config.log",
+    benchmark:
+        f"{project_dir}/benchmarks/prepare_build_config.tsv",
     script:
         "src/prepare_build_config.py"
 
@@ -76,8 +80,12 @@ rule create_model:
         hydromt_ini = f"{project_dir}/config/wflow_build_model_run.yml",
     output:
         basin_nc = f"{basin_dir}/staticmaps.nc",
+    log:
+        f"{project_dir}/logs/create_model.log",
+    benchmark:
+        f"{project_dir}/benchmarks/create_model.tsv",
     shell:
-        """hydromt build wflow_sbm "{basin_dir}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv"""
+        """hydromt build wflow_sbm "{basin_dir}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv > {log} 2>&1"""
 
 # Rule to add reservoirs, lakes and glaciers to the built model (temporary hydromt fix)
 # Can be moved back to create_model rule when hydromt is updated
@@ -89,6 +97,10 @@ rule add_reservoirs_lakes_glaciers:
     params:
         data_catalog = DATA_SOURCES,
         config = waterbodies_config,
+    log:
+        f"{project_dir}/logs/add_reservoirs_lakes_glaciers.log",
+    benchmark:
+        f"{project_dir}/benchmarks/add_reservoirs_lakes_glaciers.tsv",
     script:
         "src/setup_reservoirs_lakes_glaciers.py"
 
@@ -103,6 +115,10 @@ rule add_gauges_and_outputs:
         output_locs = output_locations,
         outputs = wflow_outvars,
         data_catalog = DATA_SOURCES
+    log:
+        f"{project_dir}/logs/add_gauges_and_outputs.log",
+    benchmark:
+        f"{project_dir}/benchmarks/add_gauges_and_outputs.tsv",
     script:
         "src/setup_gauges_and_outputs.py"
 
@@ -117,6 +133,10 @@ rule setup_runtime:
         endtime = get_config(shared_cfg["historical_window"], "endtime", optional=False),
         clim_source = get_config(shared_cfg, "clim_historical", optional=False),
         basin_dir = basin_dir,
+    log:
+        f"{project_dir}/logs/setup_runtime.log",
+    benchmark:
+        f"{project_dir}/benchmarks/setup_runtime.tsv",
     script: "src/setup_time_horizon.py"
 
 # Rule to add forcing to the updated model
@@ -125,8 +145,12 @@ rule add_forcing:
         forcing_ini = f"{project_dir}/config/wflow_build_forcing_historical.yml"
     output:
         forcing_fid = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
+    log:
+        f"{project_dir}/logs/add_forcing.log",
+    benchmark:
+        f"{project_dir}/benchmarks/add_forcing.tsv",
     shell:
-        """hydromt update wflow_sbm "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv"""
+        """hydromt update wflow_sbm "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv > {log} 2>&1"""
 
 # Rule to run the wflow model
 rule run_wflow:
@@ -136,8 +160,12 @@ rule run_wflow:
         csv_file = f"{basin_dir}/run_default/output.csv"
     params:
         toml_fid = f"{basin_dir}/wflow_sbm.toml"
+    log:
+        f"{project_dir}/logs/run_wflow.log",
+    benchmark:
+        f"{project_dir}/benchmarks/run_wflow.tsv",
     shell:
-        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_fid}" """
+        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_fid}" > {log} 2>&1 """
 
 # Rule to analyse and plot wflow model run results --> final output
 rule plot_results:
@@ -150,6 +178,10 @@ rule plot_results:
        project_dir = f"{project_dir}",
        observations_file = observations_timeseries,
        gauges_output_fid = output_locations,
+   log:
+       f"{project_dir}/logs/plot_results.log",
+   benchmark:
+       f"{project_dir}/benchmarks/plot_results.tsv",
    script: "src/plot_results.py"
 
 # Rule to plot the wflow basin, rivers, gauges and DEM on a map
@@ -161,6 +193,10 @@ rule plot_map:
     params:
         project_dir = f"{project_dir}",
         output_locations = output_locations,
+    log:
+        f"{project_dir}/logs/plot_map.log",
+    benchmark:
+        f"{project_dir}/benchmarks/plot_map.tsv",
     script: "src/plot_map.py"
 
 # Rule to plot the forcing on a map
@@ -172,4 +208,8 @@ rule plot_forcing:
     params:
         project_dir = f"{project_dir}",
         gauges_fid = f"{basin_dir}/staticgeoms/outlets.geojson"
+    log:
+        f"{project_dir}/logs/plot_forcing.log",
+    benchmark:
+        f"{project_dir}/benchmarks/plot_forcing.tsv",
     script: "src/plot_map_forcing.py"

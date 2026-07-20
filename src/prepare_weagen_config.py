@@ -93,29 +93,32 @@ def write_weagen_config(yml_dict, weagen_config_path):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        cftype = sm.params.cftype
-        weagen_config = sm.output.weagen_config
-        print(
-            f"Preparing and writing the weather generator config file {weagen_config}"
-        )
-        if cftype == "generate":
-            yml_dict = build_weagen_config(
-                cftype=cftype,
-                snake_config_path=sm.params.snake_config,
-                output_path=sm.params.output_path,
-                nc_file_prefix=sm.params.nc_file_prefix,
-                default_config_path=sm.params.default_config,
-                middle_year=sm.params.middle_year,
-                sim_years=sm.params.sim_years,
+        from src.snake_utils import tee_to_log
+
+        with tee_to_log(sm.log[0]):
+            cftype = sm.params.cftype
+            weagen_config = sm.output.weagen_config
+            print(
+                f"Preparing and writing the weather generator config file {weagen_config}"
             )
-        else:  # stress test
-            yml_dict = build_weagen_config(
-                cftype=cftype,
-                snake_config_path=sm.params.snake_config,
-                output_path=sm.params.output_path,
-                nc_file_prefix=sm.params.nc_file_prefix,
-                nc_file_suffix=sm.params.nc_file_suffix,
-            )
-        write_weagen_config(yml_dict, weagen_config)
+            if cftype == "generate":
+                yml_dict = build_weagen_config(
+                    cftype=cftype,
+                    snake_config_path=sm.params.snake_config,
+                    output_path=sm.params.output_path,
+                    nc_file_prefix=sm.params.nc_file_prefix,
+                    default_config_path=sm.params.default_config,
+                    middle_year=sm.params.middle_year,
+                    sim_years=sm.params.sim_years,
+                )
+            else:  # stress test
+                yml_dict = build_weagen_config(
+                    cftype=cftype,
+                    snake_config_path=sm.params.snake_config,
+                    output_path=sm.params.output_path,
+                    nc_file_prefix=sm.params.nc_file_prefix,
+                    nc_file_suffix=sm.params.nc_file_suffix,
+                )
+            write_weagen_config(yml_dict, weagen_config)
     else:
         raise ValueError("This script should be run from a snakemake environment")

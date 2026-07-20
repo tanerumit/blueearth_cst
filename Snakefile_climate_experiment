@@ -82,6 +82,10 @@ rule extract_climate_grid:
         endtime = hist_endtime,
     output:
         climate_nc = f"{project_dir}/climate_historical/raw_data/extract_historical.nc",
+    log:
+        f"{project_dir}/logs/extract_climate_grid.log",
+    benchmark:
+        f"{project_dir}/benchmarks/extract_climate_grid.tsv",
     script:
         "src/extract_historical_climate.py"
 
@@ -91,6 +95,10 @@ rule climate_stress_parameters:
         config = ancient(config_path),
     output:
         st_csv_fns = [f"{exp_dir}/stress_test/cst_{st_num}.csv" for st_num in np.arange(1, ST_NUM+1)]
+    log:
+        f"{project_dir}/logs/climate_stress_parameters.log",
+    benchmark:
+        f"{project_dir}/benchmarks/climate_stress_parameters.tsv",
     script:
         "src/prepare_cst_parameters.py"
 
@@ -106,6 +114,10 @@ rule prepare_weagen_config:
         middle_year = horizontime_climate,
         sim_years = wflow_run_length,
         nc_file_prefix = "rlz"
+    log:
+        f"{project_dir}/logs/prepare_weagen_config.log",
+    benchmark:
+        f"{project_dir}/benchmarks/prepare_weagen_config.tsv",
     script:
         "src/prepare_weagen_config.py"
 
@@ -119,6 +131,10 @@ rule prepare_weagen_config_st:
         output_path = f"{exp_dir}/realization_"+"{rlz_num}"+"/",
         nc_file_prefix = "rlz_"+"{rlz_num}"+"_cst",
         nc_file_suffix = "{st_num}",
+    log:
+        f"{project_dir}/logs/prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.log",
+    benchmark:
+        f"{project_dir}/benchmarks/prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "src/prepare_weagen_config.py"
 
@@ -162,6 +178,10 @@ rule climate_data_catalog:
     params:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
+    log:
+        f"{project_dir}/logs/climate_data_catalog.log",
+    benchmark:
+        f"{project_dir}/benchmarks/climate_data_catalog.tsv",
     script:
         "src/prepare_climate_data_catalog.py"
 
@@ -178,6 +198,10 @@ rule downscale_climate_realization:
         clim_source = clim_source,
         horizontime_climate = horizontime_climate,
         run_length = wflow_run_length,
+    log:
+        f"{project_dir}/logs/downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.log",
+    benchmark:
+        f"{project_dir}/benchmarks/downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "src/downscale_climate_forcing.py"
 
@@ -205,5 +229,9 @@ rule export_wflow_results:
         st_num = ST_NUM,
         Tlow = get_config(my_cfg, "Tlow", 2),
         Tpeak = get_config(my_cfg, "Tpeak", 10),
+    log:
+        f"{project_dir}/logs/export_wflow_results.log",
+    benchmark:
+        f"{project_dir}/benchmarks/export_wflow_results.tsv",
     script:
         "src/export_wflow_results.py"

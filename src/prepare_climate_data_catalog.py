@@ -117,16 +117,19 @@ def prepare_clim_data_catalog(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        # Read the two list of nc files and combine
-        nc_fns = sm.input.cst_nc
-        nc_fns2 = sm.input.rlz_nc
-        nc_fns.extend(nc_fns2)
+        from src.snake_utils import tee_to_log
 
-        prepare_clim_data_catalog(
-            fns=nc_fns,
-            data_libs_like=sm.params.data_sources,
-            source_like=sm.params.clim_source,
-            fn_out=sm.output.clim_data,
-        )
+        with tee_to_log(sm.log[0]):
+            # Read the two list of nc files and combine
+            nc_fns = sm.input.cst_nc
+            nc_fns2 = sm.input.rlz_nc
+            nc_fns.extend(nc_fns2)
+
+            prepare_clim_data_catalog(
+                fns=nc_fns,
+                data_libs_like=sm.params.data_sources,
+                source_like=sm.params.clim_source,
+                fn_out=sm.output.clim_data,
+            )
     else:
         raise ValueError("This script should be run from a snakemake environment")

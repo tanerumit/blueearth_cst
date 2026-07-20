@@ -284,15 +284,18 @@ def analyze_wflow_results(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        analyze_wflow_results(
-            csv_fns=sm.input.rlz_csv_fns,
-            exp_dir=sm.params.exp_dir,
-            st_num=sm.params.st_num,
-            qstats_fn=sm.output.Qstats,
-            bas_fn=sm.output.basin,
-            Tpeak=sm.params.Tpeak,
-            Tlow=sm.params.Tlow,
-            aggr_rlz=sm.params.aggr_rlz,
-        )
+        from src.snake_utils import tee_to_log
+
+        with tee_to_log(sm.log[0]):
+            analyze_wflow_results(
+                csv_fns=sm.input.rlz_csv_fns,
+                exp_dir=sm.params.exp_dir,
+                st_num=sm.params.st_num,
+                qstats_fn=sm.output.Qstats,
+                bas_fn=sm.output.basin,
+                Tpeak=sm.params.Tpeak,
+                Tlow=sm.params.Tlow,
+                aggr_rlz=sm.params.aggr_rlz,
+            )
     else:
         raise ValueError("This script should be run from a snakemake environment")

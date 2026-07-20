@@ -93,10 +93,13 @@ def prep_cst_parameters(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        prep_cst_parameters(
-            config_fn=sm.input.config,
-            csv_fns=sm.output.st_csv_fns,
-        )
+        from src.snake_utils import tee_to_log
+
+        with tee_to_log(sm.log[0]):
+            prep_cst_parameters(
+                config_fn=sm.input.config,
+                csv_fns=sm.output.st_csv_fns,
+            )
     else:
         prep_cst_parameters(
             config_fn=join(os.getcwd(), "config", "snake_config_model_test.yml"),

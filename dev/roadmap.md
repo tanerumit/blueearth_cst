@@ -352,7 +352,37 @@ cross-cutting Snakefile patterns that R4 and R5 inherit.
 
 **Tag.** `r03-model-builder`.
 
-### R4 — Workflow 2: climate projections
+### R4 — Workflow 2: climate projections (sealed 2026-07-20)
+
+**Status.** Sealed 2026-07-20 — `Snakefile_climate_projections` + its four
+`src/` scripts cleaned up, inheriting the R3 patterns. Design accepted via a
+`design-review-loop` run (3-lens internal panel + 3 external GPT rounds +
+round-cap arbitration; 24/24 findings closed) at `dev/r04/`. Landed in 11
+commits (`1a8809e`..seal): contract doc `dev/workflows/climate_projections.md`;
+the load-bearing `ruleorder:` resolved as evidence-backed stale-insurance
+(dry-run refuted the `AGENTS.md` "load-bearing" claim — `AGENTS.md` corrected);
+per-rule `log:`/`benchmark:` + `tee_to_log` on all five non-trivial rules
+(guards added to `get_stats`/`get_change`/`plot_proj_timeseries` first, repo-5
+ordering); `_fid`/`_nc`→`_path` label renames; units docs + bare-`except:`→
+`except Exception:` narrowing; a `check_baseline.py --workflow` scope filter
+(commit 2b); and the §7 audit-evidence test suite. **Behavior-preserving**:
+the workflow-2 end-to-end re-run matched its manifest slice on all data targets
+(the `.nc` summary at tolerance 0, all PNGs, wf1 targets); the 2 full-precision
+CSV byte-diffs are serialization non-determinism, not a value change
+(`dev/r04/baseline_diffs.md`) — **no manifest re-record**. Suite 102 passed, 3
+skipped, 6 xfailed.
+
+**Audited, defects deferred (not "audited clean").** The chain audit
+(`dev/r04/chain-audit.md`) confirmed the change-factor formula, calendars C3,
+and hydro-year windows, and surfaced four deferred defects, each with owner +
+activation condition: **D-CAL** — `get_change_annual_clim_proj` raises
+`TypeError` on cftime 360-day/noleap calendars (task `t260720c`, latent for the
+current seed); **D-VAR/D-MEM** — silent variable/member drops, wired as
+strict-xfail fail-loud norms (task `t260720d`); **D-ATTRS** — the M2b CF-metadata
+loss, probe-localized to the hydromt catalog read, a dependency op (task
+`t260720e`). The strict-xfail wiring is the tripwire: fixing any code defect
+flips its test xfail→xpass and fails the suite until the owning task removes the
+marker. Full design, reviews, audit, and probe in `dev/r04/`.
 
 **Goal.** Clean up `Snakefile_climate_projections` and the scripts it
 calls. Inherit the patterns established in R3 (shared helper,

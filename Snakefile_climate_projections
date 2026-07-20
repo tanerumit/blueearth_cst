@@ -50,6 +50,10 @@ rule all:
         temp_plt = (clim_project_dir + "/plots/temperature_anomaly_projections_abs.png"),
         snake_config = f"{project_dir}/config/snake_config_climate_projections.yml",
 
+# Retained as stale insurance pending removal task; dry-run on the current pinned
+# Snakemake shows this directive constrains nothing on the tests fixture and a
+# reduced config (see dev/r04/climate-projections-design.md §3). Removal deferred
+# to a task that first encodes the ambiguity-sensitive config shapes as regression tests.
 ruleorder: monthly_stats_hist > monthly_stats_fut > monthly_change > monthly_change_scalar_merge
 
 # Rule to copy config files to the project_dir/config folder
@@ -68,12 +72,12 @@ rule copy_config:
 # also calculate monthly time series averaged over the grid.
 rule monthly_stats_hist:
     input:
-        region_fid = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
+        region_path = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
     output:
         #stats_nc_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
         stats_time_nc_hist = temp(clim_project_dir + "/historical_stats_time_{model}.nc"),
     params:
-        yml_fid = DATA_SOURCES,
+        catalog_path = DATA_SOURCES,
         project_dir = f"{project_dir}",
         name_scenario = "historical",
         name_members = members,
@@ -81,18 +85,22 @@ rule monthly_stats_hist:
         name_clim_project = clim_project,
         variables = variables,
         save_grids = save_grids,
+    log:
+        project_dir + "/logs/monthly_stats_hist/{model}.log",
+    benchmark:
+        project_dir + "/benchmarks/monthly_stats_hist/{model}.tsv",
     script: "src/get_stats_climate_proj.py"
 
 # Rule to calculate mean monthly statistics for historical and future scenarios - grid saved to netcdf
 # also calculate monthly time series averaged over the grid.
 rule monthly_stats_fut:
     input:
-        region_fid = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
+        region_path = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
         stats_time_nc_hist = (clim_project_dir + "/historical_stats_time_{model}.nc"), #make sure starts with previous job
     output:
         stats_time_nc = temp(clim_project_dir + "/stats_time-{model}_{scenario}.nc"),
     params:
-        yml_fid = DATA_SOURCES,
+        catalog_path = DATA_SOURCES,
         project_dir = f"{project_dir}",
         name_scenario = "{scenario}",
         name_members = members,
@@ -100,6 +108,10 @@ rule monthly_stats_fut:
         name_clim_project = clim_project,
         variables = variables,
         save_grids = save_grids,
+    log:
+        project_dir + "/logs/monthly_stats_fut/{model}_{scenario}.log",
+    benchmark:
+        project_dir + "/benchmarks/monthly_stats_fut/{model}_{scenario}.tsv",
     script: "src/get_stats_climate_proj.py"
 
 # Rule to calculate change stats over the grid
@@ -118,8 +130,12 @@ rule monthly_change:
         time_horizon_hist = time_horizon_hist,
         time_horizon_fut = get_horizon,
         save_grids = save_grids,
-        stats_nc_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
-        stats_nc = (clim_project_dir + "/stats-{model}_{scenario}.nc"),
+        stats_path_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
+        stats_path = (clim_project_dir + "/stats-{model}_{scenario}.nc"),
+    log:
+        project_dir + "/logs/monthly_change/{model}_{scenario}_{horizon}.log",
+    benchmark:
+        project_dir + "/benchmarks/monthly_change/{model}_{scenario}_{horizon}.tsv",
     script: "src/get_change_climate_proj.py"
 
 #rule to merge results in one netcdf / todo: add plotting
@@ -134,6 +150,10 @@ rule monthly_change_scalar_merge:
     params:
         clim_project_dir = f"{clim_project_dir}",
         horizons = future_horizons,
+    log:
+        f"{project_dir}/logs/monthly_change_scalar_merge.log",
+    benchmark:
+        f"{project_dir}/benchmarks/monthly_change_scalar_merge.tsv",
     script: "src/get_change_climate_proj_summary.py"
 
 #rule to plot timeseries
@@ -152,4 +172,8 @@ rule plot_climate_proj_timeseries:
         precip_plt = (clim_project_dir + "/plots/precipitation_anomaly_projections_abs.png"),
         temp_plt = (clim_project_dir + "/plots/temperature_anomaly_projections_abs.png"),
         timeseries_csv = (clim_project_dir + "/gcm_timeseries.nc"),
+    log:
+        f"{project_dir}/logs/plot_climate_proj_timeseries.log",
+    benchmark:
+        f"{project_dir}/benchmarks/plot_climate_proj_timeseries.tsv",
     script: "src/plot_proj_timeseries.py"

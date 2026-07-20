@@ -47,28 +47,32 @@ VOLATILE_NC_ATTRS = frozenset({
     "date_created", "date_modified",
 })
 
-# (kind, path-template). Templates are resolved against project_dir.
-# Mirrors `rule all` across Snakefile_model_creation,
-# Snakefile_climate_projections, Snakefile_climate_experiment.
-TARGETS: list[tuple[str, str]] = [
+# (workflow, kind, path-template). Templates are resolved against project_dir.
+# The workflow tag scopes `check --workflow <name>` (repeatable); it selects a
+# path universe applied symmetrically to the recorded and current sides. Mirrors
+# `rule all` across Snakefile_model_creation, Snakefile_climate_projections,
+# Snakefile_climate_experiment.
+TARGETS: list[tuple[str, str, str]] = [
     # Snakefile_model_creation
-    ("png",  "{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png"),
-    ("png",  "{project_dir}/plots/wflow_model_performance/basin_area.png"),
-    ("png",  "{project_dir}/plots/wflow_model_performance/precip.png"),
-    ("yaml", "{project_dir}/config/snake_config_model_creation.yml"),
+    ("model_creation", "png",  "{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png"),
+    ("model_creation", "png",  "{project_dir}/plots/wflow_model_performance/basin_area.png"),
+    ("model_creation", "png",  "{project_dir}/plots/wflow_model_performance/precip.png"),
+    ("model_creation", "yaml", "{project_dir}/config/snake_config_model_creation.yml"),
     # Snakefile_climate_projections
-    ("nc",   "{clim_project_dir}/annual_change_scalar_stats_summary.nc"),
-    ("csv",  "{clim_project_dir}/annual_change_scalar_stats_summary.csv"),
-    ("csv",  "{clim_project_dir}/annual_change_scalar_stats_summary_mean.csv"),
-    ("png",  "{clim_project_dir}/plots/projected_climate_statistics.png"),
-    ("png",  "{clim_project_dir}/plots/precipitation_anomaly_projections_abs.png"),
-    ("png",  "{clim_project_dir}/plots/temperature_anomaly_projections_abs.png"),
-    ("yaml", "{project_dir}/config/snake_config_climate_projections.yml"),
+    ("climate_projections", "nc",   "{clim_project_dir}/annual_change_scalar_stats_summary.nc"),
+    ("climate_projections", "csv",  "{clim_project_dir}/annual_change_scalar_stats_summary.csv"),
+    ("climate_projections", "csv",  "{clim_project_dir}/annual_change_scalar_stats_summary_mean.csv"),
+    ("climate_projections", "png",  "{clim_project_dir}/plots/projected_climate_statistics.png"),
+    ("climate_projections", "png",  "{clim_project_dir}/plots/precipitation_anomaly_projections_abs.png"),
+    ("climate_projections", "png",  "{clim_project_dir}/plots/temperature_anomaly_projections_abs.png"),
+    ("climate_projections", "yaml", "{project_dir}/config/snake_config_climate_projections.yml"),
     # Snakefile_climate_experiment
-    ("csv",  "{exp_dir}/model_results/Qstats.csv"),
-    ("csv",  "{exp_dir}/model_results/basin.csv"),
-    ("yaml", "{project_dir}/config/snake_config_climate_experiment.yml"),
+    ("climate_experiment", "csv",  "{exp_dir}/model_results/Qstats.csv"),
+    ("climate_experiment", "csv",  "{exp_dir}/model_results/basin.csv"),
+    ("climate_experiment", "yaml", "{project_dir}/config/snake_config_climate_experiment.yml"),
 ]
+
+WORKFLOWS = ("model_creation", "climate_projections", "climate_experiment")
 
 
 def resolve(template: str, project_dir: str) -> str:
@@ -160,10 +164,14 @@ FINGERPRINTERS = {
 }
 
 
-def compute_manifest(project_dir: str) -> tuple[dict, list[str]]:
+def compute_manifest(
+    project_dir: str, workflows: set[str] | None = None
+) -> tuple[dict, list[str]]:
     out: dict[str, dict] = {}
     missing: list[str] = []
-    for kind, template in TARGETS:
+    for workflow, kind, template in TARGETS:
+        if workflows is not None and workflow not in workflows:
+            continue
         path = resolve(template, project_dir)
         if not Path(path).exists():
             missing.append(path)
@@ -254,7 +262,19 @@ def cmd_check(args: argparse.Namespace) -> int:
         return 2
     recorded = json.loads(args.manifest.read_text())
     rec_targets = recorded["targets"]
-    current, missing = compute_manifest(args.project_dir)
+
+    selected = set(args.workflow) if args.workflow else None
+    current, missing = compute_manifest(args.project_dir, workflows=selected)
+    if selected is not None:
+        # Apply the selected universe symmetrically: filter the recorded side to
+        # the same resolved paths so the missing/diff/orphan/count logic all
+        # operate on one reduced target set (design ext2-1).
+        selected_paths = {
+            resolve(template, args.project_dir)
+            for workflow, _kind, template in TARGETS
+            if workflow in selected
+        }
+        rec_targets = {p: rec for p, rec in rec_targets.items() if p in selected_paths}
 
     failures: list[tuple[str, list[str]]] = []
     for p in missing:
@@ -299,6 +319,13 @@ def main() -> None:
     check_p.add_argument("--tolerance", type=float, default=0.0,
                          help="Relative tolerance for netCDF numeric stats "
                               "(default 0 = exact). Use 1e-9 for cross-env comparison.")
+    check_p.add_argument("--workflow", action="append", choices=list(WORKFLOWS),
+                         default=None,
+                         help="Restrict the check to targets tagged with the given "
+                              "workflow(s). Repeatable. Applied symmetrically to the "
+                              "recorded and current sides. Omit to check all targets. "
+                              "Not available on `record`, which always records all "
+                              "targets.")
     args = p.parse_args()
     sys.exit(cmd_record(args) if args.cmd == "record" else cmd_check(args))
 

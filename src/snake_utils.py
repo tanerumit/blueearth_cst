@@ -10,6 +10,7 @@ own directory to ``sys.path`` before importing — see
 import contextlib
 import os
 import sys
+from collections.abc import Mapping
 
 
 def get_config(config, arg, default=None, optional=True):
@@ -45,6 +46,63 @@ def get_config(config, arg, default=None, optional=True):
         return default
     else:
         raise ValueError(f"Argument {arg} not found in config")
+
+
+def _require_step_num(axis_cfg, axis_name):
+    """Read and validate a required ``step_num`` from a stress-test axis section.
+
+    Strict by contract: a missing axis section or ``step_num`` raises
+    ``KeyError`` (parity with ``prepare_cst_parameters.py``'s direct read); a
+    ``step_num`` that is not a non-negative integer raises ``ValueError``.
+    ``bool`` is rejected — ``True``/``False`` are not valid grid step counts.
+    """
+    step_num = axis_cfg[axis_name]["step_num"]  # KeyError on missing axis/key
+    if isinstance(step_num, bool) or not isinstance(step_num, int):
+        raise ValueError(
+            f"stress_test.{axis_name}.step_num must be a non-negative int, "
+            f"got {step_num!r}"
+        )
+    if step_num < 0:
+        raise ValueError(
+            f"stress_test.{axis_name}.step_num must be non-negative, got {step_num}"
+        )
+    return step_num
+
+
+def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
+    """Return ``(temp_step_count, precip_step_count, st_num)`` for a stress_test cfg.
+
+    Single source of truth for the stress-test grid arithmetic, which was
+    previously derived twice (inline in ``Snakefile_climate_experiment`` and in
+    ``src/prepare_cst_parameters.py``). Both call sites now read this helper.
+
+    STRICT: ``temp.step_num`` and ``precip.step_num`` are REQUIRED — a missing
+    axis section or ``step_num`` raises ``KeyError``, and a value that is not a
+    non-negative integer raises ``ValueError``. The helper never silently
+    invents a grid. Per-axis step count is ``step_num + 1`` (endpoints
+    inclusive), and ``st_num = temp_step_count * precip_step_count``.
+
+    Parameters
+    ----------
+    stress_test_cfg : Mapping
+        The ``workflows.climate_experiment.stress_test`` config section, with
+        ``temp`` and ``precip`` axis sub-sections each carrying ``step_num``.
+
+    Returns
+    -------
+    tuple[int, int, int]
+        ``(temp_step_count, precip_step_count, st_num)``.
+
+    Raises
+    ------
+    KeyError
+        If the ``temp``/``precip`` axis section or its ``step_num`` is absent.
+    ValueError
+        If a ``step_num`` is not a non-negative integer.
+    """
+    temp_step_count = _require_step_num(stress_test_cfg, "temp") + 1
+    precip_step_count = _require_step_num(stress_test_cfg, "precip") + 1
+    return temp_step_count, precip_step_count, temp_step_count * precip_step_count
 
 
 class _Tee:

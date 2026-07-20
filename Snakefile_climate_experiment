@@ -6,7 +6,7 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from src.snake_utils import get_config
+from src.snake_utils import get_config, stress_test_grid
 
 # read path of the config file (Snakemake records it from --configfile) so
 # downstream R scripts can be handed the same path. Forwarding config_path is
@@ -25,13 +25,13 @@ DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
 experiment = get_config(my_cfg, "experiment_name", optional=False)
 RLZ_NUM = get_config(my_cfg, "realizations_num", 1)
 
-# Stress test step counts live under stress_test.<temp|precip>.step_num
+# Stress test step counts live under stress_test.<temp|precip>.step_num.
+# ST_NUM is derived by the shared stress_test_grid helper (strict: step_num is
+# required on both axes) so the Snakefile and prepare_cst_parameters.py read one
+# source of truth. The prior inline form defaulted a missing step_num to 1,
+# silently inventing a grid; that leniency is removed (output-neutral hardening).
 stress_test_cfg = my_cfg["stress_test"]
-ST_NUM = (
-    get_config(stress_test_cfg["temp"], "step_num", 1) + 1
-) * (
-    get_config(stress_test_cfg["precip"], "step_num", 1) + 1
-)
+_, _, ST_NUM = stress_test_grid(stress_test_cfg)
 
 run_hist = get_config(my_cfg, "run_historical", False)
 ST_START = 0 if run_hist else 1

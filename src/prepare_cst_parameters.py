@@ -1,4 +1,5 @@
 import os
+import sys
 from os.path import join
 from pathlib import Path
 import pandas as pd
@@ -6,6 +7,12 @@ import numpy as np
 import yaml
 
 from typing import Union, List
+
+# Import the shared grid helper regardless of the working directory. The
+# Snakefile prepends its basedir to sys.path before invoking script: rules, but
+# guard here so the module is import-clean for unit tests too.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+from src.snake_utils import stress_test_grid
 
 
 def prep_cst_parameters(
@@ -30,20 +37,20 @@ def prep_cst_parameters(
 
     stress_test_cfg = yml["workflows"]["climate_experiment"]["stress_test"]
 
+    # Grid step counts + total via the shared helper (single source of truth,
+    # strict on a missing step_num). temp_step_num / precip_step_num are the
+    # per-axis counts (step_num + 1) that size the linspaces and the loops below.
+    temp_step_num, precip_step_num, ST_NUM = stress_test_grid(stress_test_cfg)
+
     # Temperature change attributes
     delta_temp_mean_min = stress_test_cfg["temp"]["mean"]["min"]
     delta_temp_mean_max = stress_test_cfg["temp"]["mean"]["max"]
-    temp_step_num = stress_test_cfg["temp"]["step_num"] + 1
 
     # Precip change attributes
     delta_precip_mean_min = stress_test_cfg["precip"]["mean"]["min"]
     delta_precip_mean_max = stress_test_cfg["precip"]["mean"]["max"]
     delta_precip_variance_min = stress_test_cfg["precip"]["variance"]["min"]
     delta_precip_variance_max = stress_test_cfg["precip"]["variance"]["min"]
-    precip_step_num = stress_test_cfg["precip"]["step_num"] + 1
-
-    # Number of stress tests
-    ST_NUM = temp_step_num * precip_step_num
     # Stress test values per variables
     temp_values = np.linspace(
         delta_temp_mean_min, delta_temp_mean_max, temp_step_num, axis=1

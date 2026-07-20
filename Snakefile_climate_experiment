@@ -216,8 +216,8 @@ rule downscale_climate_realization:
 # Run Wflow for all climate forcing
 rule run_wflow:
     input:
-        forcing_fid = f"{exp_dir}/realization_"+"{rlz_num}"+"/inmaps_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc",
-        toml_fid = f"{basin_dir}/run_climate_{experiment}/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
+        forcing_path = f"{exp_dir}/realization_"+"{rlz_num}"+"/inmaps_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc",
+        toml_path = f"{basin_dir}/run_climate_{experiment}/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
     output:
         csv_file = f"{basin_dir}/run_climate_{experiment}/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv",
         state_file = temp(f"{basin_dir}/run_climate_{experiment}/outstates_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
@@ -226,7 +226,7 @@ rule run_wflow:
     benchmark:
         f"{project_dir}/benchmarks/run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
-        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_fid}" > {log} 2>&1"""
+        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_path}" > {log} 2>&1"""
 
 # Export wflow results
 rule export_wflow_results:

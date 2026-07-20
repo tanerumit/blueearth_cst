@@ -85,6 +85,10 @@ rule monthly_stats_hist:
         name_clim_project = clim_project,
         variables = variables,
         save_grids = save_grids,
+    log:
+        project_dir + "/logs/monthly_stats_hist/{model}.log",
+    benchmark:
+        project_dir + "/benchmarks/monthly_stats_hist/{model}.tsv",
     script: "src/get_stats_climate_proj.py"
 
 # Rule to calculate mean monthly statistics for historical and future scenarios - grid saved to netcdf
@@ -104,6 +108,10 @@ rule monthly_stats_fut:
         name_clim_project = clim_project,
         variables = variables,
         save_grids = save_grids,
+    log:
+        project_dir + "/logs/monthly_stats_fut/{model}_{scenario}.log",
+    benchmark:
+        project_dir + "/benchmarks/monthly_stats_fut/{model}_{scenario}.tsv",
     script: "src/get_stats_climate_proj.py"
 
 # Rule to calculate change stats over the grid

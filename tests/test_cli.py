@@ -92,29 +92,20 @@ def test_climate_projections_declares_wf1_region_input():
     assert "staticgeoms/region.geojson" in text
 
 
-# --- Known-failure ratchet (deferred to R5) ----------------------------------
-#
-# Snakefile_climate_experiment does NOT build a clean DAG on the test config: a
-# CyclicGraphException at rule generate_climate_stress_test whose only fix is a
-# wildcard/ruleorder edit inside that (R5-owned) Snakefile. Deferred to R5
-# (dev/followups.md); the ratchet is retained here.
-#
-# Rather than a blanket `xfail(strict=True)` — which keeps "passing" on ANY
-# failure and would mask a new/unrelated error — the test asserts the SPECIFIC
-# known failure: a non-zero exit AND the exact DAG-build exception class.
-#
-# Ratchet semantics: when R5 fixes the cycle, the dry-run will succeed,
-# `returncode != 0` will FAIL, and this test goes red. The fixer then converts
-# it back to a plain `assert result.returncode == 0` success assertion.
+def test_snakefile_cli_climate_experiment(config_with_staged_region):
+    """Workflow 3 dry-run builds a clean DAG on the test config (R5 fixed the cycle).
 
-
-def test_snakefile_cli_climate_experiment_known_cyclic_graph():
-    """Workflow 3 dry-run fails with CyclicGraphException at the stress-test rule.
-
-    climate_experiment trips a CyclicGraphException at rule
-    generate_climate_stress_test. R3 followup (dev/followups.md).
+    Pre-R5 this tripped a CyclicGraphException at rule
+    generate_climate_stress_test: its output wildcard rlz_{rlz_num}_cst_{st_num}.nc
+    could resolve st_num to 0, making the rule a second eligible producer of
+    cst_0.nc (a self-loop). R5 removed it with a rule-local
+    `wildcard_constraints: st_num=[1-9][0-9]*` on that rule. Once the cycle is
+    gone the ancient(region.geojson) input existence is checked, so this reuses
+    the same staged-region fixture as workflow 2 (region.geojson is the sole
+    unbuilt cross-workflow leaf). Was a CyclicGraphException ratchet pre-R5
+    (dev/followups.md § R3).
     """
-    result = _dry_run("Snakefile_climate_experiment")
-    combined = (result.stdout or "") + (result.stderr or "")
-    assert result.returncode != 0, combined
-    assert "CyclicGraphException" in combined, combined
+    result = _dry_run(
+        "Snakefile_climate_experiment", cfg=config_with_staged_region
+    )
+    assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")

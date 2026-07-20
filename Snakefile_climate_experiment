@@ -123,6 +123,15 @@ rule generate_weather_realization:
 
 # Generate climate stress tests
 rule generate_climate_stress_test:
+    # Constrain st_num to strictly positive integers on THIS rule so its output
+    # wildcard rlz_{rlz_num}_cst_{st_num}.nc can never resolve st_num to 0. Left
+    # unconstrained, the rule would be a second eligible producer of cst_0.nc
+    # (already produced by generate_weather_realization and named as this rule's
+    # own literal rlz_nc input) -> a rule ambiguity that surfaces as a self-loop
+    # (CyclicGraphException) on the test-config dry-run. cst_0 is the reserved
+    # unperturbed baseline (naming.md §4); only perturbed st_num >= 1 belong here.
+    wildcard_constraints:
+        st_num=r"[1-9][0-9]*",
     input:
         rlz_nc = f"{exp_dir}/realization_"+"{rlz_num}"+"/rlz_"+"{rlz_num}"+"_cst_0.nc",
         st_csv = f"{exp_dir}/stress_test/cst_"+"{st_num}"+".csv",

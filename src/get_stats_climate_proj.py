@@ -131,8 +131,8 @@ if __name__ == "__main__":
 
             # Snakemake options
             project_dir = sm.params.project_dir
-            region_fn = sm.input.region_fid
-            path_yml = sm.params.yml_fid
+            region_path = sm.input.region_path
+            catalog_path = sm.params.catalog_path
             name_scenario = sm.params.name_scenario
             name_members = sm.params.name_members
             name_model = sm.params.name_model
@@ -171,12 +171,12 @@ if __name__ == "__main__":
                 os.mkdir(folder_out)
 
             # initialize model and region properties
-            geom = gpd.read_file(region_fn)
+            geom = gpd.read_file(region_path)
             bbox = list(geom.geometry.bounds.values[0])
             buffer = 1
 
             # initialize data_catalog from yml file
-            data_catalog = hydromt.DataCatalog(data_libs=path_yml)
+            data_catalog = hydromt.DataCatalog(data_libs=catalog_path)
 
             # check if model really exists from data catalog entry - else skip and provide empty ds??
 

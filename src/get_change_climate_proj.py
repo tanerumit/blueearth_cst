@@ -193,8 +193,8 @@ if __name__ == "__main__":
 
             # Snakemake options
             clim_project_dir = sm.params.clim_project_dir
-            stats_nc_hist = sm.params.stats_nc_hist
-            stats_nc = sm.params.stats_nc
+            stats_path_hist = sm.params.stats_path_hist
+            stats_path = sm.params.stats_path
             stats_time_nc_hist = sm.input.stats_time_nc_hist
             stats_time_nc = sm.input.stats_time_nc
             start_month_hyd_year = sm.params.start_month_hyd_year
@@ -213,8 +213,8 @@ if __name__ == "__main__":
             # Get names of grids if save_grids
             if save_grids:
                 # open datasets
-                ds_hist = xr.open_dataset(stats_nc_hist)
-                ds_clim = xr.open_dataset(stats_nc)
+                ds_hist = xr.open_dataset(stats_path_hist)
+                ds_clim = xr.open_dataset(stats_path)
 
             # get lat lon name of data
             XDIMS = ("x", "longitude", "lon", "long")

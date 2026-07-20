@@ -72,12 +72,12 @@ rule copy_config:
 # also calculate monthly time series averaged over the grid.
 rule monthly_stats_hist:
     input:
-        region_fid = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
+        region_path = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
     output:
         #stats_nc_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
         stats_time_nc_hist = temp(clim_project_dir + "/historical_stats_time_{model}.nc"),
     params:
-        yml_fid = DATA_SOURCES,
+        catalog_path = DATA_SOURCES,
         project_dir = f"{project_dir}",
         name_scenario = "historical",
         name_members = members,
@@ -95,12 +95,12 @@ rule monthly_stats_hist:
 # also calculate monthly time series averaged over the grid.
 rule monthly_stats_fut:
     input:
-        region_fid = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
+        region_path = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
         stats_time_nc_hist = (clim_project_dir + "/historical_stats_time_{model}.nc"), #make sure starts with previous job
     output:
         stats_time_nc = temp(clim_project_dir + "/stats_time-{model}_{scenario}.nc"),
     params:
-        yml_fid = DATA_SOURCES,
+        catalog_path = DATA_SOURCES,
         project_dir = f"{project_dir}",
         name_scenario = "{scenario}",
         name_members = members,
@@ -130,8 +130,8 @@ rule monthly_change:
         time_horizon_hist = time_horizon_hist,
         time_horizon_fut = get_horizon,
         save_grids = save_grids,
-        stats_nc_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
-        stats_nc = (clim_project_dir + "/stats-{model}_{scenario}.nc"),
+        stats_path_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
+        stats_path = (clim_project_dir + "/stats-{model}_{scenario}.nc"),
     log:
         project_dir + "/logs/monthly_change/{model}_{scenario}_{horizon}.log",
     benchmark:

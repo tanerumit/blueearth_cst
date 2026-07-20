@@ -74,10 +74,14 @@ wildcard requires updating this file in the same commit.
 | `st_num`   | active                   | stress-test combination: `1..stress_test_count` perturbed; `0` = reserved unperturbed baseline (`cst_0`), run through Wflow only when `run_historical` sets `ST_START = 0` |
 | `member`   | reserved (CMIP ensemble) | ensemble member id (`r1i1p1f1`, …). Config-only today; becomes a wildcard if per-member rules are added |
 
-The `st_num2` variant in `Snakefile_climate_experiment` (it admits `0`
-under `run_historical`, where `st_num` starts at `1`) is a known
-inconsistency — fold into `st_num` during **R5** Snakefile cleanup (that
-Snakefile is R5 territory).
+The `st_num2` variant formerly used in `Snakefile_climate_experiment`'s
+downstream rules (it admitted `0` under `run_historical`, where `st_num`
+starts at `1`) was **folded into `st_num` in R5**. The downstream rules
+(`downscale_climate_realization`, `run_wflow`, `export_wflow_results`) now use
+the single `st_num` vocabulary and keep the default match that admits `0`;
+only `generate_climate_stress_test` carries a rule-local
+`wildcard_constraints: st_num=[1-9][0-9]*` that bars `0` (so it cannot be a
+second producer of the `cst_0` baseline).
 
 ## 5. Suffix vocabulary — path vs. object
 

@@ -63,6 +63,31 @@ context so future-you can confirm the issue still applies before fixing.
   R3. Deferred by choice, not a blocker — pick up when convenient (a natural
   fit alongside R4/R5 Snakefile work or R6 polish).
 
+- **[Latent robustness, not a blocker] wf1's `| tee {log}` shell rules mask the
+  exit code on failure.** *Surfaced 2026-07-20 during R5 (design §2 ruling).*
+  `Snakefile_model_creation`'s three shell rules (lines 89, 167, 182 — `hydromt
+  build`, `hydromt update`, Julia `Wflow.run()`) use `... 2>&1 | tee {log}`.
+  A bare `cmd | tee` pipeline returns `tee`'s exit status, not `cmd`'s, unless
+  bash `pipefail` is active. On **Windows/cmd.exe** Snakemake injects **no**
+  `set -euo pipefail` prefix (that prefix is bash-only — verified against
+  Snakemake 9.6.2 `shell.py`), so a genuine `cmd` failure is reported as
+  success. Verified empirically 2026-07-20 in a scratch Snakefile: a
+  deliberately-failing command under `| tee` → Snakemake reports success;
+  under `> {log} 2>&1` → Snakemake fails ("command exited with non-zero exit
+  code"). On POSIX/bash the `pipefail` prefix protects, and on **success** the
+  wf1 `| tee` rules run correctly (R3 sealed via a full `--forceall` wf1 rebuild
+  that wrote all three tee logs and passed 14/14 on this machine) — so this is a
+  **latent** failure-masking gap that only bites if a wf1 rule actually fails
+  mid-run, **not** a gate blocker.
+
+  *Fix:* migrate wf1's three shell rules to the exit-preserving `> {log} 2>&1`
+  form R5 adopted for workflow 3's shell rules, **or** adopt a portable Python
+  tee wrapper repo-wide if live console streaming must return (the tee form was
+  deliberately chosen in commit `4a67d79` to restore live output). Owner:
+  `cst-architect`. Activation: **next time wf1 shell-rule robustness is worked
+  on.** wf3's own new shell rules already use `> {log} 2>&1` (R5 commit 8), so
+  R5 introduces no new instance of the masking.
+
 ---
 
 ## R3 — Workflow 1: model builder

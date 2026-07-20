@@ -419,7 +419,77 @@ configfile mechanism, log/benchmark conventions).
 
 **Tag.** `r04-projections`.
 
-### R5 — Workflow 3: climate experiment
+### R5 — Workflow 3: climate experiment (sealed 2026-07-20)
+
+**Status.** Sealed 2026-07-20 — `Snakefile_climate_experiment` + its `src/`
+scripts + the R weathergen layer (`src/weathergen/generate_weather.R`,
+`impose_climate_change.R`) cleaned up, inheriting the R3/R4 patterns. Design
+accepted via a `design-review-loop` run (3-lens internal panel + 2 external GPT
+rounds + round-cap arbitration; 21/21 findings closed) at `dev/r05/`. Landed in
+12 commits (no commit 4; `8b356f3`..seal): contract doc
+`dev/workflows/climate_experiment.md`; `stress_test_grid` helper extracted to
+`snake_utils.py` (strict `step_num`, removing the Snakefile's silent default-1 —
+output-neutral hardening); `prepare_weagen_config.py` config assembly extracted
+into importable functions above a guard; the **CyclicGraphException** resolved
+by a rule-local `wildcard_constraints: st_num=[1-9][0-9]*` on
+`generate_climate_stress_test` + the `test_cli` ratchet flipped to a clean-DAG
+assertion on a staged-region config; the **`st_num2 → st_num` fold** (5b, landed
+— verified no re-introduced ambiguity via a `run_historical: true` dry-run);
+`shared.historical_window` wired into `extract_climate_grid`; per-rule
+`log:`/`benchmark:` + `tee_to_log` on the 7 `script:` rules and
+`> {log} 2>&1` (exit-preserving, NOT `| tee`) on the 3 shell rules; R-layer
+arg-binding + arity checks + progress `message()`s; `_fid → _path` label
+renames; and the wf3 Python-helper unit tests.
+
+**Behavior-preserving.** The end-to-end milestone gate
+(`check_baseline check --workflow model_creation --workflow climate_experiment`,
+after a full fresh wf3 regen) matched **7/7 targets** (4 wf1 + 3 wf3) — **no
+manifest re-record**. The two computational-path commits are each confirmed
+output-equivalent by a dedicated ext1-3 characterization on the exact artifact
+they touch:
+
+- **Commit 6** (`historical_window` wiring): a `--forcerun extract_climate_grid`
+  on the commit-6 code — its **first runtime execution** in R5, which proves the
+  new `sm.params.starttime`/`.endtime` reach the keyword-only args — produced an
+  `extract_historical.nc` **identical** to the pre-commit-6 snapshot. Expected:
+  the seed window is byte-identical to the prior hardcoded strings, so the same
+  hydromt extraction runs on identical inputs.
+- **Commit 9** (R-layer cleanup): a **fail-closed** (ext2-1) characterization — a
+  seeded control-vs-control pair of both the realization (`rlz_1_cst_0.nc`) and a
+  perturbed netCDF (`rlz_1_cst_1.nc`) is **bit-identical** (determinism holds on
+  `weathergenr` seed 123), and each before-vs-after comparison is likewise
+  identical.
+
+The R4-inherited CSV-serialization non-determinism open question is **resolved
+negatively for wf3**: the seeded `Qstats.csv`/`basin.csv` reproduced the manifest
+bit-for-bit across a full fresh regen, so the fragility did not recur here.
+Suite: 120 passed, 3 skipped, 7 xfailed.
+
+**Deferred defects (split, not fixed in R5) — each with owner + activation.**
+- **`t260720a`** — `precip_variance` max-reads-min bug
+  (`prepare_cst_parameters.py` line 42 reads `["min"]` into the max variable).
+  Latent on the seed (`variance.min == variance.max == 1.0`); moves output on any
+  config with `variance.max ≠ variance.min`. Owner `cst-architect` (route to
+  `python-engineer` for the one-token fix + baseline re-record). Flagged by a
+  `xfail(strict=True)` characterization test that xpasses when the fix lands.
+- **weathergenr `spatial_ref` propagation** (`dev/followups.md` § R5) — the
+  in-repo `generate_weather.R` workaround block STAYS (load-bearing) with a
+  tightened removal-condition comment; the real fix is upstream in
+  `tanerumit/weathergenr` `write_netcdf`. Upstream weathergenr task.
+- **weathergenr wavelet `>= 16` cryptic error** (`dev/followups.md` § R5) —
+  entirely inside the weathergenr package (`wavelet_cwt.R`); upstream task.
+- **wf1 `| tee {log}` exit-masking-on-failure** (`dev/followups.md`,
+  cross-cutting) — wf1's three shell rules run correctly on success (the R5 gate's
+  wf1 leg passes) but mask the exit code on failure (cmd.exe has no
+  `set -euo pipefail` prefix). Latent robustness item, NOT an R5 blocker; migrate
+  wf1 to `> {log} 2>&1` or a portable tee wrapper. Owner `cst-architect`.
+
+**R testthat coverage — DECISION: NO (locked at R5 start, G1-ratified).** The two
+R scripts are thin `weathergenr` adapters (scientific logic is upstream); the
+repo has no R test harness, and standing one up is R6-territory infra. The R
+layer is gated end-to-end by the milestone baseline run + the `test_cli` dry-run,
+with the §5a arity checks as the R-layer's correctness net. Full design, reviews,
+and dispositions in `dev/r05/`.
 
 **Goal.** Clean up `Snakefile_climate_experiment` and the scripts it
 calls — including the R weathergen layer. Inherit the patterns from

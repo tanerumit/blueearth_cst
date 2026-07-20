@@ -17,8 +17,9 @@ def prep_historical_climate(
     fn_out: Union[str, Path],
     data_libs: Union[str, Path] = "deltares_data",
     clim_source: str = "era5",
-    starttime: str = "1980-01-01T00:00:00",
-    endtime: str = "2010-12-31T00:00:00",
+    *,
+    starttime: str,
+    endtime: str,
 ):
     """
     Extract historical climate data for a given region and time period.
@@ -148,14 +149,17 @@ def prep_historical_climate(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        prep_historical_climate(
-            region_fn=sm.input.prj_region,
-            fn_out=sm.output.climate_nc,
-            data_libs=sm.params.data_sources,
-            clim_source=sm.params.clim_source,
-            starttime="2000-01-01T00:00:00",
-            endtime="2020-12-31T00:00:00",
-        )
+        from src.snake_utils import tee_to_log
+
+        with tee_to_log(sm.log[0]):
+            prep_historical_climate(
+                region_fn=sm.input.prj_region,
+                fn_out=sm.output.climate_nc,
+                data_libs=sm.params.data_sources,
+                clim_source=sm.params.clim_source,
+                starttime=sm.params.starttime,
+                endtime=sm.params.endtime,
+            )
     else:
         prep_historical_climate(
             region_fn=join(

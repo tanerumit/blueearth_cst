@@ -5,20 +5,30 @@ source("./src/weathergen/global.R")
 # See dev/scripts/install_weathergenr.R for the install path.
 library(yaml)
 
+# Bind positional CLI args to named locals with an arity check, so a wrong
+# number of args fails loudly here rather than surfacing as a cryptic NA
+# downstream. Placed after source(global.R) so the arity stop() is the first
+# thing to touch args.
 args <- commandArgs(trailingOnly = TRUE)
+if (length(args) != 2L) {
+  stop("generate_weather.R expects 2 args: <climate_nc> <weagen_config_yaml>")
+}
+climate_nc_path    <- args[[1]]
+weagen_config_path <- args[[2]]
 
-# Pass command line options
-yaml <- yaml::read_yaml(args[2])
-weathergen_input_ncfile <- args[1]
+yaml <- yaml::read_yaml(weagen_config_path)
 
 # Parse global parameters from the yaml configuration file
 historical_realizations_num <- yaml$generateWeatherSeries$realizations_num
 weathergen_output_path <- yaml$generateWeatherSeries$output.path
 
 # Step 1) Read weather data from the netcdf file
-ncdata <- weathergenr::read_netcdf(weathergen_input_ncfile)
+message("[generate_weather] Reading weather netcdf: ", climate_nc_path)
+ncdata <- weathergenr::read_netcdf(climate_nc_path)
 
 # Step 2) Generate new weather realizations
+message("[generate_weather] Generating ", historical_realizations_num,
+        " weather realization(s)")
 stochastic_weather <- weathergenr::generate_weather(
     obs_data         = ncdata$data,
     obs_grid         = ncdata$grid,
@@ -44,6 +54,9 @@ stochastic_weather <- weathergenr::generate_weather(
 # STEP 3) Save each stochastic realization back to a netcdf file
 for (n in 1:historical_realizations_num) {
 
+  message("[generate_weather] Saving realization ", n, " of ",
+          historical_realizations_num)
+
   # New return: $resampled is a data.frame with columns rlz_1, rlz_2, ...
   rlz_dates <- stochastic_weather$resampled[[paste0("rlz_", n)]]
   day_order <- match(rlz_dates, ncdata$date)
@@ -59,23 +72,28 @@ for (n in 1:historical_realizations_num) {
         out_dir       = rlz_out_dir,
         origin_date   = stochastic_weather$dates[1],
         calendar      = "noleap",
-        template_path = weathergen_input_ncfile,
+        template_path = climate_nc_path,
         compression   = 4,
         spatial_ref   = "spatial_ref",
         file_prefix   = yaml$generateWeatherSeries$nc.file.prefix,
         file_suffix   = paste0(n, "_cst_0")
   )
 
-  # Workaround: weathergenr::write_netcdf does NOT propagate spatial_ref
-  # attributes from template_path to the output. Downstream steps
-  # (impose_climate_change.R) use the realization file as their own template
-  # and need `x_dim` / `y_dim` on its spatial_ref. Copy them here from the
-  # historical template. Drop this block when weathergenr ships the fix.
+  # Workaround (load-bearing): weathergenr::write_netcdf does NOT propagate
+  # spatial_ref attributes from template_path to the output. Downstream
+  # (impose_climate_change.R) uses the realization file as its own template and
+  # needs `x_dim` / `y_dim` on its spatial_ref; without them it crashes with
+  # "attempt to select less than one element". Copy them here from the
+  # historical template.
+  # REMOVAL CONDITION: drop this block only once tanerumit/weathergenr's
+  # write_netcdf propagates spatial_ref (and its ncatt_get check asserts
+  # hasatt=TRUE) — tracked in dev/followups.md § R5. Removing it before the
+  # upstream fix lands breaks the pipeline.
   rlz_files <- list.files(
     rlz_out_dir, pattern = "_cst_0\\.nc$", full.names = TRUE
   )
   if (length(rlz_files) >= 1) {
-    src <- ncdf4::nc_open(weathergen_input_ncfile)
+    src <- ncdf4::nc_open(climate_nc_path)
     dst <- ncdf4::nc_open(rlz_files[1], write = TRUE)
     src_atts <- ncdf4::ncatt_get(src, "spatial_ref")
     for (an in names(src_atts)) {

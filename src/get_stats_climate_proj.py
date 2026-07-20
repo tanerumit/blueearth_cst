@@ -74,6 +74,16 @@ def get_stats_clim_projections(
     # filter variables for precip and temp
     # data_vars = list(data.data_vars)
     # var_list = [str for str in data_vars if any(sub in str for sub in variables)]
+    # Units handling: the monthly aggregator is dispatched by variable NAME.
+    # - "precip" is resampled with .sum("time") -> monthly TOTAL (a flux
+    #   accumulated over the month); summing conserves the monthly water volume.
+    # - every other variable (the else branch, i.e. "temp") is resampled with
+    #   .mean("time") -> monthly MEAN (an intensive state; a total would be
+    #   meaningless).
+    # Because the dispatch keys on the string "precip", a catalog that names the
+    # precipitation variable anything else is silently aggregated as temp (mean,
+    # not sum) and its units are wrong. The required config is
+    # `variables: [precip, temp]` (see dev/workflows/climate_projections.md).
     for var in data.data_vars:  # var_list:
         if var == "precip":
             var_m = data[var].resample(time="MS").sum("time")
@@ -203,7 +213,11 @@ if __name__ == "__main__":
                         # source on M2b. After bbox/time slicing the residual is small,
                         # so loading into memory is fine.
                         data = data.load()
-                    except:
+                    except Exception:  # narrowed from bare `except:` — catches the same
+                        # normal data-load errors; only BaseException
+                        # (KeyboardInterrupt/SystemExit/GeneratorExit) now propagates
+                        # instead of being swallowed, so this is output-neutral on any
+                        # completing run (a run never raises those during a data load).
                         # if it is not possible to open all variables at once, loop over each one, remove duplicates and then merge:
                         ds_list = []
                         for var in variables:
@@ -218,7 +232,11 @@ if __name__ == "__main__":
                                 # drop duplicates if any
                                 data_ = data_.drop_duplicates(dim="time", keep="first").load()
                                 ds_list.append(data_)
-                            except:
+                            except Exception:  # narrowed from bare `except:` — catches the
+                                # same normal data-load errors; only BaseException
+                                # (KeyboardInterrupt/SystemExit/GeneratorExit) now
+                                # propagates instead of being swallowed, so this is
+                                # output-neutral on any completing run.
                                 print(f"{name_scenario}", f"{name_model}", f"{var} not found")
                         # merge all variables back to data
                         data = xr.merge(ds_list)

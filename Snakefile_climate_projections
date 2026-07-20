@@ -50,6 +50,10 @@ rule all:
         temp_plt = (clim_project_dir + "/plots/temperature_anomaly_projections_abs.png"),
         snake_config = f"{project_dir}/config/snake_config_climate_projections.yml",
 
+# Retained as stale insurance pending removal task; dry-run on the current pinned
+# Snakemake shows this directive constrains nothing on the tests fixture and a
+# reduced config (see dev/r04/climate-projections-design.md §3). Removal deferred
+# to a task that first encodes the ambiguity-sensitive config shapes as regression tests.
 ruleorder: monthly_stats_hist > monthly_stats_fut > monthly_change > monthly_change_scalar_merge
 
 # Rule to copy config files to the project_dir/config folder

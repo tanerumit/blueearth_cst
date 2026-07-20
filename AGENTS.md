@@ -92,8 +92,11 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
 - Each Snakefile obtains the `--configfile` path from `workflow.configfiles[0]`
   and forwards it (as `config_path`) to downstream R scripts — keep that
   forwarding pattern even though the Snakefile itself reads the parsed `config`.
-- The `ruleorder:` directive in `Snakefile_climate_projections` is load-bearing;
-  wildcard inference is ambiguous without it.
+- The `ruleorder:` directive in `Snakefile_climate_projections` is retained as
+  stale insurance, not confirmed load-bearing: a 2026-07 dry-run on the pinned
+  Snakemake showed it constrains nothing on the tests fixture and a reduced
+  config. Removal is deferred to a task that first encodes any ambiguity-sensitive
+  config shapes as regression tests (see dev/r04/climate-projections-design.md §3).
 - Register new data sources in a `config/*_data*.yml` catalog and pass it to hydromt
   via `-d`. Never hardcode data paths in a Snakefile.
 - [Python] Scripts run via `script:` read `snakemake.input/output/params` (a global

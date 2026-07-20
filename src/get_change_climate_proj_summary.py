@@ -134,11 +134,14 @@ if __name__ == "__main__":
         list_files = sm.input.stats_nc_change
         horizons = sm.params.horizons
 
+        from src.snake_utils import tee_to_log
+
         # Call the main function
-        summary_climate_proj(
-            clim_dir=clim_project_dir,
-            clim_files=list_files,
-            horizons=horizons,
-        )
+        with tee_to_log(sm.log[0]):
+            summary_climate_proj(
+                clim_dir=clim_project_dir,
+                clim_files=list_files,
+                horizons=horizons,
+            )
     else:
         raise ValueError("This script should be run from a snakemake environment")

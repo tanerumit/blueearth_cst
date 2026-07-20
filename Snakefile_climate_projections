@@ -132,6 +132,10 @@ rule monthly_change:
         save_grids = save_grids,
         stats_nc_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
         stats_nc = (clim_project_dir + "/stats-{model}_{scenario}.nc"),
+    log:
+        project_dir + "/logs/monthly_change/{model}_{scenario}_{horizon}.log",
+    benchmark:
+        project_dir + "/benchmarks/monthly_change/{model}_{scenario}_{horizon}.tsv",
     script: "src/get_change_climate_proj.py"
 
 #rule to merge results in one netcdf / todo: add plotting
@@ -146,6 +150,10 @@ rule monthly_change_scalar_merge:
     params:
         clim_project_dir = f"{clim_project_dir}",
         horizons = future_horizons,
+    log:
+        f"{project_dir}/logs/monthly_change_scalar_merge.log",
+    benchmark:
+        f"{project_dir}/benchmarks/monthly_change_scalar_merge.tsv",
     script: "src/get_change_climate_proj_summary.py"
 
 #rule to plot timeseries
@@ -164,4 +172,8 @@ rule plot_climate_proj_timeseries:
         precip_plt = (clim_project_dir + "/plots/precipitation_anomaly_projections_abs.png"),
         temp_plt = (clim_project_dir + "/plots/temperature_anomaly_projections_abs.png"),
         timeseries_csv = (clim_project_dir + "/gcm_timeseries.nc"),
+    log:
+        f"{project_dir}/logs/plot_climate_proj_timeseries.log",
+    benchmark:
+        f"{project_dir}/benchmarks/plot_climate_proj_timeseries.tsv",
     script: "src/plot_proj_timeseries.py"

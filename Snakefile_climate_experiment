@@ -37,6 +37,15 @@ run_hist = get_config(my_cfg, "run_historical", False)
 ST_START = 0 if run_hist else 1
 
 clim_source = get_config(shared_cfg, "clim_historical", optional=False)
+
+# Historical extraction window: sourced from shared.historical_window so the
+# extract_climate_grid dates come from the config instead of being hardcoded in
+# extract_historical_climate.py. On the seed config these equal the prior
+# hardcoded 2000-01-01 / 2020-12-31 strings (output-neutral wiring).
+historical_window_cfg = get_config(shared_cfg, "historical_window", optional=False)
+hist_starttime = get_config(historical_window_cfg, "starttime", optional=False)
+hist_endtime = get_config(historical_window_cfg, "endtime", optional=False)
+
 horizontime_climate = get_config(my_cfg, "horizontime_climate", optional=False)
 wflow_run_length = get_config(my_cfg, "run_length", 20)
 
@@ -69,6 +78,8 @@ rule extract_climate_grid:
     params:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
+        starttime = hist_starttime,
+        endtime = hist_endtime,
     output:
         climate_nc = f"{project_dir}/climate_historical/raw_data/extract_historical.nc",
     script:

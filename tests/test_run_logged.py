@@ -45,6 +45,50 @@ def test_run_and_tee_creates_parent_dirs(tmp_path):
     assert log.exists()
 
 
+def test_run_and_tee_collapses_shutdown_excepthook_cascade(tmp_path):
+    # A pure trailing cascade of empty-bodied excepthook markers (the benign
+    # hydromt-build shutdown noise) is collapsed into one summary line.
+    log = tmp_path / "cascade.log"
+    # Write everything to stderr (unbuffered) so ordering is deterministic and
+    # the cascade is genuinely trailing.
+    snippet = (
+        "import sys\n"
+        "sys.stderr.write('real work line\\n')\n"
+        "[sys.stderr.write('Error in sys.excepthook:\\n\\n"
+        "Original exception was:\\n\\n') for _ in range(5)]"
+    )
+    rc = run_and_tee([sys.executable, "-c", snippet], log)
+    text = log.read_text(encoding="utf-8")
+    assert rc == 0
+    assert "real work line" in text  # real content preserved
+    # The 20-line cascade is gone; the phrase survives only inside the one
+    # summary line (which quotes the marker text).
+    assert "[run_logged] collapsed 20 benign" in text
+    assert text.count("Error in sys.excepthook:") == 1
+    assert "child rc=0" in text
+
+
+def test_run_and_tee_preserves_real_traceback_between_markers(tmp_path):
+    # A genuine excepthook failure interleaves the markers with a real
+    # traceback; non-empty bodies must NOT be collapsed.
+    log = tmp_path / "real.log"
+    snippet = (
+        "import sys\n"
+        "sys.stderr.write('Error in sys.excepthook:\\n')\n"
+        "sys.stderr.write('Traceback (most recent call last):\\n')\n"
+        "sys.stderr.write('ValueError: boom\\n')\n"
+        "sys.stderr.write('Original exception was:\\n')\n"
+        "sys.stderr.write('RuntimeError: real\\n')"
+    )
+    rc = run_and_tee([sys.executable, "-c", snippet], log)
+    text = log.read_text(encoding="utf-8")
+    assert rc == 0
+    assert "ValueError: boom" in text
+    assert "RuntimeError: real" in text
+    assert "Error in sys.excepthook:" in text  # kept verbatim, not collapsed
+    assert "[run_logged] collapsed" not in text
+
+
 def test_cli_requires_separator():
     assert main(["only-a-log.log"]) == 2
 

@@ -132,6 +132,31 @@ class _Tee:
         return False
 
 
+# Benign CPython interpreter-shutdown noise. A subprocess -- notably the verbose
+# ``hydromt build wflow_sbm ... -vv`` step -- can emit a repeating
+# ``Error in sys.excepthook:`` / ``Original exception was:`` cascade with EMPTY
+# bodies *after* it has finished successfully (rc=0), when a stderr write fails
+# during interpreter finalization (many GDAL/rasterio datasets torn down at once
+# on Windows). It floods the tail of an otherwise-clean log. Triaged as cosmetic
+# in dev/phase-1/m01/warnings.md; ``run_and_tee`` collapses a *pure* trailing run
+# of these into one summary line. A real traceback puts non-empty content
+# between the markers, so it is never collapsed (see ``_is_shutdown_noise``).
+_EXCEPTHOOK_MARKERS = ("Error in sys.excepthook:", "Original exception was:")
+
+
+def _is_shutdown_noise(line):
+    """True if ``line`` is a shutdown-excepthook marker or a blank line.
+
+    Only pure marker/blank lines are collapsible. A genuine excepthook failure
+    interleaves the markers with an actual traceback (``Traceback (most recent
+    call last):`` ...); those body lines return False here, which breaks the
+    candidate block and forces it to be emitted verbatim -- so no real error is
+    ever hidden by the collapse.
+    """
+    stripped = line.strip()
+    return stripped == "" or stripped in _EXCEPTHOOK_MARKERS
+
+
 def run_and_tee(command, log_path):
     """Run ``command`` (an argv list), streaming combined stdout+stderr to the
     console AND ``log_path``, and return the child's exit code.
@@ -144,6 +169,12 @@ def run_and_tee(command, log_path):
     fidelity while keeping live console output. The child runs with
     ``shell=False`` so argument quoting is preserved identically across cmd.exe
     and bash (e.g. Julia's ``-e "using Wflow; Wflow.run()"`` stays one argv).
+
+    A *pure* trailing run of benign interpreter-shutdown excepthook noise (see
+    ``_EXCEPTHOOK_MARKERS``) is collapsed into a single summary line so it does
+    not bury the real end of the log. The collapse is conservative: candidate
+    lines are buffered, and any real content flushes them verbatim, so the
+    filter only ever fires on a genuinely empty-bodied shutdown cascade.
 
     Parameters
     ----------
@@ -163,6 +194,13 @@ def run_and_tee(command, log_path):
     if parent:
         os.makedirs(parent, exist_ok=True)
     with open(log_path, "w", encoding="utf-8", errors="replace") as log:
+
+        def emit(text):
+            sys.stdout.write(text)
+            sys.stdout.flush()
+            log.write(text)
+            log.flush()
+
         proc = subprocess.Popen(
             command,
             stdout=subprocess.PIPE,
@@ -171,12 +209,40 @@ def run_and_tee(command, log_path):
             text=True,
             errors="replace",
         )
+        # ``pending`` holds a trailing run of candidate shutdown-noise lines that
+        # are withheld until we know whether real content follows (flush
+        # verbatim) or the stream ends (collapse if it is a true cascade).
+        pending = []
         for line in proc.stdout:
-            sys.stdout.write(line)
-            sys.stdout.flush()
-            log.write(line)
-            log.flush()
-        return proc.wait()
+            if _is_shutdown_noise(line):
+                pending.append(line)
+                continue
+            for buffered in pending:
+                emit(buffered)
+            pending = []
+            emit(line)
+        rc = proc.wait()
+        _flush_pending(pending, emit, rc)
+        return rc
+
+
+def _flush_pending(pending, emit, rc):
+    """Emit the trailing candidate block: collapse a real cascade, else verbatim.
+
+    Collapse only when the block holds at least two markers (one full
+    ``excepthook``/``original`` unit); a smaller or marker-free tail is emitted
+    unchanged so nothing real is dropped.
+    """
+    marker_count = sum(1 for ln in pending if ln.strip() in _EXCEPTHOOK_MARKERS)
+    if marker_count >= 2:
+        emit(
+            f"[run_logged] collapsed {len(pending)} benign interpreter-shutdown "
+            f"lines (repeated 'Error in sys.excepthook:' / 'Original exception "
+            f"was:'; child rc={rc})\n"
+        )
+    else:
+        for buffered in pending:
+            emit(buffered)
 
 
 @contextlib.contextmanager

@@ -160,9 +160,22 @@ def analyse_wflow_historical(
         ds_basin = xr.Dataset()
 
     ### 4. Plot climate data ###
-    # No plots of climate data if wflow run is less than a year
-    if "time" not in ds_clim.dims or len(ds_clim.time) < 365:
-        print("less than 1 year of data is available " "no yearly clim plots are made.")
+    # Two distinct skip reasons — keep them separate so the log is honest:
+    #  (a) ds_clim empty: the P/T/EP subcatchment climate outputs are absent from
+    #      the wflow results (the current output config does not produce them).
+    #      This is NOT a data-length condition — the discharge run may span many
+    #      years — so it must never be reported as "less than 1 year".
+    #  (b) climate outputs present but shorter than a year: skip the yearly plots.
+    if "time" not in ds_clim.dims:
+        print(
+            "No climate subcatchment outputs (P/T/EP) in wflow results; "
+            "skipping climate plots."
+        )
+    elif len(ds_clim.time) < 365:
+        print(
+            "Less than 1 year of climate data is available; "
+            "no yearly climate plots are made."
+        )
     else:
         for index in ds_clim.index.values:
             print(f"Plot climatic data at wflow basin {index}")

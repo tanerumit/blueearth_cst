@@ -8,6 +8,7 @@ skill's decision-record reference).
 | # | Title | Status | Date |
 |---|---|---|---|
 | [0001](0001-restore-wflow-constant-parameters.md) | Reconcile the dropped Wflow constant parameters via evidence-gated CSDMS restoration | accepted | 2026-07-21 |
+| [0002](0002-revive-subcatchment-climate-plots.md) | Revive the subcatchment climate plots by wiring P/T/EP outputs to the plot contract | proposed | 2026-07-21 |
 
 ## Retired numbers
 

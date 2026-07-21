@@ -196,7 +196,15 @@ def run_and_tee(command, log_path):
     with open(log_path, "w", encoding="utf-8", errors="replace") as log:
 
         def emit(text):
-            sys.stdout.write(text)
+            # The log file is UTF-8. The live console mirror may be a legacy
+            # code page (cp1252 on Windows) that cannot encode glyphs the child
+            # emits (e.g. Julia/Wflow progress-bar blocks); fall back to a lossy
+            # encode for the console only — the log always gets the real text.
+            try:
+                sys.stdout.write(text)
+            except UnicodeEncodeError:
+                enc = getattr(sys.stdout, "encoding", None) or "utf-8"
+                sys.stdout.write(text.encode(enc, "replace").decode(enc))
             sys.stdout.flush()
             log.write(text)
             log.flush()
@@ -207,6 +215,13 @@ def run_and_tee(command, log_path):
             stderr=subprocess.STDOUT,
             bufsize=1,
             text=True,
+            # Decode the child's pipe as UTF-8. Julia/Wflow (and Python under
+            # UTF-8 mode) emit UTF-8; without this, text mode uses the Windows
+            # locale code page (cp1252) and mangles non-ASCII — a `█` (UTF-8
+            # E2 96 88) decoded as cp1252 becomes "â–ˆ". ASCII-only children
+            # (hydromt logs) are unaffected; `errors="replace"` guards any
+            # genuinely non-UTF-8 byte instead of crashing the tee.
+            encoding="utf-8",
             errors="replace",
         )
         # ``pending`` holds a trailing run of candidate shutdown-noise lines that

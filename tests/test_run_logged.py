@@ -89,6 +89,26 @@ def test_run_and_tee_preserves_real_traceback_between_markers(tmp_path):
     assert "[run_logged] collapsed" not in text
 
 
+def test_run_and_tee_decodes_utf8_child_output(tmp_path):
+    # The child writes raw UTF-8 bytes (as Julia/Wflow progress bars do): a box
+    # char and full blocks. They must land in the log intact, NOT mangled via
+    # the Windows locale code page (which would turn `█` into `â–ˆ`).
+    log = tmp_path / "utf8.log"
+    # Write bytes straight to the buffer so the child's own stdout encoding
+    # (cp1252 on Windows) can't corrupt them first — this mimics Julia.
+    snippet = (
+        "import sys; "
+        "sys.stdout.buffer.write("
+        "'\\u250c Progress 100%|\\u2588\\u2588\\u2588|\\n'.encode('utf-8'))"
+    )
+    rc = run_and_tee([sys.executable, "-c", snippet], log)
+    text = log.read_text(encoding="utf-8")
+    assert rc == 0
+    assert "┌" in text  # ┌ preserved
+    assert "███" in text  # ███ preserved
+    assert "â" not in text  # no 'â' mojibake
+
+
 def test_cli_requires_separator():
     assert main(["only-a-log.log"]) == 2
 

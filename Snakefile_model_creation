@@ -12,6 +12,11 @@ from src.snake_utils import get_config
 # a repo convention — keep it even though the Snakefile itself uses `config`.
 config_path = workflow.configfiles[0]
 
+# Portable tee wrapper for the shell rules below: keeps live console output AND
+# preserves the child's exit code (a bare `| tee` masks failures on cmd.exe --
+# no pipefail there). See src/run_logged.py / src/snake_utils.run_and_tee.
+run_logged = str(Path(workflow.basedir) / "src" / "run_logged.py")
+
 # R01 schema — three top-level sections. Read each into a local dict.
 project_cfg = config["project"]
 shared_cfg = config["shared"]
@@ -86,7 +91,7 @@ rule create_model:
     benchmark:
         f"{project_dir}/benchmarks/create_model.tsv",
     shell:
-        """hydromt build wflow_sbm "{basin_dir}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv 2>&1 | tee {log}"""
+        """python -u "{run_logged}" "{log}" -- hydromt build wflow_sbm "{basin_dir}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv"""
 
 # Rule to add reservoirs, lakes and glaciers to the built model (temporary hydromt fix)
 # Can be moved back to create_model rule when hydromt is updated
@@ -164,7 +169,7 @@ rule add_forcing:
     benchmark:
         f"{project_dir}/benchmarks/add_forcing.tsv",
     shell:
-        """hydromt update wflow_sbm "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv 2>&1 | tee {log}"""
+        """python -u "{run_logged}" "{log}" -- hydromt update wflow_sbm "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv"""
 
 # Rule to run the wflow model
 rule run_wflow:
@@ -179,7 +184,7 @@ rule run_wflow:
     benchmark:
         f"{project_dir}/benchmarks/run_wflow.tsv",
     shell:
-        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_path}" 2>&1 | tee {log} """
+        """python -u "{run_logged}" "{log}" -- julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_path}" """
 
 # Rule to analyse and plot wflow model run results --> final output
 rule plot_results:

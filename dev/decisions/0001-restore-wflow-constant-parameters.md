@@ -34,6 +34,26 @@ Revisions:
     external blocking across 2 rounds), all resolved. Consolidated review record:
     `dev/reviews/2026-07-21_adr-0001-constant-pars.md`. Implementation (t260719a)
     is a separate, build-heavy task.
+  - 2026-07-21: **implementation — equivalence gate resolved (build-independent
+    slice).** The step-3c gate ran against authoritative two-sided sources
+    (Wflow.jl v0.8 `params_vertical` + glacier melt equation for the 0.x side;
+    Wflow.jl stable `parameters_landhydrology_sbm` for the 1.x side; `naming.py`
+    for the mapping). **All 13 mappable constants PASS** — units/sign/scale/
+    timestep basis are preserved on both sides (Wflow.jl 1.x is the same model
+    with CSDMS-renamed parameters). The two flagged priority cases resolved as
+    preserved, not fail-closed: (a) the `g_ttm`/`g_tt`→`glacier_ice__melting_
+    temperature_threshold` collapse is sound — the v0.8 glacier melt equation
+    `Q_m = g_cfmax·(T_a − g_tt)` shows `g_tt` IS the melt-onset threshold (no
+    separate `G_TTM` exists); (b) `MaxLeakage`'s 1.x default resolved to **0.0**,
+    so it is the **9th proven default-equal pin** (drift-protection class), not a
+    decision addendum. **Restored count = 13** (was "resolved (0–13), not
+    promised"); + `KsatHorFrac` retained, `InfiltCapSoil` dropped. Full gate log:
+    `dev/working/const-pars/equivalence-gate-log.md`. Build-independent artifacts
+    landed: `config_baseline.yml`/`config_restored.yml`, the step-6 discharge
+    comparator + `record --workflow` merge semantics in `check_baseline.py` (v2
+    manifest; tested), and the step-3a/3b landing/precedence script
+    `dev/scripts/verify_constant_pars.py`. Steps 2/4/4b/5/7 (two clean builds,
+    reproducibility, materiality, re-record) remain build-heavy and pending.
 
 # ADR 0001 — Reconcile the dropped Wflow constant parameters via evidence-gated CSDMS restoration
 

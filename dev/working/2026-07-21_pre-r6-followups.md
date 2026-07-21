@@ -68,8 +68,27 @@ Suite before: 119 passed / 3 skipped / 7 xfailed. After: **123 / 3 / 1**
   justified by cross-basin correctness; the discharge diff blesses the move,
   it does not decide per-param drop). Implementation protocol (restored-vs-clean
   builds, staticmaps/TOML landing asserts, discharge materiality, manifest
-  extension + re-record) is §"Validation protocol" of the ADR. Next: review the
-  ADR, then implement (a build-heavy task — route to model-builder / cst-architect).
+  extension + re-record) is §"Validation protocol" of the ADR.
+  - **Implementation — build-independent slice DONE 2026-07-21.** Artifacts under
+    `dev/working/const-pars/` + `dev/scripts/`:
+    - **Equivalence gate (step 3c) — all 13 PASS, restored count = 13** (gate log
+      `dev/working/const-pars/equivalence-gate-log.md`). Two-sided authoritative
+      evidence (Wflow.jl v0.8 params + glacier melt eqn / stable 1.x param ref /
+      `naming.py`). `g_ttm`/`g_tt` collapse sound (`g_tt` is the melt threshold);
+      `MaxLeakage` 1.x default = 0 → 9th default-equal pin. Nothing fails closed.
+    - `config_baseline.yml` (pinned M2b snapshot) + `config_restored.yml` (13 CSDMS
+      entries + KsatHorFrac; drop-comment rewritten to point at ADR 0001).
+    - `check_baseline.py`: step-6 time-index-aligned discharge comparator (`compare`
+      subcommand + `discharge` target, v2 manifest, sidecar ref series) and step-7
+      `record --workflow` merge semantics. Tests: `tests/test_check_baseline_scope.py`
+      (rewritten, 15 targets) + new `tests/test_check_baseline_discharge.py`; 19 pass.
+    - `dev/scripts/verify_constant_pars.py` (step 3a/3b landing/precedence);
+      smoke-tested against the baseline model (KsatHorFrac OK, other 13 ABSENT).
+  - **Remaining (build-heavy, steps 2/4/4b/5/7):** build wf1 from `config_restored`
+    and `config_baseline` into clean dirs; reproducibility (4b) + materiality (5) via
+    `check_baseline.py compare`; run `verify_constant_pars.py` on the restored build;
+    if material, re-run wf3 + coherence review; `record --workflow` the wf1 (and
+    affected wf3) slice(s). Route to model-builder / a real build environment.
 - **Baseline manifest rebuild** — entangled with t260719a (both touch the
   manifest). The M2b manifest is still the contract of record (invariance-by-
   construction). ADR 0001 step 7 folds the clean re-record + fingerprint

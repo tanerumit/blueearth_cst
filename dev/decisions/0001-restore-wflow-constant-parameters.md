@@ -54,6 +54,23 @@ Revisions:
     manifest; tested), and the step-3a/3b landing/precedence script
     `dev/scripts/verify_constant_pars.py`. Steps 2/4/4b/5/7 (two clean builds,
     reproducibility, materiality, re-record) remain build-heavy and pending.
+  - 2026-07-21: **implementation COMPLETE — build-heavy execution (steps
+    2/4/4b/5/7).** Three clean wf1 builds on the test basin (restored + baseline
+    ×2), Julia 1.11.7 + Wflow. **Landing (3a/3b):** 14/14 constants land as
+    `input.static.<name>.value` scalars, no shadowing (`snow__flag=true`,
+    `glacier__flag=false`). **Reproducibility (4b):** two clean baseline builds are
+    **bit-identical** on discharge (`max|ΔQ|/mean(Q_ref) = 0`) — attribution
+    airtight. **Materiality (5): IMMATERIAL** — restored vs baseline **0/7670**
+    timesteps exceed tolerance (`max|ΔQ|/mean = 1.66e-4`, peak local relative
+    **0.71% < 1% RTOL**); nonzero-but-sub-tolerance, the expected signature of the
+    active reference-choice params (InfiltCapPath 5/10, EoverR 0.11/0.1, TTI 2/1)
+    with the glacier set inert. **Re-record (step 7, immaterial branch):** promoted
+    `config_restored` → `config/wflow_build_model.yml` (surgical block swap), full
+    `--forceall` rebuild of `examples/test_local`, `record --workflow
+    model_creation` — 5 wf1 targets incl. the new discharge target + sidecar
+    reference series (`dev/baseline/discharge_ref/`); wf2/wf3 manifest rows
+    preserved byte-identical (verified per-key). Full evidence:
+    `dev/working/const-pars/baseline_diffs.md`.
 
 # ADR 0001 — Reconcile the dropped Wflow constant parameters via evidence-gated CSDMS restoration
 

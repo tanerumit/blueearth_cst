@@ -84,11 +84,17 @@ Suite before: 119 passed / 3 skipped / 7 xfailed. After: **123 / 3 / 1**
       (rewritten, 15 targets) + new `tests/test_check_baseline_discharge.py`; 19 pass.
     - `dev/scripts/verify_constant_pars.py` (step 3a/3b landing/precedence);
       smoke-tested against the baseline model (KsatHorFrac OK, other 13 ABSENT).
-  - **Remaining (build-heavy, steps 2/4/4b/5/7):** build wf1 from `config_restored`
-    and `config_baseline` into clean dirs; reproducibility (4b) + materiality (5) via
-    `check_baseline.py compare`; run `verify_constant_pars.py` on the restored build;
-    if material, re-run wf3 + coherence review; `record --workflow` the wf1 (and
-    affected wf3) slice(s). Route to model-builder / a real build environment.
+  - **Build-heavy execution — DONE 2026-07-21** (ran locally; Julia 1.11.7 + the
+    Deltares catalog were reachable, so no model-builder handoff needed). Three clean
+    wf1 builds (restored + baseline ×2). **Landing (3a/3b):** 14/14 scalars land, no
+    shadowing. **Reproducibility (4b):** baseline builds bit-identical on discharge
+    (`max|ΔQ|/mean = 0`). **Materiality (5): IMMATERIAL** — 0/7670 timesteps exceed
+    tolerance (`max|ΔQ|/mean = 1.66e-4`, peak local 0.71% < 1% RTOL); nonzero but
+    sub-tolerance. **Re-record (7, immaterial branch):** promoted `config_restored`
+    → `config/wflow_build_model.yml`, `--forceall` rebuild of `examples/test_local`,
+    `record --workflow model_creation` (wf1 slice incl. new discharge target +
+    sidecar; wf2/wf3 preserved byte-identical). Evidence:
+    `dev/working/const-pars/baseline_diffs.md`. **t260719a COMPLETE.**
 - **Baseline manifest rebuild** — entangled with t260719a (both touch the
   manifest). The M2b manifest is still the contract of record (invariance-by-
   construction). ADR 0001 step 7 folds the clean re-record + fingerprint

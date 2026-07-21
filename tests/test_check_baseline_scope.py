@@ -1,16 +1,18 @@
-"""Unit tests for the `--workflow` scope filter on check_baseline.py's `check`.
+"""Unit tests for the `--workflow` scope filter on check_baseline.py.
 
 The filter (design ext1-1/ext2-1) tags each `TARGETS` entry with its owning
-workflow and, when `--workflow` is given, builds ONE selected path universe and
-applies it symmetrically to both the recorded manifest and the current on-disk
-targets before the missing/diff/orphan/count logic. `record` stays unscoped by
-construction (no `--workflow` flag), so a scoped run cannot truncate the
-canonical manifest.
+workflow. On `check --workflow`, it builds ONE selected path universe and applies
+it symmetrically to both the recorded manifest and the current on-disk targets
+before the missing/diff/orphan/count logic. On `record --workflow` (added for
+ADR 0001 step 7), it records ONLY the selected workflow(s) and MERGES into the
+existing manifest — the other workflows' rows are preserved, never clobbered — so
+a wf1-slice re-record does not drag in a wf2/wf3 run.
 
-The fixture builds a synthetic project dir under `tmp_path` with valid files for
-every real `TARGETS` template, then records a manifest against it via the same
-`compute_manifest` code path used by the tool (so path keys match `resolve()`
-byte-for-byte, including Windows separator quirks). No real Snakemake run.
+The fixture builds a synthetic project dir under `tmp_path` with a valid file for
+every real `TARGETS` template (including the workflow-1 discharge `output.csv`),
+then records a manifest against it via `cmd_record` — the same code path the tool
+uses, so path keys match `resolve()` byte-for-byte and the discharge reference
+series lands under `<manifest_dir>/discharge_ref/`. No real Snakemake run.
 """
 from __future__ import annotations
 
@@ -28,7 +30,7 @@ import check_baseline as cb  # noqa: E402
 
 
 def _write_target(path: str, kind: str) -> None:
-    """Write a minimal but valid file for the given fingerprinter kind."""
+    """Write a minimal but valid file for the given target kind."""
     p = Path(path)
     p.parent.mkdir(parents=True, exist_ok=True)
     if kind == "nc":
@@ -41,29 +43,18 @@ def _write_target(path: str, kind: str) -> None:
         p.write_text("project:\n  project_dir: synthetic\n")
     elif kind == "png":
         p.write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
+    elif kind == "discharge":
+        rows = ["time,Q_synthetic"]
+        rows += [f"2000-01-{i + 2:02d}T00:00:00,{1.0 + 0.1 * i!r}" for i in range(10)]
+        p.write_text("\n".join(rows) + "\n")
     else:  # pragma: no cover - guard against a new untested kind
         raise ValueError(f"unhandled kind: {kind}")
 
 
-@pytest.fixture
-def project(tmp_path):
-    """A synthetic project dir with all 14 targets present + a recorded manifest.
-
-    Returns (project_dir, manifest_path). Both point under tmp_path.
-    """
-    project_dir = str(tmp_path)
-    for _workflow, kind, template in cb.TARGETS:
-        _write_target(cb.resolve(template, project_dir), kind)
-
-    current, missing = cb.compute_manifest(project_dir)
-    assert not missing, missing  # fixture sanity: all synthetic files exist
-    manifest_path = tmp_path / "manifest.json"
-    manifest_path.write_text(
-        json.dumps(
-            {"version": cb.MANIFEST_VERSION, "project_dir": project_dir, "targets": current}
-        )
+def _record_ns(project_dir, manifest_path, workflow=None):
+    return argparse.Namespace(
+        cmd="record", project_dir=project_dir, manifest=manifest_path, workflow=workflow
     )
-    return project_dir, manifest_path
 
 
 def _check_ns(project_dir, manifest_path, workflow=None, tolerance=0.0):
@@ -76,23 +67,36 @@ def _check_ns(project_dir, manifest_path, workflow=None, tolerance=0.0):
     )
 
 
-def _record_ns(project_dir, manifest_path):
-    return argparse.Namespace(cmd="record", project_dir=project_dir, manifest=manifest_path)
+@pytest.fixture
+def project(tmp_path):
+    """A synthetic project dir with all 15 targets present + a recorded manifest.
+
+    Returns (project_dir, manifest_path). Both point under tmp_path.
+    """
+    project_dir = str(tmp_path)
+    for _workflow, kind, template in cb.TARGETS:
+        _write_target(cb.resolve(template, project_dir), kind)
+
+    manifest_path = tmp_path / "manifest.json"
+    rc = cb.cmd_record(_record_ns(project_dir, manifest_path))
+    assert rc == 0  # fixture sanity: all synthetic targets recorded
+    return project_dir, manifest_path
 
 
 def test_targets_tagged_with_expected_cardinality():
-    """The shipping TARGETS carry the 4/7/3 workflow tags the count math relies on."""
+    """The shipping TARGETS carry the 5/7/3 workflow tags the count math relies on
+    (model_creation gained the beyond-`rule all` discharge target)."""
     counts = Counter(workflow for workflow, _kind, _template in cb.TARGETS)
     assert counts == {
-        "model_creation": 4,
+        "model_creation": 5,
         "climate_projections": 7,
         "climate_experiment": 3,
     }
 
 
 def test_scoped_count_is_selected_not_full(project, capsys):
-    """Assertion 1: `--workflow model_creation --workflow climate_projections`
-    reports 11 targets, not the full 14."""
+    """`--workflow model_creation --workflow climate_projections` reports 12
+    targets (5 + 7), not the full 15."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path,
@@ -100,13 +104,12 @@ def test_scoped_count_is_selected_not_full(project, capsys):
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 11 target(s)" in out
+    assert "OK - 12 target(s)" in out
 
 
 def test_selected_missing_target_fails(project, capsys):
-    """Assertion 2: a selected target missing on disk -> non-zero, and named."""
+    """A selected target missing on disk -> non-zero, and named."""
     project_dir, manifest_path = project
-    # Remove one climate_projections target (a selected workflow).
     victim = cb.resolve(
         "{clim_project_dir}/annual_change_scalar_stats_summary.csv", project_dir
     )
@@ -122,10 +125,9 @@ def test_selected_missing_target_fails(project, capsys):
 
 
 def test_unselected_missing_target_ignored(project, capsys):
-    """Assertion 3: an unselected (workflow-3) target missing on disk is ignored
-    by a scoped check -> returns 0, count stays 11."""
+    """An unselected (workflow-3) target missing on disk is ignored by a scoped
+    check -> returns 0, count stays 12."""
     project_dir, manifest_path = project
-    # Remove a climate_experiment target; it is NOT in the selected universe.
     victim = cb.resolve("{exp_dir}/model_results/Qstats.csv", project_dir)
     Path(victim).unlink()
 
@@ -135,41 +137,58 @@ def test_unselected_missing_target_ignored(project, capsys):
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 11 target(s)" in out
+    assert "OK - 12 target(s)" in out
 
 
-def test_record_rejects_workflow_flag_and_records_all(project, capsys):
-    """Assertion 4: `record` has no `--workflow` (argparse SystemExit), and an
-    unscoped record writes all 14 targets -> no scoped/truncating record path."""
+def test_unscoped_record_writes_all_targets(project):
+    """An unscoped record writes all 15 targets (overwrite semantics)."""
     project_dir, manifest_path = project
+    written = json.loads(Path(manifest_path).read_text())
+    assert len(written["targets"]) == 15
+    assert written["version"] == cb.MANIFEST_VERSION
 
-    # (a) The record subparser rejects --workflow (no such flag on record).
-    old_argv = sys.argv
-    sys.argv = [
-        "check_baseline.py", "record",
-        "--project-dir", project_dir,
-        "--manifest", str(manifest_path),
-        "--workflow", "model_creation",
-    ]
-    try:
-        with pytest.raises(SystemExit):
-            cb.main()
-    finally:
-        sys.argv = old_argv
 
-    # (b) An unscoped record writes all 14 targets.
-    out_manifest = Path(manifest_path).parent / "recorded.json"
-    rc = cb.cmd_record(_record_ns(project_dir, out_manifest))
+def test_record_workflow_merges_and_preserves_other_slices(project):
+    """`record --workflow model_creation` re-records only wf1 rows and preserves
+    the wf2/wf3 rows verbatim (ADR step 7 merge semantics — no silent clobber)."""
+    project_dir, manifest_path = project
+    before = json.loads(Path(manifest_path).read_text())["targets"]
+
+    cp_path = cb.resolve(
+        "{clim_project_dir}/annual_change_scalar_stats_summary.csv", project_dir
+    )
+    exp_path = cb.resolve("{exp_dir}/model_results/Qstats.csv", project_dir)
+    cp_before, exp_before = before[cp_path], before[exp_path]
+
+    # Mutate a wf1 target AND a wf2 target on disk; then merge-record only wf1.
+    # A correct merge must re-record wf1 yet leave the (now stale) wf2 row as it
+    # was — proving it did not recompute or drop the unselected slice.
+    disch_path = cb.resolve(
+        "{project_dir}/hydrology_model/run_default/output.csv", project_dir
+    )
+    Path(cp_path).write_text("a,b\n9,9\n")  # wf2 content now differs from cp_before
+    Path(disch_path).write_text(
+        "time,Q_synthetic\n" + "\n".join(
+            f"2000-01-{i + 2:02d}T00:00:00,{5.0 + i!r}" for i in range(10)
+        ) + "\n"
+    )
+
+    rc = cb.cmd_record(_record_ns(project_dir, manifest_path, workflow=["model_creation"]))
     assert rc == 0
-    written = json.loads(out_manifest.read_text())
-    assert len(written["targets"]) == 14
+    after = json.loads(Path(manifest_path).read_text())["targets"]
+
+    assert len(after) == 15                       # nothing dropped
+    assert after[cp_path] == cp_before            # wf2 row preserved verbatim
+    assert after[exp_path] == exp_before          # wf3 row preserved verbatim
+    # wf1 discharge row re-recorded against the mutated series.
+    assert after[disch_path]["type"] == "discharge"
+    assert after[disch_path]["mean_ref"] != before[disch_path]["mean_ref"]
 
 
 def test_unscoped_check_spans_all_targets(project, capsys):
-    """Assertion 5: `check` with no `--workflow` operates over all 14 targets,
-    unchanged from before this commit."""
+    """`check` with no `--workflow` operates over all 15 targets."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(_check_ns(project_dir, manifest_path, workflow=None))
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 14 target(s)" in out
+    assert "OK - 15 target(s)" in out

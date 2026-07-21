@@ -7,7 +7,7 @@ skill's decision-record reference).
 
 | # | Title | Status | Date |
 |---|---|---|---|
-| [0001](0001-restore-wflow-constant-parameters.md) | Reconcile the dropped Wflow constant parameters via evidence-gated CSDMS restoration | proposed | 2026-07-21 |
+| [0001](0001-restore-wflow-constant-parameters.md) | Reconcile the dropped Wflow constant parameters via evidence-gated CSDMS restoration | accepted | 2026-07-21 |
 
 ## Retired numbers
 

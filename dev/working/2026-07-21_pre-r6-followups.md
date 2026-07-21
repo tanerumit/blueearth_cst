@@ -50,10 +50,17 @@ Suite before: 119 passed / 3 skipped / 7 xfailed. After: **123 / 3 / 1**
   file-existence based). Declare the config (or a hash of the relevant keys) as a
   rule input. DAG change → dry-run.
 
-## Wave D — big / scientific (design DRAFTED, implementation PENDING)
+## Wave D — big / scientific (design ACCEPTED, implementation PENDING)
 
-- **t260719a** — **design proposed 2026-07-21 in
-  [ADR 0001](../decisions/0001-restore-wflow-constant-parameters.md).** All 15
+- **t260719a — design ACCEPTED 2026-07-21 (G2) as
+  [ADR 0001](../decisions/0001-restore-wflow-constant-parameters.md)** via a full
+  `design-review-loop` (internal risk/architecture/repo-fit panel + 2 external
+  GPT rounds via codex + user arbitration at the cap; 26 findings all resolved;
+  consolidated record `dev/reviews/2026-07-21_adr-0001-constant-pars.md`). The
+  review caught two class-of-error bugs before any build compute: the protocol
+  targeted `staticmaps.nc` but constants land as TOML scalars, and a
+  build-sequence identity-comparison trap. **Implementation is the remaining,
+  build-heavy work** (route to `model-builder`). All 15
   CSDMS mappings resolved from `hydromt_wflow/naming.py` (the M2b "5 unresolved"
   all map to real names; none is `wflow_v1: None`): 1 retained (`KsatHorFrac`),
   1 forced-drop (`InfiltCapSoil`, deprecated), 13 mappable → RESTORE. Decision:

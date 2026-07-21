@@ -12,6 +12,7 @@ import types
 import warnings
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 
@@ -47,7 +48,15 @@ class _FakeDataset:
     def __init__(self, vars_, time_size=None):
         self._vars = list(vars_)
         self.raster = _FakeRasterAccessor(vars_)
-        self.time = types.SimpleNamespace(size=time_size or 100)
+        # A real (yearly) time axis from 1980 so the truncation check has a
+        # coverage span to compare. size drives the span: default 100 -> ~1980
+        # to 2079 (covers any test request); a narrow catalog (size 10) -> only
+        # ~1980-1989, shorter than a 2000-2020 request.
+        n = time_size or 100
+        self.time = types.SimpleNamespace(
+            size=n,
+            values=np.datetime64("1980-01-01") + np.arange(n) * np.timedelta64(365, "D"),
+        )
         self._tonetcdf_calls = []
 
     def __getitem__(self, key):
@@ -312,24 +321,14 @@ def test_starttime_and_endtime_passed_to_get_rasterdataset(tmp_path, fake_era5_c
     )
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "R3 followup (dev/followups.md): when the staged source covers a "
-        "shorter time window than (starttime, endtime), prep_historical_climate "
-        "silently produces a truncated netCDF without warning. Should emit a "
-        "warnings.warn(...) when ds.time.size's date range is shorter than "
-        "the requested span. xfail until R3 adds the check."
-    ),
-)
 def test_warns_when_extracted_window_is_shorter_than_requested(
     tmp_path, fake_era5_catalog, monkeypatch
 ):
-    """Drive a fake DataCatalog whose datasets have a narrow time dimension.
-    Currently no warning is raised → xfail. R3 should add a warning that this
-    test then verifies. monkeypatch updates ehc.hydromt.DataCatalog directly
-    because `import hydromt` in the source module binds at import time —
-    rewriting sys.modules['hydromt'] later does not affect that binding."""
+    """Drive a fake DataCatalog whose datasets have a narrow time span.
+    prep_historical_climate emits a truncation warning that this test verifies.
+    monkeypatch updates ehc.hydromt.DataCatalog directly because `import hydromt`
+    in the source module binds at import time — rewriting sys.modules['hydromt']
+    later does not affect that binding."""
 
     class _NarrowDataCatalog(_RecordingDataCatalog):
         def get_rasterdataset(self, source, **kwargs):

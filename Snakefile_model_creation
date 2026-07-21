@@ -58,7 +58,7 @@ rule all:
         f"{project_dir}/plots/wflow_model_performance/precip.png",
         f"{project_dir}/config/snake_config_model_creation.yml",
         f"{basin_dir}/staticgeoms/outlet_index.csv",
-        f"{project_dir}/benchmarks/wf1_benchmarks.tsv",
+        f"{project_dir}/benchmarks/wf1_benchmarks.md",
 
 # 1.01  copy_config — copy build/snake/waterbodies configs into project_dir/config
 rule copy_config:
@@ -258,7 +258,7 @@ rule gather_benchmarks:
         f"{project_dir}/plots/wflow_model_performance/precip.png",
         f"{basin_dir}/staticgeoms/outlet_index.csv",
     output:
-        f"{project_dir}/benchmarks/wf1_benchmarks.tsv",
+        f"{project_dir}/benchmarks/wf1_benchmarks.md",
     params:
         parts_dir = f"{project_dir}/benchmarks/_parts",
         workflow_num = 1,

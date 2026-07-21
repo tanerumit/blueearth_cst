@@ -106,8 +106,8 @@ manifest targets):
 
 **Side-effect artifacts:** `{project_dir}/logs/3.NN_{rule}[/…].log`,
 `{project_dir}/benchmarks/_parts/3.NN_{rule}[/…].tsv` (per-rule benchmarks under
-`_parts/`; `gather_benchmarks` merges WF3's into one `benchmarks/wf3_benchmarks.tsv`
-with a `rule` column + `TOTAL` row) — ephemeral once the R3
+`_parts/`; `gather_benchmarks` merges WF3's into one `benchmarks/wf3_benchmarks.md`
+(Markdown table, `rule` column + `TOTAL` row)) — ephemeral once the R3
 log/benchmark convention reaches this workflow (R5 code commits); gitignored,
 never fingerprinted or committed. The `3.NN_` prefix is the `W.NN`
 rule-numbering scheme (naming.md §9); wildcard rules keep their

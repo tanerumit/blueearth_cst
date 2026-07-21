@@ -1,11 +1,12 @@
-"""Merge a workflow's per-rule Snakemake benchmark TSVs into one file + TOTAL row.
+"""Merge a workflow's per-rule Snakemake benchmark TSVs into one Markdown table.
 
 Snakemake writes one benchmark TSV per rule (per job) under
-``benchmarks/_parts/<W.NN_rule>[/…].tsv``. This gather step (one job per
-workflow) collects that workflow's parts into a single
-``benchmarks/wf<W>_benchmarks.tsv``, adds a ``rule`` column, and appends a
-``TOTAL`` row, regenerated fresh each run. All three workflows share one
-``benchmarks/_parts`` dir, so parts are filtered by the ``W.`` numbering prefix.
+``benchmarks/_parts/<W.NN_rule>[/…].tsv`` (TSV is Snakemake's fixed benchmark
+format). This gather step (one job per workflow) collects that workflow's parts
+into a single readable ``benchmarks/wf<W>_benchmarks.md`` — a Markdown table with
+a ``rule`` column and a bold ``TOTAL`` row — regenerated fresh each run. All
+three workflows share one ``benchmarks/_parts`` dir, so parts are filtered by the
+``W.`` numbering prefix.
 """
 import glob
 import os
@@ -42,8 +43,9 @@ def merge_benchmarks(parts_dir, workflow_num, out_path):
         df.insert(0, "rule", rule)
         frames.append(df)
 
-    if not frames:  # no parts (e.g. nothing ran) — write just a header
-        pd.DataFrame(columns=["rule", "s", "h:m:s"]).to_csv(out_path, sep="\t", index=False)
+    if not frames:  # no parts (e.g. nothing ran)
+        with open(out_path, "w", encoding="utf-8") as handle:
+            handle.write(f"# wf{workflow_num} benchmarks\n\n(no benchmark parts found)\n")
         return
 
     merged = pd.concat(frames, ignore_index=True)
@@ -61,7 +63,11 @@ def merge_benchmarks(parts_dir, workflow_num, out_path):
         total["h:m:s"] = _hms(total["s"])
 
     merged = pd.concat([merged, pd.DataFrame([total])], ignore_index=True)
-    merged.to_csv(out_path, sep="\t", index=False)
+    merged.loc[merged["rule"] == "TOTAL", "rule"] = "**TOTAL**"  # emphasise the total
+    with open(out_path, "w", encoding="utf-8") as handle:
+        handle.write(f"# wf{workflow_num} benchmarks\n\n")
+        handle.write(merged.to_markdown(index=False, floatfmt=".2f"))
+        handle.write("\n")
 
 
 if __name__ == "__main__":

@@ -61,8 +61,8 @@ workflows 2/3; not in this `rule all`):
 - `{basin_dir}/staticgeoms/outlet_index.csv` — position→subcatchment-ID map (R3 §4).
 - `{project_dir}/logs/1.NN_{rule}.log`, `{project_dir}/benchmarks/_parts/1.NN_{rule}.tsv`
   (per-rule benchmarks live under `_parts/`; a `gather_benchmarks` rule merges
-  them into one `benchmarks/wf1_benchmarks.tsv` with a `rule` column + `TOTAL`
-  row, via `src/merge_benchmarks.py`)
+  them into one `benchmarks/wf1_benchmarks.md` (Markdown table, `rule` column +
+  `TOTAL` row), via `src/merge_benchmarks.py`)
   — ephemeral run artifacts (R3 §6); not manifest targets, not committed. The
   `1.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9).
 

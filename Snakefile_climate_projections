@@ -61,7 +61,7 @@ rule all:
         stats_hist_log = f"{project_dir}/logs/2.02_monthly_stats_hist.log",
         stats_fut_log = f"{project_dir}/logs/2.03_monthly_stats_fut.log",
         change_log = f"{project_dir}/logs/2.04_monthly_change.log",
-        benchmarks = f"{project_dir}/benchmarks/wf2_benchmarks.tsv",
+        benchmarks = f"{project_dir}/benchmarks/wf2_benchmarks.md",
 
 # Retained as stale insurance pending removal task; dry-run on the current pinned
 # Snakemake shows this directive constrains nothing on the tests fixture and a
@@ -253,7 +253,7 @@ rule gather_benchmarks:
         (clim_project_dir + "/plots/projected_climate_statistics.png"),
         (clim_project_dir + "/plots/precipitation_anomaly_projections_abs.png"),
     output:
-        f"{project_dir}/benchmarks/wf2_benchmarks.tsv",
+        f"{project_dir}/benchmarks/wf2_benchmarks.md",
     params:
         parts_dir = f"{project_dir}/benchmarks/_parts",
         workflow_num = 2,

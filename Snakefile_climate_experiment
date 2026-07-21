@@ -72,7 +72,7 @@ rule all:
         Qstats = f"{exp_dir}/model_results/Qstats.csv",
         basin = f"{exp_dir}/model_results/basin.csv",
         snake_config = f"{project_dir}/config/snake_config_climate_experiment.yml",
-        benchmarks = f"{project_dir}/benchmarks/wf3_benchmarks.tsv",
+        benchmarks = f"{project_dir}/benchmarks/wf3_benchmarks.md",
 
 # 3.01  copy_config — copy snake config into project_dir/config
 rule copy_config:
@@ -272,7 +272,7 @@ rule gather_benchmarks:
         f"{exp_dir}/model_results/Qstats.csv",
         f"{exp_dir}/model_results/basin.csv",
     output:
-        f"{project_dir}/benchmarks/wf3_benchmarks.tsv",
+        f"{project_dir}/benchmarks/wf3_benchmarks.md",
     params:
         parts_dir = f"{project_dir}/benchmarks/_parts",
         workflow_num = 3,

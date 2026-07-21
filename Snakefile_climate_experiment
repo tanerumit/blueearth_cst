@@ -72,6 +72,7 @@ rule all:
         Qstats = f"{exp_dir}/model_results/Qstats.csv",
         basin = f"{exp_dir}/model_results/basin.csv",
         snake_config = f"{project_dir}/config/snake_config_climate_experiment.yml",
+        benchmarks = f"{project_dir}/benchmarks/wf3_benchmarks.tsv",
 
 # 3.01  copy_config — copy snake config into project_dir/config
 rule copy_config:
@@ -99,7 +100,7 @@ rule extract_climate_grid:
     log:
         f"{project_dir}/logs/3.02_extract_climate_grid.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.02_extract_climate_grid.tsv",
+        f"{project_dir}/benchmarks/_parts/3.02_extract_climate_grid.tsv",
     script:
         "src/extract_historical_climate.py"
 
@@ -112,7 +113,7 @@ rule climate_stress_parameters:
     log:
         f"{project_dir}/logs/3.03_climate_stress_parameters.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.03_climate_stress_parameters.tsv",
+        f"{project_dir}/benchmarks/_parts/3.03_climate_stress_parameters.tsv",
     script:
         "src/prepare_cst_parameters.py"
 
@@ -131,7 +132,7 @@ rule prepare_weagen_config:
     log:
         f"{project_dir}/logs/3.04_prepare_weagen_config.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.04_prepare_weagen_config.tsv",
+        f"{project_dir}/benchmarks/_parts/3.04_prepare_weagen_config.tsv",
     script:
         "src/prepare_weagen_config.py"
 
@@ -148,7 +149,7 @@ rule prepare_weagen_config_st:
     log:
         f"{project_dir}/logs/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{project_dir}/benchmarks/_parts/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "src/prepare_weagen_config.py"
 
@@ -162,7 +163,7 @@ rule generate_weather_realization:
     log:
         f"{project_dir}/logs/3.06_generate_weather_realization.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.06_generate_weather_realization.tsv",
+        f"{project_dir}/benchmarks/_parts/3.06_generate_weather_realization.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- Rscript --vanilla src/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config}"""
 
@@ -186,7 +187,7 @@ rule generate_climate_stress_test:
     log:
         f"{project_dir}/logs/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{project_dir}/benchmarks/_parts/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- Rscript --vanilla src/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.st_csv}"""
 
@@ -203,7 +204,7 @@ rule climate_data_catalog:
     log:
         f"{project_dir}/logs/3.08_climate_data_catalog.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.08_climate_data_catalog.tsv",
+        f"{project_dir}/benchmarks/_parts/3.08_climate_data_catalog.tsv",
     script:
         "src/prepare_climate_data_catalog.py"
 
@@ -223,7 +224,7 @@ rule downscale_climate_realization:
     log:
         f"{project_dir}/logs/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{project_dir}/benchmarks/_parts/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "src/downscale_climate_forcing.py"
 
@@ -238,7 +239,7 @@ rule run_wflow:
     log:
         f"{project_dir}/logs/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{project_dir}/benchmarks/_parts/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_path}" """
 
@@ -258,6 +259,21 @@ rule export_wflow_results:
     log:
         f"{project_dir}/logs/3.11_export_wflow_results.log",
     benchmark:
-        f"{project_dir}/benchmarks/3.11_export_wflow_results.tsv",
+        f"{project_dir}/benchmarks/_parts/3.11_export_wflow_results.tsv",
     script:
         "src/export_wflow_results.py"
+
+# --- benchmark gather ---------------------------------------------------------
+# Merge WF3's per-rule benchmark parts (benchmarks/_parts/3.*) into one
+# benchmarks/wf3_benchmarks.tsv (rule column + TOTAL row) once the final
+# results are built (all WF3 rules ran).
+rule gather_benchmarks:
+    input:
+        f"{exp_dir}/model_results/Qstats.csv",
+        f"{exp_dir}/model_results/basin.csv",
+    output:
+        f"{project_dir}/benchmarks/wf3_benchmarks.tsv",
+    params:
+        parts_dir = f"{project_dir}/benchmarks/_parts",
+        workflow_num = 3,
+    script: "src/merge_benchmarks.py"

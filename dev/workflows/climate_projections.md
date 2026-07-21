@@ -80,7 +80,9 @@ manifest targets — Snakefile lines 74, 93, 111):
   under the output label `timeseries_csv` (Snakefile line 154). The
   label/extension mismatch (`_csv` name, `.nc` file) is **known state**,
   documented here, not fixed in R4 unless the chain audit charters it.
-- `{project_dir}/logs/2.NN_{rule}.log`, `{project_dir}/benchmarks/2.NN_{rule}[/…].tsv`
+- `{project_dir}/logs/2.NN_{rule}.log`, `{project_dir}/benchmarks/_parts/2.NN_{rule}[/…].tsv`
+  (per-rule benchmarks under `_parts/`; `gather_benchmarks` merges WF2's into one
+  `benchmarks/wf2_benchmarks.tsv` with a `rule` column + `TOTAL` row)
   — ephemeral run artifacts once the R3 log/benchmark convention reaches this
   workflow (R4 code commits); gitignored, never fingerprinted or committed. The
   `2.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9). The fan-out

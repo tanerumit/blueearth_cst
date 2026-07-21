@@ -61,6 +61,7 @@ rule all:
         stats_hist_log = f"{project_dir}/logs/2.02_monthly_stats_hist.log",
         stats_fut_log = f"{project_dir}/logs/2.03_monthly_stats_fut.log",
         change_log = f"{project_dir}/logs/2.04_monthly_change.log",
+        benchmarks = f"{project_dir}/benchmarks/wf2_benchmarks.tsv",
 
 # Retained as stale insurance pending removal task; dry-run on the current pinned
 # Snakemake shows this directive constrains nothing on the tests fixture and a
@@ -100,7 +101,7 @@ rule monthly_stats_hist:
     log:
         project_dir + "/logs/_parts/2.02_monthly_stats_hist/{model}.log",
     benchmark:
-        project_dir + "/benchmarks/2.02_monthly_stats_hist/{model}.tsv",
+        project_dir + "/benchmarks/_parts/2.02_monthly_stats_hist/{model}.tsv",
     script: "src/get_stats_climate_proj.py"
 
 # 2.03  monthly_stats_fut — mean monthly stats per {model}_{scenario} (future),
@@ -123,7 +124,7 @@ rule monthly_stats_fut:
     log:
         project_dir + "/logs/_parts/2.03_monthly_stats_fut/{model}_{scenario}.log",
     benchmark:
-        project_dir + "/benchmarks/2.03_monthly_stats_fut/{model}_{scenario}.tsv",
+        project_dir + "/benchmarks/_parts/2.03_monthly_stats_fut/{model}_{scenario}.tsv",
     script: "src/get_stats_climate_proj.py"
 
 # 2.04  monthly_change — change factors per {model}_{scenario}_{horizon}
@@ -147,7 +148,7 @@ rule monthly_change:
     log:
         project_dir + "/logs/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.log",
     benchmark:
-        project_dir + "/benchmarks/2.04_monthly_change/{model}_{scenario}_{horizon}.tsv",
+        project_dir + "/benchmarks/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.tsv",
     script: "src/get_change_climate_proj.py"
 
 # 2.05  monthly_change_scalar_merge — merge all change factors into one summary
@@ -165,7 +166,7 @@ rule monthly_change_scalar_merge:
     log:
         f"{project_dir}/logs/2.05_monthly_change_scalar_merge.log",
     benchmark:
-        f"{project_dir}/benchmarks/2.05_monthly_change_scalar_merge.tsv",
+        f"{project_dir}/benchmarks/_parts/2.05_monthly_change_scalar_merge.tsv",
     script: "src/get_change_climate_proj_summary.py"
 
 # 2.06  plot_climate_proj_timeseries — plot projected anomaly time series
@@ -187,7 +188,7 @@ rule plot_climate_proj_timeseries:
     log:
         f"{project_dir}/logs/2.06_plot_climate_proj_timeseries.log",
     benchmark:
-        f"{project_dir}/benchmarks/2.06_plot_climate_proj_timeseries.tsv",
+        f"{project_dir}/benchmarks/_parts/2.06_plot_climate_proj_timeseries.tsv",
     script: "src/plot_proj_timeseries.py"
 
 # --- log gather ---------------------------------------------------------------
@@ -241,3 +242,19 @@ rule gather_change_logs:
             model=models, scenario=scenarios, horizon=future_horizons,
         ),
     script: "src/merge_logs.py"
+
+# --- benchmark gather ---------------------------------------------------------
+# Merge WF2's per-rule benchmark parts (benchmarks/_parts/2.*) into one
+# benchmarks/wf2_benchmarks.tsv (rule column + TOTAL row) once the summary +
+# plots are built (all WF2 rules ran).
+rule gather_benchmarks:
+    input:
+        (clim_project_dir + "/annual_change_scalar_stats_summary.nc"),
+        (clim_project_dir + "/plots/projected_climate_statistics.png"),
+        (clim_project_dir + "/plots/precipitation_anomaly_projections_abs.png"),
+    output:
+        f"{project_dir}/benchmarks/wf2_benchmarks.tsv",
+    params:
+        parts_dir = f"{project_dir}/benchmarks/_parts",
+        workflow_num = 2,
+    script: "src/merge_benchmarks.py"

@@ -117,6 +117,29 @@ def get_change_annual_clim_proj(
     ds_hist_time = _to_datetime_index(ds_hist_time)
     ds_clim_time = _to_datetime_index(ds_clim_time)
 
+    # Fail loud on asymmetric hist/clim structure rather than silently dropping
+    # (t260720d / D-VAR, D-MEM). Otherwise intersection() below quietly discards
+    # a configured variable, and xarray's default inner alignment on the change
+    # arithmetic quietly discards an unshared member -- both move the response
+    # surface with no error.
+    hist_vars = set(ds_hist_time.data_vars)
+    clim_vars = set(ds_clim_time.data_vars)
+    if hist_vars != clim_vars:
+        unshared_vars = sorted(hist_vars.symmetric_difference(clim_vars))
+        raise ValueError(
+            f"asymmetric hist/clim variables: {unshared_vars} present in only "
+            f"one dataset (hist={sorted(hist_vars)}, clim={sorted(clim_vars)})"
+        )
+    if "member" in ds_hist_time.coords and "member" in ds_clim_time.coords:
+        hist_mem = set(ds_hist_time["member"].values.tolist())
+        clim_mem = set(ds_clim_time["member"].values.tolist())
+        if hist_mem != clim_mem:
+            unshared_mem = sorted(hist_mem.symmetric_difference(clim_mem))
+            raise ValueError(
+                f"asymmetric hist/clim members: {unshared_mem} present in only "
+                f"one dataset (hist={sorted(hist_mem)}, clim={sorted(clim_mem)})"
+            )
+
     ds = []
     for var in intersection(ds_hist_time.data_vars, ds_clim_time.data_vars):
         # only keep full hydrological years

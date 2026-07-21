@@ -19,6 +19,23 @@ def intersection(lst1, lst2):
     return list(set(lst1) & set(lst2))
 
 
+def _to_datetime_index(ds):
+    """Convert an object-dtype (cftime) time index to a proleptic-Gregorian
+    DatetimeIndex.
+
+    CMIP6-native calendars (360_day, noleap) decode to an object-dtype
+    CFTimeIndex that cannot be sliced with the ``pd.Timestamp`` bounds built in
+    ``get_change_annual_clim_proj`` -- the cross-calendar comparison raises
+    ``TypeError``. The stats time series here are monthly (``MS``, day-01), which
+    has no calendar-invalid dates, so the conversion is lossless for the annual
+    resample that follows. Mirrors ``plot_proj_timeseries.py``. (t260720c)
+    """
+    if "time" in ds.coords and ds.indexes["time"].dtype == "O":
+        ds = ds.copy()
+        ds["time"] = ds.indexes["time"].to_datetimeindex()
+    return ds
+
+
 def get_change_clim_projections(ds_hist, ds_clim):
     """
     Parameters
@@ -94,6 +111,12 @@ def get_change_annual_clim_proj(
         annual statistics per each models/scenario/horizon.
 
     """
+    # cftime-safe slicing: convert any CMIP6-native cftime index up front so the
+    # pd.Timestamp hydrological-year bounds below apply to a pandas-native index
+    # (t260720c / D-CAL).
+    ds_hist_time = _to_datetime_index(ds_hist_time)
+    ds_clim_time = _to_datetime_index(ds_clim_time)
+
     ds = []
     for var in intersection(ds_hist_time.data_vars, ds_clim_time.data_vars):
         # only keep full hydrological years

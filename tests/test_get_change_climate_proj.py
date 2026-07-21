@@ -124,17 +124,11 @@ def test_row_C3_gregorian_datetime64_change_invariant():
     assert float(res["temp"].values.ravel()[0]) == 2.0
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="row-C1 calendar defect: get_change_annual_clim_proj slices a "
-    "cftime.Datetime360Day index with pd.to_datetime() Timestamps and raises "
-    "TypeError (cross-calendar compare). Split to t260720c.",
-)
 def test_row_C1_cftime_360day_change_invariant():
-    """Row C1 (strict-xfail): cftime.Datetime360Day (CMIP6-native) index.
+    """Row C1 (t260720c, fixed): cftime.Datetime360Day (CMIP6-native) index.
 
-    NORM: constant fields must yield the calendar-invariant 20.0 / 2.0.
-    Today the code raises TypeError before computing anything, so this xfails.
+    NORM: constant fields yield the calendar-invariant 20.0 / 2.0. The cftime
+    index is converted to a DatetimeIndex before slicing, so no TypeError.
     """
     hist = _make_time_ds(10.0, 5.0, [1990, 1991, 1992], calendar="360_day")
     fut = _make_time_ds(12.0, 7.0, [2050, 2051, 2052], calendar="360_day")
@@ -143,17 +137,11 @@ def test_row_C1_cftime_360day_change_invariant():
     assert float(res["temp"].values.ravel()[0]) == 2.0
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="row-C2 calendar defect: get_change_annual_clim_proj slices a "
-    "cftime.DatetimeNoLeap index with pd.to_datetime() Timestamps and raises "
-    "TypeError (cross-calendar compare). Split to t260720c.",
-)
 def test_row_C2_cftime_noleap_change_invariant():
-    """Row C2 (strict-xfail): cftime.DatetimeNoLeap index.
+    """Row C2 (t260720c, fixed): cftime.DatetimeNoLeap index.
 
-    NORM: constant fields must yield the calendar-invariant 20.0 / 2.0.
-    Today the code raises TypeError before computing anything, so this xfails.
+    NORM: constant fields yield the calendar-invariant 20.0 / 2.0. The cftime
+    index is converted to a DatetimeIndex before slicing, so no TypeError.
     """
     hist = _make_time_ds(10.0, 5.0, [1990, 1991, 1992], calendar="noleap")
     fut = _make_time_ds(12.0, 7.0, [2050, 2051, 2052], calendar="noleap")

@@ -130,13 +130,18 @@ context so future-you can confirm the issue still applies before fixing.
   `st_num2 → st_num` fold that `dev/conventions/naming.md` §4 already assigns
   to R5) — **deferred to R5**; the ratchet is retained until then.
 
-- **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
-  triage (`dev/phase-1/m01/warnings.md`) because most rules don't write stderr
-  to disk. Once R3's cross-cutting deliverable adds `log:` directives
-  to every non-trivial rule across all three Snakefiles, re-run all
-  three workflows, sweep the captured logs, and fix any bucket-2
-  (config/data-catalog) or bucket-3 (our-code) warnings that surface.
-  Update `dev/phase-1/m01/warnings.md` (or supersede it with an `m03_*` doc).
+- **[RESOLVED 2026-07-21, t260716a′ (`fix/pre-r6-followups`).] Redo M1 warnings
+  triage exhaustively.** Swept 82 captured `.log` files across all three workflows
+  (per-rule `log:` directives now present via R3/R4/R5). **Bucket 3 (our-code):
+  empty** — no warnings framed in `src/`, the Snakefiles, `dev/scripts/`, or the R
+  layer. **Bucket 2:** one item, intended hydromt behavior (the `0.00833` vs native
+  `0.008333333333325754` resolution snap) — won't-fix (a config match is fragile +
+  would drift the tracked snake-config fingerprint for zero model change).
+  **Bucket 1:** hydromt CRS/forcing/model-dir warnings + a new-but-captured 62×
+  `Error in sys.excepthook` shutdown cascade from `hydromt build -vv` (post-success;
+  upstream subprocess, not our tee wrapper — absent from the Julia/hydromt-update
+  logs that use the same wrapper). No code changes. Full re-triage recorded in
+  `dev/phase-1/m01/warnings.md` § "Exhaustive re-triage — 2026-07-21".
 
 - **`extract_climate_grid` silently truncates the historical range.**
   *[Truncation WARNING resolved 2026-07-21, commit `ce56bc3` (t260716a,
@@ -159,14 +164,22 @@ context so future-you can confirm the issue still applies before fixing.
   fail the rule if the shortfall is large enough to break a downstream step
   (e.g. < 16 historical years when weathergenr is in the pipeline).
 
-  *Related Snakemake-staleness issue:* a snake-config edit that changes what
-  the rule *should* produce does not invalidate the existing output, because
-  Snakemake's freshness check is file-existence-based, not config-content-aware.
-  Reproduced 2026-05-07: changing `historical:` in the config didn't trigger
-  re-extraction; the user had to `--forcerun extract_climate_grid` to pick up
-  the change. Worth fixing alongside the truncation warning — declare the
-  snake config (or a hash of the relevant keys) as an input of
-  `extract_climate_grid` so config edits propagate automatically.
+  *Related Snakemake-staleness issue:* **[RESOLVED 2026-07-21, t260716a′ — by R5's
+  wiring + verification, no new code.]** The 2026-05-07 repro (changing `historical:`
+  didn't re-extract) predates R5, when the dates were hardcoded and `historical:`
+  was **never read** by `extract_climate_grid` — so of course the edit had no effect.
+  R5 wired `shared.historical_window` into the rule as `params`
+  (`starttime`/`endtime`, `Snakefile_climate_experiment:78-82`), and Snakemake 9.6.2
+  applies its default `params` rerun-trigger (no `--rerun-triggers` override in the
+  repo). **Verified empirically 2026-07-21:** a dry-run against the built
+  `examples/test_local` with `historical_window.endtime` changed 2020→2019 schedules
+  `extract_climate_grid` with reason *"Params have changed since last execution:
+  before '2020-12-31…' now '2019-12-31…'"*. So config edits to the historical window
+  now propagate automatically; `--forcerun` is no longer needed. Declaring the whole
+  config as an input (the original suggestion) is unnecessary and coarser (would
+  re-run on any unrelated config edit). The broader "audit every rule whose behavior
+  depends on an unread config key" remains a general note (see R5 section below), not
+  part of this item.
 
   *Workaround applied 2026-05-07:* `historical: 2000, 2020` in the local test
   config + `--forcerun extract_climate_grid` for the immediate run. Treats

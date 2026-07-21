@@ -42,13 +42,19 @@ Suite before: 119 passed / 3 skipped / 7 xfailed. After: **123 / 3 / 1**
   (a CLI over `snake_utils.run_and_tee`): live console output + log + child exit
   code. Verified end-to-end (failing child propagates its code; old `| tee`
   masked to 0). Tests in `tests/test_run_logged.py`; DAG dry-runs green.
-- **M1 warnings triage sweep** (t260716a remnant, PENDING) — now that all three Snakefiles
-  write per-rule `log:` files, re-run the workflows, sweep captured logs, fix
-  bucket-2/3 warnings. Needs runs.
-- **`extract_climate_grid` config-staleness** (t260716a remnant) — a config edit
-  to `historical:` does not invalidate the existing output (Snakemake freshness is
-  file-existence based). Declare the config (or a hash of the relevant keys) as a
-  rule input. DAG change → dry-run.
+- **M1 warnings triage sweep (t260716a′) — DONE 2026-07-21.** Swept 82 captured
+  per-rule logs across all three workflows (no fresh runs needed — logs already on
+  disk from the t260719a wf1 rebuild + the R5 seal). **Bucket 3 (our-code): empty;
+  Bucket 2:** one intended hydromt resolution-snap (won't-fix); **Bucket 1:** hydromt
+  warnings + a captured 62× `sys.excepthook` shutdown cascade from `hydromt build
+  -vv` (upstream, post-success, not our tee wrapper). No code changes. Recorded in
+  `dev/phase-1/m01/warnings.md` § "Exhaustive re-triage".
+- **`extract_climate_grid` config-staleness (t260716a′) — RESOLVED 2026-07-21, no
+  new code.** The 2026-05-07 repro predated R5 (dates hardcoded, `historical:`
+  unread). R5 wired `historical_window` as `params`; Snakemake 9.6.2's default
+  `params` rerun-trigger now re-runs the rule on a window edit — **verified** by a
+  dry-run (endtime 2020→2019 → "Params have changed" schedules the rule). Config-
+  as-input is unnecessary/coarser. Detail in `dev/followups.md` § R3.
 
 ## Wave D — big / scientific (design ACCEPTED, implementation PENDING)
 

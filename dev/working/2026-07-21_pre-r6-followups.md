@@ -35,13 +35,14 @@ Suite before: 119 passed / 3 skipped / 7 xfailed. After: **123 / 3 / 1**
   upstream hydromt). Moves the summary `.nc` fingerprint → a `baseline_diffs.md`
   entry + re-record of the wf2 slice.
 
-## Wave C — decision-gated code / sweeps (PENDING)
+## Wave C — decision-gated code / sweeps
 
-- **wf1 `| tee` exit-masking** — migrate `Snakefile_model_creation`'s 3 shell rules
-  to a portable Python tee wrapper (shared helper in `src/snake_utils.py`) that
-  streams to console, writes the log, and preserves the child exit code. Dry-run +
-  ideally a deliberate-failure check that the wrapper propagates non-zero.
-- **M1 warnings triage sweep** (t260716a remnant) — now that all three Snakefiles
+- **wf1 `| tee` exit-masking (t260721a) — DONE 2026-07-21, commit `d13ba37`.**
+  `Snakefile_model_creation`'s 3 shell rules route through `src/run_logged.py`
+  (a CLI over `snake_utils.run_and_tee`): live console output + log + child exit
+  code. Verified end-to-end (failing child propagates its code; old `| tee`
+  masked to 0). Tests in `tests/test_run_logged.py`; DAG dry-runs green.
+- **M1 warnings triage sweep** (t260716a remnant, PENDING) — now that all three Snakefiles
   write per-rule `log:` files, re-run the workflows, sweep captured logs, fix
   bucket-2/3 warnings. Needs runs.
 - **`extract_climate_grid` config-staleness** (t260716a remnant) — a config edit

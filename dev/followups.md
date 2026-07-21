@@ -63,6 +63,14 @@ context so future-you can confirm the issue still applies before fixing.
   R3. Deferred by choice, not a blocker — pick up when convenient (a natural
   fit alongside R4/R5 Snakefile work or R6 polish).
 
+- **[RESOLVED 2026-07-21, commit `d13ba37` (t260721a, `fix/pre-r6-followups`).]**
+  wf1's three shell rules now route through `src/run_logged.py` (a CLI over
+  `snake_utils.run_and_tee`), a portable Python tee wrapper that keeps live
+  console output, writes the log, and exits with the child's own return code.
+  Verified end-to-end: a deliberately-failing child propagates its non-zero code
+  (the old `| tee` masked it to 0 under cmd.exe). Original diagnosis retained
+  below for provenance.
+
 - **[Latent robustness, not a blocker] wf1's `| tee {log}` shell rules mask the
   exit code on failure.** *Surfaced 2026-07-20 during R5 (design §2 ruling).*
   `Snakefile_model_creation`'s three shell rules (lines 89, 167, 182 — `hydromt

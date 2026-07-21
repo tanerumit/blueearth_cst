@@ -23,6 +23,7 @@ from func_plot_signature import (
     plot_clim,
     plot_basavg,
 )
+from climate_forcing import climate_forcing_by_subcatchment
 
 
 def analyse_wflow_historical(
@@ -34,8 +35,10 @@ def analyse_wflow_historical(
     Analyse and plot wflow model performance for historical run.
 
     To be read, model should be stored in ``project_dir``/hydrology_model.
-    Model results should include the following keys: Q_gauges,
-    Q_gauges_{basename(gauges_locs)}, P_subcatchment, T_subcatchment, EP_subcatchment.
+    Model results should include the discharge keys Q_outlets and, if gauges are
+    provided, Q_gauges_{basename(gauges_locs)}. The climate plots (P/T/EP) are
+    derived from the model's forcing INPUT (inmaps: precip/temp/pet), aggregated
+    per subcatchment — not from wflow outputs (ADR 0002).
 
 
     Outputs:
@@ -141,13 +144,16 @@ def analyse_wflow_historical(
             )
             qsim = xr.merge([qsim, qsim_gauges])["Q"]
 
-    # Climate data P, EP, T at the subcatchment scale — only present if those
-    # outputs were configured in setup_gauges_and_outputs / wflow_outvars. With
-    # the M2b CSDMS rename, configuring them is R3 territory; skip cleanly when
-    # absent so the hydrograph plot still ships.
-    clim_keys = ("P_subcatchment", "T_subcatchment", "EP_subcatchment")
-    if all(k in results for k in clim_keys):
-        ds_clim = xr.merge([results[k] for k in clim_keys])
+    # Climate data (P/T/EP) per subcatchment, derived from the wflow forcing
+    # INPUT (inmaps: precip/temp/pet) — the actual climate driving the model —
+    # not from wflow outputs (ADR 0002). Aggregate the gridded forcing to a
+    # per-subcatchment mean timeseries. Skip cleanly if the model carries no
+    # forcing so the hydrograph plot still ships.
+    forcing = mod.forcing.data
+    if forcing.data_vars and all(v in forcing for v in ("precip", "temp", "pet")):
+        ds_clim = climate_forcing_by_subcatchment(
+            forcing, mod.staticmaps.data["subcatchment"]
+        )
     else:
         ds_clim = xr.Dataset()
 
@@ -161,15 +167,14 @@ def analyse_wflow_historical(
 
     ### 4. Plot climate data ###
     # Two distinct skip reasons — keep them separate so the log is honest:
-    #  (a) ds_clim empty: the P/T/EP subcatchment climate outputs are absent from
-    #      the wflow results (the current output config does not produce them).
-    #      This is NOT a data-length condition — the discharge run may span many
-    #      years — so it must never be reported as "less than 1 year".
-    #  (b) climate outputs present but shorter than a year: skip the yearly plots.
+    #  (a) ds_clim empty: the model carries no forcing (precip/temp/pet), so
+    #      there is nothing to aggregate. This is NOT a data-length condition —
+    #      the discharge run may span many years — so it must never be reported
+    #      as "less than 1 year".
+    #  (b) forcing present but shorter than a year: skip the yearly plots.
     if "time" not in ds_clim.dims:
         print(
-            "No climate subcatchment outputs (P/T/EP) in wflow results; "
-            "skipping climate plots."
+            "No wflow forcing (precip/temp/pet) available; skipping climate plots."
         )
     elif len(ds_clim.time) < 365:
         print(

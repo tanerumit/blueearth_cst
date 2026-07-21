@@ -197,8 +197,11 @@ rule run_wflow:
 rule plot_results:
    input:
        csv_path = f"{basin_dir}/run_default/output.csv",
+       # forcing input drives the climate plots (ADR 0002); declared so the DAG
+       # dependency is explicit even though the script reads it via the model.
+       forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
        script = "src/plot_results.py"
-   output: 
+   output:
        output_png = f"{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png",
    params:
        project_dir = f"{project_dir}",

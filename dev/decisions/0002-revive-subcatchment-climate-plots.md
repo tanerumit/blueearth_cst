@@ -1,4 +1,4 @@
-Status: proposed
+Status: accepted
 Date: 2026-07-21
 Deciders: Ümit Taner
 Consulted: Observation 4 investigation + correction (test/pre06 gabon run;
@@ -12,6 +12,15 @@ Revisions:
     climate data INPUT to wflow (the ERA5-derived forcing inmaps_historical.nc),
     not wflow output variables. Data-source mechanism reversed; the old output-
     variable approach demoted to a rejected alternative. Still proposed, no code.
+  - 2026-07-21: IMPLEMENTED and accepted (test/pre06). New `src/climate_forcing.py`
+    (`climate_forcing_by_subcatchment`) aggregates the gridded forcing to a
+    per-subcatchment mean `(index, time)` dataset with the `P/T/EP_subcatchment`
+    keys `plot_clim` expects; `src/plot_results.py` §4 now builds `ds_clim` from
+    `mod.forcing.data` instead of wflow outputs; `Snakefile_model_creation`
+    declares `inmaps_historical.nc` as a `plot_results` input. Unit tests in
+    `tests/test_climate_forcing.py`. Verified end-to-end on the real gabon model
+    (both `clim_wflow_<id>_year/month.png` render; physically sensible
+    climatology). Full visual QA still occurs on the user's next WF1 run.
 
 # ADR 0002 — Revive the subcatchment climate plots from the wflow forcing input
 

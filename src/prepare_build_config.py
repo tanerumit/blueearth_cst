@@ -71,3 +71,8 @@ if __name__ == "__main__":
                 model_resolution=sm.params.model_resolution,
                 model_region=sm.params.model_region,
             )
+            print(
+                f"Prepared hydromt build config "
+                f"(res={sm.params.model_resolution}, region={sm.params.model_region}) "
+                f"-> {sm.output.merged}"
+            )

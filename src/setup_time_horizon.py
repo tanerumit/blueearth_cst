@@ -91,6 +91,10 @@ if __name__ == "__main__":
                 precip_source=sm.params.clim_source,
                 wflow_root=sm.params.basin_dir,
             )
+            print(
+                f"Prepared forcing config {sm.params.starttime}..{sm.params.endtime} "
+                f"(clim_source={sm.params.clim_source}) -> {sm.output.forcing_yml}"
+            )
     else:
         prep_hydromt_update_forcing_config(
             starttime="2010-01-01T00:00:00",

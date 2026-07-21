@@ -20,6 +20,7 @@ from src.snake_utils import (  # noqa: E402
     _relativize_paths,
     get_config,
     log_row,
+    patch_psutil_windows_benchmark,
     save_figure,
     tee_to_log,
 )
@@ -136,6 +137,24 @@ def test_log_row_row_survives_compaction_unchanged():
     # a log_row line is already compact -> the tee's _compact_log_line is a no-op
     row = "21:56:12 - plot - INFO - Saved figure: x.png\n"
     assert _compact_log_line(row) == row
+
+
+# --- psutil benchmark shim ---------------------------------------------------
+
+
+def test_patch_psutil_exposes_pss():
+    # Snakemake's benchmark sampler reads meminfo.pss; on Windows psutil omits it
+    # (only uss), which NAs every metric. The shim must expose pss (= uss proxy).
+    if sys.platform != "win32":
+        import pytest as _pytest
+
+        _pytest.skip("Windows-only shim")
+    import psutil
+
+    patch_psutil_windows_benchmark()
+    meminfo = psutil.Process().memory_full_info()
+    assert hasattr(meminfo, "pss")
+    assert meminfo.pss == meminfo.uss  # Windows proxy
 
 
 # --- path relativization -----------------------------------------------------

@@ -429,3 +429,41 @@ def save_figure(path, module="plot", **kwargs):
         os.makedirs(parent, exist_ok=True)
     plt.savefig(path, **kwargs)
     log_row(f"Saved figure: {path}", module=module)
+
+
+def patch_psutil_windows_benchmark():
+    """Work around Snakemake's benchmark sampler crashing on Windows.
+
+    Snakemake's benchmark monitor reads ``psutil.memory_full_info().pss`` on
+    every sample, but on Windows psutil's ``pfullmem`` has ``uss`` and **no**
+    ``pss`` — the resulting ``AttributeError`` aborts every sample before the
+    record is marked collected, so ALL metrics (rss/vms/uss/io/load/cpu_time,
+    not just pss) come out ``NA``. This shim exposes ``pss`` (= ``uss`` as a
+    Windows proxy) so the sampler succeeds and the real metrics populate.
+
+    No-op off Windows, when psutil is absent, or when ``pss`` already exists.
+    Called at the top of each Snakefile so it is active in the Snakemake process
+    that runs the benchmark threads. Upstream Snakemake bug; shimmed in our own
+    code rather than editing the vendored package.
+    """
+    if sys.platform != "win32":
+        return
+    try:
+        import psutil
+    except ImportError:
+        return
+    from collections import namedtuple
+
+    orig = psutil.Process.memory_full_info
+    if getattr(orig, "_cst_pss_shim", False):
+        return  # already patched
+
+    def _with_pss(self):
+        meminfo = orig(self)
+        if hasattr(meminfo, "pss"):
+            return meminfo
+        tuple_with_pss = namedtuple("pfullmem_pss", list(meminfo._fields) + ["pss"])
+        return tuple_with_pss(*meminfo, meminfo.uss)
+
+    _with_pss._cst_pss_shim = True
+    psutil.Process.memory_full_info = _with_pss

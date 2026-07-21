@@ -5,7 +5,10 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from src.snake_utils import get_config
+from src.snake_utils import get_config, patch_psutil_windows_benchmark
+
+# Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
+patch_psutil_windows_benchmark()
 
 # read path of the config file (Snakemake records it from --configfile) so
 # downstream R scripts can be handed the same path. Forwarding config_path is

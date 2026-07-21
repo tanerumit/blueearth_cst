@@ -419,3 +419,35 @@ for the full M2b record.
   in mind when ADR 0002 is implemented — it may argue for sourcing from
   `extract_climate_grid`-style extraction rather than the model forcing. To be
   discussed at R6 scoping; not to be designed or implemented yet.
+
+- **Reconsider the WF1 rule arrangement — bundle/split + rename.**
+  *Direction raised by Ümit 2026-07-21 (test/pre06, Observation re: WF1's 11
+  rules).* NOT covered by R6's current lock list (which is repo/directory
+  layout + `enabled:`); this is rule-level composition *within* a workflow — a
+  new R6 axis. WF1 today has 12 rules (1.01–1.12; see `Snakefile_model_creation`
+  and naming.md §9): copy_config, prepare_build_config, create_model,
+  add_reservoirs_lakes_glaciers, add_gauges_and_outputs, write_outlet_index,
+  setup_runtime, add_forcing, run_wflow, plot_results, plot_map, plot_forcing.
+  Candidates to weigh:
+  - **Plotting is three separate rules** (plot_results 1.10, plot_map 1.11,
+    plot_forcing 1.12), each a `script:` emitting PNGs and now sharing
+    `save_figure`. Consider consolidating into fewer rules (or one parameterized
+    "plots" rule / a plotting sub-component) and a shared plotting module.
+  - **Model-update chain is finely split** (create_model → add_reservoirs… →
+    add_gauges… → write_outlet_index → setup_runtime → add_forcing). Some splits
+    are historical: `add_reservoirs_lakes_glaciers`'s own comment says it "can be
+    moved back to create_model when hydromt is updated" — a standing re-merge
+    candidate.
+  - **Verb standardization**: rules mix `create_`/`add_`/`setup_`/`prepare_`/
+    `write_`/`plot_`/`run_`; `prepare_build_config` vs `setup_runtime` vs
+    `create_model` overlap semantically. Align on a small verb vocabulary
+    (naming.md §2 already prescribes `verb_noun`).
+  **Key tradeoff — do not bundle blindly:** separate rules give Snakemake
+  parallelism and *targeted* re-runs (edit forcing → only `plot_forcing` reruns);
+  bundling coarsens the DAG and re-runs more on any change. Weigh granularity vs.
+  readability per rule. Interactions: any reorg renumbers the `W.NN` scheme
+  (naming.md §9 documents this as a mechanical cost), touches CLI target names
+  (a naming.md §7 contract-surface rename → migration note), and overlaps the
+  climate-subworkflow item above (plotting may move out of WF1 entirely). Same
+  lens applies to WF3 (also 11 rules). To be discussed at R6 scoping; not to be
+  designed or implemented yet.

@@ -467,3 +467,18 @@ def patch_psutil_windows_benchmark():
 
     _with_pss._cst_pss_shim = True
     psutil.Process.memory_full_info = _with_pss
+
+
+def rule_banner(number, name):
+    """Return a rule's ``message:`` string: a bold, numbered console banner.
+
+    Shows ``<W.NN>  <name>`` (the ``W.NN`` matching the rule's log/benchmark
+    filenames) so the live Snakemake console is easy to track. The number+name
+    are wrapped in bold cyan **only** when stderr is a TTY and ``NO_COLOR`` is
+    unset — so piping/redirecting the console to a file leaves no escape codes.
+    Evaluated once at Snakefile parse time (a plain string, no wildcards).
+    """
+    tag = f"{number}  {name}"
+    if sys.stderr.isatty() and not os.environ.get("NO_COLOR"):
+        return f"\033[1;36m{tag}\033[0m"  # bold cyan
+    return tag

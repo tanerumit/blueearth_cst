@@ -21,6 +21,7 @@ from src.snake_utils import (  # noqa: E402
     get_config,
     log_row,
     patch_psutil_windows_benchmark,
+    rule_banner,
     save_figure,
     tee_to_log,
 )
@@ -155,6 +156,35 @@ def test_patch_psutil_exposes_pss():
     meminfo = psutil.Process().memory_full_info()
     assert hasattr(meminfo, "pss")
     assert meminfo.pss == meminfo.uss  # Windows proxy
+
+
+# --- rule_banner (console header) --------------------------------------------
+
+
+class _FakeTTY:
+    def isatty(self):
+        return True
+
+
+def test_rule_banner_bold_on_tty(monkeypatch):
+    monkeypatch.setattr(sys, "stderr", _FakeTTY())
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    assert rule_banner("1.09", "run_wflow") == "\033[1;36m1.09  run_wflow\033[0m"
+
+
+def test_rule_banner_plain_when_not_tty(monkeypatch):
+    import io
+
+    monkeypatch.setattr(sys, "stderr", io.StringIO())  # isatty() -> False
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    out = rule_banner("1.09", "run_wflow")
+    assert out == "1.09  run_wflow" and "\033" not in out  # no escape codes
+
+
+def test_rule_banner_respects_no_color_env(monkeypatch):
+    monkeypatch.setattr(sys, "stderr", _FakeTTY())
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert rule_banner("2.04", "monthly_change") == "2.04  monthly_change"
 
 
 # --- path relativization -----------------------------------------------------

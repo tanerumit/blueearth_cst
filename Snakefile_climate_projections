@@ -6,7 +6,7 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from src.snake_utils import get_config, patch_psutil_windows_benchmark
+from src.snake_utils import get_config, patch_psutil_windows_benchmark, rule_banner
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
 patch_psutil_windows_benchmark()
@@ -71,6 +71,7 @@ ruleorder: monthly_stats_hist > monthly_stats_fut > monthly_change > monthly_cha
 
 # 2.01  copy_config — copy snake config into project_dir/config
 rule copy_config:
+    message: rule_banner("2.01", "copy_config")
     input:
         config_snake = config_path,
     params:
@@ -84,6 +85,7 @@ rule copy_config:
 # 2.02  monthly_stats_hist — mean monthly stats for the historical period, per
 # {model} (grid to netcdf + grid-averaged monthly time series).
 rule monthly_stats_hist:
+    message: rule_banner("2.02", "monthly_stats_hist")
     input:
         region_path = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
     output:
@@ -107,6 +109,7 @@ rule monthly_stats_hist:
 # 2.03  monthly_stats_fut — mean monthly stats per {model}_{scenario} (future),
 # chained after 2.02 (grid to netcdf + grid-averaged monthly time series).
 rule monthly_stats_fut:
+    message: rule_banner("2.03", "monthly_stats_fut")
     input:
         region_path = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
         stats_time_nc_hist = (clim_project_dir + "/historical_stats_time_{model}.nc"), #make sure starts with previous job
@@ -129,6 +132,7 @@ rule monthly_stats_fut:
 
 # 2.04  monthly_change — change factors per {model}_{scenario}_{horizon}
 rule monthly_change:
+    message: rule_banner("2.04", "monthly_change")
     input:
         stats_time_nc_hist = ancient(clim_project_dir + "/historical_stats_time_{model}.nc"),
         stats_time_nc = ancient(clim_project_dir + "/stats_time-{model}_{scenario}.nc"),
@@ -153,6 +157,7 @@ rule monthly_change:
 
 # 2.05  monthly_change_scalar_merge — merge all change factors into one summary
 rule monthly_change_scalar_merge:
+    message: rule_banner("2.05", "monthly_change_scalar_merge")
     input:
         stats_nc_change = ancient(expand((clim_project_dir + "/annual_change_scalar_stats-{model}_{scenario}_{horizon}.nc"), model = models, scenario = scenarios, horizon = future_horizons)),
     output:
@@ -171,6 +176,7 @@ rule monthly_change_scalar_merge:
 
 # 2.06  plot_climate_proj_timeseries — plot projected anomaly time series
 rule plot_climate_proj_timeseries:
+    message: rule_banner("2.06", "plot_climate_proj_timeseries")
     input:
         stats_change_summary = (clim_project_dir + "/annual_change_scalar_stats_summary.nc"),
         stats_time_nc_hist =[(clim_project_dir + f"/historical_stats_time_{mod}.nc") for mod in models],
@@ -200,6 +206,7 @@ rule plot_climate_proj_timeseries:
 
 # gather 2.02 per-model logs -> 2.02_monthly_stats_hist.log
 rule gather_stats_hist_logs:
+    message: rule_banner("2.07", "gather_stats_hist_logs")
     input:
         expand(clim_project_dir + "/historical_stats_time_{model}.nc", model=models),
     output:
@@ -213,6 +220,7 @@ rule gather_stats_hist_logs:
 
 # gather 2.03 per-model logs -> 2.03_monthly_stats_fut.log
 rule gather_stats_fut_logs:
+    message: rule_banner("2.08", "gather_stats_fut_logs")
     input:
         expand(
             clim_project_dir + "/stats_time-{model}_{scenario}.nc",
@@ -229,6 +237,7 @@ rule gather_stats_fut_logs:
 
 # gather 2.04 per-model logs -> 2.04_monthly_change.log
 rule gather_change_logs:
+    message: rule_banner("2.09", "gather_change_logs")
     input:
         expand(
             clim_project_dir + "/annual_change_scalar_stats-{model}_{scenario}_{horizon}.nc",
@@ -248,6 +257,7 @@ rule gather_change_logs:
 # benchmarks/wf2_benchmarks.tsv (rule column + TOTAL row) once the summary +
 # plots are built (all WF2 rules ran).
 rule gather_benchmarks:
+    message: rule_banner("2.10", "gather_benchmarks")
     input:
         (clim_project_dir + "/annual_change_scalar_stats_summary.nc"),
         (clim_project_dir + "/plots/projected_climate_statistics.png"),

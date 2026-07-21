@@ -32,7 +32,7 @@ model_region = get_config(shared_cfg["basin"], "region", optional=False)
 model_resolution = get_config(shared_cfg["basin"], "resolution", 0.00833333)
 
 # Workflow-owned
-wflow_outvars = get_config(my_cfg, "wflow_outvars", ['river discharge'])
+wflow_outvars = get_config(my_cfg, "wflow_outvars", ['river discharge', 'actual evapotranspiration'])
 model_build_config = get_config(my_cfg, "model_build_config", f"{static_dir}/wflow_build_model.yml")
 waterbodies_config = get_config(my_cfg, "waterbodies_config", f"{static_dir}/wflow_update_waterbodies.yml")
 output_locations = get_config(my_cfg, "output_locations", None)

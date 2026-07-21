@@ -9,7 +9,7 @@
 # config/snake_config.template.yml.
 
 project:
-  project_dir: examples/test_local
+  project_dir: C:/TESTS/CST/examples/gabon
   static_dir: config
   data_sources: config/deltares_data.yml
   data_sources_climate: config/cmip6_data.yml
@@ -28,11 +28,7 @@ workflows:
     enabled: true
     model_build_config: config/wflow_build_model.yml
     waterbodies_config: config/wflow_update_waterbodies.yml
-    # Kept discharge-only on purpose: this is the baseline-recording seed, and
-    # extra outputs would only churn the copied-config fingerprint without adding
-    # any fingerprinted target. The shipped default (template / Snakefile) does
-    # include 'actual evapotranspiration'.
-    wflow_outvars: ['river discharge']
+    wflow_outvars: ['river discharge', 'actual evapotranspiration']
     output_locations: None
     observations_timeseries: None
 

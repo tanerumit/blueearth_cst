@@ -41,8 +41,11 @@ workflows:
     model_build_config: config/wflow_build_model.yml
     # Hydromt update config for waterbodies (optional; defaults below)
     waterbodies_config: config/wflow_update_waterbodies.yml
-    # Wflow output variables to save (read only by model_creation)
-    wflow_outvars: ['river discharge']
+    # Wflow output variables to save (read only by model_creation). Extras beyond
+    # 'river discharge' are written as basin-average <var>_basavg columns and
+    # plotted by plot_results (valid: overland flow, actual evapotranspiration,
+    # groundwater recharge, snow).
+    wflow_outvars: ['river discharge', 'actual evapotranspiration']
     # Optional: csv with three cols (station_ID, x, y); None defaults to wflow outlets
     output_locations: None
     # Optional: csv with observed discharge timeseries per station

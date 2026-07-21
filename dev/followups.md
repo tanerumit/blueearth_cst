@@ -390,3 +390,32 @@ for the full M2b record.
   in `src/get_stats_climate_proj.py`. The followup line item was based on
   the slow path and no longer applies. (No file currently lists it
   separately — leaving this here as a reminder if it resurfaces.)
+
+## R6 — Functional modularization (capability boundaries)
+
+- **Climate analysis/visualization as a model-independent subworkflow.**
+  *Direction raised by Ümit 2026-07-21 (test/pre06, Observation 4 follow-up).*
+  We should be able to analyze and visualize climate data — gridded meteo
+  diagnostics, forcing climatology, projection change factors — **without**
+  building a hydrology model. Today the WF1 climate QA plots
+  (`src/plot_results.py` §4) are coupled to the built wflow model
+  (`mod.forcing.data`, `staticmaps["subcatchment"]`), and the forcing itself
+  (`inmaps_historical.nc`) is a *product* of the model build. Yet the natural
+  minimal dependency for climate analysis is a region/AOI geometry + data
+  catalog — which WF3's `extract_climate_grid` (rule 3.02: `region.geojson` +
+  clim source → `extract_historical.nc`) and WF2's `monthly_stats_*` already
+  demonstrate (both depend only on `region.geojson`, not the full model).
+  Direction: factor a shared **climate-analysis subworkflow/component** whose
+  inputs are (region/AOI, gridded climate dataset) and whose outputs are
+  climate diagnostics/plots, consumed by WF1 QA, WF2, and WF3 alike; degrade
+  gracefully (region-only → basin-level; + subcatchment map → per-subcatchment).
+  This is *functional* decomposition (capability boundaries), a **new axis**
+  beyond the R6 roadmap's current layout/`enabled:` pain points (roadmap §R6) —
+  add it to the R6 lock list when R6 scoping begins.
+  **Tension to resolve:** ADR 0002
+  (`dev/decisions/0002-revive-subcatchment-climate-plots.md`) currently sources
+  the climate plots from `mod.forcing.data` (re-couples to the build); a modular
+  design would source raw gridded climate (catalog + region) instead. Keep this
+  in mind when ADR 0002 is implemented — it may argue for sourcing from
+  `extract_climate_grid`-style extraction rather than the model forcing. To be
+  discussed at R6 scoping; not to be designed or implemented yet.

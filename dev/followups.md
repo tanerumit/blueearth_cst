@@ -363,13 +363,18 @@ for the full M2b record.
   `hydromt_wflow.version_upgrade`. Concrete 8-mapping remap in
   `dev/phase-1/m02b/handoff.md` decision #3.
 
-- **CMIP6 `precip` / `temp` `.attrs` lost on `monthly_change_scalar_merge`.**
-  Pre-M2b, `annual_change_scalar_stats_summary.nc` carried `cell_measures`,
-  `cell_methods`, `comment`, `long_name`, `original_name`, `standard_name`,
-  `units` on each data variable; under hydromt 1.3, those are now `{}` on
-  the merged output. Documented in `dev/phase-1/m02b/baseline_diffs.md`.
-  *Investigation:* identify whether `get_change_climate_proj.py` or hydromt
-  drops the attrs during the merge; restore them.
+- **[RESOLVED 2026-07-21, t260720e — does-not-reproduce, no fix.] CMIP6 `precip` /
+  `temp` `.attrs` lost on `monthly_change_scalar_merge`.** Under the current pinned
+  env (hydromt 1.3.1) the merged `annual_change_scalar_stats_summary.nc` carries the
+  **full CF set** (`cell_measures`, `cell_methods`, `comment`, `long_name`,
+  `original_name`, `standard_name`, `units`) on both `precip` and `temp` — verified
+  on the real-CMIP6-read output in `examples/test_local` AND in the recorded manifest
+  fingerprint (`check --workflow climate_projections` passes on the `.nc`). R4's
+  `probe_attrs_chain.py` proved no wf2 code drops attrs, and the values are
+  CMIP6-native, so the hydromt read preserves them. The M2b `{}` diagnosis no longer
+  reproduces; original root cause not re-litigated (moot). Absorbed the old t260716c
+  "CMIP6 attr loss on merge" item. Full disposition: `dev/r04/chain-audit.md`
+  § D-ATTRS.
 
 - **Outlet station naming convention decision.** hydromt_wflow 1.x's
   `setup_outlets` uses subcatchment IDs (e.g. `130000086`, `1`, `2`, …) for

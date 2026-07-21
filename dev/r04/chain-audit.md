@@ -80,12 +80,19 @@ moves the R4 baseline.
   Norm: fail-loud `ValueError`. *Activation:* remove the row-P strict-xfail when
   fail-loud lands. *Owner:* task **t260720d** (paired with D-VAR — same
   fail-loud hardening surface).
-- **D-ATTRS — M2b CF-metadata loss.** `annual_change_scalar_stats_summary.nc`
-  carries `{}` attrs where pre-M2b it carried full CF metadata; localized to the
-  hydromt catalog read (above), not workflow-2 code. *Activation:* a real
-  CMIP6-read reproducer confirms the source; fix is either upstream hydromt or a
-  workflow-2 attrs re-attach, moving the summary `.nc` fingerprint (a
-  `baseline_diffs.md` entry). *Owner:* task **t260720e**.
+- **D-ATTRS — M2b CF-metadata loss. [RESOLVED 2026-07-21, t260720e — confirmed
+  does-not-reproduce, no fix.]** The current-pins `annual_change_scalar_stats_
+  summary.nc` (product of the real CMIP6 reads in the 2026-07-18 R01 rebuild and
+  the 2026-07-20 R4 re-run) carries the **full 7-attr CF set** (`cell_measures`,
+  `cell_methods`, `comment`, `long_name`, `original_name`, `standard_name`,
+  `units`) on both `precip` and `temp`, and the recorded manifest fingerprint
+  carries the same 7 (so `check --workflow climate_projections` passes on the
+  `.nc`). With R4's probe having proved no wf2 code drops attrs, and the values
+  being CMIP6-native (`original_name: 'pr'`, `standard_name: 'precipitation_flux'`),
+  the hydromt read under the current pins (hydromt 1.3.1 / hydromt_wflow 1.0.2)
+  demonstrably preserves them. The M2b `{}` diagnosis does **not** reproduce; its
+  original root cause is not re-litigated (moot — no fix ships and the baseline
+  already records attrs-present, so no re-record). *Owner (closed):* **t260720e**.
 
 ## Notes
 

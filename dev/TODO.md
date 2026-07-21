@@ -14,11 +14,10 @@ periodic project-health review.
 
 **Active campaign:** pre-R6 followups (`fix/pre-r6-followups`), tracker at
 [`working/2026-07-21_pre-r6-followups.md`](working/2026-07-21_pre-r6-followups.md).
-Wave A (no-run tripwire fixes) done 2026-07-21.
+**All waves DONE 2026-07-21 — campaign complete; R6 (structural refactor) is next.**
 
-| ID | Task | Status | Area | Updated | Working note |
-|---|---|---|---|---|---|
-| t260720e | **D-ATTRS** — M2b CF-metadata loss on `annual_change_scalar_stats_summary.nc` (`{}` attrs). R4 probe localized it to the hydromt catalog read (`get_rasterdataset`), a dependency op. Needs a real CMIP6 read to confirm, then a wf2 attrs re-attach (or upstream hydromt); moves the summary `.nc` fingerprint. Absorbs the old t260716c "CMIP6 attr loss" item. | backlog | pre-R6 / R4-audit | 2026-07-21 | [`chain-audit.md`](r04/chain-audit.md) |
+_No open backlog items._ (See the done list below; R6 has no task ID yet — it is
+the next milestone, tracked in `dev/roadmap.md` § R6.)
 
 **Done this campaign (2026-07-21, `fix/pre-r6-followups`):** t260720a
 (`variance.max` endpoint, `d2de843`), t260720c (D-CAL cftime, `c57eda0`),
@@ -28,7 +27,9 @@ constant-params restoration via [ADR 0001](decisions/0001-restore-wflow-constant
 gate all-13-PASS, discharge IMMATERIAL, wf1 baseline re-recorded; evidence
 `dev/working/const-pars/baseline_diffs.md`), **t260716a′** (M1 warnings
 re-triage — bucket 2/3 empty of defects; `extract_climate_grid` config-staleness
-resolved by R5 params-wiring + verified; docs-only).
+resolved by R5 params-wiring + verified; docs-only), **t260720e** (D-ATTRS —
+confirmed does-not-reproduce under current pins: summary `.nc` + recorded manifest
+both carry full CF attrs; no fix, no re-record; docs-only).
 
 **Closed as already-done (verified 2026-07-21):** t260716a `test_cli` xfails
 (R3+R5), t260716b `historical:` wiring (R5), t260716c outlet naming (R3).

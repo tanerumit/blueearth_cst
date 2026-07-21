@@ -27,13 +27,19 @@ Suite before: 119 passed / 3 skipped / 7 xfailed. After: **123 / 3 / 1**
 | t260720d | D-VAR/D-MEM: fail loud (ValueError) on asymmetric hist/clim vars & members; corrected stale split-IDs in tests | `735cc20` |
 | t260716a (part) | `extract_climate_grid` truncation warning in `prep_historical_climate` | `ce56bc3` |
 
-## Wave B — run + re-record (PENDING)
+## Wave B — run + re-record (DONE 2026-07-21)
 
-- **t260720e (D-ATTRS)** — CF-metadata loss on `annual_change_scalar_stats_summary.nc`.
-  Localized (R4 probe) to the hydromt catalog read, a dependency op. Needs a real
-  CMIP6 catalog read to confirm the source, then a workflow-2 attrs re-attach (or
-  upstream hydromt). Moves the summary `.nc` fingerprint → a `baseline_diffs.md`
-  entry + re-record of the wf2 slice.
+- **t260720e (D-ATTRS) — RESOLVED 2026-07-21: does-not-reproduce, no fix, no
+  re-record.** The current-pins summary `.nc` (product of the real CMIP6 reads in
+  the R01 rebuild + R4 re-run) carries the full 7-attr CF set on `precip`/`temp`,
+  and the recorded manifest fingerprint carries the same 7 — `check --workflow
+  climate_projections` passes on the `.nc`. With R4's probe having shown no wf2 code
+  drops attrs and the values being CMIP6-native, hydromt 1.3.1's read preserves them;
+  the M2b `{}` diagnosis no longer reproduces (root cause moot). No baseline move.
+  Disposition in `dev/r04/chain-audit.md` § D-ATTRS + `dev/followups.md` § M2b.
+  (Aside: the same check flags the 2 wf2 summary **CSVs** as byte-diffs — the
+  **pre-existing R4 serialization non-determinism**, `dev/r04/baseline_diffs.md`,
+  not D-ATTRS and not a regression.)
 
 ## Wave C — decision-gated code / sweeps
 

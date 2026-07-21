@@ -131,6 +131,10 @@ context so future-you can confirm the issue still applies before fixing.
   Update `dev/phase-1/m01/warnings.md` (or supersede it with an `m03_*` doc).
 
 - **`extract_climate_grid` silently truncates the historical range.**
+  *[Truncation WARNING resolved 2026-07-21, commit `ce56bc3` (t260716a,
+  `fix/pre-r6-followups`): `prep_historical_climate` now emits an advisory
+  warning when the extracted span falls short of the requested window. The
+  config-staleness half below remains OPEN.]*
   When the snake config's `historical:` window asks for years that the
   staged source doesn't cover, the rule produces a shorter `extract_historical.nc`
   without any warning. Downstream rules then fail in cryptic ways far from

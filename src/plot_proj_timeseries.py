@@ -16,6 +16,8 @@ import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
 import numpy as np
 
+from src.snake_utils import log_row
+
 
 
 def todatetimeindex_dropvars(ds):
@@ -48,7 +50,7 @@ if __name__ == "__main__":
 
 
             # %% Historical
-            print("Opening historical gcm timeseries")
+            log_row("Opening historical gcm timeseries", module="plot")
 
 
             # open historical datasets
@@ -60,7 +62,7 @@ if __name__ == "__main__":
             ds_hist = xr.open_mfdataset(fns_hist, preprocess=todatetimeindex_dropvars)
 
             # convert to df and compute anomalies
-            print("Computing historical gcm timeseries anomalies")
+            log_row("Computing historical gcm timeseries anomalies", module="plot")
             # precip
             gcm_pr = ds_hist["precip"].squeeze(drop=True).transpose().to_pandas()
             # check if gcm_pr_anom is pd.Series or pd.DataFrame
@@ -141,7 +143,7 @@ if __name__ == "__main__":
                 qtas_fut_abs.append([])
             # read files
             for i in range(len(rcps)):
-                print(f"Opening future gcm timeseries for rcp {rcps[i]}")
+                log_row(f"Opening future gcm timeseries for rcp {rcps[i]}", module="plot")
                 fns_rcp = [fn for fn in fns_future if rcps[i] in fn]
                 ds_rcp = xr.open_mfdataset(fns_rcp, preprocess=todatetimeindex_dropvars)
                 ds_fut.append(ds_rcp)
@@ -174,7 +176,7 @@ if __name__ == "__main__":
                 tas_fut[i] = tasfi
 
             # compute anomalies
-            print("Computing future gcm timeseries anomalies")
+            log_row("Computing future gcm timeseries anomalies", module="plot")
             fut_pr_ref = gcm_pr_annmn.mean()
             fut_tas_ref = gcm_tas_annmn.mean()
 
@@ -446,7 +448,7 @@ if __name__ == "__main__":
                 # Loop over rcp and horizon
                 for rcp in rcps:
                     for hz in horizons:
-                        print(f"Preparing change map plots for {rcp} and horizon {hz}")
+                        log_row(f"Preparing change map plots for {rcp} and horizon {hz}", module="plot")
                         fns_rcp_hz = [fn for fn in fns_grids if rcp in fn and hz in fn]
                         ds_rcp_hz = []
                         for fn in fns_rcp_hz:

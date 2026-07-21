@@ -93,13 +93,14 @@ def write_weagen_config(yml_dict, weagen_config_path):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from src.snake_utils import log_row, tee_to_log
 
         with tee_to_log(sm.log[0]):
             cftype = sm.params.cftype
             weagen_config = sm.output.weagen_config
-            print(
-                f"Preparing and writing the weather generator config file {weagen_config}"
+            log_row(
+                f"Preparing and writing the weather generator config file {weagen_config}",
+                module="weagen",
             )
             if cftype == "generate":
                 yml_dict = build_weagen_config(

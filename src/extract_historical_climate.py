@@ -13,6 +13,8 @@ from typing import Union
 from dask.diagnostics import ProgressBar
 from hydromt.model.processes.meteo import temp
 
+from src.snake_utils import log_row
+
 
 def _warn_if_window_truncated(ds, starttime, endtime, clim_source):
     """Warn when the extracted data covers a shorter span than requested.
@@ -79,10 +81,11 @@ def prep_historical_climate(
     data_catalog = hydromt.DataCatalog(data_libs=data_libs)
 
     # Extract climate data
-    print("Extracting historical climate grid")
+    log_row("Extracting historical climate grid", module="extract")
     if clim_source == "chirps" or clim_source == "chirps_global":  # precip only
-        print(
-            f"{clim_source} only contains precipitation data. Combining with climate data from era5"
+        log_row(
+            f"{clim_source} only contains precipitation data. Combining with climate data from era5",
+            module="extract",
         )
         # Get precip first
         ds = data_catalog.get_rasterdataset(
@@ -102,8 +105,9 @@ def prep_historical_climate(
         )
         # Prepare orography data corresponding to chirps from merit hydro DEM
         # (needed for downscaling of climate variables)
-        print(
-            f"Preparing orography data for {clim_source} to downscale climate variables."
+        log_row(
+            f"Preparing orography data for {clim_source} to downscale climate variables.",
+            module="extract",
         )
         dem = data_catalog.get_rasterdataset(
             "merit_hydro",
@@ -114,7 +118,7 @@ def prep_historical_climate(
         )
         dem = dem.raster.reproject_like(ds, method="average")
         # Resample other variables and add to ds_precip
-        print(f"Downscaling era5 variables to the resolution of {clim_source}")
+        log_row(f"Downscaling era5 variables to the resolution of {clim_source}", module="extract")
         for var in ["press_msl", "kin", "kout"]:
             ds[var] = ds_clim[var].raster.reproject_like(ds, method="nearest_index")
 
@@ -173,7 +177,7 @@ def prep_historical_climate(
     dvars = ds.raster.vars
     encoding = {k: {"zlib": True} for k in dvars}
 
-    print("Saving to netcdf")
+    log_row("Saving to netcdf", module="extract")
     delayed_obj = ds.to_netcdf(fn_out, encoding=encoding, mode="w", compute=False)
     with ProgressBar():
         delayed_obj.compute()

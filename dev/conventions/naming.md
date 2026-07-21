@@ -173,7 +173,44 @@ unify them.
 
 Don't rename existing `dev/` docs.
 
-## 9. Examples
+## 9. Rule numbering (`W.NN` reference scheme)
+
+Each rule in the three `Snakefile_*` entry points carries a `W.NN`
+reference number — `W` = workflow (`1` model_creation, `2`
+climate_projections, `3` climate_experiment), `NN` = zero-padded step in
+**definition order** within that Snakefile. It exists in exactly two
+places, both cheap:
+
+- **A comment header above each rule** —
+  `# 1.03  create_model — build the Wflow-SBM model (hydromt build wflow_sbm)`.
+- **The `log:` / `benchmark:` filename prefix** —
+  `logs/1.03_create_model.log`, `benchmarks/1.03_create_model.tsv`; for
+  wildcard rules the prefix goes on the subdirectory
+  (`logs/3.10_run_wflow/rlz_{rlz_num}_cst_{st_num}.log`). All three
+  workflows share `project_dir/logs`, so the `W` digit keeps their logs
+  disambiguated and a single `ls logs/` sorts globally by workflow then
+  step.
+
+Rules:
+
+- **Rule *identifiers* are NOT numbered** (MUST). Snakemake rule names are
+  Python identifiers (no leading digit, no dot) and are the CLI target
+  surface (`snakemake create_model -s …`) referenced across docs — a
+  `W.NN` identifier would be both illegal-as-typed and a §7 contract
+  rename. The number lives only in the comment and the log/benchmark path.
+- The number is a **reference and reading aid, not execution order**
+  (MUST keep this framing). Snakemake executes from the DAG; e.g.
+  WF1 `1.10`–`1.12` are parallel plot leaves and WF3 fans out over
+  `rlz_num × st_num`. Each Snakefile states this in a header comment.
+- **Reference in prose/commits as "Rule 1.3"** (drop the pad); the padded
+  `1.03` form is for the sortable filenames.
+- **Inserting a rule** renumbers the contiguous comments and log/benchmark
+  prefixes below it — a mechanical sweep. Log/benchmark paths are ephemeral
+  and untracked (not a §7 migration-note contract), so renumbering them is
+  safe. Use contiguous numbers, not gaps; "Rule 1.5" decimals are review
+  shorthand for *talking about* an insert, never a permanent identifier.
+
+## 10. Examples
 
 > **Illustrative future targets only.** This is not a rename list —
 > existing identifiers are grandfathered until their owning milestone

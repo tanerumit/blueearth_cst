@@ -104,10 +104,12 @@ manifest targets):
 - `extract_historical.nc` (line 73) — NOT `temp`, but consumed as `ancient(...)`
   (line 117), so grandfathered-stale.
 
-**Side-effect artifacts:** `{project_dir}/logs/{rule}.log`,
-`{project_dir}/benchmarks/{rule}.tsv` — ephemeral once the R3 log/benchmark
-convention reaches this workflow (R5 code commits); gitignored, never
-fingerprinted or committed.
+**Side-effect artifacts:** `{project_dir}/logs/3.NN_{rule}[/…].log`,
+`{project_dir}/benchmarks/3.NN_{rule}[/…].tsv` — ephemeral once the R3
+log/benchmark convention reaches this workflow (R5 code commits); gitignored,
+never fingerprinted or committed. The `3.NN_` prefix is the `W.NN`
+rule-numbering scheme (naming.md §9); wildcard rules keep their
+`rlz_{rlz_num}_cst_{st_num}` name under the numbered subdirectory.
 
 ## Gate-coverage honesty
 

@@ -80,11 +80,15 @@ manifest targets — Snakefile lines 74, 93, 111):
   under the output label `timeseries_csv` (Snakefile line 154). The
   label/extension mismatch (`_csv` name, `.nc` file) is **known state**,
   documented here, not fixed in R4 unless the chain audit charters it.
-- `{project_dir}/logs/2.NN_{rule}[/…].log`, `{project_dir}/benchmarks/2.NN_{rule}[/…].tsv`
+- `{project_dir}/logs/2.NN_{rule}.log`, `{project_dir}/benchmarks/2.NN_{rule}[/…].tsv`
   — ephemeral run artifacts once the R3 log/benchmark convention reaches this
   workflow (R4 code commits); gitignored, never fingerprinted or committed. The
-  `2.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9); wildcard
-  rules keep their `{model}…` subdirectory under the numbered folder.
+  `2.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9). The fan-out
+  rules (2.02/2.03/2.04) run one job per `{model}[…]` and write a **parallel-safe
+  per-model part log** under `logs/_parts/2.NN_{rule}/{model}…​.log`; a per-stage
+  **gather rule** (`gather_*_logs`, `src/merge_logs.py`) then concatenates those
+  parts into a single `logs/2.NN_{rule}.log`, regenerated fresh each run. (Only
+  logs are merged; benchmarks stay per-`{model}` under the numbered folder.)
 
 ## Required variable naming + unit split
 

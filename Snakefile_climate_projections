@@ -54,6 +54,10 @@ rule all:
         precip_plt = (clim_project_dir + "/plots/precipitation_anomaly_projections_abs.png"),
         temp_plt = (clim_project_dir + "/plots/temperature_anomaly_projections_abs.png"),
         snake_config = f"{project_dir}/config/snake_config_climate_projections.yml",
+        # one merged log per fan-out rule (gathered from the per-model _parts logs)
+        stats_hist_log = f"{project_dir}/logs/2.02_monthly_stats_hist.log",
+        stats_fut_log = f"{project_dir}/logs/2.03_monthly_stats_fut.log",
+        change_log = f"{project_dir}/logs/2.04_monthly_change.log",
 
 # Retained as stale insurance pending removal task; dry-run on the current pinned
 # Snakemake shows this directive constrains nothing on the tests fixture and a
@@ -91,7 +95,7 @@ rule monthly_stats_hist:
         variables = variables,
         save_grids = save_grids,
     log:
-        project_dir + "/logs/2.02_monthly_stats_hist/{model}.log",
+        project_dir + "/logs/_parts/2.02_monthly_stats_hist/{model}.log",
     benchmark:
         project_dir + "/benchmarks/2.02_monthly_stats_hist/{model}.tsv",
     script: "src/get_stats_climate_proj.py"
@@ -114,7 +118,7 @@ rule monthly_stats_fut:
         variables = variables,
         save_grids = save_grids,
     log:
-        project_dir + "/logs/2.03_monthly_stats_fut/{model}_{scenario}.log",
+        project_dir + "/logs/_parts/2.03_monthly_stats_fut/{model}_{scenario}.log",
     benchmark:
         project_dir + "/benchmarks/2.03_monthly_stats_fut/{model}_{scenario}.tsv",
     script: "src/get_stats_climate_proj.py"
@@ -138,7 +142,7 @@ rule monthly_change:
         stats_path_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
         stats_path = (clim_project_dir + "/stats-{model}_{scenario}.nc"),
     log:
-        project_dir + "/logs/2.04_monthly_change/{model}_{scenario}_{horizon}.log",
+        project_dir + "/logs/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.log",
     benchmark:
         project_dir + "/benchmarks/2.04_monthly_change/{model}_{scenario}_{horizon}.tsv",
     script: "src/get_change_climate_proj.py"
@@ -182,3 +186,55 @@ rule plot_climate_proj_timeseries:
     benchmark:
         f"{project_dir}/benchmarks/2.06_plot_climate_proj_timeseries.tsv",
     script: "src/plot_proj_timeseries.py"
+
+# --- log gather ---------------------------------------------------------------
+# 2.02/2.03/2.04 run one job per model (parallel-safe per-model logs under
+# logs/_parts/). These gather steps run once per stage, after all that stage's
+# jobs, concatenating the per-model parts into a single logs/<rule>.log,
+# regenerated fresh each run. Inputs are the stage's .nc outputs (all model jobs
+# done); the exact part paths are passed via params so stale parts are excluded.
+
+# gather 2.02 per-model logs -> 2.02_monthly_stats_hist.log
+rule gather_stats_hist_logs:
+    input:
+        expand(clim_project_dir + "/historical_stats_time_{model}.nc", model=models),
+    output:
+        f"{project_dir}/logs/2.02_monthly_stats_hist.log",
+    params:
+        parts = expand(
+            project_dir + "/logs/_parts/2.02_monthly_stats_hist/{model}.log",
+            model=models,
+        ),
+    script: "src/merge_logs.py"
+
+# gather 2.03 per-model logs -> 2.03_monthly_stats_fut.log
+rule gather_stats_fut_logs:
+    input:
+        expand(
+            clim_project_dir + "/stats_time-{model}_{scenario}.nc",
+            model=models, scenario=scenarios,
+        ),
+    output:
+        f"{project_dir}/logs/2.03_monthly_stats_fut.log",
+    params:
+        parts = expand(
+            project_dir + "/logs/_parts/2.03_monthly_stats_fut/{model}_{scenario}.log",
+            model=models, scenario=scenarios,
+        ),
+    script: "src/merge_logs.py"
+
+# gather 2.04 per-model logs -> 2.04_monthly_change.log
+rule gather_change_logs:
+    input:
+        expand(
+            clim_project_dir + "/annual_change_scalar_stats-{model}_{scenario}_{horizon}.nc",
+            model=models, scenario=scenarios, horizon=future_horizons,
+        ),
+    output:
+        f"{project_dir}/logs/2.04_monthly_change.log",
+    params:
+        parts = expand(
+            project_dir + "/logs/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.log",
+            model=models, scenario=scenarios, horizon=future_horizons,
+        ),
+    script: "src/merge_logs.py"

@@ -81,19 +81,12 @@ def _precip_variance_grid_max(tmp_path):
     return max(df["precip_variance"].max() for df in dfs)
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="precip_variance max-reads-min bug (prepare_cst_parameters.py line 42); "
-    "fixed by t260720a",
-)
 def test_precip_variance_grid_uses_max_endpoint(tmp_path):
-    """The precip_variance grid should span up to variance.max (INTENDED behavior).
+    """The precip_variance grid spans up to variance.max (t260720a, fixed).
 
-    Today prepare_cst_parameters reads variance['min'] into the max endpoint, so
-    a non-degenerate range (min=1.0, max=1.5) collapses to [1.0, 1.0] and the
-    grid max is 1.0, not 1.5 -> this xfails. When t260720a flips ['min']->['max']
-    it xpasses (tripping strict-xfail), forcing this marker's removal. The suite
-    thus FLAGS the defect rather than pinning the buggy value as correct.
+    Regression guard for the max-reads-min bug: prepare_cst_parameters once read
+    variance['min'] into the max endpoint, collapsing a non-degenerate range
+    (min=1.0, max=1.5) to [1.0, 1.0]. With the fix the grid max is variance.max.
     """
     cfg_path = _write_cfg(tmp_path, temp_step=1, precip_step=1, var_min=1.0, var_max=1.5)
     prep_cst_parameters(cfg_path, csv_fns=None)

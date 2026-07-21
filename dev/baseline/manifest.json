@@ -200,21 +200,28 @@
       "sha256": "b41ca4445227e0456c9fed1b3f1803fe2b4f78b573015b6f65fdd62d41a2b775",
       "type": "yaml"
     },
+    "examples/test_local/hydrology_model/run_default/output.csv": {
+      "column": "Q_130000086",
+      "mean_ref": 10.94602352,
+      "n_rows": 7670,
+      "ref_series": "discharge_ref/1f9f30a367de162f.csv",
+      "type": "discharge"
+    },
     "examples/test_local/plots/wflow_model_performance/basin_area.png": {
       "exists": true,
-      "size_bytes": 286188,
+      "size_bytes": 286166,
       "type": "png"
     },
     "examples/test_local/plots/wflow_model_performance/hydro_wflow_1.png": {
       "exists": true,
-      "size_bytes": 300043,
+      "size_bytes": 299993,
       "type": "png"
     },
     "examples/test_local/plots/wflow_model_performance/precip.png": {
       "exists": true,
-      "size_bytes": 302701,
+      "size_bytes": 302787,
       "type": "png"
     }
   },
-  "version": 1
+  "version": 2
 }

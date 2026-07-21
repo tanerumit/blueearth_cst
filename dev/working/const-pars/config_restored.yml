@@ -1,3 +1,15 @@
+# config_restored.yml — ADR 0001 step 2 restored-candidate build config (t260719a)
+#
+# Derived from config_baseline.yml (pinned git 48bc1d3). Differs from the baseline
+# ONLY in the setup_constant_pars block: it restores the 13 gate-passing constants
+# under their Wflow.jl 1.x CSDMS Standard Names, alongside the retained KsatHorFrac.
+# All 13 passed the fail-closed two-sided equivalence gate
+# (dev/working/const-pars/equivalence-gate-log.md); none held out. The deprecated
+# InfiltCapSoil (wflow_v1: None) stays dropped.
+#
+# Build with: model_build_config: dev/working/const-pars/config_restored.yml
+# This candidate is promoted to config/wflow_build_model.yml only after the ADR 0001
+# validation protocol blesses the discharge move (steps 4b/5/7).
 modeltype: wflow_sbm
 
 steps:

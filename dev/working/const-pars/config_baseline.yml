@@ -1,0 +1,44 @@
+# config_baseline.yml — ADR 0001 step 2/4 baseline snapshot (t260719a)
+#
+# UNCHANGED pre-restoration snapshot of config/wflow_build_model.yml, pinned to
+# git rev 48bc1d379de2a66277eedbae502c3c19c0d6c2c1 (branch fix/pre-r6-followups).
+# This is the actual M2b baseline (only KsatHorFrac retained). It is NOT edited by
+# this task; it exists so the restored-vs-reference discharge comparison is never
+# an edited file against itself. Body below is byte-identical to the pinned source.
+#
+# Build with: model_build_config: dev/working/const-pars/config_baseline.yml
+modeltype: wflow_sbm
+
+steps:
+  - setup_basemaps:
+      hydrography_fn: merit_hydro_ihu   # source hydrography data {merit_hydro, merit_hydro_1k}
+      basin_index_fn: merit_hydro_index # source of basin index corresponding to hydrography_fn
+      upscale_method: ihu               # upscaling method for flow direction data, by default 'ihu'
+
+  - setup_rivers:
+      hydrography_fn: merit_hydro_ihu   # source hydrography data, should match basemaps source
+      river_geom_fn: rivers_lin2019_v1  # river source data with river width and bankfull discharge
+      river_upa: 32                     # minimum upstream area threshold for the river map [km2]
+      slope_len: 2000                   # length over which to calculate river slope [m]
+      rivdph_method: powlaw             # method to estimate depth {'powlaw', 'manning', 'gvf'}
+      min_rivdph: 0.5                   # minimum river depth [m]
+      min_rivwth: 30                    # minimum river width [m]
+      smooth_len: 5000                  # length over which to smooth river depth and river width [m]
+
+  - setup_lulcmaps:
+      lulc_fn: vito                     # source for lulc maps: {globcover, vito, corine}
+
+  - setup_laimaps:
+      lai_fn: modis_lai                 # source for LAI: {modis_lai}
+
+  - setup_soilmaps:
+      soil_fn: soilgrids                # source for soilmaps: {soilgrids}
+      ptf_ksatver: brakensiek           # pedotransfer function to calculate hydraulic conductivity: {brakensiek, cosby}
+
+  # Wflow.jl 1.x requires KsatHorFrac (now subsurface_water__horizontal_to_
+  # vertical_saturated_hydraulic_conductivity_ratio) explicitly. Other old
+  # constant_pars (Cfmax, TT, TTI, WHC, etc.) fall back to Wflow.jl 1.x
+  # defaults — close enough for M2b's intentional re-baseline. Re-add if a
+  # specific run errors on a missing CSDMS-renamed parameter.
+  - setup_constant_pars:
+      subsurface_water__horizontal_to_vertical_saturated_hydraulic_conductivity_ratio: 100

@@ -1,15 +1,46 @@
 """Extract historical climate data for a given region and time period."""
 
 import os
+import warnings
 from os.path import join
 from pathlib import Path
 import geopandas as gpd
 import hydromt
+import pandas as pd
 
 from typing import Union
 
 from dask.diagnostics import ProgressBar
 from hydromt.model.processes.meteo import temp
+
+
+def _warn_if_window_truncated(ds, starttime, endtime, clim_source):
+    """Warn when the extracted data covers a shorter span than requested.
+
+    A silently-truncated window -- the staged source lacks the full requested
+    range -- otherwise surfaces far downstream as a cryptic failure, e.g.
+    weathergenr's 16-year wavelet minimum ('series' must have at least 16
+    observations). Advisory only; never blocks extraction. (t260716a,
+    dev/followups.md R3)
+    """
+    try:
+        time_vals = ds.time.values
+        actual_start = pd.Timestamp(pd.to_datetime(time_vals.min()))
+        actual_end = pd.Timestamp(pd.to_datetime(time_vals.max()))
+        req_start = pd.Timestamp(pd.to_datetime(starttime))
+        req_end = pd.Timestamp(pd.to_datetime(endtime))
+    except (AttributeError, ValueError, TypeError):
+        return  # cannot introspect the time axis -> skip the advisory check
+    tol = pd.Timedelta(days=31)
+    if actual_start > req_start + tol or actual_end < req_end - tol:
+        warnings.warn(
+            f"Extracted {clim_source} window "
+            f"{actual_start.date()}..{actual_end.date()} is shorter than the "
+            f"requested {req_start.date()}..{req_end.date()}; the staged source "
+            f"may not cover the full period. Downstream steps (e.g. weathergenr's "
+            f"16-year minimum) can fail on a truncated record.",
+            stacklevel=2,
+        )
 
 
 def prep_historical_climate(
@@ -136,6 +167,8 @@ def prep_historical_climate(
                 "press_msl",
             ],
         )
+
+    _warn_if_window_truncated(ds, starttime, endtime, clim_source)
 
     dvars = ds.raster.vars
     encoding = {k: {"zlib": True} for k in dvars}

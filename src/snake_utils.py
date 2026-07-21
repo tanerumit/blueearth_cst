@@ -9,6 +9,7 @@ own directory to ``sys.path`` before importing — see
 
 import contextlib
 import os
+import subprocess
 import sys
 from collections.abc import Mapping
 
@@ -129,6 +130,53 @@ class _Tee:
 
     def isatty(self):
         return False
+
+
+def run_and_tee(command, log_path):
+    """Run ``command`` (an argv list), streaming combined stdout+stderr to the
+    console AND ``log_path``, and return the child's exit code.
+
+    Replaces the ``<cmd> 2>&1 | tee {log}`` idiom in ``shell:`` rules. A bare
+    ``| tee`` pipeline returns *tee*'s exit status, not the command's, unless
+    bash ``pipefail`` is active -- and Snakemake injects no ``pipefail`` prefix
+    on Windows/cmd.exe, so a failed ``hydromt``/``julia`` step is misread as
+    success (t260721a; dev/followups.md). Teeing in-process restores exit-code
+    fidelity while keeping live console output. The child runs with
+    ``shell=False`` so argument quoting is preserved identically across cmd.exe
+    and bash (e.g. Julia's ``-e "using Wflow; Wflow.run()"`` stays one argv).
+
+    Parameters
+    ----------
+    command : list[str]
+        Program and arguments, already tokenized (as a ``shell:`` rule's words
+        arrive after ``--``).
+    log_path : str | os.PathLike
+        Destination log file; parent directories are created.
+
+    Returns
+    -------
+    int
+        The child process's return code.
+    """
+    log_path = os.fspath(log_path)
+    parent = os.path.dirname(log_path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    with open(log_path, "w", encoding="utf-8", errors="replace") as log:
+        proc = subprocess.Popen(
+            command,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            bufsize=1,
+            text=True,
+            errors="replace",
+        )
+        for line in proc.stdout:
+            sys.stdout.write(line)
+            sys.stdout.flush()
+            log.write(line)
+            log.flush()
+        return proc.wait()
 
 
 @contextlib.contextmanager

@@ -50,7 +50,7 @@ def prep_cst_parameters(
     delta_precip_mean_min = stress_test_cfg["precip"]["mean"]["min"]
     delta_precip_mean_max = stress_test_cfg["precip"]["mean"]["max"]
     delta_precip_variance_min = stress_test_cfg["precip"]["variance"]["min"]
-    delta_precip_variance_max = stress_test_cfg["precip"]["variance"]["min"]
+    delta_precip_variance_max = stress_test_cfg["precip"]["variance"]["max"]
     # Stress test values per variables
     temp_values = np.linspace(
         delta_temp_mean_min, delta_temp_mean_max, temp_step_num, axis=1

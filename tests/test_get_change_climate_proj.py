@@ -124,17 +124,11 @@ def test_row_C3_gregorian_datetime64_change_invariant():
     assert float(res["temp"].values.ravel()[0]) == 2.0
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="row-C1 calendar defect: get_change_annual_clim_proj slices a "
-    "cftime.Datetime360Day index with pd.to_datetime() Timestamps and raises "
-    "TypeError (cross-calendar compare). Split to t260720c.",
-)
 def test_row_C1_cftime_360day_change_invariant():
-    """Row C1 (strict-xfail): cftime.Datetime360Day (CMIP6-native) index.
+    """Row C1 (t260720c, fixed): cftime.Datetime360Day (CMIP6-native) index.
 
-    NORM: constant fields must yield the calendar-invariant 20.0 / 2.0.
-    Today the code raises TypeError before computing anything, so this xfails.
+    NORM: constant fields yield the calendar-invariant 20.0 / 2.0. The cftime
+    index is converted to a DatetimeIndex before slicing, so no TypeError.
     """
     hist = _make_time_ds(10.0, 5.0, [1990, 1991, 1992], calendar="360_day")
     fut = _make_time_ds(12.0, 7.0, [2050, 2051, 2052], calendar="360_day")
@@ -143,17 +137,11 @@ def test_row_C1_cftime_360day_change_invariant():
     assert float(res["temp"].values.ravel()[0]) == 2.0
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="row-C2 calendar defect: get_change_annual_clim_proj slices a "
-    "cftime.DatetimeNoLeap index with pd.to_datetime() Timestamps and raises "
-    "TypeError (cross-calendar compare). Split to t260720c.",
-)
 def test_row_C2_cftime_noleap_change_invariant():
-    """Row C2 (strict-xfail): cftime.DatetimeNoLeap index.
+    """Row C2 (t260720c, fixed): cftime.DatetimeNoLeap index.
 
-    NORM: constant fields must yield the calendar-invariant 20.0 / 2.0.
-    Today the code raises TypeError before computing anything, so this xfails.
+    NORM: constant fields yield the calendar-invariant 20.0 / 2.0. The cftime
+    index is converted to a DatetimeIndex before slicing, so no TypeError.
     """
     hist = _make_time_ds(10.0, 5.0, [1990, 1991, 1992], calendar="noleap")
     fut = _make_time_ds(12.0, 7.0, [2050, 2051, 2052], calendar="noleap")
@@ -193,69 +181,31 @@ def test_row_H_january_control_matches_row_U():
 
 
 # --------------------------------------------------------------------------- #
-# Row V: asymmetric variables (hist has temp, clim does not)
-#   Normative (strict-xfail): must fail loud with a ValueError.
-#   Characterization (PASS today): result silently carries only precip.
+# Row V (t260720d, fixed): asymmetric variables (hist has temp, clim does not)
+#   must fail loud with a ValueError naming the missing variable.
 # --------------------------------------------------------------------------- #
-@pytest.mark.xfail(
-    strict=True,
-    reason="row-V variable-drop defect: asymmetric hist/clim variables are "
-    "silently intersected instead of raising. Split to t260720a.",
-)
 def test_row_V_asymmetric_variables_should_raise():
-    """Row V normative (ext3-1): asymmetric variable sets must raise ValueError
-    naming the missing variable(s). Today intersection() drops silently -> no
-    raise -> strict-xfail against the norm."""
+    """Row V (ext3-1): asymmetric variable sets raise ValueError naming the
+    missing variable(s). Pre-t260720d intersection() dropped them silently."""
     hist = _make_time_ds(10.0, 5.0, [1990, 1991, 1992], with_temp=True)
     clim = _make_time_ds(12.0, 7.0, [2050, 2051, 2052], with_temp=False)
     with pytest.raises(ValueError, match=r"asymmetric.*variables.*temp"):
         get_change_annual_clim_proj(hist, clim, stats=["mean"])
 
 
-def test_row_V_char_result_carries_only_precip():
-    """Row V characterization (PASS today): the current silent-drop behaviour
-    yields a result with ONLY precip; temp is absent."""
-    hist = _make_time_ds(10.0, 5.0, [1990, 1991, 1992], with_temp=True)
-    clim = _make_time_ds(12.0, 7.0, [2050, 2051, 2052], with_temp=False)
-    res = get_change_annual_clim_proj(hist, clim, stats=["mean"])
-    assert set(res.data_vars) == {"precip"}
-    assert "temp" not in res.data_vars
-
-
 # --------------------------------------------------------------------------- #
-# Row P: asymmetric members (hist has r1+r2, clim has r1)
-#   Normative (strict-xfail): must fail loud with a ValueError.
-#   Characterization (PASS today): result silently keeps only r1i1p1f1.
+# Row P (t260720d, fixed): asymmetric members (hist has r1+r2, clim has r1)
+#   must fail loud with a ValueError naming the unshared member.
 # --------------------------------------------------------------------------- #
-@pytest.mark.xfail(
-    strict=True,
-    reason="row-P partial-member defect: asymmetric hist/clim members are "
-    "silently inner-joined instead of raising. Split to t260720b.",
-)
 def test_row_P_asymmetric_members_should_raise():
-    """Row P normative (ext3-1): an unshared member must raise ValueError
-    naming the dropped member. Today the inner-join drops silently -> no raise
-    -> strict-xfail against the norm."""
+    """Row P (ext3-1): an unshared member raises ValueError naming the dropped
+    member. Pre-t260720d xarray's inner-join dropped it silently."""
     hist = _make_time_ds(
         10.0, 5.0, [1990, 1991, 1992], members=("r1i1p1f1", "r2i1p1f1")
     )
     clim = _make_time_ds(12.0, 7.0, [2050, 2051, 2052], members=("r1i1p1f1",))
     with pytest.raises(ValueError, match=r"asymmetric.*members.*r2i1p1f1"):
         get_change_annual_clim_proj(hist, clim, stats=["mean"])
-
-
-def test_row_P_char_result_keeps_only_shared_member():
-    """Row P characterization (PASS today): the current silent inner-join
-    yields a result whose member coord == ['r1i1p1f1']; r2i1p1f1 is dropped."""
-    hist = _make_time_ds(
-        10.0, 5.0, [1990, 1991, 1992], members=("r1i1p1f1", "r2i1p1f1")
-    )
-    clim = _make_time_ds(12.0, 7.0, [2050, 2051, 2052], members=("r1i1p1f1",))
-    res = get_change_annual_clim_proj(hist, clim, stats=["mean"])
-    members = [str(m) for m in np.atleast_1d(res["member"].values)]
-    assert members == ["r1i1p1f1"]
-    # value still trivially correct on the shared member
-    assert float(res["precip"].values.ravel()[0]) == 20.0
 
 
 # --------------------------------------------------------------------------- #

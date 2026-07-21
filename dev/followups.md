@@ -63,6 +63,14 @@ context so future-you can confirm the issue still applies before fixing.
   R3. Deferred by choice, not a blocker — pick up when convenient (a natural
   fit alongside R4/R5 Snakefile work or R6 polish).
 
+- **[RESOLVED 2026-07-21, commit `d13ba37` (t260721a, `fix/pre-r6-followups`).]**
+  wf1's three shell rules now route through `src/run_logged.py` (a CLI over
+  `snake_utils.run_and_tee`), a portable Python tee wrapper that keeps live
+  console output, writes the log, and exits with the child's own return code.
+  Verified end-to-end: a deliberately-failing child propagates its non-zero code
+  (the old `| tee` masked it to 0 under cmd.exe). Original diagnosis retained
+  below for provenance.
+
 - **[Latent robustness, not a blocker] wf1's `| tee {log}` shell rules mask the
   exit code on failure.** *Surfaced 2026-07-20 during R5 (design §2 ruling).*
   `Snakefile_model_creation`'s three shell rules (lines 89, 167, 182 — `hydromt
@@ -122,15 +130,24 @@ context so future-you can confirm the issue still applies before fixing.
   `st_num2 → st_num` fold that `dev/conventions/naming.md` §4 already assigns
   to R5) — **deferred to R5**; the ratchet is retained until then.
 
-- **Redo M1 warnings triage exhaustively.** M1 closed with an incomplete
-  triage (`dev/phase-1/m01/warnings.md`) because most rules don't write stderr
-  to disk. Once R3's cross-cutting deliverable adds `log:` directives
-  to every non-trivial rule across all three Snakefiles, re-run all
-  three workflows, sweep the captured logs, and fix any bucket-2
-  (config/data-catalog) or bucket-3 (our-code) warnings that surface.
-  Update `dev/phase-1/m01/warnings.md` (or supersede it with an `m03_*` doc).
+- **[RESOLVED 2026-07-21, t260716a′ (`fix/pre-r6-followups`).] Redo M1 warnings
+  triage exhaustively.** Swept 82 captured `.log` files across all three workflows
+  (per-rule `log:` directives now present via R3/R4/R5). **Bucket 3 (our-code):
+  empty** — no warnings framed in `src/`, the Snakefiles, `dev/scripts/`, or the R
+  layer. **Bucket 2:** one item, intended hydromt behavior (the `0.00833` vs native
+  `0.008333333333325754` resolution snap) — won't-fix (a config match is fragile +
+  would drift the tracked snake-config fingerprint for zero model change).
+  **Bucket 1:** hydromt CRS/forcing/model-dir warnings + a new-but-captured 62×
+  `Error in sys.excepthook` shutdown cascade from `hydromt build -vv` (post-success;
+  upstream subprocess, not our tee wrapper — absent from the Julia/hydromt-update
+  logs that use the same wrapper). No code changes. Full re-triage recorded in
+  `dev/phase-1/m01/warnings.md` § "Exhaustive re-triage — 2026-07-21".
 
 - **`extract_climate_grid` silently truncates the historical range.**
+  *[Truncation WARNING resolved 2026-07-21, commit `ce56bc3` (t260716a,
+  `fix/pre-r6-followups`): `prep_historical_climate` now emits an advisory
+  warning when the extracted span falls short of the requested window. The
+  config-staleness half below remains OPEN.]*
   When the snake config's `historical:` window asks for years that the
   staged source doesn't cover, the rule produces a shorter `extract_historical.nc`
   without any warning. Downstream rules then fail in cryptic ways far from
@@ -147,14 +164,22 @@ context so future-you can confirm the issue still applies before fixing.
   fail the rule if the shortfall is large enough to break a downstream step
   (e.g. < 16 historical years when weathergenr is in the pipeline).
 
-  *Related Snakemake-staleness issue:* a snake-config edit that changes what
-  the rule *should* produce does not invalidate the existing output, because
-  Snakemake's freshness check is file-existence-based, not config-content-aware.
-  Reproduced 2026-05-07: changing `historical:` in the config didn't trigger
-  re-extraction; the user had to `--forcerun extract_climate_grid` to pick up
-  the change. Worth fixing alongside the truncation warning — declare the
-  snake config (or a hash of the relevant keys) as an input of
-  `extract_climate_grid` so config edits propagate automatically.
+  *Related Snakemake-staleness issue:* **[RESOLVED 2026-07-21, t260716a′ — by R5's
+  wiring + verification, no new code.]** The 2026-05-07 repro (changing `historical:`
+  didn't re-extract) predates R5, when the dates were hardcoded and `historical:`
+  was **never read** by `extract_climate_grid` — so of course the edit had no effect.
+  R5 wired `shared.historical_window` into the rule as `params`
+  (`starttime`/`endtime`, `Snakefile_climate_experiment:78-82`), and Snakemake 9.6.2
+  applies its default `params` rerun-trigger (no `--rerun-triggers` override in the
+  repo). **Verified empirically 2026-07-21:** a dry-run against the built
+  `examples/test_local` with `historical_window.endtime` changed 2020→2019 schedules
+  `extract_climate_grid` with reason *"Params have changed since last execution:
+  before '2020-12-31…' now '2019-12-31…'"*. So config edits to the historical window
+  now propagate automatically; `--forcerun` is no longer needed. Declaring the whole
+  config as an input (the original suggestion) is unnecessary and coarser (would
+  re-run on any unrelated config edit). The broader "audit every rule whose behavior
+  depends on an unread config key" remains a general note (see R5 section below), not
+  part of this item.
 
   *Workaround applied 2026-05-07:* `historical: 2000, 2020` in the local test
   config + `--forcerun extract_climate_grid` for the immediate run. Treats
@@ -338,13 +363,18 @@ for the full M2b record.
   `hydromt_wflow.version_upgrade`. Concrete 8-mapping remap in
   `dev/phase-1/m02b/handoff.md` decision #3.
 
-- **CMIP6 `precip` / `temp` `.attrs` lost on `monthly_change_scalar_merge`.**
-  Pre-M2b, `annual_change_scalar_stats_summary.nc` carried `cell_measures`,
-  `cell_methods`, `comment`, `long_name`, `original_name`, `standard_name`,
-  `units` on each data variable; under hydromt 1.3, those are now `{}` on
-  the merged output. Documented in `dev/phase-1/m02b/baseline_diffs.md`.
-  *Investigation:* identify whether `get_change_climate_proj.py` or hydromt
-  drops the attrs during the merge; restore them.
+- **[RESOLVED 2026-07-21, t260720e — does-not-reproduce, no fix.] CMIP6 `precip` /
+  `temp` `.attrs` lost on `monthly_change_scalar_merge`.** Under the current pinned
+  env (hydromt 1.3.1) the merged `annual_change_scalar_stats_summary.nc` carries the
+  **full CF set** (`cell_measures`, `cell_methods`, `comment`, `long_name`,
+  `original_name`, `standard_name`, `units`) on both `precip` and `temp` — verified
+  on the real-CMIP6-read output in `examples/test_local` AND in the recorded manifest
+  fingerprint (`check --workflow climate_projections` passes on the `.nc`). R4's
+  `probe_attrs_chain.py` proved no wf2 code drops attrs, and the values are
+  CMIP6-native, so the hydromt read preserves them. The M2b `{}` diagnosis no longer
+  reproduces; original root cause not re-litigated (moot). Absorbed the old t260716c
+  "CMIP6 attr loss on merge" item. Full disposition: `dev/r04/chain-audit.md`
+  § D-ATTRS.
 
 - **Outlet station naming convention decision.** hydromt_wflow 1.x's
   `setup_outlets` uses subcatchment IDs (e.g. `130000086`, `1`, `2`, …) for

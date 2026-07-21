@@ -123,6 +123,16 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
   via pixi.
 - Do not commit run outputs written under `project_dir`, or edit `pixi.lock` /
   `Manifest.toml` by hand.
+- **Stay within CST's automation scope.** This repo is the workflow engine only.
+  Define config/setup (`config/wflow_build_model.yml`, data catalogs, `setup_*`
+  blocks, `wflow_sbm.toml`-affecting steps) using hydromt / hydromt_wflow / Wflow
+  conventions verbatim — CSDMS Standard Names (`hydromt_wflow/naming.py`), their
+  YAML schema, their catalog format. Do **not** re-engineer how hydromt handles
+  data, how `setup_*` methods work internally, or how Wflow parameterizes physics.
+  Consume upstream behavior; verification steps may *read* upstream docs to
+  validate our config but must not patch upstream. A genuine hydromt/wflow bug is
+  flagged upstream or worked around in *our* code (`src/`, Snakefiles,
+  `dev/scripts/`), never fixed inside the vendored package.
 
 ## References
 

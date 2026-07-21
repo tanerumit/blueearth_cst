@@ -11,7 +11,12 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.snake_utils import _compact_log_line, get_config, tee_to_log  # noqa: E402
+from src.snake_utils import (  # noqa: E402
+    _compact_log_line,
+    get_config,
+    save_figure,
+    tee_to_log,
+)
 
 
 def test_missing_required_raises():
@@ -93,6 +98,23 @@ def test_compact_keeps_level_and_no_trailing_newline():
 )
 def test_compact_passes_through_non_hydromt(line):
     assert _compact_log_line(line) == line
+
+
+# --- save_figure -------------------------------------------------------------
+
+
+def test_save_figure_writes_creates_parent_and_announces(tmp_path, capsys):
+    import matplotlib
+
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    out = tmp_path / "plots" / "basin_area.png"  # parent does not exist yet
+    plt.figure()
+    plt.plot([0, 1], [0, 1])
+    save_figure(str(out), dpi=50)
+    assert out.exists()
+    assert f"Saved figure: {out}" in capsys.readouterr().out
 
 
 # --- tee_to_log (R3 §6) ------------------------------------------------------

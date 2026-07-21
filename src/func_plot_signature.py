@@ -18,6 +18,8 @@ import xarray as xr
 
 from typing import List, Union
 
+from src.snake_utils import save_figure
+
 
 # %%
 # Supported wflow outputs
@@ -531,7 +533,7 @@ def plot_signatures(
         ax.set_title("")
 
     ### Save plot ###
-    plt.savefig(os.path.join(Folder_out, f"signatures_{station_name}.png"), dpi=300)
+    save_figure(os.path.join(Folder_out, f"signatures_{station_name}.png"), dpi=300)
 
 
 def plot_hydro(
@@ -662,7 +664,7 @@ def plot_hydro(
     axes[0].legend(fontsize=fs)
     plt.tight_layout()
 
-    plt.savefig(os.path.join(Folder_out, f"hydro_{station_name}.png"), dpi=300)
+    save_figure(os.path.join(Folder_out, f"hydro_{station_name}.png"), dpi=300)
 
 
 def plot_clim(ds_clim, Folder_out, station_name, period, lw=0.8, fs=8):
@@ -767,7 +769,7 @@ def plot_clim(ds_clim, Folder_out, station_name, period, lw=0.8, fs=8):
 
     plt.tight_layout()
     fig.set_tight_layout(True)
-    plt.savefig(os.path.join(Folder_out, f"clim_{station_name}_{period}.png"), dpi=300)
+    save_figure(os.path.join(Folder_out, f"clim_{station_name}_{period}.png"), dpi=300)
 
 
 def plot_basavg(ds, Folder_out, fs=10):
@@ -806,7 +808,7 @@ def plot_basavg(ds, Folder_out, fs=10):
 
         plt.tight_layout()
         fig.set_tight_layout(True)
-        plt.savefig(os.path.join(Folder_out, f"{dvar}.png"), dpi=300)
+        save_figure(os.path.join(Folder_out, f"{dvar}.png"), dpi=300)
 
 
 # %%

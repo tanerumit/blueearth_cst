@@ -331,3 +331,23 @@ def tee_to_log(log_path):
             yield
         finally:
             sys.stdout, sys.stderr = orig_out, orig_err
+
+
+def save_figure(path, **kwargs):
+    """Save the current matplotlib figure to ``path`` and announce it cleanly.
+
+    Centralizes the "write a figure + log one line" pattern for the plotting
+    ``script:`` rules: every produced map/plot then appears in the rule's log as
+    ``Saved figure: <path>`` instead of the log being empty or showing only
+    upstream library chatter. Parent directories are created. ``kwargs`` pass
+    through to ``matplotlib.pyplot.savefig`` (e.g. ``dpi``, ``bbox_inches``).
+    matplotlib is imported lazily so this module stays light for the Snakefiles
+    that import it only for ``get_config`` / ``stress_test_grid``.
+    """
+    import matplotlib.pyplot as plt
+
+    parent = os.path.dirname(path)
+    if parent:
+        os.makedirs(parent, exist_ok=True)
+    plt.savefig(path, **kwargs)
+    print(f"Saved figure: {path}")

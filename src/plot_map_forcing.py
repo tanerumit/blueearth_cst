@@ -25,6 +25,8 @@ import cartopy.io.img_tiles as cimgt
 
 from hydromt_wflow import WflowSbmModel
 
+from src.snake_utils import save_figure
+
 
 def plot_map_model(mod, da, figname, gauges_name):
     # read/derive river geometries
@@ -131,7 +133,7 @@ def plot_map_model(mod, da, figname, gauges_name):
     )
 
     # save figure
-    plt.savefig(
+    save_figure(
         os.path.join(Folder_plots, f"{figname}.png"), dpi=300, bbox_inches="tight"
     )
 
@@ -174,7 +176,6 @@ def plot_forcing(
 
     # plot mean annual precip temp and potential evap.
     for forcing_var, forcing_char in forcing_vars.items():
-        print(forcing_var, forcing_char)
         if forcing_var == "temp":
             da = forcing_data[forcing_var].resample(time="YE").mean("time").mean("time")
         else:

@@ -13,6 +13,12 @@ from src.snake_utils import get_config, stress_test_grid
 # a repo convention.
 config_path = workflow.configfiles[0]
 
+# Portable tee wrapper for the shell rules below (the R weather generator and the
+# Julia Wflow run): routes their output through src/run_logged.py so their logs
+# get the same header + path relativization + UTF-8/exit-code handling as every
+# other rule (matches WF1). See src/run_logged.py / src/snake_utils.run_and_tee.
+run_logged = str(Path(workflow.basedir) / "src" / "run_logged.py")
+
 # R01 schema
 project_cfg = config["project"]
 shared_cfg = config["shared"]
@@ -155,7 +161,7 @@ rule generate_weather_realization:
     benchmark:
         f"{project_dir}/benchmarks/3.06_generate_weather_realization.tsv",
     shell:
-        """Rscript --vanilla src/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config} > {log} 2>&1"""
+        """python -u "{run_logged}" "{log}" -- Rscript --vanilla src/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config}"""
 
 # 3.07  generate_climate_stress_test — impose perturbations per rlz/cst (st_num >= 1)
 rule generate_climate_stress_test:
@@ -179,7 +185,7 @@ rule generate_climate_stress_test:
     benchmark:
         f"{project_dir}/benchmarks/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
-        """Rscript --vanilla src/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.st_csv} > {log} 2>&1"""
+        """python -u "{run_logged}" "{log}" -- Rscript --vanilla src/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.st_csv}"""
 
 # 3.08  climate_data_catalog — build a hydromt data catalog of the climate files
 rule climate_data_catalog:
@@ -231,7 +237,7 @@ rule run_wflow:
     benchmark:
         f"{project_dir}/benchmarks/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
-        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_path}" > {log} 2>&1"""
+        """python -u "{run_logged}" "{log}" -- julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_path}" """
 
 # 3.11  export_wflow_results — reduce runs to Qstats + basin indicators
 rule export_wflow_results:

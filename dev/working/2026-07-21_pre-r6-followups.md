@@ -50,16 +50,23 @@ Suite before: 119 passed / 3 skipped / 7 xfailed. After: **123 / 3 / 1**
   file-existence based). Declare the config (or a hash of the relevant keys) as a
   rule input. DAG change → dry-run.
 
-## Wave D — big / scientific (PENDING, final)
+## Wave D — big / scientific (design DRAFTED, implementation PENDING)
 
-- **t260719a** — restore the 14 dropped Wflow constant parameters via CSDMS
-  Standard Names. Scientific decision + parameter-reconciliation table +
-  direct staticmaps.nc/TOML assertions + data-level wf1 discharge comparison +
-  a clean re-record that also ADDS staticmaps/TOML fingerprints to the manifest.
-  Warrants its own design doc.
+- **t260719a** — **design proposed 2026-07-21 in
+  [ADR 0001](../decisions/0001-restore-wflow-constant-parameters.md).** All 15
+  CSDMS mappings resolved from `hydromt_wflow/naming.py` (the M2b "5 unresolved"
+  all map to real names; none is `wflow_v1: None`): 1 retained (`KsatHorFrac`),
+  1 forced-drop (`InfiltCapSoil`, deprecated), 13 mappable → RESTORE. Decision:
+  evidence-gated restoration (adopt-default is the null; restore posture
+  justified by cross-basin correctness; the discharge diff blesses the move,
+  it does not decide per-param drop). Implementation protocol (restored-vs-clean
+  builds, staticmaps/TOML landing asserts, discharge materiality, manifest
+  extension + re-record) is §"Validation protocol" of the ADR. Next: review the
+  ADR, then implement (a build-heavy task — route to model-builder / cst-architect).
 - **Baseline manifest rebuild** — entangled with t260719a (both touch the
   manifest). The M2b manifest is still the contract of record (invariance-by-
-  construction). A clean tracked-seed re-record is a natural companion to t260719a.
+  construction). ADR 0001 step 7 folds the clean re-record + fingerprint
+  extension into t260719a.
 
 ## Board reconciliation (verified 2026-07-21)
 

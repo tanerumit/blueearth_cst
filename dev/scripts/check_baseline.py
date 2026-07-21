@@ -20,6 +20,17 @@ is exposed via the `compare` subcommand for the one-off restored-vs-reference an
 reproducibility comparisons (ADR steps 4b/5), so reproducibility, materiality, and
 the durable regression check cannot disagree.
 
+**Mixed-provenance baseline (ADR 0001 t260719a, immaterial branch).** Since the
+constant-parameter restoration the wf1 slice reflects the RESTORED model, while the
+wf2/wf3 rows are the pre-restoration recording (the restored discharge move was
+immaterial — 0/7670 timesteps over tolerance — so wf3 was deliberately not re-run).
+A future wf3 regen + `check` MAY fail the byte-exact Qstats.csv/basin.csv
+fingerprints if the sub-tolerance wf1 move (max|dQ|/mean ~ 1.7e-4) survives their
+rounding. That is the DOCUMENTED residual, not a regression: follow the ADR 0001
+step-7 immaterial-branch recovery path (re-run wf3, confirm the movement is
+consistent with the recorded wf1 diff, then re-record the wf3 slice with a note;
+else stop and investigate) — see dev/working/const-pars/baseline_diffs.md.
+
 Usage:
     python dev/scripts/check_baseline.py record
     python dev/scripts/check_baseline.py record --workflow model_creation   # merge one slice

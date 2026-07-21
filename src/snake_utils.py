@@ -49,32 +49,58 @@ def _compact_log_line(text):
     return f"{hms} - {module} - {level} - {message}" + ("\n" if had_newline else "")
 
 
-def _log_header_lines(log_path):
-    """Return a short 2-line header written at the top of each rule log.
+def _log_path_parts(log_path):
+    """Return ``(project_root, log_id)`` derived from a rule log path.
 
-    Carries the project name and run date (the date dropped from each row by
-    ``_compact_log_line``) plus the rule-log id and start time. Project name and
-    log id are derived from ``log_path``: the parent of the first ``logs`` /
-    ``benchmarks`` path component is the project dir, and the path below that
-    anchor is the rule-log id (so wildcard sub-logs read e.g.
-    ``3.10_run_wflow/rlz_1_cst_1.log``). Falls back gracefully when the anchor
-    is absent (e.g. an ad-hoc log path in tests).
+    The parent of the first ``logs`` / ``benchmarks`` path component is the
+    project dir; the path below that anchor is the rule-log id (so wildcard
+    sub-logs read e.g. ``3.10_run_wflow/rlz_1_cst_1.log``). Both are ``""`` /
+    the bare basename when the anchor is absent (e.g. an ad-hoc test path).
     """
-    now = datetime.now()
-    parts = os.path.normpath(os.fspath(log_path)).split(os.sep)
-    project, log_id = "", os.path.basename(os.fspath(log_path))
+    log_path = os.fspath(log_path)
+    parts = os.path.normpath(log_path).split(os.sep)
     for anchor in ("logs", "benchmarks"):
         if anchor in parts:
             i = parts.index(anchor)
-            if i > 0:
-                project = parts[i - 1]
-            log_id = "/".join(parts[i + 1:]) or log_id
-            break
+            root = os.sep.join(parts[:i]) if i > 0 else ""
+            log_id = "/".join(parts[i + 1:]) or os.path.basename(log_path)
+            return root, log_id
+    return "", os.path.basename(log_path)
+
+
+def _relativize_paths(text, project_root):
+    """Rewrite absolute project paths in ``text`` as project-relative.
+
+    Strips the ``project_root`` prefix (in both native and forward-slash forms,
+    since hydromt emits either) so a log line like
+    ``Writing geoms to C:\\...\\gabon\\hydrology_model\\...\\basins.geojson``
+    reads ``Writing geoms to hydrology_model\\...\\basins.geojson``. Paths
+    outside the project (data catalogs, the pixi env) are left absolute.
+    """
+    if not project_root:
+        return text
+    text = text.replace(project_root + os.sep, "")
+    text = text.replace(project_root.replace(os.sep, "/") + "/", "")
+    return text
+
+
+def _log_header_lines(log_path):
+    """Return the header block written at the top of each rule log.
+
+    Carries the project name and run date (the date dropped from each row by
+    ``_compact_log_line``), the full project dir, and the rule-log id + start
+    time, followed by a blank line separating the header from the log body.
+    """
+    now = datetime.now()
+    root, log_id = _log_path_parts(log_path)
+    project = os.path.basename(root) if root else ""
     project_field = f"project: {project} | " if project else ""
-    return (
-        f"# BlueEarth-CST | {project_field}{now:%Y-%m-%d}\n"
-        f"# log: {log_id} | started {now:%H:%M:%S}\n"
-    )
+    header = [f"# BlueEarth-CST | {project_field}{now:%Y-%m-%d}"]
+    if root:
+        header.append(f"# project dir: {root.replace(os.sep, '/')}")
+    header.append(f"# log: {log_id} | started {now:%H:%M:%S}")
+    # trailing "" -> a blank line between the header and the body
+    return "".join(line + "\n" for line in header) + "\n"
 
 
 def get_config(config, arg, default=None, optional=True):
@@ -179,13 +205,14 @@ class _Tee:
     file descriptors) is not captured — only in-process Python output is.
     """
 
-    def __init__(self, *sinks):
+    def __init__(self, *sinks, project_root=""):
         self._sinks = sinks
+        self._project_root = project_root
 
     def write(self, text):
-        compacted = _compact_log_line(text)
+        out = _relativize_paths(_compact_log_line(text), self._project_root)
         for sink in self._sinks:
-            sink.write(compacted)
+            sink.write(out)
         return len(text)
 
     def flush(self):
@@ -257,14 +284,16 @@ def run_and_tee(command, log_path):
     parent = os.path.dirname(log_path)
     if parent:
         os.makedirs(parent, exist_ok=True)
+    project_root, _ = _log_path_parts(log_path)
     with open(log_path, "w", encoding="utf-8", errors="replace") as log:
         log.write(_log_header_lines(log_path))  # header to file only, not console
         log.flush()
 
         def emit(text):
-            # Compact hydromt's redundant log format (see _compact_log_line);
-            # non-hydromt lines pass through unchanged.
-            text = _compact_log_line(text)
+            # Compact hydromt's redundant log format (see _compact_log_line) and
+            # show project files relative to the project dir; non-hydromt lines
+            # and out-of-project paths pass through unchanged.
+            text = _relativize_paths(_compact_log_line(text), project_root)
             # The log file is UTF-8. The live console mirror may be a legacy
             # code page (cp1252 on Windows) that cannot encode glyphs the child
             # emits (e.g. Julia/Wflow progress-bar blocks); fall back to a lossy
@@ -356,11 +385,12 @@ def tee_to_log(log_path):
     if parent:
         os.makedirs(parent, exist_ok=True)
     orig_out, orig_err = sys.stdout, sys.stderr
+    project_root, _ = _log_path_parts(log_path)
     with open(log_path, "w", encoding="utf-8") as handle:
         handle.write(_log_header_lines(log_path))  # header to file only
         handle.flush()
-        sys.stdout = _Tee(orig_out, handle)
-        sys.stderr = _Tee(orig_err, handle)
+        sys.stdout = _Tee(orig_out, handle, project_root=project_root)
+        sys.stderr = _Tee(orig_err, handle, project_root=project_root)
         try:
             yield
         finally:

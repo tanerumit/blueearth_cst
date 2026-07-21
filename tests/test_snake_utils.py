@@ -5,6 +5,7 @@ conftest) had before they were collapsed into src/snake_utils.py, so the move
 is provably identity-preserving rather than merely green on a smoke test.
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -13,6 +14,8 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from src.snake_utils import (  # noqa: E402
     _compact_log_line,
+    _log_path_parts,
+    _relativize_paths,
     get_config,
     save_figure,
     tee_to_log,
@@ -117,6 +120,51 @@ def test_save_figure_writes_creates_parent_and_announces(tmp_path, capsys):
     assert f"Saved figure: {out}" in capsys.readouterr().out
 
 
+# --- path relativization -----------------------------------------------------
+
+
+def test_log_path_parts_project_root_and_id(tmp_path):
+    lp = tmp_path / "gabon" / "logs" / "1.03_create_model.log"
+    root, log_id = _log_path_parts(str(lp))
+    assert root == os.path.normpath(str(tmp_path / "gabon"))
+    assert log_id == "1.03_create_model.log"
+    # wildcard sub-log: project root unchanged, id is the path below logs/
+    lp2 = tmp_path / "gabon" / "logs" / "3.10_run_wflow" / "rlz_1_cst_1.log"
+    root2, log_id2 = _log_path_parts(str(lp2))
+    assert root2 == os.path.normpath(str(tmp_path / "gabon"))
+    assert log_id2 == "3.10_run_wflow/rlz_1_cst_1.log"
+
+
+def test_relativize_strips_project_root_both_separators():
+    root = os.path.normpath("C:/TESTS/gabon")
+    native = f"Writing geoms to {root}{os.sep}hydrology_model{os.sep}basins.geojson.\n"
+    assert _relativize_paths(native, root) == (
+        f"Writing geoms to hydrology_model{os.sep}basins.geojson.\n"
+    )
+    fwd_root = root.replace(os.sep, "/")
+    forward = f"Writing config to {fwd_root}/hydrology_model/wflow_sbm.toml.\n"
+    assert _relativize_paths(forward, root) == (
+        "Writing config to hydrology_model/wflow_sbm.toml.\n"
+    )
+
+
+def test_relativize_leaves_out_of_project_paths_absolute():
+    root = os.path.normpath("C:/TESTS/gabon")
+    line = f"Reading data from {os.path.normpath('C:/data/wflow_global/x.tif')}\n"
+    assert _relativize_paths(line, root) == line  # not under project -> untouched
+
+
+def test_tee_to_log_relativizes_project_paths(tmp_path):
+    proj = tmp_path / "gabon"
+    log = proj / "logs" / "1.10_plot_results.log"
+    abs_png = os.path.join(str(proj), "plots", "map.png")
+    with tee_to_log(log):
+        print(f"Saved figure: {abs_png}")
+    text = log.read_text(encoding="utf-8")
+    assert "Saved figure: " + os.path.join("plots", "map.png") in text
+    assert abs_png not in text  # absolute project path relativized away
+
+
 # --- tee_to_log (R3 §6) ------------------------------------------------------
 
 
@@ -149,16 +197,19 @@ def test_tee_to_log_compacts_hydromt_format(tmp_path):
 
 
 def test_tee_to_log_writes_project_header(tmp_path):
-    # a `.../<project>/logs/<rule>.log` path yields a header naming the project
-    # and the rule-log id; the date lives here (dropped from each row).
+    # a `.../<project>/logs/<rule>.log` path yields a header naming the project,
+    # the full project dir, and the rule-log id; the date lives here (dropped
+    # from each row), followed by a blank line before the body.
     log = tmp_path / "gabon" / "logs" / "1.07_setup_runtime.log"
     with tee_to_log(log):
         print("body line")
     head = log.read_text(encoding="utf-8").splitlines()
     assert head[0].startswith("# BlueEarth-CST")
     assert "project: gabon" in head[0]
-    assert "1.07_setup_runtime.log" in head[1] and "started" in head[1]
-    assert "body line" in "\n".join(head)
+    assert head[1].startswith("# project dir:") and head[1].rstrip().endswith("gabon")
+    assert "1.07_setup_runtime.log" in head[2] and "started" in head[2]
+    assert head[3] == ""  # blank line separates header from body
+    assert head[4] == "body line"
 
 
 def test_tee_to_log_reraises_and_still_restores(tmp_path):

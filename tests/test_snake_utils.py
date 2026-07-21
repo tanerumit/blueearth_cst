@@ -55,13 +55,14 @@ def test_falsey_values_returned_as_is(falsey):
 # --- _compact_log_line (hydromt format) --------------------------------------
 
 
-def test_compact_drops_dotted_name_keeps_module():
+def test_compact_shortens_timestamp_and_drops_dotted_name():
     line = (
         "2026-07-21 18:03:38,474 - hydromt.model.model - model - INFO - "
         "Initializing wflow_sbm model.\n"
     )
+    # date + milliseconds dropped -> HH:MM:SS; dotted name dropped; module kept
     assert _compact_log_line(line) == (
-        "2026-07-21 18:03:38,474 - model - INFO - Initializing wflow_sbm model.\n"
+        "18:03:38 - model - INFO - Initializing wflow_sbm model.\n"
     )
 
 
@@ -70,10 +71,9 @@ def test_compact_preserves_dashes_in_message():
         "2026-07-21 18:03:20,505 - hydromt.model.model - model - INFO - "
         "setup_rivers.river_routing=kinematic - wave - x\n"
     )
-    # message (with its own ' - ') is kept whole; only the dotted name is dropped
+    # message (with its own ' - ') is kept whole; only ts + dotted name change
     assert _compact_log_line(line) == (
-        "2026-07-21 18:03:20,505 - model - INFO - "
-        "setup_rivers.river_routing=kinematic - wave - x\n"
+        "18:03:20 - model - INFO - setup_rivers.river_routing=kinematic - wave - x\n"
     )
 
 
@@ -83,7 +83,7 @@ def test_compact_keeps_level_and_no_trailing_newline():
         " - basemaps - WARNING - Model resolution mismatch"
     )  # no trailing newline
     assert _compact_log_line(line) == (
-        "2026-07-21 18:03:18,884 - basemaps - WARNING - Model resolution mismatch"
+        "18:03:18 - basemaps - WARNING - Model resolution mismatch"
     )
 
 
@@ -141,9 +141,24 @@ def test_tee_to_log_compacts_hydromt_format(tmp_path):
         )
         print("plain progress line")
     text = log.read_text(encoding="utf-8")
-    assert "2026-07-21 18:03:38,474 - model - INFO - built" in text
+    # the record row is exactly the compacted form: HH:MM:SS, no date/ms/name
+    row = next(l for l in text.splitlines() if "INFO - built" in l)
+    assert row == "18:03:38 - model - INFO - built"
     assert "hydromt.model.model" not in text  # dotted name dropped
     assert "plain progress line" in text  # non-hydromt line untouched
+
+
+def test_tee_to_log_writes_project_header(tmp_path):
+    # a `.../<project>/logs/<rule>.log` path yields a header naming the project
+    # and the rule-log id; the date lives here (dropped from each row).
+    log = tmp_path / "gabon" / "logs" / "1.07_setup_runtime.log"
+    with tee_to_log(log):
+        print("body line")
+    head = log.read_text(encoding="utf-8").splitlines()
+    assert head[0].startswith("# BlueEarth-CST")
+    assert "project: gabon" in head[0]
+    assert "1.07_setup_runtime.log" in head[1] and "started" in head[1]
+    assert "body line" in "\n".join(head)
 
 
 def test_tee_to_log_reraises_and_still_restores(tmp_path):

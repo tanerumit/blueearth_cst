@@ -13,28 +13,30 @@ import re
 import subprocess
 import sys
 from collections.abc import Mapping
+from datetime import datetime
 
 
 # hydromt formats every log record as
 # ``<ts> - <name> - <module> - <LEVEL> - <message>`` (its hardcoded
-# ``_LOG_FORMAT``; no CLI/env/config override exists). ``<name>`` is the dotted
-# logger path (``hydromt.model.model``) and ``<module>`` its leaf (``model``) —
-# largely redundant. We cannot change hydromt's format (vendored, off-limits),
-# so both tee paths below drop the dotted ``<name>`` on the way into *our* logs,
-# keeping ``<module>`` as a short subsystem tag. Only lines matching this exact
-# shape are rewritten; everything else (Julia/Wflow output, tracebacks, plain
-# prints) passes through verbatim. Anchored timestamp + no-space name/module +
-# single-word level make the match unambiguous; the message keeps any ``-``.
+# ``_LOG_FORMAT``; no CLI/env/config override exists). ``<ts>`` is a full
+# ``YYYY-MM-DD HH:MM:SS,mmm`` stamp, ``<name>`` the dotted logger path
+# (``hydromt.model.model``), ``<module>`` its leaf (``model``) — all verbose or
+# redundant per row. We cannot change hydromt's format (vendored, off-limits),
+# so both tee paths below rewrite matching lines into *our* logs: drop the
+# dotted ``<name>`` (keep ``<module>`` as a short subsystem tag) and shorten the
+# stamp to ``HH:MM:SS`` (the date lives once in the log header, not on every
+# row). Only lines matching this exact shape are rewritten; everything else
+# (Julia/Wflow output, tracebacks, plain prints) passes through verbatim.
 _HYDROMT_LOG_RE = re.compile(
-    r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - \S+ - (\S+) - (\w+) - (.*)$"
+    r"^\d{4}-\d{2}-\d{2} (\d{2}:\d{2}:\d{2}),\d{3} - \S+ - (\S+) - (\w+) - (.*)$"
 )
 
 
 def _compact_log_line(text):
-    """Drop the redundant dotted logger name from a hydromt-format log line.
+    """Compact a hydromt-format log line: ``HH:MM:SS`` stamp, drop dotted name.
 
-    ``<ts> - <name> - <module> - <LEVEL> - <msg>`` becomes
-    ``<ts> - <module> - <LEVEL> - <msg>``. A trailing newline is preserved.
+    ``<YYYY-MM-DD HH:MM:SS,mmm> - <name> - <module> - <LEVEL> - <msg>`` becomes
+    ``<HH:MM:SS> - <module> - <LEVEL> - <msg>``. A trailing newline is preserved.
     Non-matching text is returned unchanged, so the tee stays faithful for all
     output that is not a single hydromt log record.
     """
@@ -43,8 +45,36 @@ def _compact_log_line(text):
     match = _HYDROMT_LOG_RE.match(core)
     if not match:
         return text
-    ts, module, level, message = match.groups()
-    return f"{ts} - {module} - {level} - {message}" + ("\n" if had_newline else "")
+    hms, module, level, message = match.groups()
+    return f"{hms} - {module} - {level} - {message}" + ("\n" if had_newline else "")
+
+
+def _log_header_lines(log_path):
+    """Return a short 2-line header written at the top of each rule log.
+
+    Carries the project name and run date (the date dropped from each row by
+    ``_compact_log_line``) plus the rule-log id and start time. Project name and
+    log id are derived from ``log_path``: the parent of the first ``logs`` /
+    ``benchmarks`` path component is the project dir, and the path below that
+    anchor is the rule-log id (so wildcard sub-logs read e.g.
+    ``3.10_run_wflow/rlz_1_cst_1.log``). Falls back gracefully when the anchor
+    is absent (e.g. an ad-hoc log path in tests).
+    """
+    now = datetime.now()
+    parts = os.path.normpath(os.fspath(log_path)).split(os.sep)
+    project, log_id = "", os.path.basename(os.fspath(log_path))
+    for anchor in ("logs", "benchmarks"):
+        if anchor in parts:
+            i = parts.index(anchor)
+            if i > 0:
+                project = parts[i - 1]
+            log_id = "/".join(parts[i + 1:]) or log_id
+            break
+    project_field = f"project: {project} | " if project else ""
+    return (
+        f"# BlueEarth-CST | {project_field}{now:%Y-%m-%d}\n"
+        f"# log: {log_id} | started {now:%H:%M:%S}\n"
+    )
 
 
 def get_config(config, arg, default=None, optional=True):
@@ -228,6 +258,8 @@ def run_and_tee(command, log_path):
     if parent:
         os.makedirs(parent, exist_ok=True)
     with open(log_path, "w", encoding="utf-8", errors="replace") as log:
+        log.write(_log_header_lines(log_path))  # header to file only, not console
+        log.flush()
 
         def emit(text):
             # Compact hydromt's redundant log format (see _compact_log_line);
@@ -325,6 +357,8 @@ def tee_to_log(log_path):
         os.makedirs(parent, exist_ok=True)
     orig_out, orig_err = sys.stdout, sys.stderr
     with open(log_path, "w", encoding="utf-8") as handle:
+        handle.write(_log_header_lines(log_path))  # header to file only
+        handle.flush()
         sys.stdout = _Tee(orig_out, handle)
         sys.stderr = _Tee(orig_err, handle)
         try:

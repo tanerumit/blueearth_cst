@@ -126,6 +126,9 @@ def analyse_wflow_historical(
             [f"wflow_{i + 1}" for i in range(qsim["index"].size)],
         )
     )
+    # Map subcatchment id -> positional station_name (wflow_1..N) so the climate
+    # plots share the discharge station labels instead of raw subcatchment ids.
+    station_by_id = dict(zip(qsim["index"].values, qsim["station_name"].values))
     # Discharge at the gauges_locs if present
     if gauges_locs is not None and os.path.exists(gauges_locs):
         gauges_output_name = os.path.basename(gauges_locs).split(".")[0]
@@ -183,13 +186,16 @@ def analyse_wflow_historical(
         )
     else:
         for index in ds_clim.index.values:
-            print(f"Plot climatic data at wflow basin {index}")
+            # Positional station label (wflow_1..N) to match the discharge plots;
+            # fall back to the raw id if a subcatchment has no discharge station.
+            station = station_by_id.get(index, f"wflow_{index}")
+            print(f"Plot climatic data at {station}")
             ds_clim_i = ds_clim.sel(index=index)
             # Plot per year
-            plot_clim(ds_clim_i, Folder_plots, f"wflow_{index}", "year")
+            plot_clim(ds_clim_i, Folder_plots, station, "year")
             plt.close()
             # Plot per month
-            plot_clim(ds_clim_i, Folder_plots, f"wflow_{index}", "month")
+            plot_clim(ds_clim_i, Folder_plots, station, "month")
             plt.close()
 
     ### 5. Plot other basin average outputs ###

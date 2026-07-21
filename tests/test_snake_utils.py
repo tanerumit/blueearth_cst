@@ -12,11 +12,14 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import re
+
 from src.snake_utils import (  # noqa: E402
     _compact_log_line,
     _log_path_parts,
     _relativize_paths,
     get_config,
+    log_row,
     save_figure,
     tee_to_log,
 )
@@ -118,6 +121,21 @@ def test_save_figure_writes_creates_parent_and_announces(tmp_path, capsys):
     save_figure(str(out), dpi=50)
     assert out.exists()
     assert f"Saved figure: {out}" in capsys.readouterr().out
+
+
+# --- log_row -----------------------------------------------------------------
+
+
+def test_log_row_standard_format(capsys):
+    log_row("hello world", module="plot")
+    out = capsys.readouterr().out.strip()
+    assert re.match(r"^\d{2}:\d{2}:\d{2} - plot - INFO - hello world$", out)
+
+
+def test_log_row_row_survives_compaction_unchanged():
+    # a log_row line is already compact -> the tee's _compact_log_line is a no-op
+    row = "21:56:12 - plot - INFO - Saved figure: x.png\n"
+    assert _compact_log_line(row) == row
 
 
 # --- path relativization -----------------------------------------------------

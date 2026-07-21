@@ -4,6 +4,8 @@ from os.path import join, dirname
 from pathlib import Path
 from typing import Union, List
 
+from src.snake_utils import log_row
+
 
 def copy_config_files(
     config: Union[str, Path],
@@ -37,7 +39,7 @@ def copy_config_files(
     if config_out_name is None:
         config_out_name = os.path.basename(config)
     # Copy the snake config file to the output directory
-    print(f"Copying {config_out_name} to {output_dir}")
+    log_row(f"Copying {config_out_name} to {output_dir}", module="config")
     with open(config, "r") as f:
         snake_config = f.read()
     with open(join(output_dir, config_out_name), "w") as f:
@@ -51,7 +53,7 @@ def copy_config_files(
             with open(config_file, "r") as f:
                 config = f.read()
             config_name = os.path.basename(config_file)
-            print(f"Copying {config_name} to {output_dir}")
+            log_row(f"Copying {config_name} to {output_dir}", module="config")
             with open(join(output_dir, config_name), "w") as f:
                 f.write(config)
 

@@ -397,16 +397,30 @@ def tee_to_log(log_path):
             sys.stdout, sys.stderr = orig_out, orig_err
 
 
-def save_figure(path, **kwargs):
+def log_row(message, module="cst", level="INFO"):
+    """Print one log row in the standard compact format used across rule logs.
+
+    ``HH:MM:SS - <module> - <LEVEL> - <message>`` — the same shape
+    ``_compact_log_line`` produces for hydromt records, so a ``script:`` rule's
+    own messages sit uniformly among the hydromt/library lines rather than as
+    bare, timestamp-less text. Use this instead of a plain ``print`` for anything
+    meant to appear in a rule log. The row is already compact, so the tee passes
+    it through (only any project paths in it are relativized).
+    """
+    print(f"{datetime.now():%H:%M:%S} - {module} - {level} - {message}")
+
+
+def save_figure(path, module="plot", **kwargs):
     """Save the current matplotlib figure to ``path`` and announce it cleanly.
 
     Centralizes the "write a figure + log one line" pattern for the plotting
-    ``script:`` rules: every produced map/plot then appears in the rule's log as
-    ``Saved figure: <path>`` instead of the log being empty or showing only
-    upstream library chatter. Parent directories are created. ``kwargs`` pass
-    through to ``matplotlib.pyplot.savefig`` (e.g. ``dpi``, ``bbox_inches``).
-    matplotlib is imported lazily so this module stays light for the Snakefiles
-    that import it only for ``get_config`` / ``stress_test_grid``.
+    ``script:`` rules: every produced map/plot appears in the rule's log as a
+    standard row ``HH:MM:SS - <module> - INFO - Saved figure: <path>`` (via
+    ``log_row``) instead of the log being empty or showing only upstream
+    library chatter. Parent directories are created. ``kwargs`` pass through to
+    ``matplotlib.pyplot.savefig`` (e.g. ``dpi``, ``bbox_inches``). matplotlib is
+    imported lazily so this module stays light for the Snakefiles that import it
+    only for ``get_config`` / ``stress_test_grid``.
     """
     import matplotlib.pyplot as plt
 
@@ -414,4 +428,4 @@ def save_figure(path, **kwargs):
     if parent:
         os.makedirs(parent, exist_ok=True)
     plt.savefig(path, **kwargs)
-    print(f"Saved figure: {path}")
+    log_row(f"Saved figure: {path}", module=module)

@@ -81,7 +81,7 @@ def prep_hydromt_update_forcing_config(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from src.snake_utils import log_row, tee_to_log
 
         with tee_to_log(sm.log[0]):
             prep_hydromt_update_forcing_config(
@@ -91,9 +91,10 @@ if __name__ == "__main__":
                 precip_source=sm.params.clim_source,
                 wflow_root=sm.params.basin_dir,
             )
-            print(
+            log_row(
                 f"Prepared forcing config {sm.params.starttime}..{sm.params.endtime} "
-                f"(clim_source={sm.params.clim_source}) -> {sm.output.forcing_yml}"
+                f"(clim_source={sm.params.clim_source}) -> {sm.output.forcing_yml}",
+                module="forcing",
             )
     else:
         prep_hydromt_update_forcing_config(

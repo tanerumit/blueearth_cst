@@ -24,6 +24,12 @@ from func_plot_signature import (
     plot_basavg,
 )
 from climate_forcing import climate_forcing_by_subcatchment
+from src.snake_utils import log_row
+
+
+def _log(message):
+    """Emit one standard-format log row (module tag ``plot``) for this rule."""
+    log_row(message, module="plot")
 
 
 def analyse_wflow_historical(
@@ -176,11 +182,9 @@ def analyse_wflow_historical(
     #      as "less than 1 year".
     #  (b) forcing present but shorter than a year: skip the yearly plots.
     if "time" not in ds_clim.dims:
-        print(
-            "No wflow forcing (precip/temp/pet) available; skipping climate plots."
-        )
+        _log("No wflow forcing (precip/temp/pet) available; skipping climate plots.")
     elif len(ds_clim.time) < 365:
-        print(
+        _log(
             "Less than 1 year of climate data is available; "
             "no yearly climate plots are made."
         )
@@ -189,7 +193,7 @@ def analyse_wflow_historical(
             # Positional station label (wflow_1..N) to match the discharge plots;
             # fall back to the raw id if a subcatchment has no discharge station.
             station = station_by_id.get(index, f"wflow_{index}")
-            print(f"Plot climatic data at {station}")
+            _log(f"Plot climatic data at {station}")
             ds_clim_i = ds_clim.sel(index=index)
             # Plot per year
             plot_clim(ds_clim_i, Folder_plots, station, "year")
@@ -200,11 +204,11 @@ def analyse_wflow_historical(
 
     ### 5. Plot other basin average outputs ###
     if ds_basin.data_vars:
-        print("Plot basin average wflow outputs")
+        _log("Plot basin average wflow outputs")
         plot_basavg(ds_basin, Folder_plots)
         plt.close()
     else:
-        print("No basin-average outputs configured; skipping plot_basavg.")
+        _log("No basin-average outputs configured; skipping plot_basavg.")
 
     ### 6. Plot hydrographs and compute performance metrics ###
     # Initialise the output performance table
@@ -215,7 +219,7 @@ def analyse_wflow_historical(
 
     # If possible, skip the first year of the wflow run (warm-up period)
     if len(qsim.time) > 365:
-        print("Skipping the first year of the wflow run (warm-up period)")
+        _log("Skipping the first year of the wflow run (warm-up period)")
         qsim = qsim.sel(
             time=slice(
                 f"{qsim['time.year'][0].values+1}-{qsim['time.month'][0].values}-{qsim['time.day'][0].values}",
@@ -225,7 +229,7 @@ def analyse_wflow_historical(
         if has_observations:
             do_signatures = True
     else:
-        print("Simulation is less than a year so model warm-up period will be plotted.")
+        _log("Simulation is less than a year so model warm-up period will be plotted.")
     # Sel qsim and qobs so that they have the same time period
     if has_observations:
         start = max(qsim.time.values[0], qobs.time.values[0])
@@ -243,7 +247,7 @@ def analyse_wflow_historical(
                 qobs_i = qobs.sel(index=station_id)
 
         # a) Plot hydrographs
-        print(f"Plot hydrographs at wflow station {station_name}")
+        _log(f"Plot hydrographs at wflow station {station_name}")
         plot_hydro(
             qsim=qsim_i,
             qobs=qobs_i,
@@ -257,7 +261,7 @@ def analyse_wflow_historical(
         plt.close()
         # b) Signature plot and performance metrics
         if do_signatures and qobs_i is not None:
-            print("observed timeseries are available - making signature plots.")
+            _log("observed timeseries are available - making signature plots.")
             # Plot signatures
             plot_signatures(
                 qsim=qsim_i,
@@ -284,7 +288,7 @@ def analyse_wflow_historical(
             else:
                 df_perf_all = df_perf_all.join(df_perf)
         else:
-            print(
+            _log(
                 "observed timeseries are not available " "no signature plots are made."
             )
 

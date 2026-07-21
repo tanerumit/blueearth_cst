@@ -46,15 +46,16 @@ def write_outlet_index(outlets_path, out_path):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from src.snake_utils import log_row, tee_to_log
 
         with tee_to_log(sm.log[0]):
             n_stations = write_outlet_index(
                 sm.input.outlets_path, sm.output.outlet_index_path
             )
-            print(
+            log_row(
                 f"Wrote outlet index: {n_stations} station(s) -> "
-                f"{sm.output.outlet_index_path}"
+                f"{sm.output.outlet_index_path}",
+                module="outlets",
             )
     else:
         write_outlet_index(

@@ -109,6 +109,21 @@ def test_run_and_tee_decodes_utf8_child_output(tmp_path):
     assert "â" not in text  # no 'â' mojibake
 
 
+def test_run_and_tee_compacts_hydromt_log_format(tmp_path):
+    # A child emitting a hydromt-format record (as the hydromt build/update CLI
+    # does) has its redundant dotted logger name dropped in the captured log.
+    log = tmp_path / "compact.log"
+    snippet = (
+        "print('2026-07-21 18:03:38,474 - hydromt.model.model - model - "
+        "INFO - Initializing wflow_sbm model.')"
+    )
+    rc = run_and_tee([sys.executable, "-c", snippet], log)
+    text = log.read_text(encoding="utf-8")
+    assert rc == 0
+    assert "2026-07-21 18:03:38,474 - model - INFO - Initializing wflow_sbm model." in text
+    assert "hydromt.model.model" not in text
+
+
 def test_cli_requires_separator():
     assert main(["only-a-log.log"]) == 2
 

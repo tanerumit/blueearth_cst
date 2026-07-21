@@ -9,9 +9,42 @@ own directory to ``sys.path`` before importing — see
 
 import contextlib
 import os
+import re
 import subprocess
 import sys
 from collections.abc import Mapping
+
+
+# hydromt formats every log record as
+# ``<ts> - <name> - <module> - <LEVEL> - <message>`` (its hardcoded
+# ``_LOG_FORMAT``; no CLI/env/config override exists). ``<name>`` is the dotted
+# logger path (``hydromt.model.model``) and ``<module>`` its leaf (``model``) —
+# largely redundant. We cannot change hydromt's format (vendored, off-limits),
+# so both tee paths below drop the dotted ``<name>`` on the way into *our* logs,
+# keeping ``<module>`` as a short subsystem tag. Only lines matching this exact
+# shape are rewritten; everything else (Julia/Wflow output, tracebacks, plain
+# prints) passes through verbatim. Anchored timestamp + no-space name/module +
+# single-word level make the match unambiguous; the message keeps any ``-``.
+_HYDROMT_LOG_RE = re.compile(
+    r"^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}) - \S+ - (\S+) - (\w+) - (.*)$"
+)
+
+
+def _compact_log_line(text):
+    """Drop the redundant dotted logger name from a hydromt-format log line.
+
+    ``<ts> - <name> - <module> - <LEVEL> - <msg>`` becomes
+    ``<ts> - <module> - <LEVEL> - <msg>``. A trailing newline is preserved.
+    Non-matching text is returned unchanged, so the tee stays faithful for all
+    output that is not a single hydromt log record.
+    """
+    had_newline = text.endswith("\n")
+    core = text[:-1] if had_newline else text
+    match = _HYDROMT_LOG_RE.match(core)
+    if not match:
+        return text
+    ts, module, level, message = match.groups()
+    return f"{ts} - {module} - {level} - {message}" + ("\n" if had_newline else "")
 
 
 def get_config(config, arg, default=None, optional=True):
@@ -120,8 +153,9 @@ class _Tee:
         self._sinks = sinks
 
     def write(self, text):
+        compacted = _compact_log_line(text)
         for sink in self._sinks:
-            sink.write(text)
+            sink.write(compacted)
         return len(text)
 
     def flush(self):
@@ -196,6 +230,9 @@ def run_and_tee(command, log_path):
     with open(log_path, "w", encoding="utf-8", errors="replace") as log:
 
         def emit(text):
+            # Compact hydromt's redundant log format (see _compact_log_line);
+            # non-hydromt lines pass through unchanged.
+            text = _compact_log_line(text)
             # The log file is UTF-8. The live console mirror may be a legacy
             # code page (cp1252 on Windows) that cannot encode glyphs the child
             # emits (e.g. Julia/Wflow progress-bar blocks); fall back to a lossy

@@ -11,7 +11,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.snake_utils import get_config, tee_to_log  # noqa: E402
+from src.snake_utils import _compact_log_line, get_config, tee_to_log  # noqa: E402
 
 
 def test_missing_required_raises():
@@ -47,6 +47,54 @@ def test_falsey_values_returned_as_is(falsey):
     assert result == falsey and type(result) is type(falsey)
 
 
+# --- _compact_log_line (hydromt format) --------------------------------------
+
+
+def test_compact_drops_dotted_name_keeps_module():
+    line = (
+        "2026-07-21 18:03:38,474 - hydromt.model.model - model - INFO - "
+        "Initializing wflow_sbm model.\n"
+    )
+    assert _compact_log_line(line) == (
+        "2026-07-21 18:03:38,474 - model - INFO - Initializing wflow_sbm model.\n"
+    )
+
+
+def test_compact_preserves_dashes_in_message():
+    line = (
+        "2026-07-21 18:03:20,505 - hydromt.model.model - model - INFO - "
+        "setup_rivers.river_routing=kinematic - wave - x\n"
+    )
+    # message (with its own ' - ') is kept whole; only the dotted name is dropped
+    assert _compact_log_line(line) == (
+        "2026-07-21 18:03:20,505 - model - INFO - "
+        "setup_rivers.river_routing=kinematic - wave - x\n"
+    )
+
+
+def test_compact_keeps_level_and_no_trailing_newline():
+    line = (
+        "2026-07-21 18:03:18,884 - hydromt.hydromt_wflow.workflows.basemaps"
+        " - basemaps - WARNING - Model resolution mismatch"
+    )  # no trailing newline
+    assert _compact_log_line(line) == (
+        "2026-07-21 18:03:18,884 - basemaps - WARNING - Model resolution mismatch"
+    )
+
+
+@pytest.mark.parametrize(
+    "line",
+    [
+        "[ Info: Wflow version v1.0.2\n",  # Julia log, no timestamp
+        "Traceback (most recent call last):\n",  # traceback
+        "just a plain print line\n",
+        "",  # empty
+    ],
+)
+def test_compact_passes_through_non_hydromt(line):
+    assert _compact_log_line(line) == line
+
+
 # --- tee_to_log (R3 §6) ------------------------------------------------------
 
 
@@ -60,6 +108,20 @@ def test_tee_to_log_writes_and_restores_streams(tmp_path):
     assert sys.stdout is out0 and sys.stderr is err0
     text = log.read_text(encoding="utf-8")
     assert "hello-stdout" in text and "hello-stderr" in text
+
+
+def test_tee_to_log_compacts_hydromt_format(tmp_path):
+    log = tmp_path / "rule.log"
+    with tee_to_log(log):
+        # a hydromt-format record (as hydromt's Python API emits) and a plain line
+        print(
+            "2026-07-21 18:03:38,474 - hydromt.model.model - model - INFO - built"
+        )
+        print("plain progress line")
+    text = log.read_text(encoding="utf-8")
+    assert "2026-07-21 18:03:38,474 - model - INFO - built" in text
+    assert "hydromt.model.model" not in text  # dotted name dropped
+    assert "plain progress line" in text  # non-hydromt line untouched
 
 
 def test_tee_to_log_reraises_and_still_restores(tmp_path):

@@ -195,29 +195,71 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
     return temp_step_count, precip_step_count, temp_step_count * precip_step_count
 
 
+def _cr_overwrite(line):
+    """Collapse a carriage-return-redrawn line to its final visible text.
+
+    Emulates a terminal: each ``\\r`` returns the cursor to column 0 so later
+    text overwrites earlier text on the same line. Progress bars (e.g. dask's
+    ``[####] | 100% Completed | 7.08 s``) redraw the full-width bar on every
+    ``\\r``, so the *last non-empty* segment is the final state. Filtering empty
+    segments is load-bearing: dask ends its stream with a bare ``\\r`` before the
+    newline, and a plain ``rsplit`` would keep that trailing empty piece and blank
+    the whole bar. A line with no ``\\r`` is returned unchanged.
+    """
+    if "\r" not in line:
+        return line
+    segments = [s for s in line.split("\r") if s]
+    return segments[-1] if segments else ""
+
+
 class _Tee:
-    """Minimal text stream that forwards writes to several sinks.
+    """Text stream mirroring in-process output to a live console and a log file.
 
     Deliberately not an ``io`` subclass: ``script:`` rules only ``print`` /
     log through ``sys.stdout``/``sys.stderr``, so ``write`` + ``flush`` (plus
     ``isatty``) is all that is needed. Note: this operates at the Python
     stream level, so output from *shell* subprocesses (which inherit the real
     file descriptors) is not captured — only in-process Python output is.
+
+    The ``live`` sink (console) gets output verbatim, so a carriage-return
+    progress bar still animates in place during a long ``to_netcdf``. The
+    ``logfile`` sink instead receives each line *after* carriage-return overwrite
+    (see ``_cr_overwrite``), so the persisted log keeps only the final rendered
+    state of an in-place-updated line rather than every redraw. Partial (not yet
+    newline-terminated) output is held in ``_pending`` and collapsed on the fly,
+    so a bar redrawing for hours never grows the buffer beyond one line.
     """
 
-    def __init__(self, *sinks, project_root=""):
-        self._sinks = sinks
+    def __init__(self, live, logfile, project_root=""):
+        self._live = live
+        self._logfile = logfile
         self._project_root = project_root
+        self._pending = ""  # current, not-yet-newline-terminated log line
 
     def write(self, text):
         out = _relativize_paths(_compact_log_line(text), self._project_root)
-        for sink in self._sinks:
-            sink.write(out)
+        self._live.write(out)  # verbatim: keeps the live console animation
+        buf = self._pending + out
+        lines = buf.split("\n")
+        self._pending = lines.pop()  # trailing fragment, no newline yet
+        for line in lines:
+            self._logfile.write(_cr_overwrite(line) + "\n")
+        self._pending = _cr_overwrite(self._pending)  # keep the buffer bounded
         return len(text)
 
     def flush(self):
-        for sink in self._sinks:
-            sink.flush()
+        # Flush the sinks but NOT ``_pending``: emitting a mid-progress fragment
+        # would re-clutter the log with every partial redraw.
+        self._live.flush()
+        self._logfile.flush()
+
+    def close(self):
+        # Flush any trailing partial line (e.g. a progress bar cut short by an
+        # error before its final newline) so nothing is silently dropped.
+        if self._pending:
+            self._logfile.write(_cr_overwrite(self._pending) + "\n")
+            self._pending = ""
+        self._logfile.flush()
 
     def isatty(self):
         return False
@@ -389,11 +431,16 @@ def tee_to_log(log_path):
     with open(log_path, "w", encoding="utf-8") as handle:
         handle.write(_log_header_lines(log_path))  # header to file only
         handle.flush()
-        sys.stdout = _Tee(orig_out, handle, project_root=project_root)
-        sys.stderr = _Tee(orig_err, handle, project_root=project_root)
+        stdout_tee = _Tee(orig_out, handle, project_root=project_root)
+        stderr_tee = _Tee(orig_err, handle, project_root=project_root)
+        sys.stdout, sys.stderr = stdout_tee, stderr_tee
         try:
             yield
         finally:
+            # Flush trailing partial lines while ``handle`` is still open, then
+            # restore the real streams (both always run, even if the body raised).
+            for tee in (stdout_tee, stderr_tee):
+                tee.close()
             sys.stdout, sys.stderr = orig_out, orig_err
 
 

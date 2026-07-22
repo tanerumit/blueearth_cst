@@ -16,6 +16,7 @@ import re
 
 from src.snake_utils import (  # noqa: E402
     _compact_log_line,
+    _cr_overwrite,
     _log_path_parts,
     _relativize_paths,
     get_config,
@@ -289,3 +290,48 @@ def test_tee_to_log_reraises_and_still_restores(tmp_path):
     # exception propagated (not swallowed) AND streams restored in finally
     assert sys.stdout is out0 and sys.stderr is err0
     assert "before-error" in log.read_text(encoding="utf-8")
+
+
+# --- carriage-return progress-bar collapse -----------------------------------
+
+
+@pytest.mark.parametrize(
+    "line, expected",
+    [
+        ("plain line", "plain line"),  # no CR: untouched
+        ("\r[## ] 10%\r[####] 20%", "[####] 20%"),  # keep last redraw
+        # dask ends a redrawn line with a bare CR before the newline; the empty
+        # trailing segment must be dropped, not kept (else the bar blanks out).
+        ("\r[#] 0%\r[####] 100% Completed | 7.08 s\r", "[####] 100% Completed | 7.08 s"),
+        ("\r", ""),  # only a bare CR -> nothing visible
+    ],
+)
+def test_cr_overwrite_keeps_last_nonempty_segment(line, expected):
+    assert _cr_overwrite(line) == expected
+
+
+def test_tee_to_log_collapses_progress_bar_to_final_line(tmp_path):
+    log = tmp_path / "rule.log"
+    with tee_to_log(log):
+        # mimic dask's ProgressBar: many \r-redraws written as separate chunks,
+        # the last ending "\r\n" (a bare \r right before the newline).
+        for pct in (0, 42, 100):
+            done = "#" * (pct // 10)
+            state = "Completed" if pct == 100 else "In progress"
+            sys.stdout.write(f"\r[{done:<10}] | {pct}% {state} | 7.08 s")
+        sys.stdout.write("\r\n")
+    body = [ln for ln in log.read_text(encoding="utf-8").splitlines() if "%" in ln]
+    # exactly one progress line survives, and it is the final 100% redraw
+    assert len(body) == 1
+    assert "100% Completed" in body[0]
+    # no intermediate redraw ("In progress" / "42%") leaked into the log
+    assert "In progress" not in log.read_text(encoding="utf-8")
+    assert "42%" not in body[0]
+
+
+def test_tee_to_log_close_flushes_interrupted_bar(tmp_path):
+    # a bar cut short (no final newline) must still land its last state in the log
+    log = tmp_path / "rule.log"
+    with tee_to_log(log):
+        sys.stdout.write("\r[## ] 50% In progress")  # no trailing newline
+    assert "50% In progress" in log.read_text(encoding="utf-8")

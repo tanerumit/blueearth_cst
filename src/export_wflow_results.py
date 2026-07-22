@@ -10,6 +10,7 @@ import xarray as xr
 from typing import List, Union
 
 import metrics_definition as md
+from src.snake_utils import log_row
 
 
 def analyze_wflow_results(
@@ -112,7 +113,7 @@ def analyze_wflow_results(
             dtype="float32",
         )
 
-    print("Computing discharge stats for each realization/stress test")
+    log_row("Computing discharge stats for each realization/stress test", module="export")
     Q_rps = []
     for i in range(np.size(df_out_mean, 0)):
         # Read csv file
@@ -236,7 +237,7 @@ def analyze_wflow_results(
                 )
         df_out_basavg.iloc[i, :] = np.float32(stats_basavg.round(1))
 
-    print("Writting tables for 2D stress tests plots")
+    log_row("Writting tables for 2D stress tests plots", module="export")
     if not os.path.isdir(os.path.dirname(bas_fn)):
         os.makedirs(bas_fn)
 

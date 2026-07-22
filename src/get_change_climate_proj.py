@@ -12,6 +12,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import xarray as xr
 
+from src.snake_utils import log_row
+
 # %%
 
 
@@ -355,7 +357,7 @@ if __name__ == "__main__":
                     )
 
                     # write to netcdf files
-                    print(f"writing netcdf files monthly_change_mean_grid")
+                    log_row("writing netcdf files monthly_change_mean_grid", module="change")
                     dvars = monthly_change_mean_grid.raster.vars
                     name_model = monthly_change_mean_grid.model.values[0]
                     name_scenario = monthly_change_mean_grid.scenario.values[0]

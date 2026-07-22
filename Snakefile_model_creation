@@ -5,7 +5,10 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from src.snake_utils import get_config
+from src.snake_utils import get_config, patch_psutil_windows_benchmark, rule_banner
+
+# Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
+patch_psutil_windows_benchmark()
 
 # read path of the config file (Snakemake records it from --configfile) so
 # downstream R scripts can be handed the same path. Forwarding config_path is
@@ -32,7 +35,7 @@ model_region = get_config(shared_cfg["basin"], "region", optional=False)
 model_resolution = get_config(shared_cfg["basin"], "resolution", 0.00833333)
 
 # Workflow-owned
-wflow_outvars = get_config(my_cfg, "wflow_outvars", ['river discharge'])
+wflow_outvars = get_config(my_cfg, "wflow_outvars", ['river discharge', 'actual evapotranspiration'])
 model_build_config = get_config(my_cfg, "model_build_config", f"{static_dir}/wflow_build_model.yml")
 waterbodies_config = get_config(my_cfg, "waterbodies_config", f"{static_dir}/wflow_update_waterbodies.yml")
 output_locations = get_config(my_cfg, "output_locations", None)
@@ -40,7 +43,14 @@ observations_timeseries = get_config(my_cfg, "observations_timeseries", None)
 
 basin_dir = f"{project_dir}/hydrology_model"
 
-# Master rule: end with all model run and analysed with saving a output plot
+# Rule numbering (comment headers + log/benchmark filenames) uses `W.NN` =
+# workflow.step in DEFINITION order — a reading and reference aid ("Rule 1.3" =
+# create_model), NOT guaranteed execution order. Snakemake resolves execution
+# from the DAG: e.g. 1.10-1.12 are parallel plot leaves, not a sequence. All
+# three workflows share project_dir/logs, so the leading digit keeps them
+# disambiguated and globally sortable. Convention: dev/conventions/naming.md.
+
+# 1.00  all — target aggregator: full historical build + performance plots
 rule all:
     input: 
         f"{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png",
@@ -48,9 +58,11 @@ rule all:
         f"{project_dir}/plots/wflow_model_performance/precip.png",
         f"{project_dir}/config/snake_config_model_creation.yml",
         f"{basin_dir}/staticgeoms/outlet_index.csv",
+        f"{project_dir}/benchmarks/wf1_benchmarks.md",
 
-# Rule to copy config files to the project_dir/config folder
+# 1.01  copy_config — copy build/snake/waterbodies configs into project_dir/config
 rule copy_config:
+    message: rule_banner("1.01", "copy_config")
     input:
         config_build = model_build_config,
         config_snake = config_path,
@@ -63,9 +75,10 @@ rule copy_config:
     script:
         "src/copy_config_files.py"
 
-# Rule to merge snake-config values (model_resolution) into the build config.
-# hydromt 1.3 dropped the `--opt` CLI flag, so we generate a runtime config.
+# 1.02  prepare_build_config — merge snake-config values (model_resolution) into
+# the build config. hydromt 1.3 dropped `--opt`, so we generate a runtime config.
 rule prepare_build_config:
+    message: rule_banner("1.02", "prepare_build_config")
     input:
         template = model_build_config,
     output:
@@ -74,28 +87,30 @@ rule prepare_build_config:
         model_resolution = model_resolution,
         model_region = model_region,
     log:
-        f"{project_dir}/logs/prepare_build_config.log",
+        f"{project_dir}/logs/1.02_prepare_build_config.log",
     benchmark:
-        f"{project_dir}/benchmarks/prepare_build_config.tsv",
+        f"{project_dir}/benchmarks/_parts/1.02_prepare_build_config.tsv",
     script:
         "src/prepare_build_config.py"
 
-# Rule to build model hydromt build wflow_sbm
+# 1.03  create_model — build the Wflow-SBM model (hydromt build wflow_sbm)
 rule create_model:
+    message: rule_banner("1.03", "create_model")
     input:
         hydromt_ini = f"{project_dir}/config/wflow_build_model_run.yml",
     output:
         basin_nc = f"{basin_dir}/staticmaps.nc",
     log:
-        f"{project_dir}/logs/create_model.log",
+        f"{project_dir}/logs/1.03_create_model.log",
     benchmark:
-        f"{project_dir}/benchmarks/create_model.tsv",
+        f"{project_dir}/benchmarks/_parts/1.03_create_model.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- hydromt build wflow_sbm "{basin_dir}" -i "{input.hydromt_ini}" -d "{DATA_SOURCES}" --fo -vv"""
 
-# Rule to add reservoirs, lakes and glaciers to the built model (temporary hydromt fix)
-# Can be moved back to create_model rule when hydromt is updated
+# 1.04  add_reservoirs_lakes_glaciers — add waterbodies to the built model
+# (temporary hydromt fix; can fold back into create_model when hydromt is updated)
 rule add_reservoirs_lakes_glaciers:
+    message: rule_banner("1.04", "add_reservoirs_lakes_glaciers")
     input:
         basin_nc = ancient(f"{basin_dir}/staticmaps.nc")
     output:
@@ -104,14 +119,15 @@ rule add_reservoirs_lakes_glaciers:
         data_catalog = DATA_SOURCES,
         config = waterbodies_config,
     log:
-        f"{project_dir}/logs/add_reservoirs_lakes_glaciers.log",
+        f"{project_dir}/logs/1.04_add_reservoirs_lakes_glaciers.log",
     benchmark:
-        f"{project_dir}/benchmarks/add_reservoirs_lakes_glaciers.tsv",
+        f"{project_dir}/benchmarks/_parts/1.04_add_reservoirs_lakes_glaciers.tsv",
     script:
         "src/setup_reservoirs_lakes_glaciers.py"
 
-# Rule to add gauges to the built model
+# 1.05  add_gauges_and_outputs — add gauges + output variables to the model
 rule add_gauges_and_outputs:
+    message: rule_banner("1.05", "add_gauges_and_outputs")
     input:
         basin_nc = ancient(f"{basin_dir}/staticmaps.nc"),
         text = f"{basin_dir}/staticgeoms/reservoirs_lakes_glaciers.txt"
@@ -122,27 +138,29 @@ rule add_gauges_and_outputs:
         outputs = wflow_outvars,
         data_catalog = DATA_SOURCES
     log:
-        f"{project_dir}/logs/add_gauges_and_outputs.log",
+        f"{project_dir}/logs/1.05_add_gauges_and_outputs.log",
     benchmark:
-        f"{project_dir}/benchmarks/add_gauges_and_outputs.tsv",
+        f"{project_dir}/benchmarks/_parts/1.05_add_gauges_and_outputs.tsv",
     script:
         "src/setup_gauges_and_outputs.py"
 
-# Rule to write the outlet position -> subcatchment-ID mapping (R3 section 4)
+# 1.06  write_outlet_index — write the outlet position -> subcatchment-ID mapping
 rule write_outlet_index:
+    message: rule_banner("1.06", "write_outlet_index")
     input:
         outlets_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
         outlet_index_path = f"{basin_dir}/staticgeoms/outlet_index.csv"
     log:
-        f"{project_dir}/logs/write_outlet_index.log",
+        f"{project_dir}/logs/1.06_write_outlet_index.log",
     benchmark:
-        f"{project_dir}/benchmarks/write_outlet_index.tsv",
+        f"{project_dir}/benchmarks/_parts/1.06_write_outlet_index.tsv",
     script:
         "src/write_outlet_index.py"
 
-# Rule to prepare the time horizon
+# 1.07  setup_runtime — prepare the forcing time horizon / runtime window
 rule setup_runtime:
+    message: rule_banner("1.07", "setup_runtime")
     input:
         gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
@@ -153,26 +171,28 @@ rule setup_runtime:
         clim_source = get_config(shared_cfg, "clim_historical", optional=False),
         basin_dir = basin_dir,
     log:
-        f"{project_dir}/logs/setup_runtime.log",
+        f"{project_dir}/logs/1.07_setup_runtime.log",
     benchmark:
-        f"{project_dir}/benchmarks/setup_runtime.tsv",
+        f"{project_dir}/benchmarks/_parts/1.07_setup_runtime.tsv",
     script: "src/setup_time_horizon.py"
 
-# Rule to add forcing to the updated model
+# 1.08  add_forcing — add historical forcing to the model (hydromt update wflow_sbm)
 rule add_forcing:
+    message: rule_banner("1.08", "add_forcing")
     input:
         forcing_ini = f"{project_dir}/config/wflow_build_forcing_historical.yml"
     output:
         forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
     log:
-        f"{project_dir}/logs/add_forcing.log",
+        f"{project_dir}/logs/1.08_add_forcing.log",
     benchmark:
-        f"{project_dir}/benchmarks/add_forcing.tsv",
+        f"{project_dir}/benchmarks/_parts/1.08_add_forcing.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- hydromt update wflow_sbm "{basin_dir}" -i "{input.forcing_ini}" -d "{DATA_SOURCES}" -vv"""
 
-# Rule to run the wflow model
+# 1.09  run_wflow — run the Wflow.jl model on historical forcing
 rule run_wflow:
+    message: rule_banner("1.09", "run_wflow")
     input:
         forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc"
     output:
@@ -180,31 +200,36 @@ rule run_wflow:
     params:
         toml_path = f"{basin_dir}/wflow_sbm.toml"
     log:
-        f"{project_dir}/logs/run_wflow.log",
+        f"{project_dir}/logs/1.09_run_wflow.log",
     benchmark:
-        f"{project_dir}/benchmarks/run_wflow.tsv",
+        f"{project_dir}/benchmarks/_parts/1.09_run_wflow.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_path}" """
 
-# Rule to analyse and plot wflow model run results --> final output
+# 1.10  plot_results — analyse + plot the wflow run (parallel leaf with 1.11/1.12)
 rule plot_results:
+   message: rule_banner("1.10", "plot_results")
    input:
        csv_path = f"{basin_dir}/run_default/output.csv",
+       # forcing input drives the climate plots (ADR 0002); declared so the DAG
+       # dependency is explicit even though the script reads it via the model.
+       forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
        script = "src/plot_results.py"
-   output: 
+   output:
        output_png = f"{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png",
    params:
        project_dir = f"{project_dir}",
        observations_file = observations_timeseries,
        gauges_output_path = output_locations,
    log:
-       f"{project_dir}/logs/plot_results.log",
+       f"{project_dir}/logs/1.10_plot_results.log",
    benchmark:
-       f"{project_dir}/benchmarks/plot_results.tsv",
+       f"{project_dir}/benchmarks/_parts/1.10_plot_results.tsv",
    script: "src/plot_results.py"
 
-# Rule to plot the wflow basin, rivers, gauges and DEM on a map
+# 1.11  plot_map — plot basin, rivers, gauges and DEM on a map (parallel leaf)
 rule plot_map:
+    message: rule_banner("1.11", "plot_map")
     input:
         gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
@@ -213,13 +238,14 @@ rule plot_map:
         project_dir = f"{project_dir}",
         output_locations = output_locations,
     log:
-        f"{project_dir}/logs/plot_map.log",
+        f"{project_dir}/logs/1.11_plot_map.log",
     benchmark:
-        f"{project_dir}/benchmarks/plot_map.tsv",
+        f"{project_dir}/benchmarks/_parts/1.11_plot_map.tsv",
     script: "src/plot_map.py"
 
-# Rule to plot the forcing on a map
+# 1.12  plot_forcing — plot the forcing on a map (parallel leaf)
 rule plot_forcing:
+    message: rule_banner("1.12", "plot_forcing")
     input:
         forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
     output:
@@ -228,7 +254,25 @@ rule plot_forcing:
         project_dir = f"{project_dir}",
         gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     log:
-        f"{project_dir}/logs/plot_forcing.log",
+        f"{project_dir}/logs/1.12_plot_forcing.log",
     benchmark:
-        f"{project_dir}/benchmarks/plot_forcing.tsv",
+        f"{project_dir}/benchmarks/_parts/1.12_plot_forcing.tsv",
     script: "src/plot_map_forcing.py"
+
+# --- benchmark gather ---------------------------------------------------------
+# Per-rule benchmarks land under benchmarks/_parts/. This runs once, after the
+# terminal outputs (so all WF1 rules ran), and merges the WF1 parts into one
+# benchmarks/wf1_benchmarks.tsv (rule column + TOTAL row), fresh each run.
+rule gather_benchmarks:
+    message: rule_banner("1.13", "gather_benchmarks")
+    input:
+        f"{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png",
+        f"{project_dir}/plots/wflow_model_performance/basin_area.png",
+        f"{project_dir}/plots/wflow_model_performance/precip.png",
+        f"{basin_dir}/staticgeoms/outlet_index.csv",
+    output:
+        f"{project_dir}/benchmarks/wf1_benchmarks.md",
+    params:
+        parts_dir = f"{project_dir}/benchmarks/_parts",
+        workflow_num = 1,
+    script: "src/merge_benchmarks.py"

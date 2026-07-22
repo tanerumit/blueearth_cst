@@ -22,6 +22,8 @@ import xarray as xr
 
 from dask.diagnostics import ProgressBar
 
+from src.snake_utils import log_row
+
 # %%
 
 
@@ -194,7 +196,7 @@ if __name__ == "__main__":
             ds_members_mean_stats_time = []
 
             for name_member in name_members:
-                print(name_member)
+                log_row(f"{name_member}", module="stats")
                 entry = f"{name_clim_project}_{name_model}_{name_scenario}_{name_member}"
                 if entry in data_catalog.sources:
                     try:  # todo can this be replaced by if statement?
@@ -237,7 +239,7 @@ if __name__ == "__main__":
                                 # (KeyboardInterrupt/SystemExit/GeneratorExit) now
                                 # propagates instead of being swallowed, so this is
                                 # output-neutral on any completing run.
-                                print(f"{name_scenario}", f"{name_model}", f"{var} not found")
+                                log_row(f"{name_scenario} {name_model} {var} not found", module="stats")
                         # merge all variables back to data
                         data = xr.merge(ds_list)
 
@@ -277,7 +279,7 @@ if __name__ == "__main__":
                 name_nc_out = f"stats-{name_model}_{name_scenario}.nc"
                 name_nc_out_time = f"stats_time-{name_model}_{name_scenario}.nc"
 
-            print("writing stats over time to nc")
+            log_row("writing stats over time to nc", module="stats")
             delayed_obj = nc_mean_stats_time.to_netcdf(
                 os.path.join(folder_out, name_nc_out_time),
                 encoding={k: {"zlib": True} for k in dvars},
@@ -287,7 +289,7 @@ if __name__ == "__main__":
                 delayed_obj.compute()
 
             if save_grids:
-                print("writing stats over grid to nc")
+                log_row("writing stats over grid to nc", module="stats")
                 delayed_obj = nc_mean_stats.to_netcdf(
                     os.path.join(folder_out, name_nc_out),
                     encoding={k: {"zlib": True} for k in dvars},

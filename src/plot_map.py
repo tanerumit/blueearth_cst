@@ -18,6 +18,8 @@ import matplotlib.patches as mpatches
 import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
 
+from src.snake_utils import save_figure
+
 
 def plot_basin_map(project_dir, gauges_fn, plot_dir=None):
     """Render basin_area.png (DEM + rivers + basin + outlets/gauges/waterbodies)."""
@@ -153,7 +155,7 @@ def plot_basin_map(project_dir, gauges_fn, plot_dir=None):
     )
 
     # save figure
-    plt.savefig(
+    save_figure(
         os.path.join(plot_dir, "basin_area.png"), dpi=300, bbox_inches="tight"
     )
 

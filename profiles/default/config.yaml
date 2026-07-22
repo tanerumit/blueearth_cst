@@ -1,0 +1,9 @@
+# Workflow profile — auto-loaded by Snakemake when running from the repo root
+# (`--workflow-profile` defaults to `profiles/default` if present, so no flag
+# is needed). Applies to all three Snakefile_* workflows.
+#
+# quiet: reason  — suppress the verbose per-job "Reason:" block (missing/updated
+# input paths). Drop this (or run `--quiet` without `reason`) when you need to
+# debug *why* a job re-ran. The `Job N:` banner and progress line are kept.
+quiet:
+  - reason

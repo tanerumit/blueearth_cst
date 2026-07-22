@@ -101,8 +101,14 @@ warnings surfaced from our code in any captured log.
   captures the child's combined output, and the cascade is **absent** from
   `run_wflow.log` (Julia) and the hydromt `update`-step logs, which use the same
   wrapper — so it is specific to the verbose hydromt build's shutdown, not a
-  wrapper defect. Cosmetic; accept. Candidate for an upstream hydromt report
-  (Windows `-vv` shutdown excepthook noise) if it ever obscures a real error.
+  wrapper defect. Cosmetic. **Resolved (test/pre06):** `run_and_tee`
+  (`src/snake_utils.py`) now collapses a *pure* trailing run of these empty-bodied
+  markers into one `[run_logged] collapsed N ... child rc=<rc>` summary line. The
+  filter is conservative — a real traceback puts non-empty content between the
+  markers, breaking the candidate block so it is emitted verbatim; only the
+  benign empty-bodied cascade is collapsed (`tests/test_run_logged.py`). Still a
+  candidate for an upstream hydromt report (Windows `-vv` shutdown excepthook
+  noise) since the root cause is inside the hydromt subprocess.
 
 **Conclusion.** Buckets 2 (actionable) and 3 are empty of real defects; the single
 bucket-2 item is intended hydromt behavior. The M1 coverage gap is closed. No code

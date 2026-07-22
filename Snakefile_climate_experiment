@@ -6,12 +6,21 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from src.snake_utils import get_config, stress_test_grid
+from src.snake_utils import get_config, patch_psutil_windows_benchmark, rule_banner, stress_test_grid
+
+# Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
+patch_psutil_windows_benchmark()
 
 # read path of the config file (Snakemake records it from --configfile) so
 # downstream R scripts can be handed the same path. Forwarding config_path is
 # a repo convention.
 config_path = workflow.configfiles[0]
+
+# Portable tee wrapper for the shell rules below (the R weather generator and the
+# Julia Wflow run): routes their output through src/run_logged.py so their logs
+# get the same header + path relativization + UTF-8/exit-code handling as every
+# other rule (matches WF1). See src/run_logged.py / src/snake_utils.run_and_tee.
+run_logged = str(Path(workflow.basedir) / "src" / "run_logged.py")
 
 # R01 schema
 project_cfg = config["project"]
@@ -52,15 +61,22 @@ wflow_run_length = get_config(my_cfg, "run_length", 20)
 basin_dir = f"{project_dir}/hydrology_model"
 exp_dir = f"{project_dir}/climate_{experiment}"
 
-# Master rule: end with all model run and analysed with saving a output plot
+# Rule numbering (comment headers + log/benchmark filenames) uses `W.NN` =
+# workflow.step in DEFINITION order — a reference aid ("Rule 3.10" = run_wflow),
+# not execution order (the DAG fans out over RLZ_NUM x ST_NUM realizations).
+# Convention: dev/conventions/naming.md.
+
+# 3.00  all — target aggregator: stress-test Qstats + basin indicators
 rule all:
     input:
         Qstats = f"{exp_dir}/model_results/Qstats.csv",
         basin = f"{exp_dir}/model_results/basin.csv",
         snake_config = f"{project_dir}/config/snake_config_climate_experiment.yml",
+        benchmarks = f"{project_dir}/benchmarks/wf3_benchmarks.md",
 
-# Rule to copy config files to the project_dir/config folder
+# 3.01  copy_config — copy snake config into project_dir/config
 rule copy_config:
+    message: rule_banner("3.01", "copy_config")
     input:
         config_snake = config_path,
     params:
@@ -71,8 +87,9 @@ rule copy_config:
     script:
         "src/copy_config_files.py"
 
-# Rule to extract historic climate data at native resolution for the project area
+# 3.02  extract_climate_grid — extract historical climate at native resolution
 rule extract_climate_grid:
+    message: rule_banner("3.02", "extract_climate_grid")
     input:
         prj_region = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
     params:
@@ -83,27 +100,29 @@ rule extract_climate_grid:
     output:
         climate_nc = f"{project_dir}/climate_historical/raw_data/extract_historical.nc",
     log:
-        f"{project_dir}/logs/extract_climate_grid.log",
+        f"{project_dir}/logs/3.02_extract_climate_grid.log",
     benchmark:
-        f"{project_dir}/benchmarks/extract_climate_grid.tsv",
+        f"{project_dir}/benchmarks/_parts/3.02_extract_climate_grid.tsv",
     script:
         "src/extract_historical_climate.py"
 
-# Prepare stress test experiment
+# 3.03  climate_stress_parameters — write the per-cst stress-test parameter grid
 rule climate_stress_parameters:
+    message: rule_banner("3.03", "climate_stress_parameters")
     input:
         config = ancient(config_path),
     output:
         st_csv_fns = [f"{exp_dir}/stress_test/cst_{st_num}.csv" for st_num in np.arange(1, ST_NUM+1)]
     log:
-        f"{project_dir}/logs/climate_stress_parameters.log",
+        f"{project_dir}/logs/3.03_climate_stress_parameters.log",
     benchmark:
-        f"{project_dir}/benchmarks/climate_stress_parameters.tsv",
+        f"{project_dir}/benchmarks/_parts/3.03_climate_stress_parameters.tsv",
     script:
         "src/prepare_cst_parameters.py"
 
-# Prepare config files for the weather generator: generate
+# 3.04  prepare_weagen_config — weathergen config for realization generation
 rule prepare_weagen_config:
+    message: rule_banner("3.04", "prepare_weagen_config")
     output:
         weagen_config = f"{exp_dir}/weathergen_config.yml",
     params:
@@ -115,14 +134,15 @@ rule prepare_weagen_config:
         sim_years = wflow_run_length,
         nc_file_prefix = "rlz"
     log:
-        f"{project_dir}/logs/prepare_weagen_config.log",
+        f"{project_dir}/logs/3.04_prepare_weagen_config.log",
     benchmark:
-        f"{project_dir}/benchmarks/prepare_weagen_config.tsv",
+        f"{project_dir}/benchmarks/_parts/3.04_prepare_weagen_config.tsv",
     script:
         "src/prepare_weagen_config.py"
 
-# Prepare config files for the weather generator: climate change
+# 3.05  prepare_weagen_config_st — weathergen config per rlz/cst (climate change)
 rule prepare_weagen_config_st:
+    message: rule_banner("3.05", "prepare_weagen_config_st")
     output:
         weagen_config = f"{exp_dir}/realization_"+"{rlz_num}"+"/weathergen_config_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".yml",
     params:
@@ -132,28 +152,30 @@ rule prepare_weagen_config_st:
         nc_file_prefix = "rlz_"+"{rlz_num}"+"_cst",
         nc_file_suffix = "{st_num}",
     log:
-        f"{project_dir}/logs/prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{project_dir}/logs/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{project_dir}/benchmarks/_parts/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "src/prepare_weagen_config.py"
 
-# Generate climate realization
+# 3.06  generate_weather_realization — weathergenr stochastic realizations (cst_0)
 rule generate_weather_realization:
+    message: rule_banner("3.06", "generate_weather_realization")
     input:
         climate_nc = ancient(f"{project_dir}/climate_historical/raw_data/extract_historical.nc"),
         weagen_config = f"{exp_dir}/weathergen_config.yml",
     output:
         temp([f"{exp_dir}/realization_{rlz_num}/rlz_{rlz_num}_cst_0.nc" for rlz_num in np.arange(1, RLZ_NUM+1)])
     log:
-        f"{project_dir}/logs/generate_weather_realization.log",
+        f"{project_dir}/logs/3.06_generate_weather_realization.log",
     benchmark:
-        f"{project_dir}/benchmarks/generate_weather_realization.tsv",
+        f"{project_dir}/benchmarks/_parts/3.06_generate_weather_realization.tsv",
     shell:
-        """Rscript --vanilla src/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config} > {log} 2>&1"""
+        """python -u "{run_logged}" "{log}" -- Rscript --vanilla src/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config}"""
 
-# Generate climate stress tests
+# 3.07  generate_climate_stress_test — impose perturbations per rlz/cst (st_num >= 1)
 rule generate_climate_stress_test:
+    message: rule_banner("3.07", "generate_climate_stress_test")
     # Constrain st_num to strictly positive integers on THIS rule so its output
     # wildcard rlz_{rlz_num}_cst_{st_num}.nc can never resolve st_num to 0. Left
     # unconstrained, the rule would be a second eligible producer of cst_0.nc
@@ -170,14 +192,15 @@ rule generate_climate_stress_test:
     output:
         rlz_st_nc = temp(f"{exp_dir}/realization_"+"{rlz_num}"+"/rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
     log:
-        f"{project_dir}/logs/generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{project_dir}/logs/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{project_dir}/benchmarks/_parts/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
-        """Rscript --vanilla src/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.st_csv} > {log} 2>&1"""
+        """python -u "{run_logged}" "{log}" -- Rscript --vanilla src/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.st_csv}"""
 
-# Prepare data catalog of the climate files
+# 3.08  climate_data_catalog — build a hydromt data catalog of the climate files
 rule climate_data_catalog:
+    message: rule_banner("3.08", "climate_data_catalog")
     input:
         cst_nc = expand((f"{exp_dir}/realization_"+"{rlz_num}"+"/rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc"), rlz_num = np.arange(1, RLZ_NUM+1), st_num = np.arange(1, ST_NUM+1)),
         rlz_nc = [f"{exp_dir}/realization_{rlz_num}/rlz_{rlz_num}_cst_0.nc" for rlz_num in np.arange(1, RLZ_NUM+1)]
@@ -187,14 +210,15 @@ rule climate_data_catalog:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
     log:
-        f"{project_dir}/logs/climate_data_catalog.log",
+        f"{project_dir}/logs/3.08_climate_data_catalog.log",
     benchmark:
-        f"{project_dir}/benchmarks/climate_data_catalog.tsv",
+        f"{project_dir}/benchmarks/_parts/3.08_climate_data_catalog.tsv",
     script:
         "src/prepare_climate_data_catalog.py"
 
-# Downscale climate forcing for use with wflow
+# 3.09  downscale_climate_realization — downscale climate forcing to wflow grid
 rule downscale_climate_realization:
+    message: rule_banner("3.09", "downscale_climate_realization")
     input:
         nc = f"{exp_dir}/realization_"+"{rlz_num}"+"/rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc",
         data_sources = [f"{exp_dir}/data_catalog_climate_experiment.yml", DATA_SOURCES]
@@ -207,14 +231,15 @@ rule downscale_climate_realization:
         horizontime_climate = horizontime_climate,
         run_length = wflow_run_length,
     log:
-        f"{project_dir}/logs/downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{project_dir}/logs/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{project_dir}/benchmarks/_parts/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "src/downscale_climate_forcing.py"
 
-# Run Wflow for all climate forcing
+# 3.10  run_wflow — run Wflow.jl for every rlz/cst forcing
 rule run_wflow:
+    message: rule_banner("3.10", "run_wflow")
     input:
         forcing_path = f"{exp_dir}/realization_"+"{rlz_num}"+"/inmaps_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc",
         toml_path = f"{basin_dir}/run_climate_{experiment}/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
@@ -222,14 +247,15 @@ rule run_wflow:
         csv_file = f"{basin_dir}/run_climate_{experiment}/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv",
         state_file = temp(f"{basin_dir}/run_climate_{experiment}/outstates_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
     log:
-        f"{project_dir}/logs/run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{project_dir}/logs/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{project_dir}/benchmarks/_parts/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
-        """ julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_path}" > {log} 2>&1"""
+        """python -u "{run_logged}" "{log}" -- julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_path}" """
 
-# Export wflow results
+# 3.11  export_wflow_results — reduce runs to Qstats + basin indicators
 rule export_wflow_results:
+    message: rule_banner("3.11", "export_wflow_results")
     input:
         rlz_csv_fns = expand((f"{basin_dir}/run_climate_{experiment}/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv"), rlz_num=np.arange(1, RLZ_NUM+1), st_num=np.arange(ST_START, ST_NUM+1)),
     output:
@@ -242,8 +268,24 @@ rule export_wflow_results:
         Tlow = get_config(my_cfg, "Tlow", 2),
         Tpeak = get_config(my_cfg, "Tpeak", 10),
     log:
-        f"{project_dir}/logs/export_wflow_results.log",
+        f"{project_dir}/logs/3.11_export_wflow_results.log",
     benchmark:
-        f"{project_dir}/benchmarks/export_wflow_results.tsv",
+        f"{project_dir}/benchmarks/_parts/3.11_export_wflow_results.tsv",
     script:
         "src/export_wflow_results.py"
+
+# --- benchmark gather ---------------------------------------------------------
+# Merge WF3's per-rule benchmark parts (benchmarks/_parts/3.*) into one
+# benchmarks/wf3_benchmarks.tsv (rule column + TOTAL row) once the final
+# results are built (all WF3 rules ran).
+rule gather_benchmarks:
+    message: rule_banner("3.12", "gather_benchmarks")
+    input:
+        f"{exp_dir}/model_results/Qstats.csv",
+        f"{exp_dir}/model_results/basin.csv",
+    output:
+        f"{project_dir}/benchmarks/wf3_benchmarks.md",
+    params:
+        parts_dir = f"{project_dir}/benchmarks/_parts",
+        workflow_num = 3,
+    script: "src/merge_benchmarks.py"

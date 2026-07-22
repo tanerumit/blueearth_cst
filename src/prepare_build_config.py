@@ -62,7 +62,7 @@ def merge_build_config(template_path, out_path, model_resolution, model_region):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from src.snake_utils import log_row, tee_to_log
 
         with tee_to_log(sm.log[0]):
             merge_build_config(
@@ -70,4 +70,10 @@ if __name__ == "__main__":
                 out_path=sm.output.merged,
                 model_resolution=sm.params.model_resolution,
                 model_region=sm.params.model_region,
+            )
+            log_row(
+                f"Prepared hydromt build config "
+                f"(res={sm.params.model_resolution}, region={sm.params.model_region}) "
+                f"-> {sm.output.merged}",
+                module="config",
             )

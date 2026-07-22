@@ -390,3 +390,64 @@ for the full M2b record.
   in `src/get_stats_climate_proj.py`. The followup line item was based on
   the slow path and no longer applies. (No file currently lists it
   separately — leaving this here as a reminder if it resurfaces.)
+
+## R6 — Functional modularization (capability boundaries)
+
+- **Climate analysis/visualization as a model-independent subworkflow.**
+  *Direction raised by Ümit 2026-07-21 (test/pre06, Observation 4 follow-up).*
+  We should be able to analyze and visualize climate data — gridded meteo
+  diagnostics, forcing climatology, projection change factors — **without**
+  building a hydrology model. Today the WF1 climate QA plots
+  (`src/plot_results.py` §4) are coupled to the built wflow model
+  (`mod.forcing.data`, `staticmaps["subcatchment"]`), and the forcing itself
+  (`inmaps_historical.nc`) is a *product* of the model build. Yet the natural
+  minimal dependency for climate analysis is a region/AOI geometry + data
+  catalog — which WF3's `extract_climate_grid` (rule 3.02: `region.geojson` +
+  clim source → `extract_historical.nc`) and WF2's `monthly_stats_*` already
+  demonstrate (both depend only on `region.geojson`, not the full model).
+  Direction: factor a shared **climate-analysis subworkflow/component** whose
+  inputs are (region/AOI, gridded climate dataset) and whose outputs are
+  climate diagnostics/plots, consumed by WF1 QA, WF2, and WF3 alike; degrade
+  gracefully (region-only → basin-level; + subcatchment map → per-subcatchment).
+  This is *functional* decomposition (capability boundaries), a **new axis**
+  beyond the R6 roadmap's current layout/`enabled:` pain points (roadmap §R6) —
+  add it to the R6 lock list when R6 scoping begins.
+  **Tension to resolve:** ADR 0002
+  (`dev/decisions/0002-revive-subcatchment-climate-plots.md`) currently sources
+  the climate plots from `mod.forcing.data` (re-couples to the build); a modular
+  design would source raw gridded climate (catalog + region) instead. Keep this
+  in mind when ADR 0002 is implemented — it may argue for sourcing from
+  `extract_climate_grid`-style extraction rather than the model forcing. To be
+  discussed at R6 scoping; not to be designed or implemented yet.
+
+- **Reconsider the WF1 rule arrangement — bundle/split + rename.**
+  *Direction raised by Ümit 2026-07-21 (test/pre06, Observation re: WF1's 11
+  rules).* NOT covered by R6's current lock list (which is repo/directory
+  layout + `enabled:`); this is rule-level composition *within* a workflow — a
+  new R6 axis. WF1 today has 12 rules (1.01–1.12; see `Snakefile_model_creation`
+  and naming.md §9): copy_config, prepare_build_config, create_model,
+  add_reservoirs_lakes_glaciers, add_gauges_and_outputs, write_outlet_index,
+  setup_runtime, add_forcing, run_wflow, plot_results, plot_map, plot_forcing.
+  Candidates to weigh:
+  - **Plotting is three separate rules** (plot_results 1.10, plot_map 1.11,
+    plot_forcing 1.12), each a `script:` emitting PNGs and now sharing
+    `save_figure`. Consider consolidating into fewer rules (or one parameterized
+    "plots" rule / a plotting sub-component) and a shared plotting module.
+  - **Model-update chain is finely split** (create_model → add_reservoirs… →
+    add_gauges… → write_outlet_index → setup_runtime → add_forcing). Some splits
+    are historical: `add_reservoirs_lakes_glaciers`'s own comment says it "can be
+    moved back to create_model when hydromt is updated" — a standing re-merge
+    candidate.
+  - **Verb standardization**: rules mix `create_`/`add_`/`setup_`/`prepare_`/
+    `write_`/`plot_`/`run_`; `prepare_build_config` vs `setup_runtime` vs
+    `create_model` overlap semantically. Align on a small verb vocabulary
+    (naming.md §2 already prescribes `verb_noun`).
+  **Key tradeoff — do not bundle blindly:** separate rules give Snakemake
+  parallelism and *targeted* re-runs (edit forcing → only `plot_forcing` reruns);
+  bundling coarsens the DAG and re-runs more on any change. Weigh granularity vs.
+  readability per rule. Interactions: any reorg renumbers the `W.NN` scheme
+  (naming.md §9 documents this as a mechanical cost), touches CLI target names
+  (a naming.md §7 contract-surface rename → migration note), and overlaps the
+  climate-subworkflow item above (plotting may move out of WF1 entirely). Same
+  lens applies to WF3 (also 11 rules). To be discussed at R6 scoping; not to be
+  designed or implemented yet.

@@ -6,7 +6,10 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from src.snake_utils import get_config
+from src.snake_utils import get_config, patch_psutil_windows_benchmark, rule_banner
+
+# Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
+patch_psutil_windows_benchmark()
 
 # read path of the config file (Snakemake records it from --configfile) so
 # downstream R scripts can be handed the same path. Forwarding config_path is
@@ -39,7 +42,12 @@ clim_project_dir = f"{project_dir}/climate_projections/{clim_project}"
 def get_horizon(wildcards):
     return config["workflows"]["climate_projections"]["future_horizons"][wildcards.horizon]
 
-# Master rule: end with csv with change factors for each scenario and model
+# Rule numbering (comment headers + log/benchmark filenames) uses `W.NN` =
+# workflow.step in DEFINITION order — a reference aid ("Rule 2.4" = monthly_change),
+# not execution order (the DAG fans out over {model}/{scenario}/{horizon}).
+# Convention: dev/conventions/naming.md.
+
+# 2.00  all — target aggregator: change-factor summaries + projection plots
 rule all:
     input:
         (clim_project_dir + "/annual_change_scalar_stats_summary.nc"),
@@ -49,6 +57,11 @@ rule all:
         precip_plt = (clim_project_dir + "/plots/precipitation_anomaly_projections_abs.png"),
         temp_plt = (clim_project_dir + "/plots/temperature_anomaly_projections_abs.png"),
         snake_config = f"{project_dir}/config/snake_config_climate_projections.yml",
+        # one merged log per fan-out rule (gathered from the per-model _parts logs)
+        stats_hist_log = f"{project_dir}/logs/2.02_monthly_stats_hist.log",
+        stats_fut_log = f"{project_dir}/logs/2.03_monthly_stats_fut.log",
+        change_log = f"{project_dir}/logs/2.04_monthly_change.log",
+        benchmarks = f"{project_dir}/benchmarks/wf2_benchmarks.md",
 
 # Retained as stale insurance pending removal task; dry-run on the current pinned
 # Snakemake shows this directive constrains nothing on the tests fixture and a
@@ -56,8 +69,9 @@ rule all:
 # to a task that first encodes the ambiguity-sensitive config shapes as regression tests.
 ruleorder: monthly_stats_hist > monthly_stats_fut > monthly_change > monthly_change_scalar_merge
 
-# Rule to copy config files to the project_dir/config folder
+# 2.01  copy_config — copy snake config into project_dir/config
 rule copy_config:
+    message: rule_banner("2.01", "copy_config")
     input:
         config_snake = config_path,
     params:
@@ -68,9 +82,10 @@ rule copy_config:
     script:
         "src/copy_config_files.py"
 
-# Rule to calculate mean monthly statistics for historical and future scenarios - grid saved to netcdf
-# also calculate monthly time series averaged over the grid.
+# 2.02  monthly_stats_hist — mean monthly stats for the historical period, per
+# {model} (grid to netcdf + grid-averaged monthly time series).
 rule monthly_stats_hist:
+    message: rule_banner("2.02", "monthly_stats_hist")
     input:
         region_path = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
     output:
@@ -86,14 +101,15 @@ rule monthly_stats_hist:
         variables = variables,
         save_grids = save_grids,
     log:
-        project_dir + "/logs/monthly_stats_hist/{model}.log",
+        project_dir + "/logs/_parts/2.02_monthly_stats_hist/{model}.log",
     benchmark:
-        project_dir + "/benchmarks/monthly_stats_hist/{model}.tsv",
+        project_dir + "/benchmarks/_parts/2.02_monthly_stats_hist/{model}.tsv",
     script: "src/get_stats_climate_proj.py"
 
-# Rule to calculate mean monthly statistics for historical and future scenarios - grid saved to netcdf
-# also calculate monthly time series averaged over the grid.
+# 2.03  monthly_stats_fut — mean monthly stats per {model}_{scenario} (future),
+# chained after 2.02 (grid to netcdf + grid-averaged monthly time series).
 rule monthly_stats_fut:
+    message: rule_banner("2.03", "monthly_stats_fut")
     input:
         region_path = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
         stats_time_nc_hist = (clim_project_dir + "/historical_stats_time_{model}.nc"), #make sure starts with previous job
@@ -109,13 +125,14 @@ rule monthly_stats_fut:
         variables = variables,
         save_grids = save_grids,
     log:
-        project_dir + "/logs/monthly_stats_fut/{model}_{scenario}.log",
+        project_dir + "/logs/_parts/2.03_monthly_stats_fut/{model}_{scenario}.log",
     benchmark:
-        project_dir + "/benchmarks/monthly_stats_fut/{model}_{scenario}.tsv",
+        project_dir + "/benchmarks/_parts/2.03_monthly_stats_fut/{model}_{scenario}.tsv",
     script: "src/get_stats_climate_proj.py"
 
-# Rule to calculate change stats over the grid
+# 2.04  monthly_change — change factors per {model}_{scenario}_{horizon}
 rule monthly_change:
+    message: rule_banner("2.04", "monthly_change")
     input:
         stats_time_nc_hist = ancient(clim_project_dir + "/historical_stats_time_{model}.nc"),
         stats_time_nc = ancient(clim_project_dir + "/stats_time-{model}_{scenario}.nc"),
@@ -133,13 +150,14 @@ rule monthly_change:
         stats_path_hist = (clim_project_dir + "/historical_stats_{model}.nc"),
         stats_path = (clim_project_dir + "/stats-{model}_{scenario}.nc"),
     log:
-        project_dir + "/logs/monthly_change/{model}_{scenario}_{horizon}.log",
+        project_dir + "/logs/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.log",
     benchmark:
-        project_dir + "/benchmarks/monthly_change/{model}_{scenario}_{horizon}.tsv",
+        project_dir + "/benchmarks/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.tsv",
     script: "src/get_change_climate_proj.py"
 
-#rule to merge results in one netcdf / todo: add plotting
+# 2.05  monthly_change_scalar_merge — merge all change factors into one summary
 rule monthly_change_scalar_merge:
+    message: rule_banner("2.05", "monthly_change_scalar_merge")
     input:
         stats_nc_change = ancient(expand((clim_project_dir + "/annual_change_scalar_stats-{model}_{scenario}_{horizon}.nc"), model = models, scenario = scenarios, horizon = future_horizons)),
     output:
@@ -151,13 +169,14 @@ rule monthly_change_scalar_merge:
         clim_project_dir = f"{clim_project_dir}",
         horizons = future_horizons,
     log:
-        f"{project_dir}/logs/monthly_change_scalar_merge.log",
+        f"{project_dir}/logs/2.05_monthly_change_scalar_merge.log",
     benchmark:
-        f"{project_dir}/benchmarks/monthly_change_scalar_merge.tsv",
+        f"{project_dir}/benchmarks/_parts/2.05_monthly_change_scalar_merge.tsv",
     script: "src/get_change_climate_proj_summary.py"
 
-#rule to plot timeseries
+# 2.06  plot_climate_proj_timeseries — plot projected anomaly time series
 rule plot_climate_proj_timeseries:
+    message: rule_banner("2.06", "plot_climate_proj_timeseries")
     input:
         stats_change_summary = (clim_project_dir + "/annual_change_scalar_stats_summary.nc"),
         stats_time_nc_hist =[(clim_project_dir + f"/historical_stats_time_{mod}.nc") for mod in models],
@@ -173,7 +192,79 @@ rule plot_climate_proj_timeseries:
         temp_plt = (clim_project_dir + "/plots/temperature_anomaly_projections_abs.png"),
         timeseries_csv = (clim_project_dir + "/gcm_timeseries.nc"),
     log:
-        f"{project_dir}/logs/plot_climate_proj_timeseries.log",
+        f"{project_dir}/logs/2.06_plot_climate_proj_timeseries.log",
     benchmark:
-        f"{project_dir}/benchmarks/plot_climate_proj_timeseries.tsv",
+        f"{project_dir}/benchmarks/_parts/2.06_plot_climate_proj_timeseries.tsv",
     script: "src/plot_proj_timeseries.py"
+
+# --- log gather ---------------------------------------------------------------
+# 2.02/2.03/2.04 run one job per model (parallel-safe per-model logs under
+# logs/_parts/). These gather steps run once per stage, after all that stage's
+# jobs, concatenating the per-model parts into a single logs/<rule>.log,
+# regenerated fresh each run. Inputs are the stage's .nc outputs (all model jobs
+# done); the exact part paths are passed via params so stale parts are excluded.
+
+# gather 2.02 per-model logs -> 2.02_monthly_stats_hist.log
+rule gather_stats_hist_logs:
+    message: rule_banner("2.07", "gather_stats_hist_logs")
+    input:
+        expand(clim_project_dir + "/historical_stats_time_{model}.nc", model=models),
+    output:
+        f"{project_dir}/logs/2.02_monthly_stats_hist.log",
+    params:
+        parts = expand(
+            project_dir + "/logs/_parts/2.02_monthly_stats_hist/{model}.log",
+            model=models,
+        ),
+    script: "src/merge_logs.py"
+
+# gather 2.03 per-model logs -> 2.03_monthly_stats_fut.log
+rule gather_stats_fut_logs:
+    message: rule_banner("2.08", "gather_stats_fut_logs")
+    input:
+        expand(
+            clim_project_dir + "/stats_time-{model}_{scenario}.nc",
+            model=models, scenario=scenarios,
+        ),
+    output:
+        f"{project_dir}/logs/2.03_monthly_stats_fut.log",
+    params:
+        parts = expand(
+            project_dir + "/logs/_parts/2.03_monthly_stats_fut/{model}_{scenario}.log",
+            model=models, scenario=scenarios,
+        ),
+    script: "src/merge_logs.py"
+
+# gather 2.04 per-model logs -> 2.04_monthly_change.log
+rule gather_change_logs:
+    message: rule_banner("2.09", "gather_change_logs")
+    input:
+        expand(
+            clim_project_dir + "/annual_change_scalar_stats-{model}_{scenario}_{horizon}.nc",
+            model=models, scenario=scenarios, horizon=future_horizons,
+        ),
+    output:
+        f"{project_dir}/logs/2.04_monthly_change.log",
+    params:
+        parts = expand(
+            project_dir + "/logs/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.log",
+            model=models, scenario=scenarios, horizon=future_horizons,
+        ),
+    script: "src/merge_logs.py"
+
+# --- benchmark gather ---------------------------------------------------------
+# Merge WF2's per-rule benchmark parts (benchmarks/_parts/2.*) into one
+# benchmarks/wf2_benchmarks.tsv (rule column + TOTAL row) once the summary +
+# plots are built (all WF2 rules ran).
+rule gather_benchmarks:
+    message: rule_banner("2.10", "gather_benchmarks")
+    input:
+        (clim_project_dir + "/annual_change_scalar_stats_summary.nc"),
+        (clim_project_dir + "/plots/projected_climate_statistics.png"),
+        (clim_project_dir + "/plots/precipitation_anomaly_projections_abs.png"),
+    output:
+        f"{project_dir}/benchmarks/wf2_benchmarks.md",
+    params:
+        parts_dir = f"{project_dir}/benchmarks/_parts",
+        workflow_num = 2,
+    script: "src/merge_benchmarks.py"

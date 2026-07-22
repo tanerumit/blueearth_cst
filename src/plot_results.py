@@ -23,6 +23,13 @@ from func_plot_signature import (
     plot_clim,
     plot_basavg,
 )
+from climate_forcing import climate_forcing_by_subcatchment
+from src.snake_utils import log_row
+
+
+def _log(message):
+    """Emit one standard-format log row (module tag ``plot``) for this rule."""
+    log_row(message, module="plot")
 
 
 def analyse_wflow_historical(
@@ -34,8 +41,10 @@ def analyse_wflow_historical(
     Analyse and plot wflow model performance for historical run.
 
     To be read, model should be stored in ``project_dir``/hydrology_model.
-    Model results should include the following keys: Q_gauges,
-    Q_gauges_{basename(gauges_locs)}, P_subcatchment, T_subcatchment, EP_subcatchment.
+    Model results should include the discharge keys Q_outlets and, if gauges are
+    provided, Q_gauges_{basename(gauges_locs)}. The climate plots (P/T/EP) are
+    derived from the model's forcing INPUT (inmaps: precip/temp/pet), aggregated
+    per subcatchment — not from wflow outputs (ADR 0002).
 
 
     Outputs:
@@ -123,6 +132,9 @@ def analyse_wflow_historical(
             [f"wflow_{i + 1}" for i in range(qsim["index"].size)],
         )
     )
+    # Map subcatchment id -> positional station_name (wflow_1..N) so the climate
+    # plots share the discharge station labels instead of raw subcatchment ids.
+    station_by_id = dict(zip(qsim["index"].values, qsim["station_name"].values))
     # Discharge at the gauges_locs if present
     if gauges_locs is not None and os.path.exists(gauges_locs):
         gauges_output_name = os.path.basename(gauges_locs).split(".")[0]
@@ -141,13 +153,16 @@ def analyse_wflow_historical(
             )
             qsim = xr.merge([qsim, qsim_gauges])["Q"]
 
-    # Climate data P, EP, T at the subcatchment scale — only present if those
-    # outputs were configured in setup_gauges_and_outputs / wflow_outvars. With
-    # the M2b CSDMS rename, configuring them is R3 territory; skip cleanly when
-    # absent so the hydrograph plot still ships.
-    clim_keys = ("P_subcatchment", "T_subcatchment", "EP_subcatchment")
-    if all(k in results for k in clim_keys):
-        ds_clim = xr.merge([results[k] for k in clim_keys])
+    # Climate data (P/T/EP) per subcatchment, derived from the wflow forcing
+    # INPUT (inmaps: precip/temp/pet) — the actual climate driving the model —
+    # not from wflow outputs (ADR 0002). Aggregate the gridded forcing to a
+    # per-subcatchment mean timeseries. Skip cleanly if the model carries no
+    # forcing so the hydrograph plot still ships.
+    forcing = mod.forcing.data
+    if forcing.data_vars and all(v in forcing for v in ("precip", "temp", "pet")):
+        ds_clim = climate_forcing_by_subcatchment(
+            forcing, mod.staticmaps.data["subcatchment"]
+        )
     else:
         ds_clim = xr.Dataset()
 
@@ -160,27 +175,40 @@ def analyse_wflow_historical(
         ds_basin = xr.Dataset()
 
     ### 4. Plot climate data ###
-    # No plots of climate data if wflow run is less than a year
-    if "time" not in ds_clim.dims or len(ds_clim.time) < 365:
-        print("less than 1 year of data is available " "no yearly clim plots are made.")
+    # Two distinct skip reasons — keep them separate so the log is honest:
+    #  (a) ds_clim empty: the model carries no forcing (precip/temp/pet), so
+    #      there is nothing to aggregate. This is NOT a data-length condition —
+    #      the discharge run may span many years — so it must never be reported
+    #      as "less than 1 year".
+    #  (b) forcing present but shorter than a year: skip the yearly plots.
+    if "time" not in ds_clim.dims:
+        _log("No wflow forcing (precip/temp/pet) available; skipping climate plots.")
+    elif len(ds_clim.time) < 365:
+        _log(
+            "Less than 1 year of climate data is available; "
+            "no yearly climate plots are made."
+        )
     else:
         for index in ds_clim.index.values:
-            print(f"Plot climatic data at wflow basin {index}")
+            # Positional station label (wflow_1..N) to match the discharge plots;
+            # fall back to the raw id if a subcatchment has no discharge station.
+            station = station_by_id.get(index, f"wflow_{index}")
+            _log(f"Plot climatic data at {station}")
             ds_clim_i = ds_clim.sel(index=index)
             # Plot per year
-            plot_clim(ds_clim_i, Folder_plots, f"wflow_{index}", "year")
+            plot_clim(ds_clim_i, Folder_plots, station, "year")
             plt.close()
             # Plot per month
-            plot_clim(ds_clim_i, Folder_plots, f"wflow_{index}", "month")
+            plot_clim(ds_clim_i, Folder_plots, station, "month")
             plt.close()
 
     ### 5. Plot other basin average outputs ###
     if ds_basin.data_vars:
-        print("Plot basin average wflow outputs")
+        _log("Plot basin average wflow outputs")
         plot_basavg(ds_basin, Folder_plots)
         plt.close()
     else:
-        print("No basin-average outputs configured; skipping plot_basavg.")
+        _log("No basin-average outputs configured; skipping plot_basavg.")
 
     ### 6. Plot hydrographs and compute performance metrics ###
     # Initialise the output performance table
@@ -191,7 +219,7 @@ def analyse_wflow_historical(
 
     # If possible, skip the first year of the wflow run (warm-up period)
     if len(qsim.time) > 365:
-        print("Skipping the first year of the wflow run (warm-up period)")
+        _log("Skipping the first year of the wflow run (warm-up period)")
         qsim = qsim.sel(
             time=slice(
                 f"{qsim['time.year'][0].values+1}-{qsim['time.month'][0].values}-{qsim['time.day'][0].values}",
@@ -201,7 +229,7 @@ def analyse_wflow_historical(
         if has_observations:
             do_signatures = True
     else:
-        print("Simulation is less than a year so model warm-up period will be plotted.")
+        _log("Simulation is less than a year so model warm-up period will be plotted.")
     # Sel qsim and qobs so that they have the same time period
     if has_observations:
         start = max(qsim.time.values[0], qobs.time.values[0])
@@ -219,7 +247,7 @@ def analyse_wflow_historical(
                 qobs_i = qobs.sel(index=station_id)
 
         # a) Plot hydrographs
-        print(f"Plot hydrographs at wflow station {station_name}")
+        _log(f"Plot hydrographs at wflow station {station_name}")
         plot_hydro(
             qsim=qsim_i,
             qobs=qobs_i,
@@ -233,7 +261,7 @@ def analyse_wflow_historical(
         plt.close()
         # b) Signature plot and performance metrics
         if do_signatures and qobs_i is not None:
-            print("observed timeseries are available - making signature plots.")
+            _log("observed timeseries are available - making signature plots.")
             # Plot signatures
             plot_signatures(
                 qsim=qsim_i,
@@ -260,7 +288,7 @@ def analyse_wflow_historical(
             else:
                 df_perf_all = df_perf_all.join(df_perf)
         else:
-            print(
+            _log(
                 "observed timeseries are not available " "no signature plots are made."
             )
 

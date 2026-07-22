@@ -33,18 +33,30 @@ def build_outlet_index(outlets_path):
 
 
 def write_outlet_index(outlets_path, out_path):
-    """Build the outlet index from ``outlets_path`` and write it to ``out_path``."""
+    """Build the outlet index from ``outlets_path`` and write it to ``out_path``.
+
+    Returns the number of stations written (for an informative rule log line).
+    """
     os.makedirs(os.path.dirname(out_path), exist_ok=True)
-    build_outlet_index(outlets_path).to_csv(out_path, index=False)
+    df = build_outlet_index(outlets_path)
+    df.to_csv(out_path, index=False)
+    return len(df)
 
 
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from src.snake_utils import log_row, tee_to_log
 
         with tee_to_log(sm.log[0]):
-            write_outlet_index(sm.input.outlets_path, sm.output.outlet_index_path)
+            n_stations = write_outlet_index(
+                sm.input.outlets_path, sm.output.outlet_index_path
+            )
+            log_row(
+                f"Wrote outlet index: {n_stations} station(s) -> "
+                f"{sm.output.outlet_index_path}",
+                module="outlets",
+            )
     else:
         write_outlet_index(
             os.path.join(

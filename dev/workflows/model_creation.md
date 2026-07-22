@@ -59,8 +59,12 @@ workflows 2/3; not in this `rule all`):
 **Side-effect artifacts** (bookkeeping / traceability; no downstream reader):
 - `{basin_dir}/staticgeoms/reservoirs_lakes_glaciers.txt` — waterbodies sentinel.
 - `{basin_dir}/staticgeoms/outlet_index.csv` — position→subcatchment-ID map (R3 §4).
-- `{project_dir}/logs/{rule}.log`, `{project_dir}/benchmarks/{rule}.tsv` —
-  ephemeral run artifacts (R3 §6); not manifest targets, not committed.
+- `{project_dir}/logs/1.NN_{rule}.log`, `{project_dir}/benchmarks/_parts/1.NN_{rule}.tsv`
+  (per-rule benchmarks live under `_parts/`; a `gather_benchmarks` rule merges
+  them into one `benchmarks/wf1_benchmarks.md` (Markdown table, `rule` column +
+  `TOTAL` row), via `src/merge_benchmarks.py`)
+  — ephemeral run artifacts (R3 §6); not manifest targets, not committed. The
+  `1.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9).
 
 ## Downstream consumers
 

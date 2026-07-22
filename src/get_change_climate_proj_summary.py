@@ -11,6 +11,8 @@ import numpy as np
 
 from typing import Union, List, Dict
 
+from src.snake_utils import log_row
+
 
 def preprocess_coords(ds: xr.Dataset) -> xr.Dataset:
     """Preprocess function to remove unwanted coords"""
@@ -68,7 +70,7 @@ def summary_climate_proj(
     # merge summary maps across models, scnearios and horizons.
     prefix = "annual_change_scalar_stats"
     # for prefix in prefixes:
-    print(f"merging netcdf files {prefix}")
+    log_row(f"merging netcdf files {prefix}", module="change")
     # open annual scalar summary and merge (dummy empty files dropped first)
     list_files_not_empty = filter_nonempty(clim_files)
     ds = xr.open_mfdataset(

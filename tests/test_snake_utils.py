@@ -5,8 +5,10 @@ conftest) had before they were collapsed into src/snake_utils.py, so the move
 is provably identity-preserving rather than merely green on a smoke test.
 """
 
+import io
 import os
 import sys
+import time
 from pathlib import Path
 
 import pytest
@@ -15,8 +17,10 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import re
 
 from src.snake_utils import (  # noqa: E402
+    _Heartbeat,
     _compact_log_line,
     _cr_overwrite,
+    _fmt_elapsed,
     _log_path_parts,
     _relativize_paths,
     get_config,
@@ -335,3 +339,53 @@ def test_tee_to_log_close_flushes_interrupted_bar(tmp_path):
     with tee_to_log(log):
         sys.stdout.write("\r[## ] 50% In progress")  # no trailing newline
     assert "50% In progress" in log.read_text(encoding="utf-8")
+
+
+# --- heartbeat watchdog ------------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "seconds, expected",
+    [(0, "0s"), (45, "45s"), (134, "2m14s"), (3600, "1h00m00s"), (3980, "1h06m20s")],
+)
+def test_fmt_elapsed(seconds, expected):
+    assert _fmt_elapsed(seconds) == expected
+
+
+def test_heartbeat_fires_on_silence_and_summarizes():
+    stream = io.StringIO()
+    hb = _Heartbeat("2.05_merge", stream, interval=0.05).start()
+    time.sleep(0.16)  # stay silent well past the interval
+    hb.stop()
+    out = stream.getvalue()
+    assert "still running" in out and "2.05_merge" in out  # heartbeat fired
+    assert "done in" in out  # stop() prints the summary
+
+
+def test_heartbeat_suppressed_while_active():
+    stream = io.StringIO()
+    hb = _Heartbeat("busy_rule", stream, interval=0.2).start()
+    for _ in range(6):  # keep touching so it never stays silent for 0.2s
+        hb.touch()
+        time.sleep(0.02)
+    hb.stop()
+    assert "still running" not in stream.getvalue()  # never beeped
+
+
+def test_heartbeat_disabled_when_interval_zero():
+    stream = io.StringIO()
+    hb = _Heartbeat("off", stream, interval=0).start()
+    time.sleep(0.05)
+    hb.stop()
+    assert stream.getvalue() == ""  # nothing at all, not even a summary
+
+
+def test_tee_to_log_heartbeat_goes_to_console_not_log(tmp_path, capsys):
+    # THE key requirement: the heartbeat must not populate the log file
+    log = tmp_path / "rule.log"
+    with tee_to_log(log, heartbeat_interval=0.05):
+        time.sleep(0.16)  # silence triggers a console heartbeat
+    err = capsys.readouterr().err
+    logged = log.read_text(encoding="utf-8")
+    assert "still running" in err and "done in" in err  # console got them
+    assert "still running" not in logged and "done in" not in logged  # log stayed clean

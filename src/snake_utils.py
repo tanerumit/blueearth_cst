@@ -12,6 +12,8 @@ import os
 import re
 import subprocess
 import sys
+import threading
+import time
 from collections.abc import Mapping
 from datetime import datetime
 
@@ -195,6 +197,83 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
     return temp_step_count, precip_step_count, temp_step_count * precip_step_count
 
 
+def _fmt_elapsed(seconds):
+    """Format a duration compactly: ``45s``, ``2m14s``, ``1h03m20s``."""
+    seconds = int(round(seconds))
+    hours, minutes, secs = seconds // 3600, (seconds % 3600) // 60, seconds % 60
+    if hours:
+        return f"{hours}h{minutes:02d}m{secs:02d}s"
+    if minutes:
+        return f"{minutes}m{secs:02d}s"
+    return f"{secs}s"
+
+
+class _Heartbeat:
+    """Console-only watchdog that makes a stalled rule visible while it runs.
+
+    Snakemake prints only a start and a finish timestamp, so a hung job looks
+    identical to a slow one until it (never) finishes. This daemon prints an
+    elapsed-time notice when the rule has produced no output for ``interval``
+    seconds, and a one-line ``done in <elapsed>`` summary when it stops.
+
+    Silence-triggered, not periodic: callers stamp ``touch()`` on every real
+    write, so a rule that is actively logging or drawing a progress bar keeps
+    resetting the clock and never beeps — the notice appears exactly when the
+    console would otherwise be frozen, which is the "is it stuck?" case. A lone
+    ``time.monotonic()`` float assignment is atomic under the GIL, so ``touch()``
+    needs no lock.
+
+    Writes **only** to ``stream`` (the live console, captured before any tee
+    swap); nothing here ever reaches the rule's log file — the persisted log
+    stays clean. Set ``CST_HEARTBEAT_SECS`` (``0`` disables entirely) to override
+    the interval without touching a Snakefile.
+    """
+
+    def __init__(self, label, stream, interval=60.0):
+        self._label = label
+        self._stream = stream
+        raw = os.environ.get("CST_HEARTBEAT_SECS")
+        try:
+            self._interval = float(raw) if raw is not None else float(interval)
+        except ValueError:
+            self._interval = float(interval)
+        self._enabled = self._interval > 0
+        self._start = time.monotonic()
+        self._last = self._start
+        self._stop = threading.Event()
+        self._thread = threading.Thread(target=self._run, daemon=True)
+
+    def touch(self):
+        self._last = time.monotonic()
+
+    def _emit(self, text):
+        try:
+            self._stream.write(text)
+            self._stream.flush()
+        except Exception:
+            pass  # console I/O must never break the job
+
+    def _run(self):
+        while not self._stop.wait(self._interval):
+            if time.monotonic() - self._last >= self._interval:
+                elapsed = _fmt_elapsed(time.monotonic() - self._start)
+                self._emit(f"   ... {self._label}: still running, {elapsed} elapsed\n")
+
+    def start(self):
+        if self._enabled:
+            self._thread.start()
+        return self
+
+    def stop(self, failed=False):
+        if not self._enabled:
+            return
+        self._stop.set()
+        self._thread.join(timeout=1.0)
+        elapsed = _fmt_elapsed(time.monotonic() - self._start)
+        verb = "failed after" if failed else "done in"
+        self._emit(f"   ... {self._label}: {verb} {elapsed}\n")
+
+
 def _cr_overwrite(line):
     """Collapse a carriage-return-redrawn line to its final visible text.
 
@@ -230,13 +309,16 @@ class _Tee:
     so a bar redrawing for hours never grows the buffer beyond one line.
     """
 
-    def __init__(self, live, logfile, project_root=""):
+    def __init__(self, live, logfile, project_root="", on_activity=None):
         self._live = live
         self._logfile = logfile
         self._project_root = project_root
+        self._on_activity = on_activity  # called on each write (heartbeat reset)
         self._pending = ""  # current, not-yet-newline-terminated log line
 
     def write(self, text):
+        if self._on_activity is not None:
+            self._on_activity()
         out = _relativize_paths(_compact_log_line(text), self._project_root)
         self._live.write(out)  # verbatim: keeps the live console animation
         buf = self._pending + out
@@ -326,7 +408,10 @@ def run_and_tee(command, log_path):
     parent = os.path.dirname(log_path)
     if parent:
         os.makedirs(parent, exist_ok=True)
-    project_root, _ = _log_path_parts(log_path)
+    project_root, log_id = _log_path_parts(log_path)
+    label = os.path.splitext(log_id)[0]
+    if label.startswith("_parts/"):
+        label = label[len("_parts/"):]
     with open(log_path, "w", encoding="utf-8", errors="replace") as log:
         log.write(_log_header_lines(log_path))  # header to file only, not console
         log.flush()
@@ -364,20 +449,29 @@ def run_and_tee(command, log_path):
             encoding="utf-8",
             errors="replace",
         )
+        # Silence watchdog: prints an elapsed-time notice to the console (stderr,
+        # never the log) if the child goes quiet — so a hung Julia/Wflow/hydromt
+        # step is visible live. Touched on every line read from the child.
+        heartbeat = _Heartbeat(label, sys.stderr).start()
         # ``pending`` holds a trailing run of candidate shutdown-noise lines that
         # are withheld until we know whether real content follows (flush
         # verbatim) or the stream ends (collapse if it is a true cascade).
-        pending = []
-        for line in proc.stdout:
-            if _is_shutdown_noise(line):
-                pending.append(line)
-                continue
-            for buffered in pending:
-                emit(buffered)
+        rc = None
+        try:
             pending = []
-            emit(line)
-        rc = proc.wait()
-        _flush_pending(pending, emit, rc)
+            for line in proc.stdout:
+                heartbeat.touch()
+                if _is_shutdown_noise(line):
+                    pending.append(line)
+                    continue
+                for buffered in pending:
+                    emit(buffered)
+                pending = []
+                emit(line)
+            rc = proc.wait()
+            _flush_pending(pending, emit, rc)
+        finally:
+            heartbeat.stop(failed=(rc is None or rc != 0))
         return rc
 
 
@@ -401,7 +495,7 @@ def _flush_pending(pending, emit, rc):
 
 
 @contextlib.contextmanager
-def tee_to_log(log_path):
+def tee_to_log(log_path, heartbeat_interval=60.0):
     """Tee ``sys.stdout``/``sys.stderr`` to ``log_path`` for a ``script:`` rule.
 
     Snakemake does not auto-redirect ``script:`` output to the rule's ``log:``
@@ -416,29 +510,45 @@ def tee_to_log(log_path):
       reaches Snakemake and the rule fails loudly rather than leaving an empty
       log that Snakemake would read as a finished product.
 
+    A silence watchdog (``_Heartbeat``) prints an elapsed-time notice to the
+    live console when the rule goes quiet for ``heartbeat_interval`` seconds, so
+    a stalled job is visible while it runs. It writes to the console only — the
+    log file never receives a heartbeat line. ``CST_HEARTBEAT_SECS`` overrides
+    the interval (``0`` disables it).
+
     Parameters
     ----------
     log_path : str | os.PathLike
         Destination log file. Callers pass the rule's unique
         ``snakemake.log[0]`` so concurrent jobs never share a path.
+    heartbeat_interval : float
+        Seconds of silence before the console heartbeat fires (default 60).
     """
     log_path = os.fspath(log_path)
     parent = os.path.dirname(log_path)
     if parent:
         os.makedirs(parent, exist_ok=True)
     orig_out, orig_err = sys.stdout, sys.stderr
-    project_root, _ = _log_path_parts(log_path)
+    project_root, log_id = _log_path_parts(log_path)
+    label = os.path.splitext(log_id)[0]
+    if label.startswith("_parts/"):
+        label = label[len("_parts/"):]
     with open(log_path, "w", encoding="utf-8") as handle:
         handle.write(_log_header_lines(log_path))  # header to file only
         handle.flush()
-        stdout_tee = _Tee(orig_out, handle, project_root=project_root)
-        stderr_tee = _Tee(orig_err, handle, project_root=project_root)
+        # heartbeat writes to the real console (orig_err), never the log handle
+        heartbeat = _Heartbeat(label, orig_err, interval=heartbeat_interval)
+        stdout_tee = _Tee(orig_out, handle, project_root=project_root, on_activity=heartbeat.touch)
+        stderr_tee = _Tee(orig_err, handle, project_root=project_root, on_activity=heartbeat.touch)
         sys.stdout, sys.stderr = stdout_tee, stderr_tee
+        heartbeat.start()
         try:
             yield
         finally:
-            # Flush trailing partial lines while ``handle`` is still open, then
-            # restore the real streams (both always run, even if the body raised).
+            # Stop the watchdog first (console-only summary), then flush trailing
+            # partial lines while ``handle`` is open and restore the streams —
+            # all always run, even if the body raised.
+            heartbeat.stop(failed=sys.exc_info()[0] is not None)
             for tee in (stdout_tee, stderr_tee):
                 tee.close()
             sys.stdout, sys.stderr = orig_out, orig_err

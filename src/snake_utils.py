@@ -86,23 +86,33 @@ def _relativize_paths(text, project_root):
     return text
 
 
-def _log_header_lines(log_path):
-    """Return the header block written at the top of each rule log.
+def _log_header_lines(path, kind="log", time_label="started", markdown=False):
+    """Return the provenance header block for a rule log or merged artifact.
 
     Carries the project name and run date (the date dropped from each row by
-    ``_compact_log_line``), the full project dir, and the rule-log id + start
-    time, followed by a blank line separating the header from the log body.
+    ``_compact_log_line``), the full project dir, and the artifact id + a
+    timestamp, followed by a blank line separating it from the body.
+
+    ``kind``/``time_label`` name the third line for the artifact type — a log is
+    ``log: <id> | started <t>``, a benchmark table ``benchmark: <id> | generated
+    <t>``. With ``markdown=True`` the same lines are wrapped in a fenced code
+    block so they render as one metadata box in a ``.md`` file instead of as a
+    stack of ``#`` H1 headings; otherwise each line is a ``#`` comment (a log's
+    plain-text convention).
     """
     now = datetime.now()
-    root, log_id = _log_path_parts(log_path)
+    root, log_id = _log_path_parts(path)
     project = os.path.basename(root) if root else ""
     project_field = f"project: {project} | " if project else ""
-    header = [f"# BlueEarth-CST | {project_field}{now:%Y-%m-%d}"]
+    lines = [f"BlueEarth-CST | {project_field}{now:%Y-%m-%d}"]
     if root:
-        header.append(f"# project dir: {root.replace(os.sep, '/')}")
-    header.append(f"# log: {log_id} | started {now:%H:%M:%S}")
-    # trailing "" -> a blank line between the header and the body
-    return "".join(line + "\n" for line in header) + "\n"
+        lines.append(f"project dir: {root.replace(os.sep, '/')}")
+    lines.append(f"{kind}: {log_id} | {time_label} {now:%H:%M:%S}")
+    if markdown:
+        body = "\n".join(lines)
+        return f"```text\n{body}\n```\n\n"
+    # plain-text log: each line a `# ` comment, then a blank line before the body
+    return "".join(f"# {line}\n" for line in lines) + "\n"
 
 
 def get_config(config, arg, default=None, optional=True):

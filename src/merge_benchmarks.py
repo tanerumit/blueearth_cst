@@ -70,7 +70,9 @@ def merge_benchmarks(parts_dir, workflow_num, out_path):
 
     if not frames:  # no parts (e.g. nothing ran)
         with open(out_path, "w", encoding="utf-8") as handle:
-            handle.write(_log_header_lines(out_path))  # same provenance header as rule logs
+            handle.write(  # same provenance header as rule logs, rendered for Markdown
+                _log_header_lines(out_path, kind="benchmark", time_label="generated", markdown=True)
+            )
             handle.write(f"# wf{workflow_num} benchmarks\n\n(no benchmark parts found)\n")
         return
 
@@ -91,7 +93,9 @@ def merge_benchmarks(parts_dir, workflow_num, out_path):
     merged = pd.concat([merged, pd.DataFrame([total])], ignore_index=True)
     merged.loc[merged["rule"] == "TOTAL", "rule"] = "**TOTAL**"  # emphasise the total
     with open(out_path, "w", encoding="utf-8") as handle:
-        handle.write(_log_header_lines(out_path))  # same provenance header as rule logs
+        handle.write(  # same provenance header as rule logs, rendered for Markdown
+            _log_header_lines(out_path, kind="benchmark", time_label="generated", markdown=True)
+        )
         handle.write(f"# wf{workflow_num} benchmarks\n\n")
         handle.write(merged.to_markdown(index=False, floatfmt=".2f"))
         handle.write("\n")

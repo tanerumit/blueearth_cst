@@ -28,10 +28,14 @@ def test_filters_by_workflow_prefix_and_appends_total(tmp_path):
     merge_benchmarks(str(parts), "1", str(out))
 
     md = out.read_text(encoding="utf-8")
-    # the same provenance header rule logs carry (project name, dir, date)
-    assert md.startswith("# BlueEarth-CST")
-    assert "project: gabon" in md and "# project dir:" in md
-    assert "# wf1 benchmarks" in md  # title follows the header
+    # the same provenance header rule logs carry (project, dir, date), but
+    # rendered as a fenced metadata box (not stacked H1s) and labelled for a
+    # benchmark artifact rather than a log
+    assert md.startswith("```text")  # code fence, so no H1 heading collision
+    assert "BlueEarth-CST | project: gabon |" in md and "project dir:" in md
+    assert "benchmark: wf1_benchmarks.md | generated " in md  # relabelled
+    assert "# BlueEarth-CST" not in md and "# log:" not in md  # not headings, not "log:"
+    assert "# wf1 benchmarks" in md  # the single H1 title follows the header
     assert "| rule" in md  # a Markdown table
     assert "1.03_create_model" in md and "1.09_run_wflow" in md
     assert "2.05_other_wf" not in md  # WF2 excluded
@@ -62,6 +66,7 @@ def test_no_parts_writes_placeholder(tmp_path):
     out = tmp_path / "wf3_benchmarks.md"
     merge_benchmarks(str(tmp_path / "_parts"), "3", str(out))
     md = out.read_text(encoding="utf-8")
-    assert md.startswith("# BlueEarth-CST")  # header even on the empty placeholder
+    assert md.startswith("```text")  # fenced header even on the empty placeholder
+    assert "BlueEarth-CST" in md
     assert "# wf3 benchmarks" in md
     assert "no benchmark parts found" in md

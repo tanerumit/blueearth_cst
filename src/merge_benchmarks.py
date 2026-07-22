@@ -18,6 +18,29 @@ _SUM = ["s", "io_in", "io_out", "cpu_time"]          # additive across jobs
 _MAX = ["max_rss", "max_vms", "max_uss", "max_pss"]  # peak across jobs
 _MEAN = ["mean_load"]                                # average across jobs
 
+# Legend appended under the table. Snakemake's benchmark columns are a fixed set
+# (psutil-sampled); this explains what each means and how to read it.
+_LEGEND = """\
+
+**How to read this** — one row per rule (fan-out rules aggregate all their jobs).
+The **TOTAL** row *sums* the time / IO / CPU columns but takes the **peak** of the
+memory columns, since peak usage in different rules does not happen at once.
+
+| column | meaning | interpretation |
+| --- | --- | --- |
+| `s` / `h:m:s` | wall-clock runtime (seconds / h:m:s) | the headline cost of each step |
+| `max_rss` | peak physical RAM held (MB) | the "does it fit in memory?" number |
+| `max_vms` | peak virtual address space (MB) | usually far larger than RSS and rarely actionable |
+| `max_uss` | peak RAM unique to the process (MB) | memory reclaimed if it died — a tight lower bound |
+| `max_pss` | peak RAM incl. a share of shared pages (MB) | Linux-only; on Windows a proxy equal to `max_uss` |
+| `io_in` / `io_out` | disk read / written (MB) | spots IO-bound steps; may under-report on Windows |
+| `mean_load` | average CPU load (%), 100 ≈ one core busy | >100 ⇒ used multiple cores; well under 100 ⇒ waited on IO |
+| `cpu_time` | total CPU seconds (user + system) | vs `s`: cpu_time ≫ s ⇒ parallel, ≈ s ⇒ single-threaded |
+
+Metrics come from Snakemake's `benchmark:` sampler. On Windows `max_pss` mirrors
+`max_uss` and the `io_*` columns can under-report (psutil limitation).
+"""
+
 
 def _hms(seconds):
     seconds = int(round(seconds))
@@ -68,6 +91,34 @@ def merge_benchmarks(parts_dir, workflow_num, out_path):
         handle.write(f"# wf{workflow_num} benchmarks\n\n")
         handle.write(merged.to_markdown(index=False, floatfmt=".2f"))
         handle.write("\n")
+        handle.write(_LEGEND)
+
+    _remove_parts(tsvs, parts_dir)
+
+
+def _remove_parts(tsvs, parts_dir):
+    """Delete merged benchmark parts and prune now-empty part subdirs.
+
+    The merged ``.md`` is the durable artifact; the per-rule TSV parts are
+    scratch. Only ``tsvs`` (already prefix-filtered to this workflow) are
+    removed — the three workflows share ``_parts`` — and directory pruning only
+    ever removes *empty* dirs, so another workflow's parts are never touched.
+    Note: a later *partial* re-run regenerates parts only for the rules that
+    re-ran, so its merged table reflects just those (a full run stays complete).
+    """
+    for path in tsvs:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    for root, _dirs, _files in os.walk(parts_dir, topdown=False):
+        if os.path.normpath(root) == os.path.normpath(parts_dir):
+            continue  # keep the shared _parts dir itself
+        try:
+            if not os.listdir(root):
+                os.rmdir(root)
+        except OSError:
+            pass
 
 
 if __name__ == "__main__":

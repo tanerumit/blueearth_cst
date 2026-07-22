@@ -34,6 +34,13 @@ def test_filters_by_workflow_prefix_and_appends_total(tmp_path):
     total_line = next(ln for ln in md.splitlines() if "TOTAL" in ln)
     for value in ("30.00", "26.00", "4.00", "200.00", "60.00"):
         assert value in total_line
+    # legend appended under the table, explaining the columns
+    assert "How to read this" in md and "`max_rss`" in md and "`cpu_time`" in md
+    # this workflow's merged parts are deleted; another workflow's part is kept
+    assert not (parts / "1.03_create_model.tsv").exists()
+    assert not (parts / "1.09_run_wflow.tsv").exists()
+    assert (parts / "2.05_other_wf.tsv").exists()  # WF2 part untouched
+    assert parts.exists()  # the shared _parts dir itself is kept
 
 
 def test_nested_wildcard_parts_get_relative_rule_label(tmp_path):
@@ -42,6 +49,8 @@ def test_nested_wildcard_parts_get_relative_rule_label(tmp_path):
     out = tmp_path / "wf2_benchmarks.md"
     merge_benchmarks(str(parts), "2", str(out))
     assert "2.02_monthly_stats_hist/INM/GFDL" in out.read_text(encoding="utf-8")
+    # nested parts are removed and their now-empty subdirs pruned
+    assert not (parts / "2.02_monthly_stats_hist").exists()
 
 
 def test_no_parts_writes_placeholder(tmp_path):

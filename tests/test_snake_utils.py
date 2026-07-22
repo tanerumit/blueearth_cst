@@ -252,6 +252,33 @@ def test_tee_to_log_writes_and_restores_streams(tmp_path):
     assert "hello-stdout" in text and "hello-stderr" in text
 
 
+def test_tee_to_log_captures_preexisting_console_logging(tmp_path):
+    # A library (like hydromt) installs a StreamHandler bound to the real stdout
+    # BEFORE tee_to_log runs. Its records must be compacted AND land in the log
+    # file, not bypass the tee (regression: the earlier print()-based test only
+    # exercised the regex, not this wiring).
+    import logging
+
+    lg = logging.getLogger("cst_test_lib")
+    lg.setLevel(logging.INFO)
+    lg.propagate = False  # isolate: only our handler emits, so no double-count
+    handler = logging.StreamHandler(sys.stdout)  # bound to the current console
+    handler.setFormatter(
+        logging.Formatter("%(asctime)s - %(name)s - %(module)s - %(levelname)s - %(message)s")
+    )
+    lg.addHandler(handler)
+    log = tmp_path / "rule.log"
+    try:
+        with tee_to_log(log):  # note: we do NOT print() — only the logger emits
+            lg.info("built model grid")
+    finally:
+        lg.removeHandler(handler)
+    body = log.read_text(encoding="utf-8")
+    # compacted row present exactly once, and the full hydromt timestamp is gone
+    assert len(re.findall(r"\d{2}:\d{2}:\d{2} - \w+ - INFO - built model grid", body)) == 1
+    assert not re.search(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2},\d{3}", body)
+
+
 def test_tee_to_log_compacts_hydromt_format(tmp_path):
     log = tmp_path / "rule.log"
     with tee_to_log(log):

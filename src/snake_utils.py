@@ -8,6 +8,7 @@ own directory to ``sys.path`` before importing — see
 """
 
 import contextlib
+import logging
 import os
 import re
 import subprocess
@@ -504,6 +505,57 @@ def _flush_pending(pending, emit, rc):
             emit(buffered)
 
 
+def _set_handler_stream(handler, stream):
+    """Repoint a logging handler's stream, using ``setStream`` when available."""
+    if hasattr(handler, "setStream"):
+        handler.setStream(stream)  # flushes the old stream first (py3.7+)
+    else:
+        handler.stream = stream
+
+
+def _redirect_console_log_handlers(orig_out, orig_err, stdout_tee, stderr_tee):
+    """Route pre-existing console logging handlers through the tees.
+
+    A library can install a ``StreamHandler`` bound to the real ``sys.stdout`` /
+    ``sys.stderr`` at import time — hydromt does, on the ``hydromt`` logger, in
+    its full ``<date> - <name> - <module> - <LEVEL> - <msg>`` format. Because it
+    captured the stream object *before* ``tee_to_log`` swaps the streams, its
+    records bypass ``_Tee`` entirely: uncompacted on the console and **missing
+    from the log file**. Repointing each such handler at the matching ``_Tee``
+    makes those records flow through the one shared pipeline (``_compact_log_line``
+    + path relativization + log file), so every workflow — in-process (hydromt
+    Python API) or subprocess (``run_and_tee``) — emits one identical style.
+
+    Matches the console streams by *identity*, so real ``FileHandler``s (whose
+    stream is a file, never ``is`` the console) are untouched. Returns a list of
+    ``(handler, original_stream)`` for ``_restore_log_handlers`` to undo.
+    """
+    loggers = [logging.getLogger()]  # root, then every concrete (non-placeholder) logger
+    loggers += [
+        lg for lg in logging.Logger.manager.loggerDict.values()
+        if isinstance(lg, logging.Logger)
+    ]
+    saved = []
+    for lg in loggers:
+        for handler in getattr(lg, "handlers", []):
+            stream = getattr(handler, "stream", None)
+            if stream is orig_out:
+                target = stdout_tee
+            elif stream is orig_err:
+                target = stderr_tee
+            else:
+                continue
+            saved.append((handler, stream))
+            _set_handler_stream(handler, target)
+    return saved
+
+
+def _restore_log_handlers(saved):
+    """Undo ``_redirect_console_log_handlers`` (restore each handler's stream)."""
+    for handler, stream in saved:
+        _set_handler_stream(handler, stream)
+
+
 @contextlib.contextmanager
 def tee_to_log(log_path, heartbeat_interval=60.0):
     """Tee ``sys.stdout``/``sys.stderr`` to ``log_path`` for a ``script:`` rule.
@@ -525,6 +577,12 @@ def tee_to_log(log_path, heartbeat_interval=60.0):
     a stalled job is visible while it runs. It writes to the console only — the
     log file never receives a heartbeat line. ``CST_HEARTBEAT_SECS`` overrides
     the interval (``0`` disables it).
+
+    Library logging bound to the console before entry (hydromt's ``StreamHandler``
+    on ``sys.stdout``) is repointed through the tee for the duration, so its
+    records get the same compacted ``HH:MM:SS - <module> - <LEVEL> - <msg>`` form
+    and land in the log file instead of bypassing it (see
+    ``_redirect_console_log_handlers``).
 
     Parameters
     ----------
@@ -551,13 +609,17 @@ def tee_to_log(log_path, heartbeat_interval=60.0):
         stdout_tee = _Tee(orig_out, handle, project_root=project_root, on_activity=heartbeat.touch)
         stderr_tee = _Tee(orig_err, handle, project_root=project_root, on_activity=heartbeat.touch)
         sys.stdout, sys.stderr = stdout_tee, stderr_tee
+        # route library logging (hydromt) bound to the old console through the tee
+        saved_handlers = _redirect_console_log_handlers(orig_out, orig_err, stdout_tee, stderr_tee)
         heartbeat.start()
         try:
             yield
         finally:
-            # Stop the watchdog first (console-only summary), then flush trailing
-            # partial lines while ``handle`` is open and restore the streams —
-            # all always run, even if the body raised.
+            # Restore log handlers first (before their target tees close), stop
+            # the watchdog (console-only summary), flush trailing partial lines
+            # while ``handle`` is open, then restore the streams — all always run,
+            # even if the body raised.
+            _restore_log_handlers(saved_handlers)
             heartbeat.stop(failed=sys.exc_info()[0] is not None)
             for tee in (stdout_tee, stderr_tee):
                 tee.close()

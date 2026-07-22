@@ -18,15 +18,20 @@ def _write(path, s, rss, io_in, cpu, load):
 
 
 def test_filters_by_workflow_prefix_and_appends_total(tmp_path):
-    parts = tmp_path / "_parts"
+    # mirror the production layout: <project>/benchmarks/{_parts,wf1_benchmarks.md}
+    bench = tmp_path / "gabon" / "benchmarks"
+    parts = bench / "_parts"
     _write(parts / "1.03_create_model.tsv", 10.0, 100.0, 1.0, 8.0, 50.0)
     _write(parts / "1.09_run_wflow.tsv", 20.0, 200.0, 3.0, 18.0, 70.0)
     _write(parts / "2.05_other_wf.tsv", 99.0, 999.0, 9.0, 9.0, 9.0)  # must be excluded
-    out = tmp_path / "wf1_benchmarks.md"
+    out = bench / "wf1_benchmarks.md"
     merge_benchmarks(str(parts), "1", str(out))
 
     md = out.read_text(encoding="utf-8")
-    assert md.startswith("# wf1 benchmarks")
+    # the same provenance header rule logs carry (project name, dir, date)
+    assert md.startswith("# BlueEarth-CST")
+    assert "project: gabon" in md and "# project dir:" in md
+    assert "# wf1 benchmarks" in md  # title follows the header
     assert "| rule" in md  # a Markdown table
     assert "1.03_create_model" in md and "1.09_run_wflow" in md
     assert "2.05_other_wf" not in md  # WF2 excluded
@@ -57,5 +62,6 @@ def test_no_parts_writes_placeholder(tmp_path):
     out = tmp_path / "wf3_benchmarks.md"
     merge_benchmarks(str(tmp_path / "_parts"), "3", str(out))
     md = out.read_text(encoding="utf-8")
-    assert md.startswith("# wf3 benchmarks")
+    assert md.startswith("# BlueEarth-CST")  # header even on the empty placeholder
+    assert "# wf3 benchmarks" in md
     assert "no benchmark parts found" in md

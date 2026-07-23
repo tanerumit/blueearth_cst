@@ -4,7 +4,7 @@ import os
 from os.path import join, dirname, realpath
 import pytest
 
-from ..src import copy_config_files
+from blueearth_cst.model import copy_config_files
 
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")

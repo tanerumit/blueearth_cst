@@ -177,7 +177,7 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
 
     Single source of truth for the stress-test grid arithmetic, which was
     previously derived twice (inline in ``Snakefile_climate_experiment`` and in
-    ``src/prepare_cst_parameters.py``). Both call sites now read this helper.
+    ``blueearth_cst/experiment/prepare_cst_parameters.py``). Both call sites now read this helper.
 
     STRICT: ``temp.step_num`` and ``precip.step_num`` are REQUIRED — a missing
     axis section or ``step_num`` raises ``KeyError``, and a value that is not a

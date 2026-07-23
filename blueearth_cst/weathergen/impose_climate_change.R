@@ -3,7 +3,7 @@
 # GENERAL STRESS TEST PARAMETERS ###############################################
 
 # General R settings and prerequisites
-source("./src/weathergen/global.R")
+source("./blueearth_cst/weathergen/global.R")
 
 # Bind positional CLI args to named locals with an arity check (see
 # generate_weather.R). Placed after source(global.R) so the arity stop() is the

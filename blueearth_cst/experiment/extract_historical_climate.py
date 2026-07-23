@@ -13,7 +13,7 @@ from typing import Union
 from dask.diagnostics import ProgressBar
 from hydromt.model.processes.meteo import temp
 
-from src.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row
 
 
 def _warn_if_window_truncated(ds, starttime, endtime, clim_source):
@@ -186,7 +186,7 @@ def prep_historical_climate(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
             prep_historical_climate(

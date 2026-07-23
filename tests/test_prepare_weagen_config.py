@@ -13,7 +13,7 @@ import pytest
 import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from src.prepare_weagen_config import build_weagen_config, compute_nr_years
+from blueearth_cst.experiment.prepare_weagen_config import build_weagen_config, compute_nr_years
 
 
 @pytest.mark.parametrize(

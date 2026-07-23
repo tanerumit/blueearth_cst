@@ -16,7 +16,7 @@ import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
 import numpy as np
 
-from src.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row
 
 
 
@@ -36,7 +36,7 @@ def todatetimeindex_dropvars(ds):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
             # Snakemake options

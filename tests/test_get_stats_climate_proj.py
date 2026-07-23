@@ -19,7 +19,7 @@ TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 sys.path.insert(0, SNAKEDIR)
 
-from src.get_stats_climate_proj import get_stats_clim_projections  # noqa: E402
+from blueearth_cst.projections.get_stats_climate_proj import get_stats_clim_projections  # noqa: E402
 
 
 def _make_daily_grid(precip_day, temp_day, periods, xname="lon", yname="lat"):

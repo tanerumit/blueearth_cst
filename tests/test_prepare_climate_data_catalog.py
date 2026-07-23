@@ -1,4 +1,4 @@
-"""Unit tests for src/prepare_climate_data_catalog.py.
+"""Unit tests for blueearth_cst/projections/prepare_climate_data_catalog.py.
 
 The tested function builds a hydromt 1.x data catalog dict for R-generated
 realization netCDFs, inheriting driver/metadata from a source_like entry.
@@ -44,7 +44,7 @@ sys.modules.setdefault(
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import prepare_climate_data_catalog as pcdc  # noqa: E402
+from blueearth_cst.projections import prepare_climate_data_catalog as pcdc  # noqa: E402
 
 
 @pytest.fixture
@@ -250,7 +250,7 @@ def test_chirps_source_adds_orography_entry(tmp_path, chirps_like_catalog):
     reason=(
         "hydromt 1.3 silently strips driver.options.preprocess on "
         "DataCatalog().from_dict(...).to_yml(...). "
-        "src/prepare_climate_data_catalog.py works around this with "
+        "blueearth_cst/projections/prepare_climate_data_catalog.py works around this with "
         "yaml.safe_dump. When upstream fixes to_yml, this test will pass, "
         "strict=True will fail CI, and the workaround can be removed. "
         "See dev/phase-1/m02b/handoff.md for the upstream reproducer."
@@ -261,7 +261,7 @@ def test_hydromt_to_yml_round_trip_preserves_preprocess(tmp_path):
 
     Imports the REAL hydromt to test the upstream bug. Marked xfail until
     upstream fixes it. When this passes, remove the yaml.safe_dump
-    bypass in src/prepare_climate_data_catalog.py.
+    bypass in blueearth_cst/projections/prepare_climate_data_catalog.py.
     """
     # Pop the stub so we get the real hydromt for this one test.
     sys.modules.pop("hydromt", None)

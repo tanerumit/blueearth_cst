@@ -1,4 +1,4 @@
-"""Tests for the per-workflow benchmark gather (src/merge_benchmarks.py).
+"""Tests for the per-workflow benchmark gather (blueearth_cst/shared/merge_benchmarks.py).
 
 The merged output is a Markdown table (per-rule parts stay TSV = Snakemake's
 fixed benchmark format).
@@ -7,7 +7,7 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from src.merge_benchmarks import merge_benchmarks  # noqa: E402
+from blueearth_cst.shared.merge_benchmarks import merge_benchmarks  # noqa: E402
 
 _HEADER = "s\th:m:s\tmax_rss\tio_in\tcpu_time\tmean_load\n"
 

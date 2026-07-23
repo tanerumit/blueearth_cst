@@ -9,14 +9,14 @@ import pytest
 
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
-sys.path.insert(0, join(SNAKEDIR, "src"))
+sys.path.insert(0, SNAKEDIR)
 
 CONFIG = join(TESTDIR, "snake_config_model_test.yml")
 
 
 def test_prep_cst_parameters_reads_sectioned_config(tmp_path):
     """prep_cst_parameters must read stress_test from the sectioned schema."""
-    from prepare_cst_parameters import prep_cst_parameters
+    from blueearth_cst.experiment.prepare_cst_parameters import prep_cst_parameters
 
     # temp.step_num=1, precip.step_num=1 in the tests config -> ST_NUM = 2*2 = 4.
     csv_fns = [str(tmp_path / f"cst_{i}.csv") for i in range(4)]

@@ -11,7 +11,7 @@ import numpy as np
 
 from typing import Union, List, Dict
 
-from src.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row
 
 
 def preprocess_coords(ds: xr.Dataset) -> xr.Dataset:
@@ -150,7 +150,7 @@ if __name__ == "__main__":
         list_files = sm.input.stats_nc_change
         horizons = sm.params.horizons
 
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         # Call the main function
         with tee_to_log(sm.log[0]):

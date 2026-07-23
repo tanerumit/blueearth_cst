@@ -1,4 +1,4 @@
-"""Tests for src/prepare_build_config.py (R3 section 8). Hermetic (yaml only)."""
+"""Tests for blueearth_cst/model/prepare_build_config.py (R3 section 8). Hermetic (yaml only)."""
 
 import sys
 from pathlib import Path
@@ -7,7 +7,7 @@ import pytest
 import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.prepare_build_config import merge_build_config  # noqa: E402
+from blueearth_cst.model.prepare_build_config import merge_build_config  # noqa: E402
 
 
 def _template(path):

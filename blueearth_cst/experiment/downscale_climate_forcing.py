@@ -6,7 +6,7 @@ import numpy as np
 
 from hydromt_wflow import WflowSbmModel
 
-from src.snake_utils import tee_to_log
+from blueearth_cst.shared.snake_utils import tee_to_log
 
 # This script reads the snakemake global at module top level (no __name__
 # guard), so the tee_to_log wrap must enclose the whole body — the top-level

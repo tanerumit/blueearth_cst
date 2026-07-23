@@ -18,7 +18,7 @@ import xarray as xr
 
 from typing import List, Union
 
-from src.snake_utils import save_figure
+from blueearth_cst.shared.snake_utils import save_figure
 
 
 # %%

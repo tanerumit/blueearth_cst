@@ -1,5 +1,5 @@
 # General R settings and prerequisites
-source("./src/weathergen/global.R")
+source("./blueearth_cst/weathergen/global.R")
 
 # weathergenr is assumed to be installed in R-environment.
 # See dev/scripts/install_weathergenr.R for the install path.

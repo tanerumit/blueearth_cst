@@ -88,7 +88,7 @@ def update_wflow_gauges_outputs(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
             update_wflow_gauges_outputs(

@@ -2,11 +2,11 @@ import itertools
 import sys
 from pathlib import Path
 
-# Shared helpers live in src/; make them importable regardless of the working
+# Shared helpers live in blueearth_cst/; make them importable regardless of the working
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from src.snake_utils import get_config, patch_psutil_windows_benchmark, rule_banner
+from blueearth_cst.shared.snake_utils import get_config, patch_psutil_windows_benchmark, rule_banner
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
 patch_psutil_windows_benchmark()
@@ -80,7 +80,7 @@ rule copy_config:
     output:
         config_snake_out = f"{project_dir}/config/snake_config_climate_projections.yml",
     script:
-        "src/copy_config_files.py"
+        "blueearth_cst/model/copy_config_files.py"
 
 # 2.02  monthly_stats_hist — mean monthly stats for the historical period, per
 # {model} (grid to netcdf + grid-averaged monthly time series).
@@ -104,7 +104,7 @@ rule monthly_stats_hist:
         project_dir + "/logs/_parts/2.02_monthly_stats_hist/{model}.log",
     benchmark:
         project_dir + "/benchmarks/_parts/2.02_monthly_stats_hist/{model}.tsv",
-    script: "src/get_stats_climate_proj.py"
+    script: "blueearth_cst/projections/get_stats_climate_proj.py"
 
 # 2.03  monthly_stats_fut — mean monthly stats per {model}_{scenario} (future),
 # chained after 2.02 (grid to netcdf + grid-averaged monthly time series).
@@ -128,7 +128,7 @@ rule monthly_stats_fut:
         project_dir + "/logs/_parts/2.03_monthly_stats_fut/{model}_{scenario}.log",
     benchmark:
         project_dir + "/benchmarks/_parts/2.03_monthly_stats_fut/{model}_{scenario}.tsv",
-    script: "src/get_stats_climate_proj.py"
+    script: "blueearth_cst/projections/get_stats_climate_proj.py"
 
 # 2.04  monthly_change — change factors per {model}_{scenario}_{horizon}
 rule monthly_change:
@@ -153,7 +153,7 @@ rule monthly_change:
         project_dir + "/logs/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.log",
     benchmark:
         project_dir + "/benchmarks/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.tsv",
-    script: "src/get_change_climate_proj.py"
+    script: "blueearth_cst/projections/get_change_climate_proj.py"
 
 # 2.05  monthly_change_scalar_merge — merge all change factors into one summary
 rule monthly_change_scalar_merge:
@@ -172,7 +172,7 @@ rule monthly_change_scalar_merge:
         f"{project_dir}/logs/2.05_monthly_change_scalar_merge.log",
     benchmark:
         f"{project_dir}/benchmarks/_parts/2.05_monthly_change_scalar_merge.tsv",
-    script: "src/get_change_climate_proj_summary.py"
+    script: "blueearth_cst/projections/get_change_climate_proj_summary.py"
 
 # 2.06  plot_climate_proj_timeseries — plot projected anomaly time series
 rule plot_climate_proj_timeseries:
@@ -195,7 +195,7 @@ rule plot_climate_proj_timeseries:
         f"{project_dir}/logs/2.06_plot_climate_proj_timeseries.log",
     benchmark:
         f"{project_dir}/benchmarks/_parts/2.06_plot_climate_proj_timeseries.tsv",
-    script: "src/plot_proj_timeseries.py"
+    script: "blueearth_cst/projections/plot_proj_timeseries.py"
 
 # --- log gather ---------------------------------------------------------------
 # 2.02/2.03/2.04 run one job per model (parallel-safe per-model logs under
@@ -216,7 +216,7 @@ rule gather_stats_hist_logs:
             project_dir + "/logs/_parts/2.02_monthly_stats_hist/{model}.log",
             model=models,
         ),
-    script: "src/merge_logs.py"
+    script: "blueearth_cst/shared/merge_logs.py"
 
 # gather 2.03 per-model logs -> 2.03_monthly_stats_fut.log
 rule gather_stats_fut_logs:
@@ -233,7 +233,7 @@ rule gather_stats_fut_logs:
             project_dir + "/logs/_parts/2.03_monthly_stats_fut/{model}_{scenario}.log",
             model=models, scenario=scenarios,
         ),
-    script: "src/merge_logs.py"
+    script: "blueearth_cst/shared/merge_logs.py"
 
 # gather 2.04 per-model logs -> 2.04_monthly_change.log
 rule gather_change_logs:
@@ -250,7 +250,7 @@ rule gather_change_logs:
             project_dir + "/logs/_parts/2.04_monthly_change/{model}_{scenario}_{horizon}.log",
             model=models, scenario=scenarios, horizon=future_horizons,
         ),
-    script: "src/merge_logs.py"
+    script: "blueearth_cst/shared/merge_logs.py"
 
 # --- benchmark gather ---------------------------------------------------------
 # Merge WF2's per-rule benchmark parts (benchmarks/_parts/2.*) into one
@@ -267,4 +267,4 @@ rule gather_benchmarks:
     params:
         parts_dir = f"{project_dir}/benchmarks/_parts",
         workflow_num = 2,
-    script: "src/merge_benchmarks.py"
+    script: "blueearth_cst/shared/merge_benchmarks.py"

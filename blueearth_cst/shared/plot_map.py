@@ -18,7 +18,7 @@ import matplotlib.patches as mpatches
 import cartopy.crs as ccrs
 import cartopy.io.img_tiles as cimgt
 
-from src.snake_utils import save_figure
+from blueearth_cst.shared.snake_utils import save_figure
 
 
 def plot_basin_map(project_dir, gauges_fn, plot_dir=None):
@@ -163,7 +163,7 @@ def plot_basin_map(project_dir, gauges_fn, plot_dir=None):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
             plot_basin_map(

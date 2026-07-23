@@ -13,7 +13,7 @@ import os
 
 import pandas as pd
 
-from src.snake_utils import _log_header_lines
+from blueearth_cst.shared.snake_utils import _log_header_lines
 
 # How the TOTAL row aggregates each Snakemake benchmark column.
 _SUM = ["s", "io_in", "io_out", "cpu_time"]          # additive across jobs

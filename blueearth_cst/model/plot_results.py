@@ -24,7 +24,7 @@ from func_plot_signature import (
     plot_basavg,
 )
 from climate_forcing import climate_forcing_by_subcatchment
-from src.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row
 
 
 def _log(message):
@@ -301,7 +301,7 @@ def analyse_wflow_historical(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
             analyse_wflow_historical(

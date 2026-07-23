@@ -10,7 +10,7 @@ import xarray as xr
 from typing import List, Union
 
 import metrics_definition as md
-from src.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row
 
 
 def analyze_wflow_results(
@@ -285,7 +285,7 @@ def analyze_wflow_results(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
             analyze_wflow_results(

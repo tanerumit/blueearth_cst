@@ -25,7 +25,7 @@ import cartopy.io.img_tiles as cimgt
 
 from hydromt_wflow import WflowSbmModel
 
-from src.snake_utils import save_figure
+from blueearth_cst.shared.snake_utils import save_figure
 
 
 def plot_map_model(mod, da, figname, gauges_name):
@@ -190,7 +190,7 @@ def plot_forcing(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
             # Parse snake options

@@ -12,7 +12,7 @@ from typing import Union, List
 # Snakefile prepends its basedir to sys.path before invoking script: rules, but
 # guard here so the module is import-clean for unit tests too.
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
-from src.snake_utils import stress_test_grid
+from blueearth_cst.shared.snake_utils import stress_test_grid
 
 
 def prep_cst_parameters(
@@ -93,7 +93,7 @@ def prep_cst_parameters(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from src.snake_utils import tee_to_log
+        from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
             prep_cst_parameters(

@@ -9,8 +9,8 @@ import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from src.snake_utils import run_and_tee
-from src.run_logged import main
+from blueearth_cst.shared.snake_utils import run_and_tee
+from blueearth_cst.shared.run_logged import main
 
 
 def test_run_and_tee_returns_child_exit_code(tmp_path):

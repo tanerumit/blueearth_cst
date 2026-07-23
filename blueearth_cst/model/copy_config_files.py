@@ -4,7 +4,7 @@ from os.path import join, dirname
 from pathlib import Path
 from typing import Union, List
 
-from src.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row
 
 
 def copy_config_files(

@@ -143,7 +143,15 @@ The toolbox provides three Snakemake_ workflows:
   hydrological model on each realization × stress combination.
 
 Configuration is YAML-driven. An example is at
-``config/snake_config_model_test.yml``.
+``config/workflows/snake_config_model_test.yml``. Configs live under
+``config/workflows/``, hydromt data catalogs under ``config/catalogs/``,
+and hydromt/wflow/weathergen build templates under ``config/templates/``.
+
+Each run writes its generated model and result artifacts to the
+``project_dir`` set in the config. For production use, point
+``project_dir`` at a location **outside the repository tree** so outputs
+are kept separate from the toolbox source. (The in-repo
+``examples/test_local`` directory is a dev/test convention only.)
 
 Running from pixi shell
 -----------------------
@@ -156,7 +164,7 @@ config of your choice:
     $ pixi shell
     $ cd blueearth_cst
     $ snakemake all -c 1 -s Snakefile_model_creation \
-        --configfile config/snake_config_model_test.yml
+        --configfile config/workflows/snake_config_model_test.yml
 
 See the per-workflow sections below for the recommended sequences
 (DAG visualization, unlocking, full run).
@@ -173,21 +181,62 @@ Common ``snakemake`` flags:
 
 For all options see the
 `Snakemake CLI documentation <https://snakemake.readthedocs.io/en/stable/executing/cli.html>`_.
-More example invocations are in ``run_snake_test.cmd``.
+More example invocations are in ``scripts/run_snake_test.cmd``.
 
 .. _Snakemake: https://snakemake.github.io/
+
+Running all enabled workflows with the wrapper
+----------------------------------------------
+
+Instead of invoking each Snakefile by hand, ``scripts/run_workflows.py``
+reads the ``workflows.<name>.enabled`` flags in a full-orchestration
+config and runs ``snakemake`` for exactly the enabled workflows, in order
+(model → projections → experiment):
+
+.. code-block:: console
+
+    $ pixi run python scripts/run_workflows.py \
+        --config config/workflows/snake_config_model_test.yml
+
+Contract:
+
+- Accepts **full-orchestration configs only** — a config carrying a
+  ``workflows:`` section with all three subsections, each with an
+  ``enabled:`` key (the ``snake_config_model_test*.yml`` /
+  ``snake_config.template.yml`` class). The single-workflow
+  ``snake_config_projections_*.yml`` configs carry no ``workflows:``
+  section and are run directly with ``snakemake -s`` instead.
+- A missing ``workflows:`` section or ``<name>.enabled`` key is a **hard
+  error** naming the absent key, not a silent default.
+- ``enabled:`` must parse to a real boolean: unquoted ``true`` / ``false``
+  / ``yes`` / ``no`` / ``on`` / ``off`` are accepted; quoted ``"true"`` or
+  integers ``1`` / ``0`` are rejected.
+- The wrapper **stops on the first nonzero Snakemake exit and returns that
+  code** — a failed upstream workflow is not followed by a downstream run.
+- ``--cores N`` and any arguments after a ``--`` sentinel forward to every
+  invocation; each workflow keeps its own flags (``--keep-going`` on
+  projections only).
+
+**Skip semantics.** ``enabled: false`` means the wrapper does not invoke
+that Snakefile, so its outputs are not produced. It does **not** delete
+that workflow's prior outputs and does **not** guarantee downstream
+freshness: an enabled downstream workflow consumes whatever prerequisite
+artifacts already exist on disk (or fails with ``MissingInputException``
+if they are absent) — identical to invoking a single Snakefile directly.
+You are responsible for the staleness of what a downstream workflow
+consumes when you disable its prerequisite.
 
 Running from docker image
 -------------------------
 
 .. warning::
 
-   **v0.1.0-alpha only.** ``run_snake_docker.sh`` targets the upstream
+   **v0.1.0-alpha only.** ``scripts/run_snake_docker.sh`` targets the upstream
    conda-based image. Not supported on the v0.2.0-alpha pixi-based
    fork; deferred per "Deferred: Linux replication" in
    ``dev/roadmap.md``.
 
-A script is available to run via Docker: ``run_snake_docker.sh``.
+A script is available to run via Docker: ``scripts/run_snake_docker.sh``.
 
 Snakefile_model_creation
 ------------------------
@@ -197,9 +246,9 @@ historical period.
 
 .. code-block:: console
 
-    $ snakemake -s Snakefile_model_creation --configfile config/snake_config_model_test.yml --dag | dot -Tpng > dag_model.png
-    $ snakemake --unlock -s Snakefile_model_creation --configfile config/snake_config_model_test.yml
-    $ snakemake all -c 1 -s Snakefile_model_creation --configfile config/snake_config_model_test.yml
+    $ snakemake -s Snakefile_model_creation --configfile config/workflows/snake_config_model_test.yml --dag | dot -Tpng > dag_model.png
+    $ snakemake --unlock -s Snakefile_model_creation --configfile config/workflows/snake_config_model_test.yml
+    $ snakemake all -c 1 -s Snakefile_model_creation --configfile config/workflows/snake_config_model_test.yml
 
 The first command generates a DAG visualization (requires Graphviz's
 ``dot``). The second clears any leftover working-directory lock from
@@ -213,9 +262,9 @@ precipitation change) for selected CMIP scenarios and GCMs.
 
 .. code-block:: console
 
-    $ snakemake -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --dag | dot -Tpng > dag_projections.png
-    $ snakemake --unlock -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml
-    $ snakemake all -c 1 -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --keep-going
+    $ snakemake -s Snakefile_climate_projections --configfile config/workflows/snake_config_model_test.yml --dag | dot -Tpng > dag_projections.png
+    $ snakemake --unlock -s Snakefile_climate_projections --configfile config/workflows/snake_config_model_test.yml
+    $ snakemake all -c 1 -s Snakefile_climate_projections --configfile config/workflows/snake_config_model_test.yml --keep-going
 
 Snakefile_climate_experiment
 ----------------------------
@@ -226,9 +275,9 @@ discharge statistics.
 
 .. code-block:: console
 
-    $ snakemake -s Snakefile_climate_experiment --configfile config/snake_config_model_test.yml --dag | dot -Tpng > dag_experiment.png
-    $ snakemake --unlock -s Snakefile_climate_experiment --configfile config/snake_config_model_test.yml
-    $ snakemake all -c 1 -s Snakefile_climate_experiment --configfile config/snake_config_model_test.yml
+    $ snakemake -s Snakefile_climate_experiment --configfile config/workflows/snake_config_model_test.yml --dag | dot -Tpng > dag_experiment.png
+    $ snakemake --unlock -s Snakefile_climate_experiment --configfile config/workflows/snake_config_model_test.yml
+    $ snakemake all -c 1 -s Snakefile_climate_experiment --configfile config/workflows/snake_config_model_test.yml
 
 
 Documentation

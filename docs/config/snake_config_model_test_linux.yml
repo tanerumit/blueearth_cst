@@ -7,10 +7,10 @@ project_dir: examples/Gabon
 static_dir: config
 
 # Path to the data catalog to use (can be different for Linux/Windows/data stored on P drive or other)
-data_sources: config/deltares_data_linux.yml
+data_sources: config/catalogs/deltares_data_linux.yml
 # # Path to the data catalog to use (can be different for Linux/Windows/data stored on P drive or other) TODO: REMOVE
-# data_sources_climate: config/deltares_data_climate_projections_linux.yml
-data_sources_climate: config/cmip6_data.yml
+# data_sources_climate: config/catalogs/deltares_data_climate_projections_linux.yml
+data_sources_climate: config/catalogs/cmip6_data.yml
 
 # Info on the historical climate data is used in the historic model run + reference data for the weather generator
 # Time horizon of the historical period

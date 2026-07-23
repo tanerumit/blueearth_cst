@@ -138,7 +138,13 @@ runnable/verifiable; commit 1 is the single unavoidable atomic exception.
    *(§3, docs-only)*. Update AGENTS.md Repo Map / Conventions / References to the
    new tree; point README run instructions at `scripts/`; document the wrapper
    config-class contract and the "no deletion / no freshness guarantee / downstream
-   consumes pre-existing artifacts" semantics.
+   consumes pre-existing artifacts" semantics. **Also codify the toolbox-vs-project
+   separation** (user expectation, 2026-07-23): production `project_dir` lives
+   **outside the repository tree** — one sentence in AGENTS.md/README plus a comment
+   on the `project_dir:` key in `config/workflows/snake_config.template.yml`
+   (comment-only edit; no value or behavior change). The in-repo untracked
+   `examples/test_local` dev/test convention is explicitly exempt — the baseline
+   gate (rung 4) depends on it.
 7. **`r06: add MIGRATION.md mapping every moved path old to new`** *(roadmap exit
    criterion)*. Complete old→new map for downstream forks / user-local configs,
    including the untracked `*_gabon.yml` note and the `*_local.yml`-rename

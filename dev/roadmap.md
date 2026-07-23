@@ -528,7 +528,32 @@ R3.
 
 **Tag.** `r05-experiment`.
 
-### R6 — Structural refactor
+### R6 — Structural refactor (sealed 2026-07-23)
+
+**Status.** Sealed 2026-07-23 — all 7 lock-list items landed in 8 `r06:`
+commits (`368b30e`..`285e74c`, merged `024326a`): `src/` → `blueearth_cst/`
+package (per-stage submodules + `shared/`); `config/` three-bin split
+(`workflows/` / `catalogs/` / `templates/`); runners → `scripts/`; the
+`enabled:`-aware `scripts/run_workflows.py` wrapper (pinned contract (a)–(g),
+23 contract/skip tests); `dev/` vs `docs/` boundary codified; `MIGRATION.md`
+(51 renames, git-mv-audited complete). Design accepted 2026-07-22 via the
+`r06-structural-refactor` design-review-loop (`dev/r06/`). Implementation run
+as a three-phase Opus handoff with Fable gate reviews (Gate 1 after the atomic
+move, Gate 2 pre-merge). **Behavior-preserving, verified run-relative** (no
+manifest re-record, `check_baseline.py` untouched): full e2e via the wrapper
+green (14/23/57 steps); baseline vs the pre-R6 scratch manifest clean modulo
+the three adjudicated copied-config snapshot rows (normalize-then-compare) and
+two **pre-existing** non-deterministic CSV column orderings (unsorted set
+intersection, `PYTHONHASHSEED`-dependent — demonstrated R6-independent, values
+identical by label; see `dev/followups.md`); full-tree semantic diff
+(`dev/scripts/semantic_tree_diff.py`, element-wise `.nc`) clean on all 96
+substantive files. Notable en-route corrections: four design-inventory blind
+spots (extensionless Snakefiles, two-line `script:` form, `data_sources_climate`
+as a fourth catalog key, `run_logged` count) plus a post-Gate-1 fix (`f4be2f6`)
+for three bare sibling imports only reachable through Snakemake's `script:`
+runtime path — caught exactly by the design's execution-smoke stance. Suite:
+230 passed / 3 skipped / 1 xfailed (pre-R6 parity + 36 new). Q6: no shim.
+Q8: moot. Final suite green; tag `r06-refactor`.
 
 **Goal.** Reorganize the repository so source code, configuration,
 data catalogs, generated outputs, and documentation are cleanly

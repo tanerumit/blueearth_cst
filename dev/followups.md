@@ -9,6 +9,34 @@ context so future-you can confirm the issue still applies before fixing.
 
 ---
 
+## Post-R6 (surfaced 2026-07-23 during the R6 milestone validation)
+
+- **Make the projections summary CSV column order deterministic.**
+  `blueearth_cst/projections/get_change_climate_proj.py` `intersection()`
+  returns `list(set(lst1) & set(lst2))` — hash-order dependent with unpinned
+  `PYTHONHASHSEED`, so `annual_change_scalar_stats_summary{,_mean}.csv` flip
+  `precip`/`temp` column order run-to-run (demonstrated via a 15× hash-seed
+  experiment; values identical by label, sibling `.nc` unaffected; consumers
+  read by name, so harmless today). Fix: `sorted(set(lst1) & set(lst2))`.
+  One-line, but touches a computational-path file — needs a baseline-gated
+  commit, hence deferred out of R6.
+- **`semantic_tree_diff.py` exclusion refinement.** `EXCLUDED_DIR_NAMES`
+  excludes by directory *name* only (`logs`/`benchmarks`/`.snakemake`); stray
+  `.log`/`.txt` under `hydrology_model/` fall through to the hash comparator
+  and surface as benign FAILs (3 rows in the R6 rung-4 diff). Add an
+  extension-level volatile class or per-tree exclude globs.
+- **Dead-fixture audit: `tests/wflow_build_model.yml`.** No config value points
+  at it (design §2, confirmed in R6); its own `config_fn:` line was the only
+  reference to the now-moved `config/wflow_sbm.toml`. Confirm dead and remove,
+  or wire it up intentionally.
+- **`scripts/run_snake_test.cmd` modernization.** Uses `conda activate`, needs
+  graphviz `dot`, ends in `pause` — hostile to non-interactive/pixi use; both
+  R6 e2e runs substituted direct `snakemake`/wrapper invocations. Either port
+  it to `pixi run` + no `pause`, or fold its role into
+  `scripts/run_workflows.py` docs and retire it.
+
+---
+
 ## Cross-cutting — baseline manifest integrity
 
 - **[RESOLVED 2026-07-18] Baseline rebuilt from a tracked seed config.**

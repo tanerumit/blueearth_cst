@@ -449,6 +449,94 @@ def compare_copied_config(ref_path: str, cur_path: str) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
+# P3-1 commit-5b layer: cross-root path normalization for YAML string leaves.
+#
+# The milestone diff compares trees generated under DIFFERENT project roots,
+# and several wf3-written YAMLs legitimately embed that root inside string
+# values: the config snapshots record `project.project_dir` (the root itself),
+# the weathergen configs carry root-prefixed output paths, and the experiment
+# data catalog carries absolute `uri`s. Under a cross-root comparison every
+# such leaf differs by construction -- the same behavior-neutral pointer-move
+# class ext1-3 solved for the run tomls, in YAML. Parse-level adjudication of
+# the 2026-07-23 milestone diff confirmed ALL leaf diffs in these files are
+# path-only (dev/p31/baseline_diffs.md). Mechanism mirroring the toml
+# comparator: each side's own root token becomes `<PROJECT_ROOT>` and the ref
+# side's project-relative remainder goes through the old->new path map; equal
+# normalized docs => behavior-neutral move (PASS); any non-path leaf diff
+# still FAILs.
+# ---------------------------------------------------------------------------
+
+def _root_token_variants(root: str) -> list[str]:
+    """Forward-slash string forms under which a tree's own project root can
+    appear inside a written value: as given, and absolute. Longest first so
+    the absolute form wins when both would match."""
+    p = Path(root)
+    forms = {p.as_posix()}
+    try:
+        forms.add(p.resolve().as_posix())
+    except OSError:
+        pass
+    return sorted(forms, key=len, reverse=True)
+
+
+def _normalize_path_leaf(
+    val: str, variants: list[str], path_map: list[tuple[str, str]] | None
+) -> str:
+    """Rewrite a string leaf that IS or is PREFIXED BY this side's project
+    root; every other leaf is returned untouched (and fails the equality step
+    if it diverges). Prefix-or-equality only -- no mid-string rewriting."""
+    s = val.replace("\\", "/")
+    for v in variants:
+        if s == v:
+            return "<PROJECT_ROOT>"
+        if s.startswith(v + "/"):
+            rest = s[len(v) + 1:]
+            return "<PROJECT_ROOT>/" + apply_path_map(rest, path_map)
+    return val
+
+
+def _normalize_tree_root_paths(doc, variants, path_map):
+    if isinstance(doc, dict):
+        return {
+            k: _normalize_tree_root_paths(v, variants, path_map)
+            for k, v in doc.items()
+        }
+    if isinstance(doc, list):
+        return [_normalize_tree_root_paths(v, variants, path_map) for v in doc]
+    if isinstance(doc, str):
+        return _normalize_path_leaf(doc, variants, path_map)
+    return doc
+
+
+def compare_yaml(
+    ref_path: str,
+    cur_path: str,
+    rel: Path,
+    ref_root: str | None = None,
+    cur_root: str | None = None,
+    path_map: list[tuple[str, str]] | None = None,
+) -> list[str]:
+    """Structural YAML compare: reflexivity guard, then the R6 directional
+    copied-config normalization (config-dir snapshots only), then -- when both
+    project roots are known -- the cross-root path-leaf normalization above.
+    The path map is applied to the REF side only (old->new direction)."""
+    ref = yaml.safe_load(Path(ref_path).read_text())
+    cur = yaml.safe_load(Path(cur_path).read_text())
+    if ref == cur:
+        return []
+    if _is_copied_config(rel):
+        ref = _normalize_config_paths(ref)
+        if ref == cur:
+            return []
+    if ref_root is not None and cur_root is not None:
+        ref = _normalize_tree_root_paths(ref, _root_token_variants(ref_root), path_map)
+        cur = _normalize_tree_root_paths(cur, _root_token_variants(cur_root), None)
+    if ref != cur:
+        return _dict_diff(ref, cur, prefix="")
+    return []
+
+
+# ---------------------------------------------------------------------------
 # Reused check_baseline.py comparators (imported, unchanged).
 # ---------------------------------------------------------------------------
 
@@ -477,7 +565,12 @@ def compare_hashed(ref_path: str, cur_path: str) -> list[str]:
 # ---------------------------------------------------------------------------
 
 def _is_excluded(rel: Path) -> bool:
-    return any(part in EXCLUDED_DIR_NAMES for part in rel.parts)
+    if any(part in EXCLUDED_DIR_NAMES for part in rel.parts):
+        return True
+    # Run-log FILES outside the excluded logs/ dirs (hydromt.log, the Wflow
+    # run-dir log.txt, run_default/log.txt): same non-content-bearing class as
+    # the excluded dirs -- timestamp-laden by nature, never value-comparable.
+    return rel.suffix.lower() == ".log" or rel.name == "log.txt"
 
 
 def _is_copied_config(rel: Path) -> bool:
@@ -500,8 +593,8 @@ def dispatch(
         return compare_nc(ref_path, cur_path, tol)
     if suffix == ".toml":
         return compare_toml(ref_path, cur_path, ref_root, cur_root, path_map)
-    if suffix in (".yml", ".yaml") and _is_copied_config(rel):
-        return compare_copied_config(ref_path, cur_path)
+    if suffix in (".yml", ".yaml"):
+        return compare_yaml(ref_path, cur_path, rel, ref_root, cur_root, path_map)
     if suffix == ".png":
         return compare_png(ref_path, cur_path)
     if suffix == ".csv":

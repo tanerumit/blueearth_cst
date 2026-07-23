@@ -392,3 +392,97 @@ def test_diff_trees_self_compare_clean_with_p31_map(tmp_path):
                             allowlist=std.build_p31_allowlist(
                                 "experiment", "era5_20000101_20201231"))
     assert report["passed"], std.format_report(report)
+
+
+# ---------------------------------------------------------------------------
+# P3-1 commit 5b: cross-root YAML path normalization + run-log file exclusion
+# (adjudicated milestone-diff classes; dev/p31/baseline_diffs.md)
+# ---------------------------------------------------------------------------
+
+def test_yaml_cross_root_path_leaves_pass(tmp_path):
+    """A yml whose string leaves differ ONLY by each tree's own root token +
+    the old->new layout move is behavior-neutral under the cross-root
+    normalization: the root becomes <PROJECT_ROOT> on both sides and the ref
+    remainder goes through the path map. Covers the weathergen-config and
+    project_dir-snapshot classes from the milestone diff."""
+    ref_root = tmp_path / "ref"
+    cur_root = tmp_path / "cur"
+    ref_yml = ref_root / "climate_experiment" / "weathergen_config.yml"
+    cur_yml = cur_root / "experiments" / "experiment" / "weathergen_config.yml"
+    ref_yml.parent.mkdir(parents=True)
+    cur_yml.parent.mkdir(parents=True)
+    _write_yaml(ref_yml, {
+        "project_dir": ref_root.as_posix(),
+        "output": {"path": f"{ref_root.as_posix()}/climate_experiment/realization_1/"},
+        "seed": 123,
+    })
+    _write_yaml(cur_yml, {
+        "project_dir": cur_root.as_posix(),
+        "output": {"path": f"{cur_root.as_posix()}/experiments/experiment/realization_1/"},
+        "seed": 123,
+    })
+    diffs = std.compare_yaml(
+        str(ref_yml), str(cur_yml), cur_yml.relative_to(cur_root),
+        ref_root=str(ref_root), cur_root=str(cur_root), path_map=P31_MAP,
+    )
+    assert diffs == [], diffs
+
+
+def test_yaml_cross_root_nonpath_value_still_fails(tmp_path):
+    """The normalization is path-leaf-only: a non-path value drift (the seed)
+    under the SAME root/layout moves is still a real FAIL."""
+    ref_root = tmp_path / "ref"
+    cur_root = tmp_path / "cur"
+    ref_yml = ref_root / "climate_experiment" / "weathergen_config.yml"
+    cur_yml = cur_root / "experiments" / "experiment" / "weathergen_config.yml"
+    ref_yml.parent.mkdir(parents=True)
+    cur_yml.parent.mkdir(parents=True)
+    _write_yaml(ref_yml, {
+        "output": {"path": f"{ref_root.as_posix()}/climate_experiment/realization_1/"},
+        "seed": 123,
+    })
+    _write_yaml(cur_yml, {
+        "output": {"path": f"{cur_root.as_posix()}/experiments/experiment/realization_1/"},
+        "seed": 456,  # drift
+    })
+    diffs = std.compare_yaml(
+        str(ref_yml), str(cur_yml), cur_yml.relative_to(cur_root),
+        ref_root=str(ref_root), cur_root=str(cur_root), path_map=P31_MAP,
+    )
+    assert diffs and any("seed" in d for d in diffs)
+
+
+def test_yaml_backslash_absolute_uri_normalizes(tmp_path):
+    """The data-catalog class: absolute backslashed uris under each root
+    normalize to the same <PROJECT_ROOT>-relative target."""
+    ref_root = tmp_path / "ref"
+    cur_root = tmp_path / "cur"
+    ref_yml = ref_root / "climate_experiment" / "cat.yml"
+    cur_yml = cur_root / "experiments" / "experiment" / "cat.yml"
+    ref_yml.parent.mkdir(parents=True)
+    cur_yml.parent.mkdir(parents=True)
+    ref_abs = str(ref_root.resolve() / "climate_experiment" / "realization_1" / "x.nc").replace("/", "\\")
+    cur_abs = str(cur_root.resolve() / "experiments" / "experiment" / "realization_1" / "x.nc").replace("/", "\\")
+    _write_yaml(ref_yml, {"rlz": {"uri": ref_abs}})
+    _write_yaml(cur_yml, {"rlz": {"uri": cur_abs}})
+    diffs = std.compare_yaml(
+        str(ref_yml), str(cur_yml), cur_yml.relative_to(cur_root),
+        ref_root=str(ref_root), cur_root=str(cur_root), path_map=P31_MAP,
+    )
+    assert diffs == [], diffs
+
+
+def test_diff_trees_excludes_run_log_files(tmp_path):
+    """Run-log FILES outside logs/ dirs (hydromt.log, model_runs/log.txt) are
+    excluded from the walk -- same non-content-bearing class as logs/ dirs."""
+    ref = tmp_path / "ref"
+    cur = tmp_path / "cur"
+    for root in (ref, cur):
+        (root / "hydrology_model" / "run_default").mkdir(parents=True)
+    (ref / "hydrology_model" / "hydromt.log").write_text("ts 1")
+    (cur / "hydrology_model" / "hydromt.log").write_text("ts 2")
+    (ref / "hydrology_model" / "run_default" / "log.txt").write_text("ts 1")
+    (cur / "hydrology_model" / "run_default" / "log.txt").write_text("ts 2")
+    report = std.diff_trees(str(ref), str(cur), tol=0.0)
+    assert report["passed"], std.format_report(report)
+    assert report["n_compared"] == 0

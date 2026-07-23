@@ -37,7 +37,7 @@ def _dry_run(snakefile, cfg=config_fn):
 
 @pytest.fixture()
 def config_with_staged_region(tmp_path):
-    """Config whose project_dir is a temp dir pre-staged with region.geojson.
+    """Config whose project_dir is a temp dir pre-staged with the wf1 leaves.
 
     climate_projections declares `{project_dir}/hydrology_model/staticgeoms/
     region.geojson` as an `ancient(...)` input produced by model_creation — a
@@ -45,6 +45,14 @@ def config_with_staged_region(tmp_path):
     dry-run workflow 2 in isolation we stage a minimal valid region file under
     a **test-owned tmp project_dir** (never the tracked baseline dir) and point
     a copy of the test config at it. tmp_path is torn down by pytest.
+
+    Since P3-1 commit 1, climate_experiment's drift guard (rule
+    check_project_consistency) additionally declares the wf1 config snapshot
+    `{project_dir}/config/snake_config_model_creation.yml` as a mandatory
+    `ancient(...)` input — the same class of cross-workflow contract, staged
+    the same way. The staged snapshot is serialized from the SAME parsed
+    config the dry-run consumes, so the guard's comparands match by
+    construction.
     """
     with open(config_fn) as f:
         cfg = yaml.safe_load(f)
@@ -53,6 +61,10 @@ def config_with_staged_region(tmp_path):
     region = tmp_path / "hydrology_model" / "staticgeoms" / "region.geojson"
     region.parent.mkdir(parents=True)
     region.write_text(_MINIMAL_REGION_GEOJSON, encoding="utf-8")
+
+    wf1_snapshot = tmp_path / "config" / "snake_config_model_creation.yml"
+    wf1_snapshot.parent.mkdir(parents=True)
+    wf1_snapshot.write_text(yaml.safe_dump(cfg), encoding="utf-8")
 
     cfg_path = tmp_path / "snake_config_staged.yml"
     cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")

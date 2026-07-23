@@ -151,6 +151,33 @@ def get_config(config, arg, default=None, optional=True):
         raise ValueError(f"Argument {arg} not found in config")
 
 
+def file_digest_or_absent(path) -> str:
+    """Return the SHA-256 hex digest of a file's bytes, or ``"ABSENT"``.
+
+    Absence-tolerant digest helper for the wf3 drift guard's params
+    (dev/p31/experiment-structure-design.md §3b/§3c, ext2-2). Called at
+    Snakefile parse time for the wf1/wf2 project-snapshot digests, so a fresh
+    project (no snapshot yet) still parses, ``--dry-run``s, and ``--unlock``s
+    cleanly — snapshot absence surfaces at the guard *rule* via its
+    ``ancient()`` input declaration (``MissingInputException``), never as a
+    parse-time traceback.
+
+    - **present:** SHA-256 hex digest of the file bytes — any content change
+      flips the returned string, tripping Snakemake's params rerun-trigger.
+    - **missing (or unreadable):** the literal sentinel string ``"ABSENT"`` —
+      never raises. ``"ABSENT"`` cannot collide with a real digest (uppercase,
+      non-hex, wrong length), and the ABSENT->present transition itself flips
+      the param, so the first post-wf1 invocation re-evaluates the guard.
+    """
+    import hashlib
+
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return "ABSENT"
+
+
 def _require_step_num(axis_cfg, axis_name):
     """Read and validate a required ``step_num`` from a stress-test axis section.
 

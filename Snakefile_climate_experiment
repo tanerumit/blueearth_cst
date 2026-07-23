@@ -1,3 +1,5 @@
+import hashlib
+import json
 import numpy as np
 import sys
 from pathlib import Path
@@ -6,7 +8,7 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from blueearth_cst.shared.snake_utils import get_config, patch_psutil_windows_benchmark, rule_banner, stress_test_grid
+from blueearth_cst.shared.snake_utils import file_digest_or_absent, get_config, patch_psutil_windows_benchmark, rule_banner, stress_test_grid
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
 patch_psutil_windows_benchmark()
@@ -61,6 +63,49 @@ wflow_run_length = get_config(my_cfg, "run_length", 20)
 basin_dir = f"{project_dir}/hydrology_model"
 exp_dir = f"{project_dir}/climate_{experiment}"
 
+# --- Drift-guard comparands (dev/p31/experiment-structure-design.md §3b/§3c) ---
+# Rule 3.00b check_project_consistency compares this experiment config's
+# project-level sections against the wf1/wf2 project snapshots. Snakemake's
+# default params rerun-trigger re-runs the guard when any of these param values
+# changes (probe-verified, design §3c), so every comparand is threaded through
+# as a param — and every guard param must be EXPERIMENT-INVARIANT across passing
+# configs, because the guard's second output is shared across experiments
+# (§3b/§3d; config_path is deliberately NOT a guard param — it varies per
+# experiment and would thrash the shared artifact on A<->B alternation).
+guarded_sections = (
+    "project", "shared.basin", "workflows.model_creation",
+    "workflows.climate_projections",
+)
+# SHA-256 of a canonical sorted-key JSON serialization of the guarded live
+# sections: an in-place edit to any guarded value flips this string and trips
+# the params rerun-trigger (§3c case (a)). A string digest — the form the §3c
+# probe verified — not raw nested dicts.
+guarded_sections_digest = hashlib.sha256(
+    json.dumps(
+        {
+            "project": config.get("project"),
+            "shared.basin": config.get("shared", {}).get("basin"),
+            "workflows.model_creation": config.get("workflows", {}).get("model_creation"),
+            "workflows.climate_projections": config.get("workflows", {}).get("climate_projections"),
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+        default=str,
+    ).encode("utf-8")
+).hexdigest()
+# Project snapshots the guard compares against. wf1 is a mandatory ancient()
+# rule input (absence -> rule-level MissingInputException); wf2 is a params
+# path, existence-checked in the guard script (the projections overlay is
+# optional and must not be force-required). Content digests via
+# file_digest_or_absent ("ABSENT" for a missing file, never raises) make a
+# snapshot-only content change re-trigger the guard despite ancient() (§3c
+# case (b)), while keeping a fresh project parse/--dry-run/--unlock clean
+# (ext2-2).
+wf1_snapshot_path = f"{project_dir}/config/snake_config_model_creation.yml"
+wf2_snapshot_path = f"{project_dir}/config/snake_config_climate_projections.yml"
+wf1_snapshot_digest = file_digest_or_absent(wf1_snapshot_path)
+wf2_snapshot_digest = file_digest_or_absent(wf2_snapshot_path)
+
 # Rule numbering (comment headers + log/benchmark filenames) uses `W.NN` =
 # workflow.step in DEFINITION order — a reference aid ("Rule 3.10" = run_wflow),
 # not execution order (the DAG fans out over RLZ_NUM x ST_NUM realizations).
@@ -74,11 +119,46 @@ rule all:
         snake_config = f"{project_dir}/config/snake_config_climate_experiment.yml",
         benchmarks = f"{project_dir}/benchmarks/wf3_benchmarks.md",
 
+# 3.00b check_project_consistency — drift guard: fail loud if this experiment
+# config's project-level sections (project, shared.basin,
+# workflows.model_creation, workflows.climate_projections) diverge from the
+# wf1/wf2 project snapshots. Runs at rule time (not parse) so --dry-run and
+# --unlock stay usable (design §3). Two outputs, one per sharing class (§3a,
+# ext2-1): the per-experiment sentinel is a FRESH input of the four
+# per-experiment roots (copy_config, climate_stress_parameters,
+# prepare_weagen_config, prepare_weagen_config_st); the guard artifact is
+# consumed ancient() by extract_climate_grid ONLY — its path is
+# experiment-invariant so the shared rule's input set never changes across
+# experiments (input-set provenance trigger cannot fire, §3d). The store is not
+# yet keyed in this commit, so the guard artifact lands at the then-current
+# store dir climate_historical/raw_data/ (§10.1 sequencing note; commit 4 moves
+# it under the keyed dir together with the store).
+rule check_project_consistency:
+    message: rule_banner("3.00b", "check_project_consistency")
+    input:
+        wf1_snapshot = ancient(wf1_snapshot_path),
+    params:
+        guarded_sections = guarded_sections,
+        guarded_sections_digest = guarded_sections_digest,
+        wf1_snapshot_digest = wf1_snapshot_digest,
+        wf2_snapshot_path = wf2_snapshot_path,
+        wf2_snapshot_digest = wf2_snapshot_digest,
+    output:
+        sentinel = f"{exp_dir}/.project_consistency_ok",
+        guard_ok = f"{project_dir}/climate_historical/raw_data/.guard_ok",
+    log:
+        f"{project_dir}/logs/3.00b_check_project_consistency.log",
+    benchmark:
+        f"{project_dir}/benchmarks/_parts/3.00b_check_project_consistency.tsv",
+    script:
+        "blueearth_cst/experiment/check_project_consistency.py"
+
 # 3.01  copy_config — copy snake config into project_dir/config
 rule copy_config:
     message: rule_banner("3.01", "copy_config")
     input:
         config_snake = config_path,
+        consistency_ok = f"{exp_dir}/.project_consistency_ok",
     params:
         data_catalogs = DATA_SOURCES,
         workflow_name = "climate_experiment",
@@ -92,6 +172,11 @@ rule extract_climate_grid:
     message: rule_banner("3.02", "extract_climate_grid")
     input:
         prj_region = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
+        # Guard ordering edge: the experiment-invariant guard artifact, ancient()
+        # so a later experiment's guard rewrite neither mtime- nor
+        # input-set-triggers a re-extraction (design §3a/§3d — do NOT swap this
+        # for the per-experiment sentinel).
+        guard_ok = ancient(f"{project_dir}/climate_historical/raw_data/.guard_ok"),
     params:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
@@ -111,6 +196,7 @@ rule climate_stress_parameters:
     message: rule_banner("3.03", "climate_stress_parameters")
     input:
         config = ancient(config_path),
+        consistency_ok = f"{exp_dir}/.project_consistency_ok",
     output:
         st_csv_fns = [f"{exp_dir}/stress_test/cst_{st_num}.csv" for st_num in np.arange(1, ST_NUM+1)]
     log:
@@ -123,6 +209,8 @@ rule climate_stress_parameters:
 # 3.04  prepare_weagen_config — weathergen config for realization generation
 rule prepare_weagen_config:
     message: rule_banner("3.04", "prepare_weagen_config")
+    input:
+        consistency_ok = f"{exp_dir}/.project_consistency_ok",
     output:
         weagen_config = f"{exp_dir}/weathergen_config.yml",
     params:
@@ -143,6 +231,8 @@ rule prepare_weagen_config:
 # 3.05  prepare_weagen_config_st — weathergen config per rlz/cst (climate change)
 rule prepare_weagen_config_st:
     message: rule_banner("3.05", "prepare_weagen_config_st")
+    input:
+        consistency_ok = f"{exp_dir}/.project_consistency_ok",
     output:
         weagen_config = f"{exp_dir}/realization_"+"{rlz_num}"+"/weathergen_config_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".yml",
     params:

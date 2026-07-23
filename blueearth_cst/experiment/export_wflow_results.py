@@ -9,7 +9,7 @@ import numpy as np
 import xarray as xr
 from typing import List, Union
 
-import metrics_definition as md
+import blueearth_cst.shared.metrics_definition as md
 from blueearth_cst.shared.snake_utils import log_row
 
 

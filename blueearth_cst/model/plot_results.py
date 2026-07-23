@@ -16,14 +16,14 @@ from hydromt_wflow import WflowSbmModel
 
 from typing import Union
 
-from func_plot_signature import (
+from blueearth_cst.shared.func_plot_signature import (
     plot_signatures,
     plot_hydro,
     compute_metrics,
     plot_clim,
     plot_basavg,
 )
-from climate_forcing import climate_forcing_by_subcatchment
+from blueearth_cst.model.climate_forcing import climate_forcing_by_subcatchment
 from blueearth_cst.shared.snake_utils import log_row
 
 

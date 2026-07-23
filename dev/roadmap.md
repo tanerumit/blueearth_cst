@@ -630,11 +630,15 @@ match the project snapshot; fail loud). Baseline handled as a documented
 value-identical re-record; current output layout is not an external
 contract on this fork.
 
-**Scoping confirmed** (design-scoping session 2026-07-23) — intake with
-confirmed positions, target tree, open questions, and exit criteria at
-`dev/working/design-runs/p31-experiment-structure/intake.md`. Next step:
-`design-review-loop` run `p31-experiment-structure` → accepted design at
-`dev/p31/experiment-structure-design.md` → task brief → implementation.
+**Design ACCEPTED 2026-07-23** via the `p31-experiment-structure`
+design-review-loop (3-lens internal panel + 2 external GPT rounds +
+round-cap arbitration; 29/29 findings closed; key mechanisms probe-verified
+against pinned Snakemake — params rerun-trigger, ancient() input-set
+trigger, key-level guard artifact for store reuse). Accepted design:
+`dev/p31/experiment-structure-design.md`; audit trail:
+`dev/p31/experiment-structure-design-review-record.md`; scoping intake
+landed beside them. Next step: `task-brief` handoff → implementation
+(Opus-default / Fable-gate-review pattern).
 
 **Cut (YAGNI):** registry, CLI listing, cross-experiment comparison,
 layered configs. **Deferred:** `realization_*`/`stress_test` file-format

@@ -67,9 +67,18 @@ with tee_to_log(snakemake.log[0]):
             # flat under run_climate_<experiment>/ (no run_default subdir),
             # so override Wflow.jl's default dir_output.
             "dir_output": ".",
-            "state.path_input": os.path.join("..", "instate", "instates.nc"),
+            # Absolute paths into the wf1 model dir (staticmaps + instates).
+            # The run dir moved from hydrology_model/run_climate_<exp>/ to
+            # experiments/<name>/model_runs/ (design §5), so the old "../"
+            # literals no longer walk to hydrology_model/. Pass ABSOLUTE paths:
+            # hydromt_wflow's config.write re-relativizes any absolute same-mount
+            # value against the new toml's own directory on write, emitting the
+            # correct relative pointer (verified against the vendored
+            # make_config_paths_relative; design §5/§5a). state.path_input is
+            # inert under reinit=true but set for future warm-state safety.
+            "state.path_input": str(Path(model_root, "instate", "instates.nc").resolve()),
             "state.path_output": f"outstates_{climate_name}.nc",
-            "input.path_static": os.path.join("..", "staticmaps.nc"),
+            "input.path_static": str(Path(model_root, "staticmaps.nc").resolve()),
             "input.path_forcing": os.path.relpath(fn_out.resolve(), Path(config_out_root).resolve()),
             "output.csv.path": f"output_{climate_name}.csv",
         }

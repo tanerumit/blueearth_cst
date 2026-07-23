@@ -326,7 +326,7 @@ rule downscale_climate_realization:
         data_sources = [f"{exp_dir}/data_catalog_climate_experiment.yml", DATA_SOURCES]
     output:
         nc = temp(f"{exp_dir}/realization_"+"{rlz_num}"+"/inmaps_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc"),
-        toml = f"{basin_dir}/run_climate_{experiment}/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
+        toml = f"{exp_dir}/model_runs/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
     params:
         model_dir = basin_dir,
         clim_source = clim_source,
@@ -344,10 +344,10 @@ rule run_wflow:
     message: rule_banner("3.10", "run_wflow")
     input:
         forcing_path = f"{exp_dir}/realization_"+"{rlz_num}"+"/inmaps_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc",
-        toml_path = f"{basin_dir}/run_climate_{experiment}/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
+        toml_path = f"{exp_dir}/model_runs/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
     output:
-        csv_file = f"{basin_dir}/run_climate_{experiment}/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv",
-        state_file = temp(f"{basin_dir}/run_climate_{experiment}/outstates_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
+        csv_file = f"{exp_dir}/model_runs/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv",
+        state_file = temp(f"{exp_dir}/model_runs/outstates_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
     log:
         f"{exp_dir}/logs/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
@@ -359,7 +359,7 @@ rule run_wflow:
 rule export_wflow_results:
     message: rule_banner("3.11", "export_wflow_results")
     input:
-        rlz_csv_fns = expand((f"{basin_dir}/run_climate_{experiment}/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv"), rlz_num=np.arange(1, RLZ_NUM+1), st_num=np.arange(ST_START, ST_NUM+1)),
+        rlz_csv_fns = expand((f"{exp_dir}/model_runs/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv"), rlz_num=np.arange(1, RLZ_NUM+1), st_num=np.arange(ST_START, ST_NUM+1)),
     output:
         Qstats = f"{exp_dir}/model_results/Qstats.csv",
         basin = f"{exp_dir}/model_results/basin.csv",

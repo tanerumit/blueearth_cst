@@ -1,16 +1,21 @@
 # Fork Roadmap
 
-Source of truth for the personal fork of `blueearth_cst`. Two phases:
+Source of truth for the personal fork of `blueearth_cst`. Three phases:
 
 **Phase 1 — Foundation (sealed 2026-05-08).** Replicated upstream,
 formalized the pixi env, upgraded load-bearing libraries, and added
 unit-test coverage. Four milestones, all tagged. Phase 1 dev artifacts
 under `dev/phase-1/`.
 
-**Phase 2 — Refactor (active).** Major overhaul of the workflow code,
-config contracts, and repo structure. Six milestones running from R1
+**Phase 2 — Refactor (sealed 2026-07-23).** Major overhaul of the workflow
+code, config contracts, and repo structure. Six milestones running from R1
 (modularity contracts) through R6 (structural refactor), in deliberate
 single-purpose steps. Phase 2 dev artifacts under `dev/r##/`.
+
+**Phase 3 — Usability & flexibility (planned).** Driven by the user
+expectations mapped 2026-07-23 at the R6 handoff: project/experiment
+tracking, model flexibility, and performance. Milestones P3-1..P3-3;
+dev artifacts under `dev/p3#/`. See § Phase 3 below.
 
 ```text
 Phase 1 — Foundation (sealed)
@@ -602,6 +607,56 @@ config rather than by user discipline.
 - Any further behavioral change beyond what `enabled` requires.
 
 **Tag.** `r06-refactor`.
+
+---
+
+## Phase 3 — Usability & flexibility (planned)
+
+Sequenced so each milestone eases the next: the experiment tree settles
+where per-model artifacts live (P3-2), and both precede performance work
+(P3-3) so profiling targets the final structure.
+
+### P3-1 — Project/experiment structure (scoped 2026-07-23)
+
+**Goal.** One `project_dir` = one basin project holding multiple
+non-colliding, self-describing stress-test experiments under
+`experiments/<name>/`, completing the half-built `experiment_name`
+mechanism. Experiments vary wf3 stress-test settings + the climate
+window/source; the built model (wf1) and projections overlay (wf2) are
+project-level and shared. `climate_historical/` becomes a project-level
+per-dataset store referenced (not copied) by experiments. One full config
+per experiment + a wf3 startup drift guard (project-level sections must
+match the project snapshot; fail loud). Baseline handled as a documented
+value-identical re-record; current output layout is not an external
+contract on this fork.
+
+**Scoping confirmed** (design-scoping session 2026-07-23) — intake with
+confirmed positions, target tree, open questions, and exit criteria at
+`dev/working/design-runs/p31-experiment-structure/intake.md`. Next step:
+`design-review-loop` run `p31-experiment-structure` → accepted design at
+`dev/p31/experiment-structure-design.md` → task brief → implementation.
+
+**Cut (YAGNI):** registry, CLI listing, cross-experiment comparison,
+layered configs. **Deferred:** `realization_*`/`stress_test` file-format
+efficiency redesign (user-parked 2026-07-23; candidate P3-3 input).
+
+**Tag.** `p31-experiments`.
+
+### P3-2 — Functional decomposition + model-swap interfaces (not scoped)
+
+Absorbs the R6-deferred functional decomposition of climate analysis
+(`dev/r06/structural-refactor-design.md` §8; `modularization` direction:
+climate analysis/viz runnable model-independently). Pins the interchange
+contracts (netCDF handoffs, forcing/state shapes) as explicit interfaces
+so an alternative weather generator or hydrological model becomes a
+bounded substitution. Scope after P3-1 lands.
+
+### P3-3 — Performance passes (not scoped)
+
+Profiling-driven per-workflow efficiency work (memory, speed, chunking,
+R vectorization; the `RLZ_NUM × ST_NUM` loop is the prime suspect), with
+per-workflow baseline discipline à la R3–R5. Candidate input: the parked
+realization/stress-test data-structure redesign. Scope after P3-1/P3-2.
 
 ---
 

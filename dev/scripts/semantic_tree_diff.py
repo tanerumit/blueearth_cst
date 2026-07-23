@@ -19,16 +19,39 @@ Design contract (dev/r06/structural-refactor-design.md §9, rows ext1-04 / ext2-
 - `.csv`, `.png`, discharge `output.csv` : REUSED verbatim from `check_baseline.py`
            (imported, never modified).
 
-`check_baseline.py` is imported and left unchanged (Hard-Constraints scope). The
+`check_baseline.py` is imported for its comparators; its own P3-1 edits (the
+TARGETS repoint, G1 scope amendment) live in that file, not here. The
 CSV/PNG/discharge comparators and `VOLATILE_NC_ATTRS` come from it by import.
+
+P3-1 layer (dev/p31/experiment-structure-design.md §6a, commit 5):
+
+- **Path map** -- an ORDERED list of directory-prefix rewrite rules on
+  project-root-relative paths (NOT a per-file table; the prefix form also covers
+  in-toml pointer targets that are `temp()`-deleted and exist in neither tree).
+  Ref (old-layout) relpaths are translated old->new before pairing with the
+  current tree, so a pure move is content-diffed instead of degrading to a
+  MISSING+EXTRA pair.
+- **Allowlist gate contract (risk-4)** -- after translation and content-diffing
+  of translated pairs, the residual MISSING and EXTRA sets must be EMPTY modulo
+  an explicitly enumerated allowlist (each entry justified in
+  dev/p31/migration_experiment-structure.md). A nonempty unexplained
+  MISSING/EXTRA is a gate FAILURE, not a pass.
+- **Path-aware toml comparator (§6a step 3, ext1-3)** -- for each path-valued
+  toml field: (1) lexical resolve against its own toml's dir (normpath+join,
+  never `.resolve()`); (2) translate to project-root-relative by stripping that
+  side's root; (3) apply the prefix map to the REF side's target; (4) compare --
+  equal => the pointer move is behavior-neutral (PASS), different => a real
+  failure naming the field (a mis-repoint is caught, not hidden).
 
 CLI (self-contained; no snakemake global)::
 
     python dev/scripts/semantic_tree_diff.py --ref <dir> --cur <dir> [--tolerance 1e-9]
+        [--experiment-name experiment] [--dataset-key era5_20000101_20201231]
+        [--no-path-map] [--allow <relpath> ...]
 
-Exit 0 = clean (every file equal under its comparator), 1 = at least one FAIL or
-structural mismatch (missing/extra file). A clean self-comparison
-(`--ref X --cur X`) is the commit-4 smoke.
+Exit 0 = clean (every file equal under its comparator, residual MISSING/EXTRA
+empty modulo the allowlist), 1 = at least one FAIL or unexplained
+missing/extra file. A clean self-comparison (`--ref X --cur X`) is the smoke.
 """
 
 from __future__ import annotations
@@ -91,6 +114,77 @@ COPIED_CONFIG_PATH_MAP: dict[str, dict[str, str]] = {
 EXCLUDED_DIR_NAMES = frozenset({"logs", "benchmarks", ".snakemake"})
 
 DEFAULT_TOLERANCE = 1e-9
+
+
+# ---------------------------------------------------------------------------
+# P3-1 path map (design §6a step 2, ext1-3). An ORDERED list of rewrite rules
+# on project-root-relative POSIX paths. Two rule kinds:
+#   - directory-prefix rule: old ends with "/" -- rewrites any path under it
+#     (load-bearing for temp() targets that exist in NEITHER tree, e.g. the
+#     per-realization forcing inmaps consumed by path_forcing);
+#   - exact-file rule: old does not end with "/" -- rewrites that one relpath.
+# First match wins. Direction is OLD (pre-P3-1 reference) -> NEW (current).
+# ---------------------------------------------------------------------------
+
+def build_p31_path_map(
+    experiment_name: str, dataset_key: str | None
+) -> list[tuple[str, str]]:
+    """The P3-1 old->new relocation rules for one experiment (design §6a).
+
+    Covers the five content-bearing relocation classes: results CSVs + the
+    experiment subtree (rule 3), the wf3 config snapshot (rule 1), the run-dir
+    tomls/output CSVs (rule 2), and the keyed extraction netCDF (rule 4,
+    only when the dataset key is known).
+    """
+    rules: list[tuple[str, str]] = [
+        (
+            "config/snake_config_climate_experiment.yml",
+            f"experiments/{experiment_name}/config/snake_config_climate_experiment.yml",
+        ),
+        (
+            f"hydrology_model/run_climate_{experiment_name}/",
+            f"experiments/{experiment_name}/model_runs/",
+        ),
+        (
+            f"climate_{experiment_name}/",
+            f"experiments/{experiment_name}/",
+        ),
+    ]
+    if dataset_key:
+        rules.append(
+            ("climate_historical/raw_data/", f"climate_historical/{dataset_key}/")
+        )
+    return rules
+
+
+def build_p31_allowlist(
+    experiment_name: str, dataset_key: str | None
+) -> list[str]:
+    """EXTRA-by-design current-tree relpaths (risk-4 presence exemptions ONLY).
+
+    Justifications live in dev/p31/migration_experiment-structure.md: the
+    per-experiment guard sentinel and the key-level guard artifact are new
+    gate outputs with no pre-P3-1 counterpart; neither carries scientific
+    content. There is no wf3 plots producer, so nothing is MISSING-by-design.
+    """
+    allow = [f"experiments/{experiment_name}/.project_consistency_ok"]
+    if dataset_key:
+        allow.append(f"climate_historical/{dataset_key}/.guard_ok")
+    return allow
+
+
+def apply_path_map(rel: str, path_map: list[tuple[str, str]] | None) -> str:
+    """Translate one project-root-relative path through the ordered rule list."""
+    rel = rel.replace("\\", "/")
+    if not path_map:
+        return rel
+    for old, new in path_map:
+        if old.endswith("/"):
+            if rel.startswith(old):
+                return new + rel[len(old):]
+        elif rel == old:
+            return new
+    return rel
 
 
 # ---------------------------------------------------------------------------
@@ -202,17 +296,95 @@ def _compare_attrs(scope: str, ref_attrs: dict, cur_attrs: dict) -> list[str]:
 
 
 # ---------------------------------------------------------------------------
-# TOML: parse-and-normalize structural compare.
+# TOML: parse-and-normalize structural compare, with the P3-1 path-aware
+# pointer-field comparator (design §6a step 3, ext1-3).
 # ---------------------------------------------------------------------------
 
-def compare_toml(ref_path: str, cur_path: str) -> list[str]:
+# Path-valued run-toml fields resolved relative to the toml's own directory.
+# The three fields the design names as legitimately changing string value are
+# path_static / path_forcing / path_input; path_output and csv.path are
+# included for the same treatment (their targets moved WITH the run dir, so
+# raw strings are unchanged and the normalized compare is equally a PASS).
+TOML_PATH_FIELDS: tuple[tuple[str, ...], ...] = (
+    ("input", "path_forcing"),
+    ("input", "path_static"),
+    ("state", "path_input"),
+    ("state", "path_output"),
+    ("csv", "path"),
+)
+
+
+def _get_nested(doc: dict, keys: tuple[str, ...]):
+    node = doc
+    for k in keys:
+        if not isinstance(node, dict) or k not in node:
+            return None
+        node = node[k]
+    return node
+
+
+def _set_nested(doc: dict, keys: tuple[str, ...], value) -> None:
+    node = doc
+    for k in keys[:-1]:
+        node = node[k]
+    node[keys[-1]] = value
+
+
+def _project_relative_target(toml_path: str, field_val: str, root: str) -> str:
+    """§6a step 3 (1)+(2): lexical resolve against the toml's own dir, then
+    strip that side's project root. Pure string arithmetic (normpath+join, NOT
+    `.resolve()`), so it works after `temp()` targets are deleted."""
+    v = field_val.replace("\\", "/")
+    if os.path.isabs(v):
+        resolved = os.path.normpath(v)
+    else:
+        toml_dir = os.path.dirname(os.path.abspath(toml_path))
+        resolved = os.path.normpath(os.path.join(toml_dir, v))
+    rel = os.path.relpath(resolved, os.path.abspath(root))
+    return rel.replace("\\", "/")
+
+
+def compare_toml(
+    ref_path: str,
+    cur_path: str,
+    ref_root: str | None = None,
+    cur_root: str | None = None,
+    path_map: list[tuple[str, str]] | None = None,
+) -> list[str]:
+    """Structural toml compare. When both project roots are given, the known
+    path-valued fields are compared in a PROJECT-ROOT-RELATIVE namespace with
+    the old->new path map applied to the ref side (§6a step 3): equal mapped
+    targets => behavior-neutral pointer move (PASS); different => a real
+    failure naming the field. Without roots: raw parsed-dict equality."""
     with open(ref_path, "rb") as f:
         ref = tomllib.load(f)
     with open(cur_path, "rb") as f:
         cur = tomllib.load(f)
+
+    diffs: list[str] = []
+    if ref_root is not None and cur_root is not None:
+        for field in TOML_PATH_FIELDS:
+            rv = _get_nested(ref, field)
+            cv = _get_nested(cur, field)
+            if not (isinstance(rv, str) and isinstance(cv, str)):
+                continue  # absent on a side -> handled by the raw dict diff
+            ref_target = _project_relative_target(ref_path, rv, ref_root)
+            cur_target = _project_relative_target(cur_path, cv, cur_root)
+            mapped_ref = apply_path_map(ref_target, path_map)  # step 3
+            dotted = ".".join(field)
+            if mapped_ref != cur_target:  # step 4
+                diffs.append(
+                    f"{dotted}: project-relative target {cur_target!r} vs ref "
+                    f"{ref_target!r} (mapped -> {mapped_ref!r}) -- mis-repoint"
+                )
+            # Neutralize the field for the raw compare either way: an unequal
+            # target is already reported above; an equal one is a PASS.
+            _set_nested(ref, field, "<path-field-compared>")
+            _set_nested(cur, field, "<path-field-compared>")
+
     if ref != cur:
-        return _dict_diff(ref, cur, prefix="")
-    return []
+        diffs += _dict_diff(ref, cur, prefix="")
+    return diffs
 
 
 def _dict_diff(ref, cur, prefix: str) -> list[str]:
@@ -313,13 +485,21 @@ def _is_copied_config(rel: Path) -> bool:
     return rel.suffix in (".yml", ".yaml") and "config" in rel.parts
 
 
-def dispatch(rel: Path, ref_path: str, cur_path: str, tol: float) -> list[str]:
+def dispatch(
+    rel: Path,
+    ref_path: str,
+    cur_path: str,
+    tol: float,
+    ref_root: str | None = None,
+    cur_root: str | None = None,
+    path_map: list[tuple[str, str]] | None = None,
+) -> list[str]:
     suffix = rel.suffix.lower()
     name = rel.name
     if suffix == ".nc":
         return compare_nc(ref_path, cur_path, tol)
     if suffix == ".toml":
-        return compare_toml(ref_path, cur_path)
+        return compare_toml(ref_path, cur_path, ref_root, cur_root, path_map)
     if suffix in (".yml", ".yaml") and _is_copied_config(rel):
         return compare_copied_config(ref_path, cur_path)
     if suffix == ".png":
@@ -341,30 +521,74 @@ def _list_files(root: Path) -> set[Path]:
     return out
 
 
-def diff_trees(ref_root: str, cur_root: str, tol: float = DEFAULT_TOLERANCE) -> dict:
+def diff_trees(
+    ref_root: str,
+    cur_root: str,
+    tol: float = DEFAULT_TOLERANCE,
+    path_map: list[tuple[str, str]] | None = None,
+    allowlist: list[str] | None = None,
+) -> dict:
     """Compare two output trees file-by-file. Returns a report dict with
-    `failures` (list of (relpath, [reasons])), `missing`, `extra`, `passed`."""
+    `failures` (list of (relpath, [reasons])), `missing`, `extra`, `allowed`,
+    `passed`.
+
+    P3-1 semantics (§6a): every ref relpath is translated through `path_map`
+    (old->new) before pairing with the current tree, so a mapped move is
+    content-diffed (ref bytes vs cur bytes) rather than reported as
+    MISSING+EXTRA. Residual MISSING/EXTRA entries matching `allowlist` are
+    reported separately as `allowed` and do not fail the gate; any other
+    residual entry FAILS it (risk-4)."""
     ref = Path(ref_root)
     cur = Path(cur_root)
     ref_files = _list_files(ref)
     cur_files = _list_files(cur)
 
-    missing = sorted(str(p) for p in ref_files - cur_files)
-    extra = sorted(str(p) for p in cur_files - ref_files)
+    # Translate ref relpaths old->new (POSIX keys); keep the original for I/O.
+    translated: dict[str, Path] = {}
+    for p in ref_files:
+        key = apply_path_map(p.as_posix(), path_map)
+        if key in translated:  # two ref files mapping onto one target
+            raise ValueError(
+                f"path map collision: {translated[key]} and {p} both map to {key}"
+            )
+        translated[key] = p
+    cur_keys = {p.as_posix(): p for p in cur_files}
+
+    allow = set(allowlist or [])
+    raw_missing = sorted(set(translated) - set(cur_keys))
+    raw_extra = sorted(set(cur_keys) - set(translated))
+    allowed = sorted(
+        [f"MISSING allowed: {k}" for k in raw_missing if k in allow]
+        + [f"EXTRA allowed: {k}" for k in raw_extra if k in allow]
+    )
+    missing = [
+        (k if translated[k].as_posix() == k
+         else f"{translated[k].as_posix()} (expected at {k})")
+        for k in raw_missing if k not in allow
+    ]
+    extra = [k for k in raw_extra if k not in allow]
     failures: list[tuple[str, list[str]]] = []
 
-    for rel in sorted(ref_files & cur_files):
-        reasons = dispatch(rel, str(ref / rel), str(cur / rel), tol)
+    for key in sorted(set(translated) & set(cur_keys)):
+        rel_ref = translated[key]
+        rel_cur = cur_keys[key]
+        reasons = dispatch(
+            rel_cur, str(ref / rel_ref), str(cur / rel_cur), tol,
+            ref_root=ref_root, cur_root=cur_root, path_map=path_map,
+        )
         if reasons:
-            failures.append((str(rel), reasons))
+            label = (key if rel_ref.as_posix() == key
+                     else f"{rel_ref.as_posix()} -> {key}")
+            failures.append((label, reasons))
 
     passed = not (missing or extra or failures)
     return {
         "passed": passed,
         "missing": missing,
         "extra": extra,
+        "allowed": allowed,
         "failures": failures,
-        "n_compared": len(ref_files & cur_files),
+        "n_compared": len(set(translated) & set(cur_keys)),
     }
 
 
@@ -374,6 +598,8 @@ def format_report(report: dict) -> str:
         lines.append(f"MISSING (in ref, not cur): {path}")
     for path in report["extra"]:
         lines.append(f"EXTRA (in cur, not ref): {path}")
+    for entry in report.get("allowed", []):
+        lines.append(f"ALLOWED ({entry})")
     for path, reasons in report["failures"]:
         lines.append(f"FAIL {path}")
         for r in reasons:
@@ -382,21 +608,49 @@ def format_report(report: dict) -> str:
     lines.append(
         f"{status}: {report['n_compared']} files compared, "
         f"{len(report['failures'])} failed, {len(report['missing'])} missing, "
-        f"{len(report['extra'])} extra"
+        f"{len(report['extra'])} extra, "
+        f"{len(report.get('allowed', []))} allowlisted"
     )
     return "\n".join(lines)
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("--ref", required=True, help="reference (pre-R6) project_dir tree")
-    ap.add_argument("--cur", required=True, help="current (post-R6) project_dir tree")
+    ap.add_argument("--ref", required=True, help="reference (pre-move) project_dir tree")
+    ap.add_argument("--cur", required=True, help="current (post-move) project_dir tree")
     ap.add_argument(
         "--tolerance", type=float, default=DEFAULT_TOLERANCE,
         help="relative tolerance for element-wise numeric compare (0 = exact)",
     )
+    ap.add_argument(
+        "--experiment-name", default="experiment",
+        help="experiment_name for the P3-1 path map (default: experiment)",
+    )
+    ap.add_argument(
+        "--dataset-key", default=None,
+        help="historical-store dataset key, e.g. era5_20000101_20201231 "
+             "(enables the climate_historical/raw_data/ -> <key>/ rule and the "
+             ".guard_ok allowlist entry)",
+    )
+    ap.add_argument(
+        "--no-path-map", action="store_true",
+        help="disable the P3-1 path map + built-in allowlist (identical-relpath "
+             "keying only, the pre-P3-1 behavior)",
+    )
+    ap.add_argument(
+        "--allow", action="append", default=[],
+        help="extra allowlisted MISSING/EXTRA relpath (repeatable; every entry "
+             "must be justified in the migration note)",
+    )
     args = ap.parse_args(argv)
-    report = diff_trees(args.ref, args.cur, args.tolerance)
+    if args.no_path_map:
+        path_map, allowlist = None, list(args.allow)
+    else:
+        path_map = build_p31_path_map(args.experiment_name, args.dataset_key)
+        allowlist = build_p31_allowlist(args.experiment_name, args.dataset_key)
+        allowlist += list(args.allow)
+    report = diff_trees(args.ref, args.cur, args.tolerance,
+                        path_map=path_map, allowlist=allowlist)
     print(format_report(report))
     return 0 if report["passed"] else 1
 

@@ -243,3 +243,152 @@ def test_diff_trees_reports_missing_and_extra(tmp_path):
     report = std.diff_trees(str(ref), str(cur), tol=0.0)
     assert not report["passed"]
     assert report["missing"] and report["extra"]
+
+
+# ---------------------------------------------------------------------------
+# P3-1: path map + allowlist + path-aware toml comparator (design §6a, commit 5)
+# ---------------------------------------------------------------------------
+
+P31_MAP = std.build_p31_path_map("experiment", "era5_20000101_20201231")
+
+
+def _write_run_toml(path, path_static, path_forcing="../realization_1/x.nc",
+                    path_input="../../../hydrology_model/instate/instates.nc"):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(
+        "[input]\n"
+        f'path_static = "{path_static}"\n'
+        f'path_forcing = "{path_forcing}"\n'
+        "[state]\n"
+        f'path_input = "{path_input}"\n'
+        'path_output = "outstates.nc"\n'
+        "[csv]\n"
+        'path = "output.csv"\n'
+    )
+
+
+def test_toml_path_static_relocation_passes(tmp_path):
+    """§6a positive: old-depth vs new-depth path_static both resolve to
+    project-relative hydrology_model/staticmaps.nc (no map entry needed)."""
+    ref_root = tmp_path / "ref"
+    cur_root = tmp_path / "cur"
+    ref_toml = ref_root / "hydrology_model" / "run_climate_experiment" / "a.toml"
+    cur_toml = cur_root / "experiments" / "experiment" / "model_runs" / "a.toml"
+    _write_run_toml(ref_toml, "../staticmaps.nc",
+                    path_forcing="../../climate_experiment/realization_1/x.nc",
+                    path_input="../instate/instates.nc")
+    _write_run_toml(cur_toml, "../../../hydrology_model/staticmaps.nc")
+    diffs = std.compare_toml(str(ref_toml), str(cur_toml),
+                             ref_root=str(ref_root), cur_root=str(cur_root),
+                             path_map=P31_MAP)
+    assert diffs == [], diffs
+
+
+def test_toml_path_forcing_prefix_map_passes(tmp_path):
+    """§6a positive: path_forcing target moved with exp_dir; the DIRECTORY-PREFIX
+    rule climate_experiment/ -> experiments/experiment/ translates the ref
+    target onto the cur one. The target is a temp() file existing in NEITHER
+    tree -- asserts the prefix-rewrite form of the map, not a per-file table."""
+    ref_root = tmp_path / "ref"
+    cur_root = tmp_path / "cur"
+    ref_toml = ref_root / "hydrology_model" / "run_climate_experiment" / "a.toml"
+    cur_toml = cur_root / "experiments" / "experiment" / "model_runs" / "a.toml"
+    _write_run_toml(ref_toml, "../staticmaps.nc",
+                    path_forcing="../../climate_experiment/realization_1/inmaps_rlz_1_cst_1.nc",
+                    path_input="../instate/instates.nc")
+    _write_run_toml(cur_toml, "../../../hydrology_model/staticmaps.nc",
+                    path_forcing="../realization_1/inmaps_rlz_1_cst_1.nc")
+    # the forcing target exists in neither tree (temp()-deleted)
+    assert not (ref_root / "climate_experiment").exists()
+    assert not (cur_root / "experiments" / "experiment" / "realization_1").exists()
+    diffs = std.compare_toml(str(ref_toml), str(cur_toml),
+                             ref_root=str(ref_root), cur_root=str(cur_root),
+                             path_map=P31_MAP)
+    assert diffs == [], diffs
+
+
+def test_toml_path_static_mis_repoint_fails(tmp_path):
+    """§6a negative: cur path_static resolving to a DIFFERENT project-relative
+    target fails, naming the field (mis-repoint caught, not hidden)."""
+    ref_root = tmp_path / "ref"
+    cur_root = tmp_path / "cur"
+    ref_toml = ref_root / "hydrology_model" / "run_climate_experiment" / "a.toml"
+    cur_toml = cur_root / "experiments" / "experiment" / "model_runs" / "a.toml"
+    _write_run_toml(ref_toml, "../staticmaps.nc",
+                    path_forcing="../../climate_experiment/realization_1/x.nc",
+                    path_input="../instate/instates.nc")
+    _write_run_toml(cur_toml, "../../../hydrology_model/staticmaps_WRONG.nc")
+    diffs = std.compare_toml(str(ref_toml), str(cur_toml),
+                             ref_root=str(ref_root), cur_root=str(cur_root),
+                             path_map=P31_MAP)
+    assert diffs and any("path_static" in d and "mis-repoint" in d for d in diffs)
+
+
+def test_diff_trees_path_map_pairs_moved_files(tmp_path):
+    """A pure move (same bytes, mapped path) is content-diffed and CLEAN --
+    not MISSING+EXTRA."""
+    ref = tmp_path / "ref"
+    cur = tmp_path / "cur"
+    (ref / "climate_experiment" / "model_results").mkdir(parents=True)
+    (cur / "experiments" / "experiment" / "model_results").mkdir(parents=True)
+    (ref / "climate_experiment" / "model_results" / "Qstats.csv").write_text("a,b\n1,2\n")
+    (cur / "experiments" / "experiment" / "model_results" / "Qstats.csv").write_text("a,b\n1,2\n")
+    (ref / "climate_historical" / "raw_data").mkdir(parents=True)
+    (cur / "climate_historical" / "era5_20000101_20201231").mkdir(parents=True)
+    _write_nc(ref / "climate_historical" / "raw_data" / "extract_historical.nc",
+              [1.0, 2.0, 3.0])
+    _write_nc(cur / "climate_historical" / "era5_20000101_20201231" / "extract_historical.nc",
+              [1.0, 2.0, 3.0])
+    report = std.diff_trees(str(ref), str(cur), tol=0.0, path_map=P31_MAP)
+    assert report["passed"], std.format_report(report)
+    assert report["n_compared"] == 2
+
+
+def test_diff_trees_path_map_value_diff_still_fails(tmp_path):
+    """The map pairs moved files but does NOT mask a value change (risk-4)."""
+    ref = tmp_path / "ref"
+    cur = tmp_path / "cur"
+    (ref / "climate_experiment" / "model_results").mkdir(parents=True)
+    (cur / "experiments" / "experiment" / "model_results").mkdir(parents=True)
+    (ref / "climate_experiment" / "model_results" / "Qstats.csv").write_text("a,b\n1,2\n")
+    (cur / "experiments" / "experiment" / "model_results" / "Qstats.csv").write_text("a,b\n1,999\n")
+    report = std.diff_trees(str(ref), str(cur), tol=0.0, path_map=P31_MAP)
+    assert not report["passed"]
+    assert report["failures"] and not report["missing"] and not report["extra"]
+
+
+def test_diff_trees_allowlist_gate_contract(tmp_path):
+    """Allowlisted EXTRA entries pass (reported as allowed); an unexplained
+    EXTRA fails the gate."""
+    allow = std.build_p31_allowlist("experiment", "era5_20000101_20201231")
+    ref = tmp_path / "ref"
+    cur = tmp_path / "cur"
+    ref.mkdir()
+    (cur / "experiments" / "experiment").mkdir(parents=True)
+    (cur / "climate_historical" / "era5_20000101_20201231").mkdir(parents=True)
+    (cur / "experiments" / "experiment" / ".project_consistency_ok").write_text("ok")
+    (cur / "climate_historical" / "era5_20000101_20201231" / ".guard_ok").write_text("ok")
+    report = std.diff_trees(str(ref), str(cur), tol=0.0,
+                            path_map=P31_MAP, allowlist=allow)
+    assert report["passed"], std.format_report(report)
+    assert len(report["allowed"]) == 2
+    # now an unexplained extra appears -> gate FAILURE
+    (cur / "experiments" / "experiment" / "unexplained.csv").write_text("a\n1\n")
+    report = std.diff_trees(str(ref), str(cur), tol=0.0,
+                            path_map=P31_MAP, allowlist=allow)
+    assert not report["passed"]
+    assert report["extra"] == ["experiments/experiment/unexplained.csv"]
+
+
+def test_diff_trees_self_compare_clean_with_p31_map(tmp_path):
+    """Self-diff smoke: a NEW-layout tree diffed against itself with the map
+    active is clean (old-layout prefixes match nothing; map is a no-op)."""
+    root = tmp_path / "tree"
+    (root / "experiments" / "experiment" / "model_results").mkdir(parents=True)
+    (root / "experiments" / "experiment" / "model_results" / "Qstats.csv").write_text("a,b\n1,2\n")
+    _write_run_toml(root / "experiments" / "experiment" / "model_runs" / "a.toml",
+                    "../../../hydrology_model/staticmaps.nc")
+    report = std.diff_trees(str(root), str(root), tol=0.0, path_map=P31_MAP,
+                            allowlist=std.build_p31_allowlist(
+                                "experiment", "era5_20000101_20201231"))
+    assert report["passed"], std.format_report(report)

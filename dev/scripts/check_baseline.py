@@ -108,10 +108,12 @@ TARGETS: list[tuple[str, str, str]] = [
     ("climate_projections", "png",  "{clim_project_dir}/plots/precipitation_anomaly_projections_abs.png"),
     ("climate_projections", "png",  "{clim_project_dir}/plots/temperature_anomaly_projections_abs.png"),
     ("climate_projections", "yaml", "{project_dir}/config/snake_config_climate_projections.yml"),
-    # Snakefile_climate_experiment
+    # Snakefile_climate_experiment (P3-1 layout: exp_dir = experiments/<name>/;
+    # the wf3 config snapshot moved from {project_dir}/config/ to {exp_dir}/config/
+    # -- two DISTINCT repoints, design §1a C2 / arch-6)
     ("climate_experiment", "csv",  "{exp_dir}/model_results/Qstats.csv"),
     ("climate_experiment", "csv",  "{exp_dir}/model_results/basin.csv"),
-    ("climate_experiment", "yaml", "{project_dir}/config/snake_config_climate_experiment.yml"),
+    ("climate_experiment", "yaml", "{exp_dir}/config/snake_config_climate_experiment.yml"),
 ]
 
 WORKFLOWS = ("model_creation", "climate_projections", "climate_experiment")
@@ -121,7 +123,7 @@ def resolve(template: str, project_dir: str) -> str:
     return template.format(
         project_dir=project_dir,
         clim_project_dir=f"{project_dir}/climate_projections/{CLIM_PROJECT}",
-        exp_dir=f"{project_dir}/climate_{EXPERIMENT_NAME}",
+        exp_dir=f"{project_dir}/experiments/{EXPERIMENT_NAME}",
     )
 
 

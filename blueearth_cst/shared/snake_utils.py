@@ -178,6 +178,77 @@ def file_digest_or_absent(path) -> str:
         return "ABSENT"
 
 
+_EXPERIMENT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_]*$")
+_EXPERIMENT_NAME_MAX_LEN = 64
+# Windows reserved device names (compared case-insensitively, incl. any
+# extension): CON, PRN, AUX, NUL, COM1-9, LPT1-9. A path segment equal to one of
+# these (with or without an extension) is invalid on Windows.
+_WINDOWS_RESERVED_NAMES = frozenset(
+    ["con", "prn", "aux", "nul"]
+    + [f"com{i}" for i in range(1, 10)]
+    + [f"lpt{i}" for i in range(1, 10)]
+)
+
+
+def validate_experiment_name(name: str, project_dir) -> str:
+    """Validate ``experiment_name`` as a safe ``experiments/<name>/`` path segment.
+
+    Centralized slug validation for the wf3 experiment subtree
+    (dev/p31/experiment-structure-design.md §2b). Called once at
+    ``Snakefile_climate_experiment`` parse time, BEFORE ``exp_dir`` (and every
+    derived output/params path) is built, so all paths are constructed only from
+    a vetted value. Parse-time is correct here: a malformed name makes the entire
+    DAG ill-defined, so failing under ``--dry-run`` is the intended behavior
+    (unlike the drift *guard*, which is a rule so ``--unlock`` stays usable).
+
+    Grammar: ``^[a-z0-9][a-z0-9_]*$`` (lowercase alnum + underscore, must start
+    with an alnum), nonempty, at most 64 chars — a strict subset of
+    ``dev/conventions/naming.md``'s snake_case rule that deliberately excludes
+    hyphens and dots so the value can never introduce a path component or an
+    extension. Uppercase is REJECTED (never silently lowercased). After the
+    grammar, a containment assertion confirms the resolved target is a direct
+    child of ``<project_dir>/experiments`` (belt to the grammar's braces).
+
+    Returns the validated ``name`` unchanged, or raises ``ValueError`` naming the
+    offending input.
+    """
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError(
+            f"experiment_name must be a non-empty string, got {name!r}"
+        )
+    if len(name) > _EXPERIMENT_NAME_MAX_LEN:
+        raise ValueError(
+            f"experiment_name {name!r} exceeds the {_EXPERIMENT_NAME_MAX_LEN}-char "
+            "limit"
+        )
+    # Case-insensitive Windows-reserved-name check (including any extension):
+    # the bare stem before the first dot must not be a reserved device name.
+    stem = name.split(".", 1)[0].lower()
+    if stem in _WINDOWS_RESERVED_NAMES:
+        raise ValueError(
+            f"experiment_name {name!r} is a Windows-reserved device name "
+            "(case- and extension-insensitive); choose another name"
+        )
+    if not _EXPERIMENT_NAME_RE.match(name):
+        raise ValueError(
+            f"experiment_name {name!r} does not match the required grammar "
+            r"^[a-z0-9][a-z0-9_]*$ (lowercase alphanumerics and underscores, "
+            "starting with an alphanumeric; no separators, dots, hyphens, "
+            "absolute forms, or uppercase)"
+        )
+    # Containment assertion (independent of the grammar): the resolved target
+    # must be a DIRECT child of <project_dir>/experiments. .resolve() at parse is
+    # safe — it does not require the dir to exist.
+    experiments_root = os.path.abspath(os.path.join(str(project_dir), "experiments"))
+    target = os.path.abspath(os.path.join(experiments_root, name))
+    if os.path.dirname(target) != experiments_root:
+        raise ValueError(
+            f"experiment_name {name!r} does not resolve to a direct child of "
+            f"{experiments_root!r}"
+        )
+    return name
+
+
 def _require_step_num(axis_cfg, axis_name):
     """Read and validate a required ``step_num`` from a stress-test axis section.
 

@@ -8,7 +8,7 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from blueearth_cst.shared.snake_utils import file_digest_or_absent, get_config, patch_psutil_windows_benchmark, rule_banner, stress_test_grid
+from blueearth_cst.shared.snake_utils import file_digest_or_absent, get_config, patch_psutil_windows_benchmark, rule_banner, stress_test_grid, validate_experiment_name
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
 patch_psutil_windows_benchmark()
@@ -34,6 +34,11 @@ static_dir = get_config(project_cfg, "static_dir", optional=False)
 DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
 
 experiment = get_config(my_cfg, "experiment_name", optional=False)
+# Validate the experiment name as a safe experiments/<name>/ path segment BEFORE
+# any path is built from it (design §2b). Parse-time is correct here (config
+# validation, not a project-state check) — a malformed name makes the whole DAG
+# ill-defined, so failing under --dry-run is intended.
+experiment = validate_experiment_name(experiment, project_dir)
 RLZ_NUM = get_config(my_cfg, "realizations_num", 1)
 
 # Stress test step counts live under stress_test.<temp|precip>.step_num.
@@ -61,7 +66,14 @@ horizontime_climate = get_config(my_cfg, "horizontime_climate", optional=False)
 wflow_run_length = get_config(my_cfg, "run_length", 20)
 
 basin_dir = f"{project_dir}/hydrology_model"
-exp_dir = f"{project_dir}/climate_{experiment}"
+# Per-experiment root (design §2/§2a): every wf3-owned output that was
+# project-global moves under experiments/<name>/. Redefining this one binding
+# carries all exp_dir-derived output/params paths (incl. the three params paths
+# on prepare_weagen_config, prepare_weagen_config_st, export_wflow_results) and
+# the guard sentinel. The remaining project_dir-rooted wf3 paths (log:, the
+# benchmark _parts/ tree, gather output + parts_dir param, the config snapshot)
+# are hand-edited to experiments/<name>/ below.
+exp_dir = f"{project_dir}/experiments/{experiment}"
 
 # --- Drift-guard comparands (dev/p31/experiment-structure-design.md §3b/§3c) ---
 # Rule 3.00b check_project_consistency compares this experiment config's
@@ -116,8 +128,8 @@ rule all:
     input:
         Qstats = f"{exp_dir}/model_results/Qstats.csv",
         basin = f"{exp_dir}/model_results/basin.csv",
-        snake_config = f"{project_dir}/config/snake_config_climate_experiment.yml",
-        benchmarks = f"{project_dir}/benchmarks/wf3_benchmarks.md",
+        snake_config = f"{exp_dir}/config/snake_config_climate_experiment.yml",
+        benchmarks = f"{exp_dir}/benchmarks/wf3_benchmarks.md",
 
 # 3.00b check_project_consistency — drift guard: fail loud if this experiment
 # config's project-level sections (project, shared.basin,
@@ -147,9 +159,9 @@ rule check_project_consistency:
         sentinel = f"{exp_dir}/.project_consistency_ok",
         guard_ok = f"{project_dir}/climate_historical/raw_data/.guard_ok",
     log:
-        f"{project_dir}/logs/3.00b_check_project_consistency.log",
+        f"{exp_dir}/logs/3.00b_check_project_consistency.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.00b_check_project_consistency.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.00b_check_project_consistency.tsv",
     script:
         "blueearth_cst/experiment/check_project_consistency.py"
 
@@ -163,7 +175,7 @@ rule copy_config:
         data_catalogs = DATA_SOURCES,
         workflow_name = "climate_experiment",
     output:
-        config_snake_out = f"{project_dir}/config/snake_config_climate_experiment.yml",
+        config_snake_out = f"{exp_dir}/config/snake_config_climate_experiment.yml",
     script:
         "blueearth_cst/model/copy_config_files.py"
 
@@ -185,9 +197,9 @@ rule extract_climate_grid:
     output:
         climate_nc = f"{project_dir}/climate_historical/raw_data/extract_historical.nc",
     log:
-        f"{project_dir}/logs/3.02_extract_climate_grid.log",
+        f"{exp_dir}/logs/3.02_extract_climate_grid.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.02_extract_climate_grid.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.02_extract_climate_grid.tsv",
     script:
         "blueearth_cst/experiment/extract_historical_climate.py"
 
@@ -200,9 +212,9 @@ rule climate_stress_parameters:
     output:
         st_csv_fns = [f"{exp_dir}/stress_test/cst_{st_num}.csv" for st_num in np.arange(1, ST_NUM+1)]
     log:
-        f"{project_dir}/logs/3.03_climate_stress_parameters.log",
+        f"{exp_dir}/logs/3.03_climate_stress_parameters.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.03_climate_stress_parameters.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.03_climate_stress_parameters.tsv",
     script:
         "blueearth_cst/experiment/prepare_cst_parameters.py"
 
@@ -222,9 +234,9 @@ rule prepare_weagen_config:
         sim_years = wflow_run_length,
         nc_file_prefix = "rlz"
     log:
-        f"{project_dir}/logs/3.04_prepare_weagen_config.log",
+        f"{exp_dir}/logs/3.04_prepare_weagen_config.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.04_prepare_weagen_config.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.04_prepare_weagen_config.tsv",
     script:
         "blueearth_cst/experiment/prepare_weagen_config.py"
 
@@ -242,9 +254,9 @@ rule prepare_weagen_config_st:
         nc_file_prefix = "rlz_"+"{rlz_num}"+"_cst",
         nc_file_suffix = "{st_num}",
     log:
-        f"{project_dir}/logs/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{exp_dir}/logs/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "blueearth_cst/experiment/prepare_weagen_config.py"
 
@@ -257,9 +269,9 @@ rule generate_weather_realization:
     output:
         temp([f"{exp_dir}/realization_{rlz_num}/rlz_{rlz_num}_cst_0.nc" for rlz_num in np.arange(1, RLZ_NUM+1)])
     log:
-        f"{project_dir}/logs/3.06_generate_weather_realization.log",
+        f"{exp_dir}/logs/3.06_generate_weather_realization.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.06_generate_weather_realization.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.06_generate_weather_realization.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config}"""
 
@@ -282,9 +294,9 @@ rule generate_climate_stress_test:
     output:
         rlz_st_nc = temp(f"{exp_dir}/realization_"+"{rlz_num}"+"/rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
     log:
-        f"{project_dir}/logs/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{exp_dir}/logs/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.st_csv}"""
 
@@ -300,9 +312,9 @@ rule climate_data_catalog:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
     log:
-        f"{project_dir}/logs/3.08_climate_data_catalog.log",
+        f"{exp_dir}/logs/3.08_climate_data_catalog.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.08_climate_data_catalog.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.08_climate_data_catalog.tsv",
     script:
         "blueearth_cst/projections/prepare_climate_data_catalog.py"
 
@@ -321,9 +333,9 @@ rule downscale_climate_realization:
         horizontime_climate = horizontime_climate,
         run_length = wflow_run_length,
     log:
-        f"{project_dir}/logs/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{exp_dir}/logs/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "blueearth_cst/experiment/downscale_climate_forcing.py"
 
@@ -337,9 +349,9 @@ rule run_wflow:
         csv_file = f"{basin_dir}/run_climate_{experiment}/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv",
         state_file = temp(f"{basin_dir}/run_climate_{experiment}/outstates_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
     log:
-        f"{project_dir}/logs/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{exp_dir}/logs/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_path}" """
 
@@ -358,9 +370,9 @@ rule export_wflow_results:
         Tlow = get_config(my_cfg, "Tlow", 2),
         Tpeak = get_config(my_cfg, "Tpeak", 10),
     log:
-        f"{project_dir}/logs/3.11_export_wflow_results.log",
+        f"{exp_dir}/logs/3.11_export_wflow_results.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.11_export_wflow_results.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.11_export_wflow_results.tsv",
     script:
         "blueearth_cst/experiment/export_wflow_results.py"
 
@@ -374,8 +386,8 @@ rule gather_benchmarks:
         f"{exp_dir}/model_results/Qstats.csv",
         f"{exp_dir}/model_results/basin.csv",
     output:
-        f"{project_dir}/benchmarks/wf3_benchmarks.md",
+        f"{exp_dir}/benchmarks/wf3_benchmarks.md",
     params:
-        parts_dir = f"{project_dir}/benchmarks/_parts",
+        parts_dir = f"{exp_dir}/benchmarks/_parts",
         workflow_num = 3,
     script: "blueearth_cst/shared/merge_benchmarks.py"

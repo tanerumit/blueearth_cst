@@ -83,9 +83,9 @@ def staged_project(tmp_path):
     cfg_path = tmp_path / "snake_config_staged.yml"
     cfg_path.write_text(yaml.safe_dump(base), encoding="utf-8")
 
-    # exp_dir as currently defined in Snakefile_climate_experiment (commit 1:
-    # climate_<experiment>; the experiments/<name>/ move is commit 2).
-    sentinel = pdir / f"climate_{experiment}" / ".project_consistency_ok"
+    # exp_dir as defined in Snakefile_climate_experiment (commit 2 moved it to
+    # experiments/<name>/).
+    sentinel = pdir / "experiments" / experiment / ".project_consistency_ok"
     return cfg_path, pdir, wf1, wf2, sentinel
 
 

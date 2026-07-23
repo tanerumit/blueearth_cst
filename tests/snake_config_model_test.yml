@@ -6,7 +6,7 @@ project:
   project_dir: tests/test_project
   static_dir: config
   data_sources: tests/data/tests_data_catalog.yml
-  data_sources_climate: config/cmip6_data.yml
+  data_sources_climate: config/catalogs/cmip6_data.yml
 
 shared:
   basin:
@@ -20,8 +20,8 @@ shared:
 workflows:
   model_creation:
     enabled: true
-    model_build_config: config/wflow_build_model.yml
-    waterbodies_config: config/wflow_update_waterbodies.yml
+    model_build_config: config/templates/wflow_build_model.yml
+    waterbodies_config: config/templates/wflow_update_waterbodies.yml
     wflow_outvars:
       - river discharge
       - precipitation

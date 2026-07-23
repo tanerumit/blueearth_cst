@@ -3,7 +3,7 @@ project_name: Gabon
 project_dir: examples/Gabon
 
 # Path to the data catalog to use (can be different for Linux/Windows/data stored on P drive or other)
-data_sources: config/cmip6_data.yml
+data_sources: config/catalogs/cmip6_data.yml
 
 # climate models and scenarios
 clim_project: cmip6

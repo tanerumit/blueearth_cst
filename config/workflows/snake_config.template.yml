@@ -17,9 +17,9 @@ project:
   # Static config dir (templates referenced by workflows)
   static_dir: config
   # Hydromt data catalog (era5, merit_hydro, etc.)
-  data_sources: config/deltares_data.yml
+  data_sources: config/catalogs/deltares_data.yml
   # Hydromt data catalog for CMIP6 (climate projections workflow)
-  data_sources_climate: config/cmip6_data.yml
+  data_sources_climate: config/catalogs/cmip6_data.yml
 
 shared:
   basin:
@@ -38,9 +38,9 @@ workflows:
   model_creation:
     enabled: true
     # Hydromt build config template
-    model_build_config: config/wflow_build_model.yml
+    model_build_config: config/templates/wflow_build_model.yml
     # Hydromt update config for waterbodies (optional; defaults below)
-    waterbodies_config: config/wflow_update_waterbodies.yml
+    waterbodies_config: config/templates/wflow_update_waterbodies.yml
     # Wflow output variables to save (read only by model_creation). Extras beyond
     # 'river discharge' are written as basin-average <var>_basavg columns and
     # plotted by plot_results (valid: overland flow, actual evapotranspiration,

@@ -1,9 +1,9 @@
-"""Tests for the WF2 log-gather concatenation (src/merge_logs.py)."""
+"""Tests for the WF2 log-gather concatenation (blueearth_cst/shared/merge_logs.py)."""
 import os
 import sys
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from src.merge_logs import merge_logs  # noqa: E402
+from blueearth_cst.shared.merge_logs import merge_logs  # noqa: E402
 
 
 def test_merge_concatenates_in_order_with_marker(tmp_path):

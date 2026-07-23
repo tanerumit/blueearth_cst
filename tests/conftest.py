@@ -8,7 +8,7 @@ import yaml
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.snake_utils import get_config  # noqa: E402  shared helper (R3 §3)
+from blueearth_cst.shared.snake_utils import get_config  # noqa: E402  shared helper (R3 §3)
 
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")

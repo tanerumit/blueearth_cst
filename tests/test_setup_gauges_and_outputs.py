@@ -1,4 +1,4 @@
-"""Tests for src/setup_gauges_and_outputs.py (R3 sections 7.1, 8)."""
+"""Tests for blueearth_cst/model/setup_gauges_and_outputs.py (R3 sections 7.1, 8)."""
 
 import sys
 from pathlib import Path
@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src.setup_gauges_and_outputs import update_wflow_gauges_outputs  # noqa: E402
+from blueearth_cst.model.setup_gauges_and_outputs import update_wflow_gauges_outputs  # noqa: E402
 
 
 def test_raises_on_unknown_outvar():
@@ -24,7 +24,7 @@ def test_extras_selection_and_csdms_mapping(monkeypatch):
     """
     import types
 
-    from src.setup_gauges_and_outputs import WFLOW_VARS
+    from blueearth_cst.model.setup_gauges_and_outputs import WFLOW_VARS
 
     calls = {}
 

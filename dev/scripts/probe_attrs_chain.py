@@ -2,7 +2,7 @@
 
 Localizes where CF metadata (``units``/``standard_name``/``long_name``) is lost
 in the workflow-2 change-factor chain. Standalone, diagnostic-only: it does NOT
-instrument any ``src/`` module — it re-executes the operation *sequence* of the
+instrument any ``blueearth_cst/`` module — it re-executes the operation *sequence* of the
 workflow-2 functions on a synthetic input carrying known non-empty CF attrs,
 recording ``.attrs`` after each step, so the first attr-dropping operation is
 pinnable without a real (temp-deleted) run.
@@ -98,7 +98,7 @@ def probe_merge():
     """Merge (summary_climate_proj path), M1-M2: open_mfdataset(coords=minimal,
     preprocess) + to_netcdf + reopen."""
     print("\n[merge] summary open_mfdataset + write chain (M1-M2)")
-    from src.get_change_climate_proj_summary import preprocess_coords
+    from blueearth_cst.projections.get_change_climate_proj_summary import preprocess_coords
 
     rows = []
     d = tempfile.mkdtemp()

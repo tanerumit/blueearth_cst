@@ -1,7 +1,7 @@
 """Exact-equivalence tests for the shared get_config helper (R3 §3, §8).
 
 Pins the semantics the four inline get_config copies (three Snakefiles +
-conftest) had before they were collapsed into src/snake_utils.py, so the move
+conftest) had before they were collapsed into blueearth_cst/shared/snake_utils.py, so the move
 is provably identity-preserving rather than merely green on a smoke test.
 """
 
@@ -16,7 +16,7 @@ import pytest
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import re
 
-from src.snake_utils import (  # noqa: E402
+from blueearth_cst.shared.snake_utils import (  # noqa: E402
     _Heartbeat,
     _compact_log_line,
     _cr_overwrite,

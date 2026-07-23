@@ -11,7 +11,7 @@ import sys
 import pytest
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from src.snake_utils import stress_test_grid
+from blueearth_cst.shared.snake_utils import stress_test_grid
 
 
 def test_seed_config_grid():

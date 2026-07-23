@@ -34,7 +34,7 @@ TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 sys.path.insert(0, SNAKEDIR)
 
-from src.get_change_climate_proj import (  # noqa: E402
+from blueearth_cst.projections.get_change_climate_proj import (  # noqa: E402
     _to_str_tuple,
     get_change_annual_clim_proj,
     get_change_clim_projections,

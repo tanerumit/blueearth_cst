@@ -1,4 +1,4 @@
-"""Unit tests for src/setup_time_horizon.py — forcing config YAML builder.
+"""Unit tests for blueearth_cst/shared/setup_time_horizon.py — forcing config YAML builder.
 
 Note: module name is misleading. The function builds a hydromt update YAML
 for adding forcing to a wflow model; testable surface is the chunksize
@@ -45,7 +45,7 @@ sys.modules.setdefault(
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import setup_time_horizon  # noqa: E402
+from blueearth_cst.shared import setup_time_horizon  # noqa: E402
 
 
 def _read_yaml(path):

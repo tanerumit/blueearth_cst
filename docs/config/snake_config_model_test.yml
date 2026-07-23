@@ -7,10 +7,10 @@ project_dir: examples/test2
 static_dir: config
 
 # Path to the data catalog to use (can be different for Linux/Windows/data stored on P drive or other)
-data_sources: config/deltares_data.yml
+data_sources: config/catalogs/deltares_data.yml
 # Path to the data catalog to use (can be different for Linux/Windows/data stored on P drive or other)
-#data_sources_climate: config/deltares_data_climate_projections.yml
-data_sources_climate: config/cmip6_data.yml
+#data_sources_climate: config/catalogs/deltares_data_climate_projections.yml
+data_sources_climate: config/catalogs/cmip6_data.yml
 
 # Info on the historical climate data is used in the historic model run + reference data for the weather generator
 # Time horizon of the historical period
@@ -34,7 +34,7 @@ model_region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
 # Grid resolution of the model in degrees
 model_resolution: 0.00833 #0.0062475
 # Path to model build configuration
-model_build_config: "config/wflow_build_model.yml"
+model_build_config: "config/templates/wflow_build_model.yml"
 
 # If available, please here put the path to the available observation stations locations files
 # csv file containing three columns: station_ID, x, y

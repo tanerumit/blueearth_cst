@@ -45,15 +45,32 @@ Method context that changes how code here should be edited (full rationale:
 - `Snakefile_model_creation` / `Snakefile_climate_projections` /
   `Snakefile_climate_experiment` — the three workflow entry points, run in that
   order.
-- `src/*.py` — analysis/orchestration steps, invoked from Snakemake `script:`
-  directives (not standalone CLIs).
-- `src/weathergen/*.R` — R weather generator, invoked via `Rscript --vanilla`
-  from Snakemake `shell:`.
-- `config/` — `snake_config_*.yml` workflow configs + hydromt data-catalog
-  YAMLs (`deltares_data*.yml`, `cmip6_data.yml`).
+- `blueearth_cst/` — the analysis/orchestration package, split by workflow stage:
+  `model/`, `projections/`, `experiment/` (one submodule per workflow), plus
+  `shared/` for cross-cutting helpers (`snake_utils.py`, `run_logged.py`, plotting
+  primitives, log/benchmark reducers) and `weathergen/` for the R weather
+  generator. Modules are invoked from Snakemake `script:` directives (Python) or
+  `Rscript --vanilla` `shell:` bodies (R); none is a standalone CLI. Imports are
+  `from blueearth_cst.<stage>.<module> import ...`.
+- `config/` — split into three bins: `workflows/` (`snake_config_*.yml` — the
+  `--configfile` targets), `catalogs/` (hydromt data catalogs — `deltares_data*.yml`,
+  `cmip6_data.yml` — the `-d` targets), and `templates/` (hydromt/wflow/weathergen
+  build templates — `wflow_build_model.yml`, `wflow_update_waterbodies.yml`,
+  `weathergen_config.yml`, plus the tracked `wflow_sbm.toml`).
+- `scripts/` — user-facing runners: `run_snake_test.cmd` (Windows), `run_snake_docker.sh`
+  (Linux/Docker), and `run_workflows.py` (the `enabled:`-aware wrapper, §"Key Commands").
+- `dev/` — planning, audits, design docs, conventions, roadmap, the baseline
+  manifest, and dev-process helpers under `dev/scripts/` (`check_baseline.py`,
+  `semantic_tree_diff.py`, probes). Not user-facing; not shipped.
+- `docs/` — user-facing reference (`install.md`, `env_setup_notes.md`, the vendored
+  hydromt / hydromt-wflow / wflow user guides, the technical note, example configs).
 - `tests/` — `test_cli.py` is the cheap dry-run gate; `test_model_creation.py`
   is a heavy full build.
-- Outputs land under `project_dir` (set in the config), **not** in the repo tree.
+- Outputs land under `project_dir` (set in the config). **Production `project_dir`
+  lives outside the repository tree** — a run writes generated model + result
+  artifacts to a location distinct from the toolbox source. The in-repo untracked
+  `examples/test_local` dir is a dev/test convention only (used by the baseline
+  gate), explicitly exempt from that rule.
 
 ## Key Commands
 
@@ -65,9 +82,12 @@ pixi install          # conda-forge + PyPI deps (Python stack, R toolchain, snak
 pixi run install      # + weathergenr (R, via remotes) and Julia env (Pkg.instantiate)
 
 # Run the three workflows IN ORDER (climate_experiment needs model_creation artifacts):
-snakemake all -c 3 -s Snakefile_model_creation      --configfile config/snake_config_model_test.yml
-snakemake all -c 3 -s Snakefile_climate_projections --configfile config/snake_config_model_test.yml --keep-going
-snakemake all -c 3 -s Snakefile_climate_experiment  --configfile config/snake_config_model_test.yml
+snakemake all -c 3 -s Snakefile_model_creation      --configfile config/workflows/snake_config_model_test.yml
+snakemake all -c 3 -s Snakefile_climate_projections --configfile config/workflows/snake_config_model_test.yml --keep-going
+snakemake all -c 3 -s Snakefile_climate_experiment  --configfile config/workflows/snake_config_model_test.yml
+
+# Or drive all enabled workflows through the wrapper (reads workflows.<name>.enabled):
+pixi run python scripts/run_workflows.py --config config/workflows/snake_config_model_test.yml
 
 snakemake ... --dry-run           # inspect the DAG before running or after editing rules
 snakemake --unlock -s <Snakefile> --configfile <cfg>   # Snakemake locks the workdir on crash
@@ -76,9 +96,32 @@ pytest tests/test_cli.py          # cheapest sanity check: dry-runs all three Sn
 pytest tests/                     # full suite (test_model_creation.py is slow)
 ```
 
-Use `config/*_linux.yml` config and catalog variants on Linux — data-catalog paths
-differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
-(Linux/Docker) wrap the test config.
+Use `config/workflows/*_linux.yml` + `config/catalogs/*_linux.yml` variants on
+Linux — data-catalog paths differ from Windows. `scripts/run_snake_test.cmd`
+(Windows) and `scripts/run_snake_docker.sh` (Linux/Docker) wrap the test config.
+
+**`scripts/run_workflows.py` — the `enabled:`-aware wrapper.** Reads
+`workflows.<name>.enabled` from a **full-orchestration config** (one carrying a
+`workflows:` section with all three subsections, each with an `enabled:` key — the
+`snake_config_model_test*.yml` / `snake_config.template.yml` class; the
+single-workflow `snake_config_projections_*.yml` configs have no `workflows:`
+section and are **not** wrapper inputs) and invokes `snakemake` for exactly the
+enabled workflows, in fixed order (model → projections → experiment). Contract:
+
+- A missing `workflows:` section or `<name>.enabled` key is a **hard error** (nonzero
+  exit naming the absent key), not a silent default-true.
+- `enabled:` must **parse** to a real boolean (`isinstance(v, bool)` after
+  `yaml.safe_load`): unquoted `true`/`false`/`yes`/`no`/`on`/`off` are accepted;
+  quoted `"true"` / integers `1`/`0` are rejected.
+- **Stops on the first nonzero Snakemake exit and returns that code** — a failed
+  upstream workflow is not followed by a downstream run.
+- `--cores N` and any args after a `-- ` sentinel forward to **every** invocation;
+  each workflow keeps its own flags (`--keep-going` on projections only).
+- **Skip semantics:** `enabled: false` means the wrapper does **not** invoke that
+  Snakefile, so its outputs are not produced. It does **not** delete prior outputs
+  and does **not** guarantee downstream freshness — an enabled downstream workflow
+  consumes whatever prerequisite artifacts already exist on disk (or fails with
+  `MissingInputException`), identical to invoking a single Snakefile directly.
 
 ## Conventions
 
@@ -97,8 +140,12 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
   Snakemake showed it constrains nothing on the tests fixture and a reduced
   config. Removal is deferred to a task that first encodes any ambiguity-sensitive
   config shapes as regression tests (see dev/r04/climate-projections-design.md §3).
-- Register new data sources in a `config/*_data*.yml` catalog and pass it to hydromt
-  via `-d`. Never hardcode data paths in a Snakefile.
+- Register new data sources in a `config/catalogs/*_data*.yml` catalog and pass it to
+  hydromt via `-d`. Never hardcode data paths in a Snakefile.
+- **`dev/` vs `docs/` boundary:** `dev/` is planning + dev-process tooling (not
+  shipped, not user-facing); `docs/` is user-facing reference. Put a new file where
+  its audience is — a design note or one-off probe under `dev/`, an install/usage
+  doc under `docs/`.
 - [Python] Scripts run via `script:` read `snakemake.input/output/params` (a global
   Snakemake injects), not `sys.argv`. They are not runnable standalone.
 - [R] Scripts run via `shell: Rscript --vanilla ...` take positional args parsed with
@@ -124,14 +171,14 @@ differ from Windows. `run_snake_test.cmd` (Windows) and `run_snake_docker.sh`
 - Do not commit run outputs written under `project_dir`, or edit `pixi.lock` /
   `Manifest.toml` by hand.
 - **Stay within CST's automation scope.** This repo is the workflow engine only.
-  Define config/setup (`config/wflow_build_model.yml`, data catalogs, `setup_*`
-  blocks, `wflow_sbm.toml`-affecting steps) using hydromt / hydromt_wflow / Wflow
+  Define config/setup (`config/templates/wflow_build_model.yml`, data catalogs,
+  `setup_*` blocks, `wflow_sbm.toml`-affecting steps) using hydromt / hydromt_wflow / Wflow
   conventions verbatim — CSDMS Standard Names (`hydromt_wflow/naming.py`), their
   YAML schema, their catalog format. Do **not** re-engineer how hydromt handles
   data, how `setup_*` methods work internally, or how Wflow parameterizes physics.
   Consume upstream behavior; verification steps may *read* upstream docs to
   validate our config but must not patch upstream. A genuine hydromt/wflow bug is
-  flagged upstream or worked around in *our* code (`src/`, Snakefiles,
+  flagged upstream or worked around in *our* code (`blueearth_cst/`, Snakefiles,
   `dev/scripts/`), never fixed inside the vendored package.
 
 ## References

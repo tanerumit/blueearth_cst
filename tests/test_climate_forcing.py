@@ -9,7 +9,7 @@ import numpy as np
 import xarray as xr
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-from src.climate_forcing import climate_forcing_by_subcatchment  # noqa: E402
+from blueearth_cst.model.climate_forcing import climate_forcing_by_subcatchment  # noqa: E402
 
 
 def _grid(values_2d, time=3):

@@ -1,4 +1,4 @@
-"""Tests for src/write_outlet_index.py (R3 sections 4, 8).
+"""Tests for blueearth_cst/model/write_outlet_index.py (R3 sections 4, 8).
 
 Round-trips a tiny outlets.geojson through real geopandas — no hydromt or model
 build. Sibling tests (test_extract_historical_climate, test_stage_data) stub
@@ -19,12 +19,12 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 @pytest.fixture()
 def woi(monkeypatch):
-    """src.write_outlet_index imported against the real (un-stubbed) geopandas."""
+    """blueearth_cst.model.write_outlet_index imported against the real (un-stubbed) geopandas."""
     for name in [m for m in list(sys.modules) if m == "geopandas" or m.startswith("geopandas.")]:
         monkeypatch.delitem(sys.modules, name, raising=False)
     importlib.import_module("geopandas")  # bind the real package in sys.modules
-    monkeypatch.delitem(sys.modules, "src.write_outlet_index", raising=False)
-    return importlib.import_module("src.write_outlet_index")
+    monkeypatch.delitem(sys.modules, "blueearth_cst.model.write_outlet_index", raising=False)
+    return importlib.import_module("blueearth_cst.model.write_outlet_index")
 
 
 def _tiny_outlets(path):

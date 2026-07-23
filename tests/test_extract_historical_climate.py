@@ -1,4 +1,4 @@
-"""Unit tests for src/extract_historical_climate.py.
+"""Unit tests for blueearth_cst/experiment/extract_historical_climate.py.
 
 This module is heavily coupled to hydromt I/O; we test the function's
 configuration logic (driver options, variable lists, clim_source
@@ -144,7 +144,7 @@ sys.modules.setdefault("hydromt.model.processes.meteo", _meteo_stub)
 # cheap context manager — let the real one run.
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import extract_historical_climate as ehc  # noqa: E402
+from blueearth_cst.experiment import extract_historical_climate as ehc  # noqa: E402
 
 
 @pytest.fixture

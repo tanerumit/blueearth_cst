@@ -1,4 +1,4 @@
-"""Unit tests for src/metrics_definition.py — pure-pandas streamflow metrics.
+"""Unit tests for blueearth_cst/shared/metrics_definition.py — pure-pandas streamflow metrics.
 
 Testing pattern (M02c convention; see dev/phase-1/m02c/test-coverage-design.md):
 - One test file per source module: tests/test_<module>.py
@@ -19,7 +19,7 @@ import pandas as pd
 import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from src import metrics_definition  # noqa: E402
+from blueearth_cst.shared import metrics_definition  # noqa: E402
 
 
 def _daily_df(values, start="2020-01-01"):

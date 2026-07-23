@@ -1,6 +1,6 @@
 call activate cst
 
-set CFG=config/snake_config_model_test.yml
+set CFG=config/workflows/snake_config_model_test.yml
 
 rem Snakefile_model_creation
 snakemake -s Snakefile_model_creation --configfile %CFG%  --dag | dot -Tpng > dag_model.png

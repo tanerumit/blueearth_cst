@@ -18,7 +18,7 @@ docker run \
     -F \
     -c 4 \
     -s ${docker_root}/Snakefile_model_creation \
-    --configfile ${docker_root}/config/snake_config_model_test_linux.yml
+    --configfile ${docker_root}/config/workflows/snake_config_model_test_linux.yml
 
 docker run \
     $(echo ${volumeargs[@]}) \
@@ -29,7 +29,7 @@ docker run \
     -F \
     -c 4 \
     -s ${docker_root}/Snakefile_climate_experiment \
-    --configfile ${docker_root}/config/snake_config_model_test_linux.yml
+    --configfile ${docker_root}/config/workflows/snake_config_model_test_linux.yml
 
 docker run \
     $(echo ${volumeargs[@]}) \
@@ -40,4 +40,4 @@ docker run \
     -F \
     -c 4 \
     -s ${docker_root}/Snakefile_climate_projections \
-    --configfile ${docker_root}/config/snake_config_model_test_linux.yml
+    --configfile ${docker_root}/config/workflows/snake_config_model_test_linux.yml

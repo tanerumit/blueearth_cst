@@ -25,6 +25,10 @@ from pathlib import Path
 import pytest
 import yaml
 
+import sys as _sys
+_sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from blueearth_cst.shared.snake_utils import slugify_window  # noqa: E402
+
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
 CONFIG_FN = TESTDIR / "snake_config_model_test.yml"
@@ -86,7 +90,12 @@ def staged_project(tmp_path):
     # exp_dir as defined in Snakefile_climate_experiment (commit 2 moved it to
     # experiments/<name>/).
     sentinel = pdir / "experiments" / experiment / ".project_consistency_ok"
-    return cfg_path, pdir, wf1, wf2, sentinel
+    # Key-level guard artifact lives under the dataset+window keyed store dir
+    # (commit 4). Derive the key exactly as the Snakefile does.
+    win = base["shared"]["historical_window"]
+    key = f"{base['shared']['clim_historical']}_{slugify_window(win['starttime'], win['endtime'])}"
+    guard_ok = pdir / "climate_historical" / key / ".guard_ok"
+    return cfg_path, pdir, wf1, wf2, sentinel, guard_ok
 
 
 def _seed_guard(cfg_path, sentinel):
@@ -104,11 +113,11 @@ def _dry_run_output(cfg_path, sentinel):
 
 def test_guard_invalidation_i_to_l(staged_project):
     """Gate 2b: each comparand mutation schedules the guard; revert does not."""
-    cfg_path, pdir, wf1, wf2, sentinel = staged_project
+    cfg_path, pdir, wf1, wf2, sentinel, guard_ok = staged_project
     _seed_guard(cfg_path, sentinel)
 
-    # Guard artifact (second output, shared class) also written.
-    guard_ok = pdir / "climate_historical" / "raw_data" / ".guard_ok"
+    # Guard artifact (second output, shared class) also written under the keyed
+    # store dir (commit 4).
     assert guard_ok.is_file(), "guard did not write the key-level guard artifact"
 
     # Control: nothing changed -> "Nothing to be done".
@@ -154,9 +163,15 @@ def test_guard_invalidation_i_to_l(staged_project):
     assert "Nothing to be done" in out, out
 
 
+def _unpack5(staged_project):
+    # 2c ignores the guard_ok path.
+    cfg_path, pdir, wf1, wf2, sentinel, _guard_ok = staged_project
+    return cfg_path, pdir, wf1, wf2, sentinel
+
+
 def test_2c_fresh_project_missing_wf1_snapshot(staged_project):
     """Gate 2c: a fresh project (no wf1 snapshot) parses, dry-runs, unlocks."""
-    cfg_path, pdir, wf1, wf2, sentinel = staged_project
+    cfg_path, pdir, wf1, wf2, sentinel = _unpack5(staged_project)
     wf1.unlink()
     wf2.unlink()
 

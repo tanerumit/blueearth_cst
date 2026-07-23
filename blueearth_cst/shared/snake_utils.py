@@ -249,6 +249,69 @@ def validate_experiment_name(name: str, project_dir) -> str:
     return name
 
 
+def slugify_window(start, end) -> str:
+    """Render a window ``(start, end)`` to a compact ``YYYYMMDD_YYYYMMDD`` slug.
+
+    Builds the dataset-store key component for the wf3 historical-climate store
+    (dev/p31/experiment-structure-design.md §4/§4c/§4d). The store dir is
+    ``climate_historical/<clim_source>_<start>_<end>/`` where ``<start>``/``<end>``
+    are this function's output. The window endpoints are ISO
+    ``YYYY-MM-DDTHH:MM:SS``; ``:`` is illegal in Windows paths, so time-of-day and
+    separators are stripped to ``YYYYMMDD``.
+
+    Day-resolution invariant (§4c): the store is keyed at day resolution, so two
+    windows differing ONLY below the day boundary would render to the same key
+    yet request different bounds — a silent stale-reuse. This helper therefore
+    **asserts** ``HH:MM:SS == 00:00:00`` on both endpoints and raises
+    ``ValueError`` otherwise, failing loud instead of colliding.
+
+    Parameters
+    ----------
+    start, end : str
+        Window endpoints as ISO ``YYYY-MM-DDTHH:MM:SS`` (or ``YYYY-MM-DD``).
+
+    Returns
+    -------
+    str
+        ``"<YYYYMMDD>_<YYYYMMDD>"``.
+
+    Raises
+    ------
+    ValueError
+        If an endpoint is not parseable at day resolution, or carries a nonzero
+        time-of-day component.
+    """
+    def _day_slug(value, which):
+        text = str(value).strip()
+        # Split date from an optional time-of-day on the 'T' separator (or a space).
+        if "T" in text:
+            date_part, time_part = text.split("T", 1)
+        elif " " in text:
+            date_part, time_part = text.split(" ", 1)
+        else:
+            date_part, time_part = text, ""
+        try:
+            dt = datetime.strptime(date_part, "%Y-%m-%d")
+        except ValueError as exc:
+            raise ValueError(
+                f"historical_window {which} {value!r} is not a YYYY-MM-DD date"
+            ) from exc
+        if time_part:
+            # Accept only an all-zero time-of-day; anything else is sub-day
+            # resolution the day-keyed store cannot represent (§4c). Drop any
+            # fractional seconds, then check every digit is zero.
+            hms = time_part.split(".", 1)[0]
+            if hms.replace(":", "").strip("0") != "":
+                raise ValueError(
+                    f"historical_window {which} {value!r} has a nonzero "
+                    "time-of-day; the store key is day-resolution (§4c) — "
+                    "sub-day windows are not supported"
+                )
+        return dt.strftime("%Y%m%d")
+
+    return f"{_day_slug(start, 'starttime')}_{_day_slug(end, 'endtime')}"
+
+
 def _require_step_num(axis_cfg, axis_name):
     """Read and validate a required ``step_num`` from a stress-test axis section.
 

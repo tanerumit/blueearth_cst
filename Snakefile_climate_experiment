@@ -8,7 +8,7 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from blueearth_cst.shared.snake_utils import file_digest_or_absent, get_config, patch_psutil_windows_benchmark, rule_banner, stress_test_grid, validate_experiment_name
+from blueearth_cst.shared.snake_utils import file_digest_or_absent, get_config, patch_psutil_windows_benchmark, rule_banner, slugify_window, stress_test_grid, validate_experiment_name
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
 patch_psutil_windows_benchmark()
@@ -61,6 +61,17 @@ clim_source = get_config(shared_cfg, "clim_historical", optional=False)
 historical_window_cfg = get_config(shared_cfg, "historical_window", optional=False)
 hist_starttime = get_config(historical_window_cfg, "starttime", optional=False)
 hist_endtime = get_config(historical_window_cfg, "endtime", optional=False)
+
+# Dataset+window store key (design §4/§4c/§4d): the wf3 historical-climate
+# extraction is a PROJECT-LEVEL store keyed by dataset + window, referenced (not
+# copied) by every experiment. Two experiments sharing clim_historical +
+# historical_window resolve to the same keyed dir and reuse the extraction;
+# slugify_window enforces the day-resolution invariant (sub-day windows fail
+# loud). The key is also where the guard's second (experiment-invariant) output
+# .guard_ok lands, so the shared extract_climate_grid rule's input set never
+# changes across experiments (§3d input-set invariance).
+store_key = f"{clim_source}_{slugify_window(hist_starttime, hist_endtime)}"
+store_dir = f"{project_dir}/climate_historical/{store_key}"
 
 horizontime_climate = get_config(my_cfg, "horizontime_climate", optional=False)
 wflow_run_length = get_config(my_cfg, "run_length", 20)
@@ -141,10 +152,10 @@ rule all:
 # prepare_weagen_config, prepare_weagen_config_st); the guard artifact is
 # consumed ancient() by extract_climate_grid ONLY — its path is
 # experiment-invariant so the shared rule's input set never changes across
-# experiments (input-set provenance trigger cannot fire, §3d). The store is not
-# yet keyed in this commit, so the guard artifact lands at the then-current
-# store dir climate_historical/raw_data/ (§10.1 sequencing note; commit 4 moves
-# it under the keyed dir together with the store).
+# experiments (input-set provenance trigger cannot fire, §3d). The guard
+# artifact lands under the dataset+window keyed store dir (§4), keyed identically
+# for every experiment sharing dataset+window, so the shared rule's input set is
+# invariant across those experiments.
 rule check_project_consistency:
     message: rule_banner("3.00b", "check_project_consistency")
     input:
@@ -157,7 +168,7 @@ rule check_project_consistency:
         wf2_snapshot_digest = wf2_snapshot_digest,
     output:
         sentinel = f"{exp_dir}/.project_consistency_ok",
-        guard_ok = f"{project_dir}/climate_historical/raw_data/.guard_ok",
+        guard_ok = f"{store_dir}/.guard_ok",
     log:
         f"{exp_dir}/logs/3.00b_check_project_consistency.log",
     benchmark:
@@ -188,14 +199,14 @@ rule extract_climate_grid:
         # so a later experiment's guard rewrite neither mtime- nor
         # input-set-triggers a re-extraction (design §3a/§3d — do NOT swap this
         # for the per-experiment sentinel).
-        guard_ok = ancient(f"{project_dir}/climate_historical/raw_data/.guard_ok"),
+        guard_ok = ancient(f"{store_dir}/.guard_ok"),
     params:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
         starttime = hist_starttime,
         endtime = hist_endtime,
     output:
-        climate_nc = f"{project_dir}/climate_historical/raw_data/extract_historical.nc",
+        climate_nc = f"{store_dir}/extract_historical.nc",
     log:
         f"{exp_dir}/logs/3.02_extract_climate_grid.log",
     benchmark:
@@ -264,7 +275,7 @@ rule prepare_weagen_config_st:
 rule generate_weather_realization:
     message: rule_banner("3.06", "generate_weather_realization")
     input:
-        climate_nc = ancient(f"{project_dir}/climate_historical/raw_data/extract_historical.nc"),
+        climate_nc = ancient(f"{store_dir}/extract_historical.nc"),
         weagen_config = f"{exp_dir}/weathergen_config.yml",
     output:
         temp([f"{exp_dir}/realization_{rlz_num}/rlz_{rlz_num}_cst_0.nc" for rlz_num in np.arange(1, RLZ_NUM+1)])
@@ -311,6 +322,13 @@ rule climate_data_catalog:
     params:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
+        # Orography sidecar path for the chirps/chirps_global branch: the store
+        # producer writes <clim_source>_orography.nc beside extract_historical.nc
+        # under the keyed store dir. Pass it explicitly (design §4a) so the
+        # catalog builder no longer reconstructs it by fragile ../.. walking from
+        # a realization NC — which broke on both the store move and the deeper
+        # experiments/<name>/realization_N/ realization dir.
+        oro_path = f"{store_dir}/{clim_source}_orography.nc",
     log:
         f"{exp_dir}/logs/3.08_climate_data_catalog.log",
     benchmark:

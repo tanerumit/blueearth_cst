@@ -199,6 +199,8 @@ def test_processing_metadata_for_era5_source(tmp_path, era5_like_catalog):
 def test_processing_metadata_mentions_chirps_and_era5_for_chirps_source(tmp_path, chirps_like_catalog):
     rlz_nc = tmp_path / "rlz_1_cst_0.nc"
     rlz_nc.write_bytes(b"")
+    oro_fn = tmp_path / "chirps_global_orography.nc"
+    oro_fn.write_bytes(b"")
     fn_out = tmp_path / "catalog.yml"
 
     pcdc.prepare_clim_data_catalog(
@@ -206,6 +208,7 @@ def test_processing_metadata_mentions_chirps_and_era5_for_chirps_source(tmp_path
         data_libs_like="dummy_catalog.yml",
         source_like="chirps_global",
         fn_out=fn_out,
+        oro_path=oro_fn,
     )
 
     written = yaml.safe_load(fn_out.read_text())
@@ -216,17 +219,19 @@ def test_processing_metadata_mentions_chirps_and_era5_for_chirps_source(tmp_path
 
 
 def test_chirps_source_adds_orography_entry(tmp_path, chirps_like_catalog):
-    """Chirps branch adds an extra entry named '<source>_orography' pointing at
-    a sibling DEM file under climate_historical/raw_data/."""
-    # The function looks for `../../climate_historical/raw_data/<src>_orography.nc`
-    # relative to the FIRST input file, so we need to build that directory shape.
-    raw = tmp_path / "experiment" / "climate_realizations" / "rlz_1"
-    raw.mkdir(parents=True)
-    rlz_nc = raw / "rlz_1_cst_0.nc"
+    """Chirps branch adds an extra '<source>_orography' entry whose uri is the
+    caller-passed oro_path (design §4a: the sidecar under the keyed store dir,
+    no ../.. reconstruction). The realization dir depth is now irrelevant."""
+    # Realization NC under the deeper experiments/<name>/realization_N/ layout —
+    # the rewritten lookup must NOT walk relative to this file.
+    rlz_dir = tmp_path / "experiments" / "expa" / "realization_1"
+    rlz_dir.mkdir(parents=True)
+    rlz_nc = rlz_dir / "rlz_1_cst_0.nc"
     rlz_nc.write_bytes(b"")
-    oro_dir = tmp_path / "experiment" / "climate_historical" / "raw_data"
-    oro_dir.mkdir(parents=True)
-    oro_fn = oro_dir / "chirps_global_orography.nc"
+    # Sidecar under the keyed store dir, passed explicitly.
+    store_dir = tmp_path / "climate_historical" / "chirps_global_20000101_20201231"
+    store_dir.mkdir(parents=True)
+    oro_fn = store_dir / "chirps_global_orography.nc"
     oro_fn.write_bytes(b"")
     fn_out = tmp_path / "catalog.yml"
 
@@ -235,6 +240,7 @@ def test_chirps_source_adds_orography_entry(tmp_path, chirps_like_catalog):
         data_libs_like="dummy_catalog.yml",
         source_like="chirps_global",
         fn_out=fn_out,
+        oro_path=oro_fn,
     )
 
     written = yaml.safe_load(fn_out.read_text())
@@ -243,6 +249,43 @@ def test_chirps_source_adds_orography_entry(tmp_path, chirps_like_catalog):
     assert oro["data_type"] == "RasterDataset"
     assert oro["driver"]["name"] == "raster_xarray"
     assert oro["metadata"]["crs"] == 4326
+    # §4a: the emitted uri resolves to the passed sidecar path, which exists.
+    assert Path(oro["uri"]).resolve() == oro_fn.resolve()
+    assert Path(oro["uri"]).exists()
+
+
+def test_chirps_source_requires_oro_path(tmp_path, chirps_like_catalog):
+    """Omitting oro_path for a chirps source raises (design §4a — no silent
+    fallback to a reconstructed path)."""
+    rlz_dir = tmp_path / "experiments" / "expa" / "realization_1"
+    rlz_dir.mkdir(parents=True)
+    rlz_nc = rlz_dir / "rlz_1_cst_0.nc"
+    rlz_nc.write_bytes(b"")
+    fn_out = tmp_path / "catalog.yml"
+
+    with pytest.raises(ValueError, match="oro_path"):
+        pcdc.prepare_clim_data_catalog(
+            fns=[rlz_nc],
+            data_libs_like="dummy_catalog.yml",
+            source_like="chirps_global",
+            fn_out=fn_out,
+        )
+
+
+def test_era5_source_ignores_oro_path(tmp_path, era5_like_catalog):
+    """The era5 branch adds no orography entry and needs no oro_path."""
+    rlz_nc = tmp_path / "rlz_1_cst_0.nc"
+    rlz_nc.write_bytes(b"")
+    fn_out = tmp_path / "catalog.yml"
+
+    pcdc.prepare_clim_data_catalog(
+        fns=[rlz_nc],
+        data_libs_like="dummy_catalog.yml",
+        source_like="era5",
+        fn_out=fn_out,
+    )
+    written = yaml.safe_load(fn_out.read_text())
+    assert not any(k.endswith("_orography") for k in written)
 
 
 @pytest.mark.xfail(

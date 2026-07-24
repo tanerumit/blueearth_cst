@@ -1,4 +1,4 @@
-"""Unit tests for blueearth_cst/experiment/extract_historical_climate.py.
+"""Unit tests for blueearth_cst/climate_analysis/extract_historical_climate.py.
 
 This module is heavily coupled to hydromt I/O; we test the function's
 configuration logic (driver options, variable lists, clim_source

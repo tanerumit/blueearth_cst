@@ -193,11 +193,11 @@
       "type": "yaml"
     },
     "examples/test_local/config/snake_config_climate_projections.yml": {
-      "sha256": "b41ca4445227e0456c9fed1b3f1803fe2b4f78b573015b6f65fdd62d41a2b775",
+      "sha256": "a2adbc2d3210d4531083f7d93abdd612e365e11db8d90ff14f6338d93bc051c6",
       "type": "yaml"
     },
     "examples/test_local/config/snake_config_model_creation.yml": {
-      "sha256": "b41ca4445227e0456c9fed1b3f1803fe2b4f78b573015b6f65fdd62d41a2b775",
+      "sha256": "a2adbc2d3210d4531083f7d93abdd612e365e11db8d90ff14f6338d93bc051c6",
       "type": "yaml"
     },
     "examples/test_local/experiments/experiment/config/snake_config_climate_experiment.yml": {
@@ -223,7 +223,7 @@
     },
     "examples/test_local/plots/wflow_model_performance/basin_area.png": {
       "exists": true,
-      "size_bytes": 286166,
+      "size_bytes": 286022,
       "type": "png"
     },
     "examples/test_local/plots/wflow_model_performance/hydro_wflow_1.png": {
@@ -233,7 +233,7 @@
     },
     "examples/test_local/plots/wflow_model_performance/precip.png": {
       "exists": true,
-      "size_bytes": 302787,
+      "size_bytes": 302700,
       "type": "png"
     }
   },

@@ -693,7 +693,15 @@ hand-rolled validators-as-tests against fixture artifacts; zero behavior
 change (no pipeline edits, nothing re-recorded); a bounded-substitution
 walkthrough per seam; no PoC swap (future P3-2c candidate), no in-pipeline
 enforcement, none of the P3-2a-deferred structural items (OQ-3 store, OQ-8
-zone source, entry point). Design cycle start is user-gated.
+zone source, entry point).
+**Design ACCEPTED 2026-07-24** via design-review-loop run
+`p32b-interchange-contracts` (full variant: internal panel 0 blocking /
+7 major / 9 minor → external GPT r1 revise (2 major: relational validators;
+all-skip-green) → Fable-escalated revision → external GPT r2 **approve,
+zero findings**; converged inside the cap, no arbitration; ledger 18/18
+accepted): `dev/p32b/interchange-contracts-design.md`, with the
+consolidated review record beside it. Next step: task-brief →
+implementation (Opus-default / Fable-gate-review pattern).
 
 **Tag.** `p32b-interchange-contracts`.
 

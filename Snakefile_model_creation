@@ -33,6 +33,19 @@ DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
 # Shared — multi-workflow scientific knobs
 model_region = get_config(shared_cfg["basin"], "region", optional=False)
 model_resolution = get_config(shared_cfg["basin"], "resolution", 0.00833333)
+clim_source = get_config(shared_cfg, "clim_historical", optional=False)
+hist_starttime = get_config(shared_cfg["historical_window"], "starttime", optional=False)
+hist_endtime = get_config(shared_cfg["historical_window"], "endtime", optional=False)
+
+# P3-2a bounded support (design ext2-3): the wf1 raw-climate path (rule 1.10 +
+# the model-parity plot re-source) supports era5, chirps and chirps_global
+# only. eobs fails here at DAG-parse time — before any rule executes — so the
+# rejection is early and loud on every run and dry-run.
+if clim_source == "eobs":
+    raise ValueError(
+        "clim_historical: eobs is not supported by the P3-2a wf1 raw-climate "
+        "path; supported sources: era5, chirps, chirps_global"
+    )
 
 # Workflow-owned
 wflow_outvars = get_config(my_cfg, "wflow_outvars", ['river discharge', 'actual evapotranspiration'])
@@ -206,9 +219,41 @@ rule run_wflow:
     shell:
         """python -u "{run_logged}" "{log}" -- julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{params.toml_path}" """
 
-# 1.10  plot_results — analyse + plot the wflow run (parallel leaf with 1.11/1.12)
+# 1.10  extract_climate_grid_wf1 — extract raw gridded climate for the wf1
+# climate plots (P3-2a): the bbox comes from staticmaps.nc (the declared
+# rule-1.03 producer edge, design arch-1), the grid is catalog-native, and the
+# output path is wf1-owned — distinct from both the wf3 keyed store
+# (climate_historical/<key>/) and the wf1 forcing (wflow_data/). On
+# chirps/chirps_global the extraction's orography sidecar is a declared rule
+# output with a stable, clim_source-independent filename (design ext2-1); the
+# branch is resolved at DAG-parse time from clim_historical, so there are no
+# dynamic outputs.
+_wf1_raw_dir = f"{project_dir}/climate_historical/wf1_raw"
+_wf1_raw_outputs = {"climate_nc": f"{_wf1_raw_dir}/extract_historical.nc"}
+if clim_source in ("chirps", "chirps_global"):
+    _wf1_raw_outputs["oro_nc"] = f"{_wf1_raw_dir}/orography.nc"
+
+rule extract_climate_grid_wf1:
+    message: rule_banner("1.10", "extract_climate_grid_wf1")
+    input:
+        basin_nc = ancient(f"{basin_dir}/staticmaps.nc"),
+    params:
+        data_sources = DATA_SOURCES,
+        clim_source = clim_source,
+        starttime = hist_starttime,
+        endtime = hist_endtime,
+    output:
+        **_wf1_raw_outputs,
+    log:
+        f"{project_dir}/logs/1.10_extract_climate_grid_wf1.log",
+    benchmark:
+        f"{project_dir}/benchmarks/_parts/1.10_extract_climate_grid_wf1.tsv",
+    script:
+        "blueearth_cst/model/extract_climate_wf1.py"
+
+# 1.11  plot_results — analyse + plot the wflow run (parallel leaf with 1.12/1.13)
 rule plot_results:
-   message: rule_banner("1.10", "plot_results")
+   message: rule_banner("1.11", "plot_results")
    input:
        csv_path = f"{basin_dir}/run_default/output.csv",
        # forcing input drives the climate plots (ADR 0002); declared so the DAG
@@ -222,14 +267,14 @@ rule plot_results:
        observations_file = observations_timeseries,
        gauges_output_path = output_locations,
    log:
-       f"{project_dir}/logs/1.10_plot_results.log",
+       f"{project_dir}/logs/1.11_plot_results.log",
    benchmark:
-       f"{project_dir}/benchmarks/_parts/1.10_plot_results.tsv",
+       f"{project_dir}/benchmarks/_parts/1.11_plot_results.tsv",
    script: "blueearth_cst/model/plot_results.py"
 
-# 1.11  plot_map — plot basin, rivers, gauges and DEM on a map (parallel leaf)
+# 1.12  plot_map — plot basin, rivers, gauges and DEM on a map (parallel leaf)
 rule plot_map:
-    message: rule_banner("1.11", "plot_map")
+    message: rule_banner("1.12", "plot_map")
     input:
         gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     output:
@@ -238,14 +283,14 @@ rule plot_map:
         project_dir = f"{project_dir}",
         output_locations = output_locations,
     log:
-        f"{project_dir}/logs/1.11_plot_map.log",
+        f"{project_dir}/logs/1.12_plot_map.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/1.11_plot_map.tsv",
+        f"{project_dir}/benchmarks/_parts/1.12_plot_map.tsv",
     script: "blueearth_cst/shared/plot_map.py"
 
-# 1.12  plot_forcing — plot the forcing on a map (parallel leaf)
+# 1.13  plot_forcing — plot the forcing on a map (parallel leaf)
 rule plot_forcing:
-    message: rule_banner("1.12", "plot_forcing")
+    message: rule_banner("1.13", "plot_forcing")
     input:
         forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
     output:
@@ -254,9 +299,9 @@ rule plot_forcing:
         project_dir = f"{project_dir}",
         gauges_path = f"{basin_dir}/staticgeoms/outlets.geojson"
     log:
-        f"{project_dir}/logs/1.12_plot_forcing.log",
+        f"{project_dir}/logs/1.13_plot_forcing.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/1.12_plot_forcing.tsv",
+        f"{project_dir}/benchmarks/_parts/1.13_plot_forcing.tsv",
     script: "blueearth_cst/model/plot_map_forcing.py"
 
 # --- benchmark gather ---------------------------------------------------------
@@ -264,7 +309,7 @@ rule plot_forcing:
 # terminal outputs (so all WF1 rules ran), and merges the WF1 parts into one
 # benchmarks/wf1_benchmarks.tsv (rule column + TOTAL row), fresh each run.
 rule gather_benchmarks:
-    message: rule_banner("1.13", "gather_benchmarks")
+    message: rule_banner("1.14", "gather_benchmarks")
     input:
         f"{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png",
         f"{project_dir}/plots/wflow_model_performance/basin_area.png",

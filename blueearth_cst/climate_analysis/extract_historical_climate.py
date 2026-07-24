@@ -8,7 +8,7 @@ import geopandas as gpd
 import hydromt
 import pandas as pd
 
-from typing import Union
+from typing import Optional, Union
 
 from dask.diagnostics import ProgressBar
 from hydromt.model.processes.meteo import temp
@@ -46,13 +46,14 @@ def _warn_if_window_truncated(ds, starttime, endtime, clim_source):
 
 
 def prep_historical_climate(
-    region_fn: Union[str, Path],
+    region_fn: Optional[Union[str, Path]],
     fn_out: Union[str, Path],
     data_libs: Union[str, Path] = "deltares_data",
     clim_source: str = "era5",
     *,
     starttime: str,
     endtime: str,
+    bbox=None,
 ):
     """
     Extract historical climate data for a given region and time period.
@@ -62,8 +63,9 @@ def prep_historical_climate(
 
     Parameters
     ----------
-    region_fn : str, Path
-        Path to the region geojson file
+    region_fn : str, Path, optional
+        Path to the region geojson file. Exactly one of ``region_fn`` and
+        ``bbox`` must be provided.
     fn_out : str, Path
         Path to the output netcdf file
     data_libs : str, Path
@@ -74,9 +76,19 @@ def prep_historical_climate(
         Start time of the forcing, format YYYY-MM-DDTHH:MM:SS
     endtime : str
         End time of the forcing, format YYYY-MM-DDTHH:MM:SS
+    bbox : tuple of float, optional
+        Extraction bounds (xmin, ymin, xmax, ymax) used instead of the region
+        file's total bounds (P3-2a: the wf1 caller passes the staticmaps.nc
+        model-grid bounds; wf3 keeps passing ``region_fn``).
     """
-    # Read region
-    region = gpd.read_file(region_fn)
+    if (region_fn is None) == (bbox is None):
+        raise ValueError(
+            "prep_historical_climate: exactly one of region_fn or bbox must be provided"
+        )
+    if bbox is None:
+        # Read region
+        region = gpd.read_file(region_fn)
+        bbox = region.geometry.total_bounds
     # Read data catalog
     data_catalog = hydromt.DataCatalog(data_libs=data_libs)
 
@@ -90,7 +102,7 @@ def prep_historical_climate(
         # Get precip first
         ds = data_catalog.get_rasterdataset(
             clim_source,
-            bbox=region.geometry.total_bounds,
+            bbox=bbox,
             time_range=(starttime, endtime),
             buffer=1,
             variables=["precip"],
@@ -98,7 +110,7 @@ def prep_historical_climate(
         # Get clim
         ds_clim = data_catalog.get_rasterdataset(
             "era5",
-            bbox=region.geometry.total_bounds,
+            bbox=bbox,
             time_range=(starttime, endtime),
             buffer=1,
             variables=["temp", "temp_min", "temp_max", "kin", "kout", "press_msl"],
@@ -111,7 +123,7 @@ def prep_historical_climate(
         )
         dem = data_catalog.get_rasterdataset(
             "merit_hydro",
-            bbox=region.geometry.total_bounds,
+            bbox=bbox,
             time_range=(starttime, endtime),
             buffer=1,
             variables=["elevtn"],
@@ -158,7 +170,7 @@ def prep_historical_climate(
 
         ds = data_catalog.get_rasterdataset(
             clim_source,
-            bbox=region.geometry.total_bounds,
+            bbox=bbox,
             time_range=(starttime, endtime),
             buffer=1,
             variables=[

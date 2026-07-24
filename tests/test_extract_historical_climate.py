@@ -144,7 +144,7 @@ sys.modules.setdefault("hydromt.model.processes.meteo", _meteo_stub)
 # cheap context manager — let the real one run.
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from blueearth_cst.experiment import extract_historical_climate as ehc  # noqa: E402
+from blueearth_cst.climate_analysis import extract_historical_climate as ehc  # noqa: E402
 
 
 @pytest.fixture

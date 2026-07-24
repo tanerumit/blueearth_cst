@@ -44,7 +44,7 @@ sys.modules.setdefault(
 )
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from blueearth_cst.projections import prepare_climate_data_catalog as pcdc  # noqa: E402
+from blueearth_cst.climate_analysis import prepare_climate_data_catalog as pcdc  # noqa: E402
 
 
 @pytest.fixture

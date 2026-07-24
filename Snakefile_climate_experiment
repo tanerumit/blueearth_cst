@@ -212,7 +212,7 @@ rule extract_climate_grid:
     benchmark:
         f"{exp_dir}/benchmarks/_parts/3.02_extract_climate_grid.tsv",
     script:
-        "blueearth_cst/experiment/extract_historical_climate.py"
+        "blueearth_cst/climate_analysis/extract_historical_climate.py"
 
 # 3.03  climate_stress_parameters — write the per-cst stress-test parameter grid
 rule climate_stress_parameters:
@@ -334,7 +334,7 @@ rule climate_data_catalog:
     benchmark:
         f"{exp_dir}/benchmarks/_parts/3.08_climate_data_catalog.tsv",
     script:
-        "blueearth_cst/projections/prepare_climate_data_catalog.py"
+        "blueearth_cst/climate_analysis/prepare_climate_data_catalog.py"
 
 # 3.09  downscale_climate_realization — downscale climate forcing to wflow grid
 rule downscale_climate_realization:

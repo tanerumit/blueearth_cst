@@ -23,7 +23,7 @@ from blueearth_cst.shared.func_plot_signature import (
     plot_clim,
     plot_basavg,
 )
-from blueearth_cst.model.climate_forcing import climate_forcing_by_subcatchment
+from blueearth_cst.climate_analysis.subcatchment_climate import climate_forcing_by_subcatchment
 from blueearth_cst.shared.snake_utils import log_row
 
 

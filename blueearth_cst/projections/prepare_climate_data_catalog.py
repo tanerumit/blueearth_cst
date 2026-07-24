@@ -11,6 +11,7 @@ def prepare_clim_data_catalog(
     data_libs_like: Union[str, Path],
     source_like: str,
     fn_out: Union[str, Path] = None,
+    oro_path: Union[str, Path] = None,
 ):
     """
     Prepares a data catalog for files path listed in fns using the same attributes as source_like
@@ -27,6 +28,14 @@ def prepare_clim_data_catalog(
         Data sources with the same attributes as the new sources in fns.
     fn_out: str, Optional
         If provided, writes the new data catalog to the corresponding path.
+    oro_path: str or Path, Optional
+        Absolute path to the ``<source_like>_orography.nc`` sidecar produced by
+        the historical extraction, under the dataset+window keyed store dir. Used
+        only for the chirps/chirps_global branch. Passed explicitly by the caller
+        (design §4a) so the path is not reconstructed by fragile ``../..``
+        walking from a realization NC — which broke on the store keying and the
+        deeper ``experiments/<name>/realization_N/`` realization dir. Required
+        when ``source_like`` is chirps/chirps_global.
 
     Returns
     -------
@@ -73,16 +82,14 @@ def prepare_clim_data_catalog(
 
     # Add local orography for chirps resolution
     if source_like in ("chirps", "chirps_global"):
-        fn_oro = Path(fns[0]).resolve()
-        fn_oro = os.path.join(
-            os.path.dirname(fn_oro),
-            "..",
-            "..",
-            "climate_historical",
-            "raw_data",
-            f"{source_like}_orography.nc",
-        )
-        fn_oro = Path(fn_oro).resolve()
+        # The sidecar lives beside extract_historical.nc under the keyed store
+        # dir; the caller passes its absolute path (design §4a). No ../.. walk.
+        if oro_path is None:
+            raise ValueError(
+                f"oro_path is required for source_like={source_like!r} "
+                "(the <source>_orography.nc sidecar under the keyed store dir)"
+            )
+        fn_oro = Path(oro_path).resolve()
         climate_data_dict[f"{source_like}_orography"] = {
             "data_type": "RasterDataset",
             "uri": str(fn_oro),
@@ -130,6 +137,7 @@ if __name__ == "__main__":
                 data_libs_like=sm.params.data_sources,
                 source_like=sm.params.clim_source,
                 fn_out=sm.output.clim_data,
+                oro_path=getattr(sm.params, "oro_path", None),
             )
     else:
         raise ValueError("This script should be run from a snakemake environment")

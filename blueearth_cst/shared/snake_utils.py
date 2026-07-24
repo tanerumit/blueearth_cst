@@ -151,6 +151,167 @@ def get_config(config, arg, default=None, optional=True):
         raise ValueError(f"Argument {arg} not found in config")
 
 
+def file_digest_or_absent(path) -> str:
+    """Return the SHA-256 hex digest of a file's bytes, or ``"ABSENT"``.
+
+    Absence-tolerant digest helper for the wf3 drift guard's params
+    (dev/p31/experiment-structure-design.md §3b/§3c, ext2-2). Called at
+    Snakefile parse time for the wf1/wf2 project-snapshot digests, so a fresh
+    project (no snapshot yet) still parses, ``--dry-run``s, and ``--unlock``s
+    cleanly — snapshot absence surfaces at the guard *rule* via its
+    ``ancient()`` input declaration (``MissingInputException``), never as a
+    parse-time traceback.
+
+    - **present:** SHA-256 hex digest of the file bytes — any content change
+      flips the returned string, tripping Snakemake's params rerun-trigger.
+    - **missing (or unreadable):** the literal sentinel string ``"ABSENT"`` —
+      never raises. ``"ABSENT"`` cannot collide with a real digest (uppercase,
+      non-hex, wrong length), and the ABSENT->present transition itself flips
+      the param, so the first post-wf1 invocation re-evaluates the guard.
+    """
+    import hashlib
+
+    try:
+        with open(path, "rb") as f:
+            return hashlib.sha256(f.read()).hexdigest()
+    except OSError:
+        return "ABSENT"
+
+
+_EXPERIMENT_NAME_RE = re.compile(r"^[a-z0-9][a-z0-9_]*$")
+_EXPERIMENT_NAME_MAX_LEN = 64
+# Windows reserved device names (compared case-insensitively, incl. any
+# extension): CON, PRN, AUX, NUL, COM1-9, LPT1-9. A path segment equal to one of
+# these (with or without an extension) is invalid on Windows.
+_WINDOWS_RESERVED_NAMES = frozenset(
+    ["con", "prn", "aux", "nul"]
+    + [f"com{i}" for i in range(1, 10)]
+    + [f"lpt{i}" for i in range(1, 10)]
+)
+
+
+def validate_experiment_name(name: str, project_dir) -> str:
+    """Validate ``experiment_name`` as a safe ``experiments/<name>/`` path segment.
+
+    Centralized slug validation for the wf3 experiment subtree
+    (dev/p31/experiment-structure-design.md §2b). Called once at
+    ``Snakefile_climate_experiment`` parse time, BEFORE ``exp_dir`` (and every
+    derived output/params path) is built, so all paths are constructed only from
+    a vetted value. Parse-time is correct here: a malformed name makes the entire
+    DAG ill-defined, so failing under ``--dry-run`` is the intended behavior
+    (unlike the drift *guard*, which is a rule so ``--unlock`` stays usable).
+
+    Grammar: ``^[a-z0-9][a-z0-9_]*$`` (lowercase alnum + underscore, must start
+    with an alnum), nonempty, at most 64 chars — a strict subset of
+    ``dev/conventions/naming.md``'s snake_case rule that deliberately excludes
+    hyphens and dots so the value can never introduce a path component or an
+    extension. Uppercase is REJECTED (never silently lowercased). After the
+    grammar, a containment assertion confirms the resolved target is a direct
+    child of ``<project_dir>/experiments`` (belt to the grammar's braces).
+
+    Returns the validated ``name`` unchanged, or raises ``ValueError`` naming the
+    offending input.
+    """
+    if not isinstance(name, str) or not name.strip():
+        raise ValueError(
+            f"experiment_name must be a non-empty string, got {name!r}"
+        )
+    if len(name) > _EXPERIMENT_NAME_MAX_LEN:
+        raise ValueError(
+            f"experiment_name {name!r} exceeds the {_EXPERIMENT_NAME_MAX_LEN}-char "
+            "limit"
+        )
+    # Case-insensitive Windows-reserved-name check (including any extension):
+    # the bare stem before the first dot must not be a reserved device name.
+    stem = name.split(".", 1)[0].lower()
+    if stem in _WINDOWS_RESERVED_NAMES:
+        raise ValueError(
+            f"experiment_name {name!r} is a Windows-reserved device name "
+            "(case- and extension-insensitive); choose another name"
+        )
+    if not _EXPERIMENT_NAME_RE.match(name):
+        raise ValueError(
+            f"experiment_name {name!r} does not match the required grammar "
+            r"^[a-z0-9][a-z0-9_]*$ (lowercase alphanumerics and underscores, "
+            "starting with an alphanumeric; no separators, dots, hyphens, "
+            "absolute forms, or uppercase)"
+        )
+    # Containment assertion (independent of the grammar): the resolved target
+    # must be a DIRECT child of <project_dir>/experiments. .resolve() at parse is
+    # safe — it does not require the dir to exist.
+    experiments_root = os.path.abspath(os.path.join(str(project_dir), "experiments"))
+    target = os.path.abspath(os.path.join(experiments_root, name))
+    if os.path.dirname(target) != experiments_root:
+        raise ValueError(
+            f"experiment_name {name!r} does not resolve to a direct child of "
+            f"{experiments_root!r}"
+        )
+    return name
+
+
+def slugify_window(start, end) -> str:
+    """Render a window ``(start, end)`` to a compact ``YYYYMMDD_YYYYMMDD`` slug.
+
+    Builds the dataset-store key component for the wf3 historical-climate store
+    (dev/p31/experiment-structure-design.md §4/§4c/§4d). The store dir is
+    ``climate_historical/<clim_source>_<start>_<end>/`` where ``<start>``/``<end>``
+    are this function's output. The window endpoints are ISO
+    ``YYYY-MM-DDTHH:MM:SS``; ``:`` is illegal in Windows paths, so time-of-day and
+    separators are stripped to ``YYYYMMDD``.
+
+    Day-resolution invariant (§4c): the store is keyed at day resolution, so two
+    windows differing ONLY below the day boundary would render to the same key
+    yet request different bounds — a silent stale-reuse. This helper therefore
+    **asserts** ``HH:MM:SS == 00:00:00`` on both endpoints and raises
+    ``ValueError`` otherwise, failing loud instead of colliding.
+
+    Parameters
+    ----------
+    start, end : str
+        Window endpoints as ISO ``YYYY-MM-DDTHH:MM:SS`` (or ``YYYY-MM-DD``).
+
+    Returns
+    -------
+    str
+        ``"<YYYYMMDD>_<YYYYMMDD>"``.
+
+    Raises
+    ------
+    ValueError
+        If an endpoint is not parseable at day resolution, or carries a nonzero
+        time-of-day component.
+    """
+    def _day_slug(value, which):
+        text = str(value).strip()
+        # Split date from an optional time-of-day on the 'T' separator (or a space).
+        if "T" in text:
+            date_part, time_part = text.split("T", 1)
+        elif " " in text:
+            date_part, time_part = text.split(" ", 1)
+        else:
+            date_part, time_part = text, ""
+        try:
+            dt = datetime.strptime(date_part, "%Y-%m-%d")
+        except ValueError as exc:
+            raise ValueError(
+                f"historical_window {which} {value!r} is not a YYYY-MM-DD date"
+            ) from exc
+        if time_part:
+            # Accept only an all-zero time-of-day; anything else is sub-day
+            # resolution the day-keyed store cannot represent (§4c). Drop any
+            # fractional seconds, then check every digit is zero.
+            hms = time_part.split(".", 1)[0]
+            if hms.replace(":", "").strip("0") != "":
+                raise ValueError(
+                    f"historical_window {which} {value!r} has a nonzero "
+                    "time-of-day; the store key is day-resolution (§4c) — "
+                    "sub-day windows are not supported"
+                )
+        return dt.strftime("%Y%m%d")
+
+    return f"{_day_slug(start, 'starttime')}_{_day_slug(end, 'endtime')}"
+
+
 def _require_step_num(axis_cfg, axis_name):
     """Read and validate a required ``step_num`` from a stress-test axis section.
 

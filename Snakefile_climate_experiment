@@ -1,3 +1,5 @@
+import hashlib
+import json
 import numpy as np
 import sys
 from pathlib import Path
@@ -6,7 +8,7 @@ from pathlib import Path
 # directory by prepending this Snakefile's own directory to sys.path.
 # See dev/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
-from blueearth_cst.shared.snake_utils import get_config, patch_psutil_windows_benchmark, rule_banner, stress_test_grid
+from blueearth_cst.shared.snake_utils import file_digest_or_absent, get_config, patch_psutil_windows_benchmark, rule_banner, slugify_window, stress_test_grid, validate_experiment_name
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
 patch_psutil_windows_benchmark()
@@ -32,6 +34,11 @@ static_dir = get_config(project_cfg, "static_dir", optional=False)
 DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
 
 experiment = get_config(my_cfg, "experiment_name", optional=False)
+# Validate the experiment name as a safe experiments/<name>/ path segment BEFORE
+# any path is built from it (design §2b). Parse-time is correct here (config
+# validation, not a project-state check) — a malformed name makes the whole DAG
+# ill-defined, so failing under --dry-run is intended.
+experiment = validate_experiment_name(experiment, project_dir)
 RLZ_NUM = get_config(my_cfg, "realizations_num", 1)
 
 # Stress test step counts live under stress_test.<temp|precip>.step_num.
@@ -55,11 +62,72 @@ historical_window_cfg = get_config(shared_cfg, "historical_window", optional=Fal
 hist_starttime = get_config(historical_window_cfg, "starttime", optional=False)
 hist_endtime = get_config(historical_window_cfg, "endtime", optional=False)
 
+# Dataset+window store key (design §4/§4c/§4d): the wf3 historical-climate
+# extraction is a PROJECT-LEVEL store keyed by dataset + window, referenced (not
+# copied) by every experiment. Two experiments sharing clim_historical +
+# historical_window resolve to the same keyed dir and reuse the extraction;
+# slugify_window enforces the day-resolution invariant (sub-day windows fail
+# loud). The key is also where the guard's second (experiment-invariant) output
+# .guard_ok lands, so the shared extract_climate_grid rule's input set never
+# changes across experiments (§3d input-set invariance).
+store_key = f"{clim_source}_{slugify_window(hist_starttime, hist_endtime)}"
+store_dir = f"{project_dir}/climate_historical/{store_key}"
+
 horizontime_climate = get_config(my_cfg, "horizontime_climate", optional=False)
 wflow_run_length = get_config(my_cfg, "run_length", 20)
 
 basin_dir = f"{project_dir}/hydrology_model"
-exp_dir = f"{project_dir}/climate_{experiment}"
+# Per-experiment root (design §2/§2a): every wf3-owned output that was
+# project-global moves under experiments/<name>/. Redefining this one binding
+# carries all exp_dir-derived output/params paths (incl. the three params paths
+# on prepare_weagen_config, prepare_weagen_config_st, export_wflow_results) and
+# the guard sentinel. The remaining project_dir-rooted wf3 paths (log:, the
+# benchmark _parts/ tree, gather output + parts_dir param, the config snapshot)
+# are hand-edited to experiments/<name>/ below.
+exp_dir = f"{project_dir}/experiments/{experiment}"
+
+# --- Drift-guard comparands (dev/p31/experiment-structure-design.md §3b/§3c) ---
+# Rule 3.00b check_project_consistency compares this experiment config's
+# project-level sections against the wf1/wf2 project snapshots. Snakemake's
+# default params rerun-trigger re-runs the guard when any of these param values
+# changes (probe-verified, design §3c), so every comparand is threaded through
+# as a param — and every guard param must be EXPERIMENT-INVARIANT across passing
+# configs, because the guard's second output is shared across experiments
+# (§3b/§3d; config_path is deliberately NOT a guard param — it varies per
+# experiment and would thrash the shared artifact on A<->B alternation).
+guarded_sections = (
+    "project", "shared.basin", "workflows.model_creation",
+    "workflows.climate_projections",
+)
+# SHA-256 of a canonical sorted-key JSON serialization of the guarded live
+# sections: an in-place edit to any guarded value flips this string and trips
+# the params rerun-trigger (§3c case (a)). A string digest — the form the §3c
+# probe verified — not raw nested dicts.
+guarded_sections_digest = hashlib.sha256(
+    json.dumps(
+        {
+            "project": config.get("project"),
+            "shared.basin": config.get("shared", {}).get("basin"),
+            "workflows.model_creation": config.get("workflows", {}).get("model_creation"),
+            "workflows.climate_projections": config.get("workflows", {}).get("climate_projections"),
+        },
+        sort_keys=True,
+        ensure_ascii=False,
+        default=str,
+    ).encode("utf-8")
+).hexdigest()
+# Project snapshots the guard compares against. wf1 is a mandatory ancient()
+# rule input (absence -> rule-level MissingInputException); wf2 is a params
+# path, existence-checked in the guard script (the projections overlay is
+# optional and must not be force-required). Content digests via
+# file_digest_or_absent ("ABSENT" for a missing file, never raises) make a
+# snapshot-only content change re-trigger the guard despite ancient() (§3c
+# case (b)), while keeping a fresh project parse/--dry-run/--unlock clean
+# (ext2-2).
+wf1_snapshot_path = f"{project_dir}/config/snake_config_model_creation.yml"
+wf2_snapshot_path = f"{project_dir}/config/snake_config_climate_projections.yml"
+wf1_snapshot_digest = file_digest_or_absent(wf1_snapshot_path)
+wf2_snapshot_digest = file_digest_or_absent(wf2_snapshot_path)
 
 # Rule numbering (comment headers + log/benchmark filenames) uses `W.NN` =
 # workflow.step in DEFINITION order — a reference aid ("Rule 3.10" = run_wflow),
@@ -71,19 +139,54 @@ rule all:
     input:
         Qstats = f"{exp_dir}/model_results/Qstats.csv",
         basin = f"{exp_dir}/model_results/basin.csv",
-        snake_config = f"{project_dir}/config/snake_config_climate_experiment.yml",
-        benchmarks = f"{project_dir}/benchmarks/wf3_benchmarks.md",
+        snake_config = f"{exp_dir}/config/snake_config_climate_experiment.yml",
+        benchmarks = f"{exp_dir}/benchmarks/wf3_benchmarks.md",
+
+# 3.00b check_project_consistency — drift guard: fail loud if this experiment
+# config's project-level sections (project, shared.basin,
+# workflows.model_creation, workflows.climate_projections) diverge from the
+# wf1/wf2 project snapshots. Runs at rule time (not parse) so --dry-run and
+# --unlock stay usable (design §3). Two outputs, one per sharing class (§3a,
+# ext2-1): the per-experiment sentinel is a FRESH input of the four
+# per-experiment roots (copy_config, climate_stress_parameters,
+# prepare_weagen_config, prepare_weagen_config_st); the guard artifact is
+# consumed ancient() by extract_climate_grid ONLY — its path is
+# experiment-invariant so the shared rule's input set never changes across
+# experiments (input-set provenance trigger cannot fire, §3d). The guard
+# artifact lands under the dataset+window keyed store dir (§4), keyed identically
+# for every experiment sharing dataset+window, so the shared rule's input set is
+# invariant across those experiments.
+rule check_project_consistency:
+    message: rule_banner("3.00b", "check_project_consistency")
+    input:
+        wf1_snapshot = ancient(wf1_snapshot_path),
+    params:
+        guarded_sections = guarded_sections,
+        guarded_sections_digest = guarded_sections_digest,
+        wf1_snapshot_digest = wf1_snapshot_digest,
+        wf2_snapshot_path = wf2_snapshot_path,
+        wf2_snapshot_digest = wf2_snapshot_digest,
+    output:
+        sentinel = f"{exp_dir}/.project_consistency_ok",
+        guard_ok = f"{store_dir}/.guard_ok",
+    log:
+        f"{exp_dir}/logs/3.00b_check_project_consistency.log",
+    benchmark:
+        f"{exp_dir}/benchmarks/_parts/3.00b_check_project_consistency.tsv",
+    script:
+        "blueearth_cst/experiment/check_project_consistency.py"
 
 # 3.01  copy_config — copy snake config into project_dir/config
 rule copy_config:
     message: rule_banner("3.01", "copy_config")
     input:
         config_snake = config_path,
+        consistency_ok = f"{exp_dir}/.project_consistency_ok",
     params:
         data_catalogs = DATA_SOURCES,
         workflow_name = "climate_experiment",
     output:
-        config_snake_out = f"{project_dir}/config/snake_config_climate_experiment.yml",
+        config_snake_out = f"{exp_dir}/config/snake_config_climate_experiment.yml",
     script:
         "blueearth_cst/model/copy_config_files.py"
 
@@ -92,17 +195,22 @@ rule extract_climate_grid:
     message: rule_banner("3.02", "extract_climate_grid")
     input:
         prj_region = ancient(f"{basin_dir}/staticgeoms/region.geojson"),
+        # Guard ordering edge: the experiment-invariant guard artifact, ancient()
+        # so a later experiment's guard rewrite neither mtime- nor
+        # input-set-triggers a re-extraction (design §3a/§3d — do NOT swap this
+        # for the per-experiment sentinel).
+        guard_ok = ancient(f"{store_dir}/.guard_ok"),
     params:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
         starttime = hist_starttime,
         endtime = hist_endtime,
     output:
-        climate_nc = f"{project_dir}/climate_historical/raw_data/extract_historical.nc",
+        climate_nc = f"{store_dir}/extract_historical.nc",
     log:
-        f"{project_dir}/logs/3.02_extract_climate_grid.log",
+        f"{exp_dir}/logs/3.02_extract_climate_grid.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.02_extract_climate_grid.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.02_extract_climate_grid.tsv",
     script:
         "blueearth_cst/experiment/extract_historical_climate.py"
 
@@ -111,18 +219,21 @@ rule climate_stress_parameters:
     message: rule_banner("3.03", "climate_stress_parameters")
     input:
         config = ancient(config_path),
+        consistency_ok = f"{exp_dir}/.project_consistency_ok",
     output:
         st_csv_fns = [f"{exp_dir}/stress_test/cst_{st_num}.csv" for st_num in np.arange(1, ST_NUM+1)]
     log:
-        f"{project_dir}/logs/3.03_climate_stress_parameters.log",
+        f"{exp_dir}/logs/3.03_climate_stress_parameters.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.03_climate_stress_parameters.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.03_climate_stress_parameters.tsv",
     script:
         "blueearth_cst/experiment/prepare_cst_parameters.py"
 
 # 3.04  prepare_weagen_config — weathergen config for realization generation
 rule prepare_weagen_config:
     message: rule_banner("3.04", "prepare_weagen_config")
+    input:
+        consistency_ok = f"{exp_dir}/.project_consistency_ok",
     output:
         weagen_config = f"{exp_dir}/weathergen_config.yml",
     params:
@@ -134,15 +245,17 @@ rule prepare_weagen_config:
         sim_years = wflow_run_length,
         nc_file_prefix = "rlz"
     log:
-        f"{project_dir}/logs/3.04_prepare_weagen_config.log",
+        f"{exp_dir}/logs/3.04_prepare_weagen_config.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.04_prepare_weagen_config.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.04_prepare_weagen_config.tsv",
     script:
         "blueearth_cst/experiment/prepare_weagen_config.py"
 
 # 3.05  prepare_weagen_config_st — weathergen config per rlz/cst (climate change)
 rule prepare_weagen_config_st:
     message: rule_banner("3.05", "prepare_weagen_config_st")
+    input:
+        consistency_ok = f"{exp_dir}/.project_consistency_ok",
     output:
         weagen_config = f"{exp_dir}/realization_"+"{rlz_num}"+"/weathergen_config_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".yml",
     params:
@@ -152,9 +265,9 @@ rule prepare_weagen_config_st:
         nc_file_prefix = "rlz_"+"{rlz_num}"+"_cst",
         nc_file_suffix = "{st_num}",
     log:
-        f"{project_dir}/logs/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{exp_dir}/logs/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.05_prepare_weagen_config_st/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "blueearth_cst/experiment/prepare_weagen_config.py"
 
@@ -162,14 +275,14 @@ rule prepare_weagen_config_st:
 rule generate_weather_realization:
     message: rule_banner("3.06", "generate_weather_realization")
     input:
-        climate_nc = ancient(f"{project_dir}/climate_historical/raw_data/extract_historical.nc"),
+        climate_nc = ancient(f"{store_dir}/extract_historical.nc"),
         weagen_config = f"{exp_dir}/weathergen_config.yml",
     output:
         temp([f"{exp_dir}/realization_{rlz_num}/rlz_{rlz_num}_cst_0.nc" for rlz_num in np.arange(1, RLZ_NUM+1)])
     log:
-        f"{project_dir}/logs/3.06_generate_weather_realization.log",
+        f"{exp_dir}/logs/3.06_generate_weather_realization.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.06_generate_weather_realization.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.06_generate_weather_realization.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config}"""
 
@@ -192,9 +305,9 @@ rule generate_climate_stress_test:
     output:
         rlz_st_nc = temp(f"{exp_dir}/realization_"+"{rlz_num}"+"/rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
     log:
-        f"{project_dir}/logs/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{exp_dir}/logs/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.07_generate_climate_stress_test/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.st_csv}"""
 
@@ -209,10 +322,17 @@ rule climate_data_catalog:
     params:
         data_sources = DATA_SOURCES,
         clim_source = clim_source,
+        # Orography sidecar path for the chirps/chirps_global branch: the store
+        # producer writes <clim_source>_orography.nc beside extract_historical.nc
+        # under the keyed store dir. Pass it explicitly (design §4a) so the
+        # catalog builder no longer reconstructs it by fragile ../.. walking from
+        # a realization NC — which broke on both the store move and the deeper
+        # experiments/<name>/realization_N/ realization dir.
+        oro_path = f"{store_dir}/{clim_source}_orography.nc",
     log:
-        f"{project_dir}/logs/3.08_climate_data_catalog.log",
+        f"{exp_dir}/logs/3.08_climate_data_catalog.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.08_climate_data_catalog.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.08_climate_data_catalog.tsv",
     script:
         "blueearth_cst/projections/prepare_climate_data_catalog.py"
 
@@ -224,16 +344,16 @@ rule downscale_climate_realization:
         data_sources = [f"{exp_dir}/data_catalog_climate_experiment.yml", DATA_SOURCES]
     output:
         nc = temp(f"{exp_dir}/realization_"+"{rlz_num}"+"/inmaps_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc"),
-        toml = f"{basin_dir}/run_climate_{experiment}/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
+        toml = f"{exp_dir}/model_runs/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
     params:
         model_dir = basin_dir,
         clim_source = clim_source,
         horizontime_climate = horizontime_climate,
         run_length = wflow_run_length,
     log:
-        f"{project_dir}/logs/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{exp_dir}/logs/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.09_downscale_climate_realization/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     script:
         "blueearth_cst/experiment/downscale_climate_forcing.py"
 
@@ -242,14 +362,14 @@ rule run_wflow:
     message: rule_banner("3.10", "run_wflow")
     input:
         forcing_path = f"{exp_dir}/realization_"+"{rlz_num}"+"/inmaps_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc",
-        toml_path = f"{basin_dir}/run_climate_{experiment}/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
+        toml_path = f"{exp_dir}/model_runs/wflow_sbm_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".toml"
     output:
-        csv_file = f"{basin_dir}/run_climate_{experiment}/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv",
-        state_file = temp(f"{basin_dir}/run_climate_{experiment}/outstates_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
+        csv_file = f"{exp_dir}/model_runs/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv",
+        state_file = temp(f"{exp_dir}/model_runs/outstates_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".nc")
     log:
-        f"{project_dir}/logs/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.log",
+        f"{exp_dir}/logs/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.10_run_wflow/" + "rlz_{rlz_num}_cst_{st_num}.tsv",
     shell:
         """python -u "{run_logged}" "{log}" -- julia +1.11.7 --project=. --threads 4 -e "using Wflow; Wflow.run()" "{input.toml_path}" """
 
@@ -257,7 +377,7 @@ rule run_wflow:
 rule export_wflow_results:
     message: rule_banner("3.11", "export_wflow_results")
     input:
-        rlz_csv_fns = expand((f"{basin_dir}/run_climate_{experiment}/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv"), rlz_num=np.arange(1, RLZ_NUM+1), st_num=np.arange(ST_START, ST_NUM+1)),
+        rlz_csv_fns = expand((f"{exp_dir}/model_runs/output_rlz_"+"{rlz_num}"+"_cst_"+"{st_num}"+".csv"), rlz_num=np.arange(1, RLZ_NUM+1), st_num=np.arange(ST_START, ST_NUM+1)),
     output:
         Qstats = f"{exp_dir}/model_results/Qstats.csv",
         basin = f"{exp_dir}/model_results/basin.csv",
@@ -268,9 +388,9 @@ rule export_wflow_results:
         Tlow = get_config(my_cfg, "Tlow", 2),
         Tpeak = get_config(my_cfg, "Tpeak", 10),
     log:
-        f"{project_dir}/logs/3.11_export_wflow_results.log",
+        f"{exp_dir}/logs/3.11_export_wflow_results.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/3.11_export_wflow_results.tsv",
+        f"{exp_dir}/benchmarks/_parts/3.11_export_wflow_results.tsv",
     script:
         "blueearth_cst/experiment/export_wflow_results.py"
 
@@ -284,8 +404,8 @@ rule gather_benchmarks:
         f"{exp_dir}/model_results/Qstats.csv",
         f"{exp_dir}/model_results/basin.csv",
     output:
-        f"{project_dir}/benchmarks/wf3_benchmarks.md",
+        f"{exp_dir}/benchmarks/wf3_benchmarks.md",
     params:
-        parts_dir = f"{project_dir}/benchmarks/_parts",
+        parts_dir = f"{exp_dir}/benchmarks/_parts",
         workflow_num = 3,
     script: "blueearth_cst/shared/merge_benchmarks.py"

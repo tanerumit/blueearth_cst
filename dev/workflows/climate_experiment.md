@@ -19,8 +19,10 @@ the unperturbed baseline (run through Wflow only when `run_historical` sets
 
 Read at `Snakefile_climate_experiment` lines 19–41 via `get_config`:
 
-- `experiment_name` — read as `experiment`; drives `exp_dir =
-  {project_dir}/climate_{experiment}`. Required.
+- `experiment_name` — read as `experiment`; validated at parse
+  (`validate_experiment_name`, grammar `^[a-z0-9][a-z0-9_]*$` ≤64) and drives
+  `exp_dir = {project_dir}/experiments/{experiment}` (P3-1 layout; old→new map
+  in `dev/p31/migration_experiment-structure.md`). Required.
 - `realizations_num` — number of stochastic realizations (→ `RLZ_NUM`). Default 1.
 - `stress_test.temp.step_num`, `stress_test.precip.step_num` — per-axis
   perturbation step counts; `ST_NUM = (temp.step_num+1)*(precip.step_num+1)`.
@@ -85,7 +87,8 @@ slice** (`dev/scripts/check_baseline.py` TARGETS lines 70–72):
 
 - `{exp_dir}/model_results/Qstats.csv` (normalized-content CSV hash)
 - `{exp_dir}/model_results/basin.csv` (normalized-content CSV hash)
-- `{project_dir}/config/snake_config_climate_experiment.yml` (verbatim snapshot)
+- `{exp_dir}/config/snake_config_climate_experiment.yml` (verbatim snapshot;
+  moved from `{project_dir}/config/` by P3-1)
 
 **Non-temp but non-manifest side products:**
 
@@ -104,9 +107,10 @@ manifest targets):
 - `extract_historical.nc` (line 73) — NOT `temp`, but consumed as `ancient(...)`
   (line 117), so grandfathered-stale.
 
-**Side-effect artifacts:** `{project_dir}/logs/3.NN_{rule}[/…].log`,
-`{project_dir}/benchmarks/_parts/3.NN_{rule}[/…].tsv` (per-rule benchmarks under
-`_parts/`; `gather_benchmarks` merges WF3's into one `benchmarks/wf3_benchmarks.md`
+**Side-effect artifacts:** `{exp_dir}/logs/3.NN_{rule}[/…].log`,
+`{exp_dir}/benchmarks/_parts/3.NN_{rule}[/…].tsv` (per-experiment since P3-1;
+per-rule benchmarks under
+`_parts/`; `gather_benchmarks` merges WF3's into one `{exp_dir}/benchmarks/wf3_benchmarks.md`
 (Markdown table, `rule` column + `TOTAL` row)) — ephemeral once the R3
 log/benchmark convention reaches this workflow (R5 code commits); gitignored,
 never fingerprinted or committed. The `3.NN_` prefix is the `W.NN`

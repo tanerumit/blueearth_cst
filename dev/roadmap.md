@@ -696,6 +696,7 @@ above. This section covers commit messages only.
 - Phase 1 (sealed): `m01:`, `m02:`, `m02b:`, `m02c:` — historical
   prefix on existing commits, do not rewrite.
 - Phase 2 (active): `r01:`, `r02:`, `r03:`, `r04:`, `r05:`, `r06:`.
+- Phase 3 (active): `p31:` (P3-1 experiment structure).
 - Repo housekeeping that doesn't belong to a milestone: `chore:`
   (e.g. updating this roadmap, `.gitignore`, fixing typos in
   unrelated docs).

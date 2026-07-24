@@ -660,8 +660,12 @@ subcatchment climate plots re-sourced from raw gridded climate (unwinding
 the ADR-0002 `mod.forcing.data` coupling — the milestone's single
 sanctioned value change, accepted via visual QA + characterized diff),
 wf2/wf3 rewired mechanically. Subpackage now, standalone entry point
-deferred (no 4th Snakefile; platform surface unchanged). Next step
-(user-gated): design-review-loop run `p32a-climate-analysis`.
+deferred (no 4th Snakefile; platform surface unchanged).
+**Design ACCEPTED 2026-07-24** via design-review-loop run
+`p32a-climate-analysis` (internal panel + 2 external GPT rounds + user
+arbitration at the round cap): `dev/p32a/climate-analysis-design.md`, with
+the consolidated review record and run observations beside it. Next step:
+task-brief → implementation (Opus-default / Fable-gate-review pattern).
 
 **Tag.** `p32a-climate-analysis`.
 

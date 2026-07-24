@@ -616,7 +616,7 @@ Sequenced so each milestone eases the next: the experiment tree settles
 where per-model artifacts live (P3-2), and both precede performance work
 (P3-3) so profiling targets the final structure.
 
-### P3-1 — Project/experiment structure (scoped 2026-07-23)
+### P3-1 — Project/experiment structure (sealed 2026-07-24)
 
 **Goal.** One `project_dir` = one basin project holding multiple
 non-colliding, self-describing stress-test experiments under
@@ -637,8 +637,11 @@ against pinned Snakemake — params rerun-trigger, ancient() input-set
 trigger, key-level guard artifact for store reuse). Accepted design:
 `dev/p31/experiment-structure-design.md`; audit trail:
 `dev/p31/experiment-structure-design-review-record.md`; scoping intake
-landed beside them. Next step: `task-brief` handoff → implementation
-(Opus-default / Fable-gate-review pattern).
+landed beside them. **Sealed 2026-07-24**: 8 `p31:` commits merged to
+`main` (`1a8cca9`, --no-ff) after both human gates; value-identical wf3
+re-record with semantic diff clean (evidence `dev/p31/baseline_diffs.md`
++ `migration_experiment-structure.md`); branch `milestone/p31-experiments`
++ tag at the tip; pushed.
 
 **Cut (YAGNI):** registry, CLI listing, cross-experiment comparison,
 layered configs. **Deferred:** `realization_*`/`stress_test` file-format
@@ -646,7 +649,7 @@ efficiency redesign (user-parked 2026-07-23; candidate P3-3 input).
 
 **Tag.** `p31-experiments`.
 
-### P3-2a — Model-independent climate analysis (scoped 2026-07-24)
+### P3-2a — Model-independent climate analysis (sealed 2026-07-24)
 
 First half of the former P3-2, split at scoping (the two halves touch
 different code and carry different risk classes). Absorbs the R6-deferred
@@ -664,8 +667,17 @@ deferred (no 4th Snakefile; platform surface unchanged).
 **Design ACCEPTED 2026-07-24** via design-review-loop run
 `p32a-climate-analysis` (internal panel + 2 external GPT rounds + user
 arbitration at the round cap): `dev/p32a/climate-analysis-design.md`, with
-the consolidated review record and run observations beside it. Next step:
-task-brief → implementation (Opus-default / Fable-gate-review pattern).
+the consolidated review record and run observations beside it.
+**Sealed 2026-07-24**: 6 `p32a:` commits (subpackage+shims → wf3 rewire →
+wf1 extraction+parity → plot re-source → ladder QA → shim deletion) off
+the task brief (`dev/p32a/climate-analysis-task-brief.md`), user-signed
+milestone gate. Evidence: `dev/p32a/baseline_diffs.md` (ladder clean —
+era5 `A2−A0` ≈ 0, precip null-check exact, G within tolerance, bbox-swap
+closure allclose; wf3 semantic diff 101/0/0/0; manifested slice held; the
+`clim_*` plots are unmanifested — knowing divergence from intake decision
+4 accepted at the gate) + `migration_climate-analysis.md`. chirps plot
+acceptance stays blocked pending the ext2-2 defer-and-pin tolerance run
+on the first chirps basin.
 
 **Tag.** `p32a-climate-analysis`.
 

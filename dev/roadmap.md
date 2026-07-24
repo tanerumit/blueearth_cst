@@ -646,14 +646,32 @@ efficiency redesign (user-parked 2026-07-23; candidate P3-3 input).
 
 **Tag.** `p31-experiments`.
 
-### P3-2 — Functional decomposition + model-swap interfaces (not scoped)
+### P3-2a — Model-independent climate analysis (scoped 2026-07-24)
 
-Absorbs the R6-deferred functional decomposition of climate analysis
-(`dev/r06/structural-refactor-design.md` §8; `modularization` direction:
-climate analysis/viz runnable model-independently). Pins the interchange
-contracts (netCDF handoffs, forcing/state shapes) as explicit interfaces
-so an alternative weather generator or hydrological model becomes a
-bounded substitution. Scope after P3-1 lands.
+First half of the former P3-2, split at scoping (the two halves touch
+different code and carry different risk classes). Absorbs the R6-deferred
+functional decomposition of climate analysis
+(`dev/r06/structural-refactor-design.md` §8; `modularization` direction).
+**Confirmed scope** (`dev/p32a/climate-analysis-intake.md`, the
+authoritative record): full re-source + lift — a
+`blueearth_cst/climate_analysis/` subpackage with strictly
+model-independent signatures (region + catalog + window in), the wf1
+subcatchment climate plots re-sourced from raw gridded climate (unwinding
+the ADR-0002 `mod.forcing.data` coupling — the milestone's single
+sanctioned value change, accepted via visual QA + characterized diff),
+wf2/wf3 rewired mechanically. Subpackage now, standalone entry point
+deferred (no 4th Snakefile; platform surface unchanged). Next step
+(user-gated): design-review-loop run `p32a-climate-analysis`.
+
+**Tag.** `p32a-climate-analysis`.
+
+### P3-2b — Model-swap interchange contracts (not scoped)
+
+Second half of the former P3-2: pins the interchange contracts (netCDF
+handoffs, forcing/state shapes) as explicit interfaces so an alternative
+weather generator or hydrological model becomes a bounded substitution.
+Scope after P3-2a lands (the decomposition settles where climate-analysis
+code lives before contracts are pinned around that layout).
 
 ### P3-3 — Performance passes (not scoped)
 
@@ -696,7 +714,8 @@ above. This section covers commit messages only.
 - Phase 1 (sealed): `m01:`, `m02:`, `m02b:`, `m02c:` — historical
   prefix on existing commits, do not rewrite.
 - Phase 2 (active): `r01:`, `r02:`, `r03:`, `r04:`, `r05:`, `r06:`.
-- Phase 3 (active): `p31:` (P3-1 experiment structure).
+- Phase 3 (active): `p31:` (P3-1 experiment structure), `p32a:` (P3-2a
+  model-independent climate analysis).
 - Repo housekeeping that doesn't belong to a milestone: `chore:`
   (e.g. updating this roadmap, `.gitignore`, fixing typos in
   unrelated docs).

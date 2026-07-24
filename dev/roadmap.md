@@ -681,13 +681,21 @@ on the first chirps basin.
 
 **Tag.** `p32a-climate-analysis`.
 
-### P3-2b — Model-swap interchange contracts (not scoped)
+### P3-2b — Model-swap interchange contracts (scoped 2026-07-24)
 
 Second half of the former P3-2: pins the interchange contracts (netCDF
 handoffs, forcing/state shapes) as explicit interfaces so an alternative
 weather generator or hydrological model becomes a bounded substitution.
-Scope after P3-2a lands (the decomposition settles where climate-analysis
-code lives before contracts are pinned around that layout).
+**Confirmed scope** (`dev/p32b/climate-interchange-intake.md`, the
+authoritative record): BOTH substitution seams (weather generator;
+hydrological model), **contracts-only** — per-seam contract docs +
+hand-rolled validators-as-tests against fixture artifacts; zero behavior
+change (no pipeline edits, nothing re-recorded); a bounded-substitution
+walkthrough per seam; no PoC swap (future P3-2c candidate), no in-pipeline
+enforcement, none of the P3-2a-deferred structural items (OQ-3 store, OQ-8
+zone source, entry point). Design cycle start is user-gated.
+
+**Tag.** `p32b-interchange-contracts`.
 
 ### P3-3 — Performance passes (not scoped)
 
@@ -731,7 +739,8 @@ above. This section covers commit messages only.
   prefix on existing commits, do not rewrite.
 - Phase 2 (active): `r01:`, `r02:`, `r03:`, `r04:`, `r05:`, `r06:`.
 - Phase 3 (active): `p31:` (P3-1 experiment structure), `p32a:` (P3-2a
-  model-independent climate analysis).
+  model-independent climate analysis), `p32b:` (P3-2b model-swap
+  interchange contracts).
 - Repo housekeeping that doesn't belong to a milestone: `chore:`
   (e.g. updating this roadmap, `.gitignore`, fixing typos in
   unrelated docs).

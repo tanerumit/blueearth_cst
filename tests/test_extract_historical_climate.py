@@ -111,30 +111,20 @@ def _fake_temp(*_args, **_kwargs):
     return _FakeDataArray("temp_corrected")
 
 
-# Stub modules. Order matters: parent packages must be in sys.modules before
-# the source module's `from hydromt.model.processes.meteo import temp` is
-# resolved.
+# Heavy-dep stubbing (P3-2a hardening). The pre-P3-2a version installed these
+# stubs via sys.modules.setdefault(...) at import time, which silently no-ops
+# whenever ANY earlier-collected test module has already imported the real
+# geopandas/hydromt — an import-order landmine (the P3-2a parity tests, which
+# exercise real hydromt, tripped it). Instead, an autouse fixture below
+# monkeypatches the bindings on the source module object itself
+# (ehc.gpd / ehc.hydromt / ehc.temp), which is order-independent and reverts
+# per test. The fake classes and every test assertion are unchanged.
 
 _geopandas_stub = types.SimpleNamespace(
     read_file=lambda fn: types.SimpleNamespace(
         geometry=types.SimpleNamespace(total_bounds=(0.0, 0.0, 1.0, 1.0)),
     ),
 )
-sys.modules.setdefault("geopandas", _geopandas_stub)
-
-_hydromt_stub = types.SimpleNamespace(DataCatalog=_RecordingDataCatalog)
-sys.modules.setdefault("hydromt", _hydromt_stub)
-
-_meteo_stub = types.SimpleNamespace(temp=_fake_temp)
-sys.modules.setdefault(
-    "hydromt.model",
-    types.SimpleNamespace(processes=types.SimpleNamespace(meteo=_meteo_stub)),
-)
-sys.modules.setdefault(
-    "hydromt.model.processes",
-    types.SimpleNamespace(meteo=_meteo_stub),
-)
-sys.modules.setdefault("hydromt.model.processes.meteo", _meteo_stub)
 
 
 # Note: dask is NOT stubbed because pandas does a lazy `import dask` and
@@ -145,6 +135,22 @@ sys.modules.setdefault("hydromt.model.processes.meteo", _meteo_stub)
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from blueearth_cst.climate_analysis import extract_historical_climate as ehc  # noqa: E402
+
+
+@pytest.fixture(autouse=True)
+def _stub_heavy_deps(monkeypatch):
+    """Rebind the source module's heavy deps to the fakes, per test.
+
+    Patching ehc's own attribute bindings (not sys.modules) works whether or
+    not the real packages are already imported elsewhere in the session, and
+    monkeypatch reverts them after each test. Individual tests may layer
+    further patches on top (e.g. a narrower DataCatalog).
+    """
+    monkeypatch.setattr(ehc, "gpd", _geopandas_stub)
+    monkeypatch.setattr(
+        ehc, "hydromt", types.SimpleNamespace(DataCatalog=_RecordingDataCatalog)
+    )
+    monkeypatch.setattr(ehc, "temp", _fake_temp)
 
 
 @pytest.fixture

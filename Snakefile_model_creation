@@ -252,13 +252,21 @@ rule extract_climate_grid_wf1:
         "blueearth_cst/model/extract_climate_wf1.py"
 
 # 1.11  plot_results — analyse + plot the wflow run (parallel leaf with 1.12/1.13)
+# The climate plots read the wf1 raw extraction (rule 1.10) at model parity —
+# not the inmaps forcing (P3-2a re-source; was ADR 0002). On chirps/
+# chirps_global the extraction's orography sidecar is a declared input with a
+# real producer edge (ext2-1); both rules resolve that branch at DAG-parse
+# time from the same clim_historical key, so producer and consumer cannot
+# disagree.
+_wf1_plot_clim_inputs = {"climate_nc": _wf1_raw_outputs["climate_nc"]}
+if clim_source in ("chirps", "chirps_global"):
+    _wf1_plot_clim_inputs["oro_nc"] = _wf1_raw_outputs["oro_nc"]
+
 rule plot_results:
    message: rule_banner("1.11", "plot_results")
    input:
        csv_path = f"{basin_dir}/run_default/output.csv",
-       # forcing input drives the climate plots (ADR 0002); declared so the DAG
-       # dependency is explicit even though the script reads it via the model.
-       forcing_path = f"{project_dir}/climate_historical/wflow_data/inmaps_historical.nc",
+       **_wf1_plot_clim_inputs,
        script = "blueearth_cst/model/plot_results.py"
    output:
        output_png = f"{project_dir}/plots/wflow_model_performance/hydro_wflow_1.png",
@@ -266,6 +274,8 @@ rule plot_results:
        project_dir = f"{project_dir}",
        observations_file = observations_timeseries,
        gauges_output_path = output_locations,
+       data_sources = DATA_SOURCES,
+       clim_source = clim_source,
    log:
        f"{project_dir}/logs/1.11_plot_results.log",
    benchmark:

@@ -3,22 +3,110 @@
 
 Created 2022-01-13 (@author: bouaziz); refactored in R3 into a guarded
 function so the rule's output can be tee'd to its log and the module stays
-importable.
+importable. Redesigned 2026-07-25: offline basemap-free rendering, sequential
+CVD-safe elevation ramp, geodesic scale bar, formatted graticule.
 """
 
 import os
 from os.path import basename
 
-import xarray as xr
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
+import matplotlib.ticker as mticker
 import matplotlib.patheffects as pe
 import matplotlib.patches as mpatches
 import cartopy.crs as ccrs
-import cartopy.io.img_tiles as cimgt
+from cartopy.geodesic import Geodesic
+from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
 from blueearth_cst.shared.snake_utils import save_figure
+
+# Figure styling kept local to this module: applied through an rc context so
+# nothing leaks into figures drawn later in the same interpreter.
+_RC = {
+    "font.size": 9,
+    "axes.titlesize": 11,
+    "axes.labelsize": 9,
+    "legend.fontsize": 9,
+    "xtick.labelsize": 8,
+    "ytick.labelsize": 8,
+    "figure.facecolor": "white",
+}
+
+# Neutral backdrop: the basin is masked, so cells outside it show this colour
+# instead of the page white the pale end of the elevation ramp blends into.
+_BACKDROP = "#ececec"
+_RIVER_COLOR = "#1f6fb4"
+
+
+def _nice_round(value):
+    """Snap ``value`` down to the nearest 1/2/5 x 10^n, for scale-bar lengths."""
+    if value <= 0:
+        return 1.0
+    exponent = np.floor(np.log10(value))
+    fraction = value / 10**exponent
+    for step in (5.0, 2.0, 1.0):
+        if fraction >= step:
+            return step * 10**exponent
+    return 10**exponent
+
+
+def _add_scale_bar(ax, extent, proj, fraction=0.25):
+    """Draw a geodesic scale bar sized at the latitude where it is drawn.
+
+    The bar length is measured with ``cartopy.geodesic`` between the bar's own
+    endpoints, so the km label stays correct at any latitude — a fixed
+    degrees-to-km conversion would under-read badly away from the equator.
+    """
+    lon_min, lon_max, lat_min, lat_max = extent
+    lat_bar = lat_min + 0.07 * (lat_max - lat_min)
+    lon_start = lon_min + 0.06 * (lon_max - lon_min)
+
+    geod = Geodesic()
+    span_m = float(geod.inverse((lon_min, lat_bar), (lon_max, lat_bar))[0, 0])
+    length_km = _nice_round(fraction * span_m / 1000.0)
+    lon_end = float(geod.direct((lon_start, lat_bar), 90.0, length_km * 1000.0)[0, 0])
+
+    ax.plot(
+        [lon_start, lon_end],
+        [lat_bar, lat_bar],
+        transform=proj,
+        color="black",
+        linewidth=3.0,
+        solid_capstyle="butt",
+        zorder=7,
+        path_effects=[pe.withStroke(linewidth=5, foreground="white")],
+    )
+    label = f"{length_km:g} km" if length_km >= 1 else f"{length_km * 1000:g} m"
+    ax.text(
+        0.5 * (lon_start + lon_end),
+        lat_bar + 0.015 * (lat_max - lat_min),
+        label,
+        transform=proj,
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        zorder=7,
+        path_effects=[pe.withStroke(linewidth=2.5, foreground="white")],
+    )
+
+
+def _add_north_arrow(ax):
+    """Draw a north arrow. Valid because the map is plotted north-up in PlateCarree."""
+    ax.annotate(
+        "N",
+        xy=(0.055, 0.94),
+        xytext=(0.055, 0.855),
+        xycoords="axes fraction",
+        ha="center",
+        va="center",
+        fontsize=10,
+        fontweight="bold",
+        zorder=7,
+        arrowprops=dict(arrowstyle="-|>", facecolor="black", edgecolor="black", lw=1.3),
+        path_effects=[pe.withStroke(linewidth=2.5, foreground="white")],
+    )
 
 
 def plot_basin_map(project_dir, gauges_fn, plot_dir=None):
@@ -43,121 +131,166 @@ def plot_basin_map(project_dir, gauges_fn, plot_dir=None):
     gdf_riv = mod.rivers
     # read/derive model basin boundary
     gdf_bas = mod.basins
-    plt.style.use("seaborn-v0_8-whitegrid")  # set nice style
+    # modelled domain area, on an equal-area local UTM zone (basins may be multipart)
+    area_km2 = float(gdf_bas.to_crs(gdf_bas.estimate_utm_crs()).area.sum()) / 1e6
+
     # we assume the model maps are in the geographic CRS EPSG:4326
     proj = ccrs.PlateCarree()
-    # adjust zoomlevel and figure size to your basis size & aspect
-    zoom_level = 10
-    figsize = (10, 8)
-    shaded = False  # shaded elevation (looks nicer with more pixels)
-
-    # initialize image with geoaxes
-    fig = plt.figure(figsize=figsize)
-    ax = fig.add_subplot(projection=proj)
     extent = np.array(da.raster.box.buffer(0.02).total_bounds)[[0, 2, 1, 3]]
-    ax.set_extent(extent, crs=proj)
+    lon_span = extent[1] - extent[0]
+    lat_span = extent[3] - extent[2]
 
-    # add sat background image
-    ax.add_image(cimgt.QuadtreeTiles(), zoom_level, alpha=0.5)
+    with plt.rc_context(_RC):
+        # size the canvas from the basin's own aspect ratio rather than a fixed
+        # figsize, so wide and tall basins both fill the frame
+        map_width = 7.5
+        map_height = float(np.clip(map_width * lat_span / lon_span, 3.0, 9.0))
+        fig = plt.figure(figsize=(map_width + 1.8, map_height + 1.6))
+        ax = fig.add_subplot(projection=proj)
+        ax.set_extent(extent, crs=proj)
+        ax.set_facecolor(_BACKDROP)
 
-    ## plot elevation
-    # create nice colormap
-    vmin, vmax = da.quantile([0.0, 0.98]).compute()
-    c_dem = plt.cm.terrain(np.linspace(0.25, 1, 256))
-    cmap = colors.LinearSegmentedColormap.from_list("dem", c_dem)
-    norm = colors.Normalize(vmin=vmin, vmax=vmax)
-    kwargs = dict(cmap=cmap, norm=norm)
-    # plot 'normal' elevation
-    da.plot(
-        transform=proj, ax=ax, zorder=1, cbar_kwargs=dict(aspect=30, shrink=0.8), **kwargs
-    )
-    # plot elevation with shades
-    if shaded:
-        ls = colors.LightSource(azdeg=315, altdeg=45)
-        dx, dy = da.raster.res
-        _rgb = ls.shade(
-            da.fillna(0).values,
-            norm=kwargs["norm"],
-            cmap=kwargs["cmap"],
-            blend_mode="soft",
-            dx=dx,
-            dy=dy,
-            vert_exag=200,
+        ## plot elevation
+        # sequential ColorBrewer YlOrBr: monotonic in lightness, CVD-safe and
+        # greyscale-degradable, and it leaves blue free for the river network.
+        cmap = plt.get_cmap("YlOrBr").copy()
+        cmap.set_bad(color=_BACKDROP)
+        # full data range: percentile clipping used to render the top cells
+        # white, indistinguishable from masked no-data
+        vmin = float(da.min())
+        vmax = float(da.max())
+        if vmax <= vmin:
+            vmax = vmin + 1.0
+        norm = colors.Normalize(vmin=vmin, vmax=vmax)
+        mesh = da.plot(
+            transform=proj, ax=ax, zorder=1, cmap=cmap, norm=norm, add_colorbar=False
         )
-        rgb = xr.DataArray(dims=("y", "x", "rgb"), data=_rgb, coords=da.raster.coords)
-        rgb = xr.where(np.isnan(da), np.nan, rgb)
-        rgb.plot.imshow(transform=proj, ax=ax, zorder=2)
 
-    # plot rivers with increasing width with stream order
-    gdf_riv.plot(
-        ax=ax, linewidth=gdf_riv["strord"] / 2, color="blue", zorder=3, label="river"
-    )
-    # plot the basin boundary
-    gdf_bas.boundary.plot(ax=ax, color="k", linewidth=0.3)
-    # plot various vector layers if present
-    geoms = mod.geoms.data
-    if "outlets" in geoms:
-        geoms["outlets"].plot(
-            ax=ax, marker="d", markersize=25, facecolor="k", zorder=5, label="outlets"
-        )
-    if gauges_name is not None and gauges_name in geoms:
-        geoms[gauges_name].plot(
+        # colorbar pinned to the map's own height, immediately beside it
+        cax = ax.inset_axes([1.015, 0.0, 0.025, 1.0])
+        cbar = fig.colorbar(mesh, cax=cax)
+        cbar.set_label("Elevation (m a.s.l.)")
+        cbar.outline.set_linewidth(0.6)
+
+        # plot rivers with increasing width with stream order
+        gdf_riv.plot(
             ax=ax,
-            marker="d",
-            markersize=25,
-            facecolor="blue",
-            zorder=5,
-            label="output locs",
+            linewidth=gdf_riv["strord"] / 2,
+            color=_RIVER_COLOR,
+            zorder=3,
+            label="river",
         )
-        if "station_name" in geoms[gauges_name].columns:
-            geoms[gauges_name].apply(
-                lambda x: ax.annotate(
-                    text=x["station_name"],
-                    xy=x.geometry.coords[0],
-                    xytext=(2.0, 2.0),
-                    textcoords="offset points",
-                    fontsize=5,
-                    fontweight="bold",
-                    color="black",
-                    path_effects=[pe.withStroke(linewidth=2, foreground="white")],
-                ),
-                axis=1,
+        # plot the basin boundary
+        gdf_bas.boundary.plot(ax=ax, color="black", linewidth=1.0, zorder=4)
+        # plot various vector layers if present
+        geoms = mod.geoms.data
+        if "outlets" in geoms:
+            geoms["outlets"].plot(
+                ax=ax,
+                marker="d",
+                markersize=45,
+                facecolor="black",
+                edgecolor="white",
+                linewidth=0.8,
+                zorder=6,
+                label="outlets",
+            )
+        if gauges_name is not None and gauges_name in geoms:
+            geoms[gauges_name].plot(
+                ax=ax,
+                marker="o",
+                markersize=45,
+                facecolor=_RIVER_COLOR,
+                edgecolor="white",
+                linewidth=0.8,
+                zorder=6,
+                label="output locs",
+            )
+            if "station_name" in geoms[gauges_name].columns:
+                geoms[gauges_name].apply(
+                    lambda x: ax.annotate(
+                        text=x["station_name"],
+                        xy=x.geometry.coords[0],
+                        xytext=(3.0, 3.0),
+                        textcoords="offset points",
+                        fontsize=7,
+                        fontweight="bold",
+                        color="black",
+                        zorder=7,
+                        path_effects=[pe.withStroke(linewidth=2, foreground="white")],
+                    ),
+                    axis=1,
+                )
+
+        # manual patches for legend (geopandas/geopandas#660)
+        patches = []
+        if "lakes" in geoms:
+            kwargs = dict(
+                facecolor="#9ecae1", edgecolor="black", linewidth=0.8, label="lakes"
+            )
+            geoms["lakes"].plot(ax=ax, zorder=5, **kwargs)
+            patches.append(mpatches.Patch(**kwargs))
+        if "reservoirs" in geoms:
+            kwargs = dict(
+                facecolor="#08519c", edgecolor="black", linewidth=0.8, label="reservoirs"
+            )
+            geoms["reservoirs"].plot(ax=ax, zorder=5, **kwargs)
+            patches.append(mpatches.Patch(**kwargs))
+        if "glaciers" in geoms:
+            kwargs = dict(
+                facecolor="#f0f0f0", edgecolor="#525252", linewidth=0.8, label="glaciers"
+            )
+            geoms["glaciers"].plot(ax=ax, zorder=5, **kwargs)
+            patches.append(mpatches.Patch(**kwargs))
+
+        # graticule with proper degree labels, replacing raw decimal axis labels
+        gl = ax.gridlines(
+            draw_labels=True, linewidth=0.4, color="0.55", alpha=0.7, linestyle=":"
+        )
+        gl.top_labels = False
+        gl.right_labels = False
+        gl.xformatter = LONGITUDE_FORMATTER
+        gl.yformatter = LATITUDE_FORMATTER
+        gl.xlocator = mticker.MaxNLocator(nbins=5, steps=[1, 2, 2.5, 5, 10])
+        gl.ylocator = mticker.MaxNLocator(nbins=5, steps=[1, 2, 2.5, 5, 10])
+        ax.spines["geo"].set(linewidth=0.8, edgecolor="0.3")
+
+        _add_scale_bar(ax, extent, proj)
+        _add_north_arrow(ax)
+
+        # xarray's plot() leaves a "spatial_ref = 0" centre title behind
+        ax.set_title("")
+        # an explicit ``y`` is required: title auto-positioning resolves to NaN
+        # on a GeoAxes carrying a gridliner, and the title silently disappears
+        ax.set_title(f"Model domain — {area_km2:,.0f} km²", loc="left", y=1.01)
+        # legend below the map: no in-map position is safe for an arbitrary
+        # basin shape, and the map is already carrying scale bar + north arrow
+        # de-duplicate by label: current geopandas registers polygon handles
+        # itself, so the manual patches above would otherwise double every
+        # waterbody entry (only visible on basins that actually have them)
+        handles = []
+        seen = set()
+        for handle in [*ax.get_legend_handles_labels()[0], *patches]:
+            label = handle.get_label()
+            if label and not label.startswith("_") and label not in seen:
+                seen.add(label)
+                handles.append(handle)
+        if handles:
+            ax.legend(
+                handles=handles,
+                loc="upper center",
+                bbox_to_anchor=(0.5, -0.07),
+                ncol=min(len(handles), 6),
+                frameon=False,
+                handlelength=1.6,
+                columnspacing=1.6,
             )
 
-    # manual patches for legend (geopandas/geopandas#660)
-    patches = []
-    if "lakes" in geoms:
-        kwargs = dict(facecolor="lightblue", edgecolor="black", linewidth=1, label="lakes")
-        geoms["lakes"].plot(ax=ax, zorder=4, **kwargs)
-        patches.append(mpatches.Patch(**kwargs))
-    if "reservoirs" in geoms:
-        kwargs = dict(facecolor="blue", edgecolor="black", linewidth=1, label="reservoirs")
-        geoms["reservoirs"].plot(ax=ax, zorder=4, **kwargs)
-        patches.append(mpatches.Patch(**kwargs))
-    if "glaciers" in geoms:
-        kwargs = dict(facecolor="grey", edgecolor="grey", linewidth=1, label="glaciers")
-        geoms["glaciers"].plot(ax=ax, zorder=4, **kwargs)
-        patches.append(mpatches.Patch(**kwargs))
-
-    ax.xaxis.set_visible(True)
-    ax.yaxis.set_visible(True)
-    ax.set_ylabel("latitude [degree north]")
-    ax.set_xlabel("longitude [degree east]")
-    _ = ax.set_title("")
-    ax.legend(
-        handles=[*ax.get_legend_handles_labels()[0], *patches],
-        title="Legend",
-        loc="lower right",
-        frameon=True,
-        framealpha=0.7,
-        edgecolor="k",
-        facecolor="white",
-    )
-
-    # save figure
-    save_figure(
-        os.path.join(plot_dir, "basin_area.png"), dpi=300, bbox_inches="tight"
-    )
+        # save figure
+        save_figure(
+            os.path.join(plot_dir, "basin_area.png"), dpi=300, bbox_inches="tight"
+        )
+        plt.close(fig)
 
 
 if __name__ == "__main__":

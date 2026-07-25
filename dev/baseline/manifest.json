@@ -223,7 +223,7 @@
     },
     "examples/test_local/plots/wflow_model_performance/basin_area.png": {
       "exists": true,
-      "size_bytes": 286022,
+      "size_bytes": 134828,
       "type": "png"
     },
     "examples/test_local/plots/wflow_model_performance/hydro_wflow_1.png": {

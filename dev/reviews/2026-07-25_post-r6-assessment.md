@@ -35,9 +35,9 @@ reproduce under current pins) · `by-design` (expected behaviour, not a defect).
 
 | ID | Observation | Area | Kind | Severity | Created | Updated | Rev | Status | Disposition |
 |---|---|---|---|---|---|---|---|---|---|
-| O-01 | `basin_area.png` is weak as a figure: unreadable basemap, misleading DEM ramp, no scale bar / graticule / area | wf1 | usability | medium | 2026-07-25 | 2026-07-25 | `75eb4d6` | fixed | redesigned on `feat/outputs-figures`; baseline re-recorded |
-| O-02 | rule 1.12 `plot_map` needs **internet** at run time to produce `basin_area.png` | wf1 | defect | medium | 2026-07-25 | 2026-07-25 | `75eb4d6` | fixed | fixed with O-01 — tile fetch removed |
-| O-03 | lakes / reservoirs / glaciers appear **twice** in the `basin_area.png` legend | wf1 | defect | low | 2026-07-25 | 2026-07-25 | `75eb4d6` | fixed | fixed with O-01 — legend de-duplicated by label |
+| O-01 | `basin_area.png` is weak as a figure: unreadable basemap, misleading DEM ramp, no scale bar / graticule / area | wf1 | usability | medium | 2026-07-25 | 2026-07-25 | `75eb4d6` | fixed | `e917a8e` — baseline re-recorded with it |
+| O-02 | rule 1.12 `plot_map` needs **internet** at run time to produce `basin_area.png` | wf1 | defect | medium | 2026-07-25 | 2026-07-25 | `75eb4d6` | fixed | `e917a8e` — tile fetch removed |
+| O-03 | lakes / reservoirs / glaciers appear **twice** in the `basin_area.png` legend | wf1 | defect | low | 2026-07-25 | 2026-07-25 | `75eb4d6` | fixed | `e917a8e` — legend de-duplicated by label |
 
 Area labels are free-form; keep to the repo's vocabulary where one fits:
 `wf1`/`model`, `wf2`/`projections`, `wf3`/`experiment`, `weathergen`, `shared`,

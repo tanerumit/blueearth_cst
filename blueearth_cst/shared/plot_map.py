@@ -13,12 +13,12 @@ from os.path import basename
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib import colors
-import matplotlib.ticker as mticker
 import matplotlib.patheffects as pe
 import matplotlib.patches as mpatches
 import cartopy.crs as ccrs
 from cartopy.geodesic import Geodesic
 from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
+from cartopy.mpl.ticker import LatitudeLocator, LongitudeLocator
 
 from blueearth_cst.shared.snake_utils import save_figure
 
@@ -251,8 +251,10 @@ def plot_basin_map(project_dir, gauges_fn, plot_dir=None):
         gl.right_labels = False
         gl.xformatter = LONGITUDE_FORMATTER
         gl.yformatter = LATITUDE_FORMATTER
-        gl.xlocator = mticker.MaxNLocator(nbins=5, steps=[1, 2, 2.5, 5, 10])
-        gl.ylocator = mticker.MaxNLocator(nbins=5, steps=[1, 2, 2.5, 5, 10])
+        # degree-aware locators: a bare MaxNLocator can emit ticks outside
+        # [-180, 180] for a basin near the antimeridian or the poles
+        gl.xlocator = LongitudeLocator(nbins=5, steps=[1, 2, 2.5, 5, 10])
+        gl.ylocator = LatitudeLocator(nbins=5, steps=[1, 2, 2.5, 5, 10])
         ax.spines["geo"].set(linewidth=0.8, edgecolor="0.3")
 
         _add_scale_bar(ax, extent, proj)

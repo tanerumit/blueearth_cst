@@ -118,14 +118,36 @@ the series cache. The object is required; the heavy stack is not.
    Holding xarray at module level would have left `REDUCER_HASH` untouched at a
    cost of 5.00s instead of 2.94s; the owner ruled for the 2.1s.
 
-## What ruff bought
+## What ruff bought, and the hole it left -- corrected 2026-08-21
 
-`select = ["E4", "E7", "E9", "F", "I"]` includes F821, which is static and so
-catches every name left undefined by a moved import regardless of which branch
-reaches it. It found the `__main__`-vs-function split in `get_stats`, nine
-annotation-only names in `climate_figures` and twelve in `compare_sources`.
-That is what makes scattering deferred imports through a 970-line module a
-mechanical change rather than a hopeful one.
+F821 is static, so for a PLAIN deferral it does catch every name left undefined
+by a moved import, whichever branch reaches it. It found the
+`__main__`-vs-function split in `get_stats`, nine annotation-only names in
+`climate_figures` and twelve in `compare_sources`.
+
+**But it does NOT cover a module carrying a `if TYPE_CHECKING:` guard**, and
+this task added three of them (`surface_axes`, `climate_figures`,
+`compare_sources`). The guarded import binds the name at module scope in ruff's
+semantic model, so a runtime use with NO local import still resolves and the
+missing import is invisible. Falsified at integration review, and re-confirmed
+by hand: deleting the local `import pandas as pd` from `surface_axes.read_lookup`
+leaves `ruff check` reporting "All checks passed" while the function raises
+`NameError: name 'pd' is not defined`. The same deletion in `plot_evaluation`,
+which has no guard, produces two ruff errors.
+
+The claim originally written here -- that F821 covers this "regardless of which
+branch reaches it" -- was therefore true of the pattern in general and false of
+exactly the three files where the guards were introduced. The code was clean
+anyway (checked independently with an AST auditor and with `TC004`), so nothing
+shipped broken; the reasoning was what was wrong.
+
+**`TC004` is the rule that actually closes it** and is now in
+`[tool.ruff.lint] select` (t2608210029b). It flags the mutant above and was
+clean repo-wide when enabled. This matters for whoever picks up t2608210029:
+the deferral pattern and the TYPE_CHECKING guard arrive TOGETHER, because
+postponing an import is what strands the annotations that then need the guard.
+With TC004 on, scattering deferred imports through a 970-line module is a
+mechanical change; with only F821, it was a hopeful one.
 
 ## Still open
 

@@ -126,7 +126,21 @@ force-exclude = true
 #   UP   (pyupgrade)       -- style; also rewrites annotations wholesale
 #   B/SIM/PERF/RUF/...     -- opinion, and the repo predates them
 # Either can be added later as its own reviewable commit.
-select = ["E4", "E7", "E9", "F", "I"]
+#
+# `TC004` is here for a specific hole, found by falsification rather than by
+# reading: F821 does NOT catch a runtime use of a name that a
+# `if TYPE_CHECKING:` block imports. The guard binds the name at module scope in
+# ruff's semantic model, so the use resolves and the missing local import is
+# invisible. Measured on t2608202307's deferred-import work: deleting the local
+# `import pandas as pd` from `surface_axes.read_lookup` -- a live NameError --
+# left `ruff check` reporting "All checks passed", while the same deletion in a
+# module with no guard produced two errors. TC004 flags it.
+#
+# That matters because the deferral pattern and the TYPE_CHECKING guard arrive
+# TOGETHER: postponing an import is what strands the annotations that then need
+# the guard. Any future module doing this (t2608210029 is the next one) gets the
+# check that actually protects it. Clean repo-wide when enabled.
+select = ["E4", "E7", "E9", "F", "I", "TC004"]
 
 [tool.ruff.lint.per-file-ignores]
 # NOTE: there is deliberately no F821 entry here. All 23 Snakemake `script:`

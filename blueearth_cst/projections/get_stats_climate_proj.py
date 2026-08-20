@@ -17,15 +17,19 @@ os.environ.setdefault("GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT", "false")
 # geopandas, hydromt and xarray are DEFERRED, and to two DIFFERENT places,
 # because the module's heavy uses are split between them:
 #
-#   * `xr.merge` is inside `get_stats_clim_projections`, so xarray is imported
-#     at the top of that function;
-#   * `.raster.vars`, `gpd.read_file` and `xr.open_dataset` are all inside the
-#     `__main__` entry point, so hydromt and geopandas are imported there --
-#     INSIDE the `tee_to_log` block, never above it. `tee_to_log` repoints
-#     library handlers bound before entry, so an import landing after entry has
-#     to keep landing after entry or hydromt's StreamHandler binds to the real
-#     stdout and bypasses the log file. Same reasoning, same placement, as
-#     `fetch_gcm_raw.py`.
+#   * `get_stats_clim_projections` uses `xr.merge`, and nothing else heavy, so
+#     xarray alone is imported at the top of that function;
+#   * the `__main__` entry point uses `gpd.read_file`, `xr.open_dataset`, a
+#     second `xr.merge` and `.raster.vars`, so geopandas, xarray AND hydromt are
+#     imported there -- INSIDE the `tee_to_log` block, never above it.
+#     `tee_to_log` repoints library handlers bound before entry, so an import
+#     landing after entry has to keep landing after entry or hydromt's
+#     StreamHandler binds to the real stdout and bypasses the log file. Same
+#     reasoning, same placement, as `fetch_gcm_raw.py`.
+#
+# xarray is therefore imported in BOTH scopes, which is correct rather than
+# redundant: `sys.modules` makes the second one free, and neither scope may
+# depend on the other having run.
 #
 # `analyze_projections.smk` imports this module at PARSE time so
 # `REDUCER_KERNEL` can hold the FUNCTION OBJECT -- the enumeration is what stops

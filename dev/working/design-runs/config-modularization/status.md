@@ -6,7 +6,7 @@ genre: decision-record   # milestone/refactor design (goal, what-changes, plan,
 author-binding: cst-architect
 started: 2026-08-20
 variant: full            # crosses every workflow's config contract + shared seam
-stage: 3
+stage: 4
 external-rounds-completed: 0
 dispatches:
   opus: 6
@@ -30,3 +30,5 @@ flags: []
 - [done] 2-internal-panel — outputs: internal-review-risk.md (revise, 1B/8M/9m), internal-review-architecture.md (revise, 0B/15M/6m), internal-review-repo-fit.md (revise, 4B/4M/5m), internal-review-index.md (9 groups, 3 conflicts, gate-return check: no scope fork)
 - [open] 3-revision-r1 — author dispatched (cst-architect, Opus)
   - [recovery] 2026-08-20 15:10 — spawn died: RESOURCE EXHAUSTION (session limit, reset 15:10 CET). Partial preserved: design-v2.md sections 1-15 revised (finding resolutions embedded, incl. D-13.4 removing the advanced-settings interior move from R13); MISSING: sections 16-20 + ledger.md (0 of 52 rows). Per roles-and-recovery: waited for reset, completion spawn dispatched 15:15 scoped to the remainder (opus +1)
+- [done] 3-revision-r1 — outputs: design-v2.md (2719 lines, +D-12.6b), ledger.md (52 rows: 5B+27M+20m all accepted; 3 part-level declines argued in-doc; no rejected blocking/major). Two-spawn completion after session-limit crash. Driver verify: 52/52 rows, no blocking deferred/rejected. Phantom-ID note: index cited risk-19, actual id risk-18 (driver index error, documented in ledger)
+- [open] 4-external-r1

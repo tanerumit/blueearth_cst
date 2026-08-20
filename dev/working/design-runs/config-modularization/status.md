@@ -6,8 +6,8 @@ genre: decision-record   # milestone/refactor design (goal, what-changes, plan,
 author-binding: cst-architect
 started: 2026-08-20
 variant: full            # crosses every workflow's config contract + shared seam
-stage: 4
-external-rounds-completed: 0
+stage: 6
+external-rounds-completed: 1
 dispatches:
   opus: 6
   fable: 1
@@ -15,8 +15,8 @@ cost:
   expensive-checks: 0
   doc-lines: 1341
 findings:
-  unique: 52
-  re-raised: 0
+  unique: 53
+  re-raised: 3
 gates:
   G1: approved 2026-08-20
   G2: pending
@@ -31,4 +31,7 @@ flags: []
 - [open] 3-revision-r1 — author dispatched (cst-architect, Opus)
   - [recovery] 2026-08-20 15:10 — spawn died: RESOURCE EXHAUSTION (session limit, reset 15:10 CET). Partial preserved: design-v2.md sections 1-15 revised (finding resolutions embedded, incl. D-13.4 removing the advanced-settings interior move from R13); MISSING: sections 16-20 + ledger.md (0 of 52 rows). Per roles-and-recovery: waited for reset, completion spawn dispatched 15:15 scoped to the remainder (opus +1)
 - [done] 3-revision-r1 — outputs: design-v2.md (2719 lines, +D-12.6b), ledger.md (52 rows: 5B+27M+20m all accepted; 3 part-level declines argued in-doc; no rejected blocking/major). Two-spawn completion after session-limit crash. Driver verify: 52/52 rows, no blocking deferred/rejected. Phantom-ID note: index cited risk-19, actual id risk-18 (driver index error, documented in ledger)
-- [open] 4-external-r1
+- [open] 4-external-r1 — dispatched 2026-08-20 ~16:00 CET: codex exec (GPT, codex-cli 0.145.0, ChatGPT auth), clean-room round on design-v2.md, brief instantiated as review-brief.md (settled-framing block filled from G1 + scope amendment; OV-1..5 explicitly reviewable). Posture: --sandbox read-only + -c approval_policy=never; Windows sandbox helper missing on this machine (known wart), so read-only is intent + escalation-denied + post-run git verification. Output: external-review-r1.md via -o; transcript in session scratchpad; PID 22796, Monitor armed
+- [done] 4-external-r1 — outputs: external-review-r1.md (verdict: revise, doc_version: design-v2.md, 4 major: ext1-1 S4 exception via Q2/wflow_outvars; ext1-2 --write vs report-only ruling; ext1-3 --config passthrough breaks (faults risk-18 resolution); ext1-4 --touch provenance hazard (faults risk-16 fix)). Post-run git verification clean
+- [done] 5-convergence-r1 — NOT converged (revise + 4 major). ext1-1/3/4 fault prior-round resolutions -> stage-6 revision escalates to FABLE per tier policy
+- [open] 6-revision-r2

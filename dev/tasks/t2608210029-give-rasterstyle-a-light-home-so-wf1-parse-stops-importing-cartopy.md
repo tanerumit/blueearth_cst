@@ -17,4 +17,14 @@ updated: 2026-08-21
 
 ## Progress
 
-- [ ] <first step>
+- [ ] Give `RasterStyle` a light home both `cartographic_map.py` and
+      `plot_spatial_maps.py` import; re-export from `cartographic_map` so no
+      public name moves.
+- [ ] Defer `_mask_nodata` / `plot_raster_map` into the drawing functions;
+      source `RASTER_DPI` from `shared/plot_style.py`, which already owns it.
+
+**Before starting, read t2608202307's "What ruff bought, and the hole it left".**
+If this work adds a `if TYPE_CHECKING:` guard -- and deferring imports usually
+forces one, because it strands the annotations -- note that F821 does NOT catch a
+runtime use of a guarded name. `TC004` does, and is enabled repo-wide since
+t2608210029b. Do not re-derive that the hard way.

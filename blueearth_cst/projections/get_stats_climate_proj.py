@@ -14,19 +14,34 @@ import os
 # warning per call before falling back. Disable the probe; reads still work.
 os.environ.setdefault("GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT", "false")
 
-# geopandas, hydromt and xarray are DEFERRED into `get_stats_clim_projections`,
-# the one function that touches them. `analyze_projections.smk` imports this
-# module at PARSE time so `REDUCER_KERNEL` can hold the FUNCTION OBJECT -- the
-# enumeration is what stops a changed weighting from being silently reused
-# across the series cache -- and the object is required, but the heavy stack is
-# not. hydromt alone costs ~16s of a WF2 dry-run, entirely for the `.raster`
-# accessor registration one line uses.
+# geopandas, hydromt and xarray are DEFERRED, and to two DIFFERENT places,
+# because the module's heavy uses are split between them:
 #
-# The deferral is at the TOP of that function, not beside the first use: hydromt
-# is imported for its side effect (it registers xarray's `.raster` accessor), so
-# what has to be guaranteed is that it runs before any `.raster` access, not
-# merely somewhere inside the call. Every use in this module -- `.raster.vars`,
-# `gpd.read_file`, `xr.merge`, `xr.open_dataset` -- is inside that one function.
+#   * `get_stats_clim_projections` uses `xr.merge`, and nothing else heavy, so
+#     xarray alone is imported at the top of that function;
+#   * the `__main__` entry point uses `gpd.read_file`, `xr.open_dataset`, a
+#     second `xr.merge` and `.raster.vars`, so geopandas, xarray AND hydromt are
+#     imported there -- INSIDE the `tee_to_log` block, never above it.
+#     `tee_to_log` repoints library handlers bound before entry, so an import
+#     landing after entry has to keep landing after entry or hydromt's
+#     StreamHandler binds to the real stdout and bypasses the log file. Same
+#     reasoning, same placement, as `fetch_gcm_raw.py`.
+#
+# xarray is therefore imported in BOTH scopes, which is correct rather than
+# redundant: `sys.modules` makes the second one free, and neither scope may
+# depend on the other having run.
+#
+# `analyze_projections.smk` imports this module at PARSE time so
+# `REDUCER_KERNEL` can hold the FUNCTION OBJECT -- the enumeration is what stops
+# a changed weighting from being silently reused across the series cache -- and
+# the object is required, but the heavy stack is not. hydromt alone costs ~16s
+# of a WF2 dry-run, entirely for the `.raster` accessor registration one line
+# uses.
+#
+# Each deferral sits at the TOP of its scope rather than beside the first use:
+# hydromt is imported for its SIDE EFFECT (it registers xarray's `.raster`
+# accessor), so what has to be guaranteed is that it runs before any `.raster`
+# access, not merely somewhere inside the call.
 
 from blueearth_cst.projections import series_identity
 from blueearth_cst.projections.grid_weights import (

@@ -4,9 +4,12 @@ from os.path import join
 from pathlib import Path
 from typing import Union
 
-import numpy as np
-import pandas as pd
-import yaml
+# numpy, pandas and yaml are DEFERRED into the functions that use them.
+# `run_stress_test.smk` imports this module at PARSE time for the single refusal
+# `refuse_out_of_domain_multipliers` (D35), which reads a config dict and
+# nothing else -- so a module-level import bought the numeric stack (~4.6s) on
+# every WF3 dry-run and every real run in order to validate a YAML section. The
+# `script:` entry point pays the same imports it always did, one call deeper.
 
 # Import the shared grid helper regardless of the working directory. The
 # Snakefile prepends its basedir to sys.path before invoking script: rules, but
@@ -62,6 +65,18 @@ class MultiplierDomainError(ValueError):
     """A precipitation multiplier outside the domain WG-2 states its bound over."""
 
 
+def _as_month_list(values) -> list:
+    """A bound declared as one scalar, or as twelve monthly values, as a list.
+
+    Was ``np.atleast_1d``. Plain Python instead, so the PARSE-TIME refusal below
+    reaches no third-party import at all: a bound is a YAML scalar or a YAML
+    sequence, and nothing here needs array semantics. Deferring the import
+    without this would not have helped -- the refusal itself would still have
+    triggered it.
+    """
+    return list(values) if isinstance(values, (list, tuple)) else [values]
+
+
 def refuse_out_of_domain_multipliers(stress_test_cfg: dict) -> None:
     """Refuse a config declaring a precipitation multiplier below the domain (D35).
 
@@ -89,7 +104,7 @@ def refuse_out_of_domain_multipliers(stress_test_cfg: dict) -> None:
                 continue
             offenders = [
                 (month, value)
-                for month, value in enumerate(np.atleast_1d(values), start=1)
+                for month, value in enumerate(_as_month_list(values), start=1)
                 if float(value) < floor
             ]
             if offenders:
@@ -112,6 +127,8 @@ def _level(value: float) -> float:
     member frames have always been built and written as -- so this is the value
     the run imposes, and the value any reconstruction must return.
     """
+    import numpy as np
+
     return float(str(np.float32(value)))
 
 
@@ -157,6 +174,10 @@ def prep_cst_parameters(
         Path to ``stress_test_lookup.csv``. Defaults to the config's own
         directory, for use outside Snakemake.
     """
+
+    import numpy as np
+    import pandas as pd
+    import yaml
 
     # Read the yaml config (R01 sectioned schema)
     with open(config_fn, "r") as stream:

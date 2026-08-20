@@ -24,14 +24,25 @@ be told the member count. A derivation that had to be told the member count
 could be told the wrong one.
 """
 
+from __future__ import annotations
+
 import math
 import re
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Mapping, Optional, Sequence, Union
+from typing import TYPE_CHECKING, Mapping, Optional, Sequence, Union
 
-import pandas as pd
+# pandas is DEFERRED into the three functions that actually touch it
+# (`read_lookup`, `read_indicators`, `_member_values`). `run_stress_test.smk`
+# imports this module at PARSE time for `parse_surfaces` and
+# `warn_on_heterogeneous_design`, neither of which reads a frame -- so a
+# module-level import bought pandas (~4.5s) on every WF3 dry-run and every real
+# run, to validate a config section. `from __future__ import annotations` above
+# is what makes it possible: the `pd.DataFrame` / `pd.Series` annotations on the
+# dataclass fields and signatures are then strings and are never evaluated.
+if TYPE_CHECKING:
+    import pandas as pd
 
 #: Month lengths in the weather generator's ``noleap`` calendar -- a year is 365
 #: days and February is always 28, so there is no leap branch to reach. The same
@@ -276,6 +287,8 @@ def read_lookup(lookup_path: Union[str, Path]) -> pd.DataFrame:
     returns ``01`` as ``1``, and under the ``st_0``-absent encoding the resulting
     miss presents as "every row is the baseline" rather than as an empty result.
     """
+    import pandas as pd
+
     return pd.read_csv(lookup_path, dtype={"st_id": str})
 
 
@@ -287,6 +300,8 @@ def read_indicators(indicators_path: Union[str, Path]) -> pd.DataFrame:
     re-pads both key columns before partitioning -- but owning the read is what
     makes the repair unnecessary in the common case.
     """
+    import pandas as pd
+
     return pd.read_csv(indicators_path, dtype={"st_id": str})
 
 
@@ -585,6 +600,8 @@ def derive_axis(lookup_df: pd.DataFrame, axis: Axis) -> AxisResult:
 
 def _member_values(lookup_df: pd.DataFrame, column: str, months) -> pd.Series:
     """One collapsed value per member, indexed by the padded ``st_id`` TEXT."""
+    import pandas as pd
+
     subset = lookup_df[lookup_df["month"].isin(list(months))]
     out = {}
     for st_id, member in subset.groupby("st_id"):

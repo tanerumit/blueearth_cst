@@ -10,7 +10,7 @@ stage: 6
 external-rounds-completed: 1
 dispatches:
   opus: 6
-  fable: 1
+  fable: 2
 cost:
   expensive-checks: 0
   doc-lines: 1341
@@ -34,4 +34,14 @@ flags: []
 - [open] 4-external-r1 — dispatched 2026-08-20 ~16:00 CET: codex exec (GPT, codex-cli 0.145.0, ChatGPT auth), clean-room round on design-v2.md, brief instantiated as review-brief.md (settled-framing block filled from G1 + scope amendment; OV-1..5 explicitly reviewable). Posture: --sandbox read-only + -c approval_policy=never; Windows sandbox helper missing on this machine (known wart), so read-only is intent + escalation-denied + post-run git verification. Output: external-review-r1.md via -o; transcript in session scratchpad; PID 22796, Monitor armed
 - [done] 4-external-r1 — outputs: external-review-r1.md (verdict: revise, doc_version: design-v2.md, 4 major: ext1-1 S4 exception via Q2/wflow_outvars; ext1-2 --write vs report-only ruling; ext1-3 --config passthrough breaks (faults risk-18 resolution); ext1-4 --touch provenance hazard (faults risk-16 fix)). Post-run git verification clean
 - [done] 5-convergence-r1 — NOT converged (revise + 4 major). ext1-1/3/4 fault prior-round resolutions -> stage-6 revision escalates to FABLE per tier policy
-- [open] 6-revision-r2
+- [event] gate-clarification 2026-08-20 — owner ruled on ext1-2 interpretation via AskUserQuestion: STAGING-EMIT — split_project_config.py is strictly report-only against user files; it emits proposed T1+T2 into a staging directory plus a report; application is a user step. No --write / in-place mutation mode
+- [open] 6-revision-r2 — PAUSED. Fable spawn dispatched then STOPPED by owner request (2026-08-20, session end) BEFORE its skeleton step: NO design-v3.md exists, NO ext1 ledger rows appended. Clean resume point.
+
+## RESUME INSTRUCTIONS (next session — read before acting)
+
+1. Re-verify environment (roles-and-recovery § resume): worktree session-2, branch docs/config-modularization, claim in registry (claim id in .git/agent-slots via task-status; GIT_TASK_CLAIM for CLI + shell-write posture per the owner ruling logged in observations.md).
+2. FIRST ACTION — board debt: add the todo-item for this run to dev/tasks/ and render, IF session-1's claim no longer holds dev/tasks + dev/TODO.md (it did at pause time; the registry refuses overlap). Item: resume R13 config-modularization design run at stage 6 (revision r2), run dir dev/working/design-runs/config-modularization/, origin R13.
+3. Re-dispatch stage 6: fresh cst-architect on FABLE (re-raise trigger fired: ext1-1/3/4 fault prior resolutions). Inputs: intake.md, design-v2.md, ledger.md (52 rows, append ext1-1..4), external-review-r1.md, internal panel files for context, gate record INCLUDING the staging-emit ruling (split_project_config.py strictly report-only: emits proposed T1+T2 to a staging dir; no --write). Skeleton-first: cp design-v2.md design-v3.md. Scope confined to the four findings + forced cross-refs.
+4. Then: driver scope-check of the v2→v3 diff, round-2 trigger check (findings-and-closure § Round 2), and round 2 or logged waiver + scoped pass → G2. Owner-visible at G2: OV-1..5 (§18 of v2) + staging-emit rework + ext1-4 resolution.
+5. Session ruling still in force (observations.md): this session line acts as primary integration owner — mechanical READY checks, task-ready AFTER G2/finalize, integration-start/complete from primary, no git-integrator. Landing needs scope extension: dev/milestones/r13, dev/roadmap.md (+ dev/tasks for the board note).
+6. Leftover for cleanup at integration: stray zero-commit branch docs/config-modularization-design at 47c8f1c (topology-guard-blocked from task sessions).

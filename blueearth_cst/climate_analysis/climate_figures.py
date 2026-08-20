@@ -44,19 +44,30 @@ from __future__ import annotations
 import os
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import numpy as np
-import xarray as xr
-from matplotlib.ticker import MaxNLocator
+# geopandas, matplotlib, numpy, xarray and `shared.grid_cells` are DEFERRED
+# into the thirteen functions that draw or reshape. `analyze_climate.smk` and
+# `build_model.smk` both import this module at PARSE time, and only for its
+# DECLARATION surface -- `source_climate_vars`, `source_figure_names`,
+# `figure_names` -- which is pure Python over the registries below. A
+# module-level import therefore bought geopandas + xarray + matplotlib (~5s) on
+# every WF0 and WF1 dry-run in order to spell filenames.
+#
+# `figure_naming`, `plot_style` and `snake_utils` stay at module scope: all
+# three are light (0.06-0.18s), and `plot_style` is imported by NAME here
+# precisely so `dev/scripts/preview_basin_map.py` can rebind it.
+# The `xr.` names in the signatures below are ANNOTATIONS only, and this module
+# has `from __future__ import annotations`, so they are strings that are never
+# evaluated. The guard is what keeps them resolvable for a type checker without
+# putting xarray back on the import path.
+if TYPE_CHECKING:
+    import xarray as xr
 
 from blueearth_cst.climate_analysis.figure_naming import (
     figure_filename,
     map_spatial_scope,
 )
-from blueearth_cst.shared.grid_cells import masked
 from blueearth_cst.shared.plot_style import RASTER_DPI, align_caveat_to_plot_area
 from blueearth_cst.shared.snake_utils import (
     DEFAULT_WATER_YEAR_ANCHOR,
@@ -298,6 +309,7 @@ def _resolve_variables(variables: Optional[Sequence[str]]) -> tuple[str, ...]:
 
 def _space_dims(da: xr.DataArray) -> list[str]:
     """The non-time dimensions of ``da`` (the spatial ones, on any grid)."""
+
     return [d for d in da.dims if d != "time"]
 
 
@@ -309,6 +321,8 @@ def _yearly(
     Only ``sum`` needs the completeness filter -- a mean over a partial year is
     still a valid mean of what was observed, while a total is not a total.
     """
+    import numpy as np
+
     grouped = series.resample(time=anchor)
     values = grouped.sum("time") if how == "sum" else grouped.mean("time")
     if how != "sum":
@@ -331,6 +345,7 @@ def _climatological_field(
     da: xr.DataArray, how: str, anchor: str = DEFAULT_WATER_YEAR_ANCHOR
 ) -> xr.DataArray:
     """The map panel's field: per-water-year aggregate, averaged over years."""
+
     grouped = da.resample(time=anchor)
     field = (grouped.sum("time") if how == "sum" else grouped.mean("time")).mean("time")
     if how == "sum":
@@ -341,6 +356,7 @@ def _climatological_field(
 
 def map_field(da: xr.DataArray, spec: dict, anchor: str = DEFAULT_WATER_YEAR_ANCHOR):
     """The values the ``map`` figure draws."""
+
     return _climatological_field(da, spec["how"], anchor)
 
 
@@ -348,11 +364,14 @@ def annual_series(
     da: xr.DataArray, spec: dict, anchor: str = DEFAULT_WATER_YEAR_ANCHOR
 ):
     """The values the ``annual`` figure draws."""
+
     return _yearly(da.mean(dim=_space_dims(da)), spec["how"], anchor).compute()
 
 
 def monthly_spread(da: xr.DataArray, spec: dict) -> list:
     """The per-calendar-month distributions the ``monthly`` box plot draws."""
+    import numpy as np
+
     domain = da.mean(dim=_space_dims(da)).resample(time="ME")
     how = spec["how"]
     per_month = (domain.sum("time") if how == "sum" else domain.mean("time")).compute()
@@ -456,6 +475,8 @@ def load_spatial_overlays(geoms_dir: Optional[Union[str, Path]]) -> dict:
     a correct figure, so refusing to plot one would trade a complete figure for
     no figure.
     """
+    import geopandas as gpd
+
     if geoms_dir is None:
         return {}
     geoms_dir = Path(geoms_dir)
@@ -616,6 +637,8 @@ def _series_axes(caveat, aspect=0.42):
     figure family that mixes the two cannot be made to agree on margins. It is
     also what reserves room for the footnote instead of overprinting the axis.
     """
+    import matplotlib.pyplot as plt
+
     from blueearth_cst.shared.cartographic_map import (
         _publication_rc,
         series_figure_size,
@@ -653,6 +676,8 @@ def _decadal_trend(years, values):
     record did, not evidence about climate. Reported per decade because per
     year is unreadably small for rainfall.
     """
+    import numpy as np
+
     finite = np.isfinite(values)
     if finite.sum() < 3:
         return None, None
@@ -664,6 +689,9 @@ def _render_annual(
     da, spec, title, caveat, overlays, anchor=DEFAULT_WATER_YEAR_ANCHOR, scale=None, **_
 ):
     """Domain-mean value per year, with its trend and the period mean."""
+    import numpy as np
+    from matplotlib.ticker import MaxNLocator
+
     how, label, unit = spec["how"], spec["label"], spec["unit"]
     series = annual_series(da, spec, anchor)
     axis_unit = f"{unit} y$^{{-1}}$" if how == "sum" else unit
@@ -725,6 +753,8 @@ def _apply_scale(ax, scale) -> None:
     endpoints by construction: without it the highest marker or whisker cap sits
     exactly on the frame and reads as clipped.
     """
+    import numpy as np
+
     if not scale:
         return
     lower, upper = (float(v) for v in scale)
@@ -742,6 +772,8 @@ def _render_monthly(da, spec, title, caveat, overlays, scale=None, **_):
     interannual spread drew the same figure. The boxes are the distribution
     ACROSS YEARS for each calendar month, so the reader sees both.
     """
+    import numpy as np
+
     how, label, unit = spec["how"], spec["label"], spec["unit"]
     months = np.arange(1, 13)
     spread = monthly_spread(da, spec)
@@ -873,6 +905,10 @@ def plot_climate_figures(
         the rules declare these figures, so a silent skip would resurface as an
         opaque ``MissingOutputException`` at the end of the job.
     """
+    import matplotlib.pyplot as plt
+
+    from blueearth_cst.shared.grid_cells import masked
+
     if dataset not in DATASETS:
         raise ValueError(
             f"unknown dataset {dataset!r}; expected one of {sorted(DATASETS)}"

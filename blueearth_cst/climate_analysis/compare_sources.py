@@ -45,14 +45,25 @@ independently is the defect that indirection exists to prevent — the same reas
 import os
 from collections.abc import Mapping, Sequence
 from pathlib import Path
-from typing import Optional, Union
+from typing import TYPE_CHECKING, Optional, Union
 
-import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import xarray as xr
-from matplotlib.ticker import MaxNLocator
+# The `pd.` / `xr.` names in the signatures below are QUOTED, so they are never
+# evaluated and need no runtime import. Quoted rather than postponed via
+# `from __future__ import annotations`, which the note above rules out for this
+# module. The guard keeps them resolvable for a type checker.
+if TYPE_CHECKING:
+    import pandas as pd
+    import xarray as xr
 
+# matplotlib, numpy, pandas and xarray are DEFERRED into the fifteen functions
+# that use them. `analyze_climate.smk` imports this module at PARSE time for
+# `comparison_outputs` alone -- rule 0.06's output declaration, pure Python over
+# the registries below -- so a module-level import bought the numeric and
+# plotting stack on every WF0 dry-run in order to list filenames.
+#
+# The `climate_figures` import stays at module scope: it is that module's own
+# registry surface, and since its heavy imports were deferred too it now costs
+# ~0.1s.
 from blueearth_cst.climate_analysis.climate_figures import (
     CLIMATE_VARS,
     MONTH_LABELS,
@@ -68,7 +79,6 @@ from blueearth_cst.climate_analysis.figure_naming import (
     figure_filename,
     subbasin_scope,
 )
-from blueearth_cst.shared.grid_cells import cells_csv_mask, masked, subbasin_masks
 from blueearth_cst.shared.plot_style import RASTER_DPI, align_caveat_to_plot_area
 from blueearth_cst.shared.snake_utils import (
     DEFAULT_WATER_YEAR_ANCHOR,
@@ -279,12 +289,13 @@ def _catalog_entries(data_sources) -> dict:
 _CATALOG_CACHE: dict = {}
 
 
-def _attr(ds: xr.Dataset, name: str, fallback: Optional[Mapping] = None) -> str:
+def _attr(ds: "xr.Dataset", name: str, fallback: Optional[Mapping] = None) -> str:
     """A provenance field: the store's own attribute, else the catalog entry's.
 
     Store first, because that is the record of what was actually extracted; the
     catalog is what the entry says TODAY and may have been edited since.
     """
+
     value = ds.attrs.get(name)
     if value is None or (isinstance(value, str) and not value.strip()):
         value = (fallback or {}).get(name)
@@ -293,8 +304,11 @@ def _attr(ds: xr.Dataset, name: str, fallback: Optional[Mapping] = None) -> str:
     return str(value).strip()
 
 
-def _temporal_resolution(ds: xr.Dataset) -> str:
+def _temporal_resolution(ds: "xr.Dataset") -> str:
     """The store's time step, named rather than printed as a timedelta."""
+    import numpy as np
+    import pandas as pd
+
     time = pd.DatetimeIndex(ds["time"].values)
     if time.size < 2:
         return MISSING
@@ -320,21 +334,26 @@ def _temporal_resolution(ds: xr.Dataset) -> str:
 _SPATIAL_DIM_PAIRS = (("latitude", "longitude"), ("y", "x"), ("lat", "lon"))
 
 
-def _spatial_dims(ds: xr.Dataset) -> Optional[tuple]:
+def _spatial_dims(ds: "xr.Dataset") -> Optional[tuple]:
+
     for pair in _SPATIAL_DIM_PAIRS:
         if all(dim in ds.dims for dim in pair):
             return pair
     return None
 
 
-def _grid_step(ds: xr.Dataset, dim: str) -> Optional[float]:
+def _grid_step(ds: "xr.Dataset", dim: str) -> Optional[float]:
+    import numpy as np
+
     if dim not in ds.coords or ds[dim].size < 2:
         return None
     return float(np.median(np.abs(np.diff(ds[dim].values))))
 
 
-def _spatial_resolution(ds: xr.Dataset) -> str:
+def _spatial_resolution(ds: "xr.Dataset") -> str:
     """Cell size in degrees, as one number when the cells are square."""
+    import numpy as np
+
     dims = _spatial_dims(ds)
     if dims is None:
         return MISSING
@@ -346,28 +365,32 @@ def _spatial_resolution(ds: xr.Dataset) -> str:
     return f"{lat:g}° × {lon:g}°"
 
 
-def _grid_shape(ds: xr.Dataset) -> str:
+def _grid_shape(ds: "xr.Dataset") -> str:
     """Extraction footprint in cells — the BUFFERED bbox, not the basin."""
+
     dims = _spatial_dims(ds)
     if dims is None:
         return MISSING
     return " × ".join(str(ds.sizes[dim]) for dim in dims)
 
 
-def _time_window(ds: xr.Dataset) -> str:
+def _time_window(ds: "xr.Dataset") -> str:
     """The extracted span as ONE cell — ``2000-01-01 → 2016-12-31``.
 
     One column rather than a from/to pair: the two were always read together,
     and splitting them spent two columns of a five-column table on one fact.
     """
+    import pandas as pd
+
     time = pd.DatetimeIndex(ds["time"].values)
     if not time.size:
         return MISSING
     return f"{time.min().date().isoformat()} → {time.max().date().isoformat()}"
 
 
-def _remarks(source: str, ds: xr.Dataset, metadata: Optional[Mapping] = None) -> str:
+def _remarks(source: str, ds: "xr.Dataset", metadata: Optional[Mapping] = None) -> str:
     """The catalog's note, plus what a precipitation-only store really holds."""
+
     parts = []
     note = _attr(ds, "notes", metadata)
     if note != MISSING:
@@ -380,7 +403,7 @@ def _remarks(source: str, ds: xr.Dataset, metadata: Optional[Mapping] = None) ->
     return "; ".join(parts) if parts else MISSING
 
 
-def summarize_sources(stores: Mapping, data_sources=None) -> pd.DataFrame:
+def summarize_sources(stores: Mapping, data_sources=None) -> "pd.DataFrame":
     """One row per candidate source: what it is, and what was extracted from it.
 
     Parameters
@@ -408,6 +431,9 @@ def summarize_sources(stores: Mapping, data_sources=None) -> pd.DataFrame:
     numbers differing is the point — this column is where a reader sees that one
     source was extracted over a shorter record than another.
     """
+    import pandas as pd
+    import xarray as xr
+
     rows = []
     for source, path in stores.items():
         metadata = _catalog_metadata(source, data_sources)
@@ -425,13 +451,14 @@ def summarize_sources(stores: Mapping, data_sources=None) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
-def write_comparison_table(table: pd.DataFrame, out_dir: Union[str, Path]) -> list:
+def write_comparison_table(table: "pd.DataFrame", out_dir: Union[str, Path]) -> list:
     """Write the summary table as CSV and as Markdown, and return both paths.
 
     The CSV carries every column including :data:`FOOTNOTE_COLUMN`; the Markdown
     renders the grid columns as the table and the free-text one as notes beneath
     it.
     """
+
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     csv_path = out_dir / f"{TABLE_STEM}.csv"
@@ -495,6 +522,8 @@ def mutual_window(datasets: Sequence) -> Optional[tuple]:
     the datasets — and on a monthly climatology it is invisible, because the
     x-axis has no year on it.
     """
+    import pandas as pd
+
     starts, ends = [], []
     for ds in datasets:
         time = pd.DatetimeIndex(ds["time"].values)
@@ -508,8 +537,11 @@ def mutual_window(datasets: Sequence) -> Optional[tuple]:
     return (lower, upper) if lower <= upper else None
 
 
-def _on_common_ground(ds: xr.Dataset, mask, window) -> xr.Dataset:
+def _on_common_ground(ds: "xr.Dataset", mask, window) -> "xr.Dataset":
     """One store restricted to an area's cells and the shared period."""
+
+    from blueearth_cst.shared.grid_cells import masked
+
     ds = masked(ds, mask)
     if window is not None:
         ds = ds.sel(time=slice(*window))
@@ -568,6 +600,9 @@ def _render_annual_comparison(datasets: Mapping, var: str, anchor: str, caveat: 
     part of the figure that stops being readable first — and the mean is the
     number the surrounding text quotes.
     """
+    import numpy as np
+    from matplotlib.ticker import MaxNLocator
+
     spec = CLIMATE_VARS[var]
     fig, ax = _series_axes(caveat)
     for index, (source, ds) in enumerate(datasets.items()):
@@ -603,6 +638,8 @@ def _render_monthly_comparison(datasets: Mapping, var: str, anchor: str, caveat:
     difference this figure exists to show. The mean of each month's
     distribution is the same quantity the diamonds mark there.
     """
+    import numpy as np
+
     spec = CLIMATE_VARS[var]
     months = np.arange(1, 13)
     fig, ax = _series_axes(caveat, aspect=0.40)
@@ -658,6 +695,9 @@ def plot_comparison_figures(
     narrow only the declaration and the extra files are undeclared, narrow only
     the drawing and the job ends in ``MissingOutputException``.
     """
+    import matplotlib.pyplot as plt
+    import xarray as xr
+
     out_dir = Path(out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
     basin_cells = basin_cells or {}
@@ -759,6 +799,8 @@ def _comparison_areas(opened: Mapping, basin_cells: Mapping, subbasins) -> dict:
     full extraction for that panel, which the caveat states. Dropping the source
     instead would silently change which datasets a subbasin figure compares.
     """
+    from blueearth_cst.shared.grid_cells import cells_csv_mask, subbasin_masks
+
     areas = {
         "basin_avg": {
             name: cells_csv_mask(ds, basin_cells.get(name))

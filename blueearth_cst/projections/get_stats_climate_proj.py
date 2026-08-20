@@ -14,9 +14,19 @@ import os
 # warning per call before falling back. Disable the probe; reads still work.
 os.environ.setdefault("GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT", "false")
 
-import geopandas as gpd
-import hydromt  # noqa: F401 -- registers the xarray .raster accessor used below
-import xarray as xr
+# geopandas, hydromt and xarray are DEFERRED into `get_stats_clim_projections`,
+# the one function that touches them. `analyze_projections.smk` imports this
+# module at PARSE time so `REDUCER_KERNEL` can hold the FUNCTION OBJECT -- the
+# enumeration is what stops a changed weighting from being silently reused
+# across the series cache -- and the object is required, but the heavy stack is
+# not. hydromt alone costs ~16s of a WF2 dry-run, entirely for the `.raster`
+# accessor registration one line uses.
+#
+# The deferral is at the TOP of that function, not beside the first use: hydromt
+# is imported for its side effect (it registers xarray's `.raster` accessor), so
+# what has to be guaranteed is that it runs before any `.raster` access, not
+# merely somewhere inside the call. Every use in this module -- `.raster.vars`,
+# `gpd.read_file`, `xr.merge`, `xr.open_dataset` -- is inside that one function.
 
 from blueearth_cst.projections import series_identity
 from blueearth_cst.projections.grid_weights import (
@@ -87,6 +97,8 @@ def get_stats_clim_projections(
     todo: Writes a csv file with mean monthly timeseries of precip and temp statistics (mean) over the geom
 
     """
+
+    import xarray as xr
 
     # get lat lon name of data
     x_dim = _spatial_dim(data, XDIMS)
@@ -161,6 +173,10 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
+            import geopandas as gpd
+            import hydromt  # noqa: F401 -- registers the xarray .raster accessor used below
+            import xarray as xr
+
             # Snakemake options
             project_dir = sm.params.project_dir
             region_path = sm.input.region_path

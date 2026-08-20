@@ -1,7 +1,6 @@
 import hashlib
 import uuid
 import json
-import numpy as np
 import sys
 import time
 from datetime import datetime
@@ -929,7 +928,7 @@ rule generate_weather_realizations:
         basin_cells = ancient(f"{store_dir}/basin_cells.csv"),
         weagen_config = f"{wg_dir}/config/weathergen_config.yml",
     output:
-        temp([f"{wg_dir}/output/rlz_{rlz_ix(n)}_st_{ST_BASELINE}.nc" for n in np.arange(1, RLZ_NUM+1)])
+        temp([f"{wg_dir}/output/rlz_{rlz_ix(n)}_st_{ST_BASELINE}.nc" for n in range(1, RLZ_NUM+1)])
     params:
         # The R composes its own output filenames, so it needs the SAME widths
         # this rule's output: declaration used. Passed, never re-derived -- a
@@ -1061,8 +1060,8 @@ rule downscale_climate_realization:
 # rules, 58 jobs — today's job granularity, per-run isolation and per-run disk
 # behavior), though the rule NAMES stay run_wflow_batch_<b> and the log/benchmark
 # files stay keyed by batch id rather than rlz/cst.
-_k_members = [(int(r), int(c)) for r in np.arange(1, RLZ_NUM + 1)
-              for c in np.arange(ST_START, ST_NUM + 1)]
+_k_members = [(int(r), int(c)) for r in range(1, RLZ_NUM + 1)
+              for c in range(ST_START, ST_NUM + 1)]
 try:
     _cores = int(workflow.cores) if workflow.cores else 1
 except Exception:
@@ -1188,7 +1187,7 @@ for _b, _members in _batches.items():
 rule derive_wflow_indicators:
     message: rule_banner("3.16", "derive_wflow_indicators", summary="reduce the runs to the response-surface indicators")
     input:
-        rlz_csv_fns = expand((f"{runs_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".csv"), rlz_num=[rlz_ix(n) for n in np.arange(1, RLZ_NUM+1)], st_num=[st_ix(m) for m in np.arange(ST_START, ST_NUM+1)]),
+        rlz_csv_fns = expand((f"{runs_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".csv"), rlz_num=[rlz_ix(n) for n in range(1, RLZ_NUM+1)], st_num=[st_ix(m) for m in range(ST_START, ST_NUM+1)]),
         # D22: this rule reads NO parameter artifact at all. It needed the
         # per-member grid for the axis VALUES, which are now derived at reporting
         # time from the lookup (HM-7), and the design table for the id WIDTH,

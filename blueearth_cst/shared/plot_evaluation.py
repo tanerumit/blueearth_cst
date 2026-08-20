@@ -40,13 +40,13 @@ Nothing here reads or writes a file except the figures themselves;
 
 import os
 
-import matplotlib.dates as mdates
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy.stats as stats
-from matplotlib import gridspec, rc_context
-from matplotlib.ticker import MaxNLocator
-
+# matplotlib, numpy and scipy are DEFERRED into the eight functions that draw.
+# `build_model.smk` imports this module at PARSE time for exactly one name --
+# STATION_PLOT_DIRNAME, the string below -- and a module-level import therefore
+# bought matplotlib + scipy (~4.7s) on every WF1 dry-run and every real run in
+# order to learn the word "stations". The constant stays HERE, beside the code
+# that draws into the bin, for the reason its own comment gives; it is the
+# imports that move.
 from blueearth_cst.shared import plot_style
 from blueearth_cst.shared.snake_utils import save_figure
 
@@ -299,6 +299,8 @@ def _score_box(ax, text):
 
 
 def _month_axis(ax):
+    import matplotlib.dates as mdates
+
     ax.xaxis.set_major_locator(mdates.MonthLocator(bymonth=(1, 3, 5, 7, 9, 11)))
     ax.xaxis.set_major_formatter(mdates.DateFormatter("%b"))
     ax.set_xlabel("")
@@ -306,6 +308,8 @@ def _month_axis(ax):
 
 def _draw_fdc(ax, simulated, observed, log_scale):
     """A flow-duration curve, linear or log, in real discharge units."""
+    import numpy as np
+
     for data, color, style in (
         (observed, COLOR_OBSERVED, DASH_OBSERVED),
         (simulated, COLOR_SIMULATED, "-"),
@@ -339,6 +343,8 @@ def _draw_frequency(ax, observed, simulated, ylabel, ascending):
     across the middle of the panel as they were — where they crossed the points
     they were meant to annotate.
     """
+    import numpy as np
+
     count = simulated.time.size
     b = 1.0 - 2.0 * _PLOTTING_POSITION_A
     probability = (np.arange(1, count + 1.0) - _PLOTTING_POSITION_A) / (count + b)
@@ -426,6 +432,8 @@ def _save(fig, plot_dir, stem):
     The metadata scrub stays: the default embeds the matplotlib version, which
     would move a fingerprint on every environment bump.
     """
+    import matplotlib.pyplot as plt
+
     png = os.path.join(str(plot_dir), f"{stem}.png")
     save_figure(png, fig=fig, dpi=plot_style.RASTER_DPI, metadata={"Software": None})
     plt.close(fig)
@@ -444,6 +452,11 @@ def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
     computable from the simulation alone, so ``observed`` only adds a second
     line where one exists.
     """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from matplotlib import gridspec, rc_context
+    from matplotlib.ticker import MaxNLocator
+
     years = np.unique(simulated["time.year"].values)
     annual = simulated.groupby("time.year").mean()
     cycle = simulated.groupby("time.month").mean()
@@ -509,6 +522,9 @@ def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
 
     Both need observations: two of the three panels compare against them.
     """
+    import matplotlib.pyplot as plt
+    from matplotlib import gridspec, rc_context
+
     if kind not in ("peaks", "lows"):
         raise ValueError(f"kind={kind!r}; expected 'peaks' or 'lows'")
     peaks = kind == "peaks"
@@ -726,6 +742,10 @@ def plot_performance(simulated, observed, station, plot_dir, metrics, caveat=Non
     in another is telling a different story from one that drifts throughout, and
     no single number carries that.
     """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    from matplotlib import gridspec, rc_context
+
     with rc_context(_rc()):
         fig = plt.figure(
             figsize=_figure_size(HEIGHT_PERFORMANCE_MM), layout="constrained"
@@ -789,6 +809,9 @@ def r_squared(observed, simulated):
     pairs are dropped rather than propagated: NM7Q on a basin that dries out
     produces them, and one NaN would blank the whole score.
     """
+    import numpy as np
+    import scipy.stats as stats
+
     left = np.asarray(observed, dtype="float64").ravel()
     right = np.asarray(simulated, dtype="float64").ravel()
     finite = np.isfinite(left) & np.isfinite(right)

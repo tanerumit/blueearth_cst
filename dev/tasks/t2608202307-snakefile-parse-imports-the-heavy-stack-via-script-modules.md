@@ -82,7 +82,7 @@ set actually pulls into `sys.modules`. This one is immune to the drift:
 | `run_stress_test.smk` | numpy |
 | `build_model.smk` | cartopy, geopandas, xarray, matplotlib, pandas, numpy |
 
-Before, from the module-level imports at 5363f53: WF0 geopandas + xarray +
+Before, from the module-level imports at a89927a (this work's base): WF0 geopandas + xarray +
 matplotlib + pandas + numpy; WF1 those plus cartopy and scipy; WF2 hydromt plus
 geopandas, xarray, pandas, numpy; WF3 numpy and pandas.
 

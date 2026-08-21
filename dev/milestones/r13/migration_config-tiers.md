@@ -90,6 +90,52 @@ be read as evidence rather than hope.
 **They are frozen.** A change to a live seed does not belong here, and a failure
 against them is a break in the splitter.
 
+## Where the implementation stopped, and why
+
+Commits 1–5 and the docs half of commit 7 are landed. What remains — the
+split-phase baseline re-record, the hoist (commit 8), and the hoist-phase
+re-record (commit 9) — is blocked on something a task lane cannot supply.
+
+§16.5(b) requires the falsifier pass to run **from the primary checkout**. A
+worktree's `test_case/test_local` is seeded from the primary and inherits its
+fixture *age*, so a baseline recorded from a lane is a gate that looks
+informative and is not. Commit 8 is code-and-tests only and is otherwise ready,
+but D-9.7's ordering forbids landing it first: the whole reason the hoist is
+inside R13 rather than deferred is that split-only neutrality gets validated
+while `CROSS_WORKFLOW_READS` is still populated. Landing the hoist before the
+split-phase falsifier collapses two digest shifts into one unattributable event
+— exactly the collision the ordering dissolves.
+
+### What the branch is verified to, in this lane
+
+| Gate | Result |
+|---|---|
+| `pixi run test-full -rs` | **3043 passed, 9 skipped, 1 xfailed** (420 s), one process |
+| `pixi run test-fast` | 2973 passed |
+| `pixi run test-contract` | 70 passed |
+| `pixi run tree-check` | MAP CLEAN, 224 paths, 0 unmapped |
+| `pixi run lint` / `format-check` | clean |
+
+**The skip count was read, not predicted** (§16.5 clause 5). Six of the nine
+skips are the fixture-dependent layer itself: five `temp() artifact absent;
+capture via --notemp` cases in `test_interchange_contracts.py` plus its
+`weathergen_config.yml predates the weathergenr 2.0.0 upgrade` case. So this
+green is **not evidence about the composed snapshot** — the only tests that read
+a real snapshot are among the ones that skipped. That is the situation §16.5(b)
+is written against, stated here rather than left for a reader to infer from a
+count.
+
+### One correction to commit a457157's message
+
+That commit says the `tree-check` pin "still points at a config whose values
+equal the tool's own fallbacks, so the gate cannot yet fail". §16.5(a) does not
+ask for the pin to move. Its two changes are (i) `snapshot_project_tree.py`
+composes and (ii) `tests/test_snapshot_project_tree.py` carries a case whose
+`experiment_name` is not `experiment`. Both landed in that same commit — its
+fixture uses `my_experiment` — so §16.5(a) is discharged and `pixi.toml:185` is
+correct as it stands. The gate is green *because the tool composes*, which is
+what the design asks for.
+
 ## Deviations from the design's commit table
 
 - **Commit 6 does not exist.** D-13.4 removed the advanced-settings namespacing

@@ -164,6 +164,12 @@ OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
         ("scripts/run_workflows.py", "*"),
         ("scripts/suggest_experiment_name.py", "run_stress_test"),
         ("scripts/plot_workflow_dag.py", "run_stress_test"),
+        # The migration tool's already-split detector, which reads the stanza
+        # KEY SET of every workflow and none of their values. Classified here
+        # rather than waved through: the scan turned red when the tool landed,
+        # which is the mechanism working -- a new read on an ownerless surface
+        # forces an explicit, reviewed entry instead of passing unnoticed.
+        ("scripts/split_project_config.py", "*"),
     }
 )
 

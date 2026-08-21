@@ -45,6 +45,7 @@ import argparse
 import os
 import shutil
 import sys
+from collections.abc import Mapping
 from pathlib import Path
 
 import yaml
@@ -158,6 +159,29 @@ def _refuse_unsplittable(text: str, workflow_span: tuple[int, int] | None) -> No
             "undefined alias once the sections are separate files; a block "
             "scalar loses four spaces of its own content to the dedent, which "
             f"changes the string with no structural symptom. See {MIGRATION_DOC}."
+        )
+
+
+def _refuse_already_split(source: Path, text: str) -> None:
+    """Raise if every workflow stanza is already the closed two-key shape.
+
+    Splitting a split config is not a no-op and not an error the round trip can
+    see: the body of an already-migrated stanza is its ``config_path``, so a
+    second pass would write *that key* into a new workflow file and repoint the
+    stanza at it. The result composes back to the same document — the round trip
+    passes — while the proposal is nonsense. The only thing that can catch it is
+    recognising the migrated shape up front, which is the same closed-stanza
+    test the loader uses as its migration detector.
+    """
+    doc = yaml.safe_load(text)
+    workflows = (doc or {}).get("workflows") or {}
+    stanzas = [s for s in workflows.values() if isinstance(s, Mapping)]
+    if stanzas and all(set(s) <= {"enabled", "config_path"} for s in stanzas):
+        raise SplitRefusal(
+            f"{source} is already split: every workflow stanza carries only "
+            "`enabled` and `config_path`, which is the migrated shape. There is "
+            "nothing to propose — the settings are already in the per-workflow "
+            f"files this file points at. See {MIGRATION_DOC}."
         )
 
 
@@ -300,6 +324,7 @@ def build_proposal(source: Path) -> Proposal:
     spans = _section_spans(lines, workflow_span)
     if not spans:
         raise SplitRefusal(f"{source}: the `workflows:` block declares no workflow.")
+    _refuse_already_split(source, text)
 
     # `reporting:` moves into its owning workflow's file, verbatim and undedented
     # (it is already at column zero). A COMMENTED block is reported, never moved:

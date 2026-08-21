@@ -36,15 +36,25 @@ import split_project_config as spc  # noqa: E402
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
-#: Every config the repository ships in pre-split shape. The permanent
-#: regression gate: these are the files the implementer controls, so a break
-#: here is a break in the tool rather than in somebody's project.
-SHIPPED = [
-    "test_case/snake_config_rapid.yml",
-    "test_case/snake_config_baseline.yml",
-    "test_case/snake_config_baseline_linux.yml",
-    "test_case/snake_config_wf2_fast.yml",
-    "config/templates/snake_config.template.yml",
+#: The four shipped seeds and the template, frozen in their PRE-SPLIT shape.
+#:
+#: The permanent regression gate. These were the live configs until the R13
+#: migration, and they are kept here afterwards because they are the only
+#: real-world specimens the repository has of the shape this tool exists to
+#: convert: hand-written comments at three indent levels, nested blocks, CRLF
+#: endings, four genuinely different variants. Once the repository migrated,
+#: nothing else in the tree could exercise the tool at all -- and the tool has
+#: to keep working for every user who has not migrated yet.
+#:
+#: FROZEN: nothing should edit these again. A change to a live seed does not
+#: belong here, and a failure here is a break in the splitter.
+PRESPLIT_DIR = Path(__file__).resolve().parent / "data" / "presplit"
+PRESPLIT = [
+    "snake_config_rapid.yml",
+    "snake_config_baseline.yml",
+    "snake_config_baseline_linux.yml",
+    "snake_config_wf2_fast.yml",
+    "snake_config.template.yml",
 ]
 
 #: A config declaring `reporting:`, which NO shipped seed or template does.
@@ -122,16 +132,16 @@ def source_unchanged():
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.parametrize("relative", SHIPPED)
-def test_every_shipped_config_round_trips(tmp_path, relative, source_unchanged):
-    """The permanent regression gate over the files the repository ships.
+@pytest.mark.parametrize("name", PRESPLIT)
+def test_every_shipped_config_round_trips(tmp_path, name, source_unchanged):
+    """The permanent regression gate over the repository's own former configs.
 
     Composing the STAGED pair — not a re-derivation of it — is what makes this
     evidence: the emitted ``config_path`` values are bare filenames, so they
     resolve to the staged siblings under the T1-anchored rule, and the thing
     verified is the thing a user would apply.
     """
-    source = source_unchanged(REPO_ROOT / relative)
+    source = source_unchanged(PRESPLIT_DIR / name)
     assert run(source, tmp_path) == 0
     staging = tmp_path / spc.STAGING_DIRNAME
     assert spc.verify_round_trip(staging / source.name, source) is None
@@ -299,10 +309,38 @@ def test_no_shipped_config_trips_the_refusal():
     A check keyed on the characters rather than the tokens would refuse several
     of these for a ``*`` inside a prose comment.
     """
-    for relative in SHIPPED:
-        text = (REPO_ROOT / relative).read_text(encoding="utf-8")
+    for name in PRESPLIT:
+        text = (PRESPLIT_DIR / name).read_text(encoding="utf-8")
         span = spc._top_level_span(text.splitlines(keepends=True), "workflows")
         spc._refuse_unsplittable(text, span)
+
+
+@pytest.mark.parametrize(
+    "relative",
+    [
+        "test_case/snake_config_rapid.yml",
+        "test_case/snake_config_baseline.yml",
+        "config/templates/snake_config.template.yml",
+    ],
+)
+def test_an_already_split_config_is_refused(
+    tmp_path, relative, source_unchanged, capsys
+):
+    """A second pass is nonsense the round trip cannot see, so it is refused.
+
+    The body of a migrated stanza is its `config_path`, so splitting again
+    would write *that key* into a new workflow file and repoint the stanza at
+    it -- and the result still composes back to the same document, so D-15.4b
+    reports it CLEAN. Recognising the migrated shape up front is the only
+    thing that catches it.
+
+    Parametrized over the LIVE shipped configs, which makes this a standing
+    assertion that they are in fact migrated.
+    """
+    source = source_unchanged(REPO_ROOT / relative)
+    assert run(source, tmp_path) == 1
+    assert "already split" in capsys.readouterr().err
+    assert not (tmp_path / spc.STAGING_DIRNAME).exists()
 
 
 def test_a_config_with_no_workflows_block_is_refused(
@@ -413,7 +451,7 @@ def test_comments_survive_the_split(tmp_path, source_unchanged):
     user runs against a config they were just handed — including the comments
     telling them to run it.
     """
-    source = source_unchanged(REPO_ROOT / "test_case/snake_config_rapid.yml")
+    source = source_unchanged(PRESPLIT_DIR / "snake_config_rapid.yml")
     assert run(source, tmp_path) == 0
     staging = tmp_path / spc.STAGING_DIRNAME
     wf1 = (staging / "snake_config_rapid_build_model.yml").read_text("utf-8")
@@ -423,15 +461,26 @@ def test_comments_survive_the_split(tmp_path, source_unchanged):
     assert "17 calendar years" in t1
 
 
-def test_line_endings_are_preserved(tmp_path, source_unchanged):
-    """The shipped seeds are CRLF; a silent conversion would put every line of
-    every config into the migration diff and bury the real change."""
-    source = source_unchanged(REPO_ROOT / "test_case/snake_config_rapid.yml")
-    assert b"\r\n" in source.read_bytes()
+def test_line_endings_are_preserved(tmp_path):
+    """A silent LF conversion would put every line of a config into the
+    migration diff and bury the real change.
+
+    The CRLF source is built here rather than read from a checked-in file: Git
+    normalizes line endings on checkout, so a fixture's endings are a property
+    of the clone rather than of the test.
+    """
+    body = (PRESPLIT_DIR / "snake_config_rapid.yml").read_text(encoding="utf-8")
+    source = tmp_path / "project" / "snake_config_rapid.yml"
+    source.parent.mkdir(parents=True)
+    with open(source, "w", encoding="utf-8", newline="") as handle:
+        handle.write(body.replace("\n", "\r\n"))
+    before = source.read_bytes()
+
     assert run(source, tmp_path) == 0
     staged = (tmp_path / spc.STAGING_DIRNAME / "snake_config_rapid.yml").read_bytes()
     assert b"\r\n" in staged
     assert staged.count(b"\r\n") == staged.count(b"\n")
+    assert source.read_bytes() == before
 
 
 def test_a_trailing_comment_travels_with_the_body_it_annotates(tmp_path):

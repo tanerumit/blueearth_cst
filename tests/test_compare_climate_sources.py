@@ -48,7 +48,9 @@ from blueearth_cst.climate_analysis.compare_sources import (
     summarize_sources,
 )
 from blueearth_cst.climate_analysis.figure_naming import subbasin_scope
+from blueearth_cst.shared.config_composition import load_composed_config
 from blueearth_cst.shared.grid_cells import cells_csv_mask
+from tests.conftest import write_config
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
@@ -722,11 +724,9 @@ def _parse_workflow(config_path: Path):
 
 @pytest.fixture
 def two_source_config(tmp_path) -> Path:
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["chirps"]
-    path = tmp_path / "snake_config_two_sources.yml"
-    path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
-    return path
+    return write_config(tmp_path, cfg, stem="snake_config_two_sources")
 
 
 def _rule(workflow, name):

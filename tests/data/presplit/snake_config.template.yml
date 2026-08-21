@@ -1,0 +1,266 @@
+# Config template for blueearth_cst.
+#
+# Copy this file, fill it in, and point Snakemake at your copy:
+#   snakemake all -c 3 -s build_model.smk --configfile <your copy>
+#
+# Paths are relative to the directory you RUN from (the repo root), or absolute.
+# Commented-out keys are optional and show their default.
+#
+# Why the defaults are what they are: config/templates/README.md.
+# A filled-in example: test_case/snake_config_baseline.yml.
+
+project:
+  project_dir: /path/to/my_project                        # path — absolute, outside the repo
+  static_dir: config                                      # path
+  data_sources: config/catalogs/deltares_data.yml         # path
+  data_sources_climate: config/catalogs/cmip6_data.yml    # path
+
+shared:
+  basin:
+    region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"  # text — hydromt region spec
+    resolution: 0.00833333                                # numeric — degrees (1/120 = 30 arcsec)
+    #hydrography: merit_hydro_ihu                         # text — catalog entry name
+    #basin_index: merit_hydro_index                       # text — catalog entry name
+    gauge_points: null                                    # path | null
+    automatic_subbasins:
+      max_per_basin: 11                                   # integer
+    gauge_snap_tolerance_m: 10000                         # numeric — metres
+    river_uparea_km2: 32                                  # numeric — km2
+    spatial_sources:                                      # text — catalog entry names
+      rivers: rivers_lin2019_v1
+      lulc: vito
+      lai: modis_lai
+      soil: soilgrids
+  # How much climate record to EXTRACT — drives the climate store, the climate
+  # figures and (through the store) weathergenr. NOT the model run period; see
+  # workflows.build_model.simulation_window.
+  historical_window:
+    starttime: "1990-01-01T00:00:00"                      # ISO datetime
+    endtime: "2020-12-31T00:00:00"                        # ISO datetime — span >= 16 years
+  clim_historical: era5                                   # text — entry in data_sources
+  # Randomization seed for every stochastic step (today: the weather generator,
+  # for both realization generation and the perturbation). Optional — absent, it
+  # takes `defaults.seed` from config/advanced_settings.yml.
+  #
+  #   <integer>  the same realizations every run, on any machine
+  #   auto       derived from the experiment name: different experiments get
+  #              different realizations, and re-running one reproduces it
+  #              exactly. Recompute it any time from the name alone.
+  #
+  # Not a per-invocation random draw. That would rewrite the generator config on
+  # every run and re-execute the whole stress test each time.
+  #seed: auto                                             # integer | auto
+  # First month of the water (hydrological) year. Optional — absent, it takes
+  # `defaults.water_year_start` (Jan) from config/advanced_settings.yml.
+  #
+  # ONE key for every workflow that reduces to an annual value: WF2's change
+  # factors, WF3's weather generation, WF3's hydrological indicators and WF1's
+  # climate figures. Replaced `workflows.analyze_projections.start_month_hyd_year`,
+  # which is now refused — it never reached the arithmetic.
+  #
+  # Set it to the month your basin's hydrological year begins (e.g. Oct for a
+  # northern-hemisphere water year). It matters most for the annual EXTREMES in
+  # the response surface: a Jan-Dec year splits a flood season that crosses New
+  # Year across two years and understates the annual maximum. A non-Jan value
+  # moves those numbers by design.
+  #water_year_start: Oct                                  # Jan..Dec
+  #julia_threads: 4                                       # integer
+
+workflows:
+  # WF0 — historical climate analysis. Model-free: it needs only the region and
+  # a data catalog, so it runs before (or without) the hydrology model.
+  analyze_climate:
+    enabled: true                                         # boolean
+    # OPTIONAL. Extra gridded datasets to characterise ALONGSIDE
+    # `shared.clim_historical`, which is always included and always first.
+    # Supported: era5, chirps, chirps_global. Each lands in its own
+    # data/climate/historical/<source>_<window>/ store, so a candidate that
+    # wins the comparison is already extracted when you switch to it.
+    #
+    # `shared.historical_window` is a CEILING for a candidate, not a demand: a
+    # source that does not cover it is extracted over the widest range it does
+    # hold inside it, and the shortfall is reported in the rule log. Only a
+    # candidate whose records nowhere overlap the window is an error.
+    # candidate_sources: [chirps]                         # list of source names
+  build_model:
+    enabled: true                                         # boolean
+    model_build_config: config/defaults/wflow_build_model.yml          # path
+    waterbodies_config: config/defaults/wflow_update_waterbodies.yml   # path
+    # list — any of: river discharge, overland flow, actual evapotranspiration,
+    #                groundwater recharge, snow
+    wflow_outvars: ["river discharge", "actual evapotranspiration"]
+    observations_timeseries: null                         # path | null — needs gauge_points
+    # The period the hydrological model is RUN over: sets the forcing prepared
+    # for it AND the wflow TOML's [time] window, which are necessarily equal.
+    # OPTIONAL — omit and it follows shared.historical_window exactly.
+    #
+    # Must sit INSIDE shared.historical_window: the forcing is built from the
+    # extracted climate store, so a simulation period outside the record has no
+    # data behind it. Analysing 1990-2020 and simulating 2000-2020 is the
+    # intended shape. The >= 16-year floor applies to the RECORD only, so a
+    # short run is allowed.
+    # Editing this rebuilds the forcing and re-runs the model.
+    #simulation_window:
+    #  starttime: "2000-01-01T00:00:00"                    # ISO datetime
+    #  endtime: "2020-12-31T00:00:00"                      # ISO datetime
+
+  analyze_projections:
+    enabled: true                                         # boolean
+    clim_project: cmip6                                   # text — cmip6
+    # list — Institution/Source. All 65 with a historical member:
+    #   AS-RCEC/TaiESM1  AWI/AWI-CM-1-1-MR  AWI/AWI-ESM-1-1-LR  BCC/BCC-CSM2-MR
+    #   BCC/BCC-ESM1  CAMS/CAMS-CSM1-0  CAS/CAS-ESM2-0  CAS/FGOALS-f3-L
+    #   CAS/FGOALS-g3  CCCR-IITM/IITM-ESM  CCCma/CanESM5  CCCma/CanESM5-CanOE
+    #   CMCC/CMCC-CM2-HR4  CMCC/CMCC-CM2-SR5  CMCC/CMCC-ESM2  CNRM-CERFACS/CNRM-CM6-1
+    #   CNRM-CERFACS/CNRM-CM6-1-HR  CNRM-CERFACS/CNRM-ESM2-1  CSIRO/ACCESS-ESM1-5
+    #   CSIRO-ARCCSS/ACCESS-CM2  E3SM-Project/E3SM-1-0  E3SM-Project/E3SM-1-1
+    #   E3SM-Project/E3SM-1-1-ECA  EC-Earth-Consortium/EC-Earth3
+    #   EC-Earth-Consortium/EC-Earth3-AerChem  EC-Earth-Consortium/EC-Earth3-CC
+    #   EC-Earth-Consortium/EC-Earth3-Veg  EC-Earth-Consortium/EC-Earth3-Veg-LR
+    #   FIO-QLNM/FIO-ESM-2-0  HAMMOZ-Consortium/MPI-ESM-1-2-HAM  INM/INM-CM4-8
+    #   INM/INM-CM5-0  IPSL/IPSL-CM5A2-INCA  IPSL/IPSL-CM6A-LR  IPSL/IPSL-CM6A-LR-INCA
+    #   KIOST/KIOST-ESM  MIROC/MIROC-ES2H  MIROC/MIROC-ES2L  MIROC/MIROC6
+    #   MOHC/HadGEM3-GC31-LL  MOHC/HadGEM3-GC31-MM  MOHC/UKESM1-0-LL  MPI-M/ICON-ESM-LR
+    #   MPI-M/MPI-ESM1-2-HR  MPI-M/MPI-ESM1-2-LR  MRI/MRI-ESM2-0  NASA-GISS/GISS-E2-1-G
+    #   NASA-GISS/GISS-E2-1-G-CC  NASA-GISS/GISS-E2-1-H  NASA-GISS/GISS-E2-2-H
+    #   NCAR/CESM2  NCAR/CESM2-FV2  NCAR/CESM2-WACCM  NCAR/CESM2-WACCM-FV2
+    #   NCC/NorCPM1  NCC/NorESM2-LM  NCC/NorESM2-MM  NIMS-KMA/KACE-1-0-G
+    #   NIMS-KMA/UKESM1-0-LL  NOAA-GFDL/GFDL-CM4  NOAA-GFDL/GFDL-ESM4  NUIST/NESM3
+    #   SNU/SAM0-UNICON  THU/CIESM  UA/MCM-UA-1-0
+    models: [
+        "AS-RCEC/TaiESM1",
+        "AWI/AWI-CM-1-1-MR",
+        "AWI/AWI-ESM-1-1-LR",
+        "BCC/BCC-CSM2-MR",
+        "BCC/BCC-ESM1",
+        "CAMS/CAMS-CSM1-0",
+        "CAS/CAS-ESM2-0",
+        "CAS/FGOALS-f3-L",
+        "CAS/FGOALS-g3",
+        "CCCR-IITM/IITM-ESM",
+        "CCCma/CanESM5",
+        "CCCma/CanESM5-CanOE",
+        "CMCC/CMCC-CM2-HR4",
+        "CMCC/CMCC-CM2-SR5",
+        "CMCC/CMCC-ESM2",
+        "CNRM-CERFACS/CNRM-CM6-1",
+        "CNRM-CERFACS/CNRM-CM6-1-HR",
+        "CNRM-CERFACS/CNRM-ESM2-1",
+        "CSIRO/ACCESS-ESM1-5",
+        "CSIRO-ARCCSS/ACCESS-CM2",
+        "E3SM-Project/E3SM-1-0",
+        "E3SM-Project/E3SM-1-1",
+        "E3SM-Project/E3SM-1-1-ECA",
+        "EC-Earth-Consortium/EC-Earth3",
+        "EC-Earth-Consortium/EC-Earth3-AerChem",
+        "EC-Earth-Consortium/EC-Earth3-CC",
+        "EC-Earth-Consortium/EC-Earth3-Veg",
+        "EC-Earth-Consortium/EC-Earth3-Veg-LR",
+        "FIO-QLNM/FIO-ESM-2-0",
+        "HAMMOZ-Consortium/MPI-ESM-1-2-HAM",
+        "INM/INM-CM4-8",
+        "INM/INM-CM5-0",
+        "IPSL/IPSL-CM5A2-INCA",
+        "IPSL/IPSL-CM6A-LR",
+        "IPSL/IPSL-CM6A-LR-INCA",
+        "KIOST/KIOST-ESM",
+        "MIROC/MIROC-ES2H",
+        "MIROC/MIROC-ES2L",
+        "MIROC/MIROC6",
+        "MOHC/HadGEM3-GC31-LL",
+        "MOHC/HadGEM3-GC31-MM",
+        "MOHC/UKESM1-0-LL",
+        "MPI-M/ICON-ESM-LR",
+        "MPI-M/MPI-ESM1-2-HR",
+        "MPI-M/MPI-ESM1-2-LR",
+        "MRI/MRI-ESM2-0",
+        "NASA-GISS/GISS-E2-1-G",
+        "NASA-GISS/GISS-E2-1-G-CC",
+        "NASA-GISS/GISS-E2-1-H",
+        "NASA-GISS/GISS-E2-2-H",
+        "NCAR/CESM2",
+        "NCAR/CESM2-FV2",
+        "NCAR/CESM2-WACCM",
+        "NCAR/CESM2-WACCM-FV2",
+        "NCC/NorCPM1",
+        "NCC/NorESM2-LM",
+        "NCC/NorESM2-MM",
+        "NIMS-KMA/KACE-1-0-G",
+        "NIMS-KMA/UKESM1-0-LL",
+        "NOAA-GFDL/GFDL-CM4",
+        "NOAA-GFDL/GFDL-ESM4",
+        "NUIST/NESM3",
+        "SNU/SAM0-UNICON",
+        "THU/CIESM",
+        "UA/MCM-UA-1-0"
+    ]
+        
+    #  - NOAA-GFDL/GFDL-ESM4
+    #  - INM/INM-CM5-0
+    #  - CMCC/CMCC-ESM2
+    # list — any of: ssp119, ssp126, ssp245, ssp370, ssp434, ssp460,
+    #                ssp534-over, ssp585
+    scenarios: [ssp245, ssp585]
+    members: [r1i1p1f1, r1i1p1f2, r1i1p1f3, r1i1p2f1]      # list — variant labels
+    # mapping per variable. canonical: rate | state ; change: relative | absolute
+    variables:
+      precip: {source: precip, canonical: rate, units: mm/day, change: relative}
+      temp: {source: temp, canonical: state, units: degC, change: absolute}
+    historical_year_range: [1985, 2014]                   # [integer, integer] — inclusive, clipped at 2014
+    future_horizons:                                      # mapping: name -> [integer, integer]
+      near: [2030, 2060]
+      far: [2070, 2100]
+    #stats: [mean, median, std]                           # list | null
+    #relative_change:
+    #  min_reference: {precip: 0.1}                       # mapping: variable -> numeric
+    #  max_flagged_months: 3                              # integer
+
+  run_stress_test:
+    enabled: true                                         # boolean
+    #experiment_name: my_experiment                       # text — unset auto-names from project_dir + date
+    realizations_num: 2                                   # integer
+    horizontime_climate: 2050                             # integer — year
+    run_length: 20                                        # integer — years
+    run_historical: false                                 # boolean
+    stress_test:
+      temp:
+        step_num: 1                                       # integer
+        transient_change: true                            # boolean
+        mean:                                             # 12 numerics (Jan-Dec) — degC offset
+          min: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          max: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+      precip:
+        step_num: 2                                       # integer
+        transient_change: true                            # boolean
+        mean:                                             # 12 numerics (Jan-Dec) — multiplier
+          min: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+          max: [1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3]
+        variance:                                         # 12 numerics (Jan-Dec) — multiplier
+          min: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+          max: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      # Monthly spell-length coefficients handed to the weather generator: they
+      # scale the length of dry and wet spells per calendar month. Optional;
+      # absent, both are twelve 1.0s, i.e. no adjustment. NOT perturbation axes
+      # -- they add no member to the grid and no design-table column, which is
+      # why they sit beside `temp:`/`precip:` rather than under them.
+      dry_spell_factor: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      wet_spell_factor: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    #batch_size: 4                                        # integer
+    #batch_size_max: 8                                    # integer
+
+# How results are DESCRIBED, not how they are produced. Everything under here is
+# post-processing: it sits outside configuration identity, so editing a caption
+# does not trip the experiment freeze, move the effective-config digest, or ask
+# for a re-run. Optional -- absent, one default surface is used, whose axes both
+# take the months that VARY across members, which reports the range the
+# experiment actually explored.
+#
+# Declare one only to say something the default cannot. The usual reason is a
+# SEASONAL design: with a subset of months perturbed, `months:` names the subset
+# the axis summarises, and the caption is derived from the lookup, never typed.
+#
+#reporting:
+#  surfaces:
+#    - id: jfm                                            # [a-z0-9_]+, unique
+#      x: {variable: temp}                                # temp | precip
+#      y: {variable: precip, months: [1, 2, 3], statistic: mean}

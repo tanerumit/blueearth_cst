@@ -23,6 +23,8 @@ Three groups carry most of the weight:
 
 from __future__ import annotations
 
+import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -33,6 +35,8 @@ import pytest
 import yaml
 
 from blueearth_cst.shared import config_composition as cc
+from blueearth_cst.shared.provenance import effective_config_digest
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -962,3 +966,105 @@ def test_a_broken_workflow_file_does_not_break_a_tool(tmp_path, capsys):
     assert composed["workflows"]["build_model"]["a"] == 1
     assert composed["workflows"]["run_stress_test"] == {"enabled": True}
     assert "run_stress_test" in capsys.readouterr().out
+
+
+# ---------------------------------------------------------------------------
+# Digest equality across the migration (D-10.2, §16.1)
+# ---------------------------------------------------------------------------
+
+#: Each shipped config, as (frozen pre-split specimen, live post-split project
+#: file, entry point). The pre-split side is the file that WAS live until the
+#: R13 migration, kept under tests/data/presplit/ precisely so this comparison
+#: stays possible after the tree moved.
+MIGRATED = [
+    ("snake_config_rapid.yml", "test_case/snake_config_rapid.yml"),
+    ("snake_config_baseline.yml", "test_case/snake_config_baseline.yml"),
+    ("snake_config_baseline_linux.yml", "test_case/snake_config_baseline_linux.yml"),
+    ("snake_config_wf2_fast.yml", "test_case/snake_config_wf2_fast.yml"),
+    ("snake_config.template.yml", "config/templates/snake_config.template.yml"),
+]
+
+PRESPLIT_DIR = REPO_ROOT / "tests" / "data" / "presplit"
+
+
+def _guarded_digest(cfg):
+    """WF3's guarded-sections digest, computed exactly as the Snakefile does.
+
+    Restated here rather than imported because a Snakefile is not importable.
+    It is the rerun trigger for rule 3.01, so a shift in it is a shift in when
+    the drift guard fires.
+    """
+    return hashlib.sha256(
+        json.dumps(
+            {
+                "project": cfg.get("project"),
+                "shared.basin": cfg.get("shared", {}).get("basin"),
+                "workflows.build_model": cfg.get("workflows", {}).get("build_model"),
+                "workflows.analyze_projections": cfg.get("workflows", {}).get(
+                    "analyze_projections"
+                ),
+            },
+            sort_keys=True,
+            ensure_ascii=False,
+            default=str,
+        ).encode("utf-8")
+    ).hexdigest()
+
+
+@pytest.mark.parametrize(("presplit", "live"), MIGRATED, ids=[p for p, _ in MIGRATED])
+@pytest.mark.parametrize("entry", sorted(PROJECTIONS))
+def test_effective_config_digest_survives_the_migration(presplit, live, entry):
+    """D-10.2 in executable form, and the reason §16.3's falsifier can be read.
+
+    ``effective_config_digest`` is threaded through rule x.01's params, so if the
+    split moved it, every workflow's record would re-fire on every migrated
+    project and the baseline comparison could not distinguish "the split changed
+    a number" from "the split changed where a number is written". It does not
+    move, by construction — same projection paths, same values, same canonical
+    JSON — and this is what holds that construction to account.
+
+    ``ADVANCED_SETTINGS`` is held fixed on both sides deliberately.
+    ``effective_config_document`` folds that whole mapping in UNPROJECTED, so a
+    change to its *shape* moves this digest for all four entry points. R13 moves
+    no advanced-settings key; stating the invariant here keeps the test from
+    silently depending on it.
+    """
+    projection = PROJECTIONS[entry][0]
+    before = yaml.safe_load((PRESPLIT_DIR / presplit).read_text(encoding="utf-8"))
+    after = cc.load_composed_config(REPO_ROOT / live, entry, projection)
+    assert effective_config_digest(
+        before, ADVANCED_SETTINGS, projection
+    ) == effective_config_digest(after, ADVANCED_SETTINGS, projection)
+
+
+@pytest.mark.parametrize(("presplit", "live"), MIGRATED, ids=[p for p, _ in MIGRATED])
+def test_guarded_sections_digest_survives_the_migration(presplit, live):
+    """The WF3 drift guard's rerun trigger does not move either.
+
+    Separate from the effective-config digest because it is built by hand in the
+    Snakefile from four specific sections rather than from the projection, and
+    because it is what decides whether rule 3.01 re-fires against an
+    already-built model. A shift here would refuse every already-run experiment
+    in every migrating project.
+    """
+    before = yaml.safe_load((PRESPLIT_DIR / presplit).read_text(encoding="utf-8"))
+    after = cc.load_composed_config(
+        REPO_ROOT / live, "run_stress_test", PROJECTIONS["run_stress_test"][0]
+    )
+    assert _guarded_digest(before) == _guarded_digest(after)
+
+
+def test_write_config_round_trips_through_compose(tmp_path):
+    """``compose_config(write_config(cfg)) == cfg`` — D-12.6's gate.
+
+    ``tests/conftest.write_config`` is what let the suite's dominant config
+    idiom survive the split unchanged: tests keep mutating one whole mapping and
+    the helper writes it back as a T1 + T2 set. Without this property the helper
+    would be a second, unchecked way to build a config, and every test that used
+    it would be asserting against a shape no run can have.
+    """
+    from tests.conftest import write_config
+
+    cfg = cc.load_composed_config(REPO_ROOT / "test_case/snake_config_rapid.yml")
+    cfg["reporting"] = {"title": "round trip"}
+    assert cc.load_composed_config(write_config(tmp_path, cfg)) == cfg

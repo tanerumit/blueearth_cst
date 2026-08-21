@@ -15,6 +15,7 @@ from pathlib import Path
 import pytest
 import yaml
 
+from blueearth_cst.shared.config_composition import load_composed_config
 from blueearth_cst.shared.snake_utils import (  # noqa: E402
     suggest_experiment_name,
     validate_experiment_name,
@@ -154,10 +155,8 @@ def test_the_template_config_does_not_hardcode_an_experiment_name():
     refuses to overwrite any existing value — so every project copied from it
     landed in the same ``experiments/experiment/`` and the command that exists
     to name the directory could never run. The key must start out ABSENT."""
-    template = yaml.safe_load(
-        (SNAKEDIR / "config/templates/snake_config.template.yml").read_text(
-            encoding="utf-8"
-        )
+    template = load_composed_config(
+        SNAKEDIR / "config/templates/snake_config.template.yml"
     )
     section = template["workflows"]["run_stress_test"]
     assert "experiment_name" not in section, (
@@ -175,7 +174,7 @@ def test_the_test_fixtures_deliberately_KEEP_a_fixed_name():
         "test_case/snake_config_baseline.yml",
         "test_case/snake_config_wf2_fast.yml",
     ):
-        doc = yaml.safe_load((SNAKEDIR / rel).read_text(encoding="utf-8"))
+        doc = load_composed_config(SNAKEDIR / rel)
         assert doc["workflows"]["run_stress_test"]["experiment_name"]
 
 

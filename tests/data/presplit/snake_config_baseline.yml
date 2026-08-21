@@ -1,0 +1,92 @@
+# Worked example, and the TRACKED baseline seed dev/baseline/manifest.json is
+# recorded from. Paths are relative to the repo root (where you run Snakemake),
+# not to this file.
+
+project:
+  project_dir: test_case/test_local
+  static_dir: config
+  data_sources: config/catalogs/deltares_data.yml
+  data_sources_climate: config/catalogs/cmip6_data.yml
+
+shared:
+  basin:
+    region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+    resolution: 0.00833
+    gauge_points: test_case/test_data/output_locations.csv
+    automatic_subbasins:
+      max_per_basin: 11
+  historical_window:
+    # 17 calendar years — one clear of the 16-year weathergenr floor
+    # (constraints.min_historical_years). Shortened 2026-08-10 to trim WF1.
+    starttime: "2000-01-01T00:00:00"
+    endtime: "2016-12-31T00:00:00"
+  clim_historical: era5
+
+workflows:
+  # WF0 — the basin's historical climate, WITHOUT building a hydrology model.
+  # Every key below is optional; with none set this draws the canonical figure
+  # set for `shared.clim_historical` and nothing else, which is exactly what
+  # WF1 already produces. `candidate_sources` is what makes it a comparison.
+  analyze_climate:
+    enabled: true
+  build_model:
+    enabled: true
+    model_build_config: config/defaults/wflow_build_model.yml
+    waterbodies_config: config/defaults/wflow_update_waterbodies.yml
+    wflow_outvars: ["river discharge", "groundwater recharge"]
+    observations_timeseries: test_case/test_data/observations_timeseries.csv
+  analyze_projections:
+    enabled: true
+    clim_project: cmip6
+    models:
+      - NOAA-GFDL/GFDL-ESM4
+      - INM/INM-CM4-8
+      - INM/INM-CM5-0
+    scenarios: [ssp245, ssp585]
+    members: [r1i1p1f1]
+    variables:
+      precip: {source: precip, canonical: rate, units: mm/day, change: relative}
+      temp: {source: temp, canonical: state, units: degC, change: absolute}
+    # Ends 2014, not 2016: the CMIP6 historical experiment stops there, so a
+    # later end is CLIPPED to it — and clipping a range that equalled
+    # shared.historical_window is what raises the "no longer aligns" warning.
+    historical_year_range: [2000, 2014]
+    # Matches WF3's forcing window exactly (horizontime_climate ± run_length/2
+    # = 2078 ± 8 = 2070-2086), which is computed independently of this key.
+    future_horizons:
+      far: [2070, 2090]
+
+  run_stress_test:
+    enabled: true
+    experiment_name: experiment
+    realizations_num: 2
+    # 2078 ± 8 = a 2070-2086 forcing window, inside the far horizon above and
+    # inside the generated series (weathergen spans 2010 + 78 = 2010-2087).
+    # Was 2080/20; shortened 2026-08-10 — WF3's wflow time scales with run_length.
+    horizontime_climate: 2078
+    run_length: 16
+    run_historical: true
+    stress_test:
+      temp:
+        step_num: 1
+        transient_change: true
+        mean:
+          min: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+          max: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+      precip:
+        step_num: 2
+        transient_change: true
+        mean:
+          min: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+          max: [1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3]
+        variance:
+          min: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+          max: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+      # Monthly spell-length coefficients handed to the weather generator: they
+      # scale the length of dry and wet spells per calendar month. Optional;
+      # absent, both are twelve 1.0s, i.e. no adjustment. NOT perturbation axes
+      # -- they add no member to the grid and no design-table column, which is
+      # why they sit beside `temp:`/`precip:` rather than under them.
+      dry_spell_factor: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      wet_spell_factor: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]

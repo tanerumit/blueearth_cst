@@ -40,6 +40,9 @@ from pathlib import Path
 
 import pytest
 
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
+
 SNAKEDIR = Path(__file__).resolve().parents[1]
 CONFIG_FN = Path(__file__).resolve().parent / "snake_config_fixture.yml"
 RULE_NAME = "extract_historical_climate"
@@ -209,12 +212,11 @@ _CUSTOM_BASIN = {"hydrography": "merit_hydro_1k", "basin_index": "my_basin_index
 @pytest.fixture(scope="module")
 def config_variants(tmp_path_factory):
     """The shipped test config, plus one declaring both optional basin keys."""
-    import yaml
-
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     cfg["shared"]["basin"].update(_CUSTOM_BASIN)
-    custom = tmp_path_factory.mktemp("cfg") / "snake_config_custom_basin.yml"
-    custom.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    custom = write_config(
+        tmp_path_factory.mktemp("cfg"), cfg, stem="snake_config_custom_basin"
+    )
     return {"defaults": CONFIG_FN, "custom_basin": custom}
 
 
@@ -420,12 +422,10 @@ def test_chirps_branch_declares_and_consumes_one_orography_path(tmp_path):
     catalog — and this test failing on that move is the whole reason it exists,
     since the era5 fixture would not have noticed.
     """
-    import yaml
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     cfg["shared"]["clim_historical"] = "chirps_global"
-    cfg_path = tmp_path / "snake_config_chirps.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_chirps")
 
     workflow = _parse_workflow("run_stress_test.smk", cfg_path)
     producer = workflow.get_rule(RULE_NAME)
@@ -471,13 +471,12 @@ def _wf0_rule(workflow, source):
 @pytest.mark.workflow_contract
 def test_wf0_primary_source_rule_equals_the_shared_contract(tmp_path):
     """WF0's generated rule for the project's own source == WF1's declaration."""
-    import yaml
 
     cfg_path = CONFIG_FN
     wf0 = _parse_workflow("analyze_climate.smk", cfg_path)
     wf1 = _parse_workflow("build_model.smk", cfg_path)
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     primary = cfg["shared"]["clim_historical"]
 
     generated = _wf0_rule(wf0, primary)
@@ -505,13 +504,11 @@ def test_wf0_candidate_source_gets_its_own_store_and_family_outputs(tmp_path):
     one DAG is what proves the generation reads the spec rather than a taxonomy
     written into the Snakefile.
     """
-    import yaml
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     assert cfg["shared"]["clim_historical"] == "era5"
     cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["chirps"]
-    cfg_path = tmp_path / "snake_config_two_sources.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_two_sources")
 
     wf0 = _parse_workflow("analyze_climate.smk", cfg_path)
     era5 = _wf0_rule(wf0, "era5")
@@ -537,12 +534,10 @@ def test_wf0_rejects_an_unsupported_candidate_source(tmp_path):
     Deferring it to the generated rule would surface the failure under a rule
     name that does not say which config key put the source there.
     """
-    import yaml
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["eobs"]
-    cfg_path = tmp_path / "snake_config_bad_source.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_bad_source")
 
     with pytest.raises(Exception) as exc:
         _parse_workflow("analyze_climate.smk", cfg_path)
@@ -613,13 +608,11 @@ def test_wf0_relaxes_the_floor_for_candidates_only(tmp_path):
     `shared.clim_historical` onto a candidate changes the params Snakemake
     recorded and re-extracts it under the floor.
     """
-    import yaml
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     assert cfg["shared"]["clim_historical"] == "era5"
     cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["chirps"]
-    cfg_path = tmp_path / "snake_config_floor_split.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_floor_split")
 
     wf0 = _parse_workflow("analyze_climate.smk", cfg_path)
     primary = _wf0_rule(wf0, "era5")

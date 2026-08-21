@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, validate_historical_window, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 # The canonical climate figure set. Imported for figure_names() ONLY, so every
 # figure is declared from the same list the plotter writes from and the two
@@ -45,6 +46,30 @@ patch_psutil_windows_benchmark()
 # downstream scripts can be handed the same path. Forwarding config_path is a
 # repo convention -- keep it even though the Snakefile itself uses `config`.
 config_path = workflow.configfiles[0]
+
+# The consumed-key PROJECTION: the config paths this workflow actually reads.
+# Digesting the projection rather than the whole file is what stops another
+# workflow's edit from re-firing this record.
+#
+# HOISTED above the first config read (R13 D-8.2): the projection is a
+# config-independent literal, and `compose_config` derives R(entry) from it, so
+# it has to be known before any section is touched. Moving it changed no value.
+CONFIG_PROJECTION = ("project", "shared", "workflows.analyze_climate")
+
+# COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
+# workflow's settings live in its own file. This merges them back into exactly
+# the mapping every reader below already expects (R13 D-8.1).
+#
+# The result is REBOUND to the Snakefile-global `config`, deliberately and not
+# as a style choice: `check_project_consistency` takes its live config from
+# `sm.config` -- Snakemake's `workflow.config` -- so binding elsewhere would
+# leave WF3's drift guard comparing a two-key stanza against a full recorded
+# section and failing rule 3.01 after WF1 and WF2 had already run.
+config, WORKFLOW_CONFIG_PATHS = compose_config(
+    config, config_path, entry="analyze_climate", declared_sections=CONFIG_PROJECTION,
+)
+# Sorted so the declared input lists below do not churn on dict order.
+WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
 
 # R01 schema — three top-level sections.
 project_cfg = config["project"]
@@ -113,16 +138,19 @@ for _src in CANDIDATE_SOURCES:
 # 2026-08-13).
 RUN_RECORD = f"{project_dir}/config/runs/analyze_climate/run_record.yml"
 
-# The consumed-key PROJECTION: the config paths this workflow actually reads.
-# Digesting the projection rather than the whole file is what stops another
-# workflow's edit from re-firing this record.
-CONFIG_PROJECTION = ("project", "shared", "workflows.analyze_climate")
-
 # Every external file this workflow's configuration points at. Hashed at parse
 # time so the digest moves when one is edited IN PLACE.
 CONFIG_REFERENCES = [
-    ("data_catalog", source) for source in
-    (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])
+    # The per-workflow config files, so an in-place edit to the file that now
+    # holds this workflow's settings moves the digest (R13 D-10.5). After the
+    # split the project file no longer carries those settings, so leaving them
+    # out would let the most-edited config in a project change with nothing
+    # re-firing. Derived from the dict `compose_config` returned, so this set
+    # and the one `copy_config_files` records cannot drift.
+    *[(f"workflow_config_{name}", path)
+      for name, path in sorted(WORKFLOW_CONFIG_PATHS.items())],
+    *[("data_catalog", source) for source in
+      (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
 ]
 
 EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
@@ -342,6 +370,7 @@ rule snapshot_config:
     message: rule_banner("0.01", "snapshot_config")
     input:
         config_snake = config_path,
+        config_workflows = WF_CONFIG_PATHS,
     params:
         data_catalogs = DATA_SOURCES,
         workflow_name = "analyze_climate",

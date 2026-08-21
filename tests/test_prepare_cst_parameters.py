@@ -22,6 +22,8 @@ from blueearth_cst.experiment.prepare_cst_parameters import (
     prep_cst_parameters,
     refuse_out_of_domain_multipliers,
 )
+from blueearth_cst.shared.config_composition import load_composed_config
+from tests.conftest import write_config
 
 REPO_ROOT = __import__("pathlib").Path(__file__).resolve().parents[1]
 
@@ -61,9 +63,12 @@ def _write_cfg(
             }
         }
     }
-    path = tmp_path / "config.yml"
-    path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
-    return str(path)
+    # Written SPLIT, through the same helper the rest of the suite uses:
+    # these cases drive `prep_cst_parameters` by path, which is the
+    # direct-invocation branch, and that branch composes (R13 D-10.6). A
+    # whole-shaped file would be refused at the closed-stanza check -- which
+    # is the point of writing it the way a real project is laid out.
+    return str(write_config(tmp_path, cfg, stem="config"))
 
 
 def _read_lookup(tmp_path):
@@ -207,12 +212,12 @@ def test_a_third_stress_axis_refuses_naming_c28(tmp_path):
     contract barrier that deliberately survives it.
     """
     cfg_path = _write_cfg(tmp_path, temp_step=1, precip_step=2)
-    cfg = yaml.safe_load(open(cfg_path, encoding="utf-8"))
+    cfg = load_composed_config(cfg_path)
     cfg["workflows"]["run_stress_test"]["stress_test"]["wind"] = {
         "step_num": 1,
         "mean": {"min": _twelve(0.0), "max": _twelve(1.0)},
     }
-    open(cfg_path, "w", encoding="utf-8").write(yaml.safe_dump(cfg))
+    cfg_path = str(write_config(tmp_path, cfg, stem="config"))
 
     with pytest.raises(ValueError, match="C28"):
         prep_cst_parameters(cfg_path)
@@ -361,10 +366,32 @@ def test_temp_carries_no_domain():
     refuse_out_of_domain_multipliers(cfg)  # must not raise
 
 
+def _is_project_config(path: str) -> bool:
+    """A PROJECT file is one whose top level declares `workflows:`.
+
+    Discovery is a positive predicate rather than a filename glob because
+    since R13 the same `snake_config_*.yml` glob matches two file classes:
+    project files and the per-workflow files they point at. The two cannot be
+    separated by naming -- `.gitignore` tracks the seeds through that very
+    glob, so any name it tracks, a glob also discovers.
+    """
+    try:
+        doc = yaml.safe_load(open(path, encoding="utf-8"))
+    except yaml.YAMLError:
+        return False
+    return isinstance(doc, dict) and "workflows" in doc
+
+
 @pytest.mark.parametrize(
     "config_path",
-    sorted(glob.glob(str(REPO_ROOT / "test_case" / "snake_config_*.yml")))
-    + [str(REPO_ROOT / "config" / "templates" / "snake_config.template.yml")],
+    [
+        path
+        for path in sorted(
+            glob.glob(str(REPO_ROOT / "test_case" / "snake_config_*.yml"))
+        )
+        + [str(REPO_ROOT / "config" / "templates" / "snake_config.template.yml")]
+        if _is_project_config(path)
+    ],
 )
 def test_shipped_configs_are_inside_the_domain(config_path):
     """V23's other half: the guard must not refuse anything we ship.
@@ -372,7 +399,11 @@ def test_shipped_configs_are_inside_the_domain(config_path):
     A refusal that fires on the seeds would make every `--dry-run` in the repo
     fail, so this is the case that keeps the guard honest rather than merely
     strict.
+
+    Read through `compose_config` rather than off raw YAML: that is the same
+    path a run takes, so this checks the value the guard will actually see
+    instead of a value assembled a second way.
     """
-    cfg = yaml.safe_load(open(config_path, encoding="utf-8"))
+    cfg = load_composed_config(config_path)
     stress_test_cfg = cfg["workflows"]["run_stress_test"]["stress_test"]
     refuse_out_of_domain_multipliers(stress_test_cfg)

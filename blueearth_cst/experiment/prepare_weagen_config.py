@@ -53,7 +53,8 @@ def _transient_flag(stress_test_cfg, variable):
 
 
 def build_weagen_config(
-    snake_config_path,
+    realizations_num,
+    stress_test_cfg,
     output_path,
     nc_file_prefix,
     default_config_path,
@@ -79,6 +80,14 @@ def build_weagen_config(
     Snakemake already knows that path: it is rule 3.12's own declared output, so
     it is now passed as an argument and the rule is gone.
 
+    **The snake config is no longer read from disk** (R13 D-10.6). This
+    function took a path and re-opened it for exactly two things -- the
+    realization count and the two ``transient_change`` flags -- both of
+    which the Snakefile has already composed and validated. They now arrive
+    as params, finishing a conversion the six params above had already taken
+    three-quarters of the way, and the disk read disappears rather than
+    being redirected at the split layout.
+
     The per-member file also copied in the whole ``stress_test.temp`` and
     ``stress_test.precip`` blocks — step counts and monthly min/max ranges — of
     which the R read only the two transient flags (finding F6). Anyone opening
@@ -86,9 +95,6 @@ def build_weagen_config(
     in it; the real values come from ``st_<m>.csv``. Only the two flags survive
     here, so the file no longer implies otherwise.
     """
-    yml_snake = read_yml(snake_config_path)
-    experiment_cfg = yml_snake["workflows"]["run_stress_test"]
-
     yml_dict = read_yml(default_config_path)
     # Section and key names are weathergenr's own function and argument names
     # (renamed 2026-08-12 from `generateWeatherSeries`, a function 1.2.0 does
@@ -100,7 +106,7 @@ def build_weagen_config(
             "out_dir": output_path,
             "start_year": 2010,
             "n_years": compute_nr_years(middle_year, sim_years),
-            "n_realizations": experiment_cfg["realizations_num"],
+            "n_realizations": realizations_num,
             # Resolved by the Snakefile from `shared.seed` (integer or `auto`)
             # against `defaults.seed`. Injected rather than templated so there
             # is ONE default: a `seed:` left in the weagen template would be a
@@ -124,7 +130,6 @@ def build_weagen_config(
 
     # Read by impose_climate_change.R (rule 3.12). Only the flags, not the
     # perturbation magnitudes — those live in st_<m>.csv and are read from there.
-    stress_test_cfg = experiment_cfg["stress_test"]
     yml_dict["temp"] = {"transient_change": _transient_flag(stress_test_cfg, "temp")}
     yml_dict["precip"] = {
         "transient_change": _transient_flag(stress_test_cfg, "precip")
@@ -167,7 +172,8 @@ if __name__ == "__main__":
                 module="weagen",
             )
             yml_dict = build_weagen_config(
-                snake_config_path=sm.params.snake_config,
+                realizations_num=sm.params.realizations_num,
+                stress_test_cfg=sm.params.stress_test_cfg,
                 output_path=sm.params.output_path,
                 nc_file_prefix=sm.params.nc_file_prefix,
                 default_config_path=sm.params.default_config,

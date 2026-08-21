@@ -26,7 +26,9 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-import yaml
+
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
@@ -193,7 +195,7 @@ def modelfree_project(tmp_path):
     catalog = tmp_path / "catalog.yml"
     catalog.write_text("{}\n", encoding="utf-8")
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     cfg["project"]["project_dir"] = project_dir.as_posix()
     cfg["project"]["data_sources"] = catalog.as_posix()
     cfg["shared"]["historical_window"] = {
@@ -209,8 +211,7 @@ def modelfree_project(tmp_path):
     cfg["workflows"]["build_model"]["waterbodies_config"] = (
         tmp_path / "absent" / "wflow_update_waterbodies.yml"
     ).as_posix()
-    cfg_path = tmp_path / "snake_config_modelfree.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_modelfree")
 
     spec = climate_store_rule(
         project_dir=project_dir.as_posix(),

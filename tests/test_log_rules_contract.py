@@ -40,6 +40,9 @@ from pathlib import Path, PurePosixPath
 
 import pytest
 
+from blueearth_cst.shared.config_composition import load_composed_config
+from tests.conftest import write_config
+
 SNAKEDIR = Path(__file__).resolve().parents[1]
 CONFIG_FN = Path(__file__).resolve().parent / "snake_config_fixture.yml"
 
@@ -178,12 +181,11 @@ def config_paths(tmp_path_factory) -> dict[str, Path]:
     directory per pytest process, outside the repo's own ``.tmp/``; session
     scope gets the same build-once reuse with nothing left behind.
     """
-    import yaml
-
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["chirps"]
-    path = tmp_path_factory.mktemp("log_rules") / "snake_config_two_sources.yml"
-    path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    path = write_config(
+        tmp_path_factory.mktemp("log_rules"), cfg, stem="snake_config_two_sources"
+    )
     return {"default": CONFIG_FN, "two_source": path}
 
 

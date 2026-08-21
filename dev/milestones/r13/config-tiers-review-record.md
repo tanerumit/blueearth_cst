@@ -7,8 +7,8 @@
 > whose body carries the normative contract.
 
 - **Run:** `config-modularization`, 2026-08-20 → 2026-08-21, variant `full`
-- **Accepted design:** `config-tiers-design.md` (run-dir `design-v5.md`, 3416 lines)
-- **Intake:** `config-tiers-intake.md` (run-dir `intake.md`)
+- **Accepted design:** `config-tiers-design.md` (was `design-v5.md`, 3416 lines)
+- **Intake:** `config-tiers-intake.md` (was `intake.md`)
 - **Author binding:** `cst-architect` · **Dispatches:** Opus ×6, Fable ×4
 - **Expensive checks:** 2 (one framework-feasibility probe, one CLI verification)
 
@@ -38,8 +38,18 @@
 | `design-v4.md` (3057) | corrective pass 6b | `probe-1` |
 | `design-v5.md` (3416) | arbitration revision 6a | `ext2-1..6`; minted **D-9.7**, **D-15.3a** |
 
-Verbatim reviews are preserved in git: `internal-review-{risk,architecture,repo-fit}.md`,
-`internal-review-index.md`, `external-review-r1.md`, `external-review-r2.md`.
+Verbatim reviews are preserved in git rather than retained on disk — the run
+directory was drained at closure per `dev/README.md`. The commits holding each:
+
+| Artifact | Commit |
+|---|---|
+| `internal-review-{risk,architecture,repo-fit}.md`, `internal-review-index.md` | `8b85c4c` |
+| `external-review-r1.md` | `ef498a9` |
+| `external-review-r2.md` | `b0a5607` |
+| `ledger.md` (final, 64 rows incl. arbitration entries) | `1c788ec` |
+| `status.md` (gate records, probe measurements) | `c657365` |
+| `observations.md` (process-friction log) | `c657365` |
+| `design-v1..v4.md` (superseded) | `git log -- dev/working/design-runs/config-modularization/` |
 
 ## What the review actually caught — the load-bearing history
 

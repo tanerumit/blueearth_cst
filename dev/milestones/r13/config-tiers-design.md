@@ -1,23 +1,41 @@
-# R13 — Config modularization: Design (DRAFT v2)
+# R13 — Config modularization: Design (ACCEPTED)
 
-> **Status: DRAFT v2** — revised against the internal three-lens panel
-> (52 findings: 5 blocking, 27 major, 20 minor). Dispositions are in
-> `ledger.md` beside this file; every finding ID is answered there, and the
-> sections below carry the resolutions. Awaiting human gate **G2**.
+> **Status: ACCEPTED 2026-08-21** (G2, no editorial edits) — v2 (revised against the internal three-lens panel:
+> 52 findings, 5 blocking / 27 major / 20 minor) further revised against
+> **external round 1** (4 major findings, `ext1-1..ext1-4`; verdict `revise`),
+> then corrected in a **stage-6b pass** after the driver's framework-feasibility
+> probe **refuted** r2's §15.6 records-first refresh sequence (`probe-1`,
+> blocking; premises N19–N20, §6.3), then revised against **external round 2**
+> (2 blocking + 4 major, `ext2-1..ext2-6`; verdict `revise`) under **owner
+> arbitration** — round 2 was the full-variant cap, so the owner ruled on every
+> surviving finding (ledger, "Owner arbitration (round-cap, 2026-08-21)") and
+> this revision implements those rulings; there was no further external round.
+> The consequential ruling: the `wflow_outvars` hoist is **in R13's scope** as
+> a required final phase (D-9.7), ordered after split-only neutrality
+> validation, and R13 completes with `CROSS_WORKFLOW_READS` **empty**.
+> Two of round 1's four findings implement owner rulings recorded at
+> gate-clarifications (S7 staging-emit, S8 narrow G4 — §5). Dispositions are in
+> `config-tiers-review-record.md` beside this file, which carries the verdict
+> table, the owner rulings and the commits holding each verbatim review; every
+> finding ID is answered in the ledger that record cites, and the sections below
+> carry the resolutions. **Approved at G2 on 2026-08-21.**
 > **Milestone:** R13 (config surface as the first modularization seam).
-> R12 is taken by the open WF3 execution-model milestone (`dev/roadmap.md:1462`),
-> so this work is R13 per the scope amendment. The accepted design lands at
-> `dev/milestones/r13/`; the run directory keeps the `config-modularization` slug.
+> R12 is taken by the open WF3 execution-model milestone (`dev/roadmap.md` § R12 — WF3 execution model),
+> so this work is R13 per the scope amendment. The accepted design landed here at
+> `dev/milestones/r13/`; the run directory under `dev/working/` was drained
+> at closure per `dev/README.md`.
 > **Genre:** decision-record (milestone design), per the repo's
 > `dev/milestones/*/ *-design.md` house style.
 > **Author role:** cst-architect. **Run:** `config-modularization`.
-> **Scope authority:** `dev/working/design-runs/config-modularization/intake.md`
+> **Scope authority:** `config-tiers-intake.md` (landed beside this file)
 > — its five *Confirmed scoping rulings* and its *Scope amendment* are fixed
 > anchors and are not reopened here. The G1 framing (path-referenced
 > composition; naming Candidate A provisional; clean-break migration with a
 > report-only split script) is settled; every finding below is resolved
 > **inside** it.
-> **Body: 2719 lines**, against v1's 1341. A mid-revision header predicted
+> **Body: v2 measured 2719 lines**, against v1's 1341; r2's growth is confined
+> to the four external findings' resolutions and their forced cross-references.
+> A mid-revision header predicted
 > 1500–1800; the finished count is the fact and replaces the prediction. The
 > growth is nameable rather than accretive. Eight findings
 > (`repofit-1/3/6/7/12`, `arch-19/20/21`, `risk-8`) converge on a single
@@ -81,10 +99,23 @@ convention.
   workflow referenced by path, T3 model configs unchanged.
 - **G2** — the shared-seam rule (`a key read by more than one workflow lives in
   T1`) enforced at parse time, so `pytest tests/test_cli.py` is its gate.
+  **Widened by owner arbitration** (ext2-1, 2026-08-21): R13 does not complete
+  with a sanctioned exception — the `wflow_outvars` hoist is a required final
+  phase (D-9.7), and `CROSS_WORKFLOW_READS` must be **empty** before R13
+  completes. S4 holds with zero exceptions at milestone completion.
 - **G3** — output neutrality: a pre-migration and post-migration project run
   produce identical DATA targets. The three config-snapshot baseline targets are
-  the single declared exception (§16.3).
-- **G4** — the CLI, wrapper, and `config_path`-forwarding contracts unchanged.
+  the single declared exception (§16.3) — and under D-9.7 they move **twice**,
+  once at the split and once at the hoist, each time with zero data targets
+  moving (§16.5's ordering runs once per phase).
+- **G4** — **narrowed by owner ruling** (S8, gate-clarification 2026-08-21,
+  resolving `ext1-3`): the `--configfile` path contract (one T1 path, same
+  flag), the wrapper invocation surface, and `config_path` forwarding to
+  downstream scripts are unchanged. G4 claims nothing about the `--config`
+  override surface: ad-hoc overrides of **workflow settings** are withdrawn,
+  not preserved — v2 booked that as a deliberate behavior change while stating
+  G4 broadly, which external round 1 correctly called a papered-over
+  CLI-contract break. §8.5b carries the form-by-form migration mapping.
 - **G5** — a mechanical, bounded migration for existing projects, with a
   parse-time error that names the migration document. **"Bounded" is now
   quantified rather than asserted**: §15.6 states the compute cost of the first
@@ -136,10 +167,17 @@ Carried verbatim from the intake; every decision below is answerable against the
    (baseline-neutral refactor).
 5. The layout advances workflow-as-module modularization.
 
+Criterion 3's "CLI … unchanged" is read under the **narrowed G4** (S8, §2): the
+`--configfile` contract, the wrapper, and the forwarding — not the `--config`
+override surface, which is withdrawn for workflow settings by the same ruling
+(§8.5b). The criteria themselves are the intake's and are not edited.
+
 ## 5. Settled framing (owner rulings — not reopened)
 
 Restated so this document is self-contained. Sources: intake *Confirmed scoping
-rulings* 1–5 and *Scope amendment* 1–3.
+rulings* 1–5 and *Scope amendment* 1–3; **S7 and S8 were ruled at
+gate-clarifications during external round 1** (`config-tiers-review-record.md` § Owner rulings, 2026-08-20 and
+2026-08-21) and carry the same standing.
 
 | # | Ruling |
 |---|---|
@@ -149,6 +187,8 @@ rulings* 1–5 and *Scope amendment* 1–3.
 | **S4** | Shared-seam rule: any key read by more than one workflow lives in T1, never in a T2 file — **enforced by the loader**, not by convention. |
 | **S5** | `shared.seed` and `shared.water_year_start` remain per-project overrides of `defaults:`; `min_historical_years` remains a constraint. Advanced per-workflow knobs a project may set live as optional keys in that workflow's T2 file. |
 | **S6** | This is milestone **R13**. Workflow naming is in scope: candidates + one recommendation (§14); the choice itself is an owner ruling, provisionally Candidate A at G1 and final at G2. |
+| **S7** | **Staging-emit** (ruled 2026-08-20, resolving `ext1-2`): `split_project_config.py` is strictly report-only against user files — it emits the proposed T1 + T2 into a staging directory plus a migration report, and application is an explicit user step outside the script. No `--write`, no in-place mutation, no opt-in mutation mode (§15.3). |
+| **S8** | **Narrow G4** (ruled 2026-08-21, resolving `ext1-3`): G4 covers the `--configfile` path contract, the wrapper invocation, and `config_path` forwarding — nothing more. Ad-hoc `snakemake --config` overrides of workflow settings are **withdrawn**, not preserved: an override that bypasses the T2 file is exactly the shared-seam hole D-9.1 exists to close. Routing overrides into the composed T2 before validation was offered and declined (§8.5b, §17.4). |
 
 Two questions the intake left **open** were decided in v1 and stand: where
 top-level `reporting:` lives (§10.4 — the WF3 T2 file, hoisted) and backward
@@ -188,8 +228,11 @@ mechanisms), E7 (wrapper `enabled` validation), E8 (`simulation_window` ⊂
 
 ### 6.3 New premises verified for this revision
 
-Verified in this worktree on 2026-08-20 by direct read or execution. These are
-the premises the panel's findings turn on, re-checked rather than accepted.
+Verified in this worktree by direct read or execution: N9–N18 on 2026-08-20
+(the premises the panel's findings turn on), N19–N20 on 2026-08-21 by the
+driver's framework-feasibility probe (measurements recorded in `config-tiers-review-record.md`;
+re-runnable against a copy of `test_case/test_rapid`, never against the
+fixture itself). All are re-checked rather than accepted.
 
 | # | Premise | Citation | Why it matters |
 |---|---|---|---|
@@ -203,6 +246,8 @@ the premises the panel's findings turn on, re-checked rather than accepted.
 | **N16** | `tests/conftest.py:136-145`'s `model_build_config` fixture calls `get_config(config["workflows"]["build_model"], "model_build_config", optional=False)` against a raw `yaml.safe_load` of the fixture config (`:113-118`), with no composition anywhere in the chain. | direct read | `arch-19`: the central shape change breaks a fixture in the one test layer AGENTS.md says skips rather than fails outside the primary checkout. |
 | **N17** | 16 test modules reference `tests/snake_config_fixture.yml` directly; 20 index `["workflows"]` or build a `"workflows":` dict literal; the union of modules touching any shipped-config or config-shape surface is **45**. `tests/snake_config_fixture.yml` is itself inline-shaped (its `build_model` section carries `model_build_config`, `waterbodies_config`, `wflow_outvars`, `observations_timeseries`). | `rg -l` sweeps + `yaml.safe_load` | The measured base for §16.2's three-tier inventory. Confirms `repofit-1`: the clean break disables the design's own primary gate until the fixture is split. |
 | **N18** | `tests/test_experiment_allocation.py:83,185-206` writes and reads `workflows.run_stress_test.experiment_name` through `runner.main` on a temp config. | direct read | **Named by no lens.** It breaks with `tests/test_suggest_experiment_name.py` under §12.3 and is added to §16.2 tier 1 — the concrete return on `risk-8`'s demand for an inventory rather than a sweep. |
+| **N19** | **`--touch` succeeds on a completed experiment but cannot produce a clean dry-run.** On a 56 MB copy of `test_case/test_rapid` (completed experiment): `snakemake all --touch -s run_stress_test.smk` succeeded, 32/32 jobs, 4 s — `--touch` neither errors on reaped `temp()` outputs nor resurrects them. The immediately-following `snakemake all -n` on the same touched copy scheduled **28 jobs, not zero**, reason `output files have to be generated` for exactly the four `temp()`-wrapped rules — `check_model_reference` (`run_stress_test.smk:736`, `temp(touch(...))`), `generate_weather_realizations` (`:931`), `perturb_climate_realization` (`:975`), `downscale_climate_realization` (`:1021`/`:1029`) — with everything downstream, including the `run_wflow_batch_*` cascade that consumes the downscale/perturb outputs, inheriting `input files updated by another job`. `--touch` cannot touch a file that does not exist, so a reaped intermediate keeps the DAG demanding it permanently. | driver probe, 2026-08-21 (`status.md`) | **Refutes §15.6 (r2) step 4**: "a final `--dry-run` per workflow must schedule nothing" is unachievable on any completed experiment, and step 3's "nothing consumes it" was wrong for the two rules `run_wflow_batch_*` consumes. The basis of `probe-1` and the v4 withdrawal. |
+| **N20** | **The permanently-dirty DAG is the normal state of a completed project — pre-existing, not a migration artifact.** Control: `all -n` on the **untouched** `test_case/test_rapid` schedules 20 jobs for WF1 and 36 for WF3 before any migration. AGENTS.md mandates `temp()` on per-realization intermediates (the disk-explosion control), so reaped is the normal end state of every completed WF3 run — and `run_stress_test.smk:556-560` records the same fact in-tree ("on a COMPLETED experiment every 3.12 output is temp() and already deleted"). | driver probe, 2026-08-21 + direct read | Bounds OV-2 honestly in both directions: re-invoking `snakemake all` on a completed project re-runs the reaped chain **today**, migration or not — so a migration shortcut could never save the dominant cost (the Wflow batch cascade sits downstream of the reaped files), which is why v4 withdraws the sequence rather than repairing its proof. |
 
 ## 7. Target layout — T1, T2, T3
 
@@ -305,6 +350,12 @@ Bare rather than wrapped (`build_model:` at the T2 top level) because the bare
 form is the whole point of the user-facing win: the file a user opens to change
 WF1 contains WF1's settings at column zero and nothing else. The wrapped form
 buys a redundant self-identification that the T1 reference already supplies.
+
+*Phase note (r3, D-9.7):* the example above is the **split-phase** shape
+(§15.7 commits 1–7). In R13's end state `wflow_outvars` is not in this file —
+it is read by two workflows, so the hoist phase moves it to T1's `shared:`
+(D-9.7), and the shipped seeds, the template, and the splitter's emission all
+carry the hoisted placement from §15.7 commit 8 on.
 
 Note that the values inside a T2 file keep resolving **CWD-relative**, exactly as
 they do today — `model_build_config: config/defaults/…` above is a toolbox path
@@ -546,9 +597,12 @@ obligations follow, and both are named rather than left to discovery:
 **Not** "loaded iff `enabled: true`". WF3 reads two other workflows' sections
 regardless of whether those workflows are enabled: `provenance.project_config`
 raises `KeyError` at parse time when a declared projection path is absent
-(`provenance.py:208-212`), and `run_stress_test.smk:537-540` reads the *meaning*
-of `workflows.build_model.wflow_outvars` to derive the indicator tables before
-the DAG is built. The rule is therefore:
+(`provenance.py:208-212`), and — in the split phase —
+`run_stress_test.smk:537-540` reads the *meaning* of
+`workflows.build_model.wflow_outvars` to derive the indicator tables before
+the DAG is built (post-hoist that read moves to `shared:`, D-9.7; the
+projection/guard reason stands alone and `R(entry)` is unchanged). The rule is
+therefore:
 
 > A workflow's T2 file is **loaded** for entry point `W` iff its workflow is in
 > `R(W) = {W} ∪ {the workflows named in W's CONFIG_PROJECTION}`. Enablement does
@@ -563,8 +617,9 @@ the DAG is built. The rule is therefore:
 
 Workflows **outside** `R(entry)` have their T2 files neither resolved nor merged.
 Their T1 stanza is still validated (D-9.1) and, from v2, their T2 file is still
-*opened for a name-only duplicate check* where it resolves (D-9.3) — a read of
-key names, never of values, so the narrowing in §8.1 is unaffected.
+*opened for a name-only check against the declared shared/hoisted identities*
+where it resolves (D-9.3, as restricted in r3) — a read of key names, never of
+values, so the narrowing in §8.1 is unaffected.
 
 ### D-8.7 — A declared-but-omitted `config_path` means `{}`
 
@@ -608,9 +663,12 @@ WF0 needs no WF0 file at all") true for WF0 and false for WF2.
 
 *The residual, stated.* A user who deletes both a T2 file and its `config_path`
 key for a workflow whose settings mattered gets that workflow's **defaults**, not
-an error — `run_stress_test.smk:537-540` reads `wflow_outvars` with
-`optional=True` and falls back to `DEFAULT_WFLOW_OUTVARS`. That is today's
-behavior for an empty section, preserved deliberately rather than introduced. The
+an error — in the split phase, `run_stress_test.smk:537-540` reads
+`wflow_outvars` with `optional=True` and falls back to `DEFAULT_WFLOW_OUTVARS`
+(post-hoist that particular read moves to `shared:` and stops depending on any
+T2 file at all — D-9.7 — but the defaults-not-error residual holds for every
+optional per-workflow key). That is today's behavior for an empty section,
+preserved deliberately rather than introduced. The
 distinction the design leans on is that deleting a *file* while leaving the key is
 a hard error (a typo cannot pass), whereas deleting the *key* is a two-step
 edit that says what it means.
@@ -708,8 +766,9 @@ resolved absolute path **and** the anchor it was resolved against:
 **The duplicate check compares `os.path.normcase(os.path.abspath(resolved))`**,
 not the raw string (`risk-18`). A raw-string comparison is evaded by
 `./build_model.yml` versus `build_model.yml`, a trailing separator, or a
-case-only difference on Windows — and D-9.3 cannot substitute, because with one
-file on disk there is only one file to compare. The repo has already paid for
+case-only difference on Windows — and no name-level check (D-9.3, before or
+after its r3 restriction) can substitute, because with one file on disk there
+is only one file to compare. The repo has already paid for
 this exact bug class one layer down: `copy_config_files.py:317-325` compares
 destinations with `os.path.normcase(os.path.abspath(...))` rather than
 `resolve()`, with a comment explaining that case-only differences "would collide
@@ -750,27 +809,79 @@ message that blames project drift rather than the binding.
 shape is visible through `workflow.config`, so the invariant is checked rather
 than documented.
 
-**(b) `--config key=value` overrides apply to T1, before composition.**
+**(b) `--config key=value` overrides apply to T1, before composition — and
+workflow-setting overrides are WITHDRAWN (S8, owner ruling 2026-08-21).**
 
 `scripts/plot_workflow_dag.py:50` documents `-- --config foo=bar` as a supported
 passthrough and `scripts/run_workflows.py` sanitizes and records passthrough
 `--config` overrides. Snakemake merges those into the config mapping before the
-Snakefile body executes — hence before `compose_config`. Two consequences, both
-now stated:
+Snakefile body executes — hence before `compose_config` — and the merge is
+**recursive for mapping values, replacing only leaves**
+(`update_config`, `snakemake/utils.py:563-589`), a correction of v2, which said
+an override of `workflows` "replaces the stanzas": a mapping-valued override
+merges *into* them.
 
-- An override that writes a **workflow setting** into `workflows.<name>` is a
-  parse-time **rejection** under D-9.1, not an override. This is correct and
-  deliberate: a workflow setting is overridden by editing the T2 file. It is also
-  a behavior change for anyone using that passthrough today.
-- An override of the whole `workflows` key replaces the stanzas the loader then
-  validates — which is coherent (the replacement is validated like any other T1)
-  but worth saying, because the merge happens outside this design's code.
+v2 called the resulting parse-time rejection of workflow-setting overrides
+"correct and deliberate" while G4 still claimed the CLI contract unchanged.
+External round 1 (`ext1-3`) correctly found that inconsistent, and the owner
+ruled it at a gate-clarification: **narrow G4** (S8) rather than route overrides
+into the composed T2 — a second write path into workflow settings is exactly
+the shared-seam hole D-9.1 exists to close (§17.4). The withdrawal is the
+clean-break posture (§15.1) applied to the one config surface that is not a
+file.
 
-The §15.2 migration error text must therefore **not attribute a rejected key to
+**The migration mapping — every override form a user can type, and where it
+goes** *(rows 6–7 new in r3; owner arbitration `ext2-5`)*. Rows 1–5 are the
+forms the pre-split CLI **accepts** ("formerly supported": merged silently into
+the monolith today, whatever they touched). Rows 6–7 are the dotted forms the
+`ext1-3`/S8 record named — added because a mapping that omits the form which
+prompted the ruling cannot claim completeness — and their behaviour is
+**verified against the pinned Snakemake (9.6.2), not asserted**: the CLI's own
+`parse_config` (`snakemake/cli.py:296-330`) validates every `--config` key
+against the regex `[a-zA-Z_][\w-]*\w$`, which admits no `.`, so a dotted key
+dies **inside Snakemake's argument processing** — before any configfile is
+read, before the Snakefile parses, and identically pre- and post-split. No
+closure check of this design ever sees a dotted key; there is no parsed
+mapping to state. The dotted forms were therefore never accepted syntax under
+the pinned toolchain — S8's "withdrawn" for row 6 records intent, and this row
+records the mechanism that was already refusing it.
+
+| # | Form | After the split | Replacement |
+|---|---|---|---|
+| 1 | `--config workflows='{"<name>": {"<setting>": v}}'` — a workflow setting, recursively merged into that section (parsed to a nested mapping, `update_config`-merged) | **parse-time rejection** (D-9.1: the stanza is closed to `{enabled, config_path}`) naming the key | edit the setting in that workflow's T2 file. For a one-off variant, copy the T2 file, edit the copy, and point the stanza's `config_path` at it — repointing is itself a T1-key override (row 3), so it can be done from the command line without editing any file |
+| 2 | `--config workflows='{"<name>": {"enabled": true/false}}'` — toggling a workflow | **still valid** — `enabled` is T1-owned and inside the closed stanza | unchanged |
+| 3 | `--config workflows='{"<name>": {"config_path": "<file>"}}'` — repointing a stanza at another T2 file | **valid by construction, new** — the override lands inside the closed stanza; the loader then resolves and validates the pointed file exactly as if T1 named it (§8.4, §9). This is the sanctioned ad-hoc path for workflow settings: the override *selects* a validated file rather than bypassing validation | n/a — this is the replacement |
+| 4 | `--config project='{…}'` / `--config shared='{…}'` — T1-owned keys | **still valid** — merged into T1 before composition, then validated like any other T1 content (D-9.5, `SHARED_SEAM_KEYS`) | unchanged |
+| 5 | `--config <new_top_level_key>=v` — e.g. the documented `--config foo=bar` | **parse-time rejection** (D-9.5: T1's top level is closed) | none — withdrawn. `plot_workflow_dag.py:50`'s usage example demonstrates this form and is updated in the docs sweep (§16.6) |
+| 6 | `--config workflows.<name>.<setting>=value` — the dotted workflow leaf S8's record named as withdrawn | **rejected by Snakemake's CLI itself**, pre- and post-split alike: `ValueError: Invalid config definition: Config entry must start with a valid identifier.` from `parse_config` (`cli.py:312`), raised during argument processing — verified by invocation in this worktree (2026-08-21). The error is Snakemake's, so it cannot name this design's migration doc; `docs/migration-config-tiers.md` therefore carries this row so a user who types the form and searches the docs finds the outcome and the replacement | edit the T2 file, or the `config_path` repoint (row 3); for a T1-owned leaf inside `workflows.<name>` (`enabled`), the mapping-valued row 2 |
+| 7 | `--config project.<leaf>=v` / `--config shared.<leaf>=v` — dotted T1 leaves | **same CLI-level rejection**, same message, verified identically — the dot never reaches the config mapping | the mapping-valued row 4 (`--config shared='{"seed": 42}'`), or edit T1 |
+
+*Parsed-value note, verified:* inside a mapping-valued override the value is
+parsed with `yaml.BaseLoader` (`parse_config`'s `yaml_base_load`), so nested
+scalars arrive as **strings** — `--config shared='{"seed": 42}'` produces
+`{'shared': {'seed': '42'}}`. That is pre-existing Snakemake behaviour for
+rows 1–4, unchanged by the split, and stated here only so the "parsed mapping"
+column of this table is exact rather than idealized.
+
+Two named surfaces need no code change and the implementer must not "fix" them:
+`run_workflows.py`'s passthrough handling (`:46`, `:1061-1069`) **records**
+sanitized `--config` overrides in the invocation manifest for disclosure and
+never merges them itself — that recording is correct under S8 and stays,
+including for a rejected invocation that never gets to run. And provenance is
+unchanged in posture: an override — including a `config_path` repoint — is
+excluded from the runner-side digest exactly as today ("the Snakefile snapshot
+owns Snakemake's authoritative merged config"), while the composed snapshot
+(D-11.1) and the T2-bytes digests (§10.5) record what actually loaded, so the
+effective configuration of an overridden run is fully recorded even though T1's
+on-disk `file_sha256` is not the override's witness.
+
+The §15.2 migration error text must still **not attribute a rejected key to
 the config file** unconditionally: when the offending key is not present in the
-file as parsed from disk, the message says it arrived via `--config`. That is one
-extra read of the on-disk T1 in the error path only, and it prevents the
-migration doc telling a user to fix a file that is already correct.
+file as parsed from disk, the message says it arrived via `--config` — and,
+under S8, points at this section's mapping rather than at the migration doc
+alone. That is one extra read of the on-disk T1 in the error path only, and it
+prevents the migration doc telling a user to fix a file that is already
+correct.
 
 ## 9. Shared-seam enforcement (S4)
 
@@ -778,7 +889,10 @@ The rule is: *a key read by more than one workflow lives in T1, never in a T2
 file*. Convention cannot enforce it — the intake's ruling 4 says so — and a full
 key registry would be a second source of truth that drifts from the Snakefiles.
 The mechanism is four closed checks, all at parse time, generalizing the in-repo
-precedent of `_ADVANCED_SETTINGS_SCHEMA` (E2).
+precedent of `_ADVANCED_SETTINGS_SCHEMA` (E2) — plus, from r2, the frozen
+cross-workflow read contract and its test (D-9.6), which govern the one case
+the parse-time checks cannot see — and, from r3, the in-milestone hoist phase
+(D-9.7) that empties that contract before R13 completes.
 
 **D-9.1 — Closed T1 workflow stanza, validated for every stanza that is
 present.** `workflows.<name>` admits exactly `{enabled, config_path}` (§7.1).
@@ -838,22 +952,42 @@ the unguarded direction. Deriving the rejection from the hoist map closes it
 without a hand-maintained list: every hoisted name is rejected everywhere except
 in its declared owner's file.
 
-**D-9.3 — Cross-T2 multi-declaration check, over every T2 that resolves.** Any
-top-level key name appearing in **two or more** T2 files is a hard error naming
-the key and both files. This is the direction D-9.2 cannot see: a genuinely new
-cross-workflow key, invented after this design lands, that nobody thought to add
-to `SHARED_SEAM_KEYS`. Its first symptom is being written twice, and this check
-turns that symptom into a parse-time failure whose message says what to do —
-promote it to `shared:`.
+**D-9.3 — Declared-identity check over every T2 that resolves** *(restricted
+in r3; owner arbitration `ext2-6`)*. For every name in the **declared
+global-identity set** — `REJECTED_IN_T2(name)` as D-9.2 defines it, i.e.
+T1-owned names, `SHARED_SEAM_KEYS`, `t1["shared"]`'s keys, and every hoisted
+section outside its owner — an appearance at the top level of any declared T2
+file that resolves is a hard error naming the key, the file, and the fix
+(promote to or edit `shared:`; or, for a hoisted name, its owning T2 file).
 
-**The scope widened in v2** (`risk-3`). v1 scoped the check to "all T2 files in
-`R(entry)`", and per §8.3's own table three of the four entry points have
-singleton `R(entry)` — so for WF0, WF1 and WF2 the check has exactly one file to
-look at and **can never fire**. The pairs `analyze_climate`×`build_model`,
-`analyze_climate`×`analyze_projections` and `build_model`×`analyze_projections`
-were unreachable by any entry point, leaving a hole in decision criterion 1, the
-design's central claim. The check now runs over **every T2 file declared in T1
-that resolves**, not only `R(entry)`'s.
+Two things changed here in r3, one restriction and one thing that survives:
+
+- **The unconditional cross-T2 spelling rejection is withdrawn** (`ext2-6`;
+  the all-spellings half of `risk-3` is withdrawn with it, by the same
+  arbitration). v2's rule made *any* top-level name appearing in two or more T2
+  files an error — but S4 is defined by **consumption**, not spelling. Two
+  workflows can legitimately own unrelated settings that happen to share a
+  local name (an independent `window` or `output_dir` in two T2 files); their
+  workflow namespaces distinguish them, neither reads the other's, and
+  rejecting the pair forces artificial names or needless hoists — degrading
+  the modular boundary this design exists to build. Such pairs now parse.
+  What v2 bought with the spelling rejection — first-symptom detection of a
+  genuinely new cross-workflow key nobody added to `SHARED_SEAM_KEYS` — is
+  carried by the corrected D-9.6 instead: the new key's cross-workflow *read*
+  fails the widened static scan in CI. The trade is deliberate and
+  owner-ruled: detection of a *new* shared key moves from parse time to test
+  time, while *known* shared names stay guarded at parse time — the owner
+  declined full removal of D-9.3 precisely so the whole shared-seam guarantee
+  does not rest on D-9.6 alone. D-9.2 is retained unchanged for files inside
+  `R(entry)`.
+- **The every-file reach survives** (`risk-3`'s surviving half, unchanged from
+  v2's widening). v1 scoped the check to `R(entry)`'s files, and per §8.3's
+  table three of the four entry points have singleton `R(entry)` — so for WF0,
+  WF1 and WF2 a check confined to `R(entry)` has exactly one file to look at
+  and can never see a planted shared name in an out-of-`R(entry)` file. D-9.3
+  runs over **every T2 file declared in T1 that resolves**, which is exactly
+  what distinguishes it from D-9.2: same rejection set, applied beyond the
+  composed set, names only, values never merged.
 
 > **Tolerance clause, load-bearing:** a T2 file outside `R(entry)` that is
 > **missing, unparseable, or not a mapping** is *skipped with a logged note*, not
@@ -861,7 +995,7 @@ that resolves**, not only `R(entry)`'s.
 
 Without that clause a broken WF3 config would break a WF1 run, which is the
 inverse of this milestone's goal — a workflow's own file must not be able to fail
-another workflow's parse. The widened check reads **key names only** and merges
+another workflow's parse. The check reads **key names only** and merges
 nothing, so §8.1's narrowing is preserved; the cost is up to three extra small
 YAML parses at parse time, on the order of milliseconds.
 
@@ -882,19 +1016,216 @@ moves the block (and §15.4 says what it does with the commented one), so a
 migrated config never hits it.
 
 **Coverage, honestly.** D-9.1 catches leaving a workflow key in T1. D-9.5 catches
-leaving a non-workflow section in T1. D-9.3 catches duplicating a key across T2
-files, now for every pair rather than three of six. D-9.2 catches planting a
-shared or hoisted key in a T2 file. What none of them catches is a key read by
-two workflows that appears in only *one* T2 file and is read across the section
-boundary from there — which is exactly the shape WF3's
-`workflows.build_model.wflow_outvars` read already has (E1). That read is legal
-today and stays legal: it is mediated by `guarded_sections`, a *declared*
-cross-section dependency, which is what puts `build_model` in `R(wf3)` (§8.3).
+leaving a non-workflow section in T1. D-9.2 catches planting a shared or hoisted
+key in a composed T2 file; D-9.3 extends the same rejection to every declared T2
+file that resolves, `R(entry)` or not. What the parse-time checks do **not**
+catch, since r3's restriction: a genuinely *new* cross-workflow key — same name
+in two T2 files, or one T2 file read across the section boundary — whose names
+are not yet declared shared. Both of those are the corrected D-9.6's job: any
+cross-workflow value read on any authorized runtime-consumer surface fails the
+static scan in CI. v2 left the cross-section-read case "tracked in one
+maintained list" (`guarded_sections`) with §19 Q2 open on whether the list
+should become a checked contract — a known exception to S4, which external
+round 1 (`ext1-1`) correctly refused. D-9.6 closes it, and D-9.7 empties it.
+
+**D-9.6 — The cross-workflow read inventory, and the frozen read contract**
+*(new in r2; resolves `ext1-1`).*
+
+**The inventory, measured rather than asserted** — every read of another
+workflow's `workflows.<name>.*` in the four `.smk` files, `blueearth_cst/`, and
+`scripts/`, from grep sweeps over `wflow_outvars`, `workflows.<name>`
+spellings, `["workflows"]` indexing, and `.get("workflows"` chains, with every
+hit read in context (this worktree, 2026-08-21). Three classes:
+
+*Class 1 — cross-workflow VALUE reads: a setting stored in one workflow's
+section, consumed by another to shape its behavior. Exactly ONE exists.*
+
+| # | Reader | Key | Site |
+|---|---|---|---|
+| 1 | WF3 | `workflows.build_model.wflow_outvars` (`optional=True`, default `DEFAULT_WFLOW_OUTVARS`) | `run_stress_test.smk:537-540` — the single read site; `indicator_tables()` (`shared/indicator_tables.py:468`) and the export path (`experiment/export_wflow_results.py`) consume the **value passed on from it**, never the config |
+
+*Class 2 — declared IDENTITY comparisons: whole sections read to be COMPARED
+against the owning workflow's snapshot, never consumed as settings.*
+
+| # | Reader | Sections | Site |
+|---|---|---|---|
+| 2 | WF3 drift-guard payload | `workflows.build_model`, `workflows.analyze_projections`, whole | `run_stress_test.smk:344-345`, declared at `:332-333`; compared section-scoped by `check_project_consistency.py:41-42` (`_WF1_GUARDED`, `_WF2_GUARDED`) |
+
+These are not S4 value-sharing: the guard's entire job is to **refuse** a run
+when another workflow's section changed under an already-built model, so an
+edit to the WF1 T2 file is caught loudly at rule 3.01 — the opposite of the
+silent coupling S4 exists to prevent. They stay declared, enumerated here, and
+inside the D-9.6 test's allowlist.
+
+*Class 3 — grep hits verified NOT cross-workflow, recorded so nobody re-derives
+them:* `parse_spatial_config`'s second argument is each Snakefile's **own**
+section or nothing (`analyze_climate.smk:61`, `build_model.smk:67`,
+`analyze_projections.smk:294`, `run_stress_test.smk:252`; ADR 0003 §8b keeps
+the shared rule's params a pure function of `project` + `shared.basin`);
+`resolve_simulation_window(shared_cfg, my_cfg)` is WF1-only
+(`build_model.smk:95`); `prepare_cst_parameters.py:186` and
+`prepare_weagen_config.py:90` read WF3's own section from WF3 rules;
+`run_workflows.py:291` reads T1 stanza level only (`enabled`, §12.1);
+`suggest_experiment_name.py:284` and `plot_workflow_dag.py:116` are
+single-section tool reads (§12.0, §12.3).
+
+**The contract.** `blueearth_cst/shared/config_composition.py` declares
+
+```python
+#: Every sanctioned cross-workflow VALUE read: (reader, owner, key).
+#: SHRINK-ONLY: an entry leaves this set by hoisting the key to T1 (S4);
+#: nothing is ever added. A new multiply-read key goes to `shared:`.
+#: EMPTIED AND RETIRED inside R13 by the hoist phase (D-9.7, commit 8) --
+#: from then on the D-9.6 scan asserts zero value reads, with no registry.
+CROSS_WORKFLOW_READS: frozenset[tuple[str, str, str]] = frozenset({
+    ("run_stress_test", "build_model", "wflow_outvars"),
+})
+```
+
+**The check** *(scan surface widened in r3; owner arbitration `ext2-3`)*.
+`tests/test_config_composition.py` gains a static-scan case over **every
+authorized runtime-consumer surface — the four `.smk` files, `blueearth_cst/`,
+and `scripts/`** — the same surface the inventory above swept, because a
+permanent scan narrower than the inventory cannot certify what the inventory
+claimed (r2 scanned only the `.smk` files, which external round 2 correctly
+faulted: a Python helper or user-facing script could reintroduce a
+cross-workflow read undetected). `dev/scripts/` stays outside the scan on the
+repo's own invocation-model rule: it is never part of a run, and a
+`dev/scripts/` tool that acquires a run-path caller must move into the shipped
+package — where the scan sees it.
+
+The scan matches the same access forms the inventory swept —
+`workflows.<name>` spellings, `["workflows"]` indexing, `.get("workflows"`
+chains, and the key names of declared cross-read keys — and classifies each
+hit by ownership: a Snakefile owns its workflow; a `blueearth_cst/<stage>/`
+module owns its stage's workflow; `blueearth_cst/shared/` and `scripts/` own
+no section. It then asserts the found set equals **three separately-declared
+enumerations, never one merged allowlist** (the separation is the ruling's
+second half — identity-comparison sites are enumerated apart from value
+reads):
+
+1. **value reads** — exactly the `CROSS_WORKFLOW_READS` triples (Class 1);
+2. **identity comparisons** — the Class-2 guard sites, declared as
+   (file, section) pairs, compared-not-consumed by construction;
+3. **ownerless tool and wrapper reads** — Class 3's sanctioned residue
+   (`run_workflows.py`'s stanza-level `enabled` reads, the composing tools'
+   single-section reads per §12.0/§12.3), declared as (file, section) pairs.
+
+**Completeness** (an undeclared hit on any scanned surface turns the test red
+— for an owned surface, with a message saying *promote the key to `shared:`,
+do not add an entry*; for an ownerless one, forcing an explicit, reviewed
+classification into enumeration 2 or 3) and **minimality** (a declared entry
+with no live hit is equally a failure, so no enumeration can drift stale). The
+completeness claim is relative to the stated access forms — an access the
+patterns cannot see (dynamically constructed keys) is out of the scan's reach,
+which is one reason the parse-time checks stay rather than being subsumed.
+This is not the "drifting key registry" §9's preamble rejects, for the same
+reason `shared/cross_workflow_leaves.py`'s `LEAVES` is not one: the repo's own
+precedent, `tests/test_cross_workflow_inputs.py`, keeps that cross-workflow
+**file** list honest by proving it complete and minimal against the real DAG —
+D-9.6 is the same shape one seam up, for config reads.
+
+**Why the registry cannot be gamed, stated once.** External round 2 observed
+that equality with an expandable registry cannot enforce shrink-only: adding a
+read plus a matching tuple keeps the test green. That construction is
+foreclosed by D-9.7, not argued away: `CROSS_WORKFLOW_READS` must be **empty**
+before R13 completes, and the hoist commit retires the constant and replaces
+the equality assertion for enumeration 1 with a literal **zero** — the test
+asserts *no cross-workflow value read exists on any scanned surface*. There is
+then no registry to pair an added read with; any new cross-workflow value read
+fails the scan outright, permanently. Enumerations 2 and 3 remain declared
+lists, and remain honest the same way `LEAVES` does: every entry must have a
+live site, every site an entry, and any addition is a visible, reviewable diff
+to a contract file rather than a silent read.
+
+**D-9.7 — The hoist phase: `wflow_outvars` moves to `shared:` inside R13**
+*(new in r3; owner arbitration `ext2-1`, superseding r2's Q7 deferral).*
+
+Hoisting `wflow_outvars` to `shared:` is the S4-compliant end state, and it is
+now a **required R13 implementation phase**, not a follow-up: R13 does not
+complete while `CROSS_WORKFLOW_READS` carries an entry. The phase is strictly
+ordered, and the ordering is the whole argument:
+
+1. **Land the split and validate split-only output neutrality first.** §15.7
+   commits 1–7 ship with the one-entry contract in place and digests preserved
+   by construction (D-10.2). §16.5(b)'s five-clause ordering runs; §16.3's
+   falsifier is read on the split-only state — exactly three `type: yaml`
+   targets differ, zero data targets — and the baseline is re-recorded.
+2. **Then hoist, as one coupled commit** (§15.7 commit 8): the key moves from
+   `workflows.build_model` to `shared:` in every shipped seed, the template,
+   and the test fixture's T1; the two read sites move to the shared section
+   (`build_model.smk:118`, `run_stress_test.smk:537-540`); `SHARED_SEAM_KEYS`
+   gains `wflow_outvars`, so D-9.2's and D-9.3's rejection of a T2-planted
+   copy follows by construction; `_WF1_GUARDED` at
+   `check_project_consistency.py:41` gains `("shared", "wflow_outvars")` —
+   without which the hoist would *weaken* the drift guard: a post-build
+   `wflow_outvars` edit would stop being refused at rule 3.01 and first
+   surface mid-experiment as `export_wflow_results`'s missing-column error
+   (`:346`) — and the pinned projection and derivation literals at
+   `test_snapshot_config_rules.py:122-141` move with it; the
+   `CROSS_WORKFLOW_READS` entry is removed and the constant retired, with the
+   D-9.6 scan's value-read assertion becoming a literal zero in the same
+   commit (the minimality check forces the removal; the zero forecloses the
+   registry-gaming construction).
+3. **Verify the *expected* digest shift, then re-record.** The hoist changes
+   composed content, so `effective_config_digest` moves for all four entry
+   points (`shared:` is in every projection) and `guarded_sections_digest`
+   moves with the guard contract. §16.5's ordering runs a second time and
+   §16.3's acceptance applies again, unchanged in shape: exactly the three
+   `type: yaml` snapshot targets differ, **zero data targets differ** — the
+   shift is placement, not value, because both read sites read the same value
+   with the same default (`DEFAULT_WFLOW_OUTVARS`). Only then is the final
+   baseline re-record made and R13 sealable.
+
+**The `arch-11`/D-13.4 objection is dissolved by this ordering, not
+overruled.** The objection's reasoning stands: a key relocation shifts every
+entry point's digest exactly when §16.3's falsifier must distinguish an
+expected shift from a defect, and this key additionally moves the guard
+contract. v3 resolved that collision by deferring the hoist out of R13 (Q7);
+the ordering resolves it equally well inside R13 — the neutrality validation
+happens **while the registry is still populated**, on the split-only state
+whose digests are preserved by construction, so the falsifier series never has
+to attribute an unattributable shift; the hoist's shift then arrives as an
+expected, enumerated, separately-verified event with its own falsifier pass.
+Deferral and ordering both dissolve the collision; only ordering also
+discharges S4 within the milestone, which is why the owner ruled for it. The
+dissolution licenses **this** hoist, which S4 requires for R13's completion
+claim; D-13.4's advanced-settings relocations remain deferred (Q6) — nothing
+requires them for R13 completion, and each would multiply the expected-shift
+bookkeeping for no milestone obligation.
+
+**The splitter emits the hoisted placement, and the round trip is normalized
+by the declared relocation.** `config_composition.py` declares, beside
+`SHARED_SEAM_KEYS`:
+
+```python
+#: The R13 hoist, as data: source path -> destination path in the composed
+#: mapping. Read by the splitter (emission) and by D-15.4b (round-trip
+#: normalization). One entry; grows only with a ruled hoist.
+RELOCATED_KEYS = {
+    ("workflows", "build_model", "wflow_outvars"): ("shared", "wflow_outvars"),
+}
+```
+
+A post-hoist splitter that still emitted `wflow_outvars` into the `build_model`
+T2 file would emit a layout its own loader rejects (D-9.2, once
+`SHARED_SEAM_KEYS` contains the key) — a mechanical migration tool may not
+emit a shape that fails parse. So from commit 8 on, the splitter writes the
+key into the staged T1's `shared:`, and D-15.4b's round trip becomes
+**relocation-normalized**: `compose_config(staged_t1) ==
+relocate(yaml.safe_load(source), RELOCATED_KEYS)` — exact equality up to the
+declared one-row map, still asserted, never waived. A source carrying the key
+in **both** places with differing values is ambiguous and takes a
+D-15.4a-class refusal naming both sites. §15.4 and §16.1's round-trip rows
+state the normalization.
+
 The enforcement boundary is therefore: **undeclared** cross-workflow sharing is
-refused; **declared** cross-section reads remain, tracked in one maintained list.
-§19 Q2 records whether that list should itself become a checked contract — and
-`risk-3` raises its value, since `guarded_sections` now carries the enforcement
-weight for the one case D-9.3 still cannot see.
+refused at parse time (D-9.1/9.2/9.3/9.5); the **declared** read set is a
+frozen, checked, shrink-only contract (D-9.6) that D-9.7 **empties inside
+R13**, after which the scan asserts zero cross-workflow value reads,
+permanently; and identity comparisons stay with the guard, enumerated —
+including, post-hoist, `("shared", "wflow_outvars")`. Q2 is **closed** by
+D-9.6 and Q7 is **closed into scope** by D-9.7 (§19).
 
 ## 10. Config identity under the split layout
 
@@ -969,6 +1300,14 @@ change in §15.5 commit 6. D-13.4 removes it from R13's scope, which is what mak
 the unqualified claim true again for this milestone; §16.3 states the
 qualification anyway, because a property test that silently depends on an
 unstated invariant is a gate you have to decide whether to believe.
+
+**Scope of the claim under D-9.7 (r3):** both digests are unchanged *through
+the split phase* — commits 1–7 and the split-only falsifier pass. The hoist
+phase then shifts both **deliberately and expectedly** (the key changes
+projection path and leaves a guarded section); D-9.7 step 3 verifies that
+shift, and the digest-equality property test is updated in the hoist commit to
+relocation-normalized equality (§16.1). What this decision rules out is an
+*unattributed* digest change, in either phase.
 
 No code in `provenance.py` or in the digest call sites is touched.
 
@@ -1081,8 +1420,10 @@ falsifier.
 **Runner-up, and the condition that flips it:** leaving `reporting:` at T1's top
 level. Rejected because it keeps a WF3-only, user-facing post-processing concern
 in the file every workflow reads. It becomes correct the moment a second workflow
-reads `reporting:` — at which point S4 forces the move automatically and D-9.3
-fires if anyone duplicates it instead.
+reads `reporting:` — at which point S4 forces the move automatically, and a
+copy planted in a non-owner T2 file still fails at parse even after r3's
+restriction, because `reporting` is a hoisted name and hence inside the
+declared identity set D-9.2 and D-9.3 guard.
 
 ### 10.5 D-10.5 — Both `configuration_inputs_sha256` paths, and `file_sha256(config_path)`
 
@@ -1747,8 +2088,8 @@ closing paragraph introduced a **third** without specifying it (`arch-13`):
 Mechanism 3 is **mechanism 1 with the default sourced from advanced settings**,
 which is why it needs no new machinery: `get_config` returns a present key as-is
 including `None` (E1), and the call site validates. It reads from the workflow's
-own T2 file and is a single-reader key, so D-9.2 does not reject it and D-9.3
-cannot see it in two files. Unifying mechanisms 1 and 2 remains out of scope: it
+own T2 file and is a single-reader key, so D-9.2 does not reject it, and it is
+no declared shared identity, so D-9.3 has nothing to say about it. Unifying mechanisms 1 and 2 remains out of scope: it
 would change what an explicit `null` does for at least one key, under a refactor
 that claims output neutrality.
 
@@ -1914,7 +2255,7 @@ arrived via `--config` and the message says so (§8.5b).
 It fires at Snakefile parse time, before the DAG, so `--dry-run` reports it and
 `pytest tests/test_cli.py` gates it.
 
-### 15.3 D-15.3 — `scripts/split_project_config.py`, report-only by default
+### 15.3 D-15.3 — `scripts/split_project_config.py`, report-only with staged output **(reworked in r2; owner ruling)**
 
 A user-facing runner, so `scripts/` and not `dev/scripts/`. **The precedent is
 `scripts/suggest_experiment_name.py`** — a user-facing, one-shot config editor
@@ -1924,13 +2265,74 @@ raised in the repo-fit appendix). AGENTS.md's O-23 rule splits by invocation
 model, and a one-shot user-run config editor is the class `scripts/` already
 holds.
 
+**The v2 `--write` mode is withdrawn.** External round 1 (`ext1-2`) found it
+contradicted the settled G1 posture — a report-only migration script — and the
+owner ruled the interpretation at a gate-clarification (2026-08-20):
+**STAGING-EMIT**. The script is strictly report-only *against user files*: it
+emits the proposed T1 and T2 file contents into a staging directory alongside a
+migration report, and application is an explicit user step outside the script.
+There is no `--write`, no in-place mutation, no opt-in mutation mode.
+
 ```
-python scripts/split_project_config.py <config.yml>            # reports, writes nothing
-python scripts/split_project_config.py <config.yml> --write    # writes T1 + T2 files
+python scripts/split_project_config.py <config.yml>                  # report + staged proposal
+python scripts/split_project_config.py <config.yml> --staging <dir>  # override the staging dir
 ```
 
-Report-only by default, `--write` explicit, mirroring `prune_series_cache.py`
-and `prune_climate_store.py`.
+**The staging directory, and D-15.3a — the ownership contract** *(reworked in
+r3; owner arbitration `ext2-2`)*. Default `<t1_dir>/config-split-staged/`,
+beside the source file, so the proposal is inspectable next to what it
+replaces — for an out-of-tree project that is the project's own folder, for a
+shipped seed it is a subdirectory of `test_case/`, which the E9 tracking glob
+(`!test_case/snake_config_*.yml`) does not reach, so staged files are never
+accidentally tracked.
+
+r2 said the script "owns the staging directory wholesale: it deletes and
+recreates it on every run". External round 2 found that rule unsafe as
+written, and both halves of its fix are owner-accepted: nothing bound the
+recursive delete to a directory the tool actually created, so a legitimate but
+mistaken `--staging` argument could recursively delete unrelated user files —
+the exact harm S7's report-only posture was chosen to prevent, arriving
+through the tool's own namespace claim.
+
+> **D-15.3a — Recursive replacement only of a proven-own directory; everything
+> else is refused or freshly created.**
+>
+> - On creating a staging directory the script writes an **ownership marker**
+>   at its root — `.split-staging-owned`, a fixed one-line sentinel naming the
+>   tool. A directory is *tool-created* iff its basename is
+>   `config-split-staged` **and** the marker is present at its root.
+> - The script **deletes and recreates** a staging target only when it is an
+>   exact tool-created directory by that test. Otherwise the target must be
+>   **absent** (created, marker written) or **empty** (claimed, marker
+>   written). An existing, non-empty, unmarked target is a **refusal**, naming
+>   the path and the marker rule.
+> - `--staging <dir>` supplies a **location, not a namespace**: the script
+>   operates in the newly created tool-named child `<dir>/config-split-staged/`
+>   and never replaces `<dir>` itself. (The default is the same rule with
+>   `<dir> = <t1_dir>`.)
+> - The resolved staging directory may never be the **source config's
+>   directory or any ancestor of it** (compared by
+>   `os.path.normcase(os.path.abspath(...))`, the §8.4 precedent) — refused
+>   outright, before any filesystem write, whatever its contents.
+>
+> Refusal tests for all four cases — **unmarked non-empty target, non-empty
+> target without the tool basename, source-directory target, ancestor
+> target** — plus the marker-write and child-creation behaviours land in
+> `tests/test_split_project_config.py` (§16.1, §16.2).
+
+Within a directory it has proven its own, the script refuses to write anywhere
+outside it and never reads staged content back as input. Inside it land
+exactly three things:
+
+- the proposed **T1**, under the source file's own filename;
+- the proposed **T2 siblings**, under their production names
+  (`<t1_stem>_<name>.yml`, D-7.4) — so application is a move, not a rename;
+- `migration-report.md` — per-section disposition (split to which file; empty
+  after dropping `enabled:` → no file and no `config_path` key, D-8.7), the
+  `reporting:` move, any commented `#reporting:` found (reported, not moved —
+  §15.4), any D-15.4a refusal with construct and line, the D-15.4b round-trip
+  verdict against the staged pair, and the application step with its
+  post-application check.
 
 **It splits the file as TEXT, not through `yaml.safe_dump`** — E4's argument
 applies unchanged and with more at stake: the shipped template carries ~110
@@ -1938,18 +2340,28 @@ comments, a real project's config carries the ones its author wrote, and this is
 the first command a user runs against their file. The mechanical transform:
 locate the `workflows:` block; for each `<name>:` subsection, take its body
 including the comment lines preceding each key, dedent by four spaces, drop
-`enabled:`, and write it to `<t1_dir>/<t1_stem>_<name>.yml`; replace the
-subsection with the two-key stanza; move a top-level `reporting:` block into the
-`run_stress_test` T2 file. **A section whose body is empty after dropping
-`enabled:` produces no file and no `config_path` key** (D-8.7).
+`enabled:`, and write it to the staging directory as `<t1_stem>_<name>.yml`;
+replace the subsection with the two-key stanza in the staged T1; move a
+top-level `reporting:` block into the staged `run_stress_test` T2 file. **A
+section whose body is empty after dropping `enabled:` produces no file and no
+`config_path` key** (D-8.7).
 
-**Output path and the `config_path` it emits.** Default
-`<t1_dir>/<t1_stem>_<name>.yml`, `--outdir` overrides. Under §8.4's T1-anchored
-resolution the emitted `config_path` is the **bare relative filename**
-(`snake_config_rapid_build_model.yml`), which is correct whether T1 sits under
-the repo root or in an out-of-tree project folder — the case `repofit-2` showed
-v1 could not express. It also produces the shipped seed naming for free, landing
-inside the E9 tracking glob with no `.gitignore` change (D-7.4).
+**The `config_path` it emits.** The **bare relative filename**
+(`snake_config_rapid_build_model.yml`), under §8.4's T1-anchored resolution —
+correct whether T1 sits under the repo root or in an out-of-tree project folder
+(the case `repofit-2` showed v1 could not express), and correct **inside the
+staging directory itself**: the staged T1 and its siblings compose in place,
+which is what lets D-15.4b verify the staged pair before anything is applied. It
+also produces the shipped seed naming for free, landing inside the E9 tracking
+glob with no `.gitignore` change once applied (D-7.4).
+
+**The application step, stated as the user's.** Review the report and the staged
+files; then move the T2 files beside the source config and replace the source
+config with the staged T1 — an ordinary file operation the user performs and can
+diff, not a script mode. The post-application check is a parse: any dry-run of
+an enabled workflow (or `scripts/run_workflows.py --dry-run`) runs every
+composition and seam check in §§8–9, so a mis-applied proposal fails loudly
+before anything executes.
 
 ### 15.4 D-15.4 — What the splitter refuses, and what it verifies
 
@@ -1978,16 +2390,30 @@ Two unexamined corruption paths:
 > which line. This is a short check and it converts an unbounded class of silent
 > corruption into a stated non-support with a manual path.
 >
-> **D-15.4b — Verify the user's own file, before touching it.** `--write` runs
-> the round-trip assertion `compose_config(split(x)) == yaml.safe_load(x)`
-> against **the file it is about to rewrite** and refuses on mismatch. The
-> report-only default already computes everything needed, so this is free.
+> **D-15.4b — Verify the staged pair against the source, before reporting it
+> applicable.** Every run composes the **staged** T1 (whose emitted
+> `config_path` values resolve inside the staging directory, §15.3) and asserts
+> the round trip `compose_config(staged_t1) == yaml.safe_load(source)`. On
+> mismatch the report says **do not apply**, names the first differing path, and
+> the script exits nonzero — the staged files are kept for diagnosis, marked by
+> the report's verdict. The user's file is never touched either way.
+>
+> *From §15.7 commit 8 on (r3, D-9.7):* the splitter emits the **hoisted**
+> placement of `wflow_outvars`, and the round trip is
+> **relocation-normalized** — `compose_config(staged_t1) ==
+> relocate(yaml.safe_load(source), RELOCATED_KEYS)`, exact up to the declared
+> one-row map, still asserted. A source carrying the key in both places with
+> differing values is ambiguous and takes a D-15.4a-class refusal naming both
+> sites (§9, D-9.7).
 
 v1's acceptance gate — the same round trip "for each shipped seed and for the
 template" — covers five files the implementer controls, **none of which contains
-an anchor or a block scalar**, while the user's own config is the only file
-`--write` actually rewrites and got no verification at all. D-15.4b closes that;
-the shipped-file gate stays as a permanent regression test (§16.2).
+an anchor or a block scalar**, while the user's own config got no verification
+at all. Under staging-emit the exposure shrinks by construction — the worst
+outcome is a staged proposal the report refuses, never a rewritten user file —
+and D-15.4b closes the remaining gap: no proposal is reported applicable without
+its round trip. The shipped-file gate stays as a permanent regression test
+(§16.2).
 
 **The gate set gains a synthetic fixture carrying `reporting:`** (`risk-13`,
 `arch-16`), because no shipped seed or template declares it (N9), so without one
@@ -2008,9 +2434,14 @@ and a pointer to the original file — the round-trip gate is unaffected either 
 
 ### 15.5 Mechanical steps for an existing project
 
-1. `python scripts/split_project_config.py <your-config.yml>` — read the report.
-2. `--write` — T2 files appear beside the config; T1 shrinks to `project:` +
-   `shared:` + four short stanzas.
+1. `python scripts/split_project_config.py <your-config.yml>` — read
+   `migration-report.md` and inspect the staged proposal in
+   `config-split-staged/` (§15.3). The report's D-15.4b verdict must say the
+   round trip is clean before anything is applied.
+2. **Apply the proposal — a user step, not a script mode**: move the staged T2
+   files beside the config and replace the config with the staged T1. T1
+   shrinks to `project:` + `shared:` + four short stanzas. A dry-run of any
+   enabled workflow is the post-application check (§15.3).
 3. For a workflow this project never runs and whose settings it does not need:
    **delete the T2 file *and* its `config_path` key**, leaving `enabled: false`
    alone in the stanza. Do **not** leave a `config_path` pointing at a path that
@@ -2019,7 +2450,18 @@ and a pointer to the original file — the round-trip gate is unaffected either 
    There is **no WF3 carve-out any more**: under D-8.7 a WF3 run does not require
    `build_model` and `analyze_projections` T2 *files*, only their stanzas — so the
    projections overlay stays optional exactly as the CST method requires (N14).
-4. Re-run. Nothing under `project_dir` needs hand-migration:
+4. **Migration is complete here** *(r3; owner arbitration `ext2-4`)*. The two
+   completion checks — step 1's clean D-15.4b round trip and step 2's
+   post-application dry-run — are required immediately, and they are the whole
+   requirement: composition and parseability are proven, and nothing needs to
+   *execute* now. Existing outputs, snapshots and records remain a **truthful
+   history of the pre-migration runs** — monolith-shaped snapshots recording
+   what those runs actually used — until the project's next intended
+   execution (D-15.5).
+5. **At the next intended execution** — whenever this project would next run
+   anyway — the records refresh as a side effect, at the cascade cost D-15.5
+   states plainly. Nothing under `project_dir` needs hand-migration at any
+   point:
    - the four config snapshots are **regenerated** with composed content on the
      next run of each workflow (D-11.1) — no path moves, so no `ls`-and-rename
      table like the 2026-08-14 migration needed;
@@ -2027,21 +2469,43 @@ and a pointer to the original file — the round-trip gate is unaffected either 
      the recorded section value-identical, so a completed experiment stays
      unfrozen-safe and does not need re-creating;
    - `config/runs/journal.jsonl` keeps its history; new lines carry the same
-     `effective_config_sha256` an unmigrated run would have produced.
-5. If WF3 has already run and the guard is armed, the first post-migration WF3
-   run re-fires rule 3.01 and **passes**: a pre-migration wf1 snapshot is the
-   whole config, hence a strict superset of what the guard reads, and once WF1
-   re-runs the composed snapshot still carries `project`, `shared` and
-   `workflows.build_model`.
+     `effective_config_sha256` an unmigrated run would have produced;
+   - if WF3 has already run and the guard is armed, that next WF3 run re-fires
+     rule 3.01 and **passes**: a pre-migration wf1 snapshot is the whole
+     config, hence a strict superset of what the guard reads, and once WF1
+     re-runs the composed snapshot still carries `project`, `shared` and
+     `workflows.build_model`.
+   A user who explicitly needs freshly shaped snapshots *before* any planned
+   execution — a records audit, a handoff archive — takes the full re-run
+   then, knowingly; §15.6 scopes that path to exactly those users.
 
-### 15.6 D-15.5 — The first post-migration run re-computes the project **(owner-visible)**
+### 15.6 D-15.5 — Migration completes at the dry-run; the next execution re-computes the project **(owner-visible; restated in r3)**
 
-**New in v2** (`risk-16`). §15.5 step 4 says "nothing under `project_dir` needs
-hand-migration", which is true — and reads as "nothing re-runs", which is false.
-v1 booked this cost nowhere, and it is a real charge against G5's "mechanical,
-**bounded** migration".
+**New in v2** (`risk-16`), **restated in r3** (owner arbitration `ext2-4`).
+§15.5 says "nothing under `project_dir` needs hand-migration", which is true —
+and v2 let it read as "nothing re-runs", which is false. v1 booked this cost
+nowhere, and it is a real charge against G5's "mechanical, **bounded**
+migration".
 
-**The cascade, link by link, each cited:**
+> **Decision, restated (r3): migration COMPLETION is separate from output
+> REFRESH.** Completion requires exactly two immediate checks — the staged
+> round trip (D-15.4b) and the post-application dry-run (§15.5 steps 1–2) —
+> which together prove composition and parseability. No execution is part of
+> migration. Existing snapshots and records **remain truthful history** of the
+> pre-migration runs until the user's next *intended* execution, at which
+> point the cascade below runs and the records refresh as a side effect. The
+> full-recomputation path is scoped to the one user class that needs it
+> *sooner* than their next execution: users who explicitly require freshly
+> shaped snapshots now (a records audit, a handoff archive — and the
+> maintainer's own baseline project, whose falsifier requires recomputed
+> targets, §16.5(b)). r2/v4 instead instructed "re-run" as a migration step
+> for every project, which N20 shows converts **pre-existing next-invocation
+> dirtiness into an avoidable immediate cost**: the reaped-`temp()` chain
+> re-schedules on the next invocation anyway, migration or not, so forcing
+> the run at migration time buys nothing the next intended run would not
+> have bought.
+
+**The cascade — what the next execution does, link by link, each cited:**
 
 1. Migration rewrites **T1's bytes**, and T1 is a **non-`ancient`** declared input
    of `prepare_spatial_maps` (`build_model.smk:535`). So the first post-migration
@@ -2059,31 +2523,103 @@ v1 booked this cost nowhere, and it is a real charge against G5's "mechanical,
 5. 3.10 feeds 3.11, and the realization and stress-test cascade runs.
 
 > **Consequence, stated plainly:** driven through `scripts/run_workflows.py` —
-> the documented way to run the pipeline — **migrating a project with a completed
-> experiment re-runs the entire stress test to produce identical results.** For a
-> baseline-scale project that is the full WF1 build plus `RLZ_NUM × ST_NUM` Wflow
-> runs.
+> the documented way to run the pipeline — **the first post-migration execution
+> of a project with a completed experiment re-runs the entire stress test to
+> produce identical results.** For a baseline-scale project that is the full
+> WF1 build plus `RLZ_NUM × ST_NUM` Wflow runs. The r3 restatement moves
+> *when* that bill arrives — at the next intended execution, not as a
+> migration step — and N20 bounds *whose* bill it mostly is (the reaped-chain
+> share is pre-existing re-invocation behaviour). It does not shrink the bill.
 
 This goes in §18's Negative list and in `docs/migration-config-tiers.md`, in the
-user's own words, because a user who is not told will assume the pipeline is
-broken.
+user's own words — including the completion/refresh separation, because a user
+who is not told will either assume the pipeline is broken or pay a full
+stress-test run for a value-equivalent file migration they had already
+completed.
 
-**Is a shortcut acceptable?** `snakemake --touch` marks outputs up to date
-without running them, and the splitter's D-15.4b round trip **proves per project**
-that the composed values are unchanged — which is precisely the condition under
-which the re-run is pure waste.
+**Is a shortcut acceptable? No — withdrawn twice, the second time on
+measurement.** v2 answered with a bare, documented `snakemake --touch`.
+External round 1 (`ext1-4`) faulted that answer — `--touch` changes
+**timestamps, not contents**, so configuration records could stay stale under
+products marked current — and r2 replaced it with a four-step **records-first
+refresh sequence**: (1) precondition, a clean D-15.4b round trip and no other
+edit in the same pass; (2) regenerate every configuration record before any
+timestamp moves; (3) only then `snakemake all --touch` per workflow;
+(4) a final `--dry-run` per workflow that "must schedule **nothing**" as the
+machine-checked pre/post equivalence proof, with any scheduled job falling
+back to the full re-run.
 
-> **Decision: yes, as a documented, explicitly-opt-in step — never automatic.**
-> `docs/migration-config-tiers.md` states the shortcut, its precondition (the
-> splitter reported a clean round trip **and** no other config edit was made in
-> the same pass), and its risk (a `--touch` over a genuinely changed value
-> freezes a stale artifact under a config that no longer produced it). The
-> splitter itself never invokes it, and the toolbox never runs it for a user: the
-> precondition is a judgement about what else the user changed, which no tool can
-> verify.
+**The driver's framework-feasibility probe refuted step 4 (N19).** On a
+completed experiment the four `temp()`-wrapped rules' outputs are reaped —
+AGENTS.md mandates exactly that, and `run_stress_test.smk:556-560` documents
+it in-tree (N20) — and `--touch` cannot touch a file that does not exist. The
+post-touch dry-run scheduled **28 of 32 jobs**, permanently: the DAG keeps
+demanding the absent intermediates, and everything downstream — including the
+`run_wflow_batch_*` cascade, which consumes the downscale and perturb outputs
+— inherits the staleness. Step 3's premise, "nothing consumes it (that is
+what `temp()` meant)", was wrong for precisely those two rules. The
+scheduled-empty proof is therefore unachievable on the only projects the
+sequence existed for, so its stated fallback — any scheduled job means the
+full re-run — would have fired every time, silently: the sequence proved
+nothing and always degraded to the very path it claimed to avoid. This is the
+same failure class as the r08 revalidate-and-skip cache: a designed skip-path
+the framework's actual semantics make impossible, which prose review rounds
+did not catch and a four-second probe did.
 
-The conservative path — just re-run — stays the default and the recommendation
-for any project whose numbers matter.
+> **Decision (v4, `probe-1`; scope restated in r3 by `ext2-4`): the refresh
+> sequence is withdrawn entirely. The full re-run is the only offered path to
+> freshly shaped records** — and r3 adds: it is offered to those who need such
+> records before their next intended execution, not required of every project
+> at migration time. None of r2's four steps survives as a specified mechanism. What survives of them is knowledge, not mechanism:
+> step 3's confirmed half is now premise N19's first clause (`--touch`
+> neither errors on nor resurrects reaped `temp()` outputs) and carries no
+> design weight; step 1's round trip continues as the splitter's D-15.4b
+> applicability check, where it already lived. `tests/test_migration_touch_refresh.py`
+> is retired unwritten (§16.1, §16.2). `docs/migration-config-tiers.md`
+> documents the cost, not a workaround.
+
+**Why withdrawal rather than a repaired proof.** A differential proof is
+constructible — capture the dry-run-scheduled job set on a touched
+pre-migration copy, capture it again after the sequence, and require set
+equality so the residual reaped-`temp()` chain cancels — and §17.4 records it
+as considered. It is rejected because N19 shows the residual chain **contains
+the dominant cost**: the Wflow batch cascade sits downstream of the reaped
+intermediates, so the next real `snakemake` invocation re-runs it regardless
+of any touch. A user who never re-invokes needs no refresh at all — their
+retained records are a truthful history of the pre-migration run, and nothing
+re-fires until something runs. A user who does re-invoke pays the reaped
+chain either way (N20: they already would today, before any migration). The
+sequence could therefore never deliver the saving OV-2 books — only the WF1
+rebuild and a few WF3 edge rules — at the price of a four-step manual
+procedure, a `workflow_contract`-tier test, and a proof that measures
+migration-neutrality of a permanently dirty job set rather than the
+run-avoidance a user would read it as promising.
+
+**What survives of `risk-16`'s resolution.** The cascade trace above, the
+plainly-stated cost, the §18 booking, and the migration-doc obligation all
+stand — no finding and no probe faulted them. N20 **bounds** the cost
+honestly, in both directions: the marginal cost migration adds is the WF1
+rebuild plus the promotion of an already-mostly-dirty WF3 DAG to a fully
+dirty one; and the "identical results" framing stands, because the re-run
+reproduces what D-15.4b already proved value-equivalent.
+
+**Coherence with the baseline:** unchanged — the maintainer's baseline
+project never took the sequence even while one existed; §16.3's falsifier is
+evidence only because its data targets are **recomputed** (§16.5(b)'s
+five-clause ordering stands, and the three-target re-record happens after a
+real run).
+
+The resulting posture (r3): **no mechanism sits between migration and the
+next execution** — no touch, no refresh sequence, no differential proof.
+Migration completes at the dry-run; records refresh at the next intended
+execution; and the deliberate full re-run remains the only documented path
+for the user who needs freshly shaped records sooner.
+
+**Out of R13's scope, recorded as observed:** the permanently-dirty DAG of a
+completed project (N20) predates this design and is untouched by it. Whether
+the repo wants guidance for re-invocation on completed projects is a repo
+question, not a config-modularization one; no obligation from it attaches to
+R13.
 
 ### 15.7 Commit sequencing
 
@@ -2094,13 +2630,15 @@ necessarily edits is named**, which v1 did for none of them — the gap `arch-20
 
 | # | Lands | Test modules edited in the same commit |
 |---|---|---|
-| 1 | `blueearth_cst/shared/config_composition.py`: `compose_config`, `load_composed_config`, the four seam checks, `SHARED_SEAM_KEYS`, `HOISTED_SECTIONS`, path resolution, error surface. Not yet called by any Snakefile — **no behavior change** | **new** `tests/test_config_composition.py` |
-| 2 | `scripts/split_project_config.py` + refusals (D-15.4a) + user-file round trip (D-15.4b) | **new** `tests/test_split_project_config.py`; **new** synthetic `reporting:` fixture |
+| 1 | `blueearth_cst/shared/config_composition.py`: `compose_config`, `load_composed_config`, the four seam checks, `SHARED_SEAM_KEYS`, `HOISTED_SECTIONS`, **`CROSS_WORKFLOW_READS` + the D-9.6 static scan**, path resolution, error surface. Not yet called by any Snakefile — **no behavior change** | **new** `tests/test_config_composition.py` |
+| 2 | `scripts/split_project_config.py` (staging-emit, §15.3) + refusals (D-15.4a) + staged-pair round trip (D-15.4b) | **new** `tests/test_split_project_config.py`; **new** synthetic `reporting:` fixture |
 | 3 | Migrate the four shipped seeds + the template + **`tests/snake_config_fixture.yml`'s consumers**; hoist the projection literals and wire `compose_config` into the four Snakefiles; add the T2 rule inputs (D-10.3); add `CONFIG_REFERENCES` entries (D-10.5); redirect the two disk re-reads (D-10.6). **One commit** — the loader, the configs it requires, and 3.09's only rerun trigger cannot land apart | `tests/conftest.py` (**`write_config` helper** + `model_build_config` fixture), `tests/test_cli.py`, `tests/test_snapshot_config_rules.py`, `tests/test_prepare_cst_parameters.py`, `tests/test_a1_acceptance.py`, `tests/test_gridded_outputs_removed.py`, `tests/test_prepare_weagen_config.py`, `tests/test_semantic_tree_diff.py`, the fixture's own T2 siblings, and the **7 mutating** fixture-consumer modules via the helper — the other 7 pass the path straight to a run and need no edit (§16.2 tier 2, D-12.6b) |
 | 4 | Composed snapshot (D-11.1, incl. the `copy_config_files` signature) + record-only T2 registration (D-11.2) + `_RUNS_README` text | `tests/test_copy_config_files.py` (**retire `test_content_is_copied_verbatim`, add the round-trip invariant**), `tests/test_snapshot_project_tree.py`, `tests/test_interchange_contracts.py` (verify-only) |
 | 5 | `suggest_experiment_name.py` (§12.3) + `resolve_simulation_window`'s optional source args (§12.5) + the four raw-T1 tool fixes (§12.0) | `tests/test_suggest_experiment_name.py`, **`tests/test_experiment_allocation.py`**, `tests/test_resolve_simulation_window.py`, `tests/test_add_climate_forcing.py`, `tests/test_plot_workflow_dag.py` |
-| 6 | *(v1 had advanced-settings namespacing here. **Removed** by D-13.4 — no key moves in R13.)* | — |
-| 7 | Docs sweep + `docs/migration-config-tiers.md` + `dev/milestones/r13/migration_config-tiers.md`; CI expected-skip baseline note; **baseline re-record last**, after §16.3's falsifier has been read | — |
+| 6 | *(v1 had advanced-settings namespacing here. **Removed** by D-13.4 — no advanced-settings key moves in R13; the one project-config key that does move is commit 8's hoist, D-9.7.)* | — |
+| 7 | Docs sweep + `docs/migration-config-tiers.md` (the completion/refresh separation and the next-execution cost with N20's bound, §15.6; the §8.5b mapping including rows 6–7; **no shortcut is documented** — the refresh sequence was withdrawn by `probe-1`) + `dev/milestones/r13/migration_config-tiers.md`; CI expected-skip baseline note; **split-phase baseline re-record last**, after §16.3's falsifier has been read on the split-only state (D-9.7 step 1) | — (r2's `tests/test_migration_touch_refresh.py` is retired unwritten with the sequence it tested) |
+| 8 | **The hoist (D-9.7), one coupled commit:** `wflow_outvars` moves to `shared:` in the four seeds, the template, and the fixture T1; the two read sites move (`build_model.smk:118`, `run_stress_test.smk:537-540`); `SHARED_SEAM_KEYS` gains the key; `RELOCATED_KEYS` declared; the splitter emits the hoisted placement and D-15.4b goes relocation-normalized; `_WF1_GUARDED` gains `("shared","wflow_outvars")`; `CROSS_WORKFLOW_READS` emptied and retired, the D-9.6 scan's value-read assertion becomes zero; migration note attributing the all-entry-point digest shift | `tests/test_config_composition.py` (scan + retired contract + relocation-normalized round trip), `tests/test_snapshot_config_rules.py` (pinned literals move), `tests/test_check_project_consistency.py` (gains the `("shared","wflow_outvars")` guard case), `tests/test_split_project_config.py` (hoisted emission + normalized round trip + both-places refusal), the digest-equality property test (updated to relocation-normalized equality) |
+| 9 | **Hoist-phase baseline re-record**, only after §16.5's ordering has run a second time and §16.3's acceptance has been read on the hoisted state (D-9.7 step 3: exactly the three yaml targets differ, zero data targets) | — |
 
 One CI note belongs to whichever commit lands first: the documented
 expected-skip/pass baseline (499/31/1 windows, 498/32/1 ubuntu) **shifts**, and
@@ -2132,17 +2670,17 @@ carries a falsifiable expected result.
 | Gate | What it checks here | Expected result |
 |---|---|---|
 | `pytest tests/test_cli.py` | the parse gate: dry-runs all four entry points against the migrated seeds. Every composition error, every seam refusal (D-9.1/9.2/9.3/9.5), the D-8.7 optional matrix and the §15.2 migration error fire here | green; four DAGs resolve. **Prerequisite:** §16.2 tier 2 — the gate cannot run until `tests/snake_config_fixture.yml` is a valid T1 (`repofit-1`) |
-| **new** `tests/test_config_composition.py` | `compose_config` unit surface: the `R(entry)` matrix (§8.3); path resolution (relative / absolute / `~` / missing / non-mapping / empty / **out-of-tree T1** / **cross-drive**); every §8.4 error; the duplicate-`config_path` refusal under `normcase(abspath(...))`; D-9.1/9.2/9.3/9.5; `enabled` merged and `config_path` **not** merged (D-10.1); the `reporting:` hoist (D-10.4); the D-8.7 omitted-key case; **the composed shape visible through `workflow.config`** (D-8.6a) | new tests, green |
-| **new** `tests/test_split_project_config.py` | the splitter: D-15.4a refusals (`&`, `*`, `<<:`, block scalar in a workflow section) naming the construct and line; D-15.4b round trip against the file it is about to rewrite; the commented-`#reporting:` report-not-move branch; the empty-section no-file case | new tests, green |
-| **new** digest-equality property test | for each shipped seed: `effective_config_digest` and `guarded_sections_digest` computed from the pre-split config equal those computed from the composed post-split config. D-8.1 in executable form; permanent | equal. Holds `advanced_settings` fixed — see §16.3 |
+| **new** `tests/test_config_composition.py` | `compose_config` unit surface: the `R(entry)` matrix (§8.3); path resolution (relative / absolute / `~` / missing / non-mapping / empty / **out-of-tree T1** / **cross-drive**); every §8.4 error; the duplicate-`config_path` refusal under `normcase(abspath(...))`; D-9.1/9.2/9.3/9.5 (D-9.3 as restricted: an independent same-named pair across two T2 files **parses**, a declared shared/hoisted name in any resolvable T2 file fails); **the D-9.6 static scan over the four `.smk` files, `blueearth_cst/`, and `scripts/`** — found hits equal the three declared enumerations (value reads / guard identity sites / tool reads), completeness + minimality; **from commit 8, the value-read assertion is a literal zero** (D-9.7); `enabled` merged and `config_path` **not** merged (D-10.1); the `reporting:` hoist (D-10.4); the D-8.7 omitted-key case; **the composed shape visible through `workflow.config`** (D-8.6a) | new tests, green |
+| **new** `tests/test_split_project_config.py` | the splitter: D-15.4a refusals (`&`, `*`, `<<:`, block scalar in a workflow section) naming the construct and line; D-15.4b round trip of the **staged pair** against the source (**relocation-normalized from commit 8**, plus the both-places-differing refusal — D-9.7); the commented-`#reporting:` report-not-move branch; the empty-section no-file case; **the D-15.3a staging-ownership contract** — marker written on create, recursive replace only of a marked tool-named directory, `--staging` gets a tool-named child, and the four refusals: unmarked non-empty, non-tool-basename non-empty, source directory, ancestor; and the **source-untouched invariant** — the source file's bytes are asserted unchanged after every run, refusal paths included (§15.3, owner ruling) | new tests, green |
+| **new** digest-equality property test | for each shipped seed: `effective_config_digest` and `guarded_sections_digest` computed from the pre-split config equal those computed from the composed post-split config. D-8.1 in executable form; permanent. **Updated in commit 8** to relocation-normalized equality (the hoist's digest shift is expected — D-9.7 step 3, D-10.2) | equal (split phase); equal under `RELOCATED_KEYS` normalization (hoist phase). Holds `advanced_settings` fixed — see §16.3 |
 | **new** freeze property test | an `experiment.yml` recorded pre-split plus a post-split composed config → `check_not_frozen` passes. Direct test of D-10.1 | passes |
-| **new** round-trip tests | `compose_config(split(x)) == yaml.safe_load(x)` for the four seeds, the template, and the synthetic `reporting:` fixture; and `compose_config(write_config(cfg)) == cfg` for the conftest helper (D-12.6) | equal |
+| **new** round-trip tests | `compose_config(split(x)) == yaml.safe_load(x)` for the four seeds, the template, and the synthetic `reporting:` fixture (**relocation-normalized from commit 8**, D-9.7); and `compose_config(write_config(cfg)) == cfg` for the conftest helper (D-12.6) | equal |
 | `pixi run lint` / `format-check` | CI gates, near-instant; the pre-push hook runs them too | green |
 | `pixi run test-fast` | at the merge | green |
 | `pixi run test-full` | **at the merge, not only at the push** — the branch touches all four Snakefiles and `blueearth_cst/shared/`, the paths AGENTS.md names as what the `workflow_contract` / `process_isolation` tier exists to guard. Redirect to a FILE; never pipe through `tail` | green. **From the primary checkout** — §16.5 |
 | `pixi run tree-check` | **CHANGED, see §16.5.** Today it cannot fail on this design's defect (N11) | green — *after* the pin is moved off a config whose values equal the tool's fallbacks |
 | `semantic_tree_diff.py` | **not shape-only.** `compare_copied_config` adjudicates snapshot CONTENT (N15) | a **predicted, enumerated FAIL** on three files and nothing else — §16.4 |
-| **`check_baseline.py check`** | **the falsifier.** Primary checkout, `snake_config_baseline.yml`, WF1 with `--notemp` | **exactly three targets differ**, all three `type: yaml` config snapshots. **Zero data targets differ** — §16.3 |
+| **`check_baseline.py check`** | **the falsifier.** Primary checkout, `snake_config_baseline.yml`, WF1 with `--notemp`. **Runs once per phase** (D-9.7): after the split (commits 1–7) and again after the hoist (commit 8) | **exactly three targets differ**, all three `type: yaml` config snapshots. **Zero data targets differ** — §16.3. Same acceptance both times |
 | §16.6 sweep | stale spellings in docs and generated prose that no module inventory covers | no live reference to the pre-split shape |
 
 **Not run, deliberately:** any figure gate. No `.png`/`.pdf` under `project_dir`
@@ -2156,21 +2694,24 @@ fixture references, `["workflows"]` indexing, `"workflows":` dict literals,
 shipped-seed/template references, `config/runs/` snapshot names, and the
 `simulation_window` / `ADVANCED_SETTINGS` / `historical_year_range` /
 `"reporting"` surfaces. **45 existing modules**, which is exactly N17's
-independently-derived count, **plus 2 new = 47**. `tests/conftest.py` is inside
-the 45.
+independently-derived count, **plus 2 new = 47** (r2 added a third,
+`tests/test_migration_touch_refresh.py`, for the refresh sequence; v4 retires
+it unwritten with the sequence — `probe-1`, N19). `tests/conftest.py` is
+inside the 45.
 
 Tier 1 must change. Tier 2 changes mechanically or not at all. Tier 3 is
 **verified no-change with the reason stated** — which is the half `risk-8`
 insisted on, because "not on the list" and "checked and found safe" are the two
 outcomes a sweep cannot tell apart.
 
-**Tier 1 — modules the change necessarily edits (16 existing + 2 new).** The
+**Tier 1 — modules the change necessarily edits (16 existing + 3 new).** The
 commit column is §15.7's; this table and §15.7 must name the same set.
 
 | Module | Commit | Why it breaks / changes | Expected result |
 |---|---|---|---|
-| **new** `tests/test_config_composition.py` | 1 | — | new, green. Full case list in §16.1, **including the D-8.6a assertion that the composed shape is visible through `workflow.config`** (§10.7) |
-| **new** `tests/test_split_project_config.py` | 2 | — | new, green (with the synthetic `reporting:` fixture) |
+| **new** `tests/test_config_composition.py` | 1 | — | new, green. Full case list in §16.1, **including the D-8.6a assertion that the composed shape is visible through `workflow.config`** (§10.7) **and the D-9.6 static scan of the cross-workflow read set** (§9) |
+| **new** `tests/test_split_project_config.py` | 2 | — | new, green (with the synthetic `reporting:` fixture; staged-emission cases per §16.1, including the source-untouched invariant and the four D-15.3a ownership refusals) |
+| ~~`tests/test_migration_touch_refresh.py`~~ | — | — | **retired unwritten in v4** (`probe-1`): its subject, r2's records-first refresh sequence, is withdrawn — N19 shows its "final dry-run schedules nothing" assertion can never pass on a completed experiment, so the module as specified could never have gone green |
 | `tests/conftest.py` | 3 | `:136-145`'s `model_build_config` fixture reads `config["workflows"]["build_model"]` from a raw load (N16) → `ValueError` at setup; and the file gains `write_config` (D-12.6) | fixture composes via `load_composed_config`; helper added; green |
 | `tests/test_cli.py` | 3 | `:18` loads the fixture as `config_fn`; `:60-73` mutates and dumps one file | green, **including `:110-131`** — the additive-carve test pops `workflows.analyze_climate` entirely and must still dry-run WF1 with identical job counts (D-9.1's "absence is not this check's business") |
 | `tests/test_snapshot_config_rules.py` | 3 | `:122-126` pins the exact `CONFIG_PROJECTION` literals per Snakefile; `:129-141` pins WF3's `tuple(sorted(` derivation and `for section in guarded_sections`; `:178-193` pins `snapshot_config` params (`arch-20`) | green **with the literals carried verbatim through the §8.2 hoist**, and the derivation assertion at `:129-141` surviving; `:178-193` updated for `config_workflows` |
@@ -2236,7 +2777,7 @@ coverage for D-10.6**, not incidentally.
 |---|---|---|
 | `tests/test_run_workflows.py` | its 5 `["workflows"]` reads are the **run manifest**, not the config mapping (`:292,313,328,357-358`); §12.1 shows the wrapper's own config reads are unchanged | green, unchanged. A **false positive** of the grep — recorded so nobody re-derives it |
 | `tests/test_shared_provenance.py` | its 3 index reads and 4 dict literals (`:29,142,172,184`) build **composed-shape** whole configs and feed them to the projection code, which D-8.1 preserves exactly | green, unchanged. Second false positive |
-| `tests/test_check_project_consistency.py` | same: `:43` builds a whole config and `:95-154` mutate `workflows.build_model` / `workflows.analyze_projections` — the shape the guard receives from `sm.config` after composition (D-8.6a) | green, unchanged |
+| `tests/test_check_project_consistency.py` | same: `:43` builds a whole config and `:95-154` mutate `workflows.build_model` / `workflows.analyze_projections` — the shape the guard receives from `sm.config` after composition (D-8.6a) | green, unchanged **through the split phase**; edited in commit 8, where `_WF1_GUARDED` gains `("shared","wflow_outvars")` and this module gains the case proving a post-hoist `wflow_outvars` edit is still refused (D-9.7) |
 | `tests/test_project_tree_inventory.py` | enumerates `config/runs/snake_config_*.yml` and the experiment snapshot as **paths**; D-11.1 changes content, not paths, and D-11.2 adds no file to the tree | green, unchanged — **and it is the module that fails if D-11.2 leaks a copy** |
 | `tests/test_snake_utils.py` | `:2690-2745` pins `run_header`'s row formatting with a T1 path string; §12.4 keeps `config_path` bound to T1 | green, unchanged. On `repofit-6`'s list, checked, no edit |
 | `tests/test_surface_axes.py` | `:448-529` drive `parse_surfaces({"reporting": …})` on in-memory literals — exactly the path the hoist restores | green, unchanged; it is the coverage the hoist inherits, and the reason §16.2's synthetic fixture only has to cover *placement*, not parsing |
@@ -2249,6 +2790,15 @@ coverage for D-10.6**, not incidentally.
 | `tests/test_workflow_build_model.py` | `CONFIG = "test_case/snake_config_baseline.yml"`, `workflow_contract` tier | green after commit 3; only `test-full` runs it |
 | `tests/test_workflow_analyze_projections.py` | same | same |
 | `tests/test_workflow_run_stress_test.py` | same, plus one `["workflows"]` read of a composed-shape mapping | same |
+
+**The hoist phase adds no module and edits five** *(r3, D-9.7 / §15.7 commit
+8)*: `tests/test_config_composition.py` (contract retired, value-read
+assertion → zero, relocation-normalized digest/round-trip cases),
+`tests/test_snapshot_config_rules.py` (the pinned literals move with
+`_WF1_GUARDED`), `tests/test_check_project_consistency.py` (the
+`("shared","wflow_outvars")` guard case), `tests/test_split_project_config.py`
+(hoisted emission, normalized round trip, both-places refusal), and the
+fixture's own T1 (the key moves). The module count stays 45 + 2 = 47.
 
 **Acceptance item, not a sweep:** this table is the deliverable `risk-8` asked
 for. A module that appears in neither §15.7 nor this table means the inventory
@@ -2276,6 +2826,12 @@ which `WF3_TARGETS` declares — **and it is not a manifest target**.
 > differing target, or any differing target that is not one of the three
 > snapshots, is a defect in this design or its implementation — not a
 > re-record.* Read and report the check **before** re-recording.
+>
+> *Under D-9.7 (r3) this acceptance applies **once per phase**, unchanged in
+> shape: after the split (against the pre-R13 baseline) and again after the
+> hoist (against the split-phase re-record). Both passes must show the same
+> three-yaml / zero-data pattern; the hoist pass's yaml diff is the
+> `wflow_outvars` relocation and nothing else.*
 
 **Conflict 3 of the review index is adjudicated here** (`risk-14` counted four
 in-project config snapshots; the repo-fit lens verified the seven-target
@@ -2293,8 +2849,10 @@ says which of the two it is (§1, §11.1, N10).
 `effective_config_document` (`provenance.py:254-262`) folds the whole
 `advanced_settings` mapping into the digested document **unprojected**, so any
 change to that file's shape moves `effective_config_digest` for all four entry
-points. D-13.4 removes every such change from R13's scope, which is what makes
-the digest-equality property test and this falsifier mean what they say. The
+points. D-13.4 removes every such change from R13's scope, and D-9.7 confines
+R13's one deliberate digest-moving relocation to its own phase *after* the
+split-only falsifier pass — together that is what makes the digest-equality
+property test and this falsifier mean what they say, in each phase. The
 property test **states the qualification in its own docstring** — a gate that
 silently depends on an unstated invariant is a gate you have to decide whether
 to believe.
@@ -2320,6 +2878,12 @@ FAILs — with no expected-result line anywhere in v1.
 > `project`, `shared` and the retained workflow section compare clean, every
 > path-valued key still maps, and **every other file in the tree compares
 > clean**. Any other diff is a defect.
+
+*Hoist-phase prediction (r3, D-9.7):* run against a split-phase reference
+tree, the same three comparisons FAIL on the `wflow_outvars` relocation only —
+the key missing from the retained `workflows.build_model` section and present
+under `shared:` — and every other file compares clean. Any other diff is a
+defect.
 
 The whole-tree comparison needs the untracked `test_case/test_local`, so it is a
 local gate like `check_baseline`, not a CI one, and it runs in the §16.5 order.
@@ -2370,6 +2934,12 @@ snapshot is wrong, because the only tests that read a real snapshot **skipped**.
 >    baseline (499/31/1 windows, 498/32/1 ubuntu) shifts under this change, and
 >    a predicted count is exactly the "nothing fails, so nobody looks" failure
 >    this ordering exists to prevent.
+>
+> **This ordering runs twice** (r3, D-9.7): once after §15.7 commit 7 (the
+> split-only pass, closing with the split-phase re-record) and once after
+> commit 8 (the hoist pass, closing with commit 9's final re-record). The
+> second pass takes §16.3's hoist-phase acceptance and §16.4's hoist-phase
+> prediction; R13 is sealable only after it.
 
 **(c) Retiring `test_content_is_copied_verbatim` has an ordering constraint.**
 It is the **only gate in the suite that can see the snapshot's shape without the
@@ -2401,6 +2971,9 @@ literal. The sweep is now scoped to prose and generated text only:
   replaced**, and the replacement must say **four**, the file count (§16.3);
 - `snake_utils.py:858-860`'s docstring, which carries the retired
   `config/workflows/snake_config_*.yml` spelling (`repofit-5`);
+- `scripts/plot_workflow_dag.py:50`'s usage example, which demonstrates the
+  withdrawn `--config foo=bar` form (S8, §8.5b) — replaced by a form that
+  survives, e.g. an `enabled` toggle or a `config_path` repoint;
 - `dev/reference/naming.md` §9 and `dev/reference/workflows/rule-index.md`.
 
 > **The sweep must anchor on the DIRECTORY, not the stem.** After D-7.4,
@@ -2433,8 +3006,8 @@ is one path, so the other config files would be undeclared — reproducing the F
 stale-config defect (§10.3). (c) **S4 becomes unenforceable.** Snakemake's merge
 is a silent order-dependent dict update: a `historical_window` in two files
 produces no error, just a winner. D-9.2 and D-9.3 have no place to live — and
-`risk-3` showed D-9.3 is precisely the check that must reach every pair, not
-just the reachable ones. (d) **Wrapper and invocation churn:**
+`risk-3`'s surviving half showed D-9.3 must reach every declared T2 file, not
+just the ones an entry point composes. (d) **Wrapper and invocation churn:**
 `build_command` (`run_workflows.py:371-386`) assembles one `--configfile`, and
 every documented command line carries one.
 
@@ -2539,25 +3112,116 @@ Recorded here so a reviewer can find them; each is argued at the section named.
   falsifier's ability to certify output neutrality. If the owner rules B or C,
   the rename lands as a separate series *after* baseline verification.
 
+*Withdrawn or declined in r2 — each closed by an owner ruling or an external
+finding:*
+
+- **An opt-in `--write` mutation mode for the splitter** — §15.3; withdrawn by
+  the S7 staging-emit ruling (`ext1-2`): report-only means report-only against
+  user files, and an explicit mutation flag is still a mutation mode. The
+  staged proposal plus a user-performed application replaces it.
+- **Routing `--config` workflow-setting overrides into the composed T2 section
+  before validation** — §8.5b; offered at the 2026-08-21 gate-clarification and
+  **declined** (S8): a second write path into workflow settings is exactly the
+  shared-seam hole D-9.1 exists to close. The overrides are withdrawn instead,
+  with a form-by-form migration mapping (§8.5b).
+- **Hoisting `workflows.build_model.wflow_outvars` to `shared:` inside R13** —
+  §9 (D-9.6); **deferred in r2, then brought into R13 scope in r3 by owner
+  arbitration** (`ext2-1`, D-9.7). The r2 deferral's reasoning — the
+  relocation shifts every entry point's digest and moves the guard contract
+  (`_WF1_GUARDED`) exactly when §16.3's falsifier must distinguish "expected
+  shift" from "defect", the same `arch-11` principle that defers D-13.4's
+  relocations — was **dissolved by ordering, not overruled**: the neutrality
+  validation runs first on the split-only state, so the hoist's shift arrives
+  afterwards as an expected, separately-verified event. Deferral (Q7) and
+  in-milestone ordering both dissolve the collision; only the latter also
+  discharges S4 within R13, which is what the reviewer showed a deferral
+  cannot claim (`ext2-1`: a frozen exception documents the violation, it does
+  not make S4 true).
+- **A bare `snakemake --touch` shortcut around the post-migration cascade** —
+  §15.6; withdrawn (`ext1-4`): touching changes timestamps, not contents, so it
+  could leave whole-shape snapshots and stale configuration records under
+  products marked current. r2 replaced it with a bounded records-first refresh
+  sequence proved by a scheduled-empty dry-run — see the next group.
+
+*Withdrawn in v4 — refuted by the driver's framework-feasibility probe
+(`probe-1`, N19–N20):*
+
+- **The records-first refresh sequence itself** — §15.6; withdrawn on
+  measurement: on a completed experiment the reaped `temp()` intermediates
+  keep the DAG permanently dirty (28 of 32 jobs re-scheduled after a
+  successful `--touch`; N19), so the sequence's scheduled-empty equivalence
+  proof can never come back clean and its fallback — the full re-run — would
+  have fired every time, silently. The full re-run is now the only path.
+- **A differential equivalence proof in its place** — capture the
+  dry-run-scheduled job set on a touched pre-migration copy and again after
+  the sequence, and require set equality so the reaped-chain residual cancels.
+  Constructible, and rejected (§15.6): N19 shows the residual contains the
+  Wflow batch cascade — the dominant cost — so the shortcut it would certify
+  cannot deliver the saving OV-2 books; the proof would measure
+  migration-neutrality of a permanently dirty job set, not the run-avoidance
+  a user would read it as promising; and N20 shows the re-invocation cost it
+  fails to remove is pre-existing repo behavior, not a migration artifact.
+
+*Withdrawn or restated in r3 — each by the round-cap owner arbitration
+(ledger, 2026-08-21):*
+
+- **The unconditional cross-T2 spelling rejection** (v2's D-9.3, and the
+  all-spellings half of `risk-3`'s resolution) — §9; withdrawn (`ext2-6`):
+  S4 is defined by consumption, not spelling, and independent same-named
+  workflow settings are legitimate. D-9.3 survives restricted to declared
+  shared/hoisted identities; consumption is enforced by the corrected D-9.6.
+- **Immediate full recomputation as a migration step for every project**
+  (v4's §15.5 "Re-run" instruction and §15.6's "only documented path, for
+  every project") — restated (`ext2-4`): migration completes at the staged
+  round trip plus the post-application dry-run; records refresh at the next
+  intended execution; the deliberate full re-run is scoped to users who need
+  freshly shaped snapshots sooner. Grounded in N20 — the forced-at-migration
+  run converted pre-existing next-invocation dirtiness into an avoidable
+  immediate cost.
+- **A splitter that emits the pre-hoist placement after commit 8** —
+  considered under D-9.7 and rejected: it would emit a layout its own loader
+  refuses (D-9.2, once `SHARED_SEAM_KEYS` carries `wflow_outvars`), turning a
+  mechanical migration into a two-step manual one. The splitter emits the
+  hoisted placement and D-15.4b normalizes the round trip by the declared
+  `RELOCATED_KEYS` map instead.
+- **An unowned staging namespace** (r2's "deletes and recreates it on every
+  run") — §15.3; withdrawn (`ext2-2`, D-15.3a): recursive replacement is now
+  conditional on the ownership marker plus the tool basename, `--staging`
+  yields a tool-named child, and the source directory and its ancestors are
+  refused outright.
+
 ## 18. Consequences and risks
 
 ### Owner-visible at G2 — five items, decidable without reopening anything else
 
+The six round-2 findings are **already owner-ruled** (round-cap arbitration,
+ledger 2026-08-21) and are not re-asked here; the two whose outcomes an owner
+reads first are the R13 scope widening (D-9.7 — the hoist phase, two falsifier
+passes, `CROSS_WORKFLOW_READS` empty at completion) and the OV-2 restatement
+below.
+
 | # | Item | Where | What the owner is being asked |
 |---|---|---|---|
 | **OV-1** | **`config_path` resolves against the T1 file, reversing v1's CWD-relative rule** | §8.4 | Accept the reversal, or take the recorded alternative (CWD-relative + an absolute path emitted by the splitter for an out-of-tree T1). If the alternative is preferred, §15.3's splitter and §16.1's path-resolution matrix change and **nothing in §§7–13 moves** |
-| **OV-2** | **Migrating a project with a completed experiment re-runs the entire stress test to produce identical results** | §15.6 | Accept the cost as documented, with the opt-in `snakemake --touch` shortcut stated in `docs/migration-config-tiers.md` and never invoked by any tool |
+| **OV-2** | **Migration completes at the dry-run; the first post-migration *execution* of a project with a completed experiment re-runs the entire stress test to produce identical results — and no shortcut mechanism exists** *(restated in r3 per the owner's own `ext2-4` ruling)* | §15.5–15.6 | Confirm the restated posture: completion = staged round trip + post-application dry-run, both immediate; existing records remain truthful history until the next intended execution; the deliberate full re-run is scoped to users who need freshly shaped snapshots sooner. Both attempted shortcut mechanisms remain withdrawn: the bare `--touch` by `ext1-4`, and r2's records-first refresh sequence by the driver's framework-feasibility probe (`probe-1`, N19) — reaped `temp()` intermediates keep a completed experiment's DAG permanently dirty (28 of 32 jobs scheduled after a successful touch), so the sequence's scheduled-empty proof can never pass and the expensive Wflow cascade re-runs on the next invocation regardless. N20 bounds the charge honestly: most of that re-run cost pre-exists migration — re-invoking `snakemake all` on a completed project re-runs the reaped chain today, migration or not |
 | **OV-3** | **A WF3 run does not require a WF2 T2 file** | §8.7 (D-8.7) | Confirm that `config_path` is optional for every workflow, which keeps the projections overlay optional exactly as the CST method requires (N14). The alternative — v1's implicit position — makes an overlay file mandatory for every stress test |
 | **OV-4** | **Workflow naming: Candidate A, final** | §14 | Confirm A. If B or C is ruled, §14.3 row 15 binds: the rename lands as a **separate commit series after** the config split has been baseline-verified, because a rename moves a dozen baseline target keys and destroys §16.3's falsifier |
 | **OV-5** | **D-12.6b — `tests/snake_config_fixture.yml` is split on disk** | §12.6, §16.2 | Ratify a decision **minted by the completing author while writing §16.2**, not carried from a gate: the fixture becomes a T1 plus `snake_config_fixture_<name>.yml` siblings, because 7 of its 14 remaining consumers pass its path straight to a run and have no helper call site. The alternative is keeping it whole and having those 7 each materialize a split pair inside their own tests — a larger diff, no on-disk change. Ruling the other way changes **§12.6, §16.2 tier 2 and §15.7 commit 3, and nothing else**. It matters because `repofit-1` is **blocking** and its accepted disposition incorporates this decision |
 
 ### Positive
 
-- Cross-workflow single-sourcing becomes **checkable at parse time** rather than
-  conventional: four closed checks (D-9.1, D-9.2, D-9.3, D-9.5), gated by
-  `test_cli`. D-9.3 now reaches **every pair** of T2 files rather than the three
-  of six an entry-point-scoped check could see (`risk-3`), and D-9.5 closes T1's
-  top level, which is what makes the migration detector complete (`arch-6`).
+- Cross-workflow single-sourcing becomes **checkable** rather than
+  conventional: four closed checks at parse time (D-9.1, D-9.2, D-9.3, D-9.5),
+  gated by `test_cli`, plus the cross-workflow read scan over every authorized
+  runtime-consumer surface (D-9.6, closing §19 Q2). D-9.3 reaches **every
+  declared T2 file that resolves** rather than only `R(entry)`'s (`risk-3`'s
+  surviving half; its all-spellings half is withdrawn by `ext2-6` — the check
+  now guards declared shared/hoisted identities, and consumption is D-9.6's
+  job), D-9.5 closes T1's top level, which is what makes the migration
+  detector complete (`arch-6`), and the one measured cross-workflow value read
+  (`wflow_outvars`) is **hoisted inside R13** (D-9.7), after which
+  `CROSS_WORKFLOW_READS` is empty and S4 holds with zero exceptions at
+  milestone completion.
 - The four per-project config snapshots stop being byte-identical whole-config
   copies (N5) and become the workflow-scoped views their filenames have always
   promised — closing a confusion `_RUNS_README` currently has to apologize for.
@@ -2598,11 +3262,18 @@ design (`risk-13`).
   let `suggest_experiment_name.py` silently re-point another project's
   experiment. Criterion 2 is met on **snapshots** and on **per-file scope**; it
   is *not* met on total source bytes, and this design does not claim it is.
-- **Migrating a project with a completed experiment re-runs the whole stress
-  test** (§15.6, OV-2). Unbudgeted in v1 and a real charge against G5's
-  "mechanical, **bounded** migration": rewriting T1's bytes re-fires rule 1.06,
-  which moves the wf1 snapshot digest, which re-fires 3.01, which rewrites a
-  sentinel that 3.09 and 3.10 declare **bare**, and the realization cascade runs.
+- **The first post-migration execution of a project with a completed
+  experiment re-runs the whole stress test, with no shortcut mechanism**
+  (§15.6, OV-2; timing restated in r3 by `ext2-4` — the bill arrives at the
+  next intended execution, not as a migration step). Unbudgeted in v1 and a
+  real charge against G5's "mechanical, **bounded** migration": rewriting T1's
+  bytes re-fires rule 1.06, which moves the wf1 snapshot digest, which
+  re-fires 3.01, which rewrites a sentinel that 3.09 and 3.10 declare
+  **bare**, and the realization cascade runs. Both attempted mitigations are
+  withdrawn — the bare `--touch` by `ext1-4`, r2's refresh sequence by
+  `probe-1`/N19. The bound the design can honestly state is N20's: the
+  reaped-chain portion of the re-run is pre-existing re-invocation behavior,
+  not a migration cost.
 - **The test-fixture rework is the largest single migration item**, and v1
   omitted it entirely: `tests/snake_config_fixture.yml` plus 16 consuming modules
   plus a conftest helper that does not exist today (§12.6, §16.2). Under D-12.6
@@ -2612,8 +3283,10 @@ design (`risk-13`).
   record, not a source, and is documented as "written by the run".
 - A clean break (§15.1) breaks every existing project config until it is
   migrated. Mitigated by a precise parse-time error naming the offending key and
-  the migration doc, a `--write` migration script that **verifies the user's own
-  file before rewriting it** (D-15.4b), and a precedent six days old.
+  the migration doc, a migration script that **stages the proposed T1 + T2
+  beside the user's config and verifies the staged pair against the source
+  before reporting it applicable** (D-15.4b) — no tool ever rewrites the user's
+  file (§15.3, owner ruling 2026-08-20) — and a precedent six days old.
 - The reader now needs two files open to reason about one workflow's run — the
   cost of any decomposition — **and two path-anchoring rules three lines apart**
   in T1 (§8.4, OV-1). Mitigated by error messages naming both the resolved path
@@ -2622,14 +3295,24 @@ design (`risk-13`).
 - `dev/baseline/manifest.json` must be re-recorded for **three** targets, a
   primary-checkout, no-other-session-live operation — and only after §16.3's
   check has been read and reported.
-- **`--config key=value` passthrough changes behavior**: an override that writes
-  a workflow setting into `workflows.<name>` is now a parse-time rejection, not
-  an override (§8.5b). A workflow setting is overridden by editing the T2 file.
+- **Ad-hoc `--config` overrides of workflow settings are withdrawn** (S8,
+  narrowed G4 — an owner-ruled CLI-contract break, no longer described as
+  "unchanged"): such an override is a parse-time rejection naming the key. The
+  replacement is a T2 edit, or a command-line `config_path` repoint at an
+  alternative T2 file; §8.5b carries the full form-by-form migration mapping,
+  including the one documented example (`plot_workflow_dag.py:50`) that stops
+  working.
 - **Four** config snapshots change content shape, not three; the fourth (wf0) is
   not a baseline target (N10, `risk-10`), and `_RUNS_README` must say four.
 
 ### Neutral / must be planned for
 
+- **R13 now contains two baseline-scale validation passes** (r3, D-9.7): the
+  §16.5 ordering — full WF1→WF2→WF3 re-run from the primary checkout, then
+  `test-full`, then the falsifier read, then a re-record — runs once for the
+  split and once for the hoist. A real maintainer cost, and the price of
+  discharging S4 inside the milestone with every shift attributable; the owner
+  ruled it knowingly (`ext2-1`).
 - **Two** migration documents, not one (`repofit-8`): the user-facing
   `docs/migration-config-tiers.md` and the naming.md-mandated internal record
   `dev/milestones/r13/migration_config-tiers.md`, without which the R13 seal is
@@ -2652,15 +3335,19 @@ design (`risk-13`).
 | The splitter mangles a **value** — not a comment — via an alias or a block scalar, producing a config that parses and runs with different numbers | high | D-15.4a refuses on `&`, `*`, `<<:` or a block scalar inside a workflow section, naming construct and line; D-15.4b round-trips the user's own file before rewriting it. v1 booked this as "mangles a comment block", medium |
 | `SHARED_SEAM_KEYS` drifts from `shared:` as keys are added | medium | coupled-edit discipline plus a test asserting every `shared:` key in the shipped template appears in the set — the shape `tests/test_advanced_settings.py` already uses |
 | A composition refactor rebinds the composed dict to a name other than `config`, and every WF3 run fails at rule 3.01 *after* WF1 and WF2 have run | medium | D-8.6's invariant is stated with its consumer of record (`check_project_consistency.py:225` via `sm.config`) and checked by a `workflow.config` assertion in `tests/test_config_composition.py` (`arch-12`, `risk-9`) |
-| A fourth baseline target moves | high if it happens | §16.3 makes it a **defect**, not a re-record; the check is read and reported before any re-record |
+| A fourth baseline target moves | high if it happens | §16.3 makes it a **defect**, not a re-record; the check is read and reported before any re-record — in **both** falsifier passes (D-9.7) |
+| The hoist commit lands without its guard move, and a post-build `wflow_outvars` edit stops being refused at rule 3.01 | high | D-9.7 makes the `_WF1_GUARDED` addition part of the same coupled commit as the key move; `tests/test_check_project_consistency.py` gains the case proving the refusal survives, and the pinned literals at `test_snapshot_config_rules.py:122-141` fail if the projection and guard move apart |
 | A branch passes `test-full` green in a session slot while the composed snapshot is wrong, because the only tests that read a real snapshot skipped | medium | §16.5(b)'s five-clause ordering: re-run the fixture from the primary checkout, then `test-full` there, then read the baseline, then re-record — and read the skip count with `-rs` rather than predicting it (`repofit-7`) |
 | Two T1 files are pointed at one WF3 T2 file, and naming one project's experiment silently re-points the other's | medium | Nothing at parse time can see it (§8.4's duplicate check is within one T1). Stated as a rule in the implementation brief and enforced by a reviewer — this design does not claim a check it does not have (`risk-5`) |
 | A future reader reaches into an unloaded workflow section | low | `KeyError` at parse time, gated by `test_cli`; the fix is to declare it in `CONFIG_PROJECTION`, which puts it in `R(entry)` (§10.7) |
 
 ## 19. Open questions
 
-Reconciled against the panel: one v1 question is **closed**, three stand
-unchanged in substance, one is now the owner ruling OV-4, and one is new.
+Reconciled against the panel, then against external round 1, then against the
+round-cap arbitration: three questions are now **closed** (Q1 in v2; Q2 in r2
+by D-9.6; Q7 in r3 by D-9.7 — closed *into scope*, not resolved away), two
+stand unchanged in substance, one is the owner ruling OV-4, and one tracked
+follow-up remains (Q6, from the panel).
 
 - **Q1 — key spelling. CLOSED in favour of `config_path`** (§7.1). v1 left it a
   reviewer call between `config_path` and `workflow_config`. `repofit-11`
@@ -2670,15 +3357,15 @@ unchanged in substance, one is now the owner ruling OV-4, and one is new.
   The prose collision with the Snakefile-local variable is resolved by renaming
   the **variable** to `t1_path` (§8.2), not the key.
 - **Q2 — should the declared cross-section read set become a checked
-  contract?** Open, and **worth more than v1 credited it with**. §9 refuses
-  *undeclared* cross-workflow sharing but leaves declared cross-section reads
-  (WF3 → `workflows.build_model.wflow_outvars`) governed only by
-  `guarded_sections`. A test asserting that every cross-section read in the
-  Snakefiles is covered by that tuple would close the last gap — but writing it
-  means parsing the Snakefiles, which may cost more than it buys. `risk-3`
-  raises the stakes: `guarded_sections` now carries the enforcement weight for
-  the one case D-9.3 still cannot see (a key in exactly one T2 file, read across
-  the section boundary from there).
+  contract? CLOSED in favour of the check, in r2** (D-9.6, resolving
+  `ext1-1`). v2 weighed the cost of parsing the Snakefiles against what it
+  buys; the external round settled the question the other way by showing what
+  its absence costs — a known exception to S4. The read set is now the frozen,
+  shrink-only `CROSS_WORKFLOW_READS` contract with a completeness-and-
+  minimality static scan in `tests/test_config_composition.py`, on the
+  `tests/test_cross_workflow_inputs.py` precedent. `guarded_sections` no longer
+  carries enforcement weight alone; it keeps the guard's identity comparisons,
+  enumerated in D-9.6's Class-2 table.
 - **Q3 — should `split_project_config.py` be retired after the migration?** The
   prune tools are permanent; a migration tool arguably is not. Recommend keeping
   it one release cycle, then deleting it rather than carrying a map for its own
@@ -2707,13 +3394,26 @@ unchanged in substance, one is now the owner ruling OV-4, and one is new.
   and **`tests/test_batch_sizing.py:335,343`** (`repofit-10`, a consumer
   D-13.2's original trio never named); the digest shift is user-visible in
   `effective_config_sha256` and `configuration_inputs_sha256` with no way to
-  attribute it unless the migration note says so; and it must land **after** the
-  R13 baseline has been re-recorded, never in the same series. **This is where
-  `repofit-10`'s deferred half is tracked.**
+  attribute it unless the migration note says so; and it must land **after**
+  R13's final, hoist-phase baseline re-record (§15.7 commit 9, D-9.7), never
+  in the same series. **This is where `repofit-10`'s deferred half is
+  tracked.**
+- **Q7 — the `wflow_outvars` hoist to `shared:`. CLOSED into R13 scope in r3**
+  (owner arbitration `ext2-1`, D-9.7). r2 scheduled it as a post-R13 follow-up
+  for the `arch-11` reason; the arbitration dissolved that objection by
+  ordering — split-only neutrality is validated first, then the hoist lands
+  with its full coupled-edit set (unchanged from this question's r2
+  enumeration, now stated in D-9.7 and §15.7 commit 8) and its own falsifier
+  pass. R13 completes with `CROSS_WORKFLOW_READS` **empty** and S4 holding
+  with **zero** exceptions. Nothing remains open under this ID; the follow-up
+  obligations it tracked are now milestone obligations.
 
 ## 20. Revision log
 
 | Version | Date | Change |
 |---|---|---|
 | v1 | 2026-08-20 | Initial draft for gate G1. Incorporates the intake's five confirmed scoping rulings and the post-stage-0 scope amendment (R13 milestone wiring; workflow-naming section). Decides the two questions the intake left open: `reporting:` moves to the WF3 T2 file with a loader hoist (§10.4); clean break rather than backward compatibility (§15.1). Adds empirical premises N1–N8. Sections 1–20, 1341 lines. |
-| v2 | 2026-08-20 | Revised against the internal three-lens panel — **52 findings (5 blocking, 27 major, 20 minor), every one dispositioned in `ledger.md`**. Verified ten new premises N9–N18 by direct read or execution rather than argument, including the two the panel self-flagged as argued-not-run (N11, N12). Adds decisions D-8.5 (the composition contract, with `declared_sections` as the channel `arch-1` found missing), D-8.6 (the `config` rebinding invariant and the `--config` passthrough), D-8.7 (`config_path` optional, keeping the projections overlay optional), D-9.5 (T1's top level closed), D-12.0 (`load_composed_config` for the six raw-T1 consumers v1 never named), D-12.6 (the test-fixture surface, the largest omitted migration item), D-13.4 (no advanced-settings key moves in R13), D-15.4a/b (splitter refusals and a round trip against the user's own file), D-15.5 (the post-migration re-run cost). **Reverses one v1 decision**: `config_path` resolves against the T1 file, not the CWD (§8.4, `repofit-2`; owner-visible OV-1). **Relocates the loader** to `blueearth_cst/shared/config_composition.py`. **Corrects four factual claims**: six rules not five (N1/`arch-15`), four snapshots not three (N10/`risk-10`/`risk-14`), `reporting:` present in no shipped config (N9/`risk-13`), and rule 3.09's rerun trigger is a param, not an `ancient()` input (N13/`arch-7`≡`risk-7`). Adds §16.2's inventory of **every** test module the split touches (45 existing + 2 new), which produced N18 — a breaking consumer no lens found. Adjudicates all three index conflicts (§12.0, §16.3, §16.5a). **Authored across two spawns**: §§1–15 by the first, which ended on a session limit mid-§15.7; §§16–20 and `ledger.md` by the completion spawn, which also corrected D-12.6 (7 of 14 fixture consumers pass the path directly and have no helper call site), the §15.7 commit-3 test list, and the header's line budget. Awaiting G2. |
+| v2 | 2026-08-20 | Revised against the internal three-lens panel — **52 findings (5 blocking, 27 major, 20 minor), every one dispositioned in the ledger (`config-tiers-review-record.md`)**. Verified ten new premises N9–N18 by direct read or execution rather than argument, including the two the panel self-flagged as argued-not-run (N11, N12). Adds decisions D-8.5 (the composition contract, with `declared_sections` as the channel `arch-1` found missing), D-8.6 (the `config` rebinding invariant and the `--config` passthrough), D-8.7 (`config_path` optional, keeping the projections overlay optional), D-9.5 (T1's top level closed), D-12.0 (`load_composed_config` for the six raw-T1 consumers v1 never named), D-12.6 (the test-fixture surface, the largest omitted migration item), D-13.4 (no advanced-settings key moves in R13), D-15.4a/b (splitter refusals and a round trip against the user's own file), D-15.5 (the post-migration re-run cost). **Reverses one v1 decision**: `config_path` resolves against the T1 file, not the CWD (§8.4, `repofit-2`; owner-visible OV-1). **Relocates the loader** to `blueearth_cst/shared/config_composition.py`. **Corrects four factual claims**: six rules not five (N1/`arch-15`), four snapshots not three (N10/`risk-10`/`risk-14`), `reporting:` present in no shipped config (N9/`risk-13`), and rule 3.09's rerun trigger is a param, not an `ancient()` input (N13/`arch-7`≡`risk-7`). Adds §16.2's inventory of **every** test module the split touches (45 existing + 2 new), which produced N18 — a breaking consumer no lens found. Adjudicates all three index conflicts (§12.0, §16.3, §16.5a). **Authored across two spawns**: §§1–15 by the first, which ended on a session limit mid-§15.7; §§16–20 and `ledger.md` by the completion spawn, which also corrected D-12.6 (7 of 14 fixture consumers pass the path directly and have no helper call site), the §15.7 commit-3 test list, and the header's line budget. Awaiting G2. |
+| v3 | 2026-08-21 | Revised against **external round 1** (verdict `revise`, four major findings; verbatim review at commit `ef498a9`) — every disposition in the ledger. **`ext1-1`**: §9 gains **D-9.6** — the cross-workflow read inventory as a measured deliverable (exactly one value read, `run_stress_test.smk:537-540` → `workflows.build_model.wflow_outvars`; two declared guard comparisons; false positives recorded), the frozen shrink-only `CROSS_WORKFLOW_READS` contract with a completeness-and-minimality static scan (on the `LEAVES`/`test_cross_workflow_inputs.py` precedent), §19 Q2 **closed**, and new **Q7** scheduling the `wflow_outvars` hoist immediately after the baseline re-record with its full coupled-edit set (incl. the `_WF1_GUARDED` move). **`ext1-2`** (owner ruling S7, 2026-08-20): §15.3–15.5 reworked to **staging-emit** — the splitter emits proposed T1+T2+report into a script-owned staging directory, application is a user step, `--write` withdrawn; D-15.4b verifies the staged pair; §16 gains the source-untouched invariant. **`ext1-3`** (owner ruling S8, 2026-08-21): G4 **narrowed** in §2 (`--configfile` path contract, wrapper invocation, `config_path` forwarding — nothing more); §8.5b reworked with the five-row override migration mapping (T2 edit or `config_path` repoint; `enabled`/`project`/`shared` survive; top-level and workflow-setting forms die at parse), a factual correction on `update_config`'s recursive merge, and design-level treatment of `run_workflows.py`'s disclosure recording and `plot_workflow_dag.py:50`'s example. **`ext1-4`**: the bare `--touch` shortcut is withdrawn; §15.6 defines the bounded **records-first refresh sequence** (regenerate all four snapshots + execute rule 3.01 before any touch; scheduled-empty dry-run as the equivalence proof), tested by new `tests/test_migration_touch_refresh.py` (§16.2 counts now 45+3=48). §5 records S7/S8; §17.4 records the withdrawn alternatives. New decision IDs: **D-9.6**; new tracked question: **Q7**. Awaiting G2 (round-2 trigger check first: D-9.6 and the refresh sequence are new mechanisms). |
+| v4 | 2026-08-21 | **Stage-6b corrective pass — not a review round.** The driver's framework-feasibility probe (run per the loop's probe rule for mechanisms resting on framework execution semantics or asserting an absence) **refuted r2's §15.6 records-first refresh sequence** before any reviewer saw v3; ledger row **`probe-1`** (blocking, accepted). Measurements recorded as premises **N19–N20** (§6.3): on a completed-experiment copy, `--touch` succeeds (32/32 jobs, 4 s) but the following dry-run schedules **28 of 32 jobs** — the four `temp()`-wrapped rules (`run_stress_test.smk:736, 931, 975, 1021/1029`) stay demanded forever because `--touch` cannot touch an absent file, and `run_wflow_batch_*` consumes two of their outputs; the untouched pre-migration control already schedules 20 (WF1) / 36 (WF3); `run_stress_test.smk:556-560` documents the reaped state in-tree. **The sequence is withdrawn entirely**: step 4's scheduled-empty proof is unachievable, step 3's "nothing consumes it" was false, and the residual chain contains the dominant Wflow cost — so a repaired differential proof (job-set equality on touched copies) could not restore the promised saving and is recorded rejected in §17.4. OV-2 restated: the full re-run is the only path, bounded honestly by N20 (the reaped-chain re-run pre-exists migration). `tests/test_migration_touch_refresh.py` retired unwritten (§16.1 row removed; §16.2 counts now 45+2=47; §15.7 commit 7 reworded). **No new decision IDs; no new or closed questions.** Sections touched: header, §6.3, §15.6, §15.7, §16.1, §16.2, §17.4, §18, §20. |
+| v5 | 2026-08-21 | **Arbitration revision (stage 6a).** Implements the owner's round-cap rulings on external round 2 (`ext2-1..6`, plus the partial withdrawal of `risk-3`; ledger, "Owner arbitration (round-cap, 2026-08-21)") — round 2 was the full-variant cap, so the rulings stand in for a reviewer verdict and no further external round follows. **`ext2-1`** (blocking): R13's scope widens — new **D-9.7** makes the `wflow_outvars` hoist a **required final R13 phase**, ordered neutrality-first: split lands with the one-entry contract, §16.5's ordering and §16.3's falsifier run on the split-only state and the baseline is re-recorded (commit 7), then the hoist lands as one coupled commit (8: seeds/template/fixture, both read sites, `SHARED_SEAM_KEYS`, `_WF1_GUARDED` + pinned literals, contract emptied and retired), then the expected digest shift is verified by a second §16.5/§16.3 pass and the final re-record (9). `CROSS_WORKFLOW_READS` is **empty** before R13 completes; the `arch-11` deferral is **dissolved by the ordering, not overruled**, and the dissolution licenses only this hoist (Q6 stays deferred). New supporting mechanism: `RELOCATED_KEYS` — the splitter emits the hoisted placement and D-15.4b's round trip is relocation-normalized, with a both-places-differing refusal (§15.4, §16.1). §2 G2/G3, §10.2, §16.4, §19 Q7 (closed into scope), §17.4 and §18 restated accordingly. **`ext2-2`** (blocking): new **D-15.3a** — the staging-ownership contract: recursive replacement only of an exact tool-created directory (ownership marker + tool basename), otherwise absent-or-empty; the source directory and its ancestors refused outright; `--staging <dir>` yields a newly created tool-named child; four refusal tests specified (§15.3, §16.1, §16.2). **`ext2-3`**: the permanent D-9.6 scan covers the four `.smk` files + `blueearth_cst/` + `scripts/` — the inventory's own surface — with ownership classification and **three separately-declared enumerations** (value reads / guard identity sites / tool reads); the registry-gaming half is dissolved by `ext2-1`, stated once: the hoist commit retires the registry and the value-read assertion becomes a literal zero. **`ext2-4`**: **D-15.5 restated** — migration COMPLETION (staged round trip + post-application dry-run, both immediate) is separated from output REFRESH (the next intended execution); existing records remain truthful history until then; full recomputation is scoped to users who explicitly need freshly shaped snapshots sooner; grounded in N20 (§15.5 steps 4–5, §15.6, OV-2, §18). **`ext2-5`**: §8.5b's mapping gains rows 6–7 (dotted `workflows.<name>.<setting>`; dotted `project`/`shared` leaves), with behaviour **verified against the pinned Snakemake 9.6.2 by invocation rather than asserted**: `parse_config`'s key regex (`cli.py:296-330`) admits no `.`, so a dotted key dies in the CLI (`cli.py:312`, `ValueError`) before any configfile is read, pre- and post-split identically — the dotted form was never accepted syntax under the pinned toolchain; a verified BaseLoader parsed-value note added. **`ext2-6`** (+ `risk-3` partially withdrawn by the same arbitration): **D-9.3 restricted** to declared shared/hoisted identities — independent same-named settings across T2 files now parse; the every-file reach survives (`risk-3`'s surviving half); first-symptom detection of genuinely new shared keys moves to the corrected D-9.6 (§8.3, §9, §17.1, §17.4, §18). New decision IDs: **D-9.7**, **D-15.3a**. Questions: **Q7 closed into scope**; none opened. Awaiting human gate **G2**. |

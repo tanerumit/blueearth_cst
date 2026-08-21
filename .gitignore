@@ -200,3 +200,4 @@ tests/test_project
 # dev/milestones/p32a/qa/ were 68 MB, the largest blobs in this history. Record the
 # finding in Markdown and the artifact's SHA256, not the artifact.
 dev/**/*.nc
+dev/**/*.pdf

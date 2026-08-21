@@ -8,7 +8,7 @@
 #   slot   — every modifying task in a claimed persistent worktree.  (current)
 #   lane   — a fresh session per task, against a frozen readiness SHA.
 # `lite` and `full` are permanent aliases for `trunk` and `branch`.
-mode: slot
+mode: lane
 
 # Below: only the overrides. Each beats the rung; every key left out takes the
 # `slot` value — isolation_landing `auto`, and worktree_policy `always`, which

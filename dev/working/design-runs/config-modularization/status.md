@@ -6,16 +6,16 @@ genre: decision-record   # milestone/refactor design (goal, what-changes, plan,
 author-binding: cst-architect
 started: 2026-08-20
 variant: full            # crosses every workflow's config contract + shared seam
-stage: 6b
-external-rounds-completed: 1
+stage: ARB
+external-rounds-completed: 2
 dispatches:
   opus: 6
   fable: 3
 cost:
   expensive-checks: 1   # framework-feasibility probe, 2026-08-21
-  doc-lines: 1341 -> 3012
+  doc-lines: 1341 -> 3057
 findings:
-  unique: 57
+  unique: 63
   re-raised: 3
 gates:
   G1: approved 2026-08-20
@@ -55,4 +55,8 @@ flags: []
   - **Consequence:** §15.6 step 4 ("a final `--dry-run` per workflow must schedule **nothing**") cannot come back clean on any project whose `temp()` intermediates have been reaped — which AGENTS.md mandates as the normal state of a WF3 run, and which `run_stress_test.smk:556-560` already documents in-tree ("on a COMPLETED experiment every 3.12 output is temp() and already deleted"). The step-4 equivalence proof is unachievable as specified, and step 3's conclusion that "nothing consumes it" is wrong for `downscale_climate_realization` / `perturb_climate_realization`, which `run_wflow_batch_*` does consume. Same failure class as the r08 revalidate-and-skip cache the skill cites.
 - [open] 6b-corrective-pass — the probe refutes a mechanism the revision introduced, which is a DESIGN change rather than a review finding, so it returns to the author before any reviewer sees it. Round 2 is already committed on trigger 3 (below) and will review the corrected document.
 - [event] round-2 trigger check 2026-08-21 — **ROUND 2 FIRES.** Trigger 3 (`the revision introduced new decision IDs`) fires unconditionally: D-9.6, verified by mechanical ID diff, is a mechanism no reviewer has seen. Trigger 1 (`a BLOCKING fix changed or introduced a mechanism`) does **not** fire — it is blocking-scoped and all four ext1 findings are `major`; noted explicitly because the revision does introduce two new mechanisms and a later reader would otherwise assume it fired. Trigger 2 (`a blocking or major finding was rejected`) does not fire — all four rows are `accepted`, and the two declined parts (ext1-3 route-into-T2, ext1-4 remove-the-shortcut) are branches the reviewer's own `suggested_fix` offered as alternatives. Trigger 4 (`probe missing or contradicted`) was firing; the driver closed it by running the probe above, which contradicted the design — so it is folded into the corrective pass rather than cited as a second reason to review.
+- [done] 6b-corrective-pass — outputs: design-v4.md (3057 lines), ledger row `probe-1` (blocking, accepted). §15.6's refresh sequence WITHDRAWN outright rather than repaired; probe measurements recorded as premises N19-N20 in §6.3. Driver scope-check PASSED (11 sections, 15 hunks, all declared); decision-ID diff verified: **zero** added, zero removed; v1-v3 byte-untouched. The author's added argument, which the probe did not reach: the residual reaped-`temp()` chain CONTAINS the dominant cost (`run_wflow_batch_*` consumes the downscale/perturb outputs), so a shortcut could never have saved the Wflow cascade — the differential job-set proof is recorded as considered-and-rejected in §17.4
+- [done] 4-external-r2 — dispatched 2026-08-21 via `codex exec` (GPT, codex-cli 0.145.0), `--sandbox read-only -c approval_policy=never`, brief refreshed per run-artifacts (review contract frozen; settled-framing block regenerated to carry S7 + S8). Round 2 is NOT clean-room: reviewer received design-v4.md + ledger.md + internal-review-index.md. Output: external-review-r2.md. **Verdict: revise. 2 blocking + 4 major (ext2-1..6).** Wart: the reviewer read the repo's own `.claude/skills/design-review-loop/` files (the brief's authority boundary says not to read broadly) and attempted a nested subagent delegation, which its runtime refused; the delivered review is substantive design critique with no process padding, so it is accepted on its merits
+- [done] 5-convergence-r2 — **NOT converged** (revise, 2 blocking). `external-rounds-completed: 2` = the full-variant CAP. Per the stage table, the cap routes to **human arbitration**: the owner rules on each surviving finding, rulings are logged, and any ruling mandating a fix goes to stage 6a with changes confined to the arbitrated IDs. No further external rounds.
+- [open] ARB — human arbitration on ext2-1..6, presented to the owner 2026-08-21
 

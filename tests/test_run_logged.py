@@ -493,9 +493,10 @@ def test_a_stall_under_an_open_bar_redraws_it_instead_of_beeping(tmp_path, monke
     #   stall   >= 2 x interval (tick 1 cannot fire once the bar is open, so
     #                            the first firing tick is t=2*interval)
     #
-    # 0.1s failed the first: `python -c` start-up under 12 xdist workers
-    # measures p50 0.19s / p100 0.41s on this platform, so boot routinely
-    # outran the interval and the notice printed. 1.0s tolerates ~0.9s of
+    # 0.1s failed the first. A synthetic probe -- 12 concurrent spawns of a
+    # bare `print` child, not the suite itself -- measured that latency at
+    # p50 0.19s / p100 0.41s on win-64, so boot routinely outran the 0.1s
+    # interval and the notice printed. 1.0s tolerates ~0.9s of
     # latency; the 3.0s stall spans three intervals and yields four redraws,
     # so the frame-count assertion below keeps its margin.
     monkeypatch.setenv("CST_HEARTBEAT_SECS", "1.0")

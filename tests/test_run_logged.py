@@ -483,12 +483,27 @@ def test_a_stall_under_an_open_bar_redraws_it_instead_of_beeping(tmp_path, monke
     driver, so the watchdog now has something to redraw and the notice (which
     would land ON the bar's line) is not printed.
     """
-    monkeypatch.setenv("CST_HEARTBEAT_SECS", "0.1")
+    # Two timing constraints, and the first is why this test was flaky under
+    # `-n auto`. The watchdog's clock starts in `_Heartbeat.__init__`, BEFORE
+    # the child is spawned, so its first tick lands at `interval` whether or
+    # not the child has printed yet -- and a tick with no bar open is answered
+    # by the notice, which is the very thing asserted absent. So:
+    #
+    #   interval > the child's first-output latency (else tick 1 beeps on boot)
+    #   stall   >= 2 x interval (tick 1 cannot fire once the bar is open, so
+    #                            the first firing tick is t=2*interval)
+    #
+    # 0.1s failed the first: `python -c` start-up under 12 xdist workers
+    # measures p50 0.19s / p100 0.41s on this platform, so boot routinely
+    # outran the interval and the notice printed. 1.0s tolerates ~0.9s of
+    # latency; the 3.0s stall spans three intervals and yields four redraws,
+    # so the frame-count assertion below keeps its margin.
+    monkeypatch.setenv("CST_HEARTBEAT_SECS", "1.0")
     out, err = _console(monkeypatch)
     snippet = (
         "import time\n"
         "print('[cst-progress] rlz_1_st_2 0.0', flush=True)\n"
-        "time.sleep(0.45)\n"
+        "time.sleep(3.0)\n"
         "print('[cst-progress] rlz_1_st_2 1.0', flush=True)\n"
     )
     rc = run_and_tee([sys.executable, "-c", snippet], tmp_path / "stall.log")

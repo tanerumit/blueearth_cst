@@ -6,7 +6,7 @@ genre: decision-record   # milestone/refactor design (goal, what-changes, plan,
 author-binding: cst-architect
 started: 2026-08-20
 variant: full            # crosses every workflow's config contract + shared seam
-stage: G2
+stage: 7
 external-rounds-completed: 2
 dispatches:
   opus: 6
@@ -19,7 +19,7 @@ findings:
   re-raised: 4   # ext2-1 re-raises ext1-1's deferred third part
 gates:
   G1: approved 2026-08-20
-  G2: pending
+  G2: approved 2026-08-21 (no editorial edits; lean path)
 flags: []
 ---
 
@@ -77,4 +77,17 @@ flags: []
   - **Structural checks PASSED.** 63 unique finding IDs all carry a row (risk 18, arch 21, repofit 13, ext1 4, probe 1, ext2 6), plus one arbitration entry against `risk-3` = 64 rows. No `blocking` deferred; no rejected `blocking` unarbitrated; the only non-`accepted` disposition at major-or-above is `risk-3`'s partial withdrawal, which IS the owner's arbitration ruling. design-v1..v5 all present and append-only. Both external verdicts name a `doc_version` that exists (v2, v4).
 - [event] empirical correction to S8's premise, 2026-08-21 — the author was instructed to VERIFY rather than assert the `--config` parsing behaviour for ext2-5, and the verification partly refutes the premise ext1-3 was argued on. Confirmed independently by the driver against the pinned Snakemake **9.6.2**: `snakemake ... --config workflows.build_model.foo=bar` raises `ValueError: Invalid config definition: Config entry must start with a valid identifier.` at `cli.py:312` — `parse_config`'s key regex `[a-zA-Z_][\w-]*\w$` admits no `.`, and the rejection happens **before any configfile is read, identically pre- and post-split**. So the dotted workflow-setting form was **never accepted syntax** under this toolchain: for that form there is no CLI break to migrate, and no closure check of this design ever sees it. The withdrawal ruled in S8 therefore bites only on the mapping-valued form (`--config workflows='{...}'`). **This does not reverse S8** — it narrows the blast radius the ruling was taken against, in the direction that makes the ruling easier, so it is recorded rather than re-put to the owner. Flagged to the owner in the G2 presentation because it corrects the factual premise of a decision they made.
 - [open] G2 — approval gate. Owner-visible agenda regenerated post-arbitration.
+- [done] G2 — **APPROVED 2026-08-21.** `design-v5.md` is the accepted R13 design. All five owner-visible items ruled via AskUserQuestion, every one taking the recommended option:
+
+  | # | Ruling | Effect |
+  |---|---|---|
+  | OV-1 | **Accept the reversal** — `config_path` anchors at the T1 file | §8.4 stands as written; the CWD-relative alternative stays on the record in §17 |
+  | OV-2 | **Confirm the restated posture** — migration completes at the dry-run; the next intended execution re-computes | Implements the owner's own `ext2-4` ruling; both shortcut mechanisms stay withdrawn |
+  | OV-3 | **Confirm** — `config_path` optional for every workflow | A WF3 run needs no WF2 T2 file; the projections overlay stays optional per N14 |
+  | OV-4 | **Confirm Candidate A** — keep the current workflow names | The rename stays available as a separate post-baseline series (§14.3 row 15) |
+  | OV-5 | **Ratify** — `tests/snake_config_fixture.yml` is split on disk | D-12.6b stands; `repofit-1`'s blocking disposition keeps its incorporated decision |
+
+  Verdict: **approve, no editorial edits requested.** Stage 7 therefore takes the LEAN PATH — no author spawn; the driver lands mechanically, and the ACCEPTED status-header swap is a logged editorial edit rather than design content.
+  Owner was shown at the gate, and acknowledged by approving: the S8 premise correction (the dotted `--config` form was never valid syntax, so the withdrawal bites only on the mapping-valued form), and the cost of their own `ext2-1` ruling — R13 now carries **two** baseline-scale validation passes, one for the split and one for the hoist.
+- [open] 7-finalize — BLOCKED on lane scope, not on judgement. The landing paths `dev/milestones/r13/` and `dev/roadmap.md` are outside this lane's declared `expected_paths`, and `task-scope` refuses to re-declare from `OCCUPIED` (it requires `CLAIMED`). `slot-recover --action reopen` is the documented remedy and runs **only from the primary checkout**, which this task session's topology guard correctly refuses. Anticipated at pause time — the original RESUME item 5 already said "landing needs scope extension". Everything not requiring those paths is done: the consolidated review record is written in the run dir ready to move, and the board item is unblocked.
 

@@ -13,7 +13,8 @@ updated: 2026-08-21
 
 > [!note] Overview
 > **What** — Split the monolithic project config into a T1 project file carrying closed {enabled, config_path} workflow stanzas plus per-workflow T2 files, composed by a shared loader so the in-memory config shape is unchanged. Ships a report-only split_project_config.py that emits proposed T1+T2 into a staging directory, migration docs, and the parse-time shared-seam checks (D-9.1).
-> **Why** — The design is ACCEPTED: G2 approved design-v5.md on 2026-08-21 after a
+> **Why** — The design is ACCEPTED: G2 approved it on 2026-08-21 (run-dir
+> `design-v5.md`, landed as `config-tiers-design.md`) after a
 > three-lens internal panel, two external rounds, a driver framework probe that
 > refuted a mechanism, and owner arbitration at the round cap. 63 findings, all
 > dispositioned. Read `dev/milestones/r13/config-tiers-design.md` (the normative

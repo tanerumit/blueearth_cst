@@ -1550,8 +1550,6 @@ history, per the WF2 precedent.
 
 ---
 
----
-
 ## Phase 9 — Configuration modularization (R13 design ACCEPTED)
 
 Registered 2026-08-20. The configuration surface is the first seam the toolbox
@@ -1591,6 +1589,10 @@ because reaped `temp()` intermediates cannot be touched into existence.
 (D-13.4 / §19 Q6) lands only after the R13 baseline is re-recorded, never in the
 same series. Workflow naming stays Candidate A (keep current names); §14.3 keeps
 B/C available as a separate post-baseline commit series.
+
+**Tag.** `r13-config-tiers` *(on seal)*.
+
+---
 
 ## Cross-cutting principles
 

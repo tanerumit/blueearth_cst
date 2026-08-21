@@ -39,8 +39,11 @@ updated: 2026-08-21
 - [ ] Commit 7b — **split-phase baseline re-record**. BLOCKED on the primary
       checkout: §16.5(b) forbids recording it from a lane. Runbook:
       `dev/milestones/r13/baseline-pass-runbook.md`
-- [ ] Commit 8 — the `wflow_outvars` hoist. Code-only and ready, but D-9.7's
-      ordering forbids landing it before 7b
+- [x] Commit 8 — the `wflow_outvars` hoist (`e3c9cbb`). Landed AHEAD of 7b by
+      owner decision: D-9.7 sequences the validation, not the history, and
+      pass 1 runs against a detached checkout at `9cbb72a` which carries none
+      of it. Consequence: `check_baseline.py check` at HEAD is expected to
+      disagree with `dev/baseline/manifest.json` until commit 9
 - [ ] Commit 9 — hoist-phase baseline re-record; R13 sealable after it
 
 Verified in the lane: `test-full` 3043 passed / 9 skipped / 1 xfailed,

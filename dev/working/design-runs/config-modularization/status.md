@@ -6,7 +6,7 @@ genre: decision-record   # milestone/refactor design (goal, what-changes, plan,
 author-binding: cst-architect
 started: 2026-08-20
 variant: full            # crosses every workflow's config contract + shared seam
-stage: ARB
+stage: 6a
 external-rounds-completed: 2
 dispatches:
   opus: 6
@@ -16,7 +16,7 @@ cost:
   doc-lines: 1341 -> 3057
 findings:
   unique: 63
-  re-raised: 3
+  re-raised: 4   # ext2-1 re-raises ext1-1's deferred third part
 gates:
   G1: approved 2026-08-20
   G2: pending
@@ -59,4 +59,15 @@ flags: []
 - [done] 4-external-r2 — dispatched 2026-08-21 via `codex exec` (GPT, codex-cli 0.145.0), `--sandbox read-only -c approval_policy=never`, brief refreshed per run-artifacts (review contract frozen; settled-framing block regenerated to carry S7 + S8). Round 2 is NOT clean-room: reviewer received design-v4.md + ledger.md + internal-review-index.md. Output: external-review-r2.md. **Verdict: revise. 2 blocking + 4 major (ext2-1..6).** Wart: the reviewer read the repo's own `.claude/skills/design-review-loop/` files (the brief's authority boundary says not to read broadly) and attempted a nested subagent delegation, which its runtime refused; the delivered review is substantive design critique with no process padding, so it is accepted on its merits
 - [done] 5-convergence-r2 — **NOT converged** (revise, 2 blocking). `external-rounds-completed: 2` = the full-variant CAP. Per the stage table, the cap routes to **human arbitration**: the owner rules on each surviving finding, rulings are logged, and any ruling mandating a fix goes to stage 6a with changes confined to the arbitrated IDs. No further external rounds.
 - [open] ARB — human arbitration on ext2-1..6, presented to the owner 2026-08-21
+- [done] ARB — **round-cap human arbitration, 2026-08-21.** Owner ruled on all six surviving findings via AskUserQuestion (three questions; ext2-3's disposition follows mechanically from ext2-1 and was recorded without a separate ruling). Rulings, mirroring the G1 record:
+
+  | # | Question put | Ruling | Effect |
+  |---|---|---|---|
+  | ext2-1 | Widen R13 to require the `wflow_outvars` hoist, or keep the split-only milestone and carry the S4 exception into Q7? | **Widen R13 — hoist required** (recommended option) | **R13 scope change.** Adds an implementation phase: neutrality first, then hoist, then verify the expected digest shift; `CROSS_WORKFLOW_READS` must be empty at completion |
+  | ext2-2 / ext2-4 / ext2-5 | Accept all three as recommended, or rule individually? | **Accept all three** (recommended option) | Staging-dir ownership guard; migration completion separated from output refresh; the dotted `--config` form added to the mapping |
+  | ext2-6 | Restrict D-9.3 to global identities, remove it entirely, or keep it as specified? | **Restrict to global identities** (recommended option) | Partially withdraws `risk-3` — its every-pair reach survives, its all-spellings scope does not |
+
+  Scope note: ext2-1 is a material change to R13's boundary, which normally returns a run to G1. It is NOT re-run mechanically here — stage 6a exists for exactly this case, the owner's rulings standing in for the reviewer verdict the cap forecloses. The owner was told they were deciding the milestone boundary rather than ratifying a fix.
+  Ledger: seven arbitration rows appended by the DRIVER (ext2-1..6 + `risk-3`), per stage 6a's carve-out from one-writer-per-artifact.
+- [open] 6a-arbitration-revision — author dispatched (cst-architect, Fable). Changes confined to the arbitrated IDs + forced cross-refs; driver scope-checks the v4→v5 diff against exactly those sections. The cap stands: no further external rounds.
 

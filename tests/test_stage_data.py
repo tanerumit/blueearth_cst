@@ -6,10 +6,15 @@ from pathlib import Path
 
 import numpy as np
 
-sys.modules.setdefault("geopandas", types.SimpleNamespace())
-sys.modules.setdefault("rasterio", types.SimpleNamespace())
-sys.modules.setdefault("rasterio.windows", types.SimpleNamespace())
-sys.modules.setdefault("xarray", types.SimpleNamespace(Dataset=object))
+# NO `sys.modules.setdefault` STUBS HERE, and none may be re-added. This module
+# used to install fake `geopandas`, `rasterio`, `rasterio.windows` and `xarray`
+# at import time; `setdefault` mutates `sys.modules` for the whole pytest
+# PROCESS and nothing restored them, so whichever module imported first decided
+# what every later one saw. `pytest tests/test_stage_cmip6.py` alone was green
+# and the full suite was green, but running the two staging modules together
+# made three of test_stage_cmip6's tests fail against the fakes -- a false
+# failure in exactly the subset run someone iterating on staging makes.
+# stage_data imports fine without them (t2608191420).
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dev" / "scripts"))
 import stage_data  # noqa: E402
 

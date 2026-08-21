@@ -54,6 +54,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from blueearth_cst.shared.config_composition import (  # noqa: E402
     HOISTED_SECTIONS,
     MIGRATION_DOC,
+    RELOCATED_KEYS,
     load_composed_config,
 )
 
@@ -162,6 +163,37 @@ def _refuse_unsplittable(text: str, workflow_span: tuple[int, int] | None) -> No
         )
 
 
+def _refuse_ambiguous_relocation(source: Path, doc: dict) -> None:
+    """Refuse a source that declares a relocated key in BOTH of its places.
+
+    ``wflow_outvars`` was hoisted from ``workflows.build_model`` to ``shared:``
+    (R13 D-9.7), so this tool has to decide which of the two a source means. If
+    they hold the same value that is a duplicate and either answer is the same
+    answer; if they differ, any choice silently discards one of them — which is
+    the class of harm the refusals exist to convert into a stated non-support.
+    """
+
+    def _read(path):
+        node = doc
+        for key in path:
+            if not isinstance(node, dict) or key not in node:
+                return None, False
+            node = node[key]
+        return node, True
+
+    for source_path, dest_path in RELOCATED_KEYS.items():
+        old_value, has_old = _read(source_path)
+        new_value, has_new = _read(dest_path)
+        if has_old and has_new and old_value != new_value:
+            raise SplitRefusal(
+                f"{source} declares {'.'.join(source_path)} and "
+                f"{'.'.join(dest_path)} with DIFFERENT values, and this tool "
+                "cannot tell which one you mean: the key moved between those "
+                "two places, so both spellings parse. Delete the one that is "
+                f"stale and run again. See {MIGRATION_DOC}."
+            )
+
+
 def _refuse_already_split(source: Path, text: str) -> None:
     """Raise if every workflow stanza is already the closed two-key shape.
 
@@ -266,6 +298,52 @@ def _section_spans(
     return spans
 
 
+def _key_block(
+    lines: list[str], start: int, end: int, key: str
+) -> tuple[int, int] | None:
+    """Line span of ``key`` inside ``[start, end)``, with its own comment run.
+
+    Its value may run over several lines (a block list), which are the ones
+    indented deeper than the key itself; the comment run directly above it
+    travels with it, because a comment explaining a key belongs beside it.
+    """
+    for index in range(start, end):
+        line = lines[index]
+        if _is_blank(line) or _is_comment(line):
+            continue
+        head, sep, _ = line.strip().partition(":")
+        if not sep or head.strip() != key:
+            continue
+        own_indent = _indent(line)
+        last = index + 1
+        while last < end and not _is_blank(lines[last]):
+            if _indent(lines[last]) <= own_indent:
+                break
+            last += 1
+        first = index
+        while (
+            first > start
+            and _is_comment(lines[first - 1])
+            and _indent(lines[first - 1]) == own_indent
+        ):
+            first -= 1
+        return first, last
+    return None
+
+
+def _reindent(block: list[str], indent: int, newline: str) -> list[str]:
+    """Re-indent a lifted block to ``indent``, preserving its internal shape."""
+    base = min((_indent(line) for line in block if line.strip()), default=0)
+    out = []
+    for line in block:
+        body = line.rstrip("\r\n")
+        if not body.strip():
+            out.append(newline)
+            continue
+        out.append(" " * indent + body[base:] + newline)
+    return out
+
+
 def _dedent(lines: list[str], amount: int = 4) -> list[str]:
     """Strip up to ``amount`` leading spaces, leaving blank lines untouched."""
     out = []
@@ -325,6 +403,7 @@ def build_proposal(source: Path) -> Proposal:
     if not spans:
         raise SplitRefusal(f"{source}: the `workflows:` block declares no workflow.")
     _refuse_already_split(source, text)
+    _refuse_ambiguous_relocation(source, yaml.safe_load(text) or {})
 
     # `reporting:` moves into its owning workflow's file, verbatim and undedented
     # (it is already at column zero). A COMMENTED block is reported, never moved:
@@ -354,10 +433,40 @@ def build_proposal(source: Path) -> Proposal:
                 f"`{proposal.t2_name(owner)}`. Move it by hand if you want it."
             )
 
+    # RELOCATED keys are lifted out of their workflow body and emitted into the
+    # staged project file's `shared:` (R13 D-9.7). A tool that emitted the old
+    # placement would produce a layout its own loader rejects, since
+    # `SHARED_SEAM_KEYS` now carries the key -- and a mechanical migration must
+    # not emit a shape that fails parse.
+    relocated_lines: list[str] = []
+    relocated_from: dict[str, set[int]] = {}
+    for source_path, dest_path in RELOCATED_KEYS.items():
+        if source_path[:1] != ("workflows",) or dest_path[:1] != ("shared",):
+            raise SplitRefusal(
+                f"unsupported relocation {source_path} -> {dest_path}: this tool's "
+                "text transform only moves a workflow key into `shared:`"
+            )
+        owner, key = source_path[1], source_path[2]
+        if owner not in spans:
+            continue
+        _, body_start, body_end = spans[owner]
+        found = _key_block(lines, body_start, body_end, key)
+        if found is None:
+            continue
+        start, end = found
+        relocated_from.setdefault(owner, set()).update(range(start, end))
+        relocated_lines.extend(_reindent(lines[start:end], 2, newline))
+        proposal.dispositions.append(
+            f"- `{'.'.join(source_path)}` — `{'.'.join(dest_path)}`: two "
+            "workflows read this key, so it belongs in the project file"
+        )
+
     # T2 bodies.
     emitted: dict[str, str] = {}
     for name, (_, body_start, body_end) in spans.items():
-        body = _drop_enabled(_dedent(lines[body_start:body_end]))
+        skip = relocated_from.get(name, set())
+        kept = [lines[i] for i in range(body_start, body_end) if i not in skip]
+        body = _drop_enabled(_dedent(kept))
         while body and _is_blank(body[0]):
             body.pop(0)
         while body and _is_blank(body[-1]):
@@ -408,6 +517,35 @@ def build_proposal(source: Path) -> Proposal:
         inserts[header] = replacement
     for start, end in hoist_spans:
         drop.update(range(start, end))
+
+    # The relocated keys land at the END of the staged `shared:` block, after
+    # its last real line -- so a trailing comment run introducing `workflows:`
+    # stays where its author put it.
+    if relocated_lines:
+        shared_span = _top_level_span(lines, "shared")
+        if shared_span is None:
+            raise SplitRefusal(
+                f"{source}: a key has to move into `shared:` and this config has "
+                "no `shared:` section. Add one and run again."
+            )
+        # A flow-style `shared: {}` cannot take a block key appended under it:
+        # the result parses as nothing, or as a syntax error. Refuse rather
+        # than emit it -- the same stance as the block-scalar refusal, and for
+        # the same reason.
+        shared_head = lines[shared_span[0]].strip()
+        if shared_head != "shared:":
+            raise SplitRefusal(
+                f"{source}: a key has to move into `shared:`, but `shared:` is "
+                f"written inline ({shared_head!r}). Rewrite it as a block "
+                "mapping and run again."
+            )
+        shared_at = shared_span[1]
+        while shared_at > shared_span[0] + 1 and (
+            not lines[shared_at - 1].strip() or _is_comment(lines[shared_at - 1])
+        ):
+            shared_at -= 1
+        inserts.setdefault(shared_at - 1, "")
+        inserts[shared_at - 1] += "".join(relocated_lines)
 
     out: list[str] = []
     for index, line in enumerate(lines):
@@ -495,6 +633,32 @@ def _first_difference(left: object, right: object, path: str = "") -> str | None
     return None
 
 
+def _relocate(doc: dict) -> dict:
+    """Apply the declared key relocations to a parsed SOURCE document.
+
+    The round trip below compares the staged proposal against the file it came
+    from, and one key legitimately does not land where it started:
+    ``wflow_outvars`` was hoisted to ``shared:`` (R13 D-9.7) because two
+    workflows read it. Normalizing the SOURCE by the declared map keeps that
+    comparison exact rather than waiving it — anything else that moved is
+    still a difference, and still stops the proposal.
+    """
+    for source_path, dest_path in RELOCATED_KEYS.items():
+        node = doc
+        for key in source_path[:-1]:
+            node = node.get(key) if isinstance(node, dict) else None
+            if node is None:
+                break
+        if not isinstance(node, dict) or source_path[-1] not in node:
+            continue
+        value = node.pop(source_path[-1])
+        target = doc
+        for key in dest_path[:-1]:
+            target = target.setdefault(key, {})
+        target[dest_path[-1]] = value
+    return doc
+
+
 def verify_round_trip(staged_t1: Path, source: Path) -> str | None:
     """Compose the staged pair and compare it to the source. ``None`` means clean.
 
@@ -502,6 +666,9 @@ def verify_round_trip(staged_t1: Path, source: Path) -> str | None:
     T1 — whose emitted ``config_path`` values are bare filenames and therefore
     resolve to the staged siblings under the T1-anchored rule — so the thing
     verified is the thing you would apply, not a re-derivation of it.
+
+    The comparison is **relocation-normalized**: exact up to the one-row
+    ``RELOCATED_KEYS`` map, never waived.
     """
     with open(source, encoding="utf-8", newline="") as handle:
         original = yaml.safe_load(handle.read())
@@ -509,7 +676,7 @@ def verify_round_trip(staged_t1: Path, source: Path) -> str | None:
         composed = load_composed_config(staged_t1)
     except ValueError as exc:
         return f"the staged proposal does not compose: {exc}"
-    return _first_difference(composed, original)
+    return _first_difference(composed, _relocate(original))
 
 
 # ---------------------------------------------------------------------------

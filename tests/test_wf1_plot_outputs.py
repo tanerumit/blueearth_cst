@@ -176,7 +176,10 @@ def project_with_basavg_outvar(tmp_path):
     project_dir = tmp_path / "proj"
     project_dir.mkdir()
     cfg["project"]["project_dir"] = project_dir.as_posix()
-    cfg["workflows"]["build_model"]["wflow_outvars"] = [
+    # `shared`, not `workflows.build_model`: the key was hoisted by R13 D-9.7
+    # because WF3 reads it too, and a copy planted in a workflow file is now a
+    # parse error rather than an override.
+    cfg["shared"]["wflow_outvars"] = [
         "river discharge",
         "actual evapotranspiration",
     ]

@@ -23,6 +23,7 @@ Three groups carry most of the weight:
 
 from __future__ import annotations
 
+import copy
 import hashlib
 import json
 import os
@@ -131,7 +132,7 @@ def test_composed_document_equals_the_monolith_it_was_split_from(tmp_path):
     """
     bodies = {
         "build_model": {
-            "wflow_outvars": ["river discharge"],
+            "model_build_config": "config/defaults/wflow_build_model.yml",
             "observations": "obs.csv",
         },
         "analyze_projections": {"clim_project": "cmip6", "scenarios": ["ssp245"]},
@@ -157,11 +158,11 @@ def test_enabled_is_merged_and_config_path_is_not(tmp_path):
     """
     t1_path = write_split(
         tmp_path / "cfg",
-        bodies={"build_model": {"wflow_outvars": ["q"]}},
+        bodies={"build_model": {"model_build_config": "wflow.yml"}},
         enabled={"build_model": False},
     )
     section = compose(t1_path)["workflows"]["build_model"]
-    assert section == {"enabled": False, "wflow_outvars": ["q"]}
+    assert section == {"enabled": False, "model_build_config": "wflow.yml"}
     assert "config_path" not in section
 
 
@@ -556,7 +557,9 @@ def test_a_third_stanza_key_is_refused_and_names_the_key(tmp_path):
             {
                 "project": {},
                 "shared": {},
-                "workflows": {"build_model": {"enabled": True, "wflow_outvars": ["q"]}},
+                "workflows": {
+                    "build_model": {"enabled": True, "model_build_config": "x.yml"}
+                },
             }
         ),
         encoding="utf-8",
@@ -564,7 +567,7 @@ def test_a_third_stanza_key_is_refused_and_names_the_key(tmp_path):
     with pytest.raises(ValueError) as excinfo:
         compose(t1_path)
     message = str(excinfo.value)
-    assert "wflow_outvars" in message
+    assert "model_build_config" in message
     assert "split_project_config.py" in message
 
 
@@ -790,10 +793,11 @@ def test_cross_workflow_reads_are_complete_and_minimal():
     value_reads, identity, ownerless = cc.partition_hits(
         cc.scan_cross_workflow_reads(REPO_ROOT)
     )
-    assert value_reads == cc.CROSS_WORKFLOW_READS, (
-        "cross-workflow VALUE reads drifted from the declared set. A new one is "
-        "not an entry to add: promote the key to `shared:` (S4). A stale one "
-        "means the read is gone and the entry must go with it."
+    assert value_reads == frozenset(), (
+        "a cross-workflow VALUE read exists. There is no registry to add it to, "
+        "on purpose: promote the key to `shared:` instead. An expandable "
+        "allowlist cannot enforce shrink-only -- a read plus a matching entry "
+        "keeps the test green -- so the assertion is a literal zero."
     )
     assert identity == cc.IDENTITY_COMPARISONS
     assert ownerless == cc.OWNERLESS_SECTION_READS
@@ -882,7 +886,7 @@ def test_the_composed_shape_is_visible_through_snakemake_workflow_config(tmp_pat
     four entry points are wired to call it.
     """
     t1_path = write_split(
-        tmp_path / "cfg", bodies={"build_model": {"wflow_outvars": ["q"]}}
+        tmp_path / "cfg", bodies={"build_model": {"model_build_config": "x.yml"}}
     )
     snakefile = tmp_path / "probe.smk"
     snakefile.write_text(
@@ -897,7 +901,7 @@ def test_the_composed_shape_is_visible_through_snakemake_workflow_config(tmp_pat
                 declared_sections=("project", "shared", "workflows.build_model"),
             )
             LIVE = workflow.config["workflows"]["build_model"]
-            assert LIVE == {{"enabled": True, "wflow_outvars": ["q"]}}, LIVE
+            assert LIVE == {{"enabled": True, "model_build_config": "x.yml"}}, LIVE
 
             rule all:
                 run:
@@ -987,6 +991,36 @@ MIGRATED = [
 PRESPLIT_DIR = REPO_ROOT / "tests" / "data" / "presplit"
 
 
+def _relocated(doc):
+    """A pre-split document with the declared R13 relocations applied.
+
+    ``wflow_outvars`` was hoisted from ``workflows.build_model`` to ``shared:``
+    inside R13 (D-9.7), so the digest comparison below is exact **up to that
+    one declared row** rather than exact. Normalizing here rather than
+    loosening the assertion keeps every other key held to equality: a second
+    key that moved would still fail, which is the whole value of the check.
+
+    The hoist DOES shift both digests on a real project, deliberately and
+    expectedly, and that shift has its own falsifier pass. What this test
+    rules out is an *unattributed* shift.
+    """
+    doc = copy.deepcopy(doc)
+    for source_path, dest_path in cc.RELOCATED_KEYS.items():
+        node = doc
+        for key in source_path[:-1]:
+            node = node.get(key) if isinstance(node, dict) else None
+            if node is None:
+                break
+        if not isinstance(node, dict) or source_path[-1] not in node:
+            continue
+        value = node.pop(source_path[-1])
+        target = doc
+        for key in dest_path[:-1]:
+            target = target.setdefault(key, {})
+        target[dest_path[-1]] = value
+    return doc
+
+
 def _guarded_digest(cfg):
     """WF3's guarded-sections digest, computed exactly as the Snakefile does.
 
@@ -1030,7 +1064,9 @@ def test_effective_config_digest_survives_the_migration(presplit, live, entry):
     silently depending on it.
     """
     projection = PROJECTIONS[entry][0]
-    before = yaml.safe_load((PRESPLIT_DIR / presplit).read_text(encoding="utf-8"))
+    before = _relocated(
+        yaml.safe_load((PRESPLIT_DIR / presplit).read_text(encoding="utf-8"))
+    )
     after = cc.load_composed_config(REPO_ROOT / live, entry, projection)
     assert effective_config_digest(
         before, ADVANCED_SETTINGS, projection
@@ -1047,7 +1083,9 @@ def test_guarded_sections_digest_survives_the_migration(presplit, live):
     already-built model. A shift here would refuse every already-run experiment
     in every migrating project.
     """
-    before = yaml.safe_load((PRESPLIT_DIR / presplit).read_text(encoding="utf-8"))
+    before = _relocated(
+        yaml.safe_load((PRESPLIT_DIR / presplit).read_text(encoding="utf-8"))
+    )
     after = cc.load_composed_config(
         REPO_ROOT / live, "run_stress_test", PROJECTIONS["run_stress_test"][0]
     )
@@ -1068,3 +1106,62 @@ def test_write_config_round_trips_through_compose(tmp_path):
     cfg = cc.load_composed_config(REPO_ROOT / "test_case/snake_config_rapid.yml")
     cfg["reporting"] = {"title": "round trip"}
     assert cc.load_composed_config(write_config(tmp_path, cfg)) == cfg
+
+
+def test_the_hoisted_key_is_refused_inside_a_workflow_file(tmp_path):
+    """D-9.7's placement, enforced by construction rather than by a new check.
+
+    Adding ``wflow_outvars`` to ``SHARED_SEAM_KEYS`` is the whole mechanism: a
+    copy planted in any workflow file is then refused by D-9.2/D-9.3 with no
+    rule written for this key specifically. That is what the frozen set is for,
+    and it is why the hoist is a two-line contract change rather than a feature.
+    """
+    t1_path = write_split(
+        tmp_path / "cfg",
+        shared={"basin": {"region": "x"}, "wflow_outvars": ["river discharge"]},
+        bodies={"build_model": {"wflow_outvars": ["snow"]}},
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    message = str(excinfo.value)
+    assert "wflow_outvars" in message
+    assert "`shared:`" in message
+
+
+def test_the_hoisted_key_reaches_both_readers_from_shared(tmp_path):
+    """Both workflows read the same value from one place, which is the point.
+
+    WF1 builds the model with it and WF3 derives its indicator tables from it.
+    Before the hoist that was the repository's ONE cross-workflow value read,
+    and the registry existed to sanction it; now there is one authoring site and
+    no registry.
+    """
+    t1_path = write_split(
+        tmp_path / "cfg",
+        shared={"basin": {"region": "x"}, "wflow_outvars": ["river discharge"]},
+        bodies={"build_model": {"model_build_config": "x.yml"}, "run_stress_test": {}},
+    )
+    for entry in ("build_model", "run_stress_test"):
+        composed = compose(t1_path, entry)
+        assert composed["shared"]["wflow_outvars"] == ["river discharge"]
+
+
+def test_the_relocation_map_is_one_declared_row(tmp_path):
+    """`RELOCATED_KEYS` records a move; it sanctions no read.
+
+    It is deliberately not a successor to the retired registry. A reader who
+    treated it as one would reintroduce exactly the expandable allowlist D-9.7
+    removed, so this pins both its content and its shape.
+    """
+    assert cc.RELOCATED_KEYS == {
+        ("workflows", "build_model", "wflow_outvars"): ("shared", "wflow_outvars")
+    }
+    assert not hasattr(cc, "CROSS_WORKFLOW_READS"), (
+        "the cross-workflow read registry is retired; a reinstated one would let "
+        "a new read be sanctioned by adding a tuple beside it"
+    )
+    for _, dest in cc.RELOCATED_KEYS.items():
+        assert dest[0] == "shared" and dest[1] in cc.SHARED_SEAM_KEYS, (
+            "a relocated key must land in `shared:` AND be in the frozen seam set, "
+            "or a copy planted in a workflow file would still parse"
+        )

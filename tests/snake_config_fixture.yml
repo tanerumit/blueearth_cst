@@ -23,6 +23,13 @@ shared:
     starttime: "2000-01-01T00:00:00"
     endtime: "2020-12-31T00:00:00"
   clim_historical: era5
+  wflow_outvars:
+    - river discharge
+    - precipitation
+    - overland flow
+    - actual evapotranspiration
+    - groundwater recharge
+    - snow
 
 workflows:
   # WF0 — the basin's historical climate, WITHOUT building a hydrology model.

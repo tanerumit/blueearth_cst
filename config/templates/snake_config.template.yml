@@ -60,6 +60,9 @@ shared:
     starttime: "1990-01-01T00:00:00"                      # ISO datetime
     endtime: "2020-12-31T00:00:00"                        # ISO datetime — span >= 16 years
   clim_historical: era5                                   # text — entry in data_sources
+  # list — any of: river discharge, overland flow, actual evapotranspiration,
+  #                groundwater recharge, snow
+  wflow_outvars: ["river discharge", "actual evapotranspiration"]
   # Randomization seed for every stochastic step (today: the weather generator,
   # for both realization generation and the perturbation). Optional — absent, it
   # takes `defaults.seed` from config/advanced_settings.yml.

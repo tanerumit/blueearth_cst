@@ -39,13 +39,15 @@ _BASE_CFG = {
             "endtime": "2020-12-31T00:00:00",
         },
         "clim_historical": "era5",
+        # Hoisted out of workflows.build_model by R13 D-9.7 and guarded here
+        # as a leaf, so a post-build edit is still refused at rule 3.01.
+        "wflow_outvars": ["river discharge"],
     },
     "workflows": {
         "build_model": {
             "enabled": True,
             "model_build_config": "config/defaults/wflow_build_model.yml",
             "waterbodies_config": "config/defaults/wflow_update_waterbodies.yml",
-            "wflow_outvars": ["river discharge"],
         },
         "analyze_projections": {
             "enabled": True,
@@ -92,10 +94,31 @@ def test_b_mutated_basin_resolution_fails_naming_key(snapshots):
 def test_c_mutated_build_model_fails(snapshots):
     wf1, wf2 = snapshots
     live = copy.deepcopy(_BASE_CFG)
-    live["workflows"]["build_model"]["wflow_outvars"] = ["actual evapotranspiration"]
+    live["workflows"]["build_model"]["waterbodies_config"] = "other.yml"
     diffs = compare_project_consistency(live, wf1, wf2)
     assert diffs
     assert any("workflows.build_model" in d for d in diffs)
+
+
+def test_c2_mutated_shared_wflow_outvars_fails(snapshots):
+    """The hoist must not WEAKEN this guard, and nothing else would catch it.
+
+    ``wflow_outvars`` sat inside ``workflows.build_model`` until R13, so a
+    post-build edit was refused here. Moved to ``shared:`` and left unguarded,
+    the same edit would sail past rule 3.01 and first surface mid-experiment as
+    ``export_wflow_results``' missing-column error -- a whole workflow away
+    from its cause, and after the expensive part has run.
+
+    Guarded as a LEAF rather than by widening the comparand to ``shared``
+    whole: every guard param has to stay experiment-invariant, because the
+    guard's second output is shared across experiments.
+    """
+    wf1, wf2 = snapshots
+    live = copy.deepcopy(_BASE_CFG)
+    live["shared"]["wflow_outvars"] = ["actual evapotranspiration"]
+    diffs = compare_project_consistency(live, wf1, wf2)
+    assert diffs
+    assert any("shared.wflow_outvars" in d for d in diffs), diffs
 
 
 def test_d_flat_vs_binned_paths_pass(tmp_path):

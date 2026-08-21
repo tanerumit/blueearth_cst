@@ -570,8 +570,7 @@ warn_on_heterogeneous_design(stress_test_cfg)
 refuse_out_of_domain_multipliers(stress_test_cfg)
 
 INDICATOR_TABLES = indicator_tables(
-    get_config(config.get("workflows", {}).get("build_model", {}) or {},
-               "wflow_outvars", DEFAULT_WFLOW_OUTVARS, optional=True)
+    get_config(shared_cfg, "wflow_outvars", DEFAULT_WFLOW_OUTVARS, optional=True)
 )
 
 # 3.00  all — target aggregator: the experiment's indicator tables

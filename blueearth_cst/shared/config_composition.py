@@ -110,6 +110,12 @@ SHARED_SEAM_KEYS: frozenset[str] = frozenset(
         "seed",
         "water_year_start",
         "julia_threads",
+        # Hoisted out of `workflows.build_model` by R13 D-9.7. It was the one
+        # sanctioned cross-workflow value read -- WF1 builds the model with it,
+        # WF3 derives its indicator tables from it -- and moving it here is what
+        # let `CROSS_WORKFLOW_READS` be emptied and retired. Its presence in
+        # this set is what makes a T2-planted copy a parse error.
+        "wflow_outvars",
     }
 )
 
@@ -127,16 +133,28 @@ SHARED_SEAM_KEYS: frozenset[str] = frozenset(
 #: refusal.
 HOISTED_SECTIONS: dict[str, tuple[str, ...]] = {"run_stress_test": ("reporting",)}
 
-#: Every sanctioned cross-workflow VALUE read: (reader, owner, key).
-#: SHRINK-ONLY: an entry leaves this set by hoisting the key to T1 (S4);
-#: nothing is ever added. A new multiply-read key goes to `shared:`.
-#: EMPTIED AND RETIRED inside R13 by the hoist phase (D-9.7, commit 8) --
-#: from then on the D-9.6 scan asserts zero value reads, with no registry.
-CROSS_WORKFLOW_READS: frozenset[tuple[str, str, str]] = frozenset(
-    {
-        ("run_stress_test", "build_model", "wflow_outvars"),
-    }
-)
+#: RETIRED, deliberately: there is no registry of sanctioned cross-workflow
+#: value reads, because there are none. `CROSS_WORKFLOW_READS` existed to hold
+#: exactly one entry -- WF3 reading `workflows.build_model.wflow_outvars` --
+#: and D-9.7 hoisted that key to `shared:`, which emptied it.
+#:
+#: The D-9.6 scan now asserts a literal ZERO value reads rather than equality
+#: with a set, and that is the point rather than tidiness. An expandable
+#: registry cannot enforce shrink-only: adding a read plus a matching tuple
+#: keeps the test green. With no registry to pair a read with, any new
+#: cross-workflow value read fails the scan outright, permanently. A key that
+#: two workflows need goes in `shared:` -- there is no second option.
+#:
+#: `RELOCATED_KEYS` below is not a successor. It records where ONE key moved,
+#: so the migration tool can emit the new placement and its round trip stay
+#: exact; it sanctions no read.
+
+#: The R13 hoist, as data: source path -> destination path in the composed
+#: mapping. Read by the splitter (emission) and by the round-trip check
+#: (normalization). One entry; grows only with a ruled hoist.
+RELOCATED_KEYS: dict[tuple[str, ...], tuple[str, ...]] = {
+    ("workflows", "build_model", "wflow_outvars"): ("shared", "wflow_outvars"),
+}
 
 #: Declared IDENTITY comparisons (D-9.6 class 2): whole sections read to be
 #: COMPARED against the owning workflow's snapshot, never consumed as settings.
@@ -145,8 +163,9 @@ CROSS_WORKFLOW_READS: frozenset[tuple[str, str, str]] = frozenset(
 #: an edit to the WF1 T2 file is caught loudly at rule 3.01. That is the
 #: opposite of the silent coupling the seam rule exists to prevent.
 #:
-#: (file, section) pairs, enumerated APART from the value reads above so that
-#: retiring `CROSS_WORKFLOW_READS` cannot silently absorb one.
+#: (file, section) pairs, enumerated APART from the value reads so that
+#: retiring the value-read registry could not silently absorb one -- which is
+#: exactly what the separation bought when D-9.7 retired it.
 IDENTITY_COMPARISONS: frozenset[tuple[str, str]] = frozenset(
     {
         ("run_stress_test.smk", "build_model"),
@@ -825,11 +844,11 @@ def scan_cross_workflow_reads(repo_root: str | os.PathLike) -> tuple[ScanHit, ..
     """Return every CROSS-workflow config access on the scanned surfaces (D-9.6).
 
     A hit is cross-workflow when the file does not own the section it reads. The
-    caller — ``tests/test_config_composition.py`` — asserts the found set equals
-    three separately-declared enumerations: ``CROSS_WORKFLOW_READS`` (value
-    reads), ``IDENTITY_COMPARISONS``, and ``OWNERLESS_SECTION_READS``. They are
-    separate rather than one merged allowlist so that retiring the first cannot
-    silently absorb an entry into the others.
+    caller — ``tests/test_config_composition.py`` — asserts that the value
+    reads are **empty**, and that the other two hit sets equal
+    ``IDENTITY_COMPARISONS`` and ``OWNERLESS_SECTION_READS``. The three were
+    enumerated separately so that retiring the value-read registry (D-9.7)
+    could not silently absorb an entry into the others.
 
     Both directions are checked there: **completeness**, so an undeclared read
     turns the test red with a message saying *promote the key to* ``shared:``,
@@ -863,8 +882,8 @@ def partition_hits(
     """Split scan hits into the three declared enumerations' comparable shapes.
 
     Returns ``(value_reads, identity_comparisons, ownerless_reads)`` — the first
-    as ``(reader, owner, key)`` triples to compare against
-    ``CROSS_WORKFLOW_READS``, the other two as ``(file, section)`` pairs.
+    as ``(reader, owner, key)`` triples, which must be EMPTY, the other two as
+    ``(file, section)`` pairs.
     """
     value_reads = {
         (hit.reader, hit.section, hit.key)

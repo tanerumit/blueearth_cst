@@ -149,8 +149,11 @@ if clim_source == "eobs":
         "path; supported sources: era5, chirps, chirps_global"
     )
 
-# Workflow-owned
-wflow_outvars = get_config(my_cfg, "wflow_outvars", DEFAULT_WFLOW_OUTVARS)
+# SHARED, not workflow-owned (R13 D-9.7). WF3 reads this key too -- to derive
+# its indicator tables before the DAG is built -- and a key read by more than
+# one workflow lives in the project file. It was the last such key, and
+# `CROSS_WORKFLOW_READS` is retired with its move.
+wflow_outvars = get_config(shared_cfg, "wflow_outvars", DEFAULT_WFLOW_OUTVARS)
 # `defaults/`, not `templates/` — these are read by rules 1.06/1.07/1.08, and the
 # 2026-08-11 split moved them out of the copy-me directory. Rule 1.01 still routes
 # them to a `templates/` bin inside the PROJECT: a different meaning of the word,

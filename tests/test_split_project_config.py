@@ -75,7 +75,7 @@ shared:
 workflows:
   build_model:
     enabled: true
-    wflow_outvars: ['river discharge']
+    model_build_config: config/defaults/wflow_build_model.yml
   run_stress_test:
     enabled: true
     experiment_name: gabon
@@ -221,7 +221,7 @@ def test_a_section_with_no_settings_gets_no_file_and_no_key(tmp_path, source_unc
                     enabled: true
                   build_model:
                     enabled: true
-                    wflow_outvars: ['q']
+                    model_build_config: wflow.yml
                 """
             ),
         )
@@ -536,3 +536,130 @@ def test_the_emitted_config_path_is_a_bare_sibling_filename(tmp_path, source_unc
     assert declared == "snake_config_probe_build_model.yml"
     assert not os.path.isabs(declared)
     assert os.sep not in declared and "/" not in declared
+
+
+# ---------------------------------------------------------------------------
+# The R13 hoist (D-9.7)
+# ---------------------------------------------------------------------------
+
+
+def test_the_splitter_emits_the_hoisted_placement(tmp_path, source_unchanged):
+    """A migration tool may not emit a layout its own loader rejects.
+
+    `wflow_outvars` moved to `shared:` and joined `SHARED_SEAM_KEYS`, so a
+    proposal that still wrote it into the build_model file would fail at parse
+    the moment it was applied. The pre-split specimens carry the OLD placement,
+    which is exactly the input a user migrating today has.
+    """
+    source = source_unchanged(PRESPLIT_DIR / "snake_config_rapid.yml")
+    assert run(source, tmp_path) == 0
+    staging = tmp_path / spc.STAGING_DIRNAME
+
+    staged = yaml.safe_load((staging / source.name).read_text(encoding="utf-8"))
+    assert staged["shared"]["wflow_outvars"] == [
+        "river discharge",
+        "actual evapotranspiration",
+        "groundwater recharge",
+    ]
+    wf1 = yaml.safe_load(
+        (staging / "snake_config_rapid_build_model.yml").read_text(encoding="utf-8")
+    )
+    assert "wflow_outvars" not in wf1
+    assert "The model RUN period" in (
+        staging / "snake_config_rapid_build_model.yml"
+    ).read_text(encoding="utf-8"), "the rest of the body must be undisturbed"
+
+    report = (staging / spc.REPORT_NAME).read_text(encoding="utf-8")
+    assert "workflows.build_model.wflow_outvars" in report
+
+
+def test_the_round_trip_is_normalized_only_by_the_declared_row(tmp_path):
+    """Exact up to `RELOCATED_KEYS`, never waived.
+
+    The relocation is why the round trip cannot be plain equality any more.
+    Normalizing by the declared map rather than loosening the comparison keeps
+    every other key held to exact equality -- a second key that moved would
+    still stop the proposal, which is the whole value of the check.
+    """
+    source = write_source(tmp_path, REPORTING_FIXTURE)
+    assert run(source, tmp_path) == 0
+
+    staging = tmp_path / spc.STAGING_DIRNAME
+    staged_t1 = staging / source.name
+    assert spc.verify_round_trip(staged_t1, source) is None
+
+    # Move a second key by hand: still a difference, still refused.
+    doc = yaml.safe_load(staged_t1.read_text(encoding="utf-8"))
+    doc["shared"]["clim_historical"] = "era5"
+    staged_t1.write_text(yaml.safe_dump(doc), encoding="utf-8")
+    assert spc.verify_round_trip(staged_t1, source) is not None
+
+
+def test_a_key_in_both_places_with_different_values_is_refused(
+    tmp_path, source_unchanged, capsys
+):
+    """The one ambiguity the relocation creates, converted into a refusal.
+
+    Both spellings parse, because the key moved between them. Same value is a
+    duplicate and either answer is the same answer; different values mean any
+    choice silently discards one of them, which is the harm every other refusal
+    in this tool exists to prevent.
+    """
+    text = REPORTING_FIXTURE.replace(
+        "    model_build_config: config/defaults/wflow_build_model.yml\n",
+        "    model_build_config: config/defaults/wflow_build_model.yml\n"
+        "    wflow_outvars: ['snow']\n",
+    ).replace(
+        "shared:\n  basin:\n",
+        "shared:\n  wflow_outvars: ['river discharge']\n  basin:\n",
+    )
+    source = source_unchanged(write_source(tmp_path, text))
+    assert run(source, tmp_path) == 1
+    message = capsys.readouterr().err
+    assert "workflows.build_model.wflow_outvars" in message
+    assert "shared.wflow_outvars" in message
+    assert not (tmp_path / spc.STAGING_DIRNAME).exists()
+
+
+def test_the_same_value_in_both_places_is_not_ambiguous(tmp_path, source_unchanged):
+    """A duplicate is not a conflict: both spellings say the same thing."""
+    text = REPORTING_FIXTURE.replace(
+        "    model_build_config: config/defaults/wflow_build_model.yml\n",
+        "    model_build_config: config/defaults/wflow_build_model.yml\n"
+        "    wflow_outvars: ['river discharge']\n",
+    ).replace(
+        "shared:\n  basin:\n",
+        "shared:\n  wflow_outvars: ['river discharge']\n  basin:\n",
+    )
+    source = source_unchanged(write_source(tmp_path, text))
+    assert run(source, tmp_path) == 0
+
+
+def test_an_inline_shared_block_is_refused_when_a_key_must_move(
+    tmp_path, source_unchanged, capsys
+):
+    """A flow-style `shared: {}` cannot take an appended block key.
+
+    Appending under it produces YAML that parses as something else or not at
+    all — the same silent-corruption shape as the block-scalar case, arriving
+    through the relocation instead of the dedent. Refused for the same reason.
+    """
+    source = source_unchanged(
+        write_source(
+            tmp_path,
+            textwrap.dedent(
+                """\
+                project:
+                  project_dir: proj
+                shared: {}
+                workflows:
+                  build_model:
+                    enabled: true
+                    wflow_outvars: ['q']
+                """
+            ),
+        )
+    )
+    assert run(source, tmp_path) == 1
+    assert "written inline" in capsys.readouterr().err
+    assert not (tmp_path / spc.STAGING_DIRNAME).exists()

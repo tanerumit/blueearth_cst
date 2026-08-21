@@ -1,6 +1,5 @@
 model_build_config: config/defaults/wflow_build_model.yml
 waterbodies_config: config/defaults/wflow_update_waterbodies.yml
-wflow_outvars: ['river discharge', 'actual evapotranspiration', 'groundwater recharge']
 observations_timeseries: test_case/test_data/observations_timeseries.csv
 # The model RUN period, a subset of historical_window: WF1's wflow time
 # scales with it, and nothing downstream reads more than it covers.

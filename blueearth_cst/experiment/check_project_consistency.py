@@ -38,7 +38,18 @@ from blueearth_cst.shared.snake_utils import log_row  # noqa: E402
 # ``workflows.analyze_projections`` is compared against the wf2 snapshot only
 # when that snapshot exists (else unchecked + logged — the projections overlay
 # is optional per the CST method and must not be force-required).
-_WF1_GUARDED = ("project", ("shared", "basin"), ("workflows", "build_model"))
+# ``shared.wflow_outvars`` is guarded from R13 on. Without it the hoist would
+# WEAKEN this guard: the key used to sit inside ``workflows.build_model``, so
+# a post-build edit was refused here; moved to ``shared:`` and unguarded, the
+# same edit would first surface mid-experiment as ``export_wflow_results``'
+# missing-column error, a whole workflow away from its cause. Guarding the
+# LEAF rather than ``shared`` whole keeps the comparand experiment-invariant.
+_WF1_GUARDED = (
+    "project",
+    ("shared", "basin"),
+    ("shared", "wflow_outvars"),
+    ("workflows", "build_model"),
+)
 _WF2_GUARDED = (("workflows", "analyze_projections"),)
 
 # Directional OLD->NEW path map (pre-R6 flat -> post-R6 binned), mirroring

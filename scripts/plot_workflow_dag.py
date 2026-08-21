@@ -75,6 +75,11 @@ import yaml
 # for anyone invoking this from their project folder.
 REPO_ROOT = Path(__file__).resolve().parents[1]
 
+sys.path.insert(0, str(REPO_ROOT))
+from blueearth_cst.shared.config_composition import (  # noqa: E402
+    load_composed_config,
+)
+
 # Snakefile -> workflow number. The `wf<N>` labelling is the repo's existing
 # convention for per-workflow artifacts; keep this in step with the merged-log
 # names in blueearth_cst/shared/merge_logs.py (logs/wf1_build_model.log ...).
@@ -157,6 +162,24 @@ def read_project(config_path: Path) -> tuple[Path, str, dict]:
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         raise DagPlotError(f"config file not found: {config_path}") from None
+    if isinstance(config, dict) and "workflows" in config:
+        # A PROJECT config, so COMPOSE it (R13 D-12.0). A raw load finds a
+        # two-key stanza, `experiment` below comes back None, the
+        # `if experiment:` branch is skipped, and every WF3 render silently
+        # loses the experiment id from the filename this tool is documented
+        # to produce.
+        #
+        # Guarded on `workflows:` because this function also accepts the
+        # single-workflow projections configs, which have no `project:`
+        # section, carry a top-level `project_name`, and are not project
+        # configs at all -- composing one would refuse it for a top-level key
+        # that is this tool's own convention.
+        try:
+            composed = load_composed_config(config_path)
+        except ValueError as exc:
+            raise DagPlotError(f"{config_path}: {exc}") from None
+        composed["project_name"] = config.get("project_name")
+        config = composed
     if not isinstance(config, dict):
         raise DagPlotError(f"config file is not a YAML mapping: {config_path}")
 

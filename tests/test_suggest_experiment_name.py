@@ -69,41 +69,75 @@ def _run(cfg, *extra):
 
 
 def _cfg(tmp_path, experiment_name=None):
-    # project_dir must be under tmp_path. Since R9 P4 the command RESERVES the
-    # name by creating experiments/<id>/, so a repo-relative project_dir here
-    # would write real directories into the working tree on every test run --
-    # it resurrected `examples/`, retired at R7, before this was caught. The
-    # basename still slugifies to `gabon`, which is what these cases are about.
+    """A project config plus the run_stress_test settings file it points at.
+
+    Returns the PROJECT config path, which is what the command takes; use
+    ``_settings_of`` for the file it writes into. Two files rather than one
+    since R13: `experiment_name` is a run_stress_test setting, so it lives in
+    that workflow's own file and the project config only points at it.
+
+    project_dir must be under tmp_path. Since R9 P4 the command RESERVES the
+    name by creating experiments/<id>/, so a repo-relative project_dir here
+    would write real directories into the working tree on every test run --
+    it resurrected `examples/`, retired at R7, before this was caught. The
+    basename still slugifies to `gabon`, which is what these cases are about.
+    """
     project_dir = tmp_path / "Gabon"
     project_dir.mkdir(exist_ok=True)
+    # An empty settings file is written EMPTY, not as `{}`: that is the shape a
+    # real one has, and a flow-style `{}` is a file no line-wise editor can
+    # append to (the command refuses it, correctly, which is not what these
+    # cases are about).
+    _settings_of(tmp_path).write_text(
+        yaml.safe_dump({"experiment_name": experiment_name})
+        if experiment_name is not None
+        else "",
+        encoding="utf-8",
+    )
     doc = {
         "project": {"project_dir": str(project_dir).replace("\\", "/")},
-        "workflows": {"run_stress_test": {"enabled": True}},
+        "workflows": {
+            "run_stress_test": {
+                "enabled": True,
+                "config_path": _settings_of(tmp_path).name,
+            }
+        },
     }
-    if experiment_name is not None:
-        doc["workflows"]["run_stress_test"]["experiment_name"] = experiment_name
     p = tmp_path / "cfg.yml"
     p.write_text(yaml.safe_dump(doc), encoding="utf-8")
     return p
+
+
+def _settings_of(tmp_path):
+    """The run_stress_test settings file `_cfg` writes beside the project config."""
+    return tmp_path / "cfg_run_stress_test.yml"
 
 
 def test_cli_writes_when_absent(tmp_path):
     cfg = _cfg(tmp_path)
     res = _run(cfg)
     assert res.returncode == 0, res.stderr
-    doc = yaml.safe_load(cfg.read_text(encoding="utf-8"))
-    assert doc["workflows"]["run_stress_test"]["experiment_name"] == "gabon_20260728"
+    settings = yaml.safe_load(_settings_of(tmp_path).read_text(encoding="utf-8"))
+    assert settings["experiment_name"] == "gabon_20260728"
 
 
 def test_cli_refuses_to_overwrite(tmp_path):
     """The experiment name is the directory every wf3 artifact hangs off;
-    silently changing it would strand a completed experiment's outputs."""
+    silently changing it would strand a completed experiment's outputs.
+
+    The refusal reads the key from the SETTINGS file. Reading it from the
+    project config, where the key no longer is, would make `existing` always
+    None and the refusal never fire -- in the one command whose whole contract
+    is refusing to overwrite.
+    """
     cfg = _cfg(tmp_path, experiment_name="already_here")
-    before = cfg.read_text(encoding="utf-8")
+    before = _settings_of(tmp_path).read_text(encoding="utf-8")
     res = _run(cfg)
     assert res.returncode != 0
     assert "already_here" in res.stderr
-    assert cfg.read_text(encoding="utf-8") == before, "config must be untouched"
+    assert _settings_of(tmp_path).read_text(encoding="utf-8") == before, (
+        "settings must be untouched"
+    )
 
 
 def test_cli_dry_run_leaves_the_config_alone(tmp_path):
@@ -118,15 +152,19 @@ def test_cli_dry_run_leaves_the_config_alone(tmp_path):
 def test_cli_preserves_other_config_content(tmp_path):
     """Round-tripping the YAML must not drop or reorder unrelated keys."""
     cfg = _cfg(tmp_path)
-    doc = yaml.safe_load(cfg.read_text(encoding="utf-8"))
-    doc["shared"] = {"clim_historical": "era5"}
-    cfg.write_text(yaml.safe_dump(doc, sort_keys=False), encoding="utf-8")
+    settings_path = _settings_of(tmp_path)
+    settings_path.write_text(
+        yaml.safe_dump({"realizations_num": 4}, sort_keys=False), encoding="utf-8"
+    )
+    project_before = cfg.read_text(encoding="utf-8")
+
     assert _run(cfg).returncode == 0
-    out = yaml.safe_load(cfg.read_text(encoding="utf-8"))
-    assert out["shared"] == {"clim_historical": "era5"}
-    # Compare against the value actually written rather than a literal: the
-    # fixture is tmp_path-based since P4 made the command reserve.
-    assert out["project"]["project_dir"] == doc["project"]["project_dir"]
+    out = yaml.safe_load(settings_path.read_text(encoding="utf-8"))
+    assert out["realizations_num"] == 4
+    assert out["experiment_name"] == "gabon_20260728"
+    # The project config is not rewritten at all -- the command only ever reads
+    # it, to find out which settings file to edit.
+    assert cfg.read_text(encoding="utf-8") == project_before
 
 
 def test_cli_dry_run_reports_even_when_a_value_is_set(tmp_path):
@@ -182,9 +220,20 @@ def test_the_test_fixtures_deliberately_KEEP_a_fixed_name():
 
 
 def _annotated_cfg(tmp_path, body):
-    """A config written as TEXT, so comments and layout survive to be checked."""
+    """A project config plus its run_stress_test settings file, written as TEXT.
+
+    ``body`` is the SETTINGS file's content, at column zero -- that file's top
+    level is the workflow's own keys, which is where ``experiment_name`` now
+    lives. Returns ``(project_config, settings_file)``: the command takes the
+    first and edits the second.
+
+    Text, not ``safe_dump``, because what these tests check is that the command
+    does not destroy the layout and comments of the file it edits.
+    """
     project_dir = tmp_path / "Gabon"
     project_dir.mkdir(exist_ok=True)
+    settings = tmp_path / "cfg_run_stress_test.yml"
+    settings.write_text(body, encoding="utf-8")
     p = tmp_path / "cfg.yml"
     p.write_text(
         "# top-of-file banner\n"
@@ -193,19 +242,19 @@ def _annotated_cfg(tmp_path, body):
         + str(project_dir).replace("\\", "/")
         + "  # where output goes\n"
         "\n"
-        "workflows:\n" + body,
+        "workflows:\n"
+        "  run_stress_test:\n"
+        "    enabled: true\n"
+        "    config_path: cfg_run_stress_test.yml\n",
         encoding="utf-8",
     )
-    return p
+    return p, settings
 
 
+#: A settings file with no `experiment_name`, which is the state a fresh project
+#: is in: the shipped template leaves the key commented out for this command.
 CE_BLOCK = (
-    "  run_stress_test:\n"
-    "    enabled: true\n"
-    "    realizations_num: 2  # trailing comment\n"
-    "    stress_test:\n"
-    "      temp:\n"
-    "        step_num: 1\n"
+    "realizations_num: 2  # trailing comment\nstress_test:\n  temp:\n    step_num: 1\n"
 )
 
 
@@ -213,119 +262,142 @@ def test_cli_preserves_every_comment_in_the_config(tmp_path):
     """yaml.safe_dump discards comments. The shipped template carries ~110 of
     them and this command is the first thing a new user runs against their
     copy, so a dump would delete the annotations they were just handed."""
-    cfg = _annotated_cfg(tmp_path, CE_BLOCK)
-    before = cfg.read_text(encoding="utf-8")
+    cfg, settings = _annotated_cfg(tmp_path, CE_BLOCK)
+    before = settings.read_text(encoding="utf-8")
+    project_before = cfg.read_text(encoding="utf-8")
     assert _run(cfg).returncode == 0
-    after = cfg.read_text(encoding="utf-8")
-    for comment in (
-        "# top-of-file banner",
-        "# where output goes",
-        "# trailing comment",
-    ):
-        assert comment in after, f"{comment!r} was destroyed by the write"
-    # Exactly one line added, everything else byte-identical.
+    after = settings.read_text(encoding="utf-8")
+    assert "# trailing comment" in after
+    # Exactly one line added to the settings file, everything else identical.
     added = [ln for ln in after.splitlines() if ln not in before.splitlines()]
-    assert added == ["    experiment_name: gabon_20260728"]
+    assert added == ["experiment_name: gabon_20260728"]
+    # And the PROJECT file is untouched -- the key does not live there any more.
+    assert cfg.read_text(encoding="utf-8") == project_before
 
 
 def test_cli_fills_a_bare_key_in_place_keeping_its_comment(tmp_path):
     """`experiment_name:` with no value parses to None, which this command
     treats as unset (its refusal test is `is not None`)."""
-    cfg = _annotated_cfg(
+    cfg, settings = _annotated_cfg(
         tmp_path,
-        "  run_stress_test:\n"
-        "    enabled: true\n"
-        "    experiment_name:   # fill me in\n"
-        "    realizations_num: 2\n",
+        "experiment_name:   # fill me in\nrealizations_num: 2\n",
     )
     assert _run(cfg).returncode == 0
-    after = cfg.read_text(encoding="utf-8")
-    assert "    experiment_name: gabon_20260728  # fill me in" in after
+    after = settings.read_text(encoding="utf-8")
+    assert "experiment_name: gabon_20260728  # fill me in" in after
     assert after.count("experiment_name") == 1, "must fill in place, not duplicate"
 
 
-def test_the_new_key_lands_below_the_comments_that_document_it(tmp_path):
-    """The template heads the block with a comment explaining the key; the
-    insertion goes after it, not between the comment and its heading."""
-    cfg = _annotated_cfg(
-        tmp_path,
-        "  run_stress_test:\n"
-        "    enabled: true\n"
-        "    # experiment_name is left unset on purpose; run the command\n"
-        "    realizations_num: 2\n",
+def test_an_absent_key_is_appended_without_disturbing_what_documents_it(tmp_path):
+    """An absent key is appended at the end of the settings file.
+
+    It used to be anchored below a comment run that named it, because the key
+    was buried inside a nested block where placement mattered. At the top level
+    of a file holding nothing but this workflow's settings there is no block to
+    land inside, so the anchoring machinery retires with the nesting -- and what
+    still matters is that nothing already in the file moves.
+    """
+    body = (
+        "# experiment_name is left unset on purpose; run the command\n"
+        "realizations_num: 2\n"
     )
+    cfg, settings = _annotated_cfg(tmp_path, body)
     assert _run(cfg).returncode == 0
-    lines = cfg.read_text(encoding="utf-8").splitlines()
-    assert (
-        lines.index("    experiment_name: gabon_20260728")
-        == lines.index("    realizations_num: 2") - 1
-    )
+    after = settings.read_text(encoding="utf-8")
+    assert after.startswith(body)
+    assert after.splitlines()[-1] == "experiment_name: gabon_20260728"
 
 
 def test_cli_leaves_unrelated_structure_intact(tmp_path):
     """The reload check is the guarantee; this pins it end to end."""
-    cfg = _annotated_cfg(tmp_path, CE_BLOCK)
-    before = yaml.safe_load(cfg.read_text(encoding="utf-8"))
+    cfg, settings = _annotated_cfg(tmp_path, CE_BLOCK)
+    before = yaml.safe_load(settings.read_text(encoding="utf-8"))
     assert _run(cfg).returncode == 0
-    after = yaml.safe_load(cfg.read_text(encoding="utf-8"))
-    before["workflows"]["run_stress_test"]["experiment_name"] = "gabon_20260728"
+    after = yaml.safe_load(settings.read_text(encoding="utf-8"))
+    before["experiment_name"] = "gabon_20260728"
     assert after == before
 
 
-def test_an_uneditable_config_reserves_nothing(tmp_path):
+def test_a_config_with_no_settings_file_reserves_nothing(tmp_path):
     """Failing after the reservation would strand an experiments/<id>/ for a
-    config the command then could not write to anyway."""
-    cfg = _annotated_cfg(tmp_path, "  run_stress_test: {enabled: true}\n")
+    config the command then could not write to anyway.
+
+    The unwritable case changed shape with the layout: the command now resolves
+    a settings file before it can edit anything, so a project config naming none
+    is the state that has to fail before reserving.
+    """
+    project_dir = tmp_path / "Gabon"
+    project_dir.mkdir()
+    cfg = tmp_path / "cfg.yml"
+    cfg.write_text(
+        "project:\n"
+        "  project_dir: " + str(project_dir).replace("\\", "/") + "\n"
+        "workflows:\n"
+        "  run_stress_test:\n"
+        "    enabled: true\n",
+        encoding="utf-8",
+    )
     before = cfg.read_text(encoding="utf-8")
+
     res = _run(cfg)
     assert res.returncode == 2
-    assert "flow style" in res.stderr and "by hand" in res.stderr
+    assert "config_path" in res.stderr and "nothing has been reserved" in res.stderr
     assert cfg.read_text(encoding="utf-8") == before
-    assert not (tmp_path / "Gabon" / "experiments").exists(), "must reserve nothing"
+    assert not (project_dir / "experiments").exists(), "must reserve nothing"
+
+
+def test_a_dangling_config_path_reserves_nothing(tmp_path):
+    """A pointer at a file that is not there fails the same way, and as early."""
+    cfg, settings = _annotated_cfg(tmp_path, CE_BLOCK)
+    settings.unlink()
+    res = _run(cfg)
+    assert res.returncode == 2
+    assert "does not exist" in res.stderr
+    assert not (tmp_path / "Gabon" / "experiments").exists()
 
 
 def test_the_shipped_template_is_editable_by_this_command(tmp_path):
     """The template is the file this command is documented against; a layout
-    it cannot edit would break the one path a new user is told to take."""
+    it cannot edit would break the one path a new user is told to take.
+
+    The whole SET is copied, because that is what a user copies: the project
+    file plus the per-workflow files it points at.
+    """
     import shutil
 
     src = SNAKEDIR / "config/templates/snake_config.template.yml"
-    cfg = tmp_path / "tmpl.yml"
+    cfg = tmp_path / "snake_config.template.yml"
     shutil.copy(src, cfg)
+    for sibling in (SNAKEDIR / "config/templates").glob("snake_config.*.template.yml"):
+        shutil.copy(sibling, tmp_path / sibling.name)
+    settings = tmp_path / "snake_config.run_stress_test.template.yml"
+
     doc = yaml.safe_load(cfg.read_text(encoding="utf-8"))
     project_dir = tmp_path / "Gabon"
     project_dir.mkdir()
-    text = cfg.read_text(encoding="utf-8").replace(
-        doc["project"]["project_dir"], str(project_dir).replace("\\", "/"), 1
+    cfg.write_text(
+        cfg.read_text(encoding="utf-8").replace(
+            doc["project"]["project_dir"], str(project_dir).replace("\\", "/"), 1
+        ),
+        encoding="utf-8",
     )
-    cfg.write_text(text, encoding="utf-8")
-    n_comments_before = text.count("#")
+    n_comments_before = settings.read_text(encoding="utf-8").count("#")
 
     res = _run(cfg)
     assert res.returncode == 0, res.stderr
-    after = cfg.read_text(encoding="utf-8")
+    after = settings.read_text(encoding="utf-8")
     assert after.count("#") == n_comments_before
-    assert (
-        yaml.safe_load(after)["workflows"]["run_stress_test"]["experiment_name"]
-        == "gabon_20260728"
-    )
+    assert yaml.safe_load(after)["experiment_name"] == "gabon_20260728"
 
 
-def test_a_missing_run_stress_test_block_is_appended(tmp_path):
-    """The yaml.safe_dump this replaced created absent blocks via setdefault;
-    dropping that would break configs the command used to accept."""
-    cfg = _annotated_cfg(
-        tmp_path,
-        "  build_model:\n"
-        "    enabled: true  # keep me\n"
-        "\n"
-        "# a trailing comment that belongs to no block\n",
-    )
+def test_an_empty_settings_file_gets_the_key(tmp_path):
+    """A workflow whose settings file is empty still gets a name written.
+
+    The `yaml.safe_dump` this replaced created absent structure via
+    `setdefault`, and dropping that would break configs the command accepted.
+    """
+    cfg, settings = _annotated_cfg(tmp_path, "")
     assert _run(cfg).returncode == 0
-    doc = yaml.safe_load(cfg.read_text(encoding="utf-8"))
-    assert doc["workflows"]["run_stress_test"] == {"experiment_name": "gabon_20260728"}
-    assert doc["workflows"]["build_model"] == {"enabled": True}
-    text = cfg.read_text(encoding="utf-8")
-    assert "# keep me" in text and "belongs to no block" in text
-    # The appended block goes before the dangling comment, not after it.
-    assert text.index("run_stress_test") < text.index("belongs to no block")
+    assert yaml.safe_load(settings.read_text(encoding="utf-8")) == {
+        "experiment_name": "gabon_20260728"
+    }

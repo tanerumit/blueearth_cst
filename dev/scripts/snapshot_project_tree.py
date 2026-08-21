@@ -58,8 +58,10 @@ sys.path.insert(0, str(REPO))
 sys.path.insert(0, str(HERE))
 
 import semantic_tree_diff as std  # noqa: E402
-import yaml  # noqa: E402
 
+from blueearth_cst.shared.config_composition import (  # noqa: E402
+    load_composed_config,
+)
 from blueearth_cst.shared.snake_utils import slugify_window  # noqa: E402
 
 #: Directory names whose contents are never part of a project snapshot.
@@ -215,8 +217,12 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    with open(args.config, encoding="utf-8") as handle:
-        config = yaml.safe_load(handle)
+    # COMPOSED, not raw (R13 D-12.0): the file passed here is the PROJECT
+    # config, and since the split the workflow settings live in the files it
+    # points at. A raw load would read a two-key stanza and fall back to its
+    # defaults -- silently, which is the failure mode this tool has no way to
+    # report.
+    config = load_composed_config(args.config)
     params = map_parameters(config)
 
     project_dir = (

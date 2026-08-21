@@ -119,7 +119,15 @@ validate_historical_window(historical_window)
 # Editing it re-runs rule 1.10 through Snakemake's params trigger, which
 # rebuilds the forcing and so re-runs 1.14 — and since 1.14's output.csv is
 # temp(), that is the whole model. Correct, but not cheap.
-simulation_window = resolve_simulation_window(shared_cfg, my_cfg)
+# The two windows are authored in DIFFERENT files now, so the refusal names
+# both -- a user with two files open should not have to work out which one
+# the message means (R13 §12.5).
+simulation_window = resolve_simulation_window(
+    shared_cfg,
+    my_cfg,
+    shared_source=config_path,
+    model_source=WORKFLOW_CONFIG_PATHS.get("build_model"),
+)
 clim_source = get_config(shared_cfg, "clim_historical", optional=False)
 # Wflow.jl thread count for rule 1.14. OPTIONAL — the default is P3-3's frozen
 # baseline value, so an existing config is unaffected. Config-driven rather than

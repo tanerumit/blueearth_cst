@@ -33,7 +33,16 @@ HARNESS = Path(__file__).resolve().parent / "_stage_equiv_harness.py"
 # the child converts the next occurrence from a 30-minute kill with no
 # information into a normal test failure carrying the child's partial output.
 # It does NOT fix the underlying stall -- see that item.
-HARNESS_TIMEOUT_S = 600
+#
+# 600 -> 240 on 2026-08-21 (owner ruling, t2608071208). The bound governs how
+# long an OCCURRENCE costs, and ten minutes of waiting is most of what
+# investigating one costs. 240 s keeps the headroom the paragraph above demands
+# -- roughly 15x the 12-16 s passing runs, and still above the "few minutes" a
+# CI runner takes -- while capturing the same evidence: the harness arms
+# `faulthandler.dump_traceback_later(120, repeat=True)`, so a stalled child
+# dumps every thread's stack at 120 s and again at 240 s. The three further
+# dumps 600 s bought never told anyone anything the first two had not.
+HARNESS_TIMEOUT_S = 240
 
 
 @pytest.mark.slow

@@ -40,6 +40,7 @@ import csv
 import os
 import tempfile
 
+import hydromt  # noqa: F401 -- registers the xarray .raster accessor (.raster.vars below)
 import xarray as xr
 
 from blueearth_cst.projections import provenance as _prov

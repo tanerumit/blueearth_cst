@@ -110,6 +110,13 @@ def load_source_orography(
     are computed on the extraction's own cells and nothing is regridded, and
     every non-spatial coordinate is stripped first — see ``_drop_nonspatial``.
     """
+    # Both branches end in ``.raster.reproject_like``, so the accessor is
+    # needed here regardless of which one runs. Imported at the top of the
+    # function rather than at module scope: this is a ``script:`` module and
+    # hydromt is the heaviest thing it touches, so it stays off the import path
+    # of anything that merely imports the module (t2608202307).
+    import hydromt  # noqa: F401 -- registers the xarray .raster accessor
+
     if oro_nc is not None:
         dem = xr.open_dataarray(oro_nc)
     else:
@@ -118,8 +125,6 @@ def load_source_orography(
                 "load_source_orography: the era5 branch needs a data catalog "
                 "(rule 1.15 params.data_sources) to resolve era5_orography"
             )
-        import hydromt
-
         data_catalog = hydromt.DataCatalog(data_libs=data_sources)
         dem = data_catalog.get_rasterdataset(
             "era5_orography",

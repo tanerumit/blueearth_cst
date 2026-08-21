@@ -71,17 +71,21 @@ annotations are native — and ``tests/test_model_reference.py`` enforces it.
 import os
 from pathlib import Path
 
-import geopandas as gpd
-import matplotlib.pyplot as plt
-import numpy as np
-import xarray as xr
-
-from blueearth_cst.shared.cartographic_map import (
-    RASTER_DPI,
-    RasterStyle,
-    _mask_nodata,
-    plot_raster_map,
-)
+# NOTHING HEAVY AT MODULE SCOPE, deliberately. `build_model.smk` imports this
+# module at PARSE time, for `figure_paths` alone -- a pure string function --
+# and every dry-run of WF1 then paid for whatever this block pulled in. It used
+# to pull cartopy, geopandas, xarray and matplotlib (t2608202307 measured the
+# cost; t2608210029 removed it). The rule is: a name used only inside a function
+# is imported inside that function.
+#
+# The two module-scope imports below are what the DECLARATIONS in this file
+# need, and both are cheap:
+#   * `raster_style` is pure Python -- it exists so the five module-level
+#     `RasterStyle` constants below cost nothing to declare;
+#   * `plot_style` is the page/typography contract, stdlib-only, and owns
+#     `RASTER_DPI` directly (`cartographic_map` merely re-exports it).
+from blueearth_cst.shared.plot_style import RASTER_DPI
+from blueearth_cst.shared.raster_style import RasterStyle
 from blueearth_cst.shared.snake_utils import save_figure
 
 # ---------------------------------------------------------------------------
@@ -217,6 +221,8 @@ def subbasin_classes(raster):
     the top of the page and explain nothing a reader wanted. An empty table is
     the template's own way of saying "no key", so this needs no extra flag.
     """
+    import numpy as np
+
     values = np.asarray(raster.values, dtype="float64")
     codes = [int(value) for value in np.unique(values[np.isfinite(values)])]
     labelled = len(codes) <= _MAX_LEGEND_SUBBASINS
@@ -493,6 +499,8 @@ def load_spatial_map_layers(spatial_dir):
     # every layer carries _FillValue in its ATTRS, and the CF decoder would move
     # it into encoding and recast the identifier rasters to float. The fills are
     # applied explicitly, per layer, by ``_mask_nodata``.
+    import xarray as xr
+
     with xr.open_dataset(maps_path, mask_and_scale=False) as dataset:
         maps = dataset.load()
 
@@ -500,6 +508,8 @@ def load_spatial_map_layers(spatial_dir):
     for argument, stem in SPATIAL_MAP_LAYERS.items():
         path = geoms_dir / f"{stem}.geojson"
         if path.is_file():
+            import geopandas as gpd
+
             layers[argument] = gpd.read_file(path)
     missing = [name for name in ("basins", "rivers") if name not in layers]
     if missing:
@@ -530,6 +540,10 @@ def _basin_mask(maps):
     is on the same grid, so there is no rasterisation step that could disagree
     with the raster it masks by half a cell.
     """
+    import numpy as np
+
+    from blueearth_cst.shared.cartographic_map import _mask_nodata
+
     if BASIN_MASK_VARIABLE not in maps:
         return None
     layer = _mask_nodata(maps[BASIN_MASK_VARIABLE])
@@ -545,6 +559,8 @@ def prepare_layer(maps, figure, basin_mask=None):
     figure's title ("annual mean"), because a silently averaged seasonal cycle
     is the kind of thing a reader assumes did not happen.
     """
+    from blueearth_cst.shared.cartographic_map import _mask_nodata
+
     layer = _mask_nodata(maps[figure.variable]).astype("float64")
     extra = [
         dim
@@ -578,6 +594,8 @@ def _is_degenerate(layer):
     the log is the better of the two, and the note is the part that was actually
     wanted.
     """
+    import numpy as np
+
     values = np.asarray(layer.values, dtype="float64")
     finite = values[np.isfinite(values)]
     if finite.size == 0:
@@ -625,6 +643,10 @@ def plot_spatial_maps(
     was not worth drawing" are different facts and a reader cannot tell them
     apart from an empty folder.
     """
+    import matplotlib.pyplot as plt
+
+    from blueearth_cst.shared.cartographic_map import plot_raster_map
+
     spatial_dir = Path(spatial_dir)
     plot_dir = Path(plot_dir) if plot_dir is not None else spatial_dir / PLOTS_DIRNAME
 

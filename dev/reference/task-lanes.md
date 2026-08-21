@@ -45,7 +45,9 @@ python $S task-start --task <task> --type <type> --base main -- codex
 python $S task-scope --path <expected-path> [--resource <shared-resource>]
 # ... edit, run the testing-policy check, and commit ...
 python $S task-ready --validation "<checks and result>" [--risk <flag>]
-# Stop. git-integrator independently reviews, integrates, verifies, and cleans.
+# Stop. Under `integration_mode: self` an unflagged lane reports SELF_INTEGRATE and
+# this session line integrates it from the primary; a risk flag still waits for the
+# owner, and `approval`/`hybrid` route to git-integrator instead.
 ```
 
 `task-start` compares each `worktree_seed` against the primary at allocation time: a copy the primary has moved past is refreshed, and a copy that *leads* the primary is left untouched and reported — the fixture-drift failure recorded in `t2608121258` (closed; see `dev/LOG.md`) is that second case, and it must never be overwritten. `integration-complete` proves the task branch is ancestral to `main` before parking the worktree and deleting the local branch.
@@ -59,7 +61,7 @@ python $S task-ready --validation "<checks and result>" [--risk <flag>]
 | Any normal modifying task | Run `task-start` from the primary checkout; the allocator chooses the slot and launches a fresh session. |
 | Another lane is active | Declare full paths/resources; the registry permits disjoint work and refuses overlap. |
 | All slots occupied | Report it and wait or postpone; do not reuse a running session or create a parallel branch there. |
-| Primary checkout | Read-only inspection, board reservation, and `git-integrator` integration only. |
+| Primary checkout | Read-only inspection, board reservation, and integration only. |
 
 `todoboard render` regenerates `dev/TODO.md`; declare `--resource todo-board-render` so no two lanes run it concurrently.
 

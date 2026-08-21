@@ -31,7 +31,7 @@ slot_registry: atomic # advisory | atomic
 # scientific, numerical, configuration, dependency, API, migration, release and
 # destructive changes still wait for approval. `approval` holds every task;
 # `self` runs no separate reviewer and integrates from the primary checkout.
-integration_mode: hybrid # approval | hybrid | self
+integration_mode: self # approval | hybrid | self
 
 # Untracked trees the launcher COPIES (never links) into each new worktree.
 # Without them the fixture-dependent tests skip and the suite reports a false

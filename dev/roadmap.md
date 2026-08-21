@@ -47,6 +47,14 @@ emits and what its members are called; **R12** changes how it executes. Mirrors
 Phase 5, which did the same for workflow 2. Dev artifacts under
 `dev/milestones/r11/`. See § Phase 8 below.
 
+**Phase 9 — Configuration modularization (R13 design ACCEPTED 2026-08-21).**
+Splits the monolithic project config into a project file (T1) carrying closed
+`{enabled, config_path}` workflow stanzas plus one per-workflow file (T2),
+composed by a shared loader so the in-memory shape the Snakefiles see is
+unchanged. The first modularization seam: it makes cross-workflow sharing
+checkable at parse time rather than conventional. One milestone, R13; design and
+audit trail under `dev/milestones/r13/`. See § Phase 9 below.
+
 ```text
 Phase 1 — Foundation (sealed)
   base/<start-point>
@@ -1539,6 +1547,50 @@ Do not merge `docs/wf3-redesign`. It is cited by path; its scratch stays in git
 history, per the WF2 precedent.
 
 **Tag.** `r12-wf3-execution` *(on seal)*.
+
+---
+
+## Phase 9 — Configuration modularization (R13 design ACCEPTED)
+
+Registered 2026-08-20. The configuration surface is the first seam the toolbox
+modularizes: today one `--configfile` YAML carries every workflow's settings, so
+any workflow's parameters are editable from any project file, and cross-workflow
+sharing is a convention rather than a checked property.
+
+### R13 — Config tiers (design ACCEPTED 2026-08-21; not yet implemented)
+
+**What it does.** T1 (project) holds `project:` + `shared:` plus a closed
+`{enabled, config_path}` stanza per workflow; T2 is one config file per workflow,
+referenced by path and composed by a shared loader; T3 (model configs) is
+unchanged; `advanced_settings.yml` stays a separate authority-bounded toolbox
+file. The composed in-memory config each Snakefile sees is unchanged, so the CLI
+and `config_path`-forwarding contracts hold.
+
+**Status.** Accepted at G2, 2026-08-21, with no editorial edits. The normative
+contract is `dev/milestones/r13/config-tiers-design.md`; why it says what it says
+is `dev/milestones/r13/config-tiers-review-record.md`. Implementation is boarded
+as `t2608211256`.
+
+**Scope note — R13 is not split-only.** The round-cap arbitration widened it: the
+`wflow_outvars` hoist is a **required** final phase (D-9.7), not deferred, so the
+milestone carries **two** baseline-scale validation passes — one proving the split
+is output-neutral, one verifying the hoist's *expected* digest shift — and
+completes with `CROSS_WORKFLOW_READS` empty. Do not descope it back to the split.
+
+**How the design was reached.** A full design-review-loop run: a three-lens
+internal panel (52 findings), external round 1, a driver framework-feasibility
+probe, external round 2, and owner arbitration at the two-round cap. 63 findings,
+all dispositioned. The probe is the part worth carrying forward — it refuted a
+post-migration `--touch` shortcut that two prose review rounds had passed, by
+measuring that a successful `--touch` still leaves 28 of 32 jobs scheduled,
+because reaped `temp()` intermediates cannot be touched into existence.
+
+**Out of scope, tracked.** The `advanced_settings.yml` interior relocation
+(D-13.4 / §19 Q6) lands only after the R13 baseline is re-recorded, never in the
+same series. Workflow naming stays Candidate A (keep current names); §14.3 keeps
+B/C available as a separate post-baseline commit series.
+
+**Tag.** `r13-config-tiers` *(on seal)*.
 
 ---
 

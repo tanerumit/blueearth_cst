@@ -1,8 +1,8 @@
 ---
 title: Implement the R13 config tier split once the design lands
 type: todo-item
-status: backlog
-branch: feat/config-modularization
+status: active
+branch: feat/r13-config-tiers
 effort: 2
 area: config
 origin: R13
@@ -30,4 +30,20 @@ updated: 2026-08-21
 
 ## Progress
 
-- [ ] <first step>
+- [x] Commit 1 — `config_composition.py` + seam checks + D-9.6 scan (`072dfc1`)
+- [x] Commit 2 — `split_project_config.py`, report-only (`14ecd54`)
+- [x] Commit 3 — seeds/fixture/template migrated, four Snakefiles wired (`b505233`)
+- [x] Commit 4 — composed snapshot, record-only T2 registration (`0496d44`)
+- [x] Commit 5 — the raw-T1 tools compose (`a457157`)
+- [x] Commit 7a — migration guide + reference sweep (`a18352b`)
+- [ ] Commit 7b — **split-phase baseline re-record**. BLOCKED on the primary
+      checkout: §16.5(b) forbids recording it from a lane. Runbook:
+      `dev/milestones/r13/baseline-pass-runbook.md`
+- [ ] Commit 8 — the `wflow_outvars` hoist. Code-only and ready, but D-9.7's
+      ordering forbids landing it before 7b
+- [ ] Commit 9 — hoist-phase baseline re-record; R13 sealable after it
+
+Verified in the lane: `test-full` 3043 passed / 9 skipped / 1 xfailed,
+`test-contract` 70, `tree-check` MAP CLEAN, lint + format clean. Six of the
+nine skips ARE the fixture layer, so that green is not evidence about the
+composed snapshot — see `dev/milestones/r13/migration_config-tiers.md`.

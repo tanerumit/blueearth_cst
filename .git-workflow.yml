@@ -1,38 +1,37 @@
 # Controls the git-workflow skill's ceremony for THIS repo.
 # Schema: ~/workspace/brain/artifacts/skills/git-workflow/references/configuration.md
 #
-#   full — branch risky/multi-session work; auto-commit verified work.
-#   lite — trunk only (no feature branches); auto-commit verified work.  (current)
-mode: lite
+# `mode` is a ladder ordered by where work happens; each rung pins every toggle
+# below, so a rung replaces reasoning about the individual keys.
+#   trunk  — the primary checkout, trunk only, no feature branches.
+#   branch — a branch when the work is risky or multi-session.  (skill default)
+#   slot   — every modifying task in a claimed persistent worktree.  (current)
+#   lane   — a fresh session per task, against a frozen readiness SHA.
+# `lite` and `full` are permanent aliases for `trunk` and `branch`.
+mode: slot
 
-# `concurrent` builds a worktree only when another session is already working
-# this repo; `always` builds one for every modifying task. Agent-honored, and
-# enforced by the launcher and the PreToolUse guard.
-worktree_policy: concurrent # concurrent | always
-
-# Persistent neutral worktrees are allocated atomically. Every task gets a
-# fresh process, an unguessable claim, and an explicit write scope. Integration
-# stays owner-approved during the initial rollout.
-
-#slot_registry: advisory — legacy, caller-selected slot allocation using slot-start.
-#slot_registry: atomic — task-start allocates a slot and enforces claims, scope, readiness,
-#  integration, and cleanup transitions.
-#integration_mode: approval — every READY task waits for your approval before git-integrator runs.
-#integration_mode: hybrid — low-risk READY tasks may dispatch automatically; scientific,
-#  numerical, configuration, dependency, API, migration, release, or
-#  destructive changes still wait for approval.
-
-session_slots: [session-1, session-2, session-3]
-slot_registry: atomic             # advisory | atomic
-integration_mode: hybrid        # approval | hybrid
-
-# Isolation branches auto-land after rebase + verification. Feature branches and
-# explicitly held isolation branches still wait for a decision.
-isolation_landing: auto # auto | approval
+# Below: only the overrides. Each beats the rung; every key left out takes the
+# `slot` value — isolation_landing `auto`, and worktree_policy `always`, which
+# reserves this primary checkout for integration and starts every modifying
+# task in a claimed worktree instead (agent-honored, and enforced by the
+# launcher and the PreToolUse guard).
 
 # The trunk is pushed deliberately, never as a side effect of finishing a task.
 # `true` re-enables the >24h / 25-commit backup trigger.
 auto_push: false # true | false
+
+# Overridden back off the rung's `advisory`: `task-start` gives every task a
+# fresh process, an unguessable claim and an explicit write scope, then enforces
+# the scope, readiness, integration and cleanup transitions. `advisory` hard-
+# fails every `task-*` and `integration-*` verb, so it needs a drained pool.
+session_slots: [session-1, session-2, session-3]
+slot_registry: atomic # advisory | atomic
+
+# `hybrid` lets a low-risk READY task dispatch to git-integrator automatically;
+# scientific, numerical, configuration, dependency, API, migration, release and
+# destructive changes still wait for approval. `approval` holds every task;
+# `self` runs no separate reviewer and integrates from the primary checkout.
+integration_mode: hybrid # approval | hybrid | self
 
 # Untracked trees the launcher COPIES (never links) into each new worktree.
 # Without them the fixture-dependent tests skip and the suite reports a false

@@ -5,9 +5,21 @@ Created on Tue Feb  1 14:34:58 2022
 @author: bouaziz
 """
 
-import hydromt  # noqa: F401 -- registers the xarray .raster accessor (.raster.vars below)
-import pandas as pd
-import xarray as xr
+# `import hydromt` is GONE, not deferred: its comment claimed a `.raster.vars`
+# "below", and this file contains no `.raster` access at all. What it actually
+# registered the accessor for is `derive_change_factors`, which does read
+# `.raster.vars` and imports this module -- a side effect travelling through an
+# import chain rather than being asked for. That module also imports
+# `get_change_climate_proj_summary`, which imports hydromt at module scope with
+# its own `.raster.vars` use, so the accessor is still registered before
+# anything in the chain runs; a fresh-process probe confirms it. Making
+# `derive_change_factors` ask for it itself is filed separately -- this file has
+# no `.raster` access to guarantee anything for.
+#
+# pandas and xarray are DEFERRED into the three functions that use them.
+# `analyze_projections.smk` imports this module at PARSE time so `STAGE_B_KERNEL`
+# can hold the FUNCTION OBJECTS for `kernel_hash`; the objects are required, the
+# numeric stack is not.
 
 from blueearth_cst.projections.calendar_weights import month_length_weights
 from blueearth_cst.projections.change_factor_table import COMPANION_SEP
@@ -55,6 +67,8 @@ def hydrological_year_bounds(ds_time, start_month_hyd_year="Jan"):
 
     Returns ``(start, end, n_hydrological_years)``.
     """
+    import pandas as pd
+
     data_start = pd.Timestamp(ds_time["time"].values[0])
     data_end = pd.Timestamp(ds_time["time"].values[-1])
 
@@ -158,7 +172,10 @@ def get_change_monthly_clim_proj(
       one more sample than December whenever the window starts mid-year, and a
       seasonal pattern assembled from unequal samples is not a pattern.
     """
+    import xarray as xr
+
     stats = list(DEFAULT_STATS) if stats is None else list(stats)
+
     ds_hist_time = _to_datetime_index(ds_hist_time)
     ds_clim_time = _to_datetime_index(ds_clim_time)
 
@@ -265,6 +282,8 @@ def get_change_annual_clim_proj(
         annual statistics per each models/scenario/horizon.
 
     """
+    import xarray as xr
+
     # Step 5d: `stats=None` means the v2.0 default set, not "all eight".
     # Passed explicitly by callers that opt into tail quantiles.
     stats = list(DEFAULT_STATS) if stats is None else list(stats)

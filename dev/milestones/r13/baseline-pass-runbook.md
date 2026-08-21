@@ -11,10 +11,28 @@ hoist (commit 8) lands **between** the two.
 
 ## Before you start
 
+The branch is checked out in the task lane, so the primary cannot `switch` to
+it — `fatal: already used by worktree`. **Detach at its tip instead.** A
+detached checkout does not claim the branch ref, so the lane keeps it and the
+primary gets the exact tree:
+
 ```powershell
 cd ~/workspace/blueearth_cst
-git checkout feat/r13-config-tiers          # or merge it to main first
-git log --oneline -1                        # expect the docs commit at the tip
+git status --short                 # must be clean; note the branch you are on
+git branch --show-current          # <- write this down, you return to it after
+git switch --detach feat/r13-config-tiers
+git log --oneline -1               # expect the board commit at the tip
+```
+
+Nothing needs to be committed on the primary. The pass produces one tracked
+file, `dev/baseline/manifest.json`; copy it back into the lane afterwards and
+the lane commits it on the branch:
+
+```powershell
+# after the pass, from the primary
+Copy-Item dev/baseline/manifest.json `
+    ~/workspace/.worktrees/blueearth_cst/session-1/dev/baseline/manifest.json
+git switch <the branch you noted>
 ```
 
 Everything below runs inside `pixi shell`, or prefix each line with `pixi run`.

@@ -113,6 +113,47 @@ datasets:
     # - parameters          : 21 fields, incl. width_m, width_DHG, QMEAN, Q2,
     #                         Slp, Elev, order, area
 
+  # The three waterbody layers rule 1.08 `add_reservoirs_lakes_glaciers` reads,
+  # and the ones `basin_area.png` needs before it can draw a reservoir
+  # (t2608091730). Full tables are read and clipped -- no `columns` -- because
+  # `deltares_data.yml` applies `rename` and `unit_mult` to named fields, and a
+  # column list here would have to be kept in step with that by hand.
+  # A basin containing none of a layer's features is a legitimate outcome and
+  # stages as SKIPPED "no overlap" with no local file written; `rgi` over an
+  # equatorial basin is exactly that case.
+
+  - name: hydro_lakes
+    type: vector
+    path: hydrography/lakes/lake-db.gpkg
+    # - spatial coverage    : global, 180.0°W-180.0°E, 55.9°S-83.6°N
+    # - spatial resolution  : vector multipolygons, 1 420 891 lakes
+    # - temporal coverage   : static
+    # - temporal resolution : static (no time axis)
+    # - parameters          : 21 fields, incl. Hylak_id, Lake_area, Vol_total,
+    #                         Depth_avg, Dis_avg, Pour_long, Pour_lat
+    #                         (HydroLAKES v1.0 extract)
+
+  - name: hydro_reservoirs
+    type: vector
+    path: hydrography/reservoirs/reservoir-db.gpkg
+    # - spatial coverage    : global, 153.1°W-176.8°E, 45.9°S-70.4°N
+    # - spatial resolution  : vector multipolygons, 6 797 reservoirs
+    # - temporal coverage   : static
+    # - temporal resolution : static (no time axis)
+    # - parameters          : 50 fields, incl. Hylak_id, Lake_area, Vol_total,
+    #                         Capacity_max/min/norm, Depth_avg, Dis_avg
+    #                         (GRanD v1.1 + HydroLAKES v1.0 + JRC 2016)
+
+  - name: rgi
+    type: vector
+    path: hydrography/rgi/rgi.gpkg
+    # - spatial coverage    : global, 179.9°W-179.8°E, 78.3°S-83.6°N
+    # - spatial resolution  : vector multipolygons, 216 429 glaciers
+    # - temporal coverage   : static inventory, survey dates per feature
+    # - temporal resolution : static (no time axis)
+    # - parameters          : 18 fields, incl. RGIID, GLIMSID, AREA, ZMIN,
+    #                         ZMAX, ZMED, SLOPE (Randolph Glacier Inventory 6.0)
+
   # --- Meteo / climate forcing sources ---------------------------------------
   # wflow historical forcing here is `clim_historical: era5` with
   # `variables: [precip, temp]` over 2000-2020 (see test_case/snake_config_*.yml).

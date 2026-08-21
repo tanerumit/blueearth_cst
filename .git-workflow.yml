@@ -3,26 +3,27 @@
 #
 # `mode` is a ladder ordered by where work happens; each rung pins every toggle
 # below, so a rung replaces reasoning about the individual keys.
-#   trunk  — the primary checkout, trunk only, no feature branches.  (current)
+#   trunk  — the primary checkout, trunk only, no feature branches.
 #   branch — a branch when the work is risky or multi-session.  (skill default)
-#   slot   — every task in a claimed persistent worktree (slot-start/slot-park).
+#   slot   — every modifying task in a claimed persistent worktree.  (current)
 #   lane   — a fresh session per task, against a frozen readiness SHA.
 # `lite` and `full` are permanent aliases for `trunk` and `branch`.
-mode: trunk
+mode: slot
 
 # Below: only the overrides. Each beats the rung; every key left out takes the
-# `trunk` value — isolation_landing `auto`, and worktree_policy `concurrent`,
-# which builds a worktree only when another session is already working this
-# repo (agent-honored, and enforced by the launcher and the PreToolUse guard).
+# `slot` value — isolation_landing `auto`, and worktree_policy `always`, which
+# reserves this primary checkout for integration and starts every modifying
+# task in a claimed worktree instead (agent-honored, and enforced by the
+# launcher and the PreToolUse guard).
 
 # The trunk is pushed deliberately, never as a side effect of finishing a task.
 # `true` re-enables the >24h / 25-commit backup trigger.
 auto_push: false # true | false
 
-# Persistent neutral worktrees, allocated atomically — `task-start` gives every
-# task a fresh process, an unguessable claim and an explicit write scope, then
-# enforces the scope, readiness, integration and cleanup transitions.
-# `advisory` is the legacy caller-selected `slot-start` lifecycle.
+# Overridden back off the rung's `advisory`: `task-start` gives every task a
+# fresh process, an unguessable claim and an explicit write scope, then enforces
+# the scope, readiness, integration and cleanup transitions. `advisory` hard-
+# fails every `task-*` and `integration-*` verb, so it needs a drained pool.
 session_slots: [session-1, session-2, session-3]
 slot_registry: atomic # advisory | atomic
 

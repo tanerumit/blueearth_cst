@@ -47,7 +47,13 @@ Usage (inside ``pixi shell``, or via ``pixi run``, from the repo root)::
 
     # anything after `--` is forwarded to snakemake verbatim
     python scripts/plot_workflow_dag.py -s analyze_projections.smk --configfile <cfg> \\
-        -- --config foo=bar
+        -- --config workflows='{"run_stress_test": {"enabled": false}}'
+
+A `--config` override reaches the project config before composition, so it can
+toggle a workflow or repoint a stanza's ``config_path`` -- but a project
+config's top level and its workflow stanzas are both CLOSED, so an override
+that invents a top-level key or writes a workflow setting is refused at parse
+time. See ``docs/migration-config-tiers.md`` for the full mapping.
 
 Not a Snakemake rule and deliberately so: a rule that renders the DAG would sit
 inside the DAG it renders, and would show up in ``--summary`` and in the project

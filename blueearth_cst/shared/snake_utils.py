@@ -856,8 +856,8 @@ def validate_experiment_name(name: str, project_dir) -> str:
 #: The advanced-settings file: toolbox-wide constraints and defaults that no
 #: normal project edits. Repo root is two levels up from
 #: ``blueearth_cst/shared/``. NOT a ``--configfile`` target — the Snakefiles
-#: take a per-project ``config/workflows/snake_config_*.yml``; this one is read
-#: once, here, and applies to every project.
+#: take a per-project project config, which lives beside the project it writes
+#: into; this one is read once, here, and applies to every project.
 ADVANCED_SETTINGS_PATH = (
     Path(__file__).resolve().parents[2] / "config" / "advanced_settings.yml"
 )

@@ -143,9 +143,19 @@ The toolbox provides four [Snakemake](https://snakemake.github.io/) workflows:
   applies stress-test perturbations, and runs the hydrological model on each
   realization × stress combination.
 
-Configuration is YAML-driven. Start from `config/templates/snake_config.template.yml`,
-which annotates every option inline; a filled-in worked example is
-`test_case/snake_config_baseline.yml`, and `test_case/snake_config_rapid.yml`
+Configuration is YAML-driven, and a project's configuration is a **set of
+files**: one project file plus one file per workflow, kept together in one
+directory. The project file is the only `--configfile` target — it holds
+`project:`, the `shared:` settings more than one workflow reads, and a short
+stanza per workflow saying whether it runs and which file carries its settings.
+The file you open to change WF1 therefore contains WF1's settings and nothing
+else. See `docs/migration-config-tiers.md` for the layout in full, and for
+migrating a single-file config written before 2026-08.
+
+Start from `config/templates/snake_config.template.yml` and the
+`snake_config.<workflow>.template.yml` files beside it, which annotate every
+option inline; a filled-in worked example is `test_case/snake_config_baseline.yml`
+with its siblings, and `test_case/snake_config_rapid.yml`
 is the same basin sized for a quick end-to-end run rather than for results.
 Each of the shipped example configs sits
 beside the project it writes into, the same way a real project keeps its config

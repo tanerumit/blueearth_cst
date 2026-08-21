@@ -6,14 +6,14 @@ genre: decision-record   # milestone/refactor design (goal, what-changes, plan,
 author-binding: cst-architect
 started: 2026-08-20
 variant: full            # crosses every workflow's config contract + shared seam
-stage: 6a
+stage: G2
 external-rounds-completed: 2
 dispatches:
   opus: 6
-  fable: 3
+  fable: 4
 cost:
-  expensive-checks: 1   # framework-feasibility probe, 2026-08-21
-  doc-lines: 1341 -> 3057
+  expensive-checks: 2   # framework-feasibility probe + S8 CLI verification, 2026-08-21
+  doc-lines: 1341 -> 3416
 findings:
   unique: 63
   re-raised: 4   # ext2-1 re-raises ext1-1's deferred third part
@@ -70,4 +70,11 @@ flags: []
   Scope note: ext2-1 is a material change to R13's boundary, which normally returns a run to G1. It is NOT re-run mechanically here — stage 6a exists for exactly this case, the owner's rulings standing in for the reviewer verdict the cap forecloses. The owner was told they were deciding the milestone boundary rather than ratifying a fix.
   Ledger: seven arbitration rows appended by the DRIVER (ext2-1..6 + `risk-3`), per stage 6a's carve-out from one-writer-per-artifact.
 - [open] 6a-arbitration-revision — author dispatched (cst-architect, Fable). Changes confined to the arbitrated IDs + forced cross-refs; driver scope-checks the v4→v5 diff against exactly those sections. The cap stands: no further external rounds.
+- [done] 6a-arbitration-revision — outputs: design-v5.md (3416 lines, from v4's 3057). All seven arbitration rulings implemented; no ledger rows added (nothing forced a disposition the arbitration had not anticipated).
+- [done] scoped verification pass on design-v5.md — required because v5 reaches G2 with **no reviewer verdict naming it**; the round-cap arbitration forecloses the round that would have produced one, and the owner's rulings stand in for it.
+  - **Scope-check PASSED.** 30 sections touched across 54 hunks; every one maps to an arbitrated finding's section or to a cross-reference the author declared (§7.2, §8.3, §8.4, D-8.7, §10.2, §10.4, §13, §16.4, §17.1, §9 preamble, header/§20). No drift.
+  - **New decision IDs, recorded under ARBITRATION AUTHORITY** (no reviewer will see them; the cap stands): **D-9.7** — the hoist phase, required in-R13, neutrality-first ordering, coupled-edit set, contract emptied and retired, two falsifier passes. **D-15.3a** — the staging-ownership contract (marker + tool basename; absent-or-empty; source/ancestor refusals; tool-named child). Plus one new named constant, `RELOCATED_KEYS`, driving both the splitter's hoisted emission and D-15.4b's relocation-normalized round trip. Verified mechanically: exactly these two IDs added, none removed.
+  - **Structural checks PASSED.** 63 unique finding IDs all carry a row (risk 18, arch 21, repofit 13, ext1 4, probe 1, ext2 6), plus one arbitration entry against `risk-3` = 64 rows. No `blocking` deferred; no rejected `blocking` unarbitrated; the only non-`accepted` disposition at major-or-above is `risk-3`'s partial withdrawal, which IS the owner's arbitration ruling. design-v1..v5 all present and append-only. Both external verdicts name a `doc_version` that exists (v2, v4).
+- [event] empirical correction to S8's premise, 2026-08-21 — the author was instructed to VERIFY rather than assert the `--config` parsing behaviour for ext2-5, and the verification partly refutes the premise ext1-3 was argued on. Confirmed independently by the driver against the pinned Snakemake **9.6.2**: `snakemake ... --config workflows.build_model.foo=bar` raises `ValueError: Invalid config definition: Config entry must start with a valid identifier.` at `cli.py:312` — `parse_config`'s key regex `[a-zA-Z_][\w-]*\w$` admits no `.`, and the rejection happens **before any configfile is read, identically pre- and post-split**. So the dotted workflow-setting form was **never accepted syntax** under this toolchain: for that form there is no CLI break to migrate, and no closure check of this design ever sees it. The withdrawal ruled in S8 therefore bites only on the mapping-valued form (`--config workflows='{...}'`). **This does not reverse S8** — it narrows the blast radius the ruling was taken against, in the direction that makes the ruling easier, so it is recorded rather than re-put to the owner. Flagged to the owner in the G2 presentation because it corrects the factual premise of a decision they made.
+- [open] G2 — approval gate. Owner-visible agenda regenerated post-arbitration.
 

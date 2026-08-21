@@ -668,6 +668,12 @@ rule snapshot_config:
         config_dir = f"{exp_dir}/config",
         effective_config = config,
         advanced_settings = ADVANCED_SETTINGS,
+        # The snapshot is a dump of THIS mapping, not a copy of the project
+        # file (R13 D-11.1): after the split the project file does not hold
+        # the workflow settings.
+        composed_config = config,
+        # Recorded, never copied -- their content is inlined above (D-11.2).
+        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
     output:
         config_snake_out = f"{exp_dir}/config/snake_config_run_stress_test.yml",
         run_record = RUN_RECORD,

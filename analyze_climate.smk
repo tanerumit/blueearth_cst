@@ -378,6 +378,13 @@ rule snapshot_config:
         effective_config = config,
         advanced_settings = ADVANCED_SETTINGS,
         config_projection = CONFIG_PROJECTION,
+        # The snapshot is a dump of THIS mapping, not a copy of the project
+        # file (R13 D-11.1): after the split the project file does not hold
+        # the workflow settings, and WF3's drift guard reads them out of the
+        # wf1 snapshot.
+        composed_config = config,
+        # Recorded, never copied -- their content is inlined above (D-11.2).
+        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
         # A string digest, so the params trigger compares a value rather than a
         # structure. This is what keeps the record FRESH when the checkout, the
         # lock files or a referenced catalog's bytes move.

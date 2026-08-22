@@ -4,8 +4,9 @@ Record of the split-phase falsifier pass run from the primary checkout detached
 at `9cbb72a` (below the `wflow_outvars` hoist), 2026-08-21/22.
 
 **Outcome: the split is output-neutral. The one data target that moves is not
-R13's, and its cause is dated and attributed.** Nothing was re-recorded; the
-re-record is a gate, see the last section.
+R13's, and its cause is dated and attributed.** Re-recorded 2026-08-22 after the
+owner ruled the gate (last section); `check_baseline.py check` is green at 7/7
+against the pass-1 tree.
 
 ## What `check_baseline.py check` reports
 
@@ -167,13 +168,37 @@ corrected.
   refused the experiment until the reference was re-recorded. WF1's discharge is
   unchanged across it, so the move is byte-level, not numeric.
 
-## The gate
+## The gate — RULED 2026-08-22: record both here
 
-Pass 1 cannot be re-recorded as-is without deciding one thing first: recording
-now folds R13's two config-snapshot changes **and** the weathergenr upgrade's
-indicator change into one manifest revision, leaving neither separately
-attributable. That is the failure mode `t2608071201` watches for. The
-alternative is to re-record the indicator baseline on `main` first, attributed
-to `cf5daa0`, so R13's pass has a control in which zero data targets move.
+The choice was between re-recording the indicator baseline on `main` first (so
+R13's pass would have a control with zero data targets moving) and recording
+both causes in one revision here. **The owner ruled: one pass, here.** The cost
+is accepted and stated rather than hidden: this manifest revision carries two
+unrelated causes, and their separation lives in the commit message and in this
+record, not in the manifest's own history.
 
-Owner's call. Until it is made, `dev/baseline/manifest.json` stays untouched.
+Recorded from the primary detached at `9cbb72a` (never from a lane, §16.5(b)):
+
+    recorded: 7 target(s) -> dev/baseline/manifest.json (7 total)
+    OK - 7 target(s) match manifest.
+
+What moved, and why:
+
+| target | from -> to | cause |
+|---|---|---|
+| `config/runs/snake_config_build_model.yml` | `00ef44f7` -> `68708d48` | R13 D-11.1 |
+| `config/runs/snake_config_analyze_projections.yml` | `00ef44f7` -> `1d7edd8b` | R13 D-11.1 |
+| `indicator_ref/74ed83c06b2e7e6c.csv` | values | `cf5daa0`, weathergenr 2.0.0 |
+
+Unchanged and re-verified: the WF3 config snapshot, both CMIP6 change-factor
+CSVs, and the wf1 discharge series (`discharge_ref/9baa48f90ceaf138.csv` is
+byte-identical).
+
+**`recorded_by.dirty` is `true` and should be read as `false`.** The primary's
+tree was clean at `9cbb72a`; `record` writes the sidecar reference tables before
+it calls `git_provenance()`, so a re-record whose values moved always reports
+itself dirty. Boarded as `t2608221010`.
+
+At the lane's HEAD this manifest will still disagree, by design — commit 8's
+hoist changes `shared:`, which is in every entry point's projection. Pass 2
+(commit 9) is what reconciles it.

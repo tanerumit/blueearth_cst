@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-50` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-53` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -321,6 +321,7 @@ The resulting rule, which S6 already states and this note fixes the words for:
 | `C-48` | Give the ANALYSIS variable set a config surface — selection from a registry, defaulting to today's `precip`/`temp`/`pet` | S2, P1 | NEW | no |
 | `C-49` | Move the `CLIMATE_VARS` registry out of Python so the default is visible (extends `C-36`) | — | MECHANISM | no |
 | `C-50` | Give the EXTRACTION set a config surface: derived, not declared. Designed now, behaviour deferred — narrower-than-default is REFUSED at parse time until it lands | S5, N7 | NEW | no |
+| `C-53` | `shared.water_year_start` → `climate.water_year_start` (amends the `C-47` charter) | S1, charter | REGROUP | yes |
 
 `C-16`–`C-18` are the owner's third question. `clim_historical` (the *what*) and
 `historical_window` (the *how much*) are one concept in two sibling keys —
@@ -336,8 +337,16 @@ re-derived, not merely edited.
 about analysis?"
 
 > **`climate:` declares the project's historical climate RECORD** — which
-> datasets represent this basin, and over what period. It never declares what
-> a workflow *does* with that record.
+> datasets represent this basin and over what period — **and the CONVENTIONS
+> that record determines**. It never declares what a workflow *does* with the
+> record.
+
+*(The clause in bold was added 2026-08-22 with `C-53`. It widens the charter,
+so it is worth checking the boundary still bites: WF1's `simulation_window`,
+WF2's `historical_year_range` — bounded by CMIP6's 2014, not by our record —
+WF3's `horizon_year` and WF0's figure choices all stay out. It also covers
+`selected`, which was already sitting on the line as a DECISION rather than a
+fact.)*
 
 The question felt open only because the section had been named by its
 CONSUMER, which is what N5 warns against. Named by what it IS, the ambiguity
@@ -510,7 +519,9 @@ which matters because they depend on a model boundary that does not exist yet.
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
 | `C-19` | `shared.wflow_outvars` → `model.outvars` | S1, N7 | REGROUP | yes |
-| `C-20` | `shared.seed`, `shared.water_year_start` → `method.{seed,water_year_start}` | S1, S3 | REGROUP | yes — **see `Q-D`** |
+| `C-20` | ~~`shared.seed`, `shared.water_year_start` → `method.*`~~ — **superseded by `C-51` and `C-53`** | S1, S3 | REGROUP | yes |
+| `C-51` | `shared.seed` → `seed:` in `_run_stress_test.yml`; remove from `SHARED_SEAM_KEYS` (R13 amendment) | S1, seam | REGROUP | yes |
+| `C-52` | Retire the `method:` section entirely — both its keys have real homes | S1, S4 | DELETE | yes |
 | `C-21` | `shared.julia_threads` → `compute.julia_threads` | S2, S3 | REGROUP | yes |
 
 `C-21` is the clearest S3 case: `julia_threads` cannot change a number, and
@@ -539,6 +550,47 @@ Model pluggability itself is NOT an R14 concern — it is an architectural
 milestone of its own. What R14 owes it is not to paint it into a corner:
 `N7`, `model:` as a real section, and refusing to bake a wflow-shaped variable
 core into the config schema (`C-50`).
+
+#### `method:` was a leftovers bag — `C-51`, `C-52`, `C-53`
+
+**This document committed P4 in its own draft, and the correction is recorded
+rather than quietly applied.** `seed` and `water_year_start` were grouped
+under `method:` because neither fitted elsewhere — grouping by history, which
+is the exact defect P4 names and `C-10`–`C-15` exist to fix. By the one
+criterion this repo actually uses they are maximally unalike:
+
+| key | readers |
+|---|---|
+| `seed` | `run_stress_test.smk:161` — **one** |
+| `water_year_start` | `analyze_climate.smk:97`, `build_model.smk:81`, `analyze_projections.smk:162`, `run_stress_test.smk:166` — **four** |
+
+`C-51` sends `seed` down to the workflow that runs the weather generator, by
+the same seam rule as `C-39`. A second argument is nearly decisive on its own:
+`resolve_seed(get_config(shared_cfg, "seed"), experiment)` derives `seed: auto`
+from the EXPERIMENT NAME, which lives in the stress-test file — so the two
+halves of one computation are split across two files today, and this reunites
+them. It also honours the owner's point that the weather generator IS a model,
+a stochastic one: its reproducibility knob belongs with the workflow that runs
+it, not in a shared bag.
+
+The counter-argument is that the template calls `seed` the seed for "every
+stochastic step (TODAY: the weather generator)", so a second stochastic step
+elsewhere would move it back. Accepted, because that failure is MECHANICALLY
+DETECTED rather than silent: R13's D-9.6 static read scan asserts literally
+zero cross-workflow value reads, so the day a second workflow reads it, the
+scan fails.
+
+`C-53` sends `water_year_start` UP into `climate:`. The test is not what uses
+it but what DETERMINES it: change the selected dataset or the window and it
+does not move; change BASIN and it does. `basin:` was the other candidate and
+was rejected — that section is entirely spatial, and a reader looking for the
+water year checks `climate:` first. The evidence for choosing it is literally
+WF0's monthly climatology figures, so `window`, `selected` and
+`water_year_start` become three decisions read off one figure set, in one
+section. Their adjacency also makes a real coupling visible: an Oct water year
+against a Jan–Dec window leaves partial years at both ends.
+
+`C-52` then follows: with both keys housed, `method:` has no contents.
 
 ### Group F — `_build_model.yml`
 
@@ -632,13 +684,10 @@ climate:
   sources: [era5, chirps]
   selected: era5   # null until WF0's comparison is read
   window: {start: "1990-01-01", end: "2020-12-31"}
+  water_year_start: Jan
 
 model:
   outvars: ["river discharge", "actual evapotranspiration"]
-
-method:
-  water_year_start: Jan
-  seed: auto
 
 compute:
   julia_threads: 4
@@ -688,6 +737,7 @@ reporting:
 
 ```yaml
 experiment_name: my_experiment
+seed: auto
 realizations_count: 2
 horizon_year: 2050
 run_length: 20
@@ -730,7 +780,7 @@ candidate_sources: [chirps]
 | ~~`Q-B`~~ | ~~Is `model:` holding one leaf (`outvars`) an S4 violation?~~ **RESOLVED 2026-08-22**: `model:` is the engine boundary, not a group of one. See Group E. | `C-19` | — |
 | `Q-I` | One variables key or two? `C-48` (analysis) and `C-50` (extraction) must not become one key whose meaning widens on upgrade — a project that set a short list for FIGURES would silently change what gets DOWNLOADED. Same cross-version meaning-swap `data_sources` was rejected for. | `C-48`, `C-50` | Lean TWO, distinctly named. Decide now even though only one ships. |
 | `Q-C` | `_count` suffix vs bare plural (`realizations_count` vs `realizations`) | `C-29`, `C-31` | Undecided; `_count` is unambiguous, bare plural is shorter and YAML already distinguishes int from list. |
-| `Q-D` | Does `method:` earn a heading, or should `seed`/`water_year_start` be bare top-level leaves? | `C-20` | Lean heading — it is where a third method convention would go. |
+| ~~`Q-D`~~ | ~~Does `method:` earn a heading?~~ **RETIRED 2026-08-22**: the section is gone (`C-52`); both keys have real homes. | ~~`C-20`~~ | — |
 | `Q-E` | Where does a config key's DEFAULT live: `config/advanced_settings.yml` (precedent, closed schema, already tested) or beside the key in the template? | `C-36` | **`advanced_settings`** — the only option with an existing enforcement mechanism, and the only one that could grow `C-37`. |
 | `Q-F` | Does S2 actually permit `_WF1_GUARDED` to become "everything except `compute:`/`reporting:`"? | `C-04` | Unknown. **Needs a probe against the digest and freeze code before R14 promises it.** |
 | `Q-H` | One `selected`, or one per consumer (`forcing` for WF1, `conditioning` for WF3)? | `C-44` | Lean ONE. CST does no local calibration, so the response surface is anchored on the historical run; letting the generator condition on a different record than the model was forced with decouples them silently. The genuine hybrid case is already met INSIDE a single store — the CHIRPS branch takes temperature, radiation and pressure from ERA5 and lapse-corrects them onto the CHIRPS grid. Splitting later is expensive, so record rather than default. |

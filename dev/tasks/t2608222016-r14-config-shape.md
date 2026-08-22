@@ -18,4 +18,9 @@ updated: 2026-08-22
 
 ## Progress
 
-- [ ] <first step>
+- [x] Scoping document with an indexed change register - `dev/milestones/r14/config-shape-scoping.md` (C-01..C-38, S1..S6, N1..N6, Q-A..Q-F)
+- [ ] Owner rulings on Q-A..Q-F (six changes blocked)
+- [ ] Probe Q-F: can `_WF1_GUARDED` be derived from section membership?
+- [ ] Probe D3: is every register row expressible as a pure path rewrite (C-38)?
+- [ ] Land C-35 independently - non-breaking under every outcome
+- [ ] Intake + design on the R13 pattern, then the review loop

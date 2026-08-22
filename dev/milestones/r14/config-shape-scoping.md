@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-58` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-60` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -744,8 +744,10 @@ WF3's window is deliberately derived rather than declared.
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
 | `C-25` | `clim_project` → `ensemble` | N1, N5 | RENAME | yes |
-| `C-26` | `historical_year_range: [a, b]` → `historical_window: {start, end}` | N4 | RENAME | yes |
-| `C-27` | `future_horizons.<name>: [a, b]` → `future_horizons.<name>: {start, end}` | N4 | RENAME | yes |
+| `C-26` | ~~`historical_year_range` → `historical_window`~~ — **superseded by `C-59`** | N4 | RENAME | yes |
+| `C-27` | ~~`future_horizons.<name>: [a, b]` → `{start, end}`~~ — **superseded by `C-60`** | N4 | RENAME | yes |
+| `C-59` | `historical_year_range: [a, b]` → `reference_window: {start, end}` | N4, N5 | RENAME | yes |
+| `C-60` | `future_horizons.<name>: [a, b]` → `future_windows.<name>: {start, end}` | N4, N5 | RENAME | yes |
 | `C-28` | `stats`, `save_grids` → `reporting.{stats,save_grids}` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today |
 | `C-57` | `variables:` gains a SHORT FORM — a bare key resolves through a registry; a name the registry lacks and that declares no spec is refused | P1 | **SEMANTIC** | no (additive) |
 | `C-58` | `canonical` leaves the USER surface; it stays in the registry | P1 | RENAME | yes |
@@ -800,6 +802,37 @@ This PAIRS WITH `C-49`: `CLIMATE_VARS` and this projections spec are the same
 pattern — a table of variable semantics that should be visible and NAMED
 rather than restated per project. Both land wherever `Q-E` puts defaults, and
 they should land together or the repo grows two conventions for one thing.
+
+#### Reference and future windows — `C-59`, `C-60`
+
+**Ruled by the owner, 2026-08-22.** `reference_window` fits the terminology
+better than `historical_window`, and `future_windows` matches it.
+
+`C-59` also corrects a defect THIS DOCUMENT introduced. `historical_window`
+was a poor name for WF2: its baseline is bounded by the CMIP6 historical
+experiment, which stops in 2014, while `climate.window` is the OBSERVED
+record — two different "historical" periods, different sources, different
+bounds, which `analyze_projections.smk:180` actively compares and warns about
+when they stop aligning. `reference_window` names what the period is FOR (the
+reference that change is computed against, the domain's own term) rather than
+what era it sits in.
+
+It closes a loop too. `reference_window` was considered for WF1's
+`simulation_window` and rejected, because "reference" was not the live
+distinction in that file. In WF2 it IS the live distinction — reference versus
+future is what the workflow computes — so this is the better claim on the
+name, and it settles the WF1 question permanently. The word appears in both
+files' prose without ambiguity, because WF2 builds no model and WF1 computes
+no change factors.
+
+`C-60` gives N4 a clarification worth stating outright: **a window is a
+PERIOD, a horizon is a YEAR.** Today `future_horizons` holds periods while
+`horizontime_climate` holds a year, under one word. After `C-30` and `C-60`
+the division is clean, and WF3 keeps `horizon_year` as the only surviving
+"horizon". Different names also stop implying a coupling that does not
+exist: WF3's forcing window is computed INDEPENDENTLY of `future_windows`,
+and the two matching in a config is a convention the configs document, not a
+mechanism.
 
 ### Group H — `_run_stress_test.yml`
 
@@ -899,8 +932,8 @@ member_overrides: {}
 variables:
   precip:      # bare key = registry-resolved; declare a mapping only to override
   temp:
-historical_window: {start: 1985, end: 2014}
-future_horizons:
+reference_window: {start: 1985, end: 2014}
+future_windows:
   near: {start: 2030, end: 2060}
   far:  {start: 2070, end: 2100}
 relative_change: {min_reference: {precip: 0.1}, max_flagged_months: 3}

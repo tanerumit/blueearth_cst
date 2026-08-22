@@ -122,4 +122,36 @@ moved" holds byte-exactly, not merely within the comparator's tolerance.
 the same condition. That is an unplanned control for `t2608221010`: the flag
 tracks whether a reference sidecar moved, not whether the tree was dirty.
 
-**R13 is sealable.**
+## The registry condition, discharged separately
+
+D-9.7's completion condition is not something either falsifier pass can see: the
+manifest compares artifacts, and `test-full` passing would be equally consistent
+with a scan asserting `<= 1`. Checked directly instead:
+
+- **`CROSS_WORKFLOW_READS` is gone.** No definition survives anywhere in
+  `blueearth_cst/`, the Snakefiles or `tests/` — only prose referring to its
+  retirement. Better than absent: `tests/test_config_composition.py` **pins the
+  absence** with `assert not hasattr(cc, "CROSS_WORKFLOW_READS")`, so a
+  reinstated registry fails a test rather than passing quietly.
+- **The D-9.6 scan asserts a literal zero**, not a bound that happens to hold:
+  `assert value_reads == frozenset()`. Its own message states the reason — an
+  expandable allowlist cannot enforce shrink-only, because a new read plus a
+  matching entry keeps the test green.
+- The scan runs **both directions** (an undeclared read fails on completeness, a
+  declared entry with no live site fails on minimality), and the three
+  enumerations are compared separately so retiring the registry could not
+  silently absorb an identity comparison into a value read.
+- `RELOCATED_KEYS` is pinned in content *and* shape, and every relocated key
+  must land in `shared:` **and** appear in `SHARED_SEAM_KEYS` — so a copy
+  planted in a workflow file still refuses at parse time.
+
+**R13 is sealable: every acceptance criterion is discharged, including the one
+the passes could not test.**
+
+### Note for a future reader
+
+Pass 1's manifest revision (`b4c58d8b`) is superseded by this one and is no
+longer reachable from the branch tip. That is intended. Pass 1's acceptance is
+provable from `b4c58d8b`'s commit content and `baseline-pass-1-result.md`, both
+committed — **not** by running `check_baseline check` today, which answers only
+for pass 2.

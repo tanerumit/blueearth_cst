@@ -1550,14 +1550,14 @@ history, per the WF2 precedent.
 
 ---
 
-## Phase 9 — Configuration modularization (R13 design ACCEPTED)
+## Phase 9 — Configuration modularization (R13 SEALED 2026-08-22)
 
 Registered 2026-08-20. The configuration surface is the first seam the toolbox
 modularizes: today one `--configfile` YAML carries every workflow's settings, so
 any workflow's parameters are editable from any project file, and cross-workflow
 sharing is a convention rather than a checked property.
 
-### R13 — Config tiers (design ACCEPTED 2026-08-21; not yet implemented)
+### R13 — Config tiers (SEALED 2026-08-22)
 
 **What it does.** T1 (project) holds `project:` + `shared:` plus a closed
 `{enabled, config_path}` stanza per workflow; T2 is one config file per workflow,

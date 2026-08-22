@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-61` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-63` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -749,6 +749,8 @@ WF3's window is deliberately derived rather than declared.
 | `C-59` | `historical_year_range: [a, b]` → `reference_window: {start, end}` | N4, N5 | RENAME | yes |
 | `C-60` | `future_horizons.<name>: [a, b]` → `future_windows.<name>: {start, end}` | N4, N5 | RENAME | yes |
 | `C-61` | `future_windows` becomes a LIST; the per-window name is OPTIONAL and defaults to `<start>-<end>` | N4 | **SEMANTIC** | yes |
+| `C-62` | `relative_change.min_reference` → `relative_change.min_denominator` | N5 | RENAME | yes |
+| `C-63` | Group the three member keys: `members` / `member_selection` / `member_overrides` → `members.{preference,selection,overrides}` | S4, P4 | **SEMANTIC** | yes |
 | `C-28` | `stats` → `reporting.stats` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today. **Erratum: originally also listed `save_grids`, which does not exist** |
 | `C-57` | `variables:` gains a SHORT FORM — a bare key resolves through a registry; a name the registry lacks and that declares no spec is refused | P1 | **SEMANTIC** | no (additive) |
 | `C-58` | `canonical` leaves the USER surface; it stays in the registry | P1 | RENAME | yes |
@@ -803,6 +805,49 @@ This PAIRS WITH `C-49`: `CLIMATE_VARS` and this projections spec are the same
 pattern — a table of variable semantics that should be visible and NAMED
 rather than restated per project. Both land wherever `Q-E` puts defaults, and
 they should land together or the repo grows two conventions for one thing.
+
+#### What `relative_change` and `member_overrides` are — `C-62`, `C-63`
+
+**PROPOSED.** The owner asked what these keys do; the rows below follow from
+the answers rather than from a ruling.
+
+**`relative_change` is the dry-month rule** (`dry_month.py`, design §5.6,
+ruling A2) — a guard against dividing by a near-zero reference, because "a 0.2
+mm/day reference January turns a trivial absolute change into a four-figure
+percentage". `min_reference` is the threshold, strictly below which a month is
+flagged; a flagged month emits NaN for the ratio but KEEPS the absolute change
+with status `reference_below_threshold`, since the difference still carries
+information. `max_flagged_months` (3) is where a dry season stops being normal
+and the reader is told at combination level rather than by counting
+footnotes. A `change: relative` variable outside the shipped set gets no
+default and must supply its own.
+
+`C-62` follows from `C-59`, and is a collision THIS DOCUMENT created: renaming
+`historical_year_range` to `reference_window` puts `min_reference` in the same
+file as a key about a reference WINDOW, so it now reads as "minimum reference
+window". It is the divisor, so `min_denominator` says what it is.
+
+**`member_overrides` replaces the global member preference for one model.**
+`members` is an ORDERED PREFERENCE rather than a set, `member_selection:
+first_available` takes at most one member per model, and an override lets a
+model that publishes `f2` variants be handled beside models that publish `f1`
+(`resolution.py`; both policy keys are optional, so no existing config moves).
+
+`C-63` groups the three: they are one concept spread flat, which is the P4
+pattern `basin.gauges` had. It also makes the ordered-preference semantics
+VISIBLE — today that fact lives only in a code comment (t2608192107), which is
+exactly the discoverability complaint P1 makes.
+
+```yaml
+members:
+  preference: [r1i1p1f1, r1i1p1f2]
+  selection: first_available
+  overrides:
+    MOHC/UKESM1-0-LL: [r1i1p1f2]
+```
+
+The asymmetry with plain-list `models:` and `scenarios:` is real but honest:
+members carry a policy, those do not.
 
 #### Erratum — `save_grids` does not exist (`C-28`)
 
@@ -936,6 +981,13 @@ currently sit inside the guarded, digested surface. Its section name is the one
 | `C-37` | A mechanical "declared keys ⊆ read keys" check (answers P2) | — | MECHANISM | no |
 | `C-38` | Extend `scripts/split_project_config.py` (or a sibling) into a v1→v2 rewriter driven by the register above | — | MECHANISM | no |
 
+**Second erratum, same source (2026-08-22).** The appendix lists
+`DEFAULT_MIN_REFERENCE` and `DEFAULT_MAX_FLAGGED_MONTHS` under "No config
+surface, correctly constants". They DO back config keys —
+`relative_change.min_reference` and `.max_flagged_months` — so both belong in
+`C-36`'s list. Two errata from one source in two turns: the re-measure action
+recorded under Group G is not optional.
+
 `C-35` is the only change in this document that is unambiguously correct
 regardless of how everything else resolves, and the only one that is
 non-breaking and independently landable **today**.
@@ -1001,7 +1053,9 @@ catalog: config/catalogs/cmip6_data.yml
 ensemble: cmip6
 models: [...]
 scenarios: [ssp245, ssp585]
-members: [r1i1p1f1]
+members:
+  preference: [r1i1p1f1]
+  selection: first_available
 member_selection: first_available
 member_overrides: {}
 variables:
@@ -1011,7 +1065,7 @@ reference_window: {start: 1985, end: 2014}
 future_windows:
   - {start: 2030, end: 2060}
   - {start: 2070, end: 2100, name: far}   # name optional; defaults to 2070-2100
-relative_change: {min_reference: {precip: 0.1}, max_flagged_months: 3}
+relative_change: {min_denominator: {precip: 0.1}, max_flagged_months: 3}
 reporting:
   stats: [mean, median, std]
 ```

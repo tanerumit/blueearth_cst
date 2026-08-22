@@ -238,16 +238,27 @@ corrected form — here **all three** `type: yaml` targets move, WF3's included,
 because the hoist changes `shared:` and `shared` is in every entry point's
 projection.
 
-**WF3's snapshot moves for a different reason than WF1's and WF2's, and that
-distinction is the check worth making.** WF1's and WF2's composed documents
-*gain* `wflow_outvars` — they did not carry it before, since their projections
-name only their own workflow. WF3's document already carried it, under
-`workflows.build_model` (its projection covers that section); post-hoist the
-same value appears under `shared:` instead. So for WF3 the expected diff is
-**relocation only**. Diff the pre-hoist snapshot preserved at
-`.tmp/scratchpad/2026-08-22_0900/pass1-preserved/snake_config_run_stress_test.yml`
-(sha `cba29d7e…`) against the new one: if any WF3 key changes VALUE rather than
-placement, the hoist did something D-9.7 did not intend — stop there. Beyond the three, the same rule holds: no move in the change factors
+**The three snapshots do not move for the same reason, and that distinction is
+the check worth making.** MEASURED 2026-08-22 — an earlier revision of this
+runbook predicted the split wrongly, so take the table, not the intuition:
+
+| snapshot | expected diff | why |
+|---|---|---|
+| `build_model` | **relocation** | its projection names `workflows.build_model`, which held the key |
+| `run_stress_test` | **relocation** | its projection covers `workflows.build_model` too |
+| `analyze_projections` | **gain only** | its projection never covered the key |
+
+The split is whether the workflow's projection OWNED `wflow_outvars`, not
+whether the workflow is WF3. Diff each new snapshot against the pre-hoist copy
+preserved in `.tmp/scratchpad/2026-08-22_0900/pass1-preserved/`: if any key
+changes VALUE rather than placement, the hoist did something D-9.7 did not
+intend — stop there.
+
+**Check the model artifacts too, not just the config.** `wflow_sbm.toml` is
+where `wflow_outvars` lands, and rule 1.09 `declare_wflow_outputs` re-fires on
+the hoist. In the 2026-08-22 pass both `wflow_sbm.toml` and `staticmaps.nc` came
+back byte-identical to the recorded model reference. If either moves, the hoist
+reached physics. Beyond the three, the same rule holds: no move in the change factors
 or the wf1 discharge, and no *unnamed* move in `q_indicators.csv` (whether one
 is expected at all depends on how the pass-1 gate was ruled).
 

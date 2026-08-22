@@ -46,13 +46,12 @@ updated: 2026-08-22
       pass 1 runs against a detached checkout at `9cbb72a` which carries none
       of it. Consequence: `check_baseline.py check` at HEAD is expected to
       disagree with `dev/baseline/manifest.json` until commit 9
-- [ ] Commit 9 — hoist-phase baseline re-record; **the last step, R13 sealable
-      after it**. Needs the primary re-detached at this branch's tip (it now
-      sits at `9cbb72a`, below the hoist), then the same five runbook steps.
-      Pass 2's acceptance differs from pass 1's: all THREE yaml snapshots move
-      there, because the hoist changes `shared:` and `shared` is in every entry
-      point's projection. `check_baseline check` at HEAD is EXPECTED to disagree
-      until it lands.
+- [x] Commit 9 — hoist-phase baseline re-record. Pass 2 run from the primary
+      detached at `0d256a41`, 7/7 green, `test-full` 3053 passed / 8 skipped.
+      All three yaml snapshots moved; **zero data targets moved, byte-exactly**.
+      Result: `dev/milestones/r13/baseline-pass-2-result.md`.
+
+**R13 is sealable.** Both falsifier passes are run, read and recorded.
 
 ## Pass 1 outcome (2026-08-22)
 

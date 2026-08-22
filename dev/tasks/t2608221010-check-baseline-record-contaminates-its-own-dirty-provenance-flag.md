@@ -34,6 +34,15 @@ written:
 (The manifest is written *after* `git_provenance()`, so it is not the
 contaminant — the sidecar is.)
 
+## Corroborated by the control case, unplanned
+
+R13's **pass 2** re-record (2026-08-22, primary detached at `0d256a41`) moved
+the three config snapshots but **no** data target, so no sidecar was rewritten.
+It recorded `"dirty": false` from a checkout in the same condition as pass 1's,
+which had recorded `true`. The flag tracks "did a reference table move", not
+"was the tree dirty" — which is the defect, stated as an experiment rather than
+a reading of the code.
+
 ## The ordering
 
 `dev/scripts/check_baseline.py`:

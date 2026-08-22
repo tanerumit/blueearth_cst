@@ -749,7 +749,7 @@ WF3's window is deliberately derived rather than declared.
 | `C-59` | `historical_year_range: [a, b]` → `reference_window: {start, end}` | N4, N5 | RENAME | yes |
 | `C-60` | `future_horizons.<name>: [a, b]` → `future_windows.<name>: {start, end}` | N4, N5 | RENAME | yes |
 | `C-61` | `future_windows` becomes a LIST; the per-window name is OPTIONAL and defaults to `<start>-<end>` | N4 | **SEMANTIC** | yes |
-| `C-28` | `stats`, `save_grids` → `reporting.{stats,save_grids}` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today |
+| `C-28` | `stats` → `reporting.stats` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today. **Erratum: originally also listed `save_grids`, which does not exist** |
 | `C-57` | `variables:` gains a SHORT FORM — a bare key resolves through a registry; a name the registry lacks and that declares no spec is refused | P1 | **SEMANTIC** | no (additive) |
 | `C-58` | `canonical` leaves the USER surface; it stays in the registry | P1 | RENAME | yes |
 
@@ -803,6 +803,42 @@ This PAIRS WITH `C-49`: `CLIMATE_VARS` and this projections spec are the same
 pattern — a table of variable semantics that should be visible and NAMED
 rather than restated per project. Both land wherever `Q-E` puts defaults, and
 they should land together or the repo grows two conventions for one thing.
+
+#### Erratum — `save_grids` does not exist (`C-28`)
+
+**Owner, 2026-08-22:** `save_grids` sits oddly under `reporting:` — it is
+about keeping raw data, not about reporting.
+
+Correct, and more so than the objection assumed: **the key was removed in R08
+(S8-08c) and is not part of the config surface at all.**
+`gridded_outputs.py:7` lists it in `REMOVED_GRIDDED_KEYS`; `save_grids: true`
+RAISES and `save_grids: false` warns as stale (`docs/migration-r08-wf2.md`).
+The rejection message gives the reason, which is the owner's reasoning
+reached independently: *"`raw/{series_key}.nc` is the basin slice on the
+source grid and is ALWAYS written, so the gridded series was a near-duplicate
+of it."* Raw is now always kept, so the switch had nothing left to switch.
+
+**This is a defect in this register, not a misplacement.** `C-28` was seeded
+from `parameter-placement.md`'s appendix, measured 2026-08-12, whose own
+header says *"Re-measure rather than trust it."* That instruction was not
+followed. The row is corrected in place rather than superseded, because it
+was never valid.
+
+**Action, before the intake:** RE-MEASURE the whole parameter inventory
+against the code. The appendix seeded other rows in this document and at
+least one of its keys no longer exists; the failure is systematic, not
+isolated. The `Blast radius` section already says re-measure, but it means
+FILES — this is about KEYS, and it is the more dangerous of the two, because
+a stale file path fails loudly and a stale key silently proposes work on
+something that is not there.
+
+**`stats` survives, and stays reporting-class — on precedent, not
+assertion.** It selects which ensemble statistics summarise an unchanged set
+of change factors (`None` = the v2.0 default of mean, median, std). WF3's
+`reporting.surfaces` already chooses which axes and statistics summarise an
+experiment and is deliberately OUTSIDE configuration identity, so "which
+summary is presented" is treated as reporting in this repo even when the
+summary is numeric. `stats` is the same shape.
 
 #### Reference and future windows — `C-59`, `C-60`
 
@@ -978,7 +1014,6 @@ future_windows:
 relative_change: {min_reference: {precip: 0.1}, max_flagged_months: 3}
 reporting:
   stats: [mean, median, std]
-  save_grids: false
 ```
 
 ### `_run_stress_test.yml`

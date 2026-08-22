@@ -15,10 +15,10 @@
 
 | prefix | means | example |
 |---|---|---|
-| `S1`–`S6` | proposed **structure** policy rule | `S2` — three identity classes |
+| `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N6` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
 | `C-01`–`C-38` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
-| `Q-A`–`Q-F` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
+| `Q-A`–`Q-G` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
 from the un-hyphenated `Cnn` finding IDs used in `dev/reviews/` records.

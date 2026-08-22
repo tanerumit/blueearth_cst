@@ -16,9 +16,9 @@
 | prefix | means | example |
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
-| `N1`–`N6` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-47` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
-| `Q-A`–`Q-H` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
+| `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
+| `C-01`–`C-50` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
 from the un-hyphenated `Cnn` finding IDs used in `dev/reviews/` records.
@@ -144,6 +144,13 @@ in every file. Replaces `starttime`/`endtime` and both bare `[a, b]` year pairs.
 
 **N6 — Counts use `_count`.** `realizations_num` → `realizations_count`,
 `step_num` → `steps_count`. (Open: `_count` vs bare plural — `Q-C`.)
+
+**N7 — A key in a shared section never names an ENGINE.** `model.outvars`, not
+`wflow_outvars`. The toolbox is meant to stay flexible: wflow is the model
+today, and another may demand a different set tomorrow, so a key two
+workflows read must not carry the current engine in its own name. Engine
+-specific *paths* are exempt inside a workflow file, because they point at
+files written in the engine's schema (S5) — `engine.build_config` stays.
 
 **Grandfathering.** `dev/reference/naming.md` grandfathers existing names and
 requires a migration note to rename a contract surface. R14 *is* that migration
@@ -311,6 +318,9 @@ The resulting rule, which S6 already states and this note fixes the words for:
 | `C-45` | Retire `workflows.analyze_climate.candidate_sources`; refused at parse time, as `start_month_hyd_year` is | — | DELETE | yes |
 | `C-46` | WF0 figure and comparison-table ordering follows `selected` when set, else declaration order | — | behavioural | no |
 | `C-47` | Adopt the `climate:` CHARTER (below) as the section's definition in the template and `dev/reference/` | S1, N5 | NEW | no |
+| `C-48` | Give the ANALYSIS variable set a config surface — selection from a registry, defaulting to today's `precip`/`temp`/`pet` | S2, P1 | NEW | no |
+| `C-49` | Move the `CLIMATE_VARS` registry out of Python so the default is visible (extends `C-36`) | — | MECHANISM | no |
+| `C-50` | Give the EXTRACTION set a config surface: derived, not declared. Designed now, behaviour deferred — narrower-than-default is REFUSED at parse time until it lands | S5, N7 | NEW | no |
 
 `C-16`–`C-18` are the owner's third question. `clim_historical` (the *what*) and
 `historical_window` (the *how much*) are one concept in two sibling keys —
@@ -422,11 +432,84 @@ candidates maps to `sources: [era5]` + `selected: era5`, which is
 behaviourally identical — so D3 and success criterion 5 both survive despite
 the SEMANTIC class.
 
+#### Which variables (`C-48`–`C-50`)
+
+THREE variable sets exist today and only separating them makes the question
+answerable:
+
+| set | contents | lives in | configurable |
+|---|---|---|---|
+| extraction | whatever the store pulls — precip, temp, radiation, pressure ... | fixed in code, per source branch | no |
+| analysis | `precip`, `temp`, `pet` | `CLIMATE_VARS` (`climate_figures.py:83`) | no |
+| comparison | `precip`, `temp` | `COMPARABLE_VARS` (`compare_sources.py:94`) | no |
+
+`climate_store_rule` carries **no variable parameter at all** — the extraction
+set is not merely unconfigured, it is not part of the store's identity.
+
+**`C-48` — the analysis set.** A textbook P1/M3 case: a user-facing default
+with no config surface, discoverable only by reading source. By S2 it is a
+`reporting:` key rather than a `climate:` one, because which variables get drawn
+cannot move a number — figures are terminal artifacts and dropping one drops a
+table column. Depends on `Q-G` for where `reporting:` lives.
+
+SELECTION from a registry, not DEFINITION. Each entry carries `label`, `unit`,
+`style` and `how`, and the module is blunt about the last one: *"a summed
+temperature is meaningless and a meaned rainfall understates by ~365x."*
+Aggregation semantics do not belong in a user's YAML list; an unknown name is
+refused at parse time, as the code already does. A genuinely new variable stays
+a code change plus a board item.
+
+**Hard constraint.** The honesty narrowing survives untouched.
+`source_climate_vars` refuses to draw temperature for a precip-only source
+because those values are ERA5's, regridded — the owner's ruling of 2026-08-16,
+that a dataset missing a variable gets NO output for it rather than one silently
+filled from another dataset. A configured list is INTERSECTED with what each
+source honestly carries, never used to force a plot into existence.
+
+**Naming.** WF2 already has a `variables:` mapping with a different schema
+(`{source, canonical, units, change}`) that IS identity — it drives the change
+factors. Two keys spelled `variables`, different shapes, different S2 classes,
+is a P3 in the making. This one takes a distinguishing name.
+
+**`C-50` — the extraction set.** *Owner, 2026-08-22: this should become
+configurable, to avoid downloading variables nothing needs. Recorded here;
+the extraction work itself is out of R14.*
+
+DERIVED, not declared. A freely declared list can break WF1 — radiation and
+pressure are extracted because PET is computed from them. A mandatory-core-plus
+-additions shape was considered and rejected under N7: the core would encode
+*wflow's* requirements in our schema, and a second model would mean editing
+both. The correct source of truth is the model adapter DECLARING its own forcing
+requirements, with
+
+    extract = union(selected model's requirements,
+                    each enabled workflow's requirements,
+                    variables the user asked to analyse)
+
+which serves the goal exactly: run WF0 alone and no model requirements enter the
+union at all. That is the real saving, and it is workflow-dependent, which is
+precisely why the store spec is fixed today — it is built to serve WF1.
+
+**A dummy key was considered and rejected.** Shipping the key inert, with
+behaviour to follow, is P2 shipped on purpose: `start_month_hyd_year` was read,
+forwarded to rule 2.06 and never used; `relax_priority` is not forwarded;
+`static_dir` was required and ignored. Four inert parameters, four found by
+hand, zero by machine — and D1 asks whether a proposal answers P2 mechanically.
+Here the failure would also be silent and QUANTITATIVE: a user writes a shorter
+list, expects a smaller download, gets the full extraction, and nothing says so.
+
+Instead, REFUSE rather than lie. The key exists in the schema from R14, so no
+second migration, but only the current full set is accepted; anything narrower
+is refused at parse time naming the board item. This is the repo's own idiom —
+unsupported sources are refused at parse time, and `start_month_hyd_year` was
+made a refusal rather than an ignore. It also keeps the SEMANTICS unfrozen,
+which matters because they depend on a model boundary that does not exist yet.
+
 ### Group E — `model:`, `method:`, `compute:`
 
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
-| `C-19` | `shared.wflow_outvars` → `model.outvars` | S1 | REGROUP | yes — **see `Q-B`** |
+| `C-19` | `shared.wflow_outvars` → `model.outvars` | S1, N7 | REGROUP | yes |
 | `C-20` | `shared.seed`, `shared.water_year_start` → `method.{seed,water_year_start}` | S1, S3 | REGROUP | yes — **see `Q-D`** |
 | `C-21` | `shared.julia_threads` → `compute.julia_threads` | S2, S3 | REGROUP | yes |
 
@@ -435,6 +518,27 @@ flattening it into a guarded section (the owner's Q1 as literally posed) would
 make a thread-count bump trip *"your model was built under different settings"*.
 `C-21` places `compute:` in T1; `C-34` places it in a workflow file. Under S7
 only one of those survives unchanged — see `Q-G`.
+
+#### `model:` is the engine boundary — `Q-B` resolved
+
+**Ruled by the owner, 2026-08-22:** the toolbox aims to stay flexible. wflow
+is the hydrological model today; another may later demand a different set of
+forcing variables and a different build configuration.
+
+That resolves `Q-B`. `model:` is not a group of one — it is the seat of the
+MODEL BOUNDARY, where the engine is named and its cross-workflow declarations
+live. And it upgrades `C-19` from a grouping preference to a correctness fix:
+`wflow_outvars` hardcodes the engine into a key that WF1 and WF3 both read, so
+swapping the model leaves a shared key lying in its own name. That is the
+general case N7 now states.
+
+The output tree already anticipates this: artifacts land under
+`models/hydrology/wflow/`, namespaced by domain AND engine.
+
+Model pluggability itself is NOT an R14 concern — it is an architectural
+milestone of its own. What R14 owes it is not to paint it into a corner:
+`N7`, `model:` as a real section, and refusing to bake a wflow-shaped variable
+core into the config schema (`C-50`).
 
 ### Group F — `_build_model.yml`
 
@@ -623,7 +727,8 @@ candidate_sources: [chirps]
 | ID | question | blocks | current lean |
 |---|---|---|---|
 | `Q-A` | `project.dir` (N3) vs keeping `project_dir` | `C-06` | **Keep `project_dir`** as a named exemption — it is a term of art here (AGENTS.md's two-tier location rule, `warn_if_project_dir_in_repo`, every internal variable). |
-| `Q-B` | Is `model:` holding one leaf (`outvars`) an S4 violation, or correct anticipation? | `C-19` | Undecided. Alternatives: a bare top-level `wflow_outvars:` leaf, or folding it into `climate:`/`method:` (both wrong by kind). |
+| ~~`Q-B`~~ | ~~Is `model:` holding one leaf (`outvars`) an S4 violation?~~ **RESOLVED 2026-08-22**: `model:` is the engine boundary, not a group of one. See Group E. | `C-19` | — |
+| `Q-I` | One variables key or two? `C-48` (analysis) and `C-50` (extraction) must not become one key whose meaning widens on upgrade — a project that set a short list for FIGURES would silently change what gets DOWNLOADED. Same cross-version meaning-swap `data_sources` was rejected for. | `C-48`, `C-50` | Lean TWO, distinctly named. Decide now even though only one ships. |
 | `Q-C` | `_count` suffix vs bare plural (`realizations_count` vs `realizations`) | `C-29`, `C-31` | Undecided; `_count` is unambiguous, bare plural is shorter and YAML already distinguishes int from list. |
 | `Q-D` | Does `method:` earn a heading, or should `seed`/`water_year_start` be bare top-level leaves? | `C-20` | Lean heading — it is where a third method convention would go. |
 | `Q-E` | Where does a config key's DEFAULT live: `config/advanced_settings.yml` (precedent, closed schema, already tested) or beside the key in the template? | `C-36` | **`advanced_settings`** — the only option with an existing enforcement mechanism, and the only one that could grow `C-37`. |

@@ -47,13 +47,15 @@ emits and what its members are called; **R12** changes how it executes. Mirrors
 Phase 5, which did the same for workflow 2. Dev artifacts under
 `dev/milestones/r11/`. See § Phase 8 below.
 
-**Phase 9 — Configuration modularization (R13 design ACCEPTED 2026-08-21).**
-Splits the monolithic project config into a project file (T1) carrying closed
+**Phase 9 — Configuration modularization (R13 SEALED 2026-08-22).**
+Split the monolithic project config into a project file (T1) carrying closed
 `{enabled, config_path}` workflow stanzas plus one per-workflow file (T2),
 composed by a shared loader so the in-memory shape the Snakefiles see is
-unchanged. The first modularization seam: it makes cross-workflow sharing
-checkable at parse time rather than conventional. One milestone, R13; design and
-audit trail under `dev/milestones/r13/`. See § Phase 9 below.
+unchanged, then hoisted `wflow_outvars` to `shared:`. The first modularization
+seam: it makes cross-workflow sharing checkable at parse time rather than
+conventional, and a key read by two workflows now REFUSES to sit in a workflow
+file. One milestone, R13; design and audit trail under `dev/milestones/r13/`.
+See § Phase 9 below.
 
 ```text
 Phase 1 — Foundation (sealed)

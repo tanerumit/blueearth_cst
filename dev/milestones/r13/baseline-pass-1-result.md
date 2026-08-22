@@ -202,3 +202,21 @@ itself dirty. Boarded as `t2608221010`.
 At the lane's HEAD this manifest will still disagree, by design — commit 8's
 hoist changes `shared:`, which is in every entry point's projection. Pass 2
 (commit 9) is what reconciles it.
+
+### Recoverability across pass 2
+
+Pass 2 re-runs the three workflows over the same fixture, so from the moment WF1
+starts until commit 9 lands, the tree can no longer prove what `b4c58d8b`
+asserts. What survives that window:
+
+- **`q_indicators.csv` and the wf1 discharge series are already committed**, not
+  merely fingerprinted — `check_baseline record` writes full-value sidecars, and
+  `dev/baseline/indicator_ref/74ed83c06b2e7e6c.csv` is byte-identical to the live
+  `q_indicators.csv` (verified). These are the artifacts that cost a full run, and
+  they are recoverable from git alone.
+- The two composed config snapshots are **not** content-preserved in git (only
+  their digests are), but they are a deterministic `yaml.safe_dump` of the
+  composed config and re-derivable from the tracked config files at `9cbb72a`
+  without any workflow run. Copies kept anyway, in the session-1 lane at
+  `.tmp/scratchpad/2026-08-22_0900/pass1-preserved/` with a `SHA256.txt`. That
+  path is per-worktree and deletable — it is insurance for pass 2, not a record.

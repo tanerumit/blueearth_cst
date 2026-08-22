@@ -236,7 +236,18 @@ Only after pass 1's acceptance has been READ. One coupled commit:
 The identical five steps. The acceptance is **not** the same shape as pass 1's
 corrected form — here **all three** `type: yaml` targets move, WF3's included,
 because the hoist changes `shared:` and `shared` is in every entry point's
-projection. Beyond the three, the same rule holds: no move in the change factors
+projection.
+
+**WF3's snapshot moves for a different reason than WF1's and WF2's, and that
+distinction is the check worth making.** WF1's and WF2's composed documents
+*gain* `wflow_outvars` — they did not carry it before, since their projections
+name only their own workflow. WF3's document already carried it, under
+`workflows.build_model` (its projection covers that section); post-hoist the
+same value appears under `shared:` instead. So for WF3 the expected diff is
+**relocation only**. Diff the pre-hoist snapshot preserved at
+`.tmp/scratchpad/2026-08-22_0900/pass1-preserved/snake_config_run_stress_test.yml`
+(sha `cba29d7e…`) against the new one: if any WF3 key changes VALUE rather than
+placement, the hoist did something D-9.7 did not intend — stop there. Beyond the three, the same rule holds: no move in the change factors
 or the wf1 discharge, and no *unnamed* move in `q_indicators.csv` (whether one
 is expected at all depends on how the pass-1 gate was ruled).
 

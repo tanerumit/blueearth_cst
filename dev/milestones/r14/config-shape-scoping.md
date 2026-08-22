@@ -260,6 +260,44 @@ engine vocabulary under S5 — R14 renames our key, never theirs.
 Both rows are pure RENAMEs: no semantics move, no number moves, D3 holds. A
 conceptual correction does not automatically breach the non-goals.
 
+#### Why `sources` and not `data_sources` (`C-15`)
+
+**Ruled by the owner, 2026-08-22.** The question was whether `basin.sources.*`
+should be `basin.data_sources.*`, since that is the spelling the current config
+uses.
+
+hydromt's vocabulary is precise, and the vendored guide states it
+(`docs/hydromt-user-guide/02-overview.md:359`):
+
+> `-d, --data`: ... path to the local yaml **data catalog** file
+> `-s, --source`: The **data source** to export
+
+So the CATALOG is the file and a DATA SOURCE is a named entry inside it -
+confirmed by `config/catalogs/deltares_data.yml`, whose top-level keys
+(`basin_atlas_level12_v10:` and the rest) are those entries. Two consequences:
+
+1. `basin.sources.rivers: rivers_lin2019_v1` genuinely *is* a data source in
+   hydromt's sense, so `data_sources` would be engine-accurate.
+2. Today's `data_sources: config/catalogs/deltares_data.yml` is the misnomer -
+   it names a catalog, not a source. `C-40` already corrects it to
+   `project.catalog`, which also matches hydromt's `-d`.
+
+`data_sources` was rejected anyway, because that spelling currently means *the
+catalog file*. Reusing it for *catalog entries* in the same migration gives one
+name two meanings across the version boundary: a user reading a v1 config beside
+a v2 one, or hand-migrating, sees `data_sources` in both and reads the wrong
+thing. That is P3 inverted - one spelling, two concepts - which is worse than
+the naming it would replace, and it is precisely the failure `C-38`'s mechanical
+rewriter cannot protect a human reader from.
+
+Nor is dropping `data_` a divergence from the engine: hydromt's own CLI flag is
+the bare `--source` for exactly this value.
+
+The resulting rule, which S6 already states and this note fixes the words for:
+**`catalog` means the file, `source` means an entry, everywhere.** Hence
+`project.catalog` (`C-40`), `basin.sources.*` (`C-15`) and `climate.source`
+(`C-17`) - one kind, one spelling, in three sections.
+
 ### Group D — `climate:`
 
 | ID | change | rule | class | breaking |

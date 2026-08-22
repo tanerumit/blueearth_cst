@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N6` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-38` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-42` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-G` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -171,8 +171,10 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 |---|---|---|---|---|
 | `C-06` | `project.project_dir` → `project.dir` | N3 | RENAME | yes — **blocked on `Q-A`** |
 | `C-07` | **Delete `project.static_dir`** (= M1) | — | DELETE | yes |
-| `C-08` | `project.data_sources` → `project.catalogs.spatial` | S6, N1 | RENAME | yes |
-| `C-09` | `project.data_sources_climate` → `project.catalogs.climate` | S6, N1 | RENAME | yes |
+| `C-08` | ~~`project.data_sources` → `project.catalogs.spatial`~~ — **superseded by `C-40`** | S6, N1 | RENAME | yes |
+| `C-09` | ~~`project.data_sources_climate` → `project.catalogs.climate`~~ — **superseded by `C-39`** | S6, N1 | RENAME | yes |
+| `C-39` | Move the climate catalog OUT of the project file: `project.data_sources_climate` → `catalog:` in `_analyze_projections.yml` | S1, S6 | REGROUP | yes |
+| `C-40` | `project.data_sources` → `project.catalog` (single leaf, since `C-39` empties the group) | S4, S6, N1 | RENAME | yes |
 
 **S7 constrains `C-02`, `C-03`, `C-28` and `C-34` together.** As drafted, this
 document places `compute:` in both the project file (`C-21`) and the WF3 file
@@ -190,13 +192,30 @@ invariant #2: a key present-vs-absent moves `effective_config_digest`, and
 `_frozen_differences`' key-union diff then refuses every already-run experiment
 in the project. `_WF1_GUARDED` also guards `"project"` **whole**.
 
+`C-39` rests on the same guard defect as `C-07`, and is the stronger case of
+the two. `data_sources_climate` is read by **WF2 alone**
+(`analyze_projections.smk:70`), while `data_sources` is read by all four
+(`analyze_climate.smk:83`, `build_model.smk:90`, `analyze_projections.smk:110`,
+`run_stress_test.smk:107`). Because `_WF1_GUARDED` compares `project` whole,
+repointing the CMIP6 catalog — a pure WF2 concern — today diverges a section
+WF1 owns and refuses experiments built by a workflow that never read the key.
+Moving it into the WF2 file puts it under `_WF2_GUARDED`, where the same edit
+correctly refuses WF2's own snapshot and nothing else. It also reunites the
+catalog with `ensemble: cmip6`, which is one decision split across two files
+today. **Status: proposed, no owner ruling.** The counter-case is that a
+future bias-correction or downscaling reader would have to move it back; that
+is judged unlikely by design, since CMIP6 is a plausibility overlay here and
+never drives a stress test.
+
 ### Group C — `basin:`
 
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
 | `C-10` | `shared.basin` → top-level `basin:` | S1 | REGROUP | yes |
-| `C-11` | `basin.gauge_points` → `basin.gauges.points` | S4 | REGROUP | yes |
-| `C-12` | `basin.gauge_snap_tolerance_m` → `basin.gauges.snap_tolerance_m` | S4, N2 | REGROUP | yes |
+| `C-11` | ~~`basin.gauge_points` → `basin.gauges.points`~~ — **superseded by `C-41`** | S4 | REGROUP | yes |
+| `C-12` | ~~`basin.gauge_snap_tolerance_m` → `basin.gauges.snap_tolerance_m`~~ — **superseded by `C-42`** | S4, N2 | REGROUP | yes |
+| `C-41` | `basin.gauge_points` → **`basin.output_locations`** (flat leaf, no `gauges:` group) | N5 | RENAME | yes |
+| `C-42` | `basin.gauge_snap_tolerance_m` → `basin.delineation.snap_tolerance_m` | S4, N2, N5 | REGROUP | yes |
 | `C-13` | `basin.automatic_subbasins.max_per_basin` → `basin.delineation.max_subbasins` | S4 | REGROUP | yes |
 | `C-14` | `basin.river_uparea_km2` → `basin.delineation.river_uparea_km2` | S4 | REGROUP | yes |
 | `C-15` | `basin.spatial_sources.*` + `basin.hydrography` + `basin.basin_index` → `basin.sources.*` | S6 | REGROUP | yes |
@@ -205,6 +224,41 @@ in the project. `_WF1_GUARDED` also guards `"project"` **whole**.
 — the basin's DEFINITION (`region`, `resolution`), catalog BINDINGS
 (`spatial_sources.*`, `hydrography`, `basin_index`) and delineation TOLERANCES
 (`max_per_basin`, `gauge_snap_tolerance_m`, `river_uparea_km2`).
+
+#### Conceptual correction — these points are not gauges (`C-41`, `C-42`)
+
+**Ruled by the owner, 2026-08-22.** `gauge_points` names the wrong concept.
+The file lists **points of interest**: locations where discharge is computed,
+also used as outlets for subbasin-level calculations. Some are gauges; many
+are not (a candidate dam site, say), and a basin may have none at all. Where a
+gauge does exist, its record lives in `observations_timeseries.csv`, keyed by
+`wflow_id` — so observation data is already decoupled from the point list.
+
+The code says the same thing three ways, and only the config key dissents:
+
+- `config/templates/output_locations_template.csv` carries a `location_role`
+  column whose values are `control` | `observation`, **defaulting to
+  `control`** (`spatial/products.py:310-324`), plus `automatic_outlet` for the
+  delineation-generated rows (`observation_validation.py:66`). A gauge is the
+  minority subtype, not the category.
+- Every internal name is already `output_locations` / `output-locations`: the
+  rule input (`snake_utils.py:1666`), the archived role
+  (`copy_config_files.py:44`), the template filename, and the derived
+  staticgeoms and column names (`shared/gauges.py:10`).
+- The config key **used to be** `workflows.build_model.output_locations` and is
+  still accepted as a legacy alias (`spatial/config.py:83-99`). `C-41` is
+  therefore a REVERT, not new vocabulary.
+
+`C-42` drops `gauge` for the same reason: the tolerance snaps *any* point onto
+the river network, and it belongs with `max_subbasins` and `river_uparea_km2`,
+since all three govern how the network and its outlets are resolved.
+
+Unchanged, deliberately: `blueearth_cst/shared/gauges.py`, hydromt_wflow's
+`setup_gauges`, and the `gauges_output-locations` staticgeoms layer. That is
+engine vocabulary under S5 — R14 renames our key, never theirs.
+
+Both rows are pure RENAMEs: no semantics move, no number moves, D3 holds. A
+conceptual correction does not automatically breach the non-goals.
 
 ### Group D — `climate:`
 
@@ -241,8 +295,13 @@ only one of those survives unchanged — see `Q-G`.
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
 | `C-22` | `model_build_config` / `waterbodies_config` → `engine.build_config` / `engine.waterbodies_config` | S4, S5, N3 | REGROUP | yes |
-| `C-23` | `observations_timeseries` → `observations.timeseries` | S4 | REGROUP | yes |
+| `C-23` | `observations_timeseries` → `observations.timeseries` | S4 | REGROUP | yes — **group of one; see note** |
 | `C-24` | `simulation_window.{starttime,endtime}` → `simulation_window.{start,end}` | N4 | RENAME | yes |
+
+`C-23` makes `observations:` a group of one, which S4 forbids. Either keep a
+flat `observations_timeseries:` leaf, or accept the group as anticipation of a
+second observations key. Unresolved; decide it with `Q-B`, which is the same
+question asked about `model:`.
 
 `simulation_window` stays in the WF1 file: it is read by `build_model.smk` only
 (verified 2026-08-22), so it is correctly T2 despite reading like a shared
@@ -301,19 +360,16 @@ schema_version: 2
 
 project:
   dir: /path/to/my_project
-  catalogs:
-    spatial: config/catalogs/deltares_data.yml
-    climate: config/catalogs/cmip6_data.yml
+  catalog: config/catalogs/deltares_data.yml
 
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833333
-  gauges:
-    points: null
-    snap_tolerance_m: 10000
+  output_locations: null
   delineation:
     max_subbasins: 11
     river_uparea_km2: 32
+    snap_tolerance_m: 10000
   sources:
     hydrography: merit_hydro_ihu
     basin_index: merit_hydro_index
@@ -357,6 +413,7 @@ observations:
 ### `_analyze_projections.yml`
 
 ```yaml
+catalog: config/catalogs/cmip6_data.yml
 ensemble: cmip6
 models: [...]
 scenarios: [ssp245, ssp585]

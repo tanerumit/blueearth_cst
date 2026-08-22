@@ -51,7 +51,31 @@ normalized digests being equal therefore says:
 > the mapping WF3's rules read after the split is value-identical to the mapping
 > they read before it.
 
-**R13 cannot have moved a WF3 number.** No bisect is needed to establish it.
+**R13 cannot have moved a WF3 number by changing a config VALUE.** No bisect is
+needed to establish it.
+
+That covers the config-value channel. R13 also changed WF3 *code*, so the
+channel of "same values, different handling" is closed separately, by
+inspection of the branch diff against `main`:
+
+- `prepare_weagen_config.py` — stops re-reading the project file and takes
+  `realizations_num` and `stress_test_cfg` as params (D-10.6). Same two values,
+  same `_transient_flag` on the same dict.
+- `prepare_cst_parameters.py` — same conversion for the `stress_test` section,
+  with a `load_composed_config` fallback for direct invocation.
+- `run_stress_test.smk` — `stress_test_grid` is now the single source for the
+  grid, which removes a leniency that defaulted a missing `step_num` to 1, and
+  `validate_spell_factor` is new. Both REFUSE configs the baseline does not
+  have (it sets both `step_num`s and twelve 1.0 spell factors), so neither
+  changes a value here.
+
+**`generate_weather.R`, `impose_climate_change.R` and `interchange_contracts.py`
+are not in R13's diff at all** — the generator itself is untouched. So the only
+WF3 code R13 changes is the plumbing that carries values proven identical.
+
+The confound worth stating: the single WF3 run in evidence has both R13 code
+*and* weathergenr 2.0.0 moved at once. There is no (pre-split + 2.0.0) or
+(R13 + 1.2.0) run. The above closes it by inspection instead.
 
 (An earlier scratch note recorded this as an anomaly — "the WF3 snapshot did not
 compose". It composed; the observation was of an identity, not of a no-op.)
@@ -69,9 +93,13 @@ reference table was recorded under `1.2.0`. A different weather generator draws
 different realizations, so WF3's indicators must move.
 
 **The 08-18 Wflow-invocation change is excluded by evidence, not by argument.**
-Rule 1.14 goes through that same changed seam, and WF1's discharge target was
-re-derived in this pass and reproduces the manifest exactly. The seam is
-numerically inert. `cf5daa0` is the only remaining change that reaches WF3 and
+Rules 1.14 and 3.15 did not receive the same edit in `850fb17` — 1.14 moved from
+`-e "using Wflow; Wflow.run()"` to a new driver file, 3.15 already had one — but
+both now call the **same function**, `WflowProgress.run_with_progress`
+(`blueearth_cst/shared/wflow_progress.jl`), which mirrors upstream's
+`Wflow.run(tomlpath)` clause for clause and touches no initial state, warm-up or
+routing. WF1's discharge target was re-derived in this pass and reproduces the
+manifest exactly, so that shared code is numerically inert. `cf5daa0` is the only remaining change that reaches WF3 and
 not WF1 — which is also why WF1 matching is no longer the unexplained
 counter-evidence an earlier note treated it as, and the manifest's mixed
 provenance is not needed to explain it.

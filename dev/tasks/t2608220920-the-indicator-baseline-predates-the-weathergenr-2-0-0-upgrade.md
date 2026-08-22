@@ -28,10 +28,27 @@ updated: 2026-08-22
 
 ## Why it is the generator and not the 08-18 Wflow change
 
-Rule 1.14 goes through the same changed invocation seam, and WF1's discharge
-target — re-derived in pass 1 — reproduces the manifest exactly. That seam is
-numerically inert. `cf5daa0` is the only remaining change that reaches WF3 and
-not WF1.
+`850fb17` (2026-08-18) changed how both rule 1.14 and rule 3.15 enter Wflow. The
+exclusion does not rest on the two being "the same commit" — **they call the
+same function.** Verified rather than assumed, because 1.14 and 3.15 did NOT
+receive the same edit (1.14 moved from `-e "using Wflow; Wflow.run()"` to a new
+driver file; 3.15 already had one and only gained a label):
+
+- `blueearth_cst/model/run_wflow.jl` (1.14) calls
+  `run_with_progress(Wflow, tomlpath; label="wflow")`
+- `blueearth_cst/experiment/run_wflow_batch.jl` (3.15) calls
+  `run_with_progress(Wflow, t; label=tag)`
+
+Both resolve to `WflowProgress.run_with_progress` in
+`blueearth_cst/shared/wflow_progress.jl`, which does `config =
+Wflow.Config(tomlpath)` and then `Wflow.run(config)` inside a `with_logger`
+that mirrors upstream's `Wflow.run(tomlpath)` clause for clause. The only
+deviation is a tee'd frame logger riding alongside Wflow's file logger. Nothing
+in it touches initial state, warm-up or routing.
+
+So WF1's discharge — re-derived in pass 1 and reproducing the manifest exactly —
+exercises the *same code* WF3 runs through. The seam is numerically inert, and
+`cf5daa0` is the only remaining change that reaches WF3 and not WF1.
 
 `cf5daa0` is behavioural, not a version bump: `relax_priority` -> `relax_order`
 at both entry points, and its own message records the argument was **inert on

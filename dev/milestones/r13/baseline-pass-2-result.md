@@ -155,3 +155,33 @@ longer reachable from the branch tip. That is intended. Pass 1's acceptance is
 provable from `b4c58d8b`'s commit content and `baseline-pass-1-result.md`, both
 committed — **not** by running `check_baseline check` today, which answers only
 for pass 2.
+
+## Sealing judgment at close — NOT sealed, and why
+
+`dev/reference/sealed-records.yml`'s header puts this call at milestone close,
+so it is made here rather than left implicit.
+
+**None of R13's records are registered as sealed, deliberately.** The registry's
+criterion is narrower than "is a milestone document": both existing milestone
+entries carry `superseded_by` and `current_truth`, because a sealed record is one
+that a *later* milestone has replaced but which must stay readable since code
+still cites its identifiers. R13's design is not superseded — it **is** current
+truth, and sealing a current contract would freeze the document people are
+supposed to keep accurate.
+
+One half of the condition already holds: `config-tiers-design.md` is cited by
+D-number throughout the code (`D-8.1`, `D-9.6`, `D-9.7`, `D-10.6`, `D-11.1`,
+`D-11.2` appear in Snakefiles, `config_composition.py`, `copy_config_files.py`
+and the tests), so those identifiers must stay resolvable. Only supersession is
+missing.
+
+**Trigger to revisit:** when a later milestone replaces the tiered-config
+contract, seal `config-tiers-design.md` and `config-tiers-review-record.md` then,
+naming the successor as `current_truth`. The two `baseline-pass-*-result.md`
+files record measurements rather than a contract and are cited by nothing, so
+they need a banner at most, not registration.
+
+`baseline-pass-runbook.md` is explicitly **not** a seal candidate in either
+direction: it is an operating procedure, and it was corrected twice on 2026-08-22
+against what the passes actually did. Sealing it would preserve the wrong
+predictions it started with.

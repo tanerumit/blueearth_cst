@@ -112,6 +112,19 @@ sections, and no key of theirs is renamed by this milestone.
 share a section. `project.catalogs.*` are files; `basin.sources.*` and
 `climate.source` are entries inside those files.
 
+**S7 — A section name is owned by exactly one tier.** A name is either T1-only,
+or it stays nested under `workflows.<name>` and is never hoisted. Two workflow
+files cannot both declare a section that composes to the document's top level.
+
+S7 is not a preference; it is forced. `HOISTED_SECTIONS` (D-10.4) maps each
+hoisted name to ONE owning workflow and lifts it to a single top-level
+`config["reporting"]`, and `config_composition.py:306-323` puts every *foreign*
+hoisted name into the T2 rejection set. `T1_TOP_LEVEL`'s own comment names the
+failure this prevents: *"the project would run with an undefined precedence
+between two records of the same section."* So a second workflow file declaring
+`reporting:` is refused at parse time **today**, and `compute:` cannot appear in
+both T1 and a workflow file without the same collision.
+
 ## Proposed policy — naming
 
 **N1 — No new abbreviations.** `clim_historical` → `climate.source`. Exempt:
@@ -148,7 +161,7 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 |---|---|---|---|---|
 | `C-01` | Retire `shared:` as a heading; promote its contents to top-level kind sections | S1 | REGROUP | yes |
 | `C-02` | Introduce `compute:` — the section whose contents cannot change results | S2 | NEW | yes |
-| `C-03` | Generalize `reporting:` from WF3-only to any workflow file | S2 | NEW | no (additive) |
+| `C-03` | Generalize `reporting:` from WF3-only to any workflow file | S2 | NEW | yes — **refused today; blocked on `Q-G`** |
 | `C-04` | Replace hand-maintained `_WF1_GUARDED` with "guard everything except `compute:`/`reporting:`" | S2, S3 | MECHANISM | behavior-visible |
 | `C-05` | Add `schema_version: 2` to the project file; refuse a v1 set with a message naming the migration command | — | NEW | yes (by design) |
 
@@ -160,6 +173,13 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 | `C-07` | **Delete `project.static_dir`** (= M1) | — | DELETE | yes |
 | `C-08` | `project.data_sources` → `project.catalogs.spatial` | S6, N1 | RENAME | yes |
 | `C-09` | `project.data_sources_climate` → `project.catalogs.climate` | S6, N1 | RENAME | yes |
+
+**S7 constrains `C-02`, `C-03`, `C-28` and `C-34` together.** As drafted, this
+document places `compute:` in both the project file (`C-21`) and the WF3 file
+(`C-34`), and `reporting:` in both the WF2 file (`C-28`) and the WF3 file
+(already there). Both collide with the closed hoist map. `Q-G` is the ruling
+that resolves it; until then those four rows are proposals with a known
+mechanical obstacle, not merely breaking changes.
 
 `C-07` evidence: read only by `build_model.smk:89`, used only to build the two
 fallback prefixes at `:163-164`; explicitly *not* read by WF3 since 2026-08-13
@@ -213,6 +233,8 @@ re-derived, not merely edited.
 `C-21` is the clearest S3 case: `julia_threads` cannot change a number, and
 flattening it into a guarded section (the owner's Q1 as literally posed) would
 make a thread-count bump trip *"your model was built under different settings"*.
+`C-21` places `compute:` in T1; `C-34` places it in a workflow file. Under S7
+only one of those survives unchanged — see `Q-G`.
 
 ### Group F — `_build_model.yml`
 
@@ -233,7 +255,7 @@ window.
 | `C-25` | `clim_project` → `ensemble` | N1, N5 | RENAME | yes |
 | `C-26` | `historical_year_range: [a, b]` → `historical_window: {start, end}` | N4 | RENAME | yes |
 | `C-27` | `future_horizons.<name>: [a, b]` → `future_horizons.<name>: {start, end}` | N4 | RENAME | yes |
-| `C-28` | `stats`, `save_grids` → `reporting.{stats,save_grids}` | S2 | REGROUP | yes |
+| `C-28` | `stats`, `save_grids` → `reporting.{stats,save_grids}` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today |
 
 `C-25` also removes a live collision: `clim_project` reads as "the project's
 climate" while meaning the projection ensemble family, next to a `project:`
@@ -254,7 +276,8 @@ section that means something else entirely.
 perturbation axes and must not read as siblings of `temp:`/`precip:`; a named
 `spell_factors:` group says that structurally instead of in a comment.
 `C-34` is S2's second payoff: three WF3 keys that cannot change a number
-currently sit inside the guarded, digested surface.
+currently sit inside the guarded, digested surface. Its section name is the one
+`Q-G` must place: T1-only, or per-workflow and never hoisted.
 
 ### Group I — carried forward from `parameter-placement.md`
 
@@ -401,6 +424,7 @@ candidate_sources: [chirps]
 | `Q-D` | Does `method:` earn a heading, or should `seed`/`water_year_start` be bare top-level leaves? | `C-20` | Lean heading — it is where a third method convention would go. |
 | `Q-E` | Where does a config key's DEFAULT live: `config/advanced_settings.yml` (precedent, closed schema, already tested) or beside the key in the template? | `C-36` | **`advanced_settings`** — the only option with an existing enforcement mechanism, and the only one that could grow `C-37`. |
 | `Q-F` | Does S2 actually permit `_WF1_GUARDED` to become "everything except `compute:`/`reporting:`"? | `C-04` | Unknown. **Needs a probe against the digest and freeze code before R14 promises it.** |
+| `Q-G` | Under S7, how are `compute:` and `reporting:` placed? (a) T1-only — every workflow's performance/description keys move to the project file; (b) per-workflow and never hoisted — they nest under `workflows.<name>` and lose the freeze exemption that hoisting buys; (c) distinct names per tier. | `C-02`, `C-03`, `C-28`, `C-34` | Lean (a) for `compute:` (a thread count and a batch size are the same kind of knob and belong together), and **keep `reporting:` as it is** — WF3-owned and hoisted — since (b) would revoke the caption-edit exemption that is the whole reason it was hoisted. That makes `C-03` a no-op and `C-28` a rename onto a T1 `reporting:`. |
 
 ## Constraints
 

@@ -23,4 +23,5 @@ updated: 2026-08-22
 - [ ] Probe Q-F: can `_WF1_GUARDED` be derived from section membership?
 - [ ] Probe D3: is every register row expressible as a pure path rewrite (C-38)?
 - [ ] Land C-35 independently - non-breaking under every outcome
+- [ ] Point `dev/working/parameter-placement.md` at this document (out of this lane's declared scope; needs its own task)
 - [ ] Intake + design on the R13 pattern, then the review loop

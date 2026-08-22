@@ -104,12 +104,31 @@ pixi run test-full -rs *> .tmp/r13-test-full-split.log
 before the workflows and its six fixture skips were then misread as step 1
 having failed. A `test-full` log older than the run tree is not evidence.
 
-**Read the skip list, do not predict it.** Six of the nine skips seen in the
-lane are the fixture-dependent layer itself (`temp() artifact absent`, the
-stale weathergen fixture). After step 1 those have a freshly-run project to
-read, so they should now RUN — and they are the only tests in the suite that
-read a real config snapshot. If they still skip, step 1 did not do what it
-should have, and nothing downstream is evidence.
+**Read the skip list, do not predict it.** Expect **9 -> 8 skips, and one more
+pass**, measured 2026-08-22: only
+`test_interchange_contracts.py:976` (the `weathergen_config.yml` fixture
+predating weathergenr 2.0.0) resolves from a WF run.
+
+The **five `temp() artifact absent` skips do NOT resolve** — they want WF3's
+per-realization netCDFs, which are `temp()` and deleted unless WF3 also runs
+with `--notemp`. Step 1 mandates the flag for WF1 only. Add it to the WF3 line
+too if you want those five, and budget the disk for `RLZ_NUM x ST_NUM` members.
+The three `needs --run-integration` skips are opt-in and never resolve here.
+
+**These are NOT "the only tests that read a real config snapshot"** — an earlier
+revision of this runbook said so and it is false, which matters because it made
+a green suite look like it proved nothing about the composed snapshot. The
+snapshot-reading coverage is:
+
+```powershell
+pixi run pytest tests/test_project_tree_inventory.py tests/test_snapshot_config_rules.py `
+    tests/test_copy_config_files.py tests/test_check_project_consistency.py `
+    tests/test_guard_invalidation.py -q -rs
+```
+
+166 tests, **zero skips**, all green against the freshly-run split tree on
+2026-08-22. That is the composed snapshot's real coverage; run it explicitly
+rather than inferring it from the full-suite skip list.
 
 ### 3. Read the falsifier
 

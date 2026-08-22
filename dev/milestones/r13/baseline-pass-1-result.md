@@ -134,6 +134,27 @@ Consistent with this, the drift is reproducible and seed-stable: three WF3 runs
 at different core counts and batch compositions were byte-identical
 (`63120f16`), so batch composition has no numeric effect.
 
+## Step 2 — the suite, against the freshly-run tree
+
+Re-run 2026-08-22 (yesterday's `test-full` was taken at 20:48, *before* the
+workflows ran at 22:24-00:34, so it was never evidence about this tree):
+
+    3044 passed, 8 skipped, 1 xfailed in 725.03s
+
+Against the pre-run 3043 / 9: the `weathergen_config.yml` fixture skip resolved
+and now passes. The five `temp() artifact absent` skips did **not** — they want
+WF3's per-realization netCDFs, and only WF1 is run with `--notemp`. The three
+`needs --run-integration` skips are opt-in.
+
+The runbook claimed those six were "the only tests in the suite that read a real
+config snapshot." **That is false**, and it mattered: it made a green suite look
+like it said nothing about the artifact this milestone produces. The actual
+coverage — `test_project_tree_inventory`, `test_snapshot_config_rules`,
+`test_copy_config_files`, `test_check_project_consistency`,
+`test_guard_invalidation` — is **166 tests, zero skips, all green** against this
+tree. The composed snapshot is covered and the coverage passes. Runbook
+corrected.
+
 ## Also observed, and not R13's
 
 - **Missing DAG edge for `river_attributes`.** Rule 1.06 consumes

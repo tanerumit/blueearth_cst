@@ -8,7 +8,7 @@ area: config
 origin: R13
 queue:
 created: 2026-08-21
-updated: 2026-08-21
+updated: 2026-08-22
 ---
 
 > [!note] Overview
@@ -36,15 +36,41 @@ updated: 2026-08-21
 - [x] Commit 4 — composed snapshot, record-only T2 registration (`0496d44`)
 - [x] Commit 5 — the raw-T1 tools compose (`a457157`)
 - [x] Commit 7a — migration guide + reference sweep (`a18352b`)
-- [ ] Commit 7b — **split-phase baseline re-record**. BLOCKED on the primary
-      checkout: §16.5(b) forbids recording it from a lane. Runbook:
+- [~] Commit 7b — **split-phase baseline re-record**. Pass 1 was RUN from the
+      primary (detached at `9cbb72a`) on 2026-08-21 and its result is read and
+      recorded: `dev/milestones/r13/baseline-pass-1-result.md`. **The split is
+      output-neutral.** The re-record itself is now blocked on an owner ruling,
+      not on the primary — see § The gate in that record. Runbook (acceptance
+      criteria corrected 2026-08-22):
       `dev/milestones/r13/baseline-pass-runbook.md`
 - [x] Commit 8 — the `wflow_outvars` hoist (`e3c9cbb`). Landed AHEAD of 7b by
       owner decision: D-9.7 sequences the validation, not the history, and
       pass 1 runs against a detached checkout at `9cbb72a` which carries none
       of it. Consequence: `check_baseline.py check` at HEAD is expected to
       disagree with `dev/baseline/manifest.json` until commit 9
-- [ ] Commit 9 — hoist-phase baseline re-record; R13 sealable after it
+- [ ] Commit 9 — hoist-phase baseline re-record; R13 sealable after it.
+      Pass 2's acceptance differs from pass 1's: all THREE yaml snapshots move
+      there, because the hoist changes `shared:` and `shared` is in every entry
+      point's projection.
+
+## Pass 1 outcome (2026-08-22)
+
+Verified from the primary, not argued:
+
+- **wf1 discharge unchanged**, **both CMIP6 change-factor CSVs unchanged** — the
+  split's output-neutrality test, passed.
+- WF1's and WF2's config snapshots moved off the shared `00ef44f7` to distinct
+  hashes, as designed (D-11.1).
+- **WF3's snapshot did NOT move, and that is the WF3 neutrality proof.** Its
+  `CONFIG_PROJECTION` is derived from `guarded_sections`, so R(run_stress_test)
+  covers every populated stanza of this config and composition is an identity on
+  it. Because the snapshot is a dump of the mapping WF3's rules actually read,
+  an unchanged digest means WF3 reads value-identical config across the split.
+  The runbook predicted this one would move; it was wrong, and is corrected.
+- `q_indicators.csv` differs (610/630 rows) — **not R13's**. The reference was
+  recorded under weathergenr 1.2.0 on 2026-08-16; `cf5daa0` completed the 2.0.0
+  transition on 2026-08-17. Boarded as `t2608220920`.
+- Blocking DAG defect found and boarded for `main`: `t2608220915`.
 
 Verified in the lane: `test-full` 3043 passed / 9 skipped / 1 xfailed,
 `test-contract` 70, `tree-check` MAP CLEAN, lint + format clean. Six of the

@@ -66,13 +66,43 @@ snakemake all -c 3 -s run_stress_test.smk --configfile $cfg `
     *> .tmp/r13-wf3.log
 ```
 
-Read the tail of each log before moving on.
+Read the tail of each log before moving on. **Read the tail, not the exit
+code** — on 2026-08-21 all three of these produced only
+`snakemake: error: argument --configfile/--configfiles: expected at least one
+argument` because `$cfg` was empty in the shell they ran in, and the failure is
+invisible unless you look.
+
+**Rule 1.06 will fail first on any project whose spatial layer predates
+`c6d35ba`**, with `NoDataException` on `data/spatial/geoms/river_attributes.
+geojson`. That file is a declared output of rule 1.03 but is consumed by 1.06
+through the spatial catalog at runtime and not declared as its input, so nothing
+schedules 1.03. It reads like bad data and is a missing DAG edge. Until that is
+fixed on `main`, force the producer first:
+
+```powershell
+snakemake -c 3 -s build_model.smk --configfile $cfg `
+    --forcerun delineate_spatial_units --until delineate_spatial_units
+```
+
+This regenerates `rivers.geojson` to the new definition. Verified numerically
+inert on the baseline fixture: `staticmaps.nc`, `wflow_sbm.toml`,
+`locations.geojson` and `location_registry.csv` all stay byte-identical and the
+wf1 discharge still matches.
+
+Rule 3.06 will then refuse the experiment (`ModelDriftError`, forcing
+`inmaps_historical.nc` moved) because WF1 rewrote the forcing. The move is
+byte-level, not numeric — WF1's discharge is unchanged across it — so
+re-recording the model reference is correct here.
 
 ### 2. Full suite, there, redirected to a file
 
 ```powershell
 pixi run test-full -rs *> .tmp/r13-test-full-split.log
 ```
+
+**Run this AFTER step 1, and check that you did.** On 2026-08-21 it was run
+before the workflows and its six fixture skips were then misread as step 1
+having failed. A `test-full` log older than the run tree is not evidence.
 
 **Read the skip list, do not predict it.** Six of the nine skips seen in the
 lane are the fixture-dependent layer itself (`temp() artifact absent`, the
@@ -87,25 +117,43 @@ should have, and nothing downstream is evidence.
 python dev/scripts/check_baseline.py check
 ```
 
-**Acceptance — exactly this, nothing else:**
+**Acceptance — CORRECTED 2026-08-22 after the pass was actually run.** The
+original prediction below it was wrong in both directions; the evidence is in
+`baseline-pass-1-result.md` and the corrected form is:
 
-- **exactly three targets differ**, and all three are `type: yaml` config
-  snapshots:
+- **exactly two `type: yaml` targets differ:**
   - `test_case/test_local/config/runs/snake_config_build_model.yml`
   - `test_case/test_local/config/runs/snake_config_analyze_projections.yml`
-  - `test_case/test_local/experiments/experiment/config/snake_config_run_stress_test.yml`
-- **zero data targets differ** — the two CMIP6 change-factor CSVs and the wf1
-  discharge series must be unchanged.
+- **the WF3 snapshot
+  (`experiments/experiment/config/snake_config_run_stress_test.yml`) must NOT
+  move**, and its staying at `00ef44f7…` is the split's WF3 neutrality proof
+  rather than a failure to compose. WF3's `CONFIG_PROJECTION` is derived from
+  `guarded_sections`, so R(run_stress_test) covers `build_model` and
+  `analyze_projections` as well as its own section — every *populated* stanza of
+  this config. Composition is an identity here, and because the snapshot is a
+  dump of the very mapping WF3's rules read, equal digests mean WF3 reads
+  value-identical config before and after the split. **If this one moves, that
+  is the defect.**
+- **the two CMIP6 change-factor CSVs and the wf1 discharge series must be
+  unchanged.** These are the split's real output-neutrality test.
+- **`q_indicators.csv` WILL differ, and it is not R13's.** The reference table
+  was recorded 2026-08-16 under weathergenr 1.2.0; `cf5daa0` completed the
+  1.2.0 -> 2.0.0 transition on 2026-08-17, and a different generator draws
+  different realizations. Expect a low-flow-weighted shift (baseflow index and
+  the driest-month/7-day-min metrics moving tens of percent while
+  `q_annual_mean` moves ~1%) — that is the signature of re-drawn realizations,
+  since preserving the mean is what a fitted generator does. Do **not** read it
+  as evidence against the split.
 
-The three yaml targets move because the snapshot stopped being a byte copy of
-the project file and became the workflow's composed document (D-11.1). All
-three currently share one hash (`00ef44f7…`) precisely because they were
-identical whole-config copies; after this they differ from each other, which is
-the change being made.
+The two yaml targets move because the snapshot stopped being a byte copy of the
+project file and became the workflow's composed document (D-11.1). They shared
+one hash (`00ef44f7…`) with each other and with WF3's precisely because all
+three were identical whole-config copies; after this the two narrow ones differ
+from each other and from WF3's, which is the change being made.
 
-**A data target that moves is a defect, not an expected shift.** Stop and
-report it — the whole output-neutrality claim of the split is that this cannot
-happen.
+**A data target that moves for a reason you cannot name is a defect.** The
+`q_indicators` shift above is named and dated; anything beyond it — and any move
+at all in the change factors or the wf1 discharge — stops the pass.
 
 ### 4. `semantic_tree_diff`, if the tree shape moved
 
@@ -113,9 +161,10 @@ happen.
 python dev/scripts/semantic_tree_diff.py --help   # see §16.4 for the prediction
 ```
 
-Expected: a **predicted, enumerated FAIL on those three files and nothing
-else** — `compare_copied_config` adjudicates snapshot CONTENT, so it is not
-shape-only.
+Expected: a **predicted, enumerated FAIL on the two moved snapshots and
+nothing else** — `compare_copied_config` adjudicates snapshot CONTENT, so it is
+not shape-only. (§16.4 says three; see the corrected acceptance above — WF3's
+snapshot does not move in pass 1.)
 
 ### 5. Re-record, and only then
 
@@ -124,8 +173,17 @@ python dev/scripts/check_baseline.py record
 git add dev/baseline/manifest.json
 ```
 
-Commit message should state the three moved targets by name and that zero data
-targets moved.
+Commit message should state the moved targets by name, and must say explicitly
+that the `q_indicators.csv` move is `cf5daa0`'s weathergenr 2.0.0 upgrade and
+not the split's — otherwise the manifest revision folds two unrelated causes
+into one record with neither separately attributable, which is exactly what
+`t2608071201` watches for.
+
+**This step is gated.** See `baseline-pass-1-result.md` § The gate: recording
+here bakes the generator's indicator change into the same revision as R13's
+snapshot changes. The alternative is to re-record the indicator baseline on
+`main` first, attributed to `cf5daa0`, so R13's pass has a control in which zero
+data targets move. Do not record without that ruling.
 
 ---
 
@@ -156,8 +214,12 @@ Only after pass 1's acceptance has been READ. One coupled commit:
 
 ## Pass 2 — the hoisted state
 
-The identical five steps. The acceptance is **the same shape**: exactly the
-three `type: yaml` targets differ, zero data targets.
+The identical five steps. The acceptance is **not** the same shape as pass 1's
+corrected form — here **all three** `type: yaml` targets move, WF3's included,
+because the hoist changes `shared:` and `shared` is in every entry point's
+projection. Beyond the three, the same rule holds: no move in the change factors
+or the wf1 discharge, and no *unnamed* move in `q_indicators.csv` (whether one
+is expected at all depends on how the pass-1 gate was ruled).
 
 The digests move again here, deliberately and expectedly: `shared:` is in every
 entry point's projection, so `effective_config_digest` shifts for all four, and

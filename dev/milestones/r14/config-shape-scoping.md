@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-56` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-58` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -747,10 +747,59 @@ WF3's window is deliberately derived rather than declared.
 | `C-26` | `historical_year_range: [a, b]` → `historical_window: {start, end}` | N4 | RENAME | yes |
 | `C-27` | `future_horizons.<name>: [a, b]` → `future_horizons.<name>: {start, end}` | N4 | RENAME | yes |
 | `C-28` | `stats`, `save_grids` → `reporting.{stats,save_grids}` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today |
+| `C-57` | `variables:` gains a SHORT FORM — a bare key resolves through a registry; a name the registry lacks and that declares no spec is refused | P1 | **SEMANTIC** | no (additive) |
+| `C-58` | `canonical` leaves the USER surface; it stays in the registry | P1 | RENAME | yes |
 
 `C-25` also removes a live collision: `clim_project` reads as "the project's
 climate" while meaning the projection ensemble family, next to a `project:`
 section that means something else entirely.
+
+#### The variable spec is rigorous and costly — `C-57`, `C-58`
+
+**PROPOSED. The owner ruled the diagnosis, not yet the fix (2026-08-22):**
+the four-field spec is rigorous but not user friendly.
+
+What the two disputed fields actually do, measured:
+
+- **`change` is ARITHMETIC, not plotting.** `change_factor_table.py:122` — it
+  "decides whether `relative_value` is a percent or a ...". It is what makes
+  precipitation a ratio and temperature a delta, so a wrong value MOVES
+  NUMBERS. `variable_spec.py` exists because stage B used to branch on the
+  literal string `"precip"`, so a new relative variable named anything else
+  was differenced as a temperature, silently. Falsifier K7 pins it.
+- **`canonical` does almost nothing.** Its only consumers are the display
+  label `long_name`, its own validation, and one accessor — nothing branches
+  on it. The module admits why: *"in v2.0 there is one source frequency
+  (`Amon`) so it is the identity."* Most typing, least weight.
+
+The proposed fix is a REGISTRY, not a retreat to bare names:
+
+```yaml
+variables:
+  precip:                                                     # registry-resolved
+  temp:
+  windspeed: {source: sfcWind, units: m/s, change: absolute}   # not in the registry
+```
+
+A bare key means "use the registry entry" — the null-reads-as-unset idiom the
+repo already uses for `experiment_name` and `climate.selected`. A name the
+registry does not know and that declares no spec is REFUSED.
+
+That preserves K7 and is stronger than today. The failure 5e fixed was an
+unknown variable silently acquiring temperature semantics; refusal beats both
+that and the current state, in which a user can still hand-type the wrong
+`change:`. The actual defect 5e cured was semantics living in a branch buried
+in the reducer — not the use of names as keys — and an explicit table keeps
+that cure.
+
+`C-58` keeps `canonical` in the registry, where it still feeds `long_name` and
+stays ready for a second source frequency, without every project restating an
+identity.
+
+This PAIRS WITH `C-49`: `CLIMATE_VARS` and this projections spec are the same
+pattern — a table of variable semantics that should be visible and NAMED
+rather than restated per project. Both land wherever `Q-E` puts defaults, and
+they should land together or the repo grows two conventions for one thing.
 
 ### Group H — `_run_stress_test.yml`
 
@@ -848,8 +897,8 @@ members: [r1i1p1f1]
 member_selection: first_available
 member_overrides: {}
 variables:
-  precip: {source: precip, canonical: rate,  units: mm/day, change: relative}
-  temp:   {source: temp,   canonical: state, units: degC,   change: absolute}
+  precip:      # bare key = registry-resolved; declare a mapping only to override
+  temp:
 historical_window: {start: 1985, end: 2014}
 future_horizons:
   near: {start: 2030, end: 2060}

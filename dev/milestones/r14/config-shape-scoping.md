@@ -704,6 +704,41 @@ template comment as well as here.
 (verified 2026-08-22), so it is correctly T2 despite reading like a shared
 window.
 
+#### Why `simulation_window` keeps its name
+
+**Considered and rejected 2026-08-22 (owner):** it is really the *reference*
+simulation window, but `reference_simulation_window` is too long.
+
+Two disambiguations are available inside `_build_model.yml`, and only one is
+live there:
+
+- **"simulation"** separates it from `climate.window` — the RUN period versus
+  the EXTRACTION period. That is the confusion users actually hit, and the
+  template already spends four lines on it.
+- **"reference"** separates it from the stress-test runs — but those live in
+  `_run_stress_test.yml`, and their window is not even a declared key (it is
+  derived from `horizon_year` +/- `run_length`/2). That distinction is not
+  present at the point of reading.
+
+The disambiguating word should resolve the confusion available where the reader
+is standing. There is also a file-scope reading of N3: everything in
+`_build_model.yml` IS the reference run, so "reference" in the key repeats the
+file's own subject, exactly as `clim_historical` repeated its section's.
+
+N4 fixes the suffix, so the shorter candidates were `reference_window` and
+`run_window`. `reference_window` is no longer than the current name and becomes
+the better choice IF WF3's run window ever becomes an explicit key, since both
+distinctions would then go live at once — worth revisiting at that point, not
+before. "Reference" goes in the template comment, where it can be a sentence
+rather than a prefix. `C-24` (`starttime`/`endtime` -> `start`/`end`) is
+unaffected either way.
+
+**An adjacent P3, recorded so it is a known asymmetry rather than a future
+discovery:** `simulation_window` (WF1, declared, a date span) and `run_length`
+(WF3, declared, an integer of years) describe the same kind of thing — how long
+the model runs — in two spellings and two shapes. Not unified now, because
+WF3's window is deliberately derived rather than declared.
+
 ### Group G — `_analyze_projections.yml`
 
 | ID | change | rule | class | breaking |

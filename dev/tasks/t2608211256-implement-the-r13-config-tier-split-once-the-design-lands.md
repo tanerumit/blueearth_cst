@@ -36,22 +36,23 @@ updated: 2026-08-22
 - [x] Commit 4 — composed snapshot, record-only T2 registration (`0496d44`)
 - [x] Commit 5 — the raw-T1 tools compose (`a457157`)
 - [x] Commit 7a — migration guide + reference sweep (`a18352b`)
-- [~] Commit 7b — **split-phase baseline re-record**. Pass 1 was RUN from the
-      primary (detached at `9cbb72a`) on 2026-08-21 and its result is read and
-      recorded: `dev/milestones/r13/baseline-pass-1-result.md`. **The split is
-      output-neutral.** The re-record itself is now blocked on an owner ruling,
-      not on the primary — see § The gate in that record. Runbook (acceptance
-      criteria corrected 2026-08-22):
-      `dev/milestones/r13/baseline-pass-runbook.md`
+- [x] Commit 7b — **split-phase baseline re-record** (`b4c58d8b`). Pass 1 run
+      from the primary detached at `9cbb72a`, read, and recorded 7/7 green.
+      **The split is output-neutral.** Result:
+      `dev/milestones/r13/baseline-pass-1-result.md`; runbook acceptance
+      criteria corrected the same day.
 - [x] Commit 8 — the `wflow_outvars` hoist (`e3c9cbb`). Landed AHEAD of 7b by
       owner decision: D-9.7 sequences the validation, not the history, and
       pass 1 runs against a detached checkout at `9cbb72a` which carries none
       of it. Consequence: `check_baseline.py check` at HEAD is expected to
       disagree with `dev/baseline/manifest.json` until commit 9
-- [ ] Commit 9 — hoist-phase baseline re-record; R13 sealable after it.
+- [ ] Commit 9 — hoist-phase baseline re-record; **the last step, R13 sealable
+      after it**. Needs the primary re-detached at this branch's tip (it now
+      sits at `9cbb72a`, below the hoist), then the same five runbook steps.
       Pass 2's acceptance differs from pass 1's: all THREE yaml snapshots move
       there, because the hoist changes `shared:` and `shared` is in every entry
-      point's projection.
+      point's projection. `check_baseline check` at HEAD is EXPECTED to disagree
+      until it lands.
 
 ## Pass 1 outcome (2026-08-22)
 

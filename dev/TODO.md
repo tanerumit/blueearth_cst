@@ -27,6 +27,7 @@
 | [t2608220915](tasks/t2608220915-rule-1-06-consumes-river-attributes-without-declaring-it-so-nothing-schedules-1-03.md)                      | Rule 1.06 consumes river_attributes without declaring it, so nothing schedules 1.03                      | wf1 / DAG                                   | R13 baseline pass 1 (2026-08-21)               |     | backlog |
 | [t2608220920](tasks/t2608220920-the-indicator-baseline-predates-the-weathergenr-2-0-0-upgrade.md)                                           | The indicator baseline predates the weathergenr 2.0.0 upgrade                                            | baseline / wf3                              | R13 baseline pass 1 (2026-08-21)               |     | backlog |
 | [t2608221010](tasks/t2608221010-check-baseline-record-contaminates-its-own-dirty-provenance-flag.md)                                        | check_baseline record contaminates its own dirty provenance flag                                         | baseline / provenance                       | R13 pass 1 re-record (2026-08-22)              |     | backlog |
+| [t2608222155](tasks/t2608222155-slim-the-baseline-run-so-gate-re-records-cost-less.md)                                                      | Slim the baseline run so gate re-records cost less                                                       | baseline / run cost                         | owner request, R14 branch opening (2026-08-22) |     | backlog |
 
 ## Watching
 

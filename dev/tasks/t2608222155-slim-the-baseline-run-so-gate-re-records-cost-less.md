@@ -7,7 +7,7 @@ area: baseline / run cost
 origin: owner request, R14 branch opening (2026-08-22)
 queue:
 created: 2026-08-22
-updated: 2026-08-22
+updated: 2026-08-23
 ---
 
 > [!note] Overview
@@ -102,17 +102,61 @@ and `3.12_perturb` at about 11 s x 12 jobs are almost entirely that.
 Config slimming is the *third* lever, worth roughly 8% of the run. Do it
 because the re-record is happening anyway, not because it is the answer.
 
-## What the config change is, if it goes ahead
+## What the config change is worth, and when it pays
 
-Two keys, both adopting rapid's values, worth about 100 s of rule-time:
+Two keys, both adopting rapid's values:
 
 - `run_length` 16 to 8 in `snake_config_baseline_run_stress_test.yml`
 - `horizontime_climate` 2078 to 2050, which shortens the generated series from
   78 yr to 46 (`compute_nr_years` anchors at 2010, so the HORIZON sets series
-  length, not `run_length`) and trims `3.11`/`3.12`
+  length, not `run_length`)
 
-Note `3.11` is the one place rapid measured *worse*, so do not assume the
-series shortening helps until the re-record shows it.
+Costed against the measured per-member numbers above, with no sysimage and no
+ESET exclusion — config knobs only:
+
+| variant | what changes | `3.15` rule-time | total rule-time | wall |
+|---|---|---|---|---|
+| today | 14 members x 17 yr | 615 s | ~1264 s (21 min) | ~15 min |
+| **(a) keep coverage** | `run_length` 8, horizon 2050 | 504 s | ~1150 s | **~14.5 min** (-35 s) |
+| **(b) full rapid** | (a) + grid 2 x 3 to 2 x 2 | 418 s | ~970 s | **~13.5 min** (-90 s) |
+
+(a) is the recommended variant; (b) additionally drops the three-level precip
+axis the coverage floor below keeps. Rule-time falls further than wall (-110 s
+and -300 s) because at `-c 3` the three batches run concurrently, so the wall
+is the LONGEST BATCH, not the sum. Quote whichever you mean; they are not
+interchangeable.
+
+**Every rule except `3.15` is flat, so there is nothing else to win here.**
+Per job, against a 41% shorter generated series and a 47% shorter window:
+
+| rule | baseline (78 yr series, 17 yr window) | rapid (46 yr, 9 yr) |
+|---|---|---|
+| `3.12_perturb` | 11.08 s/job | 10.82 s/job — 2% cheaper |
+| `3.14_downscale` | 14.61 s/job | 20.23 s/job — 38% SLOWER |
+| `3.11_weathergen` | 29.0 s | 45.8 s — 58% slower |
+
+The last two going the wrong way is partly a confound (rapid writes three
+`wflow_outvars` to baseline's two, and the runs are five days apart), but the
+reading is the same either way: no measured window-length saving exists outside
+`3.15`. These are Python and R jobs whose cost is interpreter start plus the
+hydromt/xarray import tree — which is what [[t2608202331]] attacks.
+
+**Reality check against the end-to-end number.** Rapid's whole wf3 measured
+944.3 s against baseline's 995.7 s; correcting for the two rules baseline's run
+skipped (`3.04` 17.3 s, `3.13` 13.6 s) that is about 913 against 996 — **83 s,
+8%** — and that is variant **(b)**, the full cut. So the end-to-end evidence
+sits at the BOTTOM of the bottom-up range, not the top. Plan on 4-8%.
+
+**Payback.** A re-record costs one full run (about 15 min) plus reading the
+diff. At 35-90 s saved per gate, the slimming repays its own re-record after
+**10 to 25 gates**. That is the argument for never doing this standalone: fold
+the two keys into the re-record R14 forces anyway and the saving is free; do it
+on its own and a gate is spent to save a minute.
+
+Non-time cost, for the same reason: moving the horizon to 2050 changes which
+CMIP6 horizon the WF2 change factors are computed for, so those manifest
+targets move too — attribution noise in the same re-record where R14's own
+changes land, on top of [[t2608220920]]'s generator move.
 
 ## Coverage floor — what must not be cut, and why
 
@@ -194,7 +238,8 @@ this same re-record), [[t2608202331]] (the actual lever).
       more than everything below
 - [ ] Decide whether a Wflow sysimage is worth boarding (P3-3 ranked it -39%)
 - [ ] Edit `run_length` and `horizontime_climate` plus the coupled
-      `future_horizons.far`
+      `future_horizons.far` — **riding along with the re-record R14 forces**,
+      not as a standalone gate; the payback is 10-25 gates otherwise
 - [ ] Re-record from the primary, WF1 with `--notemp`
 - [ ] Correct `dev/reference/validation-ladder.md` and `AGENTS.md`, including
       the falsified "~2.6x / ~1.7x" claim

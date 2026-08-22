@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-60` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-61` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -748,6 +748,7 @@ WF3's window is deliberately derived rather than declared.
 | `C-27` | ~~`future_horizons.<name>: [a, b]` → `{start, end}`~~ — **superseded by `C-60`** | N4 | RENAME | yes |
 | `C-59` | `historical_year_range: [a, b]` → `reference_window: {start, end}` | N4, N5 | RENAME | yes |
 | `C-60` | `future_horizons.<name>: [a, b]` → `future_windows.<name>: {start, end}` | N4, N5 | RENAME | yes |
+| `C-61` | `future_windows` becomes a LIST; the per-window name is OPTIONAL and defaults to `<start>-<end>` | N4 | **SEMANTIC** | yes |
 | `C-28` | `stats`, `save_grids` → `reporting.{stats,save_grids}` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today |
 | `C-57` | `variables:` gains a SHORT FORM — a bare key resolves through a registry; a name the registry lacks and that declares no spec is refused | P1 | **SEMANTIC** | no (additive) |
 | `C-58` | `canonical` leaves the USER surface; it stays in the registry | P1 | RENAME | yes |
@@ -833,6 +834,44 @@ the division is clean, and WF3 keeps `horizon_year` as the only surviving
 exist: WF3's forcing window is computed INDEPENDENTLY of `future_windows`,
 and the two matching in a config is a convention the configs document, not a
 mechanism.
+
+#### Naming a future window is optional — `C-61`
+
+**Ruled by the owner, 2026-08-22:** a user specifying four or five decades
+should not have to invent a label for each. Pass the dates; the name is
+derived. One less thing to think about.
+
+This costs less than it looks, because the name is ALREADY decorative in the
+path. `projection_figures.horizon_directory` returns
+`<sanitized-name>-<start>-<end>`, and its docstring gives the reason: *"The
+years are in the directory name, not only the horizon's label, because a
+project that redefines `far` from 2070-2090 to 2060-2080 would otherwise
+overwrite the old figure in place and leave nothing saying the window
+moved."* Dropping the label turns `near-2030-2060` into `2030-2060`, which
+preserves that disambiguation — it becomes the WHOLE identity rather than a
+suffix — and the existing duplicate check still catches two identical
+windows, which is the correct collision.
+
+```yaml
+future_windows:
+  - {start: 2030, end: 2060}
+  - {start: 2070, end: 2100, name: far}    # optional
+```
+
+A LIST rather than a mapping, so configured order is native rather than
+resting on insertion order, which `figure_relative_paths` currently depends on
+for its stable reading order.
+
+**Considered and rejected:** `future_windows: ["2030-2060", "2070-2100"]`.
+Terser, and `parse_horizon_period` already accepts that string form — but
+`reference_window: {start, end}` sits three lines above in the same file, and
+two spellings for one concept is the P3 this milestone keeps removing. N4
+wins over terseness.
+
+**Consequence to carry into the design:** WF2 figure directories change name,
+and `WF2_FIGURE_RELATIVE_PATHS` is threaded into rule 2.06 as a `params:`
+value, so the rule re-triggers. Expected for a renaming milestone, but it is a
+TREE-SHAPE change — `semantic_tree_diff.py` territory, not just a config diff.
 
 ### Group H — `_run_stress_test.yml`
 
@@ -934,8 +973,8 @@ variables:
   temp:
 reference_window: {start: 1985, end: 2014}
 future_windows:
-  near: {start: 2030, end: 2060}
-  far:  {start: 2070, end: 2100}
+  - {start: 2030, end: 2060}
+  - {start: 2070, end: 2100, name: far}   # name optional; defaults to 2070-2100
 relative_change: {min_reference: {precip: 0.1}, max_flagged_months: 3}
 reporting:
   stats: [mean, median, std]

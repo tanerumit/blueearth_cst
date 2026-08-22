@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-63` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-66` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -751,6 +751,9 @@ WF3's window is deliberately derived rather than declared.
 | `C-61` | `future_windows` becomes a LIST; the per-window name is OPTIONAL and defaults to `<start>-<end>` | N4 | **SEMANTIC** | yes |
 | `C-62` | `relative_change.min_reference` → `relative_change.min_denominator` | N5 | RENAME | yes |
 | `C-63` | Group the three member keys: `members` / `member_selection` / `member_overrides` → `members.{preference,selection,overrides}` | S4, P4 | **SEMANTIC** | yes |
+| `C-64` | `min_denominator` moves INTO the variable registry as per-variable metadata (with `C-57`) | S1, authority | REGROUP | yes |
+| `C-65` | `max_flagged_months` → `advanced_settings.constraints.max_flagged_months` | authority | DELETE | yes |
+| `C-66` | `relative_change:` dissolves — both its keys have real homes | S4 | DELETE | yes |
 | `C-28` | `stats` → `reporting.stats` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today. **Erratum: originally also listed `save_grids`, which does not exist** |
 | `C-57` | `variables:` gains a SHORT FORM — a bare key resolves through a registry; a name the registry lacks and that declares no spec is refused | P1 | **SEMANTIC** | no (additive) |
 | `C-58` | `canonical` leaves the USER surface; it stays in the registry | P1 | RENAME | yes |
@@ -848,6 +851,43 @@ members:
 
 The asymmetry with plain-list `models:` and `scenarios:` is real but honest:
 members carry a policy, those do not.
+
+#### `relative_change` leaves the project surface — `C-64`–`C-66`
+
+**Ruled by the owner, 2026-08-22:** it is an advanced setting, not something
+to touch often. Agreed — but the two keys are different KINDS and go to
+different places.
+
+**`min_denominator` is per-variable metadata (`C-64`).** `dry_month.py` says
+so: *"Keyed by the variable's canonical name, in its canonical units"*, and a
+relative variable outside the shipped set gets NO default because *"falling
+back to precipitation's 0.1 would apply a rainfall threshold to an unrelated
+quantity in unrelated units."* That is an attribute of the variable, like
+`units` and `change`, so it belongs in the `C-57` registry beside the
+`change: relative` declaration that makes it necessary. It also strengthens
+the guarantee: "a relative variable must carry a threshold" becomes checkable
+when the REGISTRY is parsed rather than at DAG build.
+
+Sending it to `advanced_settings.yml` instead was rejected for a specific
+trap: adding a relative variable would then REQUIRE editing a tracked toolbox
+file — not optional tuning but a hard prerequisite. That is the `C-54`
+objection with its polarity flipped.
+
+**`max_flagged_months` is a genuine advanced setting (`C-65`)**, and
+`constraints.min_historical_years` is its exact precedent: both are "when does
+the toolbox stop treating this as normal and say so". `constraints:`, not
+`defaults:` — a project should not override it.
+
+The cost of splitting them is that someone tuning the dry-month rule looks in
+two places. Accepted: they are related by RULE, not by KIND, and
+`advanced_settings.yml`'s top level is a closed AUTHORITY-based schema
+(`constraints` / `defaults` / `runtime`), so a topic-shaped `relative_change:`
+block there would break its own organising principle.
+
+`C-66` follows. This is the third section in the document to dissolve after
+`method:` (`C-52`) and T1 `compute:` (`C-55`), and the first outside T1 — each
+time because the section was holding keys that had better homes rather than
+naming a kind.
 
 #### Erratum — `save_grids` does not exist (`C-28`)
 
@@ -1065,7 +1105,6 @@ reference_window: {start: 1985, end: 2014}
 future_windows:
   - {start: 2030, end: 2060}
   - {start: 2070, end: 2100, name: far}   # name optional; defaults to 2070-2100
-relative_change: {min_denominator: {precip: 0.1}, max_flagged_months: 3}
 reporting:
   stats: [mean, median, std]
 ```

@@ -47,13 +47,15 @@ emits and what its members are called; **R12** changes how it executes. Mirrors
 Phase 5, which did the same for workflow 2. Dev artifacts under
 `dev/milestones/r11/`. See § Phase 8 below.
 
-**Phase 9 — Configuration modularization (R13 design ACCEPTED 2026-08-21).**
-Splits the monolithic project config into a project file (T1) carrying closed
+**Phase 9 — Configuration modularization (R13 SEALED 2026-08-22).**
+Split the monolithic project config into a project file (T1) carrying closed
 `{enabled, config_path}` workflow stanzas plus one per-workflow file (T2),
 composed by a shared loader so the in-memory shape the Snakefiles see is
-unchanged. The first modularization seam: it makes cross-workflow sharing
-checkable at parse time rather than conventional. One milestone, R13; design and
-audit trail under `dev/milestones/r13/`. See § Phase 9 below.
+unchanged, then hoisted `wflow_outvars` to `shared:`. The first modularization
+seam: it makes cross-workflow sharing checkable at parse time rather than
+conventional, and a key read by two workflows now REFUSES to sit in a workflow
+file. One milestone, R13; design and audit trail under `dev/milestones/r13/`.
+See § Phase 9 below.
 
 ```text
 Phase 1 — Foundation (sealed)
@@ -1550,14 +1552,14 @@ history, per the WF2 precedent.
 
 ---
 
-## Phase 9 — Configuration modularization (R13 design ACCEPTED)
+## Phase 9 — Configuration modularization (R13 SEALED 2026-08-22)
 
 Registered 2026-08-20. The configuration surface is the first seam the toolbox
 modularizes: today one `--configfile` YAML carries every workflow's settings, so
 any workflow's parameters are editable from any project file, and cross-workflow
 sharing is a convention rather than a checked property.
 
-### R13 — Config tiers (design ACCEPTED 2026-08-21; not yet implemented)
+### R13 — Config tiers (SEALED 2026-08-22)
 
 **What it does.** T1 (project) holds `project:` + `shared:` plus a closed
 `{enabled, config_path}` stanza per workflow; T2 is one config file per workflow,
@@ -1566,16 +1568,21 @@ unchanged; `advanced_settings.yml` stays a separate authority-bounded toolbox
 file. The composed in-memory config each Snakefile sees is unchanged, so the CLI
 and `config_path`-forwarding contracts hold.
 
-**Status.** Accepted at G2, 2026-08-21, with no editorial edits. The normative
-contract is `dev/milestones/r13/config-tiers-design.md`; why it says what it says
-is `dev/milestones/r13/config-tiers-review-record.md`. Implementation is boarded
-as `t2608211256`.
+**Status.** **SEALED 2026-08-22.** Design accepted at G2, 2026-08-21, with no
+editorial edits; implemented as nine commits on `feat/r13-config-tiers` and
+closed as `t2608211256`. The normative contract is
+`dev/milestones/r13/config-tiers-design.md`; why it says what it says is
+`dev/milestones/r13/config-tiers-review-record.md`; what the two validation
+passes actually measured is `baseline-pass-1-result.md` and
+`baseline-pass-2-result.md` beside them.
 
-**Scope note — R13 is not split-only.** The round-cap arbitration widened it: the
-`wflow_outvars` hoist is a **required** final phase (D-9.7), not deferred, so the
-milestone carries **two** baseline-scale validation passes — one proving the split
-is output-neutral, one verifying the hoist's *expected* digest shift — and
-completes with `CROSS_WORKFLOW_READS` empty. Do not descope it back to the split.
+**Scope note — R13 was not split-only.** The round-cap arbitration widened it: the
+`wflow_outvars` hoist was a **required** final phase (D-9.7), not deferred, so the
+milestone carried **two** baseline-scale validation passes — one proving the split
+output-neutral, one verifying the hoist's *expected* digest shift — and completed
+with `CROSS_WORKFLOW_READS` empty. All three discharged: zero data targets moved
+in either pass, and the registry is not merely gone but its ABSENCE is pinned by a
+test, with the D-9.6 scan asserting a literal zero rather than a bound.
 
 **How the design was reached.** A full design-review-loop run: a three-lens
 internal panel (52 findings), external round 1, a driver framework-feasibility

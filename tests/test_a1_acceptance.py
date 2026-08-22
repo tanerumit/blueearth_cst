@@ -120,9 +120,12 @@ def test_the_template_config_recommends_the_30_year_window():
     import re
     from pathlib import Path
 
+    # The key lives in the WF2 file since R13: the project file carries only
+    # `{enabled, config_path}` stanzas, so the recommendation a user reads is
+    # in the file they open to change the projections settings.
     template = (
         Path(__file__).resolve().parents[1]
-        / "config/templates/snake_config.template.yml"
+        / "config/templates/snake_config.analyze_projections.template.yml"
     ).read_text(encoding="utf-8")
     m = re.search(r"historical_year_range:\s*\[\s*(\d{4})\s*,\s*(\d{4})\s*\]", template)
     assert m, "template must declare historical_year_range"
@@ -148,7 +151,8 @@ def test_the_seed_fixture_keeps_its_own_shorter_window():
     from pathlib import Path
 
     seed = (
-        Path(__file__).resolve().parents[1] / "test_case/snake_config_baseline.yml"
+        Path(__file__).resolve().parents[1]
+        / "test_case/snake_config_baseline_analyze_projections.yml"
     ).read_text(encoding="utf-8")
     m = re.search(r"historical_year_range:\s*\[\s*(\d{4})\s*,\s*(\d{4})\s*\]", seed)
     assert m, "seed must declare historical_year_range"

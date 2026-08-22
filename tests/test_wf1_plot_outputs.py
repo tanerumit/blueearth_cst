@@ -39,12 +39,13 @@ import subprocess
 from pathlib import Path
 
 import pytest
-import yaml
 
 from blueearth_cst.climate_analysis.climate_figures import (
     figure_names as _figure_names,
 )
 from blueearth_cst.climate_analysis.climate_figures import source_figure_names
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
 
 #: A model's staticgeoms layers, spelled as hydromt_wflow actually writes them
 #: (`output_locations.csv` -> `gauges_output-locations`, note the HYPHEN).
@@ -82,14 +83,13 @@ def fabricated_project(tmp_path):
     """A project_dir pre-filled with every declared wf1 figure output."""
     from blueearth_cst.shared.snake_utils import climate_store_rule
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     project_dir = tmp_path / "proj"
     project_dir.mkdir()
     cfg["project"]["project_dir"] = project_dir.as_posix()
     # Repo-relative leaves (templates, catalog) keep working: snakemake runs
     # with cwd=SNAKEDIR.
-    cfg_path = tmp_path / "snake_config_fabricated.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_fabricated")
 
     spec = climate_store_rule(
         project_dir=project_dir.as_posix(),
@@ -172,16 +172,18 @@ def project_with_basavg_outvar(tmp_path):
     exercise the derivation — or the fact that the derived filename contains a
     SPACE, which every consumer of a declared output has to survive.
     """
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     project_dir = tmp_path / "proj"
     project_dir.mkdir()
     cfg["project"]["project_dir"] = project_dir.as_posix()
-    cfg["workflows"]["build_model"]["wflow_outvars"] = [
+    # `shared`, not `workflows.build_model`: the key was hoisted by R13 D-9.7
+    # because WF3 reads it too, and a copy planted in a workflow file is now a
+    # parse error rather than an override.
+    cfg["shared"]["wflow_outvars"] = [
         "river discharge",
         "actual evapotranspiration",
     ]
-    cfg_path = tmp_path / "snake_config_basavg.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_basavg")
 
     basavg = project_dir / _BASAVG_REL
     basavg.parent.mkdir(parents=True, exist_ok=True)
@@ -287,7 +289,7 @@ def test_the_shipped_sentinel_yields_no_layer():
     """
     from blueearth_cst.shared.gauges import gauges_layer_name
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     sentinel = cfg["shared"]["basin"]["gauge_points"]
     assert sentinel in (None, "None"), (
         f"unexpected gauge_points sentinel {sentinel!r} — if the config now "

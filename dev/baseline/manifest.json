@@ -1,17 +1,17 @@
 {
   "project_dir": "test_case/test_local",
   "recorded_by": {
-    "branch": "main",
-    "commit": "82b76a026a9a686e0948a0004ab7b640790fdb84",
+    "branch": "HEAD",
+    "commit": "0d256a415fe89991136d054324490a873a4c6ccc",
     "dirty": false
   },
   "targets": {
     "test_case/test_local/config/runs/snake_config_analyze_projections.yml": {
-      "sha256": "00ef44f7fef2b9d2be44d5c64ec9bf0d7aedadff663bdbf4748ad6e053b88381",
+      "sha256": "18411a59018b8115914986948eef12d0af2b7e04870e1e2f6ea406204f4cdb47",
       "type": "yaml"
     },
     "test_case/test_local/config/runs/snake_config_build_model.yml": {
-      "sha256": "00ef44f7fef2b9d2be44d5c64ec9bf0d7aedadff663bdbf4748ad6e053b88381",
+      "sha256": "3c5539cb592f0c13e7552bba5af657eef29aa16c38ce553cbd90a6ce4b0aaedd",
       "type": "yaml"
     },
     "test_case/test_local/data/climate/projections/cmip6/summary/cmip6_change_factors_annual.csv": {
@@ -25,7 +25,7 @@
       "type": "csv"
     },
     "test_case/test_local/experiments/experiment/config/snake_config_run_stress_test.yml": {
-      "sha256": "00ef44f7fef2b9d2be44d5c64ec9bf0d7aedadff663bdbf4748ad6e053b88381",
+      "sha256": "4ab6f772809887c3385f7d5b23821ce147dc64c95553119113d453878301ebc3",
       "type": "yaml"
     },
     "test_case/test_local/experiments/experiment/results/q_indicators.csv": {

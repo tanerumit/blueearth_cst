@@ -48,22 +48,64 @@ def test_each_kind_lands_in_its_own_bin(tmp_path, sources):
     assert not (cfg / "snake_config_build_model.yml").exists()
 
 
-def test_content_is_copied_verbatim(tmp_path, sources):
-    """A snapshot that mutates content would break the drift guard, which
-    compares digests of these files across workflows."""
+def test_the_snapshot_round_trips_to_the_composed_config(tmp_path, sources):
+    """The config snapshot is the workflow's COMPOSED document (R13 D-11.1).
+
+    This replaces `test_content_is_copied_verbatim`, which asserted
+    byte-equality between snapshot and source on the rationale that "a
+    snapshot that mutates content would break the drift guard". That rationale
+    was wrong on the merits even then: the guard compares SECTIONS by value,
+    and `file_digest_or_absent` is content-agnostic -- it detects that the
+    snapshot changed, which is exactly what should happen when the
+    configuration changes.
+
+    A verbatim copy is now also unable to serve the guard at all: the source
+    file is the project file, and WF3 reads `workflows.build_model` out of the
+    wf1 snapshot, so a copy would leave it comparing against sections that are
+    not there.
+
+    This is the only gate in the suite that can see the snapshot's SHAPE
+    without a freshly-run project fixture.
+    """
     snake, catalog, _ = sources
+    cfg = tmp_path / "project" / "config"
+    composed = {
+        "project": {"project_dir": "p"},
+        "shared": {"basin": {"region": "x"}},
+        "workflows": {"build_model": {"enabled": True, "wflow_outvars": ["q"]}},
+    }
+    copy_config_files(
+        config=str(snake),
+        config_out_path=str(cfg / "runs" / "snake_config_build_model.yml"),
+        composed_config=composed,
+        other_config_files={str(catalog): str(cfg / "catalogs")},
+    )
+    snapshot = (cfg / "runs" / "snake_config_build_model.yml").read_text(
+        encoding="utf-8"
+    )
+    assert yaml.safe_load(snapshot) == composed
+    # Sorted keys, so two runs of one configuration produce the same bytes --
+    # this file's digest is a drift-guard comparand.
+    assert snapshot.index("project:") < snapshot.index("shared:")
+
+    # The CATALOG and TEMPLATE destinations are untouched by D-11.2 and stay
+    # verbatim copies. Carried forward from the retired test unchanged.
+    assert (cfg / "catalogs" / "deltares_data.yml").read_text(
+        encoding="utf-8"
+    ) == catalog.read_text(encoding="utf-8")
+
+
+def test_without_a_composed_config_the_source_is_still_copied(tmp_path, sources):
+    """The byte-copy path survives for callers that have no composed document."""
+    snake, _catalog, _ = sources
     cfg = tmp_path / "project" / "config"
     copy_config_files(
         config=str(snake),
         config_out_path=str(cfg / "runs" / "snake_config_build_model.yml"),
-        other_config_files={str(catalog): str(cfg / "catalogs")},
     )
     assert (cfg / "runs" / "snake_config_build_model.yml").read_text(
         encoding="utf-8"
     ) == snake.read_text(encoding="utf-8")
-    assert (cfg / "catalogs" / "deltares_data.yml").read_text(
-        encoding="utf-8"
-    ) == catalog.read_text(encoding="utf-8")
 
 
 def test_missing_source_is_skipped_not_fatal(tmp_path, sources):
@@ -570,13 +612,16 @@ def test_the_runs_bin_carries_its_own_readme(tmp_path, sources):
     # The two claims a reader would otherwise get wrong.
     assert "lower bound on invocations" in readme
     assert "scientific data identity" in readme
-    # The bin's SECOND trap, added 2026-08-13 after the owner hit it: the
-    # per-workflow filename reads as a per-workflow scope, and the file is the
-    # whole config. Asserted here because the mitigation for that confusion is
-    # this text and nothing else -- the filename itself cannot be fixed (the
-    # WF1 copy is a mandatory declared input of WF3's guard rule).
-    assert "not that workflow's section of it" in readme
-    assert "projection" in readme
+    # The bin's SECOND trap: these files LOOK like mangled copies of the
+    # source -- no comments, keys reordered -- because since R13 they are
+    # composed documents rather than copies. Asserted here because this text
+    # is the only place that says so to a user reading the bin.
+    assert "composed" in readme
+    assert "Comments are" in readme
+    assert "are sorted" in readme
+    # And the record-only class D-11.2 introduced: a hash with no archive is
+    # otherwise indistinguishable from "a name with nothing on disk".
+    assert "recorded but not archived" in readme
 
 
 def test_the_runs_readme_is_refreshed_not_preserved(tmp_path, sources):

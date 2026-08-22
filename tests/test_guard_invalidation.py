@@ -38,6 +38,9 @@ CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
 sys.path.insert(0, str(SNAKEDIR / "dev" / "scripts"))
 import cross_workflow_inputs as cwi  # noqa: E402
 
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
+
 
 def _run(args, cfg_path):
     """Invoke snakemake on run_stress_test.smk; return the process.
@@ -71,7 +74,7 @@ def staged_project(tmp_path):
     missing leaf. A leaf the fixture forgets turns that assertion into a
     failure that looks like a guard defect and is not one.
     """
-    base = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    base = load_composed_config(CONFIG_FN)
     pdir = tmp_path / "proj"
     base["project"]["project_dir"] = str(pdir).replace("\\", "/")
     experiment = base["workflows"]["run_stress_test"]["experiment_name"]
@@ -100,8 +103,7 @@ def staged_project(tmp_path):
     wf1 = snap_dir / "snake_config_build_model.yml"
     wf2 = snap_dir / "snake_config_analyze_projections.yml"
 
-    cfg_path = tmp_path / "snake_config_staged.yml"
-    cfg_path.write_text(yaml.safe_dump(base), encoding="utf-8")
+    cfg_path = write_config(tmp_path, base, stem="snake_config_staged")
 
     # exp_dir as defined in run_stress_test.smk (commit 2 moved it to
     # experiments/<name>/).
@@ -224,7 +226,11 @@ def test_2c_fresh_project_missing_wf1_snapshot(staged_project):
     # ...and with every leaf input present (snapshot restored), --unlock
     # SUCCEEDS — the recoverable-lock scenario (a crashed run implies the
     # snapshot existed at crash time) keeps working.
-    base = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
+    # COMPOSED, not raw: the wf1 project snapshot records the whole config a
+    # run used, and the guard compares it against the composed live config.
+    # Staging the T1 file verbatim would seed a two-key stanza and the guard
+    # would refuse for a difference the migration did not make.
+    base = load_composed_config(cfg_path)
     wf1.write_text(yaml.safe_dump(base), encoding="utf-8")
     unlock = _run("--unlock", cfg_path)
     assert unlock.returncode == 0, (unlock.stdout or "") + (unlock.stderr or "")
@@ -232,7 +238,11 @@ def test_2c_fresh_project_missing_wf1_snapshot(staged_project):
 
     # (iii) with the snapshot present, a content change still flips the digest
     #       param — the absence-tolerant helper does not weaken the trigger.
-    base = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
+    # COMPOSED, not raw: the wf1 project snapshot records the whole config a
+    # run used, and the guard compares it against the composed live config.
+    # Staging the T1 file verbatim would seed a two-key stanza and the guard
+    # would refuse for a difference the migration did not make.
+    base = load_composed_config(cfg_path)
     wf1.write_text(yaml.safe_dump(base), encoding="utf-8")
     _seed_guard(cfg_path, sentinel)
     out = _dry_run_output(cfg_path, sentinel)

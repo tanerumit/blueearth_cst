@@ -856,8 +856,8 @@ def validate_experiment_name(name: str, project_dir) -> str:
 #: The advanced-settings file: toolbox-wide constraints and defaults that no
 #: normal project edits. Repo root is two levels up from
 #: ``blueearth_cst/shared/``. NOT a ``--configfile`` target — the Snakefiles
-#: take a per-project ``config/workflows/snake_config_*.yml``; this one is read
-#: once, here, and applies to every project.
+#: take a per-project project config, which lives beside the project it writes
+#: into; this one is read once, here, and applies to every project.
 ADVANCED_SETTINGS_PATH = (
     Path(__file__).resolve().parents[2] / "config" / "advanced_settings.yml"
 )
@@ -1319,7 +1319,9 @@ def validate_historical_window(historical_window) -> int:
     return days
 
 
-def resolve_simulation_window(shared_cfg, model_cfg):
+def resolve_simulation_window(
+    shared_cfg, model_cfg, *, shared_source=None, model_source=None
+):
     """The window the hydrological model SIMULATES, which is not the record.
 
     Two different questions were one config key until 2026-08-10:
@@ -1355,7 +1357,21 @@ def resolve_simulation_window(shared_cfg, model_cfg):
 
     Returns a mapping with ``starttime``/``endtime``; raises ``ValueError``
     naming the offending key if the window is malformed.
+    ``shared_source`` and ``model_source`` name the FILES the two values were
+    authored in, and appear in the refusal below. Both default to ``None``, so
+    the message shape is unchanged when they are absent -- which is what keeps
+    this additive for every caller that has only the two mappings.
+
+    They exist because the comparison became genuinely cross-file at R13: the
+    simulation window is authored in the build_model settings file and the
+    record in the project file. This is the clearest demonstration that the
+    shared-seam placement rule is right rather than arbitrary --
+    ``historical_window`` is read by three workflows, so it belongs in the
+    project file, and a copy planted in a workflow file is refused at parse
+    time rather than allowed to become a second record that disagrees.
     """
+    where_model = f" (in {model_source})" if model_source else ""
+    where_shared = f" (in {shared_source})" if shared_source else ""
     window = get_config(model_cfg, "simulation_window", None)
     if window is None:
         return get_config(shared_cfg, "historical_window", optional=False)
@@ -1390,8 +1406,9 @@ def resolve_simulation_window(shared_cfg, model_cfg):
     if start < rec_start or end > rec_end:
         raise ValueError(
             f"workflows.build_model.simulation_window {start.date()} .. "
-            f"{end.date()} is not inside shared.historical_window "
-            f"{rec_start.date()} .. {rec_end.date()}. The forcing is built from "
+            f"{end.date()}{where_model} is not inside shared.historical_window "
+            f"{rec_start.date()} .. {rec_end.date()}{where_shared}. The forcing "
+            "is built from "
             "the extracted climate store, so a simulation period outside the "
             "record has no data behind it — widen historical_window, or narrow "
             "the simulation window to fit inside it"

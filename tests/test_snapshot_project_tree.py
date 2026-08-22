@@ -10,10 +10,11 @@ import os
 import sys
 
 import pytest
-import yaml
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "dev", "scripts"))
 import snapshot_project_tree as spt  # noqa: E402
+
+from tests.conftest import write_config  # noqa: E402
 
 
 def _config(project_dir):
@@ -33,10 +34,14 @@ def _config(project_dir):
     }
 
 
-def _write_config(tmp_path, cfg, name="cfg.yml"):
-    p = tmp_path / name
-    p.write_text(yaml.safe_dump(cfg), encoding="utf-8")
-    return p
+def _write_config(tmp_path, cfg, name="cfg"):
+    """Write the whole mapping back as the T1 + T2 set the tool reads.
+
+    Split on disk since R13, because the tool composes: this fixture writes the
+    shape a real project has, so a regression in the tool's own reading is
+    visible here rather than hidden behind a shape no run can produce.
+    """
+    return write_config(tmp_path, cfg, stem=name)
 
 
 def _touch(root, rel, text="x"):

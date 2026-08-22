@@ -15,6 +15,9 @@ SNAKEDIR = join(TESTDIR, "..")
 sys.path.insert(0, join(SNAKEDIR, "dev", "scripts"))
 import cross_workflow_inputs as cwi  # noqa: E402
 
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
+
 config_fn = join(TESTDIR, "snake_config_fixture.yml")
 linux_config_fn = join(SNAKEDIR, "test_case", "snake_config_baseline_linux.yml")
 
@@ -55,8 +58,7 @@ def config_with_staged_region(tmp_path):
     config the dry-run consumes, so the guard's comparands match by
     construction.
     """
-    with open(config_fn) as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_composed_config(config_fn)
     cfg["project"]["project_dir"] = str(tmp_path).replace("\\", "/")
 
     # ONE definition of the leaf set, shared with `test_guard_invalidation` and
@@ -68,8 +70,7 @@ def config_with_staged_region(tmp_path):
     # the reason given in the docstring above.
     cwi.stage(tmp_path, yaml.safe_dump(cfg), extras=(cwi.EXTRA_REGION,))
 
-    cfg_path = tmp_path / "snake_config_staged.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_staged")
     return cfg_path
 
 
@@ -107,19 +108,17 @@ def test_analyze_climate_adds_no_job_to_build_model(tmp_path):
     started depending on WF0 -- the exact failure mode that would make
     `analyze_climate.enabled: false` break the model build.
     """
-    cfg = yaml.safe_load(Path(config_fn).read_text(encoding="utf-8"))
+    cfg = load_composed_config(config_fn)
     cfg["project"]["project_dir"] = (tmp_path / "proj").as_posix()
 
-    with_wf0 = tmp_path / "with_wf0.yml"
-    with_wf0.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    with_wf0 = write_config(tmp_path / "with_wf0", cfg)
 
     # The same config with the fourth workflow's section removed entirely --
     # the state every project config was in before 2026-08-14.
-    without = yaml.safe_load(Path(config_fn).read_text(encoding="utf-8"))
+    without = load_composed_config(config_fn)
     without["project"]["project_dir"] = (tmp_path / "proj").as_posix()
     without["workflows"].pop("analyze_climate")
-    without_wf0 = tmp_path / "without_wf0.yml"
-    without_wf0.write_text(yaml.safe_dump(without), encoding="utf-8")
+    without_wf0 = write_config(tmp_path / "without_wf0", without)
 
     a = _dry_run("build_model.smk", cfg=str(with_wf0))
     b = _dry_run("build_model.smk", cfg=str(without_wf0))
@@ -179,11 +178,9 @@ def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
     scratch = Path(SNAKEDIR, "_o22_probe_project")
     scratch.mkdir(exist_ok=True)
     try:
-        with open(config_fn) as f:
-            cfg = yaml.safe_load(f)
+        cfg = load_composed_config(config_fn)
         cfg["project"]["project_dir"] = "_o22_probe_project"
-        cfg_path = tmp_path / "snake_config_in_repo.yml"
-        cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+        cfg_path = write_config(tmp_path, cfg, stem="snake_config_in_repo")
 
         result = _dry_run("build_model.smk", cfg=str(cfg_path))
         combined = (result.stdout or "") + (result.stderr or "")
@@ -252,8 +249,7 @@ def test_observation_configs_use_yaml_null():
     the way out.
     """
     for cfg_path in (config_fn, linux_config_fn):
-        with open(cfg_path) as f:
-            cfg = yaml.safe_load(f)
+        cfg = load_composed_config(cfg_path)
         basin = cfg["shared"]["basin"]
         mc = cfg["workflows"]["build_model"]
         values = {
@@ -305,11 +301,9 @@ def test_eobs_config_fails_wf1_dry_run_at_parse_time(tmp_path):
     the two pre-R07 bbox derivations and is superseded by
     `tests/test_store_region_bbox.py`.
     """
-    with open(config_fn) as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_composed_config(config_fn)
     cfg["shared"]["clim_historical"] = "eobs"
-    cfg_path = tmp_path / "snake_config_eobs.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_eobs")
 
     result = _dry_run("build_model.smk", cfg=str(cfg_path))
     combined = (result.stdout or "") + (result.stderr or "")
@@ -340,14 +334,12 @@ def test_short_window_fails_wf1_dry_run_at_parse_time(tmp_path, endtime, label):
     (dev/followups-archive.md R7-6), and a ten-year window ran WF1 to completion before
     failing a whole workflow away.
     """
-    with open(config_fn) as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_composed_config(config_fn)
     cfg["shared"]["historical_window"] = {
         "starttime": "2000-01-01T00:00:00",
         "endtime": endtime,
     }
-    cfg_path = tmp_path / f"snake_config_{label}.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem=f"snake_config_{label}")
 
     result = _dry_run("build_model.smk", cfg=str(cfg_path))
     combined = (result.stdout or "") + (result.stderr or "")

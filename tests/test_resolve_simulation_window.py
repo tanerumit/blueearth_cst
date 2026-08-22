@@ -73,6 +73,36 @@ def test_the_simulation_window_must_sit_inside_the_record():
         )
 
 
+def test_the_refusal_names_both_files_when_it_is_told_them():
+    """The two windows are authored in DIFFERENT files since R13.
+
+    The simulation window lives in the build_model settings file and the record
+    in the project file, so a user with both open should not have to work out
+    which one the message means. Additive: the source arguments default to None
+    and every case above, which passes neither, keeps its message verbatim.
+    """
+    sim = _window("2021-01-01", "2023-12-31")
+    with pytest.raises(ValueError) as excinfo:
+        resolve_simulation_window(
+            _shared("2000-01-01", "2020-12-31"),
+            {"simulation_window": sim},
+            shared_source="snake_config_gabon.yml",
+            model_source="snake_config_gabon_build_model.yml",
+        )
+    message = str(excinfo.value)
+    assert "in snake_config_gabon_build_model.yml" in message
+    assert "in snake_config_gabon.yml" in message
+
+
+def test_the_message_is_unchanged_when_no_source_is_given():
+    """What makes the signature change additive rather than a break."""
+    sim = _window("2021-01-01", "2023-12-31")
+    record = _shared("2000-01-01", "2020-12-31")
+    with pytest.raises(ValueError) as excinfo:
+        resolve_simulation_window(record, {"simulation_window": sim})
+    assert " (in " not in str(excinfo.value)
+
+
 def test_a_window_overhanging_either_end_is_rejected():
     record = _shared("2000-01-01", "2020-12-31")
     for sim in (

@@ -1,0 +1,17 @@
+clim_project: cmip6
+models:
+  - NOAA-GFDL/GFDL-ESM4
+  - INM/INM-CM4-8
+scenarios: [ssp245]
+members: [r1i1p1f1]
+variables:
+  precip: {source: precip, canonical: rate, units: mm/day, change: relative}
+  temp: {source: temp, canonical: state, units: degC, change: absolute}
+# Ends 2014, where the CMIP6 historical experiment stops; a later end is
+# clipped to it, and clipping a range equal to historical_window is what
+# raises the "no longer aligns" warning.
+historical_year_range: [2000, 2014]
+# Matches WF3's forcing window (horizontime_climate +/- run_length/2 =
+# 2050 +/- 4), which is computed independently of this key.
+future_horizons:
+  mid: [2046, 2054]

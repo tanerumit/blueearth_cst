@@ -18,12 +18,13 @@ import sys
 from pathlib import Path
 
 import pytest
-import yaml
 
 from blueearth_cst.projections.gridded_outputs import (
     RemovedGriddedOutputsError,
     validate_removed_gridded_options,
 )
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -49,15 +50,13 @@ def _dry_run(config_path):
 
 @pytest.fixture
 def seed_config():
-    return yaml.safe_load(
-        (REPO / "test_case/snake_config_wf2_fast.yml").read_text(encoding="utf-8")
-    )
+    """The seed as ONE whole mapping, composed from its T1 + T2 files."""
+    return load_composed_config(REPO / "test_case/snake_config_wf2_fast.yml")
 
 
-def _write(tmp_path, cfg, name="cfg.yml"):
-    path = tmp_path / name
-    path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
-    return path
+def _write(tmp_path, cfg, name="cfg"):
+    """Write the mutated mapping back as the T1 + T2 set a run reads."""
+    return write_config(tmp_path, cfg, stem=name)
 
 
 @pytest.mark.parametrize("key", ["save_grids", "save_gridded"])

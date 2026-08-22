@@ -43,6 +43,9 @@ sys.path.insert(0, str(REPO))
 import yaml  # noqa: E402
 
 from blueearth_cst.projections import resolution as res  # noqa: E402
+from blueearth_cst.shared.config_composition import (  # noqa: E402
+    load_composed_config,
+)
 
 
 def expected_keys(config: dict) -> tuple[set[str], str, str]:
@@ -92,8 +95,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    with open(args.config, encoding="utf-8") as handle:
-        config = yaml.safe_load(handle)
+    # COMPOSED, not raw (R13 D-12.0): the file passed here is the PROJECT
+    # config, and since the split the workflow settings live in the files it
+    # points at. A raw load would read a two-key stanza and fall back to its
+    # defaults -- silently, which is the failure mode this tool has no way to
+    # report.
+    config = load_composed_config(args.config)
 
     keys, project_dir, clim_project = expected_keys(config)
     clim_dir = Path(project_dir) / "data" / "climate" / "projections" / clim_project

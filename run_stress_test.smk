@@ -17,6 +17,7 @@ from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retir
 from blueearth_cst.shared.surface_axes import parse_surfaces, warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
@@ -26,6 +27,60 @@ patch_psutil_windows_benchmark()
 # downstream R scripts can be handed the same path. Forwarding config_path is
 # a repo convention.
 config_path = workflow.configfiles[0]
+
+# --- Drift-guard comparands and the consumed-key projection ---
+#
+# HOISTED above the first config read (R13 D-8.2). Both are
+# config-independent literals, and `compose_config` derives R(entry) from the
+# projection, so it has to be known before any section is touched. The guard
+# tuple comes with it because the projection is derived FROM it. Moving them
+# changed no value; `guarded_sections_digest`, which does read `config`, stays
+# below where it was.
+#
+# Rule 3.01 check_project_consistency compares this experiment config's
+# project-level sections against the wf1/wf2 project snapshots. Snakemake's
+# default params rerun-trigger re-runs the guard when any of these param values
+# changes (probe-verified, design §3c), so every comparand is threaded through
+# as a param — and every guard param must be EXPERIMENT-INVARIANT across passing
+# configs, because the guard's second output is shared across experiments
+# (§3b/§3d; config_path is deliberately NOT a guard param — it varies per
+# experiment and would thrash the shared artifact on A<->B alternation).
+guarded_sections = (
+    "project", "shared.basin", "workflows.build_model",
+    "workflows.analyze_projections",
+)
+
+# WF3's consumed-key projection is DERIVED, not written out beside the guard
+# tuple. WF3 genuinely reads other workflows' sections -- `wflow_outvars` comes
+# out of `workflows.build_model` -- and `guarded_sections` is already the
+# maintained list of those cross-section reads. Restating it here would be
+# proximity, not enforcement: the two would drift the first time the guard
+# tuple gained an entry. `shared.basin` widens to `shared` because the guard
+# narrows to `basin` only to stay experiment-invariant, while WF3 reads other
+# `shared` keys.
+CONFIG_PROJECTION = tuple(sorted(
+    {section.split(".")[0] if section == "shared.basin" else section
+     for section in guarded_sections}
+    | {"workflows.run_stress_test"}
+))
+
+# COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
+# workflow's settings live in its own file. This merges them back into exactly
+# the mapping every reader below already expects (R13 D-8.1). R(entry) is
+# {run_stress_test, build_model, analyze_projections} because the projection
+# above names those sections -- the same maintained literal the guard uses, so
+# the loader is one more consumer of it rather than a second copy.
+#
+# The result is REBOUND to the Snakefile-global `config`, deliberately and not
+# as a style choice: `check_project_consistency` takes its live config from
+# `sm.config` -- Snakemake's `workflow.config` -- so binding elsewhere would
+# leave the drift guard comparing a two-key stanza against a full recorded
+# section and failing rule 3.01 after WF1 and WF2 had already run.
+config, WORKFLOW_CONFIG_PATHS = compose_config(
+    config, config_path, entry="run_stress_test", declared_sections=CONFIG_PROJECTION,
+)
+# Sorted so the declared input lists below do not churn on dict order.
+WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
 
 # Portable tee wrapper for the shell rules below (the R weather generator and the
 # Julia Wflow run): routes their output through blueearth_cst/shared/run_logged.py so their logs
@@ -319,19 +374,6 @@ runs_dir = f"{exp_dir}/hydrology/wflow"
 # `rule all` filename renames in the whole of R9, per naming.md §7).
 results_dir = f"{exp_dir}/results"
 
-# --- Drift-guard comparands (dev/milestones/p31/experiment-structure-design.md §3b/§3c) ---
-# Rule 3.01 check_project_consistency compares this experiment config's
-# project-level sections against the wf1/wf2 project snapshots. Snakemake's
-# default params rerun-trigger re-runs the guard when any of these param values
-# changes (probe-verified, design §3c), so every comparand is threaded through
-# as a param — and every guard param must be EXPERIMENT-INVARIANT across passing
-# configs, because the guard's second output is shared across experiments
-# (§3b/§3d; config_path is deliberately NOT a guard param — it varies per
-# experiment and would thrash the shared artifact on A<->B alternation).
-guarded_sections = (
-    "project", "shared.basin", "workflows.build_model",
-    "workflows.analyze_projections",
-)
 # SHA-256 of a canonical sorted-key JSON serialization of the guarded live
 # sections: an in-place edit to any guarded value flips this string and trips
 # the params rerun-trigger (§3c case (a)). A string digest — the form the §3c
@@ -350,23 +392,17 @@ guarded_sections_digest = hashlib.sha256(
     ).encode("utf-8")
 ).hexdigest()
 
-# WF3's consumed-key projection is DERIVED, not written out beside the guard
-# tuple. WF3 genuinely reads other workflows' sections -- `wflow_outvars` comes
-# out of `workflows.build_model` -- and `guarded_sections` is already the
-# maintained list of those cross-section reads. Restating it here would be
-# proximity, not enforcement: the two would drift the first time the guard
-# tuple gained an entry. `shared.basin` widens to `shared` because the guard
-# narrows to `basin` only to stay experiment-invariant, while WF3 reads other
-# `shared` keys.
-CONFIG_PROJECTION = tuple(sorted(
-    {section.split(".")[0] if section == "shared.basin" else section
-     for section in guarded_sections}
-    | {"workflows.run_stress_test"}
-))
-
 CONFIG_REFERENCES = [
-    ("data_catalog", source) for source in
-    (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])
+    # The per-workflow config files, so an in-place edit to the file that now
+    # holds this workflow's settings moves the digest (R13 D-10.5). After the
+    # split the project file no longer carries those settings, so leaving them
+    # out would let the most-edited config in a project change with nothing
+    # re-firing. Derived from the dict `compose_config` returned, so this set
+    # and the one `copy_config_files` records cannot drift.
+    *[(f"workflow_config_{name}", path)
+      for name, path in sorted(WORKFLOW_CONFIG_PATHS.items())],
+    *[("data_catalog", source) for source in
+      (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
 ]
 
 EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
@@ -534,8 +570,7 @@ warn_on_heterogeneous_design(stress_test_cfg)
 refuse_out_of_domain_multipliers(stress_test_cfg)
 
 INDICATOR_TABLES = indicator_tables(
-    get_config(config.get("workflows", {}).get("build_model", {}) or {},
-               "wflow_outvars", DEFAULT_WFLOW_OUTVARS, optional=True)
+    get_config(shared_cfg, "wflow_outvars", DEFAULT_WFLOW_OUTVARS, optional=True)
 )
 
 # 3.00  all — target aggregator: the experiment's indicator tables
@@ -618,6 +653,7 @@ rule snapshot_config:
     message: rule_banner("3.02", "snapshot_config")
     input:
         config_snake = config_path,
+        config_workflows = WF_CONFIG_PATHS,
         consistency_ok = f"{exp_dir}/.project_consistency_ok",
     params:
         data_catalogs = DATA_SOURCES,
@@ -631,6 +667,12 @@ rule snapshot_config:
         config_dir = f"{exp_dir}/config",
         effective_config = config,
         advanced_settings = ADVANCED_SETTINGS,
+        # The snapshot is a dump of THIS mapping, not a copy of the project
+        # file (R13 D-11.1): after the split the project file does not hold
+        # the workflow settings.
+        composed_config = config,
+        # Recorded, never copied -- their content is inlined above (D-11.2).
+        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
     output:
         config_snake_out = f"{exp_dir}/config/snake_config_run_stress_test.yml",
         run_record = RUN_RECORD,
@@ -833,7 +875,17 @@ rule prepare_stress_test_grid:
     message: rule_banner("3.09", "prepare_stress_test_grid")
     input:
         config = ancient(config_path),
+        config_workflows = ancient(WF_CONFIG_PATHS),
         consistency_ok = f"{exp_dir}/.project_consistency_ok",
+    params:
+        # The RESOLVED stress-test section, not a path to re-read (R13
+        # D-10.6). Two things follow. The module stops opening the config
+        # itself -- after the split `workflows.run_stress_test.stress_test`
+        # is in no single file it could open. And this is the rule's ONLY
+        # rerun trigger: both config inputs above are `ancient()`, which by
+        # construction triggers nothing, so without this param an edit to
+        # the grid would leave a stale `stress_test_lookup.csv` in place.
+        stress_test_cfg = stress_test_cfg,
     output:
         # ONE table at monthly grain (WG-2), 12 x ST_NUM rows keyed
         # (st_id, month), replacing BOTH the per-member _work/st_<m>.csv grid --
@@ -884,7 +936,12 @@ rule prepare_weathergen_config:
     output:
         weagen_config = f"{wg_dir}/config/weathergen_config.yml",
     params:
-        snake_config = config_path,
+        # The two RESOLVED values this rule's module used to re-read the
+        # config from disk for (R13 D-10.6). Passing them finishes the
+        # conversion the six params below already started, and the module
+        # stops needing to know the config layout at all.
+        realizations_num = RLZ_NUM,
+        stress_test_cfg = stress_test_cfg,
         default_config = "config/defaults/weathergen_config.yml",
         # The generator ROOT, not a write dir: generate_weather.R derives
         # output/ (products) and plots/ (figures) from it, because

@@ -31,7 +31,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
-import yaml
+
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
 
 pytestmark = pytest.mark.workflow_contract
 
@@ -52,7 +54,7 @@ def staged_store(tmp_path):
     The catalog is copied so the test can edit it without touching the tracked
     fixture. Returns (config_path, catalog_path, store_target).
     """
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     project_dir = tmp_path / "proj"
     project_dir.mkdir()
     catalog = tmp_path / "catalog.yml"
@@ -60,8 +62,7 @@ def staged_store(tmp_path):
 
     cfg["project"]["project_dir"] = project_dir.as_posix()
     cfg["project"]["data_sources"] = catalog.as_posix()
-    cfg_path = tmp_path / "snake_config_staged.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="snake_config_staged")
 
     # Store key exactly as climate_store_rule builds it.
 

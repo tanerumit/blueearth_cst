@@ -9,7 +9,6 @@ import math
 import os
 
 import pytest
-import yaml
 
 from blueearth_cst.experiment.prepare_weagen_config import (
     build_weagen_config,
@@ -76,24 +75,21 @@ def test_build_weagen_config_generate_reads_moved_default(tmp_path):
 
 
 def _generate_kwargs(tmp_path, stress_test=None):
-    """The call rule 3.04 makes, with a writable snake config beside it."""
+    """The call rule 3.10 makes.
+
+    No config file any more: since R13 D-10.6 the rule passes the resolved
+    realization count and stress-test section as params, so this module no
+    longer opens the project config and this fixture no longer builds one.
+    ``tmp_path`` is kept for the callers that write beside it.
+    """
     if stress_test is None:
         stress_test = {
             "temp": {"step_num": 1, "transient_change": True},
             "precip": {"step_num": 2, "transient_change": False},
         }
-    snake_cfg = {
-        "workflows": {
-            "run_stress_test": {
-                "realizations_num": 2,
-                "stress_test": stress_test,
-            }
-        }
-    }
-    snake_path = tmp_path / "snake.yml"
-    snake_path.write_text(yaml.safe_dump(snake_cfg), encoding="utf-8")
     return dict(
-        snake_config_path=str(snake_path),
+        realizations_num=2,
+        stress_test_cfg=stress_test,
         output_path="out/",
         nc_file_prefix="rlz_1",
         default_config_path=DEFAULT_WEAGEN_CONFIG,

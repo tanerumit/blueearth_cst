@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-55` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-56` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -653,13 +653,52 @@ against a Jan–Dec window leaves partial years at both ends.
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
 | `C-22` | `model_build_config` / `waterbodies_config` → `engine.build_config` / `engine.waterbodies_config` | S4, S5, N3 | REGROUP | yes |
-| `C-23` | `observations_timeseries` → `observations.timeseries` | S4 | REGROUP | yes — **group of one; see note** |
+| `C-23` | ~~`observations_timeseries` → `observations.timeseries`~~ — **superseded by `C-56`** | S4 | REGROUP | yes |
+| `C-56` | `observations_timeseries` → `observations:` as a mapping KEYED BY VARIABLE, in `model.outvars` vocabulary | N5, S4 | RENAME | yes |
 | `C-24` | `simulation_window.{starttime,endtime}` → `simulation_window.{start,end}` | N4 | RENAME | yes |
 
-`C-23` makes `observations:` a group of one, which S4 forbids. Either keep a
-flat `observations_timeseries:` leaf, or accept the group as anticipation of a
-second observations key. Unresolved; decide it with `Q-B`, which is the same
-question asked about `model:`.
+#### Observations are keyed by VARIABLE — `C-56`
+
+**Ruled by the owner, 2026-08-22.** `observations_timeseries` names the SHAPE
+of the value (a timeseries) rather than its CONTENT (observed river
+discharge), and the repo already disagrees with itself about it: the shipped
+template is `observed_daily_discharge_template.csv` while the config key says
+`observations_timeseries`. Two spellings, one thing — P3.
+
+```yaml
+observations:
+  river discharge: <path>
+```
+
+The file's columns are STATIONS, not variables (`time;1010;1020`), so one file
+is one variable across many gauges — which is exactly why the variable is the
+right key. Values are drawn from `model.outvars` vocabulary verbatim, which
+buys a parse-time INVARIANT: observations may only be supplied for a variable
+the model was asked to output, because otherwise there is nothing to compare
+against and the config expresses a wish rather than a fact. That is a
+mechanical check of the kind D1 asks every proposal here to produce.
+
+It also supersedes `C-23` properly rather than patching it: that row made
+`observations:` a group of one and an S4 violation. A mapping keyed by
+variable is not nesting for nesting's sake — it is a dictionary that happens
+to hold one entry today.
+
+A list of records (`- {variable: ..., path: ..., units: ...}`) was considered
+and held in reserve: same idea with room for per-entry metadata, more verbose,
+and nothing needs the metadata today. It is the upgrade path if units or
+timestep ever have to be declared per file. A flat `observed_discharge:` was
+rejected — it hardcodes the variable into the key, which is what N7 argues
+against in spirit.
+
+**A coupling to record.** `basin.output_locations` (T1) carries rows with
+`location_role: observation`, and those rows name the `wflow_id` COLUMNS
+inside this file; `shared/gauges.py:100` already warns that changing one means
+changing the other. After R14 the two sit in DIFFERENT TIERS — the point list
+in the project file, the observed data in WF1's. Correct by the readers rule
+(`observations_timeseries` is WF1-only: `build_model.smk:166`, plus
+`copy_config_files.py` archiving and `plot_results.py`), but a user can break
+it in one file and only discover it from the other, so it belongs in the
+template comment as well as here.
 
 `simulation_window` stays in the WF1 file: it is read by `build_model.smk` only
 (verified 2026-08-22), so it is correctly T2 despite reading like a shared
@@ -760,7 +799,7 @@ engine:
   waterbodies_config: config/defaults/wflow_update_waterbodies.yml
 simulation_window: {start: "2000-01-01", end: "2020-12-31"}
 observations:
-  timeseries: null
+  river discharge: null    # key drawn from model.outvars
 ```
 
 ### `_analyze_projections.yml`

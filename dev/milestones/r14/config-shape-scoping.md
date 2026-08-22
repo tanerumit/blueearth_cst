@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-53` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-55` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -522,13 +522,51 @@ which matters because they depend on a model boundary that does not exist yet.
 | `C-20` | ~~`shared.seed`, `shared.water_year_start` → `method.*`~~ — **superseded by `C-51` and `C-53`** | S1, S3 | REGROUP | yes |
 | `C-51` | `shared.seed` → `seed:` in `_run_stress_test.yml`; remove from `SHARED_SEAM_KEYS` (R13 amendment) | S1, seam | REGROUP | yes |
 | `C-52` | Retire the `method:` section entirely — both its keys have real homes | S1, S4 | DELETE | yes |
-| `C-21` | `shared.julia_threads` → `compute.julia_threads` | S2, S3 | REGROUP | yes |
+| `C-21` | ~~`shared.julia_threads` → `compute.julia_threads`~~ — **superseded by `C-54`** | S2, S3 | REGROUP | yes |
+| `C-54` | `shared.julia_threads` → `advanced_settings.runtime.julia_threads`; the project-level override is REMOVED | authority | DELETE | yes |
+| `C-55` | T1 `compute:` dissolves — `compute:` becomes workflow-local only, nested under its own file and never hoisted | S4, S7 | DELETE | yes |
 
-`C-21` is the clearest S3 case: `julia_threads` cannot change a number, and
+`C-21` was the clearest S3 case: `julia_threads` cannot change a number, and
 flattening it into a guarded section (the owner's Q1 as literally posed) would
 make a thread-count bump trip *"your model was built under different settings"*.
-`C-21` places `compute:` in T1; `C-34` places it in a workflow file. Under S7
-only one of those survives unchanged — see `Q-G`.
+It is superseded, not withdrawn — the S3 reasoning stands, the key just leaves
+the project surface entirely.
+
+#### `julia_threads` leaves the project config — `C-54`, `C-55`
+
+**Ruled by the owner, 2026-08-22:** it is a technical setup preference about
+the Julia software, unlike every other key around it, and users will not
+change it. Reserve it for `config/advanced_settings.yml` at the default of 4.
+
+It lands under `runtime:`, NOT `defaults:`. That file's boundary is AUTHORITY
+rather than topic: `defaults:` means a project may override, `runtime:` and
+`constraints:` mean it may not. Since the point is removing the project-level
+override, `defaults.julia_threads` would be defaulting for a key that no longer
+exists. `runtime:` already holds `julia_version`, and a Julia version and its
+thread count are the same kind of thing — how we invoke Julia.
+
+**The dividend (`C-55`): T1 `compute:` dissolves.** `julia_threads` was its
+only T1 member, so `compute:` now exists solely in the stress-test file
+(`C-34`). That matters for S7: `Q-G` existed because `compute:` had been placed
+in BOTH tiers, colliding with the closed hoist map. With T1's gone the
+collision does too — a workflow-local `compute:` nested under its own file and
+never hoisted satisfies S7 with no ruling required. **`Q-G` narrows to the
+`reporting:` question alone.**
+
+This is the same shape as `C-52`: a section that looked like a KIND turns out
+to have held one key for want of a home, and removing the key removes the
+section. Two of the draft's five new T1 sections have now dissolved that way,
+which is worth watching — it is weak evidence that the draft over-sectioned.
+
+Two things to carry forward. It is a user-facing REMOVAL, not a move: anyone
+setting `shared.julia_threads` loses it, so the migration notes must point at
+the new location rather than rewrite the key. And machine-dependence does not
+argue against it — thread count multiplies against Snakemake's `-c N`, and
+neither the project config (per-PROJECT, and a project moves between machines)
+nor `advanced_settings.yml` was ever per-machine. If per-machine tuning becomes
+a real need, `profiles/default/config.yaml` is where machine parallelism
+already lives. `_ADVANCED_SETTINGS_SCHEMA` is closed, so the key and its schema
+entry move in one commit.
 
 #### `model:` is the engine boundary — `Q-B` resolved
 
@@ -545,6 +583,24 @@ general case N7 now states.
 
 The output tree already anticipates this: artifacts land under
 `models/hydrology/wflow/`, namespaced by domain AND engine.
+
+**Double-checked 2026-08-22 (owner): should `outvars` sit under build_model
+instead, since its values are a wflow setting?** No — that is where it lived,
+and R13 moved it OUT. `SHARED_SEAM_KEYS` records why: hoisted from
+`workflows.build_model` by **D-9.7**, it was "the one sanctioned cross-workflow
+value read — WF1 builds the model with it, WF3 derives its indicator tables
+from it — and moving it here is what let `CROSS_WORKFLOW_READS` be emptied and
+retired." Moving it back would reinstate that read against a D-9.6 scan which
+now asserts literally ZERO of them (the registry that would have sanctioned one
+was retired as unable to enforce shrink-only); it would be refused at parse
+time today, since the key is in `SHARED_SEAM_KEYS`; and it would weaken the
+experiment guard, which R13 extended with the `("shared", "wflow_outvars")`
+leaf precisely so a post-build edit is caught here rather than surfacing
+mid-experiment as a missing-column error a whole workflow away.
+
+Placement follows READERS; the values being engine-native is why the key name
+must not be (N7). `C-19` therefore stands: same tier, same meaning, a name that
+survives an engine swap.
 
 Model pluggability itself is NOT an R14 concern — it is an architectural
 milestone of its own. What R14 owes it is not to paint it into a corner:
@@ -689,9 +745,6 @@ climate:
 model:
   outvars: ["river discharge", "actual evapotranspiration"]
 
-compute:
-  julia_threads: 4
-
 workflows:
   analyze_climate:     {enabled: true}
   build_model:         {enabled: true, config_path: ..._build_model.yml}
@@ -784,7 +837,7 @@ candidate_sources: [chirps]
 | `Q-E` | Where does a config key's DEFAULT live: `config/advanced_settings.yml` (precedent, closed schema, already tested) or beside the key in the template? | `C-36` | **`advanced_settings`** — the only option with an existing enforcement mechanism, and the only one that could grow `C-37`. |
 | `Q-F` | Does S2 actually permit `_WF1_GUARDED` to become "everything except `compute:`/`reporting:`"? | `C-04` | Unknown. **Needs a probe against the digest and freeze code before R14 promises it.** |
 | `Q-H` | One `selected`, or one per consumer (`forcing` for WF1, `conditioning` for WF3)? | `C-44` | Lean ONE. CST does no local calibration, so the response surface is anchored on the historical run; letting the generator condition on a different record than the model was forced with decouples them silently. The genuine hybrid case is already met INSIDE a single store — the CHIRPS branch takes temperature, radiation and pressure from ERA5 and lapse-corrects them onto the CHIRPS grid. Splitting later is expensive, so record rather than default. |
-| `Q-G` | Under S7, how are `compute:` and `reporting:` placed? (a) T1-only — every workflow's performance/description keys move to the project file; (b) per-workflow and never hoisted — they nest under `workflows.<name>` and lose the freeze exemption that hoisting buys; (c) distinct names per tier. | `C-02`, `C-03`, `C-28`, `C-34` | Lean (a) for `compute:` (a thread count and a batch size are the same kind of knob and belong together), and **keep `reporting:` as it is** — WF3-owned and hoisted — since (b) would revoke the caption-edit exemption that is the whole reason it was hoisted. That makes `C-03` a no-op and `C-28` a rename onto a T1 `reporting:`. |
+| `Q-G` | **NARROWED 2026-08-22 by `C-55` — `compute:` is settled (workflow-local only), so this is now the `reporting:` question alone.** Under S7, how is `reporting:` placed? (a) T1-only — every workflow's performance/description keys move to the project file; (b) per-workflow and never hoisted — they nest under `workflows.<name>` and lose the freeze exemption that hoisting buys; (c) distinct names per tier. | `C-02`, `C-03`, `C-28`, `C-34` | Lean (a) for `compute:` (a thread count and a batch size are the same kind of knob and belong together), and **keep `reporting:` as it is** — WF3-owned and hoisted — since (b) would revoke the caption-edit exemption that is the whole reason it was hoisted. That makes `C-03` a no-op and `C-28` a rename onto a T1 `reporting:`. |
 
 ## Constraints
 

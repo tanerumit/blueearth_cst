@@ -17,8 +17,8 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N6` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-42` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
-| `Q-A`–`Q-G` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
+| `C-01`–`C-47` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `Q-A`–`Q-H` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
 from the un-hyphenated `Cnn` finding IDs used in `dev/reviews/` records.
@@ -151,7 +151,8 @@ note: every rename below is deliberate and versioned, not opportunistic.
 
 ## Change register
 
-Class: **NEW** (section introduced) · **RENAME** · **REGROUP** (moves between
+Class: **NEW** (section introduced) · **RENAME** · **SEMANTIC** (a key's
+MEANING changes, not only its path — see the non-goals amendment) · **REGROUP** (moves between
 sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 "Breaking" = an existing project config stops parsing or changes digest.
 
@@ -305,6 +306,11 @@ The resulting rule, which S6 already states and this note fixes the words for:
 | `C-16` | Introduce top-level `climate:` | S1 | NEW | yes |
 | `C-17` | `shared.clim_historical` → `climate.source` | N1, N3 | RENAME | yes |
 | `C-18` | `shared.historical_window.{starttime,endtime}` → `climate.window.{start,end}` | N4 | RENAME | yes |
+| `C-43` | New `climate.sources` — a flat LIST of candidate datasets with no privileged element. Absorbs `candidate_sources`, moving it T2 → T1 and widening its meaning from "extras besides the primary" to "the full candidate set" | S1, charter | **SEMANTIC** | yes |
+| `C-44` | `shared.clim_historical` → `climate.selected`, with requiredness that varies by consumer (below) | N5 | **SEMANTIC** | yes |
+| `C-45` | Retire `workflows.analyze_climate.candidate_sources`; refused at parse time, as `start_month_hyd_year` is | — | DELETE | yes |
+| `C-46` | WF0 figure and comparison-table ordering follows `selected` when set, else declaration order | — | behavioural | no |
+| `C-47` | Adopt the `climate:` CHARTER (below) as the section's definition in the template and `dev/reference/` | S1, N5 | NEW | no |
 
 `C-16`–`C-18` are the owner's third question. `clim_historical` (the *what*) and
 `historical_window` (the *how much*) are one concept in two sibling keys —
@@ -313,6 +319,108 @@ names**, so nesting moves seam coverage from leaf to group and a T2 file could
 then declare a bare `window:` uncaught. `basin` already has that property, so
 this is a tolerated pattern rather than a new hole — but the seam set must be
 re-derived, not merely edited.
+
+#### The charter (`C-47`)
+
+**Ruled by the owner, 2026-08-22**, answering "is `climate:` about forcing or
+about analysis?"
+
+> **`climate:` declares the project's historical climate RECORD** — which
+> datasets represent this basin, and over what period. It never declares what
+> a workflow *does* with that record.
+
+The question felt open only because the section had been named by its
+CONSUMER, which is what N5 warns against. Named by what it IS, the ambiguity
+disappears, and the charter yields a mechanical placement test for every
+future key: *is this a fact about the basin's climate, or a use of it?* Facts
+go in `climate:`; uses go in a workflow file. Exactly parallel to `basin:`,
+where the geometry is a project fact and each workflow's use of the
+delineation is not.
+
+| stays in `climate:` (the record) | stays in a workflow file (a use) |
+|---|---|
+| `sources`, `window`, `selected` | WF0's figure and comparison choices |
+| | WF1's `simulation_window` |
+| | WF2's `historical_year_range` |
+| | WF3's `horizon_year`, `run_length` |
+
+**Moving `climate:` down into the workflow files was considered and
+rejected.** It is not an R14 tweak: `historical_window` and `clim_historical`
+are both in `SHARED_SEAM_KEYS`, so a workflow file declaring either is a parse
+error TODAY (D-9.2/D-9.3) — reversing that amends an accepted R13 decision.
+The reason holds on inspection: the climate store's path is
+`data/climate/historical/<source>_<window>/`, written by WF1 and read by WF3,
+so the shared value IS a filesystem key rather than a convention; and
+`simulation_window` must sit inside `historical_window`
+(`build_model.smk:741`); and WF2 reads the window to warn when its own
+baseline stops aligning (`analyze_projections.smk:117`, `:180`). Split, two
+files could disagree about what the record IS, and the failure would surface
+as a missing store a whole workflow away from its cause.
+
+Worth noting the seam rule produced three different answers across this
+document — `C-39` pushes the climate catalog DOWN (single reader), `C-43`
+pulls the candidate list UP (cross-workflow invariant), and the window stays
+put. A rule that discriminates is doing work.
+
+#### Many candidates, one selection (`C-43`–`C-46`)
+
+**Ruled by the owner, 2026-08-22.** There is no logical primary/secondary
+split among historical datasets: which one is better for a basin — more
+reliable, better spatial coverage — is the question WF0 exists to ANSWER, so
+the config must not presuppose it. `sources` is therefore a flat set, and
+`selected` is the conclusion drawn from the evidence.
+
+Resolution rules, chosen over a first-wins fallback:
+
+1. `sources` has ONE entry → `selected` resolves to it. Not a fallback; there
+   is no choice to make.
+2. `selected` unset and only WF0 runs → **valid**, no error. WF0 never needed
+   it: it analyses every source. "I have candidates, I have not chosen yet" is
+   a legitimate project state and the config must be able to express it.
+3. `selected` unset and WF1 or WF3 runs → **refused at parse time**, naming the
+   candidates and pointing at WF0's comparison output.
+4. `selected` must be a member of `sources`.
+
+**A first-wins fallback was rejected**: it reinstates the primary this change
+removes, with declaration ORDER now holding the privilege, invisibly. WF1
+would force the model and WF3 condition the generator on a dataset nobody
+chose, and the run record would name it as though someone had. CST does no
+local calibration, so forcing choice is the dominant lever on the historical
+run — the one decision that must not be inherited from YAML line order. Rule 3
+stops the pipeline exactly where a human judgement is required, which matches
+how this repo already behaves (unsupported sources are refused at parse time
+rather than failing inside a generated rule).
+
+**No new machinery is needed.** `analyze_climate.smk:229` reads
+`enforce_min_years=(source == clim_source)`; substituting `selected` is the
+whole change. With a selection, that source keeps the canonical spec, so the
+store WF0 builds is the one WF1 reads. With none, no source is privileged and
+every candidate relaxes the weathergenr floor — which binds later, at the
+moment of commitment, because promoting a candidate flips the param and
+re-extracts (`snake_utils.py:131-132`: `True` emits no param, `False` emits
+one). That REMOVES WF0's primary asymmetry rather than adding a mechanism.
+Selection is therefore cheap in disk and tooling — candidate stores already
+land beside the project's own, not in an evaluation bin — and costs one
+re-extraction, which is how the floor gets enforced rather than assumed.
+
+Two details to carry into the design:
+
+- **Absent and bare-null both read as unset** (the spelling `experiment_name`
+  already handles). But R13's composition invariant #2 makes a key
+  present-vs-absent move the digest, so two projects meaning the same thing
+  would hash differently. The template should ship `selected:` present and
+  null, so every project carries the key and the slot is visible.
+- **The supported set is bounded and smaller than the ambition.**
+  `_SUPPORTED_SOURCES = ("era5", "chirps", "chirps_global")`
+  (`analyze_climate.smk:120`), and `build_model.smk:148` refuses `eobs` on the
+  WF1 raw-climate path. `cru` and `eobs` do not exist today. The SHAPE is
+  general; adding a dataset is a capability task on the board, and R14 must
+  not imply it ships one.
+
+Migration invariant: a v1 config with `clim_historical: era5` and no
+candidates maps to `sources: [era5]` + `selected: era5`, which is
+behaviourally identical — so D3 and success criterion 5 both survive despite
+the SEMANTIC class.
 
 ### Group E — `model:`, `method:`, `compute:`
 
@@ -417,7 +525,8 @@ basin:
     soil: soilgrids
 
 climate:
-  source: era5
+  sources: [era5, chirps]
+  selected: era5   # null until WF0's comparison is read
   window: {start: "1990-01-01", end: "2020-12-31"}
 
 model:
@@ -519,6 +628,7 @@ candidate_sources: [chirps]
 | `Q-D` | Does `method:` earn a heading, or should `seed`/`water_year_start` be bare top-level leaves? | `C-20` | Lean heading — it is where a third method convention would go. |
 | `Q-E` | Where does a config key's DEFAULT live: `config/advanced_settings.yml` (precedent, closed schema, already tested) or beside the key in the template? | `C-36` | **`advanced_settings`** — the only option with an existing enforcement mechanism, and the only one that could grow `C-37`. |
 | `Q-F` | Does S2 actually permit `_WF1_GUARDED` to become "everything except `compute:`/`reporting:`"? | `C-04` | Unknown. **Needs a probe against the digest and freeze code before R14 promises it.** |
+| `Q-H` | One `selected`, or one per consumer (`forcing` for WF1, `conditioning` for WF3)? | `C-44` | Lean ONE. CST does no local calibration, so the response surface is anchored on the historical run; letting the generator condition on a different record than the model was forced with decouples them silently. The genuine hybrid case is already met INSIDE a single store — the CHIRPS branch takes temperature, radiation and pressure from ERA5 and lapse-corrects them onto the CHIRPS grid. Splitting later is expensive, so record rather than default. |
 | `Q-G` | Under S7, how are `compute:` and `reporting:` placed? (a) T1-only — every workflow's performance/description keys move to the project file; (b) per-workflow and never hoisted — they nest under `workflows.<name>` and lose the freeze exemption that hoisting buys; (c) distinct names per tier. | `C-02`, `C-03`, `C-28`, `C-34` | Lean (a) for `compute:` (a thread count and a batch size are the same kind of knob and belong together), and **keep `reporting:` as it is** — WF3-owned and hoisted — since (b) would revoke the caption-edit exemption that is the whole reason it was hoisted. That makes `C-03` a no-op and `C-28` a rename onto a T1 `reporting:`. |
 
 ## Constraints
@@ -572,8 +682,18 @@ candidate_sources: [chirps]
   `--configfile` CLI contract.
 - Any change to `config/catalogs/*`, `config/defaults/*` internals, or
   `advanced_settings.yml`'s authority boundary.
-- Changing what a workflow computes, or adding/removing a parameter's meaning.
-  Every register row is a MOVE or a RENAME except `C-07` (delete) and Group I.
+- Changing what a workflow computes. **Unamended.** If a number moves, the
+  change is wrong.
+- ~~Adding or removing a parameter's meaning.~~ **AMENDED 2026-08-22 (owner).**
+  `C-43` and `C-45` widen `candidate_sources` into `climate.sources` and
+  retire the old key, which the original wording forbade. Rather than land
+  that separately and make users migrate twice, R14 admits meaning changes
+  under the explicit **SEMANTIC** class. Two conditions hold for every such
+  row: it must still be expressible as a mechanical rewrite (D3), and it must
+  not move a number — success criterion 5 is scoped per-row, and every
+  SEMANTIC row so far carries a migration invariant showing the v1 behaviour
+  reproduced exactly. R13 was widened the same way, for the `wflow_outvars`
+  hoist.
 - Web/API concerns. The CST-API and frontend never constrain this repo, and no
   decision here is gated on whether they consume an artifact by name.
 

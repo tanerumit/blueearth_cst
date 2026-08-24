@@ -1097,12 +1097,15 @@ TREE-SHAPE change — `semantic_tree_diff.py` territory, not just a config diff.
 
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
-| `C-29` | `realizations_num` → `realizations_count` | N6 | RENAME | yes — **`Q-C`** |
-| `C-30` | `horizontime_climate` → `horizon_year` | N1, N5 | RENAME | yes |
-| `C-31` | `stress_test.<var>.step_num` → `steps_count` | N6 | RENAME | yes — **`Q-C`** |
-| `C-32` | `stress_test.<var>.transient_change` → `transient` | N3 | RENAME | yes |
-| `C-33` | `stress_test.{dry,wet}_spell_factor` → `stress_test.spell_factors.{dry,wet}` | S4 | REGROUP | yes |
+| `C-29` | `realizations_num` → `n_realizations` | N6 | RENAME | yes — **RULED 2026-08-24** (was `realizations_count`) |
+| `C-30` | ~~`horizontime_climate` → `horizon_year`~~ — **superseded by `C-67`** | N1, N5 | RENAME | — |
+| `C-31` | `stress_test.<var>.step_num` → `n_levels`, with `n_levels = step_num + 1` | N6 | **SEMANTIC** | yes — **RULED 2026-08-24** |
+| `C-32` | `stress_test.<var>.transient_change` (boolean) → `trajectory: transient \| constant` (enum) | N3, N5 | **SEMANTIC** | yes — **RULED 2026-08-24** |
+| `C-33` | `stress_test.{dry,wet}_spell_factor` → `spell_factors.{dry,wet}` | S4 | REGROUP | yes |
 | `C-34` | `batch_size`, `batch_size_max`, `disk_headroom_gb` → `compute.*` | S2, S3 | REGROUP | yes |
+| `C-67` | `horizontime_climate` + `run_length` → `simulation_window: {start, end}` | N4, N8 | **SEMANTIC** | yes — **RULED 2026-08-24** |
+| `C-68` | `stress_test:` → `climate_perturbations:` | N3 (file-scope) | RENAME | yes — **RULED 2026-08-24** |
+| `C-69` | `run_historical` deleted; `st_0` is always produced | S2, P2 | **DELETE** | yes — **RULED 2026-08-24** |
 
 `C-33` keeps the existing rationale intact — the spell factors are not
 perturbation axes and must not read as siblings of `temp:`/`precip:`; a named
@@ -1110,6 +1113,251 @@ perturbation axes and must not read as siblings of `temp:`/`precip:`; a named
 `C-34` is S2's second payoff: three WF3 keys that cannot change a number
 currently sit inside the guarded, digested surface. Its section name is the one
 `Q-G` must place: T1-only, or per-workflow and never hoisted.
+
+#### `experiment_name` and `seed` stay as they are — and `experiment_name` dents S2
+
+**Ruled by the owner, 2026-08-24: both are fine.** `seed` still moves file
+under `C-51`; only its spelling is settled.
+
+Recorded because it is a hole in the load-bearing rule, not because the name is
+interesting: **`experiment_name` belongs to none of S2's three classes.**
+Changing it does not change the numbers of an experiment — it starts a
+DIFFERENT experiment. It is not performance and it is not description. S2
+catches it only because "identity" is defined as *everything not named below*,
+which is the same residual-bag criticism S1 levels at `shared:`.
+
+One key is not a reason to add a fourth class. It IS a reason to answer `Q-F`
+with a probe rather than an argument: "guard everything except `compute:` and
+`reporting:`" is a claim that S2 actually partitions the surface, and here is
+one key it only appears to.
+
+#### The step count is off by one from its own name — `C-31`
+
+**Ruled by the owner, 2026-08-24: `n_levels`, as a SEMANTIC row.**
+`stress_test_grid()`'s docstring: *"Per-axis step count is `step_num + 1`
+(endpoints inclusive)"*. So baseline `precip.step_num: 2` with `min: 0.7` /
+`max: 1.3` produces THREE levels — 0.7, 1.0, 1.3 — which is why `st_2` is the
+identity member in the `t2608151154` measurement. Renaming it `n_steps` would
+make a misleading name look precise.
+
+`n_levels: 3` says three levels and means three. The migration invariant is
+`n_levels = step_num + 1`, the grid is provably unchanged, and the `+ 1` leaves
+`stress_test_grid()` rather than living on as arithmetic between the config and
+the code. A user choosing a perturbation grid thinks in levels, and the
+invariant is exactly the mechanical rewrite D3 asks for.
+
+**Considered and rejected: `n_intervals`** — a pure RENAME with an identity
+invariant, which keeps today's semantics and names them honestly. Cheaper as a
+migration row, but it preserves the mental `+ 1` at every reading, and the
+whole point of touching the key was that nobody performs that addition
+reliably. The SEMANTIC row buys the fix outright.
+
+This is the second SEMANTIC row in the milestone whose justification is that a
+name and its value disagree; `C-61` was the first. Both are admitted under the
+amended non-goal, and both carry an invariant showing the v1 behaviour
+reproduced exactly.
+
+#### The forcing window becomes a declared window — `C-67`, `C-72`, `C-73`
+
+**Ruled by the owner, 2026-08-24.** `horizon_year` and `run_length` merge into
+one declared `simulation_window: {start, end}`, the same spelling WF1 uses.
+
+This reverses a position recorded 2026-08-22 ("not unified now, because WF3's
+window is deliberately derived rather than declared"), and the reversal is
+supported by what the code actually reads. `horizontime_climate` has exactly
+three consumers and NOT ONE of them wants the midpoint:
+
+| consumer | needs |
+|---|---|
+| `downscale_climate_forcing.py:78` → `forcing_window()` | the window |
+| `batch_sizing.measure_member_footprint` → `forcing_window_years()` | the window |
+| `prepare_weagen_config.compute_nr_years()` | the END only |
+
+(`write_experiment_config.py:68` names the key in a docstring example, not a
+read.)
+
+**It deletes a documented foot-gun.** Today `start = H - ceil(L/2)` and
+`end = H + round(L/2)`, so `forcing_window.py:31` has to warn that
+`run_length: 8` at horizon 2050 gives 2046..2054 — NINE calendar years — and
+`snake_config_rapid.yml` has to tell users to keep `run_length` even because
+"7 and 8 both yield the same 9-year window and the odd value just misreports
+itself." A declared window says 2070–2086 and runs 2070–2086.
+
+**It also removes an inconsistency between two live functions.**
+`compute_nr_years` uses `ceil(H + L/2)` while `forcing_window_years` uses
+`round(L/2)`, so the two derive different implied end years for `run_length` in
+{5, 9, 13, ...}. The fix is DELETION, not harmonization: with the window
+declared there is only one derivation left.
+
+The three functions become two (`C-72`, `C-73`):
+
+| today | after |
+|---|---|
+| `forcing_window_years(H, L)` | **deleted** — the config declares it |
+| `forcing_window(H, L)` → ISO pair | a pure years-to-ISO formatter, now SHARED with WF1 under `C-71` |
+| `compute_nr_years(H, L)` | `n_years(end) = end - 2010 + 2`, no `ceil` |
+
+They are NOT merged into one function: a window and a series length are
+different questions, and fusing them would repeat the mistake `shared:` made.
+
+**Migration invariant.** `{start: H - ceil(L/2), end: H + round(L/2)}`
+reproduces the run window exactly. The generator's series length becomes
+`end - 2010 + 2`, which differs by one year only for the odd `run_length`
+values where the two functions already disagree — and **no shipped config uses
+one** (baseline 16, baseline_linux 20, rapid 8, wf2_fast 20, fixture 10, all
+even). Recorded as a per-row exception to success criterion 5 rather than
+hidden.
+
+**It settles the WF1 naming question permanently.** The 2026-08-22 record said
+`reference_window` would become the better name for WF1 IF WF3's window ever
+became explicit. It has — but `reference_window` now belongs to WF2's CMIP6
+baseline (`C-59`), so moving WF1 onto it would create a genuine cross-file
+collision between two different "reference" periods. `simulation_window` in
+BOTH WF1 and WF3 is one spelling for one concept — the period the model runs —
+disambiguated by the file the reader is standing in, which is the same test
+that kept the name in the first place.
+
+**One asymmetry survives and is deliberate:** WF1's window is a period of
+OBSERVED record and WF3's is a period of GENERATED series. Same kind, same
+spelling, different provenance; the file says which.
+
+#### `transient_change` is a boolean where the method has a type — `C-32`
+
+**Raised by the owner, 2026-08-24:** "this isn't the most elegant/user-facing
+pick for the operation ... is the value applied over the full series? or
+applied as a linear change per year?" **Ruled the same day:
+`trajectory: transient | constant`.**
+
+The note already specifies this, and specifies it as a TYPE rather than a flag
+(`docs/cst-toolbox-technical-note-2025.md`, the Annex, *Workflows and Tasks*):
+
+> `Change_step_type`: transient (default) or constant. The transient change
+> applies change factors in a gradually increasing manner, starting from no
+> change in the first analysis year. In contrast, the constant change applies
+> the same change factors over the entire analysis period.
+
+So the CONFIG diverged from the spec, not the other way round. This row is
+SEMANTIC rather than a rename because the value's TYPE changes — boolean to
+enum. Migration invariant: `true → transient`, `false → constant`, nothing else
+moves.
+
+**Why the key is not `Change_step_type`, `change_type` or anything with
+"step".** `C-31` has just made `n_levels` the grid vocabulary, so a key
+carrying "step" would now read as if it were about grid steps — the note's own
+name became actively misleading the moment `C-31` landed. "change" is WF2's
+word for change factors, and inside `climate_perturbations:` it restates the
+section (N3). `trajectory` says what the value is about: how the perturbation
+evolves across the run.
+
+**Why an enum rather than a better-pointing boolean.** A boolean makes the
+reader know which way `true` points, and it cannot grow a third profile without
+a second boolean. The two values are the two alternatives the owner stated, and
+the note names them.
+
+**Considered and rejected:**
+
+| candidate | why not |
+|---|---|
+| `trajectory: gradual \| immediate` | the note's OTHER wording (§1.3.1, "gradually over time or immediately from the start"); plainer for a non-specialist, but diverges from the generator's own `temp_transient` argument, so the seam would translate |
+| `trajectory: ramp \| step` | crispest signal language, but "step" collides with `C-31`'s grid vocabulary |
+| `ramp: true \| false` | keeps a boolean, just one that points the right way; inherits every problem above |
+
+**Erratum, note vs code.** The Annex says `transient` is the DEFAULT. The code
+deliberately refuses a missing value (`prepare_weagen_config.py:38`, "refusing
+a silent default"), and the code is right: a silent default here moves numbers.
+The note is the stale side. `C-32` keeps the refusal — `trajectory:` is
+REQUIRED on both axes — and `C-75` corrects the note.
+
+**An asymmetry inside one section, worth stating rather than discovering.**
+`trajectory:` is refused when missing while `spell_factors` (`C-33`) default
+silently to twelve 1.0s. That is defensible — the spell factors have an
+identity value and `trajectory` has none — but it is undocumented today, and
+`C-33`'s regroup is the moment to say so in the template.
+
+#### `stress_test:` names the process, not the parameters — `C-68`
+
+**Raised by the owner, 2026-08-24:** "stress test is the name for the entire
+process. Here we are discussing the perturbation parameters." The same
+file-scope reading of N3 that settled `simulation_window`: the section repeats
+its own file's subject.
+
+**Ruled by the owner, 2026-08-24: `climate_perturbations:`.**
+
+- **`climate_perturbations:`** — chosen. The toolbox's own vocabulary
+  ("perturbs local climate over a temperature × precipitation grid",
+  AGENTS.md), and it correctly covers the section's NON-AXIS contents: the
+  spell factors are perturbations that add no grid member, which is why
+  `perturbation_grid:` would be wrong.
+- `perturbations:` — rejected as terser but weaker: nothing else in the file is
+  perturbed, so "climate" is not strictly disambiguating, but the section is
+  read alongside a `climate:` section in the project file and the longer name
+  says which subject it belongs to.
+- `climate_change:` — **rejected on method grounds.** CST is scenario-neutral
+  by construction: the grid is deliberately NOT a climate-change projection,
+  and WF2 already owns change factors. Naming the grid `climate_change`
+  misrepresents the method to the next reader.
+
+#### What `run_historical` actually is, and why it goes — `C-69`
+
+Asked by the owner, 2026-08-24: "is this a useful parameter or not?" **Ruled
+the same day: delete it; `st_0` is always produced.**
+
+It sets `ST_START = 0` (`run_stress_test.smk:204-205`), which admits member
+`st_0`. That is **not** the historical record: `st_0` is the stochastically
+GENERATED series over the same future window as every other member, with no
+perturbation applied. WF1 already owns the historical run. The name is wrong
+three ways — not historical, not a run toggle, and what it selects is a member.
+
+**It is not a free knob: it silently governs 2 of 11 discharge metrics.**
+`export_wflow_results.py:357` fixes the class-C month once from `st_0` — pick
+the wettest and driest month from the baseline, then evaluate THAT month for
+every member, so the surface shows how a given month responds rather than
+conflating it with the month itself moving. With `run_historical: false`,
+`wet_month` / `dry_month` stay `None` and `q_wettest_month_mean` /
+`q_driest_month_mean` are never emitted.
+
+That was a live defect at R11 P3 — `interchange_contracts.py:989`: *"a seed
+config with `run_historical: false` dropped the st_0 baseline ... 180 rows and
+two of eleven metrics gone, with this validator green."* The check that now
+catches it, `validate_hm7`, is **test-time only** (`export_wflow_results.py:315`
+— "its 'no rows' check is never invoked at run time"), so a real run still
+loses them silently.
+
+Two more facts pointing the same way:
+
+- The shipped **template default is the lossy `false`**, as are
+  `baseline_linux`, `wf2_fast` and the test fixture.
+- `snake_config_rapid.yml:14` already tells users to set it true: *"st_0 is
+  what the two class-C month indicators are derived FROM, so `false` drops 2 of
+  11 q metrics with nothing reporting it."*
+
+**Cost of always producing `st_0`:** one member in `ST_NUM + 1` — on the
+baseline grid (2 temp × 3 precip = 6) that is 1 run in 7, ~14%.
+
+**It is robust to how `t2608151154` resolves.** That item measured `st_0`
+against the grid's identity member `st_2`: five of eleven q metrics move by a
+factor, worst −69.7%. If it is resolved by re-anchoring the class-C month on
+the identity member, `st_0`'s last job disappears and the toggle goes for the
+opposite reason. **Both resolutions retire the boolean.**
+
+**Considered and rejected**, both of which keep the knob:
+
+- Rename to `baseline_member:` and add a run-time refusal. This is more
+  machinery to preserve an option whose only effect is losing two indicators —
+  a guard whose correct answer is always "yes, run it" is a knob that should
+  not exist.
+- Rename only. The silent loss stays a documented hazard rather than a guarded
+  one, which is the state that produced the R11 P3 defect in the first place.
+
+**Consequence for the migration.** `C-69` is a DELETE, so a v1 config carrying
+`run_historical: true` migrates by dropping the key, and one carrying `false`
+migrates by dropping it too — and that second case CHANGES WHAT THE RUN
+PRODUCES, by adding `st_0` and with it the two class-C metrics. It is the one
+row in this cluster where a mechanical rewrite is not behaviour-preserving, and
+the migration tool must SAY SO for that value rather than rewrite silently. No
+shipped config is affected in the direction that loses anything: the additions
+are `baseline_linux`, `wf2_fast` and the fixture, all of which gain two metrics
+they should have had.
 
 ### Group I — carried forward from `parameter-placement.md`
 
@@ -1119,6 +1367,8 @@ currently sit inside the guarded, digested surface. Its section name is the one
 | `C-36` | Move the config-key defaults out of Python (`DEFAULT_SPELL_FACTOR`, `DEFAULT_MAX_SUBBASINS_PER_BASIN`, `DEFAULT_GAUGE_SNAP_TOLERANCE_M`, `DEFAULT_HYDROGRAPHY`, `DEFAULT_BASIN_INDEX`, `DEFAULT_STATS`) (= M3) | — | MECHANISM | no — **blocked on `Q-E`** |
 | `C-37` | A mechanical "declared keys ⊆ read keys" check (answers P2) | — | MECHANISM | no |
 | `C-38` | Extend `scripts/split_project_config.py` (or a sibling) into a v1→v2 rewriter driven by the register above | — | MECHANISM | no |
+| `C-72` | `forcing_window_years()` deleted; `forcing_window()` becomes the shared years-to-ISO seam converter | — | MECHANISM | no |
+| `C-73` | `compute_nr_years()` loses its `ceil`; derived from `simulation_window.end` | — | MECHANISM | no |
 
 **Second erratum, same source (2026-08-22).** The appendix lists
 `DEFAULT_MIN_REFERENCE` and `DEFAULT_MAX_FLAGGED_MONTHS` under "No config

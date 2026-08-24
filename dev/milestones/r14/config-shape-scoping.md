@@ -18,7 +18,7 @@
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N8` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
 | `C-01`–`C-85` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
-| `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
+| `Q-A`–`Q-I` | **open question**, blocks a change — **all nine are now CLOSED** | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
 from the un-hyphenated `Cnn` finding IDs used in `dev/reviews/` records.
@@ -102,8 +102,10 @@ surface entirely, so the description class has no section and no instances left
 to generalize. What remains is a two-way split — identity and `compute:` — and
 `C-79` is what gives `compute:` its carve-out, by excluding it from
 `CONFIG_PROJECTION`. The two rows must be presented together, or S2's split has
-no instances at all. That also makes `Q-F` the whole of the evidence for the
-rule rather than one probe among several.
+no instances at all. **And the probe of 2026-08-24 narrowed it further:** the
+experiment guard, S2's headline payoff, never rested on the class split at all
+— see "The guard was never the mechanism" below. What survives of S2 is the
+DIGEST carve-out, `C-79`, and that is now the whole of it.
 
 **S3 — One section, one guard granularity.** A section never mixes an
 experiment-invariant key with a free-to-change one. S2 is the enforcement.
@@ -145,7 +147,14 @@ policy rules would contradict each other two sections apart.
 `snap_tolerance_m`, `river_uparea_km2`, `headroom_gb`.
 
 **N3 — A key never repeats its own section.** Inside `climate:`,
-`clim_historical` → `source`.
+`clim_historical` → `source`. **Exempt: `project.project_dir`** — ruled
+2026-08-24 (`Q-A`). It is a term of art rather than a key that happens to
+repeat its section: AGENTS.md's two-tier location rule is written around the
+word, `warn_if_project_dir_in_repo` is named for it, and it is the spelling of
+every internal variable that carries the value. At 736 occurrences across 95
+files outside `dev/` it is a wider sweep than the whole `C-85` rename, for a
+rule that gains nothing a reader would notice. Named here rather than left
+implicit, so it reads as a decision and not an oversight.
 
 **N4 — A time span is `{start, end}` inside a `*_window:` group** — one spelling
 in every file. Replaces `starttime`/`endtime` and both bare `[a, b]` year pairs.
@@ -283,7 +292,7 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 | `C-01` | Retire `shared:` as a heading; promote its contents to top-level kind sections | S1 | REGROUP | yes |
 | `C-02` | Introduce `compute:` — the section whose contents cannot change results | S2 | NEW | yes |
 | `C-03` | ~~Generalize `reporting:` from WF3-only to any workflow file~~ — **WITHDRAWN 2026-08-24** by `C-77`: there is nothing left to generalize | S2 | NEW | — |
-| `C-04` | Replace hand-maintained `_WF1_GUARDED` with "guard everything except `compute:`/`reporting:`" — after `C-77` the exception list is `compute:` ALONE (`C-79`) | S2, S3 | MECHANISM | behavior-visible |
+| `C-04` | Replace hand-maintained `_WF1_GUARDED` with **"the whole WF1 snapshot except the `workflows.*` enabled flags"** | S2, S3 | MECHANISM | behavior-visible — **RE-SCOPED 2026-08-24** by the `Q-F` probe |
 | `C-05` | Add `schema_version: 2` to the project file; refuse a v1 set with a message naming the migration command | — | NEW | yes (by design) |
 | `C-78` | `HOISTED_SECTIONS` empties; retire the hoist mechanism (R13 D-10.4 amendment) | S7 | MECHANISM | no |
 | `C-79` | Exclude `compute:` from `CONFIG_PROJECTION`, so performance keys leave configuration identity | S2 | MECHANISM | no |
@@ -293,7 +302,7 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
-| `C-06` | `project.project_dir` → `project.dir` | N3 | RENAME | yes — **blocked on `Q-A`** |
+| `C-06` | ~~`project.project_dir` → `project.dir`~~ — **WITHDRAWN 2026-08-24** by `Q-A`: `project_dir` is N3's named exemption | N3 | RENAME | — |
 | `C-07` | **Delete `project.static_dir`** (= M1) | — | DELETE | yes |
 | `C-08` | ~~`project.data_sources` → `project.catalogs.spatial`~~ — **superseded by `C-40`** | S6, N1 | RENAME | yes |
 | `C-09` | ~~`project.data_sources_climate` → `project.catalogs.climate`~~ — **superseded by `C-39`** | S6, N1 | RENAME | yes |
@@ -309,6 +318,63 @@ dissolved T1 `compute:`, and `C-77` removes `reporting:` from the config
 surface altogether — which withdraws `C-03` and `C-28` and empties
 `HOISTED_SECTIONS` (`C-78`). `Q-G` is RETIRED; there is no question left for it
 to answer. `C-02` survives and is unblocked.
+
+#### The guard was never the mechanism — `Q-F` probe, `C-04` re-scoped
+
+**Probed 2026-08-24, at the owner's direction, and RULED on the result.** `Q-F`
+asked whether `_WF1_GUARDED` could become "guard everything except `compute:`".
+It cannot, because the question names the wrong mechanism — and `C-04`'s actual
+goal, deriving the list instead of maintaining it, is reachable by a simpler
+rule than the one proposed.
+
+**Three mechanisms, which this document had been treating as one:**
+
+| mechanism | compares | where `compute:` sits |
+|---|---|---|
+| drift **guard** — `_WF1_GUARDED`, `check_project_consistency` | the live config against the WF1/WF2 snapshots | **not in it, and cannot be** |
+| experiment **freeze** — `_frozen_differences` | recorded `run_stress_test` keys against the document | here |
+| **digest** — `CONFIG_PROJECTION` → `effective_config_digest` | the projected document | here |
+
+`copy_config_files.py:89` states the decisive fact: *"a WF1 snapshot does not
+carry WF3's stress-test grid."* Confirmed in `compose_config` — the composed
+document keeps every T1 key plus the entry point's OWN workflow body, and gives
+the other three workflows their bare `{enabled: ...}` stanza and nothing else.
+So `compute:`, which `C-55` made workflow-local inside
+`workflows.run_stress_test`, is already outside the guard entirely. **Carving it
+out of `_WF1_GUARDED` is a no-op.** The carve-out S2 needs is on the freeze and
+the digest, which is `C-79` — already in the register, and now the only row
+carrying the claim.
+
+**What inverting the list would actually do**, measured rather than assumed:
+
+- **It would guard `shared` whole**, where today the guard takes `shared.basin`
+  and `shared.wflow_outvars` leaf-by-leaf. `run_stress_test.smk:58` gives the
+  reason for the narrowing: *"the guard narrows to `basin` only to stay
+  experiment-invariant."* The keys that FORCED that narrowing are `seed` and
+  `julia_threads` — and R14 removes both from T1 (`C-51`, `C-54`). After R14,
+  T1 is `project`, `basin`, `climate`, `model`, `workflows`, and every one of
+  them is identity. The exception has no remaining cause, and guarding
+  `climate:` CLOSES a hole: the climate record is what the model was forced
+  with, and today an edit to it is unguarded.
+- **One genuine false positive appears.** Guarding `workflows` whole compares
+  the bare `{enabled: ...}` stanzas, so switching WF2 off after the model was
+  built would refuse the WF3 experiment. Enabling a workflow does not change
+  what the model was built from. This is the one exception a derived rule still
+  needs, and it is STRUCTURAL — a property of what a stanza is — rather than a
+  list someone maintains.
+
+**Ruled: `C-04` becomes "guard the whole WF1 snapshot except the
+`workflows.*` enabled flags".** No maintained tuple, D2 satisfied (the
+leaf-by-leaf reason is gone because R14 removed its cause), and it is strictly
+stronger than today's guard rather than weaker.
+
+**What this costs S2, stated plainly.** The rule's headline payoff was always
+"the experiment guard becomes mechanical". It still does — but NOT because of
+the three-class split. It becomes mechanical because R14 empties T1 of
+everything that is not identity, which is `C-51`, `C-54`, `C-55` and `C-77`
+rather than S2 itself. S2's surviving payoff is the DIGEST carve-out (`C-79`),
+and that is the claim the design must carry. `experiment_name` already dented
+the partition; this probe shows the guard never rested on it.
 
 #### The file is named after the program that reads it — `C-85`
 
@@ -487,7 +553,7 @@ The resulting rule, which S6 already states and this note fixes the words for:
 | `C-17` | `shared.clim_historical` → `climate.source` | N1, N3 | RENAME | yes |
 | `C-18` | ~~`shared.historical_window.{starttime,endtime}` → `climate.window.{start,end}`~~ — **superseded by `C-70`**, which changes the TYPE as well as the spelling | N4 | RENAME | — |
 | `C-43` | New `climate.sources` — a flat LIST of candidate datasets with no privileged element. Absorbs `candidate_sources`, moving it T2 → T1 and widening its meaning from "extras besides the primary" to "the full candidate set" | S1, charter | **SEMANTIC** | yes |
-| `C-44` | `shared.clim_historical` → `climate.selected`, with requiredness that varies by consumer (below) | N5 | **SEMANTIC** | yes |
+| `C-44` | `shared.clim_historical` → `climate.selected` — ONE key for all three readers (`Q-H`, ruled 2026-08-24), with requiredness that varies by consumer (below) | N5 | **SEMANTIC** | yes |
 | `C-45` | Retire `workflows.analyze_climate.candidate_sources`; refused at parse time, as `start_month_hyd_year` is | — | DELETE | yes |
 | `C-46` | WF0 figure and comparison-table ordering follows `selected` when set, else declaration order | — | behavioural | no |
 | `C-47` | Adopt the `climate:` CHARTER (below) as the section's definition in the template and `dev/reference/` | S1, N5 | NEW | no |
@@ -1278,6 +1344,11 @@ with a probe rather than an argument: "guard everything except `compute:` and
 `reporting:`" is a claim that S2 actually partitions the surface, and here is
 one key it only appears to.
 
+*(Probed 2026-08-24, and the suspicion was right for a reason this subsection
+did not anticipate: the guard never consulted the partition. `experiment_name`
+is still the hole described above — it is simply no longer the only evidence
+that S2's partition does less work than the rule claims.)*
+
 #### The step count is off by one from its own name — `C-31`
 
 **Ruled by the owner, 2026-08-24: `n_levels`, as a SEMANTIC row.**
@@ -1563,8 +1634,13 @@ the profile or `--config` needs no edit to a tracked file.
 
 `C-79` is also the first concrete instance of the `Q-F` claim — "guard
 everything except `compute:` and `reporting:`" — and with `C-77` removing
-`reporting:`, it is now the ONLY instance. `Q-F`'s probe gets simpler and more
-load-bearing at once.
+`reporting:`, it is now the ONLY instance.
+
+**And after the `Q-F` probe of 2026-08-24, the only instance FULL STOP.** The
+probe found that `compute:` was never inside the drift guard — a WF1 snapshot
+does not carry WF3's sections — so the guard needed no carve-out and never got
+one. `C-79` is not the first instance of S2's rule; it is the whole of it, on
+the digest and the freeze rather than the guard.
 
 #### `reporting:` leaves the config — `C-77`, `C-78`
 
@@ -1716,7 +1792,7 @@ therefore corrected HERE rather than edited there:
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
 | `C-35` | De-duplicate `DEFAULT_ANCHOR` (defined twice: `metrics_definition.py:18`, `climate_figures.py:120`) (= M2) | — | MECHANISM | **no** |
-| `C-36` | Move the config-key defaults out of Python (`DEFAULT_SPELL_FACTOR`, `DEFAULT_MAX_SUBBASINS_PER_BASIN`, `DEFAULT_GAUGE_SNAP_TOLERANCE_M`, `DEFAULT_HYDROGRAPHY`, `DEFAULT_BASIN_INDEX`, `DEFAULT_STATS`) (= M3) | — | MECHANISM | no — **blocked on `Q-E`** |
+| `C-36` | Move the config-key defaults out of Python (`DEFAULT_SPELL_FACTOR`, `DEFAULT_MAX_SUBBASINS_PER_BASIN`, `DEFAULT_GAUGE_SNAP_TOLERANCE_M`, `DEFAULT_HYDROGRAPHY`, `DEFAULT_BASIN_INDEX`, `DEFAULT_STATS`) (= M3) → `advanced_settings.defaults` | — | MECHANISM | no — **UNBLOCKED 2026-08-24** by `Q-E` |
 | `C-37` | A mechanical "declared keys ⊆ read keys" check (answers P2) | — | MECHANISM | no |
 | `C-38` | Extend `scripts/split_project_config.py` (or a sibling) into a v1→v2 rewriter driven by the register above | — | MECHANISM | no |
 | `C-72` | `forcing_window_years()` deleted; `forcing_window()` becomes the shared years-to-ISO seam converter | — | MECHANISM | no |
@@ -1737,6 +1813,48 @@ recorded under Group G is not optional.
 `C-35` is the only change in this document that is unambiguously correct
 regardless of how everything else resolves, and the only one that is
 non-breaking and independently landable **today**.
+
+#### Where a default lives is a question of AUTHORITY — `Q-E` resolved, `C-36`
+
+**Ruled by the owner, 2026-08-24: `config/advanced_settings.yml`** — but by
+authority and scope, not as a blanket destination. Posed as a binary,
+`Q-E` was already broken by two rows this document had ruled.
+
+The file is a working mechanism rather than a proposal, and its own header
+states the organising principle: `constraints:` are hard limits no project may
+relax, `defaults:` are starting values a project MAY override, `runtime:` pins
+the external toolchain. The schema is closed, unknown keys are rejected at
+parse time, and `tests/test_advanced_settings.py` enforces it. Decisively for
+`C-36`: **every `defaults:` entry already names the config key that overrides
+it** in its comment, which is exactly the discoverability `C-36` is trying to
+buy. It is also the only candidate that could grow `C-37`.
+
+The rule, and the two exceptions already on the register:
+
+| the default is | it lives in | example |
+|---|---|---|
+| toolbox-wide policy a project may override | `advanced_settings.defaults` | `C-36`'s six |
+| a hard limit a project may NOT relax | `advanced_settings.constraints` | `max_flagged_months` (`C-65`) |
+| an attribute of one ENTITY, not of the toolbox | the entity's registry | `min_denominator` (`C-64`) |
+
+`C-64` is the one that makes this a rule rather than a destination, and its
+reasoning is worth restating because it inverts `C-54`'s: sending
+`min_denominator` to `advanced_settings` would mean **adding a relative
+variable REQUIRES editing a tracked toolbox file** — not optional tuning but a
+hard prerequisite. A per-variable threshold is a property of the variable, so
+it travels with the variable.
+
+Against that test, six of `C-36`'s eight defaults are toolbox-wide policy and
+go to `defaults:`; the two exceptions are `min_denominator` and
+`max_flagged_months`, both already placed.
+
+**A consequence for the bundle, since it is easy to miss.** Three
+`defaults:` entries name their overriding key as `shared.julia_threads`,
+`shared.seed` and `shared.water_year_start`. `C-54` REMOVES the first override,
+`C-51` moves the second into `_run_stress_test.yml` and `C-53` moves the third
+into `climate:`. All three comments go stale in the same bundle that moves the
+keys, and `_ADVANCED_SETTINGS_SCHEMA` is closed, so the schema entry and the
+file move together.
 
 #### The note carries two vocabularies for one concept — `C-75`
 
@@ -2022,21 +2140,33 @@ compute:                                        # C-34; excluded from
 
 ## Open questions
 
-| ID | question | blocks | current lean |
+**None remain open** as of 2026-08-24. The table is kept in full rather than
+pruned: each row is the question as it was posed, and the ruling that closed
+it, which is what makes a later reader able to tell a decision from a default.
+
+| ID | question | blocks | ruling |
 |---|---|---|---|
-| `Q-A` | `project.dir` (N3) vs keeping `project_dir` | `C-06` | **Keep `project_dir`** as a named exemption — it is a term of art here (AGENTS.md's two-tier location rule, `warn_if_project_dir_in_repo`, every internal variable). |
+| ~~`Q-A`~~ | ~~`project.dir` vs keeping `project_dir`~~ **RESOLVED 2026-08-24 (owner)**: keep `project_dir`, as N3's named exemption. It is a term of art (AGENTS.md's two-tier location rule, `warn_if_project_dir_in_repo`), and at 736 occurrences across 95 files outside `dev/` it is a wider sweep than `C-85` for a rule that gains nothing. | ~~`C-06`~~ | — |
 | ~~`Q-B`~~ | ~~Is `model:` holding one leaf (`outvars`) an S4 violation?~~ **RESOLVED 2026-08-22**: `model:` is the engine boundary, not a group of one. See Group E. | `C-19` | — |
-| `Q-I` | One variables key or two? `C-48` (analysis) and `C-50` (extraction) must not become one key whose meaning widens on upgrade — a project that set a short list for FIGURES would silently change what gets DOWNLOADED. Same cross-version meaning-swap `data_sources` was rejected for. | `C-48`, `C-50` | Lean TWO, distinctly named. Decide now even though only one ships. |
+| ~~`Q-I`~~ | ~~One variables key or two?~~ **RESOLVED 2026-08-24 (owner)**: TWO, distinctly named. One key whose meaning widened on upgrade from "which to plot" to "which to download" would silently change what a project fetches — the cross-version meaning-swap `data_sources` was rejected for. Reserved now even though only `C-48` ships. | `C-48`, `C-50` | — |
 | ~~`Q-C`~~ | ~~`_count` suffix vs bare plural~~ **RESOLVED 2026-08-24 (owner)**: neither. Counts take the `n_` prefix; see the N6 rewrite. | `C-29`, `C-31` | — |
 | ~~`Q-D`~~ | ~~Does `method:` earn a heading?~~ **RETIRED 2026-08-22**: the section is gone (`C-52`); both keys have real homes. | ~~`C-20`~~ | — |
-| `Q-E` | Where does a config key's DEFAULT live: `config/advanced_settings.yml` (precedent, closed schema, already tested) or beside the key in the template? | `C-36` | **`advanced_settings`** — the only option with an existing enforcement mechanism, and the only one that could grow `C-37`. |
-| `Q-F` | Does S2 actually permit `_WF1_GUARDED` to become "everything except `compute:`"? (`reporting:` dropped out of the question 2026-08-24 with `C-77`.) | `C-04` | Unknown. **Needs a probe against the digest and freeze code before R14 promises it** — and it is now the only evidence for S2, not one probe among several. |
-| `Q-H` | One `selected`, or one per consumer (`forcing` for WF1, `conditioning` for WF3)? | `C-44` | Lean ONE. CST does no local calibration, so the response surface is anchored on the historical run; letting the generator condition on a different record than the model was forced with decouples them silently. The genuine hybrid case is already met INSIDE a single store — the CHIRPS branch takes temperature, radiation and pressure from ERA5 and lapse-corrects them onto the CHIRPS grid. Splitting later is expensive, so record rather than default. |
+| ~~`Q-E`~~ | ~~Where does a config key's DEFAULT live?~~ **RESOLVED 2026-08-24 (owner)**: `advanced_settings.yml`, chosen BY AUTHORITY AND SCOPE rather than as a blanket destination — see the subsection under Group I. | `C-36` | — |
+| ~~`Q-F`~~ | ~~Does S2 permit `_WF1_GUARDED` to become "everything except `compute:`"?~~ **RESOLVED 2026-08-24 BY PROBE**: no — the guard was never the mechanism, and `compute:` was never in it. `C-04` is re-scoped and S2's surviving payoff is the digest (`C-79`). See the subsection under Group A. | `C-04` | — |
+| ~~`Q-H`~~ | ~~One `selected`, or one per consumer?~~ **RESOLVED 2026-08-24 (owner)**: ONE. The store path is keyed on source + window (`run_stress_test.smk:257`), so a single value is the MECHANISM keeping WF1's forcing and WF3's conditioning on one store. | ~~`C-44`~~ | Retained reasoning: ONE. CST does no local calibration, so the response surface is anchored on the historical run; letting the generator condition on a different record than the model was forced with decouples them silently. The genuine hybrid case is already met INSIDE a single store — the CHIRPS branch takes temperature, radiation and pressure from ERA5 and lapse-corrects them onto the CHIRPS grid. Splitting later is expensive, so record rather than default. |
 | ~~`Q-G`~~ | ~~How is `reporting:` placed under S7?~~ **RETIRED 2026-08-24**: `C-55` narrowed it to `reporting:` alone, and `C-77` removes the section. | ~~`C-02`, `C-03`, `C-28`, `C-34`~~ | — |
 
-`Q-F` is NOT resolved by any of this, and gets harder to defer: with `C-77` and
-`C-79` landed, `compute:` becomes the ONLY section outside configuration
-identity, so the entire S2 claim rests on that one probe.
+**All open questions are now closed.** `Q-B` and `Q-D` resolved 2026-08-22;
+`Q-C` and `Q-G` on 2026-08-24 with the WF3 cluster; `Q-A`, `Q-E`, `Q-F`, `Q-H`
+and `Q-I` on 2026-08-24 in the walkthrough that followed it. `Q-F` alone was
+settled by a PROBE against the code rather than by a ruling on a lean, and it
+is the one that changed a rule rather than choosing between drafted options.
+
+One thing this table no longer covers, and the intake must: **`C-48` has no
+destination.** `C-77` deleted the `reporting:` section it was to live in, and
+`Q-G` retired, so the row survives with its S2 class intact and nowhere to go.
+It is not an open QUESTION in this table's sense — nothing is being weighed —
+but it is unfinished, and no entry here would surface it.
 
 ## Constraints
 
@@ -2077,7 +2207,8 @@ identity, so the entire S2 claim rests on that one probe.
    without reading Python.
 2. Every section name states a KIND; no section names a relationship.
 3. The experiment guard's key list is DERIVED from section membership, not
-   maintained by hand (`C-04`), or `Q-F` is answered and the reason recorded.
+   maintained by hand (`C-04`). **`Q-F` answered it 2026-08-24:** derived from
+   the SNAPSHOT rather than from section membership — see Group A.
 4. One command rewrites a complete v1 config set to v2 (`C-38`), and the
    `tests/data/presplit/` corpus is extended with a v1→v2 pair.
 5. `pixi run test-full` green on both platforms; `check_baseline.py check`
@@ -2142,7 +2273,8 @@ cost for one dead key. Recommendation:
 - **Now, independently:** `C-35` (non-breaking, correct under every outcome).
   `C-83` may also land at any time — it is a code contraction sweep, touches no
   config key, and `C-38` never sees it.
-- **Probe before designing:** `Q-F` (`C-04`) and D3-feasibility for `C-38`.
+- **Probe before designing:** D3-feasibility for `C-38`. (`Q-F` is discharged —
+  probed 2026-08-24, and it re-scoped `C-04` rather than confirming it.)
 - **One bundle, one `schema_version` bump:** everything else, **`C-85`
   included** (ruled 2026-08-24). The file rename breaks the same
   `--configfile` invocation the key migration does, so bundling pays that break

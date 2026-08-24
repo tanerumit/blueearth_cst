@@ -16,7 +16,7 @@
 | prefix | means | example |
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
-| `N1`–`N7` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
+| `N1`–`N8` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
 | `C-01`–`C-66` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
@@ -128,7 +128,10 @@ both T1 and a workflow file without the same collision.
 ## Proposed policy — naming
 
 **N1 — No new abbreviations.** `clim_historical` → `climate.source`. Exempt:
-established domain terms (`lulc`, `lai`, `uparea`, `ssp`, `outvars`).
+established domain terms (`lulc`, `lai`, `uparea`, `ssp`, `outvars`), and the
+`n_` count prefix N6 adopts — added 2026-08-24 with the N6 rewrite, because on
+a plain reading `n_` abbreviates "number of", and without the exemption two
+policy rules would contradict each other two sections apart.
 
 **N2 — Dimensional values carry their unit** unless a schema fixes it:
 `snap_tolerance_m`, `river_uparea_km2`, `headroom_gb`.
@@ -142,8 +145,27 @@ in every file. Replaces `starttime`/`endtime` and both bare `[a, b]` year pairs.
 **N5 — A name describes the VALUE, not the workflow that reads it.**
 `horizontime_climate` → `horizon_year`; `clim_project` → `ensemble`.
 
-**N6 — Counts use `_count`.** `realizations_num` → `realizations_count`,
-`step_num` → `steps_count`. (Open: `_count` vs bare plural — `Q-C`.)
+**N6 — Counts take the `n_` prefix.** `realizations_num` → `n_realizations`,
+`step_num` → `n_steps`. **Ruled by the owner, 2026-08-24**, replacing the
+`_count` suffix this rule proposed until then: `_count` is not vocabulary the
+owner uses, `n_` is the statistical idiom, and it reads as "number of" without
+a suffix that has to be learned. `Q-C` is resolved by the same ruling.
+
+Corroboration rather than the argument: `prepare_weagen_config.py:109` already
+passes `"n_realizations": realizations_num` across the Python → R seam, so the
+config and the generator stop spelling one quantity two ways. The reason is
+deliberately NOT "match weathergenr" — N7 forbids a config key carrying the
+current engine, and the generator may be replaced.
+
+Rejected, with reasons, so they are not re-proposed:
+
+| candidate | why not |
+|---|---|
+| `realizations` (bare plural) | terse, but a future list-valued `realizations:` collides, and the singular/plural cue carries the whole meaning |
+| `realizations_num` (unchanged) | zero migration cost for this key only; the bundle is already paying for the sweep |
+| `realization_num` | the repo spells member INDICES `rlz_ix` / `rlz_1`, so a singular reads as "which one", not "how many" |
+| `realization_sample_num` | the sample-vs-population distinction is not live in this file |
+| `ensemble_size` | `C-25` already claims `ensemble` for WF2's `clim_project`; two meanings of "ensemble" in one config set is the P3 this milestone removes |
 
 **N7 — A key in a shared section never names an ENGINE.** `model.outvars`, not
 `wflow_outvars`. The toolbox is meant to stay flexible: wflow is the model
@@ -151,6 +173,83 @@ today, and another may demand a different set tomorrow, so a key two
 workflows read must not carry the current engine in its own name. Engine
 -specific *paths* are exempt inside a workflow file, because they point at
 files written in the engine's schema (S5) — `engine.build_config` stays.
+
+**N8 — A window is declared in YEARS; calendar resolution happens at the engine
+seam.** A `*_window:` is `{start, end}` with integer years and BOTH ENDS
+INCLUSIVE. No ISO datetime appears in a project config. Conversion to whatever
+an engine wants — wflow's `starttime`/`endtime`, hydromt's time horizon —
+happens at the seam that hands it over (S5), never in the user's file.
+
+N4 fixes the SHAPE of a window; N8 fixes its TYPE and its calendar resolution.
+
+**The years are WATER years, resolved through `climate.water_year_start`
+(`C-53`).** With the default `Jan` a water year IS a calendar year, so the rule
+is invisible to every project that does not set the key. With `Oct`,
+`{start: 2040, end: 2050}` resolves to `2040-10-01 .. 2051-09-30` — eleven
+complete water years, the same count `{2040, 2050}` gives as calendar years
+today.
+
+**Inclusive is load-bearing, not a detail.** An exclusive end would silently
+shorten every existing window by a year: the baseline's `historical_window`
+would fall from 17 years to 16, landing exactly ON the weathergenr floor
+(`constraints.min_historical_years`) instead of one clear of it, and every
+generated series would change. Inclusive is also the convention the WF2
+template already documents (`historical_year_range: [1985, 2014]` — "inclusive,
+clipped at 2014") and the one IPCC uses (1995–2014 is twenty years).
+
+**A water year is labelled by the year it STARTS in.** The key is called
+water_year_START and holds the start month, so labelling by start is the
+internally consistent reading. Both labellings coincide under `Jan`, so this
+only ever shows on a project that sets the key.
+
+**Two mechanisms, and they are not interchangeable** — the distinction is what
+keeps WF2 correct:
+
+| mechanism | applies to | behaviour |
+|---|---|---|
+| **shift** | `climate.window`, WF1 `simulation_window`, WF3 `simulation_window` | the declared years ARE water years; bounds move to the water-year boundaries |
+| **trim** | WF2 `reference_window`, `future_windows` | the declared years are CALENDAR; the computation keeps only the complete water years inside them — **already implemented**, see `C-74` |
+
+Evidence the rule is affordable: every ISO bound in every shipped config —
+twelve values across `historical_window` and `simulation_window` in five
+configs and two templates — is `01-01` or `12-31` at `T00:00:00`. Not one
+sub-annual bound exists. The datetime carries nothing the year does not.
+
+Migration is byte-exact: `end: 2016` emits `"2016-12-31T00:00:00"`, the string
+in the config today. Note that string is MIDNIGHT on 31 December, not
+end-of-day; the converter reproduces it verbatim rather than "fixing" it, or a
+number moves.
+
+**Cost, recorded rather than hidden:** a project can no longer express a
+sub-annual bound in its own config. Nothing shipped uses one, and the escape
+hatch if a basin ever needs one is the engine's own config under S5.
+
+**Second cost, RULED by the owner 2026-08-24: N8 is NOT number-preserving for a
+project that sets `water_year_start`, and `C-38` refuses rather than rewriting
+it silently.** Today `historical_window` and `simulation_window` are explicit
+CALENDAR bounds, and `water_year_start` reaches only aggregation anchors and
+weathergenr's `year_start_month` — never the extraction or run bounds. After
+the **shift**, a project with `water_year_start: Oct` migrates
+`{start: 2000, end: 2016}` to `2000-10-01 .. 2017-09-30`: a nine-month move on
+both ends, reaching into a calendar year whose observed record may not exist.
+That changes the extraction window, hence the generator input, hence every
+number.
+
+"Invisible to every project that does not set the key" is true and is not its
+converse. `config/templates/snake_config.template.yml:91` ships
+`#water_year_start: Oct` as a commented example, so this is a REACHABLE
+configuration rather than a hypothetical.
+
+There is no number-preserving migration for that case — the old bounds are
+calendar and the new ones are water-year by construction. **Ruled: `C-38`
+REFUSES when `water_year_start != Jan`**, naming the window it will not
+rewrite, rather than migrating it silently. Such a project is migrated by hand,
+with the owner deciding whether the shifted window is the one they want.
+
+**This is the second row needing that treatment** (`C-69` is the first), which
+makes it a FEATURE of the migrator rather than a special case: `C-38` needs a
+per-row "mechanical, but tell the user what changed" hook, and the register
+needs a column saying which rows use it.
 
 **Grandfathering.** `dev/reference/naming.md` grandfathers existing names and
 requires a migration note to rename a contract surface. R14 *is* that migration

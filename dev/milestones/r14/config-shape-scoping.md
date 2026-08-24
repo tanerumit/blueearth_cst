@@ -411,7 +411,7 @@ The resulting rule, which S6 already states and this note fixes the words for:
 |---|---|---|---|---|
 | `C-16` | Introduce top-level `climate:` | S1 | NEW | yes |
 | `C-17` | `shared.clim_historical` → `climate.source` | N1, N3 | RENAME | yes |
-| `C-18` | `shared.historical_window.{starttime,endtime}` → `climate.window.{start,end}` | N4 | RENAME | yes |
+| `C-18` | ~~`shared.historical_window.{starttime,endtime}` → `climate.window.{start,end}`~~ — **superseded by `C-70`**, which changes the TYPE as well as the spelling | N4 | RENAME | — |
 | `C-43` | New `climate.sources` — a flat LIST of candidate datasets with no privileged element. Absorbs `candidate_sources`, moving it T2 → T1 and widening its meaning from "extras besides the primary" to "the full candidate set" | S1, charter | **SEMANTIC** | yes |
 | `C-44` | `shared.clim_historical` → `climate.selected`, with requiredness that varies by consumer (below) | N5 | **SEMANTIC** | yes |
 | `C-45` | Retire `workflows.analyze_climate.candidate_sources`; refused at parse time, as `start_month_hyd_year` is | — | DELETE | yes |
@@ -421,6 +421,13 @@ The resulting rule, which S6 already states and this note fixes the words for:
 | `C-49` | Move the `CLIMATE_VARS` registry out of Python so the default is visible (extends `C-36`) | — | MECHANISM | no |
 | `C-50` | Give the EXTRACTION set a config surface: derived, not declared. Designed now, behaviour deferred — narrower-than-default is REFUSED at parse time until it lands | S5, N7 | NEW | no |
 | `C-53` | `shared.water_year_start` → `climate.water_year_start` (amends the `C-47` charter) | S1, charter | REGROUP | yes |
+| `C-70` | `shared.historical_window.{starttime,endtime}` ISO → `climate.window: {start, end}` years | N8 | **SEMANTIC** | yes |
+
+`C-70` is filed HERE rather than in Group B because the `C-40`–`C-47` climate
+charter has already moved `historical_window` into `climate:`; `C-18` is the
+row it supersedes. The ROW is the same either way, but `C-38`'s rewriter reads
+the register to learn which FILE a path lives in, so the group has to be the
+one that owns the key.
 
 `C-16`–`C-18` are the owner's third question. `clim_historical` (the *what*) and
 `historical_window` (the *how much*) are one concept in two sibling keys —
@@ -754,7 +761,8 @@ against a Jan–Dec window leaves partial years at both ends.
 | `C-22` | `model_build_config` / `waterbodies_config` → `engine.build_config` / `engine.waterbodies_config` | S4, S5, N3 | REGROUP | yes |
 | `C-23` | ~~`observations_timeseries` → `observations.timeseries`~~ — **superseded by `C-56`** | S4 | REGROUP | yes |
 | `C-56` | `observations_timeseries` → `observations:` as a mapping KEYED BY VARIABLE, in `model.outvars` vocabulary | N5, S4 | RENAME | yes |
-| `C-24` | `simulation_window.{starttime,endtime}` → `simulation_window.{start,end}` | N4 | RENAME | yes |
+| `C-24` | ~~`simulation_window.{starttime,endtime}` → `{start, end}`~~ — **superseded by `C-71`**, which changes the TYPE as well as the spelling | N4 | RENAME | — |
+| `C-71` | WF1 `simulation_window.{starttime,endtime}` ISO → `{start, end}` years | N8 | **SEMANTIC** | yes |
 
 #### Observations are keyed by VARIABLE — `C-56`
 
@@ -838,6 +846,14 @@ discovery:** `simulation_window` (WF1, declared, a date span) and `run_length`
 the model runs — in two spellings and two shapes. Not unified now, because
 WF3's window is deliberately derived rather than declared.
 
+**Reversed 2026-08-24 by `C-67`.** WF3's window IS now declared, and takes the
+same `simulation_window` spelling, so the asymmetry above closes rather than
+being tolerated. The reasoning that kept the NAME survives the reversal intact
+— see the `C-67` subsection under Group H, which explains why
+`reference_window` still loses to `simulation_window` even though the second
+disambiguation has gone live. `C-24` is superseded by `C-71`, which changes the
+window's type as well as its spelling.
+
 ### Group G — `_analyze_projections.yml`
 
 | ID | change | rule | class | breaking |
@@ -856,6 +872,7 @@ WF3's window is deliberately derived rather than declared.
 | `C-28` | `stats` → `reporting.stats` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today. **Erratum: originally also listed `save_grids`, which does not exist** |
 | `C-57` | `variables:` gains a SHORT FORM — a bare key resolves through a registry; a name the registry lacks and that declares no spec is refused | P1 | **SEMANTIC** | no (additive) |
 | `C-58` | `canonical` leaves the USER surface; it stays in the registry | P1 | RENAME | yes |
+| `C-74` | WF2's windows stay CALENDAR years — decision recorded, no change | — | (decision) | no |
 
 `C-25` also removes a live collision: `clim_project` reads as "the project's
 climate" while meaning the projection ensemble family, next to a `project:`
@@ -1092,6 +1109,30 @@ wins over terseness.
 and `WF2_FIGURE_RELATIVE_PATHS` is threaded into rule 2.06 as a `params:`
 value, so the rule re-triggers. Expected for a renaming milestone, but it is a
 TREE-SHAPE change — `semantic_tree_diff.py` territory, not just a config diff.
+
+#### Why WF2's windows stay calendar — `C-74`
+
+**Asked by the owner, 2026-08-24: which is consistent with IPCC?** Calendar,
+and the toolbox already resolves the water year one layer down, which is the
+stronger reason. This is the **trim** half of N8's two-mechanism table.
+
+- IPCC/AR6 reference periods are calendar-year and inclusive — 1850–1900,
+  1995–2014, 2021–2040 / 2041–2060 / 2081–2100 — and the CMIP6 historical
+  experiment ends 2014-12-31, a calendar boundary. WF2's own template already
+  encodes it: `historical_year_range: [1985, 2014]  # inclusive, clipped at 2014`.
+- `wiki/methods/climate-projection-processing.md` names the hazard directly:
+  *"calendar arithmetic on unconverted models — many CMIP runs use noleap or
+  360-day calendars; monthly grouping before calendar reconciliation produces
+  silently misaligned baselines."*
+- **Decisive:** `get_change_climate_proj.hydrological_year_bounds()` already
+  takes the calendar-sliced data and trims it to COMPLETE hydrological years
+  using `water_year_start`, dropping a leading partial year; the EFFECTIVE
+  window is then reported in the `reference_window` / `horizon_window` columns
+  of `change_factor_table.py` so the annotation matches the numbers used.
+
+WF2 therefore already runs "declare calendar, compute in water years". Making
+its config declare water years would apply the offset TWICE. `C-74` records
+this as a decision so it is not re-proposed as an oversight.
 
 ### Group H — `_run_stress_test.yml`
 
@@ -1369,6 +1410,8 @@ they should have had.
 | `C-38` | Extend `scripts/split_project_config.py` (or a sibling) into a v1→v2 rewriter driven by the register above | — | MECHANISM | no |
 | `C-72` | `forcing_window_years()` deleted; `forcing_window()` becomes the shared years-to-ISO seam converter | — | MECHANISM | no |
 | `C-73` | `compute_nr_years()` loses its `ceil`; derived from `simulation_window.end` | — | MECHANISM | no |
+| `C-75` | Sweep the technical note onto one trajectory vocabulary and correct its stale defaults | — | MECHANISM (doc) | no |
+| `C-76` | Record what the note's Annex is, and the three places it and the code never agreed | — | (finding) | no |
 
 **Second erratum, same source (2026-08-22).** The appendix lists
 `DEFAULT_MIN_REFERENCE` and `DEFAULT_MAX_FLAGGED_MONTHS` under "No config
@@ -1380,6 +1423,72 @@ recorded under Group G is not optional.
 `C-35` is the only change in this document that is unambiguously correct
 regardless of how everything else resolves, and the only one that is
 non-breaking and independently landable **today**.
+
+#### The note carries two vocabularies for one concept — `C-75`
+
+§1.3.1 *Screen 6 — Execute a Climate Stress Test* says "whether the changes
+occur gradually over time or immediately from the start of the simulation"; the
+Annex says "transient ... or constant". One concept, two spellings, in one
+document — the same P3 this milestone removes from the configs. `C-75` sweeps
+the note onto the `transient | constant` pair `C-32` adopts, and corrects the
+documented default in the same pass.
+
+`C-75` also carries the two stale defaults this walkthrough turned up: the
+Annex's `transient` default (the code refuses a missing value, deliberately)
+and its `Realizations_number: 3` (the code defaults to 1).
+
+Non-breaking and doc-only, so it does not need the bundle. It should still land
+WITH `C-32`, because a note describing a config key that no longer exists is
+the stale-reference defect AGENTS.md names explicitly.
+
+#### What the note's Annex is, and what it is not — `C-76`
+
+Found 2026-08-24 while sourcing `C-32`. The Annex of
+`docs/cst-toolbox-technical-note-2025.md` is in scope for this milestone and
+easy to misread in BOTH directions, so both readings are recorded.
+
+**It is about THIS repo.** The Annex heading is *BlueEarth CST Workflows —
+Command-Line Functionality*, and it says "User inputs to each workflow are
+provided through JSON-based YAML files". It is describing the config this
+milestone reshapes, not the web application. By contrast §1.3.1 *Screen 6 —
+Execute a Climate Stress Test* IS the web app, so its wording ("gradually over
+time or immediately from the start") is FRONTEND copy and must not be cited as
+a constraint on this repo — the standing rule is that CST-API and the frontend
+never constrain decisions here.
+
+**It is NOT a spec the code drifted from.** Checked, because the first draft of
+this row asserted that and it does not survive:
+
+| evidence | |
+|---|---|
+| repo's first commit | 2021-12-21 |
+| `horizontime_climate` present in code | **2023-04-25** (`1860270b`) |
+| the note added to the repo | **2026-07-16** (`5cad6bd8`, "wip") |
+| `Starttime_experiment`, `Change_step_number` in code, ever | **never** — `git log -S` finds them only in the note's own commit |
+
+So the code's spellings predate the note's arrival by three years, and the
+Annex's parameter names have never existed in this repository. The two were
+never aligned; there is no drift event.
+
+**What it IS good for, and it is still worth having.** The Annex is an
+independent description of the same tool by the same author, reaching — without
+reference to the implementation — for a start/end analysis period, a count of
+SCENARIOS rather than intervals, and a two-valued change type:
+
+| the Annex writes | the code does | this cluster |
+|---|---|---|
+| `Starttime_experiment` / `Endtime_experiment`, "start year / end year of the analysis period" | `horizontime_climate` + `run_length`, a midpoint and a duration | `C-67` |
+| `Change_step_number`, "number of temperature change scenarios ... to span the range" | `step_num`, an INTERVAL count, one less than the number of scenarios | `C-31` |
+| `Change_step_type`, "transient (default) or constant" | `transient_change`, a required boolean | `C-32` |
+
+That is corroboration about what reads naturally to a domain author, not
+authority. **The three rows must be argued on their own merits**; the Annex is
+a supporting citation showing a second, independent formulation landed on the
+same shapes. Calling them "restorations" would overclaim and a reviewer could
+puncture it in one `git log`.
+
+**Erratum: `Realizations_number` default.** The Annex gives "(default value:
+3)"; `run_stress_test.smk:179` defaults it to 1. `C-75` corrects the note.
 
 ## Proposed shape
 

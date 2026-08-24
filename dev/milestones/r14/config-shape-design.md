@@ -1,4 +1,4 @@
-# R14 — Config shape: Design (DRAFT — v3, revised against external round 1)
+# R14 — Config shape: Design (DRAFT — v4)
 
 > **Status: DRAFT v3 — 2026-08-24, revised against external round 1.**
 > Authored directly by the driver at the owner's instruction. The
@@ -401,6 +401,34 @@ shorter:
 **D-9.2** `compute:` needs no guard carve-out. Per `E2`, a WF1 snapshot does not
 carry WF3's sections at all, so `compute:` was never inside the guard. Any
 design text implying otherwise is wrong.
+
+**D-9.6 — the list is maintained in THREE places, and two of them disagree.**
+*(Found by the driver 2026-08-24, after v3. `D-9.1` said "replace
+`_WF1_GUARDED`" and named only one of the three; taken literally it would leave
+a "derived" guard wired to two hand-kept literals.)*
+
+| # | site | contents |
+|---|---|---|
+| 1 | `check_project_consistency.py:47-53` — `_WF1_GUARDED` + `_WF2_GUARDED`, what the guard COMPARES | `project`, `shared.basin`, **`shared.wflow_outvars`**, `workflows.build_model`, `workflows.analyze_projections` |
+| 2 | `run_stress_test.smk:48-51` — `guarded_sections`, a rule-3.01 rerun-trigger `params:` value | the same, **minus `shared.wflow_outvars`** |
+| 3 | `run_stress_test.smk:381-390` — `guarded_sections_digest`, which restates the four lookups as literal `config.get(...)` expressions | the same four as (2) |
+
+And `CONFIG_PROJECTION` (`run_stress_test.smk:61-65`) is DERIVED from (2), so it
+inherits (2)'s contents — which is why the digest and the loader's `R(entry)`
+both hang off the shorter list.
+
+**Consequence, stated as a question rather than a verdict.** An edit to
+`shared.wflow_outvars` trips the guard at (1) but does not flip the digest at
+(3), so it does not re-fire rule 3.01. R13 added the leaf to (1) when D-9.7
+hoisted it; whether (2) and (3) were deliberately left short — the comment at
+`:44` requires every guard param to be experiment-invariant — or simply missed,
+is not established here. **P2 establishes it before reconciling**, because the
+two answers give different targets: a deliberate asymmetry is preserved and
+documented, an oversight is closed.
+
+**D-9.7** All three sites derive from ONE source after R14. A derived rule that
+leaves two hand-kept literals beside it has not satisfied `G5`; it has moved the
+maintenance rather than removed it.
 
 ### 9.2 The freeze and the digest — where the carve-out actually lives
 
@@ -887,4 +915,5 @@ One item remains a PREREQUISITE rather than a question:
 |---|---|---|
 | v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carried two open decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
 | v2 | 2026-08-24 | D-7.10 and D-12.1 RULED under owner authorization; §17 now carries no open questions. `C-48` boarded as `t2608242212`. Submitted for a single external review round (`gpt-5.6-sol`) at the owner's request — the internal lens panel stays waived. |
+| v4 | 2026-08-24 | `D-9.6`/`D-9.7` added: the guarded-section list is maintained in THREE places, not one, and `guarded_sections` / `guarded_sections_digest` omit `shared.wflow_outvars` where `_WF1_GUARDED` includes it. `D-9.1` had named only the first site, so a literal reading would have left a "derived" guard wired to two hand-kept literals. Found while writing P2's dispatch. |
 | v3 | 2026-08-24 | Revised against external round 1 (`gpt-5.6-sol`, `verdict: revise`, 3 blocking + 3 major, all accepted). New: `D-11.2a` normative machine-readable mapping; `D-11.2b` transactional migration; **§11.6 frozen-experiment migration** — the digest break did not resolve on its own, and every already-run experiment would have been permanently unrunnable; `D-14.3` baseline provenance promoted to a hard PRE-implementation gate; `D-14.4` sweep partitioned with a fail-closed allowlist, since the v2 rule was unsatisfiable by a correct implementation; §14.4 resolved-config equivalence across all four shipped sets. |

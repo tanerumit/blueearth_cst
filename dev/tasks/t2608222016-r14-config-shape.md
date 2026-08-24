@@ -80,7 +80,16 @@ separately, so `git log` is the decision log.
 - [ ] Land `C-35` independently - non-breaking under every outcome
 - [ ] Point `dev/working/parameter-placement.md` at this document (outside this
       lane's declared scope; needs its own task)
-- [ ] Intake + design on the R13 pattern, then the review loop
+- [x] Intake MATERIALIZED 2026-08-24 (`design-review-loop` stage 0):
+      `dev/milestones/r14/config-shape-intake.md`, with the derived-artifact
+      register, a ten-row evidence register verified against the code, and the
+      gate-materialization check. Every cited gate runs today
+- [ ] Resolve the baseline's provenance before criterion 5 leans on it. The
+      gate is 7/7 green, but the fixture is UNTRACKED and shared by every
+      branch, and `t2608220920` is still open against the indicator reference.
+      Either R13's pass-2 re-record resolved it and that note is stale, or the
+      green is the shared-fixture artefact
+- [ ] Design under the review loop, then G1/G2
 
 **Coupled rows to watch:** `C-64` folds `min_denominator` into the `C-57`
 registry, and `C-57` is still PROPOSED - decline it and `min_denominator` has no

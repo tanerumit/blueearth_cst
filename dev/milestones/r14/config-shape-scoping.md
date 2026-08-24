@@ -428,7 +428,7 @@ modules). Grep first, triage second — not every occurrence of the string is a
 filename. The board note has carried that question open since 2026-08-19.
 
 **The mechanical trap, which is why this cannot be done a file at a time.**
-`.gitignore:130-131` ignores `test_case/` wholesale and re-admits the seeds
+`.gitignore:140-141` ignores `test_case/` wholesale and re-admits the seeds
 through `!test_case/snake_config_*.yml` alone. Rename the files without moving
 the glob IN THE SAME COMMIT and they go untracked in silence: `git status`
 reports the old paths deleted and never lists the new ones. Verify with
@@ -2354,7 +2354,25 @@ bundle is also the moment `C-05` becomes possible.
 
 An intake + design under `design-review-loop`, on the R13 pattern:
 `dev/milestones/r14/config-shape-intake.md` → `config-shape-design.md` →
-review record. Not started; this document is the input to it.
+review record.
+
+**The intake is MATERIALIZED** (2026-08-24, stage 0) and this document is its
+input. It carries the derived-artifact register, a ten-row evidence register
+verified against the code, and the gate-materialization check. Three of its
+findings correct this document rather than merely citing it, so read the intake
+before the design:
+
+- **Success criterion 5 is not satisfiable as written here.** Three of the
+  seven `check_baseline.py` targets are `snake_config_*.yml` SNAPSHOTS, which
+  `C-85` renames and every register row rewrites. The criterion is scoped to
+  the four DATA targets; the snapshots are re-recorded, on the precedent R13
+  set in `dev/LOG.md`.
+- **`Q-F`'s probe cost S2 its headline claim.** The guard becomes mechanical
+  because R14 empties T1 of non-identity keys, not because of the three-class
+  split.
+- The baseline fixture is UNTRACKED and shared across branches, so a green gate
+  is weaker evidence than it looks — and `t2608220920` is still open against
+  it. Resolve before criterion 5 leans on it.
 
 ### To carry into the intake
 

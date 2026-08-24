@@ -1,8 +1,8 @@
 # R14 — Config shape: review record
 
 > The durable audit trail for the design's one external review round. The
-> per-round scratch under `.tmp/scratchpad/2026-08-24_r14-review/` is prunable;
-> this file is not.
+> verbatim review and the brief that produced it are committed beside this file
+> and are IMMUTABLE; only the session transcript stays in prunable scratch.
 
 ## Run shape
 
@@ -34,8 +34,9 @@ reader does not read "reviewed" as equivalent between the two milestones.
 | banner confirmed | `model: gpt-5.6-sol` · `approval: never` · `sandbox: read-only` |
 | read-only verified | `git status --short` empty and HEAD unmoved after the run |
 | verdict | **`revise`** — 3 blocking, 3 major, 0 minor |
-| brief | `.tmp/scratchpad/2026-08-24_r14-review/review-brief.md` |
-| verbatim report | `.tmp/scratchpad/2026-08-24_r14-review/ext1-report.md` |
+| brief | `config-shape-external-review-1-brief.md` (committed beside this file) |
+| verbatim report | `config-shape-external-review-1.md` (committed beside this file) |
+| session transcript | `.tmp/scratchpad/2026-08-24_r14-review/ext1-transcript.log` — 124 KB of diagnostics, deliberately NOT committed and treated as prunable |
 
 The brief scoped the read list to the design plus the intake and **excluded the
 2,400-line scoping document deliberately**, on the reasoning that a
@@ -77,3 +78,4 @@ and a falsifier to P4; `ext1-6` adds the equivalence suite to P4.
 | version | date | change |
 |---|---|---|
 | v1 | 2026-08-24 | Created at round 1's dispatch; ledger completed at disposition. |
+| v2 | 2026-08-24 | Verbatim review and dispatch brief PROMOTED out of `.tmp/` and committed beside this file. The record's primary evidence had been citing a gitignored, prunable path — a dangling citation waiting to happen, and the failure the loop's own pre-commit check exists to catch. Only the session transcript remains in scratch, and it is now labelled as prunable diagnostics rather than cited as evidence. |

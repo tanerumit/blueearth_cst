@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N8` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-84` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-85` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -287,6 +287,7 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 | `C-05` | Add `schema_version: 2` to the project file; refuse a v1 set with a message naming the migration command | — | NEW | yes (by design) |
 | `C-78` | `HOISTED_SECTIONS` empties; retire the hoist mechanism (R13 D-10.4 amendment) | S7 | MECHANISM | no |
 | `C-79` | Exclude `compute:` from `CONFIG_PROJECTION`, so performance keys leave configuration identity | S2 | MECHANISM | no |
+| `C-85` | `snake_config_*.yml` → `project_config_*.yml` across the repo, `.gitignore` un-ignore glob included; **rides the bundle** | N5 | RENAME (file surface) | yes — **RULED 2026-08-24** |
 
 ### Group B — `project:`
 
@@ -308,6 +309,60 @@ dissolved T1 `compute:`, and `C-77` removes `reporting:` from the config
 surface altogether — which withdraws `C-03` and `C-28` and empties
 `HOISTED_SECTIONS` (`C-78`). `Q-G` is RETIRED; there is no question left for it
 to answer. `C-02` survives and is unblocked.
+
+#### The file is named after the program that reads it — `C-85`
+
+**Ruled by the owner, 2026-08-24:** bundle the `snake_config_` →
+`project_config_` rename into R14. It was boarded 2026-08-19
+(`t2608191733a`, from the sample-dataset scoping) with a measured blast radius
+and a rationale, but never ruled on; this is the ruling.
+
+The rationale is N5 applied to a FILENAME rather than a key: *"Snakemake is one
+tool this repo happens to use; what the file configures is the project — the
+basin, the windows, the models, the experiment. `project_config_` says what the
+file IS; `snake_config_` says which program reads it."* That is the same test
+`C-19` applies to `wflow_outvars` and `C-25` to `clim_project`, one level up
+the tree. The engine could change and the file would keep its meaning.
+
+**Why it rides the bundle rather than landing beside it.** Both changes break
+the same thing — a user's `--configfile` invocation — and this document's own
+packaging argument is that a break of that kind is paid ONCE. Three specifics
+make the bundling more than tidiness:
+
+- `C-84` adds a template that does not exist yet
+  (`snake_config.analyze_climate.template.yml`). Land R14 first and the
+  milestone SHIPS A NEW FILE under the prefix it is retiring. Bundled, it is
+  born as `project_config.analyze_climate.template.yml`.
+- `C-38` is a v1→v2 rewriter over exactly the file set being renamed. Bundled,
+  it renames and rewrites in one pass and is written once against final names.
+  Split, it is written twice.
+- The migration note is one note. `AGENTS.md` requires one for a
+  contract-surface rename, R14 owes one anyway, and
+  `docs/migration-workflow-names.md` is the precedent for both.
+
+**The cost, recorded rather than hidden.** R14 is SCOPING and not accepted, so
+this widens an unaccepted scope — the failure mode R13 met when arbitration
+pulled the `wflow_outvars` hoist in and bought two baseline passes. It is
+accepted here because `C-85` adds no register row that `C-38` must reason
+about: it changes no key, no value and no digest input, so it cannot move a
+number and cannot interact with any other row. It is breadth, not depth.
+
+**The one thing this ruling does NOT settle**, and the design must: whether the
+rename covers only the `snake_config_` FILE prefix or also the identifiers
+carrying it (`snake_config_fixture`, fixture and variable names across 33 test
+modules). Grep first, triage second — not every occurrence of the string is a
+filename. The board note has carried that question open since 2026-08-19.
+
+**The mechanical trap, which is why this cannot be done a file at a time.**
+`.gitignore:130-131` ignores `test_case/` wholesale and re-admits the seeds
+through `!test_case/snake_config_*.yml` alone. Rename the files without moving
+the glob IN THE SAME COMMIT and they go untracked in silence: `git status`
+reports the old paths deleted and never lists the new ones. Verify with
+`git ls-files test_case/`, which is the command that does not lie here.
+`AGENTS.md` already warns about this for NEW seed configs; a rename is the same
+trap from the other side, and `AGENTS.md`'s own wording ("keep the
+`snake_config_` prefix on any new seed config") is one of the 221 occurrences
+this row updates.
 
 `C-07` evidence: read only by `build_model.smk:89`, used only to build the two
 fallback prefixes at `:163-164`; explicitly *not* read by WF3 since 2026-08-13
@@ -1670,7 +1725,7 @@ therefore corrected HERE rather than edited there:
 | `C-76` | Record what the note's Annex is, and the three places it and the code never agreed | — | (finding) | no |
 | `C-80` | PROBE: is the batching win run-length dependent? Measured at one run length only | — | (probe) | no |
 | `C-83` | `weagen` → `weathergen` across the LIVE surface (`naming.md:176` already forbids the contraction); `dev/milestones/**` excluded | N1 | RENAME (code) | no |
-| `C-84` | `_analyze_climate.yml` survives `C-45` as a comment-only scaffold; add the missing `snake_config.analyze_climate.template.yml` | S7, convention | NEW (doc) | no — **RULED 2026-08-24** |
+| `C-84` | `_analyze_climate.yml` survives `C-45` as a comment-only scaffold; add the missing WF0 template — born as `project_config.analyze_climate.template.yml` under `C-85` | S7, convention | NEW (doc) | no — **RULED 2026-08-24** |
 
 **Second erratum, same source (2026-08-22).** The appendix lists
 `DEFAULT_MIN_REFERENCE` and `DEFAULT_MAX_FLAGGED_MONTHS` under "No config
@@ -1823,9 +1878,11 @@ three templates, and one example that is inconsistent with the other three.
 1. Keep `_analyze_climate.yml` in the rapid set as a comment-only scaffold,
    saying what WF0 reads today (nothing beyond `climate:` in the project file)
    and where a future knob goes.
-2. Add `config/templates/snake_config.analyze_climate.template.yml`, so the
-   four-file convention is uniform and a scaffolded project gets WF0's slot
-   with the other three.
+2. Add the missing WF0 template, so the four-file convention is uniform and a
+   scaffolded project gets WF0's slot with the other three. Under `C-85` it is
+   born as `config/templates/project_config.analyze_climate.template.yml` —
+   the whole point of bundling the rename is that this milestone does not ship
+   a brand-new file under the prefix it is retiring.
 
 **One foot-gun to document in the template, because the asymmetry is sharp.**
 An empty file is fine; a MISSING file with `config_path` still declared is a
@@ -1849,7 +1906,7 @@ missing. Non-breaking, and it can land with the bundle or before it.
 
 ## Proposed shape
 
-### Project file (T1) — `snake_config_<project>.yml`
+### Project file (T1) — `project_config_<project>.yml` (`C-85`)
 
 ```yaml
 schema_version: 2
@@ -2056,7 +2113,7 @@ Post-R13 the surface is wider than `parameter-placement.md` §6 recorded:
   `SHARED_SEAM_KEYS`, `HOISTED_SECTIONS`, the static read scan (D-9.6)
 - `blueearth_cst/experiment/check_project_consistency.py` — `_WF1_GUARDED`,
   `_COPIED_CONFIG_PATH_MAP`
-- `config/templates/snake_config*.template.yml` × 4
+- `config/templates/snake_config*.template.yml` × 4 (× 5 after `C-84`)
 - `test_case/snake_config_*.yml` — **four multi-file sets** (baseline, baseline
   _linux, rapid, wf2_fast), 17 files
 - `tests/snake_config_fixture.yml`, and `tests/data/presplit/**` (which exists
@@ -2064,6 +2121,16 @@ Post-R13 the surface is wider than `parameter-placement.md` §6 recorded:
 - `scripts/split_project_config.py`, `scripts/plot_workflow_dag.py`
 - `docs/guide/configuration.qmd`, `docs/migration-config-tiers.md`, `README.md`
 - `dev/reference/workflows/*.md`, `dev/reference/naming.md`, `AGENTS.md`
+
+**`C-85` widens this list by BREADTH, not by depth** (measured 2026-08-19,
+re-measure before the design): 11 tracked files to rename, **221 occurrences
+across 68 files outside `dev/`**, 771 repo-wide. The categories the key
+migration does NOT already touch are `.gitignore`, `pixi.toml`, four
+`scripts/`, the three `docs/notebooks/*.ipynb` (which carry banner SHAs — see
+`t2608132100`), and 34 files under `tests/`. Four SEALED records name
+`snake_config` in 11 places and stay stale on purpose
+(`dev/reference/sealed-records.yml`, frozen by `tests/test_sealed_records.py`).
+None of it can move a number, which is why it is affordable inside the bundle.
 
 ## Packaging recommendation
 
@@ -2073,8 +2140,16 @@ sweep of the fixture corpus. Landing `C-07` alone would pay the whole migration
 cost for one dead key. Recommendation:
 
 - **Now, independently:** `C-35` (non-breaking, correct under every outcome).
+  `C-83` may also land at any time — it is a code contraction sweep, touches no
+  config key, and `C-38` never sees it.
 - **Probe before designing:** `Q-F` (`C-04`) and D3-feasibility for `C-38`.
-- **One bundle, one `schema_version` bump:** everything else.
+- **One bundle, one `schema_version` bump:** everything else, **`C-85`
+  included** (ruled 2026-08-24). The file rename breaks the same
+  `--configfile` invocation the key migration does, so bundling pays that break
+  once; and it must precede nothing, because `C-84` would otherwise ship a new
+  template under the retired prefix and `C-38` would be written twice.
+  Sequencing inside the bundle: the `git mv` and the `.gitignore` glob move in
+  ONE commit, verified with `git ls-files test_case/`.
 
 The project config carries no version key today (the `schema_version` hits
 elsewhere in the tree belong to snapshot and series-identity artifacts), so the

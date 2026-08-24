@@ -12,7 +12,7 @@ updated: 2026-08-24
 ---
 
 > [!note] Overview
-> **What** — Reshape the project config WITHIN R13's tier split: retire the shared: heading in favour of kind-named sections (basin, climate, model, compute), regroup by kind, and apply one naming policy. 84 indexed changes C-01..C-84 in dev/milestones/r14/config-shape-scoping.md.
+> **What** — Reshape the project config WITHIN R13's tier split: retire the shared: heading in favour of kind-named sections (basin, climate, model, compute), regroup by kind, and apply one naming policy. 85 indexed changes C-01..C-85 in dev/milestones/r14/config-shape-scoping.md. C-85 bundles in the snake_config_ -> project_config_ file rename (t2608191733a).
 > **Why** — R13 fixed which FILE a key lives in and left which SECTION, and what a key is called, decided by history. shared: names a relationship rather than a kind; one concept has several spellings; and the experiment guard's key list is hand-maintained because no boundary separates changes-the-numbers from changes-only-the-wall-clock.
 > **Effort** — large
 
@@ -42,6 +42,12 @@ separately, so `git log` is the decision log.
 - [ ] Owner rulings on the REMAINING open questions: `Q-A`, `Q-E`, `Q-F`,
       `Q-H`, `Q-I`. `Q-B`, `Q-C` and `Q-D` are resolved; `Q-G` is RETIRED
       (`C-77` removed the section it asked about)
+- [ ] Settle `C-85`'s scope: the `snake_config_` FILE prefix only, or also the
+      identifiers carrying it (`snake_config_fixture`, fixture and variable
+      names across 33 test modules). The rename itself is RULED IN as of
+      2026-08-24 and rides the bundle; only its breadth is open. Implementation
+      reference stays on `t2608191733a`, including the `.gitignore` trap that
+      makes `git status` lie
 - [ ] Rule where `C-48` lives. It was to be a `reporting:` key placed by `Q-G`,
       and `C-77` deleted the section while `Q-G` retired - so the row is the one
       loose thread the 2026-08-24 cluster created. Its S2 classification is

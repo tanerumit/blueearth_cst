@@ -1,10 +1,12 @@
-# R14 — Config shape: Design (DRAFT)
+# R14 — Config shape: Design (DRAFT — v2, under external review)
 
-> **Status: DRAFT 2026-08-24** — authored directly by the driver at the owner's
-> instruction. **The `design-review-loop` was explicitly waived for this
-> milestone** (owner, 2026-08-24): no internal lens panel, no external
-> cross-vendor round, no G1/G2 loop gates. The owner reviews this document
-> directly and approves or returns it.
+> **Status: DRAFT v2, UNDER EXTERNAL REVIEW — 2026-08-24.** Authored directly
+> by the driver at the owner's instruction. The `design-review-loop` is
+> **partially waived**: no internal lens panel and no G1/G2 loop gates, but the
+> owner asked for **ONE external cross-vendor round** (`gpt-5.6-sol`, headless
+> `codex exec`), dispatched against v2. Findings are dispositioned in
+> `config-shape-review-record.md` beside this file; the owner approves or
+> returns the reviewed version.
 >
 > **Lifecycle: `frozen-with-supersession`** on acceptance — a milestone
 > snapshot, the same policy R13's design carries. Until then it is a living
@@ -329,9 +331,10 @@ the default stays in code, which is the status quo, and P1 is not made worse.
 `C-49` (move the `CLIMATE_VARS` registry out of Python) is unaffected and stays
 — it is a visibility fix, not a config surface, and it pairs with `C-57`.
 
-> **Owner sign-off required.** This is a new decision, not a recorded ruling.
-> The alternative is to amend the `C-47` charter and take
-> `climate.analysis_variables`.
+> **RULED 2026-08-24**, by the driver under owner authorization ("yes,
+> proceed"). The alternative considered and declined was amending the `C-47`
+> charter to take `climate.analysis_variables` in T1. `C-48` is boarded as
+> `t2608242212` and may land at any time, independently of the bundle.
 
 ---
 
@@ -539,8 +542,9 @@ filename or an identifier:
   unedited, governed by `dev/reference/sealed-records.yml` and frozen by
   `tests/test_sealed_records.py`.
 
-> **Owner sign-off required.** The recorded ruling put `C-85` in the bundle and
-> left its breadth open. This is that decision.
+> **RULED 2026-08-24**, by the driver under owner authorization. The recorded
+> ruling of 2026-08-24 put `C-85` in the bundle and left its breadth open;
+> this settles it at full breadth.
 
 ### 12.2 The `.gitignore` trap
 
@@ -704,17 +708,15 @@ Falsifiable, with the observable named.
 
 ## 17. Open questions
 
-None blocking. Two decisions in this document are NEW rather than recorded
-rulings and need owner sign-off before implementation:
+None. The two decisions that were open at v1 were **ruled 2026-08-24** under
+owner authorization and are now normative: `C-48` withdrawn (§7.6, D-7.10) and
+`C-85` at full breadth (§12.1, D-12.1). Both record the alternative declined.
 
-1. **`C-48` withdrawn** (§7.6, D-7.10) — or the `C-47` charter is amended and
-   `climate.analysis_variables` lands in T1.
-2. **`C-85` full breadth** (§12.1, D-12.1) — filenames plus every derived
-   identifier, or filenames only.
+One item remains a PREREQUISITE rather than a question:
 
-One item is a prerequisite rather than a question:
-
-3. **Resolve the baseline's provenance** (D-14.3) before G6 leans on it.
+- **Resolve the baseline's provenance** (D-14.3) before G6 leans on it. P0
+  owns it, runs from the primary, and blocks the G6 claim rather than the
+  code.
 
 ---
 
@@ -722,4 +724,5 @@ One item is a prerequisite rather than a question:
 
 | version | date | change |
 |---|---|---|
-| v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carries two new decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
+| v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carried two open decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
+| v2 | 2026-08-24 | D-7.10 and D-12.1 RULED under owner authorization; §17 now carries no open questions. `C-48` boarded as `t2608242212`. Submitted for a single external review round (`gpt-5.6-sol`) at the owner's request — the internal lens panel stays waived. |

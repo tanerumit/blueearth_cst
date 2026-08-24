@@ -32,6 +32,7 @@
 | [t2608222252](tasks/t2608222252-derived-extraction-vars.md)                                                                                 | Make the climate extraction variable set derived and configurable                                        | wf0 / wf1 climate store                     | R14                                            |     | backlog |
 | [t2608241413](tasks/t2608241413-the-generated-series-is-anchored-to-a-hardcoded-2010.md)                                                    | The generated series is anchored to a hardcoded 2010                                                     | wf3 / weather generator                     | R14                                            |     | backlog |
 | [t2608241414](tasks/t2608241414-the-two-baseline-wf3-configs-have-diverged.md)                                                              | The two baseline WF3 configs have diverged                                                               | test_case / configs                         | R14                                            |     | backlog |
+| [t2608242212](tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md)                                                | Give the analysis variable set a config surface (R14 C-48)                                               | wf0 / wf1 climate figures                   | R14                                            |     | backlog |
 
 ## Watching
 

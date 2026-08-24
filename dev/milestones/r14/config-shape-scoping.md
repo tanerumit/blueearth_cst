@@ -277,7 +277,7 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 | `C-01` | Retire `shared:` as a heading; promote its contents to top-level kind sections | S1 | REGROUP | yes |
 | `C-02` | Introduce `compute:` — the section whose contents cannot change results | S2 | NEW | yes |
 | `C-03` | ~~Generalize `reporting:` from WF3-only to any workflow file~~ — **WITHDRAWN 2026-08-24** by `C-77`: there is nothing left to generalize | S2 | NEW | — |
-| `C-04` | Replace hand-maintained `_WF1_GUARDED` with "guard everything except `compute:`/`reporting:`" | S2, S3 | MECHANISM | behavior-visible |
+| `C-04` | Replace hand-maintained `_WF1_GUARDED` with "guard everything except `compute:`/`reporting:`" — after `C-77` the exception list is `compute:` ALONE (`C-79`) | S2, S3 | MECHANISM | behavior-visible |
 | `C-05` | Add `schema_version: 2` to the project file; refuse a v1 set with a message naming the migration command | — | NEW | yes (by design) |
 | `C-78` | `HOISTED_SECTIONS` empties; retire the hoist mechanism (R13 D-10.4 amendment) | S7 | MECHANISM | no |
 | `C-79` | Exclude `compute:` from `CONFIG_PROJECTION`, so performance keys leave configuration identity | S2 | MECHANISM | no |
@@ -480,7 +480,7 @@ delineation is not.
 | `sources`, `window`, `selected` | WF0's figure and comparison choices |
 | | WF1's `simulation_window` |
 | | WF2's `historical_year_range` |
-| | WF3's `horizon_year`, `run_length` |
+| | WF3's `simulation_window` (was `horizon_year` + `run_length`; `C-67`) |
 
 **Moving `climate:` down into the workflow files was considered and
 rejected.** It is not an R14 tweak: `historical_window` and `clim_historical`
@@ -580,6 +580,15 @@ with no config surface, discoverable only by reading source. By S2 it is a
 cannot move a number — figures are terminal artifacts and dropping one drops a
 table column. Depends on `Q-G` for where `reporting:` lives.
 
+**`C-48` lost its destination 2026-08-24.** `C-77` removes `reporting:` from
+the config surface entirely and `Q-G` is retired, so the sentence above no
+longer resolves: the section this key was to live in does not exist, and there
+is no open question that would place it. The S2 CLASSIFICATION is untouched —
+which variables get drawn still cannot move a number — but the row now needs
+its own destination ruling, which this walkthrough did not take. Recorded here
+rather than decided; it is an input to the intake, not a row that quietly
+changed.
+
 SELECTION from a registry, not DEFINITION. Each entry carries `label`, `unit`,
 `style` and `how`, and the module is blunt about the last one: *"a summed
 temperature is meaningless and a meaned rainfall understates by ~365x."*
@@ -671,6 +680,11 @@ in BOTH tiers, colliding with the closed hoist map. With T1's gone the
 collision does too — a workflow-local `compute:` nested under its own file and
 never hoisted satisfies S7 with no ruling required. **`Q-G` narrows to the
 `reporting:` question alone.**
+
+*(And then RETIRES, 2026-08-24: `C-77` removes `reporting:` from the config
+surface, so the narrowed question has nothing left to ask. The two halves of
+`Q-G` were closed by two different rulings a day apart, neither of which
+answered it as posed.)*
 
 This is the same shape as `C-52`: a section that looked like a KIND turns out
 to have held one key for want of a home, and removing the key removes the
@@ -1080,7 +1094,11 @@ no change factors.
 PERIOD, a horizon is a YEAR.** Today `future_horizons` holds periods while
 `horizontime_climate` holds a year, under one word. After `C-30` and `C-60`
 the division is clean, and WF3 keeps `horizon_year` as the only surviving
-"horizon". Different names also stop implying a coupling that does not
+"horizon". *(Cleaner still after 2026-08-24: `C-67` supersedes `C-30` and
+deletes the key rather than renaming it, so NO "horizon" survives on the config
+surface — WF3 declares a `simulation_window` like WF1. The clarification the
+row makes stands; it simply no longer has an exception to carve out.)*
+Different names also stop implying a coupling that does not
 exist: WF3's forcing window is computed INDEPENDENTLY of `future_windows`,
 and the two matching in a config is a convention the configs document, not a
 mechanism.
@@ -1950,7 +1968,7 @@ compute:                                        # C-34; excluded from
 | ~~`Q-C`~~ | ~~`_count` suffix vs bare plural~~ **RESOLVED 2026-08-24 (owner)**: neither. Counts take the `n_` prefix; see the N6 rewrite. | `C-29`, `C-31` | — |
 | ~~`Q-D`~~ | ~~Does `method:` earn a heading?~~ **RETIRED 2026-08-22**: the section is gone (`C-52`); both keys have real homes. | ~~`C-20`~~ | — |
 | `Q-E` | Where does a config key's DEFAULT live: `config/advanced_settings.yml` (precedent, closed schema, already tested) or beside the key in the template? | `C-36` | **`advanced_settings`** — the only option with an existing enforcement mechanism, and the only one that could grow `C-37`. |
-| `Q-F` | Does S2 actually permit `_WF1_GUARDED` to become "everything except `compute:`/`reporting:`"? | `C-04` | Unknown. **Needs a probe against the digest and freeze code before R14 promises it.** |
+| `Q-F` | Does S2 actually permit `_WF1_GUARDED` to become "everything except `compute:`"? (`reporting:` dropped out of the question 2026-08-24 with `C-77`.) | `C-04` | Unknown. **Needs a probe against the digest and freeze code before R14 promises it** — and it is now the only evidence for S2, not one probe among several. |
 | `Q-H` | One `selected`, or one per consumer (`forcing` for WF1, `conditioning` for WF3)? | `C-44` | Lean ONE. CST does no local calibration, so the response surface is anchored on the historical run; letting the generator condition on a different record than the model was forced with decouples them silently. The genuine hybrid case is already met INSIDE a single store — the CHIRPS branch takes temperature, radiation and pressure from ERA5 and lapse-corrects them onto the CHIRPS grid. Splitting later is expensive, so record rather than default. |
 | ~~`Q-G`~~ | ~~How is `reporting:` placed under S7?~~ **RETIRED 2026-08-24**: `C-55` narrowed it to `reporting:` alone, and `C-77` removes the section. | ~~`C-02`, `C-03`, `C-28`, `C-34`~~ | — |
 

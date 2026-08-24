@@ -97,6 +97,14 @@ This is the load-bearing rule: it makes the experiment guard mechanical —
 experiment freeze"); S2 generalizes it and gives performance knobs the same
 structural treatment.
 
+**Amended 2026-08-24 by `C-77` and `C-79`.** `reporting:` leaves the config
+surface entirely, so the description class has no section and no instances left
+to generalize. What remains is a two-way split — identity and `compute:` — and
+`C-79` is what gives `compute:` its carve-out, by excluding it from
+`CONFIG_PROJECTION`. The two rows must be presented together, or S2's split has
+no instances at all. That also makes `Q-F` the whole of the evidence for the
+rule rather than one probe among several.
+
 **S3 — One section, one guard granularity.** A section never mixes an
 experiment-invariant key with a free-to-change one. S2 is the enforcement.
 
@@ -268,9 +276,11 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 |---|---|---|---|---|
 | `C-01` | Retire `shared:` as a heading; promote its contents to top-level kind sections | S1 | REGROUP | yes |
 | `C-02` | Introduce `compute:` — the section whose contents cannot change results | S2 | NEW | yes |
-| `C-03` | Generalize `reporting:` from WF3-only to any workflow file | S2 | NEW | yes — **refused today; blocked on `Q-G`** |
+| `C-03` | ~~Generalize `reporting:` from WF3-only to any workflow file~~ — **WITHDRAWN 2026-08-24** by `C-77`: there is nothing left to generalize | S2 | NEW | — |
 | `C-04` | Replace hand-maintained `_WF1_GUARDED` with "guard everything except `compute:`/`reporting:`" | S2, S3 | MECHANISM | behavior-visible |
 | `C-05` | Add `schema_version: 2` to the project file; refuse a v1 set with a message naming the migration command | — | NEW | yes (by design) |
+| `C-78` | `HOISTED_SECTIONS` empties; retire the hoist mechanism (R13 D-10.4 amendment) | S7 | MECHANISM | no |
+| `C-79` | Exclude `compute:` from `CONFIG_PROJECTION`, so performance keys leave configuration identity | S2 | MECHANISM | no |
 
 ### Group B — `project:`
 
@@ -283,12 +293,15 @@ sections/files) · **DELETE** · **MECHANISM** (code, not a config key).
 | `C-39` | Move the climate catalog OUT of the project file: `project.data_sources_climate` → `catalog:` in `_analyze_projections.yml` | S1, S6 | REGROUP | yes |
 | `C-40` | `project.data_sources` → `project.catalog` (single leaf, since `C-39` empties the group) | S4, S6, N1 | RENAME | yes |
 
-**S7 constrains `C-02`, `C-03`, `C-28` and `C-34` together.** As drafted, this
-document places `compute:` in both the project file (`C-21`) and the WF3 file
-(`C-34`), and `reporting:` in both the WF2 file (`C-28`) and the WF3 file
-(already there). Both collide with the closed hoist map. `Q-G` is the ruling
-that resolves it; until then those four rows are proposals with a known
-mechanical obstacle, not merely breaking changes.
+**S7 constrained `C-02`, `C-03`, `C-28` and `C-34` together — DISCHARGED
+2026-08-24.** As drafted, this document placed `compute:` in both the project
+file (`C-21`) and the WF3 file (`C-34`), and `reporting:` in both the WF2 file
+(`C-28`) and the WF3 file (already there). Both collided with the closed hoist
+map. The collision is now gone from both ends rather than ruled on: `C-55`
+dissolved T1 `compute:`, and `C-77` removes `reporting:` from the config
+surface altogether — which withdraws `C-03` and `C-28` and empties
+`HOISTED_SECTIONS` (`C-78`). `Q-G` is RETIRED; there is no question left for it
+to answer. `C-02` survives and is unblocked.
 
 `C-07` evidence: read only by `build_model.smk:89`, used only to build the two
 fallback prefixes at `:163-164`; explicitly *not* read by WF3 since 2026-08-13
@@ -869,7 +882,7 @@ window's type as well as its spelling.
 | `C-64` | `min_denominator` moves INTO the variable registry as per-variable metadata (with `C-57`) | S1, authority | REGROUP | yes |
 | `C-65` | `max_flagged_months` → `advanced_settings.constraints.max_flagged_months` | authority | DELETE | yes |
 | `C-66` | `relative_change:` dissolves — both its keys have real homes | S4 | DELETE | yes |
-| `C-28` | `stats` → `reporting.stats` | S2 | REGROUP | yes — **blocked on `Q-G`**: WF2 declaring `reporting:` is refused today. **Erratum: originally also listed `save_grids`, which does not exist** |
+| `C-28` | ~~`stats` → `reporting.stats`~~ — **WITHDRAWN 2026-08-24**: `C-77` removes the destination; `stats` stays at `workflows.analyze_projections.stats`. The `save_grids` erratum below still stands | S2 | REGROUP | — |
 | `C-57` | `variables:` gains a SHORT FORM — a bare key resolves through a registry; a name the registry lacks and that declares no spec is refused | P1 | **SEMANTIC** | no (additive) |
 | `C-58` | `canonical` leaves the USER surface; it stays in the registry | P1 | RENAME | yes |
 | `C-74` | WF2's windows stay CALENDAR years — decision recorded, no change | — | (decision) | no |
@@ -1143,7 +1156,8 @@ this as a decision so it is not re-proposed as an oversight.
 | `C-31` | `stress_test.<var>.step_num` → `n_levels`, with `n_levels = step_num + 1` | N6 | **SEMANTIC** | yes — **RULED 2026-08-24** |
 | `C-32` | `stress_test.<var>.transient_change` (boolean) → `trajectory: transient \| constant` (enum) | N3, N5 | **SEMANTIC** | yes — **RULED 2026-08-24** |
 | `C-33` | `stress_test.{dry,wet}_spell_factor` → `spell_factors.{dry,wet}` | S4 | REGROUP | yes |
-| `C-34` | `batch_size`, `batch_size_max`, `disk_headroom_gb` → `compute.*` | S2, S3 | REGROUP | yes |
+| `C-34` | `batch_size`, `batch_size_max`, `disk_headroom_gb` → `compute.*` | S2, S3 | REGROUP | yes — **RULED 2026-08-24** |
+| `C-77` | `reporting:` leaves the project config surface entirely | scope | **DELETE** | yes — **RULED 2026-08-24** |
 | `C-67` | `horizontime_climate` + `run_length` → `simulation_window: {start, end}` | N4, N8 | **SEMANTIC** | yes — **RULED 2026-08-24** |
 | `C-68` | `stress_test:` → `climate_perturbations:` | N3 (file-scope) | RENAME | yes — **RULED 2026-08-24** |
 | `C-69` | `run_historical` deleted; `st_0` is always produced | S2, P2 | **DELETE** | yes — **RULED 2026-08-24** |
@@ -1152,8 +1166,19 @@ this as a decision so it is not re-proposed as an oversight.
 perturbation axes and must not read as siblings of `temp:`/`precip:`; a named
 `spell_factors:` group says that structurally instead of in a comment.
 `C-34` is S2's second payoff: three WF3 keys that cannot change a number
-currently sit inside the guarded, digested surface. Its section name is the one
-`Q-G` must place: T1-only, or per-workflow and never hoisted.
+currently sit inside the digested surface.
+
+**Erratum on `C-34`, 2026-08-24.** The row originally said these keys "sit
+inside the guarded, digested surface", and named its section as the one `Q-G`
+must place. Digested yes — `CONFIG_PROJECTION` carries
+`workflows.run_stress_test` whole (`run_stress_test.smk:61-65`), so a
+`batch_size` edit moves `effective_config_digest`. Guarded NO: `_WF1_GUARDED`
+names only `project`, `shared.basin`, `shared.wflow_outvars` and
+`workflows.build_model`, never WF3. The S2 payoff is real but it is a DIGEST
+payoff, not a guard one — which is exactly what `C-79` collects. And the
+section needed no `Q-G` ruling in the end: `C-55` dissolved T1 `compute:`, so a
+workflow-local `compute:`, nested under its own file and never hoisted,
+satisfies S7 outright.
 
 #### `experiment_name` and `seed` stay as they are — and `experiment_name` dents S2
 
@@ -1400,6 +1425,124 @@ shipped config is affected in the direction that loses anything: the additions
 are `baseline_linux`, `wf2_fast` and the fixture, all of which gain two metrics
 they should have had.
 
+#### `compute:` is real, and its keys belong outside run identity — `C-34`, `C-79`, `C-80`
+
+**Asked by the owner, 2026-08-24:** is there a good reason to batch at all;
+does the reasoning hold for both long and short runs; and would these settings
+be better in `advanced_settings.yml`? **Ruled the same day:** keep `compute:`
+where `C-34` puts it, and add `C-79` — the exclusion from `CONFIG_PROJECTION`
+that makes the section mean something.
+
+**Batching is justified, and measured.**
+`dev/milestones/p33/batching-results.md` (2026-07-25, 12-member fixture): B=1
+gives a 464 s stage makespan, B=4 gives 221–228 s, **−52%**. The record also
+corrects the intuition the name invites: Julia process startup is `F ≈ 24 s`,
+only ~21% of a run. The win is IN-SESSION warm-up of the Wflow run path — 92 s
+cold, 35 s warm, a 0.38 ratio — which is why the same record notes a
+PackageCompiler sysimage (which attacks `F` only) can never capture most of it.
+
+**The reasoning is run-length dependent, and that was never measured —
+`C-80`.** The saving per extra member in a session is the warm/cold difference,
+~57 s, and it is a FIXED per-member cost while simulation time scales with the
+run length. So a 10-year run gets a larger proportional win than a 20-year one
+from the same B. The disk side moves the other way: `batch_sizing.py`
+establishes that forcing bytes are a per-timestep constant of the MODEL, so
+per-member footprint grows about linearly with run length while state size is
+constant. **Longer runs make batching less valuable and more expensive at the
+same time.**
+
+The mechanism already half-handles this — the disk ceiling lowers B as the
+footprint grows — but the decomposition was measured at ONE run length on ONE
+fixture, so the dependence is an assumption. `C-80` records the probe rather
+than letting R14 assert it.
+
+**Why NOT `advanced_settings.yml`, which was the owner's first instinct.** The
+instinct is right that these are not scientific setup; the destination is
+wrong, and would make it worse. `effective_config_document()` takes
+`advanced_settings` into the digest **whole and unprojected** — its own
+docstring: *"These stay INSIDE the document: they are configuration ...
+recorded nowhere else in a project tree."* Moving the batch keys there keeps
+them in configuration identity and removes even the possibility of a carve-out.
+
+The same docstring names the class these keys belong to: *"Execution-only
+options such as **cores**, dry-run, and verbosity do not belong in this
+document."* And `cores` is the other half of this very arithmetic — peak disk
+is `p × B × per_member`, with `p` coming from `-c` at the command line and no
+YAML at all. `batch_size` and `disk_headroom_gb` are the same KIND of quantity
+as `-c`: properties of the machine, not of the project and not of the toolbox.
+`disk_headroom_gb` in particular is a property of whatever disk the run is on,
+and `advanced_settings.yml` is TRACKED — setting it there dirties a repo file
+per machine.
+
+`C-79` is therefore the row that makes `C-34` worth doing: with `compute:`
+excluded from `CONFIG_PROJECTION`, the keys stay visible and documented where a
+user looks for them, they leave the digest and the experiment freeze so
+changing `batch_size` never invalidates a run, and a per-machine override via
+the profile or `--config` needs no edit to a tracked file.
+
+`C-79` is also the first concrete instance of the `Q-F` claim — "guard
+everything except `compute:` and `reporting:`" — and with `C-77` removing
+`reporting:`, it is now the ONLY instance. `Q-F`'s probe gets simpler and more
+load-bearing at once.
+
+#### `reporting:` leaves the config — `C-77`, `C-78`
+
+**Ruled by the owner, 2026-08-24:** "I am not sure what shape I want for this
+... let the user post-process from the tables. So, lets remove `reporting:`
+from the config."
+
+**Nothing in this repository draws a response surface, so no figure is lost.**
+`shared/surface_axes.py`'s own docstring: *"This module is the REFERENCE
+IMPLEMENTATION of HM-7, not its definition. **No rule in this repository calls
+it**: WF3 ends at the reduction, and the consumers that actually draw a surface
+are out-of-repo (CST-API, the frontend, csthelpers)."* In the Snakefile
+`SURFACES = parse_surfaces(config)` is assigned at line 565 and **read
+nowhere** — it exists as a parse-time refusal on behalf of those consumers.
+
+That makes the ruling correct on the repo's own rules rather than merely
+acceptable: `reporting:` is a config section this repo validates on behalf of
+consumers it is explicitly forbidden to be coupled to — AGENTS.md, "no web/API
+code belongs here", and the standing rule that the API and frontend never
+constrain a decision here. Removing it removes a coupling that should not
+exist.
+
+**What goes:**
+
+- the `reporting:` block in `_run_stress_test.yml` and in the template;
+- `parse_surfaces` from the Snakefile's imports and its line 565
+  (`warn_on_heterogeneous_design` STAYS — it is about the perturbation design,
+  not reporting);
+- `config_composition.py`'s reporting-specific refusals — the leftover
+  top-level parse error and the T2 placement message.
+
+**What STAYS, explicitly, so nobody tidies it away:** `shared/surface_axes.py`
+itself. It is the HM-7 reference implementation and the seam contract
+(`dev/reference/contracts/hydrological-model-seam.md`) is the definition. No
+rule called it before this change either.
+
+**`C-78` — the hoist mechanism empties.** `HOISTED_SECTIONS` is
+`{"run_stress_test": ("reporting",)}` — one entry, and `C-77` removes it. R13
+built the hoist for exactly this section, so this is an amendment to D-10.4,
+not a quiet edit. With no users left it should be RETIRED rather than kept
+empty, on the precedent R13 itself set: `CROSS_WORKFLOW_READS` was retired when
+D-9.7 emptied it, and the D-9.6 scan now asserts a literal zero instead of
+equality with a set. An empty registry that can be refilled cannot enforce
+shrink-only; no registry can.
+
+**Consequences elsewhere in the register, all simplifications:**
+
+| row | effect |
+|---|---|
+| `Q-G` | **RETIRED.** `C-55` had already narrowed it to the `reporting:` question alone; there is no question left |
+| `C-03` | **WITHDRAWN** — nothing to generalize |
+| `C-28` | **WITHDRAWN** — no destination; WF2's `stats` stays at `workflows.analyze_projections.stats` |
+| `C-02` | survives and is UNBLOCKED — `compute:` was the other half of `Q-G` and is settled |
+
+**One thing to carry into the intake.** `reporting:` was the only section
+outside `CONFIG_PROJECTION`, so its removal briefly leaves the digest covering
+everything — until `C-79` lands. The two should be presented together, or S2's
+three-class split has no instances at all.
+
 ### Group I — carried forward from `parameter-placement.md`
 
 | ID | change | rule | class | breaking |
@@ -1412,6 +1555,7 @@ they should have had.
 | `C-73` | `compute_nr_years()` loses its `ceil`; derived from `simulation_window.end` | — | MECHANISM | no |
 | `C-75` | Sweep the technical note onto one trajectory vocabulary and correct its stale defaults | — | MECHANISM (doc) | no |
 | `C-76` | Record what the note's Annex is, and the three places it and the code never agreed | — | (finding) | no |
+| `C-80` | PROBE: is the batching win run-length dependent? Measured at one run length only | — | (probe) | no |
 
 **Second erratum, same source (2026-08-22).** The appendix lists
 `DEFAULT_MIN_REFERENCE` and `DEFAULT_MAX_FLAGGED_MONTHS` under "No config
@@ -1613,12 +1757,16 @@ candidate_sources: [chirps]
 | `Q-A` | `project.dir` (N3) vs keeping `project_dir` | `C-06` | **Keep `project_dir`** as a named exemption — it is a term of art here (AGENTS.md's two-tier location rule, `warn_if_project_dir_in_repo`, every internal variable). |
 | ~~`Q-B`~~ | ~~Is `model:` holding one leaf (`outvars`) an S4 violation?~~ **RESOLVED 2026-08-22**: `model:` is the engine boundary, not a group of one. See Group E. | `C-19` | — |
 | `Q-I` | One variables key or two? `C-48` (analysis) and `C-50` (extraction) must not become one key whose meaning widens on upgrade — a project that set a short list for FIGURES would silently change what gets DOWNLOADED. Same cross-version meaning-swap `data_sources` was rejected for. | `C-48`, `C-50` | Lean TWO, distinctly named. Decide now even though only one ships. |
-| `Q-C` | `_count` suffix vs bare plural (`realizations_count` vs `realizations`) | `C-29`, `C-31` | Undecided; `_count` is unambiguous, bare plural is shorter and YAML already distinguishes int from list. |
+| ~~`Q-C`~~ | ~~`_count` suffix vs bare plural~~ **RESOLVED 2026-08-24 (owner)**: neither. Counts take the `n_` prefix; see the N6 rewrite. | `C-29`, `C-31` | — |
 | ~~`Q-D`~~ | ~~Does `method:` earn a heading?~~ **RETIRED 2026-08-22**: the section is gone (`C-52`); both keys have real homes. | ~~`C-20`~~ | — |
 | `Q-E` | Where does a config key's DEFAULT live: `config/advanced_settings.yml` (precedent, closed schema, already tested) or beside the key in the template? | `C-36` | **`advanced_settings`** — the only option with an existing enforcement mechanism, and the only one that could grow `C-37`. |
 | `Q-F` | Does S2 actually permit `_WF1_GUARDED` to become "everything except `compute:`/`reporting:`"? | `C-04` | Unknown. **Needs a probe against the digest and freeze code before R14 promises it.** |
 | `Q-H` | One `selected`, or one per consumer (`forcing` for WF1, `conditioning` for WF3)? | `C-44` | Lean ONE. CST does no local calibration, so the response surface is anchored on the historical run; letting the generator condition on a different record than the model was forced with decouples them silently. The genuine hybrid case is already met INSIDE a single store — the CHIRPS branch takes temperature, radiation and pressure from ERA5 and lapse-corrects them onto the CHIRPS grid. Splitting later is expensive, so record rather than default. |
-| `Q-G` | **NARROWED 2026-08-22 by `C-55` — `compute:` is settled (workflow-local only), so this is now the `reporting:` question alone.** Under S7, how is `reporting:` placed? (a) T1-only — every workflow's performance/description keys move to the project file; (b) per-workflow and never hoisted — they nest under `workflows.<name>` and lose the freeze exemption that hoisting buys; (c) distinct names per tier. | `C-02`, `C-03`, `C-28`, `C-34` | Lean (a) for `compute:` (a thread count and a batch size are the same kind of knob and belong together), and **keep `reporting:` as it is** — WF3-owned and hoisted — since (b) would revoke the caption-edit exemption that is the whole reason it was hoisted. That makes `C-03` a no-op and `C-28` a rename onto a T1 `reporting:`. |
+| ~~`Q-G`~~ | ~~How is `reporting:` placed under S7?~~ **RETIRED 2026-08-24**: `C-55` narrowed it to `reporting:` alone, and `C-77` removes the section. | ~~`C-02`, `C-03`, `C-28`, `C-34`~~ | — |
+
+`Q-F` is NOT resolved by any of this, and gets harder to defer: with `C-77` and
+`C-79` landed, `compute:` becomes the ONLY section outside configuration
+identity, so the entire S2 claim rests on that one probe.
 
 ## Constraints
 

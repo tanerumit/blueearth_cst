@@ -154,7 +154,7 @@ in every file. Replaces `starttime`/`endtime` and both bare `[a, b]` year pairs.
 `horizontime_climate` → `horizon_year`; `clim_project` → `ensemble`.
 
 **N6 — Counts take the `n_` prefix.** `realizations_num` → `n_realizations`,
-`step_num` → `n_steps`. **Ruled by the owner, 2026-08-24**, replacing the
+`step_num` → `n_levels`. **Ruled by the owner, 2026-08-24**, replacing the
 `_count` suffix this rule proposed until then: `_count` is not vocabulary the
 owner uses, `n_` is the statistical idiom, and it reads as "number of" without
 a suffix that has to be learned. `Q-C` is resolved by the same ruling.
@@ -174,6 +174,12 @@ Rejected, with reasons, so they are not re-proposed:
 | `realization_num` | the repo spells member INDICES `rlz_ix` / `rlz_1`, so a singular reads as "which one", not "how many" |
 | `realization_sample_num` | the sample-vs-population distinction is not live in this file |
 | `ensemble_size` | `C-25` already claims `ensemble` for WF2's `clim_project`; two meanings of "ensemble" in one config set is the P3 this milestone removes |
+
+N6 supplies the PREFIX; the noun is still the row's to choose. The second
+example above is `n_levels` rather than `n_steps` for exactly that reason:
+`C-31` rejects `n_steps` by name, because the value is one less than the number
+of grid steps and a precise-looking prefix on a misleading noun is worse than
+the name it replaces.
 
 **N7 — A key in a shared section never names an ENGINE.** `model.outvars`, not
 `wflow_outvars`. The toolbox is meant to stay flexible: wflow is the model

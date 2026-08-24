@@ -151,10 +151,18 @@ policy rules would contradict each other two sections apart.
 2026-08-24 (`Q-A`). It is a term of art rather than a key that happens to
 repeat its section: AGENTS.md's two-tier location rule is written around the
 word, `warn_if_project_dir_in_repo` is named for it, and it is the spelling of
-every internal variable that carries the value. At 736 occurrences across 95
-files outside `dev/` it is a wider sweep than the whole `C-85` rename, for a
-rule that gains nothing a reader would notice. Named here rather than left
-implicit, so it reads as a decision and not an oversight.
+every internal variable that carries the value. It is also a wider sweep than
+the whole `C-85` rename, for a rule that gains nothing a reader would notice —
+both measured the same way on 2026-08-24, over TRACKED files outside `dev/`,
+because the two figures are only comparable if the method is:
+
+| identifier | files | occurrences |
+|---|---|---|
+| `project_dir` | 95 | **826** |
+| `snake_config` (`C-85`) | 76 | 301 |
+
+Named here rather than left implicit, so it reads as a decision and not an
+oversight.
 
 **N4 — A time span is `{start, end}` inside a `*_window:` group** — one spelling
 in every file. Replaces `starttime`/`endtime` and both bare `[a, b]` year pairs.
@@ -2146,7 +2154,7 @@ it, which is what makes a later reader able to tell a decision from a default.
 
 | ID | question | blocks | ruling |
 |---|---|---|---|
-| ~~`Q-A`~~ | ~~`project.dir` vs keeping `project_dir`~~ **RESOLVED 2026-08-24 (owner)**: keep `project_dir`, as N3's named exemption. It is a term of art (AGENTS.md's two-tier location rule, `warn_if_project_dir_in_repo`), and at 736 occurrences across 95 files outside `dev/` it is a wider sweep than `C-85` for a rule that gains nothing. | ~~`C-06`~~ | — |
+| ~~`Q-A`~~ | ~~`project.dir` vs keeping `project_dir`~~ **RESOLVED 2026-08-24 (owner)**: keep `project_dir`, as N3's named exemption. It is a term of art (AGENTS.md's two-tier location rule, `warn_if_project_dir_in_repo`), and at 826 occurrences across 95 tracked files outside `dev/` it is a wider sweep than `C-85` for a rule that gains nothing. | ~~`C-06`~~ | — |
 | ~~`Q-B`~~ | ~~Is `model:` holding one leaf (`outvars`) an S4 violation?~~ **RESOLVED 2026-08-22**: `model:` is the engine boundary, not a group of one. See Group E. | `C-19` | — |
 | ~~`Q-I`~~ | ~~One variables key or two?~~ **RESOLVED 2026-08-24 (owner)**: TWO, distinctly named. One key whose meaning widened on upgrade from "which to plot" to "which to download" would silently change what a project fetches — the cross-version meaning-swap `data_sources` was rejected for. Reserved now even though only `C-48` ships. | `C-48`, `C-50` | — |
 | ~~`Q-C`~~ | ~~`_count` suffix vs bare plural~~ **RESOLVED 2026-08-24 (owner)**: neither. Counts take the `n_` prefix; see the N6 rewrite. | `C-29`, `C-31` | — |
@@ -2253,9 +2261,12 @@ Post-R13 the surface is wider than `parameter-placement.md` §6 recorded:
 - `docs/guide/configuration.qmd`, `docs/migration-config-tiers.md`, `README.md`
 - `dev/reference/workflows/*.md`, `dev/reference/naming.md`, `AGENTS.md`
 
-**`C-85` widens this list by BREADTH, not by depth** (measured 2026-08-19,
-re-measure before the design): 11 tracked files to rename, **221 occurrences
-across 68 files outside `dev/`**, 771 repo-wide. The categories the key
+**`C-85` widens this list by BREADTH, not by depth.** Measured 2026-08-19: 11
+tracked files to rename, **221 occurrences across 68 files outside `dev/`**,
+771 repo-wide. **Re-measured 2026-08-24 over tracked files outside `dev/`: 301
+across 76** — the surface grew by a third in five days, which is the board
+note's "re-measure before the design" instruction earning its place rather than
+a discrepancy. The categories the key
 migration does NOT already touch are `.gitignore`, `pixi.toml`, four
 `scripts/`, the three `docs/notebooks/*.ipynb` (which carry banner SHAs — see
 `t2608132100`), and 34 files under `tests/`. Four SEALED records name

@@ -42,6 +42,11 @@ separately, so `git log` is the decision log.
 - [ ] Owner rulings on the REMAINING open questions: `Q-A`, `Q-E`, `Q-F`,
       `Q-H`, `Q-I`. `Q-B`, `Q-C` and `Q-D` are resolved; `Q-G` is RETIRED
       (`C-77` removed the section it asked about)
+- [ ] Rule where `C-48` lives. It was to be a `reporting:` key placed by `Q-G`,
+      and `C-77` deleted the section while `Q-G` retired - so the row is the one
+      loose thread the 2026-08-24 cluster created. Its S2 classification is
+      untouched (which variables get drawn cannot move a number); only the
+      destination is open, and no question in the table covers it
 - [ ] Probe `Q-F`: can `_WF1_GUARDED` be derived from section membership? Now
       LOAD-BEARING rather than one probe among several — with `reporting:` gone
       (`C-77`), `compute:` is the only section outside configuration identity,

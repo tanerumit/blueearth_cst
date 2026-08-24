@@ -21,7 +21,13 @@ a lane-local WF3 run contaminates every other worktree's gate.
 ### Goal
 
 Establish which is true, with commit-level evidence, so G6 rests on a falsifier
-of known provenance.
+of known provenance — and record the pre-change state somewhere it cannot be
+lost.
+
+**This phase BLOCKS every other phase** (design D-14.3, external finding
+`ext1-3`). The fixture is untracked and shared between worktrees, so once any
+phase migrates a config and a WF3 run touches it, the before-state is
+unrecoverable: it was never in git.
 
 ### Non-goals
 
@@ -44,6 +50,12 @@ of known provenance.
    and a `dev/LOG.md` row; or (b) still stale — the green gate is a
    shared-fixture artefact and a WF3 re-record from the primary is required.
 4. If (b): PAUSE at Gate 2 before re-recording.
+5. **Record the four DATA targets' hashes and provenance into a TRACKED file**
+   — the producing commit, the environment, and the sha256 of
+   `cmip6_change_factors_annual.csv`, `_monthly.csv`, `q_indicators.csv` and
+   `run_default/output.csv`. This is what survives the shared fixture being
+   regenerated, and it is the deliverable that releases the rest of the
+   program.
 
 ### Validation
 

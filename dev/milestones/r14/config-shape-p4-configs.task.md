@@ -54,6 +54,15 @@ rather than by hand — which makes this phase the rewriter's first real test.
 - Rung 2: `pixi run test-fast`.
 - Rung 3: a WF3 smoke run on `snake_config_rapid` (rapid is the config to
   WATCH EXECUTE; baseline is the config whose NUMBERS are the point).
+- Rung 4 — **resolved-config equivalence across ALL FOUR sets** (design §14.3,
+  finding `ext1-6`). `check_baseline` records from `snake_config_baseline`
+  alone, so without this `rapid`, `baseline_linux` and `wf2_fast` have no
+  numerical check whatsoever. For each set, compose the v1 and v2 documents and
+  compare SEMANTICALLY at the two seams a difference would reach a number: the
+  resolved value of every key a rule reads after defaults, and every
+  `params:`-threaded value. Assert equality except at the declared
+  non-preserving rows, which must differ in exactly the declared way. Cover the
+  optional keys the sets exercise, not only the defaults.
 - **Falsifier for "no config was hand-edited":** re-run the rewriter from the
   pre-migration commit and diff its output against the committed result. Any
   difference is a hand-edit, and a hand-edit means the rewriter cannot

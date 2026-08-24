@@ -5,8 +5,10 @@ Task Brief — P3: the v1→v2 rewriter
 Canonical ruleset: `AGENTS.md`. Design: `config-shape-design.md` §11.
 Program: `config-shape-master-brief.md`.
 
-- The register (`config-shape-scoping.md`, `C-01`..`C-85`) is the mapping. It
-  is DATA, not code — the rewriter is driven by it so the two cannot drift.
+- The register (`config-shape-scoping.md`, `C-01`..`C-85`) is the ARGUMENT.
+  The MAPPING is a separate normative artifact this phase ships — 85 rows of
+  markdown table cannot be executed or checked for completeness (external
+  finding `ext1-1`).
 - K3: a key present-vs-absent moves `effective_config_digest` and refuses every
   already-run experiment. That cost is payable ONCE, which is why everything
   lands as one bundle.
@@ -26,27 +28,49 @@ behaviour-preserving.
 ### Allowed scope
 
 - **Permitted:** `scripts/split_project_config.py` (extend) or a sibling,
-  `tests/data/presplit/**`, `tests/` for the above.
+  `config/migrations/**` (new), `tests/data/presplit/**`, `tests/` for the above.
 - **Forbidden:** `config/defaults/**`, `config/catalogs/**`;
   `dev/milestones/**`.
 
 ### Required changes (checklist)
 
-1. Extend `scripts/split_project_config.py` (or add a sibling) into a v1→v2
-   rewriter **driven by the register**, performing in one pass: key renames and
-   regroups, the file renames, the `.gitignore` glob move, and the
-   `schema_version: 2` stamp.
-2. Implement the two non-preserving hooks (design D-11.5):
+1. **Ship the mapping as a NORMATIVE artifact first** — `config/migrations/
+   v1_to_v2.yml`, per design D-11.2a, with `id`, `old_path`, `new_path`, `op`,
+   `value_transform`, `on_collision`, `default_if_absent`, `exception_hook` per
+   row. A register row with no mapping entry, or a mapping entry naming no
+   register row, **fails the build**. The register's markdown table is the
+   argument; this file is the specification.
+2. Extend `scripts/split_project_config.py` (or add a sibling) into a v1→v2
+   rewriter driven by that mapping: key renames and regroups, the file renames,
+   the `.gitignore` glob move, the `schema_version: 2` stamp, and the
+   experiment-record migration (item 4).
+3. **Make it TRANSACTIONAL** (design D-11.2b): preflight read-only over the
+   COMPLETE set — every file parsed, every mapping row resolved, every
+   exception hook evaluated — aborting on any refusal or destination collision
+   BEFORE a byte is written; then stage, validate the staged set against the
+   loader, commit atomically, and keep `*.v1.bak`. Re-running on a complete v2
+   set is a reported no-op; re-running on a PARTIAL set refuses and names the
+   inconsistency.
+4. **Migrate `experiment.yml` under `<project_dir>/experiments/*/` with the
+   same mapping** (design §11.6). Without this, `_frozen_differences` diffs the
+   whole renamed `run_stress_test` key set on EVERY attempt and every already-run
+   experiment becomes permanently unrunnable — `RETIRED_EXPERIMENT_KEYS` does
+   not rescue it, because its escape covers only keys that DISAPPEAR.
+5. Implement the two non-preserving hooks (design D-11.5):
    - **`C-69`** — a v1 config with `run_historical: false` is rewritten AND the
      user is told the run will now gain `st_0` and with it
      `q_wettest_month_mean` / `q_driest_month_mean`, 2 of 11 q metrics.
    - **`N8`** — a project with `water_year_start != Jan` is **REFUSED**, naming
      the window it will not rewrite. Old bounds are calendar, new are
      water-year; there is no number-preserving rewrite.
-3. Ship the **stale-spelling sweep**: a grep per retired spelling across
-   tracked files outside `dev/milestones/**`, failing on any hit. No such tool
-   exists today.
-4. Add a v1→v2 pair to `tests/data/presplit/`, which exists precisely to test
+6. Ship the **stale-spelling sweep** — and note it CLASSIFIES rather than
+   greps (design D-14.4). Zero retired spellings in active config, code
+   identifiers, command lines and live docs; an allowlist for the mapping, the
+   `presplit/` v1 fixtures, the migration note's tables, refusal-message
+   literals and this rewriter's own tests, each carrying a declared reason;
+   **fails closed** on an unknown classification. "Fail on any hit" is
+   unsatisfiable — your own mapping file would trip it.
+7. Add a v1→v2 pair to `tests/data/presplit/`, which exists precisely to test
    migration.
 
 ### Commit plan
@@ -56,7 +80,10 @@ spellings the moment it lands.
 
 | subject | paths | invariant preserved |
 |---|---|---|
-| add the rewriter, register-driven, no callers yet | `scripts/`, `tests/data/presplit/` | tree still parses v1; nothing migrated yet |
+| add `config/migrations/v1_to_v2.yml` + the register↔mapping completeness check | `config/migrations/`, `tests/` | the mapping is complete and traceable before anything consumes it |
+| add the rewriter, mapping-driven, no callers yet | `scripts/`, `tests/data/presplit/` | tree still parses v1; nothing migrated yet |
+| add the transactional wrapper (preflight → stage → validate → atomic commit) | `scripts/`, `tests/` | no partial write is reachable, proven by the mid-set refusal test |
+| migrate `experiment.yml` records with the same mapping | `scripts/`, `tests/` | an untouched experiment yields an EMPTY `_frozen_differences` |
 | add the two non-preserving hooks + their fixtures | `scripts/`, `tests/` | refusal and warning paths covered before any real config moves |
 | add the stale-spelling sweep | `scripts/` or `dev/scripts/` | sweep is green on a v1 tree; it has nothing to find yet |
 
@@ -71,15 +98,23 @@ spellings the moment it lands.
   - **"`N8` refuses rather than shifting"** — a fixture with
     `water_year_start: Oct` must exit non-zero naming the window. A silent
     rewrite here is the failure mode.
-  - **"the mapping cannot drift from the register"** — mutate one register row
-    in a test fixture and assert the rewriter's behaviour changes with it.
+  - **"the mapping cannot drift from the register"** — the build fails when a
+    register row has no mapping entry, and when a mapping entry names no
+    register row. Test both directions.
+  - **"a refusal mid-set leaves nothing written"** — point the rewriter at a
+    set whose THIRD file trips `N8`, and assert the tree is byte-identical
+    afterwards. This is D-11.2b's whole point and no unit test reaches it.
+  - **"an untouched experiment still runs"** — migrate a project with a
+    completed experiment, re-run WF3 changing nothing, assert
+    `_frozen_differences` is EMPTY (design D-14.8).
 - Rung 3: `pytest tests/test_cli.py`.
 - Rung 4: `pixi run test-fast`.
 
 ### Acceptance criteria
 
 - One command migrates a complete v1 set, verified on the `presplit/` pair.
-- The `Oct` fixture is refused, not rewritten.
+- The `Oct` fixture is refused, not rewritten, AND no file is written.
+- An untouched experiment survives migration with an empty `_frozen_differences`.
 - The `false` → `st_0` case is rewritten AND reported.
 - The stale-spelling sweep exists and runs.
 
@@ -90,7 +125,9 @@ message. **PAUSE at Gate 3** before P4 migrates the other three.
 
 ### Task constraints
 
-- The register is the source of truth. If a mapping is not derivable from it,
-  the register is wrong — fix it there, not in the rewriter.
+- The register is the source of truth for WHAT changes and why; the mapping
+  file is the source of truth for HOW. If a mapping row is not derivable from a
+  register row, the register is wrong — fix it there, not in the rewriter, and
+  never encode a transformation the register does not justify.
 - Do not make `N8`'s refusal bypassable with a flag. A silent shift is exactly
   what the refusal exists to prevent.

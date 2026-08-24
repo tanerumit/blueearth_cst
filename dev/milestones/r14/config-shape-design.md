@@ -1,12 +1,14 @@
-# R14 — Config shape: Design (DRAFT — v2, under external review)
+# R14 — Config shape: Design (DRAFT — v3, revised against external round 1)
 
-> **Status: DRAFT v2, UNDER EXTERNAL REVIEW — 2026-08-24.** Authored directly
-> by the driver at the owner's instruction. The `design-review-loop` is
-> **partially waived**: no internal lens panel and no G1/G2 loop gates, but the
-> owner asked for **ONE external cross-vendor round** (`gpt-5.6-sol`, headless
-> `codex exec`), dispatched against v2. Findings are dispositioned in
-> `config-shape-review-record.md` beside this file; the owner approves or
-> returns the reviewed version.
+> **Status: DRAFT v3 — 2026-08-24, revised against external round 1.**
+> Authored directly by the driver at the owner's instruction. The
+> `design-review-loop` is **partially waived**: no internal lens panel and no
+> G1/G2 loop gates, but the owner asked for **ONE external cross-vendor round**
+> (`gpt-5.6-sol`, headless `codex exec`), dispatched against v2. It returned
+> `verdict: revise` — 3 blocking, 3 major — and **all six are ACCEPTED and
+> fixed here**. Verbatim findings and dispositions:
+> `config-shape-review-record.md` beside this file. The round cap is 1, so
+> there is no second dispatch; the owner approves or returns v3.
 >
 > **Lifecycle: `frozen-with-supersession`** on acceptance — a milestone
 > snapshot, the same policy R13's design carries. Until then it is a living
@@ -489,8 +491,49 @@ key today, so the bundle is the moment this becomes possible (`C-05`).
 
 **D-11.2** `scripts/split_project_config.py` is extended (or a sibling added)
 into a v1 → v2 rewriter **driven by the register**, so the mapping is data, not
-code. It performs, in one pass: the key renames and regroups; the file renames
-(§12); the `.gitignore` glob move; and the `schema_version` stamp.
+code. It performs the key renames and regroups; the file renames (§12); the
+`.gitignore` glob move; the `schema_version` stamp; and the experiment-record
+migration (§11.6).
+
+**D-11.2a — the mapping is a NORMATIVE, machine-readable artifact, not the
+register's prose.** *(ext1-1, blocking.)* "Driven by the register" was
+under-specified: the register is an argument document, and 85 rows of markdown
+table cannot be executed or checked for completeness. The bundle ships
+`config/migrations/v1_to_v2.yml` — a versioned mapping carrying, per row:
+
+| field | meaning |
+|---|---|
+| `id` | the `C-nn` it implements, so a row is traceable to its argument |
+| `old_path` / `new_path` | dotted paths; `new_path: null` means DELETE |
+| `op` | `rename` \| `regroup` \| `delete` \| `retype` \| `new` |
+| `value_transform` | `identity`, or a named transform (`iso_to_year`, `bool_to_enum`, `step_num_to_n_levels`) |
+| `on_collision` | what happens if `new_path` already exists |
+| `default_if_absent` | what an absent optional key becomes, or `omit` |
+| `exception_hook` | `null`, `warn_st0`, or `refuse_water_year` (§11.5) |
+
+A register row with no mapping entry, or a mapping entry naming no register
+row, **fails the build**. That is the mechanical completeness check `D3` asks
+for, and it is what makes the rewriter reviewable from this document rather
+than from a 2,400-line argument.
+
+**D-11.2b — the migration is TRANSACTIONAL.** *(ext1-4, major.)* It renames
+files, rewrites contents, edits `.gitignore` and stamps a version; a failure
+part-way — including `N8`'s refusal, which can fire on the third file of a set
+— must not leave a mixed v1/v2 tree that the loader then refuses. Required
+behaviour, in order:
+
+1. **Preflight, read-only, over the COMPLETE set.** Parse every file, resolve
+   every mapping row, and evaluate every exception hook. Any refusal or
+   destination collision aborts here, **before a single byte is written**.
+2. **Stage.** Write outputs to a temporary location beside the project.
+3. **Validate the staged set** — it parses, composes, and passes the loader's
+   own refusals (§10.3).
+4. **Commit atomically**, then move the originals to a recoverable
+   `*.v1.bak` alongside rather than deleting them.
+5. **Idempotence.** Re-running on a complete v2 set is a no-op that reports so.
+   Re-running on a PARTIAL set refuses and names the inconsistency rather than
+   attempting to finish — a partially migrated tree is a state a human must
+   look at.
 
 **D-11.3 D3 holds for every row except two**, and the rewriter has an explicit
 per-row hook for them — "mechanical, but tell the user what changed".
@@ -517,6 +560,49 @@ No shipped config is affected in the losing direction: the `C-69` additions are
 `baseline_linux`, `wf2_fast` and the fixture, all of which GAIN two metrics they
 should have had. `water_year_start: Oct` ships only as a commented example, so
 `N8`'s refusal is reachable but unexercised.
+
+### 11.6 Existing experiments — the digest break must actually resolve
+
+*(ext1-5, major; the driver's premise check raised it toward blocking.)*
+
+K3 says the digest break is "payable once". v2 did not say **how** it resolves,
+and verification shows it does not resolve on its own.
+
+`_frozen_differences` diffs `set(was) | set(now)` over the recorded
+experiment's `run_stress_test` keys and flags every key whose value differs.
+R14 renames **every key in that section** — `realizations_num`,
+`stress_test`, `step_num`, `transient_change`, `horizontime_climate`,
+`run_length`, `run_historical`, `batch_size`. The config migration does not
+touch `experiment.yml`, so after migrating a project:
+
+- every OLD key is absent from `now` and every NEW key is absent from `was`;
+- the diff is therefore the whole key set, **on every attempt, forever**;
+- `RETIRED_EXPERIMENT_KEYS` does not rescue it. Its escape applies only when
+  `key not in now` — it forgives a key that DISAPPEARED, and says nothing about
+  a new name ARRIVING. Registering the old spellings closes half the diff and
+  leaves the other half.
+
+So without a fix, R14 does not cost one refusal — it makes every already-run
+experiment permanently unrunnable under its own name. That is a materially
+different claim from the one K3 makes.
+
+**D-11.6 The rewriter migrates the experiment records with the configs**, using
+the same mapping (`D-11.2a`) applied to `experiment.yml` under
+`<project_dir>/experiments/*/`. This is chosen over the two alternatives:
+
+| option | why not |
+|---|---|
+| register every rename in `RETIRED_EXPERIMENT_KEYS` | closes only half the diff, per the mechanism above; the arriving names still flag |
+| require a fork / reset per experiment | discards provenance for a rename that moves no number, and makes the user pay for a toolbox decision |
+
+**Invariant:** for an experiment whose settings a user has not touched, the
+post-migration `_frozen_differences` is EMPTY. That is the falsifier — §14.4.
+
+**Exception, and it is the `C-69` case again.** An experiment recorded with
+`run_historical: false` **cannot** be silently equivalent: dropping the key
+changes what the run produces. Its record migrates with an explicit
+`results_superseded: true` marker and the rewriter says so, on the same "tell
+the user what changed" hook as the config (§11.5).
 
 ---
 
@@ -594,7 +680,8 @@ incident history.
 | **required, not optional** | `pixi run test-full` | R14 touches `shared/` and `script:` signatures — the `workflow_contract` / `process_isolation` tier's own trigger |
 | tree shape | `semantic_tree_diff.py` | `C-67`/`C-71` change `params:`-threaded values and `C-61` renames WF2 figure directories |
 | numbers | `check_baseline.py check` | §14.2 |
-| rename | stale-spelling sweep | §14.3 |
+| equivalence | resolved-config diff, all four sets | §14.3 |
+| rename | stale-spelling sweep | §14.4 |
 
 ### 14.2 The baseline, scoped correctly
 
@@ -611,17 +698,91 @@ rule 1.14 declares `run_default/output.csv` as `temp()`, and it is a manifest
 target, so without the flag the gate fails "target missing" and reads as a
 defect.
 
-**D-14.3 Resolve the baseline's provenance BEFORE G6 depends on it.** The gate
-is 7/7 green today, but the fixture is UNTRACKED and shared by every branch, so
-a pass may reflect another branch's code — and `t2608220920` is still open
-against the indicator reference. Either R13's pass-2 re-record resolved it and
-that note is stale, or the green is the shared-fixture artefact. **A falsifier
-whose provenance is unknown is not a falsifier.**
+**D-14.3 Resolving the baseline's provenance is a HARD PRE-IMPLEMENTATION
+GATE.** *(ext1-3, blocking — v2 sequenced this wrongly.)* The gate is 7/7 green
+today, but the fixture is UNTRACKED and shared by every branch, so a pass may
+reflect another branch's code — and `t2608220920` is still open against the
+indicator reference. **A falsifier whose provenance is unknown is not a
+falsifier.**
 
-### 14.3 The stale-spelling sweep, and `C-37`
+v2 required this "before G6 depends on it" and let implementation proceed
+alongside. That is too late, and the reason is specific to this repo: **the
+fixture is untracked and SHARED between worktrees**, so the moment any phase
+migrates a `test_case/` config and a WF3 run touches it, the pre-change state
+is unrecoverable locally. A contaminated before-state cannot be reconstructed
+from git, because it was never in git.
 
-**D-14.4** No sweep tool exists. The migration ships one: a grep per retired
-spelling across tracked files outside `dev/milestones/**`, failing on any hit.
+Therefore, **before the first R14 implementation commit**:
+
+1. From a clean checkout at the pre-R14 base, identify the commit and
+   environment that produced the current manifest.
+2. Reconcile `t2608220920` — resolved, or live.
+3. Verify the four data targets independently, and **record their hashes plus
+   provenance into a tracked file**, so the before-state survives the fixture
+   being regenerated.
+4. Only then does implementation start.
+
+P0 owns this and **blocks every other phase**, not merely the G6 claim.
+
+### 14.3 Equivalence across every shipped set — the general claim
+
+*(ext1-6, major.)* `check_baseline.py` records from `snake_config_baseline` and
+nothing else, so §14.2 falsifies G6 for ONE config's four data targets. G6 is a
+claim about the MIGRATION, and a mapping error reaching only `rapid`,
+`baseline_linux`, `wf2_fast`, a non-default optional key, or one exception path
+passes every gate in §14.1 while changing results.
+
+**D-14.6 Add a resolved-config equivalence test over all four shipped sets**,
+cheaper than execution and closer to the actual risk:
+
+1. For each set, compose the v1 document (pre-migration) and the v2 document
+   (post-migration) and compare them **semantically**, at the two seams where a
+   difference would reach a number:
+   - the RESOLVED value of every key a rule reads, after defaults are applied;
+   - every `params:`-threaded value, since those are what re-fire a rule.
+2. Assert equality **except** at the register rows declared non-preserving,
+   which must differ in exactly the declared way.
+3. Run it for every optional key the shipped sets exercise, not only the
+   defaults.
+
+**D-14.7 Two targeted execution assertions**, because §14.2's four targets
+cannot see them:
+- **`C-69`** — a set that had `run_historical: false` produces `st_0` after
+  migration, and `q_indicators.csv` gains `q_wettest_month_mean` and
+  `q_driest_month_mean`.
+- **`N8`** — a `water_year_start: Oct` fixture is REFUSED by the rewriter, and
+  no file is written (which is also `D-11.2b`'s preflight falsifier).
+
+**D-14.8 The frozen-experiment invariant** (§11.6): migrate a project with a
+completed experiment, re-run WF3 without touching a setting, and assert
+`_frozen_differences` is EMPTY. This is the falsifier for the claim that the
+digest break is paid once.
+
+The four-target baseline stays the high-value end-to-end check. It is not the
+sole falsifier of the general claim, and v2 treated it as though it were.
+
+### 14.4 The stale-spelling sweep, and `C-37`
+
+**D-14.4 The sweep classifies; it does not simply grep.** *(ext1-2, blocking —
+v2's version could not pass.)* "Fail on any hit" is unsatisfiable by a CORRECT
+implementation: the migration mapping (`D-11.2a`), the v1 half of the
+`presplit/` pair (`D-13.3`), the migration note's before/after tables, the
+loader's own refusal messages (§10.3) and the rewriter's tests must all contain
+retired spellings. A gate that a correct implementation fails is one an
+implementer weakens ad hoc — which is worse than no gate.
+
+The sweep therefore partitions the tree and carries an ALLOWLIST:
+
+| zone | rule |
+|---|---|
+| active config, code identifiers, command lines, live docs | **zero** retired spellings |
+| the migration mapping, `presplit/` v1 fixtures, migration-note tables, refusal-message literals, rewriter tests | allowed, and each **must carry a classified reason** |
+| `dev/milestones/**`, sealed records | not scanned |
+
+**It fails CLOSED on an unknown classification.** A hit in an allowlisted file
+that matches no declared reason is a failure, not a pass — otherwise the
+allowlist becomes the hole. This is the same discipline `D-14.5` imposes on
+`C-37`, for the same reason.
 
 **D-14.5 `C-37` MUST FAIL CLOSED.** It asserts its ground truth is non-empty
 before reporting anything. This is not hypothetical: the register re-measure of
@@ -726,3 +887,4 @@ One item remains a PREREQUISITE rather than a question:
 |---|---|---|
 | v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carried two open decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
 | v2 | 2026-08-24 | D-7.10 and D-12.1 RULED under owner authorization; §17 now carries no open questions. `C-48` boarded as `t2608242212`. Submitted for a single external review round (`gpt-5.6-sol`) at the owner's request — the internal lens panel stays waived. |
+| v3 | 2026-08-24 | Revised against external round 1 (`gpt-5.6-sol`, `verdict: revise`, 3 blocking + 3 major, all accepted). New: `D-11.2a` normative machine-readable mapping; `D-11.2b` transactional migration; **§11.6 frozen-experiment migration** — the digest break did not resolve on its own, and every already-run experiment would have been permanently unrunnable; `D-14.3` baseline provenance promoted to a hard PRE-implementation gate; `D-14.4` sweep partitioned with a fail-closed allowlist, since the v2 rule was unsatisfiable by a correct implementation; §14.4 resolved-config equivalence across all four shipped sets. |

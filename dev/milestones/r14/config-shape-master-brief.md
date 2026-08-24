@@ -2,7 +2,8 @@ Master Brief — R14 config shape implementation
 
 ### Goal
 
-Implement `dev/milestones/r14/config-shape-design.md` (DRAFT v1, 2026-08-24):
+Implement `dev/milestones/r14/config-shape-design.md` (DRAFT **v3**, 2026-08-24,
+revised against external round 1):
 reshape the project config within R13's tier split — sections by KIND, one
 naming policy, `schema_version: 2`, a register-driven v1→v2 rewriter, and the
 `snake_config_` → `project_config_` file rename — landing as ONE user-visible
@@ -17,7 +18,7 @@ Canonical ruleset: `AGENTS.md`. Argument by `C-nn`:
 
 | Phase | Owner | Input | Expected output |
 |---|---|---|---|
-| P0 | `general-purpose` (runs from the PRIMARY, not a lane) | `t2608220920`, `dev/baseline/manifest.json` | The baseline's provenance resolved: either the indicator reference re-recorded post-weathergenr-2.0.0, or `t2608220920` closed as already-resolved with evidence |
+| P0 | `general-purpose` (runs from the PRIMARY, not a lane) | `t2608220920`, `dev/baseline/manifest.json` | The baseline's provenance resolved AND the four data targets' hashes recorded into a tracked file. **Blocks every other phase.** |
 | P1 | `python-engineer` | design §10 | Loader, seam re-derivation and parse-time refusals against the new layout; `HOISTED_SECTIONS` retired |
 | P2 | `python-engineer` | design §9, P1 | Guard derived from the snapshot; `compute:` excluded from `CONFIG_PROJECTION` |
 | P3 | `python-engineer` | design §11, register | The v1→v2 rewriter, register-driven, with the two non-preserving hooks |
@@ -28,10 +29,14 @@ Canonical ruleset: `AGENTS.md`. Argument by `C-nn`:
 
 ### Sequencing
 
-- **P0 blocks the FINAL validation, not the code.** Start it first because it
-  is a WF3 run from the primary and has the longest lead time; P1–P5 may
-  proceed while it runs. **Nothing may claim G6 until P0 lands** — a falsifier
-  whose provenance is unknown is not a falsifier (design D-14.3).
+- **P0 BLOCKS EVERY OTHER PHASE.** *(Revised 2026-08-24 after external round 1,
+  finding `ext1-3`.)* v1 of this brief let P1–P5 run concurrently with P0 and
+  blocked only the G6 claim. That was wrong for a repo-specific reason: the
+  baseline fixture is **untracked and shared between worktrees**, so the moment
+  any phase migrates a `test_case/` config and a WF3 run touches it, the
+  pre-change state is gone and cannot be recovered from git — it was never in
+  git. No implementation commit lands until P0 has recorded the four data
+  targets' hashes and provenance into a TRACKED file (design D-14.3).
 - **P1 → P2.** The guard reads the composed document; the composition must be
   correct before the guard is re-pointed at it.
 - **P3 → P4.** The `test_case/` sets are migrated BY the rewriter, which makes
@@ -65,13 +70,14 @@ P1 and P3 may run concurrently — disjoint paths, no shared file.
 
 ### Human gates
 
-1. **Gate 1 — before ANY phase starts.** The design carries two decisions that
-   are NEW rather than recorded rulings and need owner sign-off: `C-48`
-   withdrawn (D-7.10) and `C-85` full breadth (D-12.1). PAUSE until both are
-   ruled; P5's scope depends on the second.
-2. **Gate 2 — after P0.** Report which of the two outcomes held. If the
-   indicator reference needed re-recording, the baseline changed underneath the
-   milestone and every later comparison is against the new record.
+1. **Gate 1 — RELEASED 2026-08-24.** The design's two new decisions are ruled:
+   `C-48` withdrawn (D-7.10) and `C-85` at full breadth (D-12.1). Kept in the
+   list because P5's scope derives from the second.
+2. **Gate 2 — after P0, and it releases the PROGRAM.** Report which outcome
+   held and show the tracked hash record. **No implementation commit lands
+   before this gate** (design D-14.3, finding `ext1-3`). If the indicator
+   reference needed re-recording, the baseline changed underneath the milestone
+   and every later comparison is against the new record.
 3. **Gate 3 — after P3, before P4.** Show the rewriter's output for ONE
    `test_case/` set as a diff, and the refusal message for a
    `water_year_start: Oct` fixture. PAUSE for approval before migrating the
@@ -102,9 +108,22 @@ Per-phase rungs live in the phase briefs. These make sense only across phases:
 - **`semantic_tree_diff.py`** — `C-67`/`C-71` change `params:`-threaded values
   and `C-61` renames WF2 figure directories, so the tree shape moves. Expected;
   capture it rather than being surprised by it.
-- **Stale-spelling sweep** — no tool exists; P3 ships one (a grep per retired
-  spelling across tracked files outside `dev/milestones/**`, failing on any
-  hit). `C-37` is its mechanical successor and **must fail closed** (D-14.5).
+- **Stale-spelling sweep** — no tool exists; P3 ships one. It **classifies**
+  rather than simply greps: active config, code identifiers, command lines and
+  live docs must carry ZERO retired spellings, while the migration mapping, the
+  `presplit/` v1 fixtures, the migration note's tables, the loader's refusal
+  literals and the rewriter's tests are allowlisted and must each carry a
+  declared reason. It **fails closed** on an unknown classification (design
+  D-14.4, finding `ext1-2`) — "fail on any hit" was unsatisfiable by a correct
+  implementation. `C-37` is its mechanical successor, under the same rule.
+- **Resolved-config equivalence across all four shipped sets** (design §14.3,
+  finding `ext1-6`) — `check_baseline` records from `snake_config_baseline`
+  alone, so without this `rapid`, `baseline_linux` and `wf2_fast` have no
+  numerical check at all.
+- **The frozen-experiment invariant** (design §11.6, D-14.8) — migrate a
+  project with a completed experiment, re-run WF3 untouched, assert
+  `_frozen_differences` is EMPTY. This is the falsifier for "the digest break
+  is paid once".
 - **Every commit on the branch imports cleanly** — `pytest tests/test_cli.py`
   per commit; it is the only place a malformed `config/defaults/*.yml`
   surfaces.
@@ -129,6 +148,9 @@ save gate cost.
 
 ---
 
-*Revision: v1, 2026-08-24. Treat as settled once phase work starts; record
-deviations in the affected phase brief's `Progress`, or reissue with a dated
-revision line.*
+*Revision: v2, 2026-08-24 — re-sequenced after external round 1 (`ext1-3`):
+P0 promoted from concurrent to a blocking pre-implementation gate. P3 gains the
+normative mapping (`ext1-1`), the transactional contract (`ext1-4`) and the
+experiment-record migration (`ext1-5`); P4 gains the equivalence suite
+(`ext1-6`). Treat as settled once phase work starts; record deviations in the
+affected phase brief's `Progress`, or reissue with a dated revision line.*

@@ -95,10 +95,23 @@ separately, so `git log` is the decision log.
 - [x] Implementation briefs written: `config-shape-master-brief.md` plus eight
       phase briefs P0..P7. Complexity gate classified R14 as a PROGRAM, so it
       is decomposed rather than packed into one brief
-- [ ] **Owner sign-off on the design's two NEW decisions** before any phase
-      starts: `C-48` withdrawn (D-7.10), and `C-85` full breadth (D-12.1)
-- [ ] Run P0 first from the PRIMARY - it is the longest lead time and nothing
-      may claim G6 until it lands
+- [x] The design's two NEW decisions RULED 2026-08-24: `C-48` withdrawn
+      (D-7.10, boarded as `t2608242212`) and `C-85` at full breadth (D-12.1)
+- [x] ONE external review round, `gpt-5.6-sol` via headless `codex exec`,
+      against v2. Verdict REVISE - 3 blocking, 3 major, **all six accepted and
+      fixed in v3**. Ledger and verbatim findings:
+      `dev/milestones/r14/config-shape-review-record.md`. The sharpest was
+      `ext1-5`: the digest break did NOT resolve on its own, and without the
+      new design section 11.6 every already-run experiment would have been
+      permanently unrunnable under its own name
+- [ ] **P0 FIRST, and it now blocks every other phase** (was concurrent;
+      re-sequenced by `ext1-3`). The baseline fixture is untracked and shared
+      between worktrees, so once any phase migrates a config and a WF3 run
+      touches it, the pre-change state is unrecoverable - it was never in git.
+      P0 must record the four data targets' hashes into a TRACKED file before
+      any implementation commit
+- [ ] Owner approves or returns design v3 (the round cap is 1; there is no
+      second dispatch)
 
 **Coupled rows to watch:** `C-64` folds `min_denominator` into the `C-57`
 registry, and `C-57` is still PROPOSED - decline it and `min_denominator` has no

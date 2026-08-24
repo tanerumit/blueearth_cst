@@ -1908,11 +1908,10 @@ catalog: config/catalogs/cmip6_data.yml
 ensemble: cmip6
 models: [...]
 scenarios: [ssp245, ssp585]
-members:
-  preference: [r1i1p1f1]
+members:                     # C-63 groups all three; the flat
+  preference: [r1i1p1f1]     # member_selection / member_overrides are gone
   selection: first_available
-member_selection: first_available
-member_overrides: {}
+  overrides: {}
 variables:
   precip:      # bare key = registry-resolved; declare a mapping only to override
   temp:

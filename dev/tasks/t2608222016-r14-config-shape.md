@@ -36,9 +36,21 @@ separately, so `git log` is the decision log.
       leaves the config entirely (`C-77`, `C-78`), and the generator enters by
       PATH rather than by promoted keys (`C-81`). `N8` is the new rule the pass
       produced: a window is declared in inclusive integer YEARS
-- [ ] Re-measure the parameter inventory against the code. TWO errata so far
-      from `parameter-placement.md`'s 2026-08-12 appendix (`save_grids` does not
-      exist; `DEFAULT_MIN_REFERENCE` / `DEFAULT_MAX_FLAGGED_MONTHS` misclassified)
+- [x] Re-measure the parameter inventory against the code - DONE 2026-08-24.
+      All 85 rows tested against 104 config-file keys (templates + every
+      test_case set, commented-out keys included) plus the 37 `get_config`
+      keys. ONE substantive defect: **`C-82` WITHDRAWN** - `parallel` and
+      `n_cores` live in `config/defaults/weathergen_config.yml`, which
+      Constraint 1 puts out of reach, and `C-81` already makes them reachable
+      per basin. Two lesser: `disk_headroom_gb` has no template surface, and
+      `C-52` retires a section this document drafted. `C-45`'s precedent
+      verified live. The earlier errata (`save_grids`;
+      `DEFAULT_MIN_REFERENCE` / `DEFAULT_MAX_FLAGGED_MONTHS`) stand as found
+- [ ] Make `C-37` assert its ground truth is non-empty before it reports. The
+      first run of the re-measure above was itself broken - its extraction
+      returned zero keys and it then reported MORE flags while knowing LESS,
+      with nothing in the output saying so. `C-37` is the same shape of check
+      and would fail open the same way
 - [x] Owner rulings on ALL NINE open questions - the register has none left.
       `Q-B`/`Q-D` 2026-08-22; `Q-C`/`Q-G` with the WF3 cluster; `Q-A`, `Q-E`,
       `Q-F`, `Q-H`, `Q-I` in the walkthrough of 2026-08-24. `Q-A` keeps

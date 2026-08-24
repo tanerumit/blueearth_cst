@@ -784,7 +784,7 @@ which matters because they depend on a model boundary that does not exist yet.
 | `C-19` | `shared.wflow_outvars` → `model.outvars` | S1, N7 | REGROUP | yes |
 | `C-20` | ~~`shared.seed`, `shared.water_year_start` → `method.*`~~ — **superseded by `C-51` and `C-53`** | S1, S3 | REGROUP | yes |
 | `C-51` | `shared.seed` → `seed:` in `_run_stress_test.yml`; remove from `SHARED_SEAM_KEYS` (R13 amendment) | S1, seam | REGROUP | yes |
-| `C-52` | Retire the `method:` section entirely — both its keys have real homes | S1, S4 | DELETE | yes |
+| `C-52` | Retire the `method:` section entirely — both its keys have real homes. NB it retires a section **this document drafted** (`C-20`), never one that shipped | S1, S4 | DELETE | yes |
 | `C-21` | ~~`shared.julia_threads` → `compute.julia_threads`~~ — **superseded by `C-54`** | S2, S3 | REGROUP | yes |
 | `C-54` | `shared.julia_threads` → `advanced_settings.runtime.julia_threads`; the project-level override is REMOVED | authority | DELETE | yes |
 | `C-55` | T1 `compute:` dissolves — `compute:` becomes workflow-local only, nested under its own file and never hoisted | S4, S7 | DELETE | yes |
@@ -1195,6 +1195,45 @@ FILES — this is about KEYS, and it is the more dangerous of the two, because
 a stale file path fails loudly and a stale key silently proposes work on
 something that is not there.
 
+**DONE 2026-08-24.** Every source key in all 85 register rows was tested
+against a ground truth of 104 config-file keys (the four templates and every
+`test_case/` set, INCLUDING commented-out optional keys, which are a real
+surface) plus the 37 keys the four Snakefiles read through `get_config`.
+
+The register came out better than the two errata implied — **one substantive
+defect, in a row spliced the same day:**
+
+- **`C-82` WITHDRAWN.** It read `generate_weather.parallel`, `n_cores` →
+  `compute:`, classed REGROUP. Those keys are not on the project surface at
+  all: they live in `config/defaults/weathergen_config.yml:81-82`, inside the
+  `generate_weather:` block of an ENGINE config file. Constraint 1 and the
+  non-goals both forbid touching `config/defaults/*` internals; the class was
+  wrong (it would be a NEW project key SHADOWING an engine value, not a move);
+  and it contradicted `C-81` in its own cluster, which already makes both keys
+  reachable per basin through the path key. Promoting them as well would give
+  one setting two homes — the P3 this milestone removes.
+
+Two lesser findings, annotated on their rows rather than given their own:
+`disk_headroom_gb` (`C-34`) is read by the Snakefile but appears in NO template
+and NO shipped config, so it is a key with no documented surface; and `C-52`
+retires a `method:` section THIS DOCUMENT drafted (`C-20`) rather than one that
+ever shipped.
+
+Verified accurate rather than merely unflagged: `C-45`'s cited precedent is
+live — `analyze_projections.smk:144-155` refuses the retired
+`start_month_hyd_year` with a message naming its new home.
+
+**A finding about the CHECK, which `C-37` must inherit.** The first run of this
+sweep was itself broken: its ground-truth extraction shelled out to `grep -P`,
+failed with `missing )`, returned zero keys, and the check then reported 19
+flags — several of them pure artefacts of the empty ground truth. It reported
+MORE problems while knowing LESS, and nothing in its output said so. `C-37`
+("declared keys ⊆ read keys") is the same shape of check and would fail the
+same way, so it must **assert its ground truth is non-empty before it reports
+anything**. A checker that fails open is worse than no checker, because a green
+run is then evidence of nothing. This is D1's own test turned on D1's own
+proposal.
+
 **`stats` survives, and stays reporting-class — on precedent, not
 assertion.** It selects which ensemble statistics summarise an unchanged set
 of change factors (`None` = the v2.0 default of mean, median, std). WF3's
@@ -1309,13 +1348,13 @@ this as a decision so it is not re-proposed as an oversight.
 | `C-31` | `stress_test.<var>.step_num` → `n_levels`, with `n_levels = step_num + 1` | N6 | **SEMANTIC** | yes — **RULED 2026-08-24** |
 | `C-32` | `stress_test.<var>.transient_change` (boolean) → `trajectory: transient \| constant` (enum) | N3, N5 | **SEMANTIC** | yes — **RULED 2026-08-24** |
 | `C-33` | `stress_test.{dry,wet}_spell_factor` → `spell_factors.{dry,wet}` | S4 | REGROUP | yes |
-| `C-34` | `batch_size`, `batch_size_max`, `disk_headroom_gb` → `compute.*` | S2, S3 | REGROUP | yes — **RULED 2026-08-24** |
+| `C-34` | `batch_size`, `batch_size_max`, `disk_headroom_gb` → `compute.*` (`disk_headroom_gb` has NO template surface today — re-measure, 2026-08-24) | S2, S3 | REGROUP | yes — **RULED 2026-08-24** |
 | `C-77` | `reporting:` leaves the project config surface entirely | scope | **DELETE** | yes — **RULED 2026-08-24** |
 | `C-67` | `horizontime_climate` + `run_length` → `simulation_window: {start, end}` | N4, N8 | **SEMANTIC** | yes — **RULED 2026-08-24** |
 | `C-68` | `stress_test:` → `climate_perturbations:` | N3 (file-scope) | RENAME | yes — **RULED 2026-08-24** |
 | `C-69` | `run_historical` deleted; `st_0` is always produced | S2, P2 | **DELETE** | yes — **RULED 2026-08-24** |
 | `C-81` | Add `weathergen_config:` — a PATH key for the generator's own config, mirroring WF1's two; the referenced file joins `CONFIG_REFERENCES` | S5 | NEW | yes — **RULED 2026-08-24** |
-| `C-82` | `generate_weather.parallel`, `n_cores` → `compute:` | S2, S3 | REGROUP | yes — **RULED 2026-08-24** |
+| `C-82` | ~~`generate_weather.parallel`, `n_cores` → `compute:`~~ — **WITHDRAWN 2026-08-24** by the re-measure: both keys live in `config/defaults/weathergen_config.yml`, which Constraint 1 and the non-goals forbid touching, and `C-81` already makes them reachable per basin | S2, S3 | REGROUP | — |
 
 `C-33` keeps the existing rationale intact — the spell factors are not
 perturbation axes and must not read as siblings of `temp:`/`precip:`; a named
@@ -1773,12 +1812,25 @@ the workflow config files and the data catalogs, NOT `config/defaults/*`. With
 a path key the referenced file must JOIN `CONFIG_REFERENCES`, or a project
 could change its generator settings and the experiment digest would not move.
 
-**`C-82` — the one genuine promotion**, into the section `C-34` creates:
-`generate_weather.parallel` and `n_cores` are execution-only, exactly the class
-`C-79` carves out of configuration identity. C34 declined `n_cores` because
-*"a second parallelism knob belongs with `julia_threads` in
-`advanced_settings.yml`"* — a destination `C-54`/`C-55` has since moved. The
-reasoning survives and now points at `compute:`.
+**`C-82` — WITHDRAWN 2026-08-24, and it was never a promotion.** The row read
+`generate_weather.parallel` and `n_cores` into the section `C-34` creates, on
+the grounds that they are execution-only — exactly the class `C-79` carves out
+of configuration identity, and that C34's own reasoning (*"a second parallelism
+knob belongs with `julia_threads` in `advanced_settings.yml"*) had lost its
+destination to `C-54`/`C-55`.
+
+The re-measure found the row's premise false. **Both keys live in
+`config/defaults/weathergen_config.yml:81-82`**, inside the `generate_weather:`
+block — an engine config file, which Constraint 1 and the non-goals put out of
+R14's reach. Worse, `C-81` in this very subsection already makes them reachable
+per basin, in weathergenr's own vocabulary. Promoting them as well would give
+one setting two homes and require a precedence rule between our config and the
+engine's, which is the coupling S5 exists to prevent.
+
+So the classification was the tell: a REGROUP names a move on OUR surface, and
+nothing here was ever on it. Recorded rather than deleted, so a fresh screen of
+`run_weather_generator()` does not re-propose them — the answer is `C-81`, and
+it was already the answer.
 
 **Not promoted, deliberately: `pet_method`.** The highest-leverage scientific
 knob here — Hargreaves PET goes as the square root of diurnal range, and the
@@ -1801,7 +1853,7 @@ therefore corrected HERE rather than edited there:
 |---|---|---|---|---|
 | `C-35` | De-duplicate `DEFAULT_ANCHOR` (defined twice: `metrics_definition.py:18`, `climate_figures.py:120`) (= M2) | — | MECHANISM | **no** |
 | `C-36` | Move the config-key defaults out of Python (`DEFAULT_SPELL_FACTOR`, `DEFAULT_MAX_SUBBASINS_PER_BASIN`, `DEFAULT_GAUGE_SNAP_TOLERANCE_M`, `DEFAULT_HYDROGRAPHY`, `DEFAULT_BASIN_INDEX`, `DEFAULT_STATS`) (= M3) → `advanced_settings.defaults` | — | MECHANISM | no — **UNBLOCKED 2026-08-24** by `Q-E` |
-| `C-37` | A mechanical "declared keys ⊆ read keys" check (answers P2) | — | MECHANISM | no |
+| `C-37` | A mechanical "declared keys ⊆ read keys" check (answers P2) — **must assert its ground truth is non-empty before reporting**; see the re-measure under Group G | — | MECHANISM | no |
 | `C-38` | Extend `scripts/split_project_config.py` (or a sibling) into a v1→v2 rewriter driven by the register above | — | MECHANISM | no |
 | `C-72` | `forcing_window_years()` deleted; `forcing_window()` becomes the shared years-to-ISO seam converter | — | MECHANISM | no |
 | `C-73` | `compute_nr_years()` loses its `ceil`; derived from `simulation_window.end` | — | MECHANISM | no |
@@ -2130,12 +2182,12 @@ compute:                                        # C-34; excluded from
   batch_size: 4                                 # CONFIG_PROJECTION by C-79
   batch_size_max: 8
   disk_headroom_gb: null
-  parallel: false                               # C-82, from the generator
-  n_cores: null
 ```
 
-`run_historical` is absent above: `C-69` deletes it. `reporting:` is absent:
-`C-77` removes it.
+`run_historical` is absent: `C-69` deletes it. `reporting:` is absent: `C-77`
+removes it. `parallel` and `n_cores` are absent: `C-82` is WITHDRAWN, and they
+stay in the generator's own config, reachable per basin through `C-81`'s path
+key.
 
 ### `_analyze_climate.yml`
 

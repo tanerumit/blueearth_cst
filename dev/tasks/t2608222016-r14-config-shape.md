@@ -22,8 +22,8 @@ Walkthrough of the proposed shape, key by key, with the owner. Every decision is
 recorded in `dev/milestones/r14/config-shape-scoping.md` and committed
 separately, so `git log` is the decision log.
 
-- [x] Scoping document with an indexed change register: `C-01`..`C-84`,
-      `S1`..`S7`, `N1`..`N8`, `Q-A`..`Q-I`
+- [x] Scoping document with an indexed change register: `C-01`..`C-85`,
+      `S1`..`S7`, `N1`..`N8`, `Q-A`..`Q-I` (all nine questions now CLOSED)
 - [x] Project file walked: `project`, `basin`, `climate`, `model`, `workflows`.
       `method:` and T1 `compute:` both dissolved (`C-52`, `C-55`)
 - [x] `_build_model.yml` walked (`C-56`; `simulation_window` keeps its name,
@@ -39,9 +39,12 @@ separately, so `git log` is the decision log.
 - [ ] Re-measure the parameter inventory against the code. TWO errata so far
       from `parameter-placement.md`'s 2026-08-12 appendix (`save_grids` does not
       exist; `DEFAULT_MIN_REFERENCE` / `DEFAULT_MAX_FLAGGED_MONTHS` misclassified)
-- [ ] Owner rulings on the REMAINING open questions: `Q-A`, `Q-E`, `Q-F`,
-      `Q-H`, `Q-I`. `Q-B`, `Q-C` and `Q-D` are resolved; `Q-G` is RETIRED
-      (`C-77` removed the section it asked about)
+- [x] Owner rulings on ALL NINE open questions - the register has none left.
+      `Q-B`/`Q-D` 2026-08-22; `Q-C`/`Q-G` with the WF3 cluster; `Q-A`, `Q-E`,
+      `Q-F`, `Q-H`, `Q-I` in the walkthrough of 2026-08-24. `Q-A` keeps
+      `project_dir` as N3's named exemption (`C-06` withdrawn), `Q-E` puts
+      defaults in `advanced_settings` by AUTHORITY (`C-36` unblocked), `Q-H`
+      rules ONE `climate.selected`, `Q-I` rules TWO variable keys
 - [ ] Settle `C-85`'s scope: the `snake_config_` FILE prefix only, or also the
       identifiers carrying it (`snake_config_fixture`, fixture and variable
       names across 33 test modules). The rename itself is RULED IN as of
@@ -53,10 +56,14 @@ separately, so `git log` is the decision log.
       loose thread the 2026-08-24 cluster created. Its S2 classification is
       untouched (which variables get drawn cannot move a number); only the
       destination is open, and no question in the table covers it
-- [ ] Probe `Q-F`: can `_WF1_GUARDED` be derived from section membership? Now
-      LOAD-BEARING rather than one probe among several — with `reporting:` gone
-      (`C-77`), `compute:` is the only section outside configuration identity,
-      so the whole S2 claim rests on this one probe (`C-79`)
+- [x] Probe `Q-F` - DONE 2026-08-24, and it re-scoped `C-04` rather than
+      confirming it. The drift guard was never the mechanism: a WF1 snapshot
+      does not carry WF3's sections, so `compute:` was never in it and the
+      carve-out is a no-op. `C-04` becomes "the whole WF1 snapshot except the
+      `workflows.*` enabled flags", which needs no maintained tuple because
+      R14 empties T1 of every non-identity key. **S2's surviving payoff is the
+      DIGEST carve-out (`C-79`) alone** - the guard never rested on the class
+      split, which is the claim the design must now carry
 - [ ] Probe D3: is every register row expressible as a pure path rewrite (`C-38`)?
 - [ ] Land `C-35` independently - non-breaking under every outcome
 - [ ] Point `dev/working/parameter-placement.md` at this document (outside this

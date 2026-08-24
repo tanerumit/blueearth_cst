@@ -1,4 +1,4 @@
-# R14 — Config shape: Design (DRAFT — v4)
+# R14 — Config shape: Design (DRAFT — v5)
 
 > **Status: DRAFT v3 — 2026-08-24, revised against external round 1.**
 > Authored directly by the driver at the owner's instruction. The
@@ -589,6 +589,59 @@ No shipped config is affected in the losing direction: the `C-69` additions are
 should have had. `water_year_start: Oct` ships only as a commented example, so
 `N8`'s refusal is reachable but unexercised.
 
+### 11.7 Comments must survive the rewrite — OPEN, needs a ruling
+
+*(Found by the driver 2026-08-24 while writing P3's dispatch. v4 did not
+address it, and a naive implementation of `D-11.2` destroys user data.)*
+
+R13's own migration tool states the constraint and the reason
+(`scripts/split_project_config.py:16-20`): it splits the config as **TEXT**,
+not through `yaml.safe_dump`, because *"a dump discards every comment in the
+file: the shipped template carries ~110 of them and a real project's config
+carries the ones its author wrote."*
+
+Measured 2026-08-24:
+
+| file | comment lines | total |
+|---|---|---|
+| `config/templates/snake_config.template.yml` | 86 | 109 (**79%**) |
+| `test_case/snake_config_rapid.yml` | 23 | 56 (41%) |
+
+A `safe_load` → transform → `safe_dump` rewriter therefore deletes roughly four
+fifths of the shipped template and **every annotation a user wrote in their own
+project config** — silently, while producing valid YAML that passes every gate
+in §14. R13 avoided this because its migration MOVED whole blocks. R14 renames
+keys, regroups sections and retypes values, which a naive text transform cannot
+do.
+
+**The options, and none is free:**
+
+| option | cost |
+|---|---|
+| a comment-preserving round-trip (`ruamel.yaml`) | a NEW DEPENDENCY — K7 requires owner approval, and this repo deliberately stays lightweight |
+| a text-based transform, as R13 did | proven here, but renames + regroups + retypes are far harder than block moves; highest implementation risk |
+| regenerate from templates, re-inject user values | loses the user's OWN comments, which are the ones that matter most |
+| accept the loss, document it in the migration note | rejected: 79% of the template, and a user's annotations are theirs, not ours to discard |
+
+**D-11.8 is OPEN.** The recommendation is the `ruamel.yaml` round-trip, because
+it is the only option that preserves both toolbox and user comments through a
+transform this structural — but it needs an explicit dependency approval under
+K7, so this design does not take it unilaterally. **P3 pauses at Gate P3-A on
+this decision before writing the rewriter.**
+
+**Also settled here:** the rewriter is a **SIBLING**, not an extension of
+`split_project_config.py`. That script's contract is report-only —
+*"The script never edits, moves or deletes the config you point it at ... There
+is no `--write` and no in-place mode."* `D-11.2b` requires atomic in-place
+replacement, so extending it would break its stated contract. `D-11.2`'s "(or a
+sibling added)" is now the specified choice, not an alternative.
+
+**Corpus note for `D-13.3`.** `tests/data/presplit/` currently holds **v0**
+(pre-R13, monolithic) configs — no `config_path`, `workflows:` with inline
+bodies. R14's "v1" is the post-R13 SPLIT shape. The directory will hold two
+migration generations, and the fixtures must be named so they cannot be
+confused.
+
 ### 11.6 Existing experiments — the digest break must actually resolve
 
 *(ext1-5, major; the driver's premise check raised it toward blocking.)*
@@ -897,8 +950,13 @@ Falsifiable, with the observable named.
 
 ## 17. Open questions
 
-None. The two decisions that were open at v1 were **ruled 2026-08-24** under
-owner authorization and are now normative: `C-48` withdrawn (§7.6, D-7.10) and
+**One is OPEN and blocks P3: `D-11.8` — how the rewriter preserves comments**
+(§11.7). The recommendation is a `ruamel.yaml` round-trip, which is a new
+dependency and therefore needs an explicit approval under K7. Everything below
+was settled at v2.
+
+The two decisions that were open at v1 were **ruled 2026-08-24** under owner
+authorization and are now normative: `C-48` withdrawn (§7.6, D-7.10) and
 `C-85` at full breadth (§12.1, D-12.1). Both record the alternative declined.
 
 One item remains a PREREQUISITE rather than a question:
@@ -915,5 +973,6 @@ One item remains a PREREQUISITE rather than a question:
 |---|---|---|
 | v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carried two open decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
 | v2 | 2026-08-24 | D-7.10 and D-12.1 RULED under owner authorization; §17 now carries no open questions. `C-48` boarded as `t2608242212`. Submitted for a single external review round (`gpt-5.6-sol`) at the owner's request — the internal lens panel stays waived. |
+| v5 | 2026-08-24 | **`D-11.8` OPEN**: a `safe_dump` rewriter would delete 79% of the shipped template and every user-written comment; R13's tool split as TEXT for exactly this reason. Four options, none free, recommendation `ruamel.yaml` — but that is a new dependency and K7 needs owner approval, so P3 pauses at Gate P3-A. Also settles the rewriter as a SIBLING (the R13 tool is report-only by contract) and records that `presplit/` holds v0, not v1. |
 | v4 | 2026-08-24 | `D-9.6`/`D-9.7` added: the guarded-section list is maintained in THREE places, not one, and `guarded_sections` / `guarded_sections_digest` omit `shared.wflow_outvars` where `_WF1_GUARDED` includes it. `D-9.1` had named only the first site, so a literal reading would have left a "derived" guard wired to two hand-kept literals. Found while writing P2's dispatch. |
 | v3 | 2026-08-24 | Revised against external round 1 (`gpt-5.6-sol`, `verdict: revise`, 3 blocking + 3 major, all accepted). New: `D-11.2a` normative machine-readable mapping; `D-11.2b` transactional migration; **§11.6 frozen-experiment migration** — the digest break did not resolve on its own, and every already-run experiment would have been permanently unrunnable; `D-14.3` baseline provenance promoted to a hard PRE-implementation gate; `D-14.4` sweep partitioned with a fail-closed allowlist, since the v2 rule was unsatisfiable by a correct implementation; §14.4 resolved-config equivalence across all four shipped sets. |

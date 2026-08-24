@@ -89,7 +89,16 @@ separately, so `git log` is the decision log.
       branch, and `t2608220920` is still open against the indicator reference.
       Either R13's pass-2 re-record resolved it and that note is stale, or the
       green is the shared-fixture artefact
-- [ ] Design under the review loop, then G1/G2
+- [x] Design DRAFTED 2026-08-24: `dev/milestones/r14/config-shape-design.md`
+      (725 lines, 43 decision IDs). The `design-review-loop` was WAIVED by the
+      owner - authored directly, no lens panel, no external round
+- [x] Implementation briefs written: `config-shape-master-brief.md` plus eight
+      phase briefs P0..P7. Complexity gate classified R14 as a PROGRAM, so it
+      is decomposed rather than packed into one brief
+- [ ] **Owner sign-off on the design's two NEW decisions** before any phase
+      starts: `C-48` withdrawn (D-7.10), and `C-85` full breadth (D-12.1)
+- [ ] Run P0 first from the PRIMARY - it is the longest lead time and nothing
+      may claim G6 until it lands
 
 **Coupled rows to watch:** `C-64` folds `min_denominator` into the `C-57`
 registry, and `C-57` is still PROPOSED - decline it and `min_denominator` has no

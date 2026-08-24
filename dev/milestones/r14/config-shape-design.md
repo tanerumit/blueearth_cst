@@ -1,4 +1,4 @@
-# R14 — Config shape: Design (DRAFT — v5)
+# R14 — Config shape: Design (DRAFT — v6)
 
 > **Status: DRAFT v3 — 2026-08-24, revised against external round 1.**
 > Authored directly by the driver at the owner's instruction. The
@@ -623,11 +623,28 @@ do.
 | regenerate from templates, re-inject user values | loses the user's OWN comments, which are the ones that matter most |
 | accept the loss, document it in the migration note | rejected: 79% of the template, and a user's annotations are theirs, not ours to discard |
 
-**D-11.8 is OPEN.** The recommendation is the `ruamel.yaml` round-trip, because
-it is the only option that preserves both toolbox and user comments through a
-transform this structural — but it needs an explicit dependency approval under
-K7, so this design does not take it unilaterally. **P3 pauses at Gate P3-A on
-this decision before writing the rewriter.**
+**D-11.8 RULED 2026-08-24 (owner): the `ruamel.yaml` round-trip, DECLARED.**
+It is the only option preserving both toolbox and user comments through a
+transform this structural.
+
+The K7 cost is smaller than it first appears, and the reason matters. Measured
+2026-08-24: **`ruamel.yaml` 0.19.1 is already installed and already in the
+lock** — so there is no solve, no download and no new platform risk. But it is
+present only because `dvc` and `gto` require it, and both are incidental to this
+repo's purpose. Using it therefore **requires declaring it explicitly in
+`pixi.toml`**: an undeclared transitive dependency under a load-bearing
+migration tool would vanish the day an unrelated package drops it, and the
+failure would surface as a broken migration rather than a solve error.
+
+So the approval is for **promoting an existing transitive dependency to a
+declared one**, not for enlarging the environment.
+
+Two costs recorded rather than hidden. `ruamel`'s round-trip API is finicky and
+0.19 differs from 0.17, so pin conservatively and keep the round-trip confined
+to the rewriter — nothing else in the toolbox should import it. And a
+round-trip preserves comments ATTACHED to keys; a comment attached to a key that
+`C-38` DELETES has nowhere to go. The rewriter must decide per deletion whether
+to drop the comment or relocate it, and `D-14.9` is the falsifier.
 
 **Also settled here:** the rewriter is a **SIBLING**, not an extension of
 `split_project_config.py`. That script's contract is report-only —
@@ -834,6 +851,14 @@ cannot see them:
 - **`N8`** — a `water_year_start: Oct` fixture is REFUSED by the rewriter, and
   no file is written (which is also `D-11.2b`'s preflight falsifier).
 
+**D-14.9 The comment-survival falsifier.** Migrate
+`config/templates/snake_config.template.yml` and assert its comment-line count
+is unchanged at **86**. A `safe_dump` regression passes every other gate in this
+plan while destroying four fifths of the file, so this is the only check that
+sees it. Assert separately that a comment attached to a DELETED key
+(`static_dir`, `run_historical`) is handled by the declared rule rather than
+silently duplicated onto a neighbour.
+
 **D-14.8 The frozen-experiment invariant** (§11.6): migrate a project with a
 completed experiment, re-run WF3 without touching a setting, and assert
 `_frozen_differences` is EMPTY. This is the falsifier for the claim that the
@@ -950,10 +975,9 @@ Falsifiable, with the observable named.
 
 ## 17. Open questions
 
-**One is OPEN and blocks P3: `D-11.8` — how the rewriter preserves comments**
-(§11.7). The recommendation is a `ruamel.yaml` round-trip, which is a new
-dependency and therefore needs an explicit approval under K7. Everything below
-was settled at v2.
+None. `D-11.8` (§11.7) was the last, and it was **ruled 2026-08-24**: the
+`ruamel.yaml` round-trip, with the package promoted from transitive to declared
+in `pixi.toml`.
 
 The two decisions that were open at v1 were **ruled 2026-08-24** under owner
 authorization and are now normative: `C-48` withdrawn (§7.6, D-7.10) and
@@ -973,6 +997,7 @@ One item remains a PREREQUISITE rather than a question:
 |---|---|---|
 | v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carried two open decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
 | v2 | 2026-08-24 | D-7.10 and D-12.1 RULED under owner authorization; §17 now carries no open questions. `C-48` boarded as `t2608242212`. Submitted for a single external review round (`gpt-5.6-sol`) at the owner's request — the internal lens panel stays waived. |
-| v5 | 2026-08-24 | **`D-11.8` OPEN**: a `safe_dump` rewriter would delete 79% of the shipped template and every user-written comment; R13's tool split as TEXT for exactly this reason. Four options, none free, recommendation `ruamel.yaml` — but that is a new dependency and K7 needs owner approval, so P3 pauses at Gate P3-A. Also settles the rewriter as a SIBLING (the R13 tool is report-only by contract) and records that `presplit/` holds v0, not v1. |
+| v6 | 2026-08-24 | `D-11.8` RULED: `ruamel.yaml` round-trip, promoted from transitive to DECLARED in `pixi.toml` — it is already in the lock at 0.19.1 via `dvc`/`gto`, so the approval enlarges nothing, but leaving it undeclared would put a load-bearing migration tool on an accident. `D-14.9` adds the comment-survival falsifier. §17 now has no open decisions. |
+| v5 | 2026-08-24 | ~~**`D-11.8` OPEN**~~: a `safe_dump` rewriter would delete 79% of the shipped template and every user-written comment; R13's tool split as TEXT for exactly this reason. Four options, none free, recommendation `ruamel.yaml` — but that is a new dependency and K7 needs owner approval, so P3 pauses at Gate P3-A. Also settles the rewriter as a SIBLING (the R13 tool is report-only by contract) and records that `presplit/` holds v0, not v1. |
 | v4 | 2026-08-24 | `D-9.6`/`D-9.7` added: the guarded-section list is maintained in THREE places, not one, and `guarded_sections` / `guarded_sections_digest` omit `shared.wflow_outvars` where `_WF1_GUARDED` includes it. `D-9.1` had named only the first site, so a literal reading would have left a "derived" guard wired to two hand-kept literals. Found while writing P2's dispatch. |
 | v3 | 2026-08-24 | Revised against external round 1 (`gpt-5.6-sol`, `verdict: revise`, 3 blocking + 3 major, all accepted). New: `D-11.2a` normative machine-readable mapping; `D-11.2b` transactional migration; **§11.6 frozen-experiment migration** — the digest break did not resolve on its own, and every already-run experiment would have been permanently unrunnable; `D-14.3` baseline provenance promoted to a hard PRE-implementation gate; `D-14.4` sweep partitioned with a fail-closed allowlist, since the v2 rule was unsatisfiable by a correct implementation; §14.4 resolved-config equivalence across all four shipped sets. |

@@ -16,9 +16,23 @@ Program: `config-shape-master-brief.md`.
 
 ### Goal
 
-One command rewrites a complete v1 config set to v2 — keys, files, glob and
-`schema_version` — and tells the user what changed where a rewrite is not
+One command rewrites a complete v1 config set to v2 — keys, files, glob,
+`schema_version` and the per-experiment records — transactionally, PRESERVING
+COMMENTS, and tells the user what changed where a rewrite is not
 behaviour-preserving.
+
+**Build it as a SIBLING of `scripts/split_project_config.py`, never as an
+extension.** That script's contract is report-only — "never edits, moves or
+deletes the config you point it at ... There is no `--write` and no in-place
+mode" — and D-11.2b requires atomic in-place replacement.
+
+**Comments: use `ruamel.yaml`'s round-trip (D-11.8, ruled 2026-08-24).** A
+`safe_dump` rewriter deletes 86 of the 109 lines in the shipped template and
+every annotation a user wrote. `ruamel.yaml` 0.19.1 is already in the lock, but
+via `dvc`/`gto`, so **declare it explicitly in `pixi.toml`** in the same commit
+that first imports it — an undeclared transitive dependency under a
+load-bearing migration tool vanishes the day an unrelated package drops it.
+Keep the round-trip confined to this tool; nothing else should import it.
 
 ### Non-goals
 
@@ -27,8 +41,11 @@ behaviour-preserving.
 
 ### Allowed scope
 
-- **Permitted:** `scripts/split_project_config.py` (extend) or a sibling,
-  `config/migrations/**` (new), `tests/data/presplit/**`, `tests/` for the above.
+- **Permitted:** a NEW sibling script under `scripts/`, `config/migrations/**`
+  (new), `tests/data/presplit/**`, `tests/` for the above, and the one-line
+  `ruamel.yaml` declaration in `pixi.toml`.
+- **Forbidden additionally:** `scripts/split_project_config.py` — do not modify
+  R13's tool.
 - **Forbidden:** `config/defaults/**`, `config/catalogs/**`;
   `dev/milestones/**`.
 
@@ -91,6 +108,13 @@ spellings the moment it lands.
 
 - Rung 1: unit tests over the register-driven mapping.
 - Rung 2 — falsifiers, each built to fail:
+  - **"comments survive"** — migrate
+    `config/templates/snake_config.template.yml` and assert its comment-line
+    count is unchanged at **86** (D-14.9). A `safe_dump` regression passes every
+    other check here while destroying four fifths of the file. Assert separately
+    that a comment attached to a DELETED key (`static_dir`, `run_historical`)
+    follows the declared rule rather than being silently reattached to a
+    neighbour.
   - **"the rewrite is byte-exact for the window conversion"** — `end: 2016`
     must emit `"2016-12-31T00:00:00"`, the string in the config today, MIDNIGHT
     on 31 December rather than end-of-day. Reproducing it verbatim is the

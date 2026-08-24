@@ -17,7 +17,7 @@
 |---|---|---|
 | `S1`–`S7` | proposed **structure** policy rule | `S2` — three identity classes |
 | `N1`–`N8` | proposed **naming** policy rule | `N4` — `{start, end}` windows |
-| `C-01`–`C-66` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
+| `C-01`–`C-84` | one proposed **change**, individually referable | `C-07` — delete `static_dir` |
 | `Q-A`–`Q-I` | **open question**, blocks a change | `Q-A` — `project.dir` vs `project_dir` |
 
 `C-nn` (hyphenated) is this milestone's namespace and is deliberately distinct
@@ -1161,6 +1161,8 @@ this as a decision so it is not re-proposed as an oversight.
 | `C-67` | `horizontime_climate` + `run_length` → `simulation_window: {start, end}` | N4, N8 | **SEMANTIC** | yes — **RULED 2026-08-24** |
 | `C-68` | `stress_test:` → `climate_perturbations:` | N3 (file-scope) | RENAME | yes — **RULED 2026-08-24** |
 | `C-69` | `run_historical` deleted; `st_0` is always produced | S2, P2 | **DELETE** | yes — **RULED 2026-08-24** |
+| `C-81` | Add `weathergen_config:` — a PATH key for the generator's own config, mirroring WF1's two; the referenced file joins `CONFIG_REFERENCES` | S5 | NEW | yes — **RULED 2026-08-24** |
+| `C-82` | `generate_weather.parallel`, `n_cores` → `compute:` | S2, S3 | REGROUP | yes — **RULED 2026-08-24** |
 
 `C-33` keeps the existing rationale intact — the spell factors are not
 perturbation axes and must not read as siblings of `temp:`/`precip:`; a named
@@ -1543,6 +1545,93 @@ outside `CONFIG_PROJECTION`, so its removal briefly leaves the digest covering
 everything — until `C-79` lands. The two should be presented together, or S2's
 three-class split has no instances at all.
 
+#### The weather generator enters through a PATH, not through promoted keys — `C-81`, `C-82`
+
+**Asked by the owner, 2026-08-24:** screen `run_weather_generator()`'s
+parameters and propose which user-facing ones belong in
+`_run_stress_test.yml`. **Ruled the same day: none of them — one path key
+instead.**
+
+**Most of the screen was already done, and R14 must not redo it.**
+`dev/milestones/r11/c34-weathergenr-argument-decisions.md` (2026-08-08) carries
+ONE RECORDED DECISION per unpassed weathergenr argument, and states the rule
+this row obeys: *"not 'expose everything' — most upstream defaults are right,
+and surfacing them would bloat every project config ... An unexamined default
+is not a choice."* Promoting a key C34 declined would re-litigate a recorded
+decision without new evidence.
+
+C34 declined exactly the candidates a fresh screen surfaces, with reasons that
+are methodological rather than clerical:
+
+| key | C34 |
+|---|---|
+| `exaggerate_extremes`, `extreme_prob_threshold`, `extreme_k` | not surfaced — a real STRESS DIMENSION; needs a design-table column and a results column together |
+| `precip_cap_mm_day` / `_floor_` / `_quantile` | declined — "uncapped is correct for a stress test: capping would silently truncate the very tail the experiment exists to probe" |
+| `precip_intensity_threshold` | declined — `0` is what the current occurrence statistics already assume |
+| `scale_var_with_mean`, `enforce_target_mean` | declined — both are what make the design table's axes mean what they say |
+| `pet_method` | surfaced in the WEAGEN TEMPLATE only; F16's open half (PET is computed twice; is the first result used?) is unsettled |
+
+**The gap C34 did not cover** is the keys we DO pass, which were never subject
+to that discipline: `warm_signif`, `warm_pool_size`, `wet_q`, `extreme_q`,
+`annual_knn_n`. Three carry "suggested" RANGES in their own comments
+(0.80–0.95, 10,000–30,000, 100–120), which is the template admitting they are
+judgment calls rather than constants. They live in a TRACKED repo file, so a
+basin needing a different `wet_q` cannot express it without editing the
+repository — the same objection that ruled `advanced_settings.yml` out as a
+home for `disk_headroom_gb`.
+
+**The structural finding — `C-81`.** WF1 lets a project supply its own engine
+config; WF3 does not:
+
+| workflow | engine config |
+|---|---|
+| WF1 | `model_build_config: config/defaults/wflow_build_model.yml`, `waterbodies_config: ...` — both CONFIG KEYS |
+| WF3 | `config/defaults/weathergen_config.yml` — a hardcoded string literal in rule 3.10, **twice** (`input.default_config` and `params.default_config`) |
+
+So `C-81` adds the missing key:
+
+```yaml
+# _run_stress_test.yml
+weathergen_config: config/defaults/weathergen_config.yml   # path
+```
+
+This is S5's own mechanism — "engine vocabulary enters through a PATH key
+pointing at a file in their own schema" — and it is what WF1 already does.
+Every weathergenr argument becomes reachable per basin, in weathergenr's
+vocabulary, checkable against `?generate_weather`, **without one engine key
+entering our sections and without reopening any C34 decision**. It also removes
+an asymmetry between two workflows that has no stated reason.
+
+**The half that must land with it.** Rule 3.10 already declares the file as an
+INPUT, so Snakemake re-triggers on a project's own copy — that was the F7 fix
+of 2026-08-05, when it was params-only and template edits silently changed
+nothing. But `CONFIG_REFERENCES`, which feeds `effective_config_digest`, lists
+the workflow config files and the data catalogs, NOT `config/defaults/*`. With
+a path key the referenced file must JOIN `CONFIG_REFERENCES`, or a project
+could change its generator settings and the experiment digest would not move.
+
+**`C-82` — the one genuine promotion**, into the section `C-34` creates:
+`generate_weather.parallel` and `n_cores` are execution-only, exactly the class
+`C-79` carves out of configuration identity. C34 declined `n_cores` because
+*"a second parallelism knob belongs with `julia_threads` in
+`advanced_settings.yml`"* — a destination `C-54`/`C-55` has since moved. The
+reasoning survives and now points at `compute:`.
+
+**Not promoted, deliberately: `pet_method`.** The highest-leverage scientific
+knob here — Hargreaves PET goes as the square root of diurnal range, and the
+template records upstream measuring +3.7% to +14.7% PET at +4 °C across a
+plausible range of it — but surfacing a method whose result may be discarded
+downstream advertises a choice with an ambiguous effect. It waits on F16.
+
+**Two errata against the C34 record**, which is a milestone record and is
+therefore corrected HERE rather than edited there:
+
+1. Its "still open" list names three stress dimensions. **Spell length has
+   since landed** — `dry_spell_factor` / `wet_spell_factor` moved into the
+   project config on 2026-08-12, and `C-33` regroups them. Two remain
+   (occurrence frequency, extreme intensification).
+2. The `n_cores` destination moved, as above.
+
 ### Group I — carried forward from `parameter-placement.md`
 
 | ID | change | rule | class | breaking |
@@ -1556,6 +1645,8 @@ three-class split has no instances at all.
 | `C-75` | Sweep the technical note onto one trajectory vocabulary and correct its stale defaults | — | MECHANISM (doc) | no |
 | `C-76` | Record what the note's Annex is, and the three places it and the code never agreed | — | (finding) | no |
 | `C-80` | PROBE: is the batching win run-length dependent? Measured at one run length only | — | (probe) | no |
+| `C-83` | `weagen` → `weathergen` across the LIVE surface (`naming.md:176` already forbids the contraction); `dev/milestones/**` excluded | N1 | RENAME (code) | no |
+| `C-84` | `_analyze_climate.yml` survives `C-45` as a comment-only scaffold; add the missing `snake_config.analyze_climate.template.yml` | S7, convention | NEW (doc) | no — **RULED 2026-08-24** |
 
 **Second erratum, same source (2026-08-22).** The appendix lists
 `DEFAULT_MIN_REFERENCE` and `DEFAULT_MAX_FLAGGED_MONTHS` under "No config
@@ -1634,6 +1725,104 @@ puncture it in one `git log`.
 **Erratum: `Realizations_number` default.** The Annex gives "(default value:
 3)"; `run_stress_test.smk:179` defaults it to 1. `C-75` corrects the note.
 
+#### `weagen` is a contraction the conventions already forbid — `C-83`
+
+**Raised by the owner, 2026-08-24.** Not a new decision:
+`dev/reference/naming.md:176` already names it — *"Ad-hoc contractions
+(`weagen`, `proj`) are not"* established domain abbreviations. The code is
+merely GRANDFATHERED, and R14 is the migration note that discharges the
+grandfathering.
+
+The repo already spells it correctly nearly everywhere — the package directory
+is `blueearth_cst/weathergen/`, the default config is
+`config/defaults/weathergen_config.yml`, and the rule is
+`prepare_weathergen_config`. `weagen` is the stray, and the inconsistency is
+visible on a single line: `run_stress_test.smk:965`, where the rule
+`prepare_weathergen_config` runs the script `prepare_weagen_config.py`.
+
+**Scope — the LIVE surface only:**
+
+| file | what |
+|---|---|
+| `blueearth_cst/experiment/prepare_weagen_config.py` | the module FILE, plus `build_weagen_config` |
+| `tests/test_prepare_weagen_config.py` | the test file |
+| `run_stress_test.smk` | the `weagen_config` input/output name in rules 3.10, 3.11, 3.12 and the two R command lines |
+| `blueearth_cst/weathergen/{generate_weather,impose_climate_change}.R` | the argument name |
+| `blueearth_cst/experiment/downscale_climate_forcing.py`, `shared/interchange_contracts.py`, `config/defaults/weathergen_config.yml`, `test_case/snake_config_rapid.yml`, `tests/data/presplit/snake_config_rapid.yml` | comment and docstring references |
+| `dev/reference/**`, `dev/roadmap.md`, `dev/working/**`, `dev/LOG.md` | live reference prose |
+
+**Explicitly NOT swept: `dev/milestones/**`.** Those are historical records,
+valuable because unedited, and AGENTS.md governs them through
+`dev/reference/sealed-records.yml`. They hold the large majority of the 210
+occurrences; renaming there would rewrite history to match a later convention.
+
+**Not a config-key rename**, so it does not belong to the migration bundle and
+`C-38` does not touch it: `weagen_config` is a rule input NAME and a module
+path, not a user-facing key. It can land independently and non-breakingly at
+any time, and it is the cheapest row in this cluster.
+
+`proj`, named in the same sentence of `naming.md`, is NOT swept here. `C-25`
+retires one instance (`clim_project` → `ensemble`); a general sweep needs its
+own scoping and should be boarded rather than folded in.
+
+#### `_analyze_climate.yml` survives `C-45` as an empty scaffold — `C-84`
+
+**Raised by the owner, 2026-08-24:** `C-43`/`C-45` move `candidate_sources` up
+into the T1 climate charter, which leaves `_analyze_climate.yml` holding
+nothing. Keep the file as a convention for knobs WF0 may gain, or delete it?
+**Ruled: keep it, and give it the template it never had.**
+
+**R13 already supports this, deliberately.** `config_composition.py:392`:
+
+```python
+if loaded is None:
+    # An empty file is a workflow with no settings, same as an omitted key.
+    return _Probe(name, os.fspath(raw), resolved, "ok", {}, "")
+```
+
+A comment-only T2 file is legal and composes to `{}` — which is exactly what an
+omitted `config_path` composes to under D-8.7. **The two are indistinguishable
+in the composed document, so the digest is identical either way.** No mechanism
+change, no `effective_config_digest` movement, no amendment to R13. The
+decision is about discoverability alone, and R13's own comment shows the case
+was foreseen rather than tolerated.
+
+**The gap this exposes is the template, not the file.** `config/templates/`
+ships `snake_config.{build_model,analyze_projections,run_stress_test}
+.template.yml` plus the project template — **WF0 has none**. And only the rapid
+set carries an `_analyze_climate.yml`; baseline, baseline_linux and wf2_fast
+omit `config_path` entirely. After `C-45` the repo would have four workflows,
+three templates, and one example that is inconsistent with the other three.
+
+`C-84` therefore does two things:
+
+1. Keep `_analyze_climate.yml` in the rapid set as a comment-only scaffold,
+   saying what WF0 reads today (nothing beyond `climate:` in the project file)
+   and where a future knob goes.
+2. Add `config/templates/snake_config.analyze_climate.template.yml`, so the
+   four-file convention is uniform and a scaffolded project gets WF0's slot
+   with the other three.
+
+**One foot-gun to document in the template, because the asymmetry is sharp.**
+An empty file is fine; a MISSING file with `config_path` still declared is a
+hard parse-time error. The message already names the fix — *"To give this
+workflow no settings at all, delete the `config_path` key"* — but a scaffold
+invites deletion in a way an authored file does not, so the template should
+ship the file and the stanza as a pair and say that they travel together.
+
+**One caveat worth verifying in the design, not asserted here.**
+`CONFIG_REFERENCES` digests each declared workflow config file by CONTENT, so
+for the workflow that declares it, a comment edit in the scaffold moves
+`configuration_inputs_digest` and re-fires that workflow's run record. Harmless
+for WF0, which no other workflow's `R(entry)` includes — but it means comments
+in a scaffold are not free in general, and a scaffold added to a workflow
+inside WF3's projection would behave differently. Check before generalising the
+pattern.
+
+**Not a widening of R14.** `C-84` adds no key and changes no value: it is the
+disposition of a file `C-45` empties, plus the template that was already
+missing. Non-breaking, and it can land with the bundle or before it.
+
 ## Proposed shape
 
 ### Project file (T1) — `snake_config_<project>.yml`
@@ -1664,7 +1853,7 @@ basin:
 climate:
   sources: [era5, chirps]
   selected: era5   # null until WF0's comparison is read
-  window: {start: "1990-01-01", end: "2020-12-31"}
+  window: {start: 1990, end: 2020}   # C-70, water years, inclusive
   water_year_start: Jan
 
 model:
@@ -1683,7 +1872,7 @@ workflows:
 engine:
   build_config: config/defaults/wflow_build_model.yml
   waterbodies_config: config/defaults/wflow_update_waterbodies.yml
-simulation_window: {start: "2000-01-01", end: "2020-12-31"}
+simulation_window: {start: 2000, end: 2020}   # C-71, water years, inclusive
 observations:
   river discharge: null    # key drawn from model.outvars
 ```
@@ -1707,47 +1896,48 @@ reference_window: {start: 1985, end: 2014}
 future_windows:
   - {start: 2030, end: 2060}
   - {start: 2070, end: 2100, name: far}   # name optional; defaults to 2070-2100
-reporting:
-  stats: [mean, median, std]
+stats: [mean, median, std]                # C-28 WITHDRAWN; stays where it is
 ```
 
 ### `_run_stress_test.yml`
 
 ```yaml
 experiment_name: my_experiment
-seed: auto
-realizations_count: 2
-horizon_year: 2050
-run_length: 20
-run_historical: false
-stress_test:
+seed: auto                       # arrives from C-51
+n_realizations: 2
+weathergen_config: config/defaults/weathergen_config.yml   # C-81, path
+simulation_window: {start: 2070, end: 2086}     # C-67, water years, inclusive
+climate_perturbations:                          # C-68
   temp:
-    steps_count: 1
-    transient: true
+    n_levels: 2                                 # C-31, was step_num: 1
+    trajectory: transient                       # C-32, was transient_change
     mean: {min: [...12], max: [...12]}
   precip:
-    steps_count: 2
-    transient: true
+    n_levels: 3                                 # C-31, was step_num: 2
+    trajectory: transient
     mean:     {min: [...12], max: [...12]}
     variance: {min: [...12], max: [...12]}
   spell_factors:
     dry: [...12]
     wet: [...12]
-compute:
-  batch_size: 4
+compute:                                        # C-34; excluded from
+  batch_size: 4                                 # CONFIG_PROJECTION by C-79
   batch_size_max: 8
   disk_headroom_gb: null
-reporting:
-  surfaces:
-    - id: jfm
-      x: {variable: temp}
-      y: {variable: precip, months: [1, 2, 3], statistic: mean}
+  parallel: false                               # C-82, from the generator
+  n_cores: null
 ```
+
+`run_historical` is absent above: `C-69` deletes it. `reporting:` is absent:
+`C-77` removes it.
 
 ### `_analyze_climate.yml`
 
 ```yaml
-candidate_sources: [chirps]
+# C-84: a comment-only scaffold. WF0 reads nothing beyond `climate:` in the
+# project file today; a future WF0-only knob goes here. The file and its
+# `config_path` stanza travel together - deleting the file while the stanza
+# stands is a hard parse-time error.
 ```
 
 ## Open questions
@@ -1872,3 +2062,25 @@ bundle is also the moment `C-05` becomes possible.
 An intake + design under `design-review-loop`, on the R13 pattern:
 `dev/milestones/r14/config-shape-intake.md` → `config-shape-design.md` →
 review record. Not started; this document is the input to it.
+
+### To carry into the intake
+
+Raised by the `_run_stress_test.yml` walkthrough of 2026-08-24, and easy to
+lose because each item is a consequence of a row rather than a row itself:
+
+- `C-70` and `C-71` widen `climate.water_year_start` (`C-53`) from a reporting
+  and aggregation key into one that resolves EVERY window's calendar bounds.
+  That is a real widening of its authority, and the intake should say so
+  explicitly rather than let it arrive as a side effect of N8.
+- `C-67` and `C-71` both change `params:`-threaded values, so rules re-trigger
+  and the tree shape moves — `semantic_tree_diff.py` territory, the same
+  consequence already recorded for `C-61`.
+- `C-69` is the cluster's only row that is not behaviour-preserving for every
+  input value; see its subsection under Group H. `C-38`'s rewriter needs a
+  per-row hook for "mechanical, but tell the user what changed", which no
+  earlier row required. N8's `water_year_start != Jan` refusal is the second
+  user of that hook, which makes it a feature of the migrator rather than a
+  special case.
+- `C-77` and `C-79` must be presented together: until `C-79` lands, removing
+  `reporting:` leaves the digest covering everything and S2's class split with
+  no instances at all.

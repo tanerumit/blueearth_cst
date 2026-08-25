@@ -111,11 +111,11 @@ def test_the_run_record_is_one_file_per_workflow(snakefile_name):
     [
         (
             "build_model.smk",
-            '("project", "shared", "workflows.build_model")',
+            '("project", "basin", "climate", "model", "workflows.build_model")',
         ),
         (
             "analyze_projections.smk",
-            '("project", "shared", "workflows.analyze_projections")',
+            '("project", "basin", "climate", "model", "workflows.analyze_projections")',
         ),
     ],
 )
@@ -137,8 +137,17 @@ def test_wf3_derives_its_projection_from_the_guard_tuple():
     text = (REPO / "run_stress_test.smk").read_text(encoding="utf-8")
 
     assert "CONFIG_PROJECTION = tuple(sorted(" in text
-    assert "for section in guarded_sections" in text
+    assert "set(guarded_sections)" in text
     assert '{"workflows.run_stress_test"}' in text
+    # R14: the widening term is NAMED rather than derived, and that is the one
+    # thing about this expression that is not enforcement. `shared.basin` used
+    # to widen to `shared` by taking its parent; `climate:` and `model:` are
+    # SIBLINGS of `basin:` now, so there is no parent to take and the sections
+    # WF3 reads have to be written down. Pinned here so the list cannot quietly
+    # shrink back to `basin` alone, which would drop `climate.window` and
+    # `model.outvars` out of WF3's effective-config digest.
+    assert 'T1_READ_BY_WF3 = ("basin", "climate", "model")' in text
+    assert "set(T1_READ_BY_WF3)" in text
 
 
 def test_wf3_projection_equals_the_derived_union():
@@ -150,24 +159,29 @@ def test_wf3_projection_equals_the_derived_union():
     """
     guarded = (
         "project",
-        "shared.basin",
+        "basin",
         "workflows.build_model",
         "workflows.analyze_projections",
     )
+    t1_read_by_wf3 = ("basin", "climate", "model")
 
     derived = tuple(
-        sorted(
-            {s.split(".")[0] if s == "shared.basin" else s for s in guarded}
-            | {"workflows.run_stress_test"}
-        )
+        sorted(set(guarded) | set(t1_read_by_wf3) | {"workflows.run_stress_test"})
     )
 
     # Alphabetical, because `derived` is `sorted(...)`. The 2026-08-14 workflow
     # rename reordered this: under the old names the union sorted as
     # experiment, projections, creation.
+    #
+    # R14 replaced the single `shared` entry with the three sections it
+    # dissolved into. That is the SAME COVERAGE, not a widening: v1's `shared`
+    # held the basin, the window, the selected source, the water year and the
+    # outvars, and those are exactly `basin:` + `climate:` + `model:` now.
     assert derived == (
+        "basin",
+        "climate",
+        "model",
         "project",
-        "shared",
         "workflows.analyze_projections",
         "workflows.build_model",
         "workflows.run_stress_test",

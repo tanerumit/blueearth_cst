@@ -1589,3 +1589,67 @@ def test_a_missing_config_path_names_deleting_the_key_as_the_fix(tmp_path):
     assert "does not exist" in message
     assert "delete the `config_path` key" in message
     assert "resolved against" in message, "and say what it was anchored at"
+
+
+def _plant(document: dict, path: str, value=None):
+    """Plant the key ``path`` names into ``document``, creating parents."""
+    node = document
+    parts = path.split(".")
+    for part in parts[:-1]:
+        node = node.setdefault(part, {})
+    node[parts[-1]] = {"planted": True} if value is None else value
+
+
+@pytest.mark.parametrize("path", sorted(cc.RETIRED_KEYS))
+def test_every_retired_key_row_is_reachable(tmp_path, path):
+    """No row of ``RETIRED_KEYS`` may be shadowed by an earlier refusal.
+
+    This is the test that would have caught the phase's own worst bug. Seven of
+    the twenty-six rows -- every one describing where ``shared:``'s contents
+    went, which is the single most likely half-migration -- were UNREACHABLE
+    when written: ``_check_t1_top_level`` answered a leftover ``shared:`` first,
+    with a message naming the closed top level and none of ``basin:``,
+    ``climate:`` or ``model:``. The table looked complete, the suite was green,
+    and a third of the phase's headline deliverable ("every refusal message
+    names its fix") was hollow.
+
+    Parametrized over the table itself, so a row added without a reachable path
+    to it fails here rather than being discovered by a user.
+    """
+    tier, _, rest = path.partition(".")
+    directory = tmp_path / path.replace(".", "_").replace("*", "any")
+    directory.mkdir(parents=True)
+
+    document = {
+        "schema_version": cc.SCHEMA_VERSION,
+        "project": {"project_dir": "p"},
+        **copy.deepcopy(MINIMAL_T1_SECTIONS),
+        "workflows": {},
+    }
+    if tier == "T1":
+        _plant(document, rest)
+        owners = ["build_model"]
+    else:
+        owner, _, name = rest.partition(".")
+        owners = list(cc.WORKFLOW_NAMES) if owner == "*" else [owner]
+        body = {name: {"planted": True}}
+        (directory / f"t2_{owners[0]}.yml").write_text(
+            yaml.safe_dump(body), encoding="utf-8"
+        )
+    for owner in owners:
+        stanza: dict = {"enabled": True}
+        if tier != "T1" and owner == owners[0]:
+            stanza["config_path"] = f"t2_{owners[0]}.yml"
+        document["workflows"][owner] = stanza
+
+    t1_path = directory / "t1.yml"
+    t1_path.write_text(yaml.safe_dump(document), encoding="utf-8")
+
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path, owners[0])
+    message = str(excinfo.value)
+    assert cc.RETIRED_KEYS[path] in message, (
+        f"planting {path!r} did not produce its RETIRED_KEYS message -- some "
+        f"earlier refusal shadows this row, so the destination it records is "
+        f"never shown to anyone. Got:\n{message}"
+    )

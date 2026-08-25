@@ -55,12 +55,26 @@ guarded_sections = (
 # out of `workflows.build_model` -- and `guarded_sections` is already the
 # maintained list of those cross-section reads. Restating it here would be
 # proximity, not enforcement: the two would drift the first time the guard
-# tuple gained an entry. `shared.basin` widens to `shared` because the guard
-# narrows to `basin` only to stay experiment-invariant, while WF3 reads other
-# `shared` keys.
+# tuple gained an entry.
+#
+# The WIDENING term is where R14 costs a line. Under v1 this read
+# `section.split(".")[0] if section == "shared.basin"`, which turned the guard's
+# narrow `shared.basin` into the whole of `shared` -- because the guard narrows
+# to the basin ONLY to stay experiment-invariant, while WF3 reads other `shared`
+# keys (the window, the selected source, the water year, the outvars). `shared:`
+# has no parent to widen to any more: those keys are `climate:` and `model:` now
+# (`C-70`, `C-44`, `C-53`, `C-19`), which are SIBLINGS of `basin:` rather than
+# its container. So the sections WF3 reads are named. Same coverage as v1, and
+# it has to be spelled out rather than derived -- which is why this is a line of
+# code and a comment instead of a rename.
+#
+# `T1_READ_BY_WF3` is not `T1_SHARED_SECTIONS`: this is what WF3 READS, and a
+# section added to T1 for another workflow's benefit does not belong in WF3's
+# projection just because it exists.
+T1_READ_BY_WF3 = ("basin", "climate", "model")
 CONFIG_PROJECTION = tuple(sorted(
-    {section.split(".")[0] if section == "shared.basin" else section
-     for section in guarded_sections}
+    set(guarded_sections)
+    | set(T1_READ_BY_WF3)
     | {"workflows.run_stress_test"}
 ))
 
@@ -100,14 +114,12 @@ project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
 # documentary. Warns, never raises; test_case/ is the one exemption.
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
-# `project.static_dir` is deliberately NOT read here. It exists to build WF1's
-# fallback paths for `model_build_config` / `waterbodies_config`; WF3 has no
-# such fallback. It was read `optional=False` and never used, so a config
-# omitting it failed WF3 for a value WF3 ignores. Removed 2026-08-13 (defect
-# E/F). The key itself is still read by WF1 and still part of the `project`
-# section the consistency guard digests -- deleting it outright is a separate,
-# breaking change (M1 in dev/working/parameter-placement.md).
-DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
+# `project.static_dir` is GONE as of R14 `C-07` -- the separate breaking change
+# this comment used to defer (M1 in dev/working/parameter-placement.md). WF3
+# never read it; WF1 built two fallback paths from it, and those now name
+# `config/` directly, which is where they always resolved: a fixed location in
+# the checkout, not a project-relative one.
+DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
 # experiment_name is OPTIONAL, and defaults to the project's own name plus the
 # date the experiment was first created — `gabon_0108` gives

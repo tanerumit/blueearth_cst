@@ -89,8 +89,7 @@ project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
 # documentary. Warns, never raises; test_case/ is the one exemption.
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
-static_dir = get_config(project_cfg, "static_dir", optional=False)
-DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
+DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
 # Shared — multi-workflow scientific knobs
 basin_cfg = config["basin"]
@@ -164,8 +163,8 @@ wflow_outvars = get_config(config.get("model") or {}, "outvars", DEFAULT_WFLOW_O
 # and that one did not move. Under the R4 copy predicate a shipped default is
 # normally recoverable from the toolbox and so is recorded rather than copied —
 # the bin only receives one when the project points the key at its own file.
-model_build_config = get_config(my_cfg, "model_build_config", f"{static_dir}/defaults/wflow_build_model.yml")
-waterbodies_config = get_config(my_cfg, "waterbodies_config", f"{static_dir}/defaults/wflow_update_waterbodies.yml")
+model_build_config = get_config(my_cfg, "model_build_config", "config/defaults/wflow_build_model.yml")
+waterbodies_config = get_config(my_cfg, "waterbodies_config", "config/defaults/wflow_update_waterbodies.yml")
 output_locations = spatial_cfg.gauge_points_path
 observations_timeseries = get_config(my_cfg, "observations_timeseries", None)
 

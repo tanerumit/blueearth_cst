@@ -478,6 +478,16 @@ def _check_retired_keys(
     Reached only by a document that already claims `schema_version: 2`, i.e. a
     HALF-migrated one, which is why naming the individual key earns its place
     here — see `RETIRED_KEYS`.
+
+    **Called TWICE, and the first call is what makes half the table reachable.**
+    A leftover `shared:` block is both a retired key and a stray top-level name,
+    and `_check_t1_top_level` answers it first — with *"the top level is closed
+    to [...]"*, which names none of `basin:`, `climate:` or `model:`. That is a
+    strictly worse message for the most likely half-migration there is, and it
+    silently killed the seven `T1.shared.*` rows: each needs `shared` to exist
+    at T1 top level, which is exactly what the closure refuses. So the T1 half
+    runs BEFORE the closure and the T2 half after the files are read, which is
+    the earliest either can run.
     """
     hits = _retired_hits(t1, bodies)
     if not hits:
@@ -891,6 +901,10 @@ def compose_config(
     # below, and reporting one of those would point a user at a single key in a
     # file that needs migrating whole. See `_check_schema_version`.
     _check_schema_version(t1, t1_path)
+    # BEFORE the top-level closure: a leftover `shared:` is a stray top-level
+    # name AND a retired key, and only the second message says where its
+    # contents went. See `_check_retired_keys`.
+    _check_retired_keys(t1, {})
     _check_t1_top_level(t1)
 
     t1_dir = os.path.dirname(os.path.abspath(os.fspath(t1_path))) or os.getcwd()
@@ -956,7 +970,7 @@ def compose_config(
     # of it having moved, and a half-migrated WF3 file would otherwise report a
     # missing `trajectory:` for an axis still spelled `stress_test:`.
     bodies = {probe.name: probe.body for probe in probes if probe.status == "ok"}
-    _check_retired_keys(t1, bodies)
+    _check_retired_keys(t1, bodies)  # the T2 half; the T1 half ran above
     _check_climate_selection(t1, workflows, t1_path)
     _check_observations(t1, bodies)
     _check_trajectories(bodies)

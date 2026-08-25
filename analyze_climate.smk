@@ -83,7 +83,7 @@ project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than documentary.
 # Warns, never raises; test_case/ is the one exemption.
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
-DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
+DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
 basin_cfg = config["basin"]
 spatial_cfg = parse_spatial_config(basin_cfg, my_cfg)

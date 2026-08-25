@@ -70,7 +70,7 @@ project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
 # documentary. Warns, never raises; test_case/ is the one exemption.
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
-DATA_SOURCES = get_config(project_cfg, "data_sources_climate", optional=False)
+DATA_SOURCES = get_config(my_cfg, "catalog", optional=False)  # C-39
 
 
 # The content-addressed config bundle was removed here (config-snapshot
@@ -105,12 +105,12 @@ CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(
     referenced_inputs_for_digest(CONFIG_REFERENCES),
 )
 
-# The region delineation reads project.data_sources (deltares), NOT the CMIP6
+# The region delineation reads project.catalog (deltares), NOT the CMIP6
 # catalog above: delineating a basin is a hydrography read, not a projections
 # read. WF2 therefore reads BOTH catalogs — a divergence from the pre-v2.0
-# workflow, which read only data_sources_climate. The name is historical: this
+# workflow, which read only the climate catalog. The name is historical: this
 # fed the climate store until ADR 0003 replaced it with the region rule.
-STORE_DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
+STORE_DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
 # Shared — the model-free basin delineation the climate store extracts against.
 basin_cfg = config["basin"]
@@ -729,7 +729,7 @@ LOG_PARTS_DIR = f"{project_dir}/logs/_parts"
 
 # The run's key folders, stated once -- see the same block in
 # build_model.smk. `data` is the DELTARES catalog's root, not the CMIP6
-# one: `data_sources_climate` points at a `gs://` store, which has no local
+# one: WF2's `catalog:` points at a `gs://` store, which has no local
 # prefix to shorten. No `model` row -- WF2 builds none.
 declare_path_tokens(
     data=catalog_root(STORE_DATA_SOURCES),

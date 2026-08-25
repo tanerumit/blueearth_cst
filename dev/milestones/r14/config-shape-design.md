@@ -1,4 +1,4 @@
-# R14 — Config shape: Design (DRAFT — v6)
+# R14 — Config shape: Design (DRAFT — v7)
 
 > **Status: DRAFT v3 — 2026-08-24, revised against external round 1.**
 > Authored directly by the driver at the owner's instruction. The
@@ -742,6 +742,30 @@ deleted and never lists the new ones.
 `dev/`: **301 occurrences across 76 files**. The 2026-08-19 figure was 221/68 —
 stale by a third in five days, which is why D-12.4 exists.
 
+**The FILE count is 35, not 11.** The board note's "11 tracked files to rename"
+predates R13's split, which multiplied each project config into a set. Measured
+2026-08-25 by `git ls-files | grep snake_config`:
+
+| location | n | note |
+|---|---|---|
+| `test_case/` | 17 | 4 project files + 13 workflow files — the tracking hazard (`E8`) is here and ONLY here |
+| `config/templates/archive/` | 5 | **NOT renamed — see D-12.5** |
+| `config/templates/` | 4 | the shipped templates; a fifth is added by `C-84` |
+| `tests/data/presplit/` | 5 | the v0 corpus |
+| `tests/` | 4 | the fixture set |
+
+That is the third stale figure from the 2026-08-19 note, after the occurrence
+count and the `.gitignore` line numbers.
+
+**D-12.5 `config/templates/archive/` is NOT renamed.**
+`config/templates/README.md:15` calls it *"Unmaintained single-workflow
+configs"* with its own README. Renaming five unmaintained files implies a
+maintenance they do not have, and buys nothing: the `.gitignore` un-ignore glob
+covers `test_case/` only, so there is no tracking hazard there. They become an
+**allowlist entry in the stale-spelling sweep** (`D-14.4`) with "unmaintained
+archive" as the declared reason — precisely the classification mechanism
+`ext1-2` asked for.
+
 **D-12.4** Re-measure at implementation start. Any count in this document older
 than that is a premise, not a fact.
 
@@ -997,6 +1021,7 @@ One item remains a PREREQUISITE rather than a question:
 |---|---|---|
 | v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carried two open decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
 | v2 | 2026-08-24 | D-7.10 and D-12.1 RULED under owner authorization; §17 now carries no open questions. `C-48` boarded as `t2608242212`. Submitted for a single external review round (`gpt-5.6-sol`) at the owner's request — the internal lens panel stays waived. |
+| v7 | 2026-08-25 | `D-12.3` corrected: the rename touches **35 files, not 11** — the board figure predates R13's split. `D-12.5` added: `config/templates/archive/` is NOT renamed and becomes a sweep allowlist entry instead. Third stale figure from the same 2026-08-19 note. |
 | v6 | 2026-08-24 | `D-11.8` RULED: `ruamel.yaml` round-trip, promoted from transitive to DECLARED in `pixi.toml` — it is already in the lock at 0.19.1 via `dvc`/`gto`, so the approval enlarges nothing, but leaving it undeclared would put a load-bearing migration tool on an accident. `D-14.9` adds the comment-survival falsifier. §17 now has no open decisions. |
 | v5 | 2026-08-24 | ~~**`D-11.8` OPEN**~~: a `safe_dump` rewriter would delete 79% of the shipped template and every user-written comment; R13's tool split as TEXT for exactly this reason. Four options, none free, recommendation `ruamel.yaml` — but that is a new dependency and K7 needs owner approval, so P3 pauses at Gate P3-A. Also settles the rewriter as a SIBLING (the R13 tool is report-only by contract) and records that `presplit/` holds v0, not v1. |
 | v4 | 2026-08-24 | `D-9.6`/`D-9.7` added: the guarded-section list is maintained in THREE places, not one, and `guarded_sections` / `guarded_sections_digest` omit `shared.wflow_outvars` where `_WF1_GUARDED` includes it. `D-9.1` had named only the first site, so a literal reading would have left a "derived" guard wired to two hand-kept literals. Found while writing P2's dispatch. |

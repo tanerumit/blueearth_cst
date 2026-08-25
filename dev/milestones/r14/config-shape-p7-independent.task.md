@@ -1,17 +1,22 @@
-Task Brief — P7: the two independently landable rows
+Task Brief — P7: the one independently landable row (`C-83`)
 
 ### Context
 
 Canonical ruleset: `AGENTS.md`. Design: `config-shape-design.md` §11.3.
 Program: `config-shape-master-brief.md`.
 
-Two register rows are non-breaking under every outcome and touch no config key,
-so they do not need the bundle and may land before, during or after it. They
-are grouped here only because neither is large enough for its own phase.
+ONE register row is non-breaking under every outcome and touches no config key,
+so it does not need the bundle and may land before, during or after it.
+
+**`C-35` was the other, and it is WITHDRAWN 2026-08-25.** Its de-duplication was
+already done on 2026-08-13: `metrics_definition.py` does not exist, and the
+constant is single-sourced as `DEFAULT_WATER_YEAR_ANCHOR` in
+`snake_utils.py:1203`. Do not go looking for `DEFAULT_ANCHOR` — the only hit in
+the tree is a comment recording its own replacement.
 
 ### Goal
 
-Land `C-35` and `C-83` without touching the migration.
+Land `C-83` without touching the migration.
 
 ### Non-goals
 
@@ -27,11 +32,6 @@ Land `C-35` and `C-83` without touching the migration.
   mentioning `weagen` may be reworded, a key may not be renamed).
 
 ### Required changes (checklist)
-
-**`C-35` — de-duplicate `DEFAULT_ANCHOR`.** Defined twice, at
-`metrics_definition.py:18` and `climate_figures.py:120`. Single-source it. This
-is the only change in the register that is unambiguously correct regardless of
-how everything else resolves.
 
 **`C-83` — `weagen` → `weathergen` across the LIVE surface.**
 `dev/reference/naming.md:176` already names `weagen` as an ad-hoc contraction
@@ -63,7 +63,6 @@ general sweep needs its own scoping and should be boarded.
 
 | subject | paths | invariant preserved |
 |---|---|---|
-| `C-35` de-duplicate `DEFAULT_ANCHOR` | two modules + tests | one definition; no behaviour change |
 | `C-83` atomic: `git mv` the module and test + rewrite every import, rule name and R argument | `blueearth_cst/`, `tests/`, `run_stress_test.smk`, `*.R` | no commit exists in which an import names a moved module |
 
 ### Validation
@@ -78,7 +77,6 @@ general sweep needs its own scoping and should be boarded.
 
 ### Acceptance criteria
 
-- `DEFAULT_ANCHOR` has one definition.
 - No `weagen` outside `dev/milestones/**`.
 - `test-fast` green, and the diff touches no config key name.
 

@@ -1,4 +1,4 @@
-# R14 — Config shape: Design (DRAFT — v7)
+# R14 — Config shape: Design (DRAFT — v8)
 
 > **Status: DRAFT v3 — 2026-08-24, revised against external round 1.**
 > Authored directly by the driver at the owner's instruction. The
@@ -568,12 +568,14 @@ per-row hook for them — "mechanical, but tell the user what changed".
 
 ### 11.3 One bundle
 
-**D-11.4** Everything except `C-35`, `C-37` and `C-83` lands in ONE bundle with
+**D-11.4** Everything except `C-37` and `C-83` lands in ONE bundle with
 ONE `schema_version` bump. K3 is why: a key present-vs-absent moves the digest
 and refuses every already-run experiment, and that cost is payable once.
-`C-35` (de-duplicate `DEFAULT_ANCHOR`) and `C-83` (the `weagen` → `weathergen`
-sweep) are non-breaking under every outcome and may land independently, before
-or after.
+`C-83` (the `weagen` → `weathergen` sweep) is non-breaking under every outcome
+and may land independently, before or after. **`C-35` is WITHDRAWN
+2026-08-25** — the de-duplication it proposed was already done on 2026-08-13,
+one day after the appendix that seeded the row. It was the row this milestone
+trusted most, and it is the fourth stale premise from that appendix.
 
 ### 11.4 The two rows that are NOT behaviour-preserving
 
@@ -1021,6 +1023,7 @@ One item remains a PREREQUISITE rather than a question:
 |---|---|---|
 | v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carried two open decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
 | v2 | 2026-08-24 | D-7.10 and D-12.1 RULED under owner authorization; §17 now carries no open questions. `C-48` boarded as `t2608242212`. Submitted for a single external review round (`gpt-5.6-sol`) at the owner's request — the internal lens panel stays waived. |
+| v8 | 2026-08-25 | `C-35` WITHDRAWN — already done 2026-08-13. It was the register's most-trusted row and the fourth stale premise from the 2026-08-12 appendix. Exposed a gap in the 2026-08-24 re-measure: it tested SOURCE KEYS against the config surface, so MECHANISM rows (code identifiers) were never checked. Now swept — `C-35` is the only dead one. |
 | v7 | 2026-08-25 | `D-12.3` corrected: the rename touches **35 files, not 11** — the board figure predates R13's split. `D-12.5` added: `config/templates/archive/` is NOT renamed and becomes a sweep allowlist entry instead. Third stale figure from the same 2026-08-19 note. |
 | v6 | 2026-08-24 | `D-11.8` RULED: `ruamel.yaml` round-trip, promoted from transitive to DECLARED in `pixi.toml` — it is already in the lock at 0.19.1 via `dvc`/`gto`, so the approval enlarges nothing, but leaving it undeclared would put a load-bearing migration tool on an accident. `D-14.9` adds the comment-survival falsifier. §17 now has no open decisions. |
 | v5 | 2026-08-24 | ~~**`D-11.8` OPEN**~~: a `safe_dump` rewriter would delete 79% of the shipped template and every user-written comment; R13's tool split as TEXT for exactly this reason. Four options, none free, recommendation `ruamel.yaml` — but that is a new dependency and K7 needs owner approval, so P3 pauses at Gate P3-A. Also settles the rewriter as a SIBLING (the R13 tool is report-only by contract) and records that `presplit/` holds v0, not v1. |

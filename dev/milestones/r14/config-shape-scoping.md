@@ -1851,7 +1851,7 @@ therefore corrected HERE rather than edited there:
 
 | ID | change | rule | class | breaking |
 |---|---|---|---|---|
-| `C-35` | De-duplicate `DEFAULT_ANCHOR` (defined twice: `metrics_definition.py:18`, `climate_figures.py:120`) (= M2) | — | MECHANISM | **no** |
+| `C-35` | ~~De-duplicate `DEFAULT_ANCHOR`~~ — **WITHDRAWN 2026-08-25**: already done on 2026-08-13, one day after the appendix that seeded this row. `metrics_definition.py` does not exist; the constant is single-sourced as `DEFAULT_WATER_YEAR_ANCHOR` (`snake_utils.py:1203`) | — | MECHANISM | — |
 | `C-36` | Move the config-key defaults out of Python (`DEFAULT_SPELL_FACTOR`, `DEFAULT_MAX_SUBBASINS_PER_BASIN`, `DEFAULT_GAUGE_SNAP_TOLERANCE_M`, `DEFAULT_HYDROGRAPHY`, `DEFAULT_BASIN_INDEX`, `DEFAULT_STATS`) (= M3) → `advanced_settings.defaults` | — | MECHANISM | no — **UNBLOCKED 2026-08-24** by `Q-E` |
 | `C-37` | A mechanical "declared keys ⊆ read keys" check (answers P2) — **must assert its ground truth is non-empty before reporting**; see the re-measure under Group G | — | MECHANISM | no |
 | `C-38` | Extend `scripts/split_project_config.py` (or a sibling) into a v1→v2 rewriter driven by the register above | — | MECHANISM | no |
@@ -1870,9 +1870,33 @@ surface, correctly constants". They DO back config keys —
 `C-36`'s list. Two errata from one source in two turns: the re-measure action
 recorded under Group G is not optional.
 
-`C-35` is the only change in this document that is unambiguously correct
+~~`C-35` is the only change in this document that is unambiguously correct
 regardless of how everything else resolves, and the only one that is
-non-breaking and independently landable **today**.
+non-breaking and independently landable **today**.~~
+
+**WITHDRAWN 2026-08-25 — and it was the row this document trusted most.** The
+work was already done on 2026-08-13. `blueearth_cst/experiment/metrics_definition.py`
+does not exist; `climate_figures.py:120` is now a comment about map framing; and
+`snake_utils.py:1196-1203` records the fix in its own words — the literal
+`"YE-DEC"` was *"in two modules until 2026-08-13"*, and the constant is now
+single-sourced as `DEFAULT_WATER_YEAR_ANCHOR`, renamed because the bare
+`DEFAULT_ANCHOR` *"said neither what was anchored nor that the value is a
+pandas/xarray frequency alias."*
+
+**This is the FOURTH stale premise from `parameter-placement.md`'s 2026-08-12
+appendix** — after `save_grids` (`C-28`), the two misclassified defaults, and
+now this. The appendix is dated ONE DAY before the fix landed, which is the
+whole lesson: it was a snapshot, its own header says *"Re-measure rather than
+trust it"*, and four rows in this register were seeded from it unverified.
+
+**The re-measure of 2026-08-24 did not catch this, and the reason is a gap in
+the re-measure itself.** It tested every register row's SOURCE KEY against the
+config surface — templates, `test_case/`, `get_config` calls. `C-35` names no
+config key: it is a MECHANISM row about code identifiers, and mechanism rows
+were never tested against the code. Corrected 2026-08-25 by sweeping every
+identifier named in a mechanism row (`DEFAULT_*`, `forcing_window_years`,
+`compute_nr_years`, `parse_surfaces`, `RETIRED_EXPERIMENT_KEYS`,
+`CONFIG_REFERENCES`): **`C-35` is the only dead one.** The rest are real.
 
 #### Where a default lives is a question of AUTHORITY — `Q-E` resolved, `C-36`
 
@@ -2328,12 +2352,12 @@ None of it can move a number, which is why it is affordable inside the bundle.
 
 ## Packaging recommendation
 
-Every change except `C-35`, `C-37` and `C-38` is breaking, and their costs are
+Every change except `C-37`, `C-38` and `C-83` is breaking, and their costs are
 almost entirely **shared** — one migration pass, one template rewrite, one
 sweep of the fixture corpus. Landing `C-07` alone would pay the whole migration
 cost for one dead key. Recommendation:
 
-- **Now, independently:** `C-35` (non-breaking, correct under every outcome).
+- **Now, independently:** `C-83` only (`C-35` is WITHDRAWN — already done).
   `C-83` may also land at any time — it is a code contraction sweep, touches no
   config key, and `C-38` never sees it.
 - **Probe before designing:** D3-feasibility for `C-38`. (`Q-F` is discharged —

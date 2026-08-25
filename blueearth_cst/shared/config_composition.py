@@ -69,7 +69,15 @@ import yaml
 # ---------------------------------------------------------------------------
 
 #: The user-facing migration guide, named by every refusal this module raises.
-MIGRATION_DOC = "docs/migration-config-tiers.md"
+#: R13's `docs/migration-config-tiers.md` is superseded by it and says so.
+MIGRATION_DOC = "docs/migration-config-shape.md"
+
+#: The project config shape this loader accepts (R14 D-11.1). A document with no
+#: `schema_version`, or a lower one, is a v1 set and is refused rather than
+#: guessed at: the v1 and v2 spellings overlap enough that a tolerant loader
+#: would compose a half-migrated document into something that runs and produces
+#: different numbers.
+SCHEMA_VERSION: int = 2
 
 #: The migration TOOL every refusal points a user at. Pinned here, once, as a
 #: cross-phase contract (R14 Gate A): R13's `scripts/split_project_config.py`
@@ -79,12 +87,48 @@ MIGRATION_DOC = "docs/migration-config-tiers.md"
 #: no gate catches it, because these tests assert the string this module chose.
 MIGRATION_COMMAND = "scripts/migrate_project_config.py"
 
+#: **T1's shape, declared ONCE** — section name -> the leaf names that section
+#: owns. R14 D-7.2 dissolves `shared:` into `basin:`, `climate:` and `model:` at
+#: T1 top level, and D-10.3 requires `SHARED_SEAM_KEYS` to be RE-DERIVED from
+#: the result rather than edited name by name. This mapping is what makes
+#: "re-derived" mean something structural: both `T1_TOP_LEVEL` and
+#: `SHARED_SEAM_KEYS` fall out of it, so the v2 top level is written down in
+#: exactly one place and a section that gains a leaf gains seam coverage for
+#: that leaf in the same edit.
+#:
+#: **Why the leaves and not just the section names.** `SHARED_SEAM_KEYS` is a
+#: flat set of NAMES, so nesting moves seam coverage from leaf to group:
+#: `historical_window` was a `shared:` leaf and sat in the set by name, but
+#: `climate.window` is a leaf of a group. Derived from section names alone the
+#: set would carry `climate` and not `window`, and a T2 file could declare a
+#: bare `window:` uncaught. `basin` already had that property under R13, which
+#: is the reason the design calls for an explicit re-derivation rather than
+#: treating it as a tolerated pattern to repeat.
+#:
+#: **`project:` is deliberately NOT here.** It was never part of `shared:` and
+#: never in the seam set; it is rejected in T2 by name, as a section, the way it
+#: always was. Including its leaves would be actively wrong: `catalog` is a T1
+#: leaf (`C-40`) AND a legitimate key at the top of the WF2 file (`C-39`, the
+#: climate catalog, a single-reader value that belongs down-tier). Two tiers,
+#: one leaf name, on purpose -- so a seam set covering `project`'s leaves would
+#: refuse a shape the design ships.
+T1_SHARED_SECTIONS: dict[str, tuple[str, ...]] = {
+    "basin": ("region", "resolution", "output_locations", "delineation", "sources"),
+    "climate": ("sources", "selected", "window", "water_year_start"),
+    "model": ("outvars",),
+}
+
 #: T1's top level, closed (D-9.5). Closing it is what makes the migration
-#: detector complete: a config whose only unmigrated element is a top-level
-#: `reporting:` produces no extra key under any `workflows.<name>`, so the
+#: detector complete: a config whose only unmigrated element is a stray
+#: top-level section produces no extra key under any `workflows.<name>`, so the
 #: stanza check alone would see nothing and the project would run with an
 #: undefined precedence between two records of the same section.
-T1_TOP_LEVEL: tuple[str, ...] = ("project", "shared", "workflows")
+T1_TOP_LEVEL: tuple[str, ...] = (
+    "schema_version",
+    "project",
+    *T1_SHARED_SECTIONS,
+    "workflows",
+)
 
 #: The closed `workflows.<name>` stanza (D-9.1). `enabled` is T1-owned;
 #: `config_path` is OPTIONAL (D-8.7) and, when present, must resolve.
@@ -103,28 +147,23 @@ WORKFLOW_NAMES: tuple[str, ...] = (
     "run_stress_test",
 )
 
-#: Names that belong to `shared:` whether or not the current T1 declares them.
-#: Deriving the rejection set from T1 alone has a hole: a T1 omitting the
-#: optional `shared.seed` would not reject a `seed:` planted in a T2 file, which
-#: is the exact failure the seam rule is written against.
+#: Names that belong to T1 whether or not the current T1 declares them —
+#: **derived**, never edited (D-10.3). Both the section names and every leaf
+#: they own, because the set is flat and a leaf must be covered by its own name.
 #:
-#: COUPLED EDIT: adding a key to `shared:` means adding it here in the same
-#: commit — the discipline `_ADVANCED_SETTINGS_SCHEMA` already imposes.
-SHARED_SEAM_KEYS: frozenset[str] = frozenset(
-    {
-        "basin",
-        "historical_window",
-        "clim_historical",
-        "seed",
-        "water_year_start",
-        "julia_threads",
-        # Hoisted out of `workflows.build_model` by R13 D-9.7. It was the one
-        # sanctioned cross-workflow value read -- WF1 builds the model with it,
-        # WF3 derives its indicator tables from it -- and moving it here is what
-        # let `CROSS_WORKFLOW_READS` be emptied and retired. Its presence in
-        # this set is what makes a T2-planted copy a parse error.
-        "wflow_outvars",
-    }
+#: Deriving the rejection set from the T1 document alone has a hole: a T1
+#: omitting an optional key would not reject a copy of it planted in a T2 file,
+#: which is the exact failure the seam rule is written against. This frozen
+#: floor closes it. There is no COUPLED EDIT note any more, and its absence is
+#: the point: adding a leaf to `T1_SHARED_SECTIONS` adds it here by
+#: construction, so the two cannot drift.
+#:
+#: Two names that left rather than moved: `seed` is now WF3's alone (`C-51`,
+#: a single reader, so the seam rule does not reach it) and `julia_threads`
+#: left the project config entirely for `advanced_settings` (`C-54`). Both are
+#: refused by name through `RETIRED_KEYS` instead, which says where they went.
+SHARED_SEAM_KEYS: frozenset[str] = frozenset(T1_SHARED_SECTIONS) | frozenset(
+    leaf for leaves in T1_SHARED_SECTIONS.values() for leaf in leaves
 )
 
 #: RETIRED, deliberately: there is no hoist registry, because there is nothing
@@ -176,6 +215,106 @@ SHARED_SEAM_KEYS: frozenset[str] = frozenset(
 #: absorb it into that mapping or retire it; do not delete it here.
 RELOCATED_KEYS: dict[tuple[str, ...], tuple[str, ...]] = {
     ("workflows", "build_model", "wflow_outvars"): ("shared", "wflow_outvars"),
+}
+
+#: Every v1 spelling this loader can SEE, and where it went (D-10.4 row 2).
+#: Dotted path -> the sentence a user needs. `T1.` prefixes a project-file path;
+#: `T2.<workflow>.` prefixes one workflow file's own top level; `T2.*.` matches
+#: that name at the top of ANY workflow file.
+#:
+#: **This is a diagnostic, not the migration specification.** The complete,
+#: normative v1 -> v2 mapping is `config/migrations/v1_to_v2.yml` (R14 D-11.2a),
+#: which P3 ships and which the rewriter executes; 85 rows do not belong in a
+#: loader. What lives here is the subset a parse-time check can see cheaply --
+#: T1 paths and T2 top-level names -- and its job is narrow by construction:
+#: `schema_version` is checked FIRST, so a whole v1 set is already refused with
+#: the migration command before any of this runs. Everything below therefore
+#: fires on a HALF-migrated document, where naming the one key that was missed
+#: is worth far more than a generic "run the migration".
+RETIRED_KEYS: dict[str, str] = {
+    "T1.project.static_dir": ("deleted (`C-07`) -- nothing read it; remove the key"),
+    "T1.project.data_sources": "renamed to `project.catalog` (`C-40`)",
+    "T1.project.data_sources_climate": (
+        "moved DOWN to `catalog:` at the top of the analyze_projections file "
+        "(`C-39`) -- it has one reader, so it does not belong in the project file"
+    ),
+    "T1.shared": (
+        "dissolved into `basin:`, `climate:` and `model:` at the project file's "
+        "top level (`C-01`, `C-10`, `C-16`, `C-19`) -- sections by KIND, not a "
+        "bag of everything more than one workflow reads"
+    ),
+    "T1.basin.gauge_points": (
+        "renamed to `basin.output_locations` (`C-41`) -- these points are where "
+        "output is written, which is not the same thing as a gauge"
+    ),
+    "T1.basin.automatic_subbasins": (
+        "regrouped under `basin.delineation:` (`C-42`, `C-13`, `C-14`)"
+    ),
+    "T1.shared.historical_window": (
+        "renamed AND retyped to `climate.window: {start, end}` (`C-70`) -- "
+        "inclusive WATER years now, not ISO timestamps"
+    ),
+    "T1.shared.clim_historical": "renamed to `climate.selected` (`C-44`)",
+    "T1.shared.water_year_start": ("regrouped as `climate.water_year_start` (`C-53`)"),
+    "T1.shared.wflow_outvars": "regrouped as `model.outvars` (`C-19`)",
+    "T1.shared.seed": (
+        "moved DOWN to `seed:` at the top of the run_stress_test file (`C-51`) "
+        "-- one workflow runs the weather generator, so one workflow owns it"
+    ),
+    "T1.shared.julia_threads": (
+        "REMOVED from the project config (`C-54`). The project-level override is "
+        "gone; the toolbox-wide setting is "
+        "`advanced_settings.runtime.julia_threads`"
+    ),
+    "T2.*.reporting": (
+        "deleted (`C-77`) -- the reporting surface is removed from the config "
+        "entirely, and with it the hoist mechanism that carried it"
+    ),
+    "T2.run_stress_test.run_historical": (
+        "deleted (`C-69`) -- `st_0`, the unperturbed baseline, is now ALWAYS "
+        "produced. If this was `false`, the run gains two month indicators it "
+        "should always have had"
+    ),
+    "T2.run_stress_test.stress_test": (
+        "renamed to `climate_perturbations:` (`C-68`) -- and inside it "
+        "`step_num` becomes `n_levels` (which is step_num + 1, `C-31`) and "
+        "`transient_change: true` becomes `trajectory: transient` (`C-32`)"
+    ),
+    "T2.run_stress_test.realizations_num": "renamed to `n_realizations` (`C-29`)",
+    "T2.run_stress_test.dry_spell_factor": (
+        "regrouped as `climate_perturbations.spell_factors.dry` (`C-33`)"
+    ),
+    "T2.run_stress_test.wet_spell_factor": (
+        "regrouped as `climate_perturbations.spell_factors.wet` (`C-33`)"
+    ),
+    "T2.build_model.model_build_config": (
+        "regrouped as `engine.build_config` (`C-22`)"
+    ),
+    "T2.build_model.waterbodies_config": (
+        "regrouped as `engine.waterbodies_config` (`C-22`)"
+    ),
+    "T2.build_model.observations_timeseries": (
+        "replaced by `observations:`, a mapping KEYED BY VARIABLE whose keys "
+        "come from `model.outvars` (`C-56`)"
+    ),
+    "T2.analyze_projections.clim_project": "renamed to `ensemble:` (`C-25`)",
+    "T2.analyze_projections.historical_year_range": (
+        "renamed and retyped to `reference_window: {start, end}` (`C-59`) -- "
+        "CALENDAR years, deliberately, not water years (`C-74`)"
+    ),
+    "T2.analyze_projections.future_horizons": (
+        "renamed and retyped to `future_windows:`, a LIST of "
+        "`{start, end, name}` mappings (`C-60`, `C-61`)"
+    ),
+    "T2.analyze_projections.relative_change": (
+        "dissolved (`C-66`): `min_denominator` is per-variable registry "
+        "metadata now (`C-64`) and `max_flagged_months` is "
+        "`advanced_settings.constraints.max_flagged_months` (`C-65`)"
+    ),
+    "T2.analyze_climate.candidate_sources": (
+        "moved UP and widened to `climate.sources` in the project file (`C-43`) "
+        "-- the full candidate set, not the extras beside a privileged one"
+    ),
 }
 
 #: Declared IDENTITY comparisons (D-9.6 class 2): whole sections read to be
@@ -273,6 +412,202 @@ def _declared_form(resolved_abs: str) -> str:
 
 
 # ---------------------------------------------------------------------------
+# Parse-time refusals (R14 D-10.4). Every message names the FIX, not just the
+# fault: a refusal that says what is wrong and not what to do about it costs a
+# user the same round trip a missing check would have.
+# ---------------------------------------------------------------------------
+
+
+def _check_schema_version(t1: Mapping[str, Any], t1_path: str | os.PathLike) -> None:
+    """Refuse a v1 project config, naming the migration command (D-10.4 row 1).
+
+    Checked FIRST, before any other refusal, and that ordering is the whole
+    design of the refusal set. A v1 document trips half a dozen other checks --
+    `shared:` at top level, retired keys everywhere, no `climate.selected` --
+    and reporting the first of those would tell a user to fix one key in a file
+    that needs migrating wholesale. One command answers all of it.
+
+    The project config carried no version key before R14, so absent and `1` are
+    the same statement and get the same message (`C-05`).
+    """
+    raw = t1.get("schema_version")
+    if isinstance(raw, int) and not isinstance(raw, bool) and raw >= SCHEMA_VERSION:
+        return
+    if raw is None:
+        found = "no `schema_version` key at all, which means it was written before R14"
+    else:
+        found = f"`schema_version: {raw!r}`"
+    raise ValueError(
+        f"{t1_path}: this project config declares {found}, but this toolbox "
+        f"reads `schema_version: {SCHEMA_VERSION}`.\n"
+        f"  Migrate it:  python {MIGRATION_COMMAND} {t1_path}\n"
+        "That rewrites the project file AND its workflow files together, in one "
+        "transactional pass, keeping your comments and leaving `*.v1.bak` "
+        f"alongside. See {MIGRATION_DOC}."
+    )
+
+
+def _retired_hits(
+    t1: Mapping[str, Any], bodies: Mapping[str, Mapping[str, Any]]
+) -> list[str]:
+    """Return one `path -> where it went` line per retired key present."""
+    hits: list[str] = []
+    for path, destination in RETIRED_KEYS.items():
+        tier, _, rest = path.partition(".")
+        if tier == "T1":
+            node: Any = t1
+            parts = rest.split(".")
+            for part in parts[:-1]:
+                node = node.get(part) if isinstance(node, Mapping) else None
+            if isinstance(node, Mapping) and parts[-1] in node:
+                hits.append(f"  {rest} -- {destination}")
+        else:
+            owner, _, name = rest.partition(".")
+            targets = bodies if owner == "*" else {owner: bodies.get(owner) or {}}
+            for workflow, body in targets.items():
+                if isinstance(body, Mapping) and name in body:
+                    hits.append(f"  {workflow} file: {name} -- {destination}")
+    return hits
+
+
+def _check_retired_keys(
+    t1: Mapping[str, Any], bodies: Mapping[str, Mapping[str, Any]]
+) -> None:
+    """Refuse a retired key, naming its new home or that it is gone (row 2).
+
+    Reached only by a document that already claims `schema_version: 2`, i.e. a
+    HALF-migrated one, which is why naming the individual key earns its place
+    here — see `RETIRED_KEYS`.
+    """
+    hits = _retired_hits(t1, bodies)
+    if not hits:
+        return
+    raise ValueError(
+        "This config declares `schema_version: "
+        f"{SCHEMA_VERSION}` but still carries key(s) R14 retired:\n"
+        + "\n".join(sorted(hits))
+        + f"\nRe-run `python {MIGRATION_COMMAND}` on the project file to finish "
+        f"the migration -- it is idempotent on an already-migrated set and "
+        f"refuses a partial one by name. See {MIGRATION_DOC}."
+    )
+
+
+def _check_climate_selection(
+    t1: Mapping[str, Any], workflows: Mapping[str, Any], t1_path: str | os.PathLike
+) -> None:
+    """Refuse an unset or non-member ``climate.selected`` (rows 3 and 4).
+
+    **Unset is VALID when only WF0 is enabled (D-10.5).** "I have candidates, I
+    have not chosen yet" is a legitimate project state, and it is precisely the
+    state WF0 exists to resolve: WF0 compares the candidates and the comparison
+    is what a user reads in order to choose. Refusing it would make the workflow
+    that answers the question impossible to run until the question is answered.
+    """
+    climate = t1.get("climate") or {}
+    if not isinstance(climate, Mapping):
+        raise ValueError(f"{t1_path}: `climate:` must be a mapping if present.")
+    sources = climate.get("sources") or []
+    selected = climate.get("selected")
+
+    if selected is None:
+        needs = [
+            name
+            for name in ("build_model", "run_stress_test")
+            if (workflows.get(name) or {}).get("enabled")
+        ]
+        if not needs:
+            return  # D-10.5: candidates without a choice, and only WF0 to run.
+        raise ValueError(
+            f"{t1_path}: `climate.selected` is unset, but {needs!r} "
+            f"{'is' if len(needs) == 1 else 'are'} enabled and "
+            "must build on ONE historical dataset.\n"
+            f"  Candidates declared in `climate.sources`: {list(sources)!r}\n"
+            "  Set `climate.selected` to one of them. To choose on evidence "
+            "rather than by guessing, run analyze_climate first with these "
+            "candidates -- it writes a comparison of them to "
+            "`<project_dir>/data/climate/historical/comparison/` and needs no "
+            "model, and leaving `climate.selected` unset is legal for exactly "
+            f"that run. See {MIGRATION_DOC}."
+        )
+
+    if sources and selected not in sources:
+        raise ValueError(
+            f"{t1_path}: `climate.selected: {selected!r}` is not one of the "
+            f"candidates `climate.sources` declares: {list(sources)!r}.\n"
+            "  Either pick a member of that set, or add "
+            f"{selected!r} to `climate.sources` -- the selection names the "
+            "dataset the model is built and run on, and the candidate list is "
+            f"what analyze_climate compares. See {MIGRATION_DOC}."
+        )
+
+
+def _check_observations(
+    t1: Mapping[str, Any], bodies: Mapping[str, Mapping[str, Any]]
+) -> None:
+    """Refuse an ``observations:`` key that is not a declared outvar (row 5).
+
+    D-7.3's parse-time invariant: `observations:` is a mapping KEYED BY
+    VARIABLE, drawn from `model.outvars` verbatim, so observations can only be
+    supplied for a variable the model was asked to output. Without the check the
+    typo is silent -- the evaluation simply finds no series to compare against
+    and draws an empty panel.
+    """
+    body = bodies.get("build_model") or {}
+    observations = body.get("observations")
+    if not isinstance(observations, Mapping):
+        return
+    outvars = (t1.get("model") or {}).get("outvars") or []
+    stray = [key for key in observations if key not in outvars]
+    if stray:
+        raise ValueError(
+            f"the build_model config declares observations for {sorted(stray)!r}, "
+            "which `model.outvars` does not ask the model to output.\n"
+            f"  `model.outvars` declares: {list(outvars)!r}\n"
+            "  Either add the variable to `model.outvars` in the project file, "
+            "or drop the observations entry -- an observed series with no "
+            f"modelled counterpart has nothing to be compared against. "
+            f"See {MIGRATION_DOC}."
+        )
+
+
+#: The perturbation axes `trajectory:` is required on. Two, and not derived from
+#: the config: an axis a user forgot to declare is the case this refuses.
+PERTURBATION_AXES: tuple[str, ...] = ("temp", "precip")
+
+
+def _check_trajectories(bodies: Mapping[str, Mapping[str, Any]]) -> None:
+    """Refuse a perturbation axis with no ``trajectory:`` (row 6).
+
+    `trajectory:` is a REQUIRED enum with no default, deliberately (`C-32`).
+    The two values describe physically different experiments -- a step change
+    held flat across the run versus one ramped through it -- and there is no
+    answer to "which did the user mean" that is right often enough to guess.
+    Defaulting either way would silently produce a response surface computed
+    under an assumption nobody made.
+    """
+    body = bodies.get("run_stress_test") or {}
+    perturbations = body.get("climate_perturbations")
+    if not isinstance(perturbations, Mapping):
+        return
+    missing = [
+        axis
+        for axis in PERTURBATION_AXES
+        if isinstance(perturbations.get(axis), Mapping)
+        and "trajectory" not in perturbations[axis]
+    ]
+    if missing:
+        raise ValueError(
+            "the run_stress_test config declares "
+            f"`climate_perturbations` for {missing!r} with no `trajectory:`.\n"
+            "  `trajectory:` is REQUIRED on every axis and has NO default, "
+            "deliberately: `step` holds the perturbation flat across the run "
+            "and `transient` ramps it through, which are different experiments, "
+            "and guessing would produce a response surface computed under an "
+            f"assumption nobody made. See {MIGRATION_DOC}."
+        )
+
+
+# ---------------------------------------------------------------------------
 # Seam checks (D-9.1, D-9.2, D-9.3, D-9.5)
 # ---------------------------------------------------------------------------
 
@@ -321,40 +656,66 @@ def _check_stanza_closed(name: str, stanza: Mapping[str, Any]) -> None:
         )
 
 
-def _rejected_in_t2(name: str, t1_shared: Mapping[str, Any]) -> frozenset[str]:
-    """Return the names a T2 file for ``name`` may not declare (D-9.2).
+def _t1_declared_leaves(t1: Mapping[str, Any]) -> frozenset[str]:
+    """Return every leaf name T1's shared sections actually declare.
 
-    T1-owned sections, every key T1's own `shared:` declares, and the frozen
-    `SHARED_SEAM_KEYS`.
+    The DYNAMIC half of the rejection set, kept alongside the frozen
+    `SHARED_SEAM_KEYS` floor for the reason R13 gave: a section may carry a leaf
+    this module has not enumerated, and a copy of it planted in a T2 file is the
+    same seam breach as a copy of one that is enumerated.
+    """
+    leaves: set[str] = set()
+    for section in T1_SHARED_SECTIONS:
+        body = t1.get(section)
+        if isinstance(body, Mapping):
+            leaves.update(body)
+    return frozenset(leaves)
 
-    A fourth term used to sit here — every hoisted section except the ones this
-    workflow owns — and it retired with the hoist map (R14 D-10.1). It closed
-    the unguarded direction of a mechanism that no longer exists: with nothing
-    hoisted, a section at the top of a T2 file can only merge into that
-    workflow's own namespace, which is what the seam rule already governs.
+
+def _rejected_in_t2(t1: Mapping[str, Any]) -> frozenset[str]:
+    """Return the names a T2 file may not declare (D-9.2).
+
+    T1's own top-level names, every leaf T1's shared sections declare, and the
+    derived `SHARED_SEAM_KEYS` floor.
+
+    Two terms that used to sit here are gone. `shared` is now refused through
+    `T1_TOP_LEVEL` and `RETIRED_KEYS`, which say where its contents went; and
+    every hoisted section except this workflow's own retired with the hoist map
+    (R14 D-10.1) -- it closed the unguarded direction of a mechanism that no
+    longer exists.
+
+    The result no longer varies by workflow, so the parameter went with it. It
+    never did vary except through the hoist term, and a signature implying
+    otherwise invites a caller to believe there is a per-workflow exemption.
     """
     return frozenset(
-        {"project", "shared", "workflows", "enabled"}
-        | set(t1_shared)
-        | set(SHARED_SEAM_KEYS)
+        set(T1_TOP_LEVEL) | {"enabled"} | _t1_declared_leaves(t1) | SHARED_SEAM_KEYS
     )
 
 
 def _check_t2_names(
-    name: str, body: Mapping[str, Any], path: str, t1_shared: Mapping[str, Any]
+    name: str, body: Mapping[str, Any], path: str, t1: Mapping[str, Any]
 ) -> None:
     """Refuse a globally-owned name at the top level of a T2 file (D-9.2/D-9.3).
 
     Reads **key names only** and merges nothing, so the narrowing holds even
     when this runs over a file outside the composed set.
     """
-    rejected = _rejected_in_t2(name, t1_shared)
+    rejected = _rejected_in_t2(t1)
     stray = sorted(key for key in body if key in rejected)
     if not stray:
         return
-    fixes = [
-        f"{key!r} belongs in the project file's `shared:` section" for key in stray
-    ]
+    owners = {
+        leaf: section
+        for section, leaves in T1_SHARED_SECTIONS.items()
+        for leaf in leaves
+    }
+    fixes = []
+    for key in stray:
+        if key in owners and key not in T1_TOP_LEVEL:
+            fixes.append(f"{key!r} belongs in the project file's `{owners[key]}:`")
+        else:
+            fixes.append(f"{key!r} belongs at the project file's top level")
     raise ValueError(
         f"{path}: the {name!r} workflow config declares {stray!r} at its top "
         "level, but those names are owned outside a single workflow — a key "
@@ -526,12 +887,19 @@ def compose_config(
             f"{t1_path}: the project config must parse to a mapping, got "
             f"{type(t1).__name__}."
         )
+    # FIRST, before every other refusal: a v1 document trips most of the checks
+    # below, and reporting one of those would point a user at a single key in a
+    # file that needs migrating whole. See `_check_schema_version`.
+    _check_schema_version(t1, t1_path)
     _check_t1_top_level(t1)
 
     t1_dir = os.path.dirname(os.path.abspath(os.fspath(t1_path))) or os.getcwd()
-    shared = t1.get("shared") or {}
-    if not isinstance(shared, Mapping):
-        raise ValueError(f"{t1_path}: `shared:` must be a mapping if present.")
+    for section in T1_SHARED_SECTIONS:
+        if section in t1 and not isinstance(t1[section], Mapping):
+            raise ValueError(
+                f"{t1_path}: `{section}:` must be a mapping if present, got "
+                f"{type(t1[section]).__name__}."
+            )
 
     workflows = t1.get("workflows") or {}
     if not isinstance(workflows, Mapping):
@@ -580,7 +948,18 @@ def compose_config(
     # in another workflow's file.
     for probe in probes:
         if probe.status == "ok":
-            _check_t2_names(probe.name, probe.body, probe.resolved, shared)
+            _check_t2_names(probe.name, probe.body, probe.resolved, t1)
+
+    # The content refusals (D-10.4 rows 2-6), over every T2 body that resolved —
+    # the same scope, and the same reason, as the name check above. Ordered
+    # retired-first: a key that moved is a better message than the consequence
+    # of it having moved, and a half-migrated WF3 file would otherwise report a
+    # missing `trajectory:` for an axis still spelled `stress_test:`.
+    bodies = {probe.name: probe.body for probe in probes if probe.status == "ok"}
+    _check_retired_keys(t1, bodies)
+    _check_climate_selection(t1, workflows, t1_path)
+    _check_observations(t1, bodies)
+    _check_trajectories(bodies)
 
     composed: dict[str, Any] = {
         key: value for key, value in t1.items() if key != "workflows"

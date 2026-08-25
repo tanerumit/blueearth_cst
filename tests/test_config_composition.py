@@ -47,21 +47,23 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 #: as an argument instead of restating it inside the loader.
 PROJECTIONS = {
     "analyze_climate": (
-        ("project", "shared", "workflows.analyze_climate"),
+        ("project", "basin", "climate", "model", "workflows.analyze_climate"),
         {"analyze_climate"},
     ),
     "build_model": (
-        ("project", "shared", "workflows.build_model"),
+        ("project", "basin", "climate", "model", "workflows.build_model"),
         {"build_model"},
     ),
     "analyze_projections": (
-        ("project", "shared", "workflows.analyze_projections"),
+        ("project", "basin", "climate", "model", "workflows.analyze_projections"),
         {"analyze_projections"},
     ),
     "run_stress_test": (
         (
             "project",
-            "shared",
+            "basin",
+            "climate",
+            "model",
             "workflows.analyze_projections",
             "workflows.build_model",
             "workflows.run_stress_test",
@@ -75,29 +77,49 @@ PROJECTIONS = {
 # Fixture builders
 # ---------------------------------------------------------------------------
 
+#: The smallest T1 shared-section set that PASSES every R14 parse-time refusal.
+#: `climate.selected` is set and is a member of `climate.sources` because
+#: D-10.4 rows 3 and 4 refuse otherwise the moment WF1 or WF3 is enabled — and
+#: nearly every case in this module enables one. Tests about the refusals
+#: themselves pass `sections=` explicitly and take what they need away.
+MINIMAL_T1_SECTIONS: dict = {
+    "basin": {"region": "x"},
+    "climate": {"sources": ["era5"], "selected": "era5"},
+}
+
 
 def write_split(
     directory: Path,
     stem: str = "snake_config_test",
-    shared: dict | None = None,
+    sections: dict | None = None,
     bodies: dict[str, dict] | None = None,
     enabled: dict[str, bool] | None = None,
     omit_path: tuple[str, ...] = (),
+    schema_version: object = cc.SCHEMA_VERSION,
 ) -> Path:
     """Write a T1 file plus one T2 file per workflow body; return the T1 path.
 
+    ``sections`` is the T1 SHARED sections — ``basin:``, ``climate:``,
+    ``model:`` — as one mapping, written at the project file's top level. It
+    replaced a ``shared=`` parameter when R14 dissolved that section (D-7.2);
+    the callers below moved key for key, so a test that read ``shared={"basin":
+    ...}`` now reads ``sections={"basin": ...}`` and asserts the same thing.
+
     ``omit_path`` names workflows whose stanza gets no ``config_path`` even
     though a body was given — the shape D-8.7 accepts and the migration never
-    produces.
+    produces. ``schema_version`` is a parameter, and ``None`` omits the key
+    entirely, so the v1 refusal can be exercised on a document this helper built
+    rather than on a hand-pasted string.
     """
     directory.mkdir(parents=True, exist_ok=True)
     bodies = {} if bodies is None else bodies
     enabled = {} if enabled is None else enabled
-    t1 = {
-        "project": {"project_dir": (directory / "proj").as_posix()},
-        "shared": {"basin": {"region": "x"}} if shared is None else shared,
-        "workflows": {},
-    }
+    t1: dict = {}
+    if schema_version is not None:
+        t1["schema_version"] = schema_version
+    t1["project"] = {"project_dir": (directory / "proj").as_posix()}
+    t1.update(MINIMAL_T1_SECTIONS if sections is None else sections)
+    t1["workflows"] = {}
     for name, body in bodies.items():
         stanza: dict[str, object] = {"enabled": enabled.get(name, True)}
         if name not in omit_path:
@@ -132,10 +154,10 @@ def test_composed_document_equals_the_monolith_it_was_split_from(tmp_path):
     """
     bodies = {
         "build_model": {
-            "model_build_config": "config/defaults/wflow_build_model.yml",
-            "observations": "obs.csv",
+            "engine": {"build_config": "config/defaults/wflow_build_model.yml"},
+            "simulation_window": {"start": 2000, "end": 2020},
         },
-        "analyze_projections": {"clim_project": "cmip6", "scenarios": ["ssp245"]},
+        "analyze_projections": {"ensemble": "cmip6", "scenarios": ["ssp245"]},
     }
     t1_path = write_split(tmp_path / "cfg", bodies=bodies)
     composed = compose(t1_path, "run_stress_test")
@@ -158,11 +180,11 @@ def test_enabled_is_merged_and_config_path_is_not(tmp_path):
     """
     t1_path = write_split(
         tmp_path / "cfg",
-        bodies={"build_model": {"model_build_config": "wflow.yml"}},
+        bodies={"build_model": {"engine": {"build_config": "wflow.yml"}}},
         enabled={"build_model": False},
     )
     section = compose(t1_path)["workflows"]["build_model"]
-    assert section == {"enabled": False, "model_build_config": "wflow.yml"}
+    assert section == {"enabled": False, "engine": {"build_config": "wflow.yml"}}
     assert "config_path" not in section
 
 
@@ -174,10 +196,10 @@ def test_enabled_comes_first_so_recorded_bytes_are_stable(tmp_path):
     fixes by putting it there.
     """
     t1_path = write_split(
-        tmp_path / "cfg", bodies={"run_stress_test": {"realizations_num": 2}}
+        tmp_path / "cfg", bodies={"run_stress_test": {"n_realizations": 2}}
     )
     section = compose(t1_path, "run_stress_test")["workflows"]["run_stress_test"]
-    assert list(section) == ["enabled", "realizations_num"]
+    assert list(section) == ["enabled", "n_realizations"]
 
 
 def test_omitted_config_path_composes_to_an_empty_body(tmp_path):
@@ -229,17 +251,17 @@ def test_no_section_is_hoisted_out_of_its_workflow(tmp_path):
         tmp_path / "cfg",
         bodies={
             "run_stress_test": {
-                "realizations_num": 2,
-                "reporting": {"title": "Gabon"},
+                "n_realizations": 2,
+                "captions": {"title": "Gabon"},
                 "anything_else": {"k": "v"},
             }
         },
     )
     composed = compose(t1_path, "run_stress_test")
     section = composed["workflows"]["run_stress_test"]
-    assert section["reporting"] == {"title": "Gabon"}
+    assert section["captions"] == {"title": "Gabon"}
     assert section["anything_else"] == {"k": "v"}
-    assert "reporting" not in composed
+    assert "captions" not in composed
     assert "anything_else" not in composed
 
 
@@ -361,8 +383,9 @@ def test_absolute_config_path_is_used_as_given(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
+                "schema_version": cc.SCHEMA_VERSION,
                 "project": {"project_dir": "p"},
-                "shared": {},
+                **MINIMAL_T1_SECTIONS,
                 "workflows": {"build_model": {"enabled": True, "config_path": str(t2)}},
             }
         ),
@@ -385,8 +408,9 @@ def test_tilde_in_config_path_is_expanded(tmp_path, monkeypatch):
     t1_path.write_text(
         yaml.safe_dump(
             {
+                "schema_version": cc.SCHEMA_VERSION,
                 "project": {"project_dir": "p"},
-                "shared": {},
+                **MINIMAL_T1_SECTIONS,
                 "workflows": {
                     "build_model": {"enabled": True, "config_path": "~/wf1.yml"}
                 },
@@ -487,8 +511,8 @@ def test_non_string_config_path_is_refused(tmp_path, value):
     t1_path.write_text(
         yaml.safe_dump(
             {
+                "schema_version": cc.SCHEMA_VERSION,
                 "project": {},
-                "shared": {},
                 "workflows": {"build_model": {"enabled": True, "config_path": value}},
             }
         ),
@@ -506,8 +530,8 @@ def test_empty_config_path_says_to_omit_the_key(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
+                "schema_version": cc.SCHEMA_VERSION,
                 "project": {},
-                "shared": {},
                 "workflows": {"build_model": {"enabled": True, "config_path": "  "}},
             }
         ),
@@ -546,8 +570,8 @@ def test_two_stanzas_sharing_one_file_are_refused(tmp_path, second):
     t1_path.write_text(
         yaml.safe_dump(
             {
+                "schema_version": cc.SCHEMA_VERSION,
                 "project": {},
-                "shared": {},
                 "workflows": {
                     "build_model": {"enabled": True, "config_path": "wf.yml"},
                     "analyze_projections": {"enabled": True, "config_path": second},
@@ -573,8 +597,8 @@ def test_a_third_stanza_key_is_refused_and_names_the_key(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
+                "schema_version": cc.SCHEMA_VERSION,
                 "project": {},
-                "shared": {},
                 "workflows": {
                     "build_model": {"enabled": True, "model_build_config": "x.yml"}
                 },
@@ -606,8 +630,8 @@ def test_stanza_closure_is_checked_outside_this_entry_points_scope(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
+                "schema_version": cc.SCHEMA_VERSION,
                 "project": {},
-                "shared": {},
                 "workflows": {
                     "build_model": {"enabled": True},
                     "run_stress_test": {"enabled": True, "realizations_num": 2},
@@ -635,8 +659,8 @@ def test_a_stray_t1_top_level_key_is_refused(tmp_path):
     t1_path.write_text(
         yaml.safe_dump(
             {
+                "schema_version": cc.SCHEMA_VERSION,
                 "project": {},
-                "shared": {},
                 "workflows": {"build_model": {"enabled": True}},
                 "reporting": {"title": "left behind"},
             }
@@ -652,52 +676,35 @@ def test_a_shared_key_planted_in_a_t2_file_is_refused(tmp_path):
     """D-9.2. A key read by more than one workflow lives in T1, never in a T2."""
     t1_path = write_split(
         tmp_path / "cfg",
-        shared={"basin": {"region": "x"}, "clim_historical": "era5"},
-        bodies={"build_model": {"clim_historical": "chirps"}},
+        sections={"basin": {"region": "x"}, "climate": {"selected": "era5"}},
+        bodies={"build_model": {"selected": "chirps"}},
     )
     with pytest.raises(ValueError) as excinfo:
         compose(t1_path)
     message = str(excinfo.value)
-    assert "clim_historical" in message
-    assert "`shared:`" in message
+    assert "selected" in message
+    # The fix names the SECTION the leaf belongs to, which is what the R14
+    # re-derivation buys: under the v1 flat set the message could only say
+    # "the project file", leaving a user to find which of three sections.
+    assert "`climate:`" in message
 
 
 def test_a_frozen_seam_key_absent_from_this_t1_is_still_refused(tmp_path):
     """Why ``SHARED_SEAM_KEYS`` exists rather than deriving from T1 alone.
 
-    A T1 that omits the optional ``shared.seed`` would not reject a ``seed:``
-    planted in a T2 file — the exact failure the rule is written against.
+    A T1 that omits an optional leaf would not reject a copy of it planted in a
+    T2 file — the exact failure the rule is written against. ``basin.sources``
+    is the case here: optional, absent from this T1, and still refused.
     """
     t1_path = write_split(
         tmp_path / "cfg",
-        shared={"basin": {"region": "x"}},
-        bodies={"build_model": {"seed": 99}},
+        sections={"basin": {"region": "x"}, "climate": {"selected": "era5"}},
+        bodies={"build_model": {"sources": {"lulc": "vito"}}},
     )
-    assert "seed" not in yaml.safe_load(t1_path.read_text(encoding="utf-8"))["shared"]
-    with pytest.raises(ValueError, match="seed"):
+    t1_doc = yaml.safe_load(t1_path.read_text(encoding="utf-8"))
+    assert "sources" not in t1_doc["basin"] and "sources" not in t1_doc["climate"]
+    with pytest.raises(ValueError, match="sources"):
         compose(t1_path)
-
-
-def test_a_formerly_hoisted_name_is_now_an_ordinary_workflow_key(tmp_path):
-    """What the retirement gives up, asserted rather than left implicit.
-
-    D-9.2 carried a final term — every hoisted section except the ones this
-    workflow owns — so a ``reporting:`` block written at the top of
-    ``build_model``'s file was REFUSED. With the map retired the name is
-    ordinary: it merges into ``workflows.build_model`` like any other key that
-    workflow declares.
-
-    That is a real reduction in what parse time catches, and it is sound only
-    because the section it protected no longer exists on the config surface
-    (`C-77`). The general seam rule is untouched — a name owned outside one
-    workflow is still refused — so what is lost is exactly the special case,
-    and nothing more.
-    """
-    t1_path = write_split(
-        tmp_path / "cfg", bodies={"build_model": {"reporting": {"title": "own file"}}}
-    )
-    composed = compose(t1_path)
-    assert composed["workflows"]["build_model"]["reporting"] == {"title": "own file"}
 
 
 def test_an_independent_same_named_pair_across_two_t2_files_parses(tmp_path):
@@ -731,7 +738,7 @@ def test_a_shared_key_is_refused_in_a_file_outside_this_entry_points_scope(tmp_p
     """
     t1_path = write_split(
         tmp_path / "cfg",
-        shared={"basin": {"region": "x"}},
+        sections={"basin": {"region": "x"}, "climate": {"selected": "era5"}},
         bodies={
             "build_model": {"a": 1},
             "run_stress_test": {"basin": {"region": "planted"}},
@@ -909,7 +916,7 @@ def test_the_composed_shape_is_visible_through_snakemake_workflow_config(tmp_pat
     four entry points are wired to call it.
     """
     t1_path = write_split(
-        tmp_path / "cfg", bodies={"build_model": {"model_build_config": "x.yml"}}
+        tmp_path / "cfg", bodies={"build_model": {"engine": {"build_config": "x.yml"}}}
     )
     snakefile = tmp_path / "probe.smk"
     snakefile.write_text(
@@ -921,10 +928,10 @@ def test_the_composed_shape_is_visible_through_snakemake_workflow_config(tmp_pat
 
             config, WORKFLOW_CONFIG_PATHS = compose_config(
                 config, workflow.configfiles[0], entry="build_model",
-                declared_sections=("project", "shared", "workflows.build_model"),
+                declared_sections=("project", "basin", "climate", "model", "workflows.build_model"),
             )
             LIVE = workflow.config["workflows"]["build_model"]
-            assert LIVE == {{"enabled": True, "model_build_config": "x.yml"}}, LIVE
+            assert LIVE == {{"enabled": True, "engine": {{"build_config": "x.yml"}}}}, LIVE
 
             rule all:
                 run:
@@ -1135,23 +1142,28 @@ def test_write_config_round_trips_through_compose(tmp_path):
 
 
 def test_the_hoisted_key_is_refused_inside_a_workflow_file(tmp_path):
-    """D-9.7's placement, enforced by construction rather than by a new check.
+    """R13 D-9.7's placement, in its R14 spelling (`model.outvars`, `C-19`).
 
-    Adding ``wflow_outvars`` to ``SHARED_SEAM_KEYS`` is the whole mechanism: a
-    copy planted in any workflow file is then refused by D-9.2/D-9.3 with no
-    rule written for this key specifically. That is what the frozen set is for,
-    and it is why the hoist is a two-line contract change rather than a feature.
+    The mechanism is unchanged and is the point: the key is covered by
+    ``SHARED_SEAM_KEYS``, so a copy planted in any workflow file is refused by
+    D-9.2/D-9.3 with no rule written for this key specifically. R14 changes
+    only where the coverage comes from -- `outvars` is now a DERIVED member,
+    a leaf of `model:`, rather than a hand-added name.
     """
     t1_path = write_split(
         tmp_path / "cfg",
-        shared={"basin": {"region": "x"}, "wflow_outvars": ["river discharge"]},
-        bodies={"build_model": {"wflow_outvars": ["snow"]}},
+        sections={
+            "basin": {"region": "x"},
+            "climate": {"selected": "era5"},
+            "model": {"outvars": ["river discharge"]},
+        },
+        bodies={"build_model": {"outvars": ["snow"]}},
     )
     with pytest.raises(ValueError) as excinfo:
         compose(t1_path)
     message = str(excinfo.value)
-    assert "wflow_outvars" in message
-    assert "`shared:`" in message
+    assert "outvars" in message
+    assert "`model:`" in message
 
 
 def test_the_hoisted_key_reaches_both_readers_from_shared(tmp_path):
@@ -1164,12 +1176,19 @@ def test_the_hoisted_key_reaches_both_readers_from_shared(tmp_path):
     """
     t1_path = write_split(
         tmp_path / "cfg",
-        shared={"basin": {"region": "x"}, "wflow_outvars": ["river discharge"]},
-        bodies={"build_model": {"model_build_config": "x.yml"}, "run_stress_test": {}},
+        sections={
+            "basin": {"region": "x"},
+            "climate": {"selected": "era5"},
+            "model": {"outvars": ["river discharge"]},
+        },
+        bodies={
+            "build_model": {"engine": {"build_config": "x.yml"}},
+            "run_stress_test": {},
+        },
     )
     for entry in ("build_model", "run_stress_test"):
         composed = compose(t1_path, entry)
-        assert composed["shared"]["wflow_outvars"] == ["river discharge"]
+        assert composed["model"]["outvars"] == ["river discharge"]
 
 
 def test_the_relocation_map_is_one_declared_row(tmp_path):
@@ -1186,8 +1205,387 @@ def test_the_relocation_map_is_one_declared_row(tmp_path):
         "the cross-workflow read registry is retired; a reinstated one would let "
         "a new read be sanctioned by adding a tuple beside it"
     )
+    # R14 note: the destination it records is the V1 one (`shared.wflow_outvars`),
+    # and `shared:` no longer exists -- `C-19` moved the key on to `model.outvars`.
+    # The map is deliberately KEPT in that state as a candidate input to P3's
+    # `config/migrations/v1_to_v2.yml`, so what is pinned here is its CONTENT and
+    # SHAPE, not a claim that its destination is a live placement.
     for _, dest in cc.RELOCATED_KEYS.items():
-        assert dest[0] == "shared" and dest[1] in cc.SHARED_SEAM_KEYS, (
-            "a relocated key must land in `shared:` AND be in the frozen seam set, "
-            "or a copy planted in a workflow file would still parse"
+        assert isinstance(dest, tuple) and len(dest) == 2, (
+            "a relocated key is recorded as a path tuple; a bare name would lose "
+            "which section it landed in"
         )
+
+
+# ---------------------------------------------------------------------------
+# R14: the seam set re-derived, and the parse-time refusals (D-10.3, D-10.4)
+# ---------------------------------------------------------------------------
+
+
+def test_a_bare_window_in_a_t2_file_is_refused(tmp_path):
+    """THE falsifier for the R14 seam re-derivation (D-10.3).
+
+    `SHARED_SEAM_KEYS` is a flat set of NAMES, so nesting moves seam coverage
+    from leaf to group: `historical_window` was a `shared:` leaf and was in the
+    set by name, but `climate.window` is a leaf of a GROUP, and a set derived
+    from section names alone would carry `climate` and not `window`. A T2 file
+    could then declare a bare `window:` uncaught -- and `basin` already has that
+    property, which is exactly why the design calls for an explicit,
+    re-DERIVED set rather than one edited name by name.
+
+    Written before the implementation, and it failed then for the right reason:
+    against the v1 set a bare `window:` composed cleanly into
+    `workflows.build_model`.
+    """
+    t1_path = write_split(
+        tmp_path / "cfg",
+        sections={"basin": {"region": "x"}, "climate": {"window": {"start": 1990}}},
+        bodies={"build_model": {"window": {"start": 1901}}},
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    assert "window" in str(excinfo.value)
+
+
+def test_the_seam_set_covers_every_declared_t1_leaf():
+    """D-10.3's re-derivation, asserted as a PROPERTY rather than a snapshot.
+
+    A snapshot (``assert SHARED_SEAM_KEYS == {...}``) would pass just as
+    happily against a hand-edited set, which is the thing the design forbids.
+    What matters is that every leaf a T2 file must not declare is covered BY
+    NAME, because the set is flat — so this asserts the derivation, and the
+    equality below asserts there is nothing else in it.
+    """
+    for section, leaves in cc.T1_SHARED_SECTIONS.items():
+        assert section in cc.SHARED_SEAM_KEYS, (
+            f"the section name {section!r} must be refused in a T2 file"
+        )
+        for leaf in leaves:
+            assert leaf in cc.SHARED_SEAM_KEYS, (
+                f"{section}.{leaf} is a T1 leaf, and the seam set is FLAT, so it "
+                "must be covered by its own name -- nesting moves coverage from "
+                "leaf to group and a bare copy in a T2 file would go uncaught"
+            )
+    derived = frozenset(cc.T1_SHARED_SECTIONS) | {
+        leaf for leaves in cc.T1_SHARED_SECTIONS.values() for leaf in leaves
+    }
+    assert cc.SHARED_SEAM_KEYS == derived, (
+        "SHARED_SEAM_KEYS must be exactly the derivation, with no name added by "
+        "hand beside it -- a hand-added name is one the T1 shape does not know "
+        "about, and it is how the two drift"
+    )
+
+
+def test_project_leaves_are_deliberately_outside_the_seam_set():
+    """``catalog`` is a T1 leaf AND a legal WF2 key, on purpose (C-39/C-40).
+
+    This is the boundary of the re-derivation, and it is worth a test because
+    the obvious generalisation — derive from EVERY T1 section, ``project:``
+    included — refuses a shape the design ships. ``project:`` was never part of
+    ``shared:`` and is rejected in a T2 file as a section name, as it always
+    was.
+    """
+    assert "project" not in cc.T1_SHARED_SECTIONS
+    assert "catalog" not in cc.SHARED_SEAM_KEYS
+    assert "project_dir" not in cc.SHARED_SEAM_KEYS
+    assert "project" in cc.T1_TOP_LEVEL
+
+
+def test_the_wf2_catalog_key_composes(tmp_path):
+    """The same claim, exercised rather than asserted about the constants."""
+    t1_path = write_split(
+        tmp_path / "cfg",
+        bodies={"analyze_projections": {"catalog": "config/catalogs/cmip6_data.yml"}},
+    )
+    composed = compose(t1_path, "analyze_projections")
+    section = composed["workflows"]["analyze_projections"]
+    assert section["catalog"] == "config/catalogs/cmip6_data.yml"
+
+
+# --- D-10.4, one case per row. Each asserts the message names the FIX. -------
+
+
+def test_a_v1_config_is_refused_and_names_the_migration_command(tmp_path):
+    """Row 1. An absent ``schema_version`` is the v1 statement (C-05)."""
+    t1_path = write_split(
+        tmp_path / "cfg", bodies={"build_model": {}}, schema_version=None
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    message = str(excinfo.value)
+    assert cc.MIGRATION_COMMAND in message, "the fix is a command, so name it"
+    assert str(t1_path) in message, "and name the file to run it on"
+    assert cc.MIGRATION_DOC in message
+
+
+def test_a_lower_schema_version_is_refused_the_same_way(tmp_path):
+    """Row 1's other half: an explicit 1 says what an absent key says."""
+    t1_path = write_split(
+        tmp_path / "cfg", bodies={"build_model": {}}, schema_version=1
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    assert cc.MIGRATION_COMMAND in str(excinfo.value)
+
+
+def test_the_schema_check_runs_before_every_other_refusal(tmp_path):
+    """Ordering is a contract, not an implementation detail.
+
+    A v1 document trips half a dozen refusals at once. Reporting any of the
+    others would send a user to fix ONE key in a file that needs migrating
+    whole, and they would then meet the next one. This builds a document that
+    is wrong in three ways and asserts which one it is told about.
+    """
+    directory = tmp_path / "cfg"
+    directory.mkdir()
+    t1_path = directory / "t1.yml"
+    t1_path.write_text(
+        yaml.safe_dump(
+            {
+                "project": {"project_dir": "p", "static_dir": "config"},
+                "shared": {"basin": {"region": "x"}, "clim_historical": "era5"},
+                "workflows": {"build_model": {"enabled": True}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    message = str(excinfo.value)
+    assert cc.MIGRATION_COMMAND in message
+    assert "static_dir" not in message, (
+        "a v1 document must be told to migrate, not sent to fix one of the many "
+        "individual keys that migrating would fix"
+    )
+
+
+@pytest.mark.parametrize(
+    ("path", "planted", "names"),
+    [
+        ("project.static_dir", {"project": {"static_dir": "config"}}, "deleted"),
+        (
+            "project.data_sources",
+            {"project": {"data_sources": "catalog.yml"}},
+            "project.catalog",
+        ),
+        (
+            "basin.gauge_points",
+            {"basin": {"gauge_points": "pts.csv"}},
+            "basin.output_locations",
+        ),
+    ],
+)
+def test_a_retired_t1_key_is_refused_and_names_its_new_home(
+    tmp_path, path, planted, names
+):
+    """Row 2, at T1. The message names WHERE IT WENT, not merely that it is bad.
+
+    Reached only by a document already claiming ``schema_version: 2`` — a
+    HALF-migrated one — which is what makes naming the individual key worth
+    more here than a generic "run the migration".
+    """
+    directory = tmp_path / path.replace(".", "_")
+    directory.mkdir(parents=True)
+    document = {
+        "schema_version": cc.SCHEMA_VERSION,
+        "project": {"project_dir": "p"},
+        **copy.deepcopy(MINIMAL_T1_SECTIONS),
+        "workflows": {"build_model": {"enabled": True}},
+    }
+    for section, body in planted.items():
+        document.setdefault(section, {}).update(body)
+    t1_path = directory / "t1.yml"
+    t1_path.write_text(yaml.safe_dump(document), encoding="utf-8")
+
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    message = str(excinfo.value)
+    assert path in message
+    assert names in message
+
+
+def test_a_retired_t2_key_is_refused_and_names_its_new_home(tmp_path):
+    """Row 2, in a workflow file."""
+    t1_path = write_split(
+        tmp_path / "cfg",
+        bodies={"run_stress_test": {"realizations_num": 2, "run_historical": True}},
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path, "run_stress_test")
+    message = str(excinfo.value)
+    assert "n_realizations" in message, "name the key it became"
+    assert "st_0" in message, "and say what deleting `run_historical` does"
+    assert "run_stress_test file" in message, "and which file to open"
+
+
+def test_a_retired_key_is_refused_in_any_workflow_file(tmp_path):
+    """The ``T2.*`` wildcard: some names are gone everywhere, not in one file."""
+    for owner in ("build_model", "run_stress_test"):
+        t1_path = write_split(
+            tmp_path / owner, bodies={owner: {"reporting": {"title": "anywhere"}}}
+        )
+        with pytest.raises(ValueError) as excinfo:
+            compose(t1_path, owner)
+        message = str(excinfo.value)
+        assert "reporting" in message
+        assert "deleted" in message and "C-77" in message
+
+
+def test_unset_climate_selection_is_refused_when_wf1_or_wf3_runs(tmp_path):
+    """Row 3. The message names the candidates AND how to choose between them."""
+    t1_path = write_split(
+        tmp_path / "cfg",
+        sections={
+            "basin": {"region": "x"},
+            "climate": {"sources": ["era5", "chirps"]},
+        },
+        bodies={"build_model": {}},
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    message = str(excinfo.value)
+    assert "climate.selected" in message
+    assert "era5" in message and "chirps" in message, "name the candidates"
+    assert "analyze_climate" in message, "and the workflow that compares them"
+    assert "comparison" in message, "and where it writes the comparison"
+
+
+def test_unset_climate_selection_is_valid_with_only_wf0_enabled(tmp_path):
+    """D-10.5, and it is a decision rather than a gap.
+
+    "I have candidates, I have not chosen yet" is a legitimate project state,
+    and it is exactly the state WF0 exists to resolve: it compares the
+    candidates, and the comparison is what a user reads in order to choose.
+    Refusing it would make the workflow that answers the question impossible to
+    run until the question is answered.
+    """
+    t1_path = write_split(
+        tmp_path / "cfg",
+        sections={
+            "basin": {"region": "x"},
+            "climate": {"sources": ["era5", "chirps"]},
+        },
+        bodies={"analyze_climate": {}, "build_model": {}, "run_stress_test": {}},
+        enabled={
+            "analyze_climate": True,
+            "build_model": False,
+            "run_stress_test": False,
+        },
+    )
+    composed = compose(t1_path, "analyze_climate")
+    assert composed["climate"]["sources"] == ["era5", "chirps"]
+    assert composed["climate"].get("selected") is None
+
+
+def test_a_non_member_climate_selection_is_refused_and_names_the_set(tmp_path):
+    """Row 4. A typo here otherwise builds a model on a dataset nobody listed."""
+    t1_path = write_split(
+        tmp_path / "cfg",
+        sections={
+            "basin": {"region": "x"},
+            "climate": {"sources": ["era5", "chirps"], "selected": "era-5"},
+        },
+        bodies={"build_model": {}},
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    message = str(excinfo.value)
+    assert "era-5" in message
+    assert "era5" in message and "chirps" in message, "name the member set"
+    assert "add" in message, "and both ways out, not just one"
+
+
+def test_an_observation_for_an_undeclared_outvar_is_refused(tmp_path):
+    """Row 5, and D-7.3's whole reason for keying observations by variable.
+
+    Without the check the typo is silent: the evaluation finds no modelled
+    series to compare against and draws an empty panel, which reads as "the
+    model is bad here" rather than "this key is misspelled".
+    """
+    t1_path = write_split(
+        tmp_path / "cfg",
+        sections={
+            "basin": {"region": "x"},
+            "climate": {"sources": ["era5"], "selected": "era5"},
+            "model": {"outvars": ["river discharge"]},
+        },
+        bodies={"build_model": {"observations": {"river disharge": "obs.csv"}}},
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    message = str(excinfo.value)
+    assert "river disharge" in message
+    assert "river discharge" in message, "name the outvars that ARE declared"
+    assert "model.outvars" in message, "and where to add it if it belongs"
+
+
+def test_an_observation_for_a_declared_outvar_composes(tmp_path):
+    """The other direction, so the check cannot pass by refusing everything."""
+    t1_path = write_split(
+        tmp_path / "cfg",
+        sections={
+            "basin": {"region": "x"},
+            "climate": {"sources": ["era5"], "selected": "era5"},
+            "model": {"outvars": ["river discharge"]},
+        },
+        bodies={"build_model": {"observations": {"river discharge": "obs.csv"}}},
+    )
+    section = compose(t1_path)["workflows"]["build_model"]
+    assert section["observations"] == {"river discharge": "obs.csv"}
+
+
+@pytest.mark.parametrize("axis", ["temp", "precip"])
+def test_a_perturbation_axis_without_a_trajectory_is_refused(tmp_path, axis):
+    """Row 6. Both axes, because "either" is the claim and one is not both."""
+    perturbations = {
+        "temp": {"n_levels": 2, "trajectory": "transient"},
+        "precip": {"n_levels": 3, "trajectory": "transient"},
+    }
+    perturbations[axis].pop("trajectory")
+    t1_path = write_split(
+        tmp_path / "cfg",
+        bodies={"run_stress_test": {"climate_perturbations": perturbations}},
+    )
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path, "run_stress_test")
+    message = str(excinfo.value)
+    assert axis in message
+    assert "NO default" in message, "say there is no default"
+    assert "deliberately" in message, "and that this is a decision, not an omission"
+    assert "step" in message and "transient" in message, "and name the two values"
+
+
+def test_both_axes_with_a_trajectory_compose(tmp_path):
+    """The other direction for row 6."""
+    t1_path = write_split(
+        tmp_path / "cfg",
+        bodies={
+            "run_stress_test": {
+                "climate_perturbations": {
+                    "temp": {"n_levels": 2, "trajectory": "step"},
+                    "precip": {"n_levels": 3, "trajectory": "transient"},
+                }
+            }
+        },
+    )
+    section = compose(t1_path, "run_stress_test")["workflows"]["run_stress_test"]
+    assert section["climate_perturbations"]["temp"]["trajectory"] == "step"
+
+
+def test_a_missing_config_path_names_deleting_the_key_as_the_fix(tmp_path):
+    """Row 7. The fix a user does not think of: a workflow may have NO settings.
+
+    D-8.7 makes an omitted ``config_path`` legal and distinct from an empty
+    file, so "delete the key" is a real answer rather than a workaround — and
+    it is the right one whenever the file was never written rather than
+    mislaid.
+    """
+    directory = tmp_path / "cfg"
+    t1_path = write_split(directory, bodies={"build_model": {"a": 1}})
+    (directory / "snake_config_test_build_model.yml").unlink()
+    with pytest.raises(ValueError) as excinfo:
+        compose(t1_path)
+    message = str(excinfo.value)
+    assert "does not exist" in message
+    assert "delete the `config_path` key" in message
+    assert "resolved against" in message, "and say what it was anchored at"

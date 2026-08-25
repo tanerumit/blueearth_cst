@@ -32,11 +32,15 @@ Canonical ruleset: `AGENTS.md`. Argument by `C-nn`:
 - **P0 BLOCKS EVERY OTHER PHASE.** *(Revised 2026-08-24 after external round 1,
   finding `ext1-3`.)* v1 of this brief let P1–P5 run concurrently with P0 and
   blocked only the G6 claim. That was wrong for a repo-specific reason: the
-  baseline fixture is **untracked and shared between worktrees**, so the moment
-  any phase migrates a `test_case/` config and a WF3 run touches it, the
-  pre-change state is gone and cannot be recovered from git — it was never in
-  git. No implementation commit lands until P0 has recorded the four data
-  targets' hashes and provenance into a TRACKED file (design D-14.3).
+  baseline fixture is **untracked, so within any one worktree it survives branch
+  switches and reflects whatever last ran there.** The moment a phase migrates a
+  `test_case/` config and a WF3 run touches it, that worktree's pre-change state
+  is gone and cannot be recovered from git — it was never in git. No
+  implementation commit lands until P0 has recorded the four data targets'
+  hashes and provenance into a TRACKED file (design D-14.3).
+  *(Corrected 2026-08-25: an earlier wording said "shared between worktrees".
+  It is not — each worktree holds its own copy, verified by distinct inodes. The
+  hazard is per-worktree and the conclusion is unchanged.)*
 - **P1 → P2.** The guard reads the composed document; the composition must be
   correct before the guard is re-pointed at it.
 - **P3 → P4.** The `test_case/` sets are migrated BY the rewriter, which makes

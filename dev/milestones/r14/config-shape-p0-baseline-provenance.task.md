@@ -15,8 +15,11 @@ Canonical ruleset: `AGENTS.md`. Program: `config-shape-master-brief.md`.
 - Those two facts cannot both be current. `dev/milestones/r13/baseline-pass-2-result.md`
   and the manifest's mtime suggest R13's pass 2 may have re-recorded it.
 
-**Must run from the PRIMARY checkout, not a lane** — the fixture is shared, so
-a lane-local WF3 run contaminates every other worktree's gate.
+**Must run from the PRIMARY checkout, not a lane** — and the reason is NOT
+cross-worktree contamination. Each worktree holds its OWN fixture copy (verified
+2026-08-25, distinct inodes). The primary's copy is the reference one the
+manifest was recorded against; a lane's is a seeded snapshot of unknown vintage,
+so a green gate in a lane is evidence about that lane's copy and nothing more.
 
 ### Goal
 
@@ -25,9 +28,10 @@ of known provenance — and record the pre-change state somewhere it cannot be
 lost.
 
 **This phase BLOCKS every other phase** (design D-14.3, external finding
-`ext1-3`). The fixture is untracked and shared between worktrees, so once any
-phase migrates a config and a WF3 run touches it, the before-state is
-unrecoverable: it was never in git.
+`ext1-3`). The fixture is untracked, so within a worktree it survives branch
+switches and reflects whatever last ran there. Once a phase migrates a config
+and a WF3 run touches it, THAT worktree's before-state is unrecoverable — it was
+never in git.
 
 ### Non-goals
 

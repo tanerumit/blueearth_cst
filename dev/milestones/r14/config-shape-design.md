@@ -1,4 +1,4 @@
-# R14 — Config shape: Design (DRAFT — v8)
+# R14 — Config shape: Design (DRAFT — v9)
 
 > **Status: DRAFT v3 — 2026-08-24, revised against external round 1.**
 > Authored directly by the driver at the owner's instruction. The
@@ -831,10 +831,19 @@ falsifier.**
 
 v2 required this "before G6 depends on it" and let implementation proceed
 alongside. That is too late, and the reason is specific to this repo: **the
-fixture is untracked and SHARED between worktrees**, so the moment any phase
-migrates a `test_case/` config and a WF3 run touches it, the pre-change state
-is unrecoverable locally. A contaminated before-state cannot be reconstructed
-from git, because it was never in git.
+fixture is untracked, so within any one worktree it survives branch switches and
+reflects whatever last ran there.** The moment a phase migrates a `test_case/`
+config and a WF3 run touches it, that worktree's pre-change state is
+unrecoverable — it cannot be reconstructed from git, having never been in git.
+
+*(Erratum 2026-08-25: this paragraph said "SHARED between worktrees" through v7.
+It is not. Each worktree holds its OWN copy — verified by distinct inodes — so
+the sharing is across BRANCHES within a worktree, which is what
+`check_baseline`'s own warning says. The wording was the driver's, not the
+reviewer's. The hazard is per-worktree and every conclusion below stands.
+**One consequence does change:** a green gate run from a LANE is evidence about
+that lane's seeded copy, whose vintage is unknown — which is the real reason P0
+runs from the primary, whose copy is the one the manifest was recorded against.)*
 
 Therefore, **before the first R14 implementation commit**:
 
@@ -1023,6 +1032,7 @@ One item remains a PREREQUISITE rather than a question:
 |---|---|---|
 | v1 | 2026-08-24 | Initial draft. Authored directly by the driver; `design-review-loop` waived by the owner. Carried two open decisions (D-7.10, D-12.1) and one prerequisite (D-14.3). |
 | v2 | 2026-08-24 | D-7.10 and D-12.1 RULED under owner authorization; §17 now carries no open questions. `C-48` boarded as `t2608242212`. Submitted for a single external review round (`gpt-5.6-sol`) at the owner's request — the internal lens panel stays waived. |
+| v9 | 2026-08-25 | Erratum on `D-14.3`'s mechanism: the baseline fixture is NOT shared between worktrees — each holds its own copy (distinct inodes). It is shared across BRANCHES within a worktree. The wording was the driver's addition to `ext1-3`, not the reviewer's. The finding and every conclusion stand; what changes is that a lane-run gate is evidence only about that lane's seeded copy, which is the real reason P0 runs from the primary. |
 | v8 | 2026-08-25 | `C-35` WITHDRAWN — already done 2026-08-13. It was the register's most-trusted row and the fourth stale premise from the 2026-08-12 appendix. Exposed a gap in the 2026-08-24 re-measure: it tested SOURCE KEYS against the config surface, so MECHANISM rows (code identifiers) were never checked. Now swept — `C-35` is the only dead one. |
 | v7 | 2026-08-25 | `D-12.3` corrected: the rename touches **35 files, not 11** — the board figure predates R13's split. `D-12.5` added: `config/templates/archive/` is NOT renamed and becomes a sweep allowlist entry instead. Third stale figure from the same 2026-08-19 note. |
 | v6 | 2026-08-24 | `D-11.8` RULED: `ruamel.yaml` round-trip, promoted from transitive to DECLARED in `pixi.toml` — it is already in the lock at 0.19.1 via `dvc`/`gto`, so the approval enlarges nothing, but leaving it undeclared would put a load-bearing migration tool on an accident. `D-14.9` adds the comment-survival falsifier. §17 now has no open decisions. |

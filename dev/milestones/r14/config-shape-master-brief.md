@@ -20,6 +20,7 @@ Canonical ruleset: `AGENTS.md`. Argument by `C-nn`:
 |---|---|---|---|
 | P0 | `general-purpose` (runs from the PRIMARY, not a lane) | `t2608220920`, `dev/baseline/manifest.json` | The baseline's provenance resolved AND the four data targets' hashes recorded into a tracked file. **Blocks every other phase.** |
 | P1 | `python-engineer` | design §10 | Loader, seam re-derivation and parse-time refusals against the new layout; `HOISTED_SECTIONS` retired |
+| **P1b** | `python-engineer` | design §7.2–§7.5, P1 | **The per-workflow (T2) key readers.** Added 2026-08-25 by owner ruling — no phase owned them, and without them no entry point runs v2 |
 | P2 | `python-engineer` | design §9, P1 | Guard derived from the snapshot; `compute:` excluded from `CONFIG_PROJECTION` |
 | P3 | `python-engineer` | design §11, register | The v1→v2 rewriter, register-driven, with the two non-preserving hooks |
 | P4 | `python-engineer` | design §7, §13, P3 | Templates (5, incl. the new WF0 one), four `test_case/` sets, fixture, `presplit/` v1→v2 pair — migrated BY the rewriter |
@@ -43,6 +44,20 @@ Canonical ruleset: `AGENTS.md`. Argument by `C-nn`:
   hazard is per-worktree and the conclusion is unchanged.)*
 - **P1 → P2.** The guard reads the composed document; the composition must be
   correct before the guard is re-pointed at it.
+- **P1 → P1b → P2, and P1b → P4.** *(Added 2026-08-25; see the revision line.)*
+  P1 moved the T1 reads only. The T2 key renames (`C-22`, `C-25`, `C-29`,
+  `C-31`, `C-32`, `C-33`, `C-34`, `C-56`, `C-57`, `C-59`, `C-60`, `C-63`,
+  `C-66`, `C-67`, `C-68`, `C-69`) plus `C-54`'s destination were owned by no
+  phase. Both orderings are forced rather than preferred:
+  **P1b before P2**, because P2's three rung-2 falsifiers each say *"build a
+  model … run WF3"* and WF3 can run against nothing until the T2 readers move —
+  a v1 config hits P1's `schema_version` refusal, a v2 config hits
+  `KeyError: 'stress_test'`;
+  **P1b before P4**, because P4's rung 1 (*"dry-runs all four entry points
+  against every migrated set"*) proves nothing while the readers still want v1
+  keys. That second constraint is what ruled out widening P4 to absorb them.
+  P1b needs no rewriter — the readers are code written against design §7 — so
+  it may run concurrently with P3.
 - **P3 → P4.** The `test_case/` sets are migrated BY the rewriter, which makes
   P4 the rewriter's first real test rather than a parallel hand-edit.
 - **P5 after P4**, and **P5 is one atomic commit** (see its brief). Renaming
@@ -53,7 +68,9 @@ Canonical ruleset: `AGENTS.md`. Argument by `C-nn`:
   de-duplication in two modules, `C-83` a contraction sweep that touches no
   config key.
 
-P1 and P3 may run concurrently — disjoint paths, no shared file.
+P1b and P3 may run concurrently — disjoint paths, no shared file. (This read
+"P1 and P3" until 2026-08-25; P1 is done, and P1b inherits the property for the
+same reason — it touches readers, P3 adds a script.)
 
 ### Shared constraints
 
@@ -68,8 +85,17 @@ P1 and P3 may run concurrently — disjoint paths, no shared file.
   the default for optional.
 - **K6.** `workflow.configfiles[0]` forwarded as `config_path` to downstream
   **Python** scripts.
-- **`dev/milestones/**` is never swept** by any rename — sealed records,
-  frozen by `tests/test_sealed_records.py`.
+- **`dev/milestones/**` is never swept** by any rename. These are milestone
+  records and their value is that they are unedited: freshening paths in one
+  makes a stale document read as current while its line numbers and module
+  paths still lie. *(Corrected 2026-08-25: they are NOT "frozen by
+  `tests/test_sealed_records.py`" — `dev/reference/sealed-records.yml` is the
+  entire list of sealed documents and no R14 file is in it. The no-sweep rule
+  is a convention, enforced by review; only a REGISTERED record is enforced by
+  a test. AGENTS.md says to read the registry rather than guess, and this
+  clause was the guess.)* Amending a brief's own text — as the revision line
+  below does — is a different act from sweeping it, and its revision clause
+  invites it.
 - No new dependencies without owner approval.
 
 ### Human gates
@@ -142,7 +168,8 @@ save gate cost.
 | Phase | Brief | State |
 |---|---|---|
 | P0 | `config-shape-p0-baseline-provenance.task.md` | not started |
-| P1 | `config-shape-p1-loader.task.md` | not started |
+| P1 | `config-shape-p1-loader.task.md` | **DONE** 2026-08-25 (T1 reads only; see P1b) |
+| P1b | `config-shape-p1b-readers.task.md` | not started |
 | P2 | `config-shape-p2-identity.task.md` | not started |
 | P3 | `config-shape-p3-rewriter.task.md` | not started |
 | P4 | `config-shape-p4-configs.task.md` | not started |
@@ -151,6 +178,17 @@ save gate cost.
 | P7 | `config-shape-p7-independent.task.md` | not started |
 
 ---
+
+*Revision: v3, 2026-08-25 — **P1b added** by owner ruling on P1's finding that
+the T2 key renames (~280 sites, 32 files, 16 register rows) and `C-54`'s
+`advanced_settings` destination were owned by no phase, which made the bundle
+unassemblable rather than merely incomplete. Its position is forced by P2's and
+P4's own validation, not chosen. P1 is DONE and delivered the T1 reads only;
+its declared-red set is tracked in `tests/data/r14_expected_red.txt`, and the
+measurement behind P1b is board item `t2608251900`. One correction of record
+from the same finding: `dev/milestones/**` is NOT sealed —
+`dev/reference/sealed-records.yml` is the entire list and R14 is not in it, so
+this file is amended here as its own revision clause instructs, not frozen.*
 
 *Revision: v2, 2026-08-24 — re-sequenced after external round 1 (`ext1-3`):
 P0 promoted from concurrent to a blocking pre-implementation gate. P3 gains the

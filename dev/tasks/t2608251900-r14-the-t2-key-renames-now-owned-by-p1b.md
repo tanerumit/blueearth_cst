@@ -1,7 +1,7 @@
 ---
-title: R14 - the T2 key renames are unowned, and the bundle cannot go green without them
+title: R14 - the T2 key renames, now owned by P1b
 type: todo-item
-status: blocked
+status: backlog
 effort: 5
 area: config shape / R14
 origin: R14 P1
@@ -11,7 +11,18 @@ updated: 2026-08-25
 ---
 
 > [!note] Overview
-> **What** — R14's per-workflow (T2) key renames have no owner in the master brief's phase table. P1 moved the T1 reads (`project:`, `basin:`, `climate:`, `model:` - what `shared:` dissolved into) and stopped there, because P1's permitted scope is `config_composition.py`, `snake_utils.py`, the four `*.smk` and `tests/`. The T2 renames - `C-22`, `C-25`, `C-29`, `C-31`, `C-32`, `C-33`, `C-56`, `C-59`, `C-60`, `C-66`, `C-67`, `C-68`, `C-69` - are ~280 sites across `blueearth_cst/experiment/`, `blueearth_cst/projections/` and `blueearth_cst/model/`. None of those three package directories is in ANY phase's permitted scope, and none of the sites is in a Snakefile.
+> **RESOLVED 2026-08-25 — owner ruled a new phase, `P1b`.** The brief is
+> `dev/milestones/r14/config-shape-p1b-readers.task.md`; the master brief is
+> reissued at v3 with `P1 → P1b → P2` and `P1b → P4`. Both orderings are forced
+> by other phases' own validation, not chosen: P2's rung-2 falsifiers need WF3
+> to RUN, and P4's rung 1 is vacuous while the readers still want v1 keys —
+> which is what ruled out widening P4 to absorb them. `C-54`'s
+> `advanced_settings.runtime.julia_threads` destination is folded into the same
+> phase, since it is a coupled edit with the closed `_ADVANCED_SETTINGS_SCHEMA`.
+> This item stays open as the MEASUREMENT behind that ruling; close it when P1b
+> lands.
+>
+> **What** — R14's per-workflow (T2) key renames had no owner in the master brief's phase table. P1 moved the T1 reads (`project:`, `basin:`, `climate:`, `model:` - what `shared:` dissolved into) and stopped there, because P1's permitted scope is `config_composition.py`, `snake_utils.py`, the four `*.smk` and `tests/`. The T2 renames - `C-22`, `C-25`, `C-29`, `C-31`, `C-32`, `C-33`, `C-56`, `C-59`, `C-60`, `C-66`, `C-67`, `C-68`, `C-69` - are ~280 sites across `blueearth_cst/experiment/`, `blueearth_cst/projections/` and `blueearth_cst/model/`. None of those three package directories is in ANY phase's permitted scope, and none of the sites is in a Snakefile.
 > **Why** — This blocks Gate 5. Until the T2 reads move, no entry point runs a v2 config: WF2 stops at `clim_project` (`C-25`) and WF3 at `stress_test` (`C-68`), both at parse time. `K3` says the bundle merges as one green whole, so an unowned body of work between P4 and Gate 5 means the bundle can never be assembled. It is a gap in the phase table, not in any phase's execution.
 > **Effort** — large; comparable to P3 or P4, and it interlocks with both.
 
@@ -61,14 +72,15 @@ it is a grep for one literal.
 
 ## Progress
 
-- [ ] Owner decides where this lands: a new phase between P4 and P5, a widening
-      of P4's scope, or a separate milestone after the bundle.
-- [ ] Whoever takes it: the T2 renames and `C-54`'s regroup travel together
-      with P4's config migration, because a migrated config and an unmigrated
-      reader fail on each other.
+- [x] Owner decides where this lands — 2026-08-25, a new phase `P1b` between
+      P1 and P2, with `C-54`'s destination folded in.
+- [x] Brief written: `dev/milestones/r14/config-shape-p1b-readers.task.md`.
+- [x] Master brief reissued at v3 with the sequencing and the phase index.
+- [ ] P1b executed; close this item then.
 
 ## Links
 
-- `dev/milestones/r14/config-shape-master-brief.md` - the phase table with the gap
+- `dev/milestones/r14/config-shape-p1b-readers.task.md` - the phase that took it
+- `dev/milestones/r14/config-shape-master-brief.md` - v3 phase table and sequencing
 - `dev/milestones/r14/config-shape-design.md` §7.2-§7.4 - the target T2 shapes
 - `tests/test_v2_config_shape.py` - the executable boundary marker

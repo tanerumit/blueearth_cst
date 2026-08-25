@@ -41,7 +41,7 @@ config_path = workflow.configfiles[0]
 # HOISTED above the first config read (R13 D-8.2): the projection is a
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
-CONFIG_PROJECTION = ("project", "shared", "workflows.analyze_projections")
+CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_projections")
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -60,7 +60,10 @@ WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
 
 # R01 schema
 project_cfg = config["project"]
-shared_cfg = config["shared"]
+# R14 D-7.2: `shared:` dissolved into sections by KIND. `climate_cfg` is the
+# only new binding -- `basin:` and `model:` are read at their use sites, which
+# is where the v1 `shared_cfg` indirection was buying nothing.
+climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["analyze_projections"]
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
@@ -110,11 +113,11 @@ CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(
 STORE_DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
 
 # Shared — the model-free basin delineation the climate store extracts against.
-basin_cfg = shared_cfg["basin"]
+basin_cfg = config["basin"]
 model_region = get_config(basin_cfg, "region", optional=False)
 basin_hydrography = get_config(basin_cfg, "hydrography", DEFAULT_HYDROGRAPHY)
 basin_index = get_config(basin_cfg, "basin_index", DEFAULT_BASIN_INDEX)
-historical_window = get_config(shared_cfg, "historical_window", optional=False)
+historical_window = get_config(climate_cfg, "window", optional=False)
 # `shared.clim_historical` is deliberately NOT read here. WF2 has no climate
 # store and no rule that consumes the observed source: it read the key
 # `optional=False` and never used the value, so a config omitting it failed WF2
@@ -159,7 +162,7 @@ if _legacy_hyd is not None:
         "It never reached the change-factor arithmetic before, which always "
         "used Jan, so a non-Jan value will move every change factor once."
     )
-water_year_start = resolve_water_year_start(get_config(shared_cfg, "water_year_start"))
+water_year_start = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
 time_horizon_hist = get_config(my_cfg, "historical_year_range", optional=False)
 future_horizons = get_config(my_cfg, "future_horizons", optional=False)
 

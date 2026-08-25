@@ -16,30 +16,40 @@ from blueearth_cst.shared.snake_utils import (
 
 
 def _window(start, end):
-    return {"starttime": start, "endtime": end}
+    """R14 `C-70`: the window is a pair of INCLUSIVE YEARS, not ISO timestamps.
+
+    The retype is absorbed in ``historical_window_bounds`` (the one parser), so
+    every case below asserts the same property it always did on the new
+    spelling: `{start: 2000, end: 2016}` spans 2000-01-01 to 2016-12-31.
+    """
+    return {"start": start, "end": end}
 
 
 # --- historical_window_days ------------------------------------------------
 
 
 def test_span_of_a_full_year():
-    assert historical_window_days(_window("2000-01-01", "2001-01-01")) == 366
+    assert historical_window_days(_window(2000, 2000)) == 365
 
 
-def test_iso_datetime_endpoints_are_accepted():
-    """The spelling every shipped config uses."""
-    days = historical_window_days(_window("2000-01-01T00:00:00", "2020-12-31T00:00:00"))
-    assert days == 7670
+def test_year_endpoints_are_accepted():
+    """The spelling every shipped config uses since R14, and it is INCLUSIVE.
+
+    2000..2020 is 2000-01-01 to 2020-12-31, the same span the v1 ISO pair
+    spelled out -- which is what makes the retype value-preserving for the
+    configs the toolbox ships.
+    """
+    assert historical_window_days(_window(2000, 2020)) == 7670
 
 
 def test_missing_key_names_the_key():
-    with pytest.raises(ValueError, match="missing 'endtime'"):
-        historical_window_days({"starttime": "2000-01-01"})
+    with pytest.raises(ValueError, match="missing 'end'"):
+        historical_window_days({"start": 2000})
 
 
 def test_unparseable_endpoint_names_the_key_and_value():
-    with pytest.raises(ValueError, match=r"historical_window.starttime"):
-        historical_window_days(_window("not-a-date", "2001-01-01"))
+    with pytest.raises(ValueError, match=r"climate.window.start"):
+        historical_window_days(_window("not-a-year", 2001))
 
 
 def test_non_mapping_is_rejected():
@@ -82,21 +92,16 @@ def test_leap_day_clamps_across_a_non_leap_century():
 
 
 def test_exactly_the_floor_is_accepted():
-    assert validate_historical_window(_window("2000-01-01", "2016-01-01")) > 0
+    assert validate_historical_window(_window(2000, 2016)) > 0
 
 
 def test_one_day_under_the_floor_is_rejected():
     with pytest.raises(ValueError, match=f"{MIN_HISTORICAL_YEARS}-year minimum"):
-        validate_historical_window(_window("2000-01-01", "2015-12-31"))
+        validate_historical_window(_window(2000, 2015))
 
 
 def test_the_shipped_window_passes():
-    assert (
-        validate_historical_window(
-            _window("2000-01-01T00:00:00", "2020-12-31T00:00:00")
-        )
-        == 7670
-    )
+    assert validate_historical_window(_window(2000, 2020)) == 7670
 
 
 def test_rejection_names_the_window_its_length_the_floor_and_the_cause():
@@ -104,10 +109,14 @@ def test_rejection_names_the_window_its_length_the_floor_and_the_cause():
     MissingOutputException nine rules into the DAG, or a weathergenr crash a
     whole workflow away."""
     with pytest.raises(ValueError) as excinfo:
-        validate_historical_window(_window("2000-01-01", "2006-01-01"))
+        validate_historical_window(_window(2000, 2006))
     message = str(excinfo.value)
-    assert "2000-01-01" in message and "2006-01-01" in message
-    assert "6.0 years" in message
+    assert "2000-01-01" in message and "2006-12-31" in message
+    # 7.0, not 6.0: the endpoints are INCLUSIVE years since R14 (`C-70`), so
+    # 2000..2006 spans seven of them. The v1 ISO pair 2000-01-01..2006-01-01
+    # spanned six, and the number moving here is the retype being honest rather
+    # than a defect -- the same span in days, counted from a different endpoint.
+    assert "7.0 years" in message
     assert str(MIN_HISTORICAL_YEARS) in message
     assert "weathergenr" in message
 
@@ -116,7 +125,7 @@ def test_reversed_window_is_rejected_and_says_so():
     """A negative span is under the floor, but 'below the minimum' alone would
     send the reader looking for missing data rather than a swapped pair."""
     with pytest.raises(ValueError) as excinfo:
-        validate_historical_window(_window("2020-01-01", "2000-01-01"))
+        validate_historical_window(_window(2020, 2000))
     assert "BEFORE starttime" in str(excinfo.value)
 
 
@@ -125,4 +134,4 @@ def test_a_ten_year_window_is_rejected_not_merely_warned():
     record WF3 would reject. An earlier revision let this through with a
     warning."""
     with pytest.raises(ValueError):
-        validate_historical_window(_window("2000-01-01", "2010-01-01"))
+        validate_historical_window(_window(2000, 2010))

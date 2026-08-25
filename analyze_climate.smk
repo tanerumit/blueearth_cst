@@ -54,7 +54,7 @@ config_path = workflow.configfiles[0]
 # HOISTED above the first config read (R13 D-8.2): the projection is a
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
-CONFIG_PROJECTION = ("project", "shared", "workflows.analyze_climate")
+CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_climate")
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -73,7 +73,10 @@ WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
 
 # R01 schema — three top-level sections.
 project_cfg = config["project"]
-shared_cfg = config["shared"]
+# R14 D-7.2: `shared:` dissolved into sections by KIND. `climate_cfg` is the
+# only new binding -- `basin:` and `model:` are read at their use sites, which
+# is where the v1 `shared_cfg` indirection was buying nothing.
+climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["analyze_climate"]
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
@@ -82,19 +85,19 @@ project_dir = get_config(project_cfg, "project_dir", optional=False)
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
 DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
 
-basin_cfg = shared_cfg["basin"]
+basin_cfg = config["basin"]
 spatial_cfg = parse_spatial_config(basin_cfg, my_cfg)
 model_region = get_config(basin_cfg, "region", optional=False)
 basin_hydrography = spatial_cfg.hydrography
 basin_index = spatial_cfg.basin_index
-historical_window = get_config(shared_cfg, "historical_window", optional=False)
+historical_window = get_config(climate_cfg, "window", optional=False)
 # ONE minimum window for the whole toolbox, enforced identically here and at
 # extraction. Parse time, before any rule executes -- same stance as WF1.
 validate_historical_window(historical_window)
 # The water year the climate figures aggregate on, from the one shared key WF1,
 # WF2 and WF3 also read. Figures are terminal artifacts, so this changes no
 # number -- but a figure labelled 'annual' should mean the basin's year.
-WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_start"))
+WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
 
 # --- the candidate source set -------------------------------------------------
 # THE PROJECT'S OWN SOURCE IS ALWAYS FIRST AND ALWAYS PRESENT. `candidate_sources`
@@ -106,7 +109,7 @@ WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_s
 # Order is declaration order with duplicates dropped, NOT sorted: the primary
 # source leads every figure set and every comparison table, which is the reading
 # order a person wants when the question is "should I switch away from it?".
-clim_source = get_config(shared_cfg, "clim_historical", optional=False)
+clim_source = get_config(climate_cfg, "selected", optional=False)
 _extra_sources = get_config(my_cfg, "candidate_sources", []) or []
 if isinstance(_extra_sources, str):
     raise ValueError(

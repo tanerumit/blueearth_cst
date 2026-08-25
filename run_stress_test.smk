@@ -46,7 +46,7 @@ config_path = workflow.configfiles[0]
 # (§3b/§3d; config_path is deliberately NOT a guard param — it varies per
 # experiment and would thrash the shared artifact on A<->B alternation).
 guarded_sections = (
-    "project", "shared.basin", "workflows.build_model",
+    "project", "basin", "workflows.build_model",
     "workflows.analyze_projections",
 )
 
@@ -90,7 +90,10 @@ run_logged = str(Path(workflow.basedir) / "blueearth_cst" / "shared" / "run_logg
 
 # R01 schema
 project_cfg = config["project"]
-shared_cfg = config["shared"]
+# R14 D-7.2: `shared:` dissolved into sections by KIND. `climate_cfg` is the
+# only new binding -- `basin:` and `model:` are read at their use sites, which
+# is where the v1 `shared_cfg` indirection was buying nothing.
+climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["run_stress_test"]
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
@@ -151,19 +154,19 @@ else:
 experiment = validate_experiment_name(experiment, project_dir)
 
 # The randomization seed every stochastic step uses, resolved ONCE here so one
-# value is fixed for the whole DAG. `shared.seed` is optional: absent it takes
+# value is fixed for the whole DAG. `seed:` is optional: absent it takes
 # `defaults.seed` from config/advanced_settings.yml, and `auto` derives it from
 # the experiment name -- which is why this must sit AFTER the name is resolved
 # and validated above. Deriving from the name rather than the clock is what
 # keeps re-runs idempotent: a seed that changed per invocation would rewrite
 # rule 3.10's output every time and re-run all of WF3, the same trap
 # `resolve_default_experiment_name` documents for dated experiment names.
-SEED = resolve_seed(get_config(shared_cfg, "seed"), experiment)
+SEED = resolve_seed(get_config(my_cfg, "seed"), experiment)
 
-# First month of the water year, from the same shared key WF2 and the climate
+# First month of the water year, from the same `climate:` key WF2 and the climate
 # figures read. weathergenr takes it as a month NUMBER, so the conversion
 # happens at that seam rather than by asking the config for a second spelling.
-WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_start"))
+WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
 
 # The Julia invocation for rule 3.15's wflow batch, built the same way WF1
 # builds its own (build_model.smk:94-97). Until 2026-08-13 this rule
@@ -173,7 +176,7 @@ WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_s
 # bulk of the toolbox's compute. tests/test_julia_runtime.py listed this file
 # as the one tolerated offender precisely so adopting julia_prefix would shrink
 # that set; it is now empty.
-julia_threads = get_config(shared_cfg, "julia_threads", DEFAULT_JULIA_THREADS)
+julia_threads = DEFAULT_JULIA_THREADS  # C-54: no project override; advanced_settings owns it
 wflow_julia = julia_prefix(julia_threads)
 
 RLZ_NUM = get_config(my_cfg, "realizations_num", 1)
@@ -232,14 +235,14 @@ def st_ix(m):
 # drift apart.
 ST_BASELINE = st_ix(0)
 
-clim_source = get_config(shared_cfg, "clim_historical", optional=False)
+clim_source = get_config(climate_cfg, "selected", optional=False)
 
 # Region specification for the store's model-free delineation (R07 B1). The two
 # hydrography keys are OPTIONAL; defaults equal the shipped build template's
 # setup_basemaps values, so absent keys leave rule 3.01's guard digest
 # byte-identical. shared.basin is a guarded section, so an experiment config
 # whose values diverge from the wf1 snapshot fails the drift guard.
-basin_cfg = shared_cfg["basin"]
+basin_cfg = config["basin"]
 model_region = get_config(basin_cfg, "region", optional=False)
 basin_hydrography = get_config(basin_cfg, "hydrography", DEFAULT_HYDROGRAPHY)
 basin_index = get_config(basin_cfg, "basin_index", DEFAULT_BASIN_INDEX)
@@ -248,7 +251,7 @@ basin_index = get_config(basin_cfg, "basin_index", DEFAULT_BASIN_INDEX)
 # extract_historical_climate dates come from the config instead of being
 # hardcoded in the script. climate_store_rule reads starttime/endtime off
 # this section and enforces the day-resolution store-key invariant.
-historical_window_cfg = get_config(shared_cfg, "historical_window", optional=False)
+historical_window_cfg = get_config(climate_cfg, "window", optional=False)
 
 # --- The shared historical-climate store (R07 B1) -----------------------------
 # ONE producer contract, built here and identically in build_model.smk,
@@ -382,7 +385,7 @@ guarded_sections_digest = hashlib.sha256(
     json.dumps(
         {
             "project": config.get("project"),
-            "shared.basin": config.get("shared", {}).get("basin"),
+            "basin": config.get("basin"),
             "workflows.build_model": config.get("workflows", {}).get("build_model"),
             "workflows.analyze_projections": config.get("workflows", {}).get("analyze_projections"),
         },
@@ -570,7 +573,7 @@ warn_on_heterogeneous_design(stress_test_cfg)
 refuse_out_of_domain_multipliers(stress_test_cfg)
 
 INDICATOR_TABLES = indicator_tables(
-    get_config(shared_cfg, "wflow_outvars", DEFAULT_WFLOW_OUTVARS, optional=True)
+    get_config(config.get("model") or {}, "outvars", DEFAULT_WFLOW_OUTVARS, optional=True)
 )
 
 # 3.00  all — target aggregator: the experiment's indicator tables

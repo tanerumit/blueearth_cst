@@ -1235,60 +1235,59 @@ def meets_min_historical_years(start, end) -> bool:
     return end >= _shift_years(start, MIN_HISTORICAL_YEARS)
 
 
-def historical_window_days(historical_window) -> int:
-    """Calendar days spanned by a ``shared.historical_window`` mapping.
-
-    Endpoints are the ISO ``starttime``/``endtime`` every config carries. Raises
-    ``ValueError`` naming the offending key when either is missing or
-    unparseable — the same fail-loud stance ``slugify_window`` takes on the same
-    two values.
-    """
-    if not isinstance(historical_window, Mapping):
-        raise ValueError(
-            f"historical_window must be a mapping with starttime/endtime, got "
-            f"{historical_window!r}"
-        )
-    bounds = {}
-    for key in ("starttime", "endtime"):
-        if key not in historical_window:
-            raise ValueError(f"historical_window is missing {key!r}")
-        try:
-            bounds[key] = datetime.fromisoformat(str(historical_window[key]).strip())
-        except ValueError:
-            raise ValueError(
-                f"historical_window.{key} is not an ISO datetime: "
-                f"{historical_window[key]!r}"
-            ) from None
-    return (bounds["endtime"] - bounds["starttime"]).days
-
-
 def historical_window_bounds(historical_window):
-    """``(starttime, endtime)`` of a ``shared.historical_window``, as datetimes.
+    """``(start, end)`` of ``climate.window``, as datetimes.
 
-    Same parsing and same fail-loud errors as ``historical_window_days``, which
-    is written in terms of this.
+    **The R14 retype is absorbed here, and only here** (`C-70`). The project
+    config now declares ``climate.window: {start, end}`` as INCLUSIVE YEARS.
+    This pair of helpers is the one place that already parsed the window, so
+    every caller downstream — ``climate_window.py``, ``add_climate_forcing.py``,
+    ``extract_historical_climate.py``, ``reference_window.py`` — keeps receiving
+    exactly the datetimes it received before, and none of them changed.
+
+    Inclusive means ``{start: 2000, end: 2016}`` spans 2000-01-01 to 2016-12-31.
+    That is value-preserving for every config the toolbox ships: their v1 ISO
+    endpoints were already whole-year aligned on exactly those two dates.
+
+    Raises ``ValueError`` naming the offending key when an endpoint is missing
+    or is not a year — the same fail-loud stance ``slugify_window`` takes on
+    the same two values.
     """
     if not isinstance(historical_window, Mapping):
         raise ValueError(
-            f"historical_window must be a mapping with starttime/endtime, got "
+            f"climate.window must be a mapping with start/end years, got "
             f"{historical_window!r}"
         )
-    bounds = []
-    for key in ("starttime", "endtime"):
+    years = []
+    for key in ("start", "end"):
         if key not in historical_window:
-            raise ValueError(f"historical_window is missing {key!r}")
-        try:
-            bounds.append(datetime.fromisoformat(str(historical_window[key]).strip()))
-        except ValueError:
             raise ValueError(
-                f"historical_window.{key} is not an ISO datetime: "
-                f"{historical_window[key]!r}"
+                f"climate.window is missing {key!r}. It is a pair of INCLUSIVE "
+                "YEARS now, not ISO timestamps: `window: {start: 1990, end: 2020}`."
+            )
+        try:
+            years.append(int(str(historical_window[key]).strip()))
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"climate.window.{key} is not a year: {historical_window[key]!r}. "
+                "`climate.window` takes INCLUSIVE YEARS, not ISO timestamps."
             ) from None
-    return tuple(bounds)
+    start, end = years
+    return (datetime(start, 1, 1), datetime(end, 12, 31))
+
+
+def historical_window_days(historical_window) -> int:
+    """Calendar days spanned by a ``climate.window`` mapping.
+
+    Written in terms of ``historical_window_bounds``, so it inherits the same
+    parsing and the same fail-loud errors.
+    """
+    start, end = historical_window_bounds(historical_window)
+    return (end - start).days
 
 
 def validate_historical_window(historical_window) -> int:
-    """Reject a ``shared.historical_window`` shorter than ``MIN_HISTORICAL_YEARS``.
+    """Reject a ``climate.window`` shorter than ``MIN_HISTORICAL_YEARS``.
 
     Called at ``build_model.smk`` parse time, so a window that cannot
     support a full CST run is rejected BEFORE any rule executes — the same
@@ -1307,26 +1306,26 @@ def validate_historical_window(historical_window) -> int:
     days = historical_window_days(historical_window)
     if not meets_min_historical_years(start, end):
         raise ValueError(
-            f"historical_window {start.date()} .. {end.date()} spans "
+            f"climate.window {start.date()} .. {end.date()} spans "
             f"{days / 365.25:.1f} years, below the "
             f"{MIN_HISTORICAL_YEARS}-year minimum this toolbox requires: "
             f"weathergenr's wavelet decomposition needs at least "
             f"{MIN_HISTORICAL_YEARS} annual observations, so a shorter record "
             f"cannot support a climate stress test. Widen "
-            f"shared.historical_window to >= {MIN_HISTORICAL_YEARS} years"
+            f"climate.window to >= {MIN_HISTORICAL_YEARS} years"
             + ("" if days >= 0 else " (endtime is BEFORE starttime — check the order)")
         )
     return days
 
 
 def resolve_simulation_window(
-    shared_cfg, model_cfg, *, shared_source=None, model_source=None
+    climate_cfg, model_cfg, *, shared_source=None, model_source=None
 ):
     """The window the hydrological model SIMULATES, which is not the record.
 
     Two different questions were one config key until 2026-08-10:
 
-    * ``shared.historical_window`` — how much climate record to EXTRACT. It
+    * ``climate.window`` — how much climate record to EXTRACT. It
       feeds the climate store, the climate figures, and (through that store)
       weathergenr, whose wavelet decomposition sets ``MIN_HISTORICAL_YEARS``.
       This is analysis input, and it is what a future standalone climate
@@ -1374,43 +1373,30 @@ def resolve_simulation_window(
     where_shared = f" (in {shared_source})" if shared_source else ""
     window = get_config(model_cfg, "simulation_window", None)
     if window is None:
-        return get_config(shared_cfg, "historical_window", optional=False)
-    if not isinstance(window, Mapping):
-        raise ValueError(
-            f"workflows.build_model.simulation_window must be a mapping "
-            f"with starttime/endtime, got {window!r}"
-        )
-    for key in ("starttime", "endtime"):
-        if key not in window:
-            raise ValueError(
-                f"workflows.build_model.simulation_window is missing {key!r}"
-            )
-        try:
-            datetime.fromisoformat(str(window[key]).strip())
-        except ValueError:
-            raise ValueError(
-                f"workflows.build_model.simulation_window.{key} is not an "
-                f"ISO datetime: {window[key]!r}"
-            ) from None
-    start, end = (
-        datetime.fromisoformat(str(window["starttime"]).strip()),
-        datetime.fromisoformat(str(window["endtime"]).strip()),
-    )
+        return get_config(climate_cfg, "window", optional=False)
+    # R14 `C-71`: years on this side too, so the two windows a user compares are
+    # written in one unit. `historical_window_bounds` is the only parser, so a
+    # malformed value is diagnosed once, in one voice, wherever it was authored.
+    try:
+        start, end = historical_window_bounds(window)
+    except ValueError as exc:
+        raise ValueError(f"workflows.build_model.simulation_window: {exc}") from None
     if end <= start:
         raise ValueError(
             f"workflows.build_model.simulation_window {start.date()} .. "
             f"{end.date()} ends on or before it starts — check the order"
         )
-    record = get_config(shared_cfg, "historical_window", optional=False)
-    rec_start, rec_end = historical_window_bounds(record)
+    rec_start, rec_end = historical_window_bounds(
+        get_config(climate_cfg, "window", optional=False)
+    )
     if start < rec_start or end > rec_end:
         raise ValueError(
             f"workflows.build_model.simulation_window {start.date()} .. "
-            f"{end.date()}{where_model} is not inside shared.historical_window "
+            f"{end.date()}{where_model} is not inside climate.window "
             f"{rec_start.date()} .. {rec_end.date()}{where_shared}. The forcing "
             "is built from "
             "the extracted climate store, so a simulation period outside the "
-            "record has no data behind it — widen historical_window, or narrow "
+            "record has no data behind it — widen climate.window, or narrow "
             "the simulation window to fit inside it"
         )
     return window
@@ -1462,7 +1448,7 @@ def slugify_window(start, end) -> str:
             dt = datetime.strptime(date_part, "%Y-%m-%d")
         except ValueError as exc:
             raise ValueError(
-                f"historical_window {which} {value!r} is not a YYYY-MM-DD date"
+                f"climate.window {which} {value!r} is not a YYYY-MM-DD date"
             ) from exc
         if time_part:
             # Accept only an all-zero time-of-day; anything else is sub-day
@@ -1471,7 +1457,7 @@ def slugify_window(start, end) -> str:
             hms = time_part.split(".", 1)[0]
             if hms.replace(":", "").strip("0") != "":
                 raise ValueError(
-                    f"historical_window {which} {value!r} has a nonzero "
+                    f"climate.window {which} {value!r} has a nonzero "
                     "time-of-day; the store key is day-resolution (§4c) — "
                     "sub-day windows are not supported"
                 )
@@ -1901,12 +1887,23 @@ def climate_store_rule(
     """
     if not isinstance(historical_window, Mapping):
         raise TypeError(
-            "climate_store_rule: historical_window must be the shared."
-            "historical_window mapping with 'starttime'/'endtime', got "
+            "climate_store_rule: historical_window must be the `climate.window` "
+            "mapping with 'start'/'end' years, got "
             f"{type(historical_window).__name__}"
         )
-    starttime = get_config(historical_window, "starttime", optional=False)
-    endtime = get_config(historical_window, "endtime", optional=False)
+    # Through the one parser (R14 `C-70`), so the store key is derived from the
+    # same bounds every other reader sees. The KEY IS UNCHANGED by the retype:
+    # every shipped config's v1 ISO endpoints were whole-year aligned, so
+    # `{start: 2000, end: 2020}` slugs to the same `20000101_20201231` the ISO
+    # pair did -- which is what keeps an extracted store from being re-extracted
+    # into a new directory on migration.
+    _start, _end = historical_window_bounds(historical_window)
+    # Rendered back to ISO for `params:`. BYTE-IDENTICAL to the v1 values: the
+    # shipped configs' endpoints were whole-year aligned, so `{2000, 2020}`
+    # renders the same `2000-01-01T00:00:00` / `2020-12-31T00:00:00` the ISO
+    # pair carried -- which is what keeps the params digest, and every rule that
+    # threads these two values, unmoved by the retype.
+    starttime, endtime = _start.isoformat(), _end.isoformat()
 
     # Byte-for-byte the key wf3 built inline before R07 (P3-1 §4/§4c/§4d): two
     # experiments sharing clim_historical + historical_window resolve to the

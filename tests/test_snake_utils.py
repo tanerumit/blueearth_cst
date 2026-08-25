@@ -1588,7 +1588,12 @@ def test_warn_uses_containment_not_string_prefix(tmp_path):
 
 # --- climate_store_rule (R07 B1) ---------------------------------------------
 
-_WINDOW = {"starttime": "2000-01-01T00:00:00", "endtime": "2020-12-31T00:00:00"}
+#: R14 `C-70`: `climate.window` is a pair of INCLUSIVE YEARS. The ISO strings
+#: below are what `climate_store_rule` still puts in `params:`, and they are
+#: BYTE-IDENTICAL to the v1 values -- which is the property the two assertions
+#: about them exist to hold.
+_WINDOW = {"start": 2000, "end": 2020}
+_WINDOW_ISO = {"starttime": "2000-01-01T00:00:00", "endtime": "2020-12-31T00:00:00"}
 
 
 def _spec(**overrides):
@@ -1659,8 +1664,8 @@ def test_climate_store_rule_params_carry_the_content_surface():
     }
     # The catalog moved OUT of params and into the declared input.
     assert "data_sources" not in spec.params
-    assert spec.params["starttime"] == _WINDOW["starttime"]
-    assert spec.params["endtime"] == _WINDOW["endtime"]
+    assert spec.params["starttime"] == _WINDOW_ISO["starttime"]
+    assert spec.params["endtime"] == _WINDOW_ISO["endtime"]
 
 
 def test_climate_store_rule_hydrography_defaults_match_the_spatial_contract():
@@ -1703,18 +1708,20 @@ def test_climate_store_rule_script_is_relative_to_the_repo_root():
 
 def test_climate_store_rule_rejects_a_non_mapping_window():
     with pytest.raises(TypeError, match="historical_window"):
-        _spec(historical_window=("2000-01-01T00:00:00", "2020-12-31T00:00:00"))
+        _spec(historical_window=(2000, 2020))
 
 
-def test_climate_store_rule_rejects_a_sub_day_window():
-    """The day-resolution store key cannot represent a sub-day window."""
-    with pytest.raises(ValueError, match="time-of-day"):
-        _spec(
-            historical_window={
-                "starttime": "2000-01-01T06:00:00",
-                "endtime": "2020-12-31T00:00:00",
-            }
-        )
+def test_climate_store_rule_rejects_a_non_year_window():
+    """R14 `C-70` made the sub-day case unrepresentable, so this is its heir.
+
+    The store key is day-resolution, and a sub-day window could not be spelled
+    in it. Under ISO endpoints that had to be REFUSED (`slugify_window` still
+    carries the guard, now unreachable from `climate.window`); under inclusive
+    YEARS it cannot be written down at all. What can still go wrong is an
+    endpoint that is not a year, so that is what this asserts.
+    """
+    with pytest.raises(ValueError, match="not a year"):
+        _spec(historical_window={"start": "2000-01-01T06:00:00", "end": 2020})
 
 
 def test_climate_store_rule_is_frozen():

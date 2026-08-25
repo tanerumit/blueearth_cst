@@ -8,7 +8,7 @@ from pathlib import Path
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, climate_store_rule, get_config, julia_prefix, patch_psutil_windows_benchmark, region_rule, resolve_simulation_window, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, validate_historical_window, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, climate_store_rule, get_config, julia_prefix, patch_psutil_windows_benchmark, region_rule, historical_window_bounds, resolve_simulation_window, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, validate_historical_window, warn_if_project_dir_in_repo, install_console_style, run_header
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 # The canonical climate figure set (rules 1.13 and 1.15 both draw it). Imported
@@ -50,7 +50,7 @@ config_path = workflow.configfiles[0]
 # HOISTED above the first config read (R13 D-8.2): the projection is a
 # config-independent literal, and `compose_config` derives R(entry) from it, so
 # it has to be known before any section is touched. Moving it changed no value.
-CONFIG_PROJECTION = ("project", "shared", "workflows.build_model")
+CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.build_model")
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -74,11 +74,14 @@ run_logged = str(Path(workflow.basedir) / "blueearth_cst" / "shared" / "run_logg
 
 # R01 schema — three top-level sections. Read each into a local dict.
 project_cfg = config["project"]
-shared_cfg = config["shared"]
+# R14 D-7.2: `shared:` dissolved into sections by KIND. `climate_cfg` is the
+# only new binding -- `basin:` and `model:` are read at their use sites, which
+# is where the v1 `shared_cfg` indirection was buying nothing.
+climate_cfg = config.get("climate") or {}
 # The water year the climate figures aggregate on, from the one shared key
 # WF2 and WF3 also read. Figures are terminal artifacts, so this changes no
 # number -- but a figure labelled 'annual' should mean the basin's year.
-WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_start"))
+WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
 my_cfg = config["workflows"]["build_model"]
 
 # Project — paths and external resources
@@ -90,7 +93,7 @@ static_dir = get_config(project_cfg, "static_dir", optional=False)
 DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
 
 # Shared — multi-workflow scientific knobs
-basin_cfg = shared_cfg["basin"]
+basin_cfg = config["basin"]
 spatial_cfg = parse_spatial_config(basin_cfg, my_cfg)
 model_region = get_config(basin_cfg, "region", optional=False)
 model_resolution = spatial_cfg.resolution
@@ -101,7 +104,7 @@ model_resolution = spatial_cfg.resolution
 # cross-checks them against the template and fails loud on a disagreement.
 basin_hydrography = spatial_cfg.hydrography
 basin_index = spatial_cfg.basin_index
-historical_window = get_config(shared_cfg, "historical_window", optional=False)
+historical_window = get_config(climate_cfg, "window", optional=False)
 # ONE minimum window for the whole toolbox — snake_utils.MIN_HISTORICAL_YEARS
 # (16), set by weathergenr's wavelet minimum and enforced identically here and
 # at extraction. WF1 rejects it too, deliberately: a record too short for a
@@ -123,18 +126,19 @@ validate_historical_window(historical_window)
 # both -- a user with two files open should not have to work out which one
 # the message means (R13 §12.5).
 simulation_window = resolve_simulation_window(
-    shared_cfg,
+    climate_cfg,
     my_cfg,
     shared_source=config_path,
     model_source=WORKFLOW_CONFIG_PATHS.get("build_model"),
 )
-clim_source = get_config(shared_cfg, "clim_historical", optional=False)
+SIMULATION_BOUNDS = historical_window_bounds(simulation_window)
+clim_source = get_config(climate_cfg, "selected", optional=False)
 # Wflow.jl thread count for rule 1.14. OPTIONAL — the default is P3-3's frozen
 # baseline value, so an existing config is unaffected. Config-driven rather than
 # inline so a deployment can tune it to its basin (a production basin has the
 # cell-parallelism the 384-cell test fixture lacks) without a Snakefile edit.
 # NOT Snakemake's `threads:`, which caps at --cores: see DEFAULT_JULIA_THREADS.
-julia_threads = get_config(shared_cfg, "julia_threads", DEFAULT_JULIA_THREADS)
+julia_threads = DEFAULT_JULIA_THREADS  # C-54: no project override; advanced_settings owns it
 # Carries the juliaup version pin too; both are validated at parse time, before
 # any rule can put them in a shell body.
 wflow_julia = julia_prefix(julia_threads)
@@ -153,7 +157,7 @@ if clim_source == "eobs":
 # its indicator tables before the DAG is built -- and a key read by more than
 # one workflow lives in the project file. It was the last such key, and
 # `CROSS_WORKFLOW_READS` is retired with its move.
-wflow_outvars = get_config(shared_cfg, "wflow_outvars", DEFAULT_WFLOW_OUTVARS)
+wflow_outvars = get_config(config.get("model") or {}, "outvars", DEFAULT_WFLOW_OUTVARS)
 # `defaults/`, not `templates/` — these are read by rules 1.06/1.07/1.08, and the
 # 2026-08-11 split moved them out of the copy-me directory. Rule 1.01 still routes
 # them to a `templates/` bin inside the PROJECT: a different meaning of the word,
@@ -784,9 +788,12 @@ rule add_climate_forcing:
         # wflow TOML's `[time]` starttime/endtime it runs over
         # (shared/setup_time_horizon.py). They are one key precisely because
         # forcing and run period cannot legitimately differ.
-        starttime = get_config(simulation_window, "starttime", optional=False),
-        endtime = get_config(simulation_window, "endtime", optional=False),
-        clim_source = get_config(shared_cfg, "clim_historical", optional=False),
+        # `climate.window` / `simulation_window` are inclusive YEARS since R14
+        # (`C-70`, `C-71`); wflow's [time] block wants ISO datetimes, so they
+        # are rendered here, through the one parser, rather than re-derived.
+        starttime = SIMULATION_BOUNDS[0].isoformat(),
+        endtime = SIMULATION_BOUNDS[1].isoformat(),
+        clim_source = get_config(climate_cfg, "selected", optional=False),
         basin_dir = basin_dir,
         data_catalog = DATA_SOURCES,
     log:

@@ -6,8 +6,23 @@ effort: 2
 area: config / naming
 queue:
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-24
 ---
+
+> [!info] Ruled 2026-08-24 — bundled into R14 as `C-85`
+> The owner ruled this IN, riding R14's single migration bundle and
+> `schema_version` bump rather than landing separately. Both changes break the
+> same `--configfile` invocation, so the break is paid once; `C-38` renames and
+> rewrites in one pass instead of being written twice; and R14's `C-84` adds a
+> brand-new WF0 template that would otherwise ship under the retired prefix.
+> Rationale, cost and sequencing: `dev/milestones/r14/config-shape-scoping.md`,
+> Group A, "The file is named after the program that reads it".
+>
+> **This note stays the implementation reference** — the blast radius, the
+> `.gitignore` trap and the file-by-file checklist below are not duplicated
+> into the milestone. Do not start it standalone; it lands with the bundle.
+> The first progress item — filenames only, or the identifiers too — is still
+> open and is now R14's design to settle.
 
 > [!note] Overview
 > **What** — Rename every `snake_config_*.yml` seed and template to

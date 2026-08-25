@@ -11,6 +11,23 @@ created: 2026-08-22
 updated: 2026-08-22
 ---
 
+> [!info] Premise RESOLVED 2026-08-24 — verify and close from the primary
+> The indicator reference **was re-recorded after** the weathergenr 2.0.0
+> transition. `b4c58d8b` (2026-08-22, R13's split-phase pass) rewrote all 624
+> rows of `dev/baseline/indicator_ref/74ed83c06b2e7e6c.csv` — 624 insertions,
+> 624 deletions — and `cf5daa06` landed 2026-08-17. `check_baseline check`
+> reports 7/7 today.
+>
+> The filename is unchanged because it is keyed on the TARGET's identity, not
+> on content, which is what made this look unresolved on a directory listing.
+>
+> Found while writing R14's P0 dispatch. Closure needs a `dev/LOG.md` row,
+> which is outside the R14 lane's scope — R14 P0 verifies this from the primary
+> and closes it there. **What this does NOT dispose of:** the fixture is
+> untracked and shared between worktrees, so a green gate still cannot
+> distinguish this branch's tree from another's. That hazard is independent and
+> is why P0 still records the target hashes into a tracked file.
+
 > [!note] Overview
 > **What** — `dev/baseline/manifest.json`'s `q_indicators.csv` reference (`indicator_ref/74ed83c06b2e7e6c.csv`) was recorded 2026-08-16 under weathergenr **1.2.0**. `cf5daa0` completed the 1.2.0 -> 2.0.0 transition on 2026-08-17. Every WF3 run since draws different realizations, so `check_baseline check` has reported a 610/630-row indicator failure ever since — for a reason that is correct, expected, and nothing to do with whatever branch is being checked.
 > **Why** — A falsifier that is permanently red stops being read. It also actively misleads: it consumed most of R13's pass-1 session, where the low-flow signature was first attributed to a hydrology change and R13 was briefly a suspect. Every milestone that re-records from here inherits an unattributable indicator move.

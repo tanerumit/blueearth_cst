@@ -11,8 +11,8 @@ one of its decisions.
 
 **The composition invariant (D-8.1) is the whole point.** ``compose_config``
 returns a mapping whose shape is identical to the pre-split ``config`` dict:
-``config["workflows"]["run_stress_test"]``, ``config["shared"]["basin"]`` and
-``config["reporting"]`` resolve exactly as they did, to exactly the same values.
+``config["workflows"]["run_stress_test"]`` and ``config["shared"]["basin"]``
+resolve exactly as they did, to exactly the same values.
 Because that holds, ``effective_config_digest``, ``guarded_sections_digest``, the
 experiment freeze, ``resolve_simulation_window`` and every ``get_config`` call
 site are unchanged *by construction* — same inputs, same bytes hashed. Two
@@ -23,7 +23,7 @@ rebinding requirement (D-8.6).
 in a T2 file. Convention cannot enforce that, and a full key registry would be a
 second source of truth that drifts, so the rule is carried by four closed
 parse-time checks — D-9.1 (the T1 stanza is closed), D-9.2 (a T2 file may not
-declare a T1-owned or foreign-hoisted name), D-9.3 (the same rejection, widened
+declare a T1-owned name), D-9.3 (the same rejection, widened
 to every declared T2 file that resolves), D-9.5 (T1's top level is closed) —
 plus the static read scan (D-9.6) that governs the one case parse time cannot
 see: a value read reaching *across* the section boundary at runtime.
@@ -70,6 +70,14 @@ import yaml
 
 #: The user-facing migration guide, named by every refusal this module raises.
 MIGRATION_DOC = "docs/migration-config-tiers.md"
+
+#: The migration TOOL every refusal points a user at. Pinned here, once, as a
+#: cross-phase contract (R14 Gate A): R13's `scripts/split_project_config.py`
+#: retired with the v1 shape it emitted, and the refusals below must name the
+#: command that replaces it. P1 writes the name and P3 ships the script; if the
+#: two disagree, every refusal in the tree names a path that does not exist and
+#: no gate catches it, because these tests assert the string this module chose.
+MIGRATION_COMMAND = "scripts/migrate_project_config.py"
 
 #: T1's top level, closed (D-9.5). Closing it is what makes the migration
 #: detector complete: a config whose only unmigrated element is a top-level
@@ -119,19 +127,24 @@ SHARED_SEAM_KEYS: frozenset[str] = frozenset(
     }
 )
 
-#: Sections that live at the top level of ONE workflow's T2 file and are hoisted
-#: back to the composed document's top level (D-10.4). A closed two-entry map,
-#: not a general mechanism.
+#: RETIRED, deliberately: there is no hoist registry, because there is nothing
+#: left to hoist. `HOISTED_SECTIONS` existed to hold exactly one entry --
+#: `run_stress_test` -> `reporting:` -- carried outside `workflows.run_stress_test`
+#: so that a figure caption sat outside `CONFIG_PROJECTION`, the effective-config
+#: digest and the experiment freeze. R14 `C-77` removes `reporting:` from the
+#: config surface entirely, which empties the map.
 #:
-#: `reporting:` is read in exactly one place (`run_stress_test.smk` ->
-#: `surface_axes.parse_surfaces`), so the seam rule does not force it into T1.
-#: Hoisting rather than nesting is what keeps it OUTSIDE
-#: `workflows.run_stress_test` and therefore outside `CONFIG_PROJECTION`, the
-#: effective-config digest and the experiment freeze — a deliberate exclusion
-#: that lets a caption be corrected without re-running the experiment. Nesting
-#: would silently revoke it and turn every caption edit into a frozen-experiment
-#: refusal.
-HOISTED_SECTIONS: dict[str, tuple[str, ...]] = {"run_stress_test": ("reporting",)}
+#: **This AMENDS accepted R13 decision D-10.4**, which introduced the mechanism.
+#: The amendment is recorded rather than taken quietly, on R14 `K2`.
+#:
+#: Retired rather than left empty, on the precedent set two constants below: an
+#: empty registry that can be refilled cannot enforce shrink-only, because
+#: adding a section plus a matching entry keeps every test green. With no
+#: registry to pair a section with, a T2 file's top-level section can only ever
+#: merge into that workflow's own namespace -- there is no second option, and no
+#: way to reintroduce one without a design change that reads as one.
+#:
+#: Source: `dev/milestones/r14/config-shape-design.md` D-10.1 / D-10.2.
 
 #: RETIRED, deliberately: there is no registry of sanctioned cross-workflow
 #: value reads, because there are none. `CROSS_WORKFLOW_READS` existed to hold
@@ -150,8 +163,17 @@ HOISTED_SECTIONS: dict[str, tuple[str, ...]] = {"run_stress_test": ("reporting",
 #: exact; it sanctions no read.
 
 #: The R13 hoist, as data: source path -> destination path in the composed
-#: mapping. Read by the splitter (emission) and by the round-trip check
-#: (normalization). One entry; grows only with a ruled hoist.
+#: mapping. One entry; grows only with a ruled hoist.
+#:
+#: **v1-shaped, and currently without a production consumer.** Its readers were
+#: `scripts/split_project_config.py`'s emission and round-trip normalization,
+#: both retired with that tool (R14 Gate A). The destination it records --
+#: `shared.wflow_outvars` -- is itself a v1 spelling that R14 `C-19` moves to
+#: `model.outvars`. It is KEPT rather than deleted because R14 P3 ships
+#: `config/migrations/v1_to_v2.yml` and this is plausibly one of its inputs:
+#: it is the one machine-readable record of where a key was before the move,
+#: which is exactly what a v1 -> v2 rewriter needs. **P3 owns the decision** to
+#: absorb it into that mapping or retire it; do not delete it here.
 RELOCATED_KEYS: dict[tuple[str, ...], tuple[str, ...]] = {
     ("workflows", "build_model", "wflow_outvars"): ("shared", "wflow_outvars"),
 }
@@ -183,12 +205,11 @@ OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
         ("scripts/run_workflows.py", "*"),
         ("scripts/suggest_experiment_name.py", "run_stress_test"),
         ("scripts/plot_workflow_dag.py", "run_stress_test"),
-        # The migration tool's already-split detector, which reads the stanza
-        # KEY SET of every workflow and none of their values. Classified here
-        # rather than waved through: the scan turned red when the tool landed,
-        # which is the mechanism working -- a new read on an ownerless surface
-        # forces an explicit, reviewed entry instead of passing unnoticed.
-        ("scripts/split_project_config.py", "*"),
+        # R13's `scripts/split_project_config.py` held a fourth entry here for
+        # its already-split detector. It retired with the tool (R14 Gate A), and
+        # the entry had to go in the same commit: this enumeration is checked
+        # for MINIMALITY as well as completeness, so a declared entry with no
+        # live site is as much a failure as an undeclared read.
     }
 )
 
@@ -257,20 +278,21 @@ def _declared_form(resolved_abs: str) -> str:
 
 
 def _check_t1_top_level(t1: Mapping[str, Any]) -> None:
-    """Refuse a T1 top-level key outside ``{project, shared, workflows}`` (D-9.5).
+    """Refuse a T1 top-level key outside ``T1_TOP_LEVEL`` (D-9.5).
 
-    This is what turns the hoist-collision question into a non-question: a
-    leftover top-level ``reporting:`` is a parse error naming the key, so there
-    is no precedence rule to define between it and the hoisted one.
+    Closing the top level is what makes the migration detector complete: a
+    config whose only unmigrated element is a stray top-level section produces
+    no extra key under any ``workflows.<name>``, so the stanza check alone would
+    see nothing and the project would run with an undefined precedence between
+    two records of the same section.
     """
     stray = [key for key in t1 if key not in T1_TOP_LEVEL]
     if stray:
         raise ValueError(
             f"T1 project config declares top-level key(s) {sorted(stray)!r}. "
             f"The project file's top level is closed to {list(T1_TOP_LEVEL)!r}: "
-            "workflow settings belong in that workflow's own config file, and "
-            "`reporting:` belongs at the top level of the run_stress_test file. "
-            f"Run `python scripts/split_project_config.py` and see {MIGRATION_DOC}."
+            "workflow settings belong in that workflow's own config file. "
+            f"See {MIGRATION_DOC}."
         )
 
 
@@ -294,34 +316,27 @@ def _check_stanza_closed(name: str, stanza: Mapping[str, Any]) -> None:
             f"Move those settings into a workflow config file named "
             f"`<project_config_stem>_{name}.yml` beside this file and point "
             f"`workflows.{name}.config_path` at it. Run "
-            f"`python scripts/split_project_config.py <this file>` to do it "
-            f"mechanically, and see {MIGRATION_DOC}."
+            f"`python {MIGRATION_COMMAND} <this file>` to do it mechanically, "
+            f"and see {MIGRATION_DOC}."
         )
 
 
 def _rejected_in_t2(name: str, t1_shared: Mapping[str, Any]) -> frozenset[str]:
     """Return the names a T2 file for ``name`` may not declare (D-9.2).
 
-    T1-owned sections, every key T1's own `shared:` declares, the frozen
-    `SHARED_SEAM_KEYS`, and every hoisted section EXCEPT the ones this workflow
-    owns. Deriving the last term from the hoist map rather than a hand-kept list
-    is what closes the unguarded direction: a `reporting:` block written at the
-    top of `build_model`'s T2 file would otherwise be accepted and merged into
-    `workflows.build_model`, which is a guarded section — so a caption edit in
-    the wrong file would enter `guarded_sections_digest` and produce a "your
-    model was built under different settings" refusal from rule 3.01.
+    T1-owned sections, every key T1's own `shared:` declares, and the frozen
+    `SHARED_SEAM_KEYS`.
+
+    A fourth term used to sit here — every hoisted section except the ones this
+    workflow owns — and it retired with the hoist map (R14 D-10.1). It closed
+    the unguarded direction of a mechanism that no longer exists: with nothing
+    hoisted, a section at the top of a T2 file can only merge into that
+    workflow's own namespace, which is what the seam rule already governs.
     """
-    hoisted_elsewhere = {
-        section
-        for owner, sections in HOISTED_SECTIONS.items()
-        for section in sections
-        if owner != name
-    }
     return frozenset(
         {"project", "shared", "workflows", "enabled"}
         | set(t1_shared)
         | set(SHARED_SEAM_KEYS)
-        | hoisted_elsewhere
     )
 
 
@@ -337,20 +352,9 @@ def _check_t2_names(
     stray = sorted(key for key in body if key in rejected)
     if not stray:
         return
-    hoisted_owners = {
-        section: owner
-        for owner, sections in HOISTED_SECTIONS.items()
-        for section in sections
-    }
-    fixes = []
-    for key in stray:
-        if key in hoisted_owners:
-            fixes.append(
-                f"{key!r} belongs at the top level of the "
-                f"{hoisted_owners[key]!r} workflow's config file"
-            )
-        else:
-            fixes.append(f"{key!r} belongs in the project file's `shared:` section")
+    fixes = [
+        f"{key!r} belongs in the project file's `shared:` section" for key in stray
+    ]
     raise ValueError(
         f"{path}: the {name!r} workflow config declares {stray!r} at its top "
         "level, but those names are owned outside a single workflow — a key "
@@ -588,9 +592,6 @@ def compose_config(
         if name in loaded_names:
             probe = by_name.get(name)
             body = dict(probe.body) if probe is not None else {}
-            for hoisted in HOISTED_SECTIONS.get(name, ()):
-                if hoisted in body:
-                    composed[hoisted] = body.pop(hoisted)
             section.update(body)
             if probe is not None:
                 workflow_config_paths[name] = _declared_form(probe.resolved)

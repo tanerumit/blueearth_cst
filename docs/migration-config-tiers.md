@@ -1,5 +1,17 @@
 # Migrating a project config to the tiered layout
 
+> **SUPERSEDED by R14.** The tool this guide drives,
+> `scripts/split_project_config.py`, was **retired** when R14 reshaped the
+> project config to `schema_version: 2`: the tiered-but-v1 layout it emitted is
+> no longer a layout the loader accepts, so its own round-trip check could not
+> pass. Use `scripts/migrate_project_config.py` and the R14 migration note
+> (`docs/migration-config-shape.md`) instead — that one command performs this
+> split *and* the v2 reshape in a single transactional pass.
+>
+> This guide is kept because it is the only written record of WHAT the tier
+> split did and why, which the R14 note builds on rather than repeats. Every
+> command below names a script that no longer exists.
+
 Since R13 a project's configuration is a **set of files**, not one file: a
 project file plus one file per workflow. This guide is for migrating a config
 written before that change.

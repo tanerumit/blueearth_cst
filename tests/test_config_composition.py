@@ -212,13 +212,18 @@ def test_empty_t2_file_is_accepted_as_no_settings(tmp_path):
     assert compose(t1_path)["workflows"]["build_model"] == {"enabled": True}
 
 
-def test_reporting_is_hoisted_out_of_its_owning_section(tmp_path):
-    """D-10.4. ``reporting:`` reaches ``config["reporting"]``, not the section.
+def test_no_section_is_hoisted_out_of_its_workflow(tmp_path):
+    """R14 D-10.1. A T2 file's top-level section stays in that workflow.
 
-    Hoisting rather than nesting is what keeps the key outside
-    ``CONFIG_PROJECTION``, the effective-config digest and the experiment
-    freeze — a deliberate exclusion that lets a caption be corrected without
-    re-running the experiment. Nesting would silently revoke it.
+    R13 D-10.4 carried `reporting:` OUT of ``workflows.run_stress_test`` so a
+    figure caption sat outside ``CONFIG_PROJECTION``, the effective-config
+    digest and the experiment freeze. `C-77` removes `reporting:` from the
+    config surface, which empties the map, and R14 retires the mechanism rather
+    than leaving it empty.
+
+    The generic claim is what matters, so this asserts on an arbitrary section
+    name rather than on `reporting:` — a hoist reinstated for some OTHER
+    section would pass a test written about the one that left.
     """
     t1_path = write_split(
         tmp_path / "cfg",
@@ -226,21 +231,34 @@ def test_reporting_is_hoisted_out_of_its_owning_section(tmp_path):
             "run_stress_test": {
                 "realizations_num": 2,
                 "reporting": {"title": "Gabon"},
+                "anything_else": {"k": "v"},
             }
         },
     )
     composed = compose(t1_path, "run_stress_test")
-    assert composed["reporting"] == {"title": "Gabon"}
-    assert "reporting" not in composed["workflows"]["run_stress_test"]
+    section = composed["workflows"]["run_stress_test"]
+    assert section["reporting"] == {"title": "Gabon"}
+    assert section["anything_else"] == {"k": "v"}
+    assert "reporting" not in composed
+    assert "anything_else" not in composed
 
 
-def test_reporting_is_not_hoisted_when_its_owner_is_out_of_scope(tmp_path):
-    """A WF1 run never loads the WF3 file, so nothing is hoisted from it."""
-    t1_path = write_split(
-        tmp_path / "cfg",
-        bodies={"build_model": {"a": 1}, "run_stress_test": {"reporting": {"t": "x"}}},
+def test_the_hoist_registry_is_retired_not_emptied(tmp_path):
+    """The falsifier for R14 D-10.1, and the reason it is a `hasattr` check.
+
+    An empty registry that can be refilled cannot enforce shrink-only: adding a
+    section plus a matching entry keeps every other test green. Same mechanism,
+    and the same reason, as the ``CROSS_WORKFLOW_READS`` assertion below —
+    which is also why this asserts on the BINDING rather than on the absence of
+    the string. The module names both retired constants in prose, deliberately,
+    so that a reader meets the argument for their absence; a grep-for-the-name
+    test would forbid the record of the decision along with the decision.
+    """
+    assert not hasattr(cc, "HOISTED_SECTIONS"), (
+        "the hoist registry is retired (R14 D-10.1, amending R13 D-10.4); a "
+        "reinstated one -- even empty -- would let a section be carried out of "
+        "run identity by adding an entry beside it"
     )
-    assert "reporting" not in compose(t1_path, "build_model")
 
 
 # ---------------------------------------------------------------------------
@@ -568,7 +586,10 @@ def test_a_third_stanza_key_is_refused_and_names_the_key(tmp_path):
         compose(t1_path)
     message = str(excinfo.value)
     assert "model_build_config" in message
-    assert "split_project_config.py" in message
+    # Asserted through the constant, not as a literal: `MIGRATION_COMMAND` is a
+    # cross-phase pin (R14 Gate A) and a second spelling of it here would be a
+    # second place to forget when P3 ships the script.
+    assert cc.MIGRATION_COMMAND in message
 
 
 def test_stanza_closure_is_checked_outside_this_entry_points_scope(tmp_path):
@@ -657,24 +678,26 @@ def test_a_frozen_seam_key_absent_from_this_t1_is_still_refused(tmp_path):
         compose(t1_path)
 
 
-def test_reporting_in_a_non_owning_t2_file_is_refused(tmp_path):
-    """D-9.2's final term, derived from the hoist map rather than a hand list.
+def test_a_formerly_hoisted_name_is_now_an_ordinary_workflow_key(tmp_path):
+    """What the retirement gives up, asserted rather than left implicit.
 
-    Without it a ``reporting:`` block written at the top of ``build_model``'s
-    file would be accepted and merged into ``workflows.build_model``, which is a
-    guarded section — so a caption edit in the wrong file would enter
-    ``guarded_sections_digest`` and produce a *"your model was built under
-    different settings"* refusal from rule 3.01, for a change to a figure
-    caption.
+    D-9.2 carried a final term — every hoisted section except the ones this
+    workflow owns — so a ``reporting:`` block written at the top of
+    ``build_model``'s file was REFUSED. With the map retired the name is
+    ordinary: it merges into ``workflows.build_model`` like any other key that
+    workflow declares.
+
+    That is a real reduction in what parse time catches, and it is sound only
+    because the section it protected no longer exists on the config surface
+    (`C-77`). The general seam rule is untouched — a name owned outside one
+    workflow is still refused — so what is lost is exactly the special case,
+    and nothing more.
     """
     t1_path = write_split(
-        tmp_path / "cfg", bodies={"build_model": {"reporting": {"title": "wrong file"}}}
+        tmp_path / "cfg", bodies={"build_model": {"reporting": {"title": "own file"}}}
     )
-    with pytest.raises(ValueError) as excinfo:
-        compose(t1_path)
-    message = str(excinfo.value)
-    assert "reporting" in message
-    assert "run_stress_test" in message
+    composed = compose(t1_path)
+    assert composed["workflows"]["build_model"]["reporting"] == {"title": "own file"}
 
 
 def test_an_independent_same_named_pair_across_two_t2_files_parses(tmp_path):
@@ -1104,7 +1127,10 @@ def test_write_config_round_trips_through_compose(tmp_path):
     from tests.conftest import write_config
 
     cfg = cc.load_composed_config(REPO_ROOT / "test_case/snake_config_rapid.yml")
-    cfg["reporting"] = {"title": "round trip"}
+    # A workflow-owned section, not a top-level one: with the hoist retired
+    # (R14 D-10.1) a top-level key outside `T1_TOP_LEVEL` is a parse error, so
+    # the round trip is exercised where a section can actually live.
+    cfg["workflows"]["run_stress_test"]["reporting"] = {"title": "round trip"}
     assert cc.load_composed_config(write_config(tmp_path, cfg)) == cfg
 
 

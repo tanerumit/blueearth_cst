@@ -15,7 +15,6 @@ import yaml
 # point at dev/scripts/ and scripts/, which are NOT packages and are not
 # shipped; those stay.
 from blueearth_cst.shared.config_composition import (  # R13 loader (D-12.0, D-12.6)
-    HOISTED_SECTIONS,
     load_composed_config,
 )
 from blueearth_cst.shared.snake_utils import get_config  # shared helper (R3 §3)
@@ -186,28 +185,19 @@ def write_config(tmp_path, cfg, stem: str = "snake_config") -> Path:
     cfg = deepcopy(dict(cfg))
     workflows = dict(cfg.pop("workflows", {}) or {})
 
-    hoisted_by_owner: dict[str, dict] = {}
-    for owner, sections in HOISTED_SECTIONS.items():
-        for section in sections:
-            if section in cfg:
-                hoisted_by_owner.setdefault(owner, {})[section] = cfg.pop(section)
-
+    # No hoist step: `HOISTED_SECTIONS` retired in R14 P1 (D-10.1), so a T2
+    # file's top-level sections are its own and nothing is lifted out of `cfg`.
     stanzas: dict[str, dict] = {}
     for name, section in workflows.items():
         section = dict(section or {})
         stanza = {}
         if "enabled" in section:
             stanza["enabled"] = section.pop("enabled")
-        body = {**section, **hoisted_by_owner.pop(name, {})}
-        if body:
+        if section:
             t2 = tmp_path / f"{stem}_{name}.yml"
-            t2.write_text(yaml.safe_dump(body, sort_keys=False), encoding="utf-8")
+            t2.write_text(yaml.safe_dump(section, sort_keys=False), encoding="utf-8")
             stanza["config_path"] = t2.name
         stanzas[name] = stanza
-    if hoisted_by_owner:
-        raise ValueError(
-            f"no workflow section to carry hoisted key(s) {sorted(hoisted_by_owner)}"
-        )
 
     cfg["workflows"] = stanzas
     t1 = tmp_path / f"{stem}.yml"

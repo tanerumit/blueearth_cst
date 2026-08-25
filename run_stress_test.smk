@@ -14,7 +14,7 @@ from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retired_experiment_keys
-from blueearth_cst.shared.surface_axes import parse_surfaces, warn_on_heterogeneous_design
+from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, install_console_style, run_header
 from blueearth_cst.shared.config_composition import compose_config
@@ -558,11 +558,11 @@ refuse_retired_experiment_keys(my_cfg)
 # produced under a config whose declaration or whose arithmetic the contracts
 # cannot serve.
 #
-# SURFACES: `reporting:` is post-processing and sits outside run identity by
-# construction (it is not in CONFIG_PROJECTION), which is what lets a caption be
-# corrected without re-running the experiment. Nothing declares it as a rule
-# input, so no DAG edge and no rerun-trigger hazard is created either.
-SURFACES = parse_surfaces(config)
+# `SURFACES = parse_surfaces(config)` stood here until R14 P1. It was a DEAD
+# assignment -- nothing in this file read `SURFACES` -- and `C-77` removes
+# `reporting:` from the config surface, so the call had nothing left to parse.
+# `shared/surface_axes.py` itself STAYS: it is the HM-7 reference
+# implementation, and no rule called it before this change either.
 warn_on_heterogeneous_design(stress_test_cfg)
 # MULTIPLIER DOMAIN: the lookup crosses the Python->R seam in percent, and WG-2's
 # one-ulp reconstruction bound holds only for multipliers >= 0.5. The guard lives

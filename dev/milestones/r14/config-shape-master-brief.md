@@ -21,6 +21,7 @@ Canonical ruleset: `AGENTS.md`. Argument by `C-nn`:
 | P0 | `general-purpose` (runs from the PRIMARY, not a lane) | `t2608220920`, `dev/baseline/manifest.json` | The baseline's provenance resolved AND the four data targets' hashes recorded into a tracked file. **Blocks every other phase.** |
 | P1 | `python-engineer` | design §10 | Loader, seam re-derivation and parse-time refusals against the new layout; `HOISTED_SECTIONS` retired |
 | **P1b** | `python-engineer` | design §7.2–§7.5, P1 | **The per-workflow (T2) key readers.** Added 2026-08-25 by owner ruling — no phase owned them, and without them no entry point runs v2 |
+| **P1c** | `python-engineer` | design §7.3, §5.5, P1b | **The per-variable registry.** `C-57`'s short form is "registry-resolved" and `C-64` puts `min_reference` in the same place — but no registry exists, so `C-66` cannot dissolve `relative_change:` either. Added 2026-08-26 by owner ruling |
 | P2 | `python-engineer` | design §9, P1 | Guard derived from the snapshot; `compute:` excluded from `CONFIG_PROJECTION` |
 | P3 | `python-engineer` | design §11, register | The v1→v2 rewriter, register-driven, with the two non-preserving hooks |
 | P4 | `python-engineer` | design §7, §13, P3 | Templates (5, incl. the new WF0 one), four `test_case/` sets, fixture, `presplit/` v1→v2 pair — migrated BY the rewriter |
@@ -68,9 +69,14 @@ Canonical ruleset: `AGENTS.md`. Argument by `C-nn`:
   de-duplication in two modules, `C-83` a contraction sweep that touches no
   config key.
 
-P1b and P3 may run concurrently — disjoint paths, no shared file. (This read
-"P1 and P3" until 2026-08-25; P1 is done, and P1b inherits the property for the
-same reason — it touches readers, P3 adds a script.)
+P1c and P3 may run concurrently — disjoint paths, no shared file. (This read
+"P1 and P3", then "P1b and P3"; each successor inherits the property for the
+same reason — they touch readers and a registry, P3 adds a script.)
+
+**P1c does NOT block P2 or P4**, which is what separates it from P1b. P1b's
+position was forced because WF3 could not RUN without it; P1c's three rows are
+reachable-but-unmigrated config surface, so every entry point already dry-runs
+clean on v2 without them. It must land before Gate 5, not before P2.
 
 ### Shared constraints
 
@@ -178,7 +184,8 @@ save gate cost.
 |---|---|---|
 | P0 | `config-shape-p0-baseline-provenance.task.md` | **LANDED 2026-08-25** (`3d3d29fe`, merged `f814c16b`) |
 | P1 | `config-shape-p1-loader.task.md` | **DONE** 2026-08-25 (T1 reads only; see P1b) |
-| P1b | `config-shape-p1b-readers.task.md` | not started |
+| P1b | `config-shape-p1b-readers.task.md` | **DONE** 2026-08-26 (readers for all three workflows + `C-54`; `C-57`/`C-64`/`C-66` deferred to P1c) |
+| **P1c** | `config-shape-p1c-registry.task.md` | not started — **the variable registry**, added 2026-08-26 by owner ruling |
 | P2 | `config-shape-p2-identity.task.md` | not started |
 | P3 | `config-shape-p3-rewriter.task.md` | not started |
 | P4 | `config-shape-p4-configs.task.md` | not started |
@@ -205,3 +212,27 @@ normative mapping (`ext1-1`), the transactional contract (`ext1-4`) and the
 experiment-record migration (`ext1-5`); P4 gains the equivalence suite
 (`ext1-6`). Treat as settled once phase work starts; record deviations in the
 affected phase brief's `Progress`, or reissue with a dated revision line.*
+
+
+*Revision: v4, 2026-08-26 — **P1b LANDED** (four commits on
+`feat/r14-p1-loader`), and **P1c added** by owner ruling. All four entry points
+dry-run clean on a v2 config, which is the acceptance criterion P1 could meet
+for only two of them, and `V2_BLOCKED` is retired. `C-54`'s coupled
+`advanced_settings` edit landed with it, so `RETIRED_KEYS` no longer names a
+destination that does not exist. The declared-red list shrank for the first
+time, from 83 to 73, and what remains is only what P4 owes.
+
+P1c exists because three rows turned out to need a per-variable REGISTRY that
+no phase built: `C-57`'s short form is registry-resolved, `C-64` moves
+`min_reference` into the same place, and `C-66` cannot dissolve
+`relative_change:` without it — doing so would turn a configurable threshold
+into an unfixable `ThresholdError` for any relative variable outside the
+shipped defaults. `C-65`'s half also needs `config/advanced_settings.yml`,
+which P1b's scope permitted for `C-54` only.
+
+Six register defects were found by re-measuring, as P1b's brief instructed.
+The load-bearing ones: `C-71` was already migrated by P1 and is not a P1b row;
+`C-63` has three read sites, not the one the brief names; `C-57`'s "one read
+site" is true of the read and not of the work behind it; and `C-66`'s refusal
+names `min_denominator` where the code reads `min_reference`. That last one is
+still unresolved and is P1c's to settle.*

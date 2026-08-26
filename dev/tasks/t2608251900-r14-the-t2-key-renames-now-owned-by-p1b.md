@@ -1,13 +1,13 @@
 ---
 title: R14 - the T2 key renames, now owned by P1b
 type: todo-item
-status: backlog
+status: active
 effort: 5
 area: config shape / R14
 origin: R14 P1
 queue:
 created: 2026-08-25
-updated: 2026-08-25
+updated: 2026-08-26
 ---
 
 > [!note] Overview
@@ -49,6 +49,31 @@ Measured 2026-08-25 from `feat/r14-p1-loader`, by occurrence across `*.smk` and
 | `relative_change` | dissolved | `C-66` | 5 |
 | `historical_year_range` | `reference_window` | `C-59` | 3 |
 
+> [!warning] The table above is WRONG in both directions. Corrected 2026-08-26
+> by P1b, which its own brief told to re-measure before starting.
+>
+> The counts were taken with a `\b`-anchored pattern, which
+> **undercounts** by excluding compound identifiers — `\bstress_test\b` does
+> not match `stress_test_cfg`, the very spelling this table names in its own
+> first column. Unanchored, `stress_test` is 106 occurrences, not 38.
+>
+> It **overcounts** at the same time, because most of those 106 are
+> `run_stress_test` — the entry point and workflow name, which does not move —
+> and 35 of `clim_project`'s are `clim_project_dir`, a derived output path.
+>
+> The number that mattered was never the occurrence count. It is the count of
+> **config-key READS**, which is roughly 30 across the three workflows. The
+> scope rule P1b settled on, checked against P1's own precedent
+> (`build_model.smk:106` reads `climate.window` into a local still named
+> `historical_window`): rename config key reads and the strings that name a key
+> back to the user; leave locals, derived paths, `params:` names and rule input
+> names alone. A sweep on the bare token would have flagged ~200 sites that
+> must not change.
+>
+> Row-level corrections: `C-71` was ALREADY migrated by P1 and is not a P1b
+> row. `C-63` has three read sites, not one. `C-57`'s single read site sits on
+> top of a registry that does not exist, which is why it went to P1c.
+
 `tests/test_v2_config_shape.py::test_wf2_and_wf3_stop_at_the_first_t2_renamed_key`
 is the executable form of this: it passes BECAUSE the work is not done, and
 fails the moment it is - at which point the entry point moves into `V2_CLEAN`
@@ -76,7 +101,17 @@ it is a grep for one literal.
       P1 and P2, with `C-54`'s destination folded in.
 - [x] Brief written: `dev/milestones/r14/config-shape-p1b-readers.task.md`.
 - [x] Master brief reissued at v3 with the sequencing and the phase index.
-- [ ] P1b executed; close this item then.
+- [x] P1b executed 2026-08-26 (four commits on `feat/r14-p1-loader`). All
+      four entry points dry-run clean on v2; `V2_BLOCKED` retired; the
+      declared-red list shrank 83 -> 73.
+- [ ] **P1c** takes what P1b could not: `C-57`, `C-64`, `C-66`/`C-65` all
+      need a per-variable REGISTRY that does not exist. Close this item when
+      P1c lands, not before — the measurement below covered those rows too.
+- [ ] **Unowned, found by P1b and belonging to no phase:**
+      `dev/scripts/prune_series_cache.py:60` reads `my["clim_project"]` and
+      `check_baseline.py` uses `CLIM_PROJECT`. `dev/scripts/` is in no phase's
+      permitted scope. Not a run path, so outside P1b's falsifier, but both
+      break at P4 when the shipped configs actually migrate.
 
 ## Links
 

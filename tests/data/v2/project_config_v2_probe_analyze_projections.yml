@@ -1,10 +1,42 @@
-# analyze_projections settings. Empty by design: P1 moved the T1 reads, not the T2 ones
-# (the T2 renames are ~280 sites in three packages no R14 phase claims), so a
-# body of v2 workflow keys here would assert something P1 did not build.
+# analyze_projections settings, v2. Filled by P1b, which moved this workflow's
+# T2 reads; it was near-empty under P1, which moved the T1 reads only.
+#
 # D-7.9: this file and its `config_path` stanza travel together -- an empty
 # file is legal, a MISSING file with `config_path` still declared is not.
 
 # The climate catalog, pushed DOWN from `project.data_sources_climate` because
-# it has exactly one reader (C-39). P1 moved that read, so this key is v2 and
-# is exercised here.
+# it has exactly one reader (C-39). Moved by P1, not P1b.
 catalog: config/catalogs/cmip6_data.yml
+
+# C-25: `clim_project:` renamed. The VALUE is unchanged -- it still names the
+# `data/climate/projections/<value>/` tree and every series-cache filename -- so
+# this row moves what the user writes and no output path.
+ensemble: cmip6
+
+models: [NOAA-GFDL/GFDL-ESM4]
+scenarios: [ssp245]
+
+# C-63: `members:` is a group. `preference` is the list this key used to be;
+# `selection` and `overrides` were flat `member_selection` / `member_overrides`.
+members:
+  preference: [r1i1p1f1]
+  selection: first_available
+  overrides: {}
+
+# C-57 is NOT applied here: the short form is "registry-resolved" and no
+# variable registry exists yet (see the commit message). The long form is not
+# retired -- no `RETIRED_KEYS` row covers `variables` -- so it stays valid and
+# this fixture uses it.
+variables:
+  precip: {source: precip, canonical: rate, units: mm/day, change: relative}
+  temp: {source: temp, canonical: state, units: degC, change: absolute}
+
+# C-59: `historical_year_range: [2000, 2014]` retyped. CALENDAR years by design
+# (C-74) -- no water-year offset is applied to it.
+reference_window: {start: 2000, end: 2014}
+
+# C-60: `future_horizons: {mid: [2046, 2054]}` becomes a LIST, ordered by the
+# author rather than by YAML insertion. `name` is optional; naming this one
+# `mid` keeps the figure directory it would have had under v1 (C-61).
+future_windows:
+  - {start: 2046, end: 2054, name: mid}

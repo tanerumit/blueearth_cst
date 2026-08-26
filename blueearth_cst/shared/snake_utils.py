@@ -1318,6 +1318,44 @@ def validate_historical_window(historical_window) -> int:
     return days
 
 
+def window_year_pair(window, key):
+    """``[start, end]`` CALENDAR years from a ``{start, end}`` mapping.
+
+    R14 retypes several windows from a two-element list to a mapping of
+    INCLUSIVE YEARS. ``historical_window_bounds`` absorbs that for
+    ``climate.window`` and returns datetimes, because every one of its callers
+    wanted datetimes. The windows this helper serves want the YEARS: WF2's
+    ``reference_window`` (`C-59`) is clipped against the GCM historical
+    experiment as integers, and its result reaches the digest.
+
+    **No water-year offset is applied, deliberately** (`C-74`, D-7.4).
+    ``hydrological_year_bounds()`` already trims to complete water years one
+    layer down, so routing a calendar window through the water-year path would
+    apply the offset twice and move every change factor without saying so.
+
+    ``key`` names the config key in the error, because by the time this raises
+    the caller has usually lost track of which of several windows it was.
+    """
+    if not isinstance(window, Mapping):
+        raise ValueError(
+            f"{key} must be a mapping with start/end years, got {window!r}"
+        )
+    years = []
+    for bound in ("start", "end"):
+        if bound not in window:
+            raise ValueError(f"{key} is missing `{bound}`; got {window!r}")
+        value = window[bound]
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(
+                f"{key}.{bound} must be a whole year, got {value!r}. R14 retyped "
+                "this key from a two-element list to inclusive years."
+            )
+        years.append(value)
+    if years[0] > years[1]:
+        raise ValueError(f"{key}.start ({years[0]}) is after end ({years[1]})")
+    return years
+
+
 def resolve_simulation_window(
     climate_cfg, model_cfg, *, shared_source=None, model_source=None
 ):

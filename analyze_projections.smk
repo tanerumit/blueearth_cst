@@ -16,7 +16,7 @@ from snakemake.exceptions import WorkflowError
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, warn_if_project_dir_in_repo, window_year_pair, install_console_style, run_header
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError, validate_removed_gridded_options
@@ -125,10 +125,71 @@ historical_window = get_config(climate_cfg, "window", optional=False)
 # required where it is actually used -- WF1 and the shared climate-store
 # producer -- so this loosens nothing that matters.
 
-clim_project = get_config(my_cfg, "clim_project", optional=False)
+def _window_pair(window, key):
+    """Thin alias so this file reads the same for both retyped windows."""
+    return window_year_pair(window, f"workflows.analyze_projections.{key}")
+
+
+def _named_windows(windows):
+    """`C-60`: the `future_windows:` LIST, back to `{name: [start, end]}`.
+
+    Every consumer downstream -- `figure_relative_paths`, rule 2.06's `params:`,
+    `get_horizon` -- takes the mapping this returns, so the retype stops here.
+
+    `name` is optional (D-7.3's sibling in 7.3). An unnamed window is keyed
+    `<start>-<end>`, which is stable and self-describing; that IS `C-61`'s
+    figure-directory rename for any config that does not name its windows, so a
+    project keeping its old directory names keeps its old `name` values.
+
+    Insertion order is preserved: the list is ordered by the author now, which
+    is what the v1 mapping only got by accident of YAML insertion order.
+    """
+    if not isinstance(windows, (list, tuple)):
+        raise WorkflowError(
+            "workflows.analyze_projections.future_windows is a mapping, which is "
+            "the v1 `future_horizons` shape. It is a LIST now (`C-60`):\n\n"
+            "    future_windows:\n      - {start: 2046, end: 2054, name: mid}\n"
+        )
+    named = {}
+    for entry in windows:
+        pair = _window_pair(entry, "future_windows[]")
+        name = entry.get("name") or f"{pair[0]}-{pair[1]}"
+        if name in named:
+            raise WorkflowError(
+                f"workflows.analyze_projections.future_windows names {name!r} "
+                "twice; each window becomes a figure directory, so the names "
+                "must be distinct."
+            )
+        named[str(name)] = pair
+    if not named:
+        raise WorkflowError(
+            "workflows.analyze_projections.future_windows is empty; declare at "
+            "least one window."
+        )
+    return named
+
+
+# C-25: the key is `ensemble:` now. The VALUE is unchanged and still names the
+# projections subdirectory and every series-cache filename, so this renames what
+# the user writes and moves no output path.
+clim_project = get_config(my_cfg, "ensemble", optional=False)
 models = get_config(my_cfg, "models", optional=False)
 scenarios = get_config(my_cfg, "scenarios", optional=False)
-members = get_config(my_cfg, "members", optional=False)
+
+# C-63: `members:` is a GROUP now -- the bare preference list it used to be,
+# plus the two `member_*` keys that were flat beside it. Read as one block here;
+# `selection` and `overrides` are unpacked further down, where `_res` is in scope.
+_members_cfg = get_config(my_cfg, "members", optional=False)
+if not isinstance(_members_cfg, dict):
+    raise WorkflowError(
+        "workflows.analyze_projections.members is a bare list, which is the v1 "
+        "shape. It is a mapping now (`C-63`):\n\n"
+        "    members:\n      preference: [r1i1p1f1]\n"
+        "      selection: first_available\n      overrides: {}\n\n"
+        "`member_selection` and `member_overrides` fold into it as `selection` "
+        "and `overrides`."
+    )
+members = get_config(_members_cfg, "preference", optional=False)
 # Step 5e-iii / §5.5: `variables` is a MAPPING declaring each variable's canonical
 # quantity and change semantics. The bare list it replaces made stage B infer
 # `relative` from the literal name "precip", so any other relative variable was
@@ -163,8 +224,21 @@ if _legacy_hyd is not None:
         "used Jan, so a non-Jan value will move every change factor once."
     )
 water_year_start = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
-time_horizon_hist = get_config(my_cfg, "historical_year_range", optional=False)
-future_horizons = get_config(my_cfg, "future_horizons", optional=False)
+# C-59: `reference_window: {start, end}`, CALENDAR years and deliberately so
+# (`C-74`, D-7.4). It is NOT routed through `resolve_water_year_start` /
+# `hydrological_year_bounds`: those trim to complete water years one layer down,
+# so applying the offset here would apply it twice. Flattened to the [start, end]
+# pair the reference-window helpers already take, so nothing downstream retypes.
+_reference_window = get_config(my_cfg, "reference_window", optional=False)
+time_horizon_hist = _window_pair(_reference_window, "reference_window")
+
+# C-60: `future_windows:` is a LIST of `{start, end, name}` -- ordered by the
+# author rather than by mapping insertion, which is what the v1 mapping relied on.
+# Converted back to the `{name: [start, end]}` shape every consumer already takes
+# (`figure_relative_paths`, rule 2.06's params, `get_horizon`), so C-60 is a
+# config-surface change only.
+_future_windows = get_config(my_cfg, "future_windows", optional=False)
+future_horizons = _named_windows(_future_windows)
 
 # --- step 5e / D1: clip the reference window, never splice --------------------
 # The change-factor reference is the GCM historical experiment, which ends
@@ -180,7 +254,11 @@ future_horizons = get_config(my_cfg, "future_horizons", optional=False)
 from blueearth_cst.projections import reference_window as _rw
 
 REFERENCE_WINDOW = _rw.clip_reference_window(time_horizon_hist)
-_SHARED_WINDOW = [historical_window["starttime"], historical_window["endtime"]]
+# `climate.window` is `{start, end}` INCLUSIVE YEARS since R14 (`C-70`); this
+# line still read its v1 `starttime`/`endtime` sub-keys, so WF2 died here on
+# any v2 config. A P1 hole rather than a P1b row -- P1 retyped the key and this
+# reader is in WF2, which P1's scope stopped short of.
+_SHARED_WINDOW = window_year_pair(historical_window, "climate.window")
 for _line in _rw.window_warnings(REFERENCE_WINDOW, shared_window=_SHARED_WINDOW):
     print(f"WARNING analyze_projections: {_line}", file=sys.stderr)
 
@@ -484,10 +562,12 @@ _res.assert_index_matches_catalog(_CATALOG, _INDEX)
 #
 # Parsed HERE rather than beside `members` at the top of the file because the
 # policy names live on `_res`, which is imported a few lines up.
-member_selection = get_config(my_cfg, "member_selection", default=_res.FIRST_AVAILABLE)
+# C-63: both were flat `member_selection` / `member_overrides`; they are leaves of
+# the `members:` group now, read from the block captured at the top of the file.
+member_selection = get_config(_members_cfg, "selection", default=_res.FIRST_AVAILABLE)
 # A model may name its own preference list, REPLACING the global one. Coalesced
 # because `get_config` returns a key written-but-empty as None rather than {}.
-member_overrides = get_config(my_cfg, "member_overrides", default={}) or {}
+member_overrides = get_config(_members_cfg, "overrides", default={}) or {}
 
 COMBINATIONS = _res.resolve(
     _CATALOG,
@@ -673,7 +753,10 @@ def series_digest_components(model, experiment, member):
 
 ### Dictionary elements from the config based on wildcards
 def get_horizon(wildcards):
-    return config["workflows"]["analyze_projections"]["future_horizons"][wildcards.horizon]
+    # Reads the CONVERTED mapping, not the raw config: `future_windows` is a list
+    # and the wildcard is a horizon NAME, so the raw document cannot be indexed by
+    # it any more.
+    return future_horizons[wildcards.horizon]
 
 # Rule numbering (comment headers + log/benchmark filenames) uses `W.NN` = the
 # rule's position in this workflow's LOGICAL order — data, then the product,

@@ -298,6 +298,12 @@ RETIRED_KEYS: dict[str, str] = {
         "come from `model.outvars` (`C-56`)"
     ),
     "T2.analyze_projections.clim_project": "renamed to `ensemble:` (`C-25`)",
+    "T2.analyze_projections.member_selection": (
+        "folded into the `members:` group as `members.selection` (`C-63`)"
+    ),
+    "T2.analyze_projections.member_overrides": (
+        "folded into the `members:` group as `members.overrides` (`C-63`)"
+    ),
     "T2.analyze_projections.historical_year_range": (
         "renamed and retyped to `reference_window: {start, end}` (`C-59`) -- "
         "CALENDAR years, deliberately, not water years (`C-74`)"

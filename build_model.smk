@@ -163,10 +163,43 @@ wflow_outvars = get_config(config.get("model") or {}, "outvars", DEFAULT_WFLOW_O
 # and that one did not move. Under the R4 copy predicate a shipped default is
 # normally recoverable from the toolbox and so is recorded rather than copied —
 # the bin only receives one when the project points the key at its own file.
-model_build_config = get_config(my_cfg, "model_build_config", "config/defaults/wflow_build_model.yml")
-waterbodies_config = get_config(my_cfg, "waterbodies_config", "config/defaults/wflow_update_waterbodies.yml")
+# C-22: both paths regrouped under `engine:`, the wflow-engine settings this
+# workflow hands to hydromt. The group is optional and so are its leaves — the
+# defaults are unchanged, so a config that declared neither key behaves as it
+# always did.
+engine_cfg = get_config(my_cfg, "engine", {}) or {}
+model_build_config = get_config(engine_cfg, "build_config", "config/defaults/wflow_build_model.yml")
+waterbodies_config = get_config(engine_cfg, "waterbodies_config", "config/defaults/wflow_update_waterbodies.yml")
 output_locations = spatial_cfg.gauge_points_path
-observations_timeseries = get_config(my_cfg, "observations_timeseries", None)
+
+#: The one outvar rule 1.15 has an observation consumer for. Spelled as
+#: `model.outvars` spells it (`shared/indicator_tables.py` is the registry that
+#: fixes that vocabulary), because `observations:` keys are drawn from that list
+#: verbatim and the loader compares them by string.
+OBSERVED_DISCHARGE_VAR = "river discharge"
+
+# C-56: `observations:` is a mapping KEYED BY VARIABLE (D-7.3), whose keys the
+# loader has already checked against `model.outvars` — so by the time it is read
+# here, every key names a variable the model was asked to output.
+#
+# Rule 1.15 is the only consumer and it plots discharge, so the discharge entry
+# is the one that becomes an `input:`. An observed series for any OTHER variable
+# parses, validates and is then read by nothing, which is a bounded coverage the
+# repo's rules say must be stated rather than left to be discovered: hence the
+# warning instead of a silent drop.
+_observations = get_config(my_cfg, "observations", {}) or {}
+observations_timeseries = _observations.get(OBSERVED_DISCHARGE_VAR)
+_unconsumed_observations = sorted(
+    name
+    for name, source in _observations.items()
+    if name != OBSERVED_DISCHARGE_VAR and not is_unset(source)
+)
+if _unconsumed_observations:
+    logger.warning(
+        f"build_model config declares observations for "
+        f"{_unconsumed_observations!r}, which no rule reads: rule 1.15 plots "
+        f"{OBSERVED_DISCHARGE_VAR!r} only. They are accepted and ignored."
+    )
 
 # The two OPTIONAL observation inputs, declared as real `input:` entries when
 # configured and omitted entirely when not. `output_locations` is the internal
@@ -221,8 +254,8 @@ RUN_RECORD = f"{project_dir}/config/runs/build_model/run_record.yml"
 CONFIG_REFERENCES = [
     *[(f"workflow_config_{name}", path)
       for name, path in sorted(WORKFLOW_CONFIG_PATHS.items())],
-    ("model_build_config", model_build_config),
-    ("waterbodies_config", waterbodies_config),
+    ("engine.build_config", model_build_config),
+    ("engine.waterbodies_config", waterbodies_config),
     *[("data_catalog", source) for source in
       (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
     *[("output_locations", source) for source in _locations_input.values()],

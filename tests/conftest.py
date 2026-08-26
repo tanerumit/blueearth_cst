@@ -152,9 +152,8 @@ def model_build_config(config):
     sits in the layer that cannot fail in CI or in any worktree, which is why it
     goes through the same loader a run does rather than a second reader.
     """
-    model_build_config = get_config(
-        config["workflows"]["build_model"], "model_build_config", optional=False
-    )
+    engine = get_config(config["workflows"]["build_model"], "engine", optional=False)
+    model_build_config = get_config(engine, "build_config", optional=False)
     return join(SNAKEDIR, model_build_config)
 
 

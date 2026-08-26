@@ -122,7 +122,7 @@ def test_the_actual_red_set_is_exactly_the_declared_one():
     unexpected = sorted(actual - nodes)
     assert not unexpected, (
         "these failed and are NOT declared as inherited from P1's v2 flip — "
-        f"treat them as regressions in the change you just made:\n  "
+        "treat them as regressions in the change you just made:\n  "
         + "\n  ".join(unexpected)
         + f"\n\n{combined[-3000:]}"
     )

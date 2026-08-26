@@ -77,7 +77,9 @@ _COPIED_CONFIG_PATH_MAP: dict[str, dict[str, str]] = {
     # then config/templates/, then config/defaults/ (2026-08-11, when templates/
     # was split so it holds only files you copy). Both must normalize onto the
     # current path or a config from either era fails against a fresh snapshot.
-    "model_build_config": {
+    # `C-22`: keyed by the CONFIG KEY, and the leaf under `engine:` is
+    # `build_config`. `waterbodies_config` below kept its leaf name.
+    "build_config": {
         "config\\wflow_build_model.yml": "config/defaults/wflow_build_model.yml",
         "config/templates/wflow_build_model.yml": "config/defaults/wflow_build_model.yml",
     },

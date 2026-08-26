@@ -634,8 +634,10 @@ if __name__ == "__main__":
         if workflow_name == "build_model":
             other_config_files[sm.input.config_build] = templates_dir
             other_config_files[sm.input.config_waterbodies] = templates_dir
-            reference_roles[str(sm.input.config_build)] = "model_build_config"
-            reference_roles[str(sm.input.config_waterbodies)] = "waterbodies_config"
+            reference_roles[str(sm.input.config_build)] = "engine.build_config"
+            reference_roles[str(sm.input.config_waterbodies)] = (
+                "engine.waterbodies_config"
+            )
         if isinstance(data_sources, (list, tuple)):
             for src in data_sources:
                 other_config_files[src] = catalogs_dir

@@ -46,8 +46,13 @@ _BASE_CFG = {
     "workflows": {
         "build_model": {
             "enabled": True,
-            "model_build_config": "config/defaults/wflow_build_model.yml",
-            "waterbodies_config": "config/defaults/wflow_update_waterbodies.yml",
+            # `C-22`: both paths sit under `engine:` now. The nesting matters to
+            # this module specifically -- `_normalize_paths` recurses, so the
+            # normalization map keys on the LEAF and has to find it at depth.
+            "engine": {
+                "build_config": "config/defaults/wflow_build_model.yml",
+                "waterbodies_config": "config/defaults/wflow_update_waterbodies.yml",
+            },
         },
         "analyze_projections": {
             "enabled": True,
@@ -94,7 +99,7 @@ def test_b_mutated_basin_resolution_fails_naming_key(snapshots):
 def test_c_mutated_build_model_fails(snapshots):
     wf1, wf2 = snapshots
     live = copy.deepcopy(_BASE_CFG)
-    live["workflows"]["build_model"]["waterbodies_config"] = "other.yml"
+    live["workflows"]["build_model"]["engine"]["waterbodies_config"] = "other.yml"
     diffs = compare_project_consistency(live, wf1, wf2)
     assert diffs
     assert any("workflows.build_model" in d for d in diffs)
@@ -132,10 +137,10 @@ def test_d_flat_vs_binned_paths_pass(tmp_path):
     live = copy.deepcopy(_BASE_CFG)
     live["project"]["data_sources"] = "config\\deltares_data.yml"
     live["project"]["data_sources_climate"] = "config\\cmip6_data.yml"
-    live["workflows"]["build_model"]["model_build_config"] = (
+    live["workflows"]["build_model"]["engine"]["build_config"] = (
         "config\\wflow_build_model.yml"
     )
-    live["workflows"]["build_model"]["waterbodies_config"] = (
+    live["workflows"]["build_model"]["engine"]["waterbodies_config"] = (
         "config\\wflow_update_waterbodies.yml"
     )
 

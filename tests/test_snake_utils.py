@@ -2129,11 +2129,11 @@ def test_stress_test_refuses_temperature_variance():
     """
     cfg = {
         "temp": {
-            "step_num": 1,
-            "transient_change": True,
+            "n_levels": 2,
+            "trajectory": "transient",
             "variance": {"min": [1.0] * 12, "max": [1.0] * 12},
         },
-        "precip": {"step_num": 1, "transient_change": True},
+        "precip": {"n_levels": 2, "trajectory": "transient"},
     }
     with pytest.raises(ValueError, match="not a supported stress dimension"):
         su.stress_test_grid(cfg)
@@ -2142,8 +2142,8 @@ def test_stress_test_refuses_temperature_variance():
 def test_stress_test_refuses_a_typo_in_an_axis():
     """The closure is general, not a one-off ban on `variance`."""
     cfg = {
-        "temp": {"step_num": 1, "transient_change": True, "meen": {}},
-        "precip": {"step_num": 1, "transient_change": True},
+        "temp": {"n_levels": 2, "trajectory": "transient", "meen": {}},
+        "precip": {"n_levels": 2, "trajectory": "transient"},
     }
     with pytest.raises(ValueError, match=r"unsupported key\(s\) \['meen'\]"):
         su.stress_test_grid(cfg)
@@ -2152,10 +2152,10 @@ def test_stress_test_refuses_a_typo_in_an_axis():
 def test_precip_variance_is_still_accepted():
     """Only TEMPERATURE variance is refused; precip variance is live."""
     cfg = {
-        "temp": {"step_num": 1, "transient_change": True},
+        "temp": {"n_levels": 2, "trajectory": "transient"},
         "precip": {
-            "step_num": 1,
-            "transient_change": True,
+            "n_levels": 2,
+            "trajectory": "transient",
             "variance": {"min": [1.0] * 12, "max": [1.0] * 12},
         },
     }

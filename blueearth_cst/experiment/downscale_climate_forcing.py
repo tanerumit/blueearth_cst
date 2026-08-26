@@ -8,7 +8,7 @@ from hydromt_wflow import WflowSbmModel
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import (
     prepare_clim_data_catalog,
 )
-from blueearth_cst.experiment.forcing_window import forcing_window
+from blueearth_cst.experiment.forcing_window import forcing_window_iso
 from blueearth_cst.shared.progress import hydromt_progress
 from blueearth_cst.shared.snake_utils import member_pointer_base
 
@@ -51,8 +51,8 @@ def downscale_climate_forcing(
     data_libs,
     model_root,
     precip_source,
-    horizontime_climate,
-    wflow_run_length,
+    sim_start,
+    sim_end,
     catalog_out,
     oro_path=None,
 ):
@@ -75,7 +75,7 @@ def downscale_climate_forcing(
     generator's NC carries empty global attrs).
     """
     fn_out = Path(fn_out)
-    starttime, endtime = forcing_window(horizontime_climate, wflow_run_length)
+    starttime, endtime = forcing_window_iso(sim_start, sim_end)
 
     oro_source = f"{precip_source}_orography"
     pet_method = pet_method_for(precip_source)
@@ -231,8 +231,8 @@ if __name__ == "__main__":
                 data_libs=sm.input.data_sources,
                 model_root=sm.params.model_dir,
                 precip_source=sm.params.clim_source,
-                horizontime_climate=sm.params.horizontime_climate,
-                wflow_run_length=sm.params.run_length,
+                sim_start=sm.params.sim_window_start,
+                sim_end=sm.params.sim_window_end,
                 catalog_out=sm.output.catalog,
                 oro_path=sm.params.oro_path,
             )

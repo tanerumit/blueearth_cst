@@ -33,7 +33,7 @@ _KNOWN_AXES = ("temp", "precip")
 #: monthly spell-length coefficients handed to the weather generator, with no
 #: lookup column and no grid contribution. Listed so the axis guard below still
 #: refuses a typo'd or genuinely new AXIS while admitting these.
-_NON_AXIS_KEYS = ("dry_spell_factor", "wet_spell_factor")
+_NON_AXIS_KEYS = ("spell_factors",)  # C-33: one group, was two flat keys
 
 #: The lookup's header, in order (WG-2). `st_id` x `month` is the key; the three
 #: value columns are the whole vocabulary. `realization` is deliberately absent:
@@ -202,7 +202,9 @@ def prep_cst_parameters(
             entry="run_stress_test",
             declared_sections=("workflows.run_stress_test",),
         )
-        stress_test_cfg = composed["workflows"]["run_stress_test"]["stress_test"]
+        stress_test_cfg = composed["workflows"]["run_stress_test"][
+            "climate_perturbations"
+        ]
 
     # A third stress dimension must REFUSE, not silently vanish from the lookup
     # (C28). The grid arithmetic, the row loop and LOOKUP_COLUMNS below all
@@ -219,8 +221,9 @@ def prep_cst_parameters(
         )
 
     # Grid step counts + total via the shared helper (single source of truth,
-    # strict on a missing step_num). temp_step_num / precip_step_num are the
-    # per-axis counts (step_num + 1) that size the linspaces and the loops below.
+    # strict on a missing n_levels). temp_step_num / precip_step_num are the
+    # per-axis LEVEL counts -- since `C-31` that is `n_levels` itself, not
+    # `step_num + 1` -- and they size the linspaces and the loops below.
     temp_step_num, precip_step_num, ST_NUM = stress_test_grid(stress_test_cfg)
 
     # Temperature change attributes

@@ -70,18 +70,6 @@ defaults:
   # safety cap must not become a new way for a run to break.
   batch_disk_headroom_fraction: 0.25
 
-  # Wflow.jl `--threads`. Overridable per project via `shared.julia_threads`.
-  #
-  # Wflow parallelizes over grid CELLS, so raising this pays on a large basin
-  # and does nothing on a small one. It is NOT Snakemake's `--cores`: the two
-  # multiply, so keep `--cores N x julia_threads <= logical CPUs`.
-  #
-  # 4 is one leg of the frozen resource triple `(-c 3, --threads 4, B=1)` that
-  # every recorded performance baseline was measured at
-  # (dev/milestones/p33/performance-baseline.md §5.6). Changing it here silently
-  # invalidates those comparisons — prefer the per-project override.
-  julia_threads: 4
-
   # Randomization seed for every stochastic step. Overridable per project via
   # `shared.seed`, which also accepts `auto`.
   #
@@ -120,6 +108,22 @@ defaults:
   water_year_start: Jan
 
 runtime:
+
+  # Wflow.jl `--threads`. A TOOLBOX setting: `C-54` removed the per-project
+  # `shared.julia_threads` override, so this is the only place it is set.
+  # It sits under `runtime:` rather than `defaults:` because `defaults:` is for
+  # values a project could have overridden, and there is no longer such a
+  # thing for this one.
+  #
+  # Wflow parallelizes over grid CELLS, so raising this pays on a large basin
+  # and does nothing on a small one. It is NOT Snakemake's `--cores`: the two
+  # multiply, so keep `--cores N x julia_threads <= logical CPUs`.
+  #
+  # 4 is one leg of the frozen resource triple `(-c 3, --threads 4, B=1)` that
+  # every recorded performance baseline was measured at
+  # (dev/milestones/p33/performance-baseline.md §5.6). Changing it here
+  # silently invalidates those comparisons.
+  julia_threads: 4
 
   # The juliaup version selector every workflow Julia invocation carries
   # (`julia +<version> ...`). Julia is deliberately NOT in the pixi env —

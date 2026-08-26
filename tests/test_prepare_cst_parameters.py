@@ -42,17 +42,28 @@ def _write_cfg(
     precip_min=0.7,
     precip_max=1.3,
 ):
-    """Write a synthetic snake config and return its path (str)."""
+    """Write a synthetic v2 project config and return its path (str).
+
+    The ``*_step`` kwargs keep their names and their meaning: they are INTERVAL
+    counts, the way `step_num` was, so every caller's arithmetic comment
+    (``temp_step=1, precip_step=2  # 2 * 3 = 6``) still reads true. `C-31`
+    retyped the CONFIG key to `n_levels`, which is that count plus one, and the
+    ``+ 1`` below is where the two meet — deliberately in one place, so a
+    reader can check the retype against the test's own expectations.
+    """
     cfg = {
+        "schema_version": 2,
         "workflows": {
             "run_stress_test": {
-                "stress_test": {
+                "climate_perturbations": {
                     "temp": {
-                        "step_num": temp_step,
+                        "n_levels": temp_step + 1,
+                        "trajectory": "transient",
                         "mean": {"min": _twelve(0.0), "max": _twelve(3.0)},
                     },
                     "precip": {
-                        "step_num": precip_step,
+                        "n_levels": precip_step + 1,
+                        "trajectory": "transient",
                         "mean": {
                             "min": _twelve(precip_min),
                             "max": _twelve(precip_max),
@@ -61,7 +72,7 @@ def _write_cfg(
                     },
                 }
             }
-        }
+        },
     }
     # Written SPLIT, through the same helper the rest of the suite uses:
     # these cases drive `prep_cst_parameters` by path, which is the
@@ -214,7 +225,7 @@ def test_a_third_stress_axis_refuses_naming_c28(tmp_path):
     cfg_path = _write_cfg(tmp_path, temp_step=1, precip_step=2)
     cfg = load_composed_config(cfg_path)
     cfg["workflows"]["run_stress_test"]["stress_test"]["wind"] = {
-        "step_num": 1,
+        "n_levels": 2,
         "mean": {"min": _twelve(0.0), "max": _twelve(1.0)},
     }
     cfg_path = str(write_config(tmp_path, cfg, stem="config"))

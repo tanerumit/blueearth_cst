@@ -871,11 +871,13 @@ _ADVANCED_SETTINGS_SCHEMA = {
     "constraints": {"min_historical_years": "positive_int"},
     "defaults": {
         "batch_disk_headroom_fraction": "unit_fraction",
-        "julia_threads": "positive_int",
         "seed": "nonnegative_int",
         "water_year_start": "month_abbrev",
     },
-    "runtime": {"julia_version": "version_string"},
+    # `julia_threads` moved here from `defaults:` with `C-54`, which removed the
+    # per-project override. `defaults:` is for values a project could have
+    # overridden; nothing overrides this one now.
+    "runtime": {"julia_threads": "positive_int", "julia_version": "version_string"},
 }
 
 #: Three-part ``X.Y.Z``. Two parts would let juliaup resolve a different patch
@@ -1078,7 +1080,7 @@ JULIA_VERSION = ADVANCED_SETTINGS["runtime"]["julia_version"]
 #: threads instead of 4 — a thread-allocation change disguised as a refactor,
 #: and precisely what §5.6 forbids. The two numbers are independent by design:
 #: the nominal budget is ``N x t <= C_logical``.
-DEFAULT_JULIA_THREADS = ADVANCED_SETTINGS["defaults"]["julia_threads"]
+DEFAULT_JULIA_THREADS = ADVANCED_SETTINGS["runtime"]["julia_threads"]
 
 
 def validate_julia_threads(value) -> int:
@@ -2018,8 +2020,8 @@ def climate_store_rule(
 #: a known axis passed unexamined — so ``stress_test.temp.variance`` was
 #: accepted in silence and changed nothing.
 _AXIS_SUBKEYS = {
-    "temp": frozenset({"step_num", "transient_change", "mean"}),
-    "precip": frozenset({"step_num", "transient_change", "mean", "variance"}),
+    "temp": frozenset({"n_levels", "trajectory", "mean"}),
+    "precip": frozenset({"n_levels", "trajectory", "mean", "variance"}),
 }
 
 
@@ -2033,6 +2035,20 @@ def _reject_unknown_axis_subkeys(stress_test_cfg: Mapping) -> None:
         if not unknown:
             continue
         detail = ""
+        # The two R14 spellings get their destination named rather than just
+        # being listed as unsupported: `n_levels` is a RETYPE of `step_num`
+        # (+1) and `trajectory` an enum where `transient_change` was a bool,
+        # so neither is fixed by copying the old value across.
+        if "step_num" in unknown:
+            detail += (
+                " `step_num` is now `n_levels` and counts LEVELS, not intervals:"
+                " `n_levels` = `step_num` + 1 (`C-31`)."
+            )
+        if "transient_change" in unknown:
+            detail += (
+                " `transient_change: true` is now `trajectory: transient`"
+                " (`C-32`); it is required, with no default."
+            )
         if axis == "temp" and "variance" in unknown:
             detail = (
                 " Temperature variance is not a supported stress dimension: "
@@ -2040,30 +2056,41 @@ def _reject_unknown_axis_subkeys(stress_test_cfg: Mapping) -> None:
                 "Remove it rather than expecting it to perturb anything."
             )
         raise ValueError(
-            f"workflows.run_stress_test.stress_test.{axis} carries "
+            f"workflows.run_stress_test.climate_perturbations.{axis} carries "
             f"unsupported key(s) {unknown}; it accepts {sorted(allowed)}.{detail}"
         )
 
 
-def _require_step_num(axis_cfg, axis_name):
-    """Read and validate a required ``step_num`` from a stress-test axis section.
+def _require_n_levels(axis_cfg, axis_name):
+    """Read and validate a required ``n_levels`` from a perturbation axis.
 
-    Strict by contract: a missing axis section or ``step_num`` raises
+    **`C-31` is a RETYPE, not a rename.** ``step_num`` counted INTERVALS and
+    every caller added one for the endpoints; ``n_levels`` is that sum, the
+    number of grid levels on the axis, declared directly. So ``step_num: 1``
+    and ``n_levels: 2`` describe the same axis, and a config that merely
+    renamed the key without adding one would silently drop a level from every
+    axis — which is why the old spelling is refused rather than accepted.
+
+    The floor moves with the meaning: zero intervals was legal (a single
+    unperturbed level), so the minimum level count is ONE, not zero.
+
+    Strict by contract: a missing axis section or ``n_levels`` raises
     ``KeyError`` (parity with ``prepare_cst_parameters.py``'s direct read); a
-    ``step_num`` that is not a non-negative integer raises ``ValueError``.
-    ``bool`` is rejected — ``True``/``False`` are not valid grid step counts.
+    value that is not a positive integer raises ``ValueError``. ``bool`` is
+    rejected — ``True``/``False`` are not valid level counts.
     """
-    step_num = axis_cfg[axis_name]["step_num"]  # KeyError on missing axis/key
-    if isinstance(step_num, bool) or not isinstance(step_num, int):
+    n_levels = axis_cfg[axis_name]["n_levels"]  # KeyError on missing axis/key
+    if isinstance(n_levels, bool) or not isinstance(n_levels, int):
         raise ValueError(
-            f"stress_test.{axis_name}.step_num must be a non-negative int, "
-            f"got {step_num!r}"
+            f"climate_perturbations.{axis_name}.n_levels must be a positive "
+            f"int, got {n_levels!r}"
         )
-    if step_num < 0:
+    if n_levels < 1:
         raise ValueError(
-            f"stress_test.{axis_name}.step_num must be non-negative, got {step_num}"
+            f"climate_perturbations.{axis_name}.n_levels must be at least 1 "
+            f"(one level = the unperturbed axis), got {n_levels}"
         )
-    return step_num
+    return n_levels
 
 
 def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
@@ -2073,17 +2100,18 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
     previously derived twice (inline in ``run_stress_test.smk`` and in
     ``blueearth_cst/experiment/prepare_cst_parameters.py``). Both call sites now read this helper.
 
-    STRICT: ``temp.step_num`` and ``precip.step_num`` are REQUIRED — a missing
-    axis section or ``step_num`` raises ``KeyError``, and a value that is not a
-    non-negative integer raises ``ValueError``. The helper never silently
-    invents a grid. Per-axis step count is ``step_num + 1`` (endpoints
-    inclusive), and ``st_num = temp_step_count * precip_step_count``.
+    STRICT: ``temp.n_levels`` and ``precip.n_levels`` are REQUIRED — a missing
+    axis section or ``n_levels`` raises ``KeyError``, and a value that is not a
+    positive integer raises ``ValueError``. The helper never silently invents a
+    grid. Per-axis level count IS ``n_levels`` since `C-31` (it was
+    ``step_num + 1``), and ``st_num = temp_step_count * precip_step_count``.
 
     Parameters
     ----------
     stress_test_cfg : Mapping
-        The ``workflows.run_stress_test.stress_test`` config section, with
-        ``temp`` and ``precip`` axis sub-sections each carrying ``step_num``.
+        The ``workflows.run_stress_test.climate_perturbations`` config section,
+        with ``temp`` and ``precip`` axis sub-sections each carrying
+        ``n_levels``.
 
     Returns
     -------
@@ -2093,13 +2121,15 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
     Raises
     ------
     KeyError
-        If the ``temp``/``precip`` axis section or its ``step_num`` is absent.
+        If the ``temp``/``precip`` axis section or its ``n_levels`` is absent.
     ValueError
-        If a ``step_num`` is not a non-negative integer.
+        If an ``n_levels`` is not a positive integer.
     """
     _reject_unknown_axis_subkeys(stress_test_cfg)
-    temp_step_count = _require_step_num(stress_test_cfg, "temp") + 1
-    precip_step_count = _require_step_num(stress_test_cfg, "precip") + 1
+    # No `+ 1` any more: `C-31` moved that addition into the config, where the
+    # author can see it. The RESULT is unchanged for an equivalent config.
+    temp_step_count = _require_n_levels(stress_test_cfg, "temp")
+    precip_step_count = _require_n_levels(stress_test_cfg, "precip")
     return temp_step_count, precip_step_count, temp_step_count * precip_step_count
 
 

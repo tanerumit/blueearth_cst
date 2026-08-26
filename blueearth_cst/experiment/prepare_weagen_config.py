@@ -8,7 +8,6 @@ year math is reachable without a live ``snakemake`` global. Behavior-neutral:
 the same dict is assembled and written.
 """
 
-import math
 import os
 
 import yaml
@@ -24,29 +23,33 @@ def read_yml(yml_path):
     return yml
 
 
-def compute_nr_years(middle_year, wflow_run_length):
+def compute_nr_years(sim_end):
     """Number of weagen years to generate.
 
     Spans from the end of the historical period (2010) to the wflow run window
     around the horizon (``middle_year`` ± ``wflow_run_length``/2), plus a 2-year
     pad. The ``2010`` and ``+2`` literals are the historical-end anchor and pad.
     """
-    return math.ceil((middle_year + wflow_run_length / 2) - 2010 + 2)
+    # `C-67`: the window END is declared now, so the generated record runs to
+    # it directly instead of through a horizon-plus-half-length estimate that
+    # rounded differently for an odd run length.
+    return int(sim_end) - 2010 + 2
 
 
 def _transient_flag(stress_test_cfg, variable):
-    """Read ``stress_test.<variable>.transient_change``, refusing a silent default.
+    """Read ``climate_perturbations.<variable>.trajectory``, refusing a default.
 
     Absent, this would decide whether a perturbation ramps or steps and nobody
     would know which they got. The house rule for a missing required key is to
     refuse and name it (``variable_spec.parse``), not to guess.
     """
     try:
-        return stress_test_cfg[variable]["transient_change"]
+        return stress_test_cfg[variable]["trajectory"] == "transient"
     except (KeyError, TypeError):
         raise ValueError(
-            f"workflows.run_stress_test.stress_test.{variable}.transient_change "
-            "is required: it decides whether the perturbation ramps over the run "
+            f"workflows.run_stress_test.climate_perturbations.{variable}"
+            ".trajectory is required (`C-32`; it was `transient_change: true`). "
+            "It decides whether the perturbation ramps over the run "
             "or applies as a step, and the weather generator has no defensible "
             "default for it."
         ) from None
@@ -58,8 +61,7 @@ def build_weagen_config(
     output_path,
     nc_file_prefix,
     default_config_path,
-    middle_year,
-    sim_years,
+    sim_end,
     seed,
     water_year_start,
     dry_spell_factor,
@@ -105,7 +107,7 @@ def build_weagen_config(
         {
             "out_dir": output_path,
             "start_year": 2010,
-            "n_years": compute_nr_years(middle_year, sim_years),
+            "n_years": compute_nr_years(sim_end),
             "n_realizations": realizations_num,
             # Resolved by the Snakefile from `shared.seed` (integer or `auto`)
             # against `defaults.seed`. Injected rather than templated so there
@@ -177,8 +179,7 @@ if __name__ == "__main__":
                 output_path=sm.params.output_path,
                 nc_file_prefix=sm.params.nc_file_prefix,
                 default_config_path=sm.params.default_config,
-                middle_year=sm.params.middle_year,
-                sim_years=sm.params.sim_years,
+                sim_end=sm.params.sim_window_end,
                 seed=sm.params.seed,
                 water_year_start=sm.params.water_year_start,
                 dry_spell_factor=sm.params.dry_spell_factor,

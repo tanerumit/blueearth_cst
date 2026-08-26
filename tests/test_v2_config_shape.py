@@ -5,19 +5,17 @@ P1's acceptance surface (R14 `config-shape-p1-loader.task.md`). The fixture is
 P4 owns `tests/snake_config_fixture.yml` and migrates it WITH the rewriter, so
 a P1 test that edited it would be doing P4's job with a worse tool.
 
-**This module records how far the T2 migration has got, as an executable
-statement rather than a note.** P1 moved the T1 reads — the `project:`,
-`basin:`, `climate:` and `model:` sections, which is what `shared:` dissolved
-into — and stopped. P1b is moving the T2 reads, the per-workflow key renames,
-one workflow at a time; each slice moves its entry point from ``V2_BLOCKED``
-to ``V2_CLEAN`` in the same commit as the readers, so no intermediate commit
-is red.
+**This module is P1b's acceptance surface as well as P1's.** P1 moved the T1
+reads — the `project:`, `basin:`, `climate:` and `model:` sections, which is
+what `shared:` dissolved into — and two entry points dry-ran clean. P1b moved
+the T2 reads, the per-workflow key renames, one workflow per commit: WF1
+(`C-22`, `C-56`), WF2 (`C-25`, `C-59`, `C-60`, `C-63`) and WF3 (`C-68`, `C-31`,
+`C-32`, `C-33`, `C-67`, `C-69`, `C-29`, `C-34`). All four are in ``V2_CLEAN``
+now, so the ``V2_BLOCKED`` boundary marker this module carried is gone.
 
-Done so far: WF1 (`C-22`, `C-56`) and WF2 (`C-25`, `C-59`, `C-60`, `C-63`).
-Still owed by WF3: `C-68`, `C-31`, `C-32`, `C-33`, `C-67`, `C-69`, `C-29`,
-`C-34`. ``test_wf3_stops_at_the_first_t2_renamed_key`` asserts the remaining
-boundary WITH the key it stops on, so the slice that moves those reads has a
-failing test that turns green rather than a paragraph it has to find.
+Still owed, and NOT by P1b: `C-57` and `C-64` need a per-variable registry that
+does not exist, and `C-66` cannot dissolve `relative_change:` without it. Those
+are P1c. The long form of `variables:` is not retired, so the fixture uses it.
 """
 
 from __future__ import annotations
@@ -36,13 +34,7 @@ V2_CONFIG = REPO_ROOT / "tests" / "data" / "v2" / "project_config_v2_probe.yml"
 #: The entry points that dry-run clean on v2. P1 delivered the first two by
 #: moving the T1 reads; P1b added `analyze_projections` by moving WF2's T2 key
 #: readers (`C-25`, `C-59`, `C-60`, `C-63`).
-V2_CLEAN = ("analyze_climate", "build_model", "analyze_projections")
-
-#: The two that do not, and the key each stops on. Naming the key is the point:
-#: it turns "P1 left this" into "here is the next thing to move".
-V2_BLOCKED = {
-    "run_stress_test": "stress_test",  # C-68 -> `climate_perturbations:`
-}
+V2_CLEAN = ("analyze_climate", "build_model", "analyze_projections", "run_stress_test")
 
 
 def _dry_run(snakefile: str) -> str:
@@ -85,26 +77,6 @@ def test_an_entry_point_dry_runs_clean_on_v2(snakefile):
     combined = _dry_run(snakefile)
     assert "Building DAG of jobs" in combined, combined[-3000:]
     assert "Error in file" not in combined, combined[-3000:]
-
-
-@pytest.mark.workflow_contract
-@pytest.mark.parametrize(("snakefile", "key"), sorted(V2_BLOCKED.items()))
-def test_wf3_stops_at_the_first_t2_renamed_key(snakefile, key):
-    """The scope line, asserted so the next phase inherits a test, not a note.
-
-    This is a RATCHET in the unusual direction: it passes because the work is
-    not done. When the phase that moves the T2 reads lands, this test fails —
-    and that failure is the signal to move the entry point into ``V2_CLEAN``
-    above, where the real assertion lives. Deleting it silently would lose the
-    only executable record that P1 stopped here on purpose.
-    """
-    combined = _dry_run(snakefile)
-    assert key in combined, (
-        f"{snakefile} no longer stops on {key!r}. If the T2 reads have been "
-        f"moved, move {snakefile!r} into V2_CLEAN and delete this case — it "
-        "exists only to mark the boundary."
-    )
-    assert "Building DAG of jobs" not in combined or "Error" in combined
 
 
 def test_every_declared_t2_file_exists():
@@ -164,3 +136,34 @@ def test_reference_window_takes_no_water_year_offset(tmp_path):
         return _rw.clip_reference_window(pair).effective
 
     assert _effective("Jan") == _effective("Oct")
+
+
+def test_n_levels_is_step_num_plus_one():
+    """`C-31` is a RETYPE, and this is the assertion that says which one.
+
+    The brief's falsifier: a config with ``step_num: 1`` must produce the SAME
+    grid as one with ``n_levels: 2``. Asserting the MEMBER COUNT rather than the
+    key is the whole point — a migration that renamed the key without adding one
+    would pass any spelling check and silently drop a level from every axis,
+    halving the stress-test grid.
+
+    ``st_num`` is the product of the two axes, so an off-by-one on either shows
+    up here: 2x2 = 4 members, where the v1 ``step_num: 1`` pair gave (1+1)x(1+1).
+    """
+    from blueearth_cst.shared.snake_utils import stress_test_grid
+
+    v1_equivalent = {
+        "temp": {"n_levels": 1 + 1, "trajectory": "transient", "mean": {}},
+        "precip": {"n_levels": 1 + 1, "trajectory": "transient", "mean": {}},
+    }
+    assert stress_test_grid(v1_equivalent) == (2, 2, 4)
+
+    # And the retired spelling is refused rather than read as a level count,
+    # which is what stops a bare rename from being accepted.
+    with pytest.raises(ValueError, match="n_levels"):
+        stress_test_grid(
+            {
+                "temp": {"step_num": 1, "transient_change": True, "mean": {}},
+                "precip": {"step_num": 1, "transient_change": True, "mean": {}},
+            }
+        )

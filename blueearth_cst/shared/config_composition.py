@@ -281,6 +281,24 @@ RETIRED_KEYS: dict[str, str] = {
         "`transient_change: true` becomes `trajectory: transient` (`C-32`)"
     ),
     "T2.run_stress_test.realizations_num": "renamed to `n_realizations` (`C-29`)",
+    "T2.run_stress_test.horizontime_climate": (
+        "folded with `run_length` into `simulation_window: {start, end}` "
+        "(`C-67`) -- INCLUSIVE years, declared rather than derived from a "
+        "centre and a span"
+    ),
+    "T2.run_stress_test.run_length": (
+        "folded with `horizontime_climate` into `simulation_window: "
+        "{start, end}` (`C-67`) -- INCLUSIVE years. Note the old pair spanned "
+        "`run_length + 1` calendar years whenever the halves snapped outward, "
+        "so copy the window the run actually used, not the length."
+    ),
+    "T2.run_stress_test.batch_size": "regrouped as `compute.batch_size` (`C-34`)",
+    "T2.run_stress_test.batch_size_max": (
+        "regrouped as `compute.batch_size_max` (`C-34`)"
+    ),
+    "T2.run_stress_test.disk_headroom_gb": (
+        "regrouped as `compute.disk_headroom_gb` (`C-34`)"
+    ),
     "T2.run_stress_test.dry_spell_factor": (
         "regrouped as `climate_perturbations.spell_factors.dry` (`C-33`)"
     ),

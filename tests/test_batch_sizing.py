@@ -21,7 +21,7 @@ from blueearth_cst.experiment.batch_sizing import (
     resolve_batch_size,
 )
 from blueearth_cst.experiment.forcing_window import (
-    forcing_window,
+    forcing_window_iso,
     forcing_window_years,
 )
 
@@ -68,7 +68,7 @@ class TestForcingWindow:
         self, horizon, run_length, expected
     ):
         assert forcing_window_years(horizon, run_length) == expected
-        start, end = forcing_window(horizon, run_length)
+        start, end = forcing_window_iso(*forcing_window_years(horizon, run_length))
         assert start.startswith(str(expected[0]))
         assert end.startswith(str(expected[1]))
 
@@ -86,7 +86,7 @@ class TestMeasureMemberFootprint:
         basin = _model(tmp_path, hist_steps=2557)
         hist_bytes = os.path.getsize(basin.joinpath(*FORCING_ANCHOR))
 
-        fp = measure_member_footprint(basin, horizontime_climate=2050, run_length=8)
+        fp = measure_member_footprint(basin, sim_start=2046, sim_end=2054)
 
         # 2046..2054 inclusive = 3287 days.
         expected = round(hist_bytes / 2557 * 3287)
@@ -98,13 +98,13 @@ class TestMeasureMemberFootprint:
         independent of run length -- scaling it would be wrong, not merely
         imprecise."""
         basin = _model(tmp_path)
-        short = measure_member_footprint(basin, 2050, 8)
-        long = measure_member_footprint(basin, 2050, 40)
+        short = measure_member_footprint(basin, 2046, 2054)
+        long = measure_member_footprint(basin, 2030, 2070)
         assert short.state_bytes == long.state_bytes == 106_086
         assert long.forcing_bytes > short.forcing_bytes
 
     def test_total_is_both_temp_classes(self, tmp_path):
-        fp = measure_member_footprint(_model(tmp_path), 2050, 8)
+        fp = measure_member_footprint(_model(tmp_path), 2046, 2054)
         assert fp.total_bytes == fp.forcing_bytes + fp.state_bytes
 
     @pytest.mark.parametrize("missing", [FORCING_ANCHOR, STATE_ANCHOR])
@@ -115,15 +115,15 @@ class TestMeasureMemberFootprint:
         not become a new way for a run to fail."""
         basin = _model(tmp_path)
         basin.joinpath(*missing).unlink()
-        assert measure_member_footprint(basin, 2050, 8) is None
+        assert measure_member_footprint(basin, 2046, 2054) is None
 
     def test_an_absent_model_yields_no_estimate(self, tmp_path):
-        assert measure_member_footprint(tmp_path / "nope", 2050, 8) is None
+        assert measure_member_footprint(tmp_path / "nope", 2046, 2054) is None
 
     def test_an_unreadable_forcing_file_yields_no_estimate(self, tmp_path):
         basin = _model(tmp_path)
         basin.joinpath(*FORCING_ANCHOR).write_bytes(b"not a netcdf")
-        assert measure_member_footprint(basin, 2050, 8) is None
+        assert measure_member_footprint(basin, 2046, 2054) is None
 
     def test_it_reproduces_the_measured_rapid_fixture(self, tmp_path):
         """The estimator's entire claim, against real numbers.
@@ -153,7 +153,7 @@ class TestMeasureMemberFootprint:
         original = mod._netcdf_timesteps
         mod._netcdf_timesteps = lambda _p: 2557
         try:
-            fp = measure_member_footprint(basin, horizontime_climate=2050, run_length=8)
+            fp = measure_member_footprint(basin, sim_start=2046, sim_end=2054)
         finally:
             mod._netcdf_timesteps = original
 

@@ -16,7 +16,7 @@ from blueearth_cst.shared.provenance import append_journal_line, configuration_i
 from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retired_experiment_keys
 from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, window_year_pair, install_console_style, run_header
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 
@@ -191,14 +191,18 @@ WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_
 julia_threads = DEFAULT_JULIA_THREADS  # C-54: no project override; advanced_settings owns it
 wflow_julia = julia_prefix(julia_threads)
 
-RLZ_NUM = get_config(my_cfg, "realizations_num", 1)
+RLZ_NUM = get_config(my_cfg, "n_realizations", 1)  # C-29
 
-# Stress test step counts live under stress_test.<temp|precip>.step_num.
-# ST_NUM is derived by the shared stress_test_grid helper (strict: step_num is
+# C-68: the section is `climate_perturbations:` now -- it describes the
+# perturbations, and `stress_test` named the whole workflow as well as this one
+# block. The LOCAL keeps its name: it is threaded into two rules' params and
+# through to prepare_weagen_config, none of which is a config surface.
+#
+# Per-axis level counts live under climate_perturbations.<temp|precip>.n_levels.
+# ST_NUM is derived by the shared stress_test_grid helper (strict: n_levels is
 # required on both axes) so the Snakefile and prepare_cst_parameters.py read one
-# source of truth. The prior inline form defaulted a missing step_num to 1,
-# silently inventing a grid; that leniency is removed (output-neutral hardening).
-stress_test_cfg = my_cfg["stress_test"]
+# source of truth.
+stress_test_cfg = my_cfg["climate_perturbations"]
 _, _, ST_NUM = stress_test_grid(stress_test_cfg)
 
 # Monthly spell-length coefficients, beside the two perturbation axes because
@@ -207,17 +211,24 @@ _, _, ST_NUM = stress_test_grid(stress_test_cfg)
 # defensible default, unlike `transient_change` which is refused when missing.
 # Validated here, at parse time, because a wrong-length list reaches R as a
 # recycled or truncated vector and silently perturbs the wrong months.
+# C-33: both were flat beside the axes; they are leaves of `spell_factors:` now.
+_spell_factors = stress_test_cfg.get("spell_factors") or {}
 DRY_SPELL_FACTOR = validate_spell_factor(
-    stress_test_cfg.get("dry_spell_factor"),
-    "workflows.run_stress_test.stress_test.dry_spell_factor",
+    _spell_factors.get("dry"),
+    "workflows.run_stress_test.climate_perturbations.spell_factors.dry",
 )
 WET_SPELL_FACTOR = validate_spell_factor(
-    stress_test_cfg.get("wet_spell_factor"),
-    "workflows.run_stress_test.stress_test.wet_spell_factor",
+    _spell_factors.get("wet"),
+    "workflows.run_stress_test.climate_perturbations.spell_factors.wet",
 )
 
-run_hist = get_config(my_cfg, "run_historical", False)
-ST_START = 0 if run_hist else 1
+# C-69 / D-7.6: `run_historical` is DELETED and `st_0` is ALWAYS produced.
+# NOT behaviour-preserving, and deliberately so (D-11.5): a project that had
+# `run_historical: false` GAINS the unperturbed baseline member and with it
+# `q_wettest_month_mean` / `q_driest_month_mean`, 2 of the 11 q metrics. Every
+# shipped config is in the gaining direction, so a changed indicator count here
+# is the row landing, not a defect.
+ST_START = 0
 
 # Member indices are ZERO-PADDED to a width derived from the count (C27), so
 # lexical order matches run order everywhere a tree is listed, globbed or
@@ -323,8 +334,16 @@ SPATIAL_UNITS = spatial_units_rule(
     data_sources=DATA_SOURCES,
 )
 
-horizontime_climate = get_config(my_cfg, "horizontime_climate", optional=False)
-wflow_run_length = get_config(my_cfg, "run_length", 20)
+# C-67: TWO keys became one. `horizontime_climate` (a centre year) and
+# `run_length` (a span) were resolved into an inclusive year pair by
+# `forcing_window_years`; that pair is DECLARED now. The inverse is not
+# single-valued -- an odd run length snapped ceil backwards and round forwards,
+# so two (centre, length) pairs could land on one window -- which is why the
+# window itself moved into the config rather than being back-derived here.
+SIM_WINDOW_START, SIM_WINDOW_END = window_year_pair(
+    get_config(my_cfg, "simulation_window", optional=False),
+    "workflows.run_stress_test.simulation_window",
+)
 
 # R9 P2 commit 1: must match WF1's definition exactly — WF3 READS the model root
 # WF1 wrote, so the two move in the same commit or the cross-workflow contract
@@ -963,8 +982,7 @@ rule prepare_weathergen_config:
         # weathergenr::generate_weather writes both classes into ONE out_dir
         # and the R07 layout separates them (map §2b).
         output_path = f"{wg_dir}/",
-        middle_year = horizontime_climate,
-        sim_years = wflow_run_length,
+        sim_window_end = SIM_WINDOW_END,
         seed = SEED,
         water_year_start = WATER_YEAR_START,
         dry_spell_factor = DRY_SPELL_FACTOR,
@@ -1102,8 +1120,8 @@ rule downscale_climate_realization:
     params:
         model_dir = basin_dir,
         clim_source = clim_source,
-        horizontime_climate = horizontime_climate,
-        run_length = wflow_run_length,
+        sim_window_start = SIM_WINDOW_START,
+        sim_window_end = SIM_WINDOW_END,
         # Orography sidecar for the chirps/chirps_global branch: the store
         # producer writes it as the clim_source-INDEPENDENT orography.nc beside
         # extract_historical.nc under the keyed store dir (R07 B1 standardises
@@ -1168,22 +1186,25 @@ def _positive_batch_key(key, value):
 
 # Validate the clamp BEFORE it feeds the default, so a bad batch_size_max is
 # reported as batch_size_max rather than as the batch_size it silently zeroed.
-batch_size_max = _positive_batch_key("batch_size_max",
-                                     get_config(my_cfg, "batch_size_max", 8))
-_explicit_batch_size = get_config(my_cfg, "batch_size", None, optional=True)
+# C-34: the three batch/disk knobs regroup under `compute:`. A REGROUP only --
+# P2 owns what `CONFIG_PROJECTION` does with the new section.
+_compute_cfg = get_config(my_cfg, "compute", {}) or {}
+batch_size_max = _positive_batch_key("compute.batch_size_max",
+                                     get_config(_compute_cfg, "batch_size_max", 8))
+_explicit_batch_size = get_config(_compute_cfg, "batch_size", None, optional=True)
 if _explicit_batch_size is not None:
-    _explicit_batch_size = _positive_batch_key("batch_size", _explicit_batch_size)
+    _explicit_batch_size = _positive_batch_key("compute.batch_size", _explicit_batch_size)
 
 _batch_sizing = resolve_batch_size(
     member_count=len(_k_members),
     cores=_cores,
     batch_size_max=batch_size_max,
     explicit=_explicit_batch_size,
-    footprint=measure_member_footprint(basin_dir, horizontime_climate, wflow_run_length),
+    footprint=measure_member_footprint(basin_dir, SIM_WINDOW_START, SIM_WINDOW_END),
     headroom_bytes=disk_headroom_bytes(
         project_dir,
         fraction=ADVANCED_SETTINGS["defaults"]["batch_disk_headroom_fraction"],
-        headroom_gb=get_config(my_cfg, "disk_headroom_gb", None, optional=True),
+        headroom_gb=get_config(_compute_cfg, "disk_headroom_gb", None, optional=True),
     ),
 )
 batch_size = _batch_sizing.batch_size

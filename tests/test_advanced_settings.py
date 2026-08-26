@@ -22,11 +22,10 @@ VALID = {
     "constraints": {"min_historical_years": 16},
     "defaults": {
         "batch_disk_headroom_fraction": 0.25,
-        "julia_threads": 4,
         "seed": 123,
         "water_year_start": "Jan",
     },
-    "runtime": {"julia_version": "1.11.7"},
+    "runtime": {"julia_threads": 4, "julia_version": "1.11.7"},
 }
 
 
@@ -38,7 +37,7 @@ def test_the_shipped_file_is_where_the_constants_come_from():
     module-level load, so a constant left hardcoded would show up here."""
     on_disk = yaml.safe_load(su.ADVANCED_SETTINGS_PATH.read_text(encoding="utf-8"))
     assert su.MIN_HISTORICAL_YEARS == on_disk["constraints"]["min_historical_years"]
-    assert su.DEFAULT_JULIA_THREADS == on_disk["defaults"]["julia_threads"]
+    assert su.DEFAULT_JULIA_THREADS == on_disk["runtime"]["julia_threads"]
     assert su.DEFAULT_SEED == on_disk["defaults"]["seed"]
     assert su.DEFAULT_WATER_YEAR_START == on_disk["defaults"]["water_year_start"]
 
@@ -91,7 +90,7 @@ def test_unknown_key_is_rejected(tmp_path):
     otherwise be ignored and the built-in 16 would silently stand."""
     payload = {
         "constraints": {"min_historical_years": 16, "min_historical_year": 8},
-        "defaults": {"julia_threads": 4, "seed": 123, "water_year_start": "Jan"},
+        "defaults": {"seed": 123, "water_year_start": "Jan"},
     }
     with pytest.raises(ValueError, match="unknown key"):
         su.load_advanced_settings(_write(tmp_path, payload))
@@ -122,7 +121,7 @@ def test_a_malformed_julia_version_is_rejected(tmp_path, bad):
     """`1.11` is the dangerous one twice over: as a bare YAML scalar it is a
     FLOAT, and even as a string it is a two-part selector juliaup may resolve to
     a patch the manifest was never built against."""
-    payload = {**VALID, "runtime": {"julia_version": bad}}
+    payload = {**VALID, "runtime": {"julia_threads": 4, "julia_version": bad}}
     with pytest.raises(ValueError, match="runtime.julia_version"):
         su.load_advanced_settings(_write(tmp_path, payload))
 
@@ -133,9 +132,9 @@ def test_an_unquoted_two_part_version_reaches_the_validator_as_a_float(tmp_path)
     path = tmp_path / "advanced_settings.yml"
     path.write_text(
         "constraints:\n  min_historical_years: 16\n"
-        "defaults:\n  batch_disk_headroom_fraction: 0.25\n  julia_threads: 4\n"
+        "defaults:\n  batch_disk_headroom_fraction: 0.25\n"
         "  seed: 123\n  water_year_start: Jan\n"
-        "runtime:\n  julia_version: 1.11\n",
+        "runtime:\n  julia_threads: 4\n  julia_version: 1.11\n",
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="float"):

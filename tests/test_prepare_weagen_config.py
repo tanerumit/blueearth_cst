@@ -5,7 +5,6 @@ branch dict assembly (build_weagen_config). Both are import-clean after the R5
 function extraction (commit 3) — no snakemake global, no heavy deps.
 """
 
-import math
 import os
 
 import pytest
@@ -28,21 +27,28 @@ DEFAULT_WEAGEN_CONFIG = os.path.join(
 
 
 @pytest.mark.parametrize(
-    "middle_year, run_length, expected",
+    "sim_end, expected",
     [
-        (2080, 20, math.ceil((2080 + 20 / 2) - 2010 + 2)),  # 82 (seed config)
-        (2050, 30, math.ceil((2050 + 30 / 2) - 2010 + 2)),  # 57
-        (2010, 0, math.ceil((2010 + 0) - 2010 + 2)),  # 2 (degenerate)
+        # `C-67`: the window END is declared, so these are window ends now, not
+        # (centre, length) pairs. Each is the end the old pair resolved to.
+        (2090, 82),  # was (2080, 20)
+        (2065, 57),  # was (2050, 30)
+        (2010, 2),  # was (2010, 0) -- a single-year window
     ],
 )
-def test_compute_nr_years(middle_year, run_length, expected):
-    """Year math spans 2010 -> horizon +/- run_length/2, +2 pad."""
-    assert compute_nr_years(middle_year, run_length) == expected
+def test_compute_nr_years(sim_end, expected):
+    """Year math spans 2010 -> the declared window END, +2 pad (`C-67`)."""
+    assert compute_nr_years(sim_end) == expected
 
 
 def test_seed_year_math_value():
-    """Pin the seed-config value explicitly (horizon 2080, run_length 20)."""
-    assert compute_nr_years(2080, 20) == 82
+    """Pin the seed-config value explicitly.
+
+    Horizon 2080 with run_length 20 resolved to a window ending 2090, which
+    `C-67` now has the config declare directly. The PINNED VALUE is unchanged,
+    which is the point of keeping this beside the parametrised case.
+    """
+    assert compute_nr_years(2090) == 82
 
 
 def test_default_weagen_config_resolves_at_defaults_path():
@@ -84,8 +90,8 @@ def _generate_kwargs(tmp_path, stress_test=None):
     """
     if stress_test is None:
         stress_test = {
-            "temp": {"step_num": 1, "transient_change": True},
-            "precip": {"step_num": 2, "transient_change": False},
+            "temp": {"n_levels": 2, "trajectory": "transient"},
+            "precip": {"n_levels": 3, "trajectory": "step"},
         }
     return dict(
         realizations_num=2,
@@ -93,8 +99,7 @@ def _generate_kwargs(tmp_path, stress_test=None):
         output_path="out/",
         nc_file_prefix="rlz_1",
         default_config_path=DEFAULT_WEAGEN_CONFIG,
-        middle_year=2080,
-        sim_years=20,
+        sim_end=2090,
         seed=123,
         water_year_start="Jan",
         dry_spell_factor=[1.0] * 12,
@@ -118,7 +123,7 @@ def test_transient_flags_reach_the_one_shared_config(tmp_path):
 def test_only_the_flags_are_copied_not_the_perturbation_ranges(tmp_path):
     """F6: the retired per-member file copied in the whole stress_test blocks.
 
-    It carried `step_num` and the monthly min/max ranges, none of which the R
+    It carried `n_levels` and the monthly min/max ranges, none of which the R
     read -- so anyone opening it to see what a run did read plausible
     perturbation ranges that had no part in it. The real values come from
     st_<m>.csv. Do not reintroduce them here.
@@ -128,28 +133,30 @@ def test_only_the_flags_are_copied_not_the_perturbation_ranges(tmp_path):
             tmp_path,
             stress_test={
                 "temp": {
-                    "step_num": 1,
-                    "transient_change": True,
+                    "n_levels": 2,
+                    "trajectory": "transient",
                     "mean": {"min": [0.0] * 12, "max": [3.0] * 12},
                 },
-                "precip": {"step_num": 2, "transient_change": True},
+                "precip": {"n_levels": 3, "trajectory": "transient"},
             },
         )
     )
     assert set(out["temp"]) == {"transient_change"}
     assert "mean" not in out["temp"]
-    assert "step_num" not in out["temp"]
+    assert "n_levels" not in out["temp"]
 
 
 @pytest.mark.parametrize("variable", ["temp", "precip"])
 def test_missing_transient_flag_refuses_and_names_the_key(tmp_path, variable):
     """No silent default: it decides whether a perturbation ramps or steps."""
     stress_test = {
-        "temp": {"transient_change": True},
-        "precip": {"transient_change": True},
+        "temp": {"trajectory": "transient"},
+        "precip": {"trajectory": "transient"},
     }
-    del stress_test[variable]["transient_change"]
-    with pytest.raises(ValueError, match=rf"stress_test\.{variable}\.transient_change"):
+    del stress_test[variable]["trajectory"]
+    with pytest.raises(
+        ValueError, match=rf"climate_perturbations\.{variable}\.trajectory"
+    ):
         build_weagen_config(**_generate_kwargs(tmp_path, stress_test=stress_test))
 
 

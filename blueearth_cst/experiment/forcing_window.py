@@ -38,11 +38,17 @@ def forcing_window_years(horizontime_climate, wflow_run_length):
     return startyear, endyear
 
 
-def forcing_window(horizontime_climate, wflow_run_length):
-    """Return the ``(starttime, endtime)`` pair centred on ``horizontime_climate``.
+def forcing_window_iso(startyear, endyear):
+    """Render an INCLUSIVE year pair as the ``(starttime, endtime)`` ISO pair.
 
-    The ISO form of :func:`forcing_window_years`, as hydromt and the run TOML
-    want it.
+    As hydromt and the run TOML want it. Since `C-67` the two years are
+    DECLARED, as ``simulation_window: {start, end}``, rather than derived
+    from a horizon year and a run length -- so this no longer computes a
+    window, it only formats one.
+
+    :func:`forcing_window_years` stays beside it as the record of how the
+    pair used to be derived. It is no longer on any run path: the inverse
+    is not single-valued for an odd run length, which is why `C-67` moved
+    the window into the config instead of keeping the two scalars.
     """
-    startyear, endyear = forcing_window_years(horizontime_climate, wflow_run_length)
     return f"{startyear}-01-01T00:00:00", f"{endyear}-12-31T00:00:00"

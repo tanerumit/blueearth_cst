@@ -103,11 +103,20 @@ same reason — it touches readers, P3 adds a script.)
 1. **Gate 1 — RELEASED 2026-08-24.** The design's two new decisions are ruled:
    `C-48` withdrawn (D-7.10) and `C-85` at full breadth (D-12.1). Kept in the
    list because P5's scope derives from the second.
-2. **Gate 2 — after P0, and it releases the PROGRAM.** Report which outcome
-   held and show the tracked hash record. **No implementation commit lands
-   before this gate** (design D-14.3, finding `ext1-3`). If the indicator
-   reference needed re-recording, the baseline changed underneath the milestone
-   and every later comparison is against the new record.
+2. **Gate 2 — RELEASED 2026-08-25.** P0 confirmed the baseline needs no
+   re-record, so the second branch of this gate never fired and every later
+   comparison stands against the manifest as it was. `t2608220920` is closed on
+   commit-level evidence: `b4c58d8b` re-recorded 624 of the indicator table's
+   630 rows on 2026-08-22, 33 minutes after `da9fa7fc` boarded the note — the
+   premise was true as written and was fixed by the commit that boarded it.
+   The green is not a fixture artefact: the run-path diff from the recording
+   commit `0d256a41` to HEAD is EMPTY, so nothing capable of moving a number
+   changed. The tracked hash record is `dev/baseline/provenance.md`.
+   **Read it before trusting a 7/7:** the manifest hashes only the two CMIP6
+   CSVs, while `q_indicators.csv` and `run_default/output.csv` are compared
+   against tolerance reference tables and carry no sha256 anywhere — so a
+   sub-tolerance move passes the gate and still changes the file. Byte-level
+   claims go against that record, not against `check_baseline` alone.
 3. **Gate 3 — after P3, before P4.** Show the rewriter's output for ONE
    `test_case/` set as a diff, and the refusal message for a
    `water_year_start: Oct` fixture. PAUSE for approval before migrating the
@@ -167,7 +176,7 @@ save gate cost.
 
 | Phase | Brief | State |
 |---|---|---|
-| P0 | `config-shape-p0-baseline-provenance.task.md` | not started |
+| P0 | `config-shape-p0-baseline-provenance.task.md` | **LANDED 2026-08-25** (`3d3d29fe`, merged `f814c16b`) |
 | P1 | `config-shape-p1-loader.task.md` | **DONE** 2026-08-25 (T1 reads only; see P1b) |
 | P1b | `config-shape-p1b-readers.task.md` | not started |
 | P2 | `config-shape-p2-identity.task.md` | not started |

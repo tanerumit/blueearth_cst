@@ -1,7 +1,9 @@
 # A v1 config SET, in the R13 split shape, kept so migration stays testable
 
-`tests/data/presplit/` holds PRE-R13 configs: one whole document, workflows
-inline. That was the input to R13's splitter, which P1 retired.
+`tests/data/presplit/` used to sit beside this and held PRE-R13 configs: one
+whole document, workflows inline. It was the input to R13's splitter, which P1
+retired in `068b81dd`, and it was removed with the digest-equality tests that
+were its only consumer (R14 P4, owner ruling).
 
 This directory holds the *other* v1 shape — the R13 SPLIT form, a project file
 carrying `{enabled, config_path}` stanzas plus one file per workflow — which is

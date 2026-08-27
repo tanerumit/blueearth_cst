@@ -88,12 +88,12 @@ ALLOWANCES = (
     Allowance(
         name="the v1 migration fixtures",
         reason=(
-            "`tests/data/presplit/` holds PRE-R13 whole configs and "
-            "`tests/data/v1_split/` the R13 SPLIT shape the rewriter migrates. "
-            "Both exist precisely to be v1, and P4 made the second one necessary "
-            "by migrating `test_case/` out from under the migration tests"
+            "`tests/data/v1_split/` holds an R13-SPLIT v1 set, the shape the "
+            "rewriter migrates, and exists precisely to be v1. It replaced "
+            "`tests/data/presplit/`, whose PRE-R13 documents were retired with "
+            "R13's splitter and the digest-equality tests that read them"
         ),
-        path_globs=("tests/data/presplit/*", "tests/data/v1_split/*"),
+        path_globs=("tests/data/v1_split/*",),
     ),
     Allowance(
         name="milestone records",

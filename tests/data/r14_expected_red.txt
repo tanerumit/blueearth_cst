@@ -1,27 +1,24 @@
-# R14 declared-red - test node ids that fail because their FIXTURE is v1.
+# R14 declared-red - tests whose OWN fixtures are still v1.
 # Read tests/test_r14_expected_red.py first.
 #
-# **Re-recorded 2026-08-27 at P4 commit 2**, against `pixi run test-fast`.
-# 73 -> 57 -> 55 as P4 migrated the `test_case/` sets, the fixture and then
-# the templates. What is left is NOT a shipped config: it is tests whose own
-# fixtures are pre-R13, and they need a ruling rather than a migration.
+# **Re-recorded 2026-08-27**, against `pixi run test-fast`. The arc so far:
+#   83  P1 recorded it -- every shipped config refused at `schema_version`
+#   73  P1b, after the T2 readers moved
+#   57  P4/1, after the four `test_case/` sets and the fixture migrated
+#   55  P4/2, after the templates migrated
+#   29  P4/3, after R13's digest-equality tests and `presplit/` retired
 #
-# Two causes, and neither is a defect in the code under test:
-#   20  compose a `tests/data/presplit/` config (pre-R13, `shared:` inline)
-#       against v2 projections, so `basin` is missing where v2 expects it;
-#    8  hand-build a config with v1 keys and stamp `schema_version: 2`.
-#
-# The 26 in `test_config_composition.py` assert R13's invariant -- that the
-# split did NOT move `effective_config_digest`. R14 moves it ONCE, on purpose
-# (`K3`), so they cannot pass and must not be forced to. `presplit/` itself
-# exists to test R13's splitter, which P1 retired in `068b81dd`.
+# Every entry left is a test that BUILDS a v1-shaped config in `tmp_path`
+# and runs it through v2 machinery. None is a shipped config, and none is a
+# defect in the code under test -- they are fixtures that have not moved
+# yet. Migrating them is mechanical and takes the list to zero, at which
+# point BOTH this file and its test are deleted.
 #
 # By module:
 #     2  tests/test_a1_acceptance.py
 #     1  tests/test_build_model.py
 #     2  tests/test_check_project_consistency.py
 #     3  tests/test_compare_climate_sources.py
-#    26  tests/test_config_composition.py
 #     4  tests/test_log_rules_contract.py
 #     1  tests/test_migration_mapping.py
 #     1  tests/test_plot_workflow_dag.py
@@ -31,59 +28,33 @@
 #     1  tests/test_store_region_bbox.py
 #     1  tests/test_wf1_plot_outputs.py
 #
-tests/test_a1_acceptance.py::test_the_seed_fixture_keeps_its_own_shorter_window  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_a1_acceptance.py::test_the_template_config_recommends_the_30_year_window  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_build_model.py::test_copy_config  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_check_project_consistency.py::test_b_mutated_basin_resolution_fails_naming_key  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_check_project_consistency.py::test_c2_mutated_shared_wflow_outvars_fails  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_compare_climate_sources.py::test_rule_declares_the_module_named_outputs_on_two_sources  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_compare_climate_sources.py::test_rule_takes_each_store_and_its_basin_cells  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_compare_climate_sources.py::test_the_appended_log_label_matches_the_rule  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config.template.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_baseline.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_baseline_linux.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_rapid.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_wf2_fast.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config.template.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_baseline.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_baseline_linux.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_rapid.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_wf2_fast.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config.template.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_baseline.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_baseline_linux.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_rapid.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_wf2_fast.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config.template.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_baseline.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_baseline_linux.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_rapid.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_wf2_fast.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config.template.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_baseline.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_baseline_linux.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_rapid.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_wf2_fast.yml]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_config_composition.py::test_write_config_round_trips_through_compose  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_log_rules_contract.py::test_declared_labels_are_unique[analyze_climate.smk-two_source]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[analyze_climate.smk-two_source]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[analyze_climate.smk-two_source]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_climate.smk-two_source]  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_migration_mapping.py::test_the_trajectory_enum_agrees_with_the_code  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_plot_workflow_dag.py::test_rulegraph_mode_and_format_reach_the_filename  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_r01_config_readers.py::test_prep_cst_parameters_reads_sectioned_config  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_a_clean_tree_exits_zero  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_a_missing_project_dir_says_where_it_looked  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_no_check_skips_the_gate_and_always_exits_zero  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_out_writes_a_snapshot_the_falsifier_can_read_back  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_project_dir_override_wins_over_the_config  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_quiet_keeps_the_unmapped_lines_and_the_summary  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_reports_unmapped_and_exits_nonzero  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_the_default_map_still_reports_an_undeclared_artifact  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_the_map_is_the_post_migration_inventory  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_snapshot_project_tree.py::test_writes_nothing_without_out  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_spatial_units_rule.py::test_gauge_points_are_a_declared_input_only_when_configured  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_spatial_units_rule.py::test_overrides_are_carried_through  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_spatial_units_rule.py::test_the_deprecated_build_model_fallback_cannot_reach_the_rule  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_store_region_bbox.py::test_store_region_agrees_with_the_model_grid  # v1 fixture; see the header - needs a ruling, not a migration
-tests/test_wf1_plot_outputs.py::test_the_shipped_sentinel_yields_no_layer  # v1 fixture; see the header - needs a ruling, not a migration
+tests/test_a1_acceptance.py::test_the_seed_fixture_keeps_its_own_shorter_window  # v1 fixture built in the test itself
+tests/test_a1_acceptance.py::test_the_template_config_recommends_the_30_year_window  # v1 fixture built in the test itself
+tests/test_build_model.py::test_copy_config  # v1 fixture built in the test itself
+tests/test_check_project_consistency.py::test_b_mutated_basin_resolution_fails_naming_key  # v1 fixture built in the test itself
+tests/test_check_project_consistency.py::test_c2_mutated_shared_wflow_outvars_fails  # v1 fixture built in the test itself
+tests/test_compare_climate_sources.py::test_rule_declares_the_module_named_outputs_on_two_sources  # v1 fixture built in the test itself
+tests/test_compare_climate_sources.py::test_rule_takes_each_store_and_its_basin_cells  # v1 fixture built in the test itself
+tests/test_compare_climate_sources.py::test_the_appended_log_label_matches_the_rule  # v1 fixture built in the test itself
+tests/test_log_rules_contract.py::test_declared_labels_are_unique[analyze_climate.smk-two_source]  # v1 fixture built in the test itself
+tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[analyze_climate.smk-two_source]  # v1 fixture built in the test itself
+tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[analyze_climate.smk-two_source]  # v1 fixture built in the test itself
+tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_climate.smk-two_source]  # v1 fixture built in the test itself
+tests/test_migration_mapping.py::test_the_trajectory_enum_agrees_with_the_code  # v1 fixture built in the test itself
+tests/test_plot_workflow_dag.py::test_rulegraph_mode_and_format_reach_the_filename  # v1 fixture built in the test itself
+tests/test_r01_config_readers.py::test_prep_cst_parameters_reads_sectioned_config  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_a_clean_tree_exits_zero  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_a_missing_project_dir_says_where_it_looked  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_no_check_skips_the_gate_and_always_exits_zero  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_out_writes_a_snapshot_the_falsifier_can_read_back  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_project_dir_override_wins_over_the_config  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_quiet_keeps_the_unmapped_lines_and_the_summary  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_reports_unmapped_and_exits_nonzero  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_the_default_map_still_reports_an_undeclared_artifact  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_the_map_is_the_post_migration_inventory  # v1 fixture built in the test itself
+tests/test_snapshot_project_tree.py::test_writes_nothing_without_out  # v1 fixture built in the test itself
+tests/test_spatial_units_rule.py::test_gauge_points_are_a_declared_input_only_when_configured  # v1 fixture built in the test itself
+tests/test_spatial_units_rule.py::test_overrides_are_carried_through  # v1 fixture built in the test itself
+tests/test_spatial_units_rule.py::test_the_deprecated_build_model_fallback_cannot_reach_the_rule  # v1 fixture built in the test itself
+tests/test_store_region_bbox.py::test_store_region_agrees_with_the_model_grid  # v1 fixture built in the test itself
+tests/test_wf1_plot_outputs.py::test_the_shipped_sentinel_yields_no_layer  # v1 fixture built in the test itself

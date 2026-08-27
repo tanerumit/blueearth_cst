@@ -24,8 +24,6 @@ Three groups carry most of the weight:
 from __future__ import annotations
 
 import copy
-import hashlib
-import json
 import os
 import subprocess
 import sys
@@ -36,8 +34,6 @@ import pytest
 import yaml
 
 from blueearth_cst.shared import config_composition as cc
-from blueearth_cst.shared.provenance import effective_config_digest
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -1003,125 +999,40 @@ def test_a_broken_workflow_file_does_not_break_a_tool(tmp_path, capsys):
 
 
 # ---------------------------------------------------------------------------
-# Digest equality across the migration (D-10.2, §16.1)
+# RETIRED 2026-08-27 — digest equality across the R13 migration (was D-10.2)
 # ---------------------------------------------------------------------------
-
-#: Each shipped config, as (frozen pre-split specimen, live post-split project
-#: file, entry point). The pre-split side is the file that WAS live until the
-#: R13 migration, kept under tests/data/presplit/ precisely so this comparison
-#: stays possible after the tree moved.
-MIGRATED = [
-    ("snake_config_rapid.yml", "test_case/snake_config_rapid.yml"),
-    ("snake_config_baseline.yml", "test_case/snake_config_baseline.yml"),
-    ("snake_config_baseline_linux.yml", "test_case/snake_config_baseline_linux.yml"),
-    ("snake_config_wf2_fast.yml", "test_case/snake_config_wf2_fast.yml"),
-    ("snake_config.template.yml", "config/templates/snake_config.template.yml"),
-]
-
-PRESPLIT_DIR = REPO_ROOT / "tests" / "data" / "presplit"
-
-
-def _relocated(doc):
-    """A pre-split document with the declared R13 relocations applied.
-
-    ``wflow_outvars`` was hoisted from ``workflows.build_model`` to ``shared:``
-    inside R13 (D-9.7), so the digest comparison below is exact **up to that
-    one declared row** rather than exact. Normalizing here rather than
-    loosening the assertion keeps every other key held to equality: a second
-    key that moved would still fail, which is the whole value of the check.
-
-    The hoist DOES shift both digests on a real project, deliberately and
-    expectedly, and that shift has its own falsifier pass. What this test
-    rules out is an *unattributed* shift.
-    """
-    doc = copy.deepcopy(doc)
-    for source_path, dest_path in cc.RELOCATED_KEYS.items():
-        node = doc
-        for key in source_path[:-1]:
-            node = node.get(key) if isinstance(node, dict) else None
-            if node is None:
-                break
-        if not isinstance(node, dict) or source_path[-1] not in node:
-            continue
-        value = node.pop(source_path[-1])
-        target = doc
-        for key in dest_path[:-1]:
-            target = target.setdefault(key, {})
-        target[dest_path[-1]] = value
-    return doc
-
-
-def _guarded_digest(cfg):
-    """WF3's guarded-sections digest, computed exactly as the Snakefile does.
-
-    Restated here rather than imported because a Snakefile is not importable.
-    It is the rerun trigger for rule 3.01, so a shift in it is a shift in when
-    the drift guard fires.
-    """
-    return hashlib.sha256(
-        json.dumps(
-            {
-                "project": cfg.get("project"),
-                "shared.basin": cfg.get("shared", {}).get("basin"),
-                "workflows.build_model": cfg.get("workflows", {}).get("build_model"),
-                "workflows.analyze_projections": cfg.get("workflows", {}).get(
-                    "analyze_projections"
-                ),
-            },
-            sort_keys=True,
-            ensure_ascii=False,
-            default=str,
-        ).encode("utf-8")
-    ).hexdigest()
-
-
-@pytest.mark.parametrize(("presplit", "live"), MIGRATED, ids=[p for p, _ in MIGRATED])
-@pytest.mark.parametrize("entry", sorted(PROJECTIONS))
-def test_effective_config_digest_survives_the_migration(presplit, live, entry):
-    """D-10.2 in executable form, and the reason §16.3's falsifier can be read.
-
-    ``effective_config_digest`` is threaded through rule x.01's params, so if the
-    split moved it, every workflow's record would re-fire on every migrated
-    project and the baseline comparison could not distinguish "the split changed
-    a number" from "the split changed where a number is written". It does not
-    move, by construction — same projection paths, same values, same canonical
-    JSON — and this is what holds that construction to account.
-
-    ``ADVANCED_SETTINGS`` is held fixed on both sides deliberately.
-    ``effective_config_document`` folds that whole mapping in UNPROJECTED, so a
-    change to its *shape* moves this digest for all four entry points. R13 moves
-    no advanced-settings key; stating the invariant here keeps the test from
-    silently depending on it.
-    """
-    projection = PROJECTIONS[entry][0]
-    before = _relocated(
-        yaml.safe_load((PRESPLIT_DIR / presplit).read_text(encoding="utf-8"))
-    )
-    after = cc.load_composed_config(REPO_ROOT / live, entry, projection)
-    assert effective_config_digest(
-        before, ADVANCED_SETTINGS, projection
-    ) == effective_config_digest(after, ADVANCED_SETTINGS, projection)
-
-
-@pytest.mark.parametrize(("presplit", "live"), MIGRATED, ids=[p for p, _ in MIGRATED])
-def test_guarded_sections_digest_survives_the_migration(presplit, live):
-    """The WF3 drift guard's rerun trigger does not move either.
-
-    Separate from the effective-config digest because it is built by hand in the
-    Snakefile from four specific sections rather than from the projection, and
-    because it is what decides whether rule 3.01 re-fires against an
-    already-built model. A shift here would refuse every already-run experiment
-    in every migrating project.
-    """
-    before = _relocated(
-        yaml.safe_load((PRESPLIT_DIR / presplit).read_text(encoding="utf-8"))
-    )
-    after = cc.load_composed_config(
-        REPO_ROOT / live, "run_stress_test", PROJECTIONS["run_stress_test"][0]
-    )
-    assert _guarded_digest(before) == _guarded_digest(after)
-
-
+#
+# `test_effective_config_digest_survives_the_migration` and
+# `test_guarded_sections_digest_survives_the_migration` lived here, with the
+# `MIGRATED` pairs and `PRESPLIT_DIR` they needed. Both asserted that R13's
+# split did NOT move a digest, against frozen pre-split specimens under
+# `tests/data/presplit/`.
+#
+# **They were removed rather than fixed, and the reason is that their subject no
+# longer exists.** Two things ended them:
+#
+#   * R14 moves `effective_config_digest` ONCE, deliberately (`K3` — "a key
+#     present-vs-absent moves the digest and refuses every already-run
+#     experiment; that cost is payable once, which is why everything lands as
+#     one bundle"). An assertion that it does NOT move is now an assertion
+#     against the design, and making it pass would mean not doing R14.
+#   * `presplit/` held PRE-R13 whole documents so R13's splitter could be
+#     checked against them. P1 retired that splitter in `068b81dd`. The
+#     fixtures had no remaining consumer once these two tests went.
+#
+# What replaced the coverage, so this is a deletion and not a hole:
+#
+#   * `test_write_config_round_trips_through_compose`, still below, holds the
+#     composition helper to `compose(write(cfg)) == cfg`;
+#   * `tests/test_migrate_project_config.py` drives the v1 -> v2 rewriter
+#     against `tests/data/v1_split/`, an R13-SPLIT v1 set — the shape that
+#     actually migrates now;
+#   * P4's own falsifier re-runs the rewriter from the pre-migration commit and
+#     diffs, which is a stronger statement than digest equality: it says the
+#     shipped configs and the user's migration are byte-identical.
+#
+# The digest's new value is Gate 5's business (`check_baseline`), not this
+# module's. Retired under owner ruling, R14 P4.
 def test_write_config_round_trips_through_compose(tmp_path):
     """``compose_config(write_config(cfg)) == cfg`` — D-12.6's gate.
 
@@ -1137,7 +1048,11 @@ def test_write_config_round_trips_through_compose(tmp_path):
     # A workflow-owned section, not a top-level one: with the hoist retired
     # (R14 D-10.1) a top-level key outside `T1_TOP_LEVEL` is a parse error, so
     # the round trip is exercised where a section can actually live.
-    cfg["workflows"]["run_stress_test"]["reporting"] = {"title": "round trip"}
+    #
+    # `compute:` rather than `reporting:`, which `C-77` removed from the config
+    # surface entirely -- the loader refuses it now, so it could no longer serve
+    # as a payload. The property under test is the round trip, not the key.
+    cfg["workflows"]["run_stress_test"]["compute"] = {"batch_size": 4}
     assert cc.load_composed_config(write_config(tmp_path, cfg)) == cfg
 
 

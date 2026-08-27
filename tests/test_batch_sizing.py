@@ -21,8 +21,7 @@ from blueearth_cst.experiment.batch_sizing import (
     resolve_batch_size,
 )
 from blueearth_cst.experiment.forcing_window import (
-    forcing_window_iso,
-    forcing_window_years,
+    forcing_window,
 )
 
 netCDF4 = pytest.importorskip("netCDF4")
@@ -57,25 +56,24 @@ class TestForcingWindow:
     narrower and is pinned here: the window is wider than `run_length`, so
     counting its days is not the same as multiplying by 365."""
 
-    @pytest.mark.parametrize(
-        "horizon, run_length, expected",
-        [
-            (2050, 30, (2035, 2065)),
-            (2050, 8, (2046, 2054)),
-        ],
-    )
-    def test_the_year_form_agrees_with_the_iso_form(
-        self, horizon, run_length, expected
-    ):
-        assert forcing_window_years(horizon, run_length) == expected
-        start, end = forcing_window_iso(*forcing_window_years(horizon, run_length))
-        assert start.startswith(str(expected[0]))
-        assert end.startswith(str(expected[1]))
+    @pytest.mark.parametrize("window", [(2035, 2065), (2046, 2054)])
+    def test_the_iso_form_spans_the_declared_years(self, window):
+        """`C-72`: the pair is DECLARED, so this only checks the rendering.
+
+        These were the windows `(2050, 30)` and `(2050, 8)` resolved to under
+        the deleted derivation — kept as the values, since the point is that
+        the same windows still render the same way.
+        """
+        start, end = forcing_window(*window)
+        assert start.startswith(str(window[0]))
+        assert end.startswith(str(window[1]))
 
     def test_the_window_is_wider_than_run_length(self):
-        """The surprise the disk estimate must not miss: `run_length` 8 is NINE
-        calendar years of forcing, so `run_length x 365` under-counts by 12 %."""
-        start, end = forcing_window_years(2050, 8)
+        """The surprise the disk estimate must not miss: a `run_length` of 8
+        resolved to NINE calendar years of forcing, so `run_length x 365`
+        under-counted by 12 %. `C-67` made the window explicit, which is what
+        removed the trap; this pins the day count it produces."""
+        start, end = 2046, 2054
         days = (date(end, 12, 31) - date(start, 1, 1)).days + 1
         assert days == 3287
         assert days > 8 * 365

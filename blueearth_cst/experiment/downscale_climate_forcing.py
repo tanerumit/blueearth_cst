@@ -8,7 +8,7 @@ from hydromt_wflow import WflowSbmModel
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import (
     prepare_clim_data_catalog,
 )
-from blueearth_cst.experiment.forcing_window import forcing_window_iso
+from blueearth_cst.experiment.forcing_window import forcing_window
 from blueearth_cst.shared.progress import hydromt_progress
 from blueearth_cst.shared.snake_utils import member_pointer_base
 
@@ -75,7 +75,7 @@ def downscale_climate_forcing(
     generator's NC carries empty global attrs).
     """
     fn_out = Path(fn_out)
-    starttime, endtime = forcing_window_iso(sim_start, sim_end)
+    starttime, endtime = forcing_window(sim_start, sim_end)
 
     oro_source = f"{precip_source}_orography"
     pet_method = pet_method_for(precip_source)

@@ -106,8 +106,19 @@ about the work behind it. Do not let a small count read as a small task.
    at parse time naming the variable and both remedies (add it to the registry,
    or declare it long-form). Match `variable_spec.parse`'s existing house style:
    refuse and name the key, never guess.
-4. **`C-64`: `min_reference` moves** out of `DEFAULT_MIN_REFERENCE` into the
-   registry, per variable. `resolve_thresholds` reads it from there.
+4. **`C-62`: `min_reference` → `min_denominator`**, then **`C-64`: it moves**
+   out of `DEFAULT_MIN_REFERENCE` into the registry, per variable, and
+   `resolve_thresholds` reads it from there.
+
+   These are two register rows and the order matters: `C-62` renames the key on
+   the user surface, `C-64` moves the renamed key into the registry, `C-66`
+   below dissolves the parent it used to live under. Doing `C-64` without
+   `C-62` would carry the v1 spelling into the v2 registry, where nothing would
+   ever rename it — the registry has no migration path of its own.
+
+   `C-62` was added to this brief on 2026-08-27. It is a live register row that
+   no phase claimed, found while building P3's mapping, and it is the reason the
+   `min_reference` / `min_denominator` question in Gate 1 was never a conflict.
 5. **`C-65`: `max_flagged_months`** → `advanced_settings.constraints`, beside
    `min_historical_years`. It is a `constraints:` entry, not `defaults:`,
    because D-10.6 classes it a hard limit a project may not relax — so unlike
@@ -230,22 +241,29 @@ config and a changed number is a defect, not a row landing — unlike P1b's
       three variables with two vocabularies that overlap on `unit`/`units`.
       Unifying pulls `C-49` into this phase; not unifying leaves two records of
       one entity, which is the coupling S5 exists to prevent.
-   c. **`min_denominator` or `min_reference`** — and the two are NOT
-      symmetrical, so rule with the asymmetry in view rather than picking a
-      preferred word. `min_denominator` appears only in prose (D-7.5, D-10.6)
-      and in one `RETIRED_KEYS` string; `min_reference` is the name in
-      EXECUTING code — the config key `analyze_projections.smk` reads, the
-      `DEFAULT_MIN_REFERENCE` table, and the text of the `ThresholdError` a
-      user actually sees. Changing the code costs a rename across a live
-      reader; changing the prose costs an edit to two documents and one
-      refusal string. Both are cheap, but only one of them can break a run.
+   c. ~~**`min_denominator` or `min_reference`**~~ — **NOT a conflict, and this
+      brief was wrong to call it one. Corrected 2026-08-27.** The register has
+      a row for it that no one had read: **`C-62`,
+      `relative_change.min_reference` → `relative_change.min_denominator`,
+      class RENAME.** So `min_reference` is the v1 name — which is exactly why
+      executing code reads it — and `min_denominator` is the v2 name the design
+      documents. The two records never disagreed; one describes each side of a
+      rename this milestone has not performed yet.
 
-      **The same conflict exists a second time and P1b hit it too**: `C-32`'s
-      `trajectory` enum is `transient | constant` in the scoping note and P6's
-      brief, and `transient | step` in P1's shipped refusal message, its test,
-      and the validator P1b added. Rule on both together — they are one
-      question about which record wins when prose and code disagree, and
-      answering it once stops it recurring in P2 and P6.
+      **`C-62` is therefore a REQUIRED CHANGE of this phase, not a question.**
+      It is claimed by no phase brief (checked 2026-08-27 across all eight), and
+      it belongs here because `C-64` moves the renamed key into the registry
+      and `C-66` then dissolves its parent — the three are one sequence and
+      must land in that order: rename, move, dissolve.
+
+      **A real conflict does remain, and it is `C-32`'s**, not this one: the
+      register row — *ruled* 2026-08-24 — says `trajectory: transient |
+      constant`, while P1's shipped refusal message, its test and the validator
+      P1b added all say `transient | step`. Here the design record is the
+      RULED one and the code is the deviation, which is the opposite of the
+      relationship this section previously assumed. Rule it, and note that
+      changing it touches a shipped refusal string, its test, and
+      `TRAJECTORY_KINDS`.
 2. **Gate 2 — before `C-66`.** Demonstrate falsifier 2 (a non-`precip`
    relative variable configured through the new surface, WF2 dry-running
    clean) BEFORE removing the `relative_change:` reader. This gate exists

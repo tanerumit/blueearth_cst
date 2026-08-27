@@ -832,10 +832,16 @@ rows:
   - id: C-67
     status: live
     applies: config
+    collapse: true
+    collapse_transform: horizon_length_to_window
     note: >-
-      TWO keys collapse into ONE. The transform reads both and cannot be applied
-      per-key, which is why both moves name the same destination and the
-      rewriter must treat them as a unit.
+      TWO keys collapse into ONE, which is why this row is `collapse: true` and
+      carries a ROW-level transform instead of per-move ones. Neither key alone
+      determines the window, so reading them one at a time would drop half the
+      input. The transform reproduces the `ceil` back / `round` forward snapping
+      the v1 run actually used — a length of 8 at horizon 2050 is 2046..2054,
+      NINE calendar years — because the migration must preserve the window the
+      project ran, not the one its arithmetic looks like it should have.
     moves:
       - old_path: T2.run_stress_test.horizontime_climate
         new_path: T2.run_stress_test.simulation_window

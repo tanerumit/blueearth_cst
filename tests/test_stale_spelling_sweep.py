@@ -80,36 +80,26 @@ def test_it_classifies_rather_than_greps():
 #: Listed rather than allowed, so the set can only SHRINK. A new entry fails the
 #: test below; removing one is the fix landing.
 KNOWN_LIVE_V1_READERS = {
-    # An entire package neither P1 nor P1b touched. `config.py` reads
-    # `basin.gauge_points` and `basin.automatic_subbasins`; both are REFUSED by
-    # the loader in v2, so the read returns nothing and the module falls back to
-    # a default. A v2 project loses its gauge points and its delineation
-    # settings, silently.
-    "blueearth_cst/spatial/config.py",
-    "blueearth_cst/spatial/delineate_spatial_units.py",
-    "blueearth_cst/spatial/products.py",
-    # Dev tooling, in no phase's permitted scope. Not a run path, so these break
-    # at P4 rather than at runtime — already boarded on `t2608251900`.
+    # Dev tooling, in NO phase's permitted scope. Not a run path, so these break
+    # at P4 when the shipped configs actually migrate rather than at runtime.
+    # Boarded on `t2608251900`.
     "dev/scripts/prune_climate_store.py",
     "dev/scripts/prune_series_cache.py",
     "dev/scripts/semantic_tree_diff.py",
     "dev/scripts/snapshot_project_tree.py",
     "dev/scripts/stage_cmip6.py",
-    # `analyze_climate.smk:113` reads `candidate_sources`, retired by `C-43`.
-    # WF0 on a v2 config therefore ignores `climate.sources` entirely and
-    # draws the single-source figure set — the same silent-fallback shape as
-    # `spatial/config.py`, in an ENTRY POINT.
-    "analyze_climate.smk",
-    # `analyze_projections.smk:315` reads `relative_change`, retired by
-    # `C-66`. Known and owned: P1c dissolves it, and until then the reader
-    # falls back to the shipped defaults.
+    # `analyze_projections.smk:315` reads `relative_change`, which `C-66`
+    # retires. OWNED and deferred: P1c dissolves it once the variable
+    # registry exists, and until then the reader falls back to the shipped
+    # defaults rather than losing a configured value outright.
     "analyze_projections.smk",
-    # `snake_utils` names `gauge_points` / `gauge_snap_tolerance_m` as
-    # Snakemake INPUT and params names fed from `spatial_config` — tier 3,
-    # internal. They are listed rather than allowed because they are the
-    # spatial package's v1 vocabulary surfacing, and should go when it does.
-    "blueearth_cst/shared/snake_utils.py",
 }
+#
+# `blueearth_cst/spatial/config.py` and `analyze_climate.smk` were here when
+# this sweep first ran on 2026-08-27, and are the reason it exists: both read a
+# key the loader REFUSES, so a v2 project lost its gauge points, its delineation
+# settings and its candidate source list, silently. Both fixed the same day, and
+# removing them from this list is what "fixed" means.
 
 
 def test_no_NEW_runtime_file_reads_a_retired_spelling():

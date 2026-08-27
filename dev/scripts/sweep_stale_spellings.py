@@ -122,8 +122,20 @@ ALLOWANCES = (
         paths=(
             "blueearth_cst/model/copy_config_files.py",
             "blueearth_cst/model/plot_results.py",
+            "blueearth_cst/spatial/delineate_spatial_units.py",
+            "blueearth_cst/shared/snake_utils.py",
             "build_model.smk",
         ),
+    ),
+    Allowance(
+        name="an emitted provenance field",
+        reason=(
+            "`products.py` writes `automatic_subbasins` as a COUNT into the "
+            "delineation summary -- an output field that happens to share a "
+            "name with a retired config key, and renaming it would change an "
+            "artifact no R14 row touches"
+        ),
+        paths=("blueearth_cst/spatial/products.py",),
     ),
     Allowance(
         name="a netCDF dimension or provenance field",

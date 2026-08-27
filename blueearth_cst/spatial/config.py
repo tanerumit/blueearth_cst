@@ -80,7 +80,7 @@ def resolve_gauge_points_path(
 ) -> str | None:
     """Resolve the canonical gauge file, rejecting a legacy-only config.
 
-    ``shared.basin.gauge_points`` is canonical. The former
+    ``basin.output_locations`` is canonical. The former
     ``workflows.build_model.output_locations`` key is accepted only ALONGSIDE
     it, naming the same file, so a staged migration can carry both; two
     different populated paths are an error rather than a precedence rule.
@@ -88,7 +88,7 @@ def resolve_gauge_points_path(
     **A legacy-only config raises.** It cannot be honoured, which is why the
     former ``FutureWarning`` was not enough. Gauge points became an input to
     rule 1.03 ``delineate_spatial_units``, and ADR 0003 §8b requires that
-    rule's params to be a pure function of ``project`` + ``shared.basin`` —
+    rule's params to be a pure function of ``project`` + ``basin`` —
     it is declared by all three workflows and the other two carry no
     ``workflows.build_model`` section at all. So the legacy key reaches the
     evaluation rule that reads the registry back but NOT the rule that writes
@@ -96,32 +96,31 @@ def resolve_gauge_points_path(
     failure surfaces a whole model build later as observation station IDs that
     the registry does not contain. Measured on a real project 2026-08-08.
     """
-    canonical = basin_cfg.get("gauge_points")
+    canonical = basin_cfg.get("output_locations")
     legacy = model_cfg.get("output_locations")
     has_canonical = not _is_unset(canonical)
     has_legacy = not _is_unset(legacy)
 
     if has_canonical and has_legacy:
-        canonical_path = _path_value(canonical, "shared.basin.gauge_points")
+        canonical_path = _path_value(canonical, "basin.output_locations")
         legacy_path = _path_value(legacy, "workflows.build_model.output_locations")
         if _normalized_path(canonical_path) != _normalized_path(legacy_path):
             raise ValueError(
-                "Conflicting gauge-point paths: shared.basin.gauge_points="
+                "Conflicting gauge-point paths: basin.output_locations="
                 f"{canonical!r} and workflows.build_model.output_locations="
-                f"{legacy!r}. Keep only shared.basin.gauge_points, or make the "
+                f"{legacy!r}. Keep only basin.output_locations, or make the "
                 "two values identical during migration."
             )
         return canonical_path
     if has_canonical:
-        return _path_value(canonical, "shared.basin.gauge_points")
+        return _path_value(canonical, "basin.output_locations")
     if has_legacy:
         legacy_path = _path_value(legacy, "workflows.build_model.output_locations")
         raise ValueError(
             "workflows.build_model.output_locations is no longer honoured on "
-            "its own: move the path to shared.basin.gauge_points.\n\n"
-            "    shared:\n"
-            "      basin:\n"
-            f"        gauge_points: {legacy_path}\n\n"
+            "its own: move the path to basin.output_locations.\n\n"
+            "    basin:\n"
+            f"      output_locations: {legacy_path}\n\n"
             "The gauge points control the basin/subbasin partition, not only "
             "the Wflow outputs, and only the canonical key reaches the rule "
             "that delineates it. Left under the legacy key they would be "
@@ -141,19 +140,19 @@ def _parse_region(value: object) -> dict[str, Any]:
             value = ast.literal_eval(value)
         except (SyntaxError, ValueError) as exc:
             raise ValueError(
-                "shared.basin.region must be a dictionary or a string containing "
+                "basin.region must be a dictionary or a string containing "
                 "one valid dictionary literal"
             ) from exc
     if not isinstance(value, Mapping):
         raise TypeError(
-            "shared.basin.region must be a mapping or mapping-literal string, "
+            "basin.region must be a mapping or mapping-literal string, "
             f"got {type(value).__name__}"
         )
     region = dict(value)
     kinds = [key for key in ("basin", "subbasin") if key in region]
     if len(kinds) != 1:
         raise ValueError(
-            "shared.basin.region must contain exactly one hydrologic region key: "
+            "basin.region must contain exactly one hydrologic region key: "
             "'basin' or 'subbasin'"
         )
     return region
@@ -187,9 +186,7 @@ def _source_name(sources_cfg: Mapping[str, Any], key: str, default: str) -> str:
     """Return one non-empty catalog source name."""
     value = sources_cfg.get(key, default)
     if not isinstance(value, str) or not value.strip():
-        raise TypeError(
-            f"shared.basin.spatial_sources.{key} must be a non-empty string"
-        )
+        raise TypeError(f"basin.spatial_sources.{key} must be a non-empty string")
     return value
 
 
@@ -198,50 +195,56 @@ def parse_spatial_config(
 ) -> SpatialConfig:
     """Parse the spatial-foundation contract from sectioned workflow config."""
     if not isinstance(basin_cfg, Mapping):
-        raise TypeError("shared.basin must be a mapping")
+        raise TypeError("basin must be a mapping")
     if model_cfg is None:
         model_cfg = {}
     if not isinstance(model_cfg, Mapping):
         raise TypeError("workflows.build_model must be a mapping")
 
-    automatic_cfg = basin_cfg.get("automatic_subbasins", {}) or {}
-    if not isinstance(automatic_cfg, Mapping):
-        raise TypeError("shared.basin.automatic_subbasins must be a mapping")
+    # `C-13`/`C-42`: the section is `basin.delineation:` and it holds the
+    # subbasin ceiling, the snap tolerance and the river threshold — three
+    # keys that were flat on `basin:` and describe one thing.
+    delineation_cfg = basin_cfg.get("delineation", {}) or {}
+    if not isinstance(delineation_cfg, Mapping):
+        raise TypeError("basin.delineation must be a mapping")
     # ADR 0003 §11: `max_count` was a GLOBAL budget shared across parents;
     # `max_per_basin` is a per-parent ceiling. Rejected BY NAME rather than
-    # ignored, because `shared.basin` has no closed schema (unlike
+    # ignored, because `basin` has no closed schema (unlike
     # `advanced_settings`, whose `_ADVANCED_SETTINGS_SCHEMA` rejects unknown
     # keys) — so a leftover `max_count` would be dropped in silence and the
     # project would run at the new default instead of the value its author
     # wrote. On a three-basin project that is a silently tripled partition.
-    if "max_count" in automatic_cfg:
+    if "max_count" in delineation_cfg:
         raise ValueError(
-            "shared.basin.automatic_subbasins.max_count was removed in ADR 0003 "
-            "§11. Rename it to 'max_per_basin' — and note the MEANING changed "
+            "basin.delineation.max_count was removed in ADR 0003 "
+            "§11. Rename it to 'max_subbasins' — and note the MEANING changed "
             "with the name: max_count was one global budget shared across all "
-            "parent basins, max_per_basin is a ceiling applied to each parent "
+            "parent basins, max_subbasins is a ceiling applied to each parent "
             "independently. A multi-basin project keeping the same number will "
             "produce more subbasins than before, which is the point of the "
             f"rename. The default is now {DEFAULT_MAX_SUBBASINS_PER_BASIN}."
         )
-    sources_cfg = basin_cfg.get("spatial_sources", {}) or {}
+    # `C-15`: one section for every spatial input. `hydrography` and
+    # `basin_index` were flat beside `spatial_sources:` and are the same kind
+    # of thing — a named dataset — so all three live under `basin.sources:`.
+    sources_cfg = basin_cfg.get("sources", {}) or {}
     if not isinstance(sources_cfg, Mapping):
-        raise TypeError("shared.basin.spatial_sources must be a mapping")
+        raise TypeError("basin.sources must be a mapping")
 
-    hydrography = basin_cfg.get("hydrography", DEFAULT_HYDROGRAPHY)
-    basin_index = basin_cfg.get("basin_index", DEFAULT_BASIN_INDEX)
+    hydrography = sources_cfg.get("hydrography", DEFAULT_HYDROGRAPHY)
+    basin_index = sources_cfg.get("basin_index", DEFAULT_BASIN_INDEX)
     if not isinstance(hydrography, str) or not hydrography.strip():
-        raise TypeError("shared.basin.hydrography must be a non-empty string")
+        raise TypeError("basin.sources.hydrography must be a non-empty string")
     if basin_index is not None and (
         not isinstance(basin_index, str) or not basin_index.strip()
     ):
-        raise TypeError("shared.basin.basin_index must be null or a non-empty string")
+        raise TypeError("basin.sources.basin_index must be null or a non-empty string")
 
     return SpatialConfig(
         region=_parse_region(basin_cfg.get("region")),
         resolution=_positive_float(
             basin_cfg.get("resolution", 0.00833333),
-            "shared.basin.resolution",
+            "basin.resolution",
         ),
         hydrography=hydrography,
         basin_index=basin_index,
@@ -251,17 +254,17 @@ def parse_spatial_config(
         # parent two digits of local subbasin number. Under the old global
         # budget the same bound was a loose over-estimate.
         max_subbasins_per_basin=_positive_int(
-            automatic_cfg.get("max_per_basin", DEFAULT_MAX_SUBBASINS_PER_BASIN),
-            "shared.basin.automatic_subbasins.max_per_basin",
+            delineation_cfg.get("max_subbasins", DEFAULT_MAX_SUBBASINS_PER_BASIN),
+            "basin.delineation.max_subbasins",
             maximum=MAX_LOCAL_SUBBASIN_NUMBER,
         ),
         gauge_snap_tolerance_m=_positive_float(
-            basin_cfg.get("gauge_snap_tolerance_m", DEFAULT_GAUGE_SNAP_TOLERANCE_M),
-            "shared.basin.gauge_snap_tolerance_m",
+            delineation_cfg.get("snap_tolerance_m", DEFAULT_GAUGE_SNAP_TOLERANCE_M),
+            "basin.delineation.snap_tolerance_m",
         ),
         river_uparea_km2=_positive_float(
-            basin_cfg.get("river_uparea_km2", DEFAULT_RIVER_UPAREA_KM2),
-            "shared.basin.river_uparea_km2",
+            delineation_cfg.get("river_uparea_km2", DEFAULT_RIVER_UPAREA_KM2),
+            "basin.delineation.river_uparea_km2",
         ),
         sources=SpatialSources(
             rivers=_source_name(sources_cfg, "rivers", "rivers_lin2019_v1"),

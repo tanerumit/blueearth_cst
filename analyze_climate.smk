@@ -110,14 +110,23 @@ WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_
 # source leads every figure set and every comparison table, which is the reading
 # order a person wants when the question is "should I switch away from it?".
 clim_source = get_config(climate_cfg, "selected", optional=False)
-_extra_sources = get_config(my_cfg, "candidate_sources", []) or []
-if isinstance(_extra_sources, str):
+# `C-43`: the candidate set moved UP to `climate.sources` and WIDENED -- it is
+# the full list with no privileged element, and `climate.selected` names one
+# MEMBER of it. The v1 key held the OTHERS, beside a privileged
+# `clim_historical`, which is why the migration unions the two rather than
+# copying one.
+#
+# The loader already refuses a `selected` outside `sources`, so the only work
+# left here is ORDER: the primary leads every figure set and comparison table,
+# and `sources` is in declaration order.
+_declared_sources = get_config(climate_cfg, "sources", []) or []
+if isinstance(_declared_sources, str):
     raise ValueError(
-        "workflows.analyze_climate.candidate_sources must be a LIST of source "
-        f"names, got the string {_extra_sources!r}. A bare string would be "
-        "iterated character by character and mint one store per letter."
+        "climate.sources must be a LIST of source names, got the string "
+        f"{_declared_sources!r}. A bare string would be iterated character "
+        "by character and mint one store per letter."
     )
-CANDIDATE_SOURCES = list(dict.fromkeys([clim_source, *_extra_sources]))
+CANDIDATE_SOURCES = list(dict.fromkeys([clim_source, *_declared_sources]))
 
 # P3-2a bounded support (design ext2-3): the raw-climate path supports era5,
 # chirps and chirps_global only. Rejected HERE, at parse time, for every

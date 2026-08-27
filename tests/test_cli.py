@@ -227,7 +227,7 @@ def test_baseline_seed_config_does_not_warn():
     # test_interchange_contracts.py taught on 2026-08-12.
     if result.returncode != 0:
         with open(seed_cfg) as f:
-            gauge_points = yaml.safe_load(f)["shared"]["basin"]["gauge_points"]
+            gauge_points = yaml.safe_load(f)["basin"]["output_locations"]
         norm = combined.replace("\\", "/")
         assert "MissingInputException" in norm, combined[-3000:]
         assert gauge_points in norm, combined[-3000:]
@@ -250,13 +250,16 @@ def test_observation_configs_use_yaml_null():
     """
     for cfg_path in (config_fn, linux_config_fn):
         cfg = load_composed_config(cfg_path)
-        basin = cfg["shared"]["basin"]
+        basin = cfg["basin"]
         mc = cfg["workflows"]["build_model"]
         values = {
-            "shared.basin.gauge_points": basin["gauge_points"],
-            "workflows.build_model.observations_timeseries": mc[
-                "observations_timeseries"
-            ],
+            "basin.output_locations": basin["output_locations"],
+            # `C-56`: a mapping keyed by variable. The property is unchanged --
+            # an unset observation is YAML null, not the string "None" -- but
+            # it now lives one level down, under the outvar it belongs to.
+            "workflows.build_model.observations[river discharge]": (
+                (mc.get("observations") or {}).get("river discharge")
+            ),
         }
         for key, value in values.items():
             assert value is None, (
@@ -302,7 +305,12 @@ def test_eobs_config_fails_wf1_dry_run_at_parse_time(tmp_path):
     `tests/test_store_region_bbox.py`.
     """
     cfg = load_composed_config(config_fn)
-    cfg["shared"]["clim_historical"] = "eobs"
+    # `C-43`: `selected` names a MEMBER of `sources`, and the loader refuses
+    # one that is not. Switching the source therefore means declaring it as a
+    # candidate as well -- otherwise this test reds on the membership rule
+    # rather than on the eobs rejection it exists to check.
+    cfg["climate"]["selected"] = "eobs"
+    cfg["climate"]["sources"] = ["eobs"]
     cfg_path = write_config(tmp_path, cfg, stem="snake_config_eobs")
 
     result = _dry_run("build_model.smk", cfg=str(cfg_path))
@@ -315,30 +323,30 @@ def test_eobs_config_fails_wf1_dry_run_at_parse_time(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "endtime, label",
+    "end_year, label",
     [
-        ("2000-06-01T00:00:00", "sub-year"),
+        # `C-70` retyped the window to INCLUSIVE YEARS, so the old sub-year
+        # case is no longer expressible -- the shortest window a v2 config can
+        # state is one year, which is what this now exercises.
+        (2000, "one-year"),
         # The case the UNIFIED floor added: WF1 used to build a model happily on
         # ten years and let WF3 discover the problem inside weathergenr.
-        ("2010-01-01T00:00:00", "ten-year"),
+        (2009, "ten-year"),
     ],
 )
 @pytest.mark.workflow_contract
-def test_short_window_fails_wf1_dry_run_at_parse_time(tmp_path, endtime, label):
-    """A historical_window under MIN_HISTORICAL_YEARS must red the dry-run.
+def test_short_window_fails_wf1_dry_run_at_parse_time(tmp_path, end_year, label):
+    """A `climate.window` under MIN_HISTORICAL_YEARS must red the dry-run.
 
     Same parse-time stance, and same test shape, as the eobs rejection above:
     no execution can rescue the config, so the earliest failure is the most
     legible one. Pre-guard, a sub-year window reached rule 1.11 and died with
     MissingOutputException nine rules and one hydromt build past the cause
-    (dev/followups-archive.md R7-6), and a ten-year window ran WF1 to completion before
-    failing a whole workflow away.
+    (dev/followups-archive.md R7-6), and a ten-year window ran WF1 to
+    completion before failing a whole workflow away.
     """
     cfg = load_composed_config(config_fn)
-    cfg["shared"]["historical_window"] = {
-        "starttime": "2000-01-01T00:00:00",
-        "endtime": endtime,
-    }
+    cfg["climate"]["window"] = {"start": 2000, "end": end_year}
     cfg_path = write_config(tmp_path, cfg, stem=f"snake_config_{label}")
 
     result = _dry_run("build_model.smk", cfg=str(cfg_path))

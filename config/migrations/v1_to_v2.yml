@@ -282,13 +282,24 @@ rows:
   - id: C-19
     status: live
     applies: config
+    note: >-
+      The ONLY row that declares a `default_if_absent`, and it does so because
+      `model:` is a REQUIRED v2 section: `CONFIG_PROJECTION` names it, so a
+      config that never declared `wflow_outvars` migrates to one the loader
+      refuses. `snake_config_baseline_linux.yml` is exactly that config.
+
+      Writing the default is also the safer half of a known defect: WF1
+      defaulted an absent `wflow_outvars` to these two variables while WF3
+      defaulted it to `[]`, which meant zero indicator tables and no error.
+      Making the value explicit ends that disagreement for every migrated
+      project rather than carrying it forward invisibly.
     moves:
       - old_path: T1.shared.wflow_outvars
         new_path: T1.model.outvars
         op: regroup
         value_transform: identity
         on_collision: refuse
-        default_if_absent: omit
+        default_if_absent: [river discharge, actual evapotranspiration]
         exception_hook: null
 
   - id: C-20
@@ -785,11 +796,16 @@ rows:
     status: live
     applies: config
     moves:
+      # The key keeps its NAME and only retypes: a bare list becomes the
+      # group, with the list under `preference`. The destination is therefore
+      # `members`, not `members.preference` -- the transform does the nesting,
+      # and naming the deeper path as well produced
+      # `members: {preference: {preference: [...]}}`.
       - old_path: T2.analyze_projections.members
-        new_path: T2.analyze_projections.members.preference
+        new_path: T2.analyze_projections.members
         op: retype
         value_transform: list_to_preference_group
-        on_collision: refuse
+        on_collision: overwrite
         default_if_absent: omit
         exception_hook: null
       - old_path: T2.analyze_projections.member_selection

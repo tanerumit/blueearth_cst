@@ -44,10 +44,14 @@ from blueearth_cst.shared.snake_utils import log_row  # noqa: E402
 # same edit would first surface mid-experiment as ``export_wflow_results``'
 # missing-column error, a whole workflow away from its cause. Guarding the
 # LEAF rather than ``shared`` whole keeps the comparand experiment-invariant.
+# The v2 section paths. `shared:` dissolved (`C-01`), so `basin` is top-level
+# and `wflow_outvars` is `model.outvars` (`C-19`). Migrating the PATHS only:
+# replacing this tuple with the derived rule is P2 (`C-04`), and the two are
+# separate changes -- this one keeps the guard covering what it covered.
 _WF1_GUARDED = (
     "project",
-    ("shared", "basin"),
-    ("shared", "wflow_outvars"),
+    ("basin",),
+    ("model", "outvars"),
     ("workflows", "build_model"),
 )
 _WF2_GUARDED = (("workflows", "analyze_projections"),)

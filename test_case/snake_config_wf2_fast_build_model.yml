@@ -1,3 +1,4 @@
-model_build_config: config/defaults/wflow_build_model.yml
-waterbodies_config: config/defaults/wflow_update_waterbodies.yml
-observations_timeseries: null
+engine:
+  build_config: config/defaults/wflow_build_model.yml
+  waterbodies_config: config/defaults/wflow_update_waterbodies.yml
+observations:

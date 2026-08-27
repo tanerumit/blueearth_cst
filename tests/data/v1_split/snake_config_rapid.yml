@@ -18,7 +18,22 @@
 
 project:
   project_dir: test_case/test_rapid
-  catalog: config/catalogs/deltares_data.yml
+  static_dir: config
+  data_sources: config/catalogs/deltares_data.yml
+  data_sources_climate: config/catalogs/cmip6_data.yml
+
+shared:
+  basin:
+    region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+    resolution: 0.00833
+    gauge_points: test_case/test_data/output_locations.csv
+  historical_window:
+    # 17 calendar years — one clear of the 16-year weathergenr floor
+    # (constraints.min_historical_years). Sizes the era5 climate store.
+    starttime: "2000-01-01T00:00:00"
+    endtime: "2016-12-31T00:00:00"
+  clim_historical: era5
+  wflow_outvars: ['river discharge', 'actual evapotranspiration', 'groundwater recharge']
 
 workflows:
   # WF0 — the basin's historical climate, WITHOUT building a hydrology model.
@@ -39,20 +54,3 @@ workflows:
   run_stress_test:
     enabled: true
     config_path: snake_config_rapid_run_stress_test.yml
-basin:
-  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
-  resolution: 0.00833
-  output_locations: test_case/test_data/output_locations.csv
-model:
-  outvars: ['river discharge', 'actual evapotranspiration', 'groundwater recharge']
-climate:
-  selected: era5
-  window:
-    # 17 calendar years — one clear of the 16-year weathergenr floor
-    # (constraints.min_historical_years). Sizes the era5 climate store.
-    start: 2000
-    end: 2016
-  sources:
-  - era5
-  - chirps
-schema_version: 2

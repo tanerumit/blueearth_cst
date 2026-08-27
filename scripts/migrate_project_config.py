@@ -681,7 +681,34 @@ def _apply_move(
             continue
         value, present = get_path(doc, path)
         if not present:
-            continue
+            # **`omit` is the rule; `default_if_absent` is the declared
+            # exception to it.** An optional key the project never set must
+            # normally stay unset — writing the default would turn a config
+            # that INHERITS a value into one that PINS it, and the two
+            # diverge the next time the default moves.
+            #
+            # A row overrides that only when the v2 shape REQUIRES the key,
+            # so omitting it produces a config the loader refuses. Then the
+            # choice is not inherit-versus-pin, it is migrate-versus-fail.
+            fallback = move.get("default_if_absent")
+            if fallback in (None, "omit") or new is None:
+                continue
+            new_tier, new_workflow, new_path = split_tier(new)
+            dest = t1 if new_tier == "T1" else t2_by_workflow.get(new_workflow)
+            if dest is None:
+                return
+            set_path(
+                dest,
+                new_path,
+                list(fallback) if isinstance(fallback, list) else fallback,
+                on_collision="keep_existing",
+                row_id=row["id"],
+            )
+            report.append(
+                f"{row['id']}: `{new}` was ABSENT and is now written "
+                f"explicitly as {fallback!r} — see the mapping for why"
+            )
+            return
 
         hook_name = move.get("exception_hook")
         if hook_name:
@@ -844,9 +871,11 @@ def migrate_experiment_record(doc, mapping, *, outvars=None):
         outvars=outvars,
     )
     doc["run_stress_test"] = t2["run_stress_test"]
-    # `migrate_set` stamps `schema_version` on the T1 it was handed; an
-    # experiment record has no such key and must not gain one.
-    return [line for line in report if not line.startswith("C-05")]
+    # `migrate_set` stamps `schema_version` on the T1 it was handed, and may
+    # write `C-19`'s default into it. An experiment record is not a project
+    # config: it has neither key, the stub T1 carrying them is discarded, and
+    # reporting them here would describe a change that did not happen.
+    return [line for line in report if not line.startswith(("C-05", "C-19"))]
 
 
 def migrate_project(t1_path: Path, *, write: bool = False):

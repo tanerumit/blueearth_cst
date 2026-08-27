@@ -20,26 +20,7 @@
 
 project:
   project_dir: test_case/test_dev
-  static_dir: config
-  data_sources: config/catalogs/deltares_data.yml
-  data_sources_climate: config/catalogs/cmip6_data.yml
-
-shared:
-  basin:
-    region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
-    resolution: 0.00833
-    gauge_points: null
-    automatic_subbasins:
-      max_per_basin: 11
-  historical_window:
-    starttime: "2000-01-01T00:00:00"
-    endtime: "2020-12-31T00:00:00"
-  clim_historical: era5
-  # Kept discharge-only on purpose: this is the baseline-recording seed, and
-  # extra outputs would only churn the copied-config fingerprint without adding
-  # any fingerprinted target. The shipped default (template / Snakefile) does
-  # include 'actual evapotranspiration'.
-  wflow_outvars: ["river discharge"]
+  catalog: config/catalogs/deltares_data.yml
 
 workflows:
   # WF0 — the basin's historical climate, WITHOUT building a hydrology model.
@@ -58,3 +39,23 @@ workflows:
   run_stress_test:
     enabled: true
     config_path: snake_config_wf2_fast_run_stress_test.yml
+basin:
+  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+  resolution: 0.00833
+  delineation:
+    max_subbasins: 11
+  output_locations:
+model:
+  outvars: ["river discharge"]
+climate:
+  selected: era5
+  # Kept discharge-only on purpose: this is the baseline-recording seed, and
+  # extra outputs would only churn the copied-config fingerprint without adding
+  # any fingerprinted target. The shipped default (template / Snakefile) does
+  # include 'actual evapotranspiration'.
+  window:
+    start: 2000
+    end: 2020
+  sources:
+  - era5
+schema_version: 2

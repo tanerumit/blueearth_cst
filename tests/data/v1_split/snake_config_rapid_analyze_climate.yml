@@ -5,4 +5,4 @@
 # being a bare rainfall product. `chirps_global` is the third supported name
 # but is not staged locally; anything outside those three is refused at parse
 # time by the wf0 raw-climate path.
-{}
+candidate_sources: [chirps]

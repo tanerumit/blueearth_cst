@@ -28,6 +28,11 @@ from scripts.migrate_project_config import (
     step_num_to_n_levels,
 )
 
+#: The v1 SET the rewriter migrates, kept because `test_case/` is v2 now.
+#: `tests/data/presplit/` is the PRE-R13 whole-document shape and cannot
+#: stand in for it — the rewriter takes a split set.
+V1_SPLIT = "tests/data/v1_split"
+
 
 class TestStepNumToNLevels:
     """`C-31` — the one transform whose failure mode is silent."""
@@ -204,12 +209,12 @@ class TestWholeSetMigration:
 
         root = pathlib.Path(__file__).resolve().parent.parent
         t1 = yaml.safe_load(
-            (root / "test_case" / "snake_config_rapid.yml").read_text(encoding="utf-8")
+            (root / V1_SPLIT / "snake_config_rapid.yml").read_text(encoding="utf-8")
         )
         t2 = {
             wf: (
                 yaml.safe_load(
-                    (root / "test_case" / f"snake_config_rapid_{wf}.yml").read_text(
+                    (root / V1_SPLIT / f"snake_config_rapid_{wf}.yml").read_text(
                         encoding="utf-8"
                     )
                 )
@@ -356,7 +361,7 @@ class TestTheTransaction:
         """A migration a user wants to undo is one they can undo."""
         from scripts.migrate_project_config import migrate_project
 
-        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         migrate_project(t1, write=True)
         backups = sorted(p.name for p in tmp_path.glob("*.v1.bak"))
         assert len(backups) == 5, backups
@@ -373,7 +378,7 @@ class TestTheTransaction:
         from blueearth_cst.shared.config_composition import load_composed_config
         from scripts.migrate_project_config import migrate_project
 
-        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         migrate_project(t1, write=True)
         composed = load_composed_config(t1)
         assert composed["schema_version"] == 2
@@ -389,7 +394,7 @@ class TestTheTransaction:
 
         from scripts.migrate_project_config import migrate_project
 
-        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         migrate_project(t1, write=True)
         doc = yaml.safe_load(t1.read_text(encoding="utf-8"))
         assert doc["climate"]["selected"] == "era5"
@@ -399,7 +404,7 @@ class TestTheTransaction:
         """D-11.2b item 5. Idempotence, and it says so rather than staying mute."""
         from scripts.migrate_project_config import migrate_project
 
-        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         migrate_project(t1, write=True)
         again = migrate_project(t1, write=True)
         assert len(again) == 1
@@ -411,7 +416,7 @@ class TestTheTransaction:
 
         from scripts.migrate_project_config import MigrationError, migrate_project
 
-        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         doc = yaml.safe_load(t1.read_text(encoding="utf-8"))
         doc["schema_version"] = 99
         t1.write_text(yaml.safe_dump(doc), encoding="utf-8")
@@ -422,7 +427,7 @@ class TestTheTransaction:
         """The preflight is read-only, and this is what proves it."""
         from scripts.migrate_project_config import migrate_project
 
-        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         before = {p.name: p.read_bytes() for p in tmp_path.glob("*.yml")}
         migrate_project(t1, write=False)
         after = {p.name: p.read_bytes() for p in tmp_path.glob("*.yml")}
@@ -449,7 +454,7 @@ class TestTheNonPreservingHooks:
 
         from scripts.migrate_project_config import migrate_project
 
-        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         wf3 = tmp_path / "snake_config_rapid_run_stress_test.yml"
         wf3.write_text(
             re.sub(
@@ -469,7 +474,7 @@ class TestTheNonPreservingHooks:
         """The no-op case. A signal that fires every run is one nobody reads."""
         from scripts.migrate_project_config import migrate_project
 
-        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         report = migrate_project(t1, write=False)
         assert not [line for line in report if "q_wettest_month_mean" in line]
 
@@ -482,7 +487,7 @@ class TestTheNonPreservingHooks:
         """
         from scripts.migrate_project_config import MigrationError, migrate_project
 
-        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         t1.write_text(
             t1.read_text(encoding="utf-8").replace(
                 "shared:\n", "shared:\n  water_year_start: Oct\n", 1
@@ -501,7 +506,7 @@ class TestTheNonPreservingHooks:
         """
         from scripts.migrate_project_config import MigrationError, migrate_project
 
-        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         t1.write_text(
             t1.read_text(encoding="utf-8").replace(
                 "shared:\n", "shared:\n  water_year_start: Oct\n", 1
@@ -520,7 +525,7 @@ class TestTheNonPreservingHooks:
         """The month where calendar and water years coincide."""
         from scripts.migrate_project_config import migrate_project
 
-        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", V1_SPLIT)
         t1.write_text(
             t1.read_text(encoding="utf-8").replace(
                 "shared:\n", "shared:\n  water_year_start: Jan\n", 1
@@ -549,10 +554,7 @@ class TestExperimentRecords:
         )
 
         root = pathlib.Path(__file__).resolve().parent.parent
-        src = (
-            root
-            / "test_case/test_rapid/experiments/experiment_rapid/config/experiment.yml"
-        )
+        src = root / V1_SPLIT / "experiment_rapid.yml"
         with src.open(encoding="utf-8") as handle:
             doc = ry.YAML().load(handle)
 
@@ -580,10 +582,7 @@ class TestExperimentRecords:
         )
 
         root = pathlib.Path(__file__).resolve().parent.parent
-        src = (
-            root
-            / "test_case/test_rapid/experiments/experiment_rapid/config/experiment.yml"
-        )
+        src = root / V1_SPLIT / "experiment_rapid.yml"
         with src.open(encoding="utf-8") as handle:
             doc = ry.YAML().load(handle)
         migrate_experiment_record(doc, load_mapping(), outvars=["river discharge"])
@@ -614,12 +613,12 @@ class TestExperimentRecords:
 
         # the live config, migrated
         t1 = yaml.safe_load(
-            (root / "test_case/snake_config_rapid.yml").read_text(encoding="utf-8")
+            (root / V1_SPLIT / "snake_config_rapid.yml").read_text(encoding="utf-8")
         )
         t2 = {
             wf: (
                 yaml.safe_load(
-                    (root / f"test_case/snake_config_rapid_{wf}.yml").read_text(
+                    (root / f"{V1_SPLIT}/snake_config_rapid_{wf}.yml").read_text(
                         encoding="utf-8"
                     )
                 )
@@ -635,10 +634,7 @@ class TestExperimentRecords:
         _, t2, _ = migrate_set(t1, t2, mapping, outvars=["river discharge"])
 
         # the experiment record for that same config, migrated
-        src = (
-            root
-            / "test_case/test_rapid/experiments/experiment_rapid/config/experiment.yml"
-        )
+        src = root / V1_SPLIT / "experiment_rapid.yml"
         with src.open(encoding="utf-8") as handle:
             record = ry.YAML().load(handle)
         migrate_experiment_record(record, mapping, outvars=["river discharge"])

@@ -1,114 +1,83 @@
-# R14 declared-red — test node ids that fail ONLY because a shipped config is
-# still v1. Read tests/test_r14_expected_red.py first; it explains why this
-# list exists and when to DELETE it.
+# R14 declared-red - test node ids that fail ONLY because a shipped TEMPLATE
+# is still v1. Read tests/test_r14_expected_red.py first.
 #
-# Recorded 2026-08-25 at commit 4/4 of P1, against `pixi run test-fast`, and
-# SHRUNK by P1b as each workflow's readers moved. P1b took 10 nodes off it:
-# `test_prepare_cst_parameters.py`'s synthetic configs are written by the test
-# itself, so moving them to the v2 shape was P1b's to do and they went green
-# with the readers. What is LEFT is only what P4 owes -- the shipped configs,
-# which P4 migrates with the rewriter.
-# EVERY entry has the same single root cause, verified rather than assumed:
-# `_check_schema_version` refusing a project config that carries no
-# `schema_version` key. Nothing else in the suite fails. That is the claim P2
-# inherits, and the test beside this file is what keeps it true.
-#
-# P4 migrates these configs with the rewriter, at which point every line here
-# goes green and BOTH files are deleted.
-#
-# The v1 configs behind it, and the modules that read each:
-#   tests/snake_config_fixture.yml
-#   test_case/snake_config_baseline.yml
-#   test_case/snake_config_baseline_linux.yml
-#   test_case/snake_config_rapid.yml
-#   test_case/snake_config_wf2_fast.yml
-#   config/templates/snake_config.template.yml
-#   tests/data/presplit/*.yml
+# **Re-recorded 2026-08-27 at P4 commit 1**, against `pixi run test-fast`.
+# P4/1 migrated the four `test_case/` sets and `tests/snake_config_fixture.yml`
+# with the rewriter -- 73 nodes down to this. Everything left reads
+# `config/templates/**`, which P4 commit 2 migrates; the list should collapse
+# again there, and BOTH files are deleted when it reaches zero.
 #
 # By module:
+#     1  tests/test_a1_acceptance.py
 #     1  tests/test_build_model.py
-#     1  tests/test_cli.py
-#     4  tests/test_compare_climate_sources.py
+#     2  tests/test_check_project_consistency.py
+#     3  tests/test_compare_climate_sources.py
 #    26  tests/test_config_composition.py
-#    20  tests/test_log_rules_contract.py
+#     4  tests/test_log_rules_contract.py
 #     1  tests/test_migration_mapping.py
 #     1  tests/test_plot_workflow_dag.py
-#     5  tests/test_prepare_cst_parameters.py
+#     1  tests/test_prepare_cst_parameters.py
 #     1  tests/test_r01_config_readers.py
 #    10  tests/test_snapshot_project_tree.py
-#     2  tests/test_suggest_experiment_name.py
+#     3  tests/test_spatial_units_rule.py
+#     1  tests/test_store_region_bbox.py
+#     1  tests/test_suggest_experiment_name.py
 #     1  tests/test_wf1_plot_outputs.py
 #
-tests/test_build_model.py::test_copy_config  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_cli.py::test_observation_configs_use_yaml_null  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_compare_climate_sources.py::test_rule_declares_the_module_named_outputs_on_two_sources  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_compare_climate_sources.py::test_rule_is_absent_on_a_single_source_config  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_compare_climate_sources.py::test_rule_takes_each_store_and_its_basin_cells  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_compare_climate_sources.py::test_the_appended_log_label_matches_the_rule  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_rapid.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_wf2_fast.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_rapid.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_wf2_fast.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_rapid.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_wf2_fast.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_rapid.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_wf2_fast.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_rapid.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_wf2_fast.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_config_composition.py::test_write_config_round_trips_through_compose  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_are_unique[analyze_climate.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_are_unique[analyze_climate.smk-two_source]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_are_unique[analyze_projections.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_are_unique[build_model.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_are_unique[run_stress_test.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[analyze_climate.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[analyze_climate.smk-two_source]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[analyze_projections.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[build_model.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[run_stress_test.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[analyze_climate.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[analyze_climate.smk-two_source]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[analyze_projections.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[build_model.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[run_stress_test.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_climate.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_climate.smk-two_source]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_projections.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[build_model.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[run_stress_test.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_plot_workflow_dag.py::test_rulegraph_mode_and_format_reach_the_filename  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config_rapid.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config_wf2_fast.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_r01_config_readers.py::test_prep_cst_parameters_reads_sectioned_config  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_a_clean_tree_exits_zero  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_a_missing_project_dir_says_where_it_looked  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_no_check_skips_the_gate_and_always_exits_zero  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_out_writes_a_snapshot_the_falsifier_can_read_back  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_project_dir_override_wins_over_the_config  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_quiet_keeps_the_unmapped_lines_and_the_summary  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_reports_unmapped_and_exits_nonzero  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_the_default_map_still_reports_an_undeclared_artifact  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_the_map_is_the_post_migration_inventory  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_snapshot_project_tree.py::test_writes_nothing_without_out  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_suggest_experiment_name.py::test_the_template_config_does_not_hardcode_an_experiment_name  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_suggest_experiment_name.py::test_the_test_fixtures_deliberately_KEEP_a_fixed_name  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_wf1_plot_outputs.py::test_the_shipped_sentinel_yields_no_layer  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_migration_mapping.py::test_the_trajectory_enum_agrees_with_the_code  # C-32: the ruled register says `transient | constant`, shipped code says `transient | step`; P1c Gate 1 rules it
+tests/test_a1_acceptance.py::test_the_seed_fixture_keeps_its_own_shorter_window  # reads a v1 template; migrated by P4 commit 2
+tests/test_build_model.py::test_copy_config  # reads a v1 template; migrated by P4 commit 2
+tests/test_check_project_consistency.py::test_b_mutated_basin_resolution_fails_naming_key  # reads a v1 template; migrated by P4 commit 2
+tests/test_check_project_consistency.py::test_c2_mutated_shared_wflow_outvars_fails  # reads a v1 template; migrated by P4 commit 2
+tests/test_compare_climate_sources.py::test_rule_declares_the_module_named_outputs_on_two_sources  # reads a v1 template; migrated by P4 commit 2
+tests/test_compare_climate_sources.py::test_rule_takes_each_store_and_its_basin_cells  # reads a v1 template; migrated by P4 commit 2
+tests/test_compare_climate_sources.py::test_the_appended_log_label_matches_the_rule  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config.template.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_baseline.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_baseline_linux.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_rapid.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_climate-snake_config_wf2_fast.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config.template.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_baseline.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_baseline_linux.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_rapid.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[analyze_projections-snake_config_wf2_fast.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config.template.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_baseline.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_baseline_linux.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_rapid.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[build_model-snake_config_wf2_fast.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config.template.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_baseline.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_baseline_linux.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_rapid.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_effective_config_digest_survives_the_migration[run_stress_test-snake_config_wf2_fast.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config.template.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_baseline.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_baseline_linux.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_rapid.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_guarded_sections_digest_survives_the_migration[snake_config_wf2_fast.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_config_composition.py::test_write_config_round_trips_through_compose  # reads a v1 template; migrated by P4 commit 2
+tests/test_log_rules_contract.py::test_declared_labels_are_unique[analyze_climate.smk-two_source]  # reads a v1 template; migrated by P4 commit 2
+tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[analyze_climate.smk-two_source]  # reads a v1 template; migrated by P4 commit 2
+tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[analyze_climate.smk-two_source]  # reads a v1 template; migrated by P4 commit 2
+tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_climate.smk-two_source]  # reads a v1 template; migrated by P4 commit 2
+tests/test_migration_mapping.py::test_the_trajectory_enum_agrees_with_the_code  # reads a v1 template; migrated by P4 commit 2
+tests/test_plot_workflow_dag.py::test_rulegraph_mode_and_format_reach_the_filename  # reads a v1 template; migrated by P4 commit 2
+tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config.template.yml]  # reads a v1 template; migrated by P4 commit 2
+tests/test_r01_config_readers.py::test_prep_cst_parameters_reads_sectioned_config  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_a_clean_tree_exits_zero  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_a_missing_project_dir_says_where_it_looked  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_no_check_skips_the_gate_and_always_exits_zero  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_out_writes_a_snapshot_the_falsifier_can_read_back  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_project_dir_override_wins_over_the_config  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_quiet_keeps_the_unmapped_lines_and_the_summary  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_reports_unmapped_and_exits_nonzero  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_the_default_map_still_reports_an_undeclared_artifact  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_the_map_is_the_post_migration_inventory  # reads a v1 template; migrated by P4 commit 2
+tests/test_snapshot_project_tree.py::test_writes_nothing_without_out  # reads a v1 template; migrated by P4 commit 2
+tests/test_spatial_units_rule.py::test_gauge_points_are_a_declared_input_only_when_configured  # reads a v1 template; migrated by P4 commit 2
+tests/test_spatial_units_rule.py::test_overrides_are_carried_through  # reads a v1 template; migrated by P4 commit 2
+tests/test_spatial_units_rule.py::test_the_deprecated_build_model_fallback_cannot_reach_the_rule  # reads a v1 template; migrated by P4 commit 2
+tests/test_store_region_bbox.py::test_store_region_agrees_with_the_model_grid  # reads a v1 template; migrated by P4 commit 2
+tests/test_suggest_experiment_name.py::test_the_template_config_does_not_hardcode_an_experiment_name  # reads a v1 template; migrated by P4 commit 2
+tests/test_wf1_plot_outputs.py::test_the_shipped_sentinel_yields_no_layer  # reads a v1 template; migrated by P4 commit 2

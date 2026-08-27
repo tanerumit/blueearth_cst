@@ -23,26 +23,28 @@ from blueearth_cst.experiment.check_project_consistency import (  # noqa: E402
 # sections. The experiment sections that vary per experiment are present but
 # deliberately NOT guarded.
 _BASE_CFG = {
+    "schema_version": 2,
     "project": {
         "project_dir": "test_case/test_local",
-        "static_dir": "config",
-        "data_sources": "config/catalogs/deltares_data.yml",
-        "data_sources_climate": "config/catalogs/cmip6_data.yml",
+        # `C-07` deleted `static_dir`; `C-40` renamed `data_sources` to
+        # `catalog`; `C-39` pushed the climate catalog DOWN to the WF2 file,
+        # where it has its only reader.
+        "catalog": "config/catalogs/deltares_data.yml",
     },
-    "shared": {
-        "basin": {
-            "region": "{'subbasin': [9.666, 0.4476], 'uparea': 100}",
-            "resolution": 0.00833,
-        },
-        "historical_window": {
-            "starttime": "2000-01-01T00:00:00",
-            "endtime": "2020-12-31T00:00:00",
-        },
-        "clim_historical": "era5",
-        # Hoisted out of workflows.build_model by R13 D-9.7 and guarded here
-        # as a leaf, so a post-build edit is still refused at rule 3.01.
-        "wflow_outvars": ["river discharge"],
+    "basin": {
+        "region": "{'subbasin': [9.666, 0.4476], 'uparea': 100}",
+        "resolution": 0.00833,
     },
+    "climate": {
+        "selected": "era5",
+        "sources": ["era5"],
+        # `C-70`: INCLUSIVE YEARS, not ISO timestamps.
+        "window": {"start": 2000, "end": 2020},
+    },
+    # `C-19`: `wflow_outvars` is `model.outvars`. Still guarded as a LEAF, so a
+    # post-build edit is refused at rule 3.01 — the mechanism is unchanged and
+    # only the path moved.
+    "model": {"outvars": ["river discharge"]},
     "workflows": {
         "build_model": {
             "enabled": True,
@@ -90,10 +92,10 @@ def test_a_identical_sections_pass(snapshots):
 def test_b_mutated_basin_resolution_fails_naming_key(snapshots):
     wf1, wf2 = snapshots
     live = copy.deepcopy(_BASE_CFG)
-    live["shared"]["basin"]["resolution"] = 0.05
+    live["basin"]["resolution"] = 0.05
     diffs = compare_project_consistency(live, wf1, wf2)
     assert diffs
-    assert any("shared.basin" in d and "resolution" in d for d in diffs)
+    assert any("basin" in d and "resolution" in d for d in diffs)
 
 
 def test_c_mutated_build_model_fails(snapshots):
@@ -120,10 +122,10 @@ def test_c2_mutated_shared_wflow_outvars_fails(snapshots):
     """
     wf1, wf2 = snapshots
     live = copy.deepcopy(_BASE_CFG)
-    live["shared"]["wflow_outvars"] = ["actual evapotranspiration"]
+    live["model"]["outvars"] = ["actual evapotranspiration"]
     diffs = compare_project_consistency(live, wf1, wf2)
     assert diffs
-    assert any("shared.wflow_outvars" in d for d in diffs), diffs
+    assert any("model.outvars" in d for d in diffs), diffs
 
 
 def test_d_flat_vs_binned_paths_pass(tmp_path):
@@ -135,8 +137,7 @@ def test_d_flat_vs_binned_paths_pass(tmp_path):
     wf1 = _write(tmp_path / "snake_config_build_model.yml", snapshot_cfg)
 
     live = copy.deepcopy(_BASE_CFG)
-    live["project"]["data_sources"] = "config\\deltares_data.yml"
-    live["project"]["data_sources_climate"] = "config\\cmip6_data.yml"
+    live["project"]["catalog"] = "config\\deltares_data.yml"
     live["workflows"]["build_model"]["engine"]["build_config"] = (
         "config\\wflow_build_model.yml"
     )
@@ -162,7 +163,7 @@ def test_e_missing_wf1_snapshot_fails_with_run_first_message(tmp_path):
 def test_f_mutated_historical_window_passes_not_guarded(snapshots):
     wf1, wf2 = snapshots
     live = copy.deepcopy(_BASE_CFG)
-    live["shared"]["historical_window"]["endtime"] = "2010-12-31T00:00:00"
+    live["climate"]["window"]["end"] = 2010
     diffs = compare_project_consistency(live, wf1, wf2)
     assert diffs == []
 

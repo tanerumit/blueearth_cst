@@ -93,18 +93,17 @@ def fabricated_project(tmp_path):
 
     spec = climate_store_rule(
         project_dir=project_dir.as_posix(),
-        model_region=cfg["shared"]["basin"]["region"],
-        clim_source=cfg["shared"]["clim_historical"],
-        historical_window=cfg["shared"]["historical_window"],
-        data_sources=cfg["project"]["data_sources"],
+        model_region=cfg["basin"]["region"],
+        clim_source=cfg["climate"]["selected"],
+        historical_window=cfg["climate"]["window"],
+        data_sources=cfg["project"]["catalog"],  # `C-40`
     )
     store_plots = Path(spec.store_dir, "plots")
     expected = [project_dir / rel for rel in DECLARED_PLOT_OUTPUTS]
     # The SOURCE family follows the WF0 filename grammar; only the FORCING
     # family still uses the legacy `<dataset>_<var>_<kind>.png` spelling.
     expected += [
-        store_plots / name
-        for name in source_figure_names(cfg["shared"]["clim_historical"])
+        store_plots / name for name in source_figure_names(cfg["climate"]["selected"])
     ]
     # A per-station sheet inside the directory() bin rule 1.15 declares. Named
     # for a wflow_id, which is why the FILE could never be declared and the BIN
@@ -179,7 +178,7 @@ def project_with_basavg_outvar(tmp_path):
     # `shared`, not `workflows.build_model`: the key was hoisted by R13 D-9.7
     # because WF3 reads it too, and a copy planted in a workflow file is now a
     # parse error rather than an override.
-    cfg["shared"]["wflow_outvars"] = [
+    cfg["model"]["outvars"] = [
         "river discharge",
         "actual evapotranspiration",
     ]
@@ -290,7 +289,7 @@ def test_the_shipped_sentinel_yields_no_layer():
     from blueearth_cst.shared.gauges import gauges_layer_name
 
     cfg = load_composed_config(CONFIG_FN)
-    sentinel = cfg["shared"]["basin"]["gauge_points"]
+    sentinel = cfg["basin"]["output_locations"]
     assert sentinel in (None, "None"), (
         f"unexpected gauge_points sentinel {sentinel!r} — if the config now "
         f"names a real file this test needs rethinking, not relaxing"

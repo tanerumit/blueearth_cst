@@ -67,14 +67,16 @@ _WF2_GUARDED = (("workflows", "analyze_projections"),)
 # application) it is applied SYMMETRICALLY to both operands, so a flat-vs-binned
 # pair converges while two binned configs are unchanged (design §3b, gate 2d).
 _COPIED_CONFIG_PATH_MAP: dict[str, dict[str, str]] = {
-    "data_sources": {
+    # `C-40` renamed `project.data_sources` to `project.catalog` and `C-39`
+    # pushed the climate catalog DOWN to `workflows.analyze_projections.catalog`.
+    # Both leaves are spelled `catalog`, so the two former entries merge into
+    # one -- `_normalize_paths` matches on the LEAF name at any depth, and the
+    # union is what either tier can carry.
+    "catalog": {
         "config\\deltares_data.yml": "config/catalogs/deltares_data.yml",
         "config\\deltares_data_linux.yml": "config/catalogs/deltares_data_linux.yml",
         "config\\deltares_data_analyze_projections.yml": "config/catalogs/deltares_data_analyze_projections.yml",
         "config\\deltares_data_analyze_projections_linux.yml": "config/catalogs/deltares_data_analyze_projections_linux.yml",
-        "config\\cmip6_data.yml": "config/catalogs/cmip6_data.yml",
-    },
-    "data_sources_climate": {
         "config\\cmip6_data.yml": "config/catalogs/cmip6_data.yml",
     },
     # TWO old spellings each, because these files have moved twice: pre-R6 flat,

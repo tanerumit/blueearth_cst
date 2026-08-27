@@ -62,7 +62,10 @@ import semantic_tree_diff as std  # noqa: E402
 from blueearth_cst.shared.config_composition import (  # noqa: E402
     load_composed_config,
 )
-from blueearth_cst.shared.snake_utils import slugify_window  # noqa: E402
+from blueearth_cst.shared.snake_utils import (  # noqa: E402
+    historical_window_bounds,
+    slugify_window,
+)
 
 #: Directory names whose contents are never part of a project snapshot.
 EXCLUDED_DIRS = frozenset({".snakemake"})
@@ -77,17 +80,26 @@ def map_parameters(config: dict) -> dict:
     come from the sections that own them.
     """
     project = config["project"]
-    shared = config["shared"]
+    climate = config["climate"]
     workflows = config.get("workflows", {})
-    window = shared["historical_window"]
     experiment = workflows.get("run_stress_test", {})
     projections = workflows.get("analyze_projections", {})
+
+    # `C-70` retyped `climate.window` to INCLUSIVE YEARS, and the store key is
+    # still ISO at day resolution. `historical_window_bounds` is the one place
+    # that conversion lives — going through it is what keeps this tool's key
+    # byte-identical to the one `climate_store_rule` builds for a real run.
+    # Formatting the years here instead would be a second implementation of the
+    # same rule, free to drift, and the symptom would be a snapshot that never
+    # matches a tree.
+    start, end = historical_window_bounds(climate["window"])
     return {
         "project_dir": project["project_dir"],
         "experiment_name": experiment.get("experiment_name", "experiment"),
-        "dataset_key": f"{shared['clim_historical']}_"
-        + slugify_window(window["starttime"], window["endtime"]),
-        "clim_project": projections.get("clim_project", "cmip6"),
+        # `C-44`: the selected source. `C-25`: `clim_project` is `ensemble`.
+        "dataset_key": f"{climate['selected']}_"
+        + slugify_window(start.isoformat(), end.isoformat()),
+        "clim_project": projections.get("ensemble", "cmip6"),
     }
 
 

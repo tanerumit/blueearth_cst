@@ -105,10 +105,14 @@ def test_gauge_points_are_a_declared_input_only_when_configured():
     silence.
     """
     assert "gauge_points" not in _rule().inputs
-    assert "gauge_points" not in _rule(basin_overrides={"gauge_points": None}).inputs
+    assert (
+        "gauge_points" not in _rule(basin_overrides={"output_locations": None}).inputs
+    )
     # The legacy "None" sentinel spelling is unset too.
-    assert "gauge_points" not in _rule(basin_overrides={"gauge_points": "None"}).inputs
-    configured = _rule(basin_overrides={"gauge_points": "C:/data/gauges.csv"})
+    assert (
+        "gauge_points" not in _rule(basin_overrides={"output_locations": "None"}).inputs
+    )
+    configured = _rule(basin_overrides={"output_locations": "C:/data/gauges.csv"})
     assert configured.inputs["gauge_points"] == "C:/data/gauges.csv"
 
 
@@ -162,7 +166,11 @@ def test_the_deprecated_build_model_fallback_cannot_reach_the_rule():
     # Both keys, same path: a staged migration still parses, and the canonical
     # value reaches the shared rule as an input.
     migrating = parse_spatial_config(
-        {"region": {"basin": [0, 0]}, "gauge_points": "C:/data/legacy.csv"},
+        # `C-41`: the canonical basin key is `output_locations` now. The
+        # legacy one it coexists with is still `workflows.build_model.
+        # output_locations`, which is why both sides read the same word and
+        # the tier they sit in is what distinguishes them.
+        {"region": {"basin": [0, 0]}, "output_locations": "C:/data/legacy.csv"},
         {"output_locations": "C:/data/legacy.csv"},
     )
     assert "gauge_points" in su.spatial_units_rule("/proj", migrating, "cat.yml").inputs
@@ -171,12 +179,19 @@ def test_the_deprecated_build_model_fallback_cannot_reach_the_rule():
 def test_overrides_are_carried_through():
     rule = _rule(
         basin_overrides={
-            "hydrography": "merit_hydro_1k",
             "resolution": 0.05,
-            "river_uparea_km2": 50.0,
-            "gauge_snap_tolerance_m": 2500.0,
-            "automatic_subbasins": {"max_per_basin": 7},
-            "spatial_sources": {"rivers": "my_rivers"},
+            # `C-13`/`C-42`: the three delineation knobs, grouped.
+            "delineation": {
+                "river_uparea_km2": 50.0,
+                "snap_tolerance_m": 2500.0,
+                "max_subbasins": 7,
+            },
+            # `C-15`: every spatial input under one section, `hydrography`
+            # included -- it is a named dataset like the rest.
+            "sources": {
+                "hydrography": "merit_hydro_1k",
+                "rivers": "my_rivers",
+            },
         }
     )
     assert rule.params["hydrography"] == "merit_hydro_1k"

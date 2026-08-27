@@ -182,7 +182,9 @@ def config_paths(tmp_path_factory) -> dict[str, Path]:
     scope gets the same build-once reuse with nothing left behind.
     """
     cfg = load_composed_config(CONFIG_FN)
-    cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["chirps"]
+    # `C-43`: the candidate set moved UP to `climate.sources` and is the FULL
+    # list with no privileged element, so the selected source is a member of it.
+    cfg["climate"]["sources"] = [cfg["climate"]["selected"], "chirps"]
     path = write_config(
         tmp_path_factory.mktemp("log_rules"), cfg, stem="snake_config_two_sources"
     )

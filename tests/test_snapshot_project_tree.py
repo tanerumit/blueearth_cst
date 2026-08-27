@@ -19,17 +19,19 @@ from tests.conftest import write_config  # noqa: E402
 
 def _config(project_dir):
     return {
+        "schema_version": 2,
         "project": {"project_dir": str(project_dir).replace("\\", "/")},
-        "shared": {
-            "clim_historical": "era5",
-            "historical_window": {
-                "starttime": "2000-01-01T00:00:00",
-                "endtime": "2020-12-31T00:00:00",
-            },
+        "climate": {
+            "selected": "era5",
+            "sources": ["era5"],
+            # `C-70`: INCLUSIVE YEARS. The store key stays ISO at day
+            # resolution, and the tool converts through the same helper a
+            # real run uses.
+            "window": {"start": 2000, "end": 2020},
         },
         "workflows": {
             "run_stress_test": {"experiment_name": "my_experiment"},
-            "analyze_projections": {"clim_project": "cmip6"},
+            "analyze_projections": {"ensemble": "cmip6"},
         },
     }
 
@@ -75,11 +77,23 @@ def test_map_parameters_fall_back_to_the_shipped_defaults():
 
 
 def test_a_sub_day_window_fails_loud():
-    """The store key is day-resolution; a silent collision would mis-key it."""
-    cfg = _config("proj")
-    cfg["shared"]["historical_window"]["starttime"] = "2000-01-01T06:00:00"
+    """The store key is day-resolution; a silent collision would mis-key it.
+
+    **Asserted against `slugify_window` directly, not through a config.** `C-70`
+    retyped `climate.window` to INCLUSIVE YEARS, so a sub-day window is no longer
+    expressible in a project file — `map_parameters` converts through
+    `historical_window_bounds`, which yields midnight on both ends by
+    construction, and the guard is unreachable from that direction.
+
+    The guard still matters and still fires: `slugify_window` is shared, and any
+    future caller handing it a time-of-day would collide two windows onto one
+    store key. So the case moved down to the level where it is real rather than
+    being deleted with the shape that used to reach it.
+    """
+    from blueearth_cst.shared.snake_utils import slugify_window
+
     with pytest.raises(ValueError, match="time-of-day"):
-        spt.map_parameters(cfg)
+        slugify_window("2000-01-01T06:00:00", "2020-12-31T00:00:00")
 
 
 # ---------------------------------------------------------------------------

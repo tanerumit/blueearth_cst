@@ -319,12 +319,15 @@ RETIRED_KEYS: dict[str, str] = {
     "T2.run_stress_test.disk_headroom_gb": (
         "regrouped as `compute.disk_headroom_gb` (`C-34`)"
     ),
-    "T2.run_stress_test.dry_spell_factor": (
-        "regrouped as `climate_perturbations.spell_factors.dry` (`C-33`)"
-    ),
-    "T2.run_stress_test.wet_spell_factor": (
-        "regrouped as `climate_perturbations.spell_factors.wet` (`C-33`)"
-    ),
+    # `C-33`'s two spell factors are NOT listed. They live INSIDE
+    # `stress_test:`, beside `temp:`/`precip:` rather than under them, and
+    # the T2 matcher below partitions on the first dot -- so a nested path
+    # here can never fire. Their parent `T2.run_stress_test.stress_test` is
+    # refused wholesale, which covers them and says where the section went.
+    #
+    # They WERE listed, at the top level, where no v1 config has ever put
+    # them. Dead entries, found when the mapping cross-check disagreed with
+    # this table (R14 P4).
     "T2.build_model.model_build_config": (
         "regrouped as `engine.build_config` (`C-22`)"
     ),

@@ -442,15 +442,22 @@ rows:
   - id: C-33
     status: live
     applies: config
+    note: >-
+      The source paths are INSIDE `stress_test:`, not at the workflow top level.
+      They sit beside `temp:`/`precip:` rather than under them, because they add
+      no grid member and no design-table column -- which is exactly why the tier
+      is easy to get wrong. Named at the top level, this row silently never
+      fired: `C-68` renamed the section around them and they stayed flat inside
+      it, where `prepare_cst_parameters` then rejected them as unknown axes.
     moves:
-      - old_path: T2.run_stress_test.dry_spell_factor
+      - old_path: T2.run_stress_test.stress_test.dry_spell_factor
         new_path: T2.run_stress_test.climate_perturbations.spell_factors.dry
         op: regroup
         value_transform: identity
         on_collision: refuse
         default_if_absent: omit
         exception_hook: null
-      - old_path: T2.run_stress_test.wet_spell_factor
+      - old_path: T2.run_stress_test.stress_test.wet_spell_factor
         new_path: T2.run_stress_test.climate_perturbations.spell_factors.wet
         op: regroup
         value_transform: identity

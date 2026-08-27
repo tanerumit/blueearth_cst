@@ -1,60 +1,24 @@
-# R14 declared-red - tests whose OWN fixtures are still v1.
+# R14 declared-red - ONE node, and it is a flag rather than a defect.
 # Read tests/test_r14_expected_red.py first.
 #
-# **Re-recorded 2026-08-27**, against `pixi run test-fast`. The arc so far:
+# **Re-recorded 2026-08-27 at the end of P4.** The arc:
 #   83  P1 recorded it -- every shipped config refused at `schema_version`
 #   73  P1b, after the T2 readers moved
-#   57  P4/1, after the four `test_case/` sets and the fixture migrated
-#   55  P4/2, after the templates migrated
-#   29  P4/3, after R13's digest-equality tests and `presplit/` retired
+#   57  P4/1, the four `test_case/` sets and the fixture, by the rewriter
+#   55  P4/2, the templates
+#   29  P4/3, R13's digest-equality tests and `presplit/` retired
+#    1  P4/4, every remaining test fixture moved onto v2
 #
-# Every entry left is a test that BUILDS a v1-shaped config in `tmp_path`
-# and runs it through v2 machinery. None is a shipped config, and none is a
-# defect in the code under test -- they are fixtures that have not moved
-# yet. Migrating them is mechanical and takes the list to zero, at which
-# point BOTH this file and its test are deleted.
+# What is left is not a config at all. `C-32`'s trajectory enum is
+# `transient | constant` in the RULED register row and `transient | step` in
+# shipped code. The mapping states the ruled value, because it is the
+# normative record; the test compares it against `TRAJECTORY_KINDS` and fails
+# until one side moves. Emitting either silently would be a choice no commit
+# has standing to make, so the red IS the flag.
 #
-# By module:
-#     2  tests/test_a1_acceptance.py
-#     1  tests/test_build_model.py
-#     2  tests/test_check_project_consistency.py
-#     3  tests/test_compare_climate_sources.py
-#     4  tests/test_log_rules_contract.py
+# **Delete this file and its test the moment P1c Gate 1 rules `C-32`.** A
+# one-entry allowance list is one step from being a permanent one.
+#
 #     1  tests/test_migration_mapping.py
-#     1  tests/test_plot_workflow_dag.py
-#     1  tests/test_r01_config_readers.py
-#    10  tests/test_snapshot_project_tree.py
-#     3  tests/test_spatial_units_rule.py
-#     1  tests/test_store_region_bbox.py
-#     1  tests/test_wf1_plot_outputs.py
 #
-tests/test_a1_acceptance.py::test_the_seed_fixture_keeps_its_own_shorter_window  # v1 fixture built in the test itself
-tests/test_a1_acceptance.py::test_the_template_config_recommends_the_30_year_window  # v1 fixture built in the test itself
-tests/test_build_model.py::test_copy_config  # v1 fixture built in the test itself
-tests/test_check_project_consistency.py::test_b_mutated_basin_resolution_fails_naming_key  # v1 fixture built in the test itself
-tests/test_check_project_consistency.py::test_c2_mutated_shared_wflow_outvars_fails  # v1 fixture built in the test itself
-tests/test_compare_climate_sources.py::test_rule_declares_the_module_named_outputs_on_two_sources  # v1 fixture built in the test itself
-tests/test_compare_climate_sources.py::test_rule_takes_each_store_and_its_basin_cells  # v1 fixture built in the test itself
-tests/test_compare_climate_sources.py::test_the_appended_log_label_matches_the_rule  # v1 fixture built in the test itself
-tests/test_log_rules_contract.py::test_declared_labels_are_unique[analyze_climate.smk-two_source]  # v1 fixture built in the test itself
-tests/test_log_rules_contract.py::test_declared_labels_read_in_rule_number_order[analyze_climate.smk-two_source]  # v1 fixture built in the test itself
-tests/test_log_rules_contract.py::test_every_declared_label_has_a_producing_rule[analyze_climate.smk-two_source]  # v1 fixture built in the test itself
-tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_climate.smk-two_source]  # v1 fixture built in the test itself
-tests/test_migration_mapping.py::test_the_trajectory_enum_agrees_with_the_code  # v1 fixture built in the test itself
-tests/test_plot_workflow_dag.py::test_rulegraph_mode_and_format_reach_the_filename  # v1 fixture built in the test itself
-tests/test_r01_config_readers.py::test_prep_cst_parameters_reads_sectioned_config  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_a_clean_tree_exits_zero  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_a_missing_project_dir_says_where_it_looked  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_no_check_skips_the_gate_and_always_exits_zero  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_out_writes_a_snapshot_the_falsifier_can_read_back  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_project_dir_override_wins_over_the_config  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_quiet_keeps_the_unmapped_lines_and_the_summary  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_reports_unmapped_and_exits_nonzero  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_the_default_map_still_reports_an_undeclared_artifact  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_the_map_is_the_post_migration_inventory  # v1 fixture built in the test itself
-tests/test_snapshot_project_tree.py::test_writes_nothing_without_out  # v1 fixture built in the test itself
-tests/test_spatial_units_rule.py::test_gauge_points_are_a_declared_input_only_when_configured  # v1 fixture built in the test itself
-tests/test_spatial_units_rule.py::test_overrides_are_carried_through  # v1 fixture built in the test itself
-tests/test_spatial_units_rule.py::test_the_deprecated_build_model_fallback_cannot_reach_the_rule  # v1 fixture built in the test itself
-tests/test_store_region_bbox.py::test_store_region_agrees_with_the_model_grid  # v1 fixture built in the test itself
-tests/test_wf1_plot_outputs.py::test_the_shipped_sentinel_yields_no_layer  # v1 fixture built in the test itself
+tests/test_migration_mapping.py::test_the_trajectory_enum_agrees_with_the_code  # C-32 unresolved; P1c Gate 1 rules it

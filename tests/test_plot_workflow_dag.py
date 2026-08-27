@@ -33,7 +33,18 @@ def _write_r01_cfg(path, project_dir, experiment=None):
     two-key stanza, the name comes back None, and every WF3 render loses the
     experiment id from its filename with nothing reporting it.
     """
-    text = f"project:\n  project_dir: {project_dir}\n  static_dir: config\n"
+    # `C-05` stamps the version and `C-07` deleted `static_dir`. The three
+    # kind sections are here because `CONFIG_PROJECTION` names them: a config
+    # missing one does not compose, so a fixture that carried only `project:`
+    # and `workflows:` stopped being a project config when `shared:` dissolved.
+    text = (
+        f"schema_version: 2\n"
+        f"project:\n  project_dir: {project_dir}\n"
+        "basin:\n  region: \"{'subbasin': [9.7, 0.4], 'uparea': 100}\"\n"
+        "climate:\n  selected: era5\n  sources: [era5]\n"
+        "  window: {start: 2000, end: 2020}\n"
+        "model:\n  outvars: [river discharge]\n"
+    )
     if experiment is not None:
         settings = path.parent / f"{path.stem}_run_stress_test.yml"
         settings.write_text(f"experiment_name: {experiment}\n", encoding="utf-8")

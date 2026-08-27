@@ -67,11 +67,6 @@ workflows:
   # a data catalog, so it runs before (or without) the hydrology model.
   analyze_climate:
     enabled: true                                         # boolean
-    # `C-84`: WF0 has no settings of its own -- everything it needs is in the
-    # project file above. The file ships anyway so the set is legible: four
-    # workflows, four files. It and this key travel together (D-7.9) -- a
-    # `config_path` naming a file that is not there is a hard parse error.
-    config_path: snake_config.analyze_climate.template.yml
   build_model:
     enabled: true                                         # boolean
     config_path: snake_config.build_model.template.yml

@@ -137,7 +137,8 @@ def project_dir(config):
 @pytest.fixture()
 def data_sources(config):
     """Return data sources"""
-    data_sources = get_config(config["project"], "data_sources", optional=False)
+    # `C-40`: `project.data_sources` is `project.catalog`.
+    data_sources = get_config(config["project"], "catalog", optional=False)
     data_sources = join(SNAKEDIR, data_sources)
     return data_sources
 

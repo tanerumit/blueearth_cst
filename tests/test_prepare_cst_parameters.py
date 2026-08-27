@@ -9,6 +9,7 @@ stub, no sys.modules pollution risk.
 
 import glob
 import math
+import os
 
 import numpy as np
 import pandas as pd
@@ -393,16 +394,29 @@ def _is_project_config(path: str) -> bool:
     return isinstance(doc, dict) and "workflows" in doc
 
 
+#: The shipped project configs, with node ids that do NOT embed the checkout
+#: path. Parametrising on the absolute path put `C:\\Users\\taner\\...` inside
+#: the node id, which made every id machine-specific: the same test is
+#: `[...\\test_case\\snake_config_rapid.yml]` locally, `[D:\\a\\...]` on the
+#: windows runner and `[/home/runner/work/...]` on the ubuntu one.
+#:
+#: That is invisible while a suite only ever runs in one place, and it broke
+#: `tests/data/r14_expected_red.txt` the first time CI ran: the declared ids
+#: matched nothing, so five expected-red nodes were reported as undeclared
+#: REGRESSIONS on both legs. `ids=` fixes it at the source rather than
+#: normalising at the comparison, so any future list of node ids is portable.
+_SHIPPED_CONFIGS = [
+    path
+    for path in sorted(glob.glob(str(REPO_ROOT / "test_case" / "snake_config_*.yml")))
+    + [str(REPO_ROOT / "config" / "templates" / "snake_config.template.yml")]
+    if _is_project_config(path)
+]
+
+
 @pytest.mark.parametrize(
     "config_path",
-    [
-        path
-        for path in sorted(
-            glob.glob(str(REPO_ROOT / "test_case" / "snake_config_*.yml"))
-        )
-        + [str(REPO_ROOT / "config" / "templates" / "snake_config.template.yml")]
-        if _is_project_config(path)
-    ],
+    _SHIPPED_CONFIGS,
+    ids=[os.path.basename(p) for p in _SHIPPED_CONFIGS],
 )
 def test_shipped_configs_are_inside_the_domain(config_path):
     """V23's other half: the guard must not refuse anything we ship.

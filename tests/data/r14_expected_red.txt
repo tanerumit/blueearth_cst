@@ -91,11 +91,11 @@ tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_pr
 tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[build_model.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[run_stress_test.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_plot_workflow_dag.py::test_rulegraph_mode_and_format_reach_the_filename  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\config\\templates\\snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\test_case\\snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\test_case\\snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\test_case\\snake_config_rapid.yml]  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\test_case\\snake_config_wf2_fast.yml]  # reads a v1 project config; refused by `schema_version` until P4
+tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
+tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
+tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4
+tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config_rapid.yml]  # reads a v1 project config; refused by `schema_version` until P4
+tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[snake_config_wf2_fast.yml]  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_r01_config_readers.py::test_prep_cst_parameters_reads_sectioned_config  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_snapshot_project_tree.py::test_a_clean_tree_exits_zero  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_snapshot_project_tree.py::test_a_missing_project_dir_says_where_it_looked  # reads a v1 project config; refused by `schema_version` until P4

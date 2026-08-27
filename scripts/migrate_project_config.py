@@ -274,6 +274,75 @@ TRANSFORMS = {
 
 
 # ---------------------------------------------------------------------------
+# Exception hooks (D-11.5) — the two rows that are NOT behaviour-preserving
+# ---------------------------------------------------------------------------
+#
+# Every other row in the mapping is mechanical: the same run, spelled
+# differently. These two change what a project computes, so each has an explicit
+# hook rather than being migrated in silence. One warns and proceeds; the other
+# refuses. The difference is whether a correct rewrite EXISTS.
+
+
+def hook_warn_st0(value, *, t1, t2, path):
+    """`C-69`: `run_historical: false` GAINS `st_0`, and the user is told.
+
+    A project that had it `false` gains the unperturbed baseline member and with
+    it `q_wettest_month_mean` and `q_driest_month_mean` — 2 of the 11 q metrics.
+    That is the intended behaviour of the row, so this warns and proceeds; a
+    refusal would block every such project from migrating at all.
+
+    `true` is the no-op case and says nothing: a signal that fires on every run
+    is one nobody reads.
+    """
+    if value is False:
+        return [
+            "C-69: this project set `run_historical: false`. That key is gone "
+            "and `st_0` is now ALWAYS produced, so the next run gains the "
+            "unperturbed baseline member and two indicators derived from it "
+            "(`q_wettest_month_mean`, `q_driest_month_mean`) — 2 of 11 q "
+            "metrics. Results will differ from the last run of this project, "
+            "and that difference is the migration, not a defect."
+        ]
+    return []
+
+
+def hook_refuse_water_year(value, *, t1, t2, path):
+    """`N8`: a non-January water year is REFUSED, naming the window.
+
+    The v1 window's bounds are CALENDAR; the v2 key's are water-year. For
+    `water_year_start: Jan` the two coincide and the rewrite is exact. For any
+    other month they do not, and **no year pair reproduces the old window** —
+    so there is nothing correct to emit.
+
+    Refusing beats guessing here precisely because the alternative is silent:
+    every downstream number would shift by up to a year with a config that looks
+    migrated and validates cleanly.
+    """
+    start = ((t1.get("shared") or {}).get("water_year_start")) or (
+        (t1.get("climate") or {}).get("water_year_start")
+    )
+    if start in (None, "Jan"):
+        return []
+    raise MigrationError(
+        f"N8: this project sets `water_year_start: {start}`, and `{path}` "
+        "cannot be rewritten. The v1 window's bounds are CALENDAR years and the "
+        "v2 key's are WATER years, so for any start month but January no year "
+        "pair reproduces the window this project has been running. Migrating it "
+        "would shift every downstream number by up to a year while looking "
+        "correct.\n"
+        "  Decide the window you want in WATER years, set it by hand, and stamp "
+        "`schema_version: 2` yourself — or move the project to "
+        "`water_year_start: Jan` first, if the calendar year was what you meant."
+    )
+
+
+HOOKS = {
+    "warn_st0": hook_warn_st0,
+    "refuse_water_year": hook_refuse_water_year,
+}
+
+
+# ---------------------------------------------------------------------------
 # Path helpers — dotted paths against a round-trip document
 # ---------------------------------------------------------------------------
 
@@ -455,6 +524,7 @@ def migrate_set(t1, t2_by_workflow, mapping, *, outvars=None):
     behave differently the next time the default moves.
     """
     report = []
+    warnings: list[str] = []
     wildcard_workflows = tuple(t2_by_workflow)
     renames: dict[str, str] = {}
 
@@ -493,10 +563,14 @@ def migrate_set(t1, t2_by_workflow, mapping, *, outvars=None):
             outvars,
             wildcard_workflows,
             renames,
+            warnings,
         )
 
     t1["schema_version"] = SCHEMA_VERSION
     report.append(f"C-05: stamped `schema_version: {SCHEMA_VERSION}`")
+    # Warnings last, so they are the final thing a user reads rather than
+    # being buried in thirty lines of mechanical moves.
+    report.extend(warnings)
     return t1, t2_by_workflow, report
 
 
@@ -571,7 +645,15 @@ def _apply_collapse(row, t1, t2_by_workflow, report, renames):
 
 
 def _apply_move(
-    row, move, t1, t2_by_workflow, report, outvars, wildcard_workflows, renames
+    row,
+    move,
+    t1,
+    t2_by_workflow,
+    report,
+    outvars,
+    wildcard_workflows,
+    renames,
+    warnings,
 ):
     """One key: read it, transform it, write it where the mapping says.
 
@@ -600,6 +682,12 @@ def _apply_move(
         value, present = get_path(doc, path)
         if not present:
             continue
+
+        hook_name = move.get("exception_hook")
+        if hook_name:
+            # Evaluated in the PREFLIGHT, which is what lets `N8` refuse on the
+            # third file of a set without leaving a mixed tree behind.
+            warnings.extend(HOOKS[hook_name](value, t1=t1, t2=t2_by_workflow, path=old))
 
         if new is None:
             # **A deleted key takes its comment with it** (D-14.9). The

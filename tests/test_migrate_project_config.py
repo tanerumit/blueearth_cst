@@ -428,3 +428,103 @@ class TestTheTransaction:
         after = {p.name: p.read_bytes() for p in tmp_path.glob("*.yml")}
         assert after == before
         assert not list(tmp_path.glob("*.v1.bak"))
+
+
+class TestTheNonPreservingHooks:
+    """D-11.5 — the two rows that change what a project computes.
+
+    Every other row is mechanical: the same run, spelled differently. These two
+    are not, and the difference between them is whether a correct rewrite
+    EXISTS. `C-69`'s does, so it warns and proceeds; `N8`'s does not, so it
+    refuses.
+    """
+
+    def test_run_historical_false_warns_about_the_metrics_it_gains(self, tmp_path):
+        """`C-69`: the gain is the intended behaviour, so warn, do not refuse.
+
+        Refusing would block every project that set it `false` from migrating at
+        all, over a change the row exists to make.
+        """
+        import re
+
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        wf3 = tmp_path / "snake_config_rapid_run_stress_test.yml"
+        wf3.write_text(
+            re.sub(
+                r"^run_historical:\s*true",
+                "run_historical: false",
+                wf3.read_text(encoding="utf-8"),
+                flags=re.M,
+            ),
+            encoding="utf-8",
+        )
+        report = migrate_project(t1, write=False)
+        warning = [line for line in report if "q_wettest_month_mean" in line]
+        assert warning, "the gained indicators must be named, not just implied"
+        assert "st_0" in warning[0]
+
+    def test_run_historical_true_says_nothing(self, tmp_path):
+        """The no-op case. A signal that fires every run is one nobody reads."""
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        report = migrate_project(t1, write=False)
+        assert not [line for line in report if "q_wettest_month_mean" in line]
+
+    def test_a_non_january_water_year_is_refused(self, tmp_path):
+        """`N8`: no year pair reproduces the window, so there is nothing to emit.
+
+        The v1 window's bounds are CALENDAR and the v2 key's are WATER years.
+        For January they coincide; for anything else a rewrite would shift every
+        downstream number by up to a year while looking correct.
+        """
+        from scripts.migrate_project_config import MigrationError, migrate_project
+
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1.write_text(
+            t1.read_text(encoding="utf-8").replace(
+                "shared:\n", "shared:\n  water_year_start: Oct\n", 1
+            ),
+            encoding="utf-8",
+        )
+        with pytest.raises(MigrationError, match="water_year_start: Oct"):
+            migrate_project(t1, write=True)
+
+    def test_a_refusal_leaves_the_tree_byte_identical(self, tmp_path):
+        """D-11.2b's whole point, and no unit test reaches it.
+
+        `N8` fires part-way through a set. If anything had been written by then,
+        the project would be left mixed v1/v2 — a tree the loader rejects
+        wholesale, from a command that was trying to help.
+        """
+        from scripts.migrate_project_config import MigrationError, migrate_project
+
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1.write_text(
+            t1.read_text(encoding="utf-8").replace(
+                "shared:\n", "shared:\n  water_year_start: Oct\n", 1
+            ),
+            encoding="utf-8",
+        )
+        before = {p.name: p.read_bytes() for p in sorted(tmp_path.glob("*.yml"))}
+        with pytest.raises(MigrationError):
+            migrate_project(t1, write=True)
+        after = {p.name: p.read_bytes() for p in sorted(tmp_path.glob("*.yml"))}
+        assert after == before
+        assert not list(tmp_path.glob("*.v1.bak"))
+        assert not list(tmp_path.glob(".migrate_staging"))
+
+    def test_january_is_not_refused(self, tmp_path):
+        """The month where calendar and water years coincide."""
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = TestTheTransaction._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        t1.write_text(
+            t1.read_text(encoding="utf-8").replace(
+                "shared:\n", "shared:\n  water_year_start: Jan\n", 1
+            ),
+            encoding="utf-8",
+        )
+        assert migrate_project(t1, write=False)

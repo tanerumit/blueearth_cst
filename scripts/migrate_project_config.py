@@ -22,10 +22,12 @@ build this beside ``scripts/split_project_config.py`` and not to modify it. P1
 retired that script (``068b81dd``) when the hoist mechanism went, so there is
 nothing to sit beside and nothing to avoid modifying.
 
-This module is the MECHANISM. The transaction around it — preflight, stage,
-validate, atomic commit, ``*.v1.bak`` — is D-11.2b and lands next; until then
-this rewrites in memory and writes nothing, which is what makes it safe to
-land on its own.
+**The transaction is D-11.2b**, and its order is the point: `N8`'s refusal
+can fire on the THIRD file of a set, so nothing is written until every file has
+been read, every move resolved and every hook evaluated. Then stage beside the
+project, validate the staged set through the loader a real run uses, and only
+then commit — keeping the originals as ``*.v1.bak``, because a migration a user
+wants to undo is a migration they can undo.
 """
 
 from __future__ import annotations
@@ -222,6 +224,41 @@ def horizon_length_to_window(values, **_):
     return {"start": start, "end": end}
 
 
+def union_with_selected(values, **_):
+    """`C-43`: the candidate list absorbs the source that used to be privileged.
+
+    v1 had TWO keys with an asymmetry between them: ``shared.clim_historical``
+    named the dataset the model was built and run on, and
+    ``analyze_climate.candidate_sources`` listed the OTHERS, to compare it
+    against. v2's ``climate.sources`` is "the full candidate set with no
+    privileged element", and ``climate.selected`` names one MEMBER of it.
+
+    So a straight copy produces a config the loader refuses — ``selected: era5``
+    against ``sources: [chirps]`` — which is exactly what happened, and what the
+    staged-set validation caught before anything was written. The union is the
+    only reading that preserves what the project meant: every dataset it named,
+    with the one it ran on still identified.
+
+    ``clim_historical`` is READ here and consumed by `C-44`, which is why this
+    row declares it under ``collapse_reads`` rather than as a move: two rows
+    need the value and only one may remove it.
+    """
+    candidates = values.get("candidate_sources") or []
+    selected = values.get("clim_historical")
+    if not isinstance(candidates, (list, tuple)):
+        raise MigrationError(f"`candidate_sources` must be a list, got {candidates!r}")
+    ordered = [selected] if selected is not None else []
+    for entry in candidates:
+        if entry not in ordered:
+            ordered.append(entry)
+    if not ordered:
+        raise MigrationError(
+            "neither `clim_historical` nor `candidate_sources` is set, so there "
+            "is no climate source to carry into `climate.sources`."
+        )
+    return ordered
+
+
 TRANSFORMS = {
     "identity": identity,
     "iso_to_year": iso_to_year,
@@ -232,6 +269,7 @@ TRANSFORMS = {
     "list_to_preference_group": list_to_preference_group,
     "scalar_to_var_mapping": scalar_to_var_mapping,
     "horizon_length_to_window": horizon_length_to_window,
+    "union_with_selected": union_with_selected,
 }
 
 
@@ -259,11 +297,50 @@ def get_path(doc, dotted: str):
 
 
 def pop_path(doc, dotted: str):
+    """Remove a key and return ``(value, present)``.
+
+    The key's COMMENT is detached here and handed to :func:`take_comment`
+    separately, rather than being dropped: see D-14.9.
+    """
     parts = dotted.split(".")
     holder = _walk(doc, parts)
     if holder is None or parts[-1] not in holder:
         return None, False
     return holder.pop(parts[-1]), True
+
+
+def take_comment(doc, dotted: str):
+    """Detach and return the ruamel comment token attached to a key, if any.
+
+    ``ruamel`` hangs a key's comment off its PARENT mapping's ``.ca.items``,
+    keyed by the key's own name — so moving a value between mappings loses the
+    comment unless it is carried across explicitly. That is why
+    `analyze_projections`' whole comment block disappeared on the first run of
+    this tool: every key in that file is renamed, and every rename dropped its
+    annotation.
+
+    Returns None for a plain dict (the unit tests) or a key with no comment.
+    """
+    parts = dotted.split(".")
+    holder = _walk(doc, parts)
+    if holder is None:
+        return None
+    comments = getattr(holder, "ca", None)
+    if comments is None:
+        return None
+    return comments.items.pop(parts[-1], None)
+
+
+def give_comment(doc, dotted: str, token) -> None:
+    """Re-attach a comment token to a key at its new home."""
+    if token is None:
+        return
+    parts = dotted.split(".")
+    holder = _walk(doc, parts)
+    comments = getattr(holder, "ca", None)
+    if comments is None:
+        return
+    comments.items[parts[-1]] = token
 
 
 def set_path(doc, dotted: str, value, *, on_collision: str, row_id: str):
@@ -272,7 +349,9 @@ def set_path(doc, dotted: str, value, *, on_collision: str, row_id: str):
     node = doc
     for part in parts[:-1]:
         if part not in node or not isinstance(node[part], dict):
-            node[part] = {}
+            # Same TYPE as the parent, so a round-trip document keeps building
+            # round-trip containers and the dump stays formatted.
+            node[part] = type(node)() if hasattr(node, "ca") else {}
         node = node[part]
     leaf = parts[-1]
     if leaf in node:
@@ -439,7 +518,6 @@ def _apply_collapse(row, t1, t2_by_workflow, report, renames):
     dest_dotted = destinations.pop()
 
     values, sources = {}, []
-    doc = None
     for move in moves:
         tier, workflow, path = split_tier(_follow(move["old_path"], renames))
         doc = t1 if tier == "T1" else t2_by_workflow.get(workflow)
@@ -447,8 +525,23 @@ def _apply_collapse(row, t1, t2_by_workflow, report, renames):
             continue
         value, present = get_path(doc, path)
         if present:
-            values[path.split(".")[-1]] = value
+            # Keyed by the ORIGINAL v1 leaf, not the followed one. A
+            # transform is written against the mapping it appears in, so
+            # it must not have to know which other rows have already
+            # relocated its inputs.
+            values[move["old_path"].split(".")[-1]] = value
             sources.append(move["old_path"])
+
+    # Paths this row READS but does not consume, because another row owns the
+    # removal. `C-43` needs `clim_historical`'s value; `C-44` is what moves it.
+    for dotted in row.get("collapse_reads") or []:
+        tier, workflow, path = split_tier(_follow(dotted, renames))
+        doc = t1 if tier == "T1" else t2_by_workflow.get(workflow)
+        if doc is None:
+            continue
+        value, present = get_path(doc, path)
+        if present:
+            values[dotted.split(".")[-1]] = value
 
     if not values:
         return
@@ -509,6 +602,12 @@ def _apply_move(
             continue
 
         if new is None:
+            # **A deleted key takes its comment with it** (D-14.9). The
+            # alternative — reattaching it to the next key — is worse: the
+            # comment explains a setting that no longer exists, and it would now
+            # appear to describe an unrelated one. `static_dir` and
+            # `run_historical` are the two this rule is written for.
+            take_comment(doc, path)
             pop_path(doc, path)
             where = f" from {name}" if name else ""
             report.append(f"{row['id']}: removed `{path}`{where}")
@@ -531,6 +630,7 @@ def _apply_move(
                 "which this set does not declare."
             )
 
+        comment = take_comment(doc, path)
         pop_path(doc, path)
         set_path(
             dest,
@@ -539,12 +639,166 @@ def _apply_move(
             on_collision=move["on_collision"],
             row_id=row["id"],
         )
-        if isinstance(converted, dict):
-            # A SECTION moved, so every path still pointing inside it must
-            # follow. Recorded against the ORIGINAL v1 spelling, because
-            # that is what later rows will name.
-            renames[old] = new
+        give_comment(dest, new_path, comment)
+        # EVERY move is recorded, not only section moves. A later row may
+        # still name the v1 path — either because it reaches INSIDE a
+        # renamed section (`C-31` after `C-68`), or because it READS a
+        # scalar another row has already moved (`C-43` reads
+        # `clim_historical`, which `C-44` relocates). Recorded against the
+        # original v1 spelling, because that is what the mapping names.
+        renames[old] = new
         report.append(f"{row['id']}: `{old}` -> `{new}`")
+
+
+# ---------------------------------------------------------------------------
+# The transaction (D-11.2b)
+# ---------------------------------------------------------------------------
+
+
+def _yaml():
+    """A round-trip YAML handler. **The reason comments survive** (D-11.8).
+
+    A `safe_load` + `safe_dump` rewriter deletes 86 of the 109 lines in the
+    shipped template and every annotation a user ever wrote, while passing every
+    other check in this file. Confined to this tool; nothing else in the toolbox
+    imports ruamel.
+    """
+    from ruamel.yaml import YAML
+
+    handler = YAML()
+    handler.preserve_quotes = True
+    # The shipped configs are hand-written and wrap wide; keeping the width
+    # large stops the dump from re-flowing lines nobody asked it to touch.
+    handler.width = 4096
+    return handler
+
+
+def discover_set(t1_path: Path):
+    """Return ``(t1_path, {workflow: path})`` for a project's complete set.
+
+    A ``config_path`` resolves against the T1 file's OWN directory, which is the
+    rule the loader uses; resolving it against the working directory would find
+    a different file depending on where the command was run from.
+    """
+    handler = _yaml()
+    with t1_path.open(encoding="utf-8") as handle:
+        t1 = handler.load(handle)
+    if not isinstance(t1, dict):
+        raise MigrationError(f"{t1_path}: not a mapping, so not a project config")
+
+    files = {}
+    for name, stanza in (t1.get("workflows") or {}).items():
+        declared = (stanza or {}).get("config_path")
+        if not declared:
+            continue
+        candidate = t1_path.parent / declared
+        if not candidate.is_file():
+            raise MigrationError(
+                f"{t1_path}: `workflows.{name}.config_path` names `{declared}`, "
+                f"which is not beside it. Expected {candidate}."
+            )
+        files[name] = candidate
+    return t1, files
+
+
+def classify(t1) -> str:
+    """``v1`` | ``v2`` | ``partial`` — idempotence, D-11.2b item 5.
+
+    A PARTIAL set is refused rather than finished, because it is a state a human
+    should look at: something stopped part-way, and this tool cannot know
+    whether the half that moved was the half that was supposed to.
+    """
+    declared = t1.get("schema_version")
+    if declared == SCHEMA_VERSION:
+        return "v2"
+    if declared is None:
+        return "v1"
+    return "partial"
+
+
+def migrate_project(t1_path: Path, *, write: bool = False):
+    """Migrate one complete set. Returns the report; raises on any refusal.
+
+    The five steps are D-11.2b's, in its order, and the ordering is the whole
+    point: `N8`'s refusal can fire on the THIRD file of a set, and a mixed v1/v2
+    tree is one the loader then rejects wholesale. So nothing is written until
+    every file has been read, every move resolved and every hook evaluated.
+    """
+    handler = _yaml()
+    t1, workflow_files = discover_set(t1_path)
+
+    state = classify(t1)
+    if state == "v2":
+        return [f"{t1_path}: already `schema_version: {SCHEMA_VERSION}`; nothing to do"]
+    if state == "partial":
+        raise MigrationError(
+            f"{t1_path}: declares `schema_version: {t1.get('schema_version')}`, "
+            f"which is neither v1 (no key) nor v2 ({SCHEMA_VERSION}). This set "
+            "is in a state no migration produced; look at it rather than "
+            "letting this tool guess which half is current."
+        )
+
+    t2 = {}
+    for name, path in workflow_files.items():
+        with path.open(encoding="utf-8") as handle:
+            t2[name] = handler.load(handle) or {}
+
+    # 1. PREFLIGHT — in memory, over the complete set. Raises before any write.
+    outvars = ((t1.get("shared") or {}).get("wflow_outvars")) or (
+        (t1.get("model") or {}).get("outvars")
+    )
+    t1, t2, report = migrate_set(t1, t2, load_mapping(), outvars=outvars)
+
+    if not write:
+        return report
+
+    # 2. STAGE beside the project, so the rename in step 4 stays on one volume.
+    staged = {}
+    stage_dir = t1_path.parent / ".migrate_staging"
+    stage_dir.mkdir(exist_ok=True)
+    try:
+        staged[t1_path] = stage_dir / t1_path.name
+        with staged[t1_path].open("w", encoding="utf-8") as handle:
+            handler.dump(t1, handle)
+        for name, path in workflow_files.items():
+            staged[path] = stage_dir / path.name
+            with staged[path].open("w", encoding="utf-8") as handle:
+                handler.dump(t2[name], handle)
+
+        # 3. VALIDATE the staged set through the loader itself, not a second
+        #    reader — the only check that means anything is the one a run does.
+        _validate_staged(staged[t1_path])
+
+        # 4. COMMIT. Originals move to `*.v1.bak` rather than being deleted:
+        #    a migration a user wants to undo is a migration they can undo.
+        for original, temp in staged.items():
+            backup = original.with_suffix(original.suffix + ".v1.bak")
+            original.replace(backup)
+            temp.replace(original)
+            report.append(f"wrote {original.name}, kept {backup.name}")
+    finally:
+        for leftover in stage_dir.glob("*"):
+            leftover.unlink()
+        stage_dir.rmdir()
+
+    return report
+
+
+def _validate_staged(staged_t1: Path) -> None:
+    """The staged set must compose, or nothing is committed.
+
+    Uses the loader a real run uses. A rewriter that validated with its own
+    reader would be checking its own opinion of the shape.
+    """
+    from blueearth_cst.shared.config_composition import load_composed_config
+
+    try:
+        load_composed_config(staged_t1)
+    except Exception as exc:  # the loader raises several types
+        raise MigrationError(
+            "the migrated set does not compose, so nothing was written:"
+            f"{chr(10)}  {exc}"
+        ) from None
 
 
 def main(argv=None) -> int:
@@ -558,12 +812,16 @@ def main(argv=None) -> int:
         help="report what would change and write nothing (the only mode today)",
     )
     args = parser.parse_args(argv)
-    print(
-        f"{args.config}: the transactional wrapper (D-11.2b) is not built yet, "
-        "so this command reports and writes nothing. The mapping it will "
-        f"execute is {MAPPING_PATH.relative_to(REPO_ROOT)}.",
-        file=sys.stderr,
-    )
+    try:
+        report = migrate_project(Path(args.config), write=not args.dry_run)
+    except MigrationError as exc:
+        print(f"REFUSED: {exc}", file=sys.stderr)
+        return 1
+
+    for line in report:
+        print(line)
+    if args.dry_run:
+        print("(--dry-run: nothing was written)", file=sys.stderr)
     return 0
 
 

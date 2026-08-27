@@ -556,9 +556,20 @@ rows:
   - id: C-43
     status: live
     applies: config
+    collapse: true
+    collapse_transform: union_with_selected
+    collapse_reads:
+      - T1.shared.clim_historical
     note: >-
       absorbs `analyze_climate.candidate_sources` (C-45) and widens it: the full
-      candidate set with no privileged element.
+      candidate set with no privileged element. That widening is a UNION, not a
+      copy — v1's `candidate_sources` listed the datasets OTHER than the one
+      `clim_historical` named, and v2's `climate.selected` must be a member of
+      `climate.sources`. A straight copy emits `selected: era5` against
+      `sources: [chirps]`, which the loader refuses; the staged-set validation
+      caught exactly that. `clim_historical` is READ here and moved by `C-44`,
+      so it is declared under `collapse_reads` rather than as a move: two rows
+      need the value, only one may remove it.
     moves:
       - old_path: T2.analyze_climate.candidate_sources
         new_path: T1.climate.sources

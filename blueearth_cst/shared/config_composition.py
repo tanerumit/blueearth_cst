@@ -386,6 +386,12 @@ IDENTITY_COMPARISONS: frozenset[tuple[str, str]] = frozenset(
 OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
     {
         ("scripts/run_workflows.py", "*"),
+        # The v1->v2 rewriter reads the `workflows` mapping to DISCOVER a
+        # set -- it follows each `config_path` to find the files it must
+        # migrate. It consumes no workflow SETTING, and it is the one tool
+        # that legitimately holds the whole set at once, which is what
+        # D-11.2b's preflight requires (`C-38`).
+        ("scripts/migrate_project_config.py", "*"),
         ("scripts/suggest_experiment_name.py", "run_stress_test"),
         ("scripts/plot_workflow_dag.py", "run_stress_test"),
         # R13's `scripts/split_project_config.py` held a fourth entry here for

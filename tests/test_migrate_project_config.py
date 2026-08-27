@@ -300,3 +300,131 @@ class TestWholeSetMigration:
         }
         assert "horizontime_climate" not in t2["run_stress_test"]
         assert "run_length" not in t2["run_stress_test"]
+
+
+class TestTheTransaction:
+    """D-11.2b and D-14.9 — the properties that only a real write can show."""
+
+    @staticmethod
+    def _copy_set(tmp_path, stem, source_dir, glob=None):
+        """Copy a whole config SET into tmp_path and return its T1 path.
+
+        ``glob`` is explicit because the two shipped sets are named differently:
+        `test_case` uses `snake_config_rapid_<workflow>.yml` while
+        `config/templates` uses `snake_config.<workflow>.template.yml`, so no
+        single prefix pattern finds both.
+        """
+        root = pathlib.Path(__file__).resolve().parent.parent
+        import shutil
+
+        for src in (root / source_dir).glob(glob or f"{stem}*.yml"):
+            shutil.copy(src, tmp_path / src.name)
+        return tmp_path / f"{stem}.yml"
+
+    def test_every_comment_survives_the_rewrite(self, tmp_path):
+        """D-14.9's first falsifier, and the reason this tool uses ruamel.
+
+        A `safe_dump` rewriter passes every other check in this file while
+        deleting four fifths of the shipped template. Asserting the count is
+        UNCHANGED rather than a fixed number: the design says "86 of the 109
+        lines" and the template today has 68 comment lines, so a literal would
+        pin a stale figure instead of the property.
+
+        This failed on the first real run — `analyze_projections` lost all five
+        of its comments, because ruamel hangs a comment off its key's PARENT
+        mapping and every key in that file is renamed.
+        """
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = self._copy_set(
+            tmp_path,
+            "snake_config.template",
+            "config/templates",
+            glob="snake_config.*.yml",
+        )
+        before = {
+            path.name: path.read_text(encoding="utf-8").count("\n#")
+            + path.read_text(encoding="utf-8").startswith("#")
+            for path in tmp_path.glob("*.yml")
+        }
+        migrate_project(t1, write=True)
+        for name, count in before.items():
+            after = (tmp_path / name).read_text(encoding="utf-8")
+            assert after.count("\n#") + after.startswith("#") == count, name
+
+    def test_the_originals_are_kept_as_v1_bak(self, tmp_path):
+        """A migration a user wants to undo is one they can undo."""
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        migrate_project(t1, write=True)
+        backups = sorted(p.name for p in tmp_path.glob("*.v1.bak"))
+        assert len(backups) == 5, backups
+        assert "snake_config_rapid.yml.v1.bak" in backups
+
+    def test_the_migrated_set_composes(self, tmp_path):
+        """Validation runs through the LOADER, not a second reader.
+
+        A rewriter that validated with its own parser would be checking its own
+        opinion of the shape. This is what caught `C-43` copying the candidate
+        list instead of unioning it, which produced `selected: era5` against
+        `sources: [chirps]` — valid YAML, refused by the loader.
+        """
+        from blueearth_cst.shared.config_composition import load_composed_config
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        migrate_project(t1, write=True)
+        composed = load_composed_config(t1)
+        assert composed["schema_version"] == 2
+        assert composed["climate"]["selected"] in composed["climate"]["sources"]
+
+    def test_the_candidate_list_absorbs_the_selected_source(self, tmp_path):
+        """`C-43` is a UNION, not a copy.
+
+        v1's `candidate_sources` listed the datasets OTHER than the privileged
+        `clim_historical`; v2 requires `selected` to be a MEMBER of `sources`.
+        """
+        import yaml
+
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        migrate_project(t1, write=True)
+        doc = yaml.safe_load(t1.read_text(encoding="utf-8"))
+        assert doc["climate"]["selected"] == "era5"
+        assert doc["climate"]["sources"] == ["era5", "chirps"]
+
+    def test_rerunning_on_a_v2_set_is_a_reported_no_op(self, tmp_path):
+        """D-11.2b item 5. Idempotence, and it says so rather than staying mute."""
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        migrate_project(t1, write=True)
+        again = migrate_project(t1, write=True)
+        assert len(again) == 1
+        assert "already" in again[0]
+
+    def test_a_partial_set_is_refused_not_finished(self, tmp_path):
+        """A set no migration produced is one a human should look at."""
+        import yaml
+
+        from scripts.migrate_project_config import MigrationError, migrate_project
+
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        doc = yaml.safe_load(t1.read_text(encoding="utf-8"))
+        doc["schema_version"] = 99
+        t1.write_text(yaml.safe_dump(doc), encoding="utf-8")
+        with pytest.raises(MigrationError, match="neither v1"):
+            migrate_project(t1, write=True)
+
+    def test_dry_run_writes_nothing(self, tmp_path):
+        """The preflight is read-only, and this is what proves it."""
+        from scripts.migrate_project_config import migrate_project
+
+        t1 = self._copy_set(tmp_path, "snake_config_rapid", "test_case")
+        before = {p.name: p.read_bytes() for p in tmp_path.glob("*.yml")}
+        migrate_project(t1, write=False)
+        after = {p.name: p.read_bytes() for p in tmp_path.glob("*.yml")}
+        assert after == before
+        assert not list(tmp_path.glob("*.v1.bak"))

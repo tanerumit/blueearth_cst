@@ -528,3 +528,130 @@ class TestTheNonPreservingHooks:
             encoding="utf-8",
         )
         assert migrate_project(t1, write=False)
+
+
+class TestExperimentRecords:
+    """§11.6 — the records travel WITH the config, or every experiment dies.
+
+    The freeze compares an experiment's recorded settings against the live
+    config key by key. Migrate one without the other and EVERY key differs, so
+    every already-run experiment becomes permanently unrunnable.
+    `RETIRED_EXPERIMENT_KEYS` does not rescue it: its escape covers keys that
+    DISAPPEAR, and most of R14's rows are renames.
+    """
+
+    def test_the_record_moves_onto_the_v2_spellings(self):
+        import ruamel.yaml as ry
+
+        from scripts.migrate_project_config import (
+            load_mapping,
+            migrate_experiment_record,
+        )
+
+        root = pathlib.Path(__file__).resolve().parent.parent
+        src = (
+            root
+            / "test_case/test_rapid/experiments/experiment_rapid/config/experiment.yml"
+        )
+        with src.open(encoding="utf-8") as handle:
+            doc = ry.YAML().load(handle)
+
+        migrate_experiment_record(doc, load_mapping(), outvars=["river discharge"])
+        section = doc["run_stress_test"]
+        assert "stress_test" not in section
+        assert "climate_perturbations" in section
+        assert "n_realizations" in section
+        assert "simulation_window" in section
+        assert "horizontime_climate" not in section
+        assert "run_length" not in section
+
+    def test_the_record_gains_no_schema_version(self):
+        """It is not a project config; stamping it would invent a key.
+
+        The stamp is `C-05`, which applies to the T1 file. Reusing
+        `migrate_set` means the stamp happens and must be filtered back out —
+        asserted here rather than trusted, because the filter is easy to lose.
+        """
+        import ruamel.yaml as ry
+
+        from scripts.migrate_project_config import (
+            load_mapping,
+            migrate_experiment_record,
+        )
+
+        root = pathlib.Path(__file__).resolve().parent.parent
+        src = (
+            root
+            / "test_case/test_rapid/experiments/experiment_rapid/config/experiment.yml"
+        )
+        with src.open(encoding="utf-8") as handle:
+            doc = ry.YAML().load(handle)
+        migrate_experiment_record(doc, load_mapping(), outvars=["river discharge"])
+        assert "schema_version" not in doc
+
+    def test_an_untouched_experiment_still_matches_its_migrated_config(self):
+        """D-14.8, the falsifier: `_frozen_differences` must come back EMPTY.
+
+        The user changed nothing; only the toolbox's spelling moved. If the
+        record and the config are migrated by the same mapping, the freeze sees
+        no difference — and that is the property that keeps every existing
+        experiment runnable across R14.
+        """
+        import ruamel.yaml as ry
+        import yaml
+
+        from blueearth_cst.experiment.write_experiment_config import (
+            _frozen_differences,
+        )
+        from scripts.migrate_project_config import (
+            load_mapping,
+            migrate_experiment_record,
+            migrate_set,
+        )
+
+        root = pathlib.Path(__file__).resolve().parent.parent
+        mapping = load_mapping()
+
+        # the live config, migrated
+        t1 = yaml.safe_load(
+            (root / "test_case/snake_config_rapid.yml").read_text(encoding="utf-8")
+        )
+        t2 = {
+            wf: (
+                yaml.safe_load(
+                    (root / f"test_case/snake_config_rapid_{wf}.yml").read_text(
+                        encoding="utf-8"
+                    )
+                )
+                or {}
+            )
+            for wf in (
+                "analyze_climate",
+                "build_model",
+                "analyze_projections",
+                "run_stress_test",
+            )
+        }
+        _, t2, _ = migrate_set(t1, t2, mapping, outvars=["river discharge"])
+
+        # the experiment record for that same config, migrated
+        src = (
+            root
+            / "test_case/test_rapid/experiments/experiment_rapid/config/experiment.yml"
+        )
+        with src.open(encoding="utf-8") as handle:
+            record = ry.YAML().load(handle)
+        migrate_experiment_record(record, mapping, outvars=["river discharge"])
+
+        # `enabled` lives in T1's `workflows.<name>` stanza and is folded into
+        # the section by COMPOSITION, not by the T2 file — so the live side must
+        # carry it too, the way a run would see it. Comparing the raw T2 file
+        # against a composed record would report a difference that no run has.
+        live = dict(t2["run_stress_test"])
+        live["enabled"] = True
+
+        differences = _frozen_differences(
+            {"run_stress_test": dict(record["run_stress_test"])},
+            {"run_stress_test": live},
+        )
+        assert differences == [], differences

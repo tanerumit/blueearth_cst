@@ -804,6 +804,51 @@ def classify(t1) -> str:
     return "partial"
 
 
+def find_experiment_records(t1) -> list[Path]:
+    """Every ``experiments/*/config/experiment.yml`` under this project.
+
+    Outside the config SET and migrated with it, because the freeze compares
+    them key by key against the live config (design §11.6). Left alone, an
+    already-run experiment would diff the WHOLE renamed `run_stress_test` key
+    set on every attempt and become permanently unrunnable —
+    ``RETIRED_EXPERIMENT_KEYS`` does not rescue it, since its escape covers only
+    keys that DISAPPEAR, and most of these are renames.
+    """
+    project_dir = ((t1.get("project") or {}).get("project_dir")) or ""
+    if not project_dir:
+        return []
+    root = Path(project_dir)
+    if not root.is_absolute():
+        root = REPO_ROOT / root
+    if not root.is_dir():
+        return []
+    return sorted(root.glob("experiments/*/config/experiment.yml"))
+
+
+def migrate_experiment_record(doc, mapping, *, outvars=None):
+    """Apply the `run_stress_test` moves to one experiment record.
+
+    The record holds ``{experiment_name, run_stress_test}`` — this workflow's
+    resolved section and nothing else — so the same mapping applies to the same
+    subtree, and reusing :func:`migrate_set` is what keeps the two from drifting.
+    An experiment migrated by a second, similar code path would be the next
+    thing to disagree with the config it is compared against.
+    """
+    section = doc.get("run_stress_test")
+    if section is None:
+        return []
+    _, t2, report = migrate_set(
+        {"project": {}},
+        {"run_stress_test": section},
+        mapping,
+        outvars=outvars,
+    )
+    doc["run_stress_test"] = t2["run_stress_test"]
+    # `migrate_set` stamps `schema_version` on the T1 it was handed; an
+    # experiment record has no such key and must not gain one.
+    return [line for line in report if not line.startswith("C-05")]
+
+
 def migrate_project(t1_path: Path, *, write: bool = False):
     """Migrate one complete set. Returns the report; raises on any refusal.
 
@@ -831,11 +876,23 @@ def migrate_project(t1_path: Path, *, write: bool = False):
         with path.open(encoding="utf-8") as handle:
             t2[name] = handler.load(handle) or {}
 
+    # The experiment records travel WITH the set: they are compared against it
+    # by the freeze, so migrating one without the other guarantees a mismatch.
+    record_paths = find_experiment_records(t1)
+    records = {}
+    for record_path in record_paths:
+        with record_path.open(encoding="utf-8") as handle:
+            records[record_path] = handler.load(handle) or {}
+
     # 1. PREFLIGHT — in memory, over the complete set. Raises before any write.
     outvars = ((t1.get("shared") or {}).get("wflow_outvars")) or (
         (t1.get("model") or {}).get("outvars")
     )
-    t1, t2, report = migrate_set(t1, t2, load_mapping(), outvars=outvars)
+    mapping = load_mapping()
+    t1, t2, report = migrate_set(t1, t2, mapping, outvars=outvars)
+    for record_path, doc in records.items():
+        lines = migrate_experiment_record(doc, mapping, outvars=outvars)
+        report.extend(f"{record_path.parent.parent.name}: {line}" for line in lines)
 
     if not write:
         return report
@@ -852,6 +909,12 @@ def migrate_project(t1_path: Path, *, write: bool = False):
             staged[path] = stage_dir / path.name
             with staged[path].open("w", encoding="utf-8") as handle:
                 handler.dump(t2[name], handle)
+        for index, (record_path, doc) in enumerate(records.items()):
+            # Prefixed, because every record has the same basename and they
+            # would otherwise collide in one staging directory.
+            staged[record_path] = stage_dir / f"experiment_{index}_{record_path.name}"
+            with staged[record_path].open("w", encoding="utf-8") as handle:
+                handler.dump(doc, handle)
 
         # 3. VALIDATE the staged set through the loader itself, not a second
         #    reader — the only check that means anything is the one a run does.

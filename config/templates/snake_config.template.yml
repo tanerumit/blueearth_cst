@@ -33,36 +33,7 @@
 
 project:
   project_dir: /path/to/my_project                        # path — absolute, outside the repo
-  static_dir: config                                      # path
-  data_sources: config/catalogs/deltares_data.yml         # path
-  data_sources_climate: config/catalogs/cmip6_data.yml    # path
-
-shared:
-  basin:
-    region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"  # text — hydromt region spec
-    resolution: 0.00833333                                # numeric — degrees (1/120 = 30 arcsec)
-    #hydrography: merit_hydro_ihu                         # text — catalog entry name
-    #basin_index: merit_hydro_index                       # text — catalog entry name
-    gauge_points: null                                    # path | null
-    automatic_subbasins:
-      max_per_basin: 11                                   # integer
-    gauge_snap_tolerance_m: 10000                         # numeric — metres
-    river_uparea_km2: 32                                  # numeric — km2
-    spatial_sources:                                      # text — catalog entry names
-      rivers: rivers_lin2019_v1
-      lulc: vito
-      lai: modis_lai
-      soil: soilgrids
-  # How much climate record to EXTRACT — drives the climate store, the climate
-  # figures and (through the store) weathergenr. NOT the model run period; see
-  # workflows.build_model.simulation_window.
-  historical_window:
-    starttime: "1990-01-01T00:00:00"                      # ISO datetime
-    endtime: "2020-12-31T00:00:00"                        # ISO datetime — span >= 16 years
-  clim_historical: era5                                   # text — entry in data_sources
-  # list — any of: river discharge, overland flow, actual evapotranspiration,
-  #                groundwater recharge, snow
-  wflow_outvars: ["river discharge", "actual evapotranspiration"]
+  catalog: config/catalogs/deltares_data.yml              # path
   # Randomization seed for every stochastic step (today: the weather generator,
   # for both realization generation and the perturbation). Optional — absent, it
   # takes `defaults.seed` from config/advanced_settings.yml.
@@ -96,6 +67,11 @@ workflows:
   # a data catalog, so it runs before (or without) the hydrology model.
   analyze_climate:
     enabled: true                                         # boolean
+    # `C-84`: WF0 has no settings of its own -- everything it needs is in the
+    # project file above. The file ships anyway so the set is legible: four
+    # workflows, four files. It and this key travel together (D-7.9) -- a
+    # `config_path` naming a file that is not there is a hard parse error.
+    config_path: snake_config.analyze_climate.template.yml
   build_model:
     enabled: true                                         # boolean
     config_path: snake_config.build_model.template.yml
@@ -107,3 +83,33 @@ workflows:
   run_stress_test:
     enabled: true                                         # boolean
     config_path: snake_config.run_stress_test.template.yml
+basin:
+  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"    # text — hydromt region spec
+  resolution: 0.00833333                                  # numeric — degrees (1/120 = 30 arcsec)
+    #hydrography: merit_hydro_ihu                         # text — catalog entry name
+    #basin_index: merit_hydro_index                       # text — catalog entry name
+  delineation:
+    river_uparea_km2: 32                                  # numeric — km2
+    snap_tolerance_m: 10000                               # numeric — metres
+    max_subbasins: 11                                     # integer
+  sources:                                                # text — catalog entry names
+    rivers: rivers_lin2019_v1
+    lulc: vito
+    lai: modis_lai
+    soil: soilgrids
+  # How much climate record to EXTRACT — drives the climate store, the climate
+  # figures and (through the store) weathergenr. NOT the model run period; see
+  # workflows.build_model.simulation_window.
+  output_locations:                                       # path | null
+model:
+  outvars: ["river discharge", "actual evapotranspiration"]
+climate:
+  selected: era5                                          # text — entry in data_sources
+  # list — any of: river discharge, overland flow, actual evapotranspiration,
+  #                groundwater recharge, snow
+  window:
+    start: 1990
+    end: 2020
+  sources:
+  - era5
+schema_version: 2

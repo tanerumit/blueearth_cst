@@ -1,24 +1,21 @@
 #experiment_name: my_experiment                       # text — unset auto-names from project_dir + date
-realizations_num: 2                                   # integer
-horizontime_climate: 2050                             # integer — year
-run_length: 20                                        # integer — years
-run_historical: false                                 # boolean
-stress_test:
+n_realizations: 2                                     # integer
+climate_perturbations:
   temp:
-    step_num: 1                                       # integer
-    transient_change: true                            # boolean
     mean:                                             # 12 numerics (Jan-Dec) — degC offset
       min: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
       max: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+    n_levels: 2                                       # integer
+    trajectory: transient                             # boolean
   precip:
-    step_num: 2                                       # integer
-    transient_change: true                            # boolean
     mean:                                             # 12 numerics (Jan-Dec) — multiplier
       min: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
       max: [1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3]
     variance:                                         # 12 numerics (Jan-Dec) — multiplier
       min: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
       max: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+    n_levels: 3                                       # integer
+    trajectory: transient                             # boolean
   # Monthly spell-length coefficients handed to the weather generator: they
   # scale the length of dry and wet spells per calendar month. Optional;
   # absent, both are twelve 1.0s, i.e. no adjustment. NOT perturbation axes
@@ -26,8 +23,30 @@ stress_test:
   # why they sit beside `temp:`/`precip:` rather than under them.
   dry_spell_factor: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
   wet_spell_factor: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-#batch_size: 4                                        # integer
-#batch_size_max: 8                                    # integer
+simulation_window:
+  start: 2040
+  end: 2060
+# How the sweep is EXECUTED, never what it computes (`C-34`). Nothing under
+# `compute:` can change a number, which is why it is carved out of
+# configuration identity: raising a batch size does not invalidate a frozen
+# experiment or ask for a re-run.
+#
+# All three are optional and commented out because the defaults are right for
+# almost every project. Uncomment one only to answer a problem you have.
+#compute:
+  # Members per Wflow batch. Absent, it is chosen from the disk the run has
+  # and one member's measured footprint.
+  #batch_size: 4                                      # integer, members
+  # Ceiling on that automatic choice. Raise it only if the estimate is
+  # provably conservative on your machine.
+  #batch_size_max: 8                                  # integer, members
+  # Disk to leave free, in GIBIBYTES, when sizing a batch. Absent, the run
+  # reserves a FRACTION of free space instead --
+  # `advanced_settings.defaults.batch_disk_headroom_fraction`, which is where
+  # that default lives. Set this when the fraction is the wrong shape for the
+  # volume: a fixed reserve suits a large disk shared with other work, where a
+  # fraction would hold back far more than anything needs.
+  #disk_headroom_gb: 50                               # number, GiB
 
 # How results are DESCRIBED, not how they are produced. Everything under here is
 # post-processing: it sits outside configuration identity, so editing a caption

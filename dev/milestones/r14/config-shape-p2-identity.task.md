@@ -5,6 +5,14 @@ Task Brief — P2: guard, freeze, and digest under the new layout
 Canonical ruleset: `AGENTS.md`. Design: `config-shape-design.md` §9.
 Program: `config-shape-master-brief.md`. **Depends on P1.**
 
+> [!warning] **STOP — do not start this phase yet.** *(2026-08-27, from P1b.)*
+> The three rung-2 falsifiers below each say "build a model … run WF3", and no
+> config in the tree can do that: every `test_case/*.yml` is still v1 and
+> refused at `schema_version`, which **P4** clears, not P1b. The v2 probe
+> fixture builds a DAG but has no model. So this phase's blocking edge is P4,
+> and the master brief's `P1b → P2` is necessary but not sufficient.
+> Ruling and options: `config-shape-p2-sequencing-decision.md`.
+
 - `E1`/`E2` established these are THREE mechanisms, not one, and the scoping
   document had been treating them as one.
 - **A WF1 snapshot does not carry WF3's sections** (`copy_config_files.py:89`,

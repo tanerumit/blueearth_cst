@@ -78,6 +78,17 @@ position was forced because WF3 could not RUN without it; P1c's three rows are
 reachable-but-unmigrated config surface, so every entry point already dry-runs
 clean on v2 without them. It must land before Gate 5, not before P2.
 
+> [!warning] **`P1b → P2` is necessary and NOT sufficient — open, needs a
+> ruling.** *(Found 2026-08-27 at the end of P1b.)* The `P1b before P2` clause
+> above names two refusals and P1b removes only one of them. The
+> `schema_version` refusal is cleared by **P4**, not P1b, so P2's rung-2
+> falsifiers — all three of which say "build a model … run WF3" — still have no
+> config they can run against. Verified: no `test_case/*.yml` carries
+> `schema_version`, and the v2 probe fixture has no built model.
+> **Do not start P2 until this is ruled.** The options and a recommendation
+> (reorder to `P3 → Gate 3 → P4 → P2`) are in
+> `config-shape-p2-sequencing-decision.md`. P3 is unaffected and may start now.
+
 ### Shared constraints
 
 - **K1 (AGENTS.md hard constraint).** No key inside `config/defaults/*` or a

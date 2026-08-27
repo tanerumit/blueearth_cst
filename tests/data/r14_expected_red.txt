@@ -31,6 +31,7 @@
 #     4  tests/test_compare_climate_sources.py
 #    26  tests/test_config_composition.py
 #    20  tests/test_log_rules_contract.py
+#     1  tests/test_migration_mapping.py
 #     1  tests/test_plot_workflow_dag.py
 #     5  tests/test_prepare_cst_parameters.py
 #     1  tests/test_r01_config_readers.py
@@ -110,3 +111,4 @@ tests/test_snapshot_project_tree.py::test_writes_nothing_without_out  # reads a 
 tests/test_suggest_experiment_name.py::test_the_template_config_does_not_hardcode_an_experiment_name  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_suggest_experiment_name.py::test_the_test_fixtures_deliberately_KEEP_a_fixed_name  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_wf1_plot_outputs.py::test_the_shipped_sentinel_yields_no_layer  # reads a v1 project config; refused by `schema_version` until P4
+tests/test_migration_mapping.py::test_the_trajectory_enum_agrees_with_the_code  # C-32: the ruled register says `transient | constant`, shipped code says `transient | step`; P1c Gate 1 rules it

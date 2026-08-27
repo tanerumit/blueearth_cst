@@ -250,6 +250,26 @@ RETIRED_KEYS: dict[str, str] = {
     "T1.basin.automatic_subbasins": (
         "regrouped under `basin.delineation:` (`C-42`, `C-13`, `C-14`)"
     ),
+    # The other three basin leaves `C-14` and `C-15` empty. Added 2026-08-27:
+    # they were ACCEPTED SILENTLY in a v2 config until then, which is the
+    # failure this table exists to prevent -- nothing reads them after the
+    # regroup, so a project that migrated everything else kept a setting that
+    # had quietly stopped applying. Found by the register-to-mapping
+    # cross-check in `tests/test_migration_mapping.py`, not by review.
+    "T1.basin.gauge_snap_tolerance_m": (
+        "regrouped AND renamed to `basin.delineation.snap_tolerance_m` "
+        "(`C-42`) -- the `gauge_` prefix went with `basin.gauge_points`, "
+        "which is `basin.output_locations` now (`C-41`)"
+    ),
+    "T1.basin.river_uparea_km2": (
+        "regrouped as `basin.delineation.river_uparea_km2` (`C-14`)"
+    ),
+    "T1.basin.spatial_sources": (
+        "regrouped as `basin.sources:` (`C-15`) -- one section for every"
+        " spatial input, so `hydrography` and `basin_index` join it"
+    ),
+    "T1.basin.hydrography": "regrouped as `basin.sources.hydrography` (`C-15`)",
+    "T1.basin.basin_index": "regrouped as `basin.sources.basin_index` (`C-15`)",
     "T1.shared.historical_window": (
         "renamed AND retyped to `climate.window: {start, end}` (`C-70`) -- "
         "inclusive WATER years now, not ISO timestamps"

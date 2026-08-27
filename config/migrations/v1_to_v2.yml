@@ -1,0 +1,1029 @@
+# R14 — the v1 → v2 config mapping. NORMATIVE (design D-11.2a).
+#
+# This file is the SPECIFICATION the rewriter executes. The register in
+# `dev/milestones/r14/config-shape-scoping.md` (`C-01`..`C-85`) is the ARGUMENT
+# for each change; 85 rows of markdown table cannot be executed, and cannot be
+# checked for completeness. This can.
+#
+# **Completeness is enforced in three directions**, by
+# `tests/test_migration_mapping.py`:
+#   1. every register row has an entry here, and every entry names a register row;
+#   2. every `moves[].old_path` that is a T1/T2 config key appears in
+#      `config_composition.RETIRED_KEYS`, and every `RETIRED_KEYS` entry appears
+#      here. Those are two records of one fact and drift between them is the
+#      failure this milestone has produced six times;
+#   3. every `value_transform` and `exception_hook` names a transform the
+#      rewriter implements.
+#
+# ## Schema, and one deviation from D-11.2a
+#
+# D-11.2a specifies flat `old_path` / `new_path` fields per row. Five rows move
+# MORE than one key — `C-22` (two engine paths), `C-33` (two spell factors),
+# `C-34` (three compute knobs), `C-63` (three member keys), `C-67` (two keys
+# collapsing into one) — so a flat shape cannot express them without splitting
+# one register row across several entries and breaking the 1:1 traceability the
+# completeness check depends on.
+#
+# Every row therefore carries a `moves:` LIST, possibly empty. Each move has the
+# fields D-11.2a names. `moves: []` means the row changes no config key, and
+# then `applies:` says what it does change instead.
+#
+#   id                 the `C-nn` this implements — traceable to its argument
+#   status             live | withdrawn | superseded
+#   applies            config | code | doc | decision | none
+#   moves[].old_path   dotted v1 path. `T1.` or `T2.<workflow>.` prefixed
+#   moves[].new_path   dotted v2 path; null means DELETE
+#   moves[].op         rename | regroup | delete | retype | new
+#   moves[].value_transform   identity | iso_to_year | bool_to_enum |
+#                             step_num_to_n_levels | pair_to_window |
+#                             list_to_named_windows | scalar_to_var_mapping |
+#                             list_to_preference_group
+#   moves[].on_collision      refuse | overwrite | keep_existing
+#   moves[].default_if_absent value, or `omit`
+#   moves[].exception_hook    null | warn_st0 | refuse_water_year
+#
+# `on_collision: refuse` is the default everywhere and is deliberate: a
+# destination that already exists means the set is partially migrated, which
+# D-11.2b says a human must look at.
+
+schema: 1
+migration: v1_to_v2
+register: dev/milestones/r14/config-shape-scoping.md
+
+# --------------------------------------------------------------------------
+# OPEN — this value is NOT settled, and the rewriter must not run until it is.
+# --------------------------------------------------------------------------
+# `C-32`'s enum below is `transient | constant`, taken from the register row,
+# which is RULED (2026-08-24). The CODE disagrees: `_check_trajectories`'
+# refusal message, its test, and `prepare_weagen_config.TRAJECTORY_KINDS` all
+# say `transient | step`. Emitting `constant` would produce configs the loader
+# then refuses.
+#
+# The mapping states the ruled value because it is the normative record; the
+# consistency check in `tests/test_migration_mapping.py` compares it against
+# `TRAJECTORY_KINDS` and is RED until one side moves. That red is the flag, not
+# a defect in this file. Resolving it is P1c Gate 1.
+open_questions:
+  - id: C-32
+    question: >-
+      the trajectory enum is `transient | constant` in the ruled register row
+      and `transient | step` in shipped code
+    blocks: the rewriter emitting a value the loader accepts
+    owner: P1c Gate 1
+
+rows:
+  # ---- structure and mechanism -------------------------------------------
+  - id: C-01
+    status: live
+    applies: config
+    note: >-
+      `shared:` is retired as a heading; its contents are promoted to top-level
+      kind sections by C-10, C-16, C-19 and friends. This row owns the removal
+      of the heading itself, which is why its move deletes the section and the
+      per-key moves live on their own rows.
+    moves:
+      - old_path: T1.shared
+        new_path: null
+        op: delete
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-02
+    status: live
+    applies: config
+    note: introduces `compute:`; C-55 later confines it to workflow-local.
+    moves:
+      - old_path: null
+        new_path: T2.run_stress_test.compute
+        op: new
+        value_transform: identity
+        on_collision: keep_existing
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-03
+    status: withdrawn
+    applies: none
+    note: withdrawn 2026-08-24 by C-77 — nothing left to generalize.
+    moves: []
+
+  - id: C-04
+    status: live
+    applies: code
+    note: the derived guard rule. P2 owns it; no config key moves.
+    moves: []
+
+  - id: C-05
+    status: live
+    applies: config
+    note: >-
+      the version stamp itself. Emitted by the rewriter rather than mapped from
+      anything, which is why old_path is null.
+    moves:
+      - old_path: null
+        new_path: T1.schema_version
+        op: new
+        value_transform: identity
+        on_collision: overwrite
+        default_if_absent: 2
+        exception_hook: null
+
+  - id: C-06
+    status: withdrawn
+    applies: none
+    note: withdrawn 2026-08-24 by Q-A — `project_dir` stays.
+    moves: []
+
+  - id: C-07
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.project.static_dir
+        new_path: null
+        op: delete
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-08
+    status: withdrawn
+    applies: none
+    note: superseded by C-40.
+    moves: []
+
+  - id: C-09
+    status: withdrawn
+    applies: none
+    note: superseded by C-39.
+    moves: []
+
+  - id: C-10
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.shared.basin
+        new_path: T1.basin
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-11
+    status: withdrawn
+    applies: none
+    note: superseded by C-41.
+    moves: []
+
+  - id: C-12
+    status: withdrawn
+    applies: none
+    note: superseded by C-42.
+    moves: []
+
+  - id: C-13
+    status: live
+    applies: config
+    note: >-
+      TWO moves, because the SECTION goes as well as the leaf. `RETIRED_KEYS`
+      refuses `basin.automatic_subbasins` wholesale — C-13, C-14 and C-42 all
+      empty it — so a mapping that renamed only the leaf would leave the
+      rewriter with nowhere to put a section the loader rejects. Found by the
+      RETIRED_KEYS cross-check, not by review.
+    moves:
+      - old_path: T1.basin.automatic_subbasins
+        new_path: T1.basin.delineation
+        op: regroup
+        value_transform: identity
+        on_collision: keep_existing
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T1.basin.automatic_subbasins.max_per_basin
+        new_path: T1.basin.delineation.max_subbasins
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-14
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.basin.river_uparea_km2
+        new_path: T1.basin.delineation.river_uparea_km2
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-15
+    status: live
+    applies: config
+    note: >-
+      three sources of one kind collapse into `basin.sources.*`. Enumerated
+      rather than globbed: a glob would silently carry a key nobody declared.
+    moves:
+      - old_path: T1.basin.spatial_sources
+        new_path: T1.basin.sources
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T1.basin.hydrography
+        new_path: T1.basin.sources.hydrography
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T1.basin.basin_index
+        new_path: T1.basin.sources.basin_index
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-16
+    status: live
+    applies: config
+    note: the `climate:` section itself; its leaves arrive via C-43/C-44/C-53/C-70.
+    moves:
+      - old_path: null
+        new_path: T1.climate
+        op: new
+        value_transform: identity
+        on_collision: keep_existing
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-17
+    status: superseded
+    applies: none
+    note: >-
+      `shared.clim_historical` → `climate.source`, superseded by C-44, which
+      sends it to `climate.selected` instead. Not withdrawn in the register, so
+      it is recorded here rather than silently dropped.
+    superseded_by: C-44
+    moves: []
+
+  - id: C-18
+    status: withdrawn
+    applies: none
+    note: superseded by C-70.
+    moves: []
+
+  - id: C-19
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.shared.wflow_outvars
+        new_path: T1.model.outvars
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-20
+    status: withdrawn
+    applies: none
+    note: superseded by C-51 and C-53.
+    moves: []
+
+  - id: C-21
+    status: withdrawn
+    applies: none
+    note: superseded by C-54.
+    moves: []
+
+  - id: C-22
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.build_model.model_build_config
+        new_path: T2.build_model.engine.build_config
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.build_model.waterbodies_config
+        new_path: T2.build_model.engine.waterbodies_config
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-23
+    status: withdrawn
+    applies: none
+    note: superseded by C-56.
+    moves: []
+
+  - id: C-24
+    status: withdrawn
+    applies: none
+    note: superseded by C-71.
+    moves: []
+
+  - id: C-25
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.analyze_projections.clim_project
+        new_path: T2.analyze_projections.ensemble
+        op: rename
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-26
+    status: withdrawn
+    applies: none
+    note: superseded by C-59.
+    moves: []
+
+  - id: C-27
+    status: withdrawn
+    applies: none
+    note: superseded by C-60.
+    moves: []
+
+  - id: C-28
+    status: withdrawn
+    applies: none
+    note: withdrawn 2026-08-24 — C-77 removes the destination.
+    moves: []
+
+  - id: C-29
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.run_stress_test.realizations_num
+        new_path: T2.run_stress_test.n_realizations
+        op: rename
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-30
+    status: withdrawn
+    applies: none
+    note: superseded by C-67.
+    moves: []
+
+  - id: C-31
+    status: live
+    applies: config
+    note: >-
+      a RETYPE, not a rename. `step_num` counts INTERVALS; `n_levels` is that
+      plus one. A rewriter that renamed without adding would halve every grid,
+      which is why the transform is named rather than `identity`.
+    moves:
+      - old_path: T2.run_stress_test.stress_test.temp.step_num
+        new_path: T2.run_stress_test.climate_perturbations.temp.n_levels
+        op: retype
+        value_transform: step_num_to_n_levels
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.run_stress_test.stress_test.precip.step_num
+        new_path: T2.run_stress_test.climate_perturbations.precip.n_levels
+        op: retype
+        value_transform: step_num_to_n_levels
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-32
+    status: live
+    applies: config
+    note: >-
+      SEE `open_questions` ABOVE. The enum values here are the register's ruled
+      pair; shipped code says `transient | step`.
+    enum: [transient, constant]
+    moves:
+      - old_path: T2.run_stress_test.stress_test.temp.transient_change
+        new_path: T2.run_stress_test.climate_perturbations.temp.trajectory
+        op: retype
+        value_transform: bool_to_enum
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.run_stress_test.stress_test.precip.transient_change
+        new_path: T2.run_stress_test.climate_perturbations.precip.trajectory
+        op: retype
+        value_transform: bool_to_enum
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-33
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.run_stress_test.dry_spell_factor
+        new_path: T2.run_stress_test.climate_perturbations.spell_factors.dry
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.run_stress_test.wet_spell_factor
+        new_path: T2.run_stress_test.climate_perturbations.spell_factors.wet
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-34
+    status: live
+    applies: config
+    note: >-
+      `disk_headroom_gb` has no template surface today (E5, D-7.8); P4 adds it
+      as a commented example. `default_if_absent: omit` keeps a config that
+      never declared it unchanged.
+    moves:
+      - old_path: T2.run_stress_test.batch_size
+        new_path: T2.run_stress_test.compute.batch_size
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.run_stress_test.batch_size_max
+        new_path: T2.run_stress_test.compute.batch_size_max
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.run_stress_test.disk_headroom_gb
+        new_path: T2.run_stress_test.compute.disk_headroom_gb
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-35
+    status: withdrawn
+    applies: none
+    note: withdrawn 2026-08-25 — already done on 2026-08-13.
+    moves: []
+
+  - id: C-36
+    status: live
+    applies: code
+    note: config-key defaults leave Python. No key moves; the DEFAULT source does.
+    moves: []
+
+  - id: C-37
+    status: live
+    applies: code
+    note: the declared-keys ⊆ read-keys check. P3 ships the sweep (item 6).
+    moves: []
+
+  - id: C-38
+    status: live
+    applies: code
+    note: this rewriter. The mapping it executes is this file.
+    moves: []
+
+  - id: C-39
+    status: live
+    applies: config
+    note: >-
+      pushed DOWN a tier: one reader, so it belongs in the workflow file. The
+      leaf name `catalog` is shared with the T1 leaf C-40 creates, deliberately
+      (design §7 note) — which is why `project:` leaves are NOT in the seam set.
+    moves:
+      - old_path: T1.project.data_sources_climate
+        new_path: T2.analyze_projections.catalog
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-40
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.project.data_sources
+        new_path: T1.project.catalog
+        op: rename
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-41
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.basin.gauge_points
+        new_path: T1.basin.output_locations
+        op: rename
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-42
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.basin.gauge_snap_tolerance_m
+        new_path: T1.basin.delineation.snap_tolerance_m
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-43
+    status: live
+    applies: config
+    note: >-
+      absorbs `analyze_climate.candidate_sources` (C-45) and widens it: the full
+      candidate set with no privileged element.
+    moves:
+      - old_path: T2.analyze_climate.candidate_sources
+        new_path: T1.climate.sources
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-44
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.shared.clim_historical
+        new_path: T1.climate.selected
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-45
+    status: live
+    applies: config
+    note: the retirement of the WF0 key C-43 absorbed; refused at parse time.
+    moves: []
+
+  - id: C-46
+    status: live
+    applies: code
+    note: WF0 ordering follows `selected`. Behavioural, no key.
+    moves: []
+
+  - id: C-47
+    status: live
+    applies: doc
+    note: the `climate:` charter, as documentation of the section C-16 creates.
+    moves: []
+
+  - id: C-48
+    status: withdrawn
+    applies: none
+    note: >-
+      WITHDRAWN FROM R14 by D-7.10 (ruled 2026-08-24) and boarded as
+      `t2608242212`. The register row is not struck through, so it is recorded
+      as withdrawn here — the bundle does not carry it.
+    moves: []
+
+  - id: C-49
+    status: live
+    applies: code
+    note: >-
+      `CLIMATE_VARS` leaves Python. Pairs with C-57; P1c Gate 1 decides whether
+      it is one registry or two.
+    moves: []
+
+  - id: C-50
+    status: live
+    applies: config
+    note: >-
+      the EXTRACTION set is DERIVED, not declared — designed now, behaviour
+      deferred. No key to rewrite.
+    moves: []
+
+  - id: C-51
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.shared.seed
+        new_path: T2.run_stress_test.seed
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-52
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.method
+        new_path: null
+        op: delete
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-53
+    status: live
+    applies: config
+    moves:
+      - old_path: T1.shared.water_year_start
+        new_path: T1.climate.water_year_start
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-54
+    status: live
+    applies: config
+    note: >-
+      leaves the project config entirely for `advanced_settings.runtime`, which
+      the rewriter does NOT write — it is a toolbox file, not a project one. The
+      move is a deletion from the user's side; P1b already landed the toolbox
+      half.
+    moves:
+      - old_path: T1.shared.julia_threads
+        new_path: null
+        op: delete
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-55
+    status: live
+    applies: config
+    note: T1 `compute:` dissolves; it is workflow-local only (C-02).
+    moves:
+      - old_path: T1.compute
+        new_path: null
+        op: delete
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-56
+    status: live
+    applies: config
+    note: >-
+      a scalar path becomes a mapping KEYED BY VARIABLE, whose keys must come
+      from `model.outvars`. The transform needs the composed document, not just
+      the file, which is why it is named.
+    moves:
+      - old_path: T2.build_model.observations_timeseries
+        new_path: T2.build_model.observations
+        op: retype
+        value_transform: scalar_to_var_mapping
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-57
+    status: live
+    applies: config
+    note: >-
+      `variables:` gains a short form resolved through a registry. P1c owns it;
+      the rewriter does NOT contract a long-form declaration to the short one —
+      that would be a lossy rewrite of something the user wrote deliberately.
+    moves: []
+
+  - id: C-58
+    status: live
+    applies: config
+    note: >-
+      `canonical` leaves the USER surface and stays in the registry. Depends on
+      C-57's registry existing; P1c.
+    moves: []
+
+  - id: C-59
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.analyze_projections.historical_year_range
+        new_path: T2.analyze_projections.reference_window
+        op: retype
+        value_transform: pair_to_window
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-60
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.analyze_projections.future_horizons
+        new_path: T2.analyze_projections.future_windows
+        op: retype
+        value_transform: list_to_named_windows
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-61
+    status: live
+    applies: config
+    note: >-
+      the LIST shape and the optional name; carried by C-60's transform, which
+      is why this row moves nothing itself. A window the user named keeps its
+      name, so its figure directory does not move.
+    moves: []
+
+  - id: C-62
+    status: live
+    applies: config
+    note: >-
+      Unowned by any phase brief until 2026-08-27, when it was assigned to P1c.
+      Must run BEFORE C-64, which moves the renamed key into the registry.
+    moves:
+      - old_path: T2.analyze_projections.relative_change.min_reference
+        new_path: T2.analyze_projections.relative_change.min_denominator
+        op: rename
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-63
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.analyze_projections.members
+        new_path: T2.analyze_projections.members.preference
+        op: retype
+        value_transform: list_to_preference_group
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.analyze_projections.member_selection
+        new_path: T2.analyze_projections.members.selection
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.analyze_projections.member_overrides
+        new_path: T2.analyze_projections.members.overrides
+        op: regroup
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-64
+    status: live
+    applies: config
+    note: >-
+      the renamed key (C-62) becomes per-variable registry metadata. P1c. The
+      rewriter cannot perform it — the destination is a registry, not a config
+      path — so it drops the key and P1c's registry supplies the value.
+    moves: []
+
+  - id: C-65
+    status: live
+    applies: config
+    note: >-
+      destination is `advanced_settings.constraints`, a TOOLBOX file the
+      rewriter does not write. A project that set it non-default must be told;
+      that is a P1c concern, not a silent drop.
+    moves: []
+
+  - id: C-66
+    status: live
+    applies: config
+    note: >-
+      `relative_change:` dissolves once C-62/C-64/C-65 have homes. Ordered LAST
+      of the four; see P1c's commit plan.
+    moves:
+      - old_path: T2.analyze_projections.relative_change
+        new_path: null
+        op: delete
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-67
+    status: live
+    applies: config
+    note: >-
+      TWO keys collapse into ONE. The transform reads both and cannot be applied
+      per-key, which is why both moves name the same destination and the
+      rewriter must treat them as a unit.
+    moves:
+      - old_path: T2.run_stress_test.horizontime_climate
+        new_path: T2.run_stress_test.simulation_window
+        op: retype
+        value_transform: pair_to_window
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+      - old_path: T2.run_stress_test.run_length
+        new_path: T2.run_stress_test.simulation_window
+        op: retype
+        value_transform: pair_to_window
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-68
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.run_stress_test.stress_test
+        new_path: T2.run_stress_test.climate_perturbations
+        op: rename
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-69
+    status: live
+    applies: config
+    note: >-
+      NOT behaviour-preserving (D-11.5). A project with `run_historical: false`
+      GAINS `st_0` and with it two of the eleven q metrics. The hook warns; it
+      does not refuse, because the gain is the intended behaviour.
+    moves:
+      - old_path: T2.run_stress_test.run_historical
+        new_path: null
+        op: delete
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: warn_st0
+
+  - id: C-70
+    status: live
+    applies: config
+    note: >-
+      ISO timestamps become INCLUSIVE YEARS. `iso_to_year` must refuse a value
+      that is not whole-year aligned rather than truncating it.
+    moves:
+      - old_path: T1.shared.historical_window
+        new_path: T1.climate.window
+        op: retype
+        value_transform: iso_to_year
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: refuse_water_year
+
+  - id: C-71
+    status: live
+    applies: config
+    note: WF1's simulation window; same retype as C-70, different section.
+    moves:
+      - old_path: T2.build_model.simulation_window
+        new_path: T2.build_model.simulation_window
+        op: retype
+        value_transform: iso_to_year
+        on_collision: overwrite
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-72
+    status: live
+    applies: code
+    note: >-
+      `forcing_window_years()` deleted; `forcing_window()` is the years-to-ISO
+      seam. Landed 2026-08-27. Unowned by any phase brief.
+    moves: []
+
+  - id: C-73
+    status: live
+    applies: code
+    note: >-
+      `compute_nr_years()` derived from `simulation_window.end`. Landed by P1b
+      as a consequence of C-67, though claimed by no phase brief.
+    moves: []
+
+  - id: C-74
+    status: live
+    applies: decision
+    note: >-
+      WF2's windows stay CALENDAR years. Recorded as a decision so that a later
+      reader does not "fix" it into water years and double-apply the offset.
+    moves: []
+
+  - id: C-75
+    status: live
+    applies: doc
+    note: sweep the technical note onto one trajectory vocabulary. P6, with C-32.
+    moves: []
+
+  - id: C-76
+    status: live
+    applies: doc
+    note: record what the note's Annex is, and where it and the code disagreed.
+    moves: []
+
+  - id: C-77
+    status: live
+    applies: config
+    moves:
+      - old_path: T2.*.reporting
+        new_path: null
+        op: delete
+        value_transform: identity
+        on_collision: refuse
+        default_if_absent: omit
+        exception_hook: null
+
+  - id: C-78
+    status: live
+    applies: code
+    note: the hoist mechanism retires. Landed by P1.
+    moves: []
+
+  - id: C-79
+    status: live
+    applies: code
+    note: >-
+      `compute:` leaves `CONFIG_PROJECTION`. P2 owns it. NOT a key move — the
+      key stays where C-34 put it; only its membership in the digest changes.
+    moves: []
+
+  - id: C-80
+    status: live
+    applies: decision
+    note: a probe, recorded. No change.
+    moves: []
+
+  - id: C-81
+    status: live
+    applies: config
+    note: >-
+      a PATH key for the generator's own config, mirroring WF1's two. New, so
+      the rewriter emits the shipped default for a config that had none.
+    moves:
+      - old_path: null
+        new_path: T2.run_stress_test.weathergen_config
+        op: new
+        value_transform: identity
+        on_collision: keep_existing
+        default_if_absent: config/defaults/weathergen_config.yml
+        exception_hook: null
+
+  - id: C-82
+    status: withdrawn
+    applies: none
+    note: >-
+      withdrawn 2026-08-24 (E3) — both keys live in the weathergen config, which
+      K1 puts out of reach, and C-81's path key already reaches them.
+    moves: []
+
+  - id: C-83
+    status: live
+    applies: code
+    note: >-
+      `weagen` → `weathergen` across the live surface. Code identifiers, not a
+      config key; P7 owns it.
+    moves: []
+
+  - id: C-84
+    status: live
+    applies: doc
+    note: >-
+      `_analyze_climate.yml` survives C-45 as a comment-only scaffold; the
+      template gains the missing WF0 file. P4 ships it.
+    moves: []
+
+  - id: C-85
+    status: live
+    applies: file
+    note: >-
+      the FILE surface, not a key: `snake_config_*.yml` → `project_config_*.yml`
+      plus the `.gitignore` un-ignore glob. P5 owns the commit discipline; the
+      rewriter performs the rename as part of the transaction.
+    file_renames:
+      - old_glob: snake_config_*.yml
+        new_glob: project_config_*.yml
+        gitignore_glob_moves: true
+    moves: []

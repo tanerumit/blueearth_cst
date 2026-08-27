@@ -224,7 +224,7 @@ def test_a_third_stress_axis_refuses_naming_c28(tmp_path):
     """
     cfg_path = _write_cfg(tmp_path, temp_step=1, precip_step=2)
     cfg = load_composed_config(cfg_path)
-    cfg["workflows"]["run_stress_test"]["stress_test"]["wind"] = {
+    cfg["workflows"]["run_stress_test"]["climate_perturbations"]["wind"] = {
         "n_levels": 2,
         "mean": {"min": _twelve(0.0), "max": _twelve(1.0)},
     }
@@ -416,5 +416,5 @@ def test_shipped_configs_are_inside_the_domain(config_path):
     instead of a value assembled a second way.
     """
     cfg = load_composed_config(config_path)
-    stress_test_cfg = cfg["workflows"]["run_stress_test"]["stress_test"]
+    stress_test_cfg = cfg["workflows"]["run_stress_test"]["climate_perturbations"]
     refuse_out_of_domain_multipliers(stress_test_cfg)

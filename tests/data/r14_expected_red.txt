@@ -32,7 +32,7 @@
 #    26  tests/test_config_composition.py
 #    20  tests/test_log_rules_contract.py
 #     1  tests/test_plot_workflow_dag.py
-#     6  tests/test_prepare_cst_parameters.py
+#     5  tests/test_prepare_cst_parameters.py
 #     1  tests/test_r01_config_readers.py
 #    10  tests/test_snapshot_project_tree.py
 #     2  tests/test_suggest_experiment_name.py
@@ -91,7 +91,6 @@ tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[analyze_pr
 tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[build_model.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_log_rules_contract.py::test_every_logging_rule_is_declared[run_stress_test.smk-default]  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_plot_workflow_dag.py::test_rulegraph_mode_and_format_reach_the_filename  # reads a v1 project config; refused by `schema_version` until P4
-tests/test_prepare_cst_parameters.py::test_a_third_stress_axis_refuses_naming_c28  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\config\\templates\\snake_config.template.yml]  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\test_case\\snake_config_baseline.yml]  # reads a v1 project config; refused by `schema_version` until P4
 tests/test_prepare_cst_parameters.py::test_shipped_configs_are_inside_the_domain[C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\test_case\\snake_config_baseline_linux.yml]  # reads a v1 project config; refused by `schema_version` until P4

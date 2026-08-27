@@ -160,6 +160,29 @@ def test_missing_transient_flag_refuses_and_names_the_key(tmp_path, variable):
         build_weagen_config(**_generate_kwargs(tmp_path, stress_test=stress_test))
 
 
+@pytest.mark.parametrize("bad", ["Transient", "trasient", "ramp", True, "", None])
+def test_an_unrecognised_trajectory_refuses_rather_than_meaning_step(tmp_path, bad):
+    """`C-32`'s enum is CHECKED, not compared against one value.
+
+    The obvious spelling is ``trajectory == "transient"``, which passes every
+    test above and is still wrong: it makes every OTHER string mean `step`. A
+    typo, a capitalised `Transient`, or the boolean `true` left over from
+    `transient_change` would then select the opposite experiment and run to
+    completion, producing a response surface computed under an assumption
+    nobody made.
+
+    That is the same failure the missing-key refusal beside this exists to
+    prevent, one level down — which is why it is asserted here rather than
+    trusted to the loader, whose own check is for PRESENCE only.
+    """
+    stress_test = {
+        "temp": {"trajectory": bad},
+        "precip": {"trajectory": "transient"},
+    }
+    with pytest.raises(ValueError, match="must be one of"):
+        build_weagen_config(**_generate_kwargs(tmp_path, stress_test=stress_test))
+
+
 # ---------------------------------------------------------------------------
 # F7 (regression) and C34 — R11 P2 commit 4
 # ---------------------------------------------------------------------------

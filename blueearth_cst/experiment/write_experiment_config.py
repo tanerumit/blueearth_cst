@@ -65,8 +65,8 @@ def _frozen_differences(recorded: dict, document: dict) -> list:
 
     Two events reach this comparison and they are not the same thing:
 
-    * **the user changed a setting** — ``horizontime_climate: 2050 → 2085``. The
-      results really are redefined and the freeze must refuse;
+    * **the user changed a setting** — ``simulation_window.end: 2054 → 2090``.
+      The results really are redefined and the freeze must refuse;
     * **the toolbox changed which settings EXIST** — a key retired between
       releases. The user changed nothing, and whether the results are redefined
       depends entirely on what the retirement did.

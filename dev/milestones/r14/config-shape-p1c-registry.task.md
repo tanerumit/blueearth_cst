@@ -230,8 +230,22 @@ config and a changed number is a defect, not a row landing — unlike P1b's
       three variables with two vocabularies that overlap on `unit`/`units`.
       Unifying pulls `C-49` into this phase; not unifying leaves two records of
       one entity, which is the coupling S5 exists to prevent.
-   c. **`min_denominator` or `min_reference`** — the design says one, the code
-      the other, and both surfaces are in this phase's scope.
+   c. **`min_denominator` or `min_reference`** — and the two are NOT
+      symmetrical, so rule with the asymmetry in view rather than picking a
+      preferred word. `min_denominator` appears only in prose (D-7.5, D-10.6)
+      and in one `RETIRED_KEYS` string; `min_reference` is the name in
+      EXECUTING code — the config key `analyze_projections.smk` reads, the
+      `DEFAULT_MIN_REFERENCE` table, and the text of the `ThresholdError` a
+      user actually sees. Changing the code costs a rename across a live
+      reader; changing the prose costs an edit to two documents and one
+      refusal string. Both are cheap, but only one of them can break a run.
+
+      **The same conflict exists a second time and P1b hit it too**: `C-32`'s
+      `trajectory` enum is `transient | constant` in the scoping note and P6's
+      brief, and `transient | step` in P1's shipped refusal message, its test,
+      and the validator P1b added. Rule on both together — they are one
+      question about which record wins when prose and code disagree, and
+      answering it once stops it recurring in P2 and P6.
 2. **Gate 2 — before `C-66`.** Demonstrate falsifier 2 (a non-`precip`
    relative variable configured through the new surface, WF2 dry-running
    clean) BEFORE removing the `relative_change:` reader. This gate exists

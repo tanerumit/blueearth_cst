@@ -36,15 +36,40 @@ def compute_nr_years(sim_end):
     return int(sim_end) - 2010 + 2
 
 
+#: `C-32`'s enum, closed. `transient` ramps the perturbation through the run;
+#: `step` holds it flat across the run.
+#:
+#: **These are the spellings P1 SHIPPED**, in `_check_trajectories`' refusal
+#: message and the test that pins it — not a choice made here. The design's
+#: scoping note (`config-shape-scoping.md`: "`trajectory: transient |
+#: constant`") and P6's brief both say `constant` where the code says `step`.
+#: That conflict is real and unresolved, and it is the same class as
+#: `min_denominator` / `min_reference`: prose says one word, executing code
+#: says another. Adjudicating it would mean changing a shipped refusal message
+#: and its test on the strength of a design note, which is an owner's call —
+#: so this validates against the code and the conflict is flagged, not settled.
+#:
+#: The weathergen config this module WRITES still carries the boolean
+#: `transient_change`; that is weathergenr's own vocabulary and K1/S5 put it
+#: out of reach.
+TRAJECTORY_KINDS = frozenset({"transient", "step"})
+
+
 def _transient_flag(stress_test_cfg, variable):
     """Read ``climate_perturbations.<variable>.trajectory``, refusing a default.
 
     Absent, this would decide whether a perturbation ramps or steps and nobody
     would know which they got. The house rule for a missing required key is to
     refuse and name it (``variable_spec.parse``), not to guess.
+
+    **The enum is CHECKED, not compared.** ``trajectory == "transient"`` alone
+    would make every other string mean ``constant`` — so a typo, or the older
+    ``transient_change: true`` written under the new key, would silently select
+    the opposite behaviour and run to completion. That is the same silent
+    default the required-key refusal above exists to prevent, one level down.
     """
     try:
-        return stress_test_cfg[variable]["trajectory"] == "transient"
+        value = stress_test_cfg[variable]["trajectory"]
     except (KeyError, TypeError):
         raise ValueError(
             f"workflows.run_stress_test.climate_perturbations.{variable}"
@@ -53,6 +78,14 @@ def _transient_flag(stress_test_cfg, variable):
             "or applies as a step, and the weather generator has no defensible "
             "default for it."
         ) from None
+    if value not in TRAJECTORY_KINDS:
+        raise ValueError(
+            f"workflows.run_stress_test.climate_perturbations.{variable}"
+            f".trajectory must be one of {sorted(TRAJECTORY_KINDS)}, got "
+            f"{value!r}. `C-32` replaced the boolean `transient_change` with "
+            "this enum; `true` becomes `transient` and `false` becomes `step`."
+        )
+    return value == "transient"
 
 
 def build_weagen_config(

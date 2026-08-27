@@ -37,6 +37,42 @@ reference anywhere names a spelling R14 retired.
    non-preserving cases and what each does, and the file rename.
 2. Sweep `docs/guide/configuration.qmd`, `quick-start.qmd`, `running.qmd`,
    `outputs.qmd` — each shows a `--configfile` command line.
+
+   **Measured by P1b on 2026-08-26, at `8cf86ba7`, so this item is not sized
+   from recollection.** The command, which also re-measures:
+
+   ```bash
+   grep -rlE '\b(stress_test|clim_project|step_num|transient_change|run_historical|horizontime_climate|run_length|realizations_num|future_horizons|historical_year_range|model_build_config|waterbodies_config|observations_timeseries|dry_spell_factor|wet_spell_factor|relative_change|julia_threads)\b' \
+     docs/ README.md AGENTS.md | grep -vE 'hydromt-|wflow-|_site/|\.quarto/'
+   ```
+
+   What it found, and the two things worth knowing before starting:
+
+   - **`docs/guide/configuration.qmd` is stale from R13, not just R14.** Its
+     Anatomy section still documents `shared:`, which R13 dissolved, and the
+     file mentions `schema_version` and `config_path` zero times. Its example
+     block carries `candidate_sources`, `model_build_config`, `wflow_outvars`,
+     a `simulation_window` with `starttime`/`endtime`, and `clim_project` —
+     five different milestones' worth. It needs rewriting, not patching, and
+     patching only the R14 keys inside it would leave a document that reads as
+     current and is not. P1b deliberately left it whole for that reason.
+   - **`docs/notebooks/*.ipynb` are the largest v1 surface and this checklist
+     did not name them.** `Climate Stress Test.ipynb` carries `step_num`,
+     `transient_change`, `run_historical`, `horizontime_climate`, `run_length`,
+     `realizations_num`, `batch_size`, both spell factors and `julia_threads`;
+     `Climate projections.ipynb` carries `clim_project`, `future_horizons` and
+     `historical_year_range`; `Model building.ipynb` carries
+     `model_build_config`, `waterbodies_config` and `observations_timeseries`.
+     They are inside this phase's `docs/**` scope and inside its Goal ("no live
+     reference anywhere names a spelling R14 retired"), so they are named here
+     rather than discovered late.
+   - `docs/_site/**` and `docs/.quarto/**` also match and are BOTH gitignored
+     build output. Do not edit them; re-render instead.
+   - `docs/migration-r08-wf2.md` and `docs/migration-workflow-names.md` are
+     migration records of earlier milestones. Decide once, and say which:
+     either they are historical and keep their old spellings, or they are live
+     and get swept. `dev/reference/sealed-records.yml` lists no `docs/` file at
+     all, so nothing decides this for you.
 3. Sweep `README.md` and `AGENTS.md`. **`AGENTS.md`'s Repo Map paragraph
    explains the `.gitignore` glob by name** and says "keep the `snake_config_`
    prefix on any new seed config" — that sentence is one of the occurrences

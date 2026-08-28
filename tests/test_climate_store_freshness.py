@@ -1,6 +1,6 @@
 """R07 B1 / ext2-01: the data catalog is the store's freshness boundary.
 
-The producer declares exactly one input in both DAGs — the ``project.data_sources``
+The producer declares exactly one input in both DAGs — the ``project.catalog``
 catalog, plain (never ``ancient()``). Two properties follow, and this module
 pins both against a real Snakemake invocation:
 
@@ -61,7 +61,7 @@ def staged_store(tmp_path):
     shutil.copy(CATALOG_FN, catalog)
 
     cfg["project"]["project_dir"] = project_dir.as_posix()
-    cfg["project"]["data_sources"] = catalog.as_posix()
+    cfg["project"]["catalog"] = catalog.as_posix()
     cfg_path = write_config(tmp_path, cfg, stem="snake_config_staged")
 
     # Store key exactly as climate_store_rule builds it.
@@ -70,9 +70,9 @@ def staged_store(tmp_path):
 
     spec = climate_store_rule(
         project_dir=project_dir.as_posix(),
-        model_region=cfg["shared"]["basin"]["region"],
-        clim_source=cfg["shared"]["clim_historical"],
-        historical_window=cfg["shared"]["historical_window"],
+        model_region=cfg["basin"]["region"],
+        clim_source=cfg["climate"]["selected"],
+        historical_window=cfg["climate"]["window"],
         data_sources=catalog.as_posix(),
     )
     store = Path(spec.store_dir)

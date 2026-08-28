@@ -68,7 +68,7 @@ def _catalog_root():
     with open(join(SNAKEDIR, CONFIG)) as f:
         cfg = yaml.safe_load(f)
     # R01 sectioned schema: data_sources lives under project.
-    with open(join(SNAKEDIR, cfg["project"]["data_sources"])) as f:
+    with open(join(SNAKEDIR, cfg["project"]["catalog"])) as f:
         cat = yaml.safe_load(f)
     meta = cat.get("meta", {}) or {}
     roots = meta.get("roots") or ([meta["root"]] if "root" in meta else [])

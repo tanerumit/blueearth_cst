@@ -27,7 +27,10 @@ from pathlib import Path
 import pytest
 import yaml
 
-from blueearth_cst.shared.snake_utils import slugify_window
+from blueearth_cst.shared.snake_utils import (
+    historical_window_bounds,
+    slugify_window,
+)
 
 pytestmark = pytest.mark.workflow_contract
 
@@ -110,8 +113,14 @@ def staged_project(tmp_path):
     sentinel = pdir / "experiments" / experiment / ".project_consistency_ok"
     # Key-level guard artifact lives under the dataset+window keyed store dir
     # (commit 4). Derive the key exactly as the Snakefile does.
-    win = base["shared"]["historical_window"]
-    key = f"{base['shared']['clim_historical']}_{slugify_window(win['starttime'], win['endtime'])}"
+    # `C-70` retyped the window to INCLUSIVE YEARS while the store key stayed
+    # ISO at day resolution, so the conversion goes through the same helper
+    # `climate_store_rule` uses. Formatting the years here would be a second
+    # implementation of the key, free to drift from the one a run builds.
+    _start, _end = historical_window_bounds(base["climate"]["window"])
+    key = f"{base['climate']['selected']}_" + slugify_window(
+        _start.isoformat(), _end.isoformat()
+    )
     guard_ok = pdir / "data" / "climate" / "historical" / key / ".guard_ok"
     return cfg_path, pdir, wf1, wf2, sentinel, guard_ok
 
@@ -148,7 +157,7 @@ def test_guard_invalidation_i_to_l(staged_project):
     # (i) mutate a guarded live-config section -> "Params have changed"
     #     (guarded-sections digest param flips).
     live = yaml.safe_load(base_cfg_text)
-    live["shared"]["basin"]["resolution"] = 0.05
+    live["basin"]["resolution"] = 0.05
     cfg_path.write_text(yaml.safe_dump(live), encoding="utf-8")
     out = _dry_run_output(cfg_path, sentinel)
     assert "Params have changed" in out, out
@@ -161,7 +170,7 @@ def test_guard_invalidation_i_to_l(staged_project):
     # (j) mutate the wf1 snapshot content -> scheduled (wf1 digest param).
     orig_wf1 = wf1.read_text(encoding="utf-8")
     wf1_doc = yaml.safe_load(orig_wf1)
-    wf1_doc["shared"]["basin"]["resolution"] = 0.05
+    wf1_doc["basin"]["resolution"] = 0.05
     wf1.write_text(yaml.safe_dump(wf1_doc), encoding="utf-8")
     out = _dry_run_output(cfg_path, sentinel)
     assert "Params have changed" in out, out

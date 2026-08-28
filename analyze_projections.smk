@@ -115,8 +115,12 @@ STORE_DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 # Shared — the model-free basin delineation the climate store extracts against.
 basin_cfg = config["basin"]
 model_region = get_config(basin_cfg, "region", optional=False)
-basin_hydrography = get_config(basin_cfg, "hydrography", DEFAULT_HYDROGRAPHY)
-basin_index = get_config(basin_cfg, "basin_index", DEFAULT_BASIN_INDEX)
+# `C-15`: every spatial input lives under `basin.sources:`. Read through the
+# same parse WF0 and WF1 use, so one section cannot mean two things depending
+# on which entry point read it.
+_basin_sources = get_config(basin_cfg, "sources", {}) or {}
+basin_hydrography = get_config(_basin_sources, "hydrography", DEFAULT_HYDROGRAPHY)
+basin_index = get_config(_basin_sources, "basin_index", DEFAULT_BASIN_INDEX)
 historical_window = get_config(climate_cfg, "window", optional=False)
 # `shared.clim_historical` is deliberately NOT read here. WF2 has no climate
 # store and no rule that consumes the observed source: it read the key

@@ -267,8 +267,12 @@ clim_source = get_config(climate_cfg, "selected", optional=False)
 # whose values diverge from the wf1 snapshot fails the drift guard.
 basin_cfg = config["basin"]
 model_region = get_config(basin_cfg, "region", optional=False)
-basin_hydrography = get_config(basin_cfg, "hydrography", DEFAULT_HYDROGRAPHY)
-basin_index = get_config(basin_cfg, "basin_index", DEFAULT_BASIN_INDEX)
+# `C-15`: every spatial input lives under `basin.sources:`. Read through the
+# same parse WF0 and WF1 use, so one section cannot mean two things depending
+# on which entry point read it.
+_basin_sources = get_config(basin_cfg, "sources", {}) or {}
+basin_hydrography = get_config(_basin_sources, "hydrography", DEFAULT_HYDROGRAPHY)
+basin_index = get_config(_basin_sources, "basin_index", DEFAULT_BASIN_INDEX)
 
 # Historical extraction window: sourced from shared.historical_window so the
 # extract_historical_climate dates come from the config instead of being

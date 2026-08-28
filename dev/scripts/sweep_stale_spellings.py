@@ -208,6 +208,19 @@ def surviving_leaves() -> set[str]:
     * it is a SUBSTRING of a live identifier — ``stress_test`` inside
       ``run_stress_test``, which names the workflow and is not going anywhere.
 
+    **This is the sweep's blind spot, and it is structural.** A REGROUP that
+    keeps its leaf name — ``basin.hydrography`` to ``basin.sources.hydrography``
+    (`C-15`) — puts the leaf on both sides, so it lands here and the sweep goes
+    quiet on it. Two live readers survived exactly that way and were found by
+    CI, not by this tool: `analyze_projections.smk` and `run_stress_test.smk`
+    both read `hydrography` and `basin_index` straight off `basin_cfg` for a day
+    after the section moved.
+
+    Catching those needs PATH matching rather than leaf matching, which needs a
+    reader to know which mapping a given `basin_cfg` came from. Not attempted
+    here; recorded so the next person does not assume a green sweep means no
+    stale readers.
+
     Sweeping any of these by name produces hundreds of hits that are all
     correct, which is how a sweep gets switched off.
     """

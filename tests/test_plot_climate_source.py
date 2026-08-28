@@ -197,27 +197,32 @@ def modelfree_project(tmp_path):
 
     cfg = load_composed_config(CONFIG_FN)
     cfg["project"]["project_dir"] = project_dir.as_posix()
-    cfg["project"]["data_sources"] = catalog.as_posix()
-    cfg["shared"]["historical_window"] = {
-        "starttime": f"{_START}T00:00:00",
-        "endtime": f"{_END}T00:00:00",
+    cfg["project"]["catalog"] = catalog.as_posix()  # `C-40`
+    # `C-70`: INCLUSIVE YEARS. `_START`/`_END` are ISO dates, so the year is
+    # taken from each rather than the timestamp being rebuilt.
+    cfg["climate"]["window"] = {
+        "start": int(str(_START)[:4]),
+        "end": int(str(_END)[:4]),
     }
     # P4, made provable rather than asserted: the build template and the
     # waterbodies template are pointed at paths that DO NOT EXIST. Any edge from
     # the figure targets to the model-build side would now be a
     # MissingInputException, not a silent dependency.
     absent_template = tmp_path / "absent" / "wflow_build_model.yml"
-    cfg["workflows"]["build_model"]["model_build_config"] = absent_template.as_posix()
-    cfg["workflows"]["build_model"]["waterbodies_config"] = (
+    # `C-22`: both engine paths are grouped under `engine:`.
+    cfg["workflows"]["build_model"]["engine"]["build_config"] = (
+        absent_template.as_posix()
+    )
+    cfg["workflows"]["build_model"]["engine"]["waterbodies_config"] = (
         tmp_path / "absent" / "wflow_update_waterbodies.yml"
     ).as_posix()
     cfg_path = write_config(tmp_path, cfg, stem="snake_config_modelfree")
 
     spec = climate_store_rule(
         project_dir=project_dir.as_posix(),
-        model_region=cfg["shared"]["basin"]["region"],
-        clim_source=cfg["shared"]["clim_historical"],
-        historical_window=cfg["shared"]["historical_window"],
+        model_region=cfg["basin"]["region"],
+        clim_source=cfg["climate"]["selected"],
+        historical_window=cfg["climate"]["window"],
         data_sources=catalog.as_posix(),
     )
     store = Path(spec.store_dir)

@@ -371,21 +371,6 @@ RETIRED_EXPERIMENT_KEYS = {
         ),
         "note": "dev/reviews/2026-08-11_test-suite-bloat-assessment.md",
     },
-    "compute": {
-        "existing_results": "unchanged",
-        "why": (
-            "`compute:` left the experiment's configuration identity (`C-79`): "
-            "batch size, its cap and the disk headroom answer how a run FITS on "
-            "a machine, not what it computes, and the results are identical "
-            "whichever batching produced them. The key still exists and is "
-            "still read -- it is only no longer part of what freezes. Without "
-            "this entry the first run after the change refuses every "
-            "already-run experiment whose config declared it, naming `compute` "
-            "as changed: exactly the refusal `C-79` exists to remove, aimed at "
-            "exactly the users it was meant to help."
-        ),
-        "note": "dev/milestones/r14/config-shape-design.md",
-    },
 }
 
 #: Kept as a name because the R11 tests and the migration note both cite it. It

@@ -48,6 +48,14 @@ class ExperimentConfigFrozenError(RuntimeError):
 #: identity (`C-79`, design D-9.3). One entry, and it needs a reason rather than
 #: a list to belong to: `compute:` answers "how do I fit this run on this
 #: machine", not "what am I running".
+#:
+#: NOT `RETIRED_EXPERIMENT_KEYS`, which was the first thing tried and is a
+#: different mechanism for a different fact. That registry says a key no longer
+#: EXISTS, and `refuse_retired_experiment_keys` reads the same table at WF3
+#: parse time to reject any config still declaring one -- so registering
+#: `compute:` there made it undeclarable, which is the opposite of `C-79`.
+#: `compute:` is live and still read; it is only not identity, and that is a
+#: statement the freeze has to make for itself.
 _NOT_IDENTITY = ("compute",)
 
 
@@ -114,6 +122,14 @@ def _frozen_differences(recorded: dict, document: dict) -> list:
         key
         for key in set(was) | set(now)
         if was.get(key) != now.get(key)
+        # Never identity, so a difference is not a redefinition -- in either
+        # direction, and including the RECORD that still carries it from before
+        # `C-79`. Without this, the first run after the change refuses every
+        # already-run experiment whose config declared `compute:`, naming it as
+        # changed: exactly the refusal `C-79` exists to remove, aimed at exactly
+        # the users it was meant to help. The record then migrates forward on
+        # that same write, because the document no longer emits the key.
+        and key not in _NOT_IDENTITY
         # A key the CONFIG still declares is a live setting; a difference there
         # is the user's edit whatever the registry says about the name.
         and not (key not in now and retirement_preserves_results(key))

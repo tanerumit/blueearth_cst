@@ -5,19 +5,33 @@ Task Brief — P2: guard, freeze, and digest under the new layout
 Canonical ruleset: `AGENTS.md`. Design: `config-shape-design.md` §9.
 Program: `config-shape-master-brief.md`. **Depends on P1.**
 
-> [!warning] **STOP — do not start this phase yet.** *(2026-08-27, from P1b.)*
-> The three rung-2 falsifiers below each say "build a model … run WF3", and no
-> config in the tree can do that: every `test_case/*.yml` is still v1 and
-> refused at `schema_version`, which **P4** clears, not P1b. The v2 probe
-> fixture builds a DAG but has no model. So this phase's blocking edge is P4,
-> and the master brief's `P1b → P2` is necessary but not sufficient.
-> Ruling and options: `config-shape-p2-sequencing-decision.md`.
+> [!note] **Unblocked 2026-08-28.** The phase's real blocking edge was P4,
+> not P1b; P4 has landed and is green on both CI legs, so the three rung-2
+> falsifiers below can each be run as stated. Ruling:
+> `config-shape-p2-sequencing-decision.md`. **The WF1 snapshot in
+> `test_case/test_rapid` is still the pre-migration v1 document, so re-run
+> WF1 before running any falsifier** -- a refusal against a stale snapshot
+> says nothing about the guard.
 
 - `E1`/`E2` established these are THREE mechanisms, not one, and the scoping
   document had been treating them as one.
 - **A WF1 snapshot does not carry WF3's sections** (`copy_config_files.py:89`,
   confirmed in `compose_config`). `compute:` was therefore never inside the
   drift guard, and carving it out there is a no-op.
+- **`D-9.6` is established: the three-site asymmetry is an OVERSIGHT, not a
+  protective narrowing** (2026-08-28). The design left this open because
+  the two answers give different targets. The evidence is the hoist's own
+  commit: `git log -S wflow_outvars` names `e3c9cbbf` for
+  `check_project_consistency.py` and does NOT name it for
+  `run_stress_test.smk` -- R13 moved the key out of `workflows.build_model`,
+  added it to site (1), and left sites (2) and (3) covering it only through
+  the container it had just left. Site (1)'s comment argues at length for
+  guarding the leaf and gives no reason to exclude it from the rerun
+  trigger. The invariance constraint at `run_stress_test.smk:44` is also
+  satisfied: `build_experiment_config` emits `{experiment_name,
+  run_stress_test}` and nothing else, so no experiment overlay can reach a
+  T1 key and every T1 section is experiment-invariant by construction.
+  **P2 closes it rather than preserving it.**
 - The keys that forced today's leaf-by-leaf narrowing — `seed`,
   `julia_threads` — are removed from T1 by `C-51` and `C-54`, so the exception
   has no remaining cause.

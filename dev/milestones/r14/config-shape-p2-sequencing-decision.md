@@ -1,8 +1,19 @@
 # R14 — P2's blocking edge is P4, not P1b
 
-**Status: OPEN, needs an owner ruling. Found 2026-08-27, at the end of P1b.**
-Nothing is blocked on it *today* — P3 is free to start either way — but P2 must
-not be started before it is settled.
+**Status: RESOLVED 2026-08-28 — option 1, by execution rather than by memo.**
+P3 landed, Gate 3 passed, P4 landed and is green on both CI legs, and P2 has
+not started. That IS the reordering this note recommends, so the ruling is
+recorded rather than taken: the owner drove `P3 -> Gate 3 -> P4` and the
+sequence the dependency graph implied is the sequence that ran.
+
+The blocking condition is discharged. Verified 2026-08-28 at `b3ebcbc3`:
+every `test_case/*.yml` now carries `schema_version: 2` and
+`test_case/test_rapid` is a real project, so P2's three rung-2 falsifiers can
+each be run as stated. **One consequence for whoever runs them: the WF1
+snapshot in that tree is still the PRE-migration v1 document**
+(`config/runs/snake_config_build_model.yml`, a copy of the old project file),
+so WF1 has to be re-run before any falsifier means anything. A guard refusal
+against a stale v1 snapshot is not evidence about the guard.
 
 ## The finding
 

@@ -37,29 +37,27 @@ def compute_nr_years(sim_end):
 
 
 #: `C-32`'s enum, closed. `transient` ramps the perturbation through the run;
-#: `step` holds it flat across the run.
+#: `constant` holds it flat across the run.
 #:
-#: **These are the spellings P1 SHIPPED**, in `_check_trajectories`' refusal
-#: message and the test that pins it — not a choice made here. The design's
-#: scoping note (`config-shape-scoping.md`: "`trajectory: transient |
-#: constant`") and P6's brief both say `constant` where the code says `step`.
-#: That conflict is real and unresolved, and it is the same class as
-#: `min_denominator` / `min_reference`: prose says one word, executing code
-#: says another. Adjudicating it would mean changing a shipped refusal message
-#: and its test on the strength of a design note, which is an owner's call —
-#: so this validates against the code and the conflict is flagged, not settled.
+#: **RULED 2026-08-28.** The register row was ruled 2026-08-24 as
+#: `transient | constant` and P1 shipped `transient | step`, so for four days
+#: the design record and the code disagreed. `constant` won on three counts:
+#: the register row is the decided one and the code was the deviation; both
+#: words describe how the perturbation behaves over TIME, which is what
+#: `trajectory` names, where `step` describes a shape; and the design, its
+#: scoping note and P6's brief already agreed.
 #:
 #: The weathergen config this module WRITES still carries the boolean
 #: `transient_change`; that is weathergenr's own vocabulary and K1/S5 put it
 #: out of reach.
-TRAJECTORY_KINDS = frozenset({"transient", "step"})
+TRAJECTORY_KINDS = frozenset({"transient", "constant"})
 
 
 def _transient_flag(stress_test_cfg, variable):
     """Read ``climate_perturbations.<variable>.trajectory``, refusing a default.
 
-    Absent, this would decide whether a perturbation ramps or steps and nobody
-    would know which they got. The house rule for a missing required key is to
+    Absent, this would decide whether a perturbation ramps or is held flat, and
+    nobody would know which they got. The house rule for a missing required key is to
     refuse and name it (``variable_spec.parse``), not to guess.
 
     **The enum is CHECKED, not compared.** ``trajectory == "transient"`` alone
@@ -75,15 +73,16 @@ def _transient_flag(stress_test_cfg, variable):
             f"workflows.run_stress_test.climate_perturbations.{variable}"
             ".trajectory is required (`C-32`; it was `transient_change: true`). "
             "It decides whether the perturbation ramps over the run "
-            "or applies as a step, and the weather generator has no defensible "
-            "default for it."
+            "(`transient`) or is held flat across it (`constant`), and the "
+            "weather generator has no defensible default for it."
         ) from None
     if value not in TRAJECTORY_KINDS:
         raise ValueError(
             f"workflows.run_stress_test.climate_perturbations.{variable}"
             f".trajectory must be one of {sorted(TRAJECTORY_KINDS)}, got "
             f"{value!r}. `C-32` replaced the boolean `transient_change` with "
-            "this enum; `true` becomes `transient` and `false` becomes `step`."
+            "this enum; `true` becomes `transient` and `false` becomes "
+            "`constant`."
         )
     return value == "transient"
 

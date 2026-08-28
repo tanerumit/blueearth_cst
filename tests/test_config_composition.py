@@ -1467,7 +1467,7 @@ def test_a_perturbation_axis_without_a_trajectory_is_refused(tmp_path, axis):
     assert axis in message
     assert "NO default" in message, "say there is no default"
     assert "deliberately" in message, "and that this is a decision, not an omission"
-    assert "step" in message and "transient" in message, "and name the two values"
+    assert "constant" in message and "transient" in message, "and name the two values"
 
 
 def test_both_axes_with_a_trajectory_compose(tmp_path):
@@ -1477,14 +1477,14 @@ def test_both_axes_with_a_trajectory_compose(tmp_path):
         bodies={
             "run_stress_test": {
                 "climate_perturbations": {
-                    "temp": {"n_levels": 2, "trajectory": "step"},
+                    "temp": {"n_levels": 2, "trajectory": "constant"},
                     "precip": {"n_levels": 3, "trajectory": "transient"},
                 }
             }
         },
     )
     section = compose(t1_path, "run_stress_test")["workflows"]["run_stress_test"]
-    assert section["climate_perturbations"]["temp"]["trajectory"] == "step"
+    assert section["climate_perturbations"]["temp"]["trajectory"] == "constant"
 
 
 def test_a_missing_config_path_names_deleting_the_key_as_the_fix(tmp_path):

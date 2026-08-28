@@ -91,7 +91,7 @@ def _generate_kwargs(tmp_path, stress_test=None):
     if stress_test is None:
         stress_test = {
             "temp": {"n_levels": 2, "trajectory": "transient"},
-            "precip": {"n_levels": 3, "trajectory": "step"},
+            "precip": {"n_levels": 3, "trajectory": "constant"},
         }
     return dict(
         realizations_num=2,
@@ -148,7 +148,7 @@ def test_only_the_flags_are_copied_not_the_perturbation_ranges(tmp_path):
 
 @pytest.mark.parametrize("variable", ["temp", "precip"])
 def test_missing_transient_flag_refuses_and_names_the_key(tmp_path, variable):
-    """No silent default: it decides whether a perturbation ramps or steps."""
+    """No silent default: it decides whether a perturbation ramps or holds."""
     stress_test = {
         "temp": {"trajectory": "transient"},
         "precip": {"trajectory": "transient"},
@@ -161,11 +161,11 @@ def test_missing_transient_flag_refuses_and_names_the_key(tmp_path, variable):
 
 
 @pytest.mark.parametrize("bad", ["Transient", "trasient", "ramp", True, "", None])
-def test_an_unrecognised_trajectory_refuses_rather_than_meaning_step(tmp_path, bad):
+def test_an_unrecognised_trajectory_refuses_rather_than_meaning_constant(tmp_path, bad):
     """`C-32`'s enum is CHECKED, not compared against one value.
 
     The obvious spelling is ``trajectory == "transient"``, which passes every
-    test above and is still wrong: it makes every OTHER string mean `step`. A
+    test above and is still wrong: it makes every OTHER string mean `constant`. A
     typo, a capitalised `Transient`, or the boolean `true` left over from
     `transient_change` would then select the opposite experiment and run to
     completion, producing a response surface computed under an assumption

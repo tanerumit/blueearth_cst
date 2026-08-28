@@ -95,15 +95,20 @@ class TestBoolToEnum:
     """`C-32` — the enum comes from the MAPPING, which is why this is data-driven."""
 
     def test_true_ramps_and_false_steps(self):
-        enum = ["transient", "step"]
-        assert bool_to_enum(True, enum=enum) == "transient"
-        assert bool_to_enum(False, enum=enum) == "step"
-
-    def test_the_other_spelling_works_the_same_way(self):
-        """The unresolved pair. Ruling `C-32` must not need a code change."""
         enum = ["transient", "constant"]
         assert bool_to_enum(True, enum=enum) == "transient"
         assert bool_to_enum(False, enum=enum) == "constant"
+
+    def test_a_different_pair_would_work_the_same_way(self):
+        """The enum is DATA, which is what made ruling `C-32` a one-line change.
+
+        Kept after the ruling rather than deleted with it: the property is that
+        this transform reads its vocabulary from the mapping, and the cheapest
+        way to state that is to hand it a pair the mapping does not use.
+        """
+        enum = ["transient", "step"]
+        assert bool_to_enum(True, enum=enum) == "transient"
+        assert bool_to_enum(False, enum=enum) == "step"
 
     def test_the_mapping_is_what_supplies_it(self):
         """Whatever the mapping says today, the transform must accept it."""
@@ -115,7 +120,7 @@ class TestBoolToEnum:
     @pytest.mark.parametrize("bad", ["true", 1, None, "transient"])
     def test_a_non_boolean_is_refused(self, bad):
         with pytest.raises(MigrationError):
-            bool_to_enum(bad, enum=["transient", "step"])
+            bool_to_enum(bad, enum=["transient", "constant"])
 
 
 class TestWindowShapes:

@@ -126,28 +126,28 @@ def test_each_workflow_declares_its_consumed_key_projection(snakefile_name, expe
     assert f"CONFIG_PROJECTION = {expected}" in text
 
 
-def test_wf3_derives_its_projection_from_the_guard_tuple():
+def test_wf3_derives_its_projection_from_the_guard_list():
     """Derived, not restated -- proximity is not enforcement.
 
-    WF3 genuinely reads other workflows' sections, and `guarded_sections` is
-    already the maintained list of those cross-section reads. A projection
-    written out beside it would drift the first time that tuple gained an
-    entry, and nothing would report it.
+    A projection written out beside `guarded_sections` would drift the first
+    time that list gained an entry, and nothing would report it. That is not
+    hypothetical: `D-9.6` records three hand-kept copies of the guarded list of
+    which two disagreed with the guard for a whole milestone.
     """
     text = (REPO / "run_stress_test.smk").read_text(encoding="utf-8")
 
     assert "CONFIG_PROJECTION = tuple(sorted(" in text
     assert "set(guarded_sections)" in text
     assert '{"workflows.run_stress_test"}' in text
-    # R14: the widening term is NAMED rather than derived, and that is the one
-    # thing about this expression that is not enforcement. `shared.basin` used
-    # to widen to `shared` by taking its parent; `climate:` and `model:` are
-    # SIBLINGS of `basin:` now, so there is no parent to take and the sections
-    # WF3 reads have to be written down. Pinned here so the list cannot quietly
-    # shrink back to `basin` alone, which would drop `climate.window` and
-    # `model.outvars` out of WF3's effective-config digest.
-    assert 'T1_READ_BY_WF3 = ("basin", "climate", "model")' in text
-    assert "set(T1_READ_BY_WF3)" in text
+    assert "guarded_sections = guarded_section_paths()" in text
+    # P2 retired the WIDENING term. Under v1 the guard narrowed to
+    # `shared.basin` to stay experiment-invariant, so the projection had to
+    # widen it back to the whole of `shared`; R14 dissolved `shared:` and
+    # `C-51`/`C-54` removed the narrowing's cause, and `guarded_section_paths()`
+    # now derives from `T1_TOP_LEVEL` -- T1's closed top level -- so it already
+    # names every T1 section WF3 could read. Pinned as an ABSENCE, because a
+    # reintroduced literal would be a second list that looks like enforcement.
+    assert "T1_READ_BY_WF3" not in text
 
 
 def test_wf3_projection_equals_the_derived_union():
@@ -157,16 +157,12 @@ def test_wf3_projection_equals_the_derived_union():
     proves what it evaluates to, which is what a reader of the record cares
     about.
     """
-    guarded = (
-        "project",
-        "basin",
-        "workflows.build_model",
-        "workflows.analyze_projections",
+    from blueearth_cst.experiment.check_project_consistency import (
+        guarded_section_paths,
     )
-    t1_read_by_wf3 = ("basin", "climate", "model")
 
     derived = tuple(
-        sorted(set(guarded) | set(t1_read_by_wf3) | {"workflows.run_stress_test"})
+        sorted(set(guarded_section_paths()) | {"workflows.run_stress_test"})
     )
 
     # Alphabetical, because `derived` is `sorted(...)`. The 2026-08-14 workflow
@@ -177,11 +173,17 @@ def test_wf3_projection_equals_the_derived_union():
     # dissolved into. That is the SAME COVERAGE, not a widening: v1's `shared`
     # held the basin, the window, the selected source, the water year and the
     # outvars, and those are exactly `basin:` + `climate:` + `model:` now.
+    #
+    # `schema_version` is P2's one addition, and it arrives as a consequence
+    # rather than a choice: the guard compares every key a snapshot carries, and
+    # a snapshot written under a different config shape is not a snapshot of
+    # this configuration.
     assert derived == (
         "basin",
         "climate",
         "model",
         "project",
+        "schema_version",
         "workflows.analyze_projections",
         "workflows.build_model",
         "workflows.run_stress_test",

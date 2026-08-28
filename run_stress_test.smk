@@ -17,6 +17,7 @@ from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retir
 from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, window_year_pair, install_console_style, run_header
+from blueearth_cst.experiment.check_project_consistency import guarded_section_paths
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 
@@ -45,44 +46,45 @@ config_path = workflow.configfiles[0]
 # configs, because the guard's second output is shared across experiments
 # (§3b/§3d; config_path is deliberately NOT a guard param — it varies per
 # experiment and would thrash the shared artifact on A<->B alternation).
-guarded_sections = (
-    "project", "basin", "workflows.build_model",
-    "workflows.analyze_projections",
-)
+# DERIVED, from the guard's own rule (P2, design D-9.7). This used to be a
+# hand-kept tuple, and it disagreed with the guard: R13 hoisted `wflow_outvars`
+# out of `workflows.build_model`, added the leaf to the comparator, and never
+# touched this line -- so an edit to it was refused by the guard while leaving
+# this trigger unmoved. Deriving both from one function is what makes that class
+# of drift unrepresentable rather than merely fixed.
+#
+# `guarded_section_paths()` is the parse-time form: the comparator derives its
+# list from the snapshot it is about to read, which needs `project_dir` and a
+# file that may not exist yet, and neither is available here.
+guarded_sections = guarded_section_paths()
 
-# WF3's consumed-key projection is DERIVED, not written out beside the guard
-# tuple. WF3 genuinely reads other workflows' sections -- `wflow_outvars` comes
-# out of `workflows.build_model` -- and `guarded_sections` is already the
-# maintained list of those cross-section reads. Restating it here would be
-# proximity, not enforcement: the two would drift the first time the guard
-# tuple gained an entry.
+# WF3's consumed-key projection. Two different claims live here -- what the
+# guard COMPARES and what WF3 READS -- and both have to be composed before
+# anything can use them, so the projection is their union.
 #
-# The WIDENING term is where R14 costs a line. Under v1 this read
-# `section.split(".")[0] if section == "shared.basin"`, which turned the guard's
-# narrow `shared.basin` into the whole of `shared` -- because the guard narrows
-# to the basin ONLY to stay experiment-invariant, while WF3 reads other `shared`
-# keys (the window, the selected source, the water year, the outvars). `shared:`
-# has no parent to widen to any more: those keys are `climate:` and `model:` now
-# (`C-70`, `C-44`, `C-53`, `C-19`), which are SIBLINGS of `basin:` rather than
-# its container. So the sections WF3 reads are named. Same coverage as v1, and
-# it has to be spelled out rather than derived -- which is why this is a line of
-# code and a comment instead of a rename.
+# The second term is now EMPTY, and that is a result of P2 rather than an
+# omission. `guarded_section_paths()` derives from `T1_TOP_LEVEL`, T1's closed
+# top level, so it already names every T1 section there can be -- including the
+# three WF3 reads for itself (`basin`, `climate`, `model`). Under v1 this line
+# had to widen the guard's narrow `shared.basin` back to the whole of `shared`,
+# because the guard narrowed to the basin ONLY to stay experiment-invariant
+# while WF3 read other `shared` keys: the window, the selected source, the water
+# year, the outvars. R14 dissolved `shared:` and removed the narrowing's cause,
+# so there is nothing left for a widening term to add.
 #
-# `T1_READ_BY_WF3` is not `T1_SHARED_SECTIONS`: this is what WF3 READS, and a
-# section added to T1 for another workflow's benefit does not belong in WF3's
-# projection just because it exists.
-T1_READ_BY_WF3 = ("basin", "climate", "model")
+# It stays written as a union because of the one term the guard structurally
+# cannot supply: a WF1 snapshot never witnesses `workflows.run_stress_test`
+# (design D-9.2), so the guard's list will never contain WF3's own section and
+# WF3 has to declare it.
 CONFIG_PROJECTION = tuple(sorted(
-    set(guarded_sections)
-    | set(T1_READ_BY_WF3)
-    | {"workflows.run_stress_test"}
+    set(guarded_sections) | {"workflows.run_stress_test"}
 ))
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
 # the mapping every reader below already expects (R13 D-8.1). R(entry) is
 # {run_stress_test, build_model, analyze_projections} because the projection
-# above names those sections -- the same maintained literal the guard uses, so
+# above names those sections -- the same derived list the guard uses, so
 # the loader is one more consumer of it rather than a second copy.
 #
 # The result is REBOUND to the Snakefile-global `config`, deliberately and not
@@ -416,14 +418,28 @@ results_dir = f"{exp_dir}/results"
 # sections: an in-place edit to any guarded value flips this string and trips
 # the params rerun-trigger (§3c case (a)). A string digest — the form the §3c
 # probe verified — not raw nested dicts.
+# The lookups are DERIVED from `guarded_sections` rather than restated (P2,
+# design D-9.7). Written out, this was the third copy of the list and the second
+# one to omit `wflow_outvars` -- so an edit the guard refused did not re-fire the
+# guard, and the refusal arrived only because some other trigger happened to move.
+def _guarded_value(dotted):
+    """The live value at a dotted guarded path, or None when absent.
+
+    `None` for a missing section rather than a KeyError: this is a digest input,
+    and a config that omits an optional section must still produce a digest --
+    the guard is where absence is adjudicated.
+    """
+    node = config
+    for part in dotted.split("."):
+        if not isinstance(node, dict):
+            return None
+        node = node.get(part)
+    return node
+
+
 guarded_sections_digest = hashlib.sha256(
     json.dumps(
-        {
-            "project": config.get("project"),
-            "basin": config.get("basin"),
-            "workflows.build_model": config.get("workflows", {}).get("build_model"),
-            "workflows.analyze_projections": config.get("workflows", {}).get("analyze_projections"),
-        },
+        {path: _guarded_value(path) for path in guarded_sections},
         sort_keys=True,
         ensure_ascii=False,
         default=str,

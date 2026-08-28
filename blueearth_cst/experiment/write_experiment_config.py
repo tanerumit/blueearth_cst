@@ -44,11 +44,31 @@ class ExperimentConfigFrozenError(RuntimeError):
     """The experiment has already run; its configuration is settled."""
 
 
+#: Sections of `workflows.run_stress_test` that are NOT part of an experiment's
+#: identity (`C-79`, design D-9.3). One entry, and it needs a reason rather than
+#: a list to belong to: `compute:` answers "how do I fit this run on this
+#: machine", not "what am I running".
+_NOT_IDENTITY = ("compute",)
+
+
 def build_experiment_config(experiment: str, experiment_cfg) -> dict:
-    """The document: the id plus this experiment's own resolved section."""
+    """The document: the id plus this experiment's own resolved section.
+
+    `compute:` is dropped here, and dropping it HERE is the point. The design
+    says excluding it from `CONFIG_PROJECTION` takes it out of both the digest
+    and the freeze; that is true of the digest only. Rule 3.11 passes
+    `experiment_cfg = my_cfg` -- the whole WF3 section -- and this document is
+    built from that, so the projection never reaches it. Without this line
+    `batch_size` would leave `effective_config_digest` and still refuse an
+    already-run experiment through :func:`check_not_frozen`, which is the
+    failure `C-79` exists to remove.
+    """
+    section = dict(experiment_cfg or {})
+    for key in _NOT_IDENTITY:
+        section.pop(key, None)
     return {
         "experiment_name": experiment,
-        "run_stress_test": dict(experiment_cfg or {}),
+        "run_stress_test": section,
     }
 
 

@@ -12,7 +12,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
-from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
+from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, EXCLUSION_PREFIX, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retired_experiment_keys
 from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
@@ -76,9 +76,36 @@ guarded_sections = guarded_section_paths()
 # cannot supply: a WF1 snapshot never witnesses `workflows.run_stress_test`
 # (design D-9.2), so the guard's list will never contain WF3's own section and
 # WF3 has to declare it.
-CONFIG_PROJECTION = tuple(sorted(
+_PROJECTION_SELECT = tuple(sorted(
     set(guarded_sections) | {"workflows.run_stress_test"}
 ))
+
+# `C-79` / design D-9.3: `compute:` is EXCLUDED from configuration identity.
+#
+# The three batch knobs answer "how do I fit this run on this machine", not
+# "what am I running". Raising `batch_size` on a bigger box currently moves
+# `effective_config_digest` and lands in `_frozen_differences`, so it refuses an
+# already-run experiment for a change that cannot move a single number in it --
+# and the only way out is to start a new experiment, which discards results that
+# were never invalidated. `effective_config_document` already excludes
+# execution-only options by construction (`cores`, dry-run, verbosity);
+# `compute:` is the same class of thing, and it lives in the config only because
+# the values are worth recording.
+#
+# Declared as an EXCLUSION rather than pruned from the config on the way to the
+# digest, so the record says what it left out: `run_record.yml`'s `projection`
+# is this list verbatim. A projection that claimed `workflows.run_stress_test`
+# whole while the document silently omitted a child would be exactly the kind of
+# record that under-describes itself.
+#
+# `compose_config` gets the SELECTION only. Its `R(entry)` derivation reads
+# `s.split(".")[1] for s in declared_sections if s.startswith("workflows.")`,
+# which an exclusion happens to fall outside of -- but relying on that is
+# relying on a coincidence, and the loader has no business parsing a digest
+# vocabulary.
+CONFIG_PROJECTION = _PROJECTION_SELECT + (
+    f"{EXCLUSION_PREFIX}workflows.run_stress_test.compute",
+)
 
 # COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
 # workflow's settings live in its own file. This merges them back into exactly
@@ -93,7 +120,8 @@ CONFIG_PROJECTION = tuple(sorted(
 # leave the drift guard comparing a two-key stanza against a full recorded
 # section and failing rule 3.01 after WF1 and WF2 had already run.
 config, WORKFLOW_CONFIG_PATHS = compose_config(
-    config, config_path, entry="run_stress_test", declared_sections=CONFIG_PROJECTION,
+    config, config_path, entry="run_stress_test",
+    declared_sections=_PROJECTION_SELECT,
 )
 # Sorted so the declared input lists below do not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())

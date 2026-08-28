@@ -151,6 +151,34 @@ def file_sha256(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+#: How an exclusion is spelled inside a projection. One character, chosen so a
+#: projection stays a flat list of strings -- the run record's `projection`
+#: field is that list verbatim, and a nested {include, exclude} shape would
+#: change the recorded document for every workflow in order to express
+#: something only WF3 needs.
+EXCLUSION_PREFIX = "-"
+
+
+def _prune(node: Any, parts: Sequence[str]) -> Any:
+    """Return ``node`` without the key at ``parts``, copying only that spine.
+
+    Absent is fine, and deliberately so: an exclusion of a path the config never
+    declared prunes nothing and returns the node unchanged. Selection raises on
+    an absent path because a projection is a DECLARATION of what a workflow
+    reads; an exclusion is a declaration of what does not count as identity, and
+    a config that never set an optional key has nothing to disagree about.
+    """
+    if not isinstance(node, Mapping) or parts[0] not in node:
+        return node
+    head, rest = parts[0], parts[1:]
+    out = dict(node)
+    if not rest:
+        del out[head]
+    else:
+        out[head] = _prune(out[head], rest)
+    return out
+
+
 def project_config(
     config: Mapping[Any, Any], projection: Sequence[str]
 ) -> dict[str, Any]:
@@ -162,11 +190,28 @@ def project_config(
     the whole file is what stops an edit to one workflow's section from moving
     another workflow's digest.
 
+    A path may instead be an EXCLUSION, written with a leading ``-``:
+    ``-workflows.run_stress_test.compute`` selects the section and then prunes
+    that child from it. Two properties make this the right shape rather than a
+    caller-side prune of the config:
+
+    * the exclusion travels WITH the projection, so
+      :func:`effective_config_document` records it and the run record names what
+      it left out. A projection that claimed the whole section while the
+      document omitted a child would be a record that under-describes itself;
+    * an exclusion of an ABSENT path is a no-op rather than an error, which
+      selection deliberately is not. The excluded keys are the optional ones --
+      that is usually why they are excluded -- and a config that never declared
+      one must still produce a digest.
+
     Args:
         config: Parsed configuration mapping.
-        projection: Dotted paths to select. No path may be a prefix of another;
-            declaring both ``shared`` and ``shared.basin`` is ambiguous about
-            which one the digest covers.
+        projection: Dotted paths to select, and dotted paths prefixed with
+            ``-`` to prune afterwards. No selected path may be a prefix of
+            another; declaring both ``basin`` and ``basin.region`` is ambiguous
+            about which one the digest covers. An exclusion must fall INSIDE a
+            selected path, or it prunes nothing and is a typo rather than a
+            declaration.
 
     Returns:
         A nested mapping holding only the selected paths, shaped like the
@@ -175,7 +220,8 @@ def project_config(
     Raises:
         TypeError: If ``config`` is not a mapping, or a path is not a
             non-empty string.
-        ValueError: If two paths overlap.
+        ValueError: If two selected paths overlap, or an exclusion falls
+            outside every selected path.
         KeyError: If a declared path is absent from ``config``. This is loud on
             purpose: the projection is a DECLARATION by the Snakefile author
             about what the workflow reads, so a missing path is either a typo'd
@@ -186,10 +232,23 @@ def project_config(
     """
     if not isinstance(config, Mapping):
         raise TypeError("config must be a mapping")
-    paths = list(projection)
-    for path in paths:
+    declared = list(projection)
+    for path in declared:
         if not isinstance(path, str) or not path:
             raise TypeError("each projection path must be a non-empty string")
+    paths = [p for p in declared if not p.startswith(EXCLUSION_PREFIX)]
+    exclusions = [
+        p[len(EXCLUSION_PREFIX) :] for p in declared if p.startswith(EXCLUSION_PREFIX)
+    ]
+    for path in exclusions:
+        if not path:
+            raise TypeError("an exclusion must name a path, not just a prefix")
+        if not any(path == sel or path.startswith(f"{sel}.") for sel in paths):
+            raise ValueError(
+                f"projection excludes {path!r}, which no selected path "
+                "contains; it would prune nothing. Either select the section "
+                "it belongs to or drop the exclusion"
+            )
     for path in paths:
         for other in paths:
             if path is not other and other.startswith(f"{path}."):
@@ -214,7 +273,12 @@ def project_config(
         target = projected
         for part in parts[:-1]:
             target = target.setdefault(part, {})
+        # A COPY, because pruning below must not reach back into the caller's
+        # config. Shallow at each level is enough: `_prune` rebuilds every
+        # mapping it descends through.
         target[parts[-1]] = source
+    for path in exclusions:
+        projected = _prune(projected, path.split("."))
     return projected
 
 

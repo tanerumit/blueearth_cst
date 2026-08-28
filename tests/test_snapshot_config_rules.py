@@ -136,10 +136,19 @@ def test_wf3_derives_its_projection_from_the_guard_list():
     """
     text = (REPO / "run_stress_test.smk").read_text(encoding="utf-8")
 
-    assert "CONFIG_PROJECTION = tuple(sorted(" in text
+    assert "_PROJECTION_SELECT = tuple(sorted(" in text
     assert "set(guarded_sections)" in text
     assert '{"workflows.run_stress_test"}' in text
+    assert "CONFIG_PROJECTION = _PROJECTION_SELECT" in text
     assert "guarded_sections = guarded_section_paths()" in text
+    # `C-79`: the projection says what it leaves OUT. Pinned as text because
+    # this is a DECLARATION -- the behaviour it produces is asserted in
+    # test_shared_provenance.py, and both are needed: a digest can be right for
+    # a run while the record fails to say why.
+    assert '"-workflows.run_stress_test.compute"' in text or (
+        f"{'{'}EXCLUSION_PREFIX{'}'}workflows.run_stress_test.compute" in text
+    )
+    assert "declared_sections=_PROJECTION_SELECT" in text
     # P2 retired the WIDENING term. Under v1 the guard narrowed to
     # `shared.basin` to stay experiment-invariant, so the projection had to
     # widen it back to the whole of `shared`; R14 dissolved `shared:` and

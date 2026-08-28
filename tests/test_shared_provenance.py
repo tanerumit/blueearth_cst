@@ -1,5 +1,6 @@
 """Tests for deterministic shared CST provenance digests."""
 
+import copy
 from collections import OrderedDict
 from pathlib import Path
 
@@ -14,6 +15,7 @@ from blueearth_cst.shared.provenance import (
     canonical_sha256,
     configuration_inputs_digest,
     effective_config_digest,
+    effective_config_document,
     environment_file_hashes,
     file_sha256,
     project_config,
@@ -159,6 +161,88 @@ def test_project_config_rejects_overlapping_paths() -> None:
     """Declaring a section and its child leaves the covered scope ambiguous."""
     with pytest.raises(ValueError, match="overlap"):
         project_config(_CONFIG, ("shared", "shared.basin"))
+
+
+def test_a_projection_can_exclude_a_child_of_a_selected_path() -> None:
+    """`C-79`: the section is selected, one child is pruned from it.
+
+    The alternative -- enumerating the section's OTHER children -- is unsafe
+    here, because `project_config` raises on a declared path the config lacks
+    and the remaining children are optional. A config that omitted one would
+    stop parsing.
+    """
+    projected = project_config(_CONFIG, ("shared", "-shared.julia_threads"))
+
+    assert projected == {"shared": {"basin": "test"}}
+
+
+def test_excluding_a_path_the_config_lacks_is_a_no_op() -> None:
+    """Deliberately NOT the rule selection follows, and the asymmetry is the point.
+
+    Selection raises on an absent path because a projection DECLARES what a
+    workflow reads, so a missing one is a typo or a config missing a section it
+    needs. An exclusion declares what does not count as identity, and the keys
+    worth excluding are the optional ones -- a config that never set one has
+    nothing to disagree about and must still produce a digest.
+    """
+    projected = project_config(_CONFIG, ("project", "-project.compute"))
+
+    assert projected == {"project": {"project_dir": "out"}}
+
+
+def test_an_exclusion_outside_every_selected_path_is_refused() -> None:
+    """It would prune nothing, which makes it a typo rather than a declaration.
+
+    Silently accepting it is the failure worth refusing: the record would name
+    an exclusion that never happened, so a reader would believe a key was
+    outside configuration identity when it was inside it all along.
+    """
+    with pytest.raises(ValueError, match="would prune nothing"):
+        project_config(_CONFIG, ("project", "-shared.basin"))
+
+
+def test_pruning_does_not_reach_back_into_the_callers_config() -> None:
+    """The projection is a view; building one must not edit the config.
+
+    `config` is Snakemake's live mapping in the only caller that excludes
+    anything, and every rule downstream reads it. A prune that mutated it would
+    silently remove `compute:` from the batching code that resolves the run.
+    """
+    before = copy.deepcopy(_CONFIG)
+    project_config(_CONFIG, ("shared", "-shared.julia_threads"))
+
+    assert _CONFIG == before
+
+
+def test_the_recorded_document_names_the_exclusion() -> None:
+    """The record has to say what it left out, or it under-describes itself.
+
+    This is the whole reason the exclusion travels inside the projection rather
+    than being pruned from the config by the caller: a `projection` field that
+    claimed a section while the document omitted one of its children would be a
+    provenance record that quietly stops recording -- the failure the
+    projection mechanism exists to prevent.
+    """
+    document = effective_config_document(
+        _CONFIG, {}, ("shared", "-shared.julia_threads")
+    )
+
+    assert "-shared.julia_threads" in document["projection"]
+    assert "julia_threads" not in document["project_config"]["shared"]
+
+
+def test_an_excluded_key_does_not_move_the_digest() -> None:
+    """`C-79` stated as the behaviour a user notices.
+
+    Raising `batch_size` on a bigger machine must not change what the run is,
+    and the digest is where "what the run is" is decided.
+    """
+    other = copy.deepcopy(_CONFIG)
+    other["shared"]["julia_threads"] = 64
+
+    assert effective_config_digest(
+        _CONFIG, {}, ("shared", "-shared.julia_threads")
+    ) == effective_config_digest(other, {}, ("shared", "-shared.julia_threads"))
 
 
 def test_effective_config_digest_ignores_sections_outside_the_projection() -> None:

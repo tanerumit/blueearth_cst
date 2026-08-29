@@ -33,8 +33,13 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-CANONICAL_KINDS = frozenset({"rate", "state"})
-CHANGE_KINDS = frozenset({"relative", "absolute"})
+from blueearth_cst.shared.variable_registry import (
+    CANONICAL_KINDS,
+    CHANGE_KINDS,
+    VARIABLES,
+)
+
+__all__ = ["CANONICAL_KINDS", "CHANGE_KINDS", "VariableSpec", "parse", "source_names"]
 
 
 class VariableSpec(NamedTuple):
@@ -49,6 +54,55 @@ class VariableSpec(NamedTuple):
     @property
     def long_name(self) -> str:
         return f"{self.name} ({self.canonical}, {self.units})"
+
+
+def _resolve(name, body):
+    """Fill a bare ``precip:`` from the registry (`C-57`), or refuse saying how.
+
+    The SHORT form is a name with no body:
+
+    ```yaml
+    variables:
+      precip:
+      temp:
+    ```
+
+    which resolves to exactly what the long form would have said, from
+    ``shared/variable_registry.py``. The long form keeps working untouched: it
+    is the only way to declare a variable the registry has never heard of, and
+    removing it would make the registry a wall rather than a default.
+
+    **Two refusals, because there are two different faults**, and telling a user
+    the wrong remedy is worse than telling them nothing:
+
+    * a name the registry does not know -- add it to the registry, or declare it
+      in full here;
+    * a name the registry knows but does not DIFFERENCE, which today is ``pet``
+      -- it has presentation metadata and no projection spec, so "add it to the
+      registry" would be false advice about a variable that is already in it.
+    """
+    if body is not None:
+        return body
+    entry = VARIABLES.get(name)
+    if entry is None:
+        raise ValueError(
+            f"variables.{name} is declared with no body, which resolves it from "
+            f"the variable registry -- and {name!r} is not in it.\n"
+            "  Either add it to `blueearth_cst/shared/variable_registry.py`, or "
+            "declare it in full here:\n"
+            f"    {name}: {{source: ..., canonical: rate|state, units: ..., "
+            "change: relative|absolute}"
+        )
+    if entry.projections is None:
+        raise ValueError(
+            f"variables.{name} is declared with no body, and {name!r} IS in the "
+            "variable registry but carries no projection spec -- it is a "
+            "variable this toolbox plots and does not difference.\n"
+            "  Declare it in full here if WF2 should difference it:\n"
+            f"    {name}: {{source: ..., canonical: rate|state, units: ..., "
+            "change: relative|absolute}"
+        )
+    return dict(entry.projections._asdict())
 
 
 def parse(variables) -> dict[str, VariableSpec]:
@@ -79,6 +133,7 @@ def parse(variables) -> dict[str, VariableSpec]:
 
     spec: dict[str, VariableSpec] = {}
     for name, body in variables.items():
+        body = _resolve(name, body)
         if not isinstance(body, dict):
             raise ValueError(
                 f"variables.{name} must be a mapping with source/canonical/units/"

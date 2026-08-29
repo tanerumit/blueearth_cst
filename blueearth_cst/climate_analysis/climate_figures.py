@@ -75,31 +75,21 @@ from blueearth_cst.shared.snake_utils import (
     log_row,
     save_figure,
 )
+from blueearth_cst.shared.variable_registry import CLIMATE_VARS as _CLIMATE_VARS
 
 #: One entry per variable: label and unit for the axes, and how the variable
 #: aggregates in time. ``sum`` is a flux that accumulates (a yearly TOTAL);
 #: ``mean`` is a state that averages. Getting this wrong is not cosmetic -- a
 #: summed temperature is meaningless and a meaned rainfall understates by ~365x.
-CLIMATE_VARS = {
-    "precip": {
-        "label": "precipitation",
-        "unit": "mm",
-        "how": "sum",
-        "style": "precip",
-    },
-    "temp": {
-        "label": "air temperature",
-        "unit": "$\\degree$C",
-        "how": "mean",
-        "style": "temp",
-    },
-    "pet": {
-        "label": "potential evaporation",
-        "unit": "mm",
-        "how": "sum",
-        "style": "pet",
-    },
-}
+#:
+#: **Re-exported, not defined here** (R14 `C-57`). The same three variables were
+#: also described by every project's `variables:` block, in a second vocabulary
+#: that knew nothing about this one; `shared/variable_registry.py` is now the
+#: single record and this is its presentation view. The name and the value are
+#: unchanged, including insertion order, so every reader of this module is
+#: untouched. `C-49` -- getting the table out of Python altogether -- is a
+#: separate row and stays outside this phase.
+CLIMATE_VARS = _CLIMATE_VARS
 
 #: One entry per figure kind. ``map`` is the spatial view (climatological
 #: field), ``annual`` and ``monthly`` are the temporal views (domain mean).

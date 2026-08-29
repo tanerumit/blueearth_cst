@@ -116,7 +116,7 @@ produced** — see "Rebuilt tables" below.
 | `projected_climate_statistics.png` | `plots/cmip6_change_factor_cloud.png` | It is the ΔT/ΔP cloud, one point per combination. |
 | `{precipitation,temperature}_{anomaly,monthly}_projections_{abs,anom}.png` | `plots/cmip6_{precip,temp}_{annual,monthly}_{absolute,change}.png` | The old names contradicted their contents — `precipitation_anomaly_projections_abs.png` plots absolute levels, so "anomaly" sat in the filename of the non-anomaly figure. |
 
-The figure scheme is `{clim_project}_{variable}_{view}_{quantity}`, using the same
+The figure scheme is `{ensemble}_{variable}_{view}_{quantity}`, using the same
 `precip`/`temp` names as the config and the tables, and the same
 `absolute`/`change` distinction the tables draw.
 

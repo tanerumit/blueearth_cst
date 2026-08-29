@@ -80,6 +80,14 @@ class ProjectionSpec(NamedTuple):
     canonical: str
     units: str
     change: str
+    #: The near-zero threshold below which a reference value makes a RELATIVE
+    #: change meaningless (`C-64`). ``None`` for an absolute variable, which has
+    #: no denominator to be small. **Appended, and it has to stay last**:
+    #: `analyze_projections.smk` flattens the spec to a plain list to cross the
+    #: Snakemake params boundary and `derive_change_factors` rebuilds it with
+    #: ``VariableSpec(*fields)``, so a field inserted earlier would silently
+    #: shift every value after it.
+    min_denominator: float | None = None
 
 
 class Variable(NamedTuple):
@@ -104,7 +112,16 @@ VARIABLES: dict[str, Variable] = {
             label="precipitation", unit="mm", how="sum", style="precip"
         ),
         projections=ProjectionSpec(
-            source="precip", canonical="rate", units="mm/day", change="relative"
+            source="precip",
+            canonical="rate",
+            units="mm/day",
+            change="relative",
+            # A2, closing OQ-9: 0.1 mm/day. A month drier than this is a month
+            # where "30% more rain" describes nothing a reader should act on.
+            # Deliberately conservative and revisable by measurement without a
+            # design change. It was `dry_month.DEFAULT_MIN_REFERENCE` until
+            # `C-64`; the value is unchanged, only its home.
+            min_denominator=0.1,
         ),
     ),
     "temp": Variable(
@@ -112,7 +129,12 @@ VARIABLES: dict[str, Variable] = {
             label="air temperature", unit="$\\degree$C", how="mean", style="temp"
         ),
         projections=ProjectionSpec(
-            source="temp", canonical="state", units="degC", change="absolute"
+            source="temp",
+            canonical="state",
+            units="degC",
+            change="absolute",
+            # Absolute: there is no denominator, so no threshold. Left at the
+            # default rather than set to a number that would never be read.
         ),
     ),
     "pet": Variable(

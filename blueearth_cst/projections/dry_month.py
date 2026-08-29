@@ -27,9 +27,24 @@ The rule (A2, closing OQ-9):
 
 from __future__ import annotations
 
-#: A2, closing OQ-9. Keyed by the variable's canonical name, in its canonical
-#: units. Only variables shipped in the default configs get a default.
-DEFAULT_MIN_REFERENCE = {"precip": 0.1}
+from blueearth_cst.projections.variable_spec import VariableSpec
+
+#: `C-64` moved the shipped thresholds into `shared/variable_registry.py`, per
+#: variable, beside everything else that is true of that variable. What used to
+#: be `DEFAULT_MIN_REFERENCE = {"precip": 0.1}` is now
+#: `VARIABLES["precip"].projections.min_denominator`, and the VALUE is unchanged
+#: -- only its home. A second table here would be a second record of one fact,
+#: which is what D-10.6 and the registry exist to end.
+#:
+#: The positions below are derived rather than written down. Snakemake's params
+#: carry plain data, so `analyze_projections.smk` flattens each `VariableSpec`
+#: to a list and this module may receive either shape. Reading `fields[4]` for
+#: `change` -- which is what it used to do -- is correct only for as long as
+#: nobody adds a field, and a wrong index here does not raise: it reads some
+#: other string, compares unequal to "relative", and SKIPS the threshold check
+#: for every variable.
+_CHANGE_AT = VariableSpec._fields.index("change")
+_MIN_DENOMINATOR_AT = VariableSpec._fields.index("min_denominator")
 
 #: A2. A basin with a genuine dry season produces about one season of
 #: structurally flagged months as its NORMAL state; more than that means the
@@ -55,27 +70,51 @@ def resolve_thresholds(variable_spec, configured=None):
     configured = dict(configured or {})
     thresholds, missing = {}, []
     for name, spec in dict(variable_spec).items():
-        change = getattr(spec, "change", None)
-        if change is None:
-            fields = list(spec)
-            change = fields[4] if len(fields) > 4 else "absolute"
+        change = _field(spec, "change", _CHANGE_AT, default="absolute")
         if change != "relative":
             continue
-        if name in configured:
+        # Precedence, and the order is the point (`C-64`): an explicitly
+        # configured value beats the one the spec carries. The spec's value may
+        # itself have come from the config -- `variable_spec._threshold` already
+        # prefers a declared `min_denominator` over the registry's -- so this
+        # argument is the older surface, kept working while it still has a
+        # caller. Reversing the two would silently hand a project the shipped
+        # number in place of the one it set.
+        if name in configured and configured[name] is not None:
             thresholds[name] = float(configured[name])
-        elif name in DEFAULT_MIN_REFERENCE:
-            thresholds[name] = float(DEFAULT_MIN_REFERENCE[name])
+            continue
+        declared = _field(spec, "min_denominator", _MIN_DENOMINATOR_AT)
+        if declared is not None:
+            thresholds[name] = float(declared)
         else:
             missing.append(name)
     if missing:
         raise ThresholdError(
-            "relative_change.min_denominator is required for "
-            f"{sorted(missing)}: declared `change: relative` with no shipped "
-            "default. Set a threshold in that variable's own canonical units. "
-            f"Refusing to fall back to {DEFAULT_MIN_REFERENCE!r}, which would "
-            "apply a precipitation threshold to an unrelated quantity."
+            f"no `min_denominator` for {sorted(missing)}: declared "
+            "`change: relative` with no value in the variable registry and none "
+            "declared. Set one in that variable's own canonical units, either "
+            "in `variables.<name>.min_denominator` or in "
+            "`blueearth_cst/shared/variable_registry.py`.\n"
+            "  Refusing to borrow another variable's threshold: precipitation's "
+            "0.1 mm/day applied to an unrelated quantity in unrelated units is "
+            "a number, and it is not a meaningful one."
         )
     return thresholds
+
+
+def _field(spec, name, index, default=None):
+    """One field of a spec that may be a ``VariableSpec`` or a plain list.
+
+    Snakemake's params carry plain data, so both shapes reach this module. The
+    attribute is tried first and the position is the fallback; ``index`` is
+    derived from ``VariableSpec._fields`` above rather than written down.
+    """
+    value = getattr(spec, name, None)
+    if value is not None:
+        return value
+    if isinstance(spec, (list, tuple)):
+        return spec[index] if len(spec) > index else default
+    return default
 
 
 def is_flagged(reference_value, threshold) -> bool:

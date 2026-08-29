@@ -10,7 +10,8 @@ from __future__ import annotations
 import pytest
 
 from blueearth_cst.climate_analysis import climate_figures
-from blueearth_cst.projections.variable_spec import parse
+from blueearth_cst.projections.dry_month import ThresholdError, resolve_thresholds
+from blueearth_cst.projections.variable_spec import VariableSpec, parse
 from blueearth_cst.shared.variable_registry import (
     CLIMATE_VARS,
     VARIABLES,
@@ -167,3 +168,122 @@ def test_every_entry_is_well_formed(name):
     assert entry.projections.canonical in {"rate", "state"}
     assert entry.projections.change in {"relative", "absolute"}
     assert entry.projections.source and entry.projections.units
+
+
+# ---------------------------------------------------------------------------
+# `C-64` — the relative-change threshold is per-variable registry metadata
+# ---------------------------------------------------------------------------
+
+
+def test_the_shipped_threshold_moved_without_changing_value():
+    """`dry_month.DEFAULT_MIN_REFERENCE = {"precip": 0.1}` lived in code.
+
+    The row is a MOVE and the brief says a changed number is a defect rather
+    than a row landing, so the value is asserted here and not merely its
+    presence.
+    """
+    assert VARIABLES["precip"].projections.min_denominator == 0.1
+    assert VARIABLES["temp"].projections.min_denominator is None
+
+
+def test_every_shipped_config_still_gets_its_threshold():
+    """The regression that would have broken all four projects at once.
+
+    Every shipped config declares `precip` in the LONG form and none names a
+    threshold. Without the registry fallback in `_threshold`, `C-64` would take
+    `DEFAULT_MIN_REFERENCE` away and leave nothing behind, and WF2 would refuse
+    to build a DAG for every existing project on the next run.
+    """
+    assert resolve_thresholds(parse(LONG_FORM)) == {"precip": 0.1}
+
+
+def test_the_short_form_and_the_long_form_resolve_the_same_threshold():
+    assert resolve_thresholds(parse({"precip": None, "temp": None})) == {"precip": 0.1}
+
+
+def test_a_declared_threshold_beats_the_registry():
+    """The precedence `C-64` introduces, and the quiet failure if reversed.
+
+    Before this row there was no contest: the config was the only surface. Now
+    both a registry value and a declared value can exist, and the wrong order
+    hands a project the shipped number in place of the one it deliberately set
+    — a plausible result rather than an error, which nothing downstream would
+    question.
+    """
+    declared = dict(LONG_FORM["precip"], min_denominator=0.5)
+    assert resolve_thresholds(parse({"precip": declared})) == {"precip": 0.5}
+
+
+def test_a_relative_variable_outside_the_shipped_set_is_configurable():
+    """Falsifier 2, at the level a unit test can reach it.
+
+    This configuration was IMPOSSIBLE to express before P1c: `relative_change:`
+    is refused wholesale by `RETIRED_KEYS`, so a v2 project could declare a
+    non-`precip` relative variable and had nowhere to put its threshold. If this
+    were still impossible after the phase, `C-66` would have removed a
+    capability rather than moved it.
+    """
+    spec = parse(
+        {
+            "runoff": {
+                "source": "runoff",
+                "canonical": "rate",
+                "units": "mm/day",
+                "change": "relative",
+                "min_denominator": 0.05,
+            }
+        }
+    )
+    assert resolve_thresholds(spec) == {"runoff": 0.05}
+
+
+def test_a_relative_variable_with_no_threshold_anywhere_still_refuses():
+    """The refusal must survive the move, or the move removed a guard.
+
+    Borrowing precipitation's 0.1 mm/day for an unrelated quantity in unrelated
+    units produces a number, and not a meaningful one — which is why this raises
+    rather than defaulting.
+    """
+    spec = parse(
+        {
+            "runoff": {
+                "source": "runoff",
+                "canonical": "rate",
+                "units": "mm/day",
+                "change": "relative",
+            }
+        }
+    )
+    with pytest.raises(ThresholdError) as excinfo:
+        resolve_thresholds(spec)
+    message = str(excinfo.value)
+    assert "runoff" in message
+    # It must name a surface that EXISTS. The message used to say
+    # `relative_change.min_reference`, which `RETIRED_KEYS` refuses and `C-66`
+    # deletes — advice that sends a user to write a key the loader rejects.
+    assert "relative_change" not in message
+    assert "variables.<name>.min_denominator" in message
+
+
+@pytest.mark.parametrize("bad", [0, -1, "wide", [0.1]])
+def test_a_threshold_that_cannot_guard_a_denominator_refuses(bad):
+    """Zero admits the division the guard exists to prevent."""
+    with pytest.raises(ValueError, match="min_denominator"):
+        parse({"precip": dict(LONG_FORM["precip"], min_denominator=bad)})
+
+
+def test_the_threshold_survives_the_snakemake_params_boundary():
+    """`analyze_projections.smk` flattens the spec to a list to cross it.
+
+    `derive_change_factors` rebuilds it with `VariableSpec(*fields)` and
+    `resolve_thresholds` may see either shape. A field inserted anywhere but the
+    END shifts every value after it, and the failure is silent: `change` reads
+    as some other string, compares unequal to "relative", and the threshold
+    check is skipped for every variable rather than raising.
+    """
+    spec = parse(LONG_FORM)
+    flattened = {name: list(value) for name, value in spec.items()}
+
+    assert resolve_thresholds(flattened) == resolve_thresholds(spec)
+    assert VariableSpec._fields[-1] == "min_denominator"
+    assert VariableSpec._fields.index("change") == 4

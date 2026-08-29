@@ -50,10 +50,61 @@ class VariableSpec(NamedTuple):
     canonical: str
     units: str
     change: str
+    #: `C-64`. **Appended and must stay last** -- the params boundary flattens
+    #: this to a list and rebuilds it positionally.
+    min_denominator: float | None = None
 
     @property
     def long_name(self) -> str:
         return f"{self.name} ({self.canonical}, {self.units})"
+
+
+def _threshold(name, body):
+    """The relative-change threshold for ``name``: config first, registry second.
+
+    `C-64` moved the shipped defaults out of ``dry_month.DEFAULT_MIN_REFERENCE``
+    and into the registry, which introduces a precedence question that did not
+    exist before -- both a registry value and a declared value can now be
+    present. **The config wins.** The other order is the quiet failure: a
+    project that deliberately set a threshold would silently get the shipped
+    one, and the result is a plausible number rather than an error.
+
+    The registry fallback is what keeps every shipped config working. All four
+    declare `precip` in the LONG form and none of them names a threshold, so
+    without it `resolve_thresholds` would refuse every existing project on the
+    next run.
+
+    An unregistered variable that declares neither gets ``None`` and is refused
+    later, by name, in :func:`dry_month.resolve_thresholds` -- which is the
+    right place, because only there is it known whether the variable is
+    relative and therefore whether a threshold was needed at all.
+    """
+    # `is not None` rather than `in body`: the SHORT form resolves through
+    # `_resolve`, which hands back the registry entry whole -- including
+    # `min_denominator: None` for an absolute variable. Testing for the key's
+    # presence would read that null as a declared value and refuse `temp:`.
+    # It also gives an explicit `min_denominator: null` the only sensible
+    # meaning: defer to the registry.
+    if body.get("min_denominator") is not None:
+        value = body["min_denominator"]
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"variables.{name}.min_denominator must be a number; got {value!r}"
+            ) from None
+        if value <= 0:
+            raise ValueError(
+                f"variables.{name}.min_denominator must be > 0; got {value!r}. "
+                "It is a near-zero guard on the DENOMINATOR of a relative "
+                "change; zero or negative would admit the division it exists "
+                "to prevent."
+            )
+        return value
+    entry = VARIABLES.get(name)
+    if entry is not None and entry.projections is not None:
+        return entry.projections.min_denominator
+    return None
 
 
 def _resolve(name, body):
@@ -161,6 +212,7 @@ def parse(variables) -> dict[str, VariableSpec]:
             canonical=str(body["canonical"]),
             units=str(body["units"]),
             change=str(body["change"]),
+            min_denominator=_threshold(name, body),
         )
     return spec
 

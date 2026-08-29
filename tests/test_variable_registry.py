@@ -209,9 +209,17 @@ def test_a_declared_threshold_beats_the_registry():
     hands a project the shipped number in place of the one it deliberately set
     — a plausible result rather than an error, which nothing downstream would
     question.
+
+    Resolved at PARSE, in `variable_spec._threshold`, and asserted on the spec
+    as well as through the resolver: since `C-66` there is no second place where
+    a threshold could be overridden, so if this precedence is wrong it is wrong
+    everywhere at once.
     """
     declared = dict(LONG_FORM["precip"], min_denominator=0.5)
-    assert resolve_thresholds(parse({"precip": declared})) == {"precip": 0.5}
+    spec = parse({"precip": declared})
+
+    assert spec["precip"].min_denominator == 0.5
+    assert resolve_thresholds(spec) == {"precip": 0.5}
 
 
 def test_a_relative_variable_outside_the_shipped_set_is_configurable():

@@ -316,13 +316,16 @@ stats = get_config(my_cfg, "stats", None, optional=True)
 # apply a rainfall threshold to an unrelated quantity in unrelated units.
 from blueearth_cst.projections import dry_month as _dm
 
-_relative_cfg = get_config(my_cfg, "relative_change", {}, optional=True) or {}
-MIN_REFERENCE = _dm.resolve_thresholds(
-    # `C-62`: the key is `min_denominator` on the user surface. The LOCAL
-    # stays `MIN_REFERENCE` -- P1b's tier rule renames what names a key back
-    # to the user, not what a variable happens to be called here.
-    VARIABLE_SPEC, _relative_cfg.get("min_denominator")
-)
+# `C-66`: `relative_change:` is gone. Both of its keys have homes that fit them
+# better -- `min_denominator` is per-variable metadata on the variable itself
+# (`C-64`) and `max_flagged_months` is a toolbox constraint (`C-65`) -- so the
+# section had nothing left to hold. The threshold now arrives INSIDE the spec,
+# resolved at parse: a declared `variables.<name>.min_denominator` first, the
+# registry second.
+#
+# The LOCAL stays `MIN_REFERENCE`: P1b's tier rule renames what names a key back
+# to the user, not what a variable happens to be called here.
+MIN_REFERENCE = _dm.resolve_thresholds(VARIABLE_SPEC)
 # `C-65`: a toolbox CONSTRAINT, not a project setting. The threshold at which a
 # monthly relative product stops being reportable is a property of the method,
 # so no project may relax it -- which is why this reads from

@@ -17,22 +17,26 @@ from blueearth_cst.projections.dry_month import (
 from blueearth_cst.projections.variable_spec import parse
 from blueearth_cst.shared.variable_registry import VARIABLES
 
-SEED_SPEC = parse(
-    {
-        "precip": {
-            "source": "precip",
-            "canonical": "rate",
-            "units": "mm/day",
-            "change": "relative",
-        },
-        "temp": {
-            "source": "temp",
-            "canonical": "state",
-            "units": "degC",
-            "change": "absolute",
-        },
-    }
-)
+#: Named so a test can vary ONE field of it. Since `C-66` a threshold is
+#: declared inside the variable's own block rather than passed alongside the
+#: spec, so the override cases below have to build a config rather than pass an
+#: argument.
+SEED = {
+    "precip": {
+        "source": "precip",
+        "canonical": "rate",
+        "units": "mm/day",
+        "change": "relative",
+    },
+    "temp": {
+        "source": "temp",
+        "canonical": "state",
+        "units": "degC",
+        "change": "absolute",
+    },
+}
+
+SEED_SPEC = parse(SEED)
 
 
 # --- N1: strict, on both sides ------------------------------------------------
@@ -100,11 +104,24 @@ def test_N4_the_error_refuses_to_borrow_the_precip_default():
 
 
 def test_N4_supplying_the_threshold_resolves_it():
-    assert resolve_thresholds(parse(RUNOFF), {"runoff": 2.5})["runoff"] == 2.5
+    """N4's claim, through the surface that exists after `C-66`.
+
+    It used to pass the threshold as a second argument to `resolve_thresholds`,
+    which carried `relative_change.min_reference` from the config. That section
+    is dissolved and the argument with it, so the threshold is declared where
+    the variable is — which is the whole point of `C-64`.
+    """
+    supplied = {"runoff": dict(RUNOFF["runoff"], min_denominator=2.5)}
+    assert resolve_thresholds(parse(supplied))["runoff"] == 2.5
 
 
 def test_N4_a_configured_value_overrides_the_default():
-    assert resolve_thresholds(SEED_SPEC, {"precip": 0.05})["precip"] == 0.05
+    """And it still beats the registry's shipped 0.1 for `precip`."""
+    overridden = {
+        "precip": dict(SEED["precip"], min_denominator=0.05),
+        "temp": SEED["temp"],
+    }
+    assert resolve_thresholds(parse(overridden))["precip"] == 0.05
 
 
 # --- N5: max_flagged_months, strict -------------------------------------------

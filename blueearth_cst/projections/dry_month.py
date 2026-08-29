@@ -61,27 +61,25 @@ class ThresholdError(ValueError):
     """A relative variable whose near-zero threshold is unknown."""
 
 
-def resolve_thresholds(variable_spec, configured=None):
+def resolve_thresholds(variable_spec):
     """Threshold per RELATIVE variable, or raise naming the ones still unset.
 
     ``variable_spec`` maps name to a spec exposing ``.change``, or to the plain
     field list Snakemake params carry.
+
+    **One source since `C-66`.** There used to be a second argument carrying
+    ``relative_change.min_reference`` straight from the config, which made this
+    function the place where config beat default. That section no longer exists,
+    and the precedence moved with it: ``variable_spec._threshold`` resolves a
+    declared ``variables.<name>.min_denominator`` over the registry's value
+    before the spec is built, so by the time it arrives here the question has
+    been answered. Keeping the parameter would have left a second, quieter way
+    to override a threshold with no config path able to reach it.
     """
-    configured = dict(configured or {})
     thresholds, missing = {}, []
     for name, spec in dict(variable_spec).items():
         change = _field(spec, "change", _CHANGE_AT, default="absolute")
         if change != "relative":
-            continue
-        # Precedence, and the order is the point (`C-64`): an explicitly
-        # configured value beats the one the spec carries. The spec's value may
-        # itself have come from the config -- `variable_spec._threshold` already
-        # prefers a declared `min_denominator` over the registry's -- so this
-        # argument is the older surface, kept working while it still has a
-        # caller. Reversing the two would silently hand a project the shipped
-        # number in place of the one it set.
-        if name in configured and configured[name] is not None:
-            thresholds[name] = float(configured[name])
             continue
         declared = _field(spec, "min_denominator", _MIN_DENOMINATOR_AT)
         if declared is not None:

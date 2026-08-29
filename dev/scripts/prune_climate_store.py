@@ -45,7 +45,10 @@ sys.path.insert(0, str(REPO))
 
 import yaml  # noqa: E402
 
-from blueearth_cst.shared.snake_utils import slugify_window  # noqa: E402
+from blueearth_cst.shared.snake_utils import (  # noqa: E402
+    historical_window_bounds,
+    slugify_window,
+)
 
 #: The store root, project-root-relative. Kept as one constant because R09 P2
 #: moves it to ``data/climate/historical/`` — one edit, not a search.
@@ -59,10 +62,17 @@ def active_store_key(config: dict) -> str:
     keyed at day resolution. Derived rather than globbed, so a key the workflow
     would not produce counts as an orphan instead of as a second active store.
     """
-    shared = config["shared"]
-    window = shared["historical_window"]
-    return f"{shared['clim_historical']}_" + slugify_window(
-        window["starttime"], window["endtime"]
+    # v2 (`C-01`, `C-44`, `C-70`): `shared:` dissolved, so the source is
+    # `climate.selected` and the window is `climate.window` -- INCLUSIVE YEARS
+    # rather than ISO timestamps. The store key is still ISO at day resolution,
+    # so the conversion goes through the same helper `climate_store_rule` uses.
+    # Formatting the years here instead would be a second implementation of the
+    # key, free to drift from the one a run actually builds -- and a key that
+    # does not match makes the ACTIVE store look like an orphan, which this tool
+    # offers to delete.
+    start, end = historical_window_bounds(config["climate"]["window"])
+    return f"{config['climate']['selected']}_" + slugify_window(
+        start.isoformat(), end.isoformat()
     )
 
 

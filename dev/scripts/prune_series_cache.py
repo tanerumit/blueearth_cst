@@ -57,18 +57,31 @@ def expected_keys(config: dict) -> tuple[set[str], str, str]:
     """
     project = config["project"]
     my = config["workflows"]["analyze_projections"]
-    clim_project = my["clim_project"]
-    catalog_path = project["data_sources_climate"]
+    # v2: `clim_project` -> `ensemble` (`C-25`, value unchanged, so every cache
+    # filename this tool matches is unchanged too), and the climate catalog
+    # moved DOWN to the workflow that is its only reader (`C-39`).
+    clim_project = my["ensemble"]
+    catalog_path = my["catalog"]
 
     with open(REPO / catalog_path, encoding="utf-8") as handle:
         catalog = yaml.safe_load(handle)
 
+    # `C-63`: `members:` is a GROUP now -- `preference` is the list this key
+    # used to be, and `selection` / `overrides` were the flat
+    # `member_selection` / `member_overrides`. Passing the group whole would
+    # hand the resolver a mapping where it expects a list, and passing only
+    # `preference` would silently drop a project's per-model overrides: every
+    # overridden model would resolve to a different member, and the keys this
+    # tool calls orphaned would be the ones the next run needs.
+    members_cfg = my["members"] or {}
     combinations = res.resolve(
         catalog,
         clim_project=clim_project,
         models=my["models"],
         scenarios=my["scenarios"],
-        members=my["members"],
+        members=members_cfg["preference"],
+        selection=members_cfg.get("selection", res.FIRST_AVAILABLE),
+        overrides=members_cfg.get("overrides") or {},
     )
     needed = {(c.dataset, "historical", c.member) for c in combinations if c.resolved}
     needed |= {(c.dataset, c.scenario, c.member) for c in combinations if c.resolved}

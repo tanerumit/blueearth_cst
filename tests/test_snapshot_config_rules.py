@@ -33,19 +33,19 @@ def _rule_block(snakefile: Path, name: str) -> str:
     [
         (
             "build_model.smk",
-            "config/runs/snake_config_build_model.yml",
+            "config/runs/project_config_build_model.yml",
             "config/runs/build_model/run_record.yml",
         ),
         (
             "analyze_projections.smk",
-            "config/runs/snake_config_analyze_projections.yml",
+            "config/runs/project_config_analyze_projections.yml",
             "config/runs/analyze_projections/run_record.yml",
         ),
         (
             # WF3's record sits directly in the experiment's config bin, not
             # under a runs/ sub-bin: the experiment IS the partition (R2).
             "run_stress_test.smk",
-            "config/snake_config_run_stress_test.yml",
+            "config/project_config_run_stress_test.yml",
             "config/run_record.yml",
         ),
     ],

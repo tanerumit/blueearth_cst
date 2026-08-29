@@ -38,7 +38,7 @@ class SpatialSources:
 
 @dataclass(frozen=True)
 class SpatialConfig:
-    """Validated spatial-foundation settings resolved from the snake config."""
+    """Validated spatial-foundation settings resolved from the project config."""
 
     region: dict[str, Any]
     resolution: float

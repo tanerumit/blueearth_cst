@@ -162,7 +162,7 @@ each refactor a workflow. Otherwise each refactor has to decide on
 the fly which keys belong to which workflow, and the decisions
 accumulate inconsistently.
 
-**Scope.** Reorganize the snake config into three top-level sections
+**Scope.** Reorganize the project config into three top-level sections
 (`project`, `shared`, `workflows.<name>`); each Snakefile reads only
 its own section + shared. The contract-doc *format* is specified in
 the R1 design doc (§4); the per-workflow docs themselves are deferred
@@ -186,7 +186,7 @@ plugin registry.
 
 **Exit criteria.**
 - Three top-level config sections in place with a checked-in template
-  at `config/snake_config.template.yml`.
+  at `config/project_config.template.yml`.
 - All three Snakefiles read sectioned config; old flat reads removed.
 - `src/` scripts that read config directly (`prepare_cst_parameters`,
   `prepare_weagen_config`, `get_change_climate_proj`,
@@ -1184,7 +1184,7 @@ ruling 6 marked superseded.
 
 **Resolved across design v6–v8**, all toward what the code emits: the config
 snapshot **stays under `config/`** (the decider being that
-`config/runs/snake_config_build_model.yml` is a declared `input:` of WF3's
+`config/runs/project_config_build_model.yml` is a declared `input:` of WF3's
 drift guard, so it is a consumed contract artifact rather than an archive); the
 climate store **keeps its source+window cache key**; `cmip6/raw/` and `scalar/`
 are both kept, `scalar/` being R8's ruling S8-03; `change_factors/` stays as two

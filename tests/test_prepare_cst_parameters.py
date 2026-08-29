@@ -382,7 +382,7 @@ def _is_project_config(path: str) -> bool:
     """A PROJECT file is one whose top level declares `workflows:`.
 
     Discovery is a positive predicate rather than a filename glob because
-    since R13 the same `snake_config_*.yml` glob matches two file classes:
+    since R13 the same `project_config_*.yml` glob matches two file classes:
     project files and the per-workflow files they point at. The two cannot be
     separated by naming -- `.gitignore` tracks the seeds through that very
     glob, so any name it tracks, a glob also discovers.
@@ -397,7 +397,7 @@ def _is_project_config(path: str) -> bool:
 #: The shipped project configs, with node ids that do NOT embed the checkout
 #: path. Parametrising on the absolute path put `C:\\Users\\taner\\...` inside
 #: the node id, which made every id machine-specific: the same test is
-#: `[...\\test_case\\snake_config_rapid.yml]` locally, `[D:\\a\\...]` on the
+#: `[...\\test_case\\project_config_rapid.yml]` locally, `[D:\\a\\...]` on the
 #: windows runner and `[/home/runner/work/...]` on the ubuntu one.
 #:
 #: That is invisible while a suite only ever runs in one place, and it broke
@@ -407,8 +407,8 @@ def _is_project_config(path: str) -> bool:
 #: normalising at the comparison, so any future list of node ids is portable.
 _SHIPPED_CONFIGS = [
     path
-    for path in sorted(glob.glob(str(REPO_ROOT / "test_case" / "snake_config_*.yml")))
-    + [str(REPO_ROOT / "config" / "templates" / "snake_config.template.yml")]
+    for path in sorted(glob.glob(str(REPO_ROOT / "test_case" / "project_config_*.yml")))
+    + [str(REPO_ROOT / "config" / "templates" / "project_config.template.yml")]
     if _is_project_config(path)
 ]
 

@@ -174,10 +174,10 @@ format-check = { cmd = "ruff format --check .", description = "Fail if anything 
 # DAG validation, one per workflow. `--configfile` is pinned to the tracked test
 # config so the task is runnable from a fresh clone; pass a different one on the
 # CLI when working against another project config (see test_case/ for the shipped examples).
-dag-wf0 = { cmd = "snakemake all -c 3 -s analyze_climate.smk --configfile test_case/snake_config_baseline.yml --dry-run", description = "Dry-run wf0 (historical climate analysis) to validate the DAG" }
-dag-wf1 = { cmd = "snakemake all -c 3 -s build_model.smk --configfile test_case/snake_config_baseline.yml --dry-run", description = "Dry-run wf1 (model creation) to validate the DAG" }
-dag-wf2 = { cmd = "snakemake all -c 3 -s analyze_projections.smk --configfile test_case/snake_config_baseline.yml --dry-run", description = "Dry-run wf2 (climate projections) to validate the DAG" }
-dag-wf3 = { cmd = "snakemake all -c 3 -s run_stress_test.smk --configfile test_case/snake_config_baseline.yml --dry-run", description = "Dry-run wf3 (climate experiment) to validate the DAG" }
+dag-wf0 = { cmd = "snakemake all -c 3 -s analyze_climate.smk --configfile test_case/project_config_baseline.yml --dry-run", description = "Dry-run wf0 (historical climate analysis) to validate the DAG" }
+dag-wf1 = { cmd = "snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_baseline.yml --dry-run", description = "Dry-run wf1 (model creation) to validate the DAG" }
+dag-wf2 = { cmd = "snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_baseline.yml --dry-run", description = "Dry-run wf2 (climate projections) to validate the DAG" }
+dag-wf3 = { cmd = "snakemake all -c 3 -s run_stress_test.smk --configfile test_case/project_config_baseline.yml --dry-run", description = "Dry-run wf3 (climate experiment) to validate the DAG" }
 
 # Project-tree inspection (R09). Same shape as the dag-* tasks: `--config` is
 # pinned to the tracked test config so the task runs from a fresh clone, and a
@@ -190,7 +190,7 @@ dag-wf3 = { cmd = "snakemake all -c 3 -s run_stress_test.smk --configfile test_c
 # run in the primary checkout while the comparator lives in a task worktree),
 # pass `--project-dir` with an absolute path. See
 # dev/milestones/r09/observed-tier-runbook.md.
-tree-check = { cmd = "python dev/scripts/snapshot_project_tree.py --config test_case/snake_config_baseline.yml", description = "Snapshot a project_dir as a path list and check every path against the R09 path map (add --out to record it; nothing is written otherwise)" }
+tree-check = { cmd = "python dev/scripts/snapshot_project_tree.py --config test_case/project_config_baseline.yml", description = "Snapshot a project_dir as a path list and check every path against the R09 path map (add --out to record it; nothing is written otherwise)" }
 
 # `pixi install` does not install everything a run needs -- weathergenr comes
 # from `pixi run install` (remotes), as does the Julia env, and a console script
@@ -201,7 +201,7 @@ tree-check = { cmd = "python dev/scripts/snapshot_project_tree.py --config test_
 env-check = { cmd = "python dev/scripts/check_env.py", description = "Report whether this checkout's env can run the workflows (--all: every worktree)" }
 
 # The runner over the four workflow entry points, reachable without spelling out its path:
-#     pixi run run-workflows --config test_case/snake_config_rapid.yml
+#     pixi run run-workflows --config test_case/project_config_rapid.yml
 #     pixi run run-workflows --config <cfg> --cores 4 -- --dry-run
 #
 # `--config` is deliberately NOT pinned, unlike dag-* and tree-check above.

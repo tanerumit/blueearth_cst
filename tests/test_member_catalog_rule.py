@@ -31,7 +31,7 @@ import pytest
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 SNAKEFILE = "run_stress_test.smk"
 RULE_NAME = "downscale_climate_realization"

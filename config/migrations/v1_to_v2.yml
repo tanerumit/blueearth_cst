@@ -286,7 +286,7 @@ rows:
       The ONLY row that declares a `default_if_absent`, and it does so because
       `model:` is a REQUIRED v2 section: `CONFIG_PROJECTION` names it, so a
       config that never declared `wflow_outvars` migrates to one the loader
-      refuses. `snake_config_baseline_linux.yml` is exactly that config.
+      refuses. `project_config_baseline_linux.yml` is exactly that config.
 
       Writing the default is also the safer half of a known defect: WF1
       defaulted an absent `wflow_outvars` to these two variables while WF3

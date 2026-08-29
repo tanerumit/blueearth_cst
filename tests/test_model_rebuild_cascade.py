@@ -21,7 +21,7 @@ import pytest
 
 SNAKEDIR = Path(__file__).resolve().parents[1]
 SNAKEFILE = SNAKEDIR / "build_model.smk"
-CFG = SNAKEDIR / "test_case" / "snake_config_baseline.yml"
+CFG = SNAKEDIR / "test_case" / "project_config_baseline.yml"
 
 
 def _rule_block(name: str) -> str:

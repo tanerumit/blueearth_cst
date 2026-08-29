@@ -911,7 +911,7 @@ def _store_key() -> str:
     that was correct. Same lesson as the `_STORE_ROOT` block above: derive the
     location, never spell it.
     """
-    with open(join(_FIXTURE, "config", "runs", "snake_config_build_model.yml")) as f:
+    with open(join(_FIXTURE, "config", "runs", "project_config_build_model.yml")) as f:
         shared = yaml.safe_load(f)["shared"]
     window = shared["historical_window"]
     slug = slugify_window(window["starttime"], window["endtime"])
@@ -999,7 +999,7 @@ def test_wg5_catalog_grid_integration():
     catalog = _merged_member_catalog()
     if not catalog:
         pytest.skip(_TEMP_ABSENT)
-    with open(join(_EXP, "config", "snake_config_run_stress_test.yml")) as f:
+    with open(join(_EXP, "config", "project_config_run_stress_test.yml")) as f:
         snap = yaml.safe_load(f)
     exp_cfg = snap["workflows"]["run_stress_test"]
     rlz_num = exp_cfg["realizations_num"]

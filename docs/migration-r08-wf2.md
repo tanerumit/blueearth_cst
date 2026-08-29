@@ -323,7 +323,7 @@ downstream analysis over `change_factors/*` — deliberately not computed here.
 
 ## Recommended reference window
 
-`snake_config.template.yml` now recommends **1985–2014**: thirty years ending at
+`project_config.template.yml` now recommends **1985–2014**: thirty years ending at
 the last year the CMIP6 historical experiment covers. The range is inclusive, and
 with the default water year starting in January that is thirty complete
 hydrological years. Any other start month yields 29, with the partial years at

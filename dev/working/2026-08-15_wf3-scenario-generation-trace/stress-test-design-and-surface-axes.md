@@ -325,7 +325,7 @@ The two obligations this created, and what became of them:
    output CSV against `st_0`'s. A mismatch is itself a finding.
 
    **Done 2026-08-15. Mismatch. The reasoning was right about the FACTORS and
-   wrong about the TRANSFORM.** No run was needed: `snake_config_baseline.yml`
+   wrong about the TRANSFORM.** No run was needed: `project_config_baseline.yml`
    already has an identity member — temp `step_num: 1` (levels 0.0, 3.0), precip
    `step_num: 2` (levels 0.7, **1.0**, 1.3), variance flat — and with the grid's
    temp-outer/precip-inner order that is `st_2`, which `stress_test_design.csv`
@@ -426,7 +426,7 @@ Raised during the Q4 discussion and worth recording, because it looks like
 duplication and is not.
 
 `<exp>/config/experiment.yml` (rule 3.07) holds the experiment id plus the resolved
-`run_stress_test` section — a subset of what `snake_config_run_stress_test.yml`
+`run_stress_test` section — a subset of what `project_config_run_stress_test.yml`
 (rule 3.02) already snapshots. The difference is semantic: the snapshot **records**
 and is rewritten every invocation; `experiment.yml` **refuses**, and is immutable
 once the experiment has successfully run (`ExperimentConfigFrozenError`, marker =

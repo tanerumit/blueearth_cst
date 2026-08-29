@@ -202,7 +202,7 @@ class TestWholeSetMigration:
     These are the cases the unit tests above cannot reach: every one of them is
     about ORDER, and order only goes wrong once several rows touch one tree.
     Both were live bugs, found by running the mapping against
-    `test_case/snake_config_rapid.yml` rather than against a fixture built to
+    `test_case/project_config_rapid.yml` rather than against a fixture built to
     suit it.
     """
 
@@ -320,8 +320,8 @@ class TestTheTransaction:
         """Copy a whole config SET into tmp_path and return its T1 path.
 
         ``glob`` is explicit because the two shipped sets are named differently:
-        `test_case` uses `snake_config_rapid_<workflow>.yml` while
-        `config/templates` uses `snake_config.<workflow>.template.yml`, so no
+        `test_case` uses `project_config_rapid_<workflow>.yml` while
+        `config/templates` uses `project_config.<workflow>.template.yml`, so no
         single prefix pattern finds both.
         """
         root = pathlib.Path(__file__).resolve().parent.parent
@@ -348,9 +348,9 @@ class TestTheTransaction:
 
         t1 = self._copy_set(
             tmp_path,
-            "snake_config.template",
+            "project_config.template",
             "config/templates",
-            glob="snake_config.*.yml",
+            glob="project_config.*.yml",
         )
         before = {
             path.name: path.read_text(encoding="utf-8").count("\n#")

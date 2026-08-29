@@ -39,7 +39,7 @@ project once ran under, and no rule will regenerate it.
 
 Usage (from the repo root, inside pixi)::
 
-    python dev/scripts/prune_config_snapshots.py --config test_case/snake_config_baseline.yml
+    python dev/scripts/prune_config_snapshots.py --config test_case/project_config_baseline.yml
     python dev/scripts/prune_config_snapshots.py --config <cfg> --delete
 
 Not part of a run: this inspects and maintains a project tree

@@ -7,9 +7,9 @@ The toolbox has no command-line interface and no per-workflow settings files.
 Everything a run needs comes from **one configuration file**, passed to every
 workflow as `--configfile`.
 
-Start from `config/templates/snake_config.template.yml`, which annotates every
-option inline. `test_case/snake_config_baseline.yml` is a filled-in worked
-example, and `test_case/snake_config_rapid.yml` is the same basin sized for a
+Start from `config/templates/project_config.template.yml`, which annotates every
+option inline. `test_case/project_config_baseline.yml` is a filled-in worked
+example, and `test_case/project_config_rapid.yml` is the same basin sized for a
 quick end-to-end run.
 
 ::: {.callout-important}

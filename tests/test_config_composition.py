@@ -86,7 +86,7 @@ MINIMAL_T1_SECTIONS: dict = {
 
 def write_split(
     directory: Path,
-    stem: str = "snake_config_test",
+    stem: str = "project_config_test",
     sections: dict | None = None,
     bodies: dict[str, dict] | None = None,
     enabled: dict[str, bool] | None = None,
@@ -226,7 +226,7 @@ def test_empty_t2_file_is_accepted_as_no_settings(tmp_path):
     """A file that parses to ``None`` is a workflow with no settings, not an error."""
     directory = tmp_path / "cfg"
     t1_path = write_split(directory, bodies={"build_model": {"a": 1}})
-    (directory / "snake_config_test_build_model.yml").write_text("", encoding="utf-8")
+    (directory / "project_config_test_build_model.yml").write_text("", encoding="utf-8")
     assert compose(t1_path)["workflows"]["build_model"] == {"enabled": True}
 
 
@@ -361,7 +361,7 @@ def test_relative_config_path_is_anchored_at_t1_not_the_cwd(tmp_path, monkeypatc
 
     elsewhere = tmp_path / "cwd"
     elsewhere.mkdir()
-    (elsewhere / "snake_config_test_build_model.yml").write_text(
+    (elsewhere / "project_config_test_build_model.yml").write_text(
         yaml.safe_dump({"marker": "cwd"}), encoding="utf-8"
     )
     monkeypatch.chdir(elsewhere)
@@ -469,12 +469,12 @@ def test_missing_t2_file_names_the_path_the_anchor_and_the_doc(tmp_path):
     """
     directory = tmp_path / "cfg"
     t1_path = write_split(directory, bodies={"build_model": {"a": 1}})
-    (directory / "snake_config_test_build_model.yml").unlink()
+    (directory / "project_config_test_build_model.yml").unlink()
 
     with pytest.raises(ValueError) as excinfo:
         compose(t1_path)
     message = str(excinfo.value)
-    assert "snake_config_test_build_model.yml" in message
+    assert "project_config_test_build_model.yml" in message
     assert str(directory) in message
     assert cc.MIGRATION_DOC in message
 
@@ -482,7 +482,7 @@ def test_missing_t2_file_names_the_path_the_anchor_and_the_doc(tmp_path):
 def test_t2_file_that_is_not_a_mapping_is_refused(tmp_path):
     directory = tmp_path / "cfg"
     t1_path = write_split(directory, bodies={"build_model": {"a": 1}})
-    (directory / "snake_config_test_build_model.yml").write_text(
+    (directory / "project_config_test_build_model.yml").write_text(
         "- one\n- two\n", encoding="utf-8"
     )
     with pytest.raises(ValueError, match="not a mapping|list"):
@@ -492,7 +492,7 @@ def test_t2_file_that_is_not_a_mapping_is_refused(tmp_path):
 def test_unparseable_t2_file_is_refused_with_the_parser_reason(tmp_path):
     directory = tmp_path / "cfg"
     t1_path = write_split(directory, bodies={"build_model": {"a": 1}})
-    (directory / "snake_config_test_build_model.yml").write_text(
+    (directory / "project_config_test_build_model.yml").write_text(
         "a: [1, 2\nb: {\n", encoding="utf-8"
     )
     with pytest.raises(ValueError, match="not valid YAML"):
@@ -764,7 +764,7 @@ def test_a_broken_file_outside_scope_is_skipped_and_inside_scope_is_fatal(
         directory,
         bodies={"build_model": {"a": 1}, "run_stress_test": {"b": 2}},
     )
-    wf3_file = directory / "snake_config_test_run_stress_test.yml"
+    wf3_file = directory / "project_config_test_run_stress_test.yml"
     if breakage == "missing":
         wf3_file.unlink()
     elif breakage == "unparseable":
@@ -989,7 +989,7 @@ def test_a_broken_workflow_file_does_not_break_a_tool(tmp_path, capsys):
     t1_path = write_split(
         directory, bodies={"build_model": {"a": 1}, "run_stress_test": {"b": 2}}
     )
-    (directory / "snake_config_test_run_stress_test.yml").write_text(
+    (directory / "project_config_test_run_stress_test.yml").write_text(
         "a: [1, 2\n", encoding="utf-8"
     )
     composed = cc.load_composed_config(t1_path)
@@ -1044,7 +1044,7 @@ def test_write_config_round_trips_through_compose(tmp_path):
     """
     from tests.conftest import write_config
 
-    cfg = cc.load_composed_config(REPO_ROOT / "test_case/snake_config_rapid.yml")
+    cfg = cc.load_composed_config(REPO_ROOT / "test_case/project_config_rapid.yml")
     # A workflow-owned section, not a top-level one: with the hoist retired
     # (R14 D-10.1) a top-level key outside `T1_TOP_LEVEL` is a parse error, so
     # the round trip is exercised where a section can actually live.
@@ -1497,7 +1497,7 @@ def test_a_missing_config_path_names_deleting_the_key_as_the_fix(tmp_path):
     """
     directory = tmp_path / "cfg"
     t1_path = write_split(directory, bodies={"build_model": {"a": 1}})
-    (directory / "snake_config_test_build_model.yml").unlink()
+    (directory / "project_config_test_build_model.yml").unlink()
     with pytest.raises(ValueError) as excinfo:
         compose(t1_path)
     message = str(excinfo.value)

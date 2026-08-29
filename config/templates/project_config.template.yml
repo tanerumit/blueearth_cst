@@ -4,13 +4,19 @@
 # plus one file per workflow. Copy them all, renaming as you go, and point
 # Snakemake at the project file only:
 #
-#   snake_config.template.yml                  ->  snake_config_<project>.yml
-#   snake_config.build_model.template.yml      ->  snake_config_<project>_build_model.yml
-#   snake_config.analyze_projections.template.yml
-#                                              ->  snake_config_<project>_analyze_projections.yml
-#   snake_config.run_stress_test.template.yml  ->  snake_config_<project>_run_stress_test.yml
+#   project_config.template.yml                  ->  project_config.yml
+#   project_config.build_model.template.yml      ->  project_config_build_model.yml
+#   project_config.analyze_projections.template.yml
+#                                                ->  project_config_analyze_projections.yml
+#   project_config.run_stress_test.template.yml  ->  project_config_run_stress_test.yml
 #
-#   snakemake all -c 3 -s build_model.smk --configfile snake_config_<project>.yml
+#   snakemake all -c 3 -s build_model.smk --configfile project_config.yml
+#
+# No project name in the filename. Your directory already says which project
+# this is, and repeating it in four filenames buys nothing. The seeds shipped
+# in this repo's `test_case/` DO carry one — `project_config_rapid`,
+# `_baseline`, `_wf2_fast` — because they are several example sets sharing a
+# single directory, which is not the situation you are in.
 #
 # Then fix each `config_path:` below to name your renamed copy. Keep the whole
 # set in ONE directory: a `config_path` is resolved relative to THIS file, not
@@ -29,7 +35,7 @@
 # Commented-out keys are optional and show their default.
 #
 # Why the defaults are what they are: config/templates/README.md.
-# A filled-in example: test_case/snake_config_baseline.yml.
+# A filled-in example: test_case/project_config_baseline.yml.
 
 project:
   project_dir: /path/to/my_project                        # path — absolute, outside the repo
@@ -69,15 +75,15 @@ workflows:
     enabled: true                                         # boolean
   build_model:
     enabled: true                                         # boolean
-    config_path: snake_config.build_model.template.yml
+    config_path: project_config.build_model.template.yml
 
   analyze_projections:
     enabled: true                                         # boolean
-    config_path: snake_config.analyze_projections.template.yml
+    config_path: project_config.analyze_projections.template.yml
 
   run_stress_test:
     enabled: true                                         # boolean
-    config_path: snake_config.run_stress_test.template.yml
+    config_path: project_config.run_stress_test.template.yml
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"    # text — hydromt region spec
   resolution: 0.00833333                                  # numeric — degrees (1/120 = 30 arcsec)

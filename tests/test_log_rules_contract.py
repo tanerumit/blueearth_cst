@@ -44,7 +44,7 @@ from blueearth_cst.shared.config_composition import load_composed_config
 from tests.conftest import write_config
 
 SNAKEDIR = Path(__file__).resolve().parents[1]
-CONFIG_FN = Path(__file__).resolve().parent / "snake_config_fixture.yml"
+CONFIG_FN = Path(__file__).resolve().parent / "project_config_fixture.yml"
 
 #: Every entry point, with the module-level list naming its log sections.
 WORKFLOWS = [
@@ -186,7 +186,7 @@ def config_paths(tmp_path_factory) -> dict[str, Path]:
     # list with no privileged element, so the selected source is a member of it.
     cfg["climate"]["sources"] = [cfg["climate"]["selected"], "chirps"]
     path = write_config(
-        tmp_path_factory.mktemp("log_rules"), cfg, stem="snake_config_two_sources"
+        tmp_path_factory.mktemp("log_rules"), cfg, stem="project_config_two_sources"
     )
     return {"default": CONFIG_FN, "two_source": path}
 

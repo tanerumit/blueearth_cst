@@ -26,7 +26,7 @@ _BASIN_DATASET_KEYS = (
 
 
 def _check_basin_dataset_agreement(
-    template_path, basemaps_kwargs, hydrography, basin_index, snake_config_path
+    template_path, basemaps_kwargs, hydrography, basin_index, project_config_path
 ):
     """Raise when the build template and ``shared.basin`` name different datasets.
 
@@ -48,7 +48,7 @@ def _check_basin_dataset_agreement(
     supplied = {"hydrography": hydrography, "basin_index": basin_index}
     mismatches = [
         f"{template_path} setup_basemaps.{tmpl_key}="
-        f"{basemaps_kwargs[tmpl_key]!r} vs {snake_config_path} "
+        f"{basemaps_kwargs[tmpl_key]!r} vs {project_config_path} "
         f"shared.basin.{cfg_key}={supplied[cfg_key]!r}"
         for tmpl_key, cfg_key in _BASIN_DATASET_KEYS
         if supplied[cfg_key] is not None
@@ -57,7 +57,7 @@ def _check_basin_dataset_agreement(
     ]
     if mismatches:
         raise RuntimeError(
-            "Build template and snake config disagree on the basin datasets: "
+            "Build template and project config disagree on the basin datasets: "
             + "; ".join(mismatches)
             + ". The climate store's delineation and the Wflow build must use "
             "the same hydrography; edit one side so both name the same catalog "
@@ -72,7 +72,7 @@ def merge_build_config(
     model_region,
     hydrography=None,
     basin_index=None,
-    snake_config_path="the snake config",
+    project_config_path="the project config",
 ):
     """Merge region/resolution into the template's setup_basemaps step.
 
@@ -86,7 +86,7 @@ def merge_build_config(
         Value for ``setup_basemaps.res`` (coerced to float).
     model_region : dict | str
         Value for ``setup_basemaps.region``. May be a Python-dict-literal
-        string (as it arrives from the snake config, e.g.
+        string (as it arrives from the project config, e.g.
         ``"{'subbasin': [9.666, 0.4476], 'uparea': 100}"``); parsed via
         ``ast.literal_eval`` so it serializes as proper YAML.
     hydrography, basin_index : str, optional
@@ -95,7 +95,7 @@ def merge_build_config(
         given, they are cross-checked against the template's
         ``setup_basemaps.hydrography_fn`` / ``basin_index_fn`` and a
         disagreement raises. Never injected into the generated build config.
-    snake_config_path : str | os.PathLike, optional
+    project_config_path : str | os.PathLike, optional
         Named in the cross-check error so the message points at both files.
 
     Raises
@@ -124,7 +124,7 @@ def merge_build_config(
     # Cross-check BEFORE writing anything, so a disagreement never leaves a
     # generated config on disk.
     _check_basin_dataset_agreement(
-        template_path, kwargs, hydrography, basin_index, snake_config_path
+        template_path, kwargs, hydrography, basin_index, project_config_path
     )
     kwargs["region"] = model_region
     kwargs["res"] = float(model_resolution)
@@ -148,7 +148,7 @@ if __name__ == "__main__":
                 model_region=sm.params.model_region,
                 hydrography=sm.params.hydrography,
                 basin_index=sm.params.basin_index,
-                snake_config_path=sm.params.snake_config,
+                project_config_path=sm.params.project_config,
             )
             log_row(
                 f"Prepared hydromt build config "

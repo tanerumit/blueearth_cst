@@ -76,12 +76,12 @@ To change what a run does, edit the **source config** you pass to
 
 | File | What it is |
 |---|---|
-| `snake_config_<workflow>.yml` | that workflow's composed configuration -- see below |
+| `project_config_<workflow>.yml` | that workflow's composed configuration -- see below |
 | `<workflow>/run_record.yml` | what the run resolved to: toolbox commit, environment hashes, the settings actually consumed, and the external inputs referenced |
 | `journal.jsonl` | append-only ledger, two lines per run (start and outcome) |
 | `invocations/` | one manifest per `scripts/run_workflows.py` invocation |
 
-## What the four `snake_config_<workflow>.yml` files hold
+## What the four `project_config_<workflow>.yml` files hold
 
 Each is that workflow's **composed** configuration: the project file you passed
 to `--configfile`, with the per-workflow settings files it loaded merged back
@@ -171,7 +171,7 @@ def copy_config_files(
     projection: Optional[Sequence[str]] = None,
 ):
     """
-    Snapshot the snake config and its referenced config files into project_dir.
+    Snapshot the project config and its referenced config files into project_dir.
 
     R07 B9 changed this from "one derived output directory" to explicit
     per-file routing, because the project config snapshot is now split by
@@ -195,7 +195,7 @@ def copy_config_files(
         keep hashing the file the user invoked, and the run header and error
         messages must keep naming it.
     config_out_path : Union[str, Path]
-        FULL destination path for the snake config snapshot (the rule declares
+        FULL destination path for the project config snapshot (the rule declares
         it, so the bin choice lives in the Snakefile rather than here)
     composed_config : Mapping, optional
         the workflow's COMPOSED config -- the project file plus the
@@ -588,7 +588,7 @@ if __name__ == "__main__":
 
         # R07 B9: the project config snapshot is split by KIND, so this is a
         # signature change rather than a rename -- one derived output_dir can
-        # no longer serve. The snake config lands where the rule declared it
+        # no longer serve. The project config lands where the rule declared it
         # (config/runs/, or the experiment dir for wf3); catalogs go to
         # config/catalogs/; verbatim snapshots of shipped templates go to
         # config/templates/. Generated run-time configs live in

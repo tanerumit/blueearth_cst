@@ -506,8 +506,8 @@ CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(
 # snapshot-only content change re-trigger the guard despite ancient() (§3c
 # case (b)), while keeping a fresh project parse/--dry-run/--unlock clean
 # (ext2-2).
-wf1_snapshot_path = f"{project_dir}/config/runs/snake_config_build_model.yml"
-wf2_snapshot_path = f"{project_dir}/config/runs/snake_config_analyze_projections.yml"
+wf1_snapshot_path = f"{project_dir}/config/runs/project_config_build_model.yml"
+wf2_snapshot_path = f"{project_dir}/config/runs/project_config_analyze_projections.yml"
 wf1_snapshot_digest = file_digest_or_absent(wf1_snapshot_path)
 wf2_snapshot_digest = file_digest_or_absent(wf2_snapshot_path)
 
@@ -663,7 +663,7 @@ INDICATOR_TABLES = indicator_tables(
 WF3_TARGETS = {
     **{f"{token}_indicators": f"{results_dir}/{fname}"
        for token, fname in INDICATOR_TABLES.items()},
-    "snake_config": f"{exp_dir}/config/snake_config_run_stress_test.yml",
+    "project_config": f"{exp_dir}/config/project_config_run_stress_test.yml",
     # The staleness sidecar (3.16b). A target entry, not merely a declared
     # output: no rule reads a sidecar, so without this it would never build --
     # the same reachability argument the lookup makes below.
@@ -756,7 +756,7 @@ rule snapshot_config:
         # Recorded, never copied -- their content is inlined above (D-11.2).
         workflow_config_paths = WORKFLOW_CONFIG_PATHS,
     output:
-        config_snake_out = f"{exp_dir}/config/snake_config_run_stress_test.yml",
+        config_snake_out = f"{exp_dir}/config/project_config_run_stress_test.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"

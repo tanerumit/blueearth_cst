@@ -2143,7 +2143,7 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
 #: ONE definition because WF1 and WF3 both default it: WF1 to these two,
 #: WF3 to `[]` until 2026-08-13 — and `[]` means zero indicator tables with
 #: no error, so a config omitting the key ran to completion and wrote
-#: nothing. `snake_config_baseline_linux.yml` omits it, so that was a
+#: nothing. `project_config_baseline_linux.yml` omits it, so that was a
 #: shipped reproducer.
 DEFAULT_WFLOW_OUTVARS = ["river discharge", "actual evapotranspiration"]
 
@@ -4857,7 +4857,7 @@ def run_header(workflow, project_dir, config_path=None, **details):
     row that was not, so a block whose whole purpose is to state paths mixed
     ``C:\\a\\b`` with ``a/b`` and read as two trees. ``config`` is also printed
     through the repo strip that every rule log line already uses, so it reads
-    ``<repo>/test_case/snake_config_rapid.yml`` rather than the same fact
+    ``<repo>/test_case/project_config_rapid.yml`` rather than the same fact
     behind 60 characters of machine-specific prefix.
     """
     # Forward slashes, like every path the folder rows below and the log

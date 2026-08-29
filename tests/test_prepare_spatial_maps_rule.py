@@ -10,7 +10,7 @@ import pytest
 
 REPO = Path(__file__).resolve().parents[1]
 SNAKEFILE = REPO / "build_model.smk"
-CONFIG = REPO / "tests" / "snake_config_fixture.yml"
+CONFIG = REPO / "tests" / "project_config_fixture.yml"
 
 
 def _rule_block(name: str) -> str:

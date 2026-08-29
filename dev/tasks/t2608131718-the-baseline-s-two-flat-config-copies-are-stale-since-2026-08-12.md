@@ -25,12 +25,12 @@ then `check_baseline.py check`:
 - **6 of 7 targets match**, including `run_default/output.csv` (the wflow
   discharge, tolerance comparator) and `results/q_indicators.csv`. Defect H is
   therefore value-neutral **in fact**, not only in argument.
-- **1 target differs**: `config/runs/snake_config_model_creation.yml`.
+- **1 target differs**: `config/runs/project_config_model_creation.yml`.
 
 ## Why it differs, and why it is not the redesign's doing
 
 The manifest was recorded at `9285ae6` (2026-08-12). Three commits have since
-changed `test_case/snake_config_baseline.yml`, which both flat copies are
+changed `test_case/project_config_baseline.yml`, which both flat copies are
 verbatim copies OF:
 
 - `07a994d` — spell factors moved into `stress_test`

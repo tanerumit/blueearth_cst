@@ -39,7 +39,7 @@ pytestmark = pytest.mark.workflow_contract
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 CATALOG_FN = TESTDIR / "data" / "tests_data_catalog.yml"
 
 SNAKEFILES = ("build_model.smk", "run_stress_test.smk")
@@ -62,7 +62,7 @@ def staged_store(tmp_path):
 
     cfg["project"]["project_dir"] = project_dir.as_posix()
     cfg["project"]["catalog"] = catalog.as_posix()
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_staged")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_staged")
 
     # Store key exactly as climate_store_rule builds it.
 

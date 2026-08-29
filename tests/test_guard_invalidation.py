@@ -36,7 +36,7 @@ pytestmark = pytest.mark.workflow_contract
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 sys.path.insert(0, str(SNAKEDIR / "dev" / "scripts"))
 import cross_workflow_inputs as cwi  # noqa: E402
@@ -103,10 +103,10 @@ def staged_project(tmp_path):
     config_text = yaml.safe_dump(base)
     cwi.stage(pdir, config_text, extras=(cwi.EXTRA_REGION, cwi.EXTRA_WF2_SNAPSHOT))
     snap_dir = pdir / "config" / "runs"
-    wf1 = snap_dir / "snake_config_build_model.yml"
-    wf2 = snap_dir / "snake_config_analyze_projections.yml"
+    wf1 = snap_dir / "project_config_build_model.yml"
+    wf2 = snap_dir / "project_config_analyze_projections.yml"
 
-    cfg_path = write_config(tmp_path, base, stem="snake_config_staged")
+    cfg_path = write_config(tmp_path, base, stem="project_config_staged")
 
     # exp_dir as defined in run_stress_test.smk (commit 2 moved it to
     # experiments/<name>/).
@@ -212,7 +212,7 @@ def test_2c_fresh_project_missing_wf1_snapshot(staged_project):
     combined = (result.stdout or "") + (result.stderr or "")
     assert result.returncode != 0, combined
     assert "MissingInputException" in combined, combined
-    assert "snake_config_build_model.yml" in combined, combined
+    assert "project_config_build_model.yml" in combined, combined
     assert "Traceback" not in combined, combined
 
     # (ii) --unlock with the snapshot absent. DEVIATION from design gate

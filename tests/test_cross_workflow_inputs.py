@@ -35,7 +35,7 @@ pytestmark = pytest.mark.workflow_contract
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 sys.path.insert(0, str(SNAKEDIR / "dev" / "scripts"))
 import cross_workflow_inputs as cwi  # noqa: E402
@@ -68,7 +68,7 @@ def _staged_config(tmp_path: Path, leaves) -> Path:
     # The --configfile target is written SPLIT; `config_text` above stays
     # whole because it is staged as the wf1 project SNAPSHOT, which the
     # drift guard compares against the composed live config.
-    return write_config(tmp_path, base, stem="snake_config_staged")
+    return write_config(tmp_path, base, stem="project_config_staged")
 
 
 def _dry_run(snakefile: str, config_path: Path) -> subprocess.CompletedProcess:

@@ -62,7 +62,7 @@ module docstring for why each exists. But it means "7/7 green" is not "no byte
 moved", and for the two tolerance targets this file is the only byte-level
 record anywhere.
 
-The three `snake_config_*.yml` snapshot targets are **excluded by design**. A
+The three `project_config_*.yml` snapshot targets are **excluded by design**. A
 config migration renames and rewrites them, so they are re-recorded rather than
 defended — the precedent is R13's, where *"the split moved the two narrow config
 snapshots, the hoist moved all three, and zero data targets moved in either"*

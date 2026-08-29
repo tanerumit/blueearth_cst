@@ -134,7 +134,7 @@ waterbodies, outputs, runtime, and forcing.
 - `{basin_dir}/forcing/plots/forcing_precip_map.png` (model inputs)
 - `{project_dir}/data/climate/historical/<key>/plots/source_{precip,temp,pet}.png`
   (source-grid figures from the shared store; produced with no model)
-- `{project_dir}/config/runs/snake_config_build_model.yml` (verbatim snake-config snapshot)
+- `{project_dir}/config/runs/project_config_build_model.yml` (verbatim snake-config snapshot)
 - `{project_dir}/data/spatial/spatial_catalog.yml` (representative target for the
   complete rule-1.02 spatial product)
 
@@ -211,9 +211,9 @@ manifest paths must be basin-independent (see design §4). The CSV column
 
 ## `wflow_outvars` output set (known discrepancy — documented, not fixed in R3)
 
-- Canonical `config/snake_config_model_test.yml`: `['river discharge']` — the
+- Canonical `config/project_config_model_test.yml`: `['river discharge']` — the
   minimal set (outlet Q only).
-- Pytest fixture `tests/snake_config_model_test.yml`: all six mapped variables
+- Pytest fixture `tests/project_config_model_test.yml`: all six mapped variables
   (`river discharge`, `precipitation`, `overland flow`,
   `actual evapotranspiration`, `groundwater recharge`, `snow`).
 

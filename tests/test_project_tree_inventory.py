@@ -66,8 +66,8 @@ COVERED: dict[str, list[str]] = {
         f"benchmarks/_parts/{E}/3.16_derive_wflow_indicators.tsv",
     ],
     "config": [
-        "config/runs/snake_config_build_model.yml",
-        "config/runs/snake_config_analyze_projections.yml",
+        "config/runs/project_config_build_model.yml",
+        "config/runs/project_config_analyze_projections.yml",
         # The wrapper's per-invocation manifest. Not reachable through the
         # `config/runs/<workflow>/<digest>/` regex below -- it sits DIRECTLY
         # under `invocations/`, with no digest level -- so it carries its own
@@ -166,7 +166,7 @@ COVERED: dict[str, list[str]] = {
     ],
     "experiments": [
         f"experiments/{E}/.project_consistency_ok",
-        f"experiments/{E}/config/snake_config_run_stress_test.yml",
+        f"experiments/{E}/config/project_config_run_stress_test.yml",
         f"experiments/{E}/config/model_reference.yml",
         f"experiments/{E}/config/experiment.yml",
         # No row for a generated climate catalog. Rule 3.13 wrote one naming

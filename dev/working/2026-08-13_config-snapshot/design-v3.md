@@ -65,8 +65,8 @@ Rule `X.01 snapshot_config` in each Snakefile (script:
 `blueearth_cst/model/copy_config_files.py`) writes **two tiers**.
 
 **Tier A — mutable "current copies"**, overwritten every run:
-`<project_dir>/config/runs/snake_config_<workflow>.yml` (WF1, WF2),
-`<exp_dir>/config/snake_config_climate_experiment.yml` (WF3), plus verbatim
+`<project_dir>/config/runs/project_config_<workflow>.yml` (WF1, WF2),
+`<exp_dir>/config/project_config_climate_experiment.yml` (WF3), plus verbatim
 copies of every referenced catalog, build template and observation file into
 `config/{catalogs,templates,observations}/`.
 
@@ -105,7 +105,7 @@ that no longer exists in the repo.
 ## 3. Problems identified
 
 - **P1** — Per-workflow naming promises a projection the content does not
-  deliver. `snake_config_model_creation.yml` is a verbatim copy of the whole
+  deliver. `project_config_model_creation.yml` is a verbatim copy of the whole
   configfile. `provenance.py:137` returns `{"project_config": config, ...}` with
   `config` the entire parsed configfile.
 - **P2** — The bundle digest is a function of configuration the workflow never
@@ -683,8 +683,8 @@ without minting a bundle.
 <project_dir>/config/
   observations/                              (only when the R4 predicate says copy)
   runs/
-    snake_config_model_creation.yml          UNCHANGED PATH
-    snake_config_climate_projections.yml     UNCHANGED PATH
+    project_config_model_creation.yml          UNCHANGED PATH
+    project_config_climate_projections.yml     UNCHANGED PATH
     model_creation/run_record.yml
     climate_projections/run_record.yml
     journal.jsonl                            (undeclared side effect, §5.7)
@@ -696,7 +696,7 @@ without minting a bundle.
   hydromt_update_waterbodies.yml             NEW — values used, rule 1.08 (§5.6)
   evaluation/run_metadata.json               NEW — staleness sidecar (§5.8)
 <exp_dir>/config/
-  snake_config_climate_experiment.yml        UNCHANGED PATH
+  project_config_climate_experiment.yml        UNCHANGED PATH
   run_record.yml
   catalogs/data_catalog_climate_experiment.yml   (generated — kept, §5.5)
 <exp_dir>/results/
@@ -705,7 +705,7 @@ without minting a bundle.
 
 **The three flat copies keep their exact paths.** The baseline fingerprints
 three of them — the two project-scope copies *and*
-`experiments/experiment/config/snake_config_climate_experiment.yml` — all
+`experiments/experiment/config/project_config_climate_experiment.yml` — all
 unchanged in path and content. Every artifact this design adds is a **new
 file** outside the manifest, and the one fingerprinted file §5.8 could have
 touched (`q_indicators.csv`) is explicitly untouched. **No baseline re-record
@@ -743,7 +743,7 @@ record is per-run already.
 
 **`config/runs/README.md`** states "everything here is written by the run; edit
 the source config instead" — addressing the one genuine trap, that
-`snake_config_model_creation.yml` looks editable and silently is not — and
+`project_config_model_creation.yml` looks editable and silently is not — and
 carries the §5.4 digest contracts and comparability rule. Per-bin READMEs are
 the house pattern.
 

@@ -51,7 +51,7 @@ def _dry_run(config_path):
 @pytest.fixture
 def seed_config():
     """The seed as ONE whole mapping, composed from its T1 + T2 files."""
-    return load_composed_config(REPO / "test_case/snake_config_wf2_fast.yml")
+    return load_composed_config(REPO / "test_case/project_config_wf2_fast.yml")
 
 
 def _write(tmp_path, cfg, name="cfg"):
@@ -104,7 +104,7 @@ def test_no_shipped_config_carries_a_gridded_key():
     # over a missing directory yields nothing at all). Hence the explicit
     # emptiness guard below.
     roots = (REPO / "config/templates", REPO / "test_case")
-    cfg_paths = sorted(p for root in roots for p in root.rglob("snake_config*.yml"))
+    cfg_paths = sorted(p for root in roots for p in root.rglob("project_config*.yml"))
     assert len(cfg_paths) >= 5, (
         f"expected to find the shipped configs, found {len(cfg_paths)}: "
         f"{[str(p) for p in cfg_paths]} -- if they moved again, update `roots`"

@@ -1,6 +1,6 @@
 # A hand-written v2 project config — P1's acceptance fixture.
 #
-# NOT a migration of `tests/snake_config_fixture.yml`, which P4 owns and
+# NOT a migration of `tests/project_config_fixture.yml`, which P4 owns and
 # migrates with the rewriter. This file exists for one claim: that the v2 SHAPE
 # parses, composes and builds a DAG. It is deliberately minimal — every T2 body
 # is empty or near-empty — because P1 moved the T1 reads and not the T2 ones,

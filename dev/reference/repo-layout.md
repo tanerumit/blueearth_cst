@@ -33,7 +33,7 @@ Four bins plus `advanced_settings.yml`.
 
 **`advanced_settings.yml`** carries `constraints:` (hard limits no project config may relax, e.g. `min_historical_years`), `defaults:` (starting values a project may override, e.g. `julia_threads`), and `runtime:` (toolchain pins, e.g. `julia_version`, which `pixi.toml` and `Manifest.toml` must match — `tests/test_julia_runtime.py` enforces it). It is not a `--configfile` target; `snake_utils` reads it once for every project. Its schema is closed, so add a setting to the file and to `snake_utils._ADVANCED_SETTINGS_SCHEMA` together.
 
-**Tracked files under `test_case/`** are only `snake_config_*.yml` and the two basin-input CSVs under `test_data/`. Keep the `snake_config_` prefix on any new seed config: a name outside that glob is silently untracked. Un-ignoring needs the pattern form (`test_case/*`), not the directory form, because git will not un-ignore a file whose parent directory is excluded — which is also why the CSVs take three lines: un-ignore the directory, re-exclude its contents, re-include `*.csv`.
+**Tracked files under `test_case/`** are only `project_config_*.yml` and the two basin-input CSVs under `test_data/`. Keep the `project_config_` prefix on any new seed config: a name outside that glob is silently untracked. Un-ignoring needs the pattern form (`test_case/*`), not the directory form, because git will not un-ignore a file whose parent directory is excluded — which is also why the CSVs take three lines: un-ignore the directory, re-exclude its contents, re-include `*.csv`.
 
 ## scripts/
 

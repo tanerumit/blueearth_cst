@@ -6,11 +6,11 @@
     "dirty": false
   },
   "targets": {
-    "test_case/test_local/config/runs/snake_config_analyze_projections.yml": {
+    "test_case/test_local/config/runs/project_config_analyze_projections.yml": {
       "sha256": "18411a59018b8115914986948eef12d0af2b7e04870e1e2f6ea406204f4cdb47",
       "type": "yaml"
     },
-    "test_case/test_local/config/runs/snake_config_build_model.yml": {
+    "test_case/test_local/config/runs/project_config_build_model.yml": {
       "sha256": "3c5539cb592f0c13e7552bba5af657eef29aa16c38ce553cbd90a6ce4b0aaedd",
       "type": "yaml"
     },
@@ -24,7 +24,7 @@
       "size_bytes": 53875,
       "type": "csv"
     },
-    "test_case/test_local/experiments/experiment/config/snake_config_run_stress_test.yml": {
+    "test_case/test_local/experiments/experiment/config/project_config_run_stress_test.yml": {
       "sha256": "4ab6f772809887c3385f7d5b23821ce147dc64c95553119113d453878301ebc3",
       "type": "yaml"
     },

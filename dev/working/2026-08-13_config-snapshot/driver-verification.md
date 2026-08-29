@@ -101,8 +101,8 @@ must state where advanced settings sit in the two-digest split.
   `workflows.model_creation`.
 - `copy_config_files.py:81` copies with `source_path.name` (collision-prone);
   `:144` used hash-prefixed names in the bundle.
-- `dev/baseline/manifest.json` fingerprints exactly three `snake_config_*`
-  copies, including `experiments/experiment/config/snake_config_climate_experiment.yml`.
+- `dev/baseline/manifest.json` fingerprints exactly three `project_config_*`
+  copies, including `experiments/experiment/config/project_config_climate_experiment.yml`.
 - `tests/test_snapshot_config_rules.py:51,67` assert the bundle wiring.
 - `README.md` ~170-186 documents the bundle and `referenced-files.json`.
 - `short_digest` / `snapshot_bundle_digest` have call sites only in code the

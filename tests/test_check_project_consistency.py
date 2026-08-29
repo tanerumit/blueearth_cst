@@ -21,7 +21,7 @@ from blueearth_cst.experiment.check_project_consistency import (  # noqa: E402
 )
 
 # A minimal but structurally faithful full config (R01 sectioned schema),
-# mirroring test_case/snake_config_baseline.yml at the guarded
+# mirroring test_case/project_config_baseline.yml at the guarded
 # sections. The experiment sections that vary per experiment are present but
 # deliberately NOT guarded.
 _BASE_CFG = {
@@ -114,10 +114,10 @@ def _snapshot_for(entry: str) -> dict:
 def snapshots(tmp_path):
     """Write matching wf1 + wf2 snapshots from _BASE_CFG; return their paths."""
     wf1 = _write(
-        tmp_path / "snake_config_build_model.yml", _snapshot_for("build_model")
+        tmp_path / "project_config_build_model.yml", _snapshot_for("build_model")
     )
     wf2 = _write(
-        tmp_path / "snake_config_analyze_projections.yml",
+        tmp_path / "project_config_analyze_projections.yml",
         _snapshot_for("analyze_projections"),
     )
     return wf1, wf2
@@ -176,7 +176,7 @@ def test_d_flat_vs_binned_paths_pass(tmp_path):
     # Snapshot uses NEW binned catalog paths; experiment config uses OLD flat
     # paths for the mapped keys. Symmetric normalization makes them equal.
     snapshot_cfg = _snapshot_for("build_model")
-    wf1 = _write(tmp_path / "snake_config_build_model.yml", snapshot_cfg)
+    wf1 = _write(tmp_path / "project_config_build_model.yml", snapshot_cfg)
 
     live = copy.deepcopy(_BASE_CFG)
     live["project"]["catalog"] = "config\\deltares_data.yml"

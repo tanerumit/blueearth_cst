@@ -14,15 +14,15 @@ workflows:
     enabled: true
   build_model:
     enabled: true
-    config_path: snake_config_fixture_build_model.yml
+    config_path: project_config_fixture_build_model.yml
 
   analyze_projections:
     enabled: true
-    config_path: snake_config_fixture_analyze_projections.yml
+    config_path: project_config_fixture_analyze_projections.yml
 
   run_stress_test:
     enabled: true
-    config_path: snake_config_fixture_run_stress_test.yml
+    config_path: project_config_fixture_run_stress_test.yml
 basin:
   region: "{'subbasin': [9.738, 0.4212], 'uparea': 70}"
   resolution: 0.0062475

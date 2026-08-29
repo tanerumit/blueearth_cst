@@ -32,7 +32,7 @@ from tests.conftest import write_config  # noqa: E402
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 
 # The synthetic domain: a small era5-like grid around the test basin.
@@ -216,7 +216,7 @@ def modelfree_project(tmp_path):
     cfg["workflows"]["build_model"]["engine"]["waterbodies_config"] = (
         tmp_path / "absent" / "wflow_update_waterbodies.yml"
     ).as_posix()
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_modelfree")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_modelfree")
 
     spec = climate_store_rule(
         project_dir=project_dir.as_posix(),

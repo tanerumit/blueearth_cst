@@ -875,7 +875,7 @@ WF2_TARGETS = {
     # log part under `_parts/`, which is the defect the LOG_RULES block above
     # documents three times over.
     "spatial_basins": SPATIAL_UNITS.outputs["basins"],
-    "snake_config": f"{project_dir}/config/runs/snake_config_analyze_projections.yml",
+    "project_config": f"{project_dir}/config/runs/project_config_analyze_projections.yml",
     # ONE merged log for the whole workflow (was: one per fan-out stage,
     # alongside four rules writing logs/2.NN_*.log directly -- five files a
     # reader had to open in the right order to follow one run). Every rule
@@ -979,7 +979,7 @@ rule snapshot_config:
         # keeps the record fresh when the CHECKOUT moves; see its definition.
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        config_snake_out = f"{project_dir}/config/runs/snake_config_analyze_projections.yml",
+        config_snake_out = f"{project_dir}/config/runs/project_config_analyze_projections.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"

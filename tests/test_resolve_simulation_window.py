@@ -87,12 +87,12 @@ def test_the_refusal_names_both_files_when_it_is_told_them():
         resolve_simulation_window(
             _shared(2000, 2020),
             {"simulation_window": sim},
-            shared_source="snake_config_gabon.yml",
-            model_source="snake_config_gabon_build_model.yml",
+            shared_source="project_config_gabon.yml",
+            model_source="project_config_gabon_build_model.yml",
         )
     message = str(excinfo.value)
-    assert "in snake_config_gabon_build_model.yml" in message
-    assert "in snake_config_gabon.yml" in message
+    assert "in project_config_gabon_build_model.yml" in message
+    assert "in project_config_gabon.yml" in message
 
 
 def test_the_message_is_unchanged_when_no_source_is_given():

@@ -59,7 +59,7 @@ Not a general-purpose pruner. Not a replacement for `prune_series_cache.py` or
 - Rung 1: `pytest tests/test_project_tree_inventory.py`.
 - Rung 2: a test that the tool's `--delete` scope excludes
   `<exp_dir>/config/catalogs/` and `config/basin_data/`.
-- Rung 3: `pixi run tree-check --config test_case/snake_config_baseline.yml` —
+- Rung 3: `pixi run tree-check --config test_case/project_config_baseline.yml` —
   **red before this phase, green after**. That transition is the migration's own
   proof; record both results.
 - Rung 5: `check_baseline.py check` — **runs once, here**, and is the program's
@@ -82,5 +82,5 @@ approved at Gate 2 before any deletion.
 ### Task constraints
 
 Run the baseline gate from the **primary checkout** against
-`snake_config_baseline.yml` — never the rapid tree. WF1 runs feeding the
+`project_config_baseline.yml` — never the rapid tree. WF1 runs feeding the
 baseline need `--notemp` (`AGENTS.md`).

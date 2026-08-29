@@ -19,7 +19,7 @@ pins what the pipeline hands *in* (forcing + static grid + run config) and
 expects *out* (discharge CSVs → response surface), not Wflow's physics.
 
 **Grounded in** the fixture tree `test_case/test_local` (era5 branch,
-`test_case/snake_config_baseline.yml`) inspected with xarray, the base
+`test_case/project_config_baseline.yml`) inspected with xarray, the base
 vs per-cst `wflow_sbm.toml` diff, and the wf1/wf3 rules + scripts.
 
 **CST-scope disclaimer (the governing constraint; `AGENTS.md` Hard
@@ -778,7 +778,7 @@ model exists — wf3 needs `models/hydrology/wflow/` artifacts):
 
 ```bash
 snakemake all -c 3 -s run_stress_test.smk \
-  --configfile test_case/snake_config_baseline.yml --notemp
+  --configfile test_case/project_config_baseline.yml --notemp
 ```
 
 `--notemp` tells Snakemake **not** to delete `temp()`-flagged outputs after their

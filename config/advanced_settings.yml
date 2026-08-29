@@ -1,7 +1,7 @@
 # Advanced settings — toolbox-wide knobs a normal project never touches.
 #
 # NOT a `--configfile` target. The three Snakefiles are driven by a project's
-# own `snake_config_*.yml` (the shipped examples live beside the project they
+# own `project_config_*.yml` (the shipped examples live beside the project they
 # write into, under `test_case/`); THIS file is read
 # once by `blueearth_cst/shared/snake_utils.py` and applies to every project
 # and every workflow. Editing it changes the toolbox, not a run.

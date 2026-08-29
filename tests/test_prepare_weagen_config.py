@@ -74,7 +74,7 @@ def test_build_weagen_config_generate_reads_moved_default(tmp_path):
     """Exercise the exact resolution path rule 3.04 uses: build_weagen_config's
     generate branch read_yml(default_config_path) against the moved template."""
     out = build_weagen_config(**_generate_kwargs(tmp_path))
-    # Seeded from the moved default template, then overridden by snake config.
+    # Seeded from the moved default template, then overridden by project config.
     assert out["generate_weather"]["seed"] == 123  # injected, not templated
     assert out["generate_weather"]["n_realizations"] == 2
     assert out["generate_weather"]["n_years"] == 82

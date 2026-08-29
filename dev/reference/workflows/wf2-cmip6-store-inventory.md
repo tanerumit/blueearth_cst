@@ -229,7 +229,7 @@ Measured over the generated catalog, across the four tier-1 SSPs:
 | `+ r1i1p2f1` | **157** | **45** | 18 |
 | full 11-label union | 149 | 43 | 26 |
 
-`snake_config.template.yml` therefore ships
+`project_config.template.yml` therefore ships
 `[r1i1p1f1, r1i1p1f2, r1i1p1f3, r1i1p2f1]` — the maximum. The wider union is
 strictly worse: the extra physics variants (`p3f1`, `p5f1`, `r1i1000p1f1`, …)
 create more asymmetry than coverage. The 18 raising pairs are CAMS-CSM1-0,
@@ -240,7 +240,7 @@ the unshared labels named, and the fix is to narrow `members:` for that run.
 A per-model `members:` mapping would remove the tradeoff entirely — it is a
 config-schema plus script change, so it is recorded here for v2 rather than done.
 
-The small `snake_config_model_test*.yml` fixtures stay pinned to `r1i1p1f1`:
+The small `project_config_model_test*.yml` fixtures stay pinned to `r1i1p1f1`:
 their three models all publish it, and the gate is meant to stay minimal.
 
 ## 5. Overview B — temporal resolutions

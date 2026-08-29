@@ -18,7 +18,7 @@ updated: 2026-08-17
 ## Measured
 
 First end-to-end run of the wf0 multi-source path, 2026-08-16, against
-`test_case/snake_config_rapid.yml` with `candidate_sources: [chirps]`. Both
+`test_case/project_config_rapid.yml` with `candidate_sources: [chirps]`. Both
 stores checked with `validate_wg1` after the run.
 
 | Contract term | Expected | era5 | chirps |

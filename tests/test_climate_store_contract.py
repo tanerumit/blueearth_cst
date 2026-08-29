@@ -44,7 +44,7 @@ from blueearth_cst.shared.config_composition import load_composed_config  # noqa
 from tests.conftest import write_config  # noqa: E402
 
 SNAKEDIR = Path(__file__).resolve().parents[1]
-CONFIG_FN = Path(__file__).resolve().parent / "snake_config_fixture.yml"
+CONFIG_FN = Path(__file__).resolve().parent / "project_config_fixture.yml"
 RULE_NAME = "extract_historical_climate"
 
 #: Sentinel for "the built Rule carries no such attribute on this Snakemake".
@@ -219,7 +219,7 @@ def config_variants(tmp_path_factory):
     cfg = load_composed_config(CONFIG_FN)
     cfg["basin"].update(_CUSTOM_BASIN)
     custom = write_config(
-        tmp_path_factory.mktemp("cfg"), cfg, stem="snake_config_custom_basin"
+        tmp_path_factory.mktemp("cfg"), cfg, stem="project_config_custom_basin"
     )
     return {"defaults": CONFIG_FN, "custom_basin": custom}
 
@@ -436,7 +436,7 @@ def test_chirps_branch_declares_and_consumes_one_orography_path(tmp_path):
     # one that is not -- so switching the source means declaring it too.
     cfg["climate"]["selected"] = "chirps_global"
     cfg["climate"]["sources"] = ["chirps_global"]
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_chirps")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_chirps")
 
     workflow = _parse_workflow("run_stress_test.smk", cfg_path)
     producer = workflow.get_rule(RULE_NAME)
@@ -519,7 +519,7 @@ def test_wf0_candidate_source_gets_its_own_store_and_family_outputs(tmp_path):
     cfg = load_composed_config(CONFIG_FN)
     assert cfg["climate"]["selected"] == "era5"
     cfg["climate"]["sources"] = [cfg["climate"]["selected"], "chirps"]
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_two_sources")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_two_sources")
 
     wf0 = _parse_workflow("analyze_climate.smk", cfg_path)
     era5 = _wf0_rule(wf0, "era5")
@@ -548,7 +548,7 @@ def test_wf0_rejects_an_unsupported_candidate_source(tmp_path):
 
     cfg = load_composed_config(CONFIG_FN)
     cfg["climate"]["sources"] = [cfg["climate"]["selected"], "eobs"]
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_bad_source")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_bad_source")
 
     with pytest.raises(Exception) as exc:
         _parse_workflow("analyze_climate.smk", cfg_path)
@@ -617,7 +617,7 @@ def test_wf0_relaxes_the_floor_for_candidates_only(tmp_path):
     cfg = load_composed_config(CONFIG_FN)
     assert cfg["climate"]["selected"] == "era5"
     cfg["climate"]["sources"] = [cfg["climate"]["selected"], "chirps"]
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_floor_split")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_floor_split")
 
     wf0 = _parse_workflow("analyze_climate.smk", cfg_path)
     primary = _wf0_rule(wf0, "era5")

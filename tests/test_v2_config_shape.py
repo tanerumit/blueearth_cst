@@ -2,7 +2,7 @@
 
 P1's acceptance surface (R14 `config-shape-p1-loader.task.md`). The fixture is
 `tests/data/v2/project_config_v2_probe.yml`, hand-written rather than migrated:
-P4 owns `tests/snake_config_fixture.yml` and migrates it WITH the rewriter, so
+P4 owns `tests/project_config_fixture.yml` and migrates it WITH the rewriter, so
 a P1 test that edited it would be doing P4's job with a worse tool.
 
 **This module is P1b's acceptance surface as well as P1's.** P1 moved the T1

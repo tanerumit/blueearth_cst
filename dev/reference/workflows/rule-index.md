@@ -241,7 +241,7 @@ the config snapshot, the merged log and the benchmark table).
 **Does.** Copies the config and the files it references into the project, and
 writes the run record.
 
-**Writes.** `config/runs/snake_config_analyze_climate.yml` · the run record.
+**Writes.** `config/runs/project_config_analyze_climate.yml` · the run record.
 
 #### 0.02 · `delineate_region`
 
@@ -452,7 +452,7 @@ routed by kind, and writes an immutable content-addressed bundle of the
 effective settings (merged config + advanced settings + manifest) so a finished
 project can say what it was run with.
 
-**Writes.** `config/runs/snake_config_build_model.yml` ·
+**Writes.** `config/runs/project_config_build_model.yml` ·
 `config/runs/build_model/<digest>/` (bundle dir).
 
 **Writes (undeclared).** Copies into `config/templates/` (build + waterbodies),
@@ -879,7 +879,7 @@ plots, the merged log and the benchmark table.
 
 **Does.** As WF1 1.01, with the WF2 bins.
 
-**Writes.** `config/runs/snake_config_analyze_projections.yml` ·
+**Writes.** `config/runs/project_config_analyze_projections.yml` ·
 `config/runs/analyze_projections/<digest>/` (bundle dir).
 
 **Writes (undeclared).** Catalog copies into `config/catalogs/`.
@@ -1116,7 +1116,7 @@ window, so the shared rule's input set never varies across experiments).
 **Does.** As WF1 1.01, but the snapshot stays **inside the experiment** rather
 than joining `config/runs/`.
 
-**Writes.** `<exp>/config/snake_config_run_stress_test.yml` ·
+**Writes.** `<exp>/config/project_config_run_stress_test.yml` ·
 `<exp>/config/runs/run_stress_test/<digest>/` (bundle dir).
 
 **Writes (undeclared).** Catalog copies into `<exp>/config/catalogs/`.

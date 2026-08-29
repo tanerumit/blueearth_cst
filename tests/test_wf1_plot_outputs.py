@@ -54,7 +54,7 @@ _GEOMS = {"basins", "rivers", "outlets", _GAUGES_LAYER}
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 
 #: The config-invariant subset O-24 declares, project-root-relative. The
@@ -89,7 +89,7 @@ def fabricated_project(tmp_path):
     cfg["project"]["project_dir"] = project_dir.as_posix()
     # Repo-relative leaves (templates, catalog) keep working: snakemake runs
     # with cwd=SNAKEDIR.
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_fabricated")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_fabricated")
 
     spec = climate_store_rule(
         project_dir=project_dir.as_posix(),
@@ -182,7 +182,7 @@ def project_with_basavg_outvar(tmp_path):
         "river discharge",
         "actual evapotranspiration",
     ]
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_basavg")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_basavg")
 
     basavg = project_dir / _BASAVG_REL
     basavg.parent.mkdir(parents=True, exist_ok=True)

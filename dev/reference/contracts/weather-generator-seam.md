@@ -18,7 +18,7 @@ current occupant, but **this contract is generator-agnostic**: it pins what wf3
 hands *in* to the generator and expects *out* of it, not weathergenr's internals.
 
 **Grounded in** the fixture tree `test_case/test_local` (era5 branch,
-`test_case/snake_config_baseline.yml`) inspected with xarray for
+`test_case/project_config_baseline.yml`) inspected with xarray for
 dims/coords/vars/units/attrs, and the wf3 rules + scripts. **CST-scope
 disclaimer** (`AGENTS.md` Hard Constraints): a contract surface pins only what
 OUR pipeline's producer guarantees or OUR consumer relies on; upstream tool
@@ -396,7 +396,7 @@ WG-5 entry-key set against the **intended** grid: expected keys exactly
 3.14 is instantiated over both the st_0 members and the perturbed grid).
 Applied to the UNION of the per-member catalogs. Missing and unexpected keys are each
 reported. The intended grid is derived from the run's *recorded* P3-1 config
-snapshot (`<exp>/config/snake_config_run_stress_test.yml`) via the same
+snapshot (`<exp>/config/project_config_run_stress_test.yml`) via the same
 `stress_test_grid` helper the Snakefile uses (`shared/snake_utils.py:336`), so
 the check is self-consistent with the tree even if the tracked test config later
 drifts. A dropped or extra catalog entry is invisible to per-artifact
@@ -428,7 +428,7 @@ enough and avoids re-running the batches that are already up to date:
 
 ```bash
 snakemake -c 3 -s run_stress_test.smk \
-  --configfile test_case/snake_config_baseline.yml --notemp \
+  --configfile test_case/project_config_baseline.yml --notemp \
   test_case/test_local/experiments/experiment/climate/weathergenr/output/rlz_1_st_1.nc \
   test_case/test_local/experiments/experiment/hydrology/wflow/forcing/inmaps_rlz_1_st_1.nc \
   test_case/test_local/experiments/experiment/hydrology/wflow/output/outstates_rlz_1_st_1.nc
@@ -443,7 +443,7 @@ model exists — wf3 needs `models/hydrology/wflow/` artifacts):
 
 ```bash
 snakemake all -c 3 -s run_stress_test.smk \
-  --configfile test_case/snake_config_baseline.yml --notemp
+  --configfile test_case/project_config_baseline.yml --notemp
 ```
 
 `--notemp` tells Snakemake **not** to delete `temp()`-flagged outputs after their

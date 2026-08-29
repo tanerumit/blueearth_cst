@@ -10,7 +10,7 @@ document someone reads to do their job is a defect, not a record); design
   `referenced-files.json` — all of which cease to exist.
 - Per-bin `README.md` files are the house pattern (`config/defaults/`,
   `config/templates/`, `config/basemap/` each have one).
-- The one genuine trap in the project tree: `snake_config_model_creation.yml`
+- The one genuine trap in the project tree: `project_config_model_creation.yml`
   sits under a directory called `config/`, looks exactly like a file you would
   edit and re-run, and editing it silently does nothing.
 

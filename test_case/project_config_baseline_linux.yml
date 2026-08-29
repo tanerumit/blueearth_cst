@@ -16,14 +16,14 @@ workflows:
     enabled: true
   build_model:
     enabled: true
-    config_path: snake_config_baseline_linux_build_model.yml
+    config_path: project_config_baseline_linux_build_model.yml
   analyze_projections:
     enabled: true
-    config_path: snake_config_baseline_linux_analyze_projections.yml
+    config_path: project_config_baseline_linux_analyze_projections.yml
 
   run_stress_test:
     enabled: true
-    config_path: snake_config_baseline_linux_run_stress_test.yml
+    config_path: project_config_baseline_linux_run_stress_test.yml
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.0062475

@@ -524,7 +524,7 @@ WF1_TERMINALS = [
 # the config snapshot and the two gathered artifacts.
 WF1_TARGETS = [
     *WF1_TERMINALS,
-    f"{project_dir}/config/runs/snake_config_build_model.yml",
+    f"{project_dir}/config/runs/project_config_build_model.yml",
     f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
     f"{project_dir}/benchmarks/wf1_benchmarks.md",
 ]
@@ -566,7 +566,7 @@ rule snapshot_config:
         # a structure. This is what keeps the record FRESH; see its definition.
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        config_snake_out = f"{project_dir}/config/runs/snake_config_build_model.yml",
+        config_snake_out = f"{project_dir}/config/runs/project_config_build_model.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"

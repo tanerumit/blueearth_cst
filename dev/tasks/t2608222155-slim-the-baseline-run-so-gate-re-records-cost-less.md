@@ -106,7 +106,7 @@ because the re-record is happening anyway, not because it is the answer.
 
 Two keys, both adopting rapid's values:
 
-- `run_length` 16 to 8 in `snake_config_baseline_run_stress_test.yml`
+- `run_length` 16 to 8 in `project_config_baseline_run_stress_test.yml`
 - `horizontime_climate` 2078 to 2050, which shortens the generated series from
   78 yr to 46 (`compute_nr_years` anchors at 2010, so the HORIZON sets series
   length, not `run_length`)
@@ -187,7 +187,7 @@ say which.*
 ## Coupled edits and traps
 
 - **`horizontime_climate` plus/minus `run_length`/2 must stay inside
-  `future_horizons.far`** in `snake_config_baseline_analyze_projections.yml`.
+  `future_horizons.far`** in `project_config_baseline_analyze_projections.yml`.
   That alignment is *computed independently of the key* (the file says so), so
   a missed edit misaligns silently. At 2078/16 the current `far: [2070, 2090]`
   contains 2070-2086; at horizon 2050 it does not.
@@ -201,7 +201,7 @@ say which.*
   `models/hydrology/wflow/forcing/inmaps_historical.nc` (8.5 MB, 17 yr) is NOT
   temp and survives, so a one-knob `endtime` probe against the wf1 TOML is the
   runnable form if a further measurement is ever wanted.
-- **The four `snake_config_baseline_linux*.yml` are NOT baseline twins.** They
+- **The four `project_config_baseline_linux*.yml` are NOT baseline twins.** They
   point at `test_case/gabon`, use `resolution: 0.0062475`,
   `horizontime_climate: 2050`, `run_length: 20`, `run_historical: false`, and
   their header records that Linux end-to-end validation is deferred and "this
@@ -218,7 +218,7 @@ say which.*
 `dev/reference/validation-ladder.md` (its config table hard-codes "14 x 17",
 "78 years", "17 calendar years", and the falsified "~2.6x / ~1.7x" claim),
 `AGENTS.md` section Validation ladder, and the header comments in
-`snake_config_baseline*.yml`, which state their own values as reasons.
+`project_config_baseline*.yml`, which state their own values as reasons.
 
 ## What this discharges
 

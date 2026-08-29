@@ -22,7 +22,7 @@ from blueearth_cst.shared.snake_utils import get_config  # shared helper (R3 §3
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 
-config_fn = join(TESTDIR, "snake_config_fixture.yml")
+config_fn = join(TESTDIR, "project_config_fixture.yml")
 
 
 @pytest.fixture(autouse=True)
@@ -148,7 +148,7 @@ def model_build_config(config):
     """Return model build config, read through the composed document.
 
     Composes rather than indexing a raw load: since R13 the settings live in
-    ``tests/snake_config_fixture_build_model.yml`` and the project file carries
+    ``tests/project_config_fixture_build_model.yml`` and the project file carries
     only ``{enabled, config_path}``, so a raw index finds nothing. This fixture
     sits in the layer that cannot fail in CI or in any worktree, which is why it
     goes through the same loader a run does rather than a second reader.
@@ -158,7 +158,7 @@ def model_build_config(config):
     return join(SNAKEDIR, model_build_config)
 
 
-def write_config(tmp_path, cfg, stem: str = "snake_config") -> Path:
+def write_config(tmp_path, cfg, stem: str = "project_config") -> Path:
     """Split a whole-config mapping into T1 + T2 files under ``tmp_path``.
 
     Returns the T1 path, ready to hand to ``--configfile``. The inverse of

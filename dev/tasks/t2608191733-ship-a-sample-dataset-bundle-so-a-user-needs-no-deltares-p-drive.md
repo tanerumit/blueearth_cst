@@ -92,7 +92,7 @@ judged against a promise it cannot keep.
 - [ ] `scripts/fetch_sample_data.py` — user-facing (three-homes rule: a user
       runs it). Downloads the release asset, **verifies `sample_data.sha256`
       before unpacking**, unpacks to a gitignored top-level `sample_data/`.
-- [ ] `test_case/snake_config_sample.yml` — derived from `sample_bundle.yml`,
+- [ ] `test_case/project_config_sample.yml` — derived from `sample_bundle.yml`,
       selecting the bundle's catalog via `project.data_sources`.
 - [ ] `.gitignore` entry for `sample_data/`, and the tracked
       `sample_data.sha256`.
@@ -176,6 +176,6 @@ sample catalog, and Docker as the primary channel.
 - `dev/working/2026-08-19_shipped-sample-dataset/build-sample-bundle.task.md` —
   the builder's assignment brief.
 - [[t2608191733a-rename-snake-config-yml-to-project-config-yml-repo-wide]] —
-  decides whether the sample config lands as `snake_config_sample.yml` or
+  decides whether the sample config lands as `project_config_sample.yml` or
   `project_config_sample.yml`. Land the rename FIRST if both are wanted; adding
-  a new `snake_config_*` file only widens that rename.
+  a new `project_config_*` file only widens that rename.

@@ -1,5 +1,5 @@
 # RAPID config — the DEFAULT for iterating on the workflows end to end.
-# `snake_config_baseline.yml` is the comprehensive one; use that for the
+# `project_config_baseline.yml` is the comprehensive one; use that for the
 # baseline, a milestone seal, or any run whose numbers get read.
 #
 # Cheap where the cost is, full where a code path would otherwise be skipped:
@@ -27,18 +27,18 @@ workflows:
   # WF1 already produces. `candidate_sources` is what makes it a comparison.
   analyze_climate:
     enabled: true
-    config_path: snake_config_rapid_analyze_climate.yml
+    config_path: project_config_rapid_analyze_climate.yml
   build_model:
     enabled: true
-    config_path: snake_config_rapid_build_model.yml
+    config_path: project_config_rapid_build_model.yml
 
   analyze_projections:
     enabled: true
-    config_path: snake_config_rapid_analyze_projections.yml
+    config_path: project_config_rapid_analyze_projections.yml
 
   run_stress_test:
     enabled: true
-    config_path: snake_config_rapid_run_stress_test.yml
+    config_path: project_config_rapid_run_stress_test.yml
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833

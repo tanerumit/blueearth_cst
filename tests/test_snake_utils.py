@@ -2170,7 +2170,7 @@ def test_wflow_outvars_default_is_not_empty():
 
     WF3 defaulted to it while WF1 defaulted to two variables, so a config
     omitting the key ran to completion and wrote nothing --
-    `snake_config_baseline_linux.yml` omits it, so that was shipped.
+    `project_config_baseline_linux.yml` omits it, so that was shipped.
     """
     assert su.DEFAULT_WFLOW_OUTVARS
     assert "river discharge" in su.DEFAULT_WFLOW_OUTVARS
@@ -2726,7 +2726,7 @@ def test_run_header_shape_matches_run_summary():
     out = su.run_header(
         "wf3 run_stress_test",
         "test_case/test_rapid2",
-        "test_case/snake_config_rapid.yml",
+        "test_case/project_config_rapid.yml",
         experiment="experiment_rapid",
     )
     assert out.splitlines() == [
@@ -2734,7 +2734,7 @@ def test_run_header_shape_matches_run_summary():
         "",
         "  run",
         "    project     test_case/test_rapid2",
-        "    config      test_case/snake_config_rapid.yml",
+        "    config      test_case/project_config_rapid.yml",
         "    experiment  experiment_rapid",
     ]
 
@@ -2778,10 +2778,10 @@ def test_run_header_aligns_both_groups_on_one_value_column():
 def test_run_header_forward_slashes_and_shortens_the_config_path(monkeypatch):
     """The one row that kept OS separators made the block read as two trees."""
     monkeypatch.setattr(su, "_REPO_ROOT", os.path.normpath(_abs("repo")))
-    config = os.path.join(_abs("repo"), "test_case", "snake_config_rapid.yml")
+    config = os.path.join(_abs("repo"), "test_case", "project_config_rapid.yml")
     out = su.run_header("wf1 build_model", "test_case/test_rapid", config)
     row = next(line for line in out.splitlines() if line.strip().startswith("config"))
-    assert row.split() == ["config", "<repo>/test_case/snake_config_rapid.yml"]
+    assert row.split() == ["config", "<repo>/test_case/project_config_rapid.yml"]
     assert "\\" not in out
 
 

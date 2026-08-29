@@ -125,7 +125,7 @@ def test_the_template_config_recommends_the_30_year_window():
     # in the file they open to change the projections settings.
     template = (
         Path(__file__).resolve().parents[1]
-        / "config/templates/snake_config.analyze_projections.template.yml"
+        / "config/templates/project_config.analyze_projections.template.yml"
     ).read_text(encoding="utf-8")
     m = re.search(
         r"reference_window:[^\n]*\n\s*start:\s*(\d{4})[^\n]*\n\s*end:\s*(\d{4})",
@@ -155,7 +155,7 @@ def test_the_seed_fixture_keeps_its_own_shorter_window():
 
     seed = (
         Path(__file__).resolve().parents[1]
-        / "test_case/snake_config_baseline_analyze_projections.yml"
+        / "test_case/project_config_baseline_analyze_projections.yml"
     ).read_text(encoding="utf-8")
     m = re.search(
         r"reference_window:[^\n]*\n\s*start:\s*(\d{4})[^\n]*\n\s*end:\s*(\d{4})", seed

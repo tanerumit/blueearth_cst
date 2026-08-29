@@ -18,8 +18,8 @@ import cross_workflow_inputs as cwi  # noqa: E402
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
 from tests.conftest import write_config  # noqa: E402
 
-config_fn = join(TESTDIR, "snake_config_fixture.yml")
-linux_config_fn = join(SNAKEDIR, "test_case", "snake_config_baseline_linux.yml")
+config_fn = join(TESTDIR, "project_config_fixture.yml")
+linux_config_fn = join(SNAKEDIR, "test_case", "project_config_baseline_linux.yml")
 
 
 def _dry_run(snakefile, cfg=config_fn):
@@ -52,7 +52,7 @@ def config_with_staged_region(tmp_path):
 
     Since P3-1 commit 1, run_stress_test's drift guard (rule
     check_project_consistency) additionally declares the wf1 config snapshot
-    `{project_dir}/config/runs/snake_config_build_model.yml` as a mandatory
+    `{project_dir}/config/runs/project_config_build_model.yml` as a mandatory
     `ancient(...)` input — the same class of cross-workflow contract, staged
     the same way. The staged snapshot is serialized from the SAME parsed
     config the dry-run consumes, so the guard's comparands match by
@@ -70,7 +70,7 @@ def config_with_staged_region(tmp_path):
     # the reason given in the docstring above.
     cwi.stage(tmp_path, yaml.safe_dump(cfg), extras=(cwi.EXTRA_REGION,))
 
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_staged")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_staged")
     return cfg_path
 
 
@@ -180,7 +180,7 @@ def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
     try:
         cfg = load_composed_config(config_fn)
         cfg["project"]["project_dir"] = "_o22_probe_project"
-        cfg_path = write_config(tmp_path, cfg, stem="snake_config_in_repo")
+        cfg_path = write_config(tmp_path, cfg, stem="project_config_in_repo")
 
         result = _dry_run("build_model.smk", cfg=str(cfg_path))
         combined = (result.stdout or "") + (result.stderr or "")
@@ -196,15 +196,15 @@ def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
 def test_baseline_seed_config_does_not_warn():
     """The exemption holds for the config the baseline gate actually runs.
 
-    That is test_case/snake_config_baseline.yml (project_dir:
-    test_case/test_local) -- NOT tests/snake_config_fixture.yml, which
+    That is test_case/project_config_baseline.yml (project_dir:
+    test_case/test_local) -- NOT tests/project_config_fixture.yml, which
     points at tests/test_project and therefore warns correctly: it is an
     in-repo project_dir outside the single exemption. The exemption exists
     because the baseline seed config is TRACKED and a tracked config cannot
     carry a machine-specific absolute path; it does not extend to every
     convenient in-repo scratch dir.
     """
-    seed_cfg = join(SNAKEDIR, "test_case", "snake_config_baseline.yml")
+    seed_cfg = join(SNAKEDIR, "test_case", "project_config_baseline.yml")
     result = _dry_run("build_model.smk", cfg=seed_cfg)
     combined = (result.stdout or "") + (result.stderr or "")
     assert "inside the repository tree" not in combined, combined[-3000:]
@@ -311,7 +311,7 @@ def test_eobs_config_fails_wf1_dry_run_at_parse_time(tmp_path):
     # rather than on the eobs rejection it exists to check.
     cfg["climate"]["selected"] = "eobs"
     cfg["climate"]["sources"] = ["eobs"]
-    cfg_path = write_config(tmp_path, cfg, stem="snake_config_eobs")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_eobs")
 
     result = _dry_run("build_model.smk", cfg=str(cfg_path))
     combined = (result.stdout or "") + (result.stderr or "")
@@ -347,7 +347,7 @@ def test_short_window_fails_wf1_dry_run_at_parse_time(tmp_path, end_year, label)
     """
     cfg = load_composed_config(config_fn)
     cfg["climate"]["window"] = {"start": 2000, "end": end_year}
-    cfg_path = write_config(tmp_path, cfg, stem=f"snake_config_{label}")
+    cfg_path = write_config(tmp_path, cfg, stem=f"project_config_{label}")
 
     result = _dry_run("build_model.smk", cfg=str(cfg_path))
     combined = (result.stdout or "") + (result.stderr or "")

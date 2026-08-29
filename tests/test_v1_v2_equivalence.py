@@ -2,7 +2,7 @@
 
 P4 rung 4, design §14.3, finding `ext1-6`. **This is the only numerical check
 three of the four shipped configs will ever get**: `check_baseline` records from
-`snake_config_baseline` alone, so `rapid`, `baseline_linux` and `wf2_fast` have
+`project_config_baseline` alone, so `rapid`, `baseline_linux` and `wf2_fast` have
 nothing else standing between a migration and a silently different run.
 
 **Distinct from P4's byte-for-byte falsifier, and the difference is the point.**
@@ -37,14 +37,22 @@ from scripts.migrate_project_config import load_mapping, split_tier
 REPO_ROOT = Path(__file__).resolve().parent.parent
 V1_DIR = REPO_ROOT / "tests" / "data" / "v1_split"
 
-#: The four shipped sets. `baseline` is the one `check_baseline` records from;
-#: the other three have only this module.
-SETS = [
-    "snake_config_rapid",
-    "snake_config_baseline",
-    "snake_config_baseline_linux",
-    "snake_config_wf2_fast",
-]
+#: The four shipped sets, by the part of the name that is the SET rather than
+#: the prefix. `baseline` is the one `check_baseline` records from; the other
+#: three have only this module.
+#:
+#: The two sides carry different prefixes since `C-85`, and deliberately. The
+#: v2 files are `project_config_*`; the v1 capture keeps `snake_config_*`
+#: because that is what those files were called at `79b76334` — right down to
+#: the `config_path:` keys inside them, which name their siblings. Renaming a
+#: captured artifact to a later convention would make it inaccurate about the
+#: thing it captures, which is the same objection that protects the sealed
+#: records under `dev/milestones/`.
+SETS = ["rapid", "baseline", "baseline_linux", "wf2_fast"]
+
+#: The prefix each side carried at the time it was written.
+V1_PREFIX = "snake_config_"
+V2_PREFIX = "project_config_"
 
 WORKFLOWS = (
     "analyze_climate",
@@ -60,10 +68,10 @@ def _load_v1(stem):
     Plain `safe_load`, not the loader: these documents declare no
     `schema_version` and the loader refuses them by design.
     """
-    t1 = yaml.safe_load((V1_DIR / f"{stem}.yml").read_text(encoding="utf-8"))
+    t1 = yaml.safe_load((V1_DIR / f"{V1_PREFIX}{stem}.yml").read_text(encoding="utf-8"))
     bodies = {}
     for name in WORKFLOWS:
-        path = V1_DIR / f"{stem}_{name}.yml"
+        path = V1_DIR / f"{V1_PREFIX}{stem}_{name}.yml"
         if path.is_file():
             bodies[name] = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
     return t1, bodies
@@ -119,7 +127,7 @@ def test_every_moved_value_arrived(stem, mapping):
     on its own, so nothing goes unchecked by skipping the parent.
     """
     t1, bodies = _load_v1(stem)
-    composed = load_composed_config(REPO_ROOT / "test_case" / f"{stem}.yml")
+    composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
 
     checked = 0
     for row in mapping["rows"]:
@@ -167,7 +175,7 @@ def test_the_climate_window_is_the_same_period(stem):
     that was not would have had to be refused instead.
     """
     t1, _ = _load_v1(stem)
-    composed = load_composed_config(REPO_ROOT / "test_case" / f"{stem}.yml")
+    composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
 
     before, present = _get(t1, "shared.historical_window")
     if not present:
@@ -194,7 +202,7 @@ def test_the_perturbation_grid_has_the_same_member_count(stem):
     if not present:
         pytest.skip(f"{stem} declares no stress_test section")
 
-    composed = load_composed_config(REPO_ROOT / "test_case" / f"{stem}.yml")
+    composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
     after = composed["workflows"]["run_stress_test"]["climate_perturbations"]
 
     v1_members = (before["temp"]["step_num"] + 1) * (before["precip"]["step_num"] + 1)
@@ -224,7 +232,7 @@ def test_the_simulation_window_is_the_period_the_run_used(stem):
     if not has_length:
         length = 20
 
-    composed = load_composed_config(REPO_ROOT / "test_case" / f"{stem}.yml")
+    composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
     after = composed["workflows"]["run_stress_test"]["simulation_window"]
 
     assert after["start"] == int(horizon - math.ceil(length / 2))
@@ -243,7 +251,7 @@ def test_run_historical_is_gone_and_that_is_the_declared_difference(stem):
     wf3 = bodies.get("run_stress_test") or {}
     _, had_key = _get(wf3, "run_historical")
 
-    composed = load_composed_config(REPO_ROOT / "test_case" / f"{stem}.yml")
+    composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
     after = composed["workflows"]["run_stress_test"]
 
     assert "run_historical" not in after, (
@@ -268,7 +276,7 @@ def test_the_candidate_set_still_contains_every_source_it_named(stem):
     selected, _ = _get(t1, "shared.clim_historical")
     extras, _ = _get(bodies.get("analyze_climate") or {}, "candidate_sources")
 
-    composed = load_composed_config(REPO_ROOT / "test_case" / f"{stem}.yml")
+    composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
     after = composed["climate"]["sources"]
 
     expected = {selected} | set(extras or [])

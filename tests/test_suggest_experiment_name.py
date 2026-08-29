@@ -194,11 +194,11 @@ def test_the_template_config_does_not_hardcode_an_experiment_name():
     landed in the same ``experiments/experiment/`` and the command that exists
     to name the directory could never run. The key must start out ABSENT."""
     template = load_composed_config(
-        SNAKEDIR / "config/templates/snake_config.template.yml"
+        SNAKEDIR / "config/templates/project_config.template.yml"
     )
     section = template["workflows"]["run_stress_test"]
     assert "experiment_name" not in section, (
-        "snake_config.template.yml must not set experiment_name: a copied "
+        "project_config.template.yml must not set experiment_name: a copied "
         "template would inherit the placeholder, and "
         "suggest_experiment_name.py refuses to overwrite an existing value"
     )
@@ -209,8 +209,8 @@ def test_the_test_fixtures_deliberately_KEEP_a_fixed_name():
     keep theirs. Only the user-facing template drops the key."""
     # Both seeds now sit beside the projects they write into, under test_case/.
     for rel in (
-        "test_case/snake_config_baseline.yml",
-        "test_case/snake_config_wf2_fast.yml",
+        "test_case/project_config_baseline.yml",
+        "test_case/project_config_wf2_fast.yml",
     ):
         doc = load_composed_config(SNAKEDIR / rel)
         assert doc["workflows"]["run_stress_test"]["experiment_name"]
@@ -365,12 +365,14 @@ def test_the_shipped_template_is_editable_by_this_command(tmp_path):
     """
     import shutil
 
-    src = SNAKEDIR / "config/templates/snake_config.template.yml"
-    cfg = tmp_path / "snake_config.template.yml"
+    src = SNAKEDIR / "config/templates/project_config.template.yml"
+    cfg = tmp_path / "project_config.template.yml"
     shutil.copy(src, cfg)
-    for sibling in (SNAKEDIR / "config/templates").glob("snake_config.*.template.yml"):
+    for sibling in (SNAKEDIR / "config/templates").glob(
+        "project_config.*.template.yml"
+    ):
         shutil.copy(sibling, tmp_path / sibling.name)
-    settings = tmp_path / "snake_config.run_stress_test.template.yml"
+    settings = tmp_path / "project_config.run_stress_test.template.yml"
 
     doc = yaml.safe_load(cfg.read_text(encoding="utf-8"))
     project_dir = tmp_path / "Gabon"

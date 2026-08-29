@@ -126,7 +126,7 @@ class TestMeasureMemberFootprint:
     def test_it_reproduces_the_measured_rapid_fixture(self, tmp_path):
         """The estimator's entire claim, against real numbers.
 
-        Recorded 2026-08-18 from a live `snake_config_rapid.yml` run
+        Recorded 2026-08-18 from a live `project_config_rapid.yml` run
         (horizon 2050, run_length 8, a 16x24 grid):
 
             <model>/forcing/inmaps_historical.nc   3_526_927 B over 2557 steps

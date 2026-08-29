@@ -103,7 +103,7 @@ def build_weagen_config(
 
     Seeds from the default weagen template, then overrides the output path,
     historical start year, number of years (``compute_nr_years``), file prefix
-    and realization count from the snake config. Adds the two
+    and realization count from the project config. Adds the two
     ``transient_change`` flags that ``impose_climate_change.R`` reads.
 
     **C29 removed the second, per-member config** this function used to build.
@@ -114,7 +114,7 @@ def build_weagen_config(
     Snakemake already knows that path: it is rule 3.12's own declared output, so
     it is now passed as an argument and the rule is gone.
 
-    **The snake config is no longer read from disk** (R13 D-10.6). This
+    **The project config is no longer read from disk** (R13 D-10.6). This
     function took a path and re-opened it for exactly two things -- the
     realization count and the two ``transient_change`` flags -- both of
     which the Snakefile has already composed and validated. They now arrive

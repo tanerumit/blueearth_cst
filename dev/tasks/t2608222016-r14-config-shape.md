@@ -57,8 +57,8 @@ separately, so `git log` is the decision log.
       `project_dir` as N3's named exemption (`C-06` withdrawn), `Q-E` puts
       defaults in `advanced_settings` by AUTHORITY (`C-36` unblocked), `Q-H`
       rules ONE `climate.selected`, `Q-I` rules TWO variable keys
-- [ ] Settle `C-85`'s scope: the `snake_config_` FILE prefix only, or also the
-      identifiers carrying it (`snake_config_fixture`, fixture and variable
+- [ ] Settle `C-85`'s scope: the `project_config_` FILE prefix only, or also the
+      identifiers carrying it (`project_config_fixture`, fixture and variable
       names across 33 test modules). The rename itself is RULED IN as of
       2026-08-24 and rides the bundle; only its breadth is open. Implementation
       reference stays on `t2608191733a`, including the `.gitignore` trap that

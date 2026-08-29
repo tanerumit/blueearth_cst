@@ -92,10 +92,10 @@ toolbox repository cannot give back.
   **Falsifier:** a non-empty diff from `check_baseline.py check` disproves it —
   and means either a fingerprinted target was modified or the manifest needs a
   deliberate re-record decision from the owner.
-- **`pixi run tree-check --config test_case/snake_config_baseline.yml`** must be
+- **`pixi run tree-check --config test_case/project_config_baseline.yml`** must be
   green after P6 and red before it (that redness is the migration's own proof).
 - **End-to-end**: `pixi run python scripts/run_workflows.py --config
-  test_case/snake_config_rapid.yml` after P4, from the primary checkout.
+  test_case/project_config_rapid.yml` after P4, from the primary checkout.
 
 ### Phase brief index
 

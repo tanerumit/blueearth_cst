@@ -7,7 +7,7 @@
 # resolves **2** series, which makes an iteration loop minutes instead of tens of
 # minutes.
 #
-# Differences from test_case/snake_config_baseline.yml, and ONLY these:
+# Differences from test_case/project_config_baseline.yml, and ONLY these:
 #   - project_dir: test_case/test_dev   (its own tree; never touches the
 #     baseline fixture, whose manifested summary/plots are derived from all
 #     3 models and would be wrong if regenerated from 1)
@@ -15,7 +15,7 @@
 #   - scenarios: one scenario (ssp245)
 #
 # NOT a baseline seed. `dev/baseline/manifest.json` is recorded from
-# snake_config_baseline.yml and nothing else; never point check_baseline here.
+# project_config_baseline.yml and nothing else; never point check_baseline here.
 # The first run pays a one-off climate-store extraction for the new project_dir.
 
 project:
@@ -31,14 +31,14 @@ workflows:
     enabled: true
   build_model:
     enabled: true
-    config_path: snake_config_wf2_fast_build_model.yml
+    config_path: project_config_wf2_fast_build_model.yml
   analyze_projections:
     enabled: true
-    config_path: snake_config_wf2_fast_analyze_projections.yml
+    config_path: project_config_wf2_fast_analyze_projections.yml
 
   run_stress_test:
     enabled: true
-    config_path: snake_config_wf2_fast_run_stress_test.yml
+    config_path: project_config_wf2_fast_run_stress_test.yml
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833

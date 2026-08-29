@@ -19,7 +19,7 @@ Run them in order; `run_stress_test` needs what `build_model` produced.
 
 ```bash
 pixi shell
-snakemake all -c 3 -s build_model.smk --configfile test_case/snake_config_rapid.yml
+snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml
 ```
 
 The flags worth knowing:
@@ -66,7 +66,7 @@ forty minutes into a model build.
 Snakemake for exactly the enabled workflows, in order:
 
 ```bash
-pixi run run-workflows --config test_case/snake_config_rapid.yml
+pixi run run-workflows --config test_case/project_config_rapid.yml
 pixi run run-workflows --config <config> --cores 4 -- --dry-run
 ```
 

@@ -156,7 +156,7 @@ datasets:
 
   # --- Meteo / climate forcing sources ---------------------------------------
   # wflow historical forcing here is `clim_historical: era5` with
-  # `variables: [precip, temp]` over 2000-2020 (see test_case/snake_config_*.yml).
+  # `variables: [precip, temp]` over 2000-2020 (see test_case/project_config_*.yml).
   # The two CHIRPS entries and E-OBS stage ALTERNATIVE sources for the same
   # window, to be compared against era5 via `analyze_climate.candidate_sources`.
   # The wf0/wf1 raw-climate path accepts era5, chirps and chirps_global only
@@ -174,7 +174,7 @@ datasets:
     #                         tmax->temp_max, msl->press_msl, ssrd->kin,
     #                         tisr->kout. The store also carries d2m, tcwv, u10
     #                         and v10, which the catalog does not rename.
-    # The wflow forcing build only uses 2000-2020 (see snake config); limiting
+    # The wflow forcing build only uses 2000-2020 (see project config); limiting
     # the time slice avoids streaming the whole zarr over SMB.
     time_range: ["1970-01-01", "2020-12-31"]
     # `variables:` takes the zarr's NATIVE ERA5 short names (filtered BEFORE

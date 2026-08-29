@@ -10,7 +10,7 @@ The properties, and the first three are ones the rest of the suite cannot reach:
   the period they share before anything is derived. Both corrections are
   invisible in a rendered figure (two plausible lines either way), so they are
   asserted numerically here or nowhere;
-* **the multi-source DAG direction** — ``tests/snake_config_fixture.yml`` sets
+* **the multi-source DAG direction** — ``tests/project_config_fixture.yml`` sets
   one entry in ``climate.sources``, so ``test_cli`` and
   ``test_log_rules_contract`` both
   parse WF0 in its SINGLE-source shape and neither sees rule 0.06 at all. This
@@ -55,7 +55,7 @@ from tests.conftest import write_config
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 _START, _END = "2001-01-01", "2017-12-31"
 
@@ -730,7 +730,7 @@ def two_source_config(tmp_path) -> Path:
     # it is the full list with no privileged element, so the selected source is
     # a member rather than sitting outside it.
     cfg["climate"]["sources"] = [cfg["climate"]["selected"], "chirps"]
-    return write_config(tmp_path, cfg, stem="snake_config_two_sources")
+    return write_config(tmp_path, cfg, stem="project_config_two_sources")
 
 
 def _rule(workflow, name):

@@ -173,7 +173,7 @@ Two distinctions are the ones a new rule gets wrong:
 
   Whether a later rule consumes the output is *not* the criterion. `write_climate_data_catalog` is consumed downstream and is still `write_`, because enumerating entries is all it does.
 
-**Nouns are full words.** Only the established domain set abbreviates — `gcm`, `cmip6`, `wflow`, `rlz`, `st` — and those are tier-1/tier-2 identifiers under §6. Ad-hoc contractions (`weagen`, `proj`) are not. Qualifiers are trailing full words, never two-letter suffixes.
+**Nouns are full words.** Only the established domain set abbreviates — `gcm`, `cmip6`, `wflow`, `rlz`, `st` — and those are tier-1/tier-2 identifiers under §6. Ad-hoc contractions (`weathergen`, `proj`) are not. Qualifiers are trailing full words, never two-letter suffixes.
 
 **Adding a verb is allowed, and cheaper than a bad name.** The bar is that the action class is genuinely distinct *and* that the verb has a rule using it. A verb in this table with no rule behind it reads as an available option that some rule must already justify.
 

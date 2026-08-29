@@ -298,7 +298,7 @@ Script: [`experiment/prepare_cst_parameters.py`](../../../blueearth_cst/experime
 | out | [`<exp>/config/stress_test_design.csv`](../../../test_case/test_rapid/experiments/experiment_rapid/config/stress_test_design.csv) | 4 cols × `ST_NUM+1` rows: `st_id, temp_change, precip_change, precip_variance_change` |
 
 ### 3.10 `prepare_weathergen_config`
-Script: [`experiment/prepare_weagen_config.py`](../../../blueearth_cst/experiment/prepare_weagen_config.py)
+Script: [`experiment/prepare_weathergen_config.py`](../../../blueearth_cst/experiment/prepare_weathergen_config.py)
 
 | | path | shape |
 |---|---|---|

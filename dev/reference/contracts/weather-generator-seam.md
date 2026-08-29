@@ -193,7 +193,7 @@ consumer reads while keeping the divergence honestly on the record.
 - **path pattern:** `<exp>/climate/weathergenr/config/weathergen_config.yml` —
   **one file** since C29.
 - **producer:** rule 3.10 `prepare_weathergen_config`
-  (`blueearth_cst/experiment/prepare_weagen_config.py`).
+  (`blueearth_cst/experiment/prepare_weathergen_config.py`).
 - **consumer:** rules 3.11 and 3.12 (both R side), which read the same file.
 - **one config, not one per member (C29).** Do not reintroduce a per-member
   `weathergen_config_*.yml`: nothing in it varied except the output

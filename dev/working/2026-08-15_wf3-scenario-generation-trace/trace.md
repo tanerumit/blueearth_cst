@@ -87,7 +87,7 @@ produced by 3.11, not by perturbation.
 
 | | |
 |---|---|
-| script | `blueearth_cst/experiment/prepare_weagen_config.py` |
+| script | `blueearth_cst/experiment/prepare_weathergen_config.py` |
 | out | `<wg>/config/weathergen_config.yml` |
 
 One shared config for the generator: series length (anchored at 2010 and running

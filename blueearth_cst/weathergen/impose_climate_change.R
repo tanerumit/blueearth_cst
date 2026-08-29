@@ -13,10 +13,10 @@ source("./blueearth_cst/weathergen/read_member_grid.R")
 # first thing to touch args.
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 5L) {
-  stop("impose_climate_change.R expects 5 args: <realization_nc> <weagen_config_yaml> <lookup_csv> <output_nc> <st_id>")
+  stop("impose_climate_change.R expects 5 args: <realization_nc> <weathergen_config_yaml> <lookup_csv> <output_nc> <st_id>")
 }
 rlz_path           <- args[[1]]
-weagen_config_path <- args[[2]]
+weathergen_config_path <- args[[2]]
 lookup_csv_path    <- args[[3]]
 output_nc_path     <- args[[4]]
 # The member token, from rule 3.12's {st_num} wildcard. Already zero-padded to
@@ -29,7 +29,7 @@ st_id_token        <- args[[5]]
 # per-member weathergen_config_rlz_<n>_cst_<m>.yml: it carried nothing that
 # varied except the output filename, which Snakemake already knows because it is
 # this rule's own declared output, so it now arrives as args[[4]].
-yaml <- yaml::read_yaml(weagen_config_path)
+yaml <- yaml::read_yaml(weathergen_config_path)
 # Stochastic weather realization to be perturbed
 log_row("Reading realization: ", rlz_path)
 rlz_input <- weathergenr::read_netcdf(rlz_path, keep_leap_day = FALSE)

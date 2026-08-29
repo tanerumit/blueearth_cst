@@ -109,7 +109,7 @@ so one lookup answers both.
 | 3.07 | `write_experiment_config` | 3.01e |
 | 3.08 | `extract_historical_climate` | 3.02 `extract_climate_grid` |
 | 3.09 | `prepare_stress_test_grid` | 3.03 `climate_stress_parameters` |
-| 3.10 | `prepare_weathergen_config` | 3.04 `prepare_weagen_config` |
+| 3.10 | `prepare_weathergen_config` | 3.04 `prepare_weathergen_config` |
 | 3.11 | `generate_weather_realizations` | 3.06 `generate_weather_realization` |
 | 3.12 | `perturb_climate_realization` | 3.07 `generate_climate_stress_test` |
 | 3.13 | `write_climate_data_catalog` | 3.08 `climate_data_catalog` |
@@ -136,7 +136,7 @@ so one lookup answers both.
 | `fetch_gcm_slice` | `fetch_gcm_raw` |
 | `plot_gcm_timeseries` | `plot_climate_proj_timeseries` |
 | `prepare_stress_test_grid` | `climate_stress_parameters` |
-| `prepare_weathergen_config` | `prepare_weagen_config` |
+| `prepare_weathergen_config` | `prepare_weathergen_config` |
 | `generate_weather_realizations` | `generate_weather_realization` |
 | `perturb_climate_realization` | `generate_climate_stress_test` |
 | `write_climate_data_catalog` | `climate_data_catalog` |

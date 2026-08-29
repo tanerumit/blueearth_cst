@@ -11,11 +11,11 @@ library(yaml)
 # thing to touch args.
 args <- commandArgs(trailingOnly = TRUE)
 if (length(args) != 5L) {
-  stop("generate_weather.R expects 5 args: <climate_nc> <weagen_config_yaml> ",
+  stop("generate_weather.R expects 5 args: <climate_nc> <weathergen_config_yaml> ",
        "<rlz_index_width> <st_index_width> <basin_cells_csv>")
 }
 climate_nc_path    <- args[[1]]
-weagen_config_path <- args[[2]]
+weathergen_config_path <- args[[2]]
 # Member indices are zero-padded to a width derived from the COUNT (C27). The
 # widths are computed ONCE, in the Snakefile, and passed in -- never re-derived
 # here. Re-deriving would mean reimplementing stress_test_grid's arithmetic in R,
@@ -37,7 +37,7 @@ pad <- function(value, width) sprintf(paste0("%0", width, "d"), as.integer(value
 # The reserved unperturbed baseline this rule writes, padded like any member.
 st_baseline <- pad(0L, st_index_width)
 
-yaml <- yaml::read_yaml(weagen_config_path)
+yaml <- yaml::read_yaml(weathergen_config_path)
 
 # Parse global parameters from the yaml configuration file. Section and key
 # names are weathergenr's own function and argument names (renamed 2026-08-12

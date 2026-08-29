@@ -196,12 +196,12 @@ def downscale_climate_forcing(
     if hasattr(forcing.indexes["time"], "to_datetimeindex"):
         forcing["time"] = forcing.indexes["time"].to_datetimeindex(time_unit="ns")
 
-    # weagen has off-by-one timestamps at the year boundaries; clip the forcing
+    # weathergen has off-by-one timestamps at the year boundaries; clip the forcing
     # in place via the component's data.
     for var in list(forcing.data_vars):
         forcing[var] = forcing[var].sel(time=slice(starttime, endtime))
 
-    # Refresh starttime/endtime from the actual forcing axis (weagen quirk).
+    # Refresh starttime/endtime from the actual forcing axis (weathergen quirk).
     last_var = next(iter(forcing.data_vars))
     times = forcing[last_var].time.values
     mod.config.set("time.starttime", str(times[0])[:19])

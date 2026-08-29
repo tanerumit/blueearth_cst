@@ -189,7 +189,7 @@ plugin registry.
   at `config/project_config.template.yml`.
 - All three Snakefiles read sectioned config; old flat reads removed.
 - `src/` scripts that read config directly (`prepare_cst_parameters`,
-  `prepare_weagen_config`, `get_change_climate_proj`,
+  `prepare_weathergen_config`, `get_change_climate_proj`,
   `get_change_climate_proj_summary`) migrated.
 - Three migrated config files committed (`tests/`, canonical, Linux).
 - All three workflows run end-to-end on the migrated canonical config
@@ -435,7 +435,7 @@ rounds + round-cap arbitration; 21/21 findings closed) at `dev/milestones/r05/`.
 12 commits (no commit 4; `8b356f3`..seal): contract doc
 `dev/reference/workflows/run_stress_test.md`; `stress_test_grid` helper extracted to
 `snake_utils.py` (strict `step_num`, removing the Snakefile's silent default-1 —
-output-neutral hardening); `prepare_weagen_config.py` config assembly extracted
+output-neutral hardening); `prepare_weathergen_config.py` config assembly extracted
 into importable functions above a guard; the **CyclicGraphException** resolved
 by a rule-local `wildcard_constraints: st_num=[1-9][0-9]*` on
 `generate_climate_stress_test` + the `test_cli` ratchet flipped to a clean-DAG
@@ -1333,7 +1333,7 @@ therefore read alike, which they should.
 **Defects being fixed.** Two rules carry no verb at all
 (`climate_stress_parameters`, `climate_data_catalog`); one verb is actively wrong
 (`export_wflow_results` — folded into R9); `setup_` duplicates `prepare_`;
-`weagen` and `proj` are contractions that appear in no path or directory; `_st`
+`weathergen` and `proj` are contractions that appear in no path or directory; `_st`
 reads as a truncation; and `plot_results` / `plot_map` are vague beside their
 specific siblings.
 

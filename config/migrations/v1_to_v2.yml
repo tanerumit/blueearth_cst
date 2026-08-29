@@ -55,7 +55,7 @@ register: dev/milestones/r14/config-shape-scoping.md
 # --------------------------------------------------------------------------
 # `C-32`'s enum below is `transient | constant`, taken from the register row,
 # which is RULED (2026-08-24). The CODE disagrees: `_check_trajectories`'
-# refusal message, its test, and `prepare_weagen_config.TRAJECTORY_KINDS` all
+# refusal message, its test, and `prepare_weathergen_config.TRAJECTORY_KINDS` all
 # say `transient | step`. Emitting `constant` would produce configs the loader
 # then refuses.
 #

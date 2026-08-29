@@ -218,7 +218,7 @@ def test_the_trajectory_enum_agrees_with_the_code(mapping):
 
     Declared in `tests/data/r14_expected_red.txt` with that reason.
     """
-    from blueearth_cst.experiment.prepare_weagen_config import TRAJECTORY_KINDS
+    from blueearth_cst.experiment.prepare_weathergen_config import TRAJECTORY_KINDS
 
     row = _rows(mapping)["C-32"]
     declared = set(row["enum"])

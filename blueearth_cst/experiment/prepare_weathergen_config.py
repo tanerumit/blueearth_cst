@@ -2,7 +2,7 @@
 
 The config-assembly body was previously module-level code reading the
 ``snakemake`` global on import, which made it un-importable for unit tests.
-R5 extracts it into named functions (``build_weagen_config`` /
+R5 extracts it into named functions (``build_weathergen_config`` /
 ``compute_nr_years``) above a nested ``__main__`` / ``globals()`` guard so the
 year math is reachable without a live ``snakemake`` global. Behavior-neutral:
 the same dict is assembled and written.
@@ -24,7 +24,7 @@ def read_yml(yml_path):
 
 
 def compute_nr_years(sim_end):
-    """Number of weagen years to generate.
+    """Number of weathergen years to generate.
 
     Spans from the end of the historical period (2010) to the wflow run window
     around the horizon (``middle_year`` ± ``wflow_run_length``/2), plus a 2-year
@@ -87,7 +87,7 @@ def _transient_flag(stress_test_cfg, variable):
     return value == "transient"
 
 
-def build_weagen_config(
+def build_weathergen_config(
     realizations_num,
     stress_test_cfg,
     output_path,
@@ -101,7 +101,7 @@ def build_weagen_config(
 ):
     """Assemble the ONE weathergenr config the experiment uses.
 
-    Seeds from the default weagen template, then overrides the output path,
+    Seeds from the default weathergen template, then overrides the output path,
     historical start year, number of years (``compute_nr_years``), file prefix
     and realization count from the project config. Adds the two
     ``transient_change`` flags that ``impose_climate_change.R`` reads.
@@ -143,7 +143,7 @@ def build_weagen_config(
             "n_realizations": realizations_num,
             # Resolved by the Snakefile from `shared.seed` (integer or `auto`)
             # against `defaults.seed`. Injected rather than templated so there
-            # is ONE default: a `seed:` left in the weagen template would be a
+            # is ONE default: a `seed:` left in the weathergen template would be a
             # second one, and the two would drift the first time either moved.
             "seed": seed,
             # weathergenr wants the month NUMBER; the config carries the
@@ -172,11 +172,11 @@ def build_weagen_config(
     return yml_dict
 
 
-def write_weagen_config(yml_dict, weagen_config_path):
-    """Write the assembled weagen config dict to ``weagen_config_path``."""
-    if not os.path.isdir(os.path.dirname(weagen_config_path)):
-        os.makedirs(os.path.dirname(weagen_config_path))
-    with open(weagen_config_path, "w") as f:
+def write_weathergen_config(yml_dict, weathergen_config_path):
+    """Write the assembled weathergen config dict to ``weathergen_config_path``."""
+    if not os.path.isdir(os.path.dirname(weathergen_config_path)):
+        os.makedirs(os.path.dirname(weathergen_config_path))
+    with open(weathergen_config_path, "w") as f:
         yaml.dump(yml_dict, f, default_flow_style=False, sort_keys=False)
 
 
@@ -200,12 +200,12 @@ if __name__ == "__main__":
                     "weathergenr would reject it at rule 3.11"
                 ),
             )
-            weagen_config = sm.output.weagen_config
+            weathergen_config = sm.output.weathergen_config
             log_row(
-                f"Preparing and writing the weather generator config file {weagen_config}",
-                module="weagen",
+                f"Preparing and writing the weather generator config file {weathergen_config}",
+                module="weathergen",
             )
-            yml_dict = build_weagen_config(
+            yml_dict = build_weathergen_config(
                 realizations_num=sm.params.realizations_num,
                 stress_test_cfg=sm.params.stress_test_cfg,
                 output_path=sm.params.output_path,
@@ -217,6 +217,6 @@ if __name__ == "__main__":
                 dry_spell_factor=sm.params.dry_spell_factor,
                 wet_spell_factor=sm.params.wet_spell_factor,
             )
-            write_weagen_config(yml_dict, weagen_config)
+            write_weathergen_config(yml_dict, weathergen_config)
     else:
         raise ValueError("This script should be run from a snakemake environment")

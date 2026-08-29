@@ -1,7 +1,7 @@
-"""Unit tests for prepare_weagen_config helpers (R5 §8).
+"""Unit tests for prepare_weathergen_config helpers (R5 §8).
 
 Targets the year math (compute_nr_years, generate-branch) and the stress-test
-branch dict assembly (build_weagen_config). Both are import-clean after the R5
+branch dict assembly (build_weathergen_config). Both are import-clean after the R5
 function extraction (commit 3) — no snakemake global, no heavy deps.
 """
 
@@ -9,15 +9,15 @@ import os
 
 import pytest
 
-from blueearth_cst.experiment.prepare_weagen_config import (
-    build_weagen_config,
+from blueearth_cst.experiment.prepare_weathergen_config import (
+    build_weathergen_config,
     compute_nr_years,
     read_yml,
 )
 
 REPO_ROOT = os.path.join(os.path.dirname(__file__), "..")
 # The path rule 3.04 (run_stress_test.smk:131) hands to
-# prepare_weagen_config as ``default_config``. It lives under config/defaults/:
+# prepare_weathergen_config as ``default_config``. It lives under config/defaults/:
 # the 2026-08-11 split moved the three rule-read configs out of
 # config/templates/, which now holds only files you copy. This literal must
 # track that Snakefile param.
@@ -51,7 +51,7 @@ def test_seed_year_math_value():
     assert compute_nr_years(2090) == 82
 
 
-def test_default_weagen_config_resolves_at_defaults_path():
+def test_default_weathergen_config_resolves_at_defaults_path():
     """Config-split smoke (--dry-run-blind): weathergen_config.yml must resolve
     at config/defaults/. run_stress_test.smk:131 passes this path as
     the ``default_config`` param; rule 3.04 reads it via read_yml. A green
@@ -70,10 +70,10 @@ def test_default_weagen_config_resolves_at_defaults_path():
     assert "seed" not in cfg["generate_weather"]
 
 
-def test_build_weagen_config_generate_reads_moved_default(tmp_path):
-    """Exercise the exact resolution path rule 3.04 uses: build_weagen_config's
+def test_build_weathergen_config_generate_reads_moved_default(tmp_path):
+    """Exercise the exact resolution path rule 3.04 uses: build_weathergen_config's
     generate branch read_yml(default_config_path) against the moved template."""
-    out = build_weagen_config(**_generate_kwargs(tmp_path))
+    out = build_weathergen_config(**_generate_kwargs(tmp_path))
     # Seeded from the moved default template, then overridden by project config.
     assert out["generate_weather"]["seed"] == 123  # injected, not templated
     assert out["generate_weather"]["n_realizations"] == 2
@@ -115,7 +115,7 @@ def test_transient_flags_reach_the_one_shared_config(tmp_path):
     their only carrier, so an omission here is a silent behaviour change in the
     perturbation step -- which is what `validate_wg3` now pins.
     """
-    out = build_weagen_config(**_generate_kwargs(tmp_path))
+    out = build_weathergen_config(**_generate_kwargs(tmp_path))
     assert out["temp"] == {"transient_change": True}
     assert out["precip"] == {"transient_change": False}
 
@@ -128,7 +128,7 @@ def test_only_the_flags_are_copied_not_the_perturbation_ranges(tmp_path):
     perturbation ranges that had no part in it. The real values come from
     st_<m>.csv. Do not reintroduce them here.
     """
-    out = build_weagen_config(
+    out = build_weathergen_config(
         **_generate_kwargs(
             tmp_path,
             stress_test={
@@ -157,7 +157,7 @@ def test_missing_transient_flag_refuses_and_names_the_key(tmp_path, variable):
     with pytest.raises(
         ValueError, match=rf"climate_perturbations\.{variable}\.trajectory"
     ):
-        build_weagen_config(**_generate_kwargs(tmp_path, stress_test=stress_test))
+        build_weathergen_config(**_generate_kwargs(tmp_path, stress_test=stress_test))
 
 
 @pytest.mark.parametrize("bad", ["Transient", "trasient", "ramp", True, "", None])
@@ -180,7 +180,7 @@ def test_an_unrecognised_trajectory_refuses_rather_than_meaning_constant(tmp_pat
         "precip": {"trajectory": "transient"},
     }
     with pytest.raises(ValueError, match="must be one of"):
-        build_weagen_config(**_generate_kwargs(tmp_path, stress_test=stress_test))
+        build_weathergen_config(**_generate_kwargs(tmp_path, stress_test=stress_test))
 
 
 # ---------------------------------------------------------------------------
@@ -242,11 +242,11 @@ def test_f7_the_template_is_a_declared_input_of_rule_3_10():
 def test_surfaced_arguments_reach_the_generated_config(tmp_path, section, key, value):
     """C34: a surfaced argument is worthless if it does not reach the R.
 
-    `build_weagen_config` seeds from the template wholesale, so a key added
+    `build_weathergen_config` seeds from the template wholesale, so a key added
     there arrives automatically -- this pins that, because the alternative
     (an explicit copy list) is what would silently drop it.
     """
-    out = build_weagen_config(**_generate_kwargs(tmp_path))
+    out = build_weathergen_config(**_generate_kwargs(tmp_path))
     assert out[section][key] == value
 
 
@@ -257,7 +257,7 @@ def test_c34_retired_the_dead_evaluate_keys(tmp_path):
     set it FALSE still got every plot. Leaving a dead key that reads as a live
     setting is worse than removing it.
     """
-    out = build_weagen_config(**_generate_kwargs(tmp_path))
+    out = build_weathergen_config(**_generate_kwargs(tmp_path))
     gw = out["generate_weather"]
     assert "evaluate.model" not in gw
     assert "evaluate.grid.num" not in gw

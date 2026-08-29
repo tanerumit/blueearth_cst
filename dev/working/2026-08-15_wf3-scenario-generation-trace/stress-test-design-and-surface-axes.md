@@ -540,7 +540,7 @@ branch is never merged) defines
 
 ```
 member_hash = sha256({member_id, rlz, cst, baseline, seed_r,
-                      weagen_template_digest, st_params_digest,
+                      weathergen_template_digest, st_params_digest,
                       tavg, prcp, precip_variance, run_config_digest})
 ```
 

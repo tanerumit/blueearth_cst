@@ -226,7 +226,7 @@ RLZ_NUM = get_config(my_cfg, "n_realizations", 1)  # C-29
 # C-68: the section is `climate_perturbations:` now -- it describes the
 # perturbations, and `stress_test` named the whole workflow as well as this one
 # block. The LOCAL keeps its name: it is threaded into two rules' params and
-# through to prepare_weagen_config, none of which is a config surface.
+# through to prepare_weathergen_config, none of which is a config surface.
 #
 # Per-axis level counts live under climate_perturbations.<temp|precip>.n_levels.
 # ST_NUM is derived by the shared stress_test_grid helper (strict: n_levels is
@@ -1016,7 +1016,7 @@ rule prepare_weathergen_config:
         # Then weathergenr fails twenty rules later: the R3 defect, restored.
         climate_nc = ancient(f"{store_dir}/extract_historical.nc"),
     output:
-        weagen_config = f"{wg_dir}/config/weathergen_config.yml",
+        weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     params:
         # The two RESOLVED values this rule's module used to re-read the
         # config from disk for (R13 D-10.6). Passing them finishes the
@@ -1043,9 +1043,9 @@ rule prepare_weathergen_config:
     benchmark:
         f"{BENCH_PARTS_DIR}/3.10_prepare_weathergen_config.tsv",
     script:
-        "blueearth_cst/experiment/prepare_weagen_config.py"
+        "blueearth_cst/experiment/prepare_weathergen_config.py"
 
-# 3.05 prepare_weagen_config_st is GONE (C29, 2026-08-05). It emitted one
+# 3.05 prepare_weathergen_config_st is GONE (C29, 2026-08-05). It emitted one
 # weathergen_config_rlz_<n>_cst_<m>.yml per member -- RLZ_NUM x ST_NUM files,
 # each with its own log and benchmark part -- and nothing in it varied except the
 # OUTPUT FILENAME, split into prefix and suffix because weathergenr::write_netcdf
@@ -1064,7 +1064,7 @@ rule generate_weather_realizations:
         # climate_nc is: both are store artifacts whose re-extraction must not
         # by itself re-run the generator.
         basin_cells = ancient(f"{store_dir}/basin_cells.csv"),
-        weagen_config = f"{wg_dir}/config/weathergen_config.yml",
+        weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     output:
         temp([f"{wg_dir}/output/rlz_{rlz_ix(n)}_st_{ST_BASELINE}.nc" for n in range(1, RLZ_NUM+1)])
     params:
@@ -1078,7 +1078,7 @@ rule generate_weather_realizations:
     benchmark:
         f"{BENCH_PARTS_DIR}/3.11_generate_weather_realizations.tsv",
     shell:
-        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config} {params.rlz_width} {params.st_width} {input.basin_cells}"""
+        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/generate_weather.R {input.climate_nc} {input.weathergen_config} {params.rlz_width} {params.st_width} {input.basin_cells}"""
 
 # 3.12  perturb_climate_realization — impose perturbations per rlz/cst (st_num >= 1)
 rule perturb_climate_realization:
@@ -1108,7 +1108,7 @@ rule perturb_climate_realization:
         # The ONE shared config from 3.10 (C29 retired the per-member one). The
         # DAG edge was already there transitively via 3.11; declaring it makes
         # the transient-flag read visible to --dry-run.
-        weagen_config = f"{wg_dir}/config/weathergen_config.yml",
+        weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     output:
         rlz_st_nc = temp(f"{wg_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".nc")
     log:
@@ -1116,7 +1116,7 @@ rule perturb_climate_realization:
     benchmark:
         f"{BENCH_PARTS_DIR}/3.12_perturb_climate_realization/" + "rlz_{rlz_num}_st_{st_num}.tsv",
     shell:
-        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.lookup_csv} {output.rlz_st_nc} {wildcards.st_num}"""
+        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/impose_climate_change.R {input.rlz_nc} {input.weathergen_config} {input.lookup_csv} {output.rlz_st_nc} {wildcards.st_num}"""
 
 # 3.13 was write_climate_data_catalog, removed 2026-08-18. It built ONE hydromt
 # catalog naming every member, and rule 3.14 read a single entry out of it — so

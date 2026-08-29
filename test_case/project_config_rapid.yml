@@ -4,7 +4,7 @@
 #
 # Cheap where the cost is, full where a code path would otherwise be skipped:
 #   - horizontime_climate 2050. weathergenr generates from 2010 to the horizon
-#     (prepare_weagen_config.compute_nr_years anchors at 2010), so the HORIZON
+#     (prepare_weathergen_config.compute_nr_years anchors at 2010), so the HORIZON
 #     sets the series length, not run_length: 46 years here vs 78 for the seed.
 #   - run_length 8 — WF3's wflow time is RLZ_NUM x ST_NUM x this. EVEN, because
 #     forcing_window snaps ceil backwards and round forwards, so 7 and 8 both

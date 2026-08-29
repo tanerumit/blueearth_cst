@@ -112,7 +112,7 @@ ALLOWANCES = (
             "its config even though our keys for them moved"
         ),
         paths=(
-            "blueearth_cst/experiment/prepare_weagen_config.py",
+            "blueearth_cst/experiment/prepare_weathergen_config.py",
             "blueearth_cst/shared/interchange_contracts.py",
         ),
     ),

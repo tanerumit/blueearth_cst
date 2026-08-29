@@ -27,8 +27,18 @@ members:
 # variable registry exists yet (see the commit message). The long form is not
 # retired -- no `RETIRED_KEYS` row covers `variables` -- so it stays valid and
 # this fixture uses it.
+# C-57: BOTH forms, in one document, because both have to keep working.
+#
+# `precip:` is the SHORT form -- a bare key resolving every field from
+# `blueearth_cst/shared/variable_registry.py`, including the 0.1 mm/day
+# near-zero threshold C-64 moved there. `temp:` stays long, which is the only
+# way to declare a variable the registry has never heard of and therefore the
+# form that must never stop working.
+#
+# Mixed deliberately rather than converted: a fixture on one form leaves the
+# other exercised nowhere against the real loader and a real DAG.
 variables:
-  precip: {source: precip, canonical: rate, units: mm/day, change: relative}
+  precip:
   temp: {source: temp, canonical: state, units: degC, change: absolute}
 
 # C-59: `historical_year_range: [2000, 2014]` retyped. CALENDAR years by design

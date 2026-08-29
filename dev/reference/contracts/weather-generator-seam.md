@@ -200,7 +200,7 @@ consumer reads while keeping the divergence honestly on the record.
   filename — split into prefix and suffix because `weathergenr::write_netcdf`
   takes them separately — and Snakemake already knew it as rule 3.12's own
   declared output, so it is passed as the 4th CLI argument and split in R. Its
-  two `transient_change` flags moved into this file and are now pinned here. At
+  two `trajectory` flags moved into this file and are now pinned here. At
   RLZ_NUM=10, ST_NUM=88 the removal drops 880 YAMLs plus their logs and
   benchmark parts. The rest of what it carried — copies of the `stress_test`
   step counts and monthly min/max ranges — was never read (finding F6) and
@@ -210,7 +210,7 @@ consumer reads while keeping the divergence honestly on the record.
   `general.variables` (list ⊆ `{precip, temp, temp_min, temp_max}`) and
   `generateWeatherSeries.{warm.*, knn.sample.num, month.start, warm.variable,
   seed, evaluate.*, dry.spell.change[12], wet.spell.change[12], output.path,
-  sim.year.start, sim.year.num, nc.file.prefix, realizations_num}`.
+  sim.year.start, sim.year.num, nc.file.prefix, n_realizations}`.
 - **pinned surface:** **the key set + types the R side reads** (derived
   read-only from `global.R` / `generate_weather.R`), NOT weathergenr's
   semantics. Upstream-spelled keys (`warm.signif.level`, `dot.case`) are

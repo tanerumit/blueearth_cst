@@ -323,9 +323,11 @@ MIN_REFERENCE = _dm.resolve_thresholds(
     # to the user, not what a variable happens to be called here.
     VARIABLE_SPEC, _relative_cfg.get("min_denominator")
 )
-MAX_FLAGGED_MONTHS = _relative_cfg.get(
-    "max_flagged_months", _dm.DEFAULT_MAX_FLAGGED_MONTHS
-)
+# `C-65`: a toolbox CONSTRAINT, not a project setting. The threshold at which a
+# monthly relative product stops being reportable is a property of the method,
+# so no project may relax it -- which is why this reads from
+# `advanced_settings.constraints` and takes no `_relative_cfg` fallback.
+MAX_FLAGGED_MONTHS = ADVANCED_SETTINGS["constraints"]["max_flagged_months"]
 
 # R9 P2 commit 2: the projections overlay moves under `data/climate/`. ONE
 # binding carries every WF2 output below it, and the two cache tiers keep their

@@ -19,7 +19,11 @@ def _write(tmp_path, payload):
 
 
 VALID = {
-    "constraints": {"min_historical_years": 16},
+    # `max_flagged_months` joined `constraints:` with `C-65`. This fixture
+    # failing on a schema addition is the schema working: it is closed, so the
+    # YAML and `_ADVANCED_SETTINGS_SCHEMA` cannot land apart without something
+    # saying so.
+    "constraints": {"min_historical_years": 16, "max_flagged_months": 3},
     "defaults": {
         "batch_disk_headroom_fraction": 0.25,
         "seed": 123,
@@ -131,7 +135,7 @@ def test_an_unquoted_two_part_version_reaches_the_validator_as_a_float(tmp_path)
     rather than asserted about it."""
     path = tmp_path / "advanced_settings.yml"
     path.write_text(
-        "constraints:\n  min_historical_years: 16\n"
+        "constraints:\n  min_historical_years: 16\n  max_flagged_months: 3\n"
         "defaults:\n  batch_disk_headroom_fraction: 0.25\n"
         "  seed: 123\n  water_year_start: Jan\n"
         "runtime:\n  julia_threads: 4\n  julia_version: 1.11\n",

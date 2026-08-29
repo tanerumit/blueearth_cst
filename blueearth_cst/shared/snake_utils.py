@@ -868,7 +868,13 @@ ADVANCED_SETTINGS_PATH = (
 #: force (the same fail-loud stance ``get_config`` takes for project configs).
 #: A new setting is added HERE and in the file together.
 _ADVANCED_SETTINGS_SCHEMA = {
-    "constraints": {"min_historical_years": "positive_int"},
+    # `max_flagged_months` joined with `C-65`. A CONSTRAINT rather than a
+    # default: D-10.6 classes it a hard limit a project may not relax, so
+    # unlike `C-54` there is no overriding key to name (D-10.7).
+    "constraints": {
+        "min_historical_years": "positive_int",
+        "max_flagged_months": "positive_int",
+    },
     "defaults": {
         "batch_disk_headroom_fraction": "unit_fraction",
         "seed": "nonnegative_int",

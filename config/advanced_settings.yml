@@ -43,6 +43,22 @@ constraints:
   # moves the failure later and makes it harder to read.
   min_historical_years: 16
 
+  # How many structurally flagged months make the MONTHLY relative product
+  # undefined for a combination, rather than merely caveated.
+  #
+  # A basin with a genuine dry season produces about one season of flagged
+  # months as its NORMAL state. More than that and the product is undefined
+  # for over a quarter of the year, which a reader should be told at
+  # combination level rather than by counting footnotes.
+  #
+  # A `constraints:` entry and not a `defaults:` one, so unlike its
+  # neighbours below there is no overriding project key to name here: this
+  # is the point at which a result stops being reportable, which is a
+  # property of the method rather than of a project (`C-65`, D-10.6/D-10.7).
+  # It was `analyze_projections.relative_change.max_flagged_months` until
+  # R14; a project that set it non-default is told so by the migration.
+  max_flagged_months: 3
+
 defaults:
 
   # The share of FREE disk that WF3's batched Wflow runs may hold in transient

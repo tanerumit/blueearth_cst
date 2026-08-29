@@ -989,7 +989,7 @@ def main(argv=None) -> int:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="report what would change and write nothing (the only mode today)",
+        help="report what would change and write nothing",
     )
     args = parser.parse_args(argv)
     try:

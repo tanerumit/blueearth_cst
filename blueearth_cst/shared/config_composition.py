@@ -374,10 +374,22 @@ RETIRED_KEYS: dict[str, str] = {
 #: (file, section) pairs, enumerated APART from the value reads so that
 #: retiring the value-read registry could not silently absorb one -- which is
 #: exactly what the separation bought when D-9.7 retired it.
+#: **One entry since P2, and the move is the point.** The two
+#: `run_stress_test.smk` entries were the Snakefile's literal
+#: `config.get("workflows", {}).get("build_model")` lookups inside
+#: `guarded_sections_digest` -- a hand-written restatement of the guard's list
+#: that had already drifted from it (D-9.6). P2 derived them away, so the
+#: minimality direction of the inventory test requires retiring them: a declared
+#: entry with no live site is as much a failure as an undeclared read.
+#:
+#: The comparator's own access replaces them, and it is spelled `"*"` because
+#: there is no workflow name left to write. `guarded_paths` walks whatever
+#: `workflows` mapping the SNAPSHOT carries, so which sections get compared is a
+#: property of the document rather than of this file -- which is exactly the
+#: guarantee P2 was after, and it means the inventory can no longer name them.
 IDENTITY_COMPARISONS: frozenset[tuple[str, str]] = frozenset(
     {
-        ("run_stress_test.smk", "build_model"),
-        ("run_stress_test.smk", "analyze_projections"),
+        ("blueearth_cst/experiment/check_project_consistency.py", "*"),
     }
 )
 

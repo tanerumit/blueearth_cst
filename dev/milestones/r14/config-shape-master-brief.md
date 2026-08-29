@@ -196,7 +196,7 @@ save gate cost.
 | P0 | `config-shape-p0-baseline-provenance.task.md` | **LANDED 2026-08-25** (`3d3d29fe`, merged `f814c16b`) |
 | P1 | `config-shape-p1-loader.task.md` | **DONE** 2026-08-25 (T1 reads only; see P1b) |
 | P1b | `config-shape-p1b-readers.task.md` | **DONE** 2026-08-26 (readers for all three workflows + `C-54`; `C-57`/`C-64`/`C-66` deferred to P1c) |
-| **P1c** | `config-shape-p1c-registry.task.md` | not started — **the variable registry**, added 2026-08-26 by owner ruling |
+| **P1c** | `config-shape-p1c-registry.task.md` | **DONE** 2026-08-29 — the variable registry, Gate 1 and Gate 2 released; ruling at `config-shape-p1c-gate1.md` |
 | P2 | `config-shape-p2-identity.task.md` | **DONE** 2026-08-29 (derived guard at all three sites; `compute:` out of identity). Falsifiers observed: `config-shape-p2-falsifiers.md` |
 | P3 | `config-shape-p3-rewriter.task.md` | **DONE** 2026-08-27 (`config/migrations/v1_to_v2.yml` + `scripts/migrate_project_config.py`; Gate 3 released) |
 | P4 | `config-shape-p4-configs.task.md` | **DONE** 2026-08-28 (four sets + templates + fixture, migrated BY the rewriter; equivalence check across all four) |

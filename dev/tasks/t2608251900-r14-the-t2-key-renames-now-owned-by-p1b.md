@@ -104,14 +104,17 @@ it is a grep for one literal.
 - [x] P1b executed 2026-08-26 (four commits on `feat/r14-p1-loader`). All
       four entry points dry-run clean on v2; `V2_BLOCKED` retired; the
       declared-red list shrank 83 -> 73.
-- [ ] **P1c** takes what P1b could not: `C-57`, `C-64`, `C-66`/`C-65` all
-      need a per-variable REGISTRY that does not exist. Close this item when
-      P1c lands, not before — the measurement below covered those rows too.
-- [ ] **Unowned, found by P1b and belonging to no phase:**
-      `dev/scripts/prune_series_cache.py:60` reads `my["clim_project"]` and
-      `check_baseline.py` uses `CLIM_PROJECT`. `dev/scripts/` is in no phase's
-      permitted scope. Not a run path, so outside P1b's falsifier, but both
-      break at P4 when the shipped configs actually migrate.
+- [x] **P1c** landed 2026-08-29 (six commits). The registry is
+      `blueearth_cst/shared/variable_registry.py`; `C-57`, `C-62`, `C-64`,
+      `C-65` and `C-66` are all in. Gate 1's ruling and the three risks it
+      recorded are at `dev/milestones/r14/config-shape-p1c-gate1.md`.
+- [x] **Unowned, found by P1b** — fixed 2026-08-29, and the prediction was
+      half right. `prune_series_cache` was broken in THREE places, not one:
+      `clim_project` -> `ensemble`, the climate catalog's move, and `C-63`'s
+      `members:` group, which it passed whole to a resolver expecting a list.
+      `prune_climate_store` was broken too and nobody had predicted it. But
+      `check_baseline.py`'s `CLIM_PROJECT` is a PINNED LITERAL describing the
+      recorded baseline, not a config read, so it was never at risk.
 
 ## Links
 

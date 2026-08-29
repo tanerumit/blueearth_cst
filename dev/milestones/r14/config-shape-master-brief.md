@@ -201,7 +201,7 @@ save gate cost.
 | P3 | `config-shape-p3-rewriter.task.md` | **DONE** 2026-08-27 (`config/migrations/v1_to_v2.yml` + `scripts/migrate_project_config.py`; Gate 3 released) |
 | P4 | `config-shape-p4-configs.task.md` | **DONE** 2026-08-28 (four sets + templates + fixture, migrated BY the rewriter; equivalence check across all four) |
 | P5 | `config-shape-p5-rename.task.md` | **DONE** 2026-08-29 (`51469c05`, one atomic commit; Gate 4 released). 466 occurrences / 140 files, not the brief's 301/76 |
-| P6 | `config-shape-p6-docs.task.md` | not started |
+| P6 | `config-shape-p6-docs.task.md` | **DONE** 2026-08-29 (`68f004b3`). Migration note written; guide rewritten; notebooks, `dev/reference/` and `C-75` swept |
 | P7 | `config-shape-p7-independent.task.md` | **DONE** 2026-08-29 (`f4e78bfc`). `C-83` only — `C-35` was withdrawn 2026-08-25 |
 
 ---

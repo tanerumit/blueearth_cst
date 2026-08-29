@@ -90,3 +90,11 @@ freeze" is not evidence about `compute:` specifically.
 Option 3 looks closest to the intent, but the choice needs the person who owns
 the experiment-structure design (`dev/milestones/p31/`), not the person who
 tripped over it.
+
+## The brief
+
+`dev/working/2026-08-29_experiment-freeze/freeze-repair.task.md`. Gate 1 rules
+the record's home; the falsifier is two WF3 runs, and it has to go through
+Snakemake — a unit test cannot see this defect, which is how it survived.
+
+## Links

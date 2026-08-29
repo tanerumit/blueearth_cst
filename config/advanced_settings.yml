@@ -1,7 +1,7 @@
 # Advanced settings — toolbox-wide knobs a normal project never touches.
 #
 # NOT a `--configfile` target. The three Snakefiles are driven by a project's
-# own `snake_config_*.yml` (the shipped examples live beside the project they
+# own `project_config_*.yml` (the shipped examples live beside the project they
 # write into, under `test_case/`); THIS file is read
 # once by `blueearth_cst/shared/snake_utils.py` and applies to every project
 # and every workflow. Editing it changes the toolbox, not a run.
@@ -43,6 +43,22 @@ constraints:
   # moves the failure later and makes it harder to read.
   min_historical_years: 16
 
+  # How many structurally flagged months make the MONTHLY relative product
+  # undefined for a combination, rather than merely caveated.
+  #
+  # A basin with a genuine dry season produces about one season of flagged
+  # months as its NORMAL state. More than that and the product is undefined
+  # for over a quarter of the year, which a reader should be told at
+  # combination level rather than by counting footnotes.
+  #
+  # A `constraints:` entry and not a `defaults:` one, so unlike its
+  # neighbours below there is no overriding project key to name here: this
+  # is the point at which a result stops being reportable, which is a
+  # property of the method rather than of a project (`C-65`, D-10.6/D-10.7).
+  # It was `analyze_projections.relative_change.max_flagged_months` until
+  # R14; a project that set it non-default is told so by the migration.
+  max_flagged_months: 3
+
 defaults:
 
   # The share of FREE disk that WF3's batched Wflow runs may hold in transient
@@ -69,18 +85,6 @@ defaults:
   # project falls back to the previous behaviour rather than failing, since a
   # safety cap must not become a new way for a run to break.
   batch_disk_headroom_fraction: 0.25
-
-  # Wflow.jl `--threads`. Overridable per project via `shared.julia_threads`.
-  #
-  # Wflow parallelizes over grid CELLS, so raising this pays on a large basin
-  # and does nothing on a small one. It is NOT Snakemake's `--cores`: the two
-  # multiply, so keep `--cores N x julia_threads <= logical CPUs`.
-  #
-  # 4 is one leg of the frozen resource triple `(-c 3, --threads 4, B=1)` that
-  # every recorded performance baseline was measured at
-  # (dev/milestones/p33/performance-baseline.md §5.6). Changing it here silently
-  # invalidates those comparisons — prefer the per-project override.
-  julia_threads: 4
 
   # Randomization seed for every stochastic step. Overridable per project via
   # `shared.seed`, which also accepts `auto`.
@@ -120,6 +124,22 @@ defaults:
   water_year_start: Jan
 
 runtime:
+
+  # Wflow.jl `--threads`. A TOOLBOX setting: `C-54` removed the per-project
+  # `shared.julia_threads` override, so this is the only place it is set.
+  # It sits under `runtime:` rather than `defaults:` because `defaults:` is for
+  # values a project could have overridden, and there is no longer such a
+  # thing for this one.
+  #
+  # Wflow parallelizes over grid CELLS, so raising this pays on a large basin
+  # and does nothing on a small one. It is NOT Snakemake's `--cores`: the two
+  # multiply, so keep `--cores N x julia_threads <= logical CPUs`.
+  #
+  # 4 is one leg of the frozen resource triple `(-c 3, --threads 4, B=1)` that
+  # every recorded performance baseline was measured at
+  # (dev/milestones/p33/performance-baseline.md §5.6). Changing it here
+  # silently invalidates those comparisons.
+  julia_threads: 4
 
   # The juliaup version selector every workflow Julia invocation carries
   # (`julia +<version> ...`). Julia is deliberately NOT in the pixi env —

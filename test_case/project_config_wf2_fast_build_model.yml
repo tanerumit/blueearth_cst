@@ -1,0 +1,4 @@
+engine:
+  build_config: config/defaults/wflow_build_model.yml
+  waterbodies_config: config/defaults/wflow_update_waterbodies.yml
+observations:

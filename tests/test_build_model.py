@@ -8,7 +8,7 @@ from blueearth_cst.model import copy_config_files
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 
-config_fn = join(TESTDIR, "snake_config_fixture.yml")
+config_fn = join(TESTDIR, "project_config_fixture.yml")
 
 
 def test_copy_config(tmp_path, data_sources, model_build_config):
@@ -34,7 +34,7 @@ def test_copy_config(tmp_path, data_sources, model_build_config):
 
     copy_config_files.copy_config_files(
         config=config_fn,
-        config_out_path=join(cfg, "runs", "snake_config_build_model.yml"),
+        config_out_path=join(cfg, "runs", "project_config_build_model.yml"),
         other_config_files={
             data_sources: join(cfg, "catalogs"),
             model_build_config: join(cfg, "templates"),
@@ -44,7 +44,7 @@ def test_copy_config(tmp_path, data_sources, model_build_config):
 
     # The flat copy is unconditional -- the drift guard reads it, and it is
     # baseline-fingerprinted in a real project.
-    assert os.path.exists(join(cfg, "runs", "snake_config_build_model.yml"))
+    assert os.path.exists(join(cfg, "runs", "project_config_build_model.yml"))
 
     # Both fixture inputs are TRACKED toolbox files, so neither is copied.
     assert not os.path.exists(join(cfg, "templates", "wflow_build_model.yml"))

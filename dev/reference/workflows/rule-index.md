@@ -161,7 +161,7 @@ Paths are relative to `project_dir`, with these shorthands:
 | `<model>/` | `models/hydrology/wflow/` |
 | `<spatial>/` | `data/spatial/` |
 | `<store>/` | `data/climate/historical/<clim_source>_<window>/` |
-| `<proj>/` | `data/climate/projections/<clim_project>/` |
+| `<proj>/` | `data/climate/projections/<ensemble>/` |
 | `<exp>/` | `experiments/<experiment_name>/` |
 | `<wg>/` | `<exp>/climate/weathergenr/` |
 | `<runs>/` | `<exp>/hydrology/wflow/` |
@@ -241,7 +241,7 @@ the config snapshot, the merged log and the benchmark table).
 **Does.** Copies the config and the files it references into the project, and
 writes the run record.
 
-**Writes.** `config/runs/snake_config_analyze_climate.yml` · the run record.
+**Writes.** `config/runs/project_config_analyze_climate.yml` · the run record.
 
 #### 0.02 · `delineate_region`
 
@@ -452,7 +452,7 @@ routed by kind, and writes an immutable content-addressed bundle of the
 effective settings (merged config + advanced settings + manifest) so a finished
 project can say what it was run with.
 
-**Writes.** `config/runs/snake_config_build_model.yml` ·
+**Writes.** `config/runs/project_config_build_model.yml` ·
 `config/runs/build_model/<digest>/` (bundle dir).
 
 **Writes (undeclared).** Copies into `config/templates/` (build + waterbodies),
@@ -476,7 +476,7 @@ never from a built model.
 and WF3 as 3.04, splatted from one `spatial_units_rule` helper so the three
 declarations cannot drift. Partitions the region into the vector layers every
 later join is keyed on, and is where **gauge points enter the workflow**: it
-snaps `shared.basin.gauge_points` to the river network and partitions each
+snaps `shared.basin.output_locations` to the river network and partitions each
 parent basin into incremental subbasins — gauge-driven where `control` points
 exist, automatic otherwise, chosen per basin — creating the `basin_id` →
 `subbasin_id` → `wflow_id` identity hierarchy.
@@ -564,7 +564,7 @@ declaring it there orders nothing after *this* rule.
 
 **Does.** Declares which timeseries Wflow emits — the `[output.csv]` block — for
 `outlets` (Q), `gauges_locations` (Q, P) and basin means of any extra
-`wflow_outvars`. It adds **no model data**: 1.07 created both gauge maps with
+`model.outvars`. It adds **no model data**: 1.07 created both gauge maps with
 `toml_output=None`, deferring exactly this step. It also re-checks that the
 model's gauge IDs still equal `location_registry.wflow_id`, and fails if either
 map is absent.
@@ -590,7 +590,7 @@ in between, so this copy is what catches corruption from that step.
 recipe: a `steps:` YAML holding `setup_config` (`time.starttime`,
 `time.endtime`, `time.timestepsecs`, `input.path_forcing`),
 `setup_precip_forcing` and `setup_temp_pet_forcing`, with the PET method and
-orography source branched off `clim_historical` and the chunksize sized by
+orography source branched off `climate.selected` and the chunksize sized by
 opening the model's staticmaps. Then applies it via `hydromt update wflow_sbm`,
 which builds the forcing for the model grid and — through the recipe's
 `setup_config` step — writes the run window and forcing pointer into the model
@@ -726,7 +726,7 @@ the evaluation figures — four sheets per station plus the basin-average series
 One rule, both products.
 
 **Writes.** `<model>/evaluation/performance_metrics.csv` · one
-`<var>_basavg.png` per basin-average `wflow_outvars` entry.
+`<var>_basavg.png` per basin-average `model.outvars` entry.
 
 **Writes (undeclared).** Per station, keyed by `wflow_id`:
 `hydrograph_<id>`, `signatures_peaks_<id>`, `signatures_lows_<id>` and
@@ -782,7 +782,7 @@ the incremental partition *within* that extent. A project can be
 
 ## Where a gauge point lives, rule by rule
 
-`shared.basin.gauge_points` (`station_name, x, y, location_role[, wflow_id]`) is
+`shared.basin.output_locations` (`station_name, x, y, location_role[, wflow_id]`) is
 consumed once, by 1.03, and everything after that reads its derived identities:
 
 | stage | rule | what happens to the point |
@@ -879,7 +879,7 @@ plots, the merged log and the benchmark table.
 
 **Does.** As WF1 1.01, with the WF2 bins.
 
-**Writes.** `config/runs/snake_config_analyze_projections.yml` ·
+**Writes.** `config/runs/project_config_analyze_projections.yml` ·
 `config/runs/analyze_projections/<digest>/` (bundle dir).
 
 **Writes (undeclared).** Catalog copies into `config/catalogs/`.
@@ -940,7 +940,7 @@ polygon fingerprint. WF2's terminal product — and, despite the `derive_` name,
 also renders one figure and writes the run's provenance and human-readable
 report. Kept as one rule deliberately: the design gives stage B no fan-out.
 
-**Writes.** `<proj>/summary/<clim_project>_change_factors_annual.csv` ·
+**Writes.** `<proj>/summary/<ensemble>_change_factors_annual.csv` ·
 `_monthly.csv` · `<proj>/summary/composition.csv` ·
 `<proj>/summary/provenance.json` · `<proj>/report.md` ·
 `<proj>/plots/overview/change-factor-cloud.png`, plus
@@ -956,7 +956,7 @@ horizon. Since 2026-08-17 the monthly figures RENDER
 a real input, opened and read. The annual table stays an **ordering edge only**.
 
 **Writes.** Eight PNGs under `<proj>/plots/`, named
-`<clim_project>_{precip,temp}_{annual,monthly}_{absolute,change}.png`. All eight
+`<ensemble>_{precip,temp}_{annual,monthly}_{absolute,change}.png`. All eight
 are declared, so none is invisible to Snakemake.
 
 #### 2.08 · `gather_benchmarks`
@@ -1116,7 +1116,7 @@ window, so the shared rule's input set never varies across experiments).
 **Does.** As WF1 1.01, but the snapshot stays **inside the experiment** rather
 than joining `config/runs/`.
 
-**Writes.** `<exp>/config/snake_config_run_stress_test.yml` ·
+**Writes.** `<exp>/config/project_config_run_stress_test.yml` ·
 `<exp>/config/runs/run_stress_test/<digest>/` (bundle dir).
 
 **Writes (undeclared).** Catalog copies into `<exp>/config/catalogs/`.

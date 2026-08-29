@@ -8,7 +8,8 @@ from pathlib import Path
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, climate_store_rule, get_config, julia_prefix, patch_psutil_windows_benchmark, region_rule, resolve_simulation_window, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, validate_historical_window, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, climate_store_rule, get_config, julia_prefix, patch_psutil_windows_benchmark, region_rule, historical_window_bounds, resolve_simulation_window, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, validate_historical_window, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 # The canonical climate figure set (rules 1.13 and 1.15 both draw it). Imported
 # for figure_names() ONLY, so every figure is declared from the same list the
@@ -40,6 +41,32 @@ patch_psutil_windows_benchmark()
 # a repo convention — keep it even though the Snakefile itself uses `config`.
 config_path = workflow.configfiles[0]
 
+# The consumed-key PROJECTION: the config paths this workflow actually reads.
+# Digesting the projection rather than the whole file is what stops a WF3-only
+# edit from re-firing WF1's record. A path this config lacks raises at parse
+# time -- the declaration is a claim about what the workflow reads, so a typo
+# must not quietly narrow the digest.
+#
+# HOISTED above the first config read (R13 D-8.2): the projection is a
+# config-independent literal, and `compose_config` derives R(entry) from it, so
+# it has to be known before any section is touched. Moving it changed no value.
+CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.build_model")
+
+# COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
+# workflow's settings live in its own file. This merges them back into exactly
+# the mapping every reader below already expects (R13 D-8.1).
+#
+# The result is REBOUND to the Snakefile-global `config`, deliberately and not
+# as a style choice: `check_project_consistency` takes its live config from
+# `sm.config` -- Snakemake's `workflow.config` -- so binding elsewhere would
+# leave WF3's drift guard comparing a two-key stanza against a full recorded
+# section and failing rule 3.01 after WF1 and WF2 had already run.
+config, WORKFLOW_CONFIG_PATHS = compose_config(
+    config, config_path, entry="build_model", declared_sections=CONFIG_PROJECTION,
+)
+# Sorted so the declared input list below does not churn on dict order.
+WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
+
 # Portable tee wrapper for the shell rules below: keeps live console output AND
 # preserves the child's exit code (a bare `| tee` masks failures on cmd.exe --
 # no pipefail there). See blueearth_cst/shared/run_logged.py / blueearth_cst.shared.snake_utils.run_and_tee.
@@ -47,11 +74,14 @@ run_logged = str(Path(workflow.basedir) / "blueearth_cst" / "shared" / "run_logg
 
 # R01 schema — three top-level sections. Read each into a local dict.
 project_cfg = config["project"]
-shared_cfg = config["shared"]
+# R14 D-7.2: `shared:` dissolved into sections by KIND. `climate_cfg` is the
+# only new binding -- `basin:` and `model:` are read at their use sites, which
+# is where the v1 `shared_cfg` indirection was buying nothing.
+climate_cfg = config.get("climate") or {}
 # The water year the climate figures aggregate on, from the one shared key
 # WF2 and WF3 also read. Figures are terminal artifacts, so this changes no
 # number -- but a figure labelled 'annual' should mean the basin's year.
-WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_start"))
+WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
 my_cfg = config["workflows"]["build_model"]
 
 # Project — paths and external resources
@@ -59,11 +89,10 @@ project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
 # documentary. Warns, never raises; test_case/ is the one exemption.
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
-static_dir = get_config(project_cfg, "static_dir", optional=False)
-DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
+DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
 # Shared — multi-workflow scientific knobs
-basin_cfg = shared_cfg["basin"]
+basin_cfg = config["basin"]
 spatial_cfg = parse_spatial_config(basin_cfg, my_cfg)
 model_region = get_config(basin_cfg, "region", optional=False)
 model_resolution = spatial_cfg.resolution
@@ -74,7 +103,7 @@ model_resolution = spatial_cfg.resolution
 # cross-checks them against the template and fails loud on a disagreement.
 basin_hydrography = spatial_cfg.hydrography
 basin_index = spatial_cfg.basin_index
-historical_window = get_config(shared_cfg, "historical_window", optional=False)
+historical_window = get_config(climate_cfg, "window", optional=False)
 # ONE minimum window for the whole toolbox — snake_utils.MIN_HISTORICAL_YEARS
 # (16), set by weathergenr's wavelet minimum and enforced identically here and
 # at extraction. WF1 rejects it too, deliberately: a record too short for a
@@ -92,14 +121,23 @@ validate_historical_window(historical_window)
 # Editing it re-runs rule 1.10 through Snakemake's params trigger, which
 # rebuilds the forcing and so re-runs 1.14 — and since 1.14's output.csv is
 # temp(), that is the whole model. Correct, but not cheap.
-simulation_window = resolve_simulation_window(shared_cfg, my_cfg)
-clim_source = get_config(shared_cfg, "clim_historical", optional=False)
+# The two windows are authored in DIFFERENT files now, so the refusal names
+# both -- a user with two files open should not have to work out which one
+# the message means (R13 §12.5).
+simulation_window = resolve_simulation_window(
+    climate_cfg,
+    my_cfg,
+    shared_source=config_path,
+    model_source=WORKFLOW_CONFIG_PATHS.get("build_model"),
+)
+SIMULATION_BOUNDS = historical_window_bounds(simulation_window)
+clim_source = get_config(climate_cfg, "selected", optional=False)
 # Wflow.jl thread count for rule 1.14. OPTIONAL — the default is P3-3's frozen
 # baseline value, so an existing config is unaffected. Config-driven rather than
 # inline so a deployment can tune it to its basin (a production basin has the
 # cell-parallelism the 384-cell test fixture lacks) without a Snakefile edit.
 # NOT Snakemake's `threads:`, which caps at --cores: see DEFAULT_JULIA_THREADS.
-julia_threads = get_config(shared_cfg, "julia_threads", DEFAULT_JULIA_THREADS)
+julia_threads = DEFAULT_JULIA_THREADS  # C-54: no project override; advanced_settings owns it
 # Carries the juliaup version pin too; both are validated at parse time, before
 # any rule can put them in a shell body.
 wflow_julia = julia_prefix(julia_threads)
@@ -114,18 +152,54 @@ if clim_source == "eobs":
         "path; supported sources: era5, chirps, chirps_global"
     )
 
-# Workflow-owned
-wflow_outvars = get_config(my_cfg, "wflow_outvars", DEFAULT_WFLOW_OUTVARS)
+# SHARED, not workflow-owned (R13 D-9.7). WF3 reads this key too -- to derive
+# its indicator tables before the DAG is built -- and a key read by more than
+# one workflow lives in the project file. It was the last such key, and
+# `CROSS_WORKFLOW_READS` is retired with its move.
+wflow_outvars = get_config(config.get("model") or {}, "outvars", DEFAULT_WFLOW_OUTVARS)
 # `defaults/`, not `templates/` — these are read by rules 1.06/1.07/1.08, and the
 # 2026-08-11 split moved them out of the copy-me directory. Rule 1.01 still routes
 # them to a `templates/` bin inside the PROJECT: a different meaning of the word,
 # and that one did not move. Under the R4 copy predicate a shipped default is
 # normally recoverable from the toolbox and so is recorded rather than copied —
 # the bin only receives one when the project points the key at its own file.
-model_build_config = get_config(my_cfg, "model_build_config", f"{static_dir}/defaults/wflow_build_model.yml")
-waterbodies_config = get_config(my_cfg, "waterbodies_config", f"{static_dir}/defaults/wflow_update_waterbodies.yml")
+# C-22: both paths regrouped under `engine:`, the wflow-engine settings this
+# workflow hands to hydromt. The group is optional and so are its leaves — the
+# defaults are unchanged, so a config that declared neither key behaves as it
+# always did.
+engine_cfg = get_config(my_cfg, "engine", {}) or {}
+model_build_config = get_config(engine_cfg, "build_config", "config/defaults/wflow_build_model.yml")
+waterbodies_config = get_config(engine_cfg, "waterbodies_config", "config/defaults/wflow_update_waterbodies.yml")
 output_locations = spatial_cfg.gauge_points_path
-observations_timeseries = get_config(my_cfg, "observations_timeseries", None)
+
+#: The one outvar rule 1.15 has an observation consumer for. Spelled as
+#: `model.outvars` spells it (`shared/indicator_tables.py` is the registry that
+#: fixes that vocabulary), because `observations:` keys are drawn from that list
+#: verbatim and the loader compares them by string.
+OBSERVED_DISCHARGE_VAR = "river discharge"
+
+# C-56: `observations:` is a mapping KEYED BY VARIABLE (D-7.3), whose keys the
+# loader has already checked against `model.outvars` — so by the time it is read
+# here, every key names a variable the model was asked to output.
+#
+# Rule 1.15 is the only consumer and it plots discharge, so the discharge entry
+# is the one that becomes an `input:`. An observed series for any OTHER variable
+# parses, validates and is then read by nothing, which is a bounded coverage the
+# repo's rules say must be stated rather than left to be discovered: hence the
+# warning instead of a silent drop.
+_observations = get_config(my_cfg, "observations", {}) or {}
+observations_timeseries = _observations.get(OBSERVED_DISCHARGE_VAR)
+_unconsumed_observations = sorted(
+    name
+    for name, source in _observations.items()
+    if name != OBSERVED_DISCHARGE_VAR and not is_unset(source)
+)
+if _unconsumed_observations:
+    logger.warning(
+        f"build_model config declares observations for "
+        f"{_unconsumed_observations!r}, which no rule reads: rule 1.15 plots "
+        f"{OBSERVED_DISCHARGE_VAR!r} only. They are accepted and ignored."
+    )
 
 # The two OPTIONAL observation inputs, declared as real `input:` entries when
 # configured and omitted entirely when not. `output_locations` is the internal
@@ -168,19 +242,20 @@ _observations_input = (
 # one per workflow.
 RUN_RECORD = f"{project_dir}/config/runs/build_model/run_record.yml"
 
-# The consumed-key PROJECTION: the config paths this workflow actually reads.
-# Digesting the projection rather than the whole file is what stops a WF3-only
-# edit from re-firing WF1's record. A path this config lacks raises at parse
-# time -- the declaration is a claim about what the workflow reads, so a typo
-# must not quietly narrow the digest.
-CONFIG_PROJECTION = ("project", "shared", "workflows.build_model")
-
 # Every external file this workflow's configuration points at. Hashed at parse
 # time so the digest below moves when one is edited IN PLACE -- the recorded
 # hash alone would move without re-firing anything.
+#
+# The per-workflow config files are in here for exactly that reason (R13
+# D-10.5): after the split they hold the settings the project file used to, so
+# leaving them out would let the most-edited config file in the project be
+# edited in place without moving any digest. Derived from the one dict
+# `compose_config` returned, so this set and `copy_config_files`' cannot drift.
 CONFIG_REFERENCES = [
-    ("model_build_config", model_build_config),
-    ("waterbodies_config", waterbodies_config),
+    *[(f"workflow_config_{name}", path)
+      for name, path in sorted(WORKFLOW_CONFIG_PATHS.items())],
+    ("engine.build_config", model_build_config),
+    ("engine.waterbodies_config", waterbodies_config),
     *[("data_catalog", source) for source in
       (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
     *[("output_locations", source) for source in _locations_input.values()],
@@ -449,7 +524,7 @@ WF1_TERMINALS = [
 # the config snapshot and the two gathered artifacts.
 WF1_TARGETS = [
     *WF1_TERMINALS,
-    f"{project_dir}/config/runs/snake_config_build_model.yml",
+    f"{project_dir}/config/runs/project_config_build_model.yml",
     f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
     f"{project_dir}/benchmarks/wf1_benchmarks.md",
 ]
@@ -465,6 +540,7 @@ rule snapshot_config:
     input:
         config_build = model_build_config,
         config_snake = config_path,
+        config_workflows = WF_CONFIG_PATHS,
         config_waterbodies = waterbodies_config,
         # Snapshotted into config/basin_data/ so the finished project can say
         # what it was evaluated against: both live outside the repo AND outside
@@ -479,11 +555,18 @@ rule snapshot_config:
         effective_config = config,
         advanced_settings = ADVANCED_SETTINGS,
         config_projection = CONFIG_PROJECTION,
+        # The snapshot is a dump of THIS mapping, not a copy of the project
+        # file (R13 D-11.1): after the split the project file does not hold
+        # the workflow settings, and WF3's drift guard reads them out of the
+        # wf1 snapshot.
+        composed_config = config,
+        # Recorded, never copied -- their content is inlined above (D-11.2).
+        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
         # A string digest, so the params trigger compares a value rather than
         # a structure. This is what keeps the record FRESH; see its definition.
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        config_snake_out = f"{project_dir}/config/runs/snake_config_build_model.yml",
+        config_snake_out = f"{project_dir}/config/runs/project_config_build_model.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"
@@ -533,6 +616,7 @@ rule prepare_spatial_maps:
     message: rule_banner("1.06", "prepare_spatial_maps")
     input:
         config_snake = config_path,
+        config_workflows = WF_CONFIG_PATHS,
         data_catalogs = DATA_SOURCES,
         hydrography = SPATIAL_UNITS.outputs["hydrography"],
         basins = SPATIAL_UNITS.outputs["basins"],
@@ -736,9 +820,12 @@ rule add_climate_forcing:
         # wflow TOML's `[time]` starttime/endtime it runs over
         # (shared/setup_time_horizon.py). They are one key precisely because
         # forcing and run period cannot legitimately differ.
-        starttime = get_config(simulation_window, "starttime", optional=False),
-        endtime = get_config(simulation_window, "endtime", optional=False),
-        clim_source = get_config(shared_cfg, "clim_historical", optional=False),
+        # `climate.window` / `simulation_window` are inclusive YEARS since R14
+        # (`C-70`, `C-71`); wflow's [time] block wants ISO datetimes, so they
+        # are rendered here, through the one parser, rather than re-derived.
+        starttime = SIMULATION_BOUNDS[0].isoformat(),
+        endtime = SIMULATION_BOUNDS[1].isoformat(),
+        clim_source = get_config(climate_cfg, "selected", optional=False),
         basin_dir = basin_dir,
         data_catalog = DATA_SOURCES,
     log:

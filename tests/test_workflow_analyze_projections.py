@@ -29,7 +29,7 @@ import yaml
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 
-CONFIG = "test_case/snake_config_baseline.yml"
+CONFIG = "test_case/project_config_baseline.yml"
 
 pytestmark = pytest.mark.integration
 

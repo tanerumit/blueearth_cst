@@ -1,0 +1,5 @@
+engine:
+  build_config: config/defaults/wflow_build_model.yml
+  waterbodies_config: config/defaults/wflow_update_waterbodies.yml
+observations:
+  river discharge: test_case/test_data/observations_timeseries.csv

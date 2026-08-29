@@ -18,7 +18,7 @@ current occupant, but **this contract is generator-agnostic**: it pins what wf3
 hands *in* to the generator and expects *out* of it, not weathergenr's internals.
 
 **Grounded in** the fixture tree `test_case/test_local` (era5 branch,
-`test_case/snake_config_baseline.yml`) inspected with xarray for
+`test_case/project_config_baseline.yml`) inspected with xarray for
 dims/coords/vars/units/attrs, and the wf3 rules + scripts. **CST-scope
 disclaimer** (`AGENTS.md` Hard Constraints): a contract surface pins only what
 OUR pipeline's producer guarantees or OUR consumer relies on; upstream tool
@@ -193,14 +193,14 @@ consumer reads while keeping the divergence honestly on the record.
 - **path pattern:** `<exp>/climate/weathergenr/config/weathergen_config.yml` —
   **one file** since C29.
 - **producer:** rule 3.10 `prepare_weathergen_config`
-  (`blueearth_cst/experiment/prepare_weagen_config.py`).
+  (`blueearth_cst/experiment/prepare_weathergen_config.py`).
 - **consumer:** rules 3.11 and 3.12 (both R side), which read the same file.
 - **one config, not one per member (C29).** Do not reintroduce a per-member
   `weathergen_config_*.yml`: nothing in it varied except the output
   filename — split into prefix and suffix because `weathergenr::write_netcdf`
   takes them separately — and Snakemake already knew it as rule 3.12's own
   declared output, so it is passed as the 4th CLI argument and split in R. Its
-  two `transient_change` flags moved into this file and are now pinned here. At
+  two `trajectory` flags moved into this file and are now pinned here. At
   RLZ_NUM=10, ST_NUM=88 the removal drops 880 YAMLs plus their logs and
   benchmark parts. The rest of what it carried — copies of the `stress_test`
   step counts and monthly min/max ranges — was never read (finding F6) and
@@ -210,7 +210,7 @@ consumer reads while keeping the divergence honestly on the record.
   `general.variables` (list ⊆ `{precip, temp, temp_min, temp_max}`) and
   `generateWeatherSeries.{warm.*, knn.sample.num, month.start, warm.variable,
   seed, evaluate.*, dry.spell.change[12], wet.spell.change[12], output.path,
-  sim.year.start, sim.year.num, nc.file.prefix, realizations_num}`.
+  sim.year.start, sim.year.num, nc.file.prefix, n_realizations}`.
 - **pinned surface:** **the key set + types the R side reads** (derived
   read-only from `global.R` / `generate_weather.R`), NOT weathergenr's
   semantics. Upstream-spelled keys (`warm.signif.level`, `dot.case`) are
@@ -396,7 +396,7 @@ WG-5 entry-key set against the **intended** grid: expected keys exactly
 3.14 is instantiated over both the st_0 members and the perturbed grid).
 Applied to the UNION of the per-member catalogs. Missing and unexpected keys are each
 reported. The intended grid is derived from the run's *recorded* P3-1 config
-snapshot (`<exp>/config/snake_config_run_stress_test.yml`) via the same
+snapshot (`<exp>/config/project_config_run_stress_test.yml`) via the same
 `stress_test_grid` helper the Snakefile uses (`shared/snake_utils.py:336`), so
 the check is self-consistent with the tree even if the tracked test config later
 drifts. A dropped or extra catalog entry is invisible to per-artifact
@@ -428,7 +428,7 @@ enough and avoids re-running the batches that are already up to date:
 
 ```bash
 snakemake -c 3 -s run_stress_test.smk \
-  --configfile test_case/snake_config_baseline.yml --notemp \
+  --configfile test_case/project_config_baseline.yml --notemp \
   test_case/test_local/experiments/experiment/climate/weathergenr/output/rlz_1_st_1.nc \
   test_case/test_local/experiments/experiment/hydrology/wflow/forcing/inmaps_rlz_1_st_1.nc \
   test_case/test_local/experiments/experiment/hydrology/wflow/output/outstates_rlz_1_st_1.nc
@@ -443,7 +443,7 @@ model exists — wf3 needs `models/hydrology/wflow/` artifacts):
 
 ```bash
 snakemake all -c 3 -s run_stress_test.smk \
-  --configfile test_case/snake_config_baseline.yml --notemp
+  --configfile test_case/project_config_baseline.yml --notemp
 ```
 
 `--notemp` tells Snakemake **not** to delete `temp()`-flagged outputs after their

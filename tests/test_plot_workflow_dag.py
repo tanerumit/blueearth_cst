@@ -22,14 +22,38 @@ class FakeResult:
 
 
 def _write_r01_cfg(path, project_dir, experiment=None):
-    """An R01 config; `experiment` adds the key WF3's DAG scope reads.
+    """A project config; `experiment` adds the key WF3's DAG scope reads.
 
     Optional on purpose -- both WF3 branches are exercised below: the
     experiment scope, and the fallback when the key is absent.
+
+    When `experiment` is given the config is written SPLIT, because that is
+    where the key lives since R13 and the tool has to compose to see it. This
+    fixture is the one that would go quiet if it did not: a raw read finds a
+    two-key stanza, the name comes back None, and every WF3 render loses the
+    experiment id from its filename with nothing reporting it.
     """
-    text = f"project:\n  project_dir: {project_dir}\n  static_dir: config\n"
+    # `C-05` stamps the version and `C-07` deleted `static_dir`. The three
+    # kind sections are here because `CONFIG_PROJECTION` names them: a config
+    # missing one does not compose, so a fixture that carried only `project:`
+    # and `workflows:` stopped being a project config when `shared:` dissolved.
+    text = (
+        f"schema_version: 2\n"
+        f"project:\n  project_dir: {project_dir}\n"
+        "basin:\n  region: \"{'subbasin': [9.7, 0.4], 'uparea': 100}\"\n"
+        "climate:\n  selected: era5\n  sources: [era5]\n"
+        "  window: {start: 2000, end: 2020}\n"
+        "model:\n  outvars: [river discharge]\n"
+    )
     if experiment is not None:
-        text += f"workflows:\n  run_stress_test:\n    experiment_name: {experiment}\n"
+        settings = path.parent / f"{path.stem}_run_stress_test.yml"
+        settings.write_text(f"experiment_name: {experiment}\n", encoding="utf-8")
+        text += (
+            "workflows:\n"
+            "  run_stress_test:\n"
+            "    enabled: true\n"
+            f"    config_path: {settings.name}\n"
+        )
     path.write_text(text, encoding="utf-8")
 
 

@@ -38,7 +38,7 @@ SNAKEDIR = join(TESTDIR, "..")
 # two -- `_catalog_root()` opens it, so the module ERRORED on a missing file
 # rather than reaching its own data-mirror skip. Corrected 2026-08-09 against
 # the paths on disk and the baseline manifest's own wf1 discharge target.
-CONFIG = "test_case/snake_config_baseline.yml"
+CONFIG = "test_case/project_config_baseline.yml"
 # The DERIVED table, not wflow's `output.csv`: since 2026-08-10 rule 1.14
 # declares the raw csv as temp(), so this rule-`all` run consumes it in 1.14b
 # and 1.15 and then drops it. Asserting the raw file here would fail on a
@@ -68,7 +68,7 @@ def _catalog_root():
     with open(join(SNAKEDIR, CONFIG)) as f:
         cfg = yaml.safe_load(f)
     # R01 sectioned schema: data_sources lives under project.
-    with open(join(SNAKEDIR, cfg["project"]["data_sources"])) as f:
+    with open(join(SNAKEDIR, cfg["project"]["catalog"])) as f:
         cat = yaml.safe_load(f)
     meta = cat.get("meta", {}) or {}
     roots = meta.get("roots") or ([meta["root"]] if "root" in meta else [])

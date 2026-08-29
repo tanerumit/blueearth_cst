@@ -2,13 +2,12 @@
 
 The config-assembly body was previously module-level code reading the
 ``snakemake`` global on import, which made it un-importable for unit tests.
-R5 extracts it into named functions (``build_weagen_config`` /
+R5 extracts it into named functions (``build_weathergen_config`` /
 ``compute_nr_years``) above a nested ``__main__`` / ``globals()`` guard so the
 year math is reachable without a live ``snakemake`` global. Behavior-neutral:
 the same dict is assembled and written.
 """
 
-import math
 import os
 
 import yaml
@@ -24,41 +23,77 @@ def read_yml(yml_path):
     return yml
 
 
-def compute_nr_years(middle_year, wflow_run_length):
-    """Number of weagen years to generate.
+def compute_nr_years(sim_end):
+    """Number of weathergen years to generate.
 
     Spans from the end of the historical period (2010) to the wflow run window
     around the horizon (``middle_year`` ± ``wflow_run_length``/2), plus a 2-year
     pad. The ``2010`` and ``+2`` literals are the historical-end anchor and pad.
     """
-    return math.ceil((middle_year + wflow_run_length / 2) - 2010 + 2)
+    # `C-67`: the window END is declared now, so the generated record runs to
+    # it directly instead of through a horizon-plus-half-length estimate that
+    # rounded differently for an odd run length.
+    return int(sim_end) - 2010 + 2
+
+
+#: `C-32`'s enum, closed. `transient` ramps the perturbation through the run;
+#: `constant` holds it flat across the run.
+#:
+#: **RULED 2026-08-28.** The register row was ruled 2026-08-24 as
+#: `transient | constant` and P1 shipped `transient | step`, so for four days
+#: the design record and the code disagreed. `constant` won on three counts:
+#: the register row is the decided one and the code was the deviation; both
+#: words describe how the perturbation behaves over TIME, which is what
+#: `trajectory` names, where `step` describes a shape; and the design, its
+#: scoping note and P6's brief already agreed.
+#:
+#: The weathergen config this module WRITES still carries the boolean
+#: `transient_change`; that is weathergenr's own vocabulary and K1/S5 put it
+#: out of reach.
+TRAJECTORY_KINDS = frozenset({"transient", "constant"})
 
 
 def _transient_flag(stress_test_cfg, variable):
-    """Read ``stress_test.<variable>.transient_change``, refusing a silent default.
+    """Read ``climate_perturbations.<variable>.trajectory``, refusing a default.
 
-    Absent, this would decide whether a perturbation ramps or steps and nobody
-    would know which they got. The house rule for a missing required key is to
+    Absent, this would decide whether a perturbation ramps or is held flat, and
+    nobody would know which they got. The house rule for a missing required key is to
     refuse and name it (``variable_spec.parse``), not to guess.
+
+    **The enum is CHECKED, not compared.** ``trajectory == "transient"`` alone
+    would make every other string mean ``constant`` — so a typo, or the older
+    ``transient_change: true`` written under the new key, would silently select
+    the opposite behaviour and run to completion. That is the same silent
+    default the required-key refusal above exists to prevent, one level down.
     """
     try:
-        return stress_test_cfg[variable]["transient_change"]
+        value = stress_test_cfg[variable]["trajectory"]
     except (KeyError, TypeError):
         raise ValueError(
-            f"workflows.run_stress_test.stress_test.{variable}.transient_change "
-            "is required: it decides whether the perturbation ramps over the run "
-            "or applies as a step, and the weather generator has no defensible "
-            "default for it."
+            f"workflows.run_stress_test.climate_perturbations.{variable}"
+            ".trajectory is required (`C-32`; it was `transient_change: true`). "
+            "It decides whether the perturbation ramps over the run "
+            "(`transient`) or is held flat across it (`constant`), and the "
+            "weather generator has no defensible default for it."
         ) from None
+    if value not in TRAJECTORY_KINDS:
+        raise ValueError(
+            f"workflows.run_stress_test.climate_perturbations.{variable}"
+            f".trajectory must be one of {sorted(TRAJECTORY_KINDS)}, got "
+            f"{value!r}. `C-32` replaced the boolean `transient_change` with "
+            "this enum; `true` becomes `transient` and `false` becomes "
+            "`constant`."
+        )
+    return value == "transient"
 
 
-def build_weagen_config(
-    snake_config_path,
+def build_weathergen_config(
+    realizations_num,
+    stress_test_cfg,
     output_path,
     nc_file_prefix,
     default_config_path,
-    middle_year,
-    sim_years,
+    sim_end,
     seed,
     water_year_start,
     dry_spell_factor,
@@ -66,9 +101,9 @@ def build_weagen_config(
 ):
     """Assemble the ONE weathergenr config the experiment uses.
 
-    Seeds from the default weagen template, then overrides the output path,
+    Seeds from the default weathergen template, then overrides the output path,
     historical start year, number of years (``compute_nr_years``), file prefix
-    and realization count from the snake config. Adds the two
+    and realization count from the project config. Adds the two
     ``transient_change`` flags that ``impose_climate_change.R`` reads.
 
     **C29 removed the second, per-member config** this function used to build.
@@ -79,6 +114,14 @@ def build_weagen_config(
     Snakemake already knows that path: it is rule 3.12's own declared output, so
     it is now passed as an argument and the rule is gone.
 
+    **The project config is no longer read from disk** (R13 D-10.6). This
+    function took a path and re-opened it for exactly two things -- the
+    realization count and the two ``transient_change`` flags -- both of
+    which the Snakefile has already composed and validated. They now arrive
+    as params, finishing a conversion the six params above had already taken
+    three-quarters of the way, and the disk read disappears rather than
+    being redirected at the split layout.
+
     The per-member file also copied in the whole ``stress_test.temp`` and
     ``stress_test.precip`` blocks — step counts and monthly min/max ranges — of
     which the R read only the two transient flags (finding F6). Anyone opening
@@ -86,9 +129,6 @@ def build_weagen_config(
     in it; the real values come from ``st_<m>.csv``. Only the two flags survive
     here, so the file no longer implies otherwise.
     """
-    yml_snake = read_yml(snake_config_path)
-    experiment_cfg = yml_snake["workflows"]["run_stress_test"]
-
     yml_dict = read_yml(default_config_path)
     # Section and key names are weathergenr's own function and argument names
     # (renamed 2026-08-12 from `generateWeatherSeries`, a function 1.2.0 does
@@ -99,11 +139,11 @@ def build_weagen_config(
         {
             "out_dir": output_path,
             "start_year": 2010,
-            "n_years": compute_nr_years(middle_year, sim_years),
-            "n_realizations": experiment_cfg["realizations_num"],
+            "n_years": compute_nr_years(sim_end),
+            "n_realizations": realizations_num,
             # Resolved by the Snakefile from `shared.seed` (integer or `auto`)
             # against `defaults.seed`. Injected rather than templated so there
-            # is ONE default: a `seed:` left in the weagen template would be a
+            # is ONE default: a `seed:` left in the weathergen template would be a
             # second one, and the two would drift the first time either moved.
             "seed": seed,
             # weathergenr wants the month NUMBER; the config carries the
@@ -124,7 +164,6 @@ def build_weagen_config(
 
     # Read by impose_climate_change.R (rule 3.12). Only the flags, not the
     # perturbation magnitudes — those live in st_<m>.csv and are read from there.
-    stress_test_cfg = experiment_cfg["stress_test"]
     yml_dict["temp"] = {"transient_change": _transient_flag(stress_test_cfg, "temp")}
     yml_dict["precip"] = {
         "transient_change": _transient_flag(stress_test_cfg, "precip")
@@ -133,11 +172,11 @@ def build_weagen_config(
     return yml_dict
 
 
-def write_weagen_config(yml_dict, weagen_config_path):
-    """Write the assembled weagen config dict to ``weagen_config_path``."""
-    if not os.path.isdir(os.path.dirname(weagen_config_path)):
-        os.makedirs(os.path.dirname(weagen_config_path))
-    with open(weagen_config_path, "w") as f:
+def write_weathergen_config(yml_dict, weathergen_config_path):
+    """Write the assembled weathergen config dict to ``weathergen_config_path``."""
+    if not os.path.isdir(os.path.dirname(weathergen_config_path)):
+        os.makedirs(os.path.dirname(weathergen_config_path))
+    with open(weathergen_config_path, "w") as f:
         yaml.dump(yml_dict, f, default_flow_style=False, sort_keys=False)
 
 
@@ -161,23 +200,23 @@ if __name__ == "__main__":
                     "weathergenr would reject it at rule 3.11"
                 ),
             )
-            weagen_config = sm.output.weagen_config
+            weathergen_config = sm.output.weathergen_config
             log_row(
-                f"Preparing and writing the weather generator config file {weagen_config}",
-                module="weagen",
+                f"Preparing and writing the weather generator config file {weathergen_config}",
+                module="weathergen",
             )
-            yml_dict = build_weagen_config(
-                snake_config_path=sm.params.snake_config,
+            yml_dict = build_weathergen_config(
+                realizations_num=sm.params.realizations_num,
+                stress_test_cfg=sm.params.stress_test_cfg,
                 output_path=sm.params.output_path,
                 nc_file_prefix=sm.params.nc_file_prefix,
                 default_config_path=sm.params.default_config,
-                middle_year=sm.params.middle_year,
-                sim_years=sm.params.sim_years,
+                sim_end=sm.params.sim_window_end,
                 seed=sm.params.seed,
                 water_year_start=sm.params.water_year_start,
                 dry_spell_factor=sm.params.dry_spell_factor,
                 wet_spell_factor=sm.params.wet_spell_factor,
             )
-            write_weagen_config(yml_dict, weagen_config)
+            write_weathergen_config(yml_dict, weathergen_config)
     else:
         raise ValueError("This script should be run from a snakemake environment")

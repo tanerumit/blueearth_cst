@@ -1588,7 +1588,12 @@ def test_warn_uses_containment_not_string_prefix(tmp_path):
 
 # --- climate_store_rule (R07 B1) ---------------------------------------------
 
-_WINDOW = {"starttime": "2000-01-01T00:00:00", "endtime": "2020-12-31T00:00:00"}
+#: R14 `C-70`: `climate.window` is a pair of INCLUSIVE YEARS. The ISO strings
+#: below are what `climate_store_rule` still puts in `params:`, and they are
+#: BYTE-IDENTICAL to the v1 values -- which is the property the two assertions
+#: about them exist to hold.
+_WINDOW = {"start": 2000, "end": 2020}
+_WINDOW_ISO = {"starttime": "2000-01-01T00:00:00", "endtime": "2020-12-31T00:00:00"}
 
 
 def _spec(**overrides):
@@ -1659,8 +1664,8 @@ def test_climate_store_rule_params_carry_the_content_surface():
     }
     # The catalog moved OUT of params and into the declared input.
     assert "data_sources" not in spec.params
-    assert spec.params["starttime"] == _WINDOW["starttime"]
-    assert spec.params["endtime"] == _WINDOW["endtime"]
+    assert spec.params["starttime"] == _WINDOW_ISO["starttime"]
+    assert spec.params["endtime"] == _WINDOW_ISO["endtime"]
 
 
 def test_climate_store_rule_hydrography_defaults_match_the_spatial_contract():
@@ -1703,18 +1708,20 @@ def test_climate_store_rule_script_is_relative_to_the_repo_root():
 
 def test_climate_store_rule_rejects_a_non_mapping_window():
     with pytest.raises(TypeError, match="historical_window"):
-        _spec(historical_window=("2000-01-01T00:00:00", "2020-12-31T00:00:00"))
+        _spec(historical_window=(2000, 2020))
 
 
-def test_climate_store_rule_rejects_a_sub_day_window():
-    """The day-resolution store key cannot represent a sub-day window."""
-    with pytest.raises(ValueError, match="time-of-day"):
-        _spec(
-            historical_window={
-                "starttime": "2000-01-01T06:00:00",
-                "endtime": "2020-12-31T00:00:00",
-            }
-        )
+def test_climate_store_rule_rejects_a_non_year_window():
+    """R14 `C-70` made the sub-day case unrepresentable, so this is its heir.
+
+    The store key is day-resolution, and a sub-day window could not be spelled
+    in it. Under ISO endpoints that had to be REFUSED (`slugify_window` still
+    carries the guard, now unreachable from `climate.window`); under inclusive
+    YEARS it cannot be written down at all. What can still go wrong is an
+    endpoint that is not a year, so that is what this asserts.
+    """
+    with pytest.raises(ValueError, match="not a year"):
+        _spec(historical_window={"start": "2000-01-01T06:00:00", "end": 2020})
 
 
 def test_climate_store_rule_is_frozen():
@@ -2122,11 +2129,11 @@ def test_stress_test_refuses_temperature_variance():
     """
     cfg = {
         "temp": {
-            "step_num": 1,
-            "transient_change": True,
+            "n_levels": 2,
+            "trajectory": "transient",
             "variance": {"min": [1.0] * 12, "max": [1.0] * 12},
         },
-        "precip": {"step_num": 1, "transient_change": True},
+        "precip": {"n_levels": 2, "trajectory": "transient"},
     }
     with pytest.raises(ValueError, match="not a supported stress dimension"):
         su.stress_test_grid(cfg)
@@ -2135,8 +2142,8 @@ def test_stress_test_refuses_temperature_variance():
 def test_stress_test_refuses_a_typo_in_an_axis():
     """The closure is general, not a one-off ban on `variance`."""
     cfg = {
-        "temp": {"step_num": 1, "transient_change": True, "meen": {}},
-        "precip": {"step_num": 1, "transient_change": True},
+        "temp": {"n_levels": 2, "trajectory": "transient", "meen": {}},
+        "precip": {"n_levels": 2, "trajectory": "transient"},
     }
     with pytest.raises(ValueError, match=r"unsupported key\(s\) \['meen'\]"):
         su.stress_test_grid(cfg)
@@ -2145,10 +2152,10 @@ def test_stress_test_refuses_a_typo_in_an_axis():
 def test_precip_variance_is_still_accepted():
     """Only TEMPERATURE variance is refused; precip variance is live."""
     cfg = {
-        "temp": {"step_num": 1, "transient_change": True},
+        "temp": {"n_levels": 2, "trajectory": "transient"},
         "precip": {
-            "step_num": 1,
-            "transient_change": True,
+            "n_levels": 2,
+            "trajectory": "transient",
             "variance": {"min": [1.0] * 12, "max": [1.0] * 12},
         },
     }
@@ -2163,7 +2170,7 @@ def test_wflow_outvars_default_is_not_empty():
 
     WF3 defaulted to it while WF1 defaulted to two variables, so a config
     omitting the key ran to completion and wrote nothing --
-    `snake_config_baseline_linux.yml` omits it, so that was shipped.
+    `project_config_baseline_linux.yml` omits it, so that was shipped.
     """
     assert su.DEFAULT_WFLOW_OUTVARS
     assert "river discharge" in su.DEFAULT_WFLOW_OUTVARS
@@ -2719,7 +2726,7 @@ def test_run_header_shape_matches_run_summary():
     out = su.run_header(
         "wf3 run_stress_test",
         "test_case/test_rapid2",
-        "test_case/snake_config_rapid.yml",
+        "test_case/project_config_rapid.yml",
         experiment="experiment_rapid",
     )
     assert out.splitlines() == [
@@ -2727,7 +2734,7 @@ def test_run_header_shape_matches_run_summary():
         "",
         "  run",
         "    project     test_case/test_rapid2",
-        "    config      test_case/snake_config_rapid.yml",
+        "    config      test_case/project_config_rapid.yml",
         "    experiment  experiment_rapid",
     ]
 
@@ -2771,10 +2778,10 @@ def test_run_header_aligns_both_groups_on_one_value_column():
 def test_run_header_forward_slashes_and_shortens_the_config_path(monkeypatch):
     """The one row that kept OS separators made the block read as two trees."""
     monkeypatch.setattr(su, "_REPO_ROOT", os.path.normpath(_abs("repo")))
-    config = os.path.join(_abs("repo"), "test_case", "snake_config_rapid.yml")
+    config = os.path.join(_abs("repo"), "test_case", "project_config_rapid.yml")
     out = su.run_header("wf1 build_model", "test_case/test_rapid", config)
     row = next(line for line in out.splitlines() if line.strip().startswith("config"))
-    assert row.split() == ["config", "<repo>/test_case/snake_config_rapid.yml"]
+    assert row.split() == ["config", "<repo>/test_case/project_config_rapid.yml"]
     assert "\\" not in out
 
 

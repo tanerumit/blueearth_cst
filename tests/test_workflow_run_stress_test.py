@@ -40,7 +40,7 @@ import yaml
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 
-CONFIG = "test_case/snake_config_baseline.yml"
+CONFIG = "test_case/project_config_baseline.yml"
 
 pytestmark = pytest.mark.integration
 
@@ -53,7 +53,7 @@ def _load_cfg():
 def _catalog_root(cfg):
     """First data root declared by the config's data catalog, or None."""
     # R01 sectioned schema: data_sources lives under project.
-    with open(join(SNAKEDIR, cfg["project"]["data_sources"])) as f:
+    with open(join(SNAKEDIR, cfg["project"]["catalog"])) as f:
         cat = yaml.safe_load(f)
     meta = cat.get("meta", {}) or {}
     roots = meta.get("roots") or ([meta["root"]] if "root" in meta else [])

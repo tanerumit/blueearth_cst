@@ -153,7 +153,7 @@ Three homes, split by invocation model (AGENTS.md), applied:
 - **unpack target** — a gitignored top-level `sample_data/`. Not under
   `test_case/`, whose un-ignore patterns are already three deep; a fourth to
   keep 50 MB of binaries out of git is a trap waiting to be sprung.
-- **run config** — `test_case/snake_config_sample.yml`. The `snake_config_`
+- **run config** — `test_case/project_config_sample.yml`. The `project_config_`
   prefix is mandatory or the file is silently untracked. See the pending
   rename to `project_config_`.
 

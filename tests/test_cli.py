@@ -15,8 +15,11 @@ SNAKEDIR = join(TESTDIR, "..")
 sys.path.insert(0, join(SNAKEDIR, "dev", "scripts"))
 import cross_workflow_inputs as cwi  # noqa: E402
 
-config_fn = join(TESTDIR, "snake_config_fixture.yml")
-linux_config_fn = join(SNAKEDIR, "test_case", "snake_config_baseline_linux.yml")
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
+
+config_fn = join(TESTDIR, "project_config_fixture.yml")
+linux_config_fn = join(SNAKEDIR, "test_case", "project_config_baseline_linux.yml")
 
 
 def _dry_run(snakefile, cfg=config_fn):
@@ -49,14 +52,13 @@ def config_with_staged_region(tmp_path):
 
     Since P3-1 commit 1, run_stress_test's drift guard (rule
     check_project_consistency) additionally declares the wf1 config snapshot
-    `{project_dir}/config/runs/snake_config_build_model.yml` as a mandatory
+    `{project_dir}/config/runs/project_config_build_model.yml` as a mandatory
     `ancient(...)` input — the same class of cross-workflow contract, staged
     the same way. The staged snapshot is serialized from the SAME parsed
     config the dry-run consumes, so the guard's comparands match by
     construction.
     """
-    with open(config_fn) as f:
-        cfg = yaml.safe_load(f)
+    cfg = load_composed_config(config_fn)
     cfg["project"]["project_dir"] = str(tmp_path).replace("\\", "/")
 
     # ONE definition of the leaf set, shared with `test_guard_invalidation` and
@@ -68,8 +70,7 @@ def config_with_staged_region(tmp_path):
     # the reason given in the docstring above.
     cwi.stage(tmp_path, yaml.safe_dump(cfg), extras=(cwi.EXTRA_REGION,))
 
-    cfg_path = tmp_path / "snake_config_staged.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_staged")
     return cfg_path
 
 
@@ -107,19 +108,17 @@ def test_analyze_climate_adds_no_job_to_build_model(tmp_path):
     started depending on WF0 -- the exact failure mode that would make
     `analyze_climate.enabled: false` break the model build.
     """
-    cfg = yaml.safe_load(Path(config_fn).read_text(encoding="utf-8"))
+    cfg = load_composed_config(config_fn)
     cfg["project"]["project_dir"] = (tmp_path / "proj").as_posix()
 
-    with_wf0 = tmp_path / "with_wf0.yml"
-    with_wf0.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    with_wf0 = write_config(tmp_path / "with_wf0", cfg)
 
     # The same config with the fourth workflow's section removed entirely --
     # the state every project config was in before 2026-08-14.
-    without = yaml.safe_load(Path(config_fn).read_text(encoding="utf-8"))
+    without = load_composed_config(config_fn)
     without["project"]["project_dir"] = (tmp_path / "proj").as_posix()
     without["workflows"].pop("analyze_climate")
-    without_wf0 = tmp_path / "without_wf0.yml"
-    without_wf0.write_text(yaml.safe_dump(without), encoding="utf-8")
+    without_wf0 = write_config(tmp_path / "without_wf0", without)
 
     a = _dry_run("build_model.smk", cfg=str(with_wf0))
     b = _dry_run("build_model.smk", cfg=str(without_wf0))
@@ -179,11 +178,9 @@ def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
     scratch = Path(SNAKEDIR, "_o22_probe_project")
     scratch.mkdir(exist_ok=True)
     try:
-        with open(config_fn) as f:
-            cfg = yaml.safe_load(f)
+        cfg = load_composed_config(config_fn)
         cfg["project"]["project_dir"] = "_o22_probe_project"
-        cfg_path = tmp_path / "snake_config_in_repo.yml"
-        cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+        cfg_path = write_config(tmp_path, cfg, stem="project_config_in_repo")
 
         result = _dry_run("build_model.smk", cfg=str(cfg_path))
         combined = (result.stdout or "") + (result.stderr or "")
@@ -199,15 +196,15 @@ def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
 def test_baseline_seed_config_does_not_warn():
     """The exemption holds for the config the baseline gate actually runs.
 
-    That is test_case/snake_config_baseline.yml (project_dir:
-    test_case/test_local) -- NOT tests/snake_config_fixture.yml, which
+    That is test_case/project_config_baseline.yml (project_dir:
+    test_case/test_local) -- NOT tests/project_config_fixture.yml, which
     points at tests/test_project and therefore warns correctly: it is an
     in-repo project_dir outside the single exemption. The exemption exists
     because the baseline seed config is TRACKED and a tracked config cannot
     carry a machine-specific absolute path; it does not extend to every
     convenient in-repo scratch dir.
     """
-    seed_cfg = join(SNAKEDIR, "test_case", "snake_config_baseline.yml")
+    seed_cfg = join(SNAKEDIR, "test_case", "project_config_baseline.yml")
     result = _dry_run("build_model.smk", cfg=seed_cfg)
     combined = (result.stdout or "") + (result.stderr or "")
     assert "inside the repository tree" not in combined, combined[-3000:]
@@ -230,7 +227,7 @@ def test_baseline_seed_config_does_not_warn():
     # test_interchange_contracts.py taught on 2026-08-12.
     if result.returncode != 0:
         with open(seed_cfg) as f:
-            gauge_points = yaml.safe_load(f)["shared"]["basin"]["gauge_points"]
+            gauge_points = yaml.safe_load(f)["basin"]["output_locations"]
         norm = combined.replace("\\", "/")
         assert "MissingInputException" in norm, combined[-3000:]
         assert gauge_points in norm, combined[-3000:]
@@ -252,15 +249,17 @@ def test_observation_configs_use_yaml_null():
     the way out.
     """
     for cfg_path in (config_fn, linux_config_fn):
-        with open(cfg_path) as f:
-            cfg = yaml.safe_load(f)
-        basin = cfg["shared"]["basin"]
+        cfg = load_composed_config(cfg_path)
+        basin = cfg["basin"]
         mc = cfg["workflows"]["build_model"]
         values = {
-            "shared.basin.gauge_points": basin["gauge_points"],
-            "workflows.build_model.observations_timeseries": mc[
-                "observations_timeseries"
-            ],
+            "basin.output_locations": basin["output_locations"],
+            # `C-56`: a mapping keyed by variable. The property is unchanged --
+            # an unset observation is YAML null, not the string "None" -- but
+            # it now lives one level down, under the outvar it belongs to.
+            "workflows.build_model.observations[river discharge]": (
+                (mc.get("observations") or {}).get("river discharge")
+            ),
         }
         for key, value in values.items():
             assert value is None, (
@@ -305,11 +304,14 @@ def test_eobs_config_fails_wf1_dry_run_at_parse_time(tmp_path):
     the two pre-R07 bbox derivations and is superseded by
     `tests/test_store_region_bbox.py`.
     """
-    with open(config_fn) as f:
-        cfg = yaml.safe_load(f)
-    cfg["shared"]["clim_historical"] = "eobs"
-    cfg_path = tmp_path / "snake_config_eobs.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg = load_composed_config(config_fn)
+    # `C-43`: `selected` names a MEMBER of `sources`, and the loader refuses
+    # one that is not. Switching the source therefore means declaring it as a
+    # candidate as well -- otherwise this test reds on the membership rule
+    # rather than on the eobs rejection it exists to check.
+    cfg["climate"]["selected"] = "eobs"
+    cfg["climate"]["sources"] = ["eobs"]
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_eobs")
 
     result = _dry_run("build_model.smk", cfg=str(cfg_path))
     combined = (result.stdout or "") + (result.stderr or "")
@@ -321,33 +323,31 @@ def test_eobs_config_fails_wf1_dry_run_at_parse_time(tmp_path):
 
 
 @pytest.mark.parametrize(
-    "endtime, label",
+    "end_year, label",
     [
-        ("2000-06-01T00:00:00", "sub-year"),
+        # `C-70` retyped the window to INCLUSIVE YEARS, so the old sub-year
+        # case is no longer expressible -- the shortest window a v2 config can
+        # state is one year, which is what this now exercises.
+        (2000, "one-year"),
         # The case the UNIFIED floor added: WF1 used to build a model happily on
         # ten years and let WF3 discover the problem inside weathergenr.
-        ("2010-01-01T00:00:00", "ten-year"),
+        (2009, "ten-year"),
     ],
 )
 @pytest.mark.workflow_contract
-def test_short_window_fails_wf1_dry_run_at_parse_time(tmp_path, endtime, label):
-    """A historical_window under MIN_HISTORICAL_YEARS must red the dry-run.
+def test_short_window_fails_wf1_dry_run_at_parse_time(tmp_path, end_year, label):
+    """A `climate.window` under MIN_HISTORICAL_YEARS must red the dry-run.
 
     Same parse-time stance, and same test shape, as the eobs rejection above:
     no execution can rescue the config, so the earliest failure is the most
     legible one. Pre-guard, a sub-year window reached rule 1.11 and died with
     MissingOutputException nine rules and one hydromt build past the cause
-    (dev/followups-archive.md R7-6), and a ten-year window ran WF1 to completion before
-    failing a whole workflow away.
+    (dev/followups-archive.md R7-6), and a ten-year window ran WF1 to
+    completion before failing a whole workflow away.
     """
-    with open(config_fn) as f:
-        cfg = yaml.safe_load(f)
-    cfg["shared"]["historical_window"] = {
-        "starttime": "2000-01-01T00:00:00",
-        "endtime": endtime,
-    }
-    cfg_path = tmp_path / f"snake_config_{label}.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg = load_composed_config(config_fn)
+    cfg["climate"]["window"] = {"start": 2000, "end": end_year}
+    cfg_path = write_config(tmp_path, cfg, stem=f"project_config_{label}")
 
     result = _dry_run("build_model.smk", cfg=str(cfg_path))
     combined = (result.stdout or "") + (result.stderr or "")

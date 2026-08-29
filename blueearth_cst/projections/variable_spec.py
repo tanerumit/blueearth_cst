@@ -33,8 +33,13 @@ from __future__ import annotations
 
 from typing import NamedTuple
 
-CANONICAL_KINDS = frozenset({"rate", "state"})
-CHANGE_KINDS = frozenset({"relative", "absolute"})
+from blueearth_cst.shared.variable_registry import (
+    CANONICAL_KINDS,
+    CHANGE_KINDS,
+    VARIABLES,
+)
+
+__all__ = ["CANONICAL_KINDS", "CHANGE_KINDS", "VariableSpec", "parse", "source_names"]
 
 
 class VariableSpec(NamedTuple):
@@ -45,10 +50,110 @@ class VariableSpec(NamedTuple):
     canonical: str
     units: str
     change: str
+    #: `C-64`. **Appended and must stay last** -- the params boundary flattens
+    #: this to a list and rebuilds it positionally.
+    min_denominator: float | None = None
 
     @property
     def long_name(self) -> str:
         return f"{self.name} ({self.canonical}, {self.units})"
+
+
+def _threshold(name, body):
+    """The relative-change threshold for ``name``: config first, registry second.
+
+    `C-64` moved the shipped defaults out of ``dry_month.DEFAULT_MIN_REFERENCE``
+    and into the registry, which introduces a precedence question that did not
+    exist before -- both a registry value and a declared value can now be
+    present. **The config wins.** The other order is the quiet failure: a
+    project that deliberately set a threshold would silently get the shipped
+    one, and the result is a plausible number rather than an error.
+
+    The registry fallback is what keeps every shipped config working. All four
+    declare `precip` in the LONG form and none of them names a threshold, so
+    without it `resolve_thresholds` would refuse every existing project on the
+    next run.
+
+    An unregistered variable that declares neither gets ``None`` and is refused
+    later, by name, in :func:`dry_month.resolve_thresholds` -- which is the
+    right place, because only there is it known whether the variable is
+    relative and therefore whether a threshold was needed at all.
+    """
+    # `is not None` rather than `in body`: the SHORT form resolves through
+    # `_resolve`, which hands back the registry entry whole -- including
+    # `min_denominator: None` for an absolute variable. Testing for the key's
+    # presence would read that null as a declared value and refuse `temp:`.
+    # It also gives an explicit `min_denominator: null` the only sensible
+    # meaning: defer to the registry.
+    if body.get("min_denominator") is not None:
+        value = body["min_denominator"]
+        try:
+            value = float(value)
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"variables.{name}.min_denominator must be a number; got {value!r}"
+            ) from None
+        if value <= 0:
+            raise ValueError(
+                f"variables.{name}.min_denominator must be > 0; got {value!r}. "
+                "It is a near-zero guard on the DENOMINATOR of a relative "
+                "change; zero or negative would admit the division it exists "
+                "to prevent."
+            )
+        return value
+    entry = VARIABLES.get(name)
+    if entry is not None and entry.projections is not None:
+        return entry.projections.min_denominator
+    return None
+
+
+def _resolve(name, body):
+    """Fill a bare ``precip:`` from the registry (`C-57`), or refuse saying how.
+
+    The SHORT form is a name with no body:
+
+    ```yaml
+    variables:
+      precip:
+      temp:
+    ```
+
+    which resolves to exactly what the long form would have said, from
+    ``shared/variable_registry.py``. The long form keeps working untouched: it
+    is the only way to declare a variable the registry has never heard of, and
+    removing it would make the registry a wall rather than a default.
+
+    **Two refusals, because there are two different faults**, and telling a user
+    the wrong remedy is worse than telling them nothing:
+
+    * a name the registry does not know -- add it to the registry, or declare it
+      in full here;
+    * a name the registry knows but does not DIFFERENCE, which today is ``pet``
+      -- it has presentation metadata and no projection spec, so "add it to the
+      registry" would be false advice about a variable that is already in it.
+    """
+    if body is not None:
+        return body
+    entry = VARIABLES.get(name)
+    if entry is None:
+        raise ValueError(
+            f"variables.{name} is declared with no body, which resolves it from "
+            f"the variable registry -- and {name!r} is not in it.\n"
+            "  Either add it to `blueearth_cst/shared/variable_registry.py`, or "
+            "declare it in full here:\n"
+            f"    {name}: {{source: ..., canonical: rate|state, units: ..., "
+            "change: relative|absolute}"
+        )
+    if entry.projections is None:
+        raise ValueError(
+            f"variables.{name} is declared with no body, and {name!r} IS in the "
+            "variable registry but carries no projection spec -- it is a "
+            "variable this toolbox plots and does not difference.\n"
+            "  Declare it in full here if WF2 should difference it:\n"
+            f"    {name}: {{source: ..., canonical: rate|state, units: ..., "
+            "change: relative|absolute}"
+        )
+    return dict(entry.projections._asdict())
 
 
 def parse(variables) -> dict[str, VariableSpec]:
@@ -79,6 +184,7 @@ def parse(variables) -> dict[str, VariableSpec]:
 
     spec: dict[str, VariableSpec] = {}
     for name, body in variables.items():
+        body = _resolve(name, body)
         if not isinstance(body, dict):
             raise ValueError(
                 f"variables.{name} must be a mapping with source/canonical/units/"
@@ -106,6 +212,7 @@ def parse(variables) -> dict[str, VariableSpec]:
             canonical=str(body["canonical"]),
             units=str(body["units"]),
             change=str(body["change"]),
+            min_denominator=_threshold(name, body),
         )
     return spec
 

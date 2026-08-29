@@ -8,8 +8,8 @@ gate (step 3c) and the build-independent artifacts were committed at `1d011c0`.
 
 All three built with `Snakefile_model_creation` targeting
 `{project_dir}/hydrology_model/run_default/output.csv` (7670 daily timesteps,
-2000-01-02 … 2020-12-31, outlet `Q_130000086`), same snake config
-(`config/snake_config_model_test.yml` region/resolution/forcing), differing only in
+2000-01-02 … 2020-12-31, outlet `Q_130000086`), same project config
+(`config/project_config_model_test.yml` region/resolution/forcing), differing only in
 `project_dir` + `model_build_config`. Data catalog `config/deltares_data.yml`
 (root `C:\data\wflow_global\hydromt`); Julia 1.11.7 + Wflow via `--project=.`.
 

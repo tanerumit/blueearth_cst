@@ -20,18 +20,27 @@ mode: slot
 # `true` re-enables the >24h / 25-commit backup trigger.
 auto_push: false # true | false
 
-# Overridden back off the rung's `advisory`: `task-start` gives every task a
-# fresh process, an unguessable claim and an explicit write scope, then enforces
-# the scope, readiness, integration and cleanup transitions. `advisory` hard-
-# fails every `task-*` and `integration-*` verb, so it needs a drained pool.
+# The rung's own backend, chosen for zero-ceremony return. A session keeps its
+# branch checked out between sessions and occupancy is DERIVED from that branch,
+# so picking work back up is `cd <session-worktree>` plus launching an agent:
+# no claim token, no `task-scope`, no state machine. `atomic` instead binds every
+# write to a `GIT_TASK_CLAIM` token that only `task-start` / `task-resume` can
+# inject into a child process, which is why a session opened directly in a
+# worktree had every native edit denied there.
+#
+# What still holds the line, because `worktree_policy: always` (from the rung)
+# gates them rather than the registry: the primary checkout stays integration-
+# only, and `topology-guard-hook` PINS each session to one branch — `switch`,
+# `checkout`, `branch` and `worktree` are refused inside a session worktree
+# until `task-land` parks it. `merge` and `rebase` stay allowed so a session can
+# resync in place. Every `task-*` verb has an advisory path; only `integration-*`
+# is atomic-only.
 session_slots: [session-1, session-2, session-3]
-slot_registry: atomic # advisory | atomic
+slot_registry: advisory # advisory | atomic
 
-# `hybrid` lets a low-risk READY task dispatch to git-integrator automatically;
-# scientific, numerical, configuration, dependency, API, migration, release and
-# destructive changes still wait for approval. `approval` holds every task;
-# `self` runs no separate reviewer and integrates from the primary checkout.
-integration_mode: self # approval | hybrid | self
+# `integration_mode` drives atomic-only machinery — READY dispositions and the
+# exclusive integration lock — and is dormant under `advisory`, so it is left
+# unset. The session that does the work also lands it, from this checkout.
 
 # Untracked trees the launcher COPIES (never links) into each new worktree.
 # Without them the fixture-dependent tests skip and the suite reports a false

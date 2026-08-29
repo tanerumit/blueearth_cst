@@ -16,7 +16,8 @@ from snakemake.exceptions import WorkflowError
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, warn_if_project_dir_in_repo, window_year_pair, install_console_style, run_header
+from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError, validate_removed_gridded_options
 # The figure family's CONTRACT only. `projection_figures` is deliberately
@@ -33,16 +34,43 @@ patch_psutil_windows_benchmark()
 # a repo convention.
 config_path = workflow.configfiles[0]
 
+# The consumed-key PROJECTION: the config paths this workflow actually reads.
+# Digesting the projection rather than the whole file is what stops another
+# workflow's edit from re-firing this record.
+#
+# HOISTED above the first config read (R13 D-8.2): the projection is a
+# config-independent literal, and `compose_config` derives R(entry) from it, so
+# it has to be known before any section is touched. Moving it changed no value.
+CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_projections")
+
+# COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
+# workflow's settings live in its own file. This merges them back into exactly
+# the mapping every reader below already expects (R13 D-8.1).
+#
+# The result is REBOUND to the Snakefile-global `config`, deliberately and not
+# as a style choice: `check_project_consistency` takes its live config from
+# `sm.config` -- Snakemake's `workflow.config` -- so binding elsewhere would
+# leave WF3's drift guard comparing a two-key stanza against a full recorded
+# section and failing rule 3.01 after WF1 and WF2 had already run.
+config, WORKFLOW_CONFIG_PATHS = compose_config(
+    config, config_path, entry="analyze_projections", declared_sections=CONFIG_PROJECTION,
+)
+# Sorted so the declared input lists below do not churn on dict order.
+WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
+
 # R01 schema
 project_cfg = config["project"]
-shared_cfg = config["shared"]
+# R14 D-7.2: `shared:` dissolved into sections by KIND. `climate_cfg` is the
+# only new binding -- `basin:` and `model:` are read at their use sites, which
+# is where the v1 `shared_cfg` indirection was buying nothing.
+climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["analyze_projections"]
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
 # documentary. Warns, never raises; test_case/ is the one exemption.
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
-DATA_SOURCES = get_config(project_cfg, "data_sources_climate", optional=False)
+DATA_SOURCES = get_config(my_cfg, "catalog", optional=False)  # C-39
 
 
 # The content-addressed config bundle was removed here (config-snapshot
@@ -51,14 +79,17 @@ DATA_SOURCES = get_config(project_cfg, "data_sources_climate", optional=False)
 # it: current-only and one per workflow.
 RUN_RECORD = f"{project_dir}/config/runs/analyze_projections/run_record.yml"
 
-# The consumed-key PROJECTION -- the config paths this workflow actually reads.
-# Digesting it rather than the whole file is what stops a WF1- or WF3-only edit
-# from re-firing WF2's record.
-CONFIG_PROJECTION = ("project", "shared", "workflows.analyze_projections")
-
 CONFIG_REFERENCES = [
-    ("data_catalog", source) for source in
-    (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])
+    # The per-workflow config files, so an in-place edit to the file that now
+    # holds this workflow's settings moves the digest (R13 D-10.5). After the
+    # split the project file no longer carries those settings, so leaving them
+    # out would let the most-edited config in a project change with nothing
+    # re-firing. Derived from the dict `compose_config` returned, so this set
+    # and the one `copy_config_files` records cannot drift.
+    *[(f"workflow_config_{name}", path)
+      for name, path in sorted(WORKFLOW_CONFIG_PATHS.items())],
+    *[("data_catalog", source) for source in
+      (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
 ]
 
 EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
@@ -74,19 +105,23 @@ CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(
     referenced_inputs_for_digest(CONFIG_REFERENCES),
 )
 
-# The region delineation reads project.data_sources (deltares), NOT the CMIP6
+# The region delineation reads project.catalog (deltares), NOT the CMIP6
 # catalog above: delineating a basin is a hydrography read, not a projections
 # read. WF2 therefore reads BOTH catalogs — a divergence from the pre-v2.0
-# workflow, which read only data_sources_climate. The name is historical: this
+# workflow, which read only the climate catalog. The name is historical: this
 # fed the climate store until ADR 0003 replaced it with the region rule.
-STORE_DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
+STORE_DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
 # Shared — the model-free basin delineation the climate store extracts against.
-basin_cfg = shared_cfg["basin"]
+basin_cfg = config["basin"]
 model_region = get_config(basin_cfg, "region", optional=False)
-basin_hydrography = get_config(basin_cfg, "hydrography", DEFAULT_HYDROGRAPHY)
-basin_index = get_config(basin_cfg, "basin_index", DEFAULT_BASIN_INDEX)
-historical_window = get_config(shared_cfg, "historical_window", optional=False)
+# `C-15`: every spatial input lives under `basin.sources:`. Read through the
+# same parse WF0 and WF1 use, so one section cannot mean two things depending
+# on which entry point read it.
+_basin_sources = get_config(basin_cfg, "sources", {}) or {}
+basin_hydrography = get_config(_basin_sources, "hydrography", DEFAULT_HYDROGRAPHY)
+basin_index = get_config(_basin_sources, "basin_index", DEFAULT_BASIN_INDEX)
+historical_window = get_config(climate_cfg, "window", optional=False)
 # `shared.clim_historical` is deliberately NOT read here. WF2 has no climate
 # store and no rule that consumes the observed source: it read the key
 # `optional=False` and never used the value, so a config omitting it failed WF2
@@ -94,10 +129,71 @@ historical_window = get_config(shared_cfg, "historical_window", optional=False)
 # required where it is actually used -- WF1 and the shared climate-store
 # producer -- so this loosens nothing that matters.
 
-clim_project = get_config(my_cfg, "clim_project", optional=False)
+def _window_pair(window, key):
+    """Thin alias so this file reads the same for both retyped windows."""
+    return window_year_pair(window, f"workflows.analyze_projections.{key}")
+
+
+def _named_windows(windows):
+    """`C-60`: the `future_windows:` LIST, back to `{name: [start, end]}`.
+
+    Every consumer downstream -- `figure_relative_paths`, rule 2.06's `params:`,
+    `get_horizon` -- takes the mapping this returns, so the retype stops here.
+
+    `name` is optional (D-7.3's sibling in 7.3). An unnamed window is keyed
+    `<start>-<end>`, which is stable and self-describing; that IS `C-61`'s
+    figure-directory rename for any config that does not name its windows, so a
+    project keeping its old directory names keeps its old `name` values.
+
+    Insertion order is preserved: the list is ordered by the author now, which
+    is what the v1 mapping only got by accident of YAML insertion order.
+    """
+    if not isinstance(windows, (list, tuple)):
+        raise WorkflowError(
+            "workflows.analyze_projections.future_windows is a mapping, which is "
+            "the v1 `future_horizons` shape. It is a LIST now (`C-60`):\n\n"
+            "    future_windows:\n      - {start: 2046, end: 2054, name: mid}\n"
+        )
+    named = {}
+    for entry in windows:
+        pair = _window_pair(entry, "future_windows[]")
+        name = entry.get("name") or f"{pair[0]}-{pair[1]}"
+        if name in named:
+            raise WorkflowError(
+                f"workflows.analyze_projections.future_windows names {name!r} "
+                "twice; each window becomes a figure directory, so the names "
+                "must be distinct."
+            )
+        named[str(name)] = pair
+    if not named:
+        raise WorkflowError(
+            "workflows.analyze_projections.future_windows is empty; declare at "
+            "least one window."
+        )
+    return named
+
+
+# C-25: the key is `ensemble:` now. The VALUE is unchanged and still names the
+# projections subdirectory and every series-cache filename, so this renames what
+# the user writes and moves no output path.
+clim_project = get_config(my_cfg, "ensemble", optional=False)
 models = get_config(my_cfg, "models", optional=False)
 scenarios = get_config(my_cfg, "scenarios", optional=False)
-members = get_config(my_cfg, "members", optional=False)
+
+# C-63: `members:` is a GROUP now -- the bare preference list it used to be,
+# plus the two `member_*` keys that were flat beside it. Read as one block here;
+# `selection` and `overrides` are unpacked further down, where `_res` is in scope.
+_members_cfg = get_config(my_cfg, "members", optional=False)
+if not isinstance(_members_cfg, dict):
+    raise WorkflowError(
+        "workflows.analyze_projections.members is a bare list, which is the v1 "
+        "shape. It is a mapping now (`C-63`):\n\n"
+        "    members:\n      preference: [r1i1p1f1]\n"
+        "      selection: first_available\n      overrides: {}\n\n"
+        "`member_selection` and `member_overrides` fold into it as `selection` "
+        "and `overrides`."
+    )
+members = get_config(_members_cfg, "preference", optional=False)
 # Step 5e-iii / §5.5: `variables` is a MAPPING declaring each variable's canonical
 # quantity and change semantics. The bare list it replaces made stage B infer
 # `relative` from the literal name "precip", so any other relative variable was
@@ -131,9 +227,22 @@ if _legacy_hyd is not None:
         "It never reached the change-factor arithmetic before, which always "
         "used Jan, so a non-Jan value will move every change factor once."
     )
-water_year_start = resolve_water_year_start(get_config(shared_cfg, "water_year_start"))
-time_horizon_hist = get_config(my_cfg, "historical_year_range", optional=False)
-future_horizons = get_config(my_cfg, "future_horizons", optional=False)
+water_year_start = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
+# C-59: `reference_window: {start, end}`, CALENDAR years and deliberately so
+# (`C-74`, D-7.4). It is NOT routed through `resolve_water_year_start` /
+# `hydrological_year_bounds`: those trim to complete water years one layer down,
+# so applying the offset here would apply it twice. Flattened to the [start, end]
+# pair the reference-window helpers already take, so nothing downstream retypes.
+_reference_window = get_config(my_cfg, "reference_window", optional=False)
+time_horizon_hist = _window_pair(_reference_window, "reference_window")
+
+# C-60: `future_windows:` is a LIST of `{start, end, name}` -- ordered by the
+# author rather than by mapping insertion, which is what the v1 mapping relied on.
+# Converted back to the `{name: [start, end]}` shape every consumer already takes
+# (`figure_relative_paths`, rule 2.06's params, `get_horizon`), so C-60 is a
+# config-surface change only.
+_future_windows = get_config(my_cfg, "future_windows", optional=False)
+future_horizons = _named_windows(_future_windows)
 
 # --- step 5e / D1: clip the reference window, never splice --------------------
 # The change-factor reference is the GCM historical experiment, which ends
@@ -149,7 +258,11 @@ future_horizons = get_config(my_cfg, "future_horizons", optional=False)
 from blueearth_cst.projections import reference_window as _rw
 
 REFERENCE_WINDOW = _rw.clip_reference_window(time_horizon_hist)
-_SHARED_WINDOW = [historical_window["starttime"], historical_window["endtime"]]
+# `climate.window` is `{start, end}` INCLUSIVE YEARS since R14 (`C-70`); this
+# line still read its v1 `starttime`/`endtime` sub-keys, so WF2 died here on
+# any v2 config. A P1 hole rather than a P1b row -- P1 retyped the key and this
+# reader is in WF2, which P1's scope stopped short of.
+_SHARED_WINDOW = window_year_pair(historical_window, "climate.window")
 for _line in _rw.window_warnings(REFERENCE_WINDOW, shared_window=_SHARED_WINDOW):
     print(f"WARNING analyze_projections: {_line}", file=sys.stderr)
 
@@ -203,13 +316,21 @@ stats = get_config(my_cfg, "stats", None, optional=True)
 # apply a rainfall threshold to an unrelated quantity in unrelated units.
 from blueearth_cst.projections import dry_month as _dm
 
-_relative_cfg = get_config(my_cfg, "relative_change", {}, optional=True) or {}
-MIN_REFERENCE = _dm.resolve_thresholds(
-    VARIABLE_SPEC, _relative_cfg.get("min_reference")
-)
-MAX_FLAGGED_MONTHS = _relative_cfg.get(
-    "max_flagged_months", _dm.DEFAULT_MAX_FLAGGED_MONTHS
-)
+# `C-66`: `relative_change:` is gone. Both of its keys have homes that fit them
+# better -- `min_denominator` is per-variable metadata on the variable itself
+# (`C-64`) and `max_flagged_months` is a toolbox constraint (`C-65`) -- so the
+# section had nothing left to hold. The threshold now arrives INSIDE the spec,
+# resolved at parse: a declared `variables.<name>.min_denominator` first, the
+# registry second.
+#
+# The LOCAL stays `MIN_REFERENCE`: P1b's tier rule renames what names a key back
+# to the user, not what a variable happens to be called here.
+MIN_REFERENCE = _dm.resolve_thresholds(VARIABLE_SPEC)
+# `C-65`: a toolbox CONSTRAINT, not a project setting. The threshold at which a
+# monthly relative product stops being reportable is a property of the method,
+# so no project may relax it -- which is why this reads from
+# `advanced_settings.constraints` and takes no `_relative_cfg` fallback.
+MAX_FLAGGED_MONTHS = ADVANCED_SETTINGS["constraints"]["max_flagged_months"]
 
 # R9 P2 commit 2: the projections overlay moves under `data/climate/`. ONE
 # binding carries every WF2 output below it, and the two cache tiers keep their
@@ -453,10 +574,12 @@ _res.assert_index_matches_catalog(_CATALOG, _INDEX)
 #
 # Parsed HERE rather than beside `members` at the top of the file because the
 # policy names live on `_res`, which is imported a few lines up.
-member_selection = get_config(my_cfg, "member_selection", default=_res.FIRST_AVAILABLE)
+# C-63: both were flat `member_selection` / `member_overrides`; they are leaves of
+# the `members:` group now, read from the block captured at the top of the file.
+member_selection = get_config(_members_cfg, "selection", default=_res.FIRST_AVAILABLE)
 # A model may name its own preference list, REPLACING the global one. Coalesced
 # because `get_config` returns a key written-but-empty as None rather than {}.
-member_overrides = get_config(my_cfg, "member_overrides", default={}) or {}
+member_overrides = get_config(_members_cfg, "overrides", default={}) or {}
 
 COMBINATIONS = _res.resolve(
     _CATALOG,
@@ -642,7 +765,10 @@ def series_digest_components(model, experiment, member):
 
 ### Dictionary elements from the config based on wildcards
 def get_horizon(wildcards):
-    return config["workflows"]["analyze_projections"]["future_horizons"][wildcards.horizon]
+    # Reads the CONVERTED mapping, not the raw config: `future_windows` is a list
+    # and the wildcard is a horizon NAME, so the raw document cannot be indexed by
+    # it any more.
+    return future_horizons[wildcards.horizon]
 
 # Rule numbering (comment headers + log/benchmark filenames) uses `W.NN` = the
 # rule's position in this workflow's LOGICAL order — data, then the product,
@@ -698,7 +824,7 @@ LOG_PARTS_DIR = f"{project_dir}/logs/_parts"
 
 # The run's key folders, stated once -- see the same block in
 # build_model.smk. `data` is the DELTARES catalog's root, not the CMIP6
-# one: `data_sources_climate` points at a `gs://` store, which has no local
+# one: WF2's `catalog:` points at a `gs://` store, which has no local
 # prefix to shorten. No `model` row -- WF2 builds none.
 declare_path_tokens(
     data=catalog_root(STORE_DATA_SOURCES),
@@ -749,7 +875,7 @@ WF2_TARGETS = {
     # log part under `_parts/`, which is the defect the LOG_RULES block above
     # documents three times over.
     "spatial_basins": SPATIAL_UNITS.outputs["basins"],
-    "snake_config": f"{project_dir}/config/runs/snake_config_analyze_projections.yml",
+    "project_config": f"{project_dir}/config/runs/project_config_analyze_projections.yml",
     # ONE merged log for the whole workflow (was: one per fan-out stage,
     # alongside four rules writing logs/2.NN_*.log directly -- five files a
     # reader had to open in the right order to follow one run). Every rule
@@ -834,6 +960,7 @@ rule snapshot_config:
     message: rule_banner("2.01", "snapshot_config")
     input:
         config_snake = config_path,
+        config_workflows = WF_CONFIG_PATHS,
     params:
         data_catalogs = DATA_SOURCES,
         workflow_name = "analyze_projections",
@@ -841,11 +968,18 @@ rule snapshot_config:
         effective_config = config,
         advanced_settings = ADVANCED_SETTINGS,
         config_projection = CONFIG_PROJECTION,
+        # The snapshot is a dump of THIS mapping, not a copy of the project
+        # file (R13 D-11.1): after the split the project file does not hold
+        # the workflow settings, and WF3's drift guard reads them out of the
+        # wf1 snapshot.
+        composed_config = config,
+        # Recorded, never copied -- their content is inlined above (D-11.2).
+        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
         # A string digest, so the params trigger compares a value. This is what
         # keeps the record fresh when the CHECKOUT moves; see its definition.
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        config_snake_out = f"{project_dir}/config/runs/snake_config_analyze_projections.yml",
+        config_snake_out = f"{project_dir}/config/runs/project_config_analyze_projections.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"

@@ -17,7 +17,7 @@ docker run \
     -F \
     -c 4 \
     -s ${docker_root}/build_model.smk \
-    --configfile ${docker_root}/test_case/snake_config_baseline_linux.yml
+    --configfile ${docker_root}/test_case/project_config_baseline_linux.yml
 
 docker run \
     $(echo ${volumeargs[@]}) \
@@ -28,7 +28,7 @@ docker run \
     -F \
     -c 4 \
     -s ${docker_root}/run_stress_test.smk \
-    --configfile ${docker_root}/test_case/snake_config_baseline_linux.yml
+    --configfile ${docker_root}/test_case/project_config_baseline_linux.yml
 
 docker run \
     $(echo ${volumeargs[@]}) \
@@ -39,4 +39,4 @@ docker run \
     -F \
     -c 4 \
     -s ${docker_root}/analyze_projections.smk \
-    --configfile ${docker_root}/test_case/snake_config_baseline_linux.yml
+    --configfile ${docker_root}/test_case/project_config_baseline_linux.yml

@@ -19,7 +19,7 @@ pins what the pipeline hands *in* (forcing + static grid + run config) and
 expects *out* (discharge CSVs → response surface), not Wflow's physics.
 
 **Grounded in** the fixture tree `test_case/test_local` (era5 branch,
-`test_case/snake_config_baseline.yml`) inspected with xarray, the base
+`test_case/project_config_baseline.yml`) inspected with xarray, the base
 vs per-cst `wflow_sbm.toml` diff, and the wf1/wf3 rules + scripts.
 
 **CST-scope disclaimer (the governing constraint; `AGENTS.md` Hard
@@ -300,7 +300,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
 ## HM-7 — response-surface reduction (one indicator table per variable)
 
 - **path pattern:** `<exp>/results/<token>_indicators.csv`, **one per variable in
-  `workflows.build_model.wflow_outvars`** (R11 CR-2). `basin_indicators.csv` is
+  `model.outvars`** (R11 CR-2). `basin_indicators.csv` is
   gone; its contents are now per-variable tables. The set is config-dependent, so
   the DAG derives it — see the token vocabulary below.
 - **producer:** rule 3.16 `derive_wflow_indicators`. The *module* it runs is
@@ -327,7 +327,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
 
 - **variable tokens (the contract CR-2 places here):**
 
-  | `wflow_outvars` | token | table |
+  | `model.outvars` | token | table |
   | --- | --- | --- |
   | river discharge | `q` | `q_indicators.csv` |
   | precipitation | `precip` | `precip_indicators.csv` |
@@ -480,7 +480,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   generally return that value: measured, the weighted mean over the noleap month
   lengths differs from the input in **49%** of random percents and **48%** of
   random °C values. Realistic grids hit it — two of the seven levels of a
-  0.5–1.6 grid at `step_num: 6` are not fixed points — and this repo treats that
+  0.5–1.6 grid at `n_levels: 7` are not fixed points — and this repo treats that
   ulp as load-bearing.
 
   **The month-length weighting is fixed by the CMIP6 overlay rather than chosen**:
@@ -619,8 +619,11 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   1. **Completeness, both directions, kept and re-pointed at the lookup.** Every
      `st_id` in the lookup appears in every indicator table, and every non-zero
      `st_id` in a table appears in the lookup. Both directions are required: a
-     seed config with `run_historical: false` drops the `st_0` baseline and with
-     it two of the eleven metrics, which a one-directional check passes green.
+     config that dropped the `st_0` baseline lost two of the eleven metrics
+     with it, which a one-directional check passes green. `C-69` removed
+     the key that could do this — `st_0` is always produced now — so the
+     check guards against a code path losing it rather than a config
+     switching it off.
   2. **The `st_0` partition.** `st_0` rows are expected in the tables and
      expected **absent** from the lookup; either violated is a divergence. Two
      identical all-zero rows would otherwise be indistinguishable from an
@@ -748,7 +751,7 @@ executes on **every** checkout, fixture or not. HM-2 unit attrs are asserted
 | `validate_hm_gauge_column_identity` (relational) | HM-4 → HM-5 → HM-7 gauge-column identity | per-cst TOMLs + the per-cst run CSVs + `q_indicators.csv` | **yes** (all inputs persist) |
 | *(HM-6a)* | HM-6a | `models/hydrology/wflow/run_default/outstate/outstates.nc` | **no validator** — existence pinned transitively via HM-4's `[state].path_output` |
 | `validate_hm6b` | HM-6b | `<exp>/hydrology/wflow/output/outstates_rlz_<n>_st_<m>.nc` | **no** — `temp()` content absent; skip-until-captured on disk, synthetic-proven every suite |
-| `validate_hm7` | HM-7 | `<exp>/results/<token>_indicators.csv` (one per `wflow_outvars` entry) | **yes** (persists; `rule all`, manifested) |
+| `validate_hm7` | HM-7 | `<exp>/results/<token>_indicators.csv` (one per `model.outvars` entry) | **yes** (persists; `rule all`, manifested) |
 
 One validator lives OUTSIDE that module, deliberately:
 `validate_spatial_geoms_parity` in
@@ -778,7 +781,7 @@ model exists — wf3 needs `models/hydrology/wflow/` artifacts):
 
 ```bash
 snakemake all -c 3 -s run_stress_test.smk \
-  --configfile test_case/snake_config_baseline.yml --notemp
+  --configfile test_case/project_config_baseline.yml --notemp
 ```
 
 `--notemp` tells Snakemake **not** to delete `temp()`-flagged outputs after their

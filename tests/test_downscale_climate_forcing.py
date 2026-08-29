@@ -6,7 +6,8 @@ so none of this was reachable from a test. The conversion moved the body into
 functions; those three are what a test can actually pin without a wflow model,
 a data catalog and a forcing netCDF.
 
-`forcing_window` has since moved to its own light module -- WF3's Snakefile
+`forcing_window` has since moved to its own light module, and `C-72` reduced
+it to rendering a DECLARED year pair -- WF3's Snakefile
 needs it at parse time to size batches against the disk, and cannot pay this
 module's `hydromt_wflow` import to get it. It is still rule 3.14's window, so
 its tests stay here; only the import moved.
@@ -26,23 +27,23 @@ from blueearth_cst.experiment.forcing_window import forcing_window
 
 class TestForcingWindow:
     def test_an_even_run_length_is_centred_on_the_horizon(self):
-        start, end = forcing_window(2050, 30)
+        start, end = forcing_window(2035, 2065)
         assert (start, end) == ("2035-01-01T00:00:00", "2065-12-31T00:00:00")
 
     def test_an_odd_run_length_puts_the_extra_year_at_the_end(self):
         """`ceil` backwards and `round` forwards, so 31 years split 15/16."""
-        start, end = forcing_window(2050, 31)
+        start, end = forcing_window(2034, 2066)
         assert start == "2034-01-01T00:00:00"
         assert end == "2066-12-31T00:00:00"
 
     def test_the_window_spans_whole_years(self):
-        start, end = forcing_window(2000, 20)
+        start, end = forcing_window(1990, 2010)
         assert start.endswith("-01-01T00:00:00")
         assert end.endswith("-12-31T00:00:00")
 
     def test_a_float_horizon_still_yields_integer_years(self):
         """`horizontime_climate` arrives from YAML and may parse as a float."""
-        start, end = forcing_window(2050.0, 30)
+        start, end = forcing_window(2035, 2065)
         assert (start, end) == ("2035-01-01T00:00:00", "2065-12-31T00:00:00")
 
 

@@ -23,7 +23,7 @@ Prescriptive style guide for naming identifiers and files in `blueearth_cst`. `M
 
 **YAML** — discriminate by the *consuming contract*, never by authorship or by whether the file is checked in or generated:
 
-- BlueEarth-owned configs consumed locally — the `project` / `shared` / `workflows.<name>` snake config — use snake_case keys and lowercase booleans `true` / `false` (MUST for new keys). Existing `TRUE` / `FALSE` are grandfathered.
+- BlueEarth-owned configs consumed locally — the project config's `project` / `basin` / `climate` / `model` / `workflows.<name>` sections (`shared:` dissolved in R14 `C-01`) — use snake_case keys and lowercase booleans `true` / `false` (MUST for new keys). Existing `TRUE` / `FALSE` are grandfathered.
 - Any YAML consumed under an upstream schema preserves the upstream spelling (MUST), **even when BlueEarth generates the file**: weathergenr (`warm.signif.level`), HydroMT / Wflow parameter names, and HydroMT data catalogs.
 
 ## 3. Path-identifier suffix (`_path` canonical)
@@ -40,7 +40,7 @@ Wildcards used across Snakefiles MUST come from this list. Adding one requires u
 | `scenario` | active | climate scenario (`historical`, `ssp245`, …) |
 | `horizon` | active | future horizon name (`near`, `far`) |
 | `rlz_num` | active | weather realization number (`1..rlz_count`) |
-| `st_num` | active | stress-test combination: `1..stress_test_count` perturbed; `0` = reserved unperturbed baseline (`st_0`), run through Wflow only when `run_historical` sets `ST_START = 0` |
+| `st_num` | active | stress-test combination: `1..stress_test_count` perturbed; `0` = reserved unperturbed baseline (`st_0`), always run through Wflow since `C-69` retired the key that could switch it off |
 | `member` | reserved (CMIP ensemble) | ensemble member id (`r1i1p1f1`, …). Config-only today; becomes a wildcard if per-member rules are added |
 
 **The member token in filenames and catalog keys is `st_`**, the same word as the wildcard: `st_<m>.csv` and `rlz_<n>_st_<m>.{nc,csv,toml,log}`, with `st_0` the reserved baseline. `rlz_` stays as-is — it abbreviates a correct term and collides with nothing.
@@ -125,7 +125,7 @@ Different file classes follow different conventions; this guide does not unify t
 | Snakemake entry points | `<verb>_<noun>.smk` | `build_model.smk`, `analyze_climate.smk` |
 | Markdown planning docs under `dev/` | kebab-case | `naming-conventions-design.md` |
 | Standard root-level files | upstream | `CLAUDE.md`, `README.md`, `Dockerfile`, `LICENSE` |
-| Config / data / catalog YAML | tool contract | `snake_config_rapid.yml`, `deltares_data.yml` |
+| Config / data / catalog YAML | tool contract | `project_config_rapid.yml`, `deltares_data.yml` |
 | Generated outputs under `project_dir/` | lowercase `snake_case`, two exemptions below | `q_indicators.csv`, `basin_indicators.csv`, `inmaps_rlz_1_st_2.nc` |
 
 Do not rename existing `dev/` docs.
@@ -173,7 +173,7 @@ Two distinctions are the ones a new rule gets wrong:
 
   Whether a later rule consumes the output is *not* the criterion. `write_climate_data_catalog` is consumed downstream and is still `write_`, because enumerating entries is all it does.
 
-**Nouns are full words.** Only the established domain set abbreviates — `gcm`, `cmip6`, `wflow`, `rlz`, `st` — and those are tier-1/tier-2 identifiers under §6. Ad-hoc contractions (`weagen`, `proj`) are not. Qualifiers are trailing full words, never two-letter suffixes.
+**Nouns are full words.** Only the established domain set abbreviates — `gcm`, `cmip6`, `wflow`, `rlz`, `st` — and those are tier-1/tier-2 identifiers under §6. Ad-hoc contractions are not: `weagen` was one and R14 `C-83` retired it in favour of `weathergen`; **`proj` survives** and is the remaining case, still awaiting a sweep of its own. Qualifiers are trailing full words, never two-letter suffixes.
 
 **Adding a verb is allowed, and cheaper than a bad name.** The bar is that the action class is genuinely distinct *and* that the verb has a rule using it. A verb in this table with no rule behind it reads as an available option that some rule must already justify.
 

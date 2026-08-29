@@ -35,10 +35,13 @@ pytestmark = pytest.mark.workflow_contract
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 sys.path.insert(0, str(SNAKEDIR / "dev" / "scripts"))
 import cross_workflow_inputs as cwi  # noqa: E402
+
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
 
 #: The workflows that consume wf1 artifacts. WF1 produces them, so it is not here.
 DOWNSTREAM = {
@@ -54,7 +57,7 @@ MINIMALITY_WORKFLOW = "wf3"
 
 def _staged_config(tmp_path: Path, leaves) -> Path:
     """Stage ``leaves`` into a scratch project and return its config path."""
-    base = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    base = load_composed_config(CONFIG_FN)
     project_dir = tmp_path / "proj"
     base["project"]["project_dir"] = str(project_dir).replace("\\", "/")
     config_text = yaml.safe_dump(base)
@@ -62,9 +65,10 @@ def _staged_config(tmp_path: Path, leaves) -> Path:
     project_dir.mkdir(parents=True, exist_ok=True)
     cwi.stage(project_dir, config_text, leaves=leaves)
 
-    config_path = tmp_path / "snake_config_staged.yml"
-    config_path.write_text(config_text, encoding="utf-8")
-    return config_path
+    # The --configfile target is written SPLIT; `config_text` above stays
+    # whole because it is staged as the wf1 project SNAPSHOT, which the
+    # drift guard compares against the composed live config.
+    return write_config(tmp_path, base, stem="project_config_staged")
 
 
 def _dry_run(snakefile: str, config_path: Path) -> subprocess.CompletedProcess:

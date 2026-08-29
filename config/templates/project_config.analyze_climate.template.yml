@@ -1,0 +1,26 @@
+# WF0 — historical climate analysis. Copy this beside your project file.
+#
+# **This file is deliberately empty of settings** (`C-84`). WF0 takes everything
+# it needs from the project file: `basin.region` says where, `climate.sources`
+# says which datasets to compare, `climate.selected` says which one leads, and
+# `climate.window` says over what period. There is nothing left for a
+# workflow-local file to say.
+#
+# It ships anyway, for one reason: DISCOVERABILITY. Without it a reader has four
+# workflows and three settings files and no way to tell whether WF0's is missing
+# or unnecessary. An empty file answers that.
+#
+# **The file and its `config_path` stanza travel together** (D-7.9). An empty
+# file is legal. A `config_path` naming a file that is not there is a hard parse
+# error, on purpose, so a typo cannot pass as "this workflow has no settings".
+# If you do not run WF0, delete its `config_path` key and set `enabled: false` —
+# an omitted `config_path` is the way to say a workflow has no file at all.
+#
+# Composed, this contributes `{}` — indistinguishable in the composed document
+# from an omitted `config_path`, so the config digest is identical either way.
+# Shipping it costs a run nothing.
+#
+# `climate.sources` is the FULL candidate set with no privileged element, and
+# `climate.selected` names one member of it. Both live in the project file
+# because WF1 and WF3 read them too; a key more than one workflow reads belongs
+# there, and is refused here.

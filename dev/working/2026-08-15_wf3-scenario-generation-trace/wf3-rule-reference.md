@@ -94,7 +94,7 @@ basin, the resolution or the model settings moved since that build, the stress t
 would quietly simulate a *different catchment* and produce numbers that look fine.
 
 **`check_project_consistency`** (3.01) reads the config snapshot WF1 left at
-`config/runs/snake_config_build_model.yml` and compares the `project`,
+`config/runs/project_config_build_model.yml` and compares the `project`,
 `shared.basin` and `workflows.build_model` sections against this run's. Agreement
 produces two empty sentinel files — `.project_consistency_ok` in the experiment and
 `.guard_ok` beside the climate store — and disagreement stops the run.
@@ -244,7 +244,7 @@ Script: [`experiment/check_project_consistency.py`](../../../blueearth_cst/exper
 
 | | path | shape |
 |---|---|---|
-| in | `<proj>/config/runs/snake_config_build_model.yml` (`ancient`) | YAML, WF1's config snapshot |
+| in | `<proj>/config/runs/project_config_build_model.yml` (`ancient`) | YAML, WF1's config snapshot |
 | out | `<exp>/.project_consistency_ok` · `<store>/.guard_ok` | empty sentinels |
 
 ### 3.02 `snapshot_config`
@@ -252,7 +252,7 @@ Script: [`model/copy_config_files.py`](../../../blueearth_cst/model/copy_config_
 
 | | path | shape |
 |---|---|---|
-| out | [`<exp>/config/snake_config_run_stress_test.yml`](../../../test_case/test_rapid/experiments/experiment_rapid/config/snake_config_run_stress_test.yml) | the config as run |
+| out | [`<exp>/config/project_config_run_stress_test.yml`](../../../test_case/test_rapid/experiments/experiment_rapid/config/project_config_run_stress_test.yml) | the config as run |
 | out | `<exp>/config/runs/run_record.yml` | commit, digests, env hashes |
 
 ### 3.03 `delineate_region` · 3.04 `delineate_spatial_units`
@@ -298,7 +298,7 @@ Script: [`experiment/prepare_cst_parameters.py`](../../../blueearth_cst/experime
 | out | [`<exp>/config/stress_test_design.csv`](../../../test_case/test_rapid/experiments/experiment_rapid/config/stress_test_design.csv) | 4 cols × `ST_NUM+1` rows: `st_id, temp_change, precip_change, precip_variance_change` |
 
 ### 3.10 `prepare_weathergen_config`
-Script: [`experiment/prepare_weagen_config.py`](../../../blueearth_cst/experiment/prepare_weagen_config.py)
+Script: [`experiment/prepare_weathergen_config.py`](../../../blueearth_cst/experiment/prepare_weathergen_config.py)
 
 | | path | shape |
 |---|---|---|

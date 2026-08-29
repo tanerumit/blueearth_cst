@@ -1,0 +1,55 @@
+models: ["AS-RCEC/TaiESM1", "AWI/AWI-CM-1-1-MR", "AWI/AWI-ESM-1-1-LR", "BCC/BCC-CSM2-MR", "BCC/BCC-ESM1", "CAMS/CAMS-CSM1-0", "CAS/CAS-ESM2-0", "CAS/FGOALS-f3-L", "CAS/FGOALS-g3", "CCCR-IITM/IITM-ESM", "CCCma/CanESM5", "CCCma/CanESM5-CanOE", "CMCC/CMCC-CM2-HR4", "CMCC/CMCC-CM2-SR5", "CMCC/CMCC-ESM2", "CNRM-CERFACS/CNRM-CM6-1", "CNRM-CERFACS/CNRM-CM6-1-HR", "CNRM-CERFACS/CNRM-ESM2-1", "CSIRO/ACCESS-ESM1-5", "CSIRO-ARCCSS/ACCESS-CM2", "E3SM-Project/E3SM-1-0", "E3SM-Project/E3SM-1-1", "E3SM-Project/E3SM-1-1-ECA", "EC-Earth-Consortium/EC-Earth3", "EC-Earth-Consortium/EC-Earth3-AerChem", "EC-Earth-Consortium/EC-Earth3-CC", "EC-Earth-Consortium/EC-Earth3-Veg", "EC-Earth-Consortium/EC-Earth3-Veg-LR", "FIO-QLNM/FIO-ESM-2-0", "HAMMOZ-Consortium/MPI-ESM-1-2-HAM", "INM/INM-CM4-8", "INM/INM-CM5-0", "IPSL/IPSL-CM5A2-INCA", "IPSL/IPSL-CM6A-LR", "IPSL/IPSL-CM6A-LR-INCA", "KIOST/KIOST-ESM", "MIROC/MIROC-ES2H", "MIROC/MIROC-ES2L", "MIROC/MIROC6", "MOHC/HadGEM3-GC31-LL", "MOHC/HadGEM3-GC31-MM", "MOHC/UKESM1-0-LL", "MPI-M/ICON-ESM-LR", "MPI-M/MPI-ESM1-2-HR", "MPI-M/MPI-ESM1-2-LR", "MRI/MRI-ESM2-0", "NASA-GISS/GISS-E2-1-G", "NASA-GISS/GISS-E2-1-G-CC", "NASA-GISS/GISS-E2-1-H", "NASA-GISS/GISS-E2-2-H", "NCAR/CESM2", "NCAR/CESM2-FV2", "NCAR/CESM2-WACCM", "NCAR/CESM2-WACCM-FV2", "NCC/NorCPM1", "NCC/NorESM2-LM", "NCC/NorESM2-MM", "NIMS-KMA/KACE-1-0-G", "NIMS-KMA/UKESM1-0-LL", "NOAA-GFDL/GFDL-CM4", "NOAA-GFDL/GFDL-ESM4", "NUIST/NESM3", "SNU/SAM0-UNICON", "THU/CIESM", "UA/MCM-UA-1-0"]
+
+#  - NOAA-GFDL/GFDL-ESM4
+#  - INM/INM-CM5-0
+#  - CMCC/CMCC-ESM2
+# list — any of: ssp119, ssp126, ssp245, ssp370, ssp434, ssp460,
+#                ssp534-over, ssp585
+scenarios: [ssp245, ssp585]
+variables:
+  precip: {source: precip, canonical: rate, units: mm/day, change: relative}
+  temp: {source: temp, canonical: state, units: degC, change: absolute}
+ensemble: cmip6                                       # text — cmip6
+# list — Institution/Source. All 65 with a historical member:
+#   AS-RCEC/TaiESM1  AWI/AWI-CM-1-1-MR  AWI/AWI-ESM-1-1-LR  BCC/BCC-CSM2-MR
+#   BCC/BCC-ESM1  CAMS/CAMS-CSM1-0  CAS/CAS-ESM2-0  CAS/FGOALS-f3-L
+#   CAS/FGOALS-g3  CCCR-IITM/IITM-ESM  CCCma/CanESM5  CCCma/CanESM5-CanOE
+#   CMCC/CMCC-CM2-HR4  CMCC/CMCC-CM2-SR5  CMCC/CMCC-ESM2  CNRM-CERFACS/CNRM-CM6-1
+#   CNRM-CERFACS/CNRM-CM6-1-HR  CNRM-CERFACS/CNRM-ESM2-1  CSIRO/ACCESS-ESM1-5
+#   CSIRO-ARCCSS/ACCESS-CM2  E3SM-Project/E3SM-1-0  E3SM-Project/E3SM-1-1
+#   E3SM-Project/E3SM-1-1-ECA  EC-Earth-Consortium/EC-Earth3
+#   EC-Earth-Consortium/EC-Earth3-AerChem  EC-Earth-Consortium/EC-Earth3-CC
+#   EC-Earth-Consortium/EC-Earth3-Veg  EC-Earth-Consortium/EC-Earth3-Veg-LR
+#   FIO-QLNM/FIO-ESM-2-0  HAMMOZ-Consortium/MPI-ESM-1-2-HAM  INM/INM-CM4-8
+#   INM/INM-CM5-0  IPSL/IPSL-CM5A2-INCA  IPSL/IPSL-CM6A-LR  IPSL/IPSL-CM6A-LR-INCA
+#   KIOST/KIOST-ESM  MIROC/MIROC-ES2H  MIROC/MIROC-ES2L  MIROC/MIROC6
+#   MOHC/HadGEM3-GC31-LL  MOHC/HadGEM3-GC31-MM  MOHC/UKESM1-0-LL  MPI-M/ICON-ESM-LR
+#   MPI-M/MPI-ESM1-2-HR  MPI-M/MPI-ESM1-2-LR  MRI/MRI-ESM2-0  NASA-GISS/GISS-E2-1-G
+#   NASA-GISS/GISS-E2-1-G-CC  NASA-GISS/GISS-E2-1-H  NASA-GISS/GISS-E2-2-H
+#   NCAR/CESM2  NCAR/CESM2-FV2  NCAR/CESM2-WACCM  NCAR/CESM2-WACCM-FV2
+#   NCC/NorCPM1  NCC/NorESM2-LM  NCC/NorESM2-MM  NIMS-KMA/KACE-1-0-G
+#   NIMS-KMA/UKESM1-0-LL  NOAA-GFDL/GFDL-CM4  NOAA-GFDL/GFDL-ESM4  NUIST/NESM3
+#   SNU/SAM0-UNICON  THU/CIESM  UA/MCM-UA-1-0
+catalog: config/catalogs/cmip6_data.yml                   # path
+
+reference_window:                                     # [integer, integer] — inclusive, clipped at 2014
+  start: 1985
+  end: 2014
+future_windows:                                       # mapping: name -> [integer, integer]
+- start: 2030
+  end: 2060
+  name: near
+- start: 2070
+  end: 2100
+  name: far
+members:                                               # list — variant labels
+# mapping per variable. canonical: rate | state ; change: relative | absolute
+  preference:
+  - r1i1p1f1
+  - r1i1p1f2
+  - r1i1p1f3
+  - r1i1p2f1
+#stats: [mean, median, std]                           # list | null
+#relative_change:
+#  min_reference: {precip: 0.1}                       # mapping: variable -> numeric
+#  max_flagged_months: 3                              # integer

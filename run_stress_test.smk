@@ -12,11 +12,13 @@ from pathlib import Path
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
-from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
+from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, EXCLUSION_PREFIX, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retired_experiment_keys
-from blueearth_cst.shared.surface_axes import parse_surfaces, warn_on_heterogeneous_design
+from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, window_year_pair, install_console_style, run_header
+from blueearth_cst.experiment.check_project_consistency import guarded_section_paths
+from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
@@ -27,6 +29,103 @@ patch_psutil_windows_benchmark()
 # a repo convention.
 config_path = workflow.configfiles[0]
 
+# --- Drift-guard comparands and the consumed-key projection ---
+#
+# HOISTED above the first config read (R13 D-8.2). Both are
+# config-independent literals, and `compose_config` derives R(entry) from the
+# projection, so it has to be known before any section is touched. The guard
+# tuple comes with it because the projection is derived FROM it. Moving them
+# changed no value; `guarded_sections_digest`, which does read `config`, stays
+# below where it was.
+#
+# Rule 3.01 check_project_consistency compares this experiment config's
+# project-level sections against the wf1/wf2 project snapshots. Snakemake's
+# default params rerun-trigger re-runs the guard when any of these param values
+# changes (probe-verified, design §3c), so every comparand is threaded through
+# as a param — and every guard param must be EXPERIMENT-INVARIANT across passing
+# configs, because the guard's second output is shared across experiments
+# (§3b/§3d; config_path is deliberately NOT a guard param — it varies per
+# experiment and would thrash the shared artifact on A<->B alternation).
+# DERIVED, from the guard's own rule (P2, design D-9.7). This used to be a
+# hand-kept tuple, and it disagreed with the guard: R13 hoisted `wflow_outvars`
+# out of `workflows.build_model`, added the leaf to the comparator, and never
+# touched this line -- so an edit to it was refused by the guard while leaving
+# this trigger unmoved. Deriving both from one function is what makes that class
+# of drift unrepresentable rather than merely fixed.
+#
+# `guarded_section_paths()` is the parse-time form: the comparator derives its
+# list from the snapshot it is about to read, which needs `project_dir` and a
+# file that may not exist yet, and neither is available here.
+guarded_sections = guarded_section_paths()
+
+# WF3's consumed-key projection. Two different claims live here -- what the
+# guard COMPARES and what WF3 READS -- and both have to be composed before
+# anything can use them, so the projection is their union.
+#
+# The second term is now EMPTY, and that is a result of P2 rather than an
+# omission. `guarded_section_paths()` derives from `T1_TOP_LEVEL`, T1's closed
+# top level, so it already names every T1 section there can be -- including the
+# three WF3 reads for itself (`basin`, `climate`, `model`). Under v1 this line
+# had to widen the guard's narrow `shared.basin` back to the whole of `shared`,
+# because the guard narrowed to the basin ONLY to stay experiment-invariant
+# while WF3 read other `shared` keys: the window, the selected source, the water
+# year, the outvars. R14 dissolved `shared:` and removed the narrowing's cause,
+# so there is nothing left for a widening term to add.
+#
+# It stays written as a union because of the one term the guard structurally
+# cannot supply: a WF1 snapshot never witnesses `workflows.run_stress_test`
+# (design D-9.2), so the guard's list will never contain WF3's own section and
+# WF3 has to declare it.
+_PROJECTION_SELECT = tuple(sorted(
+    set(guarded_sections) | {"workflows.run_stress_test"}
+))
+
+# `C-79` / design D-9.3: `compute:` is EXCLUDED from configuration identity.
+#
+# The three batch knobs answer "how do I fit this run on this machine", not
+# "what am I running". Raising `batch_size` on a bigger box currently moves
+# `effective_config_digest` and lands in `_frozen_differences`, so it refuses an
+# already-run experiment for a change that cannot move a single number in it --
+# and the only way out is to start a new experiment, which discards results that
+# were never invalidated. `effective_config_document` already excludes
+# execution-only options by construction (`cores`, dry-run, verbosity);
+# `compute:` is the same class of thing, and it lives in the config only because
+# the values are worth recording.
+#
+# Declared as an EXCLUSION rather than pruned from the config on the way to the
+# digest, so the record says what it left out: `run_record.yml`'s `projection`
+# is this list verbatim. A projection that claimed `workflows.run_stress_test`
+# whole while the document silently omitted a child would be exactly the kind of
+# record that under-describes itself.
+#
+# `compose_config` gets the SELECTION only. Its `R(entry)` derivation reads
+# `s.split(".")[1] for s in declared_sections if s.startswith("workflows.")`,
+# which an exclusion happens to fall outside of -- but relying on that is
+# relying on a coincidence, and the loader has no business parsing a digest
+# vocabulary.
+CONFIG_PROJECTION = _PROJECTION_SELECT + (
+    f"{EXCLUSION_PREFIX}workflows.run_stress_test.compute",
+)
+
+# COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
+# workflow's settings live in its own file. This merges them back into exactly
+# the mapping every reader below already expects (R13 D-8.1). R(entry) is
+# {run_stress_test, build_model, analyze_projections} because the projection
+# above names those sections -- the same derived list the guard uses, so
+# the loader is one more consumer of it rather than a second copy.
+#
+# The result is REBOUND to the Snakefile-global `config`, deliberately and not
+# as a style choice: `check_project_consistency` takes its live config from
+# `sm.config` -- Snakemake's `workflow.config` -- so binding elsewhere would
+# leave the drift guard comparing a two-key stanza against a full recorded
+# section and failing rule 3.01 after WF1 and WF2 had already run.
+config, WORKFLOW_CONFIG_PATHS = compose_config(
+    config, config_path, entry="run_stress_test",
+    declared_sections=_PROJECTION_SELECT,
+)
+# Sorted so the declared input lists below do not churn on dict order.
+WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
+
 # Portable tee wrapper for the shell rules below (the R weather generator and the
 # Julia Wflow run): routes their output through blueearth_cst/shared/run_logged.py so their logs
 # get the same header + path relativization + UTF-8/exit-code handling as every
@@ -35,21 +134,22 @@ run_logged = str(Path(workflow.basedir) / "blueearth_cst" / "shared" / "run_logg
 
 # R01 schema
 project_cfg = config["project"]
-shared_cfg = config["shared"]
+# R14 D-7.2: `shared:` dissolved into sections by KIND. `climate_cfg` is the
+# only new binding -- `basin:` and `model:` are read at their use sites, which
+# is where the v1 `shared_cfg` indirection was buying nothing.
+climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["run_stress_test"]
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
 # documentary. Warns, never raises; test_case/ is the one exemption.
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
-# `project.static_dir` is deliberately NOT read here. It exists to build WF1's
-# fallback paths for `model_build_config` / `waterbodies_config`; WF3 has no
-# such fallback. It was read `optional=False` and never used, so a config
-# omitting it failed WF3 for a value WF3 ignores. Removed 2026-08-13 (defect
-# E/F). The key itself is still read by WF1 and still part of the `project`
-# section the consistency guard digests -- deleting it outright is a separate,
-# breaking change (M1 in dev/working/parameter-placement.md).
-DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
+# `project.static_dir` is GONE as of R14 `C-07` -- the separate breaking change
+# this comment used to defer (M1 in dev/working/parameter-placement.md). WF3
+# never read it; WF1 built two fallback paths from it, and those now name
+# `config/` directly, which is where they always resolved: a fixed location in
+# the checkout, not a project-relative one.
+DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
 # experiment_name is OPTIONAL, and defaults to the project's own name plus the
 # date the experiment was first created — `gabon_0108` gives
@@ -96,19 +196,19 @@ else:
 experiment = validate_experiment_name(experiment, project_dir)
 
 # The randomization seed every stochastic step uses, resolved ONCE here so one
-# value is fixed for the whole DAG. `shared.seed` is optional: absent it takes
+# value is fixed for the whole DAG. `seed:` is optional: absent it takes
 # `defaults.seed` from config/advanced_settings.yml, and `auto` derives it from
 # the experiment name -- which is why this must sit AFTER the name is resolved
 # and validated above. Deriving from the name rather than the clock is what
 # keeps re-runs idempotent: a seed that changed per invocation would rewrite
 # rule 3.10's output every time and re-run all of WF3, the same trap
 # `resolve_default_experiment_name` documents for dated experiment names.
-SEED = resolve_seed(get_config(shared_cfg, "seed"), experiment)
+SEED = resolve_seed(get_config(my_cfg, "seed"), experiment)
 
-# First month of the water year, from the same shared key WF2 and the climate
+# First month of the water year, from the same `climate:` key WF2 and the climate
 # figures read. weathergenr takes it as a month NUMBER, so the conversion
 # happens at that seam rather than by asking the config for a second spelling.
-WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_start"))
+WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
 
 # The Julia invocation for rule 3.15's wflow batch, built the same way WF1
 # builds its own (build_model.smk:94-97). Until 2026-08-13 this rule
@@ -118,17 +218,21 @@ WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_s
 # bulk of the toolbox's compute. tests/test_julia_runtime.py listed this file
 # as the one tolerated offender precisely so adopting julia_prefix would shrink
 # that set; it is now empty.
-julia_threads = get_config(shared_cfg, "julia_threads", DEFAULT_JULIA_THREADS)
+julia_threads = DEFAULT_JULIA_THREADS  # C-54: no project override; advanced_settings owns it
 wflow_julia = julia_prefix(julia_threads)
 
-RLZ_NUM = get_config(my_cfg, "realizations_num", 1)
+RLZ_NUM = get_config(my_cfg, "n_realizations", 1)  # C-29
 
-# Stress test step counts live under stress_test.<temp|precip>.step_num.
-# ST_NUM is derived by the shared stress_test_grid helper (strict: step_num is
+# C-68: the section is `climate_perturbations:` now -- it describes the
+# perturbations, and `stress_test` named the whole workflow as well as this one
+# block. The LOCAL keeps its name: it is threaded into two rules' params and
+# through to prepare_weathergen_config, none of which is a config surface.
+#
+# Per-axis level counts live under climate_perturbations.<temp|precip>.n_levels.
+# ST_NUM is derived by the shared stress_test_grid helper (strict: n_levels is
 # required on both axes) so the Snakefile and prepare_cst_parameters.py read one
-# source of truth. The prior inline form defaulted a missing step_num to 1,
-# silently inventing a grid; that leniency is removed (output-neutral hardening).
-stress_test_cfg = my_cfg["stress_test"]
+# source of truth.
+stress_test_cfg = my_cfg["climate_perturbations"]
 _, _, ST_NUM = stress_test_grid(stress_test_cfg)
 
 # Monthly spell-length coefficients, beside the two perturbation axes because
@@ -137,17 +241,24 @@ _, _, ST_NUM = stress_test_grid(stress_test_cfg)
 # defensible default, unlike `transient_change` which is refused when missing.
 # Validated here, at parse time, because a wrong-length list reaches R as a
 # recycled or truncated vector and silently perturbs the wrong months.
+# C-33: both were flat beside the axes; they are leaves of `spell_factors:` now.
+_spell_factors = stress_test_cfg.get("spell_factors") or {}
 DRY_SPELL_FACTOR = validate_spell_factor(
-    stress_test_cfg.get("dry_spell_factor"),
-    "workflows.run_stress_test.stress_test.dry_spell_factor",
+    _spell_factors.get("dry"),
+    "workflows.run_stress_test.climate_perturbations.spell_factors.dry",
 )
 WET_SPELL_FACTOR = validate_spell_factor(
-    stress_test_cfg.get("wet_spell_factor"),
-    "workflows.run_stress_test.stress_test.wet_spell_factor",
+    _spell_factors.get("wet"),
+    "workflows.run_stress_test.climate_perturbations.spell_factors.wet",
 )
 
-run_hist = get_config(my_cfg, "run_historical", False)
-ST_START = 0 if run_hist else 1
+# C-69 / D-7.6: `run_historical` is DELETED and `st_0` is ALWAYS produced.
+# NOT behaviour-preserving, and deliberately so (D-11.5): a project that had
+# `run_historical: false` GAINS the unperturbed baseline member and with it
+# `q_wettest_month_mean` / `q_driest_month_mean`, 2 of the 11 q metrics. Every
+# shipped config is in the gaining direction, so a changed indicator count here
+# is the row landing, not a defect.
+ST_START = 0
 
 # Member indices are ZERO-PADDED to a width derived from the count (C27), so
 # lexical order matches run order everywhere a tree is listed, globbed or
@@ -177,23 +288,27 @@ def st_ix(m):
 # drift apart.
 ST_BASELINE = st_ix(0)
 
-clim_source = get_config(shared_cfg, "clim_historical", optional=False)
+clim_source = get_config(climate_cfg, "selected", optional=False)
 
 # Region specification for the store's model-free delineation (R07 B1). The two
 # hydrography keys are OPTIONAL; defaults equal the shipped build template's
 # setup_basemaps values, so absent keys leave rule 3.01's guard digest
 # byte-identical. shared.basin is a guarded section, so an experiment config
 # whose values diverge from the wf1 snapshot fails the drift guard.
-basin_cfg = shared_cfg["basin"]
+basin_cfg = config["basin"]
 model_region = get_config(basin_cfg, "region", optional=False)
-basin_hydrography = get_config(basin_cfg, "hydrography", DEFAULT_HYDROGRAPHY)
-basin_index = get_config(basin_cfg, "basin_index", DEFAULT_BASIN_INDEX)
+# `C-15`: every spatial input lives under `basin.sources:`. Read through the
+# same parse WF0 and WF1 use, so one section cannot mean two things depending
+# on which entry point read it.
+_basin_sources = get_config(basin_cfg, "sources", {}) or {}
+basin_hydrography = get_config(_basin_sources, "hydrography", DEFAULT_HYDROGRAPHY)
+basin_index = get_config(_basin_sources, "basin_index", DEFAULT_BASIN_INDEX)
 
 # Historical extraction window: sourced from shared.historical_window so the
 # extract_historical_climate dates come from the config instead of being
 # hardcoded in the script. climate_store_rule reads starttime/endtime off
 # this section and enforces the day-resolution store-key invariant.
-historical_window_cfg = get_config(shared_cfg, "historical_window", optional=False)
+historical_window_cfg = get_config(climate_cfg, "window", optional=False)
 
 # --- The shared historical-climate store (R07 B1) -----------------------------
 # ONE producer contract, built here and identically in build_model.smk,
@@ -253,8 +368,16 @@ SPATIAL_UNITS = spatial_units_rule(
     data_sources=DATA_SOURCES,
 )
 
-horizontime_climate = get_config(my_cfg, "horizontime_climate", optional=False)
-wflow_run_length = get_config(my_cfg, "run_length", 20)
+# C-67: TWO keys became one. `horizontime_climate` (a centre year) and
+# `run_length` (a span) were resolved into an inclusive year pair by
+# `forcing_window_years`; that pair is DECLARED now. The inverse is not
+# single-valued -- an odd run length snapped ceil backwards and round forwards,
+# so two (centre, length) pairs could land on one window -- which is why the
+# window itself moved into the config rather than being back-derived here.
+SIM_WINDOW_START, SIM_WINDOW_END = window_year_pair(
+    get_config(my_cfg, "simulation_window", optional=False),
+    "workflows.run_stress_test.simulation_window",
+)
 
 # R9 P2 commit 1: must match WF1's definition exactly — WF3 READS the model root
 # WF1 wrote, so the two move in the same commit or the cross-workflow contract
@@ -319,54 +442,49 @@ runs_dir = f"{exp_dir}/hydrology/wflow"
 # `rule all` filename renames in the whole of R9, per naming.md §7).
 results_dir = f"{exp_dir}/results"
 
-# --- Drift-guard comparands (dev/milestones/p31/experiment-structure-design.md §3b/§3c) ---
-# Rule 3.01 check_project_consistency compares this experiment config's
-# project-level sections against the wf1/wf2 project snapshots. Snakemake's
-# default params rerun-trigger re-runs the guard when any of these param values
-# changes (probe-verified, design §3c), so every comparand is threaded through
-# as a param — and every guard param must be EXPERIMENT-INVARIANT across passing
-# configs, because the guard's second output is shared across experiments
-# (§3b/§3d; config_path is deliberately NOT a guard param — it varies per
-# experiment and would thrash the shared artifact on A<->B alternation).
-guarded_sections = (
-    "project", "shared.basin", "workflows.build_model",
-    "workflows.analyze_projections",
-)
 # SHA-256 of a canonical sorted-key JSON serialization of the guarded live
 # sections: an in-place edit to any guarded value flips this string and trips
 # the params rerun-trigger (§3c case (a)). A string digest — the form the §3c
 # probe verified — not raw nested dicts.
+# The lookups are DERIVED from `guarded_sections` rather than restated (P2,
+# design D-9.7). Written out, this was the third copy of the list and the second
+# one to omit `wflow_outvars` -- so an edit the guard refused did not re-fire the
+# guard, and the refusal arrived only because some other trigger happened to move.
+def _guarded_value(dotted):
+    """The live value at a dotted guarded path, or None when absent.
+
+    `None` for a missing section rather than a KeyError: this is a digest input,
+    and a config that omits an optional section must still produce a digest --
+    the guard is where absence is adjudicated.
+    """
+    node = config
+    for part in dotted.split("."):
+        if not isinstance(node, dict):
+            return None
+        node = node.get(part)
+    return node
+
+
 guarded_sections_digest = hashlib.sha256(
     json.dumps(
-        {
-            "project": config.get("project"),
-            "shared.basin": config.get("shared", {}).get("basin"),
-            "workflows.build_model": config.get("workflows", {}).get("build_model"),
-            "workflows.analyze_projections": config.get("workflows", {}).get("analyze_projections"),
-        },
+        {path: _guarded_value(path) for path in guarded_sections},
         sort_keys=True,
         ensure_ascii=False,
         default=str,
     ).encode("utf-8")
 ).hexdigest()
 
-# WF3's consumed-key projection is DERIVED, not written out beside the guard
-# tuple. WF3 genuinely reads other workflows' sections -- `wflow_outvars` comes
-# out of `workflows.build_model` -- and `guarded_sections` is already the
-# maintained list of those cross-section reads. Restating it here would be
-# proximity, not enforcement: the two would drift the first time the guard
-# tuple gained an entry. `shared.basin` widens to `shared` because the guard
-# narrows to `basin` only to stay experiment-invariant, while WF3 reads other
-# `shared` keys.
-CONFIG_PROJECTION = tuple(sorted(
-    {section.split(".")[0] if section == "shared.basin" else section
-     for section in guarded_sections}
-    | {"workflows.run_stress_test"}
-))
-
 CONFIG_REFERENCES = [
-    ("data_catalog", source) for source in
-    (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])
+    # The per-workflow config files, so an in-place edit to the file that now
+    # holds this workflow's settings moves the digest (R13 D-10.5). After the
+    # split the project file no longer carries those settings, so leaving them
+    # out would let the most-edited config in a project change with nothing
+    # re-firing. Derived from the dict `compose_config` returned, so this set
+    # and the one `copy_config_files` records cannot drift.
+    *[(f"workflow_config_{name}", path)
+      for name, path in sorted(WORKFLOW_CONFIG_PATHS.items())],
+    *[("data_catalog", source) for source in
+      (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
 ]
 
 EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
@@ -388,8 +506,8 @@ CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(
 # snapshot-only content change re-trigger the guard despite ancient() (§3c
 # case (b)), while keeping a fresh project parse/--dry-run/--unlock clean
 # (ext2-2).
-wf1_snapshot_path = f"{project_dir}/config/runs/snake_config_build_model.yml"
-wf2_snapshot_path = f"{project_dir}/config/runs/snake_config_analyze_projections.yml"
+wf1_snapshot_path = f"{project_dir}/config/runs/project_config_build_model.yml"
+wf2_snapshot_path = f"{project_dir}/config/runs/project_config_analyze_projections.yml"
 wf1_snapshot_digest = file_digest_or_absent(wf1_snapshot_path)
 wf2_snapshot_digest = file_digest_or_absent(wf2_snapshot_path)
 
@@ -522,11 +640,11 @@ refuse_retired_experiment_keys(my_cfg)
 # produced under a config whose declaration or whose arithmetic the contracts
 # cannot serve.
 #
-# SURFACES: `reporting:` is post-processing and sits outside run identity by
-# construction (it is not in CONFIG_PROJECTION), which is what lets a caption be
-# corrected without re-running the experiment. Nothing declares it as a rule
-# input, so no DAG edge and no rerun-trigger hazard is created either.
-SURFACES = parse_surfaces(config)
+# `SURFACES = parse_surfaces(config)` stood here until R14 P1. It was a DEAD
+# assignment -- nothing in this file read `SURFACES` -- and `C-77` removes
+# `reporting:` from the config surface, so the call had nothing left to parse.
+# `shared/surface_axes.py` itself STAYS: it is the HM-7 reference
+# implementation, and no rule called it before this change either.
 warn_on_heterogeneous_design(stress_test_cfg)
 # MULTIPLIER DOMAIN: the lookup crosses the Python->R seam in percent, and WG-2's
 # one-ulp reconstruction bound holds only for multipliers >= 0.5. The guard lives
@@ -534,8 +652,7 @@ warn_on_heterogeneous_design(stress_test_cfg)
 refuse_out_of_domain_multipliers(stress_test_cfg)
 
 INDICATOR_TABLES = indicator_tables(
-    get_config(config.get("workflows", {}).get("build_model", {}) or {},
-               "wflow_outvars", DEFAULT_WFLOW_OUTVARS, optional=True)
+    get_config(config.get("model") or {}, "outvars", DEFAULT_WFLOW_OUTVARS, optional=True)
 )
 
 # 3.00  all — target aggregator: the experiment's indicator tables
@@ -546,7 +663,7 @@ INDICATOR_TABLES = indicator_tables(
 WF3_TARGETS = {
     **{f"{token}_indicators": f"{results_dir}/{fname}"
        for token, fname in INDICATOR_TABLES.items()},
-    "snake_config": f"{exp_dir}/config/snake_config_run_stress_test.yml",
+    "project_config": f"{exp_dir}/config/project_config_run_stress_test.yml",
     # The staleness sidecar (3.16b). A target entry, not merely a declared
     # output: no rule reads a sidecar, so without this it would never build --
     # the same reachability argument the lookup makes below.
@@ -618,6 +735,7 @@ rule snapshot_config:
     message: rule_banner("3.02", "snapshot_config")
     input:
         config_snake = config_path,
+        config_workflows = WF_CONFIG_PATHS,
         consistency_ok = f"{exp_dir}/.project_consistency_ok",
     params:
         data_catalogs = DATA_SOURCES,
@@ -631,8 +749,14 @@ rule snapshot_config:
         config_dir = f"{exp_dir}/config",
         effective_config = config,
         advanced_settings = ADVANCED_SETTINGS,
+        # The snapshot is a dump of THIS mapping, not a copy of the project
+        # file (R13 D-11.1): after the split the project file does not hold
+        # the workflow settings.
+        composed_config = config,
+        # Recorded, never copied -- their content is inlined above (D-11.2).
+        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
     output:
-        config_snake_out = f"{exp_dir}/config/snake_config_run_stress_test.yml",
+        config_snake_out = f"{exp_dir}/config/project_config_run_stress_test.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"
@@ -833,7 +957,17 @@ rule prepare_stress_test_grid:
     message: rule_banner("3.09", "prepare_stress_test_grid")
     input:
         config = ancient(config_path),
+        config_workflows = ancient(WF_CONFIG_PATHS),
         consistency_ok = f"{exp_dir}/.project_consistency_ok",
+    params:
+        # The RESOLVED stress-test section, not a path to re-read (R13
+        # D-10.6). Two things follow. The module stops opening the config
+        # itself -- after the split `workflows.run_stress_test.stress_test`
+        # is in no single file it could open. And this is the rule's ONLY
+        # rerun trigger: both config inputs above are `ancient()`, which by
+        # construction triggers nothing, so without this param an edit to
+        # the grid would leave a stale `stress_test_lookup.csv` in place.
+        stress_test_cfg = stress_test_cfg,
     output:
         # ONE table at monthly grain (WG-2), 12 x ST_NUM rows keyed
         # (st_id, month), replacing BOTH the per-member _work/st_<m>.csv grid --
@@ -882,17 +1016,21 @@ rule prepare_weathergen_config:
         # Then weathergenr fails twenty rules later: the R3 defect, restored.
         climate_nc = ancient(f"{store_dir}/extract_historical.nc"),
     output:
-        weagen_config = f"{wg_dir}/config/weathergen_config.yml",
+        weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     params:
-        snake_config = config_path,
+        # The two RESOLVED values this rule's module used to re-read the
+        # config from disk for (R13 D-10.6). Passing them finishes the
+        # conversion the six params below already started, and the module
+        # stops needing to know the config layout at all.
+        realizations_num = RLZ_NUM,
+        stress_test_cfg = stress_test_cfg,
         default_config = "config/defaults/weathergen_config.yml",
         # The generator ROOT, not a write dir: generate_weather.R derives
         # output/ (products) and plots/ (figures) from it, because
         # weathergenr::generate_weather writes both classes into ONE out_dir
         # and the R07 layout separates them (map §2b).
         output_path = f"{wg_dir}/",
-        middle_year = horizontime_climate,
-        sim_years = wflow_run_length,
+        sim_window_end = SIM_WINDOW_END,
         seed = SEED,
         water_year_start = WATER_YEAR_START,
         dry_spell_factor = DRY_SPELL_FACTOR,
@@ -905,9 +1043,9 @@ rule prepare_weathergen_config:
     benchmark:
         f"{BENCH_PARTS_DIR}/3.10_prepare_weathergen_config.tsv",
     script:
-        "blueearth_cst/experiment/prepare_weagen_config.py"
+        "blueearth_cst/experiment/prepare_weathergen_config.py"
 
-# 3.05 prepare_weagen_config_st is GONE (C29, 2026-08-05). It emitted one
+# 3.05 prepare_weathergen_config_st is GONE (C29, 2026-08-05). It emitted one
 # weathergen_config_rlz_<n>_cst_<m>.yml per member -- RLZ_NUM x ST_NUM files,
 # each with its own log and benchmark part -- and nothing in it varied except the
 # OUTPUT FILENAME, split into prefix and suffix because weathergenr::write_netcdf
@@ -926,7 +1064,7 @@ rule generate_weather_realizations:
         # climate_nc is: both are store artifacts whose re-extraction must not
         # by itself re-run the generator.
         basin_cells = ancient(f"{store_dir}/basin_cells.csv"),
-        weagen_config = f"{wg_dir}/config/weathergen_config.yml",
+        weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     output:
         temp([f"{wg_dir}/output/rlz_{rlz_ix(n)}_st_{ST_BASELINE}.nc" for n in range(1, RLZ_NUM+1)])
     params:
@@ -940,7 +1078,7 @@ rule generate_weather_realizations:
     benchmark:
         f"{BENCH_PARTS_DIR}/3.11_generate_weather_realizations.tsv",
     shell:
-        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/generate_weather.R {input.climate_nc} {input.weagen_config} {params.rlz_width} {params.st_width} {input.basin_cells}"""
+        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/generate_weather.R {input.climate_nc} {input.weathergen_config} {params.rlz_width} {params.st_width} {input.basin_cells}"""
 
 # 3.12  perturb_climate_realization — impose perturbations per rlz/cst (st_num >= 1)
 rule perturb_climate_realization:
@@ -970,7 +1108,7 @@ rule perturb_climate_realization:
         # The ONE shared config from 3.10 (C29 retired the per-member one). The
         # DAG edge was already there transitively via 3.11; declaring it makes
         # the transient-flag read visible to --dry-run.
-        weagen_config = f"{wg_dir}/config/weathergen_config.yml",
+        weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     output:
         rlz_st_nc = temp(f"{wg_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".nc")
     log:
@@ -978,7 +1116,7 @@ rule perturb_climate_realization:
     benchmark:
         f"{BENCH_PARTS_DIR}/3.12_perturb_climate_realization/" + "rlz_{rlz_num}_st_{st_num}.tsv",
     shell:
-        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/impose_climate_change.R {input.rlz_nc} {input.weagen_config} {input.lookup_csv} {output.rlz_st_nc} {wildcards.st_num}"""
+        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/impose_climate_change.R {input.rlz_nc} {input.weathergen_config} {input.lookup_csv} {output.rlz_st_nc} {wildcards.st_num}"""
 
 # 3.13 was write_climate_data_catalog, removed 2026-08-18. It built ONE hydromt
 # catalog naming every member, and rule 3.14 read a single entry out of it — so
@@ -1030,8 +1168,8 @@ rule downscale_climate_realization:
     params:
         model_dir = basin_dir,
         clim_source = clim_source,
-        horizontime_climate = horizontime_climate,
-        run_length = wflow_run_length,
+        sim_window_start = SIM_WINDOW_START,
+        sim_window_end = SIM_WINDOW_END,
         # Orography sidecar for the chirps/chirps_global branch: the store
         # producer writes it as the clim_source-INDEPENDENT orography.nc beside
         # extract_historical.nc under the keyed store dir (R07 B1 standardises
@@ -1096,22 +1234,25 @@ def _positive_batch_key(key, value):
 
 # Validate the clamp BEFORE it feeds the default, so a bad batch_size_max is
 # reported as batch_size_max rather than as the batch_size it silently zeroed.
-batch_size_max = _positive_batch_key("batch_size_max",
-                                     get_config(my_cfg, "batch_size_max", 8))
-_explicit_batch_size = get_config(my_cfg, "batch_size", None, optional=True)
+# C-34: the three batch/disk knobs regroup under `compute:`. A REGROUP only --
+# P2 owns what `CONFIG_PROJECTION` does with the new section.
+_compute_cfg = get_config(my_cfg, "compute", {}) or {}
+batch_size_max = _positive_batch_key("compute.batch_size_max",
+                                     get_config(_compute_cfg, "batch_size_max", 8))
+_explicit_batch_size = get_config(_compute_cfg, "batch_size", None, optional=True)
 if _explicit_batch_size is not None:
-    _explicit_batch_size = _positive_batch_key("batch_size", _explicit_batch_size)
+    _explicit_batch_size = _positive_batch_key("compute.batch_size", _explicit_batch_size)
 
 _batch_sizing = resolve_batch_size(
     member_count=len(_k_members),
     cores=_cores,
     batch_size_max=batch_size_max,
     explicit=_explicit_batch_size,
-    footprint=measure_member_footprint(basin_dir, horizontime_climate, wflow_run_length),
+    footprint=measure_member_footprint(basin_dir, SIM_WINDOW_START, SIM_WINDOW_END),
     headroom_bytes=disk_headroom_bytes(
         project_dir,
         fraction=ADVANCED_SETTINGS["defaults"]["batch_disk_headroom_fraction"],
-        headroom_gb=get_config(my_cfg, "disk_headroom_gb", None, optional=True),
+        headroom_gb=get_config(_compute_cfg, "disk_headroom_gb", None, optional=True),
     ),
 )
 batch_size = _batch_sizing.batch_size

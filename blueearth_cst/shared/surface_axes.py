@@ -35,10 +35,11 @@ from typing import TYPE_CHECKING, Mapping, Optional, Sequence, Union
 
 # pandas is DEFERRED into the three functions that actually touch it
 # (`read_lookup`, `read_indicators`, `_member_values`). `run_stress_test.smk`
-# imports this module at PARSE time for `parse_surfaces` and
-# `warn_on_heterogeneous_design`, neither of which reads a frame -- so a
-# module-level import bought pandas (~4.5s) on every WF3 dry-run and every real
-# run, to validate a config section. `from __future__ import annotations` above
+# imports this module at PARSE time for `warn_on_heterogeneous_design`, which
+# reads no frame -- so a module-level import bought pandas (~4.5s) on every WF3
+# dry-run and every real run, to validate a config section. (R14 P1 removed the
+# second parse-time import, `parse_surfaces`; the argument is unchanged, since
+# neither function read a frame.) `from __future__ import annotations` above
 # is what makes it possible: the `pd.DataFrame` / `pd.Series` annotations on the
 # dataclass fields and signatures are then strings and are never evaluated.
 if TYPE_CHECKING:

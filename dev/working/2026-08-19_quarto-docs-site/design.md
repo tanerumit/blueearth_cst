@@ -184,7 +184,7 @@ paragraph is a paragraph that will disagree with its original within a month.
 
 **D3 — The user guide is authored, by extraction from `README.md`.**
 Four pages: *Quick start*, *Configuring a project* (the config bins and the
-`snake_config_*.yml` choice), *Running the workflows* (the four entry points in
+`project_config_*.yml` choice), *Running the workflows* (the four entry points in
 order, plus `run_workflows.py`), *Reading the outputs* (`project_dir` layout).
 The README's corresponding sections are then **reduced to a summary plus a link
 to the site**, not deleted and not left duplicated. This is the largest content

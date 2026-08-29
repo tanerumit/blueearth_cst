@@ -10,6 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, validate_historical_window, warn_if_project_dir_in_repo, install_console_style, run_header
+from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 # The canonical climate figure set. Imported for figure_names() ONLY, so every
 # figure is declared from the same list the plotter writes from and the two
@@ -46,30 +47,57 @@ patch_psutil_windows_benchmark()
 # repo convention -- keep it even though the Snakefile itself uses `config`.
 config_path = workflow.configfiles[0]
 
+# The consumed-key PROJECTION: the config paths this workflow actually reads.
+# Digesting the projection rather than the whole file is what stops another
+# workflow's edit from re-firing this record.
+#
+# HOISTED above the first config read (R13 D-8.2): the projection is a
+# config-independent literal, and `compose_config` derives R(entry) from it, so
+# it has to be known before any section is touched. Moving it changed no value.
+CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_climate")
+
+# COMPOSE: the project file carries `{enabled, config_path}` stanzas and each
+# workflow's settings live in its own file. This merges them back into exactly
+# the mapping every reader below already expects (R13 D-8.1).
+#
+# The result is REBOUND to the Snakefile-global `config`, deliberately and not
+# as a style choice: `check_project_consistency` takes its live config from
+# `sm.config` -- Snakemake's `workflow.config` -- so binding elsewhere would
+# leave WF3's drift guard comparing a two-key stanza against a full recorded
+# section and failing rule 3.01 after WF1 and WF2 had already run.
+config, WORKFLOW_CONFIG_PATHS = compose_config(
+    config, config_path, entry="analyze_climate", declared_sections=CONFIG_PROJECTION,
+)
+# Sorted so the declared input lists below do not churn on dict order.
+WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
+
 # R01 schema — three top-level sections.
 project_cfg = config["project"]
-shared_cfg = config["shared"]
+# R14 D-7.2: `shared:` dissolved into sections by KIND. `climate_cfg` is the
+# only new binding -- `basin:` and `model:` are read at their use sites, which
+# is where the v1 `shared_cfg` indirection was buying nothing.
+climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["analyze_climate"]
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than documentary.
 # Warns, never raises; test_case/ is the one exemption.
 warn_if_project_dir_in_repo(project_dir, workflow.basedir)
-DATA_SOURCES = get_config(project_cfg, "data_sources", optional=False)
+DATA_SOURCES = get_config(project_cfg, "catalog", optional=False)  # C-40
 
-basin_cfg = shared_cfg["basin"]
+basin_cfg = config["basin"]
 spatial_cfg = parse_spatial_config(basin_cfg, my_cfg)
 model_region = get_config(basin_cfg, "region", optional=False)
 basin_hydrography = spatial_cfg.hydrography
 basin_index = spatial_cfg.basin_index
-historical_window = get_config(shared_cfg, "historical_window", optional=False)
+historical_window = get_config(climate_cfg, "window", optional=False)
 # ONE minimum window for the whole toolbox, enforced identically here and at
 # extraction. Parse time, before any rule executes -- same stance as WF1.
 validate_historical_window(historical_window)
 # The water year the climate figures aggregate on, from the one shared key WF1,
 # WF2 and WF3 also read. Figures are terminal artifacts, so this changes no
 # number -- but a figure labelled 'annual' should mean the basin's year.
-WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_start"))
+WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_start"))
 
 # --- the candidate source set -------------------------------------------------
 # THE PROJECT'S OWN SOURCE IS ALWAYS FIRST AND ALWAYS PRESENT. `candidate_sources`
@@ -81,15 +109,24 @@ WATER_YEAR_START = resolve_water_year_start(get_config(shared_cfg, "water_year_s
 # Order is declaration order with duplicates dropped, NOT sorted: the primary
 # source leads every figure set and every comparison table, which is the reading
 # order a person wants when the question is "should I switch away from it?".
-clim_source = get_config(shared_cfg, "clim_historical", optional=False)
-_extra_sources = get_config(my_cfg, "candidate_sources", []) or []
-if isinstance(_extra_sources, str):
+clim_source = get_config(climate_cfg, "selected", optional=False)
+# `C-43`: the candidate set moved UP to `climate.sources` and WIDENED -- it is
+# the full list with no privileged element, and `climate.selected` names one
+# MEMBER of it. The v1 key held the OTHERS, beside a privileged
+# `clim_historical`, which is why the migration unions the two rather than
+# copying one.
+#
+# The loader already refuses a `selected` outside `sources`, so the only work
+# left here is ORDER: the primary leads every figure set and comparison table,
+# and `sources` is in declaration order.
+_declared_sources = get_config(climate_cfg, "sources", []) or []
+if isinstance(_declared_sources, str):
     raise ValueError(
-        "workflows.analyze_climate.candidate_sources must be a LIST of source "
-        f"names, got the string {_extra_sources!r}. A bare string would be "
-        "iterated character by character and mint one store per letter."
+        "climate.sources must be a LIST of source names, got the string "
+        f"{_declared_sources!r}. A bare string would be iterated character "
+        "by character and mint one store per letter."
     )
-CANDIDATE_SOURCES = list(dict.fromkeys([clim_source, *_extra_sources]))
+CANDIDATE_SOURCES = list(dict.fromkeys([clim_source, *_declared_sources]))
 
 # P3-2a bounded support (design ext2-3): the raw-climate path supports era5,
 # chirps and chirps_global only. Rejected HERE, at parse time, for every
@@ -113,16 +150,19 @@ for _src in CANDIDATE_SOURCES:
 # 2026-08-13).
 RUN_RECORD = f"{project_dir}/config/runs/analyze_climate/run_record.yml"
 
-# The consumed-key PROJECTION: the config paths this workflow actually reads.
-# Digesting the projection rather than the whole file is what stops another
-# workflow's edit from re-firing this record.
-CONFIG_PROJECTION = ("project", "shared", "workflows.analyze_climate")
-
 # Every external file this workflow's configuration points at. Hashed at parse
 # time so the digest moves when one is edited IN PLACE.
 CONFIG_REFERENCES = [
-    ("data_catalog", source) for source in
-    (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])
+    # The per-workflow config files, so an in-place edit to the file that now
+    # holds this workflow's settings moves the digest (R13 D-10.5). After the
+    # split the project file no longer carries those settings, so leaving them
+    # out would let the most-edited config in a project change with nothing
+    # re-firing. Derived from the dict `compose_config` returned, so this set
+    # and the one `copy_config_files` records cannot drift.
+    *[(f"workflow_config_{name}", path)
+      for name, path in sorted(WORKFLOW_CONFIG_PATHS.items())],
+    *[("data_catalog", source) for source in
+      (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
 ]
 
 EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
@@ -326,7 +366,7 @@ WF0_TERMINALS = [
 
 WF0_TARGETS = [
     *WF0_TERMINALS,
-    f"{project_dir}/config/runs/snake_config_analyze_climate.yml",
+    f"{project_dir}/config/runs/project_config_analyze_climate.yml",
     f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
     f"{project_dir}/benchmarks/wf0_benchmarks.md",
 ]
@@ -342,6 +382,7 @@ rule snapshot_config:
     message: rule_banner("0.01", "snapshot_config")
     input:
         config_snake = config_path,
+        config_workflows = WF_CONFIG_PATHS,
     params:
         data_catalogs = DATA_SOURCES,
         workflow_name = "analyze_climate",
@@ -349,12 +390,19 @@ rule snapshot_config:
         effective_config = config,
         advanced_settings = ADVANCED_SETTINGS,
         config_projection = CONFIG_PROJECTION,
+        # The snapshot is a dump of THIS mapping, not a copy of the project
+        # file (R13 D-11.1): after the split the project file does not hold
+        # the workflow settings, and WF3's drift guard reads them out of the
+        # wf1 snapshot.
+        composed_config = config,
+        # Recorded, never copied -- their content is inlined above (D-11.2).
+        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
         # A string digest, so the params trigger compares a value rather than a
         # structure. This is what keeps the record FRESH when the checkout, the
         # lock files or a referenced catalog's bytes move.
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        config_snake_out = f"{project_dir}/config/runs/snake_config_analyze_climate.yml",
+        config_snake_out = f"{project_dir}/config/runs/project_config_analyze_climate.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"

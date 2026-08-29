@@ -118,7 +118,7 @@ def test_disagreeing_basin_dataset_raises_naming_both_sides(tmp_path, kwargs, ne
             out,
             0.00833,
             {"subbasin": [1.0, 2.0]},
-            snake_config_path="my_config.yml",
+            project_config_path="my_config.yml",
             **kwargs,
         )
     message = str(excinfo.value)

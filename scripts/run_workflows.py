@@ -132,7 +132,7 @@ ABSENCE rather than freshness.
 
 Usage::
 
-    python scripts/run_workflows.py --config test_case/snake_config_baseline.yml
+    python scripts/run_workflows.py --config test_case/project_config_baseline.yml
     python scripts/run_workflows.py --config <cfg> --cores 4 -- --dry-run
 """
 
@@ -1218,7 +1218,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "--config",
         required=True,
-        help="path to a full-orchestration snake config (see test_case/ for examples)",
+        help="path to a full-orchestration project config (see test_case/ for examples)",
     )
     ap.add_argument(
         "--cores",

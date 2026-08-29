@@ -44,11 +44,39 @@ class ExperimentConfigFrozenError(RuntimeError):
     """The experiment has already run; its configuration is settled."""
 
 
+#: Sections of `workflows.run_stress_test` that are NOT part of an experiment's
+#: identity (`C-79`, design D-9.3). One entry, and it needs a reason rather than
+#: a list to belong to: `compute:` answers "how do I fit this run on this
+#: machine", not "what am I running".
+#:
+#: NOT `RETIRED_EXPERIMENT_KEYS`, which was the first thing tried and is a
+#: different mechanism for a different fact. That registry says a key no longer
+#: EXISTS, and `refuse_retired_experiment_keys` reads the same table at WF3
+#: parse time to reject any config still declaring one -- so registering
+#: `compute:` there made it undeclarable, which is the opposite of `C-79`.
+#: `compute:` is live and still read; it is only not identity, and that is a
+#: statement the freeze has to make for itself.
+_NOT_IDENTITY = ("compute",)
+
+
 def build_experiment_config(experiment: str, experiment_cfg) -> dict:
-    """The document: the id plus this experiment's own resolved section."""
+    """The document: the id plus this experiment's own resolved section.
+
+    `compute:` is dropped here, and dropping it HERE is the point. The design
+    says excluding it from `CONFIG_PROJECTION` takes it out of both the digest
+    and the freeze; that is true of the digest only. Rule 3.11 passes
+    `experiment_cfg = my_cfg` -- the whole WF3 section -- and this document is
+    built from that, so the projection never reaches it. Without this line
+    `batch_size` would leave `effective_config_digest` and still refuse an
+    already-run experiment through :func:`check_not_frozen`, which is the
+    failure `C-79` exists to remove.
+    """
+    section = dict(experiment_cfg or {})
+    for key in _NOT_IDENTITY:
+        section.pop(key, None)
     return {
         "experiment_name": experiment,
-        "run_stress_test": dict(experiment_cfg or {}),
+        "run_stress_test": section,
     }
 
 
@@ -65,8 +93,8 @@ def _frozen_differences(recorded: dict, document: dict) -> list:
 
     Two events reach this comparison and they are not the same thing:
 
-    * **the user changed a setting** — ``horizontime_climate: 2050 → 2085``. The
-      results really are redefined and the freeze must refuse;
+    * **the user changed a setting** — ``simulation_window.end: 2054 → 2090``.
+      The results really are redefined and the freeze must refuse;
     * **the toolbox changed which settings EXIST** — a key retired between
       releases. The user changed nothing, and whether the results are redefined
       depends entirely on what the retirement did.
@@ -94,6 +122,14 @@ def _frozen_differences(recorded: dict, document: dict) -> list:
         key
         for key in set(was) | set(now)
         if was.get(key) != now.get(key)
+        # Never identity, so a difference is not a redefinition -- in either
+        # direction, and including the RECORD that still carries it from before
+        # `C-79`. Without this, the first run after the change refuses every
+        # already-run experiment whose config declared `compute:`, naming it as
+        # changed: exactly the refusal `C-79` exists to remove, aimed at exactly
+        # the users it was meant to help. The record then migrates forward on
+        # that same write, because the document no longer emits the key.
+        and key not in _NOT_IDENTITY
         # A key the CONFIG still declares is a live setting; a difference there
         # is the user's edit whatever the registry says about the name.
         and not (key not in now and retirement_preserves_results(key))

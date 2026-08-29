@@ -30,7 +30,7 @@ Method context that changes how code here should be edited (rationale: `docs/cst
 Self-explanatory except for these. Full detail: `dev/reference/repo-layout.md`.
 
 - `blueearth_cst/` — modules invoked from Snakemake `script:` (Python) or `Rscript --vanilla` `shell:` bodies (R); none is a standalone CLI. Split by stage (`model/`, `projections/`, `climate_analysis/`, `experiment/`), plus `shared/` for cross-cutting helpers and `weathergen/` for the R weather generator.
-- `config/` — four bins plus `advanced_settings.yml`, which `snake_utils` reads once for every project and is not a `--configfile` target (closed schema: add a key to the file and to `_ADVANCED_SETTINGS_SCHEMA` together). There is **no `workflows/` bin** — every `--configfile` target lives beside the project it writes into, under `test_case/`. The two-tier split: `config/defaults/` is read by rules, so changing one changes a run; `config/templates/` is only scaffolds you copy. `catalogs/` holds the hydromt `-d` targets, of which `cmip6_data.yml` and `cmip6_store_index.json` are generated — never hand-edit them. **Keep the `snake_config_` prefix on any new seed config**; a name outside that glob is silently untracked. Real basin data lives in the project folder, referenced by absolute path, never in this repository.
+- `config/` — four bins plus `advanced_settings.yml`, which `snake_utils` reads once for every project and is not a `--configfile` target (closed schema: add a key to the file and to `_ADVANCED_SETTINGS_SCHEMA` together). There is **no `workflows/` bin** — every `--configfile` target lives beside the project it writes into, under `test_case/`. A project config is a SET of files since R13: a project file carrying closed `{enabled, config_path}` workflow stanzas plus one file per workflow beside it, composed by `blueearth_cst/shared/config_composition.py` into today's in-memory shape. A `config_path` resolves against the project file's own directory; every other path key still resolves from the run directory. A key read by more than one workflow belongs in `shared:` and is refused inside a workflow file at parse time (`docs/migration-config-tiers.md`). The two-tier split: `config/defaults/` is read by rules, so changing one changes a run; `config/templates/` is only scaffolds you copy. `catalogs/` holds the hydromt `-d` targets, of which `cmip6_data.yml` and `cmip6_store_index.json` are generated — never hand-edit them. **Keep the `project_config_` prefix on any new seed config**; a name outside that glob is silently untracked. Real basin data lives in the project folder, referenced by absolute path, never in this repository.
 - `dev/` — planning, audits, conventions, roadmap, baseline manifest, dev helpers. Not shipped. **Open work lives on the todo-board**: one note per item under `dev/tasks/`, closures in `dev/LOG.md`, and `dev/TODO.md` is generated (`python dev/scripts/todoboard.py render` — edit the note, not `TODO.md`).
 - `docs/` — user-facing reference, including the vendored hydromt / wflow guides. Configs are not mirrored here; `config/` is the single source.
 - Outputs land under `project_dir`. Production `project_dir` lives **outside the repository tree**; the untracked `test_case/test_local` is a dev-only exemption.
@@ -47,15 +47,15 @@ Run everything inside `pixi shell`, or prefix each command with `pixi run`.
 pixi install          # conda-forge + PyPI deps
 pixi run install      # + weathergenr (R, via remotes) and the Julia env
 
-# The four workflows, IN ORDER. snake_config_rapid.yml is the DEFAULT config.
-snakemake all -c 3 -s analyze_climate.smk     --configfile test_case/snake_config_rapid.yml
-snakemake all -c 3 -s build_model.smk         --configfile test_case/snake_config_rapid.yml
-snakemake all -c 3 -s analyze_projections.smk --configfile test_case/snake_config_rapid.yml --keep-going
-snakemake all -c 3 -s run_stress_test.smk     --configfile test_case/snake_config_rapid.yml
+# The four workflows, IN ORDER. project_config_rapid.yml is the DEFAULT config.
+snakemake all -c 3 -s analyze_climate.smk     --configfile test_case/project_config_rapid.yml
+snakemake all -c 3 -s build_model.smk         --configfile test_case/project_config_rapid.yml
+snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
+snakemake all -c 3 -s run_stress_test.smk     --configfile test_case/project_config_rapid.yml
 
 # Or drive all enabled workflows in fixed order. Contract: the module docstring,
 # pinned clause-by-clause by tests/test_run_workflows.py.
-pixi run python scripts/run_workflows.py --config test_case/snake_config_rapid.yml
+pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml
 
 snakemake ... --dry-run     # validate the DAG before running and after editing a rule
 snakemake --unlock -s <smk> --configfile <cfg>   # Snakemake locks the workdir on crash
@@ -98,7 +98,7 @@ A task branch is isolated from `main` and cheap to revert, so spend validation t
 
 **Reading CI:** `gh` resolves to the `upstream` (Deltares) remote in this clone and exits 0 printing nothing, which reads as "CI has never run". Fix it once per clone with `gh repo set-default tanerumit/blueearth_cst`, and install the ruff pre-push hook the same way: `git config core.hooksPath .githooks`.
 
-**Which config to run:** default to `snake_config_rapid.yml` (`test_case/test_rapid`) for anything you want to watch EXECUTE — a rule you edited, a DAG check, a WF3 smoke run, a figure render. Use `snake_config_baseline.yml` (`test_case/test_local`) when the run's NUMBERS are the point; the baseline is recorded from it and nothing else, so never point `check_baseline.py` at the rapid tree. `snake_config_wf2_fast.yml` is WF2 code iteration only. Rapid is CHEAP, not NARROW — a config that gives up coverage must say which.
+**Which config to run:** default to `project_config_rapid.yml` (`test_case/test_rapid`) for anything you want to watch EXECUTE — a rule you edited, a DAG check, a WF3 smoke run, a figure render. Use `project_config_baseline.yml` (`test_case/test_local`) when the run's NUMBERS are the point; the baseline is recorded from it and nothing else, so never point `check_baseline.py` at the rapid tree. `project_config_wf2_fast.yml` is WF2 code iteration only. Rapid is CHEAP, not NARROW — a config that gives up coverage must say which.
 
 **Run WF1 with `--notemp` when the run feeds `check_baseline.py`.** Rule 1.14 declares wflow's `run_default/output.csv` as `temp()`, and that file is the manifest's wf1 discharge target, so without the flag the gate fails "target missing" and reads as a defect. The rounded `output_q.csv` is not a substitute.
 

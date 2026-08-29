@@ -8,15 +8,28 @@ and `blueearth_cst/spatial/`.
 
 ## Owned config keys (`workflows.build_model.*`)
 
-- `wflow_outvars` — Wflow output variables to emit (default `['river discharge']`).
-- `model_build_config` — path to the hydromt build config (default `{static_dir}/wflow_build_model.yml`).
-- `waterbodies_config` — path to the reservoirs/lakes/glaciers update config (default `{static_dir}/wflow_update_waterbodies.yml`).
-- `observations_timeseries` — optional observed-discharge file for `plot_wflow_evaluation`. Default `None`.
+In this workflow's own config file, reached through its
+`config_path:` stanza.
+
+- `engine.build_config` — path to the hydromt build config
+  (default `config/defaults/wflow_build_model.yml`).
+- `engine.waterbodies_config` — path to the reservoirs/lakes/glaciers
+  update config (default `config/defaults/wflow_update_waterbodies.yml`).
+- `observations` — optional observed series for `plot_wflow_evaluation`,
+  **per variable**: `{'river discharge': <path>}`. A variable named here
+  that `model.outvars` does not ask for is refused at parse time — an
+  observed series with no modelled counterpart has nothing to be
+  compared against. Default `None`.
+- `simulation_window` — `{start, end}`, INCLUSIVE calendar years.
+
+`model.outvars` is **no longer owned here**: R14 `C-19` moved it to the
+project file, because WF3 reads it too and a key two workflows read has
+to have one home.
 
 ## Reads from `shared`
 
 - `shared.basin.region`, `shared.basin.resolution` — basin delineation + model resolution.
-- `shared.basin.gauge_points` — optional canonical gauge/control-point file.
+- `shared.basin.output_locations` — optional canonical gauge/control-point file.
   The former `workflows.build_model.output_locations` key is accepted for
   one compatibility release; conflicting populated values fail at parse time.
 - `shared.basin.automatic_subbasins.max_count` — global automatic-fallback
@@ -38,15 +51,18 @@ and `blueearth_cst/spatial/`.
   (This was unconstrained when the key shipped, while the forcing still came
   from the data catalog.) No length floor applies — the ≥16-year minimum is
   weathergenr's, on the record.
-- `shared.clim_historical` — historical climate source (e.g. `era5`).
+- `shared.climate.selected` — historical climate source (e.g. `era5`).
 
 ## Reads from `project`
 
 - `project.project_dir` — output root
   (`basin_dir = {project_dir}/models/hydrology/wflow`,
   `spatial_dir = {project_dir}/data/spatial`).
-- `project.static_dir` — location of the build/update config templates.
-- `project.data_sources` — hydromt data-catalog YAML (passed to `hydromt build/update -d`).
+- `project.catalog` — hydromt data-catalog YAML (passed to
+  `hydromt build/update -d`).
+
+`project.static_dir` is gone (`C-07`): the two engine configs it used to
+prefix are named by full path in this workflow's own file.
 
 ## Rule 1.02: engine-neutral spatial foundation
 
@@ -123,7 +139,7 @@ waterbodies, outputs, runtime, and forcing.
   `jrc` (reservoir timeseries), `hydro_lakes` (HydroLAKES), `rgi` (glaciers).
   Any source may be legitimately absent for a basin — the
   `add_reservoirs_lakes_glaciers` rule catches per-method `NoDataException`.
-- **Forcing**: `shared.clim_historical` source (e.g. `era5`) over the
+- **Forcing**: `shared.climate.selected` source (e.g. `era5`) over the
   historical window.
 
 ## Output contract (by role — not all are `rule all` targets)
@@ -134,7 +150,7 @@ waterbodies, outputs, runtime, and forcing.
 - `{basin_dir}/forcing/plots/forcing_precip_map.png` (model inputs)
 - `{project_dir}/data/climate/historical/<key>/plots/source_{precip,temp,pet}.png`
   (source-grid figures from the shared store; produced with no model)
-- `{project_dir}/config/runs/snake_config_build_model.yml` (verbatim snake-config snapshot)
+- `{project_dir}/config/runs/project_config_build_model.yml` (verbatim snake-config snapshot)
 - `{project_dir}/data/spatial/spatial_catalog.yml` (representative target for the
   complete rule-1.02 spatial product)
 
@@ -209,11 +225,11 @@ static `rule all` /
 manifest paths must be basin-independent (see design §4). The CSV column
 `Q_outlets` is upstream hydromt_wflow vocabulary, kept as-is.
 
-## `wflow_outvars` output set (known discrepancy — documented, not fixed in R3)
+## `model.outvars` output set (known discrepancy — documented, not fixed in R3)
 
-- Canonical `config/snake_config_model_test.yml`: `['river discharge']` — the
+- Canonical `config/project_config_model_test.yml`: `['river discharge']` — the
   minimal set (outlet Q only).
-- Pytest fixture `tests/snake_config_model_test.yml`: all six mapped variables
+- Pytest fixture `tests/project_config_model_test.yml`: all six mapped variables
   (`river discharge`, `precipitation`, `overland flow`,
   `actual evapotranspiration`, `groundwater recharge`, `snow`).
 
@@ -221,7 +237,7 @@ The two seed configs carry different output sets. Enabling the complete plot
 suite (climate panels in `plot_results.py`) would require the fuller set but
 **moves the baseline**, so it is a followup, not an R3 change (design §7.3).
 
-## `wflow_outvars` → CSDMS mapping (`WFLOW_VARS`, `setup_gauges_and_outputs.py`)
+## `model.outvars` → CSDMS mapping (`WFLOW_VARS`, `setup_gauges_and_outputs.py`)
 
 Semantic name → Wflow.jl 1.x CSDMS Standard Name → reporting unit. Units are
 the conventional Wflow 1.x output units; the header/param/unit pairings are

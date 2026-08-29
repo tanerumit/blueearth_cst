@@ -1,6 +1,6 @@
 """R07 B1 / ext2-01: the data catalog is the store's freshness boundary.
 
-The producer declares exactly one input in both DAGs — the ``project.data_sources``
+The producer declares exactly one input in both DAGs — the ``project.catalog``
 catalog, plain (never ``ancient()``). Two properties follow, and this module
 pins both against a real Snakemake invocation:
 
@@ -31,13 +31,15 @@ import subprocess
 from pathlib import Path
 
 import pytest
-import yaml
+
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
 
 pytestmark = pytest.mark.workflow_contract
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 CATALOG_FN = TESTDIR / "data" / "tests_data_catalog.yml"
 
 SNAKEFILES = ("build_model.smk", "run_stress_test.smk")
@@ -52,16 +54,15 @@ def staged_store(tmp_path):
     The catalog is copied so the test can edit it without touching the tracked
     fixture. Returns (config_path, catalog_path, store_target).
     """
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    cfg = load_composed_config(CONFIG_FN)
     project_dir = tmp_path / "proj"
     project_dir.mkdir()
     catalog = tmp_path / "catalog.yml"
     shutil.copy(CATALOG_FN, catalog)
 
     cfg["project"]["project_dir"] = project_dir.as_posix()
-    cfg["project"]["data_sources"] = catalog.as_posix()
-    cfg_path = tmp_path / "snake_config_staged.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg["project"]["catalog"] = catalog.as_posix()
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_staged")
 
     # Store key exactly as climate_store_rule builds it.
 
@@ -69,9 +70,9 @@ def staged_store(tmp_path):
 
     spec = climate_store_rule(
         project_dir=project_dir.as_posix(),
-        model_region=cfg["shared"]["basin"]["region"],
-        clim_source=cfg["shared"]["clim_historical"],
-        historical_window=cfg["shared"]["historical_window"],
+        model_region=cfg["basin"]["region"],
+        clim_source=cfg["climate"]["selected"],
+        historical_window=cfg["climate"]["window"],
         data_sources=catalog.as_posix(),
     )
     store = Path(spec.store_dir)

@@ -51,8 +51,8 @@ def downscale_climate_forcing(
     data_libs,
     model_root,
     precip_source,
-    horizontime_climate,
-    wflow_run_length,
+    sim_start,
+    sim_end,
     catalog_out,
     oro_path=None,
 ):
@@ -75,7 +75,7 @@ def downscale_climate_forcing(
     generator's NC carries empty global attrs).
     """
     fn_out = Path(fn_out)
-    starttime, endtime = forcing_window(horizontime_climate, wflow_run_length)
+    starttime, endtime = forcing_window(sim_start, sim_end)
 
     oro_source = f"{precip_source}_orography"
     pet_method = pet_method_for(precip_source)
@@ -196,12 +196,12 @@ def downscale_climate_forcing(
     if hasattr(forcing.indexes["time"], "to_datetimeindex"):
         forcing["time"] = forcing.indexes["time"].to_datetimeindex(time_unit="ns")
 
-    # weagen has off-by-one timestamps at the year boundaries; clip the forcing
+    # weathergen has off-by-one timestamps at the year boundaries; clip the forcing
     # in place via the component's data.
     for var in list(forcing.data_vars):
         forcing[var] = forcing[var].sel(time=slice(starttime, endtime))
 
-    # Refresh starttime/endtime from the actual forcing axis (weagen quirk).
+    # Refresh starttime/endtime from the actual forcing axis (weathergen quirk).
     last_var = next(iter(forcing.data_vars))
     times = forcing[last_var].time.values
     mod.config.set("time.starttime", str(times[0])[:19])
@@ -231,8 +231,8 @@ if __name__ == "__main__":
                 data_libs=sm.input.data_sources,
                 model_root=sm.params.model_dir,
                 precip_source=sm.params.clim_source,
-                horizontime_climate=sm.params.horizontime_climate,
-                wflow_run_length=sm.params.run_length,
+                sim_start=sm.params.sim_window_start,
+                sim_end=sm.params.sim_window_end,
                 catalog_out=sm.output.catalog,
                 oro_path=sm.params.oro_path,
             )

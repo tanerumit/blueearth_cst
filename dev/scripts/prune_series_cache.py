@@ -23,7 +23,7 @@ produce while being a few KB to keep.
 
 Usage (from the repo root, inside pixi)::
 
-    python dev/scripts/prune_series_cache.py --config test_case/snake_config_baseline.yml
+    python dev/scripts/prune_series_cache.py --config test_case/project_config_baseline.yml
     python dev/scripts/prune_series_cache.py --config <cfg> --delete
 
 Not part of a run: this inspects and maintains a project tree
@@ -43,6 +43,9 @@ sys.path.insert(0, str(REPO))
 import yaml  # noqa: E402
 
 from blueearth_cst.projections import resolution as res  # noqa: E402
+from blueearth_cst.shared.config_composition import (  # noqa: E402
+    load_composed_config,
+)
 
 
 def expected_keys(config: dict) -> tuple[set[str], str, str]:
@@ -54,18 +57,31 @@ def expected_keys(config: dict) -> tuple[set[str], str, str]:
     """
     project = config["project"]
     my = config["workflows"]["analyze_projections"]
-    clim_project = my["clim_project"]
-    catalog_path = project["data_sources_climate"]
+    # v2: `clim_project` -> `ensemble` (`C-25`, value unchanged, so every cache
+    # filename this tool matches is unchanged too), and the climate catalog
+    # moved DOWN to the workflow that is its only reader (`C-39`).
+    clim_project = my["ensemble"]
+    catalog_path = my["catalog"]
 
     with open(REPO / catalog_path, encoding="utf-8") as handle:
         catalog = yaml.safe_load(handle)
 
+    # `C-63`: `members:` is a GROUP now -- `preference` is the list this key
+    # used to be, and `selection` / `overrides` were the flat
+    # `member_selection` / `member_overrides`. Passing the group whole would
+    # hand the resolver a mapping where it expects a list, and passing only
+    # `preference` would silently drop a project's per-model overrides: every
+    # overridden model would resolve to a different member, and the keys this
+    # tool calls orphaned would be the ones the next run needs.
+    members_cfg = my["members"] or {}
     combinations = res.resolve(
         catalog,
         clim_project=clim_project,
         models=my["models"],
         scenarios=my["scenarios"],
-        members=my["members"],
+        members=members_cfg["preference"],
+        selection=members_cfg.get("selection", res.FIRST_AVAILABLE),
+        overrides=members_cfg.get("overrides") or {},
     )
     needed = {(c.dataset, "historical", c.member) for c in combinations if c.resolved}
     needed |= {(c.dataset, c.scenario, c.member) for c in combinations if c.resolved}
@@ -92,8 +108,12 @@ def main() -> None:
     )
     args = parser.parse_args()
 
-    with open(args.config, encoding="utf-8") as handle:
-        config = yaml.safe_load(handle)
+    # COMPOSED, not raw (R13 D-12.0): the file passed here is the PROJECT
+    # config, and since the split the workflow settings live in the files it
+    # points at. A raw load would read a two-key stanza and fall back to its
+    # defaults -- silently, which is the failure mode this tool has no way to
+    # report.
+    config = load_composed_config(args.config)
 
     keys, project_dir, clim_project = expected_keys(config)
     clim_dir = Path(project_dir) / "data" / "climate" / "projections" / clim_project

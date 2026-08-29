@@ -1,6 +1,8 @@
 """Global test attributes and fixtures"""
 
+from copy import deepcopy
 from os.path import dirname, join, realpath
+from pathlib import Path
 
 import pytest
 import yaml
@@ -12,12 +14,15 @@ import yaml
 # declarative setting replaced them. The remaining inserts in this directory
 # point at dev/scripts/ and scripts/, which are NOT packages and are not
 # shipped; those stay.
+from blueearth_cst.shared.config_composition import (  # R13 loader (D-12.0, D-12.6)
+    load_composed_config,
+)
 from blueearth_cst.shared.snake_utils import get_config  # shared helper (R3 §3)
 
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 
-config_fn = join(TESTDIR, "snake_config_fixture.yml")
+config_fn = join(TESTDIR, "project_config_fixture.yml")
 
 
 @pytest.fixture(autouse=True)
@@ -112,10 +117,13 @@ def pytest_collection_modifyitems(config, items):
 
 @pytest.fixture()
 def config():
-    """Return config dictionary"""
-    with open(config_fn, "rb") as f:
-        cfdict = yaml.safe_load(f)
-    return cfdict
+    """Return the fixture config as one whole mapping, composed from T1 + T2.
+
+    Composed rather than raw-loaded so that consumers see the same shape a run
+    sees: since R13 the file at ``config_fn`` is the project file only, and a
+    raw load would hand every consumer two-key workflow stanzas.
+    """
+    return load_composed_config(config_fn)
 
 
 @pytest.fixture()
@@ -129,16 +137,69 @@ def project_dir(config):
 @pytest.fixture()
 def data_sources(config):
     """Return data sources"""
-    data_sources = get_config(config["project"], "data_sources", optional=False)
+    # `C-40`: `project.data_sources` is `project.catalog`.
+    data_sources = get_config(config["project"], "catalog", optional=False)
     data_sources = join(SNAKEDIR, data_sources)
     return data_sources
 
 
 @pytest.fixture()
 def model_build_config(config):
-    """Return model build config"""
-    model_build_config = get_config(
-        config["workflows"]["build_model"], "model_build_config", optional=False
-    )
-    model_build_config = join(SNAKEDIR, model_build_config)
-    return model_build_config
+    """Return model build config, read through the composed document.
+
+    Composes rather than indexing a raw load: since R13 the settings live in
+    ``tests/project_config_fixture_build_model.yml`` and the project file carries
+    only ``{enabled, config_path}``, so a raw index finds nothing. This fixture
+    sits in the layer that cannot fail in CI or in any worktree, which is why it
+    goes through the same loader a run does rather than a second reader.
+    """
+    engine = get_config(config["workflows"]["build_model"], "engine", optional=False)
+    model_build_config = get_config(engine, "build_config", optional=False)
+    return join(SNAKEDIR, model_build_config)
+
+
+def write_config(tmp_path, cfg, stem: str = "project_config") -> Path:
+    """Split a whole-config mapping into T1 + T2 files under ``tmp_path``.
+
+    Returns the T1 path, ready to hand to ``--configfile``. The inverse of
+    ``compose_config``, for fixtures — and the reason the suite's dominant
+    config idiom did not need rewriting when the config layout split:
+
+        cfg = load_composed_config(CONFIG_FN)   # one whole mapping, as before
+        cfg["workflows"]["build_model"]["x"] = ...       # mutate, as before
+        cfg_path = write_config(tmp_path, cfg)  # was: safe_dump to one file
+
+    A workflow section that is empty once ``enabled`` is removed gets no file
+    and no ``config_path``, matching what the migration splitter emits and what
+    the loader treats as "this workflow has no settings". Anything outside
+    ``project`` / ``shared`` / ``workflows`` is hoisted into its owning
+    workflow's file, so a test can keep writing ``reporting:`` at the top level
+    of the mapping it mutates.
+
+    Correctness is gated by ``compose_config(write_config(cfg)) == cfg`` in
+    tests/test_config_composition.py — without it this helper would be a second,
+    unchecked way to build a config.
+    """
+    tmp_path = Path(tmp_path)
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    cfg = deepcopy(dict(cfg))
+    workflows = dict(cfg.pop("workflows", {}) or {})
+
+    # No hoist step: `HOISTED_SECTIONS` retired in R14 P1 (D-10.1), so a T2
+    # file's top-level sections are its own and nothing is lifted out of `cfg`.
+    stanzas: dict[str, dict] = {}
+    for name, section in workflows.items():
+        section = dict(section or {})
+        stanza = {}
+        if "enabled" in section:
+            stanza["enabled"] = section.pop("enabled")
+        if section:
+            t2 = tmp_path / f"{stem}_{name}.yml"
+            t2.write_text(yaml.safe_dump(section, sort_keys=False), encoding="utf-8")
+            stanza["config_path"] = t2.name
+        stanzas[name] = stanza
+
+    cfg["workflows"] = stanzas
+    t1 = tmp_path / f"{stem}.yml"
+    t1.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
+    return t1

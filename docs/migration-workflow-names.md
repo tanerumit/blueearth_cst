@@ -49,11 +49,11 @@ Either re-run the workflow, or rename these by hand:
 | `logs/wf1_model_creation.log` | `logs/wf1_build_model.log` |
 | `logs/wf2_climate_projections.log` | `logs/wf2_analyze_projections.log` |
 | `logs/wf3_climate_experiment_<exp>.log` | `logs/wf3_run_stress_test_<exp>.log` |
-| `config/runs/snake_config_model_creation.yml` | `config/runs/snake_config_build_model.yml` |
-| `config/runs/snake_config_climate_projections.yml` | `config/runs/snake_config_analyze_projections.yml` |
+| `config/runs/project_config_model_creation.yml` | `config/runs/project_config_build_model.yml` |
+| `config/runs/project_config_climate_projections.yml` | `config/runs/project_config_analyze_projections.yml` |
 | `config/runs/model_creation/run_record.yml` | `config/runs/build_model/run_record.yml` |
 | `config/runs/climate_projections/run_record.yml` | `config/runs/analyze_projections/run_record.yml` |
-| `<exp>/config/snake_config_climate_experiment.yml` | `<exp>/config/snake_config_run_stress_test.yml` |
+| `<exp>/config/project_config_climate_experiment.yml` | `<exp>/config/project_config_run_stress_test.yml` |
 | `<exp>/config/catalogs/data_catalog_climate_experiment.yml` | *(no longer produced — delete it)* |
 | `<exp>/config/runs/climate_experiment/<digest>/` | `<exp>/config/runs/run_stress_test/<digest>/` |
 

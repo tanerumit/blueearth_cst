@@ -50,8 +50,8 @@ describing the same basin:
 
 | Config | Use it for |
 |---|---|
-| `test_case/snake_config_rapid.yml` | **the default.** Anything you want to watch *execute* — a first run, a rule you edited, a smoke test |
-| `test_case/snake_config_baseline.yml` | runs whose *numbers* you will quote or compare |
+| `test_case/project_config_rapid.yml` | **the default.** Anything you want to watch *execute* — a first run, a rule you edited, a smoke test |
+| `test_case/project_config_baseline.yml` | runs whose *numbers* you will quote or compare |
 
 Rapid is cheap, not narrow: it keeps the historical baseline scenario and two
 CMIP6 models, so no code path is skipped — it just runs fewer years and fewer
@@ -64,16 +64,16 @@ From the repository root, inside the pixi environment:
 ```bash
 pixi shell
 
-snakemake all -c 3 -s analyze_climate.smk     --configfile test_case/snake_config_rapid.yml
-snakemake all -c 3 -s build_model.smk         --configfile test_case/snake_config_rapid.yml
-snakemake all -c 3 -s analyze_projections.smk --configfile test_case/snake_config_rapid.yml --keep-going
-snakemake all -c 3 -s run_stress_test.smk     --configfile test_case/snake_config_rapid.yml
+snakemake all -c 3 -s analyze_climate.smk     --configfile test_case/project_config_rapid.yml
+snakemake all -c 3 -s build_model.smk         --configfile test_case/project_config_rapid.yml
+snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
+snakemake all -c 3 -s run_stress_test.smk     --configfile test_case/project_config_rapid.yml
 ```
 
 Or let the wrapper run whichever workflows the config enables, in order:
 
 ```bash
-pixi run run-workflows --config test_case/snake_config_rapid.yml
+pixi run run-workflows --config test_case/project_config_rapid.yml
 ```
 
 ::: {.callout-tip}
@@ -84,7 +84,7 @@ the cheapest way to confirm the workflow can resolve its inputs, and it costs
 seconds:
 
 ```bash
-snakemake all -c 3 -s build_model.smk --configfile test_case/snake_config_rapid.yml --dry-run
+snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml --dry-run
 ```
 :::
 

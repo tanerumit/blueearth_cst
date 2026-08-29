@@ -40,8 +40,11 @@ from pathlib import Path
 
 import pytest
 
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
+
 SNAKEDIR = Path(__file__).resolve().parents[1]
-CONFIG_FN = Path(__file__).resolve().parent / "snake_config_fixture.yml"
+CONFIG_FN = Path(__file__).resolve().parent / "project_config_fixture.yml"
 RULE_NAME = "extract_historical_climate"
 
 #: Sentinel for "the built Rule carries no such attribute on this Snakemake".
@@ -203,18 +206,21 @@ def test_ruleinfo_field_universe_is_fully_bucketed():
 #: "custom_basin" variant below proves both declarations READ the config rather
 #: than both falling back to the same module default (which is all a
 #: defaults-only run can show).
-_CUSTOM_BASIN = {"hydrography": "merit_hydro_1k", "basin_index": "my_basin_index"}
+# `C-15`: every spatial input lives under `basin.sources:` -- `hydrography`
+# and `basin_index` are named datasets like the rest.
+_CUSTOM_BASIN = {
+    "sources": {"hydrography": "merit_hydro_1k", "basin_index": "my_basin_index"}
+}
 
 
 @pytest.fixture(scope="module")
 def config_variants(tmp_path_factory):
     """The shipped test config, plus one declaring both optional basin keys."""
-    import yaml
-
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
-    cfg["shared"]["basin"].update(_CUSTOM_BASIN)
-    custom = tmp_path_factory.mktemp("cfg") / "snake_config_custom_basin.yml"
-    custom.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg = load_composed_config(CONFIG_FN)
+    cfg["basin"].update(_CUSTOM_BASIN)
+    custom = write_config(
+        tmp_path_factory.mktemp("cfg"), cfg, stem="project_config_custom_basin"
+    )
     return {"defaults": CONFIG_FN, "custom_basin": custom}
 
 
@@ -246,13 +252,17 @@ def declarations(request, config_variants):
 @pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_optional_basin_keys_are_read_from_the_config_by_both(declarations):
-    """Both declarations honour ``shared.basin.hydrography``/``basin_index``.
+    """Both declarations honour ``basin.sources.hydrography``/``basin_index``.
 
     Without this, a per-workflow divergence in the *default* (or one side
     forgetting to read the key at all) stays invisible on the shipped config.
     """
+    # The config nests these under `basin.sources:` since `C-15`, but the RULE
+    # still carries them as flat params -- a params name is internal and need
+    # not track the section its value came from. So the expectation is the
+    # nested VALUES, flattened.
     expected = (
-        _CUSTOM_BASIN
+        _CUSTOM_BASIN["sources"]
         if declarations["_variant"] == "custom_basin"
         else {"hydrography": "merit_hydro_ihu", "basin_index": "merit_hydro_index"}
     )
@@ -420,12 +430,13 @@ def test_chirps_branch_declares_and_consumes_one_orography_path(tmp_path):
     catalog — and this test failing on that move is the whole reason it exists,
     since the era5 fixture would not have noticed.
     """
-    import yaml
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
-    cfg["shared"]["clim_historical"] = "chirps_global"
-    cfg_path = tmp_path / "snake_config_chirps.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg = load_composed_config(CONFIG_FN)
+    # `C-43`: `selected` names a MEMBER of `sources`, and the loader refuses
+    # one that is not -- so switching the source means declaring it too.
+    cfg["climate"]["selected"] = "chirps_global"
+    cfg["climate"]["sources"] = ["chirps_global"]
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_chirps")
 
     workflow = _parse_workflow("run_stress_test.smk", cfg_path)
     producer = workflow.get_rule(RULE_NAME)
@@ -456,7 +467,7 @@ def test_chirps_branch_declares_and_consumes_one_orography_path(tmp_path):
 # a source taxonomy the factory already knows.
 #
 # The invariant that replaces byte-identity: BINDING THE GENERATED RULE TO
-# `shared.clim_historical` MUST YIELD THE SHARED CONTRACT. If it does not, WF0
+# `climate.selected` MUST YIELD THE SHARED CONTRACT. If it does not, WF0
 # and WF1 would extract into the same directory from different params -- the
 # re-extraction oscillation the shared contract exists to prevent, arriving
 # through a rule name instead of through a diverging input set.
@@ -471,14 +482,13 @@ def _wf0_rule(workflow, source):
 @pytest.mark.workflow_contract
 def test_wf0_primary_source_rule_equals_the_shared_contract(tmp_path):
     """WF0's generated rule for the project's own source == WF1's declaration."""
-    import yaml
 
     cfg_path = CONFIG_FN
     wf0 = _parse_workflow("analyze_climate.smk", cfg_path)
     wf1 = _parse_workflow("build_model.smk", cfg_path)
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
-    primary = cfg["shared"]["clim_historical"]
+    cfg = load_composed_config(CONFIG_FN)
+    primary = cfg["climate"]["selected"]
 
     generated = _wf0_rule(wf0, primary)
     shared = wf1.get_rule(RULE_NAME)
@@ -505,13 +515,11 @@ def test_wf0_candidate_source_gets_its_own_store_and_family_outputs(tmp_path):
     one DAG is what proves the generation reads the spec rather than a taxonomy
     written into the Snakefile.
     """
-    import yaml
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
-    assert cfg["shared"]["clim_historical"] == "era5"
-    cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["chirps"]
-    cfg_path = tmp_path / "snake_config_two_sources.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg = load_composed_config(CONFIG_FN)
+    assert cfg["climate"]["selected"] == "era5"
+    cfg["climate"]["sources"] = [cfg["climate"]["selected"], "chirps"]
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_two_sources")
 
     wf0 = _parse_workflow("analyze_climate.smk", cfg_path)
     era5 = _wf0_rule(wf0, "era5")
@@ -537,25 +545,23 @@ def test_wf0_rejects_an_unsupported_candidate_source(tmp_path):
     Deferring it to the generated rule would surface the failure under a rule
     name that does not say which config key put the source there.
     """
-    import yaml
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
-    cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["eobs"]
-    cfg_path = tmp_path / "snake_config_bad_source.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg = load_composed_config(CONFIG_FN)
+    cfg["climate"]["sources"] = [cfg["climate"]["selected"], "eobs"]
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_bad_source")
 
     with pytest.raises(Exception) as exc:
         _parse_workflow("analyze_climate.smk", cfg_path)
     message = str(exc.value)
     assert "eobs" in message
-    assert "candidate_sources" in message
+    assert "climate.sources" in message or "sources" in message
 
 
 # ---------------------------------------------------------------------------
 # The MIN_HISTORICAL_YEARS floor splits with the source's ROLE (2026-08-16)
 # ---------------------------------------------------------------------------
 #
-# `shared.historical_window` is a ceiling, not a demand: a source that cannot
+# `climate.window` is a ceiling, not a demand: a source that cannot
 # fill it is extracted over what it holds. The floor still binds the source that
 # FEEDS the pipeline -- weathergenr's wavelet minimum -- and not a candidate that
 # ends at a comparison figure.
@@ -574,10 +580,7 @@ def test_the_enforced_default_emits_no_param_at_all():
         project_dir="/tmp/p",
         model_region="{'subbasin': [1.0, 2.0]}",
         clim_source="era5",
-        historical_window={
-            "starttime": "2000-01-01T00:00:00",
-            "endtime": "2020-12-31T00:00:00",
-        },
+        historical_window={"start": 2000, "end": 2020},  # `C-70`: years
         data_sources="catalog.yml",
     )
     assert "enforce_min_years" not in spec.params
@@ -591,10 +594,7 @@ def test_only_a_relaxed_store_carries_the_flag():
         project_dir="/tmp/p",
         model_region="{'subbasin': [1.0, 2.0]}",
         clim_source="chirps",
-        historical_window={
-            "starttime": "2000-01-01T00:00:00",
-            "endtime": "2020-12-31T00:00:00",
-        },
+        historical_window={"start": 2000, "end": 2020},  # `C-70`: years
         data_sources="catalog.yml",
         enforce_min_years=False,
     )
@@ -610,16 +610,14 @@ def test_wf0_relaxes_the_floor_for_candidates_only(tmp_path):
 
     This is what stops a short candidate store from being promoted silently: WF1
     and WF3 declare the store WITHOUT the flag, so switching
-    `shared.clim_historical` onto a candidate changes the params Snakemake
+    `climate.selected` onto a candidate changes the params Snakemake
     recorded and re-extracts it under the floor.
     """
-    import yaml
 
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
-    assert cfg["shared"]["clim_historical"] == "era5"
-    cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["chirps"]
-    cfg_path = tmp_path / "snake_config_floor_split.yml"
-    cfg_path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    cfg = load_composed_config(CONFIG_FN)
+    assert cfg["climate"]["selected"] == "era5"
+    cfg["climate"]["sources"] = [cfg["climate"]["selected"], "chirps"]
+    cfg_path = write_config(tmp_path, cfg, stem="project_config_floor_split")
 
     wf0 = _parse_workflow("analyze_climate.smk", cfg_path)
     primary = _wf0_rule(wf0, "era5")

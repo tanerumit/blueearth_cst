@@ -152,7 +152,7 @@ the rest.
 Use `config/deltares_data_local.yml` (a copy of `deltares_data.yml` with
 `root:` pointing at `C:/data/wflow_global/hydromt`) by either:
 
-- pointing the snake config's data catalog key at it, or
+- pointing the project config's data catalog key at it, or
 - passing `--config data_catalog=config/deltares_data_local.yml` to snakemake
   if your Snakefile reads it from `config`.
 

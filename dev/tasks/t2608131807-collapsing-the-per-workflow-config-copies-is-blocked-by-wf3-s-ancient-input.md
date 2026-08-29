@@ -32,7 +32,7 @@ the three costs below in view.
 The owner proposed two variants in one sitting: flatten `config/runs/` into
 `config/`, and nest the flat copies under `config/runs/<workflow>/`. Both trip
 the SAME wire as cost 1 — the first moves
-`config/runs/snake_config_model_creation.yml` out of `runs/`, the second moves
+`config/runs/project_config_model_creation.yml` out of `runs/`, the second moves
 it down into `<workflow>/` — so the item now covers three proposals, not one.
 That is twice in two days from two different readings of the same directory,
 which is the evidence that **prose mitigation has been tried and does not
@@ -46,7 +46,7 @@ directory rather than of scattered files.
 
 ## What was measured (2026-08-13)
 
-- `test_local/config/runs/snake_config_{model_creation,climate_projections}.yml`
+- `test_local/config/runs/project_config_{model_creation,climate_projections}.yml`
   are **byte-identical**, 3155 bytes each. On `test_rapid`, 4851 each. Both
   files are the **whole** source config, not the workflow's section of it.
 - The WF3 drift guard reads only its guarded sections from each snapshot:
@@ -93,7 +93,7 @@ design — check `dev/reference/sealed-records.yml` before editing any of them.
 
 **Separately (not part of this item):** several of those workflow reference docs
 already carry **pre-R7 paths** — `climate_projections.md:98` gives
-`{project_dir}/config/snake_config_climate_projections.yml`, missing the `runs/`
+`{project_dir}/config/project_config_climate_projections.yml`, missing the `runs/`
 bin, and `climate_experiment.md:121` and `model_creation.md:137` want checking
 too. That is a live-reference staleness defect under AGENTS.md's "keep
 configuration references current", independent of whether this item ever moves.

@@ -6,16 +6,31 @@ effort: 2
 area: config / naming
 queue:
 created: 2026-08-19
-updated: 2026-08-19
+updated: 2026-08-24
 ---
 
+> [!info] Ruled 2026-08-24 — bundled into R14 as `C-85`
+> The owner ruled this IN, riding R14's single migration bundle and
+> `schema_version` bump rather than landing separately. Both changes break the
+> same `--configfile` invocation, so the break is paid once; `C-38` renames and
+> rewrites in one pass instead of being written twice; and R14's `C-84` adds a
+> brand-new WF0 template that would otherwise ship under the retired prefix.
+> Rationale, cost and sequencing: `dev/milestones/r14/config-shape-scoping.md`,
+> Group A, "The file is named after the program that reads it".
+>
+> **This note stays the implementation reference** — the blast radius, the
+> `.gitignore` trap and the file-by-file checklist below are not duplicated
+> into the milestone. Do not start it standalone; it lands with the bundle.
+> The first progress item — filenames only, or the identifiers too — is still
+> open and is now R14's design to settle.
+
 > [!note] Overview
-> **What** — Rename every `snake_config_*.yml` seed and template to
+> **What** — Rename every `project_config_*.yml` seed and template to
 > `project_config_*.yml`, and update the `.gitignore` un-ignore glob, tests,
 > docs, `AGENTS.md`, `pixi.toml` and every command line that names one.
 > **Why** — Snakemake is one tool this repo happens to use; what the file
 > configures is the **project** — the basin, the windows, the models, the
-> experiment. `project_config_` says what the file *is*; `snake_config_` says
+> experiment. `project_config_` says what the file *is*; `project_config_` says
 > which program reads it. The second is the less durable fact: the file would
 > keep its meaning if the engine changed.
 > **Effort** — Large, but by breadth rather than difficulty. 11 tracked files
@@ -28,7 +43,7 @@ updated: 2026-08-19
 
 ```
 test_case/*
-!test_case/snake_config_*.yml
+!test_case/project_config_*.yml
 ```
 
 `test_case/` is otherwise ignored wholesale, so the seed configs are tracked
@@ -44,7 +59,7 @@ that lies here.
 ## Blast radius, measured 2026-08-19
 
 ```
-11  tracked files named snake_config*   (5 archived, 1 template, 4 test_case, 1 tests fixture)
+11  tracked files named project_config*   (5 archived, 1 template, 4 test_case, 1 tests fixture)
 221 occurrences in 68 files outside dev/
 771 occurrences repo-wide  (the difference is dev/ records)
 ```
@@ -64,8 +79,8 @@ under `tests/`** (33 test modules plus `conftest.py`).
 
 ## Progress
 
-- [ ] Decide the scope of the prefix change: only the `snake_config_` file
-      prefix, or also identifiers that carry it (`snake_config_fixture`,
+- [ ] Decide the scope of the prefix change: only the `project_config_` file
+      prefix, or also identifiers that carry it (`project_config_fixture`,
       variable and fixture names). Grep first, triage second — not every
       occurrence of the string is a filename.
 - [ ] `git mv` the 11 files; `.gitignore` glob in the SAME commit; verify with
@@ -82,7 +97,7 @@ under `tests/`** (33 test modules plus `conftest.py`).
       `Snakefile_<noun>` → `*.smk` rename of 2026-08-14.
 - [ ] `dev/` records: leave the **4 sealed records** alone
       (`dev/reference/sealed-records.yml`; `tests/test_sealed_records.py` fails
-      on an edit). All four mention `snake_config` — 11 occurrences that stay
+      on an edit). All four mention `project_config` — 11 occurrences that stay
       stale on purpose. Everything else in `dev/` gets its paths kept current, per
       the Conventions rule that a stale path in a document someone reads to do
       their job is a defect.
@@ -94,7 +109,7 @@ under `tests/`** (33 test modules plus `conftest.py`).
 
 Land this **before**
 [[t2608191733-ship-a-sample-dataset-bundle-so-a-user-needs-no-deltares-p-drive]]
-if both are wanted. That item adds a new `snake_config_sample.yml`; doing it
+if both are wanted. That item adds a new `project_config_sample.yml`; doing it
 first only widens this rename, and its `dev/scripts/sample_bundle.yml` already
 carries a note pointing here.
 

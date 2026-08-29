@@ -47,13 +47,15 @@ emits and what its members are called; **R12** changes how it executes. Mirrors
 Phase 5, which did the same for workflow 2. Dev artifacts under
 `dev/milestones/r11/`. See § Phase 8 below.
 
-**Phase 9 — Configuration modularization (R13 design ACCEPTED 2026-08-21).**
-Splits the monolithic project config into a project file (T1) carrying closed
+**Phase 9 — Configuration modularization (R13 SEALED 2026-08-22).**
+Split the monolithic project config into a project file (T1) carrying closed
 `{enabled, config_path}` workflow stanzas plus one per-workflow file (T2),
 composed by a shared loader so the in-memory shape the Snakefiles see is
-unchanged. The first modularization seam: it makes cross-workflow sharing
-checkable at parse time rather than conventional. One milestone, R13; design and
-audit trail under `dev/milestones/r13/`. See § Phase 9 below.
+unchanged, then hoisted `wflow_outvars` to `shared:`. The first modularization
+seam: it makes cross-workflow sharing checkable at parse time rather than
+conventional, and a key read by two workflows now REFUSES to sit in a workflow
+file. One milestone, R13; design and audit trail under `dev/milestones/r13/`.
+See § Phase 9 below.
 
 ```text
 Phase 1 — Foundation (sealed)
@@ -160,7 +162,7 @@ each refactor a workflow. Otherwise each refactor has to decide on
 the fly which keys belong to which workflow, and the decisions
 accumulate inconsistently.
 
-**Scope.** Reorganize the snake config into three top-level sections
+**Scope.** Reorganize the project config into three top-level sections
 (`project`, `shared`, `workflows.<name>`); each Snakefile reads only
 its own section + shared. The contract-doc *format* is specified in
 the R1 design doc (§4); the per-workflow docs themselves are deferred
@@ -184,10 +186,10 @@ plugin registry.
 
 **Exit criteria.**
 - Three top-level config sections in place with a checked-in template
-  at `config/snake_config.template.yml`.
+  at `config/project_config.template.yml`.
 - All three Snakefiles read sectioned config; old flat reads removed.
 - `src/` scripts that read config directly (`prepare_cst_parameters`,
-  `prepare_weagen_config`, `get_change_climate_proj`,
+  `prepare_weathergen_config`, `get_change_climate_proj`,
   `get_change_climate_proj_summary`) migrated.
 - Three migrated config files committed (`tests/`, canonical, Linux).
 - All three workflows run end-to-end on the migrated canonical config
@@ -433,7 +435,7 @@ rounds + round-cap arbitration; 21/21 findings closed) at `dev/milestones/r05/`.
 12 commits (no commit 4; `8b356f3`..seal): contract doc
 `dev/reference/workflows/run_stress_test.md`; `stress_test_grid` helper extracted to
 `snake_utils.py` (strict `step_num`, removing the Snakefile's silent default-1 —
-output-neutral hardening); `prepare_weagen_config.py` config assembly extracted
+output-neutral hardening); `prepare_weathergen_config.py` config assembly extracted
 into importable functions above a guard; the **CyclicGraphException** resolved
 by a rule-local `wildcard_constraints: st_num=[1-9][0-9]*` on
 `generate_climate_stress_test` + the `test_cli` ratchet flipped to a clean-DAG
@@ -1182,7 +1184,7 @@ ruling 6 marked superseded.
 
 **Resolved across design v6–v8**, all toward what the code emits: the config
 snapshot **stays under `config/`** (the decider being that
-`config/runs/snake_config_build_model.yml` is a declared `input:` of WF3's
+`config/runs/project_config_build_model.yml` is a declared `input:` of WF3's
 drift guard, so it is a consumed contract artifact rather than an archive); the
 climate store **keeps its source+window cache key**; `cmip6/raw/` and `scalar/`
 are both kept, `scalar/` being R8's ruling S8-03; `change_factors/` stays as two
@@ -1331,7 +1333,7 @@ therefore read alike, which they should.
 **Defects being fixed.** Two rules carry no verb at all
 (`climate_stress_parameters`, `climate_data_catalog`); one verb is actively wrong
 (`export_wflow_results` — folded into R9); `setup_` duplicates `prepare_`;
-`weagen` and `proj` are contractions that appear in no path or directory; `_st`
+`weathergen` and `proj` are contractions that appear in no path or directory; `_st`
 reads as a truncation; and `plot_results` / `plot_map` are vague beside their
 specific siblings.
 
@@ -1550,14 +1552,14 @@ history, per the WF2 precedent.
 
 ---
 
-## Phase 9 — Configuration modularization (R13 design ACCEPTED)
+## Phase 9 — Configuration modularization (R13 SEALED 2026-08-22)
 
 Registered 2026-08-20. The configuration surface is the first seam the toolbox
 modularizes: today one `--configfile` YAML carries every workflow's settings, so
 any workflow's parameters are editable from any project file, and cross-workflow
 sharing is a convention rather than a checked property.
 
-### R13 — Config tiers (design ACCEPTED 2026-08-21; not yet implemented)
+### R13 — Config tiers (SEALED 2026-08-22)
 
 **What it does.** T1 (project) holds `project:` + `shared:` plus a closed
 `{enabled, config_path}` stanza per workflow; T2 is one config file per workflow,
@@ -1566,16 +1568,21 @@ unchanged; `advanced_settings.yml` stays a separate authority-bounded toolbox
 file. The composed in-memory config each Snakefile sees is unchanged, so the CLI
 and `config_path`-forwarding contracts hold.
 
-**Status.** Accepted at G2, 2026-08-21, with no editorial edits. The normative
-contract is `dev/milestones/r13/config-tiers-design.md`; why it says what it says
-is `dev/milestones/r13/config-tiers-review-record.md`. Implementation is boarded
-as `t2608211256`.
+**Status.** **SEALED 2026-08-22.** Design accepted at G2, 2026-08-21, with no
+editorial edits; implemented as nine commits on `feat/r13-config-tiers` and
+closed as `t2608211256`. The normative contract is
+`dev/milestones/r13/config-tiers-design.md`; why it says what it says is
+`dev/milestones/r13/config-tiers-review-record.md`; what the two validation
+passes actually measured is `baseline-pass-1-result.md` and
+`baseline-pass-2-result.md` beside them.
 
-**Scope note — R13 is not split-only.** The round-cap arbitration widened it: the
-`wflow_outvars` hoist is a **required** final phase (D-9.7), not deferred, so the
-milestone carries **two** baseline-scale validation passes — one proving the split
-is output-neutral, one verifying the hoist's *expected* digest shift — and
-completes with `CROSS_WORKFLOW_READS` empty. Do not descope it back to the split.
+**Scope note — R13 was not split-only.** The round-cap arbitration widened it: the
+`wflow_outvars` hoist was a **required** final phase (D-9.7), not deferred, so the
+milestone carried **two** baseline-scale validation passes — one proving the split
+output-neutral, one verifying the hoist's *expected* digest shift — and completed
+with `CROSS_WORKFLOW_READS` empty. All three discharged: zero data targets moved
+in either pass, and the registry is not merely gone but its ABSENCE is pinned by a
+test, with the D-9.6 scan asserting a literal zero rather than a bound.
 
 **How the design was reached.** A full design-review-loop run: a three-lens
 internal panel (52 findings), external round 1, a driver framework-feasibility

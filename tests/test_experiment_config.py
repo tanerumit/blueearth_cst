@@ -377,3 +377,70 @@ def test_an_unexplained_top_level_key_freezes(tmp_path):
     with pytest.raises(ExperimentConfigFrozenError) as excinfo:
         write_experiment_config(_marker(tmp_path), out, "gabon_dry", _CFG)
     assert "schema_from_the_future" in str(excinfo.value)
+
+
+# ---------------------------------------------------------------------------
+# `C-79`: `compute:` is not part of an experiment's identity
+# ---------------------------------------------------------------------------
+
+
+def test_compute_is_not_in_the_experiment_document():
+    """It answers how the run FITS on a machine, not what it computes."""
+    doc = build_experiment_config(
+        "gabon_dry", dict(_CFG, compute={"batch_size": 4, "batch_size_max": 8})
+    )
+
+    assert "compute" not in doc["run_stress_test"]
+    assert doc["run_stress_test"] == _CFG
+
+
+def test_changing_batch_size_does_not_freeze_an_already_run_experiment(tmp_path):
+    """The falsifier `C-79` exists to make pass.
+
+    Excluding `compute:` from `CONFIG_PROJECTION` takes it out of the DIGEST and
+    nothing more: rule 3.11 passes the whole WF3 section as `experiment_cfg`, so
+    without the drop in `build_experiment_config` this refusal would survive the
+    projection change untouched -- and the only remedy on offer would be to
+    start a new experiment, discarding results that were never invalidated.
+    """
+    exp = _exp(tmp_path)
+    out = exp / "config" / "experiment.yml"
+    write_experiment_config(
+        _marker(tmp_path), out, "gabon_dry", dict(_CFG, compute={"batch_size": 2})
+    )
+    _mark_run(tmp_path)
+
+    doc = write_experiment_config(  # must not raise
+        _marker(tmp_path), out, "gabon_dry", dict(_CFG, compute={"batch_size": 16})
+    )
+    assert "compute" not in doc["run_stress_test"]
+
+
+def test_a_record_written_before_the_change_does_not_freeze(tmp_path):
+    """The upgrade path, which is the case that would bite a real project.
+
+    A project that declared `compute:` and has already run carries it in its
+    recorded `experiment.yml`. The key-union diff reads a key present in the
+    record and absent from the document as CHANGED, so without the registry
+    entry the first run after upgrading refuses every such experiment by name --
+    aimed at exactly the users `C-79` was written to help.
+    """
+    exp = _exp(tmp_path)
+    out = exp / "config" / "experiment.yml"
+    out.parent.mkdir(parents=True, exist_ok=True)
+    stale = {
+        "experiment_name": "gabon_dry",
+        "run_stress_test": dict(_CFG, compute={"batch_size": 2}),
+    }
+    out.write_text(yaml.safe_dump(stale), encoding="utf-8")
+    _mark_run(tmp_path)
+
+    doc = write_experiment_config(_marker(tmp_path), out, "gabon_dry", _CFG)
+
+    # And the record MIGRATES: the retired key is gone from the file, not
+    # tolerated in it forever.
+    assert "compute" not in doc["run_stress_test"]
+    assert (
+        "compute"
+        not in yaml.safe_load(out.read_text(encoding="utf-8"))["run_stress_test"]
+    )

@@ -9,6 +9,7 @@ stub, no sys.modules pollution risk.
 
 import glob
 import math
+import os
 
 import numpy as np
 import pandas as pd
@@ -22,6 +23,8 @@ from blueearth_cst.experiment.prepare_cst_parameters import (
     prep_cst_parameters,
     refuse_out_of_domain_multipliers,
 )
+from blueearth_cst.shared.config_composition import load_composed_config
+from tests.conftest import write_config
 
 REPO_ROOT = __import__("pathlib").Path(__file__).resolve().parents[1]
 
@@ -40,17 +43,28 @@ def _write_cfg(
     precip_min=0.7,
     precip_max=1.3,
 ):
-    """Write a synthetic snake config and return its path (str)."""
+    """Write a synthetic v2 project config and return its path (str).
+
+    The ``*_step`` kwargs keep their names and their meaning: they are INTERVAL
+    counts, the way `step_num` was, so every caller's arithmetic comment
+    (``temp_step=1, precip_step=2  # 2 * 3 = 6``) still reads true. `C-31`
+    retyped the CONFIG key to `n_levels`, which is that count plus one, and the
+    ``+ 1`` below is where the two meet — deliberately in one place, so a
+    reader can check the retype against the test's own expectations.
+    """
     cfg = {
+        "schema_version": 2,
         "workflows": {
             "run_stress_test": {
-                "stress_test": {
+                "climate_perturbations": {
                     "temp": {
-                        "step_num": temp_step,
+                        "n_levels": temp_step + 1,
+                        "trajectory": "transient",
                         "mean": {"min": _twelve(0.0), "max": _twelve(3.0)},
                     },
                     "precip": {
-                        "step_num": precip_step,
+                        "n_levels": precip_step + 1,
+                        "trajectory": "transient",
                         "mean": {
                             "min": _twelve(precip_min),
                             "max": _twelve(precip_max),
@@ -59,11 +73,14 @@ def _write_cfg(
                     },
                 }
             }
-        }
+        },
     }
-    path = tmp_path / "config.yml"
-    path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
-    return str(path)
+    # Written SPLIT, through the same helper the rest of the suite uses:
+    # these cases drive `prep_cst_parameters` by path, which is the
+    # direct-invocation branch, and that branch composes (R13 D-10.6). A
+    # whole-shaped file would be refused at the closed-stanza check -- which
+    # is the point of writing it the way a real project is laid out.
+    return str(write_config(tmp_path, cfg, stem="config"))
 
 
 def _read_lookup(tmp_path):
@@ -207,12 +224,12 @@ def test_a_third_stress_axis_refuses_naming_c28(tmp_path):
     contract barrier that deliberately survives it.
     """
     cfg_path = _write_cfg(tmp_path, temp_step=1, precip_step=2)
-    cfg = yaml.safe_load(open(cfg_path, encoding="utf-8"))
-    cfg["workflows"]["run_stress_test"]["stress_test"]["wind"] = {
-        "step_num": 1,
+    cfg = load_composed_config(cfg_path)
+    cfg["workflows"]["run_stress_test"]["climate_perturbations"]["wind"] = {
+        "n_levels": 2,
         "mean": {"min": _twelve(0.0), "max": _twelve(1.0)},
     }
-    open(cfg_path, "w", encoding="utf-8").write(yaml.safe_dump(cfg))
+    cfg_path = str(write_config(tmp_path, cfg, stem="config"))
 
     with pytest.raises(ValueError, match="C28"):
         prep_cst_parameters(cfg_path)
@@ -361,10 +378,45 @@ def test_temp_carries_no_domain():
     refuse_out_of_domain_multipliers(cfg)  # must not raise
 
 
+def _is_project_config(path: str) -> bool:
+    """A PROJECT file is one whose top level declares `workflows:`.
+
+    Discovery is a positive predicate rather than a filename glob because
+    since R13 the same `project_config_*.yml` glob matches two file classes:
+    project files and the per-workflow files they point at. The two cannot be
+    separated by naming -- `.gitignore` tracks the seeds through that very
+    glob, so any name it tracks, a glob also discovers.
+    """
+    try:
+        doc = yaml.safe_load(open(path, encoding="utf-8"))
+    except yaml.YAMLError:
+        return False
+    return isinstance(doc, dict) and "workflows" in doc
+
+
+#: The shipped project configs, with node ids that do NOT embed the checkout
+#: path. Parametrising on the absolute path put `C:\\Users\\taner\\...` inside
+#: the node id, which made every id machine-specific: the same test is
+#: `[...\\test_case\\project_config_rapid.yml]` locally, `[D:\\a\\...]` on the
+#: windows runner and `[/home/runner/work/...]` on the ubuntu one.
+#:
+#: That is invisible while a suite only ever runs in one place, and it broke
+#: `tests/data/r14_expected_red.txt` the first time CI ran: the declared ids
+#: matched nothing, so five expected-red nodes were reported as undeclared
+#: REGRESSIONS on both legs. `ids=` fixes it at the source rather than
+#: normalising at the comparison, so any future list of node ids is portable.
+_SHIPPED_CONFIGS = [
+    path
+    for path in sorted(glob.glob(str(REPO_ROOT / "test_case" / "project_config_*.yml")))
+    + [str(REPO_ROOT / "config" / "templates" / "project_config.template.yml")]
+    if _is_project_config(path)
+]
+
+
 @pytest.mark.parametrize(
     "config_path",
-    sorted(glob.glob(str(REPO_ROOT / "test_case" / "snake_config_*.yml")))
-    + [str(REPO_ROOT / "config" / "templates" / "snake_config.template.yml")],
+    _SHIPPED_CONFIGS,
+    ids=[os.path.basename(p) for p in _SHIPPED_CONFIGS],
 )
 def test_shipped_configs_are_inside_the_domain(config_path):
     """V23's other half: the guard must not refuse anything we ship.
@@ -372,7 +424,11 @@ def test_shipped_configs_are_inside_the_domain(config_path):
     A refusal that fires on the seeds would make every `--dry-run` in the repo
     fail, so this is the case that keeps the guard honest rather than merely
     strict.
+
+    Read through `compose_config` rather than off raw YAML: that is the same
+    path a run takes, so this checks the value the guard will actually see
+    instead of a value assembled a second way.
     """
-    cfg = yaml.safe_load(open(config_path, encoding="utf-8"))
-    stress_test_cfg = cfg["workflows"]["run_stress_test"]["stress_test"]
+    cfg = load_composed_config(config_path)
+    stress_test_cfg = cfg["workflows"]["run_stress_test"]["climate_perturbations"]
     refuse_out_of_domain_multipliers(stress_test_cfg)

@@ -81,7 +81,10 @@ def _code(cell: str) -> str:
 def _variable_rows() -> dict[str, list[str]]:
     rows = _rows(_text(), "`river discharge`")
     header, *body = rows
-    assert header[0] == "`wflow_outvars` label"
+    # `C-19` moved the key to the project file; the header names it, so the
+    # header moved with it. Pinned rather than matched loosely, because this
+    # column IS the config surface -- what a user writes under `model.outvars`.
+    assert header[0] == "`model.outvars` label"
     assert header[1:5] == ["CSDMS name", "csv code", "token", "table"]
     return {_code(r[0]): r for r in body}
 

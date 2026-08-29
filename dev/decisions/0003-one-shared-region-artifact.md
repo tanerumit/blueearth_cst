@@ -707,8 +707,8 @@ was wrong. §11 and §12 are untouched and still proposed.
   independently, and more parents than the ceiling no longer raises.
 
 - **The rename is wider than §11 states: FIVE configs, not one.**
-  `config/workflows/{snake_config_model_test,..._linux,dev_fast,template}.yml`
-  and `tests/snake_config_model_test.yml` all carry the key, and all five must
+  `config/workflows/{project_config_model_test,..._linux,dev_fast,template}.yml`
+  and `tests/project_config_model_test.yml` all carry the key, and all five must
   move in the same commit or the old-key rejection makes them unparseable. All
   five went to `max_per_basin: 11`, the new default, rather than to a preserved
   20 — which the table above shows is the same partition.

@@ -14,7 +14,7 @@ to the dicts first and to the tables here second.
 
 ## 1. Variables
 
-| `wflow_outvars` label | CSDMS name | csv code | token | table | metric |
+| `model.outvars` label | CSDMS name | csv code | token | table | metric |
 | --- | --- | --- | --- | --- | --- |
 | `river discharge` | `river_water__volume_flow_rate` | `Q` | `q` | `q_indicators.csv` | *11 names — see §2* |
 | `precipitation` | `atmosphere_water__precipitation_volume_flux` | `p` | `precip` | `precip_indicators.csv` | `precip_annual_total` |
@@ -25,7 +25,7 @@ to the dicts first and to the tables here second.
 
 Column by column, with the dict that owns it:
 
-- **`wflow_outvars` label** — what a **user writes in a config**, and the only
+- **`model.outvars` label** — what a **user writes in a config**, and the only
   spelling in this table that appears in one. Owned by
   `blueearth_cst/model/setup_gauges_and_outputs.py::WFLOW_VARS`. A `naming.md` §6
   **tier-2** contract: grandfathered, renameable only with a migration note.

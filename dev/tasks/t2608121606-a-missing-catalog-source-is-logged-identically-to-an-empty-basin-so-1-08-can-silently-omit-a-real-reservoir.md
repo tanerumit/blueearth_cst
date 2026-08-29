@@ -14,7 +14,7 @@ updated: 2026-08-12
 
 ## The observation
 
-Today's WF1 run in the primary (`test_case/snake_config_model_test.yml`,
+Today's WF1 run in the primary (`test_case/project_config_model_test.yml`,
 2026-08-12), rule 1.08, verbatim:
 
 ```

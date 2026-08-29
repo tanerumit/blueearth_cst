@@ -9,7 +9,7 @@ what it held; see `config/defaults/README.md`.
 
 | File | Purpose |
 | --- | --- |
-| `snake_config.template.yml` | The annotated starting point for a new project's config. A filled-in worked example is `test_case/snake_config_baseline.yml`. |
+| `project_config.template.yml` | The annotated starting point for a new project's config. A filled-in worked example is `test_case/project_config_baseline.yml`. |
 | `output_locations_template.csv` | Header-only schema for gauge/output locations |
 | `observed_daily_discharge_template.csv` | Header-only schema for observed discharge |
 | `archive/` | Unmaintained single-workflow configs; see its own README |
@@ -30,7 +30,7 @@ Drop the `_template` suffix when you copy.
 
 # Why the template's defaults are what they are
 
-`snake_config.template.yml` states only types and allowed values. The reasoning
+`project_config.template.yml` states only types and allowed values. The reasoning
 behind the non-obvious defaults lives here.
 
 ### `historical_window` — minimum 16 years

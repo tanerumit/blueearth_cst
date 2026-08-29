@@ -61,7 +61,7 @@ def delineate_region(
     ----------
     model_region : str | dict
         ``shared.basin.region``. A Python-dict-literal string (the form the
-        snake config carries, e.g. ``"{'subbasin': [9.666, 0.4476],
+        project config carries, e.g. ``"{'subbasin': [9.666, 0.4476],
         'uparea': 100}"``) is parsed with ``ast.literal_eval``, matching
         ``prepare_build_config.merge_build_config``.
     data_libs : str | Path

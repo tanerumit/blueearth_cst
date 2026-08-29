@@ -47,7 +47,13 @@ Usage (inside ``pixi shell``, or via ``pixi run``, from the repo root)::
 
     # anything after `--` is forwarded to snakemake verbatim
     python scripts/plot_workflow_dag.py -s analyze_projections.smk --configfile <cfg> \\
-        -- --config foo=bar
+        -- --config workflows='{"run_stress_test": {"enabled": false}}'
+
+A `--config` override reaches the project config before composition, so it can
+toggle a workflow or repoint a stanza's ``config_path`` -- but a project
+config's top level and its workflow stanzas are both CLOSED, so an override
+that invents a top-level key or writes a workflow setting is refused at parse
+time. See ``docs/migration-config-tiers.md`` for the full mapping.
 
 Not a Snakemake rule and deliberately so: a rule that renders the DAG would sit
 inside the DAG it renders, and would show up in ``--summary`` and in the project
@@ -74,6 +80,11 @@ import yaml
 # repo-root relative, so inheriting the caller's cwd would break the DAG build
 # for anyone invoking this from their project folder.
 REPO_ROOT = Path(__file__).resolve().parents[1]
+
+sys.path.insert(0, str(REPO_ROOT))
+from blueearth_cst.shared.config_composition import (  # noqa: E402
+    load_composed_config,
+)
 
 # Snakefile -> workflow number. The `wf<N>` labelling is the repo's existing
 # convention for per-workflow artifacts; keep this in step with the merged-log
@@ -157,6 +168,24 @@ def read_project(config_path: Path) -> tuple[Path, str, dict]:
         config = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     except FileNotFoundError:
         raise DagPlotError(f"config file not found: {config_path}") from None
+    if isinstance(config, dict) and "workflows" in config:
+        # A PROJECT config, so COMPOSE it (R13 D-12.0). A raw load finds a
+        # two-key stanza, `experiment` below comes back None, the
+        # `if experiment:` branch is skipped, and every WF3 render silently
+        # loses the experiment id from the filename this tool is documented
+        # to produce.
+        #
+        # Guarded on `workflows:` because this function also accepts the
+        # single-workflow projections configs, which have no `project:`
+        # section, carry a top-level `project_name`, and are not project
+        # configs at all -- composing one would refuse it for a top-level key
+        # that is this tool's own convention.
+        try:
+            composed = load_composed_config(config_path)
+        except ValueError as exc:
+            raise DagPlotError(f"{config_path}: {exc}") from None
+        composed["project_name"] = config.get("project_name")
+        config = composed
     if not isinstance(config, dict):
         raise DagPlotError(f"config file is not a YAML mapping: {config_path}")
 

@@ -49,8 +49,8 @@ is routinely mistaken for input.
 | **Toolbox knobs** | `config/advanced_settings.yml` | 5 keys: `constraints` (1) · `defaults` (3) · `runtime` (1). Closed schema. |
 | **Engine templates** | `config/defaults/` × 3 — `wflow_build_model.yml`, `wflow_update_waterbodies.yml`, `weathergen_config.yml` | Rule INPUTS in the engines' own vocabulary. Changing one changes a run. |
 | **Data catalogs** | `config/catalogs/` × 3 live + 2 archived; `tests/data/tests_data_catalog.yml` | hydromt `-d` targets. `cmip6_data.yml` (3919 lines) is **generated** by a crawl. |
-| **Scaffolds** | `config/templates/snake_config.template.yml`, `wflow_sbm.reference.toml`, 5 archived single-workflow configs | Copied, never read by a rule. |
-| **Shipped example projects** | `test_case/snake_config_*.yml` × 4, `tests/snake_config_fixture.yml` | T2 documents that happen to live in-repo. |
+| **Scaffolds** | `config/templates/project_config.template.yml`, `wflow_sbm.reference.toml`, 5 archived single-workflow configs | Copied, never read by a rule. |
+| **Shipped example projects** | `test_case/project_config_*.yml` × 4, `tests/project_config_fixture.yml` | T2 documents that happen to live in-repo. |
 | **Process / build** | `pixi.toml`, `pyproject.toml`, `Project.toml`, `Manifest.toml`, `.github/workflows/ci.yml`, `profiles/default/config.yaml`, `.testing-policy.yml`, `.git-workflow.yml`, `dev/reference/sealed-records.yml`, `dev/scripts/{stage_data,scaffold_extras}.yml` | Not pipeline parameters. Listed so the count is honest. |
 
 **A sixth, invisible group: Python `DEFAULT_*` constants — 14 of them.** Three
@@ -215,7 +215,7 @@ No config surface, correctly constants: `DEFAULT_DECIMALS`,
 referenced-files.json, files/**}` — content-addressed run snapshots ·
 `config/catalogs/*` · `config/templates/*` ·
 `experiments/<id>/{experiment.yml, model_reference.yml,
-snake_config_run_stress_test.yml, catalogs/*, runs/**}` ·
+project_config_run_stress_test.yml, catalogs/*, runs/**}` ·
 `experiments/<id>/climate/weathergenr/config/weathergen_config.yml` ·
 `models/hydrology/wflow/{wflow_sbm.toml, config/*}`
 

@@ -66,5 +66,5 @@ design schema; the predicate is exercised in all four branches above.
 
 ### Task constraints
 
-Do not change the three flat `snake_config_*.yml` copy paths or their contents —
+Do not change the three flat `project_config_*.yml` copy paths or their contents —
 they are baseline-fingerprinted and read by the WF3 drift guard.

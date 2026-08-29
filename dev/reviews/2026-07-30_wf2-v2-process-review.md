@@ -69,7 +69,7 @@ Fixed during this review:
 
 - `kernel_hash` — invalidation now tracks bytecode, constants and name lookups
   rather than file bytes, so comments, docstrings and error strings are free.
-- `snake_config_dev_fast.yml` — 2 series instead of 9 for iteration.
+- `project_config_dev_fast.yml` — 2 series instead of 9 for iteration.
 
 Still to do, and the biggest remaining win:
 

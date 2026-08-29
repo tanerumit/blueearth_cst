@@ -140,7 +140,7 @@ against the real DAG. §5.5 rules on this.
 | `dev/scripts/check_baseline.py` | `WORKFLOWS = ("model_creation", "climate_projections", "climate_experiment")` and a target table keyed by those names | needs a fourth key; `dev/baseline/manifest.json` carries the names too |
 | `tests/test_cli.py` | dry-runs three Snakefiles | needs a fourth |
 | `dev/reference/naming.md` §9 | `W` = workflow id (`1`/`2`/`3`), `NN` = position in that workflow's logical order; **"renumbering is a migration, not an edit"** | the new workflow runs *before* WF1 |
-| per-workflow bookkeeping | `WORKFLOW_LOG_NAME`, `LOG_RULES` (asserted in both directions by `tests/test_log_rules_contract.py`), `gather_benchmarks`, `snapshot_config` → `config/runs/snake_config_<name>.yml`, `run_record.yml`, `CONFIG_PROJECTION`, the journal's `workflow=` value, parse-time `validate_historical_window` | each needs its fourth instance |
+| per-workflow bookkeeping | `WORKFLOW_LOG_NAME`, `LOG_RULES` (asserted in both directions by `tests/test_log_rules_contract.py`), `gather_benchmarks`, `snapshot_config` → `config/runs/project_config_<name>.yml`, `run_record.yml`, `CONFIG_PROJECTION`, the journal's `workflow=` value, parse-time `validate_historical_window` | each needs its fourth instance |
 
 ---
 
@@ -243,7 +243,7 @@ that has nowhere to live otherwise.
 | Rule | Name | Notes |
 |---|---|---|
 | 0.00 | `all` | terminals + config snapshot + gathered log/benchmarks |
-| 0.01 | `snapshot_config` | its own `config/runs/snake_config_analyze_climate.yml` + `config/runs/analyze_climate/run_record.yml`; `CONFIG_PROJECTION = ("project", "shared", "workflows.analyze_climate")` |
+| 0.01 | `snapshot_config` | its own `config/runs/project_config_analyze_climate.yml` + `config/runs/analyze_climate/run_record.yml`; `CONFIG_PROJECTION = ("project", "shared", "workflows.analyze_climate")` |
 | 0.02 | `delineate_region` | shared contract, byte-identical to 1.02/2.02/3.03 |
 | 0.03 | `delineate_spatial_units` | shared contract, byte-identical to 1.03 |
 | 0.04 | `extract_historical_climate` | **generalised over the candidate source set** — see §5.4 |
@@ -437,11 +437,11 @@ with the right name into a consistent world.
 | `workflows.climate_projections` | `workflows.analyze_projections` |
 | `workflows.climate_experiment` | `workflows.run_stress_test` |
 | `logs/wf1_model_creation.log` | `logs/wf1_build_model.log` |
-| `config/runs/snake_config_model_creation.yml` | `config/runs/snake_config_build_model.yml` |
+| `config/runs/project_config_model_creation.yml` | `config/runs/project_config_build_model.yml` |
 | `config/runs/model_creation/run_record.yml` | `config/runs/build_model/run_record.yml` |
 
 …and the same for the other two, including
-`<exp>/config/snake_config_climate_experiment.yml`.
+`<exp>/config/project_config_climate_experiment.yml`.
 
 **Measured surface:** 171 live occurrences of `Snakefile_<name>` across 55 files
 and ~167 of `model_creation`, excluding `dev/` records. The `dev/milestones/`
@@ -455,11 +455,11 @@ simplify to `*.smk`), `pixi.toml` (`dag-wf1..3` tasks plus a new `dag-wf0`),
 `Dockerfile`, `scripts/run_snake_test.cmd`, `scripts/run_snake_docker.sh`,
 `profiles/default/config.yaml`, `README.md`, `AGENTS.md`, `docs/`, the three
 notebooks, the four tracked seed configs, `config/templates/
-snake_config.template.yml`, and ~20 test modules.
+project_config.template.yml`, and ~20 test modules.
 
 **The fixture trap, and it is the riskiest part of this migration.**
 `test_case/test_local` and `test_case/test_rapid` contain the renamed paths as
-*data* (`config/runs/snake_config_model_creation.yml`, `run_record.yml`,
+*data* (`config/runs/project_config_model_creation.yml`, `run_record.yml`,
 `journal.jsonl` entries, the experiment's config copy). They are untracked, so:
 
 - the fixture trees must be path-migrated in the same pass, or `check_baseline`
@@ -484,7 +484,7 @@ Two landings. Each commit is independently green.
    `.zed/settings.json`) and `tests/test_cli.py`.
 2. Rename the `workflows.<name>` config keys: the three Snakefiles' `my_cfg` and
    `CONFIG_PROJECTION`, `run_workflows.py`'s `WORKFLOW_ORDER`/`SNAKEFILES`/
-   `FLAGS`, the four tracked seeds, the template, `tests/snake_config_fixture.yml`.
+   `FLAGS`, the four tracked seeds, the template, `tests/project_config_fixture.yml`.
    A config carrying an old key must fail at parse time naming the new one.
 3. Rename the derived paths: log and benchmark filenames, `config/runs/`
    snapshots and run records, the journal's `workflow=` value,
@@ -507,7 +507,7 @@ Two landings. Each commit is independently green.
 8. Station sampling + observation comparison (0.06, 0.07, 0.08), the two config
    keys, the two csv templates, `observations_timeseries` moved to `shared:`.
 9. Budyko screening (0.09).
-10. A `snake_config_` seed exercising the evaluation layer (`lane/pipeline`),
+10. A `project_config_` seed exercising the evaluation layer (`lane/pipeline`),
     then — **split at the file boundary, in `lane/devmeta`** — the fourth
     notebook (the obligation deferred here from the closed `t2608131847`) and
     its entry in `docs/notebooks/README.md`, carrying the
@@ -619,7 +619,7 @@ R2.
   under `test_case/`. Mostly wrong: the fourth workflow is a fourth
   `workflows:` subsection in the existing seeds. A new seed is warranted only
   for commit 10's evaluation-layer exercise, and it must keep the
-  `snake_config_` prefix or it is silently untracked.
+  `project_config_` prefix or it is silently untracked.
 - **O-6 (residual risk, unavoidable).** The rename's fixture migration cannot be
   validated in a worktree — the fixture-dependent layer skips rather than fails
   there. Landing A must be gated in the primary checkout with no other session

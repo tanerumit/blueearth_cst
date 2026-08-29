@@ -22,7 +22,6 @@ from blueearth_cst.experiment.batch_sizing import (
 )
 from blueearth_cst.experiment.forcing_window import (
     forcing_window,
-    forcing_window_years,
 )
 
 netCDF4 = pytest.importorskip("netCDF4")
@@ -57,25 +56,24 @@ class TestForcingWindow:
     narrower and is pinned here: the window is wider than `run_length`, so
     counting its days is not the same as multiplying by 365."""
 
-    @pytest.mark.parametrize(
-        "horizon, run_length, expected",
-        [
-            (2050, 30, (2035, 2065)),
-            (2050, 8, (2046, 2054)),
-        ],
-    )
-    def test_the_year_form_agrees_with_the_iso_form(
-        self, horizon, run_length, expected
-    ):
-        assert forcing_window_years(horizon, run_length) == expected
-        start, end = forcing_window(horizon, run_length)
-        assert start.startswith(str(expected[0]))
-        assert end.startswith(str(expected[1]))
+    @pytest.mark.parametrize("window", [(2035, 2065), (2046, 2054)])
+    def test_the_iso_form_spans_the_declared_years(self, window):
+        """`C-72`: the pair is DECLARED, so this only checks the rendering.
+
+        These were the windows `(2050, 30)` and `(2050, 8)` resolved to under
+        the deleted derivation — kept as the values, since the point is that
+        the same windows still render the same way.
+        """
+        start, end = forcing_window(*window)
+        assert start.startswith(str(window[0]))
+        assert end.startswith(str(window[1]))
 
     def test_the_window_is_wider_than_run_length(self):
-        """The surprise the disk estimate must not miss: `run_length` 8 is NINE
-        calendar years of forcing, so `run_length x 365` under-counts by 12 %."""
-        start, end = forcing_window_years(2050, 8)
+        """The surprise the disk estimate must not miss: a `run_length` of 8
+        resolved to NINE calendar years of forcing, so `run_length x 365`
+        under-counted by 12 %. `C-67` made the window explicit, which is what
+        removed the trap; this pins the day count it produces."""
+        start, end = 2046, 2054
         days = (date(end, 12, 31) - date(start, 1, 1)).days + 1
         assert days == 3287
         assert days > 8 * 365
@@ -86,7 +84,7 @@ class TestMeasureMemberFootprint:
         basin = _model(tmp_path, hist_steps=2557)
         hist_bytes = os.path.getsize(basin.joinpath(*FORCING_ANCHOR))
 
-        fp = measure_member_footprint(basin, horizontime_climate=2050, run_length=8)
+        fp = measure_member_footprint(basin, sim_start=2046, sim_end=2054)
 
         # 2046..2054 inclusive = 3287 days.
         expected = round(hist_bytes / 2557 * 3287)
@@ -98,13 +96,13 @@ class TestMeasureMemberFootprint:
         independent of run length -- scaling it would be wrong, not merely
         imprecise."""
         basin = _model(tmp_path)
-        short = measure_member_footprint(basin, 2050, 8)
-        long = measure_member_footprint(basin, 2050, 40)
+        short = measure_member_footprint(basin, 2046, 2054)
+        long = measure_member_footprint(basin, 2030, 2070)
         assert short.state_bytes == long.state_bytes == 106_086
         assert long.forcing_bytes > short.forcing_bytes
 
     def test_total_is_both_temp_classes(self, tmp_path):
-        fp = measure_member_footprint(_model(tmp_path), 2050, 8)
+        fp = measure_member_footprint(_model(tmp_path), 2046, 2054)
         assert fp.total_bytes == fp.forcing_bytes + fp.state_bytes
 
     @pytest.mark.parametrize("missing", [FORCING_ANCHOR, STATE_ANCHOR])
@@ -115,20 +113,20 @@ class TestMeasureMemberFootprint:
         not become a new way for a run to fail."""
         basin = _model(tmp_path)
         basin.joinpath(*missing).unlink()
-        assert measure_member_footprint(basin, 2050, 8) is None
+        assert measure_member_footprint(basin, 2046, 2054) is None
 
     def test_an_absent_model_yields_no_estimate(self, tmp_path):
-        assert measure_member_footprint(tmp_path / "nope", 2050, 8) is None
+        assert measure_member_footprint(tmp_path / "nope", 2046, 2054) is None
 
     def test_an_unreadable_forcing_file_yields_no_estimate(self, tmp_path):
         basin = _model(tmp_path)
         basin.joinpath(*FORCING_ANCHOR).write_bytes(b"not a netcdf")
-        assert measure_member_footprint(basin, 2050, 8) is None
+        assert measure_member_footprint(basin, 2046, 2054) is None
 
     def test_it_reproduces_the_measured_rapid_fixture(self, tmp_path):
         """The estimator's entire claim, against real numbers.
 
-        Recorded 2026-08-18 from a live `snake_config_rapid.yml` run
+        Recorded 2026-08-18 from a live `project_config_rapid.yml` run
         (horizon 2050, run_length 8, a 16x24 grid):
 
             <model>/forcing/inmaps_historical.nc   3_526_927 B over 2557 steps
@@ -153,7 +151,7 @@ class TestMeasureMemberFootprint:
         original = mod._netcdf_timesteps
         mod._netcdf_timesteps = lambda _p: 2557
         try:
-            fp = measure_member_footprint(basin, horizontime_climate=2050, run_length=8)
+            fp = measure_member_footprint(basin, sim_start=2046, sim_end=2054)
         finally:
             mod._netcdf_timesteps = original
 

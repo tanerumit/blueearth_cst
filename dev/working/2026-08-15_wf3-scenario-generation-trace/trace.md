@@ -18,7 +18,7 @@ that becomes a decision belongs there rather than in this file.
 
 Every path is relative to `project_dir`. `<exp>` is
 `experiments/<experiment_name>`, `<wg>` is `<exp>/climate/weathergenr`.
-Numbers in § 3 come from a real `snake_config_rapid.yml` run recorded in
+Numbers in § 3 come from a real `project_config_rapid.yml` run recorded in
 `test_case/test_rapid/benchmarks/wf3_benchmarks_experiment_rapid.md`.
 
 ### Step 0 — what the config declares
@@ -87,7 +87,7 @@ produced by 3.11, not by perturbation.
 
 | | |
 |---|---|
-| script | `blueearth_cst/experiment/prepare_weagen_config.py` |
+| script | `blueearth_cst/experiment/prepare_weathergen_config.py` |
 | out | `<wg>/config/weathergen_config.yml` |
 
 One shared config for the generator: series length (anchored at 2010 and running
@@ -185,7 +185,7 @@ run TOMLs, the per-member run CSVs, and the indicator tables.
 
 ## 3. Where the time actually goes
 
-From a real `snake_config_rapid.yml` run — `RLZ_NUM` = 2, `ST_NUM` = 4 (+ `st_0`),
+From a real `project_config_rapid.yml` run — `RLZ_NUM` = 2, `ST_NUM` = 4 (+ `st_0`),
 so 10 members. Source: `test_case/test_rapid/benchmarks/wf3_benchmarks_experiment_rapid.md`.
 
 **Every rule, in execution order.** Rule numbers are also dependency order since

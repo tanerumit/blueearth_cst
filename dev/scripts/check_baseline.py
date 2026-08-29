@@ -254,7 +254,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "build_model",
         "yaml",
-        "{project_dir}/config/runs/snake_config_build_model.yml",
+        "{project_dir}/config/runs/project_config_build_model.yml",
     ),
     # Unmoved within the tree (prefix change only) -- and exception 3(d)
     # requires it to stay that way: if discharge moves at all, stop.
@@ -306,7 +306,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "analyze_projections",
         "yaml",
-        "{project_dir}/config/runs/snake_config_analyze_projections.yml",
+        "{project_dir}/config/runs/project_config_analyze_projections.yml",
     ),
     # run_stress_test.smk. R9 P3 renames the two tables and moves them
     # from indicators/ to results/. The wf3 config snapshot does NOT join
@@ -331,7 +331,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "run_stress_test",
         "yaml",
-        "{exp_dir}/config/snake_config_run_stress_test.yml",
+        "{exp_dir}/config/project_config_run_stress_test.yml",
     ),
 ]
 

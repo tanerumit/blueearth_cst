@@ -27,16 +27,22 @@ from pathlib import Path
 import pytest
 import yaml
 
-from blueearth_cst.shared.snake_utils import slugify_window
+from blueearth_cst.shared.snake_utils import (
+    historical_window_bounds,
+    slugify_window,
+)
 
 pytestmark = pytest.mark.workflow_contract
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 sys.path.insert(0, str(SNAKEDIR / "dev" / "scripts"))
 import cross_workflow_inputs as cwi  # noqa: E402
+
+from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
+from tests.conftest import write_config  # noqa: E402
 
 
 def _run(args, cfg_path):
@@ -71,7 +77,7 @@ def staged_project(tmp_path):
     missing leaf. A leaf the fixture forgets turns that assertion into a
     failure that looks like a guard defect and is not one.
     """
-    base = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
+    base = load_composed_config(CONFIG_FN)
     pdir = tmp_path / "proj"
     base["project"]["project_dir"] = str(pdir).replace("\\", "/")
     experiment = base["workflows"]["run_stress_test"]["experiment_name"]
@@ -97,19 +103,24 @@ def staged_project(tmp_path):
     config_text = yaml.safe_dump(base)
     cwi.stage(pdir, config_text, extras=(cwi.EXTRA_REGION, cwi.EXTRA_WF2_SNAPSHOT))
     snap_dir = pdir / "config" / "runs"
-    wf1 = snap_dir / "snake_config_build_model.yml"
-    wf2 = snap_dir / "snake_config_analyze_projections.yml"
+    wf1 = snap_dir / "project_config_build_model.yml"
+    wf2 = snap_dir / "project_config_analyze_projections.yml"
 
-    cfg_path = tmp_path / "snake_config_staged.yml"
-    cfg_path.write_text(yaml.safe_dump(base), encoding="utf-8")
+    cfg_path = write_config(tmp_path, base, stem="project_config_staged")
 
     # exp_dir as defined in run_stress_test.smk (commit 2 moved it to
     # experiments/<name>/).
     sentinel = pdir / "experiments" / experiment / ".project_consistency_ok"
     # Key-level guard artifact lives under the dataset+window keyed store dir
     # (commit 4). Derive the key exactly as the Snakefile does.
-    win = base["shared"]["historical_window"]
-    key = f"{base['shared']['clim_historical']}_{slugify_window(win['starttime'], win['endtime'])}"
+    # `C-70` retyped the window to INCLUSIVE YEARS while the store key stayed
+    # ISO at day resolution, so the conversion goes through the same helper
+    # `climate_store_rule` uses. Formatting the years here would be a second
+    # implementation of the key, free to drift from the one a run builds.
+    _start, _end = historical_window_bounds(base["climate"]["window"])
+    key = f"{base['climate']['selected']}_" + slugify_window(
+        _start.isoformat(), _end.isoformat()
+    )
     guard_ok = pdir / "data" / "climate" / "historical" / key / ".guard_ok"
     return cfg_path, pdir, wf1, wf2, sentinel, guard_ok
 
@@ -146,7 +157,7 @@ def test_guard_invalidation_i_to_l(staged_project):
     # (i) mutate a guarded live-config section -> "Params have changed"
     #     (guarded-sections digest param flips).
     live = yaml.safe_load(base_cfg_text)
-    live["shared"]["basin"]["resolution"] = 0.05
+    live["basin"]["resolution"] = 0.05
     cfg_path.write_text(yaml.safe_dump(live), encoding="utf-8")
     out = _dry_run_output(cfg_path, sentinel)
     assert "Params have changed" in out, out
@@ -159,7 +170,7 @@ def test_guard_invalidation_i_to_l(staged_project):
     # (j) mutate the wf1 snapshot content -> scheduled (wf1 digest param).
     orig_wf1 = wf1.read_text(encoding="utf-8")
     wf1_doc = yaml.safe_load(orig_wf1)
-    wf1_doc["shared"]["basin"]["resolution"] = 0.05
+    wf1_doc["basin"]["resolution"] = 0.05
     wf1.write_text(yaml.safe_dump(wf1_doc), encoding="utf-8")
     out = _dry_run_output(cfg_path, sentinel)
     assert "Params have changed" in out, out
@@ -201,7 +212,7 @@ def test_2c_fresh_project_missing_wf1_snapshot(staged_project):
     combined = (result.stdout or "") + (result.stderr or "")
     assert result.returncode != 0, combined
     assert "MissingInputException" in combined, combined
-    assert "snake_config_build_model.yml" in combined, combined
+    assert "project_config_build_model.yml" in combined, combined
     assert "Traceback" not in combined, combined
 
     # (ii) --unlock with the snapshot absent. DEVIATION from design gate
@@ -224,7 +235,11 @@ def test_2c_fresh_project_missing_wf1_snapshot(staged_project):
     # ...and with every leaf input present (snapshot restored), --unlock
     # SUCCEEDS — the recoverable-lock scenario (a crashed run implies the
     # snapshot existed at crash time) keeps working.
-    base = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
+    # COMPOSED, not raw: the wf1 project snapshot records the whole config a
+    # run used, and the guard compares it against the composed live config.
+    # Staging the T1 file verbatim would seed a two-key stanza and the guard
+    # would refuse for a difference the migration did not make.
+    base = load_composed_config(cfg_path)
     wf1.write_text(yaml.safe_dump(base), encoding="utf-8")
     unlock = _run("--unlock", cfg_path)
     assert unlock.returncode == 0, (unlock.stdout or "") + (unlock.stderr or "")
@@ -232,7 +247,11 @@ def test_2c_fresh_project_missing_wf1_snapshot(staged_project):
 
     # (iii) with the snapshot present, a content change still flips the digest
     #       param — the absence-tolerant helper does not weaken the trigger.
-    base = yaml.safe_load(cfg_path.read_text(encoding="utf-8"))
+    # COMPOSED, not raw: the wf1 project snapshot records the whole config a
+    # run used, and the guard compares it against the composed live config.
+    # Staging the T1 file verbatim would seed a two-key stanza and the guard
+    # would refuse for a difference the migration did not make.
+    base = load_composed_config(cfg_path)
     wf1.write_text(yaml.safe_dump(base), encoding="utf-8")
     _seed_guard(cfg_path, sentinel)
     out = _dry_run_output(cfg_path, sentinel)

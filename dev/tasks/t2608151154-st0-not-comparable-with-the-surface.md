@@ -19,7 +19,7 @@ updated: 2026-08-15
 
 Found 2026-08-15 while verifying the alias precondition for `t2608152230`; that
 item's ruling 6 was withdrawn on the same evidence. **No pipeline run was
-needed** — `snake_config_baseline.yml` already contains an identity member, since
+needed** — `project_config_baseline.yml` already contains an identity member, since
 precip `step_num: 2` puts 1.0 on a level, and with the grid's
 temp-outer/precip-inner order that is `st_2` (`stress_test_design.csv`:
 `2,0.0,0.0,0.0`). Both it and `st_0` sit in `test_case/test_local`, with run
@@ -78,7 +78,7 @@ That makes this item a live input to `t2608082036` rather than a bystander.
   origin and is method-consistent with the surface. It fixes the root cause (and
   makes `t2608152230`'s withdrawn alias valid again), but it changes every
   baseline number, invalidates the two class-C metrics' current values, and
-  forces a baseline re-record from `snake_config_baseline.yml` in the primary
+  forces a baseline re-record from `project_config_baseline.yml` in the primary
   checkout with no other session live. The cheaper alternative — leave the
   pipeline alone and caveat the annotation wherever it is reported — is
   **rejected**; see the ruling below.
@@ -110,7 +110,7 @@ and should be paid ONCE, in one sitting in the primary checkout:
 
 - `t2608121258` — neither fixture tree matches the manifest's WF3 `n_rows` (756
   expected, 630 from both), so a deliberate WF1+WF3 re-run on
-  `snake_config_baseline.yml` with `--notemp` is owed regardless of this item.
+  `project_config_baseline.yml` with `--notemp` is owed regardless of this item.
 - *The magnitudes need re-measuring* above — `test_case/test_local` predates the
   2026-08-12 weathergenr 1.2.0 rename, so the table in this note has to be
   re-measured on 1.2.0 before any number in it is quoted. Same run.

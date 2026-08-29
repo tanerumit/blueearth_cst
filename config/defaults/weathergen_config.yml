@@ -101,7 +101,7 @@ generate_weather:
                              # oversight. Add them the day a run needs a faster
                              # device (`ragg::agg_png`) or lighter figures.
 
-  # Injected per run by rule 3.10 (prepare_weagen_config.py):
+  # Injected per run by rule 3.10 (prepare_weathergen_config.py):
   #   n_years, start_year, n_realizations, out_dir, seed, year_start_month,
   #   dry_spell_factor, wet_spell_factor
   #

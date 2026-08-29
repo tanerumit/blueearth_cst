@@ -300,7 +300,7 @@ last touched 2026-08-12 by a path-repointing commit. They are inherited skeleton
 of the same pattern, without the results half. Verified defects:
 
 - They `%%writefile ./config/my-project-settings.yml` and then run against it —
-  but the repo's shipped seed configs live at `test_case/snake_config_*.yml`
+  but the repo's shipped seed configs live at `test_case/project_config_*.yml`
   (`AGENTS.md` § Repo Map), so the notebook teaches a config location the repo
   does not use.
 - DAG is written to `../../test_case/test_local/dag/dag_*.png` and then displayed

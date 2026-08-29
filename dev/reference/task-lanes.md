@@ -24,7 +24,7 @@ The trade is deliberate: lanes made merge order irrelevant **by construction**, 
 
 - implementation paths and workflow entry points (`*.smk`, `blueearth_cst/**`);
 - shared seams — `blueearth_cst/shared/`, above all `snake_utils.py` (parses every Snakefile's config) and `interchange_contracts.py` (**is** the wf1→wf2/wf3 seam). 72–85% of each workflow's commits touch `shared/`, so two workflow-scoped tasks are **not** independent by default;
-- `config/**`, `test_case/snake_config_*.yml`, and the schema they validate;
+- `config/**`, `test_case/project_config_*.yml`, and the schema they validate;
 - the exact test modules each task expects to edit; and
 - mutable state outside the checkout — `project_dir`, `.snakemake` locks, the shared Julia depot under `~/.julia`.
 

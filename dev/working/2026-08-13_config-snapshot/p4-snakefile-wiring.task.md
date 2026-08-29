@@ -68,7 +68,7 @@ No changes to the writer or the provenance helpers (P1/P2 own them).
 - Rung 4: `pixi run test-full` at phase merge — this phase touches Snakefiles
   and `script:` signatures, the paths that tier exists to guard.
 - Rung 5: end-to-end `scripts/run_workflows.py --config
-  test_case/snake_config_rapid.yml` from the **primary checkout**.
+  test_case/project_config_rapid.yml` from the **primary checkout**.
 
 **Falsifiers, both required — each targets an absence, which no ordinary test
 reaches:**

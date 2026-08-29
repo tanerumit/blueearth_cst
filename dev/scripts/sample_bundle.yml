@@ -13,7 +13,7 @@
 #
 #   dev/scripts/stage_data.yml    bbox + per-dataset time_range
 #   dev/scripts/stage_cmip6.yml   region + models/scenarios/members/variables
-#   test_case/snake_config_*.yml  the window, models and horizons a RUN reads
+#   test_case/project_config_*.yml  the window, models and horizons a RUN reads
 #
 # Nothing checks that they agree, and every disagreement fails late and
 # quietly: a `historical_window` reaching past the staged meteo years fails
@@ -360,10 +360,10 @@ run:
 #   sample_data/basin/region.geojson              the fingerprinted polygon
 #   sample_data/BUNDLE.md                         provenance, licences, what was cut
 #   sample_data.sha256                            TRACKED in the repo, not in the bundle
-#   test_case/snake_config_sample.yml             the run config, derived from this file
+#   test_case/project_config_sample.yml             the run config, derived from this file
 #
-# The sample run config MUST keep the `snake_config_` prefix: .gitignore
-# un-ignores `test_case/*` only through `!test_case/snake_config_*.yml`, so a
+# The sample run config MUST keep the `project_config_` prefix: .gitignore
+# un-ignores `test_case/*` only through `!test_case/project_config_*.yml`, so a
 # name outside that glob is silently untracked — `git status` reports the old
 # path as deleted and never lists the new one. That prefix is itself queued for
 # a rename to `project_config_`; see the board.

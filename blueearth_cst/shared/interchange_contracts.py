@@ -358,7 +358,7 @@ _WG3_GENERATE_WEATHER_KEYS = (
     "n_cores",
     "verbose",
     "save_plots",
-    # Injected per run by rule 3.10 (prepare_weagen_config.build_weagen_config).
+    # Injected per run by rule 3.10 (prepare_weathergen_config.build_weathergen_config).
     "year_start_month",
     "n_years",
     "start_year",

@@ -49,7 +49,7 @@ reproduce under current pins) · `by-design` (expected behaviour, not a defect).
 | O-01 | Root `data/` holds basin-specific data inside the toolbox source tree | config | usability | medium | 2026-07-26 | 2026-07-26 | `75eb4d6` | triaged | Direction decided 2026-07-26 (delete values, ship templates); implementation pending review closure |
 | O-02 | Root `dag/` holds generated run artifacts | dev-tooling | usability | low | 2026-07-26 | 2026-07-26 | `75eb4d6` | triaged | Direction decided 2026-07-26 (write under `project_dir`); implementation pending review closure |
 | O-03 | Rationale for the nested `blueearth_cst/` package layout is recorded nowhere user-facing | docs | question | low | 2026-07-26 | 2026-07-26 | `75eb4d6` | triaged | Answered 2026-07-26 — keep the layout, record the reasoning in `AGENTS.md` |
-| O-04 | `tests/snake_config_model_test.yml` points at a nonexistent `tests/data/observations/` | tests | defect | low | 2026-07-26 | 2026-07-26 | `75eb4d6` | open | Fold into O-01 |
+| O-04 | `tests/project_config_model_test.yml` points at a nonexistent `tests/data/observations/` | tests | defect | low | 2026-07-26 | 2026-07-26 | `75eb4d6` | open | Fold into O-01 |
 | O-05 | `docs/config/` is a 16-file pre-R6 mirror of `config/` | docs | defect | medium | 2026-07-26 | 2026-07-26 | `75eb4d6` | triaged | Retire; accepted into scope 2026-07-26 |
 | O-06 | `Dockerfile` stages the pre-R6 `src/`, so the image ships without the Python package | env | regression | high→n/a | 2026-07-26 | 2026-07-26 | `75eb4d6` | wontfix | **Parked by owner 2026-07-26** — Docker is not in active use; rebuild rather than repair when Linux/Docker work resumes |
 | O-07 | `prepare_cst_parameters.py` `sys.path` insert is one level short of the repo root | experiment | defect | low | 2026-07-26 | 2026-07-26 | `75eb4d6` | triaged | Accepted into scope 2026-07-26 |
@@ -66,7 +66,7 @@ reproduce under current pins) · `by-design` (expected behaviour, not a defect).
 | O-18 | Should Linux be parked too? — the per-iteration tax is mostly not being paid | config | question | medium | 2026-07-26 | 2026-07-26 | `75eb4d6` | triaged | Assessed 2026-07-26: park the goal (already parked), **keep the CI leg**, treat the variants as stale |
 | O-19 | `deltares_data_linux.yml` is a pre-1.0 hydromt catalog, incompatible with the pinned `hydromt >=1.3` | config | defect | medium | 2026-07-26 | 2026-07-26 | `75eb4d6` | open | Rebuild at the Linux milestone, not repair; mark stale now |
 | O-20 | `examples/` is misnamed — it holds the local test fixture, not examples | dev-tooling | usability | low | 2026-07-26 | 2026-07-26 | `75eb4d6` | open | Rename agreed in principle; needs a target name + a naming.md §7 migration note. **Not cosmetic:** 4 of 18 baseline fingerprints go stale. `runs/` withdrawn — use a test-scoped name |
-| O-21 | `snake_config.template.yml` ships a repo-relative `project_dir` while its own comment says point outside | config | defect | medium | 2026-07-26 | 2026-07-26 | `75eb4d6` | open | The template teaches the wrong default — origin of the tier confusion |
+| O-21 | `project_config.template.yml` ships a repo-relative `project_dir` while its own comment says point outside | config | defect | medium | 2026-07-26 | 2026-07-26 | `75eb4d6` | open | The template teaches the wrong default — origin of the tier confusion |
 | O-22 | No mechanical check that a production `project_dir` points outside the repo | shared | usability | low | 2026-07-26 | 2026-07-26 | `75eb4d6` | triaged | **Accepted 2026-07-26** — add a parse-time warning; design sketched below. Land after O-20 |
 | O-23 | Why a root `scripts/` when `blueearth_cst/` already holds scripts? | dev-tooling | question | low | 2026-07-26 | 2026-07-26 | `75eb4d6` | by-design | **Keep all three homes unchanged.** The split is by invocation model and was deliberated in R6; the gap is documentary — add one contrastive line to `AGENTS.md` |
 | O-24 | Rule 1.13 `plot_forcing` writes three PNGs but declares only one as `output:` | wf1 | defect | medium | 2026-07-26 | 2026-07-26 | `75eb4d6` | open | `temp.png` / `pet.png` are untracked by Snakemake and absent from the baseline. Independent of the output-layout work |
@@ -108,7 +108,7 @@ each can be routed on its own merits.
     model-build input, not only plotting), `blueearth_cst/model/plot_results.py:127`,
     `blueearth_cst/shared/plot_map.py:28`.
   - Only **one** config supplies real paths:
-    `config/workflows/snake_config_model_test_linux.yml:25-26`. Every other config
+    `config/workflows/project_config_model_test_linux.yml:25-26`. Every other config
     ships the unset sentinel. `scripts/run_snake_docker.sh:7` mounts the directory
     (`-v $(pwd)/data:${docker_root}/data`).
   - No Snakefile, CI job, or `Dockerfile` stage references the path literally.
@@ -118,7 +118,7 @@ each can be routed on its own merits.
     config values verbatim). `os.path.isfile("None")` / `os.path.exists("None")`
     are False, so the guards work by accident. Replacing it with real YAML `null`
     raises `TypeError` in both consumers — any edit here must keep the sentinel
-    byte-identical to `config/workflows/snake_config_model_test.yml:36-37`.
+    byte-identical to `config/workflows/project_config_model_test.yml:36-37`.
   - **Baseline is independent of `data/`.** The tracked baseline seed already has
     both keys at the sentinel, so wf1 has never added gauges or plotted
     observations under it; `dev/baseline/manifest.json`'s wf1 discharge
@@ -193,16 +193,16 @@ each can be routed on its own merits.
 - **Decision 2026-07-26:** keep the layout; record the two-level reasoning in the
   `AGENTS.md` Repo Map entry so the question does not recur.
 
-### O-04 — `tests/snake_config_model_test.yml` points at a nonexistent path
+### O-04 — `tests/project_config_model_test.yml` points at a nonexistent path
 
 - **Created:** 2026-07-26 · **Rev:** `75eb4d6` · **Status:** open
-- **Observed:** `tests/snake_config_model_test.yml:32-33` sets `output_locations` /
+- **Observed:** `tests/project_config_model_test.yml:32-33` sets `output_locations` /
   `observations_timeseries` to `tests/data/observations/*.csv`. `tests/data/`
   contains only `tests_data_catalog.yml`; there is no `observations/` subdirectory.
 - **Expected:** either a real path or the unset sentinel.
 - **Notes:** degrades silently — both consumers guard with `os.path.isfile` /
   `os.path.exists`, so the dry-run gate passes and wf1 simply adds no gauges. The
-  identical dangle in `tests/test_project/config/snake_config_model_creation.yml:32-33`
+  identical dangle in `tests/test_project/config/project_config_model_creation.yml:32-33`
   is gitignored generated state (`.gitignore:139`), not a repo defect. Predates R6.
   Fix alongside O-01.
 
@@ -211,8 +211,8 @@ each can be routed on its own merits.
 - **Created:** 2026-07-26 · **Rev:** `75eb4d6` · **Status:** triaged
 - **Observed:** 16 tracked files under `docs/config/` duplicate the `config/` tree
   in its **pre-R6 flat schema**, including catalogs, workflow configs, and
-  templates. Two of them (`snake_config_model_test_linux.yml:35,37` and
-  `snake_config_model_test.yml:41,43`) still reference the `data/observations/`
+  templates. Two of them (`project_config_model_test_linux.yml:35,37` and
+  `project_config_model_test.yml:41,43`) still reference the `data/observations/`
   paths from O-01.
 - **Expected:** one source of truth for configuration; `docs/` carries reference
   prose, not a second copy of `config/`.
@@ -257,7 +257,7 @@ each can be routed on its own merits.
 - **What parking does _not_ buy — Linux ≠ Docker:**
   - CI's `ubuntu-latest` leg runs natively through pixi, not through Docker, so the
     Linux half of "Deferred: Linux replication" is untouched and still real.
-  - `config/workflows/snake_config_model_test_linux.yml` and
+  - `config/workflows/project_config_model_test_linux.yml` and
     `config/catalogs/*_linux.yml` are Linux artifacts, not Docker artifacts — O-01
     still has to repoint them.
 - **Follow-on decision, still open:** park *in place*, relocate, or delete.
@@ -561,10 +561,10 @@ each can be routed on its own merits.
 
 | File | Nature | Recurring cost |
 |---|---|---|
-| `snake_config_projections_cmip5_full_linux.yml` | Differs from its sibling by **one line** (the catalog path) plus trailing blank lines | Pure duplication |
-| `snake_config_projections_isimip3_linux.yml` | Differs by **exactly one line** (the catalog path) | Pure duplication |
+| `project_config_projections_cmip5_full_linux.yml` | Differs from its sibling by **one line** (the catalog path) plus trailing blank lines | Pure duplication |
+| `project_config_projections_isimip3_linux.yml` | Differs by **exactly one line** (the catalog path) | Pure duplication |
 | `deltares_data_climate_projections_linux.yml` | Genuine 259-line twin; diff is only the root prefix (`p:/…` → `/p/…`) | Real sync tax |
-| `snake_config_model_test_linux.yml` | Genuine variant in the current R01 schema; O-01 touches it | Real sync tax |
+| `project_config_model_test_linux.yml` | Genuine variant in the current R01 schema; O-01 touches it | Real sync tax |
 | `deltares_data_linux.yml` | **Not a variant — see O-19** | None; it is already abandoned |
 
 - **Conclusion.** Parking Linux "for a few weeks" would change very little, because
@@ -605,7 +605,7 @@ each can be routed on its own merits.
 - **Created:** 2026-07-26 · **Rev:** `75eb4d6` · **Status:** open
 - **Observed:** `examples/` is **entirely gitignored** (`.gitignore:124`, zero
   tracked files) and holds `test_local` — the `project_dir` of the tracked baseline
-  seed (`config/workflows/snake_config_model_test.yml:12`) — plus `Gabon` for the
+  seed (`config/workflows/project_config_model_test.yml:12`) — plus `Gabon` for the
   Linux config. `AGENTS.md` already describes it as "a dev/test convention only
   (used by the baseline gate)". Nothing in it is an example.
 - **Reinforcing point:** the repo's actual user-facing examples live elsewhere —
@@ -622,7 +622,7 @@ each can be routed on its own merits.
      themselves are *derived* — `check_baseline.py:122-126` resolves
      `{project_dir}` templates — so rewriting them is mechanical. But four targets
      are **copied config snapshots**
-     (`{project_dir}/config/snake_config_{model_creation,climate_projections,climate_experiment}.yml`
+     (`{project_dir}/config/project_config_{model_creation,climate_projections,climate_experiment}.yml`
      and the wf3 `{exp_dir}/config/` one), fingerprinted as raw `sha256` of file
      bytes. Those snapshots contain `project_dir: examples/test_local` verbatim, so
      renaming changes their content and invalidates their hashes. They can be
@@ -650,7 +650,7 @@ each can be routed on its own merits.
   becomes `test_case/`. This name is also what O-22's exemption constant keys on.
 
 - **Why the fixture cannot simply move outside the repo too.** Its path is
-  load-bearing inside a **tracked** file. `config/workflows/snake_config_model_test.yml`
+  load-bearing inside a **tracked** file. `config/workflows/project_config_model_test.yml`
   is the tracked baseline seed — deliberately so, per the recorded lesson never to
   point `check_baseline.py` at an untracked `*_local.yml`. A tracked config cannot
   carry a machine-specific absolute path, so the fixture must live at a
@@ -668,7 +668,7 @@ each can be routed on its own merits.
 ### O-21 — The config template ships a repo-relative `project_dir`, contradicting its own comment
 
 - **Created:** 2026-07-26 · **Rev:** `75eb4d6` · **Status:** open
-- **Observed:** `config/workflows/snake_config.template.yml:15-18` — the comment
+- **Observed:** `config/workflows/project_config.template.yml:15-18` — the comment
   reads "For production use, point this OUTSIDE the repository tree so generated
   model + result artifacts stay separate from the toolbox source", and the value
   immediately below it is `project_dir: examples/test`.

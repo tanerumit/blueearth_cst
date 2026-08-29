@@ -33,7 +33,7 @@ _KNOWN_AXES = ("temp", "precip")
 #: monthly spell-length coefficients handed to the weather generator, with no
 #: lookup column and no grid contribution. Listed so the axis guard below still
 #: refuses a typo'd or genuinely new AXIS while admitting these.
-_NON_AXIS_KEYS = ("dry_spell_factor", "wet_spell_factor")
+_NON_AXIS_KEYS = ("spell_factors",)  # C-33: one group, was two flat keys
 
 #: The lookup's header, in order (WG-2). `st_id` x `month` is the key; the three
 #: value columns are the whole vocabulary. `realization` is deliberately absent:
@@ -153,6 +153,7 @@ def _percent(level: float) -> float:
 def prep_cst_parameters(
     config_fn: Union[str, Path],
     lookup_fn: Union[str, Path, None] = None,
+    stress_test_cfg: Union[dict, None] = None,
 ):
     """Write the stress-test lookup: one long table, `12 x ST_NUM` rows.
 
@@ -173,17 +174,37 @@ def prep_cst_parameters(
     lookup_fn : str, Path, optional
         Path to ``stress_test_lookup.csv``. Defaults to the config's own
         directory, for use outside Snakemake.
+    stress_test_cfg : dict, optional
+        The already-resolved ``stress_test`` section. The rule passes it as a
+        param (R13 D-10.6) so this module never re-reads the config from
+        disk: since the split, ``workflows.run_stress_test.stress_test``
+        exists in no single file a caller could hand over. Passing the
+        section is also what gives rule 3.09 a rerun trigger at all -- its
+        only config input is ``ancient()``, which by construction triggers
+        nothing, so before this the grid values could change and the rule
+        stay satisfied with a stale lookup table.
+
+        Omitted, the section is composed from ``config_fn``, which is what
+        the direct-invocation branch below does.
     """
 
     import numpy as np
     import pandas as pd
-    import yaml
 
-    # Read the yaml config (R01 sectioned schema)
-    with open(config_fn, "r") as stream:
-        yml = yaml.load(stream, Loader=yaml.FullLoader)
+    if stress_test_cfg is None:
+        # Direct invocation: compose the project file the same way a run
+        # does, so `python -m ...` keeps working against the one path
+        # anybody would think to pass.
+        from blueearth_cst.shared.config_composition import load_composed_config
 
-    stress_test_cfg = yml["workflows"]["run_stress_test"]["stress_test"]
+        composed = load_composed_config(
+            config_fn,
+            entry="run_stress_test",
+            declared_sections=("workflows.run_stress_test",),
+        )
+        stress_test_cfg = composed["workflows"]["run_stress_test"][
+            "climate_perturbations"
+        ]
 
     # A third stress dimension must REFUSE, not silently vanish from the lookup
     # (C28). The grid arithmetic, the row loop and LOOKUP_COLUMNS below all
@@ -200,8 +221,9 @@ def prep_cst_parameters(
         )
 
     # Grid step counts + total via the shared helper (single source of truth,
-    # strict on a missing step_num). temp_step_num / precip_step_num are the
-    # per-axis counts (step_num + 1) that size the linspaces and the loops below.
+    # strict on a missing n_levels). temp_step_num / precip_step_num are the
+    # per-axis LEVEL counts -- since `C-31` that is `n_levels` itself, not
+    # `step_num + 1` -- and they size the linspaces and the loops below.
     temp_step_num, precip_step_num, ST_NUM = stress_test_grid(stress_test_cfg)
 
     # Temperature change attributes
@@ -285,6 +307,7 @@ if __name__ == "__main__":
             prep_cst_parameters(
                 config_fn=sm.input.config,
                 lookup_fn=sm.output.lookup_csv,
+                stress_test_cfg=sm.params.stress_test_cfg,
             )
     else:
         # Direct invocation takes the config path as an argument; naming one

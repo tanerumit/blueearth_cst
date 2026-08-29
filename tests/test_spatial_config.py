@@ -45,13 +45,18 @@ def test_parse_spatial_config_accepts_explicit_basin_settings():
     config = parse_spatial_config(
         _basin_config(
             region={"basin": [10, 20]},
-            hydrography="custom_hydro",
-            basin_index=None,
-            gauge_points="C:/observations/gauges.csv",
-            automatic_subbasins={"max_per_basin": 8},
-            gauge_snap_tolerance_m=2500,
-            river_uparea_km2=15,
-            spatial_sources={
+            output_locations="C:/observations/gauges.csv",
+            # `C-13`/`C-42`: the three delineation knobs, grouped.
+            delineation={
+                "max_subbasins": 8,
+                "snap_tolerance_m": 2500,
+                "river_uparea_km2": 15,
+            },
+            # `C-15`: every spatial input under one section, `hydrography` and
+            # `basin_index` included — they are named datasets like the rest.
+            sources={
+                "hydrography": "custom_hydro",
+                "basin_index": None,
                 "rivers": "custom_rivers",
                 "lulc": "custom_lulc",
                 "lai": "custom_lai",
@@ -76,7 +81,7 @@ def test_gauge_points_supports_legacy_unset_spellings(legacy_unset):
     """Legacy unset values do not become input paths."""
     assert (
         resolve_gauge_points_path(
-            {"gauge_points": None}, {"output_locations": legacy_unset}
+            {"output_locations": None}, {"output_locations": legacy_unset}
         )
         is None
     )
@@ -105,8 +110,8 @@ def test_legacy_only_rejection_quotes_the_migrated_key_and_path():
         )
 
     message = str(excinfo.value)
-    assert "gauge_points: C:/observations/gauges.csv" in message
-    assert "shared:" in message and "basin:" in message
+    assert "C:/observations/gauges.csv" in message
+    assert "basin:" in message and "output_locations:" in message
     # The second half of the migration -- the ids move too, and a user who
     # only moves the key hits the wflow_id assertion next.
     assert "config/templates/README.md" in message
@@ -115,7 +120,7 @@ def test_legacy_only_rejection_quotes_the_migrated_key_and_path():
 def test_matching_canonical_and_legacy_gauge_paths_are_allowed():
     """A staged config migration can carry both keys when they agree."""
     path = resolve_gauge_points_path(
-        {"gauge_points": "C:/observations/gauges.csv"},
+        {"output_locations": "C:/observations/gauges.csv"},
         {"output_locations": "C:\\observations\\gauges.csv"},
     )
 
@@ -126,7 +131,7 @@ def test_conflicting_gauge_paths_fail_loudly():
     """No precedence rule can silently select the wrong gauge file."""
     with pytest.raises(ValueError, match="Conflicting gauge-point paths"):
         resolve_gauge_points_path(
-            {"gauge_points": "C:/observations/new.csv"},
+            {"output_locations": "C:/observations/new.csv"},
             {"output_locations": "C:/observations/old.csv"},
         )
 
@@ -137,13 +142,13 @@ def test_conflicting_gauge_paths_fail_loudly():
         ({"region": "not a mapping"}, ValueError, "region"),
         ({"region": {"bbox": [0, 0, 1, 1]}}, ValueError, "basin.*subbasin"),
         ({"resolution": 0}, ValueError, "resolution"),
-        ({"automatic_subbasins": {"max_per_basin": 0}}, ValueError, "max_per_basin"),
-        ({"automatic_subbasins": {"max_per_basin": 100}}, ValueError, "<= 99"),
+        ({"delineation": {"max_subbasins": 0}}, ValueError, "max_subbasins"),
+        ({"delineation": {"max_subbasins": 100}}, ValueError, "<= 99"),
         # ADR 0003 §11: the OLD key must be rejected BY NAME, not ignored.
-        ({"automatic_subbasins": {"max_count": 20}}, ValueError, "max_per_basin"),
-        ({"gauge_snap_tolerance_m": -1}, ValueError, "tolerance"),
-        ({"gauge_points": 123}, TypeError, "path string"),
-        ({"spatial_sources": {"soil": ""}}, TypeError, "soil"),
+        ({"delineation": {"max_count": 20}}, ValueError, "max_subbasins"),
+        ({"delineation": {"snap_tolerance_m": -1}}, ValueError, "tolerance"),
+        ({"output_locations": 123}, TypeError, "path string"),
+        ({"sources": {"soil": ""}}, TypeError, "soil"),
     ],
 )
 def test_invalid_spatial_config_fails_at_parse_time(updates, error, match):

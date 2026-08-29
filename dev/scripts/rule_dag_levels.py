@@ -32,7 +32,7 @@ levels as dependency depth, never as "these run together and nothing else does".
 Usage (from the repo root, inside pixi)::
 
     python dev/scripts/rule_dag_levels.py -s analyze_projections.smk \\
-        --configfile test_case/snake_config_baseline.yml
+        --configfile test_case/project_config_baseline.yml
 
     # anything after `--` is forwarded to snakemake verbatim
     python dev/scripts/rule_dag_levels.py -s build_model.smk \\

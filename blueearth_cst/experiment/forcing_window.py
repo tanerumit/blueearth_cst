@@ -6,43 +6,31 @@ module scope. ``run_stress_test.smk`` needs this window at PARSE time to size
 Wflow batches against the disk (:mod:`blueearth_cst.experiment.batch_sizing`),
 and a Snakefile cannot pay a hydromt import to learn two integers.
 
-The arithmetic stays in ONE place: :func:`forcing_window` is the string form
-rule 3.14 hands to hydromt, :func:`forcing_window_years` is the integer form the
-batch estimator counts days between. A second copy of the snapping rule would
-be free to drift from the window the run actually uses, which is precisely the
-number a disk estimate must not get wrong.
+**There is no arithmetic left here** (`C-72`). :func:`forcing_window` renders
+the ISO pair rule 3.14 hands to hydromt, from the year pair the config now
+declares directly (`C-67`).
 
-``numpy`` rather than the stdlib because the Snakefile already imports it, so it
-is free here, and because ``np.round``'s half-to-even is the rounding the landed
-window has always used.
+What was deleted, and why it cannot come back: ``forcing_window_years()``
+derived that pair from a horizon year and a run length, snapping ``ceil``
+backwards and ``np.round`` forwards. The batch estimator counted days between
+the two integers rather than multiplying the run length by 365, because the
+snapping made the span ``run_length + 1`` calendar years whenever the halves
+went outward. `C-67` moved the window into the config, which removed both the
+derivation and the trap — and the derivation could not have been kept anyway,
+since it was not single-valued for an odd run length.
 """
 
-import numpy as np
 
+def forcing_window(startyear, endyear):
+    """Render an INCLUSIVE year pair as the ``(starttime, endtime)`` ISO pair.
 
-def forcing_window_years(horizontime_climate, wflow_run_length):
-    """Return the inclusive ``(startyear, endyear)`` the forcing window spans.
+    As hydromt and the run TOML want it. Since `C-67` the two years are
+    DECLARED, as ``simulation_window: {start, end}``, rather than derived — so
+    this formats a window, it does not compute one. See the module docstring
+    for what `C-72` removed.
 
-    The window is ``wflow_run_length`` years wide, split around the horizon year
-    and snapped to whole years: ``ceil`` backwards, ``round`` forwards, so an odd
-    run length puts the extra year at the end.
-
-    Note the span is ``run_length + 1`` calendar years whenever the halves snap
-    outward -- ``run_length`` 8 at horizon 2050 gives 2046..2054, which is NINE
-    years of forcing. That surprise is load-bearing for the disk estimate, and is
-    why the estimator counts days between these two integers instead of
-    multiplying ``run_length`` by 365.
+    ``endyear`` renders as MIDNIGHT on 31 December, not end-of-day. That is the
+    string the shipped configs carry, and reproducing it verbatim is the point:
+    changing it would move every WF3 run's end boundary by a day.
     """
-    startyear = int(horizontime_climate - np.ceil(wflow_run_length / 2))
-    endyear = int(horizontime_climate + np.round(wflow_run_length / 2))
-    return startyear, endyear
-
-
-def forcing_window(horizontime_climate, wflow_run_length):
-    """Return the ``(starttime, endtime)`` pair centred on ``horizontime_climate``.
-
-    The ISO form of :func:`forcing_window_years`, as hydromt and the run TOML
-    want it.
-    """
-    startyear, endyear = forcing_window_years(horizontime_climate, wflow_run_length)
     return f"{startyear}-01-01T00:00:00", f"{endyear}-12-31T00:00:00"

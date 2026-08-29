@@ -3,6 +3,11 @@
 Pure arithmetic + strict validation; no heavy deps, no ``sys.modules``
 pollution risk. Pins the strict contract both call sites (the Snakefile and
 ``prepare_cst_parameters.py``) now share.
+
+Retyped by R14 `C-31` (P1b): the config declares ``n_levels``, the number of
+LEVELS on an axis, where it declared ``step_num``, the number of intervals.
+``n_levels`` = ``step_num`` + 1, so the helper no longer adds one and the
+minimum legal value moved from 0 to 1.
 """
 
 import re
@@ -17,43 +22,61 @@ from blueearth_cst.shared.snake_utils import (
 
 
 def test_seed_config_grid():
-    """The seed config (temp 1, precip 2) yields (2, 3, 6)."""
-    cfg = {"temp": {"step_num": 1}, "precip": {"step_num": 2}}
+    """The seed config yields (2, 3, 6).
+
+    Under `C-31` the config declares the LEVEL counts (2, 3) that it used to
+    declare as interval counts (1, 2). Same grid, same six members — this is
+    the equivalence the retype turns on, pinned here on the shipped values.
+    """
+    cfg = {"temp": {"n_levels": 2}, "precip": {"n_levels": 3}}
     assert stress_test_grid(cfg) == (2, 3, 6)
 
 
-def test_zero_step_num_is_single_point_axis():
-    """step_num 0 is a valid degenerate axis (one point → count 1)."""
-    cfg = {"temp": {"step_num": 0}, "precip": {"step_num": 0}}
+def test_one_level_is_a_single_point_axis():
+    """The degenerate axis is `n_levels: 1`, where it was `step_num: 0`.
+
+    The FLOOR moves with the meaning, which is the part a bare rename would
+    have got wrong: zero intervals was legal and describes one unperturbed
+    level, so the minimum level count is one. `n_levels: 0` describes an axis
+    with no points at all and is refused below.
+    """
+    cfg = {"temp": {"n_levels": 1}, "precip": {"n_levels": 1}}
     assert stress_test_grid(cfg) == (1, 1, 1)
 
 
 @pytest.mark.parametrize(
     "cfg",
     [
-        {"precip": {"step_num": 2}},  # missing temp axis section
-        {"temp": {"step_num": 1}},  # missing precip axis section
-        {"temp": {}, "precip": {"step_num": 2}},  # missing temp.step_num
-        {"temp": {"step_num": 1}, "precip": {}},  # missing precip.step_num
+        {"precip": {"n_levels": 3}},  # missing temp axis section
+        {"temp": {"n_levels": 2}},  # missing precip axis section
+        {"temp": {}, "precip": {"n_levels": 3}},  # missing temp.n_levels
+        {"temp": {"n_levels": 2}, "precip": {}},  # missing precip.n_levels
     ],
 )
-def test_missing_step_num_raises_keyerror(cfg):
-    """A missing axis section or step_num raises KeyError (no silent default)."""
+def test_missing_n_levels_raises_keyerror(cfg):
+    """A missing axis section or n_levels raises KeyError (no silent default)."""
     with pytest.raises(KeyError):
         stress_test_grid(cfg)
 
 
 @pytest.mark.parametrize("bad", ["2", 1.5, True, False, None])
-def test_non_integer_step_num_raises_valueerror(bad):
-    """A non-integer step_num (incl. bool) raises ValueError."""
-    cfg = {"temp": {"step_num": bad}, "precip": {"step_num": 2}}
+def test_non_integer_n_levels_raises_valueerror(bad):
+    """A non-integer n_levels (incl. bool) raises ValueError."""
+    cfg = {"temp": {"n_levels": bad}, "precip": {"n_levels": 3}}
     with pytest.raises(ValueError):
         stress_test_grid(cfg)
 
 
-def test_negative_step_num_raises_valueerror():
-    """A negative step_num raises ValueError."""
-    cfg = {"temp": {"step_num": -1}, "precip": {"step_num": 2}}
+@pytest.mark.parametrize("bad", [0, -1])
+def test_a_level_count_below_one_raises_valueerror(bad):
+    """`n_levels` below 1 raises. ZERO is the case the retype added.
+
+    `step_num: 0` was legal and meant one level; `n_levels: 0` means an axis
+    with no points, which is not a grid. A config that renamed the key without
+    adding one lands exactly here, so this is where that mistake is caught
+    rather than silently halving the grid.
+    """
+    cfg = {"temp": {"n_levels": bad}, "precip": {"n_levels": 3}}
     with pytest.raises(ValueError):
         stress_test_grid(cfg)
 

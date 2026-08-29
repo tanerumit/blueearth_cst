@@ -120,12 +120,18 @@ def test_the_template_config_recommends_the_30_year_window():
     import re
     from pathlib import Path
 
+    # The key lives in the WF2 file since R13: the project file carries only
+    # `{enabled, config_path}` stanzas, so the recommendation a user reads is
+    # in the file they open to change the projections settings.
     template = (
         Path(__file__).resolve().parents[1]
-        / "config/templates/snake_config.template.yml"
+        / "config/templates/project_config.analyze_projections.template.yml"
     ).read_text(encoding="utf-8")
-    m = re.search(r"historical_year_range:\s*\[\s*(\d{4})\s*,\s*(\d{4})\s*\]", template)
-    assert m, "template must declare historical_year_range"
+    m = re.search(
+        r"reference_window:[^\n]*\n\s*start:\s*(\d{4})[^\n]*\n\s*end:\s*(\d{4})",
+        template,
+    )
+    assert m, "template must declare reference_window"
     assert [int(m.group(1)), int(m.group(2))] == OQ4_WINDOW
 
 
@@ -148,14 +154,17 @@ def test_the_seed_fixture_keeps_its_own_shorter_window():
     from pathlib import Path
 
     seed = (
-        Path(__file__).resolve().parents[1] / "test_case/snake_config_baseline.yml"
+        Path(__file__).resolve().parents[1]
+        / "test_case/project_config_baseline_analyze_projections.yml"
     ).read_text(encoding="utf-8")
-    m = re.search(r"historical_year_range:\s*\[\s*(\d{4})\s*,\s*(\d{4})\s*\]", seed)
-    assert m, "seed must declare historical_year_range"
+    m = re.search(
+        r"reference_window:[^\n]*\n\s*start:\s*(\d{4})[^\n]*\n\s*end:\s*(\d{4})", seed
+    )
+    assert m, "seed must declare reference_window"
     start, end = int(m.group(1)), int(m.group(2))
 
     assert end <= HISTORICAL_END_YEAR, (
-        f"seed historical_year_range ends {end}, after the CMIP6 historical "
+        f"seed reference_window ends {end}, after the CMIP6 historical "
         f"experiment ({HISTORICAL_END_YEAR}); it would be clipped silently"
     )
     assert [start, end] != OQ4_WINDOW, (

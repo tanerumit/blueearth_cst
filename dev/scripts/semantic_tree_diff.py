@@ -177,7 +177,7 @@ COPIED_CONFIG_PATH_MAP: dict[str, dict[str, str]] = {
     "project_dir": {
         "examples/test_local": "test_case/test_local",  # O-20
         "examples/Gabon": "test_case/gabon",  # O-20
-        # O-21 retargets snake_config.template.yml to an outside-the-tree
+        # O-21 retargets project_config.template.yml to an outside-the-tree
         # placeholder in commit 6. That template is not a copied *snapshot*
         # (no run writes it into project_dir), so it needs no entry here;
         # add one only if a snapshot of it ever appears in a reference tree.
@@ -234,8 +234,8 @@ def build_p31_path_map(
             # LEFT is the pre-P3-1 tree and keeps its historical spelling; only
             # RIGHT describes the tree as it is today, so only RIGHT follows the
             # 2026-08-14 workflow rename.
-            "config/snake_config_climate_experiment.yml",
-            f"experiments/{experiment_name}/config/snake_config_run_stress_test.yml",
+            "config/project_config_climate_experiment.yml",
+            f"experiments/{experiment_name}/config/project_config_run_stress_test.yml",
         ),
         (
             f"hydrology_model/run_climate_{experiment_name}/",
@@ -339,9 +339,9 @@ def build_project_tree_rules(
     # The two snapshot CONTRACT PATHS are enumerated; the digest bundles are a
     # regex because the digest is content-derived. `files/` inside a bundle is a
     # prefix: its members are named `<hash>-<original>` per referenced input.
-    same("config/runs/snake_config_analyze_climate.yml")
-    same("config/runs/snake_config_build_model.yml")
-    same("config/runs/snake_config_analyze_projections.yml")
+    same("config/runs/project_config_analyze_climate.yml")
+    same("config/runs/project_config_build_model.yml")
+    same("config/runs/project_config_analyze_projections.yml")
     # `scripts/run_workflows.py`'s invocation manifest, one immutable file per
     # wrapper run. A PREFIX, because the set is genuinely open — the filename is
     # `<utc stamp>-<uuid12>.json`, so a new one appears every run.
@@ -461,7 +461,7 @@ def build_project_tree_rules(
     # -- experiments/<id>/ ----------------------------------------------------
     for leaf in (
         ".project_consistency_ok",
-        "config/snake_config_run_stress_test.yml",
+        "config/project_config_run_stress_test.yml",
         "config/model_reference.yml",
         "config/experiment.yml",
         # The stress-test parameter lookup, beside the config snapshot whose

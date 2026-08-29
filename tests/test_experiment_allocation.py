@@ -75,16 +75,7 @@ def test_resume_allocates_nothing(tmp_path):
     _existing(tmp_path, "gabon_dry")
     before = sorted(p.name for p in (tmp_path / "experiments").iterdir())
 
-    cfg = tmp_path / "cfg.yml"
-    cfg.write_text(
-        yaml.safe_dump(
-            {
-                "project": {"project_dir": str(tmp_path).replace("\\", "/")},
-                "workflows": {"run_stress_test": {"experiment_name": "gabon_dry"}},
-            }
-        ),
-        encoding="utf-8",
-    )
+    cfg = _cfg(tmp_path, experiment_name="gabon_dry")
 
     # The runner refuses to overwrite an existing name -- that IS the resume
     # path, and it must allocate nothing.
@@ -169,20 +160,53 @@ def test_concurrent_reservation_yields_exactly_one_winner(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def _cfg(tmp_path):
-    cfg = tmp_path / "cfg.yml"
+def _cfg(tmp_path, stem="cfg", experiment_name=None):
+    """A project config plus the run_stress_test settings file it points at.
+
+    Two files since R13: `experiment_name` is a run_stress_test setting, so the
+    runner writes it into that workflow's own file and the project config only
+    points at it. Returns the PROJECT config, which is what the runner takes.
+    """
+    settings = _settings_of(tmp_path, stem)
+    settings.write_text(
+        yaml.safe_dump({"experiment_name": experiment_name})
+        if experiment_name is not None
+        else "",
+        encoding="utf-8",
+    )
+    cfg = tmp_path / f"{stem}.yml"
     cfg.write_text(
-        yaml.safe_dump({"project": {"project_dir": str(tmp_path).replace("\\", "/")}}),
+        yaml.safe_dump(
+            {
+                "project": {"project_dir": str(tmp_path).replace("\\", "/")},
+                "workflows": {
+                    "run_stress_test": {
+                        "enabled": True,
+                        "config_path": settings.name,
+                    }
+                },
+            }
+        ),
         encoding="utf-8",
     )
     return cfg
 
 
+def _settings_of(tmp_path, stem="cfg"):
+    """The run_stress_test settings file `_cfg` writes beside the project config."""
+    return tmp_path / f"{stem}_run_stress_test.yml"
+
+
+def _written_name(tmp_path, stem="cfg"):
+    """The name the runner wrote, read from the file it actually edits."""
+    doc = yaml.safe_load(_settings_of(tmp_path, stem).read_text(encoding="utf-8")) or {}
+    return doc.get("experiment_name")
+
+
 def test_the_runner_reserves_and_writes_the_name(tmp_path, capsys):
     cfg = _cfg(tmp_path)
     assert runner.main([str(cfg), "--date", "20260804"]) == 0
-    doc = yaml.safe_load(cfg.read_text(encoding="utf-8"))
-    name = doc["workflows"]["run_stress_test"]["experiment_name"]
+    name = _written_name(tmp_path)
     assert name.endswith("_20260804")
     assert experiment_exists(tmp_path, name), "the name was written but not reserved"
 
@@ -190,19 +214,11 @@ def test_the_runner_reserves_and_writes_the_name(tmp_path, capsys):
 def test_the_runner_versions_a_generated_collision(tmp_path):
     cfg = _cfg(tmp_path)
     runner.main([str(cfg), "--date", "20260804"])
-    first = yaml.safe_load(cfg.read_text(encoding="utf-8"))["workflows"][
-        "run_stress_test"
-    ]["experiment_name"]
+    first = _written_name(tmp_path)
 
-    cfg2 = tmp_path / "cfg2.yml"
-    cfg2.write_text(
-        yaml.safe_dump({"project": {"project_dir": str(tmp_path).replace("\\", "/")}}),
-        encoding="utf-8",
-    )
+    cfg2 = _cfg(tmp_path, stem="cfg2")
     runner.main([str(cfg2), "--date", "20260804"])
-    second = yaml.safe_load(cfg2.read_text(encoding="utf-8"))["workflows"][
-        "run_stress_test"
-    ]["experiment_name"]
+    second = _written_name(tmp_path, stem="cfg2")
 
     assert second == f"{first}_v2"
 
@@ -212,9 +228,9 @@ def test_the_runner_rejects_a_user_supplied_collision(tmp_path, capsys):
     cfg = _cfg(tmp_path)
     assert runner.main([str(cfg), "--name", "gabon_dry"]) == 1
     assert "gabon_dry" in capsys.readouterr().err
-    # ...and the config is left untouched, so nothing points at a name that was
-    # refused.
-    assert "experiment_name" not in cfg.read_text(encoding="utf-8")
+    # ...and the settings file is left untouched, so nothing points at a name
+    # that was refused.
+    assert "experiment_name" not in _settings_of(tmp_path).read_text(encoding="utf-8")
 
 
 def test_dry_run_reserves_nothing(tmp_path, capsys):

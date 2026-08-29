@@ -43,7 +43,7 @@ from __future__ import annotations
 
 #: WF3 rule 3.01 `check_project_consistency` takes this as a mandatory
 #: `ancient()` input; its absence is a rule-level MissingInputException.
-LEAF_WF1_SNAPSHOT = "config/runs/snake_config_build_model.yml"
+LEAF_WF1_SNAPSHOT = "config/runs/project_config_build_model.yml"
 
 #: WF3 rule 3.01c `write_model_reference` (R9 P4), the first WF3 rule to declare
 #: model files as inputs. Both are `ancient()`: the reference must not re-derive

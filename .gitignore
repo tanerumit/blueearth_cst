@@ -138,7 +138,7 @@ dask-worker-space/
 # be re-included: git cannot un-ignore a file whose PARENT DIRECTORY is excluded,
 # and the directory form would silently keep it untracked.
 test_case/*
-!test_case/snake_config_*.yml
+!test_case/project_config_*.yml
 # The basin inputs those configs name. Untracked until 2026-08-12, which broke
 # both CI legs from 08-10: the seed config's `gauge_points` is a rule input, so
 # a bare checkout could not resolve the wf1 DAG at all (MissingInputException,
@@ -200,3 +200,4 @@ tests/test_project
 # dev/milestones/p32a/qa/ were 68 MB, the largest blobs in this history. Record the
 # finding in Markdown and the artifact's SHA256, not the artifact.
 dev/**/*.nc
+dev/**/*.pdf

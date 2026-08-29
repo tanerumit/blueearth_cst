@@ -2,7 +2,7 @@
 
 R07 B8. Run once, deliberately, before the first climate-experiment run::
 
-    python scripts/suggest_experiment_name.py test_case/snake_config_baseline.yml
+    python scripts/suggest_experiment_name.py test_case/project_config_baseline.yml
 
 Reads ``project.project_dir``, slugifies its basename, appends today's date,
 validates the result through the same grammar the workflow enforces, and writes
@@ -30,6 +30,7 @@ so the write is a targeted insertion whose result is verified by reloading it.
 from __future__ import annotations
 
 import argparse
+import os
 import re
 import sys
 from collections.abc import Callable
@@ -61,140 +62,81 @@ def _indent_of(line: str) -> int:
     return len(line) - len(line.lstrip(" "))
 
 
+def _target_config(cfg_path: Path, doc: dict) -> Path:
+    """Return the run_stress_test settings file the project config points at.
+
+    The command still TAKES the project config on the command line -- that is
+    the file a user knows the name of, and the one they pass to Snakemake --
+    but the key it writes belongs to the run_stress_test workflow, so it lands
+    in that workflow's own file.
+
+    A missing or unresolvable pointer fails with the same nothing-has-been-
+    reserved posture the command already takes for an unwritable config.
+    """
+    stanza = (doc.get("workflows") or {}).get("run_stress_test") or {}
+    declared = stanza.get("config_path")
+    if not declared:
+        raise ValueError(
+            f"{cfg_path} declares no workflows.run_stress_test.config_path, so "
+            "there is no settings file to write the name into. Create one and "
+            "point the stanza at it; nothing has been reserved"
+        )
+    resolved = Path(os.path.expanduser(str(declared)))
+    if not resolved.is_absolute():
+        resolved = cfg_path.resolve().parent / resolved
+    if not resolved.is_file():
+        raise ValueError(
+            f"workflows.run_stress_test.config_path names a file that does not "
+            f"exist: {resolved} (resolved against {cfg_path.resolve().parent}). "
+            "Nothing has been reserved"
+        )
+    return resolved
+
+
 def _plan_edit(text: str) -> tuple[int, int, Callable[[str], list[str]]]:
-    """Plan where ``experiment_name`` goes in the raw config text.
+    """Plan where a TOP-LEVEL ``experiment_name`` goes in the raw config text.
 
     Returns ``(index, n_replaced, render)``: replace ``n_replaced`` lines from
     ``index`` (0 to insert) with ``render(name)``. Deferring the name to a
     callable lets the plan be computed BEFORE the name is reserved, so a config
     this cannot edit leaves no orphaned ``experiments/<id>/`` behind.
 
-    Raises ``ValueError`` only for flow style (``run_stress_test: {…}``),
-    which cannot be edited a line at a time. A *missing* block is not an error:
-    the ``yaml.safe_dump`` this replaced created one via ``setdefault``, and
-    ``tests/test_experiment_allocation.py`` pins that, so an absent
-    ``workflows:`` or ``run_stress_test:`` is appended instead.
+    **Top-level since R13.** The key used to be spliced at
+    ``workflows.run_stress_test.experiment_name`` inside the one project config.
+    The command now edits that workflow's OWN settings file, where the key sits
+    at column zero -- so the whole nested machinery is gone: finding the parent
+    blocks, creating them when absent, matching the block's existing indent, and
+    anchoring on a comment run inside it.
+
+    That machinery would not merely have been dead. A workflow settings file has
+    no ``workflows:`` key, so the old planner took its append-whole-path branch
+    and wrote a THREE-LEVEL block into a file whose top level is already the
+    workflow -- and the verifier, which built its expectation the same nested
+    way, would have confirmed it. The command would have reported success while
+    the composed config had no ``experiment_name`` at all.
+
+    A *missing* key is not an error: it is appended at EOF, which is the
+    behaviour ``tests/test_experiment_allocation.py`` pins.
     """
     lines = text.splitlines(keepends=True)
     nl = "\r\n" if "\r\n" in text else "\n"
 
-    def _find(start: int, parent_indent: int, key: str) -> tuple[int, int] | None:
-        """Index and indent of ``key``'s line, or None if the block has no such key."""
-        for i in range(start, len(lines)):
-            line = lines[i]
-            if _is_skippable(line):
-                continue
-            indent = _indent_of(line)
-            if indent <= parent_indent:
-                break  # dedented out of the block without finding the key
-            head, sep, tail = line.strip().partition(":")
-            if sep and head.strip() == key:
-                if tail.strip() and not tail.strip().startswith("#"):
-                    raise ValueError(
-                        f"{key!r} is written inline (flow style); this command "
-                        "edits block-style YAML one line at a time"
-                    )
-                return i, indent
-        return None
-
-    def _block_end(start: int, parent_indent: int) -> int:
-        """One past the block's last REAL line — trailing blanks and comments
-        belong to whatever follows, so appending before them keeps them there."""
-        last = start
-        for i in range(start, len(lines)):
-            if _is_skippable(lines[i]):
-                continue
-            if _indent_of(lines[i]) <= parent_indent:
-                break
-            last = i + 1
-        return last
-
-    found_wf = _find(0, -1, "workflows")
-    if found_wf is None:
-        # Append the whole path at EOF. A config with no workflows: section is
-        # not runnable anyway, but the dump this replaced accepted one.
-        pad = [] if not lines or lines[-1].endswith(("\n", "\r")) else [nl]
-        return (
-            len(lines),
-            0,
-            lambda name: (
-                pad
-                + [
-                    f"workflows:{nl}",
-                    f"  run_stress_test:{nl}",
-                    f"    experiment_name: {name}{nl}",
-                ]
-            ),
-        )
-    wf_idx, wf_indent = found_wf
-
-    found_ce = _find(wf_idx + 1, wf_indent, "run_stress_test")
-    if found_ce is None:
-        ci = " " * (wf_indent + 2)
-        return (
-            _block_end(wf_idx + 1, wf_indent),
-            0,
-            lambda name: [
-                f"{ci}run_stress_test:{nl}",
-                f"{ci}  experiment_name: {name}{nl}",
-            ],
-        )
-    ce_idx, ce_indent = found_ce
-
-    # Indentation comes from the block's own first real line, so the edit
-    # matches whatever the file already uses rather than assuming two spaces.
-    first_child_indent = None
-    insert_at = None
-    # A comment run naming the key marks where the config says the key belongs
-    # — the template's own block ends "inserts the key just below". Honour it,
-    # so the value does not land above the paragraph explaining it.
-    after_comment = None
-    run_end = run_names_key = None
-    end = len(lines)
-    for i in range(ce_idx + 1, len(lines)):
-        line = lines[i]
-        stripped = line.strip()
-        if stripped.startswith("#"):
-            run_end = i
-            run_names_key = run_names_key or "experiment_name" in stripped
+    for i, line in enumerate(lines):
+        if _is_skippable(line) or _indent_of(line) != 0:
             continue
-        if run_names_key and after_comment is None:
-            after_comment = run_end + 1
-        run_end = run_names_key = None
-        if not stripped:
+        match = _KEY_RE.match(line)
+        if not match:
             continue
-        if _indent_of(line) <= ce_indent:
-            end = i
-            break
-        if first_child_indent is None:
-            first_child_indent = _indent_of(line)
-            insert_at = i
-        # Only a DIRECT child is the key we mean; `experiment_name:` nested
-        # under stress_test: would be a different key entirely.
-        if _indent_of(line) == first_child_indent:
-            m = _KEY_RE.match(line)
-            if m:
-                indent, trailing = m.group(1), m.group(2)
-                # Keep any trailing comment on the line being filled in.
-                comment = (
-                    "  " + trailing[trailing.index("#") :].rstrip()
-                    if "#" in trailing
-                    else ""
-                )
-                eol = line[len(line.rstrip("\r\n")) :] or nl
-                return (
-                    i,
-                    1,
-                    lambda name: [f"{indent}experiment_name: {name}{comment}{eol}"],
-                )
-    if run_names_key and after_comment is None:
-        after_comment = run_end + 1
-    if first_child_indent is None:
-        # No keys yet: the block is empty or comment-only.
-        at, ind = (after_comment or end), " " * (ce_indent + 2)
-    else:
-        at, ind = (after_comment or insert_at), " " * first_child_indent
-    return at, 0, lambda name: [f"{ind}experiment_name: {name}{nl}"]
+        trailing = match.group(2)
+        # Keep any trailing comment on the line being filled in.
+        comment = (
+            "  " + trailing[trailing.index("#") :].rstrip() if "#" in trailing else ""
+        )
+        eol = line[len(line.rstrip("\r\n")) :] or nl
+        return i, 1, lambda name: [f"experiment_name: {name}{comment}{eol}"]
+
+    pad = [] if not lines or lines[-1].endswith(("\n", "\r")) else [nl]
+    return len(lines), 0, lambda name: pad + [f"experiment_name: {name}{nl}"]
 
 
 def _write_experiment_name(path: Path, name: str) -> None:
@@ -211,22 +153,29 @@ def _write_experiment_name(path: Path, name: str) -> None:
     lines[idx : idx + n_replaced] = render(name)
     new_text = "".join(lines)
 
+    # The expectation is the TOP-LEVEL key (R13 §12.3). Built the same way
+    # the edit is planned, so a verifier that agreed with a wrong-depth write
+    # cannot exist: the old `setdefault("workflows", ...)` chain reloaded a
+    # bogus three-level block to exactly itself and passed.
     expected = yaml.safe_load(text) or {}
-    expected.setdefault("workflows", {}).setdefault("run_stress_test", {})[
-        "experiment_name"
-    ] = name
+    expected["experiment_name"] = name
     if yaml.safe_load(new_text) != expected:
         raise ValueError(
             f"the edit to {path} did not reload to the expected config; "
-            "nothing was written. Set "
-            f"workflows.run_stress_test.experiment_name: {name} by hand"
+            f"nothing was written. Set experiment_name: {name} by hand in "
+            f"{path}"
         )
     path.write_text(new_text, encoding="utf-8")
 
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__)
-    ap.add_argument("config", help="path to the orchestration config YAML")
+    ap.add_argument(
+        "config",
+        help="path to the PROJECT config YAML (the --configfile target). The "
+        "name is written into the run_stress_test settings file this one "
+        "points at, which is where that workflow's keys live",
+    )
     ap.add_argument(
         "--date",
         default=None,
@@ -281,9 +230,20 @@ def main(argv: list[str] | None = None) -> int:
         print(name)
         return 0
 
-    existing = ((doc.get("workflows") or {}).get("run_stress_test") or {}).get(
-        "experiment_name"
-    )
+    # The file this command actually edits: the run_stress_test settings file
+    # the project config points at. Resolved the same way the loader resolves
+    # it -- relative to the project file's own directory (R13 D-8.4).
+    try:
+        target = _target_config(cfg_path, doc)
+    except ValueError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+
+    target_doc = yaml.safe_load(target.read_text(encoding="utf-8")) or {}
+    if not isinstance(target_doc, dict):
+        print(f"error: {target} does not parse to a mapping", file=sys.stderr)
+        return 2
+    existing = target_doc.get("experiment_name")
     if existing is not None:
         print(
             f"error: experiment_name is already set to {existing!r}; refusing "
@@ -297,11 +257,11 @@ def main(argv: list[str] | None = None) -> int:
     # a side effect on disk; failing after it would leave an experiments/<id>/
     # nothing points at, for a config we then could not write to anyway.
     try:
-        _plan_edit(cfg_path.read_text(encoding="utf-8"))
+        _plan_edit(target.read_text(encoding="utf-8"))
     except ValueError as exc:
         print(
-            f"error: cannot edit {cfg_path}: {exc}. Nothing was reserved or "
-            "written; add workflows.run_stress_test.experiment_name by hand",
+            f"error: cannot edit {target}: {exc}. Nothing was reserved or "
+            f"written; add experiment_name to {target} by hand",
             file=sys.stderr,
         )
         return 2
@@ -319,11 +279,11 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        _write_experiment_name(cfg_path, name)
+        _write_experiment_name(target, name)
     except ValueError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
-    print(f"wrote workflows.run_stress_test.experiment_name: {name}")
+    print(f"wrote experiment_name: {name} to {target}")
     return 0
 
 

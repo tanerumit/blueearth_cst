@@ -61,9 +61,9 @@ bundle unpacked runs all four workflows with the network disabled.
 
 - `dev/scripts/stage_data.py` — only for the empty-clip behaviour, and only
   after **Gate 1** below. It is a shared producer with other callers.
-- `test_case/snake_config_sample.yml` — the sample run config. Gate 2. It MUST
-  keep the `snake_config_` prefix: `.gitignore` un-ignores `test_case/*` only
-  through `!test_case/snake_config_*.yml`, so any other name is silently
+- `test_case/project_config_sample.yml` — the sample run config. Gate 2. It MUST
+  keep the `project_config_` prefix: `.gitignore` un-ignores `test_case/*` only
+  through `!test_case/project_config_*.yml`, so any other name is silently
   untracked. (A rename to `project_config_` is boarded separately; do not
   pre-empt it.)
 - `.gitignore` — one entry for the unpack directory.
@@ -141,7 +141,7 @@ Only if it returns cleanly does the empty-GPKG work have a purpose. Report the
 observation before editing `stage_data.py`.
 
 **Gate 2 — the sample project config.** Show the generated
-`test_case/snake_config_sample.yml` for approval before committing it. It is a
+`test_case/project_config_sample.yml` for approval before committing it. It is a
 tracked contract surface and the file a user copies.
 
 ### Validation

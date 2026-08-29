@@ -63,8 +63,6 @@ from dataclasses import dataclass
 from datetime import date
 from pathlib import Path
 
-from blueearth_cst.experiment.forcing_window import forcing_window_years
-
 #: WF1 artifacts the estimate is anchored on, relative to the wflow basin dir.
 #: Both are ordinary persisted outputs -- neither is ``temp()`` -- which is the
 #: whole reason they can be read at WF3 parse time.
@@ -161,7 +159,7 @@ def _days_in_years(startyear, endyear):
     return (date(endyear, 12, 31) - date(startyear, 1, 1)).days + 1
 
 
-def measure_member_footprint(basin_dir, horizontime_climate, run_length):
+def measure_member_footprint(basin_dir, sim_start, sim_end):
     """Estimate one member's ``temp()`` footprint, or ``None`` if it cannot be.
 
     ``None`` is an ordinary outcome, not an error: WF1 may not have run yet.
@@ -176,9 +174,7 @@ def measure_member_footprint(basin_dir, horizontime_climate, run_length):
     if not hist_steps:
         return None
 
-    member_steps = _days_in_years(
-        *forcing_window_years(horizontime_climate, run_length)
-    )
+    member_steps = _days_in_years(sim_start, sim_end)
     try:
         hist_bytes = os.path.getsize(forcing_anchor)
         state_bytes = os.path.getsize(state_anchor)

@@ -10,8 +10,9 @@ The properties, and the first three are ones the rest of the suite cannot reach:
   the period they share before anything is derived. Both corrections are
   invisible in a rendered figure (two plausible lines either way), so they are
   asserted numerically here or nowhere;
-* **the multi-source DAG direction** — ``tests/snake_config_fixture.yml`` sets
-  no ``candidate_sources``, so ``test_cli`` and ``test_log_rules_contract`` both
+* **the multi-source DAG direction** — ``tests/project_config_fixture.yml`` sets
+  one entry in ``climate.sources``, so ``test_cli`` and
+  ``test_log_rules_contract`` both
   parse WF0 in its SINGLE-source shape and neither sees rule 0.06 at all. This
   module parses it with two sources, which is where the conditional rule, its
   declared outputs and its appended ``LOG_RULES`` label have to agree;
@@ -48,11 +49,13 @@ from blueearth_cst.climate_analysis.compare_sources import (
     summarize_sources,
 )
 from blueearth_cst.climate_analysis.figure_naming import subbasin_scope
+from blueearth_cst.shared.config_composition import load_composed_config
 from blueearth_cst.shared.grid_cells import cells_csv_mask
+from tests.conftest import write_config
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
-CONFIG_FN = TESTDIR / "snake_config_fixture.yml"
+CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 _START, _END = "2001-01-01", "2017-12-31"
 
@@ -722,11 +725,12 @@ def _parse_workflow(config_path: Path):
 
 @pytest.fixture
 def two_source_config(tmp_path) -> Path:
-    cfg = yaml.safe_load(CONFIG_FN.read_text(encoding="utf-8"))
-    cfg["workflows"]["analyze_climate"]["candidate_sources"] = ["chirps"]
-    path = tmp_path / "snake_config_two_sources.yml"
-    path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
-    return path
+    cfg = load_composed_config(CONFIG_FN)
+    # `C-43`: the candidate set moved UP to `climate.sources` and WIDENED --
+    # it is the full list with no privileged element, so the selected source is
+    # a member rather than sitting outside it.
+    cfg["climate"]["sources"] = [cfg["climate"]["selected"], "chirps"]
+    return write_config(tmp_path, cfg, stem="project_config_two_sources")
 
 
 def _rule(workflow, name):
@@ -734,7 +738,7 @@ def _rule(workflow, name):
 
 
 def test_rule_is_absent_on_a_single_source_config():
-    """With no candidate_sources, WF0 stays exactly what WF1 already draws."""
+    """With ONE entry in `climate.sources`, WF0 is what WF1 already draws."""
     assert _rule(_parse_workflow(CONFIG_FN), "compare_climate_sources") is None
 
 

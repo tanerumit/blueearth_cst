@@ -25,19 +25,19 @@ State gate costs as orders of magnitude, never in seconds. The marker names and 
 
 ## Which config to run
 
-Default to `snake_config_rapid.yml`. Reach for `snake_config_baseline.yml` only when the run's numbers are the point.
+Default to `project_config_rapid.yml`. Reach for `project_config_baseline.yml` only when the run's numbers are the point.
 
 | Config | `project_dir` | Run it for |
 |---|---|---|
-| `snake_config_rapid.yml` | `test_case/test_rapid` | anything you want to watch EXECUTE — a rule you edited, a DAG check, a WF3 smoke run, a figure render |
-| `snake_config_baseline.yml` | `test_case/test_local` | recording or checking `dev/baseline/manifest.json`, `tree-check`, a milestone seal, any number you will quote |
-| `snake_config_wf2_fast.yml` | `test_case/test_dev` | WF2 code iteration only — 2 series, and it drops `st_0` |
+| `project_config_rapid.yml` | `test_case/test_rapid` | anything you want to watch EXECUTE — a rule you edited, a DAG check, a WF3 smoke run, a figure render |
+| `project_config_baseline.yml` | `test_case/test_local` | recording or checking `dev/baseline/manifest.json`, `tree-check`, a milestone seal, any number you will quote |
+| `project_config_wf2_fast.yml` | `test_case/test_dev` | WF2 code iteration only — 2 series, and it drops `st_0` |
 
-Rapid costs ~2.6× less wflow time (10 members × 9 forcing years, vs 14 × 17) and ~1.7× less weather generation (46 generated years, vs 78). To move the second number, change the horizon rather than `run_length`: `compute_nr_years` anchors the generated series at 2010, so it spans 2010 → `horizontime_climate` + `run_length`/2.
+Rapid costs ~2.6× less wflow time (10 members × 9 forcing years, vs 14 × 17) and ~1.7× less weather generation (46 generated years, vs 78). To move the second number, change the END of `simulation_window` rather than its start: `compute_nr_years` anchors the generated series at 2010, so it spans 2010 → `simulation_window.end`. (`C-67` folded the former `horizontime_climate` + `run_length`/2 into that one declared year.)
 
-Rapid is cheap, not narrow. It keeps `run_historical: true`, since `st_0` is what the two class-C month indicators derive from — `false` silently drops 2 of 11 `q` metrics — and it keeps two CMIP6 models, since a one-model config never runs the ensemble reduction. A config that gives up coverage must say which, as `wf2_fast` does.
+Rapid is cheap, not narrow. It gets `st_0`, which is what the two class-C month indicators derive from — and since `C-69` every config does, so this is no longer a way a config can quietly give up 2 of 11 `q` metrics — and it keeps two CMIP6 models, since a one-model config never runs the ensemble reduction. A config that gives up coverage must say which, as `wf2_fast` does.
 
-Record the baseline from `snake_config_baseline.yml` and nothing else; never point `check_baseline.py` at the rapid tree.
+Record the baseline from `project_config_baseline.yml` and nothing else; never point `check_baseline.py` at the rapid tree.
 
 ## Read the CI run after you push
 

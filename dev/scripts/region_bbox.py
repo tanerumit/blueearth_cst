@@ -32,7 +32,7 @@ error, which is what keeps this usable on a model-free WF0 project.
 
 Usage (from the repo root, inside pixi)::
 
-    python dev/scripts/region_bbox.py --config test_case/snake_config_rapid.yml
+    python dev/scripts/region_bbox.py --config test_case/project_config_rapid.yml
     python dev/scripts/region_bbox.py --config <cfg> --out
     python dev/scripts/region_bbox.py --config <cfg> --out some/where/bbox.geojson
 

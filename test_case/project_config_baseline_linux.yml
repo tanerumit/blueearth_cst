@@ -1,0 +1,45 @@
+# Linux example config for blueearth_cst — R01 sectioned schema.
+# Value-preserving restructure of the Linux variant. Keys absent here
+# (wflow_outvars, model_build_config, waterbodies_config)
+# stay absent so the Snakefile defaults apply. Linux end-to-end
+# validation is deferred per dev/roadmap.md; this file must parse cleanly.
+
+project:
+  project_dir: test_case/gabon
+  catalog: config/catalogs/deltares_data_linux.yml
+workflows:
+  # WF0 — the basin's historical climate, WITHOUT building a hydrology model.
+  # Every key below is optional; with none set this draws the canonical figure
+  # set for `shared.clim_historical` and nothing else, which is exactly what
+  # WF1 already produces. `candidate_sources` is what makes it a comparison.
+  analyze_climate:
+    enabled: true
+  build_model:
+    enabled: true
+    config_path: project_config_baseline_linux_build_model.yml
+  analyze_projections:
+    enabled: true
+    config_path: project_config_baseline_linux_analyze_projections.yml
+
+  run_stress_test:
+    enabled: true
+    config_path: project_config_baseline_linux_run_stress_test.yml
+basin:
+  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+  resolution: 0.0062475
+  delineation:
+    max_subbasins: 11
+  output_locations:
+model:
+  outvars:
+  - river discharge
+  - actual evapotranspiration
+climate:
+  selected: era5
+
+  window:
+    start: 2000
+    end: 2020
+  sources:
+  - era5
+schema_version: 2

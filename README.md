@@ -143,9 +143,19 @@ The toolbox provides four [Snakemake](https://snakemake.github.io/) workflows:
   applies stress-test perturbations, and runs the hydrological model on each
   realization × stress combination.
 
-Configuration is YAML-driven. Start from `config/templates/snake_config.template.yml`,
-which annotates every option inline; a filled-in worked example is
-`test_case/snake_config_baseline.yml`, and `test_case/snake_config_rapid.yml`
+Configuration is YAML-driven, and a project's configuration is a **set of
+files**: one project file plus one file per workflow, kept together in one
+directory. The project file is the only `--configfile` target — it holds
+`project:`, the `shared:` settings more than one workflow reads, and a short
+stanza per workflow saying whether it runs and which file carries its settings.
+The file you open to change WF1 therefore contains WF1's settings and nothing
+else. See `docs/migration-config-tiers.md` for the layout in full, and for
+migrating a single-file config written before 2026-08.
+
+Start from `config/templates/project_config.template.yml` and the
+`project_config.<workflow>.template.yml` files beside it, which annotate every
+option inline; a filled-in worked example is `test_case/project_config_baseline.yml`
+with its siblings, and `test_case/project_config_rapid.yml`
 is the same basin sized for a quick end-to-end run rather than for results.
 Each of the shipped example configs sits
 beside the project it writes into, the same way a real project keeps its config
@@ -261,7 +271,7 @@ your choice:
 $ pixi shell
 $ cd blueearth_cst
 $ snakemake all -c 1 -s build_model.smk \
-    --configfile test_case/snake_config_baseline.yml
+    --configfile test_case/project_config_baseline.yml
 ```
 
 See the per-workflow sections below for the recommended sequences (DAG
@@ -289,15 +299,15 @@ projections → experiment):
 
 ```console
 $ pixi run python scripts/run_workflows.py \
-    --config test_case/snake_config_baseline.yml
+    --config test_case/project_config_baseline.yml
 ```
 
 Contract:
 
 - Accepts **full-orchestration configs only** — a config carrying a `workflows:`
   section with all four subsections, each with an `enabled:` key (the
-  `snake_config_baseline*.yml` / `snake_config.template.yml` class). The
-  single-workflow `snake_config_projections_*.yml` configs — parked under
+  `project_config_baseline*.yml` / `project_config.template.yml` class). The
+  single-workflow `project_config_projections_*.yml` configs — parked under
   `config/templates/archive/` and unmaintained — carry no `workflows:` section
   and are run directly with `snakemake -s` instead.
 - A missing `workflows:` section or `<name>.enabled` key is a **hard error**
@@ -384,9 +394,9 @@ Builds a hydrological Wflow model and runs / analyses it for a historical
 period.
 
 ```console
-$ python scripts/plot_workflow_dag.py -s build_model.smk --configfile test_case/snake_config_baseline.yml
-$ snakemake --unlock -s build_model.smk --configfile test_case/snake_config_baseline.yml
-$ snakemake all -c 1 -s build_model.smk --configfile test_case/snake_config_baseline.yml
+$ python scripts/plot_workflow_dag.py -s build_model.smk --configfile test_case/project_config_baseline.yml
+$ snakemake --unlock -s build_model.smk --configfile test_case/project_config_baseline.yml
+$ snakemake all -c 1 -s build_model.smk --configfile test_case/project_config_baseline.yml
 ```
 
 The first command renders a DAG visualization (requires Graphviz's `dot`). It
@@ -403,9 +413,9 @@ Derives future climate statistics (expected temperature and precipitation
 change) for selected CMIP scenarios and GCMs.
 
 ```console
-$ python scripts/plot_workflow_dag.py -s analyze_projections.smk --configfile test_case/snake_config_baseline.yml
-$ snakemake --unlock -s analyze_projections.smk --configfile test_case/snake_config_baseline.yml
-$ snakemake all -c 1 -s analyze_projections.smk --configfile test_case/snake_config_baseline.yml --keep-going
+$ python scripts/plot_workflow_dag.py -s analyze_projections.smk --configfile test_case/project_config_baseline.yml
+$ snakemake --unlock -s analyze_projections.smk --configfile test_case/project_config_baseline.yml
+$ snakemake all -c 1 -s analyze_projections.smk --configfile test_case/project_config_baseline.yml --keep-going
 ```
 
 ### run_stress_test.smk
@@ -444,9 +454,9 @@ completed run's outputs are addressed by, so silently renaming it would strand
 them. Clear the key by hand to go back to the default.
 
 ```console
-$ python scripts/plot_workflow_dag.py -s run_stress_test.smk --configfile test_case/snake_config_baseline.yml
-$ snakemake --unlock -s run_stress_test.smk --configfile test_case/snake_config_baseline.yml
-$ snakemake all -c 1 -s run_stress_test.smk --configfile test_case/snake_config_baseline.yml
+$ python scripts/plot_workflow_dag.py -s run_stress_test.smk --configfile test_case/project_config_baseline.yml
+$ snakemake --unlock -s run_stress_test.smk --configfile test_case/project_config_baseline.yml
+$ snakemake all -c 1 -s run_stress_test.smk --configfile test_case/project_config_baseline.yml
 ```
 
 ## Testing

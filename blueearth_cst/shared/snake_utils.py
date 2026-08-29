@@ -856,8 +856,8 @@ def validate_experiment_name(name: str, project_dir) -> str:
 #: The advanced-settings file: toolbox-wide constraints and defaults that no
 #: normal project edits. Repo root is two levels up from
 #: ``blueearth_cst/shared/``. NOT a ``--configfile`` target — the Snakefiles
-#: take a per-project ``config/workflows/snake_config_*.yml``; this one is read
-#: once, here, and applies to every project.
+#: take a per-project project config, which lives beside the project it writes
+#: into; this one is read once, here, and applies to every project.
 ADVANCED_SETTINGS_PATH = (
     Path(__file__).resolve().parents[2] / "config" / "advanced_settings.yml"
 )
@@ -868,14 +868,22 @@ ADVANCED_SETTINGS_PATH = (
 #: force (the same fail-loud stance ``get_config`` takes for project configs).
 #: A new setting is added HERE and in the file together.
 _ADVANCED_SETTINGS_SCHEMA = {
-    "constraints": {"min_historical_years": "positive_int"},
+    # `max_flagged_months` joined with `C-65`. A CONSTRAINT rather than a
+    # default: D-10.6 classes it a hard limit a project may not relax, so
+    # unlike `C-54` there is no overriding key to name (D-10.7).
+    "constraints": {
+        "min_historical_years": "positive_int",
+        "max_flagged_months": "positive_int",
+    },
     "defaults": {
         "batch_disk_headroom_fraction": "unit_fraction",
-        "julia_threads": "positive_int",
         "seed": "nonnegative_int",
         "water_year_start": "month_abbrev",
     },
-    "runtime": {"julia_version": "version_string"},
+    # `julia_threads` moved here from `defaults:` with `C-54`, which removed the
+    # per-project override. `defaults:` is for values a project could have
+    # overridden; nothing overrides this one now.
+    "runtime": {"julia_threads": "positive_int", "julia_version": "version_string"},
 }
 
 #: Three-part ``X.Y.Z``. Two parts would let juliaup resolve a different patch
@@ -1078,7 +1086,7 @@ JULIA_VERSION = ADVANCED_SETTINGS["runtime"]["julia_version"]
 #: threads instead of 4 — a thread-allocation change disguised as a refactor,
 #: and precisely what §5.6 forbids. The two numbers are independent by design:
 #: the nominal budget is ``N x t <= C_logical``.
-DEFAULT_JULIA_THREADS = ADVANCED_SETTINGS["defaults"]["julia_threads"]
+DEFAULT_JULIA_THREADS = ADVANCED_SETTINGS["runtime"]["julia_threads"]
 
 
 def validate_julia_threads(value) -> int:
@@ -1235,60 +1243,59 @@ def meets_min_historical_years(start, end) -> bool:
     return end >= _shift_years(start, MIN_HISTORICAL_YEARS)
 
 
-def historical_window_days(historical_window) -> int:
-    """Calendar days spanned by a ``shared.historical_window`` mapping.
-
-    Endpoints are the ISO ``starttime``/``endtime`` every config carries. Raises
-    ``ValueError`` naming the offending key when either is missing or
-    unparseable — the same fail-loud stance ``slugify_window`` takes on the same
-    two values.
-    """
-    if not isinstance(historical_window, Mapping):
-        raise ValueError(
-            f"historical_window must be a mapping with starttime/endtime, got "
-            f"{historical_window!r}"
-        )
-    bounds = {}
-    for key in ("starttime", "endtime"):
-        if key not in historical_window:
-            raise ValueError(f"historical_window is missing {key!r}")
-        try:
-            bounds[key] = datetime.fromisoformat(str(historical_window[key]).strip())
-        except ValueError:
-            raise ValueError(
-                f"historical_window.{key} is not an ISO datetime: "
-                f"{historical_window[key]!r}"
-            ) from None
-    return (bounds["endtime"] - bounds["starttime"]).days
-
-
 def historical_window_bounds(historical_window):
-    """``(starttime, endtime)`` of a ``shared.historical_window``, as datetimes.
+    """``(start, end)`` of ``climate.window``, as datetimes.
 
-    Same parsing and same fail-loud errors as ``historical_window_days``, which
-    is written in terms of this.
+    **The R14 retype is absorbed here, and only here** (`C-70`). The project
+    config now declares ``climate.window: {start, end}`` as INCLUSIVE YEARS.
+    This pair of helpers is the one place that already parsed the window, so
+    every caller downstream — ``climate_window.py``, ``add_climate_forcing.py``,
+    ``extract_historical_climate.py``, ``reference_window.py`` — keeps receiving
+    exactly the datetimes it received before, and none of them changed.
+
+    Inclusive means ``{start: 2000, end: 2016}`` spans 2000-01-01 to 2016-12-31.
+    That is value-preserving for every config the toolbox ships: their v1 ISO
+    endpoints were already whole-year aligned on exactly those two dates.
+
+    Raises ``ValueError`` naming the offending key when an endpoint is missing
+    or is not a year — the same fail-loud stance ``slugify_window`` takes on
+    the same two values.
     """
     if not isinstance(historical_window, Mapping):
         raise ValueError(
-            f"historical_window must be a mapping with starttime/endtime, got "
+            f"climate.window must be a mapping with start/end years, got "
             f"{historical_window!r}"
         )
-    bounds = []
-    for key in ("starttime", "endtime"):
+    years = []
+    for key in ("start", "end"):
         if key not in historical_window:
-            raise ValueError(f"historical_window is missing {key!r}")
-        try:
-            bounds.append(datetime.fromisoformat(str(historical_window[key]).strip()))
-        except ValueError:
             raise ValueError(
-                f"historical_window.{key} is not an ISO datetime: "
-                f"{historical_window[key]!r}"
+                f"climate.window is missing {key!r}. It is a pair of INCLUSIVE "
+                "YEARS now, not ISO timestamps: `window: {start: 1990, end: 2020}`."
+            )
+        try:
+            years.append(int(str(historical_window[key]).strip()))
+        except (TypeError, ValueError):
+            raise ValueError(
+                f"climate.window.{key} is not a year: {historical_window[key]!r}. "
+                "`climate.window` takes INCLUSIVE YEARS, not ISO timestamps."
             ) from None
-    return tuple(bounds)
+    start, end = years
+    return (datetime(start, 1, 1), datetime(end, 12, 31))
+
+
+def historical_window_days(historical_window) -> int:
+    """Calendar days spanned by a ``climate.window`` mapping.
+
+    Written in terms of ``historical_window_bounds``, so it inherits the same
+    parsing and the same fail-loud errors.
+    """
+    start, end = historical_window_bounds(historical_window)
+    return (end - start).days
 
 
 def validate_historical_window(historical_window) -> int:
-    """Reject a ``shared.historical_window`` shorter than ``MIN_HISTORICAL_YEARS``.
+    """Reject a ``climate.window`` shorter than ``MIN_HISTORICAL_YEARS``.
 
     Called at ``build_model.smk`` parse time, so a window that cannot
     support a full CST run is rejected BEFORE any rule executes — the same
@@ -1307,24 +1314,64 @@ def validate_historical_window(historical_window) -> int:
     days = historical_window_days(historical_window)
     if not meets_min_historical_years(start, end):
         raise ValueError(
-            f"historical_window {start.date()} .. {end.date()} spans "
+            f"climate.window {start.date()} .. {end.date()} spans "
             f"{days / 365.25:.1f} years, below the "
             f"{MIN_HISTORICAL_YEARS}-year minimum this toolbox requires: "
             f"weathergenr's wavelet decomposition needs at least "
             f"{MIN_HISTORICAL_YEARS} annual observations, so a shorter record "
             f"cannot support a climate stress test. Widen "
-            f"shared.historical_window to >= {MIN_HISTORICAL_YEARS} years"
+            f"climate.window to >= {MIN_HISTORICAL_YEARS} years"
             + ("" if days >= 0 else " (endtime is BEFORE starttime — check the order)")
         )
     return days
 
 
-def resolve_simulation_window(shared_cfg, model_cfg):
+def window_year_pair(window, key):
+    """``[start, end]`` CALENDAR years from a ``{start, end}`` mapping.
+
+    R14 retypes several windows from a two-element list to a mapping of
+    INCLUSIVE YEARS. ``historical_window_bounds`` absorbs that for
+    ``climate.window`` and returns datetimes, because every one of its callers
+    wanted datetimes. The windows this helper serves want the YEARS: WF2's
+    ``reference_window`` (`C-59`) is clipped against the GCM historical
+    experiment as integers, and its result reaches the digest.
+
+    **No water-year offset is applied, deliberately** (`C-74`, D-7.4).
+    ``hydrological_year_bounds()`` already trims to complete water years one
+    layer down, so routing a calendar window through the water-year path would
+    apply the offset twice and move every change factor without saying so.
+
+    ``key`` names the config key in the error, because by the time this raises
+    the caller has usually lost track of which of several windows it was.
+    """
+    if not isinstance(window, Mapping):
+        raise ValueError(
+            f"{key} must be a mapping with start/end years, got {window!r}"
+        )
+    years = []
+    for bound in ("start", "end"):
+        if bound not in window:
+            raise ValueError(f"{key} is missing `{bound}`; got {window!r}")
+        value = window[bound]
+        if isinstance(value, bool) or not isinstance(value, int):
+            raise ValueError(
+                f"{key}.{bound} must be a whole year, got {value!r}. R14 retyped "
+                "this key from a two-element list to inclusive years."
+            )
+        years.append(value)
+    if years[0] > years[1]:
+        raise ValueError(f"{key}.start ({years[0]}) is after end ({years[1]})")
+    return years
+
+
+def resolve_simulation_window(
+    climate_cfg, model_cfg, *, shared_source=None, model_source=None
+):
     """The window the hydrological model SIMULATES, which is not the record.
 
     Two different questions were one config key until 2026-08-10:
 
-    * ``shared.historical_window`` — how much climate record to EXTRACT. It
+    * ``climate.window`` — how much climate record to EXTRACT. It
       feeds the climate store, the climate figures, and (through that store)
       weathergenr, whose wavelet decomposition sets ``MIN_HISTORICAL_YEARS``.
       This is analysis input, and it is what a future standalone climate
@@ -1355,45 +1402,47 @@ def resolve_simulation_window(shared_cfg, model_cfg):
 
     Returns a mapping with ``starttime``/``endtime``; raises ``ValueError``
     naming the offending key if the window is malformed.
+    ``shared_source`` and ``model_source`` name the FILES the two values were
+    authored in, and appear in the refusal below. Both default to ``None``, so
+    the message shape is unchanged when they are absent -- which is what keeps
+    this additive for every caller that has only the two mappings.
+
+    They exist because the comparison became genuinely cross-file at R13: the
+    simulation window is authored in the build_model settings file and the
+    record in the project file. This is the clearest demonstration that the
+    shared-seam placement rule is right rather than arbitrary --
+    ``historical_window`` is read by three workflows, so it belongs in the
+    project file, and a copy planted in a workflow file is refused at parse
+    time rather than allowed to become a second record that disagrees.
     """
+    where_model = f" (in {model_source})" if model_source else ""
+    where_shared = f" (in {shared_source})" if shared_source else ""
     window = get_config(model_cfg, "simulation_window", None)
     if window is None:
-        return get_config(shared_cfg, "historical_window", optional=False)
-    if not isinstance(window, Mapping):
-        raise ValueError(
-            f"workflows.build_model.simulation_window must be a mapping "
-            f"with starttime/endtime, got {window!r}"
-        )
-    for key in ("starttime", "endtime"):
-        if key not in window:
-            raise ValueError(
-                f"workflows.build_model.simulation_window is missing {key!r}"
-            )
-        try:
-            datetime.fromisoformat(str(window[key]).strip())
-        except ValueError:
-            raise ValueError(
-                f"workflows.build_model.simulation_window.{key} is not an "
-                f"ISO datetime: {window[key]!r}"
-            ) from None
-    start, end = (
-        datetime.fromisoformat(str(window["starttime"]).strip()),
-        datetime.fromisoformat(str(window["endtime"]).strip()),
-    )
+        return get_config(climate_cfg, "window", optional=False)
+    # R14 `C-71`: years on this side too, so the two windows a user compares are
+    # written in one unit. `historical_window_bounds` is the only parser, so a
+    # malformed value is diagnosed once, in one voice, wherever it was authored.
+    try:
+        start, end = historical_window_bounds(window)
+    except ValueError as exc:
+        raise ValueError(f"workflows.build_model.simulation_window: {exc}") from None
     if end <= start:
         raise ValueError(
             f"workflows.build_model.simulation_window {start.date()} .. "
             f"{end.date()} ends on or before it starts — check the order"
         )
-    record = get_config(shared_cfg, "historical_window", optional=False)
-    rec_start, rec_end = historical_window_bounds(record)
+    rec_start, rec_end = historical_window_bounds(
+        get_config(climate_cfg, "window", optional=False)
+    )
     if start < rec_start or end > rec_end:
         raise ValueError(
             f"workflows.build_model.simulation_window {start.date()} .. "
-            f"{end.date()} is not inside shared.historical_window "
-            f"{rec_start.date()} .. {rec_end.date()}. The forcing is built from "
+            f"{end.date()}{where_model} is not inside climate.window "
+            f"{rec_start.date()} .. {rec_end.date()}{where_shared}. The forcing "
+            "is built from "
             "the extracted climate store, so a simulation period outside the "
-            "record has no data behind it — widen historical_window, or narrow "
+            "record has no data behind it — widen climate.window, or narrow "
             "the simulation window to fit inside it"
         )
     return window
@@ -1445,7 +1494,7 @@ def slugify_window(start, end) -> str:
             dt = datetime.strptime(date_part, "%Y-%m-%d")
         except ValueError as exc:
             raise ValueError(
-                f"historical_window {which} {value!r} is not a YYYY-MM-DD date"
+                f"climate.window {which} {value!r} is not a YYYY-MM-DD date"
             ) from exc
         if time_part:
             # Accept only an all-zero time-of-day; anything else is sub-day
@@ -1454,7 +1503,7 @@ def slugify_window(start, end) -> str:
             hms = time_part.split(".", 1)[0]
             if hms.replace(":", "").strip("0") != "":
                 raise ValueError(
-                    f"historical_window {which} {value!r} has a nonzero "
+                    f"climate.window {which} {value!r} has a nonzero "
                     "time-of-day; the store key is day-resolution (§4c) — "
                     "sub-day windows are not supported"
                 )
@@ -1884,12 +1933,23 @@ def climate_store_rule(
     """
     if not isinstance(historical_window, Mapping):
         raise TypeError(
-            "climate_store_rule: historical_window must be the shared."
-            "historical_window mapping with 'starttime'/'endtime', got "
+            "climate_store_rule: historical_window must be the `climate.window` "
+            "mapping with 'start'/'end' years, got "
             f"{type(historical_window).__name__}"
         )
-    starttime = get_config(historical_window, "starttime", optional=False)
-    endtime = get_config(historical_window, "endtime", optional=False)
+    # Through the one parser (R14 `C-70`), so the store key is derived from the
+    # same bounds every other reader sees. The KEY IS UNCHANGED by the retype:
+    # every shipped config's v1 ISO endpoints were whole-year aligned, so
+    # `{start: 2000, end: 2020}` slugs to the same `20000101_20201231` the ISO
+    # pair did -- which is what keeps an extracted store from being re-extracted
+    # into a new directory on migration.
+    _start, _end = historical_window_bounds(historical_window)
+    # Rendered back to ISO for `params:`. BYTE-IDENTICAL to the v1 values: the
+    # shipped configs' endpoints were whole-year aligned, so `{2000, 2020}`
+    # renders the same `2000-01-01T00:00:00` / `2020-12-31T00:00:00` the ISO
+    # pair carried -- which is what keeps the params digest, and every rule that
+    # threads these two values, unmoved by the retype.
+    starttime, endtime = _start.isoformat(), _end.isoformat()
 
     # Byte-for-byte the key wf3 built inline before R07 (P3-1 §4/§4c/§4d): two
     # experiments sharing clim_historical + historical_window resolve to the
@@ -1966,8 +2026,8 @@ def climate_store_rule(
 #: a known axis passed unexamined — so ``stress_test.temp.variance`` was
 #: accepted in silence and changed nothing.
 _AXIS_SUBKEYS = {
-    "temp": frozenset({"step_num", "transient_change", "mean"}),
-    "precip": frozenset({"step_num", "transient_change", "mean", "variance"}),
+    "temp": frozenset({"n_levels", "trajectory", "mean"}),
+    "precip": frozenset({"n_levels", "trajectory", "mean", "variance"}),
 }
 
 
@@ -1981,6 +2041,20 @@ def _reject_unknown_axis_subkeys(stress_test_cfg: Mapping) -> None:
         if not unknown:
             continue
         detail = ""
+        # The two R14 spellings get their destination named rather than just
+        # being listed as unsupported: `n_levels` is a RETYPE of `step_num`
+        # (+1) and `trajectory` an enum where `transient_change` was a bool,
+        # so neither is fixed by copying the old value across.
+        if "step_num" in unknown:
+            detail += (
+                " `step_num` is now `n_levels` and counts LEVELS, not intervals:"
+                " `n_levels` = `step_num` + 1 (`C-31`)."
+            )
+        if "transient_change" in unknown:
+            detail += (
+                " `transient_change: true` is now `trajectory: transient`"
+                " (`C-32`); it is required, with no default."
+            )
         if axis == "temp" and "variance" in unknown:
             detail = (
                 " Temperature variance is not a supported stress dimension: "
@@ -1988,30 +2062,41 @@ def _reject_unknown_axis_subkeys(stress_test_cfg: Mapping) -> None:
                 "Remove it rather than expecting it to perturb anything."
             )
         raise ValueError(
-            f"workflows.run_stress_test.stress_test.{axis} carries "
+            f"workflows.run_stress_test.climate_perturbations.{axis} carries "
             f"unsupported key(s) {unknown}; it accepts {sorted(allowed)}.{detail}"
         )
 
 
-def _require_step_num(axis_cfg, axis_name):
-    """Read and validate a required ``step_num`` from a stress-test axis section.
+def _require_n_levels(axis_cfg, axis_name):
+    """Read and validate a required ``n_levels`` from a perturbation axis.
 
-    Strict by contract: a missing axis section or ``step_num`` raises
+    **`C-31` is a RETYPE, not a rename.** ``step_num`` counted INTERVALS and
+    every caller added one for the endpoints; ``n_levels`` is that sum, the
+    number of grid levels on the axis, declared directly. So ``step_num: 1``
+    and ``n_levels: 2`` describe the same axis, and a config that merely
+    renamed the key without adding one would silently drop a level from every
+    axis — which is why the old spelling is refused rather than accepted.
+
+    The floor moves with the meaning: zero intervals was legal (a single
+    unperturbed level), so the minimum level count is ONE, not zero.
+
+    Strict by contract: a missing axis section or ``n_levels`` raises
     ``KeyError`` (parity with ``prepare_cst_parameters.py``'s direct read); a
-    ``step_num`` that is not a non-negative integer raises ``ValueError``.
-    ``bool`` is rejected — ``True``/``False`` are not valid grid step counts.
+    value that is not a positive integer raises ``ValueError``. ``bool`` is
+    rejected — ``True``/``False`` are not valid level counts.
     """
-    step_num = axis_cfg[axis_name]["step_num"]  # KeyError on missing axis/key
-    if isinstance(step_num, bool) or not isinstance(step_num, int):
+    n_levels = axis_cfg[axis_name]["n_levels"]  # KeyError on missing axis/key
+    if isinstance(n_levels, bool) or not isinstance(n_levels, int):
         raise ValueError(
-            f"stress_test.{axis_name}.step_num must be a non-negative int, "
-            f"got {step_num!r}"
+            f"climate_perturbations.{axis_name}.n_levels must be a positive "
+            f"int, got {n_levels!r}"
         )
-    if step_num < 0:
+    if n_levels < 1:
         raise ValueError(
-            f"stress_test.{axis_name}.step_num must be non-negative, got {step_num}"
+            f"climate_perturbations.{axis_name}.n_levels must be at least 1 "
+            f"(one level = the unperturbed axis), got {n_levels}"
         )
-    return step_num
+    return n_levels
 
 
 def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
@@ -2021,17 +2106,18 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
     previously derived twice (inline in ``run_stress_test.smk`` and in
     ``blueearth_cst/experiment/prepare_cst_parameters.py``). Both call sites now read this helper.
 
-    STRICT: ``temp.step_num`` and ``precip.step_num`` are REQUIRED — a missing
-    axis section or ``step_num`` raises ``KeyError``, and a value that is not a
-    non-negative integer raises ``ValueError``. The helper never silently
-    invents a grid. Per-axis step count is ``step_num + 1`` (endpoints
-    inclusive), and ``st_num = temp_step_count * precip_step_count``.
+    STRICT: ``temp.n_levels`` and ``precip.n_levels`` are REQUIRED — a missing
+    axis section or ``n_levels`` raises ``KeyError``, and a value that is not a
+    positive integer raises ``ValueError``. The helper never silently invents a
+    grid. Per-axis level count IS ``n_levels`` since `C-31` (it was
+    ``step_num + 1``), and ``st_num = temp_step_count * precip_step_count``.
 
     Parameters
     ----------
     stress_test_cfg : Mapping
-        The ``workflows.run_stress_test.stress_test`` config section, with
-        ``temp`` and ``precip`` axis sub-sections each carrying ``step_num``.
+        The ``workflows.run_stress_test.climate_perturbations`` config section,
+        with ``temp`` and ``precip`` axis sub-sections each carrying
+        ``n_levels``.
 
     Returns
     -------
@@ -2041,13 +2127,15 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
     Raises
     ------
     KeyError
-        If the ``temp``/``precip`` axis section or its ``step_num`` is absent.
+        If the ``temp``/``precip`` axis section or its ``n_levels`` is absent.
     ValueError
-        If a ``step_num`` is not a non-negative integer.
+        If an ``n_levels`` is not a positive integer.
     """
     _reject_unknown_axis_subkeys(stress_test_cfg)
-    temp_step_count = _require_step_num(stress_test_cfg, "temp") + 1
-    precip_step_count = _require_step_num(stress_test_cfg, "precip") + 1
+    # No `+ 1` any more: `C-31` moved that addition into the config, where the
+    # author can see it. The RESULT is unchanged for an equivalent config.
+    temp_step_count = _require_n_levels(stress_test_cfg, "temp")
+    precip_step_count = _require_n_levels(stress_test_cfg, "precip")
     return temp_step_count, precip_step_count, temp_step_count * precip_step_count
 
 
@@ -2055,7 +2143,7 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
 #: ONE definition because WF1 and WF3 both default it: WF1 to these two,
 #: WF3 to `[]` until 2026-08-13 — and `[]` means zero indicator tables with
 #: no error, so a config omitting the key ran to completion and wrote
-#: nothing. `snake_config_baseline_linux.yml` omits it, so that was a
+#: nothing. `project_config_baseline_linux.yml` omits it, so that was a
 #: shipped reproducer.
 DEFAULT_WFLOW_OUTVARS = ["river discharge", "actual evapotranspiration"]
 
@@ -4769,7 +4857,7 @@ def run_header(workflow, project_dir, config_path=None, **details):
     row that was not, so a block whose whole purpose is to state paths mixed
     ``C:\\a\\b`` with ``a/b`` and read as two trees. ``config`` is also printed
     through the repo strip that every rule log line already uses, so it reads
-    ``<repo>/test_case/snake_config_rapid.yml`` rather than the same fact
+    ``<repo>/test_case/project_config_rapid.yml`` rather than the same fact
     behind 60 characters of machine-specific prefix.
     """
     # Forward slashes, like every path the folder rows below and the log

@@ -43,20 +43,28 @@ _REPO_ROOT = Path(__file__).resolve().parents[2]
 #: these two role names.
 ALWAYS_ARCHIVED_ROLES = frozenset({"output_locations", "observations_timeseries"})
 
+#: Role prefixes whose files are RECORDED but never archived into the project
+#: (R13 D-11.2). The per-workflow config files qualify because the composed
+#: snapshot beside them already carries their content inlined -- copying them
+#: too would archive the same bytes twice and put a project-authored source
+#: file into `config/templates/`, a bin that means shipped-toolbox snapshots.
+#:
+#: A prefix rather than an exact role because the role carries the workflow
+#: name: `workflow_config_build_model`, `workflow_config_run_stress_test`.
+RECORD_ONLY_ROLE_PREFIXES = ("workflow_config",)
+
 #: Dropped beside the run record, because this bin has two genuine traps.
 #:
 #: Everything here LOOKS like configuration and is not: it is written by the
 #: run, so an edit is silently overwritten the next time the workflow executes.
 #: Someone will eventually open the copy nearest the outputs and change it.
 #:
-#: And the per-workflow name promises a scope the content does not deliver --
-#: `snake_config_build_model.yml` is the WHOLE config, so the two copies are
-#: byte-identical whenever both workflows ran under the same one. Measured
-#: 2026-08-13: the owner opened them, read the identical bytes as duplication,
-#: and asked. The `projection` field of `run_record.yml` is the scoped view;
-#: the copies keep whole-config content because their paths are
-#: baseline-fingerprinted AND the WF1 copy is a mandatory declared input of
-#: WF3's guard rule, so the name cannot be fixed by renaming the file.
+#: And a reader needs to know these are composed documents rather than copies
+#: of their source files: comments are gone and keys are sorted, which reads
+#: like corruption if you expect a copy. The per-workflow name now describes
+#: the content -- since R13 each file carries the sections its own workflow
+#: composed -- so the section that used to explain why the copies looked
+#: identical is replaced rather than amended.
 _RUNS_README = """\
 # What is in this directory
 
@@ -68,27 +76,31 @@ To change what a run does, edit the **source config** you pass to
 
 | File | What it is |
 |---|---|
-| `snake_config_<workflow>.yml` | the **whole** source config, copied verbatim -- see below |
+| `project_config_<workflow>.yml` | that workflow's composed configuration -- see below |
 | `<workflow>/run_record.yml` | what the run resolved to: toolbox commit, environment hashes, the settings actually consumed, and the external inputs referenced |
 | `journal.jsonl` | append-only ledger, two lines per run (start and outcome) |
 | `invocations/` | one manifest per `scripts/run_workflows.py` invocation |
 
-## Why the `snake_config_<workflow>.yml` files look identical
+## What the four `project_config_<workflow>.yml` files hold
 
-Each one is the **whole** source config, not that workflow's section of it. The
-per-workflow name records **which workflow last wrote the file**, not what is
-inside -- so all of them carry every section, including the two workflows' that
-did not write them.
+Each is that workflow's **composed** configuration: the project file you passed
+to `--configfile`, with the per-workflow settings files it loaded merged back
+in. So each one is the workflow-scoped view its name promises, and the four
+differ from each other by construction -- a WF1 snapshot does not carry WF3's
+stress-test grid.
 
-Byte-identical copies are therefore the healthy case: it means both workflows
-last ran under the same config. They diverge when one workflow has run since the
-config changed and the other has not, and that divergence is exactly what WF3's
-consistency guard reads to refuse an experiment whose model was built under
-different settings.
+They differ from your source files in two ways, both deliberate. Comments are
+not carried: this is a record, and your files stay the annotated ones. And keys
+are sorted, so two runs of the same configuration produce the same bytes.
 
-For the settings a given workflow actually **consumed**, read the `projection`
-and `effective_config` fields of its `run_record.yml` -- that is the
-workflow-scoped view this file's name suggests but does not provide.
+They diverge across workflows when one workflow has run since the config changed
+and another has not, and that divergence is exactly what WF3's consistency guard
+reads to refuse an experiment whose model was built under different settings.
+
+Your per-workflow config files are **recorded but not archived**: each appears in
+`run_record.yml`'s `referenced_inputs` with its `sha256`, and with
+`archived_path: null`, because its content is already inlined verbatim in the
+composed snapshot beside it.
 
 ## Reading `run_record.yml`
 
@@ -149,6 +161,7 @@ def _write_runs_readme(directory: Path) -> None:
 def copy_config_files(
     config: Union[str, Path],
     config_out_path: Union[str, Path],
+    composed_config: Optional[Mapping] = None,
     other_config_files: Optional[Mapping[Union[str, Path], Union[str, Path]]] = None,
     reference_roles: Optional[Mapping[Union[str, Path], str]] = None,
     run_record_path: Union[str, Path, None] = None,
@@ -158,7 +171,7 @@ def copy_config_files(
     projection: Optional[Sequence[str]] = None,
 ):
     """
-    Snapshot the snake config and its referenced config files into project_dir.
+    Snapshot the project config and its referenced config files into project_dir.
 
     R07 B9 changed this from "one derived output directory" to explicit
     per-file routing, because the project config snapshot is now split by
@@ -177,10 +190,26 @@ def copy_config_files(
     Parameters
     ----------
     config : Union[str, Path]
-        path to the snake config file
+        path to the SOURCE project config. Stays the source path even when
+        ``composed_config`` is given: ``source_config.{path, sha256}`` must
+        keep hashing the file the user invoked, and the run header and error
+        messages must keep naming it.
     config_out_path : Union[str, Path]
-        FULL destination path for the snake config snapshot (the rule declares
+        FULL destination path for the project config snapshot (the rule declares
         it, so the bin choice lives in the Snakefile rather than here)
+    composed_config : Mapping, optional
+        the workflow's COMPOSED config -- the project file plus the
+        per-workflow files this entry point loaded, merged. When given, the
+        snapshot is a `safe_dump` of this mapping rather than a byte copy of
+        ``config`` (R13 D-11.1).
+
+        The copy has to stop being verbatim: after the split the source file
+        is the project file, which does not contain the workflow settings,
+        and WF3's drift guard reads ``workflows.build_model`` out of the wf1
+        snapshot. A verbatim copy would leave the guard comparing against
+        sections that are not there.
+
+        ``None`` keeps the byte copy, for callers with no composed document.
     other_config_files : Mapping[src, dest_dir], optional
         each referenced config file mapped to the directory its kind belongs
         in. Missing files are recorded as logical identifiers rather than
@@ -219,7 +248,22 @@ def copy_config_files(
         f"Config snapshot -> {current_config_path.parent / current_config_path.name}",
         module="config",
     )
-    shutil.copyfile(source_config_path, current_config_path)
+    if composed_config is None:
+        shutil.copyfile(source_config_path, current_config_path)
+    else:
+        # `sort_keys=True` so two runs of the same configuration produce the
+        # same bytes -- this file's digest is a drift-guard comparand.
+        #
+        # Comments are lost, deliberately. This bin is "written by the run;
+        # editing any of it changes nothing", the run record beside it is
+        # already dumped rather than copied, and the SOURCE files remain the
+        # annotated artifact. That is the same source-versus-record trade
+        # `suggest_experiment_name` refuses for the source config, for the
+        # same reason and in the opposite direction.
+        current_config_path.write_text(
+            yaml.safe_dump(dict(composed_config), sort_keys=True),
+            encoding="utf-8",
+        )
     # Beside the flat config copy, which is the bin a user actually opens --
     # not beside the record, which sits one level down under a per-workflow
     # subdirectory (and, for WF3, in the experiment's own config dir).
@@ -286,6 +330,37 @@ def _snapshot_references(
                     "git_blob": None,
                     "sha256": None,
                     "size_bytes": None,
+                }
+            )
+            continue
+
+        if any(role.startswith(prefix) for prefix in RECORD_ONLY_ROLE_PREFIXES):
+            # RECORD-ONLY: hashed and registered, never copied, and the copy
+            # branch below is not reached -- so `dest_dir` is never touched.
+            # A per-workflow config file lives outside the checkout, so the
+            # copy predicate would otherwise archive it into the project. That
+            # copy would be redundant: its content is already inlined verbatim
+            # in the composed snapshot beside it (D-11.1), and archiving it
+            # would blur `config/templates/`, which means shipped-toolbox
+            # snapshots and not project-authored configs.
+            #
+            # `recoverable` follows the tracked blob, as everywhere else: a
+            # shipped seed the checkout can hand back is recoverable; a
+            # project-authored file outside the tree is not, and the honest
+            # record for it is a hash with no archive. That triple is
+            # otherwise indistinguishable from the pathless-identifier shape
+            # above, which is why the role is what tells them apart -- and
+            # why the bin README says which class this is.
+            blob = _tracked_blob(source_path, toolbox)
+            entries.append(
+                {
+                    "role": role,
+                    "origin": _repo_relative(source_path),
+                    "recoverable": blob is not None,
+                    "archived_path": None,
+                    "git_blob": blob,
+                    "sha256": file_sha256(source_path),
+                    "size_bytes": source_path.stat().st_size,
                 }
             )
             continue
@@ -513,7 +588,7 @@ if __name__ == "__main__":
 
         # R07 B9: the project config snapshot is split by KIND, so this is a
         # signature change rather than a rename -- one derived output_dir can
-        # no longer serve. The snake config lands where the rule declared it
+        # no longer serve. The project config lands where the rule declared it
         # (config/runs/, or the experiment dir for wf3); catalogs go to
         # config/catalogs/; verbatim snapshots of shipped templates go to
         # config/templates/. Generated run-time configs live in
@@ -541,12 +616,28 @@ if __name__ == "__main__":
         # Only the roles whose basenames can collide need declaring; anything
         # else keeps its own stem.
         reference_roles = {}
+
+        # The per-workflow config files this run composed, RECORDED and not
+        # copied (R13 D-11.2). Registered from the same dict the Snakefile
+        # built `CONFIG_REFERENCES` from, so the parse-time and record-time
+        # reference sets cannot drift -- and they must not, because the same
+        # run emits `configuration_inputs_sha256` on both paths under one
+        # name. `dest_dir` is a placeholder the record-only branch never
+        # reads; the mapping requires a value.
+        for name, path in sorted(
+            (getattr(sm.params, "workflow_config_paths", None) or {}).items()
+        ):
+            other_config_files[str(path)] = config_dir
+            reference_roles[str(path)] = f"workflow_config_{name}"
+
         data_sources = sm.params.data_catalogs
         if workflow_name == "build_model":
             other_config_files[sm.input.config_build] = templates_dir
             other_config_files[sm.input.config_waterbodies] = templates_dir
-            reference_roles[str(sm.input.config_build)] = "model_build_config"
-            reference_roles[str(sm.input.config_waterbodies)] = "waterbodies_config"
+            reference_roles[str(sm.input.config_build)] = "engine.build_config"
+            reference_roles[str(sm.input.config_waterbodies)] = (
+                "engine.waterbodies_config"
+            )
         if isinstance(data_sources, (list, tuple)):
             for src in data_sources:
                 other_config_files[src] = catalogs_dir
@@ -582,6 +673,7 @@ if __name__ == "__main__":
         copy_config_files(
             config=config_snake,
             config_out_path=config_snake_out,
+            composed_config=getattr(sm.params, "composed_config", None),
             other_config_files=other_config_files,
             reference_roles=reference_roles,
             run_record_path=sm.output.run_record,

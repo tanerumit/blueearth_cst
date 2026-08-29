@@ -39,7 +39,7 @@ import yaml
 REPO = Path(__file__).resolve().parents[3]
 # The repo is not installed; Snakefiles do the same prepend for `script:` modules.
 sys.path.insert(0, str(REPO))
-DEFAULT_CONFIG = REPO / "config" / "workflows" / "snake_config_model_test.yml"
+DEFAULT_CONFIG = REPO / "config" / "workflows" / "project_config_model_test.yml"
 
 
 @contextmanager

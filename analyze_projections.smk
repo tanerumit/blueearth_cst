@@ -318,7 +318,10 @@ from blueearth_cst.projections import dry_month as _dm
 
 _relative_cfg = get_config(my_cfg, "relative_change", {}, optional=True) or {}
 MIN_REFERENCE = _dm.resolve_thresholds(
-    VARIABLE_SPEC, _relative_cfg.get("min_reference")
+    # `C-62`: the key is `min_denominator` on the user surface. The LOCAL
+    # stays `MIN_REFERENCE` -- P1b's tier rule renames what names a key back
+    # to the user, not what a variable happens to be called here.
+    VARIABLE_SPEC, _relative_cfg.get("min_denominator")
 )
 MAX_FLAGGED_MONTHS = _relative_cfg.get(
     "max_flagged_months", _dm.DEFAULT_MAX_FLAGGED_MONTHS

@@ -8,7 +8,7 @@ a four-figure percentage.
 
 The rule (A2, closing OQ-9):
 
-* flag when ``reference < min_reference`` — **strictly** below; a reference
+* flag when ``reference < min_denominator`` — **strictly** below; a reference
   exactly at the threshold is not flagged;
 * a flagged month emits ``value = NaN`` and
   ``status = "reference_below_threshold"``, and keeps the **absolute** change in
@@ -69,7 +69,7 @@ def resolve_thresholds(variable_spec, configured=None):
             missing.append(name)
     if missing:
         raise ThresholdError(
-            "relative_change.min_reference is required for "
+            "relative_change.min_denominator is required for "
             f"{sorted(missing)}: declared `change: relative` with no shipped "
             "default. Set a threshold in that variable's own canonical units. "
             f"Refusing to fall back to {DEFAULT_MIN_REFERENCE!r}, which would "

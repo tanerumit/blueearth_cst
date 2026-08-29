@@ -222,7 +222,7 @@ def _scalar(value):
 
 #: Decimal places every float carries into a WF2 CSV.
 #:
-#: Three is 100x finer than the default `relative_change.min_reference`
+#: Three is 100x finer than the default `relative_change.min_denominator`
 #: (0.1 mm/day), so the rounding cannot interact with the dry-month threshold: a
 #: reference small enough to be quantised here was already flagged and its ratio
 #: already `NaN`. Revisit only if a user declares a variable whose units make its

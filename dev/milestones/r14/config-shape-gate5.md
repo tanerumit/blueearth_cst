@@ -174,7 +174,39 @@ this project. X5 stands as written for a config that omits the names; it is
 
 ### 5. Release
 
-Gate 5 is **RELEASED**. The bundle is green: ladder, numbers, tree shape. What
-remains between here and `main` is the merge itself (K3 — the digest moves
-once, so the branch merges as one bundle), which is the owner's call and not
-part of this gate.
+Gate 5 is **RELEASED**. The bundle is green: ladder, numbers, tree shape.
+
+**The merge already happened, and it happened first.** R14 landed on `main` as
+`5e048c00` (PR #1) on 2026-08-29 15:24, one bundle as K3 requires, with CI
+green on both legs at `baa28390`. That merge cites Gate 5's ladder and baseline
+halves — which were the two that had run. **The tree-shape half is the one this
+record adds, and it ran the day after the merge.** It changes nothing about the
+outcome: it CONFIRMS what the merge asserted, and it would have been the gate's
+cheapest falsifier had it run before.
+
+Recorded because the ordering is the kind of thing a milestone record exists to
+preserve, not to smooth over: a gate is only a gate when it precedes the thing
+it gates. What lands after this record is the record itself.
+
+### 6. The gate found one defect after all, and not with the tree diff
+
+The pre-push `test-fast` run for this record went red: **1 failed, 3124
+passed**. `tests/test_interchange_contracts.py::test_wg1_integration` derives
+the historical-store key from the fixture's own WF1 snapshot and read it as
+`yaml.safe_load(...)["shared"]` — the section R14 dissolved. Both keys behind
+it moved too (`shared.clim_historical` → `climate.selected`, `C-44`;
+`shared.historical_window`'s ISO pair → `climate.window`'s inclusive years,
+`C-70`). Fixed by routing through `historical_window_bounds`, the same helper
+`climate_store_rule` uses, so the key has one implementation.
+
+**Why nine phases, `test-full` at 3199, and two green CI legs all missed it.**
+The test reads a FIXTURE and skips when the fixture is absent — so on CI it has
+never run at all. Locally it read a *pre-migration* snapshot that still had
+`shared:` in it, and passed. The Gate 5 rebuild replaced that snapshot with a
+v2 one; the test failed on the next run. It was green through the entire
+migration for the same reason it was worthless: it was reading v1 both sides.
+
+That is the general shape worth keeping: **a fixture-gated test passes through
+a migration by reading a fixture the migration has not touched yet**, and CI
+cannot see it. The tree diff found nothing here; the check that did was running
+the suite in the one worktree whose fixture had caught up.

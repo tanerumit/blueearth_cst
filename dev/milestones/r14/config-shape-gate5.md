@@ -10,8 +10,16 @@ released.
 ### 1. Ladder — green
 
 `pixi run test-full`: 3199 passed. CI green on both legs. Recorded in
-`9bfdda5c` and again in `3348c6ef`; not re-run here, and nothing on the branch
-has moved since.
+`9bfdda5c` and again in `3348c6ef`; not re-run here.
+
+**Not re-run is a claim, so here is what moved after it.** Four commits:
+`3348c6ef` (`dev/baseline/manifest.json`, `provenance.md`), `baa28390` (a
+board note), this record, and one clause in `AGENTS.md` §Repo Map that still
+named R13's `shared:` heading after R14 dissolved it. Of those paths exactly
+one is READ by a test — the baseline manifest, by `test_check_baseline_*.py`
+and `test_advanced_settings.py` — and those five files were re-run here: **82
+passed in 8.6 s**. `AGENTS.md` appears in a dozen test files as a citation in
+comments and in no assertion.
 
 ### 2. Numbers — the four data targets did not move
 
@@ -70,8 +78,13 @@ pixi run python dev/scripts/semantic_tree_diff.py --ref "$REF" --cur test_case/t
   --map "config/runs/snake_config_build_model.yml=config/runs/project_config_build_model.yml" \
   --map "experiments/experiment/config/snake_config_run_stress_test.yml=experiments/experiment/config/project_config_run_stress_test.yml" \
   --allow "experiments/experiment/config/catalogs/data_catalog_run_stress_test.yml" \
-  --allow-content <each of the 23 rows in the table below>
+  --allow-content …   # one per adjudicated difference; 23 of them
 ```
+
+The 23 `--allow-content` paths are not reconstructable from the grouped table
+below, so the exact command is committed beside this file as
+`gate5-tree-diff.sh` — run it to reproduce the CLEAN, or drop its
+`--allow-content` lines to reproduce `gate5-tree-diff.txt`.
 
 **Result.**
 
@@ -108,9 +121,23 @@ git** on this branch. The two worktrees hold the same lock file with different
 LINE ENDINGS: this worktree's copy is CRLF (664,259 bytes,
 `ca888ef1…`), the primary's is LF (646,447 bytes, `d2b1e08e…`, byte-equal to
 the committed blob), and `tr -d '\r'` makes them identical. So a checkout
-line-ending difference re-keys every CMIP6 series. Boarded as `t2608301524`;
-it is a pre-existing defect, unrelated to config shape, and it does not touch a
-value anywhere.
+line-ending difference re-keys every CMIP6 series.
+
+**Reconstructed rather than argued.** "No kernel function changed" is an
+inference from a diff; the hash itself settles it. Importing the six symbols
+exactly as `analyze_projections.smk` does, at HEAD, and varying only the lock
+file:
+
+    session-1 (CRLF)   3f549e3d26166828e81d485ff658049ed4db5db479d5983680589a9de71da34f
+    primary   (LF)     b1245b016889b0f72476a281867a652c4aa63d7c22e771cb2c4797eeee60ee2e
+    cur tree recorded  3f549e3d…      ref tree recorded  b1245b01…
+
+One code state reproduces BOTH recorded hashes. The kernel source contributes
+nothing to the difference; the env fingerprint is the whole of it. Probe:
+`gate5-kernel-hash-probe.py`.
+
+Boarded as `t2608301524`; it is a pre-existing defect, unrelated to config
+shape, and it does not touch a value anywhere.
 
 #### X5 was predicted and did not fire
 
@@ -130,6 +157,17 @@ this project. X5 stands as written for a config that omits the names; it is
   second one could only hide as a content difference in a file both trees
   carry, and all 23 were read.
 - **`logs/`, `benchmarks/`, `.snakemake/`** — excluded by the tool.
+- **The stale-spelling sweep is RED and stays red.**
+  `dev/scripts/sweep_stale_spellings.py` at this commit: 25 hits classified,
+  **117 unclassified**, exit 1. Not a defect list — the populations are the
+  migration machinery, tests that assert a v1 spelling is REFUSED,
+  `dev/scripts/` old→new path maps, and `clim_project` as a Python parameter
+  name. `t2608290620` owns giving the classifier those allowance classes and
+  measured 113 at `bedadddd`; the four added since are `docs/migration-config-tiers.md`,
+  R13's migration record, which holds v1 keys for the same reason the other
+  migration files do. So this gate's ladder claim is `test-full` + the targeted
+  re-run above, and **not** a green sweep. Reading it still requires filtering
+  by path, which is exactly what that board item exists to fix.
 - **The experiment-freeze defect** (`t2608290250`) is out of scope by
   construction: R14 found it, briefed the repair, and did not fix it. Gate 5
   does not assert the freeze fires.

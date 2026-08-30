@@ -26,6 +26,16 @@ Measured 2026-08-29 at `bedadddd`, after P6 swept everything in its own scope.
 The sweep is clean across `docs/`, `README.md`, `AGENTS.md` and
 `dev/reference/`; what remains is all outside P6's permitted paths.
 
+*(Re-measured 2026-08-30 at Gate 5, `66547c2d`: **117**, not 113, and `docs/`
+is no longer clean — `docs/migration-config-tiers.md` contributes 4. It is
+R13's migration record and holds v1 keys for the same reason
+`config/migrations/v1_to_v2.yml` does, so it belongs in the first population
+rather than being swept. One thing the sweep could not see at all: `AGENTS.md`
+still described the shared tier as `shared:`, a heading R14 dissolved. The
+token was a SECTION name, not a key, so no allowance class would have helped —
+fixed in the Gate 5 follow-up commit, and worth remembering when choosing what the
+classifier matches on.)*
+
 | population | example | why it holds a v1 spelling |
 |---|---|---|
 | the migration machinery | `config/migrations/v1_to_v2.yml` (27), `scripts/migrate_project_config.py` (23), `config_composition.py`'s `RETIRED_KEYS` (20) | it exists to name v1 keys; a sweep that "fixed" these would delete the migration |

@@ -31,6 +31,7 @@ import yaml
 
 from blueearth_cst.shared import interchange_contracts as ic  # noqa: E402
 from blueearth_cst.shared.snake_utils import (  # noqa: E402
+    historical_window_bounds,
     slugify_window,
     stress_test_grid,
 )
@@ -910,12 +911,21 @@ def _store_key() -> str:
     moment `prune_climate_store.py --delete` removed the orphan — on a fixture
     that was correct. Same lesson as the `_STORE_ROOT` block above: derive the
     location, never spell it.
+
+    R14 moved both keys — `shared.clim_historical` -> `climate.selected`
+    (`C-44`) and `shared.historical_window`'s ISO pair -> `climate.window`'s
+    inclusive YEARS (`C-70`) — and this reader was missed, because the fixture
+    it reads was still a v1 snapshot until the Gate 5 rebuild. It went through
+    the migration green and failed the moment the fixture caught up. The
+    conversion back to a day-resolution key goes through the same helper
+    `climate_store_rule` uses, so this cannot become a second implementation of
+    the key.
     """
     with open(join(_FIXTURE, "config", "runs", "project_config_build_model.yml")) as f:
-        shared = yaml.safe_load(f)["shared"]
-    window = shared["historical_window"]
-    slug = slugify_window(window["starttime"], window["endtime"])
-    return f"{shared['clim_historical']}_{slug}"
+        climate = yaml.safe_load(f)["climate"]
+    _start, _end = historical_window_bounds(climate["window"])
+    slug = slugify_window(_start.isoformat(), _end.isoformat())
+    return f"{climate['selected']}_{slug}"
 
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)

@@ -112,6 +112,14 @@ separately, so `git log` is the decision log.
       any implementation commit
 - [ ] Owner approves or returns design v3 (the round cap is 1; there is no
       second dispatch)
+- [x] **All nine phases LANDED** (P0..P7, 2026-08-25..29) and **Gate 5 RELEASED
+      2026-08-30**: `test-full` 3199 with CI green on both legs, the four data
+      baseline targets unchanged (`3348c6ef`), and the tree shape CLEAN against
+      a pre-R14 reference tree. Record: `dev/milestones/r14/config-shape-gate5.md`.
+      The checkboxes above this line are the PRE-IMPLEMENTATION list and several
+      were overtaken by the phases rather than done as written - read the master
+      brief's phase index for what actually landed. Only the merge (K3, one
+      bundle) is left
 
 **Coupled rows to watch:** `C-64` folds `min_denominator` into the `C-57`
 registry, and `C-57` is still PROPOSED - decline it and `min_denominator` has no

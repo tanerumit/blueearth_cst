@@ -35,6 +35,7 @@
 | [t2608241414](tasks/t2608241414-the-two-baseline-wf3-configs-have-diverged.md)                                                              | The two baseline WF3 configs have diverged                                                               | test_case / configs                         | R14                                            |     | backlog |
 | [t2608242212](tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md)                                                | Give the analysis variable set a config surface (R14 C-48)                                               | wf0 / wf1 climate figures                   | R14                                            |     | backlog |
 | [t2608251900](tasks/t2608251900-r14-the-t2-key-renames-now-owned-by-p1b.md)                                                                 | R14 - the T2 key renames, now owned by P1b                                                               | config shape / R14                          | R14 P1                                         |     | active  |
+| [t2608301524](tasks/t2608301524-a-crlf-checkout-of-pixi-lock-re-keys-every-cmip6-series.md)                                                 | A CRLF checkout of pixi.lock re-keys every CMIP6 series                                                  | projections / series identity               | R14 Gate 5                                     |     | backlog |
 
 ## Watching
 

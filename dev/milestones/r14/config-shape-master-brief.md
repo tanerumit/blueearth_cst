@@ -141,8 +141,13 @@ clean on v2 without them. It must land before Gate 5, not before P2.
 4. **Gate 4 — before P5's commit.** `C-85` is the atomic move. Show
    `git ls-files test_case/` output proving the seeds are still tracked, BEFORE
    committing.
-5. **Gate 5 — before merge.** Full validation ladder green, and the four data
-   baseline targets unchanged.
+5. **Gate 5 — RELEASED 2026-08-30.** Full validation ladder green
+   (`test-full` 3199, CI both legs), the four data baseline targets unchanged
+   (`3348c6ef`), and the tree shape CLEAN against a pre-R14 reference tree —
+   253 files compared, 0 missing, 0 extra, 24 declared exceptions, each read
+   and classified. Record, with the reference tree's provenance and the one
+   difference that is NOT R14's: `config-shape-gate5.md`. What remains before
+   `main` is the merge itself (K3), which is the owner's call.
 
 Rollback: any phase may be reverted independently except P5, which reverts as
 one commit. If the four data targets move and the cause is not one of the two
@@ -163,7 +168,10 @@ Per-phase rungs live in the phase briefs. These make sense only across phases:
   `--notemp`** or the gate fails "target missing" and reads as a defect.
 - **`semantic_tree_diff.py`** — `C-67`/`C-71` change `params:`-threaded values
   and `C-61` renames WF2 figure directories, so the tree shape moves. Expected;
-  capture it rather than being surprised by it.
+  capture it rather than being surprised by it. *(Run 2026-08-30:
+  `config-shape-gate5.md` §3. The shape did NOT move — `C-61` made the window
+  name optional and the baseline config names its windows, so X5 is unobserved
+  for this project rather than falsified.)*
 - **Stale-spelling sweep** — no tool exists; P3 ships one. It **classifies**
   rather than simply greps: active config, code identifiers, command lines and
   live docs must carry ZERO retired spellings, while the migration mapping, the

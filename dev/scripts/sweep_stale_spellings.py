@@ -82,7 +82,9 @@ ALLOWANCES = (
             "scripts/migrate_project_config.py",
             "tests/test_migrate_project_config.py",
             "tests/test_migration_mapping.py",
+            "tests/test_v1_v2_equivalence.py",
             "dev/scripts/sweep_stale_spellings.py",
+            "tests/test_stale_spelling_sweep.py",
         ),
     ),
     Allowance(
@@ -119,17 +121,24 @@ ALLOWANCES = (
     Allowance(
         name="a Snakemake input or archive role name",
         reason=(
-            "an input name is INTERNAL and need not track the config key it is "
-            "fed from -- the precedent is `output_locations`, whose config "
-            "source has been `basin.gauge_points` and is now "
-            "`basin.output_locations`, while the input name never moved"
+            "an input, params or dataclass-field name is INTERNAL and need not "
+            "track the config key it is fed from -- the precedent is "
+            "`output_locations`, whose config source has been "
+            "`basin.gauge_points` and is now `basin.output_locations`, while "
+            "the input name never moved. `gauge_snap_tolerance_m` is the same "
+            "shape: `basin.delineation.snap_tolerance_m` now feeds a params "
+            "name and a `SpatialConfig` field that both kept the old spelling"
         ),
         paths=(
             "blueearth_cst/model/copy_config_files.py",
             "blueearth_cst/model/plot_results.py",
             "blueearth_cst/spatial/delineate_spatial_units.py",
+            "blueearth_cst/spatial/config.py",
             "blueearth_cst/shared/snake_utils.py",
             "build_model.smk",
+            "tests/test_copy_config_files.py",
+            "tests/test_spatial_units_rule.py",
+            "tests/test_spatial_products.py",
         ),
     ),
     Allowance(
@@ -150,6 +159,11 @@ ALLOWANCES = (
             "belongs to no R14 row"
         ),
         path_globs=("blueearth_cst/projections/*",),
+        paths=(
+            "tests/test_change_factor_table.py",
+            "tests/test_get_stats_climate_proj.py",
+            "tests/test_report.py",
+        ),
     ),
     Allowance(
         name="a cross-era path normalization table",
@@ -158,7 +172,91 @@ ALLOWANCES = (
             "snapshot taken before a move still compares; it has to name the "
             "old spellings to recognise them"
         ),
-        paths=("blueearth_cst/experiment/check_project_consistency.py",),
+        paths=(
+            "blueearth_cst/experiment/check_project_consistency.py",
+            "tests/test_check_project_consistency.py",
+        ),
+    ),
+    Allowance(
+        name="a documented archived example",
+        reason=(
+            "`config/templates/archive/` holds unmaintained single-workflow "
+            "examples, parked 2026-08-10 and referenced by no test, script or "
+            "Snakefile. Their own README says to reconcile one against the live "
+            "template before using it and that a stale key fails AT PARSE TIME "
+            "rather than being ignored -- a loud failure with a written "
+            "instruction, not a silent trap. Migrating them would claim a "
+            "support level the README explicitly withholds"
+        ),
+        path_globs=("config/templates/archive/*",),
+    ),
+    Allowance(
+        name="an earlier migration's record",
+        reason=(
+            "`docs/migration-config-tiers.md` documents R13's tier split and "
+            "has to show the v1 keys it moved, exactly as "
+            "`config/migrations/v1_to_v2.yml` does. The `milestone records` "
+            "class does not reach it because it lives under `docs/`"
+        ),
+        paths=("docs/migration-config-tiers.md",),
+    ),
+    Allowance(
+        name="the staging tool's own vocabulary",
+        reason=(
+            "`dev/scripts/stage_cmip6.py` reads `dev/scripts/stage_cmip6.yml`, "
+            "its OWN config -- `region`, `target_root`, `models`, `scenarios`, "
+            "`members`, `variables`, and `clim_project` with its own default. "
+            "That file is not a project config and no R14 row touches it, so "
+            "the word here is the staging tool's, the way `transient_change` "
+            "is weathergenr's"
+        ),
+        paths=("dev/scripts/stage_cmip6.py", "tests/test_stage_cmip6.py"),
+    ),
+    Allowance(
+        name="an old->new map in dev tooling",
+        reason=(
+            "a path or key map is HALF old spellings by construction -- that is "
+            "what makes it a map. `semantic_tree_diff` translates a pre-move "
+            "tree onto the current layout, and `snapshot_project_tree` reads "
+            "`ensemble` and emits it under the `clim_project` name its own "
+            "snapshot format uses"
+        ),
+        paths=(
+            "dev/scripts/semantic_tree_diff.py",
+            "tests/test_semantic_tree_diff.py",
+            "dev/scripts/snapshot_project_tree.py",
+            "tests/test_snapshot_project_tree.py",
+        ),
+    ),
+    Allowance(
+        name="a refusal test's input document",
+        reason=(
+            "these three modules exist to assert that a v1 spelling is REFUSED, "
+            "and constructing the document to be refused means writing the key. "
+            "Named individually rather than as a `tests/**` glob ON PURPOSE: "
+            "the two live v1 readers this sweep first caught "
+            "(`test_interchange_contracts`, `test_workflow_analyze_projections`) "
+            "sat in the same directory, and a glob would have excused them"
+        ),
+        paths=(
+            "tests/test_config_composition.py",
+            "tests/test_experiment_config.py",
+            "tests/test_indicator_tables.py",
+        ),
+    ),
+    Allowance(
+        name="a negative or refusal assertion",
+        reason=(
+            "asserting a key is ABSENT, or that raising names it, requires "
+            "spelling it. Matched on the LINE rather than the path, so a live "
+            "subscript read in the same file is still a defect -- which is the "
+            "shape both of this sweep's first real findings had"
+        ),
+        line_patterns=(
+            r"\bnot\s+in\b",
+            r"pytest\.raises\([^)]*match=",
+            r"""assert\s+['"][\w.]+['"]\s+in\s+(message|msg|err|text|out)""",
+        ),
     ),
     Allowance(
         name="a refusal or migration message",

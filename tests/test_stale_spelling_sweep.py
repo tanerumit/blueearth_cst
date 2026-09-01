@@ -64,42 +64,49 @@ def test_it_classifies_rather_than_greps():
     """
     defects, allowed = sweep()
     assert allowed, "nothing was classified — the allowances are not matching"
-    assert defects, (
-        "no unclassified hits at all. Either P4 has run and this test should "
-        "become a zero-assertion gate, or the allowlist has grown until it "
-        "covers everything."
+    # This asserted `defects` was NON-empty until 2026-09-01, with its own
+    # instruction for the day it stopped being true: "either P4 has run and this
+    # test should become a zero-assertion gate, or the allowlist has grown until
+    # it covers everything." P4 has run. It is now the gate, and the thing that
+    # keeps it from being an allowlist that ate its own purpose is the ratchet
+    # below plus `test_matching_is_position_sensitive`, which both still bite.
+    assert not defects, (
+        "unclassified retired spellings: "
+        f"{sorted({p.name for p, _, _, _ in defects})}. Either it is a real "
+        "stale reader, or it needs an allowance class with a stated reason."
     )
 
 
-#: Runtime files where a retired spelling is still LIVE, found by this sweep on
-#: 2026-08-27 and not yet fixed. Each is a real defect, not an allowance:
-#: `spatial/config.py` reads `basin.gauge_points` and `basin.automatic_subbasins`,
-#: both of which the loader REFUSES in v2 — so a v2 project's gauge points and
-#: delineation settings are read by nothing and silently fall back to defaults.
+#: Runtime files reading a retired spelling that are known and NOT yet fixed.
 #:
-#: Listed rather than allowed, so the set can only SHRINK. A new entry fails the
-#: test below; removing one is the fix landing.
-KNOWN_LIVE_V1_READERS = {
-    # Dev tooling, in NO phase's permitted scope. Not a run path, so these break
-    # at P4 when the shipped configs actually migrate rather than at runtime.
-    # Boarded on `t2608251900`.
-    "dev/scripts/prune_climate_store.py",
-    "dev/scripts/prune_series_cache.py",
-    "dev/scripts/semantic_tree_diff.py",
-    "dev/scripts/snapshot_project_tree.py",
-    "dev/scripts/stage_cmip6.py",
-    # `analyze_projections.smk:315` reads `relative_change`, which `C-66`
-    # retires. OWNED and deferred: P1c dissolves it once the variable
-    # registry exists, and until then the reader falls back to the shipped
-    # defaults rather than losing a configured value outright.
-    "analyze_projections.smk",
-}
-#
-# `blueearth_cst/spatial/config.py` and `analyze_climate.smk` were here when
-# this sweep first ran on 2026-08-27, and are the reason it exists: both read a
-# key the loader REFUSES, so a v2 project lost its gauge points, its delineation
-# settings and its candidate source list, silently. Both fixed the same day, and
-# removing them from this list is what "fixed" means.
+#: **Empty as of 2026-09-01, and every entry was discharged by verification
+#: rather than by assumption.** The list is kept because it is the ratchet: an
+#: entry appearing here again means a v1 reader went live, and the test below
+#: fails on anything not listed. Emptying it is what "the migration finished"
+#: looks like from this tool's side.
+#:
+#: How the six went, in the order they were resolved:
+#:
+#: * `prune_series_cache.py`, `prune_climate_store.py` — genuinely broken,
+#:   genuinely FIXED 2026-08-29 (`t2608251900`). `prune_series_cache` now reads
+#:   `my["ensemble"]`; `clim_project` survives only as a local name, which
+#:   P1b's tier rule leaves alone.
+#: * `analyze_projections.smk` — `C-66` dissolved `relative_change:` in P1c.
+#:   Only a comment naming the retired key remains.
+#: * `semantic_tree_diff.py`, `snapshot_project_tree.py`, `stage_cmip6.py` —
+#:   never defects; MISCLASSIFIED here on 2026-08-27 by shape rather than by
+#:   reading them. `COPIED_CONFIG_PATH_MAP` is an old->new map keyed by config
+#:   key, so half of it is old spellings by construction;
+#:   `snapshot_project_tree` reads `ensemble` and emits it under its own
+#:   snapshot field name; `stage_cmip6` reads `dev/scripts/stage_cmip6.yml`,
+#:   its own config with its own required keys, no more a project config than
+#:   weathergenr's is. Each now has an allowance class stating that.
+#:
+#: The three misclassifications are the lesson: a ratchet entry added from a
+#: hit's SHAPE rather than from reading the file records a defect that does not
+#: exist, and it is the same mistake in the opposite direction as an allowance
+#: class that excuses one that does.
+KNOWN_LIVE_V1_READERS: set[str] = set()
 
 
 def test_no_NEW_runtime_file_reads_a_retired_spelling():

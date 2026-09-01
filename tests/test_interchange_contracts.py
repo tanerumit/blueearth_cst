@@ -1042,8 +1042,13 @@ def test_wg5_catalog_grid_integration():
     with open(join(_EXP, "config", "project_config_run_stress_test.yml")) as f:
         snap = yaml.safe_load(f)
     exp_cfg = snap["workflows"]["run_stress_test"]
-    rlz_num = exp_cfg["realizations_num"]
-    _, _, st_num = stress_test_grid(exp_cfg["stress_test"])
+    # R14 renamed both: `realizations_num` -> `n_realizations` (`C-29`) and
+    # `stress_test:` -> `climate_perturbations:` (`C-68`). The snapshot this
+    # reads was migrated with the rest of the fixture, so the old spellings
+    # raise KeyError -- masked until now because the skip above fires on the
+    # default fixture state, where no temp() member catalog is present.
+    rlz_num = exp_cfg["n_realizations"]
+    _, _, st_num = stress_test_grid(exp_cfg["climate_perturbations"])
     # The catalog KEYS carry the member token, so P2's rename moves them. Same
     # pre-P2 fixture condition as `_member_artifact`, expressed on the key shape
     # rather than a path: skip only when every entry still uses the old token,

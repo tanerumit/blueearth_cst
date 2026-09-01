@@ -257,7 +257,9 @@ def test_2c_fresh_project_missing_wf1_snapshot(staged_project):
     out = _dry_run_output(cfg_path, sentinel)
     assert "Nothing to be done" in out, out
     wf1_doc = yaml.safe_load(wf1.read_text(encoding="utf-8"))
-    wf1_doc["project"]["static_dir"] = "changed"
+    # Any difference invalidates; the key only has to be one the live config
+    # does not carry. It was `static_dir` until R14 deleted that key (`C-07`).
+    wf1_doc["project"]["snapshot_only_marker"] = "changed"
     wf1.write_text(yaml.safe_dump(wf1_doc), encoding="utf-8")
     out = _dry_run_output(cfg_path, sentinel)
     assert "Params have changed" in out, out

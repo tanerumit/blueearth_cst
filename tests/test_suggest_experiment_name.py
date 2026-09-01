@@ -154,13 +154,13 @@ def test_cli_preserves_other_config_content(tmp_path):
     cfg = _cfg(tmp_path)
     settings_path = _settings_of(tmp_path)
     settings_path.write_text(
-        yaml.safe_dump({"realizations_num": 4}, sort_keys=False), encoding="utf-8"
+        yaml.safe_dump({"unrelated_setting": 4}, sort_keys=False), encoding="utf-8"
     )
     project_before = cfg.read_text(encoding="utf-8")
 
     assert _run(cfg).returncode == 0
     out = yaml.safe_load(settings_path.read_text(encoding="utf-8"))
-    assert out["realizations_num"] == 4
+    assert out["unrelated_setting"] == 4
     assert out["experiment_name"] == "gabon_20260728"
     # The project config is not rewritten at all -- the command only ever reads
     # it, to find out which settings file to edit.

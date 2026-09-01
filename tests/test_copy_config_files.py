@@ -71,8 +71,9 @@ def test_the_snapshot_round_trips_to_the_composed_config(tmp_path, sources):
     cfg = tmp_path / "project" / "config"
     composed = {
         "project": {"project_dir": "p"},
-        "shared": {"basin": {"region": "x"}},
-        "workflows": {"build_model": {"enabled": True, "wflow_outvars": ["q"]}},
+        "basin": {"region": "x"},
+        "model": {"outvars": ["q"]},
+        "workflows": {"build_model": {"enabled": True}},
     }
     copy_config_files(
         config=str(snake),
@@ -86,7 +87,7 @@ def test_the_snapshot_round_trips_to_the_composed_config(tmp_path, sources):
     assert yaml.safe_load(snapshot) == composed
     # Sorted keys, so two runs of one configuration produce the same bytes --
     # this file's digest is a drift-guard comparand.
-    assert snapshot.index("project:") < snapshot.index("shared:")
+    assert snapshot.index("basin:") < snapshot.index("project:")
 
     # The CATALOG and TEMPLATE destinations are untouched by D-11.2 and stay
     # verbatim copies. Carried forward from the retired test unchanged.

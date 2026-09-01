@@ -103,6 +103,35 @@ def _fixture_present() -> bool:
     return os.path.exists(_FIXTURE)
 
 
+# --- the fixture's SCHEMA, which its presence does not imply ----------------
+#
+# `_fixture_present` answers "is there a tree here", and for sixteen of the
+# seventeen cases below that is the whole question: they read the model dir,
+# the climate store and the experiment dir, whose paths R14 did not move. The
+# seventeenth reads a WF1 CONFIG SNAPSHOT, and R14 renamed that file
+# (`snake_config_` -> `project_config_`, `C-85`) and the keys inside it. A tree
+# written before R14 therefore passes `_fixture_present` and then raises
+# `FileNotFoundError` on a file that is absent BY VERSION rather than missing.
+#
+# That is not hypothetical and it is not transient: the primary checkout's
+# fixture is deliberately pre-R14 -- Gate 5 kept it as the counterfactual it
+# compared the migrated tree against (`dev/milestones/r14/config-shape-gate5.md`)
+# -- so it will stay that way, and refreshing it would destroy the reference.
+# Guard the one schema-dependent case rather than widening `_fixture_present`,
+# which would skip the sixteen that a pre-R14 tree still answers correctly.
+_WF1_SNAPSHOT = join(_FIXTURE, "config", "runs", "project_config_build_model.yml")
+
+_FIXTURE_PRE_R14 = (
+    "test_case/test_local predates R14: no config/runs/"
+    "project_config_build_model.yml, so its v1 snapshot cannot answer a v2 key "
+    "(the WG-1 store-key case is skipped; the rest of the layer still runs)"
+)
+
+
+def _wf1_snapshot_present() -> bool:
+    return os.path.exists(_WF1_SNAPSHOT)
+
+
 # --- the pre-P2 member-token guard -----------------------------------------
 #
 # R11 P2 renamed the member token `cst_` -> `st_` in filenames and catalog
@@ -921,7 +950,7 @@ def _store_key() -> str:
     `climate_store_rule` uses, so this cannot become a second implementation of
     the key.
     """
-    with open(join(_FIXTURE, "config", "runs", "project_config_build_model.yml")) as f:
+    with open(_WF1_SNAPSHOT) as f:
         climate = yaml.safe_load(f)["climate"]
     _start, _end = historical_window_bounds(climate["window"])
     slug = slugify_window(_start.isoformat(), _end.isoformat())
@@ -929,6 +958,7 @@ def _store_key() -> str:
 
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
+@pytest.mark.skipif(not _wf1_snapshot_present(), reason=_FIXTURE_PRE_R14)
 def test_wg1_integration():
     path = join(_STORE_ROOT, _store_key(), "extract_historical.nc")
     with _open_ds(path) as ds:

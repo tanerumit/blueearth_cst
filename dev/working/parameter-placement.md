@@ -1,3 +1,33 @@
+> **SUPERSEDED — the configuration-surface problem statement, answered by R14's config-shape milestone (sealed 2026-09-01).**
+>
+> Kept UNEDITED because R14's scoping, design and intake all cite it by
+> section: `config-shape-scoping.md` maps its `M1`..`M4` onto register rows and
+> reuses its measured inventory, and three documents cite its `P3` and `P4` as
+> the problems they set out to solve. Its own banner said it would move to
+> `dev/reference/` once a direction was chosen; a direction WAS chosen, and the
+> destination is wrong — `AGENTS.md` and `config-shape-design.md` are the live
+> rules now, and promoting a superseded problem statement beside them would
+> create a second, weaker source of the same answers.
+>
+> **Disposition of every proposal, verified 2026-09-01 rather than assumed:**
+>
+> | | | |
+> |---|---|---|
+> | `M1` `project.static_dir` | **done** | `C-07` deleted the key; `run_stress_test.smk:147` records it |
+> | `M2` `DEFAULT_ANCHOR` twice | **done** | already fixed 2026-08-13, one day after this document; `C-35` withdrawn on that ground |
+> | `M3` five Python defaults | **OPEN** | `C-36`. `Q-E` ruled the destination 2026-08-24 and no phase landed it — boarded as `t2609012120` |
+> | `M4` `shared.basin` mixes kinds | **done** | R14 dissolved `shared:` into kind sections outright |
+> | `P1` default and key in different tiers | **ruled, not applied** | `Q-E` chose `advanced_settings`; the instance is `M3` above |
+> | `P2` nothing tests that a key reaches a reader | **OPEN** | `C-37`, boarded as `t2609011201`. Still the sharpest test this document names |
+> | `P3` one concept, several spellings | **done** | R14's naming policy, plus `dev/scripts/sweep_stale_spellings.py` as the mechanical check |
+> | `P4` grouping by history | **done** | the kind sections again |
+>
+> Two of eight are open and both have board items. §6's cost columns were
+> already stale when R14 read them (written 2026-08-12, before R13 landed) and
+> are stale by more now; the register rows above supersede them. Read this for
+> WHY the milestone happened, never for what the configuration currently looks
+> like.
+
 # Configuration surface — problem statement and inventory (DRAFT)
 
 > **DRAFT / PROPOSAL — not agreed. Do not cite this as a rule.**

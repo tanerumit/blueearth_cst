@@ -37,6 +37,21 @@
 # rather than each asserting only that some text exists somewhere.
 
 sealed_records:
+  - path: dev/working/parameter-placement.md
+    sealed: 2026-09-01
+    superseded_by: R14 config shape
+    current_truth: dev/milestones/r14/config-shape-design.md
+    why: >-
+      the problem statement R14 was scoped from. `config-shape-scoping.md` maps
+      its M1..M4 onto register rows and reuses its measured inventory, and three
+      R14 documents cite its P3 and P4 by number, so editing it would falsify
+      citations rather than freshen a stale doc. It stays in `working/` on
+      purpose: five of its six citations are R14 milestone records, whose paths
+      AGENTS.md forbids migrating, and the sixth (`run_stress_test.smk:148`) is
+      accurate as written. Its own banner proposed `dev/reference/`, which is
+      the one destination now clearly wrong -- a superseded problem statement
+      beside the live rules is a second, weaker source of the same answers.
+    sha256: 0d755c4203873e7bfc6ba25a6cacfab2140d861cc345e627b52faabac6bf0fd4
   - path: dev/reference/workflows/climate_projections.md
     sealed: 2026-07-31
     superseded_by: R8 WF2 rework

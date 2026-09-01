@@ -7,7 +7,7 @@ area: config / naming
 origin: R14 P6
 queue: 2
 created: 2026-08-29
-updated: 2026-08-29
+updated: 2026-09-01
 ---
 
 > [!note] Overview

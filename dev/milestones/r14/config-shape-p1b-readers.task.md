@@ -155,4 +155,43 @@ rather than presenting it as evidence of correctness.
 ---
 
 *Added 2026-08-25 by owner ruling, on P1's finding that no phase owned these
-rows. Board item `t2608251900` carries the measurement that prompted it.*
+rows. Board item `t2608251900` carried the measurement that prompted it; that
+item closed 2026-09-01 into `dev/LOG.md` and the correction it held is below.*
+
+### Executed 2026-08-26 — and the re-measure above changed the scope
+
+Four commits on `feat/r14-p1-loader`. All four entry points dry-run clean on
+v2, `V2_BLOCKED` retired, the declared-red list 83 -> 73. P1c followed
+2026-08-29 (`dev/milestones/r14/config-shape-p1c-gate1.md`).
+
+**The occurrence counts in the item that motivated this phase were wrong in
+both directions, and the number was never the right one.** They were taken with
+a ``-anchored pattern, which UNDERCOUNTS by excluding compound identifiers --
+`stress_test` does not match `stress_test_cfg`, the very spelling the table
+named in its own first column (unanchored: 106, not 38). It OVERCOUNTS at the
+same time, because most of those 106 are `run_stress_test`, the entry point and
+workflow name, which does not move; 35 of `clim_project`'s are
+`clim_project_dir`, a derived output path.
+
+What mattered is the count of config-key READS -- roughly **30** across the
+three workflows, against ~200 bare-token sites that must NOT change. The scope
+rule this phase settled on, checked against P1's own precedent
+(`build_model.smk:106` reads `climate.window` into a local still named
+`historical_window`):
+
+> Rename config key reads and the strings that name a key back to the user.
+> Leave locals, derived paths, `params:` names and rule input names alone.
+
+Row-level corrections to the phase table: `C-71` was ALREADY migrated by P1 and
+is not a P1b row; `C-63` has three read sites, not one; `C-57`'s single read
+site sits on top of a registry that did not exist, which is why it went to P1c.
+
+`C-54`'s `advanced_settings.runtime.julia_threads` destination landed with this
+phase, in the same commit as `_ADVANCED_SETTINGS_SCHEMA`.
+
+**Unowned work this phase found**, fixed 2026-08-29: `prune_series_cache` was
+broken in three places (`clim_project` -> `ensemble`, the climate catalog's
+move, and `C-63`'s `members:` group passed whole to a resolver expecting a
+list), and `prune_climate_store` was broken too and nobody had predicted it.
+`check_baseline.py`'s `CLIM_PROJECT` is a PINNED LITERAL describing the
+recorded baseline, not a config read, so it was never at risk.*

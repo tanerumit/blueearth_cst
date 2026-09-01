@@ -194,4 +194,4 @@ broken in three places (`clim_project` -> `ensemble`, the climate catalog's
 move, and `C-63`'s `members:` group passed whole to a resolver expecting a
 list), and `prune_climate_store` was broken too and nobody had predicted it.
 `check_baseline.py`'s `CLIM_PROJECT` is a PINNED LITERAL describing the
-recorded baseline, not a config read, so it was never at risk.*
+recorded baseline, not a config read, so it was never at risk.

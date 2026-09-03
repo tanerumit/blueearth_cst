@@ -2370,9 +2370,13 @@ class _Heartbeat:
         # the scheme). Naming one here would be a NameError at import.
         try:
             # Console-only by design (`quiet_rows` is the durable copy), so the
-            # colour here can never reach a file.
+            # colour -- and the line reset -- here can never reach a file. The
+            # reset covers a progress frame a concurrent job may have left
+            # standing; see `_line_reset`. Unconditional, because this method
+            # only ever writes whole, newline-terminated notices.
             self._stream.write(
-                _paint_body(text, _console_colour(self._stream), code or _ANSI_BODY)
+                _line_reset(self._stream)
+                + _paint_body(text, _console_colour(self._stream), code or _ANSI_BODY)
             )
             self._stream.flush()
         except Exception:
@@ -2860,6 +2864,13 @@ class _Tee:
         self._on_activity = on_activity  # called on each write (heartbeat reset)
         self._pending = ""  # current, not-yet-newline-terminated log line
         self._in_redraw = False  # console-side state for _drop_redraw_frames
+        #: Whether a streamed progress frame is standing on the console line,
+        #: i.e. the cursor sits at the end of a frame this tee wrote and did not
+        #: terminate. Set by the redraw path ONLY: an ordinary partial write also
+        #: leaves the cursor mid-line, but there the next write is the rest of
+        #: that same line and erasing it would destroy a library's multi-write
+        #: row. See `_line_reset`.
+        self._frame_standing = False
         # Set by ``close``. A tee OUTLIVES its log file: ``tee_to_log`` closes
         # the file when its `with open(...)` exits, and anything still holding a
         # reference to this object then has a live handle onto a dead sink.
@@ -2886,7 +2897,21 @@ class _Tee:
         if _redraw:
             shown, self._in_redraw = out, False
         if shown and not _muted_on_console(shown):
-            self._live.write(_paint_body(shown, self._colour))
+            # The CONSOLE copy only. `out` below feeds `_pending` and the log
+            # file, and the module's standing contract is that no escape code
+            # ever reaches `logs/` -- which is also why `shared.progress` may
+            # not emit this itself: its one string goes to both sinks, while
+            # here the two are already separate.
+            reset = ""
+            if self._frame_standing and not _redraw:
+                reset = _line_reset(self._live)
+                self._frame_standing = False
+            self._live.write(reset + _paint_body(shown, self._colour))
+            if _redraw:
+                # A frame is standing unless this write closed the bar's line
+                # (`DaskProgress.finish` writes the terminating newline through
+                # the same redraw path).
+                self._frame_standing = not shown.endswith("\n")
         # After close the console is still open and still the right place for
         # this text; only the log file is gone. Writing to a closed file raises
         # ValueError, and a raise HERE is the expensive kind: these late writes
@@ -3933,6 +3958,35 @@ def _ansi(text, code):
     return f"\033[{code}m{text}{_ANSI_RESET}"
 
 
+def _line_reset(stream):
+    """The escape that puts ``stream``'s cursor on a CLEAN line, or ``""``.
+
+    A progress frame is left STANDING on the console line between redraws: the
+    bar in ``shared.progress`` writes ``\\r<frame>`` and stops there, so the
+    cursor sits at the frame's end with the frame still visible. Any writer that
+    then starts a new logical line appends to it -- ``13:18:23 - DONE Rule 0.03``
+    landing on the tail of an ``era5 store`` bar with no line break between them
+    (observed 2026-09-03, on a ``-c 3`` WF0 run). This is the same defect
+    :func:`_pad_line_over` fixes for ``run_and_tee``; that path never reached the
+    writers here, which is why the convention has to be restated as an escape.
+
+    ``\\r`` returns to column 0 and ``\\x1b[2K`` erases the line, so the caller's
+    text lands on a clean one whatever was standing and whoever drew it. That
+    matters because the writers are in DIFFERENT PROCESSES -- the bar in a rule's
+    job, the finish line in Snakemake's parent -- so no in-process flag can
+    coordinate them and only cursor state can.
+
+    Gated on ``isatty`` ALONE, deliberately, and not on :func:`_console_colour`:
+    ``NO_COLOR`` asks for no colour, not for an unmanaged cursor, and folding the
+    two together would hand anyone who sets it the bug back. Off a terminal the
+    escape would be literal text in a captured run artifact, so there it is
+    ``""`` -- and off a terminal nothing overwrites anything, so no frame is ever
+    left standing to clear.
+    """
+    isatty = getattr(stream, "isatty", None)
+    return "\r\033[2K" if bool(isatty and isatty()) else ""
+
+
 def _console_colour(stream):
     """Whether to colour output written to ``stream``.
 
@@ -4566,7 +4620,12 @@ class _ConsoleHandler(logging.StreamHandler):
                 text = self._render(record)
             if not text:
                 return
-            self.stream.write(text + self.terminator)
+            # Reset the line first: a job running under `-c 3` may have a
+            # progress frame standing on it, drawn from ANOTHER PROCESS, and
+            # this handler's row would otherwise be appended to that frame with
+            # no break between them. See `_line_reset`; unconditional, because
+            # every row this handler writes is whole and terminator-suffixed.
+            self.stream.write(_line_reset(self.stream) + text + self.terminator)
             self.flush()
         except BrokenPipeError:
             raise
@@ -4580,7 +4639,7 @@ class _ConsoleHandler(logging.StreamHandler):
         try:
             pending = "\n".join(self._drain(None, None))
             if pending:
-                self.stream.write(pending + self.terminator)
+                self.stream.write(_line_reset(self.stream) + pending + self.terminator)
                 self.flush()
         except Exception:  # noqa: BLE001 -- teardown must not raise
             pass

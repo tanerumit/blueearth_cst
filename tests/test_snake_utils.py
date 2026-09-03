@@ -1126,6 +1126,115 @@ def test_tee_persists_the_same_summary_whatever_the_console_is(tmp_path):
     assert "40.0%" not in written[0]
 
 
+# --- line reset over a standing progress frame -------------------------------
+#
+# A frame is left standing between redraws (`\r<frame>`, cursor at its end), so
+# the next writer to start a logical line must clear it or its row is APPENDED
+# to the bar. The writers are in different processes under `-c 3`, which is why
+# the fix is cursor state rather than a shared flag.
+
+_LINE_RESET = "\r\033[2K"
+
+
+def _unreset(text):
+    """Drop the line reset these writers prefix to every row they start.
+
+    Used by the COLOUR tests, whose subject is the paint tier: the reset is
+    unconditional on a terminal and would otherwise have to be spelled into
+    every one of them, which is how an assertion about one thing quietly
+    starts gating another. It also carries a carriage return, and
+    ``str.splitlines`` splits on that -- so a test reading ``out.splitlines()``
+    would see a phantom empty row before every line.
+    """
+    return text.replace(_LINE_RESET, "")
+
+
+def test_line_reset_is_the_erase_sequence_on_a_terminal():
+    assert su._line_reset(_LiveConsole(tty=True)) == _LINE_RESET
+
+
+def test_line_reset_is_empty_off_a_terminal():
+    """Off a terminal the escape would be literal text in a captured run."""
+    assert su._line_reset(_LiveConsole(tty=False)) == ""
+
+
+def test_line_reset_survives_no_color(monkeypatch):
+    """`NO_COLOR` asks for no colour, not for an unmanaged cursor."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert su._line_reset(_LiveConsole(tty=True)) == _LINE_RESET
+
+
+def test_tee_clears_a_standing_frame_before_an_ordinary_row(tmp_path, monkeypatch):
+    """The defect: `13:18:23 - DONE ...` landing on the tail of an open bar."""
+    monkeypatch.setenv("NO_COLOR", "1")  # assert on the escape under test alone
+    log = tmp_path / "rule.log"
+    live = _LiveConsole(tty=True)
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(live, handle)
+        tee.write_redraw("\rforcing  ====------  40.0%  0:03 | eta 0:04")
+        tee.write("08:12:03 - a - b\n")
+        tee.close()
+
+    console = live.getvalue()
+    assert console.index("08:12:03") > console.index(_LINE_RESET)
+    assert "40.0%08:12:03" not in console
+
+
+def test_tee_keeps_the_reset_off_the_log_file(tmp_path):
+    """The escape is console-only; no escape code may ever reach `logs/`."""
+    log = tmp_path / "rule.log"
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(_LiveConsole(tty=True), handle)
+        tee.write_redraw("\rforcing  ====------  40.0%  0:03 | eta 0:04")
+        tee.write("08:12:03 - a - b\n")
+        tee.close()
+
+    assert "\033" not in log.read_text(encoding="utf-8")
+
+
+def test_tee_does_not_reset_a_line_no_frame_is_standing_on(tmp_path, monkeypatch):
+    """An ordinary partial write also leaves the cursor mid-line, and erasing
+    THAT would destroy a library's multi-write row."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    log = tmp_path / "rule.log"
+    live = _LiveConsole(tty=True)
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(live, handle)
+        tee.write("08:12:03 - a - ")
+        tee.write("b\n")
+        tee.close()
+
+    assert live.getvalue() == "08:12:03 - a - b\n"
+
+
+def test_tee_does_not_reset_after_the_bar_closed_its_own_line(tmp_path, monkeypatch):
+    """`finish` writes the terminating newline, so nothing is left standing."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    log = tmp_path / "rule.log"
+    live = _LiveConsole(tty=True)
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(live, handle)
+        tee.write_redraw("\rforcing  ==========  100.0%  0:07 elapsed")
+        tee.write_redraw("\n")
+        tee.write("08:12:03 - a - b\n")
+        tee.close()
+
+    assert not live.getvalue().endswith(_LINE_RESET + "08:12:03 - a - b\n")
+
+
+def test_tee_writes_no_escape_over_a_frame_off_a_terminal(tmp_path):
+    """Nothing overwrote anything there, so there is nothing to clear."""
+    log = tmp_path / "rule.log"
+    live = _LiveConsole(tty=False)
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(live, handle)
+        tee.write_redraw("\rforcing  ====------  40.0%  0:03 | eta 0:04")
+        tee.write("08:12:03 - a - b\n")
+        tee.close()
+
+    assert "\033" not in live.getvalue()
+
+
 # --- repeated source name ----------------------------------------------------
 
 
@@ -2454,6 +2563,23 @@ def test_console_no_escape_codes_when_the_stream_is_not_a_tty():
     assert "\033" not in out
 
 
+def test_console_clears_the_line_before_a_row_on_a_terminal(monkeypatch):
+    """The finish line is printed by the PARENT while a job's bar is open.
+
+    The bar is drawn in the job's own process, so nothing in this handler can
+    know one is standing; it clears the line unconditionally instead. Asserted
+    without colour so the escape under test is the only one in the output.
+    """
+    monkeypatch.setenv("NO_COLOR", "1")
+    base = _logging.StreamHandler(_LiveConsole(tty=True))
+    base.name = "DefaultStreamHandler"
+    base.setFormatter(_logging.Formatter("%(message)s"))
+    handler = su._ConsoleHandler(base)
+    _emit(handler, _job_info(1, "r", "Rule 1.01: r"))
+
+    assert handler.stream.getvalue().startswith(_LINE_RESET)
+
+
 def test_console_a_finish_with_no_start_falls_back_to_snakemakes_own_text():
     """`--quiet rules` drops the start record; the finish must still name the rule.
 
@@ -2531,7 +2657,7 @@ def test_console_paints_a_start_and_a_finish_in_two_different_tiers():
         _console_record(event="job_finished", job_id=1),
         _console_record(event="progress", done=1, total=4),
     )
-    run_line, done_line = out.splitlines()
+    run_line, done_line = _unreset(out).splitlines()
     assert su._ANSI_RUN != su._ANSI_DONE != su._ANSI_BODY
     for line, code in ((run_line, su._ANSI_RUN), (done_line, su._ANSI_DONE)):
         opener = f"\033[{code}m"
@@ -2550,14 +2676,19 @@ def test_console_honours_no_color_even_on_a_tty(monkeypatch):
     """
     monkeypatch.setenv("NO_COLOR", "1")
     out = _emit(_colour_handler(), _console_record("Building DAG of jobs..."))
-    assert out == "Building DAG of jobs..." + "\n", repr(out)
-    assert "\033" not in out
+    # The line reset stays: `NO_COLOR` asks for no colour, not for a cursor
+    # left sitting on whatever a concurrent job's progress bar drew there.
+    assert out == _LINE_RESET + "Building DAG of jobs..." + "\n", repr(out)
+    assert "\033[0m" not in out
+    assert f"\033[{su._ANSI_BODY}m" not in out
 
 
 def test_console_paints_an_informational_snakemake_line_in_the_body_tier():
     handler = _colour_handler()
     out = _emit(handler, _console_record("Building DAG of jobs..."))
-    assert out == f"\033[{su._ANSI_BODY}mBuilding DAG of jobs...\033[0m\n", repr(out)
+    assert _unreset(out) == f"\033[{su._ANSI_BODY}mBuilding DAG of jobs...\033[0m\n", (
+        repr(out)
+    )
 
 
 def test_console_never_recolours_a_warning_or_an_error():
@@ -2568,7 +2699,7 @@ def test_console_never_recolours_a_warning_or_an_error():
         _console_record("state file missing", level=_logging.WARNING),
         _console_record("Error in rule x:", level=_logging.ERROR, event="job_error"),
     )
-    assert "\033" not in out, repr(out)
+    assert "\033" not in _unreset(out), repr(out)
 
 
 def test_rule_banner_registers_its_number_for_the_finish_line(monkeypatch):
@@ -2843,7 +2974,7 @@ def test_heartbeat_paints_the_alarm_and_not_the_all_clear():
     hb = su._Heartbeat("2.05_merge", stream, interval=0.05).start()
     time.sleep(0.16)
     hb.stop()
-    out = stream.getvalue()
+    out = _unreset(stream.getvalue())
     stall = next(line for line in out.splitlines() if "still running" in line)
     done = next(line for line in out.splitlines() if "done in" in line)
     assert stall.startswith(f"\033[{su._ANSI_WARN}m"), stall
@@ -2855,7 +2986,7 @@ def test_heartbeat_paints_the_failure_verdict(monkeypatch):
     stream = _TTYStringIO()
     hb = su._Heartbeat("3.15_run_wflow", stream, interval=10.0).start()
     hb.stop(failed=True)
-    assert stream.getvalue().startswith(f"\033[{su._ANSI_WARN}m")
+    assert _unreset(stream.getvalue()).startswith(f"\033[{su._ANSI_WARN}m")
 
 
 def test_run_summary_failure_keeps_its_note_out_of_the_key_column():

@@ -1,18 +1,15 @@
 ---
-title: Fold rules 1.08 and 1.09 back into 1.07 so WF1 reads and writes the model once, not three times
-type: todo-item
-status: backlog
-effort: 2
+title: WF1 writes the model three times, and the split is worth keeping
+type: watch-item
 area: wf1 / model build
-queue:
 created: 2026-09-04
 updated: 2026-09-04
 ---
 
 > [!note] Overview
-> **What** — Rules 1.07, 1.08 and 1.09 each open the Wflow model from disk, mutate it, and call the full hydromt `Model.write()` — which flushes *every* component regardless of what the rule touched. One WF1 build therefore deserializes and re-serializes `staticmaps.nc`, `wflow_sbm.toml` and all eight `staticgeoms/*.geojson` three times over. Call sites: `blueearth_cst/model/build_wflow_model.py:551`, `setup_reservoirs_lakes_glaciers.py:125`, `setup_gauges_and_outputs.py:140`.
-> **Why** — Merging is the direction rule 1.08 already declares for itself (`build_model.smk:687` — *"temporary hydromt fix; can fold back into build_wflow_model when supported"*), with R10-1 as precedent. **But the payoff is much smaller than it looked** — measured 2026-09-04, the redundant I/O is ~1.7 s per rule, not the ~12 s the run log suggested; three quarters of each rule's process is `import hydromt`, which is [[t2608202331]]'s scanner problem, not this one's. Do [[t2608202331]] first. See "Step 2 answered" below.
-> **Effort** — Large, and the work is not the merge itself but the rebuild-trigger scaffolding it disturbs. **Resolved 2026-09-04:** the upstream condition 1.08 defers to does not govern this path at all — see "Step 1 answered" below. 1.08 is mergeable now against our own code; 1.09 is the harder half and is not a build-step merge.
+> **What** — Rules 1.07, 1.08 and 1.09 each open the Wflow model, mutate it, and call the full hydromt `Model.write()`, which flushes every component. One WF1 build therefore reads and rewrites `staticmaps.nc`, `wflow_sbm.toml` and all eight `staticgeoms/*.geojson` three times. Call sites: `blueearth_cst/model/build_wflow_model.py:551`, `setup_reservoirs_lakes_glaciers.py:125`, `setup_gauges_and_outputs.py:140`.
+> **Why** — Opened as a consolidation task; closed to a watch after two measurements overturned the case for merging. The redundant I/O is ~1.7 s per rule, not the ~12 s a run log suggested, and the split buys **failure isolation that gets more valuable as the basin gets bigger** — which is the opposite of how the saving scales. Keeping the three rules is a decision, not an accident, and this note is the record of why.
+> **Trigger** — Someone proposes merging 1.07-1.09 again (the docstring that used to invite it is corrected, but the idea recurs on reading a run log); or a probe against a *production* model root shows the round-trip costing minutes rather than seconds, which would be the first real evidence against the ruling below.
 
 ## Where it came from
 
@@ -97,9 +94,10 @@ The import cost is CONSTANT; the read and write SCALE with the grid. `staticmaps
 is 204 K with 45 variables on this fixture. There is some basin size at which
 2 × 1.7 s becomes 2 × something that matters and the merge pays for itself on
 I/O alone. Finding it needs the probe pointed at a production model root — a
-one-line change — not another fixture run. Until someone does that, this item is
-**deferred on value, not blocked on capability**: the code path is understood and
-mergeable (see step 1), it is simply not worth the R7-1 rework yet.
+one-line change — not another fixture run. That probe is now the note's Trigger. (Superseded in
+part by the Ruling below: the basin size that would make the I/O material is
+also the basin size that makes the merge's rebuild-coupling cost worse, so a
+large number here is not on its own an argument to merge.)
 
 Probe: `.tmp/scratchpad/2026-09-04_1718/probe_roundtrip.py` in the `session-1`
 worktree — scratch, so treat it as gone; the table above is the durable record
@@ -201,13 +199,14 @@ So the merge shape is **1.08 into 1.07 first** — that alone removes one full
 read+write round-trip against obstacles we control — with 1.09 as a separate,
 larger decision.
 
-### Side finding: the docstring is stale
+### Side finding: the docstring was stale — CORRECTED 2026-09-04
 
-`setup_reservoirs_lakes_glaciers.py:1-12` states a rationale that does not hold
-for the path it sits on, and its removal trigger points at an upstream event that
-is irrelevant to it. Worth correcting whenever this module is next touched, even
-if the merge itself is deferred — a wrong reason in a docstring is what kept this
-deferred without anyone re-checking it.
+`setup_reservoirs_lakes_glaciers.py` stated a rationale that did not hold for the
+path it sits on, and a removal trigger pointing at an upstream event irrelevant
+to it. A wrong reason in a docstring is what kept this deferred for a year
+without anyone re-checking it. The docstring now carries the real reason
+(per-method no-data *and* failure isolation), withdraws the trigger, and cites
+this note.
 
 ## Scope guard
 
@@ -216,14 +215,38 @@ re-engineer how hydromt writes components — per-component writers exist in v1
 (`model.<component>.write()`, `docs/hydromt-wflow/user-guide.md:1260`), and using
 them is fine, but the `setup_*` / build-config conventions stay verbatim.
 
-## Progress
+## Ruling 2026-09-04 — keep the split; the merge's cost scales, its benefit does not
 
-- [x] Establish whether hydromt_wflow v1 supports the reservoir / lake / glacier `setup_*` methods inside the build config — **answered 2026-09-04: the question was wrong.** 1.07 does not use the `hydromt build` CLI, so the deferral condition never applied; 1.08 is mergeable against two small local obstacles. See "Step 1 answered" above
-- [x] Re-measure the read round-trip uncontended — **answered 2026-09-04: the premise was wrong.** The redundant I/O is ~3.4 s, not ~20 s; ~74% of each rule is `import hydromt`. See "Step 2 answered" above
-- [ ] Re-run the probe against a production model root to find the basin size at which the I/O saving alone justifies the merge
-- [ ] Merge 1.08 into 1.07: extend `_SUPPORTED_PARAMETER_STEPS`, add per-step no-data skip + status recording to `_apply_parameter_steps`, fold `hydromt_update_waterbodies.yml` provenance into the build's `values_used`
-- [ ] Re-derive the R7-1 sentinel chain for the collapsed rule set
-- [ ] Correct the stale rationale + removal trigger in `setup_reservoirs_lakes_glaciers.py:1-12` (do this even if the merge is deferred)
-- [ ] Decide 1.09 separately — it is imperative post-build logic, not a build step
-- [ ] Re-check the six `ancient(.model_final)` readers against the new last-writer
-- [ ] Validate: `pytest tests/test_cli.py`, then `pixi run test-full` (rule and `script:` signatures move), then `check_baseline.py check` against `project_config_baseline.yml` with WF1 run `--notemp`
+The toy fixture hid the decisive asymmetry. A real basin runs a Wflow simulation
+(rule 1.14) for hours to half a day, and rule 1.07 itself resamples soil,
+land-use and LAI grids (`setup_soilmaps`, `setup_lulcmaps`, `setup_laimaps`,
+`setup_rivers`), so it scales with basin size and is one of the expensive build
+rules on anything real.
+
+Against that:
+
+- **The merge's benefit is fixed.** ~8.7 s for folding in 1.08, ~17 s for both —
+  almost all of it one saved `import hydromt`, which does not grow with the
+  basin. Against a half-day run that is noise.
+- **The merge's cost grows.** The waterbody methods depend on external catalog
+  sources that are frequently absent or mis-resolved — see [[t2608121606]], where
+  a missing source is logged identically to an empty basin. Folding them into
+  1.07 means a catalog failure redoes the whole parameterization, and that
+  redo gets more expensive exactly as the basin gets bigger.
+
+So the current three-rule split is buying failure isolation on the rules where
+a rebuild is costly, and paying a few seconds for it. **That is a good trade and
+it improves with scale.** The consolidation is not deferred on value any more —
+it is declined.
+
+What survives from the investigation, and is worth not re-deriving:
+
+1. The deferral condition in 1.08's docstring was misdirected — 1.07 never
+   invokes the `hydromt build` CLI. Corrected in the module; see below.
+2. The round-trip is ~1.7 s, not ~12 s; ~74% of each rule is `import hydromt`,
+   which is [[t2608202331]] and unfixable here.
+3. Conditional writes cannot help, for the two reasons recorded above.
+
+`setup_reservoirs_lakes_glaciers.py`'s docstring now states this reasoning and
+cites this note by ID, so **this note keeps its ID and is not closed with
+`done`** — closing deletes the file and breaks that citation.

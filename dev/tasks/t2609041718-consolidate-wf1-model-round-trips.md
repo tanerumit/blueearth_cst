@@ -11,7 +11,7 @@ updated: 2026-09-04
 
 > [!note] Overview
 > **What** — Rules 1.07, 1.08 and 1.09 each open the Wflow model from disk, mutate it, and call the full hydromt `Model.write()` — which flushes *every* component regardless of what the rule touched. One WF1 build therefore deserializes and re-serializes `staticmaps.nc`, `wflow_sbm.toml` and all eight `staticgeoms/*.geojson` three times over. Call sites: `blueearth_cst/model/build_wflow_model.py:551`, `setup_reservoirs_lakes_glaciers.py:125`, `setup_gauges_and_outputs.py:140`.
-> **Why** — The read is the expensive half and it is pure overhead: on the 2026-09-04 run log, rule 1.08 sat ~12 s between its `RUN` banner and its first hydromt message, and 1.09 ~8 s, before either did any work. On the fixture that is seconds; on a production basin the model grows and the round-trip scales with it. Merging is also the direction rule 1.08 already declares for itself (`build_model.smk:687` — *"temporary hydromt fix; can fold back into build_wflow_model when supported"*), with R10-1 as precedent for the repo doing exactly this merge.
+> **Why** — Merging is the direction rule 1.08 already declares for itself (`build_model.smk:687` — *"temporary hydromt fix; can fold back into build_wflow_model when supported"*), with R10-1 as precedent. **But the payoff is much smaller than it looked** — measured 2026-09-04, the redundant I/O is ~1.7 s per rule, not the ~12 s the run log suggested; three quarters of each rule's process is `import hydromt`, which is [[t2608202331]]'s scanner problem, not this one's. Do [[t2608202331]] first. See "Step 2 answered" below.
 > **Effort** — Large, and the work is not the merge itself but the rebuild-trigger scaffolding it disturbs. **Resolved 2026-09-04:** the upstream condition 1.08 defers to does not govern this path at all — see "Step 1 answered" below. 1.08 is mergeable now against our own code; 1.09 is the harder half and is not a build-step merge.
 
 ## Where it came from
@@ -20,7 +20,7 @@ A question about a WF1 run log on 2026-09-04: why the `Writing geoms to …` blo
 appears three times. It is not a reporting glitch — the files really are written
 three times, by three different rules.
 
-## Measurement — contended, treat as an upper bound
+## Measurement — contended, treat as an upper bound (SUPERSEDED by step 2 below)
 
 From the run log, wall-clock between a rule's `RUN` banner and its first hydromt
 message (i.e. model deserialization):
@@ -37,6 +37,52 @@ in both `test_case/test_rapid` and `test_case/test_local`; the geoms are 1–12 
 flight (1.12 `plot_basin_map` finished 17:00:03, 1.05 `plot_climate_source` at
 17:00:07), so the numbers are an upper bound on the round-trip, not its cost.
 Re-measure with `-c 1` before treating ~20 s as the prize.
+
+## Step 2 answered (2026-09-04) — measured, and the premise was wrong
+
+The contended log gaps above are **not** deserialization. Decomposed directly
+against a copy of the `test_case/test_rapid` model root, opened the way rule 1.08
+opens it (`mode="r+"`, `data_libs=config/catalogs/deltares_data.yml`). Two
+consecutive runs, cold then warm:
+
+| stage | run 1 | run 2 |
+|---|---|---|
+| interpreter start → script body | 0.56 s | 0.46 s |
+| **`import hydromt` + `hydromt_wflow`** | **6.74 s** | **6.48 s** |
+| `WflowSbmModel(...)` + catalog parse | 0.26 s | 0.28 s |
+| `staticmaps.data` materialize (45 vars) | 0.50 s | 0.50 s |
+| `geoms.data` materialize (8 layers) | 0.05 s | 0.05 s |
+| `mod.write()` full flush | 0.94 s | 0.88 s |
+| total | 9.15 s | 8.75 s |
+
+**~74% of each rule's process is the import.** The model round-trip this item was
+opened about — read plus write — is ~1.7 s, and two of the three are redundant,
+so the merge's actual I/O prize is **~3.4 s on this fixture, not ~20 s**.
+
+Merging does also remove two process starts and two imports (~14 s here), but
+that cost is not WF1's: it is [[t2608202331]], where the per-module import cost
+on this machine is measured at 4.79 ms against a normal 0.3–1 ms because the
+pixi prefix sits inside ESET's real-time scan surface. With that exclusion in
+place the two saved imports are worth ~2 s, and this merge's whole prize falls to
+roughly 5 s on the fixture.
+
+**So [[t2608202331]] dominates this item and should go first** — it is
+`effort: 1`, needs no code change, and pays out across every rule and the whole
+test suite rather than three rules in WF1.
+
+### The one thing that could revive this
+
+The import cost is CONSTANT; the read and write SCALE with the grid. `staticmaps.nc`
+is 204 K with 45 variables on this fixture. There is some basin size at which
+2 × 1.7 s becomes 2 × something that matters and the merge pays for itself on
+I/O alone. Finding it needs the probe pointed at a production model root — a
+one-line change — not another fixture run. Until someone does that, this item is
+**deferred on value, not blocked on capability**: the code path is understood and
+mergeable (see step 1), it is simply not worth the R7-1 rework yet.
+
+Probe: `.tmp/scratchpad/2026-09-04_1718/probe_roundtrip.py` in the `session-1`
+worktree — scratch, so treat it as gone; the table above is the durable record
+and the probe is ten lines to rewrite.
 
 ## Conditional writes were considered and rejected
 
@@ -59,9 +105,9 @@ it is not re-proposed:
    R7-1's toml-stripping, `build_model.smk:666-678`).
 
 Rules 1.08 and 1.09 declare only a `.txt`, a `.yml` and sentinels, so *their*
-geom writes are undeclared side effects and are skippable in principle — worth
-~1–2 s, against a new stale-write failure mode. Not worth it on its own; the
-round-trip is the target.
+geom writes are undeclared side effects and are skippable in principle — but
+step 2 prices them at well under a second, against a new stale-write failure
+mode. Not worth it on any reading.
 
 ## The constraint any merge has to satisfy
 
@@ -152,7 +198,9 @@ them is fine, but the `setup_*` / build-config conventions stay verbatim.
 ## Progress
 
 - [x] Establish whether hydromt_wflow v1 supports the reservoir / lake / glacier `setup_*` methods inside the build config — **answered 2026-09-04: the question was wrong.** 1.07 does not use the `hydromt build` CLI, so the deferral condition never applied; 1.08 is mergeable against two small local obstacles. See "Step 1 answered" above
-- [ ] Re-measure the read round-trip with `-c 1` on an uncontended run, and on a basin larger than the fixture, to confirm the prize is real
+- [x] Re-measure the read round-trip uncontended — **answered 2026-09-04: the premise was wrong.** The redundant I/O is ~3.4 s, not ~20 s; ~74% of each rule is `import hydromt`. See "Step 2 answered" above
+- [ ] Do [[t2608202331]] (ESET exclusion) FIRST — it dominates this item and costs no code change
+- [ ] Re-run the probe against a production model root to find the basin size at which the I/O saving alone justifies the merge
 - [ ] Merge 1.08 into 1.07: extend `_SUPPORTED_PARAMETER_STEPS`, add per-step no-data skip + status recording to `_apply_parameter_steps`, fold `hydromt_update_waterbodies.yml` provenance into the build's `values_used`
 - [ ] Re-derive the R7-1 sentinel chain for the collapsed rule set
 - [ ] Correct the stale rationale + removal trigger in `setup_reservoirs_lakes_glaciers.py:1-12` (do this even if the merge is deferred)

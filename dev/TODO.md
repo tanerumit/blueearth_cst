@@ -36,6 +36,7 @@
 | [t2608241414](tasks/t2608241414-the-two-baseline-wf3-configs-have-diverged.md)                                                              | The two baseline WF3 configs have diverged                                                               | test_case / configs                         | R14                                            |     | backlog |
 | [t2608242212](tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md)                                                | Give the analysis variable set a config surface (R14 C-48)                                               | wf0 / wf1 climate figures                   | R14                                            |     | backlog |
 | [t2608301524](tasks/t2608301524-a-crlf-checkout-of-pixi-lock-re-keys-every-cmip6-series.md)                                                 | A CRLF checkout of pixi.lock re-keys every CMIP6 series                                                  | projections / series identity               | R14 Gate 5                                     |     | backlog |
+| [t2609041718](tasks/t2609041718-consolidate-wf1-model-round-trips.md)                                                                       | Fold rules 1.08 and 1.09 back into 1.07 so WF1 reads and writes the model once, not three times          | wf1 / model build                           |                                                |     | backlog |
 
 ## Watching
 

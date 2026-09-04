@@ -141,8 +141,8 @@ accepted change requests, which is itself in scope.
 | 1 | **The three artifacts have no schemas.** The scenario table, the seam view, and what stage 2's raw output is keyed by | Everything else is downstream |
 | 2 | **`scenario_id`'s form is unruled.** It must be stable under set growth — adding realizations or resizing the grid must not renumber existing runs (C24 reason 2, which survives). That excludes a sequential integer. Opaque-vs-readable is genuinely open, and C25 already rejected content-hashed ids once as "opaque and unsortable" | The id appears in six filenames, a catalog key and a tree inventory; renaming it later is a second migration with a second baseline re-record |
 | 3 | **Where the scenario table is written, and by what.** For the stochastic family it should be computable from config before the DAG is built, as `stress_test_grid()` is today; an externally supplied family would provide it as a file | C26's chicken-and-egg is live: Snakemake needs the id set at DAG-construction time, before any rule has written a file. Getting this wrong reaches for a checkpoint, which is a large complexity jump |
-| 4 | **Each metric's grain must become explicit.** Today it is emergent — a metric is pooled because of which loop it sits inside. Class A is per realization; Classes B and C pool across them and are written with `st_id` + the `POOLED_REALIZATION` sentinel | The indicator table carries two grains permanently: a return level is not the mean of per-run return levels, so for that metric the finest grain that exists *is* the bundle. The table must key both honestly, without a sentinel in a key column |
-| 5 | **The baseline relation is implicit and family-specific.** `st_0` is a stochastic-family concept used as universal: `_category_month` fixes the wet and dry month once from `runs[0]` and evaluates every member against it | Cheap to record now (it is `st_0` for everything today) and expensive later — adding a column to a baseline-covered artifact costs a re-record |
+| 4 | **Each metric's grain must become explicit**, and the index table that explains it must be specified. Today grain is emergent — a metric is pooled because of which loop it sits inside. Class A is per realization; Classes B and C pool across them and are written with `st_id` + the `POOLED_REALIZATION` sentinel | The indicator table carries two grains permanently: a return level is not the mean of per-run return levels, so for that metric the finest grain that exists *is* the bundle. W2 sets the direction — one index column, meaning explained elsewhere — and leaves the design to specify the index table, the mixed namespace's validation, and each metric's declared grain |
+| 5 | **The baseline relation is implicit and family-specific.** `st_0` is a stochastic-family concept used as universal: `_category_month` fixes the wet and dry month once from `runs[0]` and evaluates every member against it | **DEFERRED by owner ruling (W3)** until a second scenario family exists to test against. Kept as a gap, not dropped, because the design must not settle it by accident — a `scenario_id` scheme that hardcodes a reserved baseline id forecloses the question. **Correction to revision 2:** deferral is cheaper than stated there — the scenario table is *not* among the seven baseline targets (`q_indicators.csv` is; its predecessor `stress_test_design.csv` never was, per the R11 ruling), so adding a baseline column later costs a contract and validator change, not a re-record |
 | 6 | **Record length is an unstated estimator precondition.** The Class B GEV is fitted on `RLZ_NUM × N` blocks *because* a fit over one short realization is ill-conditioned | Not a defect today. It becomes one the moment a second family shares the table under the same metric name |
 | 7 | **Three contract clauses change.** WG-2 pins `rlz_<n>_st_<m>.nc` as a **DAG-globbed naming pattern** in its *pinned surface*; WG-5 pins one catalog entry per `rlz_<n>_st_<m>`; HM-7 pins the five indicator columns | A contract document here is normative, not descriptive |
 | 8 | **C24, C25 and C28 must be superseded, not edited**, and the migration executed atomically. `wf3-change-requests.md` is in `dev/reference/sealed-records.yml`; `tests/test_sealed_records.py` fails any edit. Six artifact paths move, `naming.md` §7 requires a migration note, and `semantic_tree_diff.py`'s inventory moves with them | The mechanism is a new decision record arguing reason-by-reason. A tree-shape change the fixture-dependent test layer cannot catch in a worktree |
@@ -168,6 +168,39 @@ that such coordinates are *columns supplied by stage 1*, computed by whatever
 produced the scenarios, so stage 3 reads them rather than deriving them — keeping
 CMIP logic out of WF3 entirely. That answer is recorded here so it is reviewed
 rather than assumed; it is not yet ruled.
+
+## Working direction — initial, NOT settled
+
+**Read this section differently from the one above it.** The constraints table is
+ruled and closed. What follows is the owner's stated *initial direction*, given
+2026-09-04 with the explicit qualifier: *"these are not definite decisions. These
+are my initial thoughts. We shall solidify along the way."* A design run may test
+these, argue against them, and bring back a different answer — which is exactly
+what it is for. It may **not** silently ignore them.
+
+| # | Direction | Why it is provisional |
+|---|---|---|
+| W1 | **Pooled and per-run values share one results file.** No split into two tables | Confirmed by the owner as fine; the alternative was offered and declined. Low risk of reversal |
+| W2 | **The results file carries the results plus ONE index column, and nothing else.** What an index *means* — a single run, or a bundle of runs — is explained in a separate table. `metric, location, scenario_id, value`, four columns, no blanks and no grain column | The strongest of the four, and it improved on the driver's own preference. Held provisional because it constrains a baseline-covered artifact and the id namespace at once (below) |
+| W3 | **`st_0` and the baseline relation stay OPEN**, deliberately, until there is a second scenario family to test against | The owner's ruling is to defer, not to decide either way. Recorded as deferred so a design run does not treat silence as licence to settle it |
+
+**W2's consequence, which the design must confirm rather than inherit.** One index
+column holding both run ids and bundle ids means a **single mixed namespace**. That
+is only safe if:
+
+- every id in the results file resolves in the index table, checked by the HM-7
+  validator rather than assumed;
+- run ids and bundle ids are distinguishable *on sight*, which argues for readable
+  prefixed strings and against an opaque or numeric id — so W2 and scope gap 2 are
+  one decision, not two;
+- nothing downstream `groupby`s the index column directly. The join comes first,
+  the grouping second.
+
+The driver's own preference had been two columns (`scenario_id` + `group_id`, blank
+when pooled). It is recorded here as the rejected alternative, with its stated
+objection to W2 — *"the key is polymorphic"* — noted as **withdrawn**: the
+polymorphism is resolved in one explicit artifact rather than smuggled into the
+results file, which is a materially different thing.
 
 ## Decision criteria
 
@@ -274,7 +307,7 @@ framing.
 | # | Finding | Class | Disposition under the three-stage framing |
 |---|---|---|---|
 | RR-1 | Pooled Class B/C values are keyed by group, not by run, and have no row shape under an id-only table | **Structural error in revision 1** | **Dissolved.** Revision 1 put one `group_id` in the registry, which cannot express two coexisting bundlings (E9). Moving grain to stage 3 as a declared property of each metric removes the conflict. What survives is gap 4: the indicator table still carries two grains permanently, and must key both without a sentinel |
-| RR-2 | Baseline comparability crosses the seam: `st_0` is a stochastic-family concept used as universal | **Method** | **Accepted** — scope gap 5 |
+| RR-2 | Baseline comparability crosses the seam: `st_0` is a stochastic-family concept used as universal | **Method** | **Accepted as scope gap 5, then DEFERRED by owner ruling (W3)** — the finding stands and is not disputed; settling it waits for a second family to test against. The design's obligation narrows to not foreclosing it |
 | RR-3 | Record length is an unstated estimator precondition; a 30-year horizon and a multi-realization cell share a metric name with no column recording precision | **Method** | **Accepted** — scope gap 6 |
 | RR-4 | The composite identity carried a *structural guarantee* of a full factorial (common random numbers across design points); a column carries the information but not the guarantee | **Method, partly pre-existing** | **Accepted as decision criterion 8 and a stage-1 obligation** — the scenario table must make an incomplete set detectable. Noted honestly: the batch rule already degraded per-member completeness, so the cost predates this change |
 | RR-5 | Plotting a GCM run as an overlay point still requires its (ΔT, ΔP), which is WF2's change-factor computation re-entering WF3 | **Method — bears on a hard constraint** | **Accepted as E19 and an unruled position.** The intended answer is that stage 1 supplies the coordinates as columns; the design must rule it, and family-gate the surface reduction |
@@ -291,9 +324,11 @@ it does not eliminate it.
 
 **Questions the design must answer.**
 
-1. What keys a pooled indicator row, given the table carries two grains permanently
-   and a sentinel is not available?
-2. What is the baseline relation, and does `st_0` stay reserved or become a column?
+1. **Direction given (W2), specification open.** One index column, meaning explained
+   in a separate table. What is that table's schema, how is the mixed run/bundle
+   namespace validated, and how does each metric declare its grain?
+2. **Deferred (W3).** The baseline relation and `st_0`'s status wait for a second
+   scenario family. The design's obligation is only to *not foreclose* it.
 3. How does stage 1 make an incomplete scenario set detectable?
 4. Are a future family's overlay coordinates supplied by stage 1, and does that
    satisfy "never couple WF3 to CMIP scenarios"?

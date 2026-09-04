@@ -70,6 +70,27 @@ roughly 5 s on the fixture.
 `effort: 1`, needs no code change, and pays out across every rule and the whole
 test suite rather than three rules in WF1.
 
+### Revised 2026-09-04 — the exclusion is unavailable, which roughly doubles this item
+
+The owner cannot obtain permission for the ESET exclusion; [[t2608202331]] is
+now a `watch-item`. The ~6.5 s import is therefore a **permanent** per-process
+cost on this machine, and the arithmetic above inverts:
+
+| | if the exclusion were possible | as things actually are |
+|---|---|---|
+| merging 1.08 into 1.07 | ~2 s | **~8.7 s** (0.5 s process + 6.5 s import + 1.7 s I/O) |
+| merging 1.09 as well | ~5 s | **~17 s** |
+
+**This still does not justify the merge on its own.** A WF1 build takes minutes,
+so ~9 s is a small fraction of a one-off cost, and the R7-1 rework plus the six
+`ancient(.model_final)` re-checks are the same size as before. What changed is
+that the item is no longer *waiting* on anything — the "do the cheap thing first"
+route is closed, so a future reader should weigh the merge on its own merits
+rather than deferring to a prerequisite that will never land.
+
+Where the import cost actually hurts is the test suite (59 min locally against
+~9 in CI), and rule consolidation does nothing for that.
+
 ### The one thing that could revive this
 
 The import cost is CONSTANT; the read and write SCALE with the grid. `staticmaps.nc`
@@ -199,7 +220,6 @@ them is fine, but the `setup_*` / build-config conventions stay verbatim.
 
 - [x] Establish whether hydromt_wflow v1 supports the reservoir / lake / glacier `setup_*` methods inside the build config — **answered 2026-09-04: the question was wrong.** 1.07 does not use the `hydromt build` CLI, so the deferral condition never applied; 1.08 is mergeable against two small local obstacles. See "Step 1 answered" above
 - [x] Re-measure the read round-trip uncontended — **answered 2026-09-04: the premise was wrong.** The redundant I/O is ~3.4 s, not ~20 s; ~74% of each rule is `import hydromt`. See "Step 2 answered" above
-- [ ] Do [[t2608202331]] (ESET exclusion) FIRST — it dominates this item and costs no code change
 - [ ] Re-run the probe against a production model root to find the basin size at which the I/O saving alone justifies the merge
 - [ ] Merge 1.08 into 1.07: extend `_SUPPORTED_PARAMETER_STEPS`, add per-step no-data skip + status recording to `_apply_parameter_steps`, fold `hydromt_update_waterbodies.yml` provenance into the build's `values_used`
 - [ ] Re-derive the R7-1 sentinel chain for the collapsed rule set

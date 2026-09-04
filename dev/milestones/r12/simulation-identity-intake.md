@@ -139,13 +139,13 @@ accepted change requests, which is itself in scope.
 | # | Gap | Why it blocks implementation |
 |---|---|---|
 | 1 | **The three artifacts have no schemas.** The scenario table, the seam view, and what stage 2's raw output is keyed by | Everything else is downstream |
-| 2 | **`scenario_id`'s form is unruled.** It must be stable under set growth — adding realizations or resizing the grid must not renumber existing runs (C24 reason 2, which survives). That excludes a sequential integer. Opaque-vs-readable is genuinely open, and C25 already rejected content-hashed ids once as "opaque and unsortable" | The id appears in six filenames, a catalog key and a tree inventory; renaming it later is a second migration with a second baseline re-record |
+| 2 | **`scenario_id`'s form is DIRECTED (W4), its guard and its column name are not.** A plain zero-padded sequential number, width from `index_width` (C27), nothing embedded. C24 reason 2 no longer excludes this — see W4's note. What the design owes: the stale-lookup digest guard, the column's name, and whether run and bundle ids share one sequence | The id appears in six filenames, a catalog key and a tree inventory; renaming it later is a second migration, and the results file's key column is baseline-covered |
 | 3 | **Where the scenario table is written, and by what.** For the stochastic family it should be computable from config before the DAG is built, as `stress_test_grid()` is today; an externally supplied family would provide it as a file | C26's chicken-and-egg is live: Snakemake needs the id set at DAG-construction time, before any rule has written a file. Getting this wrong reaches for a checkpoint, which is a large complexity jump |
 | 4 | **Each metric's grain must become explicit**, and the index table that explains it must be specified. Today grain is emergent — a metric is pooled because of which loop it sits inside. Class A is per realization; Classes B and C pool across them and are written with `st_id` + the `POOLED_REALIZATION` sentinel | The indicator table carries two grains permanently: a return level is not the mean of per-run return levels, so for that metric the finest grain that exists *is* the bundle. W2 sets the direction — one index column, meaning explained elsewhere — and leaves the design to specify the index table, the mixed namespace's validation, and each metric's declared grain |
 | 5 | **The baseline relation is implicit and family-specific.** `st_0` is a stochastic-family concept used as universal: `_category_month` fixes the wet and dry month once from `runs[0]` and evaluates every member against it | **DEFERRED by owner ruling (W3)** until a second scenario family exists to test against. Kept as a gap, not dropped, because the design must not settle it by accident — a `scenario_id` scheme that hardcodes a reserved baseline id forecloses the question. **Correction to revision 2:** deferral is cheaper than stated there — the scenario table is *not* among the seven baseline targets (`q_indicators.csv` is; its predecessor `stress_test_design.csv` never was, per the R11 ruling), so adding a baseline column later costs a contract and validator change, not a re-record |
 | 6 | **Record length is an unstated estimator precondition.** The Class B GEV is fitted on `RLZ_NUM × N` blocks *because* a fit over one short realization is ill-conditioned | Not a defect today. It becomes one the moment a second family shares the table under the same metric name |
 | 7 | **Three contract clauses change.** WG-2 pins `rlz_<n>_st_<m>.nc` as a **DAG-globbed naming pattern** in its *pinned surface*; WG-5 pins one catalog entry per `rlz_<n>_st_<m>`; HM-7 pins the five indicator columns | A contract document here is normative, not descriptive |
-| 8 | **C24, C25 and C28 must be superseded, not edited**, and the migration executed atomically. `wf3-change-requests.md` is in `dev/reference/sealed-records.yml`; `tests/test_sealed_records.py` fails any edit. Six artifact paths move, `naming.md` §7 requires a migration note, and `semantic_tree_diff.py`'s inventory moves with them | The mechanism is a new decision record arguing reason-by-reason. A tree-shape change the fixture-dependent test layer cannot catch in a worktree |
+| 8 | **C24 and C28 must be superseded, not edited**, and the migration executed atomically. `wf3-change-requests.md` is in `dev/reference/sealed-records.yml`; `tests/test_sealed_records.py` fails any edit. Six artifact paths move, `naming.md` §7 requires a migration note, and `semantic_tree_diff.py`'s inventory moves with them. **C25 leaves the supersession set** — W4 disposes of it rather than overturning it: its objection was to ids that are opaque *and* unsortable, and a zero-padded sequence is neither, while its experiment-scoping ruling is relied on rather than reversed | The mechanism is a new decision record arguing reason-by-reason. A tree-shape change the fixture-dependent test layer cannot catch in a worktree |
 
 ## Constraints — settled, not open for review
 
@@ -183,6 +183,7 @@ what it is for. It may **not** silently ignore them.
 | W1 | **Pooled and per-run values share one results file.** No split into two tables | Confirmed by the owner as fine; the alternative was offered and declined. Low risk of reversal |
 | W2 | **The results file carries the results plus ONE index column, and nothing else.** What an index *means* — a single run, or a bundle of runs — is explained in a separate table. `metric, location, scenario_id, value`, four columns, no blanks and no grain column | The strongest of the four, and it improved on the driver's own preference. Held provisional because it constrains a baseline-covered artifact and the id namespace at once (below) |
 | W3 | **`st_0` and the baseline relation stay OPEN**, deliberately, until there is a second scenario family to test against | The owner's ruling is to defer, not to decide either way. Recorded as deferred so a design run does not treat silence as licence to settle it |
+| W4 | **A plain sequential number — `001`…`999` or similar. No features embedded in the id.** *"We can always refer to the lookup table to understand what scenario_48 is."* Width derives from the count via the existing `snake_utils.index_width` (C27), so lexical order matches numeric | Direction is firm; what remains open is the column's NAME and the stale-lookup guard (both below) |
 
 **W2's consequence, which the design must confirm rather than inherit.** One index
 column holding both run ids and bundle ids means a **single mixed namespace**. That
@@ -202,13 +203,47 @@ objection to W2 — *"the key is polymorphic"* — noted as **withdrawn**: the
 polymorphism is resolved in one explicit artifact rather than smuggled into the
 results file, which is a materially different thing.
 
+**W4 supersedes the driver's "readable prefixed string" reasoning, and C24 reason 2
+weakens with it.** That reason read *"adding realizations would otherwise renumber
+the design"*, and the driver carried it forward as a hard stability criterion
+excluding sequential ids. **The premise no longer holds.** It was written when the
+id was the only handle on a design point; under W2/W4 `st_id` survives as a lookup
+COLUMN, so adding realizations renumbers the opaque handle while leaving the design
+untouched — grid point 3 is still grid point 3, in the table a reader consults
+anyway. Decision criterion 3 ("the id must be stable under set growth") is
+therefore **narrowed**: what must be stable is the *design's* identity, not the
+index.
+
+Two consequences the design must settle rather than inherit:
+
+- **The stale-lookup hazard is what actually survives.** A sequential id means
+  nothing except relative to the lookup that defines it, so re-running a changed
+  scenario set into an existing experiment folder silently mislabels yesterday's
+  outputs. C25's experiment-scoping contains the cross-experiment case; the in-place
+  case needs the lookup to be **identifiable** — a digest written beside the
+  outputs, so a mismatch is detected rather than silent.
+- **This resolves E20.** `scenario_id` and design-v4's `member_hash` are **not** the
+  same object and must not be merged: the index is a human-and-join handle, the hash
+  is a machine freshness check. Making one string serve both is what produced C25's
+  "opaque and unsortable" objection in the first place.
+
+**One mixed number space, not two.** Applying W4 consistently, bundle ids draw from
+the same sequence as run ids — `048` is a run, `501` is a bundle, and the index
+table distinguishes them. No prefix, no embedded type. The open point is the
+COLUMN NAME: calling a bundle a "scenario" reads oddly, and something neutral
+(`index`, `id`) may fit better. Settle it once; renaming a key column later costs a
+baseline re-record.
+
 ## Decision criteria
 
 1. **The simulator must be family-agnostic.** If admitting a second family requires
    editing stage 2, the seam is in the wrong place.
 2. **No identity recoverable by string parsing.** A spelling is not a contract.
-3. **The id must be stable under set growth.** Adding realizations, resizing the
-   grid, or admitting a family must not renumber existing runs.
+3. **The DESIGN must be stable under set growth; the index need not be.** Narrowed
+   by W4. Adding realizations, resizing the grid, or admitting a family must not
+   change what a design point *is* — `st_id` and its properties live in the lookup
+   and stay put. The sequential index may renumber, provided a changed lookup is
+   detectable rather than silent.
 4. **Grain is declared, never a sentinel.** Nothing may reuse a key column to mean
    two things.
 5. **Store the finest grain, derive every summary** — the principle the accepted
@@ -230,7 +265,9 @@ results file, which is a materially different thing.
   scenario table explicitly labelled as such — so a later split into per-family
   tables is a file split, not a redesign.
 - A superseding decision record under `dev/decisions/` arguing C24 reason-by-reason
-  and stating C25's and C28's triggers, without editing the sealed record.
+  and stating C28's trigger, without editing the sealed record. It must also record
+  why **C25 is not superseded** — W4 satisfies it rather than overturning it, and
+  its experiment-scoping ruling is load-bearing for W4's stale-lookup guard.
 - Replacement contract text for WG-2, WG-5 and HM-7.
 - A migration note satisfying `naming.md` §7.
 - A claim → falsifier table handed to `task-brief`.
@@ -290,7 +327,7 @@ Empirical premises the design leans on. Falsity of any row changes a decision.
 | E17 | A sequential id renumbers the set when `RLZ_NUM` or the grid changes | C24 reason 2, `wf3-change-requests.md:643` | Argued, not measured — but it is arithmetic over a cross-product, so the failure is structural | Construct two configs differing only in `realizations_num` | **HYPOTHESIS — structural, not executed** |
 | E18 | A user-supplied or GCM-downscaled scenario set is not expressible as `(rlz, st)` | The change request | Argued from the shape of such a set; no such set exists in this repo to test against | — | **HYPOTHESIS — asserted, no artifact exists.** Recorded so a reviewer prices it rather than inherits it |
 | E19 | Plotting a GCM-derived run on the T × P plane requires its (ΔT, ΔP) | Reasoning review argument, not code | Not a model output; it would have to be derived from the GCM series, which is WF2's change-factor computation. The intended answer is that stage 1 supplies it as columns | — | **HYPOTHESIS — argued at intake.** Load-bearing for the scenario-neutrality question |
-| E20 | `member_hash` (design-v4 §5.1) and a minted `scenario_id` may be the same object | `design-v4.md:987` at tag `archive/wf3-experiment-v2` | `member_hash` is a stable-under-growth identity over the member tuple; whether it can *serve* as the id, or must stay a separate freshness column, is undetermined | `git show archive/wf3-experiment-v2:dev/working/design-runs/wf3-experiment-v2/design-v4.md` | **OPEN QUESTION — not a premise** |
+| E20 | `member_hash` (design-v4 §5.1) and a minted `scenario_id` are **not** the same object | `design-v4.md:987` at tag `archive/wf3-experiment-v2` | `member_hash` is a content digest over the member tuple. Under W4 the index is a plain sequential number, so the two answer different questions — the index is a human-and-join handle, the hash a machine freshness check. Merging them re-incurs C25's "opaque and unsortable" objection | `git show archive/wf3-experiment-v2:dev/working/design-runs/wf3-experiment-v2/design-v4.md` | **RESOLVED by W4** 2026-09-04 — was an open question through revision 2. The hash keeps a role: it is the candidate guard against a stale lookup |
 
 ## Reasoning review at intake — findings
 
@@ -311,7 +348,7 @@ framing.
 | RR-3 | Record length is an unstated estimator precondition; a 30-year horizon and a multi-realization cell share a metric name with no column recording precision | **Method** | **Accepted** — scope gap 6 |
 | RR-4 | The composite identity carried a *structural guarantee* of a full factorial (common random numbers across design points); a column carries the information but not the guarantee | **Method, partly pre-existing** | **Accepted as decision criterion 8 and a stage-1 obligation** — the scenario table must make an incomplete set detectable. Noted honestly: the batch rule already degraded per-member completeness, so the cost predates this change |
 | RR-5 | Plotting a GCM run as an overlay point still requires its (ΔT, ΔP), which is WF2's change-factor computation re-entering WF3 | **Method — bears on a hard constraint** | **Accepted as E19 and an unruled position.** The intended answer is that stage 1 supplies the coordinates as columns; the design must rule it, and family-gate the surface reduction |
-| RR-6 | "Nothing parses it" (a consumer contract) and "semantically empty" (a string property) are different choices, conflated in the request. A readable unparsed composite satisfies every raised constraint and keeps the outputs folder sortable | **Taste, with a real regression** | **Accepted into scope gap 2**, and why C25 joined the supersession set |
+| RR-6 | "Nothing parses it" (a consumer contract) and "semantically empty" (a string property) are different choices, conflated in the request. A readable unparsed composite satisfies every raised constraint and keeps the outputs folder sortable | **Taste, with a real regression** | **Distinction accepted; the recommendation superseded by W4.** The reviewer was right that the two choices are separable, and the owner took the opposite branch: nothing parses it AND nothing is embedded in it. The regression it warned about — an unsortable outputs folder — is answered by zero-padding from `index_width` (C27), not by embedding features. C25 is disposed of rather than superseded |
 | RR-7 | The motivating family does not exist, so a general registry schema is underdetermined and risks being frozen wrong | **Process** | **Largely answered by the owner's scoping ruling** — build for the current assessment, do not define every family up front. What remains is the success criterion that family-specific columns be *labelled*, so a later split is a file split rather than a redesign |
 
 **The strongest fair statement of the case against**, recorded so the design answers
@@ -332,7 +369,11 @@ it does not eliminate it.
 3. How does stage 1 make an incomplete scenario set detectable?
 4. Are a future family's overlay coordinates supplied by stage 1, and does that
    satisfy "never couple WF3 to CMIP scenarios"?
-5. Opaque id or readable unparsed composite — and does the answer dispose of C25?
+5. **Directed (W4): a plain sequential number, nothing embedded.** What remains —
+   what guards a stale lookup, what the key column is called, and whether run and
+   bundle ids share one sequence. C25 is disposed of by W4 rather than argued
+   against: its objection was to ids that are opaque *and* unsortable, and a
+   zero-padded sequence is neither.
 
 ## Framework-feasibility probes
 

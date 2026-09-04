@@ -2426,6 +2426,46 @@ def test_console_finish_line_carries_number_wildcards_elapsed_and_counter():
     ), done
 
 
+def test_console_start_line_replays_the_last_reported_counter():
+    """A long fan-out shows its position WHILE it runs, not only as it finishes.
+
+    The number is Snakemake's own, replayed -- so the bracket means the same
+    thing on both lines, and a START may legitimately repeat the FINISH above
+    it when nothing has completed in between.
+    """
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _job_info(1, "perturb", "Rule 3.12: perturb  [rlz 1 | st 1]"),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=8, total=37),
+        _job_info(2, "perturb", "Rule 3.12: perturb  [rlz 1 | st 2]"),
+    )
+    lines = out.splitlines()
+    # The FIRST start line precedes any progress record, so it carries none.
+    assert lines[0].endswith("[rlz 1 | st 1]"), lines[0]
+    assert re.search(r"RUN .*\[rlz 1 \| st 2\]  \[8/37\]$", lines[-1]), lines[-1]
+
+
+def test_console_start_counter_is_snakemakes_number_not_a_second_one():
+    """Starts are not counted; an unreported job moves nothing.
+
+    An independent counter would drift on a restarted, grouped, or already-up-
+    to-date job, which is why the finish line holds for Snakemake's record
+    rather than incrementing. The start line inherits that discipline: three
+    jobs may start against one reported count.
+    """
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _console_record(event="progress", done=5, total=37),
+        _job_info(1, "perturb", "Rule 3.12: perturb  [rlz 1 | st 1]"),
+        _job_info(2, "perturb", "Rule 3.12: perturb  [rlz 1 | st 2]"),
+        _job_info(3, "perturb", "Rule 3.12: perturb  [rlz 1 | st 3]"),
+    )
+    assert out.count("[5/37]") == 3, out
+
+
 def test_console_finish_line_uses_the_banner_wildcard_grammar():
     """`[rlz 1 | st 0]`, not Snakemake's `rlz=1, st=0` -- one grammar, two lines."""
     handler = _console_handler()

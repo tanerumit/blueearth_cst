@@ -4644,6 +4644,11 @@ class _ConsoleHandler(logging.StreamHandler):
             self.addFilter(inherited)
         self._started = {}  # jobid -> (rule name, wildcards, monotonic start)
         self._finished = []  # jobids awaiting the progress record's counter
+        #: Last counter Snakemake reported, replayed onto the START line so a
+        #: long fan-out shows its position while it runs rather than only as
+        #: each member finishes. Snakemake's number, shown earlier -- NOT a
+        #: second counter, for the reason set out in :meth:`_render`.
+        self._progress = (None, None)
         # Rule names whose summary clause has already been printed once. Held on
         # the INSTANCE, unlike `_RULE_NUMBERS`/`_RULE_SUMMARIES`, which are
         # module-level and outlive one workflow: `run_workflows.py` drives four
@@ -4711,6 +4716,7 @@ class _ConsoleHandler(logging.StreamHandler):
 
         if event == "progress":
             lines = self._drain(fields.get("done"), fields.get("total"))
+            self._progress = (fields.get("done"), fields.get("total"))
         else:
             lines = self._drain(None, None)
             if event == "job_info":
@@ -4769,7 +4775,20 @@ class _ConsoleHandler(logging.StreamHandler):
             # that rule -- reshaping it into one line would delete it.
             return self.format(record)
         message = self._trim_summary(fields.get("rule_name"), message)
-        return self._paint(f"{self._now()} - {_MARKER_RUN} {message}", _ANSI_RUN)
+        # The counter, replayed from the last progress record. The bracket means
+        # the SAME thing on both lines -- jobs complete out of the total -- so a
+        # START line and the FINISH line above it can legitimately show the same
+        # number: nothing has finished in between. That repetition is the honest
+        # rendering; the alternative, numbering starts instead, is the
+        # independent counter :meth:`_render` refuses.
+        #
+        # Absent until Snakemake has reported once, so the first job of a run
+        # starts with no counter. That is the same `is not None` guard the
+        # finish line uses, and it degrades to today's line rather than to a
+        # placeholder that would have to be explained.
+        done, total = self._progress
+        tail = f"  [{done}/{total}]" if done is not None and total else ""
+        return self._paint(f"{self._now()} - {_MARKER_RUN} {message}{tail}", _ANSI_RUN)
 
     def _trim_summary(self, rule_name, message):
         """Drop the rule's constant summary clause after its FIRST start line.

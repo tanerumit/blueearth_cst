@@ -11,7 +11,6 @@ import os
 import re
 import sys
 import time
-import warnings
 import zlib
 from pathlib import Path
 
@@ -1649,34 +1648,33 @@ def test_tee_to_log_heartbeat_goes_to_console_not_log(tmp_path, capsys):
 # ---------------------------------------------------------------------------
 
 
-def test_warn_in_repo_project_dir_warns(tmp_path):
+def test_warn_in_repo_project_dir_warns(tmp_path, capsys):
     repo = tmp_path / "repo"
     (repo / "scratch_run").mkdir(parents=True)
-    with pytest.warns(UserWarning, match="inside the repository tree"):
-        fired = su.warn_if_project_dir_in_repo(repo / "scratch_run", repo)
+    fired = su.warn_if_project_dir_in_repo(repo / "scratch_run", repo)
     assert fired is True
+    err = capsys.readouterr().err
+    assert "inside the repo tree" in err and "scratch_run" in err
 
 
-def test_warn_exempt_test_case_is_silent(tmp_path):
+def test_warn_exempt_test_case_is_silent(tmp_path, capsys):
     """The fixture exemption: the baseline seed config is TRACKED, and a
     tracked config cannot carry a machine-specific absolute path."""
     repo = tmp_path / "repo"
     (repo / "test_case" / "test_local").mkdir(parents=True)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")  # any warning becomes a failure
-        fired = su.warn_if_project_dir_in_repo(repo / "test_case" / "test_local", repo)
+    fired = su.warn_if_project_dir_in_repo(repo / "test_case" / "test_local", repo)
     assert fired is False
+    assert capsys.readouterr().err == ""
 
 
-def test_warn_absolute_out_of_tree_is_silent(tmp_path):
+def test_warn_absolute_out_of_tree_is_silent(tmp_path, capsys):
     repo = tmp_path / "repo"
     repo.mkdir()
     outside = tmp_path / "elsewhere" / "my_project"
     outside.mkdir(parents=True)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        fired = su.warn_if_project_dir_in_repo(outside, repo)
+    fired = su.warn_if_project_dir_in_repo(outside, repo)
     assert fired is False
+    assert capsys.readouterr().err == ""
 
 
 def test_warn_uses_containment_not_string_prefix(tmp_path):
@@ -1685,14 +1683,11 @@ def test_warn_uses_containment_not_string_prefix(tmp_path):
     passes the three cases above and fails both of these."""
     repo = tmp_path / "repo"
     (repo / "test_caseX").mkdir(parents=True)
-    with pytest.warns(UserWarning):
-        assert su.warn_if_project_dir_in_repo(repo / "test_caseX", repo) is True
+    assert su.warn_if_project_dir_in_repo(repo / "test_caseX", repo) is True
 
     sibling = tmp_path / "repo_other"
     sibling.mkdir()
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        assert su.warn_if_project_dir_in_repo(sibling, repo) is False
+    assert su.warn_if_project_dir_in_repo(sibling, repo) is False
 
 
 # --- climate_store_rule (R07 B1) ---------------------------------------------

@@ -16,7 +16,7 @@ from snakemake.exceptions import WorkflowError
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, warn_if_project_dir_in_repo, window_year_pair, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, warn_if_project_dir_in_repo, warn_row, window_year_pair, install_console_style, run_header
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError, validate_removed_gridded_options
@@ -264,7 +264,7 @@ REFERENCE_WINDOW = _rw.clip_reference_window(time_horizon_hist)
 # reader is in WF2, which P1's scope stopped short of.
 _SHARED_WINDOW = window_year_pair(historical_window, "climate.window")
 for _line in _rw.window_warnings(REFERENCE_WINDOW, shared_window=_SHARED_WINDOW):
-    print(f"WARNING analyze_projections: {_line}", file=sys.stderr)
+    warn_row(_line, module="reference_window")
 
 # The durable record. D1 names provenance.json and report.md as its homes; neither
 # exists yet (6a and 7 respectively), so stage B logs it and 6a moves it. Recorded
@@ -295,7 +295,7 @@ try:
 except RemovedGriddedOutputsError as _error:
     raise WorkflowError(str(_error)) from None
 for _warning in _gridded_warnings:
-    print(_warning, file=sys.stderr)
+    warn_row(_warning, module="config")
 
 # Step 5d: the statistic set. OPTIONAL and unset in every shipped config, so the
 # config snapshot -- one of the 15 manifest targets, fingerprinted by sha256 --

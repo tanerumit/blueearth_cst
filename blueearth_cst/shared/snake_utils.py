@@ -20,7 +20,6 @@ import sys
 import threading
 import time
 import traceback
-import warnings
 import zlib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -700,14 +699,10 @@ def warn_if_project_dir_in_repo(project_dir, repo_root) -> bool:
     if rel.parts and rel.parts[0] in _PROJECT_DIR_EXEMPT_NAMES:
         return False
 
-    warnings.warn(
-        f"project_dir resolves inside the repository tree "
-        f"({rel.as_posix()!r} under {root_resolved}). Generated model and "
-        f"result artifacts should be written OUTSIDE the toolbox source; set "
-        f"project_dir to an absolute path elsewhere. Exempt: "
-        f"{'/'.join(sorted(_PROJECT_DIR_EXEMPT_NAMES))}/.",
-        UserWarning,
-        stacklevel=2,
+    warn_row(
+        f"project_dir is inside the repo tree ({rel.as_posix()!r}); "
+        f"write run artifacts outside the source",
+        module="config",
     )
     return True
 
@@ -3705,6 +3700,44 @@ def log_row(message, module="cst", level="INFO"):
     sys.stdout.write(
         _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n"
     )
+
+
+def warn_row(message, module="cst"):
+    """Print one WARNING row to stderr, in :func:`log_row`'s grammar and colour.
+
+    The PARSE-TIME counterpart of `log_row`. A Snakefile's top-of-file checks
+    run before Snakemake builds its logging stack and before any rule opens a
+    tee, so neither :func:`install_console_style` nor :class:`_Tee` is there to
+    style what they print -- and each site had invented its own spelling:
+    ``warnings.warn`` (which prepends ``<file>:<line>: UserWarning:`` and echoes
+    the source line under it, three lines for one sentence), a bare ``print``
+    with a hand-written ``WARNING <workflow>:`` prefix, and a ``log_row`` on
+    stdout. Four spellings of one thing, none of them the colour the same
+    warning gets once a rule is running.
+
+    ``HH:MM:SS - <module> - WARNING - <message>``, where ``module`` names the
+    component that noticed (``config``, ``reference_window``) exactly as an
+    in-run row names ``states`` or ``data_source``. **The colour is not chosen
+    here**: :func:`_paint_body` reads the severity out of the row's own text, so
+    this is painted by the same rule that paints a warning arriving from
+    hydromt -- one funnel, not a second scheme that has to be kept in step.
+
+    stderr rather than stdout, because a parse-time row belongs to the RUN's
+    console and has no rule log to land in; that also keeps it out of a piped
+    ``--dry-run`` DAG, which callers redirect.
+
+    **From a Snakefile, keep ``module=...`` off the start of a line.**
+    ``module`` is a Snakemake KEYWORD, and its parser reads a line opening with
+    ``module=`` as the ``module`` directive -- ``SyntaxError: Expected name or
+    colon after module keyword``, raised at parse time before any rule exists.
+    A single-line call is fine (the token is then mid-expression); a call broken
+    across lines is not. Build the message into a local first and pass it in one
+    line, as ``run_stress_test.smk`` does. The parameter keeps the name anyway,
+    because :func:`log_row` has always spelled it that way and two names for one
+    field costs more at every call site than this costs at one.
+    """
+    text = _log_row_text(f"{datetime.now():%H:%M:%S}", module, "WARNING", str(message))
+    sys.stderr.write(_paint_body(text + "\n", _console_colour(sys.stderr)))
 
 
 # Figures written by `save_figure` since the last flush, as

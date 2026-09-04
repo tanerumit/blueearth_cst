@@ -72,8 +72,8 @@ def test_a_false_gridded_key_returns_a_warning(key):
     warnings = validate_removed_gridded_options({key: False})
 
     assert warnings == [
-        f"WARNING analyze_projections: `{key}` is obsolete and ignored "
-        "(S8-08c); the gridded outputs were removed. Delete the key."
+        f"`{key}` is obsolete and ignored (S8-08c); the gridded outputs "
+        "were removed. Delete the key."
     ]
 
 

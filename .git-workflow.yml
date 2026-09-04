@@ -1,73 +1,65 @@
-# Controls the git-workflow skill's ceremony for THIS repo.
+# .git-workflow.yml
+# Git workflow policy for this repository.
 # Schema: ~/workspace/brain/artifacts/skills/git-workflow/references/configuration.md
+
+# ── Workflow mode ────────────────────────────────────────────────────────────
 #
-# `mode` is a ladder ordered by where work happens; each rung pins every toggle
-# below, so a rung replaces reasoning about the individual keys.
-#   trunk  — the primary checkout, trunk only, no feature branches.
-#   branch — a branch when the work is risky or multi-session.  (skill default)
-#   slot   — every modifying task in a claimed persistent worktree.  (current)
-#   lane   — a fresh session per task, against a frozen readiness SHA.
-# `lite` and `full` are permanent aliases for `trunk` and `branch`.
+# trunk  — work directly on the primary branch
+# branch — use branches for risky or multi-session work
+# slot   — run every modifying task in a reusable session worktree
+# lane   — create an isolated, state-managed session for each task
+#
+# Aliases: lite = trunk; full = branch
 mode: slot
 
-# Below: only the overrides. Each beats the rung; every key left out takes the
-# `slot` value — isolation_landing `auto`, and worktree_policy `always`, which
-# reserves this primary checkout for integration and starts every modifying
-# task in a claimed worktree instead (agent-honored, and enforced by the
-# launcher and the PreToolUse guard).
+# Explicit settings below override the selected mode.
 
-# The trunk is pushed deliberately, never as a side effect of finishing a task.
-# `true` re-enables the >24h / 25-commit backup trigger.
-auto_push: false # true | false
+# Push only when requested. Set to true to enable the periodic backup trigger.
+auto_push: false
 
-# The rung's own backend, chosen for zero-ceremony return. A session keeps its
-# branch checked out between sessions and occupancy is DERIVED from that branch,
-# so picking work back up is `cd <session-worktree>` plus launching an agent:
-# no claim token, no `task-scope`, no state machine. `atomic` instead binds every
-# write to a `GIT_TASK_CLAIM` token that only `task-start` / `task-resume` can
-# inject into a child process, which is why a session opened directly in a
-# worktree had every native edit denied there.
+# ── Session worktrees ────────────────────────────────────────────────────────
 #
-# What still holds the line, because `worktree_policy: always` (from the rung)
-# gates them rather than the registry: the primary checkout stays integration-
-# only, and `topology-guard-hook` PINS each session to one branch — `switch`,
-# `checkout`, `branch` and `worktree` are refused inside a session worktree
-# until `task-land` parks it. `merge` and `rebase` stay allowed so a session can
-# resync in place. Every `task-*` verb has an advisory path; only `integration-*`
-# is atomic-only.
-session_slots: [session-1, session-2, session-3]
-slot_registry: advisory # advisory | atomic
+# Available reusable worktrees. Each modifying task claims one of these slots.
+session_slots:
+  - session-1
+  - session-2
+  - session-3
 
-# `integration_mode` drives atomic-only machinery — READY dispositions and the
-# exclusive integration lock — and is dormant under `advisory`, so it is left
-# unset. The session that does the work also lands it, from this checkout.
+# advisory — infer occupancy from the branch checked out in each worktree
+# atomic   — enforce ownership through claims, scopes, and readiness state
+slot_registry: advisory
 
-# Untracked trees the launcher COPIES (never links) into each new worktree.
-# Without them the fixture-dependent tests skip and the suite reports a false
-# green. Rationale: dev/reference/task-lanes.md.
+# Inherited from `slot`:
+#   worktree_policy: always
+#   isolation_landing: auto
+#
+# The primary checkout is reserved for integration. Session branches are
+# automatically landed after they are clean, rebased, and verified.
+#
+# `integration_mode` is omitted because it is inactive with an advisory
+# registry.
+
+# ── Worktree setup ───────────────────────────────────────────────────────────
+
+# Copy untracked test data into each new worktree.
+# These fixtures are required for complete test coverage.
 worktree_seed:
-  - test_case/test_local          # 46 MB; named by 18 of the 25 fixture references
-  - test_case/basin_map_fixture   # 248 KB; only dev/scripts/preview_basin_map.py
+  - test_case/test_local
+  - test_case/basin_map_fixture
 
-# Untracked agent config the launcher SYMLINKS (never copies) into each new
-# worktree: it is read, not written, and one shared definition is the point.
-# Without it a worktree session loses the 14 project skills and the 10 personas
-# with no error — the catalog is simply smaller. Rationale:
-# dev/reference/task-lanes.md.
+# Link shared agent configuration into each new worktree.
+# Links keep every session on the same skill and persona definitions.
 worktree_link:
-  - .claude   # skills/ + agents/, symlinks into ~/workspace/brain/artifacts
-  - .codex    # Codex personas (regular files, no brain fallback)
-  - .agents   # runtime-neutral skills/
+  - .claude
+  - .codex
+  - .agents
 
-# Environment the launcher BUILDS in each new worktree — it can be neither
-# copied nor symlinked. `.pixi/` embeds absolute paths, so a copy is subtly
-# broken and a link points two checkouts at one mutable prefix. `pixi install`
-# is not the whole environment: weathergenr comes from GitHub via remotes and
-# the Julia env from Pkg.instantiate(), both under `pixi run install`.
-# Runs after seeding and linking; a failure is reported, not fatal, and never
-# unwinds an otherwise-correct worktree. Skip once with --no-provision.
-# VERIFY AFTERWARDS — a missing env is gitignored and invisible to git status:
-#   pixi run python dev/scripts/check_env.py --all
+# Build the environment inside each new worktree.
+# Provisioning failures are reported but do not remove the worktree.
+# Skip once with `--no-provision`.
 worktree_provision:
   - pixi install
   - pixi run install
+
+# Verify a newly provisioned environment with:
+# pixi run python dev/scripts/check_env.py --all

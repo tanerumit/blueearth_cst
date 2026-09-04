@@ -10,8 +10,22 @@
 > opened. Revision 1 proposed a single registry table carrying provenance *and*
 > bundling. The owner replaced that with a three-stage decomposition in which no
 > one table solves everything; the reasoning review's blocking finding (RR-1)
-> dissolved as a result. Revision 1 is in git history at `2d7dbeed`. Once a
-> design run opens, this file stops being edited.
+> dissolved as a result. Once a design run opens, this file stops being edited.
+>
+> **Revision 1 is readable at commit `2d7dbeed`, and it matters** — the reasoning
+> review (RR-1 .. RR-7 below) was filed against *that* framing, not this one. Its
+> dispositions here describe what revision 1 proposed, so a reader judging whether
+> a disposition is fair needs the text it disposed of:
+>
+> ```
+> git show 2d7dbeed:dev/milestones/r12/simulation-identity-intake.md
+> ```
+>
+> Specifically, revision 1's registry carried a single `group_id` column and its
+> scope gap 4 asked how pooled rows were keyed. E9 is why that failed. This is the
+> same reason `sealed-records.yml` exists — a superseded position is only
+> checkable while it is still legible — with the difference that a pre-design
+> intake revision is cheap enough to leave in history rather than in the tree.
 
 Stage 0 of a prospective `design-review-loop` run, slug `wf3-simulation-identity`.
 Driver-authored; **no design content here**.
@@ -203,8 +217,12 @@ rather than assumed; it is not yet ruled.
 - **A user-facing config surface for metric grain.** The minimum is that grain
   becomes an explicit, named property of each metric *in code*. Promoting it to
   configuration is a separate, later decision.
-- **The wf3 file split itself.** This makes the three stages separable; it does not
-  separate them. No workflow file is added or removed.
+- **The wf3 file split itself.** The three stages are the *motivating* framing, and
+  this design makes them **separable** — three contracts, a family-blind seam, no
+  stage reaching into another's columns. It does not **separate** them: WF3 stays
+  one `.smk` file, no workflow entry point is added or removed, and the stage
+  boundaries are contracts rather than files. Splitting the file is a later
+  milestone that this one makes cheap.
 - **The response-surface plotting change.** That a surface becomes family-gated
   follows from the schema; specifying the plot does not.
 - **R12's execution model** — manifest, ledger, resumable sweeps, epochs,

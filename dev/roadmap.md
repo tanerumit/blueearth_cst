@@ -1527,6 +1527,21 @@ So the paragraph above is history: `t2608082036` is now front of the queue with
 nothing in front of it, and this section's remaining "not yet scoped" is the
 live state.
 
+**Superseded 2026-09-04 — `t2608082036` was DROPPED (2026-08-18, `dev/LOG.md`),
+and R12 has been re-scoped.** The paragraph above is history twice over: the
+re-derivation item it queues no longer exists, and the design-v4 re-derivation is
+no longer what R12 is. The live scoping is
+[`dev/milestones/r12/simulation-identity-intake.md`](milestones/r12/simulation-identity-intake.md)
+— WF3 in three stages (scenario space → simulation → metrics), replacing the
+composite `(rlz, st_id)` run identity with a single `scenario_id` at a
+family-blind simulator seam. It is a stage-0 intake: **no design run is open**, and
+this section is not rewritten until one reaches G2. `dev/LOG.md`'s drop row asked
+for exactly this — *"if it returns under a new ID, they need repointing"* — and
+this paragraph is that repointing for the roadmap's two references. The remaining
+six live in `stress-test-lookup-design.md`, `stress-test-lookup-intake.md` and
+`t2608151154`, and are regenerated from the accepted design per the intake's
+derived-artifact register.
+
 **Efficiency and resource use are design criteria, not a post-hoc measurement —
 owner directive 2026-08-16.** R12 is the mechanics milestone, so computational
 cost and resource footprint are weighed while the improvements are being chosen.

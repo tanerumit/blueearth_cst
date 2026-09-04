@@ -12,7 +12,7 @@ updated: 2026-09-04
 > [!note] Overview
 > **What** — Rules 1.07, 1.08 and 1.09 each open the Wflow model from disk, mutate it, and call the full hydromt `Model.write()` — which flushes *every* component regardless of what the rule touched. One WF1 build therefore deserializes and re-serializes `staticmaps.nc`, `wflow_sbm.toml` and all eight `staticgeoms/*.geojson` three times over. Call sites: `blueearth_cst/model/build_wflow_model.py:551`, `setup_reservoirs_lakes_glaciers.py:125`, `setup_gauges_and_outputs.py:140`.
 > **Why** — The read is the expensive half and it is pure overhead: on the 2026-09-04 run log, rule 1.08 sat ~12 s between its `RUN` banner and its first hydromt message, and 1.09 ~8 s, before either did any work. On the fixture that is seconds; on a production basin the model grows and the round-trip scales with it. Merging is also the direction rule 1.08 already declares for itself (`build_model.smk:687` — *"temporary hydromt fix; can fold back into build_wflow_model when supported"*), with R10-1 as precedent for the repo doing exactly this merge.
-> **Effort** — Large, and the work is not the merge itself but the rebuild-trigger scaffolding it disturbs. The open question is whether hydromt_wflow v1 yet supports the waterbody `setup_*` methods inside the build config, which is the condition 1.08's own header defers to.
+> **Effort** — Large, and the work is not the merge itself but the rebuild-trigger scaffolding it disturbs. **Resolved 2026-09-04:** the upstream condition 1.08 defers to does not govern this path at all — see "Step 1 answered" below. 1.08 is mergeable now against our own code; 1.09 is the harder half and is not a build-step merge.
 
 ## Where it came from
 
@@ -79,6 +79,69 @@ directory — six rules take `ancient(.model_final)` on that basis. A merge
 changes which rule is the last writer, so every one of those reads needs
 re-checking.
 
+## Step 1 answered (2026-09-04) — the deferral condition is misdirected
+
+`setup_reservoirs_lakes_glaciers.py:1-12` defers the merge to upstream: *"hydromt
+1.3's `hydromt build` cannot tolerate per-method no-data … Removal trigger: fold
+these methods back … once upstream hydromt handles per-method no-data gracefully
+during build."* Installed today: hydromt 1.3.1, hydromt_wflow 1.0.2 — i.e. the
+version named.
+
+**But rule 1.07 does not use the `hydromt build` CLI.** `build_wflow_model.py`
+runs the steps itself, in a Python loop we own:
+
+```python
+# _apply_parameter_steps, build_wflow_model.py:400-422
+for name, configured in steps:
+    ...
+    getattr(model, name)(**call)
+```
+
+That is the same mechanic as `_run_waterbody_methods`
+(`setup_reservoirs_lakes_glaciers.py:24-46`), which already wraps its
+`getattr(mod, method)(**kwargs)` in `except (NoDataException, FileNotFoundError)`
+and records `ok` / `skipped` per method. So per-method no-data tolerance during
+build is **entirely within our own code** — no upstream change is required, and
+the recorded removal trigger will never fire because it is watching the wrong
+thing. (The claim about the CLI is not disproved here; it simply does not govern
+this path. `hydromt update` *is* shelled out elsewhere in WF1 —
+`add_climate_forcing.py:79-120` — which is probably where the belief came from.)
+
+**The two real obstacles are local, and both are small:**
+
+1. `_SUPPORTED_PARAMETER_STEPS` (`build_wflow_model.py:62-68`) is a closed
+   allowlist of five methods; the three waterbody methods
+   (`setup_reservoirs_simple_control`, `setup_reservoirs_no_control`,
+   `setup_glaciers`, per `config/defaults/wflow_update_waterbodies.yml`) have to
+   be added to it.
+2. `_apply_parameter_steps` has no per-step exception handling. It needs the
+   skip *and* the status record — `write_values_used`'s docstring is right that
+   status is half the provenance, since a skipped method leaves no trace in the
+   model and a values-only record would describe reservoirs that were never
+   added.
+
+**1.09 is the harder half, and it is not a build-step merge.** It calls no
+`setup_*` parameter step: it does `mod.config.remove("output.csv.column")`, reads
+`mod.staticmaps.data` back, and derives three `setup_config_output_timeseries`
+calls from what it finds (`setup_gauges_and_outputs.py:59-131`). Merging it means
+moving imperative post-build logic into the build module, not extending a
+config-driven step list — and the `setup_config` family is *deliberately* outside
+the allowlist (`build_wflow_model.py:32-36`: a `setup_config` entry in the
+template would fail the build, which is why `logging.silent` is set in the base
+config instead).
+
+So the merge shape is **1.08 into 1.07 first** — that alone removes one full
+read+write round-trip against obstacles we control — with 1.09 as a separate,
+larger decision.
+
+### Side finding: the docstring is stale
+
+`setup_reservoirs_lakes_glaciers.py:1-12` states a rationale that does not hold
+for the path it sits on, and its removal trigger points at an upstream event that
+is irrelevant to it. Worth correcting whenever this module is next touched, even
+if the merge itself is deferred — a wrong reason in a docstring is what kept this
+deferred without anyone re-checking it.
+
 ## Scope guard
 
 This is rule/DAG restructuring in our own code. It is **not** a licence to
@@ -88,8 +151,11 @@ them is fine, but the `setup_*` / build-config conventions stay verbatim.
 
 ## Progress
 
-- [ ] Establish whether hydromt_wflow v1 supports the reservoir / lake / glacier `setup_*` methods inside the build config — this is the "when supported" condition 1.08's header defers to, and it decides whether 1.08 can merge at all or only 1.09 can
+- [x] Establish whether hydromt_wflow v1 supports the reservoir / lake / glacier `setup_*` methods inside the build config — **answered 2026-09-04: the question was wrong.** 1.07 does not use the `hydromt build` CLI, so the deferral condition never applied; 1.08 is mergeable against two small local obstacles. See "Step 1 answered" above
 - [ ] Re-measure the read round-trip with `-c 1` on an uncontended run, and on a basin larger than the fixture, to confirm the prize is real
-- [ ] Decide the merge shape (1.09 into 1.07 alone, or all three) and re-derive the R7-1 sentinel chain for it
+- [ ] Merge 1.08 into 1.07: extend `_SUPPORTED_PARAMETER_STEPS`, add per-step no-data skip + status recording to `_apply_parameter_steps`, fold `hydromt_update_waterbodies.yml` provenance into the build's `values_used`
+- [ ] Re-derive the R7-1 sentinel chain for the collapsed rule set
+- [ ] Correct the stale rationale + removal trigger in `setup_reservoirs_lakes_glaciers.py:1-12` (do this even if the merge is deferred)
+- [ ] Decide 1.09 separately — it is imperative post-build logic, not a build step
 - [ ] Re-check the six `ancient(.model_final)` readers against the new last-writer
 - [ ] Validate: `pytest tests/test_cli.py`, then `pixi run test-full` (rule and `script:` signatures move), then `check_baseline.py check` against `project_config_baseline.yml` with WF1 run `--notemp`

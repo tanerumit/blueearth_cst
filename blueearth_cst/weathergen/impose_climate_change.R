@@ -96,7 +96,41 @@ wnc <- yaml$write_netcdf
 # `diagnostic = FALSE` makes the return shape compatible with write_netcdf
 # directly (a list of data.frames, one per grid cell — same as the old
 # imposeClimateChanges return).
-log_row("Applying climate perturbations")
+# WHICH member, and BY WHAT. The rule banner already carries `[rlz N | st M]`
+# and the `[n/total]` job counter, but under `-c 3` several 3.12 jobs interleave
+# their body rows on one console, and a bare "Applying climate perturbations"
+# cannot be attributed to the banner above it -- so it reads as the same row
+# repeated once per member, which on a full grid is exactly what it looks like.
+#
+# `output_stem` rather than a re-derived id: it is the declared output name,
+# this script's one source of truth for the member (see the derivation above).
+#
+# Summarized across the twelve monthly rows. Every shipped grid holds one value
+# for all twelve, so the summary is normally a single number -- but the lookup
+# schema permits monthly variation, and printing `[1]` of a varying vector would
+# be a confidently wrong row, so a varying factor prints its range instead.
+fmt_change <- function(values, unit) {
+  lo <- min(values)
+  hi <- max(values)
+  if (isTRUE(all.equal(lo, hi))) {
+    sprintf("%+.1f%s", lo, unit)
+  } else {
+    sprintf("%+.1f..%+.1f%s", lo, hi, unit)
+  }
+}
+perturbation <- paste0(
+  "temp ", fmt_change(cst_data$temp_change, " degC"),
+  ", precip ", fmt_change(cst_data$precip_change, "%")
+)
+# Variance is flat at 0.0 percent on every shipped config, so naming it there
+# would be a constant column; it appears only where it actually varies the run.
+if (any(cst_data$precip_variance_change != 0)) {
+  perturbation <- paste0(
+    perturbation, ", precip var ",
+    fmt_change(cst_data$precip_variance_change, "%")
+  )
+}
+log_row(output_stem, " applying perturbations (", perturbation, ")")
 rlz_future <- weathergenr::apply_climate_perturbations(
    data               = rlz_input$data,
    grid               = rlz_input$grid,

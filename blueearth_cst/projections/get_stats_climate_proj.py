@@ -286,12 +286,6 @@ if __name__ == "__main__":
                     os.utime(path, None)  # refresh mtime so Snakemake sees it done
                 raise SystemExit(0)
 
-            # Identity, not digests: several reduce jobs interleave on the console
-            # under `-c 3`, so a row has to say which (model, scenario) it belongs
-            # to. The digest and the region fingerprint say nothing a reader can
-            # act on and are stamped on the series file itself.
-            log_row(f"{name_model} {name_scenario} deriving", module="stats")
-
             # --- revision 6: the reduce stage reads LOCAL raw slices only -------
             # No DataCatalog, no get_rasterdataset, no network. Measured on
             # 2026-07-30: opening one remote source costs ~1142 s against ~19 s to
@@ -324,6 +318,25 @@ if __name__ == "__main__":
                 )
                 raw_label = f"{entry} ({os.path.basename(raw_path)})"
 
+                # Announced BEFORE the identity check and the eager load, not
+                # after: on a production slice that load is the long part, and a
+                # row printed once it finishes says the job is alive only after
+                # the wait it was needed for. Identity, not digests, because
+                # several reduce jobs interleave on the console under `-c 3` and
+                # a row has to say which (model, scenario, member) it belongs to;
+                # the digest and region fingerprint say nothing a reader can act
+                # on and are stamped on the series file itself.
+                #
+                # ONE row, where there were two. `<model> <scenario> deriving`
+                # used to precede this one, and with `name_members` a
+                # single-element list per job (analyze_projections.smk, "ONE
+                # member per job") the pair was strictly 1:1 -- the opener said
+                # nothing this row does not, minus the member and the file.
+                log_row(
+                    f"{name_model} {name_scenario} {name_member} reducing "
+                    f"{os.path.basename(raw_path)}",
+                    module="stats",
+                )
                 series_identity.assert_raw_identity(
                     raw_path, expected_raw_digest, raw_label
                 )
@@ -333,16 +346,6 @@ if __name__ == "__main__":
                 series_identity.assert_raw_coverage(
                     data, acquisition_window, variables, raw_label
                 )
-                # One identified row per member, where there used to be a bare
-                # member name before the read and a digest-carrying row after it.
-                # They announced the same step, and neither said which model or
-                # scenario was reducing.
-                log_row(
-                    f"{name_model} {name_scenario} {name_member} reducing "
-                    f"{os.path.basename(raw_path)}",
-                    module="stats",
-                )
-
                 # Captured HERE, from the dataset the reduction actually saw,
                 # rather than re-derived at the attrs site: `data` there would be
                 # whichever member the loop ended on, which is true today only

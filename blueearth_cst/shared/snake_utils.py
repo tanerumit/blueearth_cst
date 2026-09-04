@@ -2724,6 +2724,15 @@ _TEE_CONSOLE_MUTED = (
     ("tables", "Reading model table files."),
     ("tables", "No tables found, skip writing."),
     ("grid", "No grid data found, skip writing."),
+    # `Write forcing file` announces the write hydromt is ABOUT to do; the next
+    # row, `Writing file <path>`, states the same fact and names the target. The
+    # pair does bracket a decision -- hydromt renames the file when one already
+    # exists and overwriting is off -- but that case announces ITSELF at
+    # WARNING and names both paths, so the opening row is never the anchor that
+    # makes the rename legible. Muting it costs nothing and saves a row per
+    # forcing write: once in a WF1 build, and once per member in WF3, where
+    # every downscale rule writes one.
+    ("forcing", "Write forcing file"),
     # hydromt echoes the object store URI it is about to read. WF2 already
     # printed that URI one row earlier, from `fetch_gcm_raw`, in BOTH the
     # pinned and the globbed branch -- so this row is a duplicate that costs

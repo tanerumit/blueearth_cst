@@ -1022,15 +1022,21 @@ def test_drop_redraw_frames_keeps_content_after_a_cr_less_final_frame():
 
 
 def test_tee_keeps_a_bar_out_of_the_console_but_in_the_log(tmp_path, capsys):
+    # The sentinel is the row hydromt prints right after a dask bar. It was
+    # `forcing - Write forcing file` until that row joined `_TEE_CONSOLE_MUTED`,
+    # at which point this test failed for the wrong cause: a muted sentinel
+    # proves nothing about bars. Keep this one UNMUTED -- delivering it is what
+    # the assertion below actually tests.
     log = tmp_path / "rule.log"
+    row = "08:12:03 - forcing - Writing file <model>/forcing/inmaps.nc\n"
     with tee_to_log(log):
         for pct in (0, 42, 100):
             sys.stdout.write(f"\r[{'#' * (pct // 10):<10}] | {pct}% Completed | 7.08 s")
         sys.stdout.write("\n")
-        sys.stdout.write("08:12:03 - forcing - Write forcing file\n")
+        sys.stdout.write(row)
     console = capsys.readouterr().out
     assert "% Completed" not in console
-    assert "08:12:03 - forcing - Write forcing file" in console
+    assert row.rstrip() in console
     persisted = log.read_text(encoding="utf-8")
     assert "100% Completed" in persisted  # the durable record keeps the final state
 
@@ -1440,6 +1446,46 @@ def test_tee_mutes_a_row_whose_component_prefix_survived_compaction(tmp_path, ca
         sys.stdout.write(row)
     assert "No grid data found" not in capsys.readouterr().out
     assert "wflow_sbm.states: No grid data found" in log.read_text(encoding="utf-8")
+
+
+def test_tee_mutes_the_forcing_write_announcement_but_not_the_path(tmp_path, capsys):
+    """`Write forcing file` announces what the NEXT row states with its target.
+
+    The pair is one fact twice, so the opener is muted -- but the row that names
+    the file is the one a reader is actually looking for, and a mute that took
+    both would be the defect. WF3 writes one forcing file per member, so this is
+    a row per downscale rule, not a one-off.
+    """
+    log = tmp_path / "rule.log"
+    with tee_to_log(log, heartbeat_interval=0):
+        sys.stdout.write("14:02:03 - forcing - Write forcing file\n")
+        sys.stdout.write(
+            "14:02:03 - forcing - Writing file <experiment>/inmaps_rlz_1_st_3.nc\n"
+        )
+    out = capsys.readouterr().out
+    logged = log.read_text(encoding="utf-8")
+    assert "Write forcing file" not in out
+    assert "Writing file <experiment>/inmaps_rlz_1_st_3.nc" in out
+    # The durable record keeps everything; only the console mirror drops a row.
+    assert "Write forcing file" in logged
+    assert "Writing file <experiment>/inmaps_rlz_1_st_3.nc" in logged
+
+
+def test_forcing_mute_cannot_silence_a_raised_level(tmp_path, capsys):
+    """The rename case announces itself at WARNING and must survive the mute.
+
+    That row is the reason the opener is safe to drop: it names both paths
+    itself, so it never depended on `Write forcing file` as its anchor.
+    """
+    log = tmp_path / "rule.log"
+    row = (
+        "14:02:03 - forcing - WARNING - Write forcing file skipped: "
+        "inmaps_historical.nc already exists.\n"
+    )
+    with tee_to_log(log, heartbeat_interval=0):
+        sys.stdout.write(row)
+    assert "already exists" in capsys.readouterr().out
+    assert "already exists" in log.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize(

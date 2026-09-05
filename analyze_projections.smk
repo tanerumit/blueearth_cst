@@ -999,7 +999,7 @@ rule snapshot_config:
 # formula edit. Passing `digest_components` here instead would silently undo the
 # entire split while every test still passed.
 rule fetch_gcm_slice:
-    message: rule_banner("2.04", "fetch_gcm_slice", "{wildcards.series_key}", summary="download one CMIP6 slice")
+    message: rule_banner("2.04", "fetch_gcm_slice", "series {wildcards.series_key}", summary="download one CMIP6 slice")
     wildcard_constraints:
         series_key = "|".join(re.escape(k) for k in SERIES),
     input:
@@ -1041,7 +1041,7 @@ rule fetch_gcm_slice:
 # series at all: every series is independent, so the stage fans out at full width.
 # Since revision 6 it reads the local raw slice above and makes NO network call.
 rule reduce_gcm_series:
-    message: rule_banner("2.05", "reduce_gcm_series", "{wildcards.series_key}", summary="reduce the slice to a basin-average series")
+    message: rule_banner("2.05", "reduce_gcm_series", "series {wildcards.series_key}", summary="reduce the slice to a basin-average series")
     wildcard_constraints:
         # Anchor to the keys actually built at parse time. Without this the
         # wildcard would also match paths that merely look like keys.

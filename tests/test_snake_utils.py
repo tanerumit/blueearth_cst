@@ -95,7 +95,23 @@ def test_compact_shortens_timestamp_and_drops_dotted_name():
     )
     # date + milliseconds dropped -> HH:MM:SS; dotted name dropped; module kept
     assert _compact_log_line(line) == (
-        "18:03:38 - model - Initializing wflow_sbm model.\n"
+        "18:03:38 - model - Initializing wflow_sbm model\n"
+    )
+
+
+def test_compact_drops_a_single_trailing_stop():
+    """hydromt ends its messages with a full stop; our rows end with none.
+
+    One convention across the log, and a stop after a path (`staticmaps.nc.`)
+    is the one place it read as part of the path. Only ONE stop goes, so an
+    ellipsis survives.
+    """
+    stamp = "2026-07-21 18:03:38,474 - hydromt.model.model - model - INFO - "
+    assert _compact_log_line(stamp + "Writing grid data to a/staticmaps.nc.\n") == (
+        "18:03:38 - model - Writing grid data to a/staticmaps.nc\n"
+    )
+    assert (
+        _compact_log_line(stamp + "Writing...\n") == "18:03:38 - model - Writing...\n"
     )
 
 
@@ -173,7 +189,7 @@ def test_compact_drops_a_component_prefix_that_repeats_the_module():
         "wflow_sbm.geoms: Writing geoms to staticgeoms/basins.geojson.\n"
     )
     assert _compact_log_line(line) == (
-        "11:13:01 - geoms - Writing geoms to staticgeoms/basins.geojson.\n"
+        "11:13:01 - geoms - Writing geoms to staticgeoms/basins.geojson\n"
     )
 
 
@@ -185,7 +201,7 @@ def test_compact_keeps_a_component_prefix_that_says_something_else():
     )
     assert _compact_log_line(line) == (
         "11:13:01 - spatial - wflow_sbm.staticmaps: Writing region to "
-        "staticgeoms/region.geojson.\n"
+        "staticgeoms/region.geojson\n"
     )
 
 
@@ -2493,6 +2509,41 @@ def test_console_finish_line_drops_the_num_suffix_the_banner_drops():
         _console_record(event="progress", done=1, total=1),
     )
     assert "[rlz 1 | st 2]" in out and "rlz_num" not in out
+
+
+def test_console_finish_line_drops_the_key_suffix_the_banner_drops():
+    """`series_key` is the WILDCARD's name; `series` is the console's, on both lines.
+
+    WF2's banners write `series {wildcards.series_key}`, so a finish line
+    rendering the raw key put `[series_key cmip6_x]` directly under
+    `[series cmip6_x]` -- the `_num` defect one suffix along.
+    """
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _job_info(1, "r", "x", {"series_key": "cmip6_x"}),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=1, total=1),
+    )
+    assert "[series cmip6_x]" in out and "series_key" not in out
+
+
+def test_console_start_counter_sits_on_the_banner_line_of_a_multiline_message():
+    """`rule all` is a banner plus one target per line; the counter is the job's.
+
+    Appended to the whole message it landed after the LAST target path
+    (`benchmarks/wf1_benchmarks.md  [19/20]`), where it read as part of the
+    path. It belongs on the line that names the job; the targets are untouched.
+    """
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _console_record(event="progress", done=19, total=20),
+        _job_info(1, "all", "Rule 1.00: all  [proj]\n    a/x.csv\n    logs/wf1.log"),
+    )
+    lines = out.splitlines()
+    assert lines[0].endswith("Rule 1.00: all  [proj]  [19/20]"), lines[0]
+    assert lines[1:] == ["    a/x.csv", "    logs/wf1.log"], lines[1:]
 
 
 def test_console_finish_line_keeps_a_wildcard_actually_named_num():

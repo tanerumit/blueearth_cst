@@ -147,6 +147,13 @@ def _compact_log_line(text):
         message = prefixed.group(2)
     message = _DATA_SOURCE_READ_RE.sub(r"\1 from ", message)
     message = _drop_repeated_source_name(message)
+    # hydromt ends most messages with a full stop and our own rows end with
+    # none, so a log mixed `staticmaps.nc.` and `wflow_sbm.toml.` with
+    # `-> basin_cells.csv` on adjacent rows -- and a stop after a path is the
+    # one place it reads as part of the path. One convention: no stop. Only a
+    # SINGLE trailing stop goes, so an ellipsis (`Writing...`) is left alone.
+    if message.endswith(".") and not message.endswith(".."):
+        message = message[:-1]
     return _log_row_text(hms, module, level, message) + ("\n" if had_newline else "")
 
 
@@ -4560,10 +4567,19 @@ def _console_wildcard_key(key):
 
     Only a TRAILING ``_num``, and only when something is left of it, so a
     wildcard actually named ``num`` keeps its name.
+
+    ``_key`` is dropped on the same terms: WF2 fans out over ``series_key``,
+    and its banners write ``series {wildcards.series_key}``, so without this
+    the START line said ``[series cmip6_...]`` and the FINISH line under it
+    ``[series_key cmip6_...]`` -- the one-fact-two-spellings defect again, one
+    suffix along. Both suffixes are `dev/reference/naming.md` conventions for
+    what KIND of field a wildcard is, which is why they belong off a console
+    that shows the value beside the name.
     """
-    return (
-        key[: -len("_num")] if key.endswith("_num") and len(key) > len("_num") else key
-    )
+    for suffix in ("_num", "_key"):
+        if key.endswith(suffix) and len(key) > len(suffix):
+            return key[: -len(suffix)]
+    return key
 
 
 class _ConsoleHandler(logging.StreamHandler):
@@ -4788,7 +4804,16 @@ class _ConsoleHandler(logging.StreamHandler):
         # placeholder that would have to be explained.
         done, total = self._progress
         tail = f"  [{done}/{total}]" if done is not None and total else ""
-        return self._paint(f"{self._now()} - {_MARKER_RUN} {message}{tail}", _ANSI_RUN)
+        # On the FIRST line of the message, never after the last: `rule all`'s
+        # `target_banner` is a banner plus one target per line, and appending
+        # here put the counter on the tail of the final target path
+        # (`benchmarks/wf1_benchmarks.md  [19/20]`), where it read as part of
+        # the path. The counter describes the job, so it sits on the line that
+        # names the job; the targets below are untouched.
+        head, sep, rest = message.partition("\n")
+        return self._paint(
+            f"{self._now()} - {_MARKER_RUN} {head}{tail}{sep}{rest}", _ANSI_RUN
+        )
 
     def _trim_summary(self, rule_name, message):
         """Drop the rule's constant summary clause after its FIRST start line.

@@ -30,8 +30,12 @@ st_id_token        <- args[[5]]
 # varied except the output filename, which Snakemake already knows because it is
 # this rule's own declared output, so it now arrives as args[[4]].
 yaml <- yaml::read_yaml(weathergen_config_path)
-# Stochastic weather realization to be perturbed
-log_row("Reading realization: ", rlz_path)
+# Stochastic weather realization to be perturbed. Named by the MEMBER being
+# built, like the perturbation row below: rule 3.12 is one job per member and
+# several run at once under `-c 3`, so a row carrying only the realization it
+# reads was printed identically by every member of that realization.
+log_row(sub("\\.nc$", "", basename(output_nc_path)),
+        " reading realization ", basename(rlz_path))
 rlz_input <- weathergenr::read_netcdf(rlz_path, keep_leap_day = FALSE)
 # This member's slice of the experiment's stress-test lookup: twelve rows in
 # month order, or a stop() naming the token.
@@ -174,8 +178,9 @@ rlz_future <- weathergenr::apply_climate_perturbations(
    pet_method         = acp$pet_method
 )
 
-# Save to netcdf file
-log_row("Saving perturbed netcdf to: ", output_path)
+# Save to netcdf file. Unannounced: weathergenr's own `NetCDF written: <path>
+# | vars=... | dims=...` row lands immediately below and names the file, so an
+# opener stating the DIRECTORY was one row per member saying less.
 weathergenr::write_netcdf(
    data          = rlz_future,
    grid          = rlz_input$grid,

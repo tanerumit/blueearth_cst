@@ -72,6 +72,7 @@ from blueearth_cst.shared.plot_style import RASTER_DPI, align_caveat_to_plot_are
 from blueearth_cst.shared.snake_utils import (
     DEFAULT_WATER_YEAR_ANCHOR,
     PRECIP_ONLY_SOURCES,
+    flush_figure_bundles,
     log_row,
     save_figure,
 )
@@ -985,13 +986,19 @@ def plot_climate_figures(
                 save_figure(out_path, dpi=RASTER_DPI)
                 plt.close(fig)
                 written.append(out_path)
-    # The directory is deliberately NOT repeated here: every figure above came
-    # through `save_figure`, whose first row of the group already states it.
-    # What this row adds is the COUNT -- "did I get all of them" without
-    # counting rows -- and which dataset they belong to.
-    log_row(
-        f"Wrote {len(written)} canonical climate figures "
-        f"({clim_source or dataset}, {len(scopes)} spatial scope(s))",
-        module="plot",
-    )
+    # No summary row. It restated three facts the rows around it already
+    # carry: the count is the sum of `save_figure`'s per-directory rows
+    # immediately above, the dataset is on the `Reading store (<source>)` row
+    # and in the rule's own name, and the scope count is on `Aggregating over
+    # N area(s)`. `written` is still returned, so a caller that wants the set
+    # has it.
+    #
+    # The bundle is flushed EXPLICITLY in that row's place, rather than left to
+    # `tee_to_log`'s drain at close. Two reasons. Rules 1.13 and 0.05 write
+    # nothing after this call, so the figure rows would land at the very end of
+    # the log instead of beside the figures they describe. And a bundle left
+    # pending is process state: in a bare test process nothing drains it, so it
+    # would surface as a stray figure row inside whichever later test next
+    # calls `log_row`.
+    flush_figure_bundles()
     return written

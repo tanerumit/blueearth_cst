@@ -327,14 +327,22 @@ if __name__ == "__main__":
                 # the digest and region fingerprint say nothing a reader can act
                 # on and are stamped on the series file itself.
                 #
-                # ONE row, where there were two. `<model> <scenario> deriving`
+                # ONE row, where there were three. `<model> <scenario> deriving`
                 # used to precede this one, and with `name_members` a
                 # single-element list per job (analyze_projections.smk, "ONE
                 # member per job") the pair was strictly 1:1 -- the opener said
                 # nothing this row does not, minus the member and the file.
+                # `writing series to <file>` used to follow it, naming the SAME
+                # basename a third time (raw and series differ only by
+                # directory) immediately above a labelled bar that is the write.
+                #
+                # The filename is gone too. It IS the series key, which the RUN
+                # and DONE lines both carry in brackets, so on a four-line job
+                # the forty-character key was printed four times. What is left
+                # is the human identity -- which is what tells two interleaved
+                # reduce jobs apart -- and the two artifacts by name.
                 log_row(
-                    f"{name_model} {name_scenario} {name_member} reducing "
-                    f"{os.path.basename(raw_path)}",
+                    f"{name_model} {name_scenario} {name_member} reducing raw -> series",
                     module="stats",
                 )
                 series_identity.assert_raw_identity(
@@ -451,9 +459,6 @@ if __name__ == "__main__":
             # otherwise carry it forward (R9 P2 F4).
             series_identity.drop_inherited_single_source_attrs(nc_mean_stats_time)
 
-            log_row(
-                f"writing series to {os.path.basename(series_nc_out)}", module="stats"
-            )
             os.makedirs(os.path.dirname(series_nc_out), exist_ok=True)
             delayed_obj = nc_mean_stats_time.to_netcdf(
                 series_nc_out,
@@ -462,8 +467,10 @@ if __name__ == "__main__":
             )
             # Labelled with the model/scenario the series belongs to: WF2 writes
             # one series per (model, scenario), so an unlabelled bar would show
-            # the same anonymous line dozens of times.
-            with DaskProgress(f"{os.path.basename(series_nc_out)[:-3]} series"):
+            # the same anonymous line dozens of times. The label is the human
+            # identity rather than the file stem it used to be -- same fact,
+            # and it no longer restates the key the RUN line already carries.
+            with DaskProgress(f"{name_model} {name_scenario} series"):
                 delayed_obj.compute()
 
     else:

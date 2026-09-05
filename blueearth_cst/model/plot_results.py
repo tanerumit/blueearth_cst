@@ -350,7 +350,7 @@ def analyse_wflow_historical(
 
     ### 5. Plot other basin average outputs ###
     if ds_basin.data_vars:
-        _log("Plot basin average wflow outputs")
+        _log("Plotting basin-average wflow outputs")
         plot_basavg(ds_basin, Folder_plots)
         plt.close()
     else:
@@ -388,6 +388,21 @@ def analyse_wflow_historical(
     # an outlet and a gauge on the same cell produce one set of figures.
     stations = resolve_stations(qsim, location_registry)
 
+    # ONE announcement for the whole set, not one per station. Every `log_row`
+    # flushes the open figure bundle (`snake_utils.save_figure`), so a row
+    # before each station cut sixteen figures into four identical
+    # `4 figures -> <model>/evaluation/plots/stations` rows. The ids the
+    # per-station rows carried are kept here, on the row that opens the set.
+    plotted_ids = [
+        stations[int(sid)].wflow_id
+        for sid in qsim.index.values
+        if stations.get(int(sid)) is not None
+    ]
+    _log(
+        f"Evaluation figures for {len(plotted_ids)} station(s): "
+        + ", ".join(str(wflow_id) for wflow_id in plotted_ids)
+    )
+
     for station_id in qsim.index.values:
         station = stations.get(int(station_id))
         if station is None:
@@ -419,7 +434,6 @@ def analyse_wflow_historical(
             metrics = df_perf[str(station.wflow_id)].unstack("time_type")
             df_perf_all = df_perf if df_perf_all.empty else df_perf_all.join(df_perf)
 
-        _log(f"Plot evaluation figures for wflow_id {station.wflow_id}")
         plot_station_evaluation(
             simulated=qsim_i,
             observed=qobs_i,

@@ -63,6 +63,10 @@ Ranked by rows saved per run, then by how visible the clash is.
 5. **WF2 `stats` rows repeat the 40-char series key four times in four lines**
    (RUN line, `reducing <file>`, `writing series to <file>`, bar label). One row
    `reducing -> series` and a bar labelled `series`
+   — **landed with one deviation**: the bar keeps a short `<model> <scenario>`
+   identity rather than a bare `series`. The code's own comment says the label
+   is what separates reduce jobs interleaving under `-c 3`, which the screen
+   did not have in view; the key still drops from four appearances to two
    (`projections/get_stats_climate_proj.py:335,454`).
 
 6. **WF3 per-member weathergen rows without a member.** `Reading realization:`
@@ -84,6 +88,12 @@ Ranked by rows saved per run, then by how visible the clash is.
    1.05 and 1.13 print the bundle rows AND a `Wrote 33 canonical climate
    figures (...)` row that restates them (`climate_analysis/climate_figures.py:993`).
    Route WF2 through `save_figure`, drop the restating row.
+   — **landed, and the per-figure counts go with it**: `(N traces per panel)`
+   and `(N points)` are no longer printed anywhere. They are recoverable from
+   `composition.csv` and the `deriving change factors for N point(s) x N
+   horizon(s)` row, both written by the same rules. The figures themselves are
+   byte-identical — `save_figure` forwards the same `fig` and `dpi` the direct
+   `savefig` calls used — so the figure-revision gate does not apply.
 
 9. **Collapse the `Job stats:` table.** 22 lines on WF1 where every count is 1.
    Snakemake sends it as event `run_info`, so `_ConsoleHandler._render` can
@@ -125,5 +135,5 @@ Ranked by rows saved per run, then by how visible the clash is.
 
 - [x] Items 1, 2, 9, 12 (console handler and tee -- one commit)
 - [x] Items 3, 4 (durations and the heartbeat -- one commit)
-- [ ] Items 5, 6, 7, 8, 10 (per-rule rows)
+- [x] Items 5, 6, 7, 8, 10 (per-rule rows)
 - [ ] Item 11 (case sweep), last

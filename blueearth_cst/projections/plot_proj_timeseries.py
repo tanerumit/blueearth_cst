@@ -226,10 +226,9 @@ if __name__ == "__main__":
             ):
                 out_path = plots_dir / relative
                 out_path.parent.mkdir(parents=True, exist_ok=True)
-                traces = projection_plots.draw_annual_overview(
+                projection_plots.draw_annual_overview(
                     annual, variable, reference, out_path
                 )
-                log_row(f"Wrote {relative} ({traces} traces per panel)", module="plot")
 
             # One monthly figure per configured horizon, each rendering the
             # table's own numbers for that horizon.
@@ -239,9 +238,8 @@ if __name__ == "__main__":
                 changes = monthly_change_from_table(monthly_table, name)
                 out_path = plots_dir / relative
                 out_path.parent.mkdir(parents=True, exist_ok=True)
-                traces = projection_plots.draw_monthly_change(
+                projection_plots.draw_monthly_change(
                     changes, name, period, reference, out_path
                 )
-                log_row(f"Wrote {relative} ({traces} traces per panel)", module="plot")
     else:
         raise RuntimeError("plot_proj_timeseries.py runs only as a Snakemake script:")

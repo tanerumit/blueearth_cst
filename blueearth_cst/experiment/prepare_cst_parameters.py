@@ -20,7 +20,7 @@ from typing import Union
 # root); parent.parent stopped at the package dir, from which
 # `import blueearth_cst.shared...` cannot resolve (O-07).
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from blueearth_cst.shared.snake_utils import index_width, stress_test_grid
+from blueearth_cst.shared.snake_utils import index_width, log_row, stress_test_grid
 
 #: The stress-test axes this module knows how to enumerate. A third axis needs a
 #: new lookup COLUMN, and adding one requires a C28 ruling -- removing the shape
@@ -296,6 +296,14 @@ def prep_cst_parameters(
     lookup = pd.DataFrame(rows, columns=list(LOOKUP_COLUMNS))
     Path(lookup_fn).parent.mkdir(parents=True, exist_ok=True)
     lookup.to_csv(lookup_fn, index=False)
+    # Rule 3.09 declares a `log:`, so `merge_logs` opened a section for it on
+    # every run and found nothing to put under it. The member count is the
+    # grid this experiment will actually run -- the one number a reader of this
+    # rule wants -- and twelve rows per member is WG-2's monthly grain.
+    log_row(
+        f"wrote {lookup_fn} ({len(lookup)} rows, {len(lookup) // 12} member(s))",
+        module="experiment",
+    )
 
 
 if __name__ == "__main__":

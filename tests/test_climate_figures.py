@@ -144,6 +144,26 @@ def test_writes_exactly_the_declared_names(tmp_path):
 
 
 @pytest.mark.slow
+def test_the_figure_bundle_is_drained_before_returning(tmp_path, capsys):
+    """The figure rows land beside the figures, and no bundle outlives the call.
+
+    `save_figure` accumulates a group and something else emits it. Until the
+    trailing summary row was removed that row was the trigger; without an
+    explicit flush the rows would wait for `tee_to_log` to drain at close --
+    which lands them at the END of the log for rules 1.13 and 0.05, and in a
+    bare test process never happens at all, so the group would surface inside
+    whichever later test next called `log_row`.
+    """
+    from blueearth_cst.shared import snake_utils as su
+
+    su._FIGURE_BUNDLES.clear()
+    cf.plot_climate_figures(_dataset(), tmp_path, "source", variables=("precip",))
+
+    assert su._FIGURE_BUNDLES == {}, su._FIGURE_BUNDLES
+    assert "figures ->" in capsys.readouterr().out
+
+
+@pytest.mark.slow
 def test_a_dask_backed_dataset_works(tmp_path):
     """The regression this module shipped with: PET arrives dask-backed from the
     meteo workflow while precip and temp come straight off the netCDF, and

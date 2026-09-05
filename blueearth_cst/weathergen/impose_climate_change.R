@@ -64,7 +64,7 @@ precip_variance_factor <- 1 + cst_data$precip_variance_change / 100
 # declaration -- and is naming-agnostic: rlz_1_cst_2 and rlz_1_st_2 both split
 # correctly, which R11 P2's member-token rename then demonstrated -- it changed
 # the declared name and touched nothing here.
-output_path    <- paste0(dirname(output_nc_path), "/")
+output_path    <- dirname(output_nc_path)
 output_stem    <- sub("\\.nc$", "", basename(output_nc_path))
 if (!grepl("_", output_stem, fixed = TRUE)) {
   stop("cannot split '", output_stem, "' into weathergenr's <prefix>_<suffix>: ",

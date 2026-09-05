@@ -147,6 +147,10 @@ def _compact_log_line(text):
         message = prefixed.group(2)
     message = _DATA_SOURCE_READ_RE.sub(r"\1 from ", message)
     message = _drop_repeated_source_name(message)
+    message = _FORCING_EXISTS_RE.sub(
+        r"\1 exists and overwriting is off; writing under a generated name",
+        message,
+    )
     # hydromt ends most messages with a full stop and our own rows end with
     # none, so a log mixed `staticmaps.nc.` and `wflow_sbm.toml.` with
     # `-> basin_cells.csv` on adjacent rows -- and a stop after a path is the
@@ -155,6 +159,28 @@ def _compact_log_line(text):
     if message.endswith(".") and not message.endswith(".."):
         message = message[:-1]
     return _log_row_text(hms, module, level, message) + ("\n" if had_newline else "")
+
+
+#: hydromt's forcing-exists warning is three sentences and ~290 characters,
+#: of which two sentences are a remedy that cannot apply here: they tell the
+#: reader to change `input.path_forcing` "in setup_config section of the build
+#: inifile", and this pipeline sets that key programmatically (rule 1.10)
+#: rather than from an inifile anyone edits. What survives is the fact and its
+#: consequence, which is the part worth reading -- a duplicate forcing file is
+#: about to be written under a generated name that nothing declared, and
+#: `input.path_forcing` is about to point at it
+#: (`hydromt_wflow/components/forcing.py:265`).
+#:
+#: REWRITTEN, not muted. The mute table is INFO-only by construction and
+#: `_DEMOTED_WARNINGS` only withholds colour; this row keeps both its level
+#: and its colour, because the situation it reports is real -- see the board
+#: item on rules 1.08/1.09 re-flushing forcing. Anchored at both ends, so a
+#: reworded upstream message stops matching and prints in full: the same safe
+#: direction every cosmetic filter in this module fails in.
+_FORCING_EXISTS_RE = re.compile(
+    r"^Netcdf forcing file `([^`]+)` already exists and overwriting is not "
+    r"enabled\. .*? A default name will be generated\.?$"
+)
 
 
 def _drop_repeated_source_name(message):

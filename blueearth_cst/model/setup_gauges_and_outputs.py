@@ -22,6 +22,9 @@ WFLOW_VARS = {
 
 from blueearth_cst.shared.progress import hydromt_progress  # noqa: E402
 from blueearth_cst.shared.wflow_outputs import code_for  # noqa: E402
+from blueearth_cst.shared.wflow_write import (  # noqa: E402
+    write_model_except_forcing,
+)
 
 
 def update_wflow_gauges_outputs(
@@ -137,7 +140,10 @@ def update_wflow_gauges_outputs(
         )
 
     with hydromt_progress("model"):
-        mod.write()
+        # Everything but the forcing: rule 1.10 owns that file, and a bare
+        # `write()` re-flushed it on every re-run into a duplicate under a
+        # generated name. See `shared/wflow_write`.
+        write_model_except_forcing(mod)
     # mod.close() commits deferred staticmaps writes — without it,
     # hydromt 1.x leaves the new variables in `staticmaps_<hash>.nc`
     # temp files instead of swapping them into the real file.

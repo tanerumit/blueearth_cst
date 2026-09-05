@@ -2742,9 +2742,16 @@ def test_log_row_flushes_after_its_one_write(monkeypatch):
     assert events == ["write", "flush"]
 
 
-def test_console_job_stats_collapse_to_one_line():
-    """22 lines on WF1, every count 1; what a reader wants is the run's size
-    and which rules fan out."""
+def test_console_job_stats_collapse_to_one_line(monkeypatch):
+    """The FALLBACK, for a workflow whose rules declared no numbers.
+
+    `run_info` renders the plan block whenever `_RULE_NUMBERS` can name the
+    rules; this one-line collapse is what is left when it cannot. The registry
+    is cleared explicitly rather than trusted to be empty -- it is module
+    state, and any earlier test in this file that calls `rule_banner` fills it,
+    which is exactly how this test started exercising the wrong branch.
+    """
+    monkeypatch.setattr(su, "_RULE_NUMBERS", {})
     handler = _console_handler()
     table = (
         "Job stats:\njob                              count\n"
@@ -2775,6 +2782,37 @@ def test_console_job_stats_collapse_to_one_line():
         ),
     )
     assert one == "1 job across 1 rule\n", one
+
+
+def test_console_run_info_renders_the_plan_block(monkeypatch):
+    """The other branch: a registry that CAN name the rules.
+
+    End to end through the handler, because `tests/test_plan_block.py` covers
+    the renderer in isolation and this is the only place the wiring -- the
+    `run_info` event reaching `_plan_block`, and the whole block arriving as
+    one string so its blank line survives `_render`'s truthiness filter -- is
+    exercised.
+    """
+    monkeypatch.setattr(
+        su,
+        "_RULE_NUMBERS",
+        {"all": "1.00", "snapshot_config": "1.01", "run_wflow": "1.14"},
+    )
+    out = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\n"
+            "all  1\nsnapshot_config  1\ntotal  2\n",
+            event="run_info",
+        ),
+    )
+    assert out == (
+        "  plan -- 1 of 2 rules to run, 1 up to date\n"
+        "\n"
+        "  >  1.01  snapshot_config\n"
+        "     1.14  run_wflow\n"
+        "\n"
+    ), out
 
 
 def test_console_an_unparsed_run_info_passes_through():

@@ -16,6 +16,29 @@ from blueearth_cst.model.setup_gauges_and_outputs import (
 from blueearth_cst.shared.wflow_outputs import code_for
 
 
+def _install_write_components(mod, calls):
+    """Give a fake model the component API ``write_model_except_forcing`` drives.
+
+    The rule stopped calling a blanket ``mod.write()`` on 2026-09-05 -- that
+    flushed the forcing, which rule 1.10 owns, duplicating it on every re-run
+    (see ``shared/wflow_write``). These fakes record what is written so the
+    tests below can assert the forcing is NOT among it.
+    """
+
+    def rec(name):
+        return lambda *a, **k: calls.setdefault("written", []).append(name)
+
+    mod.write_data_catalog = rec("data_catalog")
+    mod.staticmaps.write = rec("staticmaps")
+    mod.staticmaps.write_region = rec("region")
+    mod.geoms = SimpleNamespace(write=rec("geoms"))
+    mod.forcing = SimpleNamespace(write=rec("forcing"))
+    mod.tables = SimpleNamespace(write=rec("tables"))
+    mod.states = SimpleNamespace(write=rec("states"))
+    mod.config.write = rec("config")
+    mod.config.data = {}
+
+
 def test_raises_on_unknown_outvar():
     # Validation runs before any model is opened, so a dummy root is fine: an
     # unknown wflow_outvars name must raise loudly, not be silently dropped.
@@ -41,12 +64,10 @@ def test_extras_selection_and_csdms_mapping(monkeypatch):
                 data=xr.Dataset({"outlets": (("y", "x"), np.array([[101.0]]))})
             )
             self.config = SimpleNamespace(remove=lambda *a, **k: None)
+            _install_write_components(self, calls)
 
         def setup_config_output_timeseries(self, **k):
             calls.setdefault("timeseries", []).append(k)
-
-        def write(self):
-            calls["write"] = True
 
         def close(self):
             calls["close"] = True
@@ -68,7 +89,9 @@ def test_extras_selection_and_csdms_mapping(monkeypatch):
         WFLOW_VARS["snow"],
         WFLOW_VARS["overland flow"],
     ]
-    assert calls.get("write") and calls.get("close")
+    # Written and closed -- but never the forcing, which rule 1.10 owns.
+    assert "config" in calls.get("written", []) and calls.get("close")
+    assert "forcing" not in calls.get("written", [])
 
 
 def _record_calls(monkeypatch, with_registry=False):
@@ -88,12 +111,10 @@ def _record_calls(monkeypatch, with_registry=False):
         def __init__(self, *a, **k):
             self.staticmaps = SimpleNamespace(data=xr.Dataset(maps))
             self.config = _FakeConfig()
+            _install_write_components(self, calls)
 
         def setup_config_output_timeseries(self, **k):
             calls.setdefault("timeseries", []).append(k)
-
-        def write(self):
-            calls["write"] = True
 
         def close(self):
             calls["close"] = True

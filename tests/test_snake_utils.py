@@ -2801,8 +2801,7 @@ def test_console_run_info_renders_the_plan_block(monkeypatch):
     out = _emit(
         _console_handler(),
         _console_record(
-            "Job stats:\njob  count\n----  ---\n"
-            "all  1\nsnapshot_config  1\ntotal  2\n",
+            "Job stats:\njob  count\n----  ---\nall  1\nsnapshot_config  1\ntotal  2\n",
             event="run_info",
         ),
     )

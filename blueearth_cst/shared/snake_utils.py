@@ -4025,6 +4025,7 @@ def patch_psutil_windows_benchmark():
 _ANSI_RUN = "94"  # bright blue
 _ANSI_DONE = "92"  # bright green
 _ANSI_BODY = "38;5;250"  # light grey
+_ANSI_DIM = "38;5;243"  # dim grey -- the plan block's up-to-date rows
 _ANSI_FAIL = "91"  # bright red
 _ANSI_WARN = "93"  # bright yellow
 _ANSI_ALERT = "38;5;208"  # orange
@@ -4704,6 +4705,139 @@ def _console_wildcard_key(key):
     return key
 
 
+#: Rules kept OUT of the plan block. ``rule all`` is a target aggregator: it
+#: declares no output and does no work, but Snakemake counts it as a job -- so
+#: the block's "5 of 19 rules" and Snakemake's own "6 jobs" differ by exactly
+#: this rule, deliberately. Excluded by NAME because that is Snakemake's own
+#: convention for the target rule and what :func:`target_banner` is scoped to.
+_PLAN_EXCLUDED_RULES = ("all",)
+
+
+def _run_info_counts(text):
+    """Parse Snakemake's ``Job stats:`` table into ``{rule name: job count}``.
+
+    By the ``<name>  <count>`` shape of a table row, so the header, the ruled
+    line and the ``total`` row are skipped by that shape alone. A message that
+    yields nothing -- a reworded table, or some other ``run_info`` -- returns
+    an empty mapping and every caller falls back to Snakemake's own text.
+    """
+    counts = {}
+    for row in text.splitlines():
+        match = re.fullmatch(r"(\S+)\s+(\d+)", row.strip())
+        if match and match.group(1) != "total":
+            counts[match.group(1)] = int(match.group(2))
+    return counts
+
+
+def _plan_rule_name(names):
+    """One display name for the rules SHARING a number.
+
+    WF0 builds ``extract_historical_climate_<source>`` in a Python loop, so
+    three rule objects carry the number ``0.04``; the shared prefix is the rule
+    as a person names it. Falls back to the first name when the group has no
+    usable common prefix, which is the safe direction: a real name from the
+    Snakefile beats a truncation.
+    """
+    ordered = sorted(names)
+    if len(ordered) == 1:
+        return ordered[0]
+    shared = os.path.commonprefix(ordered).rstrip("_")
+    return shared or ordered[0]
+
+
+def _plan_rows(counts):
+    """``[(number, name, jobs), ...]`` in rule-number order.
+
+    Joins the two things that each know half the answer: ``_RULE_NUMBERS``
+    (every rule the Snakefile DECLARED, filled by :func:`rule_banner` at parse
+    time) and Snakemake's job-stats counts (the rules that will actually RUN).
+    A rule absent from ``counts`` is up to date, which is the whole point of
+    the block -- it prints nothing else for the rest of the run.
+
+    Grouped by NUMBER, not by name, because a number is not unique: see
+    :func:`_plan_rule_name`. Sorted lexicographically on the number, which
+    orders ``1.14`` before ``1.14b`` before ``1.15`` without a version parser.
+    """
+    by_number = {}
+    for name, number in _RULE_NUMBERS.items():
+        if name in _PLAN_EXCLUDED_RULES:
+            continue
+        by_number.setdefault(number, []).append(name)
+    rows = [
+        (number, _plan_rule_name(names), sum(counts.get(n, 0) for n in names))
+        for number, names in by_number.items()
+    ]
+    rows.sort(key=lambda row: row[0])
+    return rows
+
+
+def _plan_head(rows, jobs, unlisted=0):
+    """The block's first line: the size and shape of what is about to happen.
+
+    ``unlisted`` is rules Snakemake is about to run that the ledger cannot
+    name, because they never called :func:`rule_banner` and so registered no
+    number. That should be zero -- every rule in all four Snakefiles declares a
+    banner -- but a block that quietly listed 18 of 19 rules would be worse
+    than one that admits the gap, which is this repo's standing rule about a
+    tool that bounds its own coverage.
+    """
+    total = len(rows)
+    running = sum(1 for row in rows if row[2])
+    plural = "rule" if total == 1 else "rules"
+    if running == total:
+        head = f"{total} {plural}, all to run"
+    elif running:
+        head = f"{running} of {total} {plural} to run, {total - running} up to date"
+    else:
+        head = f"{total} {plural}, all up to date"
+    # The job count only when it says something the rule count does not, i.e.
+    # when something fans out. `_run_info_line`, which this replaces, always
+    # carried it. Counted over the LISTED rows, not over Snakemake's table, so
+    # it agrees with the rows below it -- the table includes the excluded
+    # `all`, and a head line off by one from what it introduces is worse than
+    # no head line.
+    if jobs and jobs != running:
+        head = f"{head}, {jobs} job{'s' if jobs != 1 else ''}"
+    if unlisted:
+        head = f"{head}, {unlisted} unlisted"
+    return f"  plan -- {head}"
+
+
+def _plan_lines(counts):
+    """Render the plan block, or ``None`` to fall back to Snakemake's own line.
+
+    One row per DECLARED rule, ordered by rule id so the workflow's shape reads
+    as a spine. Rows that will run carry a ``>`` gutter; rows already satisfied
+    are dimmed. Both encode the same fact on purpose -- the dimming dies in a
+    pipe, a redirect and CI, and the gutter does not, which is the same reason
+    :func:`rule_banner` brackets its context rather than relying on colour.
+
+    The gutter is DROPPED when every rule runs: a mark on every line carries no
+    information, and the head line already says ``all to run``.
+
+    Returns ``(head, rows)`` with each row as ``(text, running)``, so the
+    caller owns the colour -- ``_paint`` colours whole lines and never fields.
+    """
+    rows = _plan_rows(counts)
+    if not rows:
+        return None
+    partial = any(row[2] for row in rows) and not all(row[2] for row in rows)
+    number_width = max(len(row[0]) for row in rows) + 2
+    # Pad the name column only when something actually fans out, so a workflow
+    # without fan-out has no trailing whitespace to explain.
+    fanned = any(row[2] > 1 for row in rows)
+    name_width = max(len(row[1]) for row in rows) if fanned else 0
+    lines = []
+    for number, name, jobs in rows:
+        gutter = "  >  " if (partial and jobs) else "     "
+        text = f"{gutter}{number.ljust(number_width)}{name.ljust(name_width)}"
+        if jobs > 1:
+            text = f"{text} x{jobs}"
+        lines.append((text.rstrip(), bool(jobs)))
+    unlisted = sum(1 for name in counts if name not in _RULE_NUMBERS)
+    return _plan_head(rows, sum(row[2] for row in rows), unlisted), lines
+
+
 class _ConsoleHandler(logging.StreamHandler):
     """Snakemake's terminal handler, restyled: one line per job start and end.
 
@@ -4862,7 +4996,7 @@ class _ConsoleHandler(logging.StreamHandler):
             elif event == "job_started":
                 pass  # "Execute N jobs..." -- scheduler bookkeeping
             elif event == "run_info":
-                lines.append(self._paint(self._run_info_line(record), _ANSI_BODY))
+                lines.extend(self._plan_block(record))
             elif not self._muted(record, event):
                 # Body tier for what is informational only. A WARNING or an ERROR keeps
                 # Snakemake's own colouring, which is the one thing on this
@@ -4879,6 +5013,43 @@ class _ConsoleHandler(logging.StreamHandler):
                 lines.append(shown)
 
         return "\n".join(line for line in lines if line) or None
+
+    def _plan_block(self, record):
+        """The run's rules, one per line, keyed on rule id.
+
+        REPLACES the collapsed ``N jobs across M rules`` line rather than
+        joining it: that line's whole content is this block's head line.
+
+        Why this earns its lines when the ``Job stats:`` table it descends from
+        did not. A rule that is up to date prints NOTHING for the rest of the
+        run, so on a re-run the console showed five start lines and could not
+        say whether the workflow had five rules or nineteen. Measured on the
+        rapid fixture 2026-09-05: WF1 declares 19 rules and a completed build
+        leaves 5 with work. That delta exists nowhere else on the console --
+        which is the half of the argument for collapsing the table that did not
+        survive contact with a re-run.
+
+        Falls back to :meth:`_run_info_line` whenever the plan cannot be built
+        -- an unparsable table, or a workflow whose rules never called
+        :func:`rule_banner` -- the same fail-open direction every other
+        cosmetic rule in this module takes.
+        """
+        text = self.format(record)
+        counts = _run_info_counts(text)
+        plan = _plan_lines(counts) if counts else None
+        if plan is None:
+            return [self._paint(self._run_info_line(record), _ANSI_BODY)]
+        head, rows = plan
+        painted = [self._paint(head, _ANSI_BODY), ""]
+        painted.extend(
+            self._paint(row, _ANSI_RUN if running else _ANSI_DIM)
+            for row, running in rows
+        )
+        # ONE element, newlines and all. `_render` joins its lines through a
+        # truthiness filter, so a blank passed as its own element is dropped --
+        # the block's internal air has to travel inside a single string. The
+        # trailing newline is what separates the plan from the first RUN line.
+        return ["\n".join(painted) + "\n"]
 
     def _run_info_line(self, record):
         """Collapse Snakemake's ``Job stats:`` table to one line.
@@ -4899,11 +5070,7 @@ class _ConsoleHandler(logging.StreamHandler):
         other cosmetic rule here.
         """
         text = self.format(record)
-        counts = {}
-        for row in text.splitlines():
-            match = re.fullmatch(r"(\S+)\s+(\d+)", row.strip())
-            if match and match.group(1) != "total":
-                counts[match.group(1)] = int(match.group(2))
+        counts = _run_info_counts(text)
         if not counts:
             return text
         jobs = sum(counts.values())

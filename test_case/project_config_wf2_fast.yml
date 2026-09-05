@@ -1,32 +1,67 @@
-# FAST DEV CONFIG — for iterating on WF2 code, not for recording anything.
+# =============================================================================
+#  WF2 FAST -- for iterating on analyze_projections code only
+# =============================================================================
 #
-# Why this exists: the seed config resolves 9 series (3 models x {historical,
-# ssp245, ssp585}), and any edit to an enumerated reducer module invalidates all
-# of them, so a code change costs a full network re-derivation. Two of those reads
-# (the ssp585 pair) individually exceed a 10-minute tool timeout. This config
-# resolves **2** series, which makes an iteration loop minutes instead of tens of
-# minutes.
+# One model, one scenario: two series instead of nine, so a code change in
+# the projections stage costs minutes rather than tens of minutes. Writes to
+# its own project folder, so it never touches the baseline fixture.
 #
-# Differences from test_case/project_config_baseline.yml, and ONLY these:
-#   - project_dir: test_case/test_dev   (its own tree; never touches the
-#     baseline fixture, whose manifested summary/plots are derived from all
-#     3 models and would be wrong if regenerated from 1)
-#   - models:    one model  (NOAA-GFDL/GFDL-ESM4)
-#   - scenarios: one scenario (ssp245)
+# Not a baseline seed: never point check_baseline.py here.
 #
-# NOT a baseline seed. `dev/baseline/manifest.json` is recorded from
-# project_config_baseline.yml and nothing else; never point check_baseline here.
-# The first run pays a one-off climate-store extraction for the new project_dir.
+# Paths are relative to the repo root, where you run Snakemake, except
+# `config_path`, which is relative to this file.
+
+schema_version: 2
+
+
+# -----------------------------------------------------------------------------
+#  PROJECT
+# -----------------------------------------------------------------------------
 
 project:
   project_dir: test_case/test_dev
   catalog: config/catalogs/deltares_data.yml
 
+
+# -----------------------------------------------------------------------------
+#  BASIN
+# -----------------------------------------------------------------------------
+
+basin:
+  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+  resolution: 0.00833
+  output_locations:
+  delineation:
+    max_subbasins: 11
+
+
+# -----------------------------------------------------------------------------
+#  CLIMATE
+# -----------------------------------------------------------------------------
+
+climate:
+  sources:
+  - era5
+  selected: era5
+  window:
+    start: 2000
+    end: 2020
+
+
+# -----------------------------------------------------------------------------
+#  MODEL
+# -----------------------------------------------------------------------------
+
+model:
+  # Discharge only: this set exists for wf2, and more outputs only add work.
+  outvars: ["river discharge"]
+
+
+# -----------------------------------------------------------------------------
+#  WORKFLOWS
+# -----------------------------------------------------------------------------
+
 workflows:
-  # WF0 — the basin's historical climate, WITHOUT building a hydrology model.
-  # Every key below is optional; with none set this draws the canonical figure
-  # set for `shared.clim_historical` and nothing else, which is exactly what
-  # WF1 already produces. `candidate_sources` is what makes it a comparison.
   analyze_climate:
     enabled: true
   build_model:
@@ -35,27 +70,6 @@ workflows:
   analyze_projections:
     enabled: true
     config_path: project_config_wf2_fast_analyze_projections.yml
-
   run_stress_test:
     enabled: true
     config_path: project_config_wf2_fast_run_stress_test.yml
-basin:
-  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
-  resolution: 0.00833
-  delineation:
-    max_subbasins: 11
-  output_locations:
-model:
-  outvars: ["river discharge"]
-climate:
-  selected: era5
-  # Kept discharge-only on purpose: this is the baseline-recording seed, and
-  # extra outputs would only churn the copied-config fingerprint without adding
-  # any fingerprinted target. The shipped default (template / Snakefile) does
-  # include 'actual evapotranspiration'.
-  window:
-    start: 2000
-    end: 2020
-  sources:
-  - era5
-schema_version: 2

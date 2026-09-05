@@ -1,17 +1,39 @@
-engine:
-  build_config: config/defaults/wflow_build_model.yml              # path
-  waterbodies_config: config/defaults/wflow_update_waterbodies.yml # path
-observations:                                         # path | null — needs gauge_points
-# The period the hydrological model is RUN over: sets the forcing prepared
-# for it AND the wflow TOML's [time] window, which are necessarily equal.
-# OPTIONAL — omit and it follows shared.historical_window exactly.
+# =============================================================================
+#  build_model (wf1) -- build the Wflow-SBM model, run it on the historical record
+# =============================================================================
 #
-# Must sit INSIDE shared.historical_window: the forcing is built from the
-# extracted climate store, so a simulation period outside the record has no
-# data behind it. Analysing 1990-2020 and simulating 2000-2020 is the
-# intended shape. The >= 16-year floor applies to the RECORD only, so a
-# short run is allowed.
-# Editing this rebuilds the forcing and re-runs the model.
+# Keep this next to the project file. The basin, climate record and output
+# variables come from there; only the model build and its run are set here.
+
+
+# -----------------------------------------------------------------------------
+#  OBSERVATIONS
+# -----------------------------------------------------------------------------
+
+# One observed series per variable in `model.outvars`. Optional. Needs
+# `basin.output_locations`; columns are matched by wflow_id.
+# Format: observed_daily_discharge_template.csv.
+observations:
+  river discharge: /path/to/observed_discharge.csv   # path | null
+
+
+# -----------------------------------------------------------------------------
+#  RUN PERIOD
+# -----------------------------------------------------------------------------
+
+# Years the model runs over, inclusive. Default: all of `climate.window`.
+# Must lie inside `climate.window`. Can be short.
 #simulation_window:
-#  starttime: "2000-01-01T00:00:00"                    # ISO datetime
-#  endtime: "2020-12-31T00:00:00"                      # ISO datetime
+#  start: 2000
+#  end: 2020
+
+
+# -----------------------------------------------------------------------------
+#  ENGINE
+# -----------------------------------------------------------------------------
+
+# hydromt build settings. These are the defaults; point at your own copies
+# to change how the model is built.
+#engine:
+#  build_config: config/defaults/wflow_build_model.yml
+#  waterbodies_config: config/defaults/wflow_update_waterbodies.yml

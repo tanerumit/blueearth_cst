@@ -1,26 +1,26 @@
+# analyze_projections (wf2) -- baseline set
+
+catalog: config/catalogs/cmip6_data.yml
+ensemble: cmip6
+
 models:
 - NOAA-GFDL/GFDL-ESM4
 - INM/INM-CM4-8
 - INM/INM-CM5-0
 scenarios: [ssp245, ssp585]
+members:
+  preference:
+  - r1i1p1f1
+
 variables:
   precip: {source: precip, canonical: rate, units: mm/day, change: relative}
   temp: {source: temp, canonical: state, units: degC, change: absolute}
-ensemble: cmip6
-catalog: config/catalogs/cmip6_data.yml
 
-# Ends 2014, not 2016: the CMIP6 historical experiment stops there, so a
-# later end is CLIPPED to it — and clipping a range that equalled
-# shared.historical_window is what raises the "no longer aligns" warning.
+# Ends 2014, where the CMIP6 historical runs stop.
 reference_window:
   start: 2000
   end: 2014
-# Matches WF3's forcing window exactly (horizontime_climate ± run_length/2
-# = 2078 ± 8 = 2070-2086), which is computed independently of this key.
 future_windows:
 - start: 2070
   end: 2090
   name: far
-members:
-  preference:
-  - r1i1p1f1

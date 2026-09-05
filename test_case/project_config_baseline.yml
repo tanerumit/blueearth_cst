@@ -1,16 +1,65 @@
-# Worked example, and the TRACKED baseline seed dev/baseline/manifest.json is
-# recorded from. Paths are relative to the repo root (where you run Snakemake),
-# not to this file.
+# =============================================================================
+#  BASELINE -- the worked example, and the seed the baseline is recorded from
+# =============================================================================
+#
+# `dev/baseline/manifest.json` is recorded from this set and nothing else.
+# Use it for a milestone seal or any run whose numbers you will read; use
+# `project_config_rapid.yml` for everything else.
+#
+# Paths are relative to the repo root, where you run Snakemake, except
+# `config_path`, which is relative to this file.
+
+schema_version: 2
+
+
+# -----------------------------------------------------------------------------
+#  PROJECT
+# -----------------------------------------------------------------------------
 
 project:
   project_dir: test_case/test_local
   catalog: config/catalogs/deltares_data.yml
 
+
+# -----------------------------------------------------------------------------
+#  BASIN
+# -----------------------------------------------------------------------------
+
+basin:
+  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+  resolution: 0.00833
+  output_locations: test_case/test_data/output_locations.csv
+  delineation:
+    max_subbasins: 11
+
+
+# -----------------------------------------------------------------------------
+#  CLIMATE
+# -----------------------------------------------------------------------------
+
+climate:
+  sources:
+  - era5
+  selected: era5
+  # 17 years: one more than the 16-year minimum.
+  window:
+    start: 2000
+    end: 2016
+
+
+# -----------------------------------------------------------------------------
+#  MODEL
+# -----------------------------------------------------------------------------
+
+model:
+  outvars: ["river discharge", "groundwater recharge"]
+
+
+# -----------------------------------------------------------------------------
+#  WORKFLOWS
+# -----------------------------------------------------------------------------
+
 workflows:
-  # WF0 — the basin's historical climate, WITHOUT building a hydrology model.
-  # Every key below is optional; with none set this draws the canonical figure
-  # set for `shared.clim_historical` and nothing else, which is exactly what
-  # WF1 already produces. `candidate_sources` is what makes it a comparison.
   analyze_climate:
     enabled: true
   build_model:
@@ -19,25 +68,6 @@ workflows:
   analyze_projections:
     enabled: true
     config_path: project_config_baseline_analyze_projections.yml
-
   run_stress_test:
     enabled: true
     config_path: project_config_baseline_run_stress_test.yml
-basin:
-  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
-  resolution: 0.00833
-  delineation:
-    max_subbasins: 11
-  output_locations: test_case/test_data/output_locations.csv
-model:
-  outvars: ["river discharge", "groundwater recharge"]
-climate:
-  selected: era5
-  window:
-    # 17 calendar years — one clear of the 16-year weathergenr floor
-    # (constraints.min_historical_years). Shortened 2026-08-10 to trim WF1.
-    start: 2000
-    end: 2016
-  sources:
-  - era5
-schema_version: 2

@@ -1,4 +1,7 @@
+# build_model (wf1) -- wf2_fast set
+
 engine:
   build_config: config/defaults/wflow_build_model.yml
   waterbodies_config: config/defaults/wflow_update_waterbodies.yml
+
 observations:

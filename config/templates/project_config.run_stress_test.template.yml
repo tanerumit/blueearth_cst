@@ -1,48 +1,71 @@
-#experiment_name: my_experiment                       # text — unset auto-names from project_dir + date
-n_realizations: 2                                     # integer
-climate_perturbations:
-  temp:
-    mean:                                             # 12 numerics (Jan-Dec) — degC offset
-      min: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-      max: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
-    n_levels: 2                                       # integer
-    trajectory: transient                             # boolean
-  precip:
-    mean:                                             # 12 numerics (Jan-Dec) — multiplier
-      min: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
-      max: [1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3]
-    variance:                                         # 12 numerics (Jan-Dec) — multiplier
-      min: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-      max: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-    n_levels: 3                                       # integer
-    trajectory: transient                             # boolean
-  spell_factors:
-  # Monthly spell-length coefficients handed to the weather generator: they
-  # scale the length of dry and wet spells per calendar month. Optional;
-  # absent, both are twelve 1.0s, i.e. no adjustment. NOT perturbation axes
-  # -- they add no member to the grid and no design-table column, which is
-  # why they sit beside `temp:`/`precip:` rather than under them.
-    dry: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-    wet: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+# =============================================================================
+#  run_stress_test (wf3) -- the climate stress test
+# =============================================================================
+#
+# Generates weather series, perturbs them across a temperature x precipitation
+# grid, runs the model on each, and builds the response surface. Keep this
+# next to the project file.
+
+
+# -----------------------------------------------------------------------------
+#  EXPERIMENT
+# -----------------------------------------------------------------------------
+
+# Name of the experiment folder. Default: project name plus the date of the
+# first run, reused afterwards. To pick one: scripts/suggest_experiment_name.py
+#experiment_name: my_experiment
+
+# Random seed. `auto` derives it from the experiment name.
+#seed: auto                               # integer | auto
+
+n_realizations: 2                         # weather series per grid point
+
+# Future years to simulate, inclusive. Match an analyze_projections horizon
+# to place the projections on the same period.
 simulation_window:
   start: 2040
   end: 2060
-#batch_size: 4                                        # integer
-#batch_size_max: 8                                    # integer
 
-# How results are DESCRIBED, not how they are produced. Everything under here is
-# post-processing: it sits outside configuration identity, so editing a caption
-# does not trip the experiment freeze, move the effective-config digest, or ask
-# for a re-run. Optional -- absent, one default surface is used, whose axes both
-# take the months that VARY across members, which reports the range the
-# experiment actually explored.
+
+# -----------------------------------------------------------------------------
+#  PERTURBATION GRID
+# -----------------------------------------------------------------------------
+
+# Each axis runs from `min` to `max` in `n_levels` steps, set per month
+# (Jan..Dec). The grid is temp levels x precip levels, plus the unperturbed
+# baseline (st_0), always included.
 #
-# Declare one only to say something the default cannot. The usual reason is a
-# SEASONAL design: with a subset of months perturbed, `months:` names the subset
-# the axis summarises, and the caption is derived from the lookup, never typed.
-#
-#reporting:
-#  surfaces:
-#    - id: jfm                                            # [a-z0-9_]+, unique
-#      x: {variable: temp}                                # temp | precip
-#      y: {variable: precip, months: [1, 2, 3], statistic: mean}
+# `trajectory` is required: `constant` applies the full change from the
+# start, `transient` ramps it up over the run.
+climate_perturbations:
+  temp:
+    n_levels: 2                           # 2 = min and max only
+    trajectory: transient                 # constant | transient
+    mean:                                 # degC added, per month
+      min: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+      max: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
+  precip:
+    n_levels: 3                           # 3 = min, middle, max
+    trajectory: transient
+    mean:                                 # multiplier, per month (0.7 = 30 % drier)
+      min: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
+      max: [1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3, 1.3]
+    variance:                             # multiplier on year-to-year variability (1.0 = unchanged)
+      min: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+      max: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+  # Dry and wet spell length multipliers, per month. Not a grid axis.
+  #spell_factors:
+  #  dry: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+  #  wet: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+
+# -----------------------------------------------------------------------------
+#  COMPUTE
+# -----------------------------------------------------------------------------
+
+# How model runs are grouped. Larger batches need more disk at once.
+#compute:
+#  batch_size_max: 8                       # most runs per batch
+#  batch_size: 4                           # fixed batch size (skips automatic sizing)
+#  disk_headroom_gb: 40                    # disk to keep free; default is a share of free space

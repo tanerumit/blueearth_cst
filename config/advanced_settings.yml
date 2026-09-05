@@ -63,7 +63,7 @@ defaults:
 
   # The share of FREE disk that WF3's batched Wflow runs may hold in transient
   # `temp()` files at their peak. Overridable per project via
-  # `workflows.run_stress_test.disk_headroom_gb`, which states an ABSOLUTE
+  # `compute.disk_headroom_gb` in the run_stress_test file, which states an ABSOLUTE
   # budget instead — the two answer different questions, so they differ in unit
   # deliberately: this one is a policy ("never eat more than a quarter of what
   # is free"), the project key is a budget ("you may use 40 GB").
@@ -87,7 +87,7 @@ defaults:
   batch_disk_headroom_fraction: 0.25
 
   # Randomization seed for every stochastic step. Overridable per project via
-  # `shared.seed`, which also accepts `auto`.
+  # `seed:` in the run_stress_test file, which also accepts `auto`.
   #
   # Today there is exactly ONE consumer: weathergenr, which uses it for both
   # realization generation and the perturbation step (C34/F15 — one seed, so
@@ -96,7 +96,7 @@ defaults:
   # config so that a second stochastic step, in any workflow, reads the same
   # key instead of introducing a second seed that can drift from this one.
   #
-  # `shared.seed: auto` derives the seed from the experiment name, so it
+  # `seed: auto` derives the seed from the experiment name, so it
   # differs between experiments and is identical on every re-run of one. A
   # seed that changed per INVOCATION would rewrite rule 3.10's output every
   # time and re-run all of WF3 — the same trap
@@ -108,7 +108,7 @@ defaults:
   seed: 123
 
   # First month of the water (hydrological) year, as a three-letter name.
-  # Overridable per project via `shared.water_year_start`.
+  # Overridable per project via `climate.water_year_start`.
   #
   # Every workflow that reduces to an ANNUAL value reads it: WF2's change
   # factors, WF3's weather generation, WF3's hydrological indicators and WF1's
@@ -125,8 +125,8 @@ defaults:
 
 runtime:
 
-  # Wflow.jl `--threads`. A TOOLBOX setting: `C-54` removed the per-project
-  # `shared.julia_threads` override, so this is the only place it is set.
+  # Wflow.jl `--threads`. A TOOLBOX setting with no per-project override;
+  # this is the only place it is set.
   # It sits under `runtime:` rather than `defaults:` because `defaults:` is for
   # values a project could have overridden, and there is no longer such a
   # thing for this one.

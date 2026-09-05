@@ -1,3 +1,5 @@
-# Optional observed-discharge series. Gauge/control points live at
-# shared.basin.gauge_points; schemas: config/templates/.
+# build_model (wf1) -- baseline linux set
+
+# No observed series. To add one, key it by a variable in `model.outvars`
+# and set `basin.output_locations` in the project file.
 observations:

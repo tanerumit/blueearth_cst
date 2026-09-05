@@ -9,10 +9,19 @@ what it held; see `config/defaults/README.md`.
 
 | File | Purpose |
 | --- | --- |
-| `project_config.template.yml` | The annotated starting point for a new project's config. A filled-in worked example is `test_case/project_config_baseline.yml`. |
-| `output_locations_template.csv` | Header-only schema for gauge/output locations |
+| `project_config.template.yml` | The project file: what every workflow shares, and which workflows run. Start here. |
+| `project_config.analyze_climate.template.yml` | wf0. Empty on purpose; it reads the project file. |
+| `project_config.build_model.template.yml` | wf1: observations, run period, engine configs |
+| `project_config.analyze_projections.template.yml` | wf2: models, scenarios, variables, windows |
+| `project_config.run_stress_test.template.yml` | wf3: experiment, perturbation grid, compute |
+| `output_locations_template.csv` | Header-only schema for output locations |
 | `observed_daily_discharge_template.csv` | Header-only schema for observed discharge |
 | `archive/` | Unmaintained single-workflow configs; see its own README |
+
+The five YAML files are one set. Copy all five into your project folder and
+pass the project file to `--configfile`; its `config_path:` lines name the other
+four. A filled-in worked example is `test_case/project_config_rapid.yml` with
+its siblings; `docs/guide/configuration.qmd` walks through the layout.
 
 `wflow_sbm.reference.toml` sits here as a **reference copy only** — no Snakefile,
 script or test reads it. Rule 1.07 has hydromt generate the project's own TOML
@@ -30,18 +39,21 @@ Drop the `_template` suffix when you copy.
 
 # Why the template's defaults are what they are
 
-`project_config.template.yml` states only types and allowed values. The reasoning
-behind the non-obvious defaults lives here.
+The templates state what each key does. The reasoning behind the non-obvious
+defaults lives here.
 
-### `historical_window` — minimum 16 years
+### `climate.window` — minimum 16 years
 
-Enforced at WF1 parse time and again at extraction. weathergenr's wavelet
+Enforced at parse time and again at extraction. weathergenr's wavelet
 decomposition needs at least 16 annual observations, so a shorter record cannot
 support a stress test at all. The floor is `constraints.min_historical_years` in
-`config/advanced_settings.yml` and is **not** overridable per project. This
-window was 6 years until 2026-08-01 and would now be rejected.
+`config/advanced_settings.yml` and is **not** overridable per project.
 
-### `members` — why four labels, not one
+The window is inclusive water years; the model's own run period
+(`simulation_window` in the build_model file) may be shorter and must sit inside
+it.
+
+### `members.preference` — why four labels, not one
 
 Not every model publishes `r1i1p1f1`. CNRM-\*, MIROC-ES2L, UKESM1-0-LL and
 MCM-UA-1-0 use `f2`; HadGEM3-GC31-\* use `f3`; CanESM5-CanOE uses `p2f1`. Pinning
@@ -56,11 +68,45 @@ and future member sets differ. When those differ, the change-factor stage raises
 `asymmetric hist/clim members` rather than quietly using the intersection. With
 this list that affects CAMS-CSM1-0, CanESM5, EC-Earth3 (ssp245), GISS-E2-1-G,
 GISS-E2-1-H, IPSL-CM6A-LR (ssp434/460), MCM-UA-1-0 and NorESM2-LM (ssp245) — for
-those, narrow `members:` to the one label the model shares across your scenarios.
+those, narrow `members.preference` to the one label the model shares across your
+scenarios, or name it in `members.overrides`.
 
 Per-model member counts: `dev/reference/workflows/wf2-cmip6-monthly-members.csv`.
 
-### `historical_year_range` — why 1985–2014
+### `models` — every CMIP6 model with a historical member
+
+The template lists three. All 65 in the shipped catalog, as `Institution/Source`:
+
+```
+AS-RCEC/TaiESM1                 AWI/AWI-CM-1-1-MR               AWI/AWI-ESM-1-1-LR
+BCC/BCC-CSM2-MR                 BCC/BCC-ESM1                    CAMS/CAMS-CSM1-0
+CAS/CAS-ESM2-0                  CAS/FGOALS-f3-L                 CAS/FGOALS-g3
+CCCR-IITM/IITM-ESM              CCCma/CanESM5                   CCCma/CanESM5-CanOE
+CMCC/CMCC-CM2-HR4               CMCC/CMCC-CM2-SR5               CMCC/CMCC-ESM2
+CNRM-CERFACS/CNRM-CM6-1         CNRM-CERFACS/CNRM-CM6-1-HR      CNRM-CERFACS/CNRM-ESM2-1
+CSIRO/ACCESS-ESM1-5             CSIRO-ARCCSS/ACCESS-CM2         E3SM-Project/E3SM-1-0
+E3SM-Project/E3SM-1-1           E3SM-Project/E3SM-1-1-ECA       EC-Earth-Consortium/EC-Earth3
+EC-Earth-Consortium/EC-Earth3-AerChem                           EC-Earth-Consortium/EC-Earth3-CC
+EC-Earth-Consortium/EC-Earth3-Veg                               EC-Earth-Consortium/EC-Earth3-Veg-LR
+FIO-QLNM/FIO-ESM-2-0            HAMMOZ-Consortium/MPI-ESM-1-2-HAM
+INM/INM-CM4-8                   INM/INM-CM5-0                   IPSL/IPSL-CM5A2-INCA
+IPSL/IPSL-CM6A-LR               IPSL/IPSL-CM6A-LR-INCA          KIOST/KIOST-ESM
+MIROC/MIROC-ES2H                MIROC/MIROC-ES2L                MIROC/MIROC6
+MOHC/HadGEM3-GC31-LL            MOHC/HadGEM3-GC31-MM            MOHC/UKESM1-0-LL
+MPI-M/ICON-ESM-LR               MPI-M/MPI-ESM1-2-HR             MPI-M/MPI-ESM1-2-LR
+MRI/MRI-ESM2-0                  NASA-GISS/GISS-E2-1-G           NASA-GISS/GISS-E2-1-G-CC
+NASA-GISS/GISS-E2-1-H           NASA-GISS/GISS-E2-2-H           NCAR/CESM2
+NCAR/CESM2-FV2                  NCAR/CESM2-WACCM                NCAR/CESM2-WACCM-FV2
+NCC/NorCPM1                     NCC/NorESM2-LM                  NCC/NorESM2-MM
+NIMS-KMA/KACE-1-0-G             NIMS-KMA/UKESM1-0-LL            NOAA-GFDL/GFDL-CM4
+NOAA-GFDL/GFDL-ESM4             NUIST/NESM3                     SNU/SAM0-UNICON
+THU/CIESM                       UA/MCM-UA-1-0
+```
+
+The list is generated from the catalog; a model you add to
+`config/catalogs/cmip6_data.yml` qualifies the same way.
+
+### `reference_window` — why 1985–2014
 
 Thirty years ending at the last year the CMIP6 historical experiment covers
 (owner ruling OQ-4, 2026-07-29).
@@ -71,13 +117,11 @@ Thirty years ending at the last year the CMIP6 historical experiment covers
 - 2014 ends the historical experiment. Asking for more is not an error: the
   window is **clipped** to 2014 and the run says so on stderr. Scenario data is
   never spliced in to fill the gap, so the extra years simply do not arrive.
-- The range is inclusive, so 1985–2014 is thirty calendar years — and with the
-  default `shared.water_year_start: Jan`, thirty complete hydrological years. Any
-  other start month yields 29, the partial years at both ends dropped. Every
-  artifact reports the effective window and count beside the nominal one.
-  (The key was `workflows.analyze_projections.start_month_hyd_year` until
-  2026-08-12; that spelling is now a parse-time error, and it never reached the
-  change-factor arithmetic, which always used January.)
+- The range is inclusive **calendar** years, unlike `climate.window` in the
+  project file, which is water years. With the default `climate.water_year_start:
+  Jan` the two coincide; any other start month trims the partial years at both
+  ends one layer down. Every artifact reports the effective window and count
+  beside the nominal one.
 
 ### `experiment_name` — why it is absent rather than set
 
@@ -98,24 +142,27 @@ It reserves the directory atomically, versions a generated collision to `_v2`,
 and refuses to overwrite a name already set — which would strand a completed
 experiment's outputs under a name nothing points at.
 
-### `julia_threads` — how it interacts with `--cores`
+### `julia_threads` — a toolbox setting, not a project one
 
-Wflow parallelizes over grid **cells**, so raising it pays on a large basin and
-does nothing on a small one. It is not Snakemake's `--cores`: the two multiply,
-so keep `--cores N × julia_threads <= logical CPUs`.
+It lives in `config/advanced_settings.yml` under `runtime:` and has no
+per-project override. Wflow parallelizes over grid **cells**, so raising it pays
+on a large basin and does nothing on a small one. It is not Snakemake's
+`--cores`: the two multiply, so keep `--cores N × julia_threads <= logical CPUs`.
 
-### `batch_size` / `batch_size_max`
+### `compute.batch_size` / `compute.batch_size_max`
 
 WF3 groups stress-test members into batches for the Wflow run. Disk is the
-binding constraint on large `RLZ_NUM × ST_NUM` sweeps, because concurrent batches
-are resident at once — so `batch_size_max` (default 8) bounds the footprint,
-while an explicit `batch_size` wins outright. Both fail at parse time, naming the
-offending key, if set below 1.
+binding constraint on large sweeps, because concurrent batches are resident at
+once — so `batch_size_max` (default 8) bounds the footprint, while an explicit
+`batch_size` wins outright. Both fail at parse time, naming the offending key, if
+set below 1. `compute.disk_headroom_gb` states an absolute disk budget; absent,
+the toolbox keeps `defaults.batch_disk_headroom_fraction` of free disk
+(`config/advanced_settings.yml`).
 
-### `hydrography` / `basin_index`
+### `basin.sources.hydrography` / `basin.sources.basin_index`
 
 Catalog **entry names**, not paths. They must match `setup_basemaps` in the
-`model_build_config` template, or rule 1.02 fails loudly naming both files and
+`engine.build_config` template, or rule 1.02 fails loudly naming both files and
 both values.
 
 ---
@@ -128,44 +175,27 @@ config at the copies by **absolute path** — real basin data lives in the proje
 folder, never in this repository (see `AGENTS.md` § Repo Map, the two-tier
 `project_dir` rule).
 
-Both inputs are optional. To run without them, set the config keys to `null`:
+Both inputs are optional. To run without them:
 
 ```yaml
-shared:
-  basin:
-    gauge_points: null
-workflows:
-  build_model:
-    observations_timeseries: null
+# project file
+basin:
+  output_locations: null
+
+# build_model file
+observations:
 ```
 
-**They work as a pair.** `observations_timeseries` without `gauge_points` has
+**They work as a pair.** `observations` without `basin.output_locations` has
 nothing to key against: the series columns are matched by resolved `wflow_id`,
-and those ids only exist once gauge points have driven the delineation.
-
-**Config migration — the old key no longer works on its own.**
-`shared.basin.gauge_points` replaces `workflows.build_model.output_locations`
-because the points now control the model-neutral basin/subbasin layout as well
-as Wflow outputs, and **only the canonical key reaches the rule that delineates
-it** (1.03 `delineate_spatial_units`, whose params are `shared.basin` alone per
-ADR 0003 §8b — it is declared by all three workflows and the other two carry no
-`workflows.build_model` section).
-
-A config that sets ONLY the legacy key therefore fails at parse time with the
-migrated key spelled out. This used to be a `FutureWarning` that returned the
-path anyway, which was worse than useless: the points still reached the
-evaluation rule, so delineation quietly used the automatic fallback and the run
-failed a whole model build later, comparing observation station IDs against a
-registry built without them. If both keys are set they must name the same path,
-so a staged migration can carry both; conflicting values fail at parse time.
-
-Older configs may also write an unquoted `None`, which YAML parses to the Python
-**string** `"None"` rather than to null. That remains an accepted unset spelling
-during the compatibility release. Prefer a real YAML `null` in new configs.
+and those ids only exist once output locations have driven the delineation.
+`observations` is keyed by variable, and the variable must be one of
+`model.outvars`; a series for a variable the model does not write is refused at
+parse time.
 
 ## `output_locations_template.csv`
 
-Gauge/output locations, **comma**-separated:
+Output locations, **comma**-separated:
 
 | Column | Meaning |
 | --- | --- |
@@ -174,7 +204,7 @@ Gauge/output locations, **comma**-separated:
 | `x`, `y` | longitude, latitude in EPSG:4326 |
 | `location_role` | optional role: `control` (default) defines a subbasin; `observation` is tracked without controlling delineation |
 
-### How `wflow_id` is built (changed 2026-08-06 — **existing files must be renumbered**)
+### How `wflow_id` is built
 
 ```
 wflow_id = basin_id*1000 + local_subbasin_number*10 + m
@@ -185,31 +215,19 @@ points inside it. Basin 1 reads `1010, 1011, 1020, 1030…`; basin 2 reads
 `2010, 2011, …`. Ids therefore group by basin, order by subbasin, and keep the
 subbasin legible in the flat integer.
 
-**This replaces the previous scheme, and old files will not work.** Before
-2026-08-06 a primary location took its `subbasin_id` verbatim (`101`, `102`, …)
-while any additional location took `1_000_000 + subbasin_id*100 + n` — so a
-station and its neighbour sat four orders of magnitude apart in the same column.
+Both files are keyed by `wflow_id`, so the locations file's `wflow_id` column and
+the discharge file's column headers must agree. Neither failure is silent: a
+pinned `wflow_id` that does not match the resolved hierarchy stops preparation
+with an explicit old-ID → resolved-ID crosswalk, and an observation header
+carrying ids the registry does not know fails the WF1 header check by name.
 
-| location | before | after |
-| --- | --- | --- |
-| basin 1, subbasin 1, primary | `101` | `1010` |
-| basin 1, subbasin 1, second point | `1010102` | `1011` |
-| basin 1, subbasin 2, primary | `102` | `1020` |
+The simplest way to obtain ids is to **omit the `wflow_id` column**, run WF1
+once, and read the assigned ids out of `data/spatial/location_registry.csv` —
+the column is optional, and pinning it is only worth doing when you need the ids
+to stay fixed across rebuilds.
 
-**What you have to do.** Both files are keyed by `wflow_id`, so **renumber the
-locations file's `wflow_id` column and the discharge file's column headers
-together.** Neither failure is silent: a pinned `wflow_id` that no longer matches
-the resolved hierarchy stops preparation with an explicit old-ID → resolved-ID
-crosswalk, and an observation header carrying ids the registry does not know
-fails the WF1 header check by name.
-
-The simplest migration is to **delete the `wflow_id` column**, run WF1 once, and
-read the assigned ids out of `data/spatial/location_registry.csv` — the column is
-optional, and pinning it is only worth doing when you need the ids to stay fixed
-across rebuilds.
-
-`location_code` is unchanged (`B001-S01-L01`): codes are for reading, `wflow_id`
-is the integer for joining and for scanning a CSV header.
+`location_code` (`B001-S01-L01`) is for reading; `wflow_id` is the integer for
+joining and for scanning a CSV header.
 
 ## `observed_daily_discharge_template.csv`
 
@@ -232,7 +250,7 @@ not require an observation series.
 
 ## What consumes these
 
-The spatial-preparation phase reads gauge points to control subbasin
+The spatial-preparation phase reads output locations to control subbasin
 delineation and writes `spatial/location_registry.csv`. The Wflow adapter then
 uses that registry for gauge/output IDs; `plot_results.py` uses the same IDs for
 observation joins. A configured path is a declared Snakemake input, so a typo
@@ -244,7 +262,8 @@ Both files are snapshotted into `<project_dir>/config/basin_data/` by rule
 1.01, alongside the run's config (`config/runs/`), catalogs (`config/catalogs/`)
 and build templates (`config/templates/`). The bin is named for what it holds —
 local, basin-scoped tabular inputs — not for observations alone: only one of the
-two files is an observation, the other declares where the model reports. They are referenced by **absolute
-path** from wherever you keep them, so without that copy a finished project
-could not say what it was evaluated against — the metrics table would cite
-gauges and observations that exist only on the machine that ran it.
+two files is an observation, the other declares where the model reports. They are
+referenced by **absolute path** from wherever you keep them, so without that
+copy a finished project could not say what it was evaluated against — the
+metrics table would cite gauges and observations that exist only on the machine
+that ran it.

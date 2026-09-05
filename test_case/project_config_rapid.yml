@@ -1,58 +1,81 @@
-# RAPID config — the DEFAULT for iterating on the workflows end to end.
-# `project_config_baseline.yml` is the comprehensive one; use that for the
-# baseline, a milestone seal, or any run whose numbers get read.
+# =============================================================================
+#  RAPID -- the default config for running the workflows end to end
+# =============================================================================
 #
-# Cheap where the cost is, full where a code path would otherwise be skipped:
-#   - horizontime_climate 2050. weathergenr generates from 2010 to the horizon
-#     (prepare_weathergen_config.compute_nr_years anchors at 2010), so the HORIZON
-#     sets the series length, not run_length: 46 years here vs 78 for the seed.
-#   - run_length 8 — WF3's wflow time is RLZ_NUM x ST_NUM x this. EVEN, because
-#     forcing_window snaps ceil backwards and round forwards, so 7 and 8 both
-#     yield the same 9-year window and the odd value just misreports itself.
-#   - 2 models x 1 scenario = 4 WF2 series, not 9. Two models rather than one,
-#     so the multi-model ensemble reduction still runs.
-#   - run_historical: true. st_0 is what the two class-C month indicators are
-#     derived FROM, so `false` drops 2 of 11 q metrics with nothing reporting it.
+# Cheap where the cost is, complete where a code path would otherwise be
+# skipped. Use `project_config_baseline.yml` for any run whose numbers you
+# will read; this one is for watching the workflows execute.
 #
-# Paths are relative to the repo root (where you run Snakemake), not to this file.
+#   - 17 years of record: one more than the 16-year minimum.
+#   - stress test simulated over 2046-2054: the weather generator produces
+#     series from 2010 to the last simulated year, so a nearer window means a
+#     shorter series.
+#   - 2 models x 1 scenario: two models, so the multi-model summary still runs.
+#   - 2 x 2 perturbation levels plus the baseline: the smallest grid that
+#     still has a surface.
+#
+# Paths are relative to the repo root, where you run Snakemake, except
+# `config_path`, which is relative to this file.
+
+schema_version: 2
+
+
+# -----------------------------------------------------------------------------
+#  PROJECT
+# -----------------------------------------------------------------------------
 
 project:
   project_dir: test_case/test_rapid
   catalog: config/catalogs/deltares_data.yml
 
+
+# -----------------------------------------------------------------------------
+#  BASIN
+# -----------------------------------------------------------------------------
+
+basin:
+  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
+  resolution: 0.00833
+  output_locations: test_case/test_data/output_locations.csv
+
+
+# -----------------------------------------------------------------------------
+#  CLIMATE
+# -----------------------------------------------------------------------------
+
+climate:
+  # Two sources, so analyze_climate compares them.
+  sources:
+  - era5
+  - chirps
+  selected: era5
+  window:
+    start: 2000
+    end: 2016
+
+
+# -----------------------------------------------------------------------------
+#  MODEL
+# -----------------------------------------------------------------------------
+
+model:
+  outvars: ['river discharge', 'actual evapotranspiration', 'groundwater recharge']
+
+
+# -----------------------------------------------------------------------------
+#  WORKFLOWS
+# -----------------------------------------------------------------------------
+
 workflows:
-  # WF0 — the basin's historical climate, WITHOUT building a hydrology model.
-  # Every key below is optional; with none set this draws the canonical figure
-  # set for `shared.clim_historical` and nothing else, which is exactly what
-  # WF1 already produces. `candidate_sources` is what makes it a comparison.
   analyze_climate:
     enabled: true
     config_path: project_config_rapid_analyze_climate.yml
   build_model:
     enabled: true
     config_path: project_config_rapid_build_model.yml
-
   analyze_projections:
     enabled: true
     config_path: project_config_rapid_analyze_projections.yml
-
   run_stress_test:
     enabled: true
     config_path: project_config_rapid_run_stress_test.yml
-basin:
-  region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
-  resolution: 0.00833
-  output_locations: test_case/test_data/output_locations.csv
-model:
-  outvars: ['river discharge', 'actual evapotranspiration', 'groundwater recharge']
-climate:
-  selected: era5
-  window:
-    # 17 calendar years — one clear of the 16-year weathergenr floor
-    # (constraints.min_historical_years). Sizes the era5 climate store.
-    start: 2000
-    end: 2016
-  sources:
-  - era5
-  - chirps
-schema_version: 2

@@ -75,10 +75,41 @@ back, which is why a COMPLETE run ends with a correct TOML. Measured on
 3. **Do nothing and clean up after.** Rejected on sight: it leaves the TOML
    window open, which is the half that can affect a result.
 
-Option 2 looks like the smallest correct change and its own log row already
-proves the target state is supported. Either way this is a rule-behaviour
-change and takes the full ladder: `test-full`, plus a WF1 re-run against a
-model that already has forcing, which is the case no fixture currently covers.
+## What was done: option 1, by replicating the plugin's sequence
+
+Option 2 was tried first and abandoned. There is no PUBLIC way to empty the
+component: `forcing.set()` refuses data without a `time` dimension
+(`components/forcing.py:288`), and the only other route is assigning the
+private `_data`.
+
+Option 1 then hit its own wall. `hydromt`'s base `Model.write` takes a
+`components` list, so naming everything except `forcing` would have been a
+one-line fix -- but `WflowBaseModel` OVERRIDES `write` with a signature that
+takes filenames only (`wflow_base.py:1716`), and that call raises `TypeError`.
+Read the plugin's override, not the base class.
+
+What landed is `blueearth_cst/shared/wflow_write.py`: the plugin's own write
+sequence, step for step, minus `self.forcing.write(...)`, keeping its opening
+`Write model data to <root>` row so the two rules are not silent. The cost is
+that it must stay in step with the plugin, and drift would be SILENT -- a
+component hydromt adds would just stop being written and the run would still
+exit 0. `tests/test_wflow_write.py` closes that with a drift guard that parses
+the plugin's own source and asserts its component writes are exactly ours plus
+the forcing.
+
+## Verification
+
+`test-full`, plus the re-run case no fixture covers: a complete WF1 on the
+rapid config, then `-f add_reservoirs_lakes_glaciers declare_wflow_outputs`
+against the resulting model. Snakemake ran exactly those 2 jobs (rule 1.07 did
+NOT re-run, which would have wiped the forcing and made the check vacuous).
+Before: a 3.24 MB duplicate and a repointed TOML. After: `forcing/` holds only
+`inmaps_historical.nc` and `path_forcing = "forcing/inmaps_historical.nc"`,
+unchanged, with no `already exists and overwriting` row in the log.
+
+WF3's rule 3.14 was checked for the same defect and is clean -- it writes
+`mod.forcing.write(filename=...)` and `mod.config.write(...)` explicitly,
+never a blanket `write()`.
 
 ## Relation to t2609041718
 
@@ -91,9 +122,9 @@ them — but the watch-item should cite this one.
 
 ## Progress
 
-- [ ] Pick between options 1 and 2
-- [ ] Add a regression test: build, then re-run 1.08 against a model that
-      already has forcing, and assert the forcing directory holds exactly one
-      netCDF and `path_forcing` still names it
-- [ ] Land, then re-run WF1 twice in a row on the rapid config to confirm
-- [ ] Cross-reference from `t2609041718`
+- [x] Pick between options 1 and 2 — option 1, via a replicated sequence
+- [x] Add a regression test — `tests/test_wflow_write.py`, including the drift
+      guard against the plugin's own source
+- [x] Land, then re-run 1.08 and 1.09 against a model that already has forcing
+- [x] Check WF3 for the same defect — clean
+- [x] Cross-reference from `t2609041718`

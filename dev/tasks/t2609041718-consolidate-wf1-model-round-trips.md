@@ -250,3 +250,13 @@ What survives from the investigation, and is worth not re-deriving:
 `setup_reservoirs_lakes_glaciers.py`'s docstring now states this reasoning and
 cites this note by ID, so **this note keeps its ID and is not closed with
 `done`** — closing deletes the file and breaks that citation.
+
+## Later evidence: the split's cost was not only time ([[t2609051529]])
+
+2026-09-05. The redundant round-trip turned out to also DUPLICATE the forcing
+netCDF on every re-run and briefly repoint `input.path_forcing` at the copy,
+because the blanket `mod.write()` in 1.08 and 1.09 flushed a component neither
+rule owns. That is new evidence of a different kind from the ~1.7 s measured
+here, and it does not overturn the ruling: the fix was to stop those rules
+flushing the forcing (`shared/wflow_write.py`), not to merge them back into
+1.07. The failure-isolation argument above is untouched.

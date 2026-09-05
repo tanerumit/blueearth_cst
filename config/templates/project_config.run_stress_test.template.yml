@@ -8,7 +8,7 @@
 
 
 # -----------------------------------------------------------------------------
-#  EXPERIMENT -- name, seed, size, period
+#  EXPERIMENT
 # -----------------------------------------------------------------------------
 
 # Name of the experiment folder. Default: project name plus the date of the
@@ -28,7 +28,7 @@ simulation_window:
 
 
 # -----------------------------------------------------------------------------
-#  PERTURBATION GRID -- the stress test itself
+#  PERTURBATION GRID
 # -----------------------------------------------------------------------------
 
 # Each axis runs from `min` to `max` in `n_levels` steps, set per month
@@ -61,7 +61,7 @@ climate_perturbations:
 
 
 # -----------------------------------------------------------------------------
-#  COMPUTE -- optional
+#  COMPUTE
 # -----------------------------------------------------------------------------
 
 # How model runs are grouped. Larger batches need more disk at once.

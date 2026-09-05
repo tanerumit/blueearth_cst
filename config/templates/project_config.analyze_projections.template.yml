@@ -7,7 +7,7 @@
 
 
 # -----------------------------------------------------------------------------
-#  ENSEMBLE -- which projections to use
+#  ENSEMBLE
 # -----------------------------------------------------------------------------
 
 catalog: config/catalogs/cmip6_data.yml    # CMIP6 catalog (generated, do not edit)
@@ -29,7 +29,7 @@ members:
 
 
 # -----------------------------------------------------------------------------
-#  VARIABLES -- what to compute change factors for
+#  VARIABLES
 # -----------------------------------------------------------------------------
 
 # Leave the value empty to use the built-in definition (precip: relative
@@ -41,7 +41,7 @@ variables:
 
 
 # -----------------------------------------------------------------------------
-#  WINDOWS -- reference period and future horizons
+#  WINDOWS
 # -----------------------------------------------------------------------------
 
 # Calendar years, inclusive. CMIP6 historical runs end in 2014; a later end
@@ -57,7 +57,7 @@ future_windows:
 
 
 # -----------------------------------------------------------------------------
-#  REPORTING -- optional
+#  REPORTING
 # -----------------------------------------------------------------------------
 
 #stats: [mean, median, std]               # ensemble statistics to report

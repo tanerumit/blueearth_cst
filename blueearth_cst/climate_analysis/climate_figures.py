@@ -477,7 +477,7 @@ def load_spatial_overlays(geoms_dir: Optional[Union[str, Path]]) -> dict:
         if path.is_file():
             overlays[name] = gpd.read_file(path)
         else:
-            log_row(f"spatial overlay absent, skipped: {path}", module="plot")
+            log_row(f"Spatial overlay absent, skipped: {path}", module="plot")
     return overlays
 
 

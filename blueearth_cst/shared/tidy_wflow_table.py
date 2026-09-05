@@ -222,6 +222,6 @@ if __name__ == "__main__":
         # One file named, several counted -- `flush_figure_bundles`' grammar,
         # because a rule that writes ONE table should say which.
         if len(written) == 1:
-            log_row(f"wrote {written[0]}", module="export")
+            log_row(f"Wrote {written[0]}", module="export")
         else:
-            log_row(f"wrote {len(written)} table(s) -> {out_dir}", module="export")
+            log_row(f"Wrote {len(written)} table(s) -> {out_dir}", module="export")

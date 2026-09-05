@@ -155,7 +155,7 @@ def _write_runs_readme(directory: Path) -> None:
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "README.md").write_text(_RUNS_README, encoding="utf-8")
     except OSError as error:  # never fail a run over a README
-        log_row(f"could not write {directory}/README.md: {error}", module="config")
+        log_row(f"Could not write {directory}/README.md: {error}", module="config")
 
 
 def copy_config_files(

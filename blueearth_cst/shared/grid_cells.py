@@ -113,7 +113,7 @@ def cells_csv_mask(ds: xr.Dataset, cells_csv: Optional[Union[str, Path]]):
         return None
     if not has_grid(ds):
         log_row(
-            "store does not spell its grid latitude/longitude; the basin mask "
+            "Store does not spell its grid latitude/longitude; the basin mask "
             "cannot be matched and the full extraction is used",
             module="cells",
             level="WARNING",
@@ -160,7 +160,7 @@ def subbasin_masks(ds: xr.Dataset, subbasins, id_column: str = SUBBASIN_ID_COLUM
         return {}
     if id_column not in subbasins.columns:
         log_row(
-            f"subbasin layer carries no {id_column!r} column; per-subbasin "
+            f"Subbasin layer carries no {id_column!r} column; per-subbasin "
             "figures are skipped",
             module="cells",
             level="WARNING",

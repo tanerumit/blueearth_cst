@@ -110,6 +110,27 @@ Ranked by rows saved per run, then by how visible the clash is.
     2026-09-05: projections 19 lowercase vs 6 upper, experiment 6 vs 2, all other
     folders capitalised. Pick one (capitalised is the majority and what hydromt
     and the R rows do) and sweep. Cosmetic; last.
+    — **landed**: 33 openers capitalised, counted by an AST walk over every
+    `log_row` / `warn_row` / `_log` call rather than by grep, so a call broken
+    across lines was not missed. **A call-site walk is not sufficient on its
+    own**: four rows are built elsewhere and handed in as a local, which the
+    walk skips silently. The four `.smk` files cannot be `ast.parse`d at all,
+    and every one of their `warn_row` calls is that shape — `warn_row` 's own
+    docstring requires it, because `module=` opening a continuation line is
+    read as Snakemake's `module` directive. Those were traced by hand through
+    `reference_window.window_warnings`, `gridded_outputs`, `batch_sizing` and
+    `hns_switch_row`; three of the four needed fixing.
+
+    Six rows are deliberately left lowercase, because they open with a NAME
+    rather than a sentence and capitalising would misspell the thing the row is
+    about: `wf2 snapshot absent` (a workflow id), `reference_window <k=v ...>`
+    (a field name carrying a grep contract), `store calendar=` (key=value),
+    `project_dir is inside the repo tree` (a config key), `experiment_name
+    unset` (a config key) and `gcsfs extended-filesystem switch =` (a package
+    name). A row opening with an interpolated value is untouched by
+    construction. `Wrote raw ` is also a `_TEE_CONSOLE_MUTED` prefix, so the
+    mute entry moved with it; the R rows were already capitalised, and no `.R`
+    file outside `weathergen/` emits rows.
 
 12. **`log_row` never flushes.** Off a terminal (CI, a redirect) a rule's rows
     arrive after its DONE line. A `sys.stdout.flush()` after the write.
@@ -136,4 +157,4 @@ Ranked by rows saved per run, then by how visible the clash is.
 - [x] Items 1, 2, 9, 12 (console handler and tee -- one commit)
 - [x] Items 3, 4 (durations and the heartbeat -- one commit)
 - [x] Items 5, 6, 7, 8, 10 (per-rule rows)
-- [ ] Item 11 (case sweep), last
+- [x] Item 11 (case sweep), last

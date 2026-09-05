@@ -100,7 +100,7 @@ if __name__ == "__main__":
                 experiment=sm.params.experiment,
             )
             log_row(
-                "model reference matches the live model; simulation may proceed",
+                "Model reference matches the live model; simulation may proceed",
                 module="experiment",
             )
     else:

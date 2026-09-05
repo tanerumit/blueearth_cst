@@ -2795,7 +2795,7 @@ _TEE_CONSOLE_MUTED = (
     # WF2's own fetch rows that state a property of the RUN, or a fact the
     # artifact already carries. Same terms as everything above: INFO only, and
     # the row survives in every log part. The row naming WHICH slice a worker is
-    # on -- `fetching <resolved entry name>` -- is
+    # on -- `Fetching <resolved entry name>` -- is
     # deliberately NOT here: with several fetch jobs in flight (Snakemake under
     # `-c 3`, or `stage_cmip6.py` under four workers) it is the only thing that
     # attributes a twenty-minute wait to a source, and a stall nobody can
@@ -2811,12 +2811,12 @@ _TEE_CONSOLE_MUTED = (
     # `store calendar=noleap (tas)` -- a property of the store, stamped on the
     # slice as `cst_calendar`, so the console copy is the transient one.
     ("fetch", "store calendar="),
-    # `wrote raw <key>.nc (0.07 MB, 780 steps)` -- the completion row. Under
+    # `Wrote raw <key>.nc (0.07 MB, 780 steps)` -- the completion row. Under
     # Snakemake the rule's DONE line already says the job finished, and under
     # `stage_cmip6.py` the tool's own entry restates the size beside the
     # elapsed time; either way this row lands next to a second statement of
     # itself. The size and step count stay in the log part.
-    ("fetch", "wrote raw "),
+    ("fetch", "Wrote raw "),
 )
 
 

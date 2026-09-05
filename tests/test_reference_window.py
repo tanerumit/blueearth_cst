@@ -96,20 +96,20 @@ def test_K6_the_seed_window_of_exactly_20_years_does_NOT_warn():
     """An off-by-one here is invisible on the fixture and wrong everywhere else."""
     w = clip_reference_window(SEED_REQUESTED)
     assert w.n_years == 20
-    assert not any("short reference window" in line for line in window_warnings(w))
+    assert not any("Short reference window" in line for line in window_warnings(w))
 
 
 def test_K6_nineteen_years_does_warn():
     w = clip_reference_window([1991, 2010])
     assert w.n_years == 19
-    assert any("short reference window" in line for line in window_warnings(w))
+    assert any("Short reference window" in line for line in window_warnings(w))
 
 
 def test_K6_a_clipped_window_can_trigger_BOTH_warnings():
     """Conditions are independent; D1 says per condition, not lumped."""
     lines = window_warnings(clip_reference_window([2000, 2030]))
     assert any("clipped" in line for line in lines)
-    assert any("short reference window" in line for line in lines)
+    assert any("Short reference window" in line for line in lines)
     assert len(lines) == 2
 
 

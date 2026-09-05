@@ -366,7 +366,7 @@ def analyze_wflow_results(
 
     rows: dict = {token: [] for token in indicator_tokens}
     log_row(
-        f"reducing {len(csv_fns)} runs into {len(indicator_tokens)} indicator "
+        f"Reducing {len(csv_fns)} runs into {len(indicator_tokens)} indicator "
         f"table(s): {', '.join(indicator_tokens)}",
         module="export",
     )
@@ -480,7 +480,7 @@ def analyze_wflow_results(
         # aligns rows by. Formatting one column leaves all the others exact.
         table["value"] = table["value"].map(_format_value)
         table.to_csv(table_paths[token], index=False)
-        log_row(f"wrote {table_paths[token]} ({len(table)} rows)", module="export")
+        log_row(f"Wrote {table_paths[token]} ({len(table)} rows)", module="export")
 
 
 if __name__ == "__main__":

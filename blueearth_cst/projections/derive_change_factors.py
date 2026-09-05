@@ -361,7 +361,7 @@ if "snakemake" in globals():
             )
 
         log_row(
-            f"deriving change factors for {len(points)} point(s) x "
+            f"Deriving change factors for {len(points)} point(s) x "
             f"{len(horizons)} horizon(s)",
             module="change",
         )
@@ -445,7 +445,7 @@ if "snakemake" in globals():
                     )
 
             log_row(
-                f"merging {len(change_files)} change file(s) into the summary",
+                f"Merging {len(change_files)} change file(s) into the summary",
                 module="change",
             )
             summary_climate_proj(
@@ -548,12 +548,12 @@ if "snakemake" in globals():
             columns=TABLE_COLUMNS_MONTHLY,
         )
         log_row(
-            f"tidy monthly change-factor table: {len(monthly_rows)} rows "
+            f"Tidy monthly change-factor table: {len(monthly_rows)} rows "
             f"-> {os.path.basename(str(sm.output.change_factors_monthly))}",
             module="change",
         )
         log_row(
-            f"tidy annual change-factor table: {len(rows)} rows "
+            f"Tidy annual change-factor table: {len(rows)} rows "
             f"-> {os.path.basename(str(sm.output.change_factors_annual))}",
             module="change",
         )
@@ -658,17 +658,17 @@ if "snakemake" in globals():
             ),
         )
         log_row(
-            f"report -> {os.path.basename(str(sm.output.report_md))}", module="change"
+            f"Report -> {os.path.basename(str(sm.output.report_md))}", module="change"
         )
         log_row(
-            f"provenance: {len(document['sources'])} sources, "
+            f"Provenance: {len(document['sources'])} sources, "
             f"{document['composition']['resolved']}/{document['composition']['requested']} resolved "
             f"-> {os.path.basename(str(sm.output.provenance_json))}",
             module="change",
         )
         n_resolved = sum(1 for r in rows if r["status"] == "resolved")
         log_row(
-            f"composition record: {len(rows)} requested, {n_resolved} resolved "
+            f"Composition record: {len(rows)} requested, {n_resolved} resolved "
             f"-> {os.path.basename(str(sm.output.composition_csv))}",
             module="change",
         )

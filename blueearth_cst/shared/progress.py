@@ -65,8 +65,8 @@ _BAR_MAX = 32
 _BAR_DEFAULT = 28
 
 # Everything on the line that is not the bar or the label: percentage, the two
-# clocks, the separator and the padding between fields.
-_LINE_OVERHEAD = 30
+# `h:mm:ss` clocks, the separator and the padding between fields.
+_LINE_OVERHEAD = 34
 
 _MIN_REDRAW_SECONDS = 0.1
 
@@ -92,13 +92,20 @@ def _stream_glyphs(stream) -> dict[str, str]:
 
 
 def format_duration(seconds: float) -> str:
-    """``M:SS``, widening to ``H:MM:SS`` only once there is an hour to show."""
+    """``h:mm:ss`` -- the one duration spelling on the console.
+
+    The same rendering as ``snake_utils.format_elapsed`` (the DONE lines, the
+    run summary, the heartbeat) and the benchmark tables' own column. It is
+    restated here rather than imported because this module pulls in dask and
+    ``snake_utils`` must stay light enough for a Snakefile to import at parse
+    time; ``tests/test_progress.py`` pins the two to the same output. The bar
+    used to widen from ``M:SS`` only at an hour, which put ``3:44 elapsed`` on
+    the frame and ``0:03:46`` on the DONE line two rows later.
+    """
     seconds = max(int(seconds), 0)
     hours, remainder = divmod(seconds, 3600)
     minutes, secs = divmod(remainder, 60)
-    if hours:
-        return f"{hours:d}:{minutes:02d}:{secs:02d}"
-    return f"{minutes:d}:{secs:02d}"
+    return f"{hours:d}:{minutes:02d}:{secs:02d}"
 
 
 def render_bar(

@@ -37,8 +37,14 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
 
+# `save_figure`: every figure in the toolbox is written and announced through
+# ONE function, so WF0/WF1's `N figures -> <dir>` bundle row is what WF2 prints
+# too. The four writes below used to call `fig.savefig` directly and let each
+# caller log a row per figure, which is why WF2 was the one workflow whose
+# figures were announced one-per-line under two different module tags.
 from blueearth_cst.shared import plot_style
 from blueearth_cst.shared.cartographic_map import _publication_rc, series_figure_size
+from blueearth_cst.shared.snake_utils import save_figure
 
 #: Scenario ink. Carried over from the producers this design replaces, verbatim:
 #: the set is judged on layout and semantics, not on a palette change nobody
@@ -336,7 +342,7 @@ def draw_annual_overview(annual, variable, reference, out_path, dpi=None):
             "members are not distinguished. CMIP6 is a plausibility overlay, not a "
             "stress-test driver.",
         )
-        fig.savefig(out_path, dpi=dpi)
+        save_figure(out_path, fig=fig, dpi=dpi)
         plt.close(fig)
     return traces // 2
 
@@ -417,7 +423,7 @@ def draw_cloud_faceted(changes, horizons, out_path, dpi=None):
             "model; colour still encodes scenario alone. Marginal densities removed: "
             "these points are not a distribution.",
         )
-        fig.savefig(out_path, dpi=dpi)
+        save_figure(out_path, fig=fig, dpi=dpi)
         plt.close(fig)
     return points
 
@@ -494,7 +500,7 @@ def draw_cloud_combined(changes, horizons, out_path, dpi=None):
             "Companion to the faceted cloud: this view shows how far the cloud travels "
             "between horizons.",
         )
-        fig.savefig(out_path, dpi=dpi)
+        save_figure(out_path, fig=fig, dpi=dpi)
         plt.close(fig)
     return points
 
@@ -551,6 +557,6 @@ def draw_monthly_change(changes, name, horizon, reference, out_path, dpi=None):
             f"scenario, member): {traces // 2} per panel, colour encoding scenario "
             "alone. CMIP6 is a plausibility overlay, not a stress-test driver.",
         )
-        fig.savefig(out_path, dpi=dpi)
+        save_figure(out_path, fig=fig, dpi=dpi)
         plt.close(fig)
     return traces // 2

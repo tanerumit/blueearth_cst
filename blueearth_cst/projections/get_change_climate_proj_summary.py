@@ -164,11 +164,7 @@ def summary_climate_proj(
 
     faceted = plots_dir / projection_figures.CLOUD_FACETED_PATH
     faceted.parent.mkdir(parents=True, exist_ok=True)
-    points = projection_plots.draw_cloud_faceted(changes, periods, faceted)
-    log_row(
-        f"Wrote {projection_figures.CLOUD_FACETED_PATH} ({points} points)",
-        module="change",
-    )
+    projection_plots.draw_cloud_faceted(changes, periods, faceted)
 
     # The combined view exists to show how far the cloud TRAVELS between
     # horizons, so a single-horizon project does not get one -- it would be the
@@ -176,11 +172,7 @@ def summary_climate_proj(
     # applies the same rule, so the Snakefile declares exactly what is written.
     if len(periods) > 1:
         combined = plots_dir / projection_figures.CLOUD_COMBINED_PATH
-        points = projection_plots.draw_cloud_combined(changes, periods, combined)
-        log_row(
-            f"Wrote {projection_figures.CLOUD_COMBINED_PATH} ({points} points)",
-            module="change",
-        )
+        projection_plots.draw_cloud_combined(changes, periods, combined)
 
 
 # NOTE: this module no longer runs as a Snakemake `script:`. Step 4d merged rules

@@ -184,7 +184,7 @@ def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
 
         result = _dry_run("build_model.smk", cfg=str(cfg_path))
         combined = (result.stdout or "") + (result.stderr or "")
-        assert "inside the repository tree" in combined, combined[-3000:]
+        assert "inside the repo tree" in combined, combined[-3000:]
         assert result.returncode == 0, combined[-3000:]
     finally:
         for leftover in sorted(scratch.rglob("*"), reverse=True):

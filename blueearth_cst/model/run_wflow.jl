@@ -28,7 +28,7 @@ using Dates
 # windows that reported nothing (see `open_frame`) -- opening the bar first is
 # what puts a line on the console for it.
 include(joinpath(@__DIR__, "..", "shared", "wflow_progress.jl"))
-using .WflowProgress: open_frame, run_with_progress
+using .WflowProgress: open_frame, run_with_progress, format_elapsed
 
 open_frame("wflow")
 
@@ -45,7 +45,7 @@ tomlpath = ARGS[1]
 
 try
     dt = @elapsed run_with_progress(Wflow, tomlpath; label = "wflow")
-    row("simulation complete  $(round(dt; digits = 1)) s")
+    row("simulation complete  $(format_elapsed(dt))")
     flush(stdout)
 catch e
     # `FAILED` is the spelling the console's severity matcher knows

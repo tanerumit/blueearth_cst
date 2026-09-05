@@ -16,7 +16,7 @@ from blueearth_cst.shared.provenance import append_journal_line, configuration_i
 from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retired_experiment_keys
 from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, window_year_pair, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, warn_row, window_year_pair, install_console_style, run_header
 from blueearth_cst.experiment.check_project_consistency import guarded_section_paths
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -181,12 +181,14 @@ if _name is None or (isinstance(_name, str) and not _name.strip()):
             f"    pixi run python scripts/suggest_experiment_name.py "
             f"{config_path} --name <name>\n"
         ) from None
-    print(
-        f"experiment_name is not set; using {experiment!r} "
-        f"(derived from project_dir). Set the key, or run "
-        f"scripts/suggest_experiment_name.py, to pin a different name.",
-        file=sys.stderr,
+    # One statement, then a SINGLE-LINE call: `module` is a Snakemake keyword,
+    # and `module=...` opening a continuation line is parsed as the `module`
+    # directive rather than as a keyword argument. See `warn_row`.
+    _derived_name_note = (
+        f"experiment_name unset; using {experiment!r} from project_dir. "
+        f"Pin one with scripts/suggest_experiment_name.py"
     )
+    warn_row(_derived_name_note, module="config")
 else:
     experiment = _name
 # Validate the experiment name as a safe experiments/<name>/ path segment BEFORE
@@ -1259,7 +1261,7 @@ batch_size = _batch_sizing.batch_size
 if _batch_sizing.warning:
     # WARNING rather than a raise: the cap cannot shrink below B=1, so this is
     # the one overrun it can only report. The console paints it orange.
-    log_row(_batch_sizing.warning, module="wflow", level="WARNING")
+    warn_row(_batch_sizing.warning, module="wflow")
 _batches = {bid: _k_members[i:i + batch_size]
             for bid, i in enumerate(range(0, len(_k_members), batch_size))}
 _batch_driver = str(Path(workflow.basedir) / "blueearth_cst" / "experiment" / "run_wflow_batch.jl")

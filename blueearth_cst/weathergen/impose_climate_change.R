@@ -30,8 +30,12 @@ st_id_token        <- args[[5]]
 # varied except the output filename, which Snakemake already knows because it is
 # this rule's own declared output, so it now arrives as args[[4]].
 yaml <- yaml::read_yaml(weathergen_config_path)
-# Stochastic weather realization to be perturbed
-log_row("Reading realization: ", rlz_path)
+# Stochastic weather realization to be perturbed. Named by the MEMBER being
+# built, like the perturbation row below: rule 3.12 is one job per member and
+# several run at once under `-c 3`, so a row carrying only the realization it
+# reads was printed identically by every member of that realization.
+log_row(sub("\\.nc$", "", basename(output_nc_path)),
+        " reading realization ", basename(rlz_path))
 rlz_input <- weathergenr::read_netcdf(rlz_path, keep_leap_day = FALSE)
 # This member's slice of the experiment's stress-test lookup: twelve rows in
 # month order, or a stop() naming the token.
@@ -64,7 +68,7 @@ precip_variance_factor <- 1 + cst_data$precip_variance_change / 100
 # declaration -- and is naming-agnostic: rlz_1_cst_2 and rlz_1_st_2 both split
 # correctly, which R11 P2's member-token rename then demonstrated -- it changed
 # the declared name and touched nothing here.
-output_path    <- paste0(dirname(output_nc_path), "/")
+output_path    <- dirname(output_nc_path)
 output_stem    <- sub("\\.nc$", "", basename(output_nc_path))
 if (!grepl("_", output_stem, fixed = TRUE)) {
   stop("cannot split '", output_stem, "' into weathergenr's <prefix>_<suffix>: ",
@@ -96,7 +100,41 @@ wnc <- yaml$write_netcdf
 # `diagnostic = FALSE` makes the return shape compatible with write_netcdf
 # directly (a list of data.frames, one per grid cell — same as the old
 # imposeClimateChanges return).
-log_row("Applying climate perturbations")
+# WHICH member, and BY WHAT. The rule banner already carries `[rlz N | st M]`
+# and the `[n/total]` job counter, but under `-c 3` several 3.12 jobs interleave
+# their body rows on one console, and a bare "Applying climate perturbations"
+# cannot be attributed to the banner above it -- so it reads as the same row
+# repeated once per member, which on a full grid is exactly what it looks like.
+#
+# `output_stem` rather than a re-derived id: it is the declared output name,
+# this script's one source of truth for the member (see the derivation above).
+#
+# Summarized across the twelve monthly rows. Every shipped grid holds one value
+# for all twelve, so the summary is normally a single number -- but the lookup
+# schema permits monthly variation, and printing `[1]` of a varying vector would
+# be a confidently wrong row, so a varying factor prints its range instead.
+fmt_change <- function(values, unit) {
+  lo <- min(values)
+  hi <- max(values)
+  if (isTRUE(all.equal(lo, hi))) {
+    sprintf("%+.1f%s", lo, unit)
+  } else {
+    sprintf("%+.1f..%+.1f%s", lo, hi, unit)
+  }
+}
+perturbation <- paste0(
+  "temp ", fmt_change(cst_data$temp_change, " degC"),
+  ", precip ", fmt_change(cst_data$precip_change, "%")
+)
+# Variance is flat at 0.0 percent on every shipped config, so naming it there
+# would be a constant column; it appears only where it actually varies the run.
+if (any(cst_data$precip_variance_change != 0)) {
+  perturbation <- paste0(
+    perturbation, ", precip var ",
+    fmt_change(cst_data$precip_variance_change, "%")
+  )
+}
+log_row(output_stem, " applying perturbations (", perturbation, ")")
 rlz_future <- weathergenr::apply_climate_perturbations(
    data               = rlz_input$data,
    grid               = rlz_input$grid,
@@ -140,8 +178,9 @@ rlz_future <- weathergenr::apply_climate_perturbations(
    pet_method         = acp$pet_method
 )
 
-# Save to netcdf file
-log_row("Saving perturbed netcdf to: ", output_path)
+# Save to netcdf file. Unannounced: weathergenr's own `NetCDF written: <path>
+# | vars=... | dims=...` row lands immediately below and names the file, so an
+# opener stating the DIRECTORY was one row per member saying less.
 weathergenr::write_netcdf(
    data          = rlz_future,
    grid          = rlz_input$grid,

@@ -74,17 +74,21 @@ def _state(finished=0, ready=0, waiting=0, running=0):
 @pytest.mark.parametrize(
     ("seconds", "expected"),
     [
-        (0, "0:00"),
-        (7, "0:07"),
-        (67, "1:07"),
-        (599, "9:59"),
+        (0, "0:00:00"),
+        (7, "0:00:07"),
+        (67, "0:01:07"),
+        (599, "0:09:59"),
         (3600, "1:00:00"),
         (3725, "1:02:05"),
-        (-5, "0:00"),  # a clock never runs backwards on screen
+        (-5, "0:00:00"),  # a clock never runs backwards on screen
     ],
 )
-def test_format_duration_widens_only_at_an_hour(seconds, expected):
+def test_format_duration_is_h_mm_ss(seconds, expected):
+    """One duration spelling on the console: the bar agrees with the DONE line."""
+    from blueearth_cst.shared.snake_utils import format_elapsed
+
     assert format_duration(seconds) == expected
+    assert format_duration(seconds) == format_elapsed(seconds)
 
 
 # --- rendering ----------------------------------------------------------------
@@ -102,20 +106,20 @@ def test_render_bar_reports_label_percentage_and_eta():
     assert line.startswith("era5 store  ")
     assert " 25.0%" in line
     # A quarter done after 30s implies 90s remaining.
-    assert "eta 1:30" in line
+    assert "eta 0:01:30" in line
 
 
 def test_render_bar_omits_eta_before_any_progress():
     """Zero progress gives no basis for an estimate, so none is printed."""
     line = render_bar(0.0, 4.0, label="era5 store", glyphs=_GLYPHS_ASCII)
     assert "eta" not in line
-    assert "0:04 elapsed" in line
+    assert "0:00:04 elapsed" in line
 
 
 def test_render_bar_final_frame_reads_as_a_summary():
     line = render_bar(1.0, 44.0, label="era5 store", glyphs=_GLYPHS_ASCII)
     assert "100.0%" in line
-    assert "0:44 elapsed" in line
+    assert "0:00:44 elapsed" in line
     assert "eta" not in line
 
 

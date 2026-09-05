@@ -57,8 +57,11 @@ historical_realizations_num <- gw$n_realizations
 # figures, so the split is done here -- on our side of the seam -- rather than
 # by asking upstream for two output directories.
 weathergen_root <- gw$out_dir
-weathergen_output_path <- paste0(weathergen_root, "output/")
-weathergen_plots_path <- paste0(weathergen_root, "plots/")
+# No trailing slash on either: weathergenr joins with file.path(), so a slash
+# here landed as `output//rlz_1_st_0.nc` on every path row it printed.
+weathergen_root <- sub("/+$", "", weathergen_root)
+weathergen_output_path <- file.path(weathergen_root, "output")
+weathergen_plots_path <- file.path(weathergen_root, "plots")
 
 # Step 1) Read weather data from the netcdf file
 log_row("Reading weather netcdf: ", climate_nc_path)

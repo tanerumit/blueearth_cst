@@ -113,17 +113,16 @@ def window_warnings(window: ReferenceWindow, shared_window=None) -> list[str]:
 
     if window.clipped:
         lines.append(
-            f"reference window clipped: requested {window.requested_label}, "
-            f"effective {window.effective_label} (the historical experiment ends "
-            f"{HISTORICAL_END_YEAR}; reference data is clipped, never spliced)."
+            f"reference window clipped: {window.requested_label} -> "
+            f"{window.effective_label} (the historical experiment ends "
+            f"{HISTORICAL_END_YEAR})"
         )
 
     if window.n_years < SHORT_WINDOW_YEARS:
         lines.append(
             f"short reference window: {window.n_years} years "
-            f"({window.effective_label}). Statistics derived from it are "
-            f"correspondingly uncertain; {SHORT_WINDOW_YEARS} is the design's "
-            "reference length."
+            f"({window.effective_label}); the design length is "
+            f"{SHORT_WINDOW_YEARS}"
         )
 
     # Alignment: silent unless the clip is what broke it. See the module docstring.
@@ -132,8 +131,8 @@ def window_warnings(window: ReferenceWindow, shared_window=None) -> list[str]:
         if window.effective != shared and window.requested == shared:
             lines.append(
                 f"reference window no longer aligns with shared.historical_window "
-                f"{shared[0]}-{shared[1]}: they were equal as configured, and the "
-                f"clip to {window.effective_label} broke the alignment."
+                f"{shared[0]}-{shared[1]}; the clip to {window.effective_label} "
+                f"broke it"
             )
     return lines
 

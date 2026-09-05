@@ -1,14 +1,27 @@
 """Update a wflow model with reservoirs, lakes and glaciers.
 
-This runs as a **separate rule** (rather than inside create_model's build
-config) because hydromt 1.3's ``hydromt build`` cannot tolerate per-method
-no-data for reservoirs/lakes/glaciers — a basin may legitimately lack any of
-them. Running each method individually here lets a NoDataException skip only
-that one method.
+This runs as a **separate rule** from the build (1.07 ``build_wflow_model``)
+for two reasons, and neither is an upstream limitation.
 
-Removal trigger: fold these methods back into create_model's build config and
-delete this module once upstream hydromt handles per-method no-data gracefully
-during build. (Tracked upstream; no issue number recorded yet.)
+Per-method no-data: a basin may legitimately lack reservoirs, lakes or
+glaciers, so each method runs individually here and a ``NoDataException`` skips
+only that one. This much COULD move into the build — ``build_wflow_model``
+applies its own steps through the same kind of loop
+(``_apply_parameter_steps``), so the tolerance is ours to add, not hydromt's to
+fix.
+
+Failure isolation is why it does not move. Rule 1.07 resamples soil, land-use
+and LAI grids and scales with basin size, so on a production basin it is one of
+the expensive rules; the waterbody methods depend on external catalog sources
+that are often absent or mis-resolved. Folding them in would redo the whole
+parameterization whenever a catalog lookup fails — trading a fixed few seconds
+for a rebuild cost that grows with the basin.
+
+The earlier note here claimed the split existed because hydromt 1.3's
+``hydromt build`` cannot tolerate per-method no-data, with a removal trigger
+waiting on upstream. That trigger is withdrawn: rule 1.07 never invokes the
+``hydromt build`` CLI, so the condition could not have fired. Measurements and
+the full argument are in ``dev/tasks/t2609041718``.
 """
 
 import os

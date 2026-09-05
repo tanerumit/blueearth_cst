@@ -14,6 +14,7 @@ ANSI; every wrapper degrades to plain text in that case.
 Public API:
     __version__ (str — the skill release this copy was vendored from)
     USE_COLOR (bool, evaluated once at import)
+    USE_VT (bool, evaluated once at import — cursor control, ignores NO_COLOR)
     USE_ASCII (bool, evaluated once at import — glyphs degrade to ASCII)
     green / yellow / red / cyan / magenta / dim / bold   colour wrappers
     glyph(ch)                                      non-ASCII glyph → ASCII when USE_ASCII
@@ -60,6 +61,7 @@ Higher-level helpers (built on the primitives above):
     examples_epilog(*lines)                        `examples:` argparse epilog (matches `options:`)
     next_hint(text)                                `→ next: …` styled hint to stdout
     progress_supported()                           True when ProgressBar can redraw in place
+    line_reset(stream=None)                        `\\r\\x1b[2K` on a terminal, else `""`
     ProgressBar(total, width=28)                   single-line bar; .draw / .tick / .clear
 """
 from __future__ import annotations
@@ -77,7 +79,7 @@ from pathlib import Path
 #: so compare this against upstream before editing a consumer's console surface.
 #: A copy with NO `__version__` at all predates the marker and is therefore
 #: older than every version that carries one.
-__version__ = "0.10.0"
+__version__ = "0.12.0"
 
 # Prefix for this module's optional env-var overrides. Neutral by default so the
 # module vendors cleanly into any project; a consumer can rebrand every override
@@ -92,13 +94,31 @@ def _env(name: str) -> str | None:
     return os.environ.get(ENV_PREFIX + name)
 
 
-def _enable_windows_ansi() -> bool:
+#: Windows std handle ids, by the file descriptor they back.
+_STD_HANDLES = {1: -11, 2: -12}  # STD_OUTPUT_HANDLE, STD_ERROR_HANDLE
+
+
+def _std_handle(stream) -> int:
+    """The Windows std handle id behind `stream`, defaulting to stdout's.
+
+    VT mode is enabled per HANDLE, so a helper asked about `stderr` has to probe
+    stderr's. A redirected stdout with a live stderr is ordinary (`cmd > run.log`
+    with diagnostics still on screen), and probing the wrong handle there reports
+    "no ANSI" for a console that speaks it perfectly well.
+    """
+    try:
+        return _STD_HANDLES.get(stream.fileno(), -11)
+    except Exception:
+        return -11
+
+
+def _enable_windows_ansi(handle: int = -11) -> bool:
     if platform.system() != "Windows":
         return True
     try:
         import ctypes
         kernel32 = ctypes.windll.kernel32
-        h = kernel32.GetStdHandle(-11)  # STD_OUTPUT_HANDLE
+        h = kernel32.GetStdHandle(handle)
         mode = ctypes.c_ulong()
         if not kernel32.GetConsoleMode(h, ctypes.byref(mode)):
             return False
@@ -108,15 +128,27 @@ def _enable_windows_ansi() -> bool:
         return False
 
 
-def _color_supported() -> bool:
-    if os.environ.get("NO_COLOR"):
-        return False
+def _vt_supported() -> bool:
+    """Whether the console understands ANSI, WITHOUT asking about colour.
+
+    `NO_COLOR` is deliberately absent here. It asks for no colour; it does not
+    ask for an unmanaged cursor, and folding the two together would make
+    `line_reset` a no-op for everyone who sets it — reintroducing exactly the
+    interleaving defect that function exists to prevent.
+    """
     if not getattr(sys.stdout, "isatty", lambda: False)():
         return False
     return _enable_windows_ansi()
 
 
+def _color_supported() -> bool:
+    if os.environ.get("NO_COLOR"):
+        return False
+    return _vt_supported()
+
+
 USE_COLOR = _color_supported()
+USE_VT = _vt_supported()
 
 
 #: Every non-ASCII character this module can emit. `_encoding_incapable()`
@@ -692,6 +724,39 @@ def progress_supported() -> bool:
     return USE_COLOR
 
 
+def line_reset(stream=None) -> str:
+    """The escape that puts the cursor on a CLEAN line, or `""` off a terminal.
+
+    Prefix it to every line a writer STARTS while a redrawn line may be
+    standing. `\\r` returns to column 0 and `\\x1b[2K` erases the line, so the
+    text lands on a clean one whatever was there and whoever drew it.
+
+    `ProgressBar` leaves a frame standing between redraws, and `clear()` only
+    helps the caller holding the bar. A second writer — a logging handler on
+    `stderr`, a watchdog thread, a parent process multiplexing several jobs onto
+    one console — cannot call it, so its row is appended to the frame with no
+    line break:
+
+        files  ████████░░░░  73%  eta 0:04Done: 12 of 30 converted
+
+    Defaults to `sys.stdout`; pass the stream the writer actually holds when it
+    is not that. Both conditions are evaluated PER STREAM rather than read off
+    the import-time `USE_VT`, because the writer that has to clear the line is
+    often not the one that drew on it — a logging handler holds `stderr` while
+    the bar draws on `stdout`, and `cmd > run.log` leaves one a terminal and the
+    other a file. `USE_VT` answers for `sys.stdout` only.
+
+    Gated on `isatty` and VT support, NOT on `USE_COLOR` — see `_vt_supported`.
+    Off a terminal it is `""`, which is both correct and necessary: nothing
+    overwrites anything there, so no frame is ever standing, and the escape
+    would otherwise be literal bytes in a captured log.
+    """
+    stream = sys.stdout if stream is None else stream
+    if not getattr(stream, "isatty", lambda: False)():
+        return ""
+    return "\r\033[2K" if _enable_windows_ansi(_std_handle(stream)) else ""
+
+
 class ProgressBar:
     """Single-line progress bar that redraws in place via `\\r\\x1b[2K`.
 
@@ -699,6 +764,11 @@ class ProgressBar:
     `tick()` erases the line and re-renders. Interleave with per-item
     error lines by calling `clear()` first, printing the line, then
     `draw()`-ing again so the bar reappears below it.
+
+    That protocol covers the caller holding the bar and nobody else. A
+    frame is left STANDING between redraws, so any OTHER writer on the
+    same console — a logging handler, a watchdog thread, a parent
+    process — prefixes `line_reset(its_stream)` to each row it starts.
 
     Minimal use::
 
@@ -746,7 +816,7 @@ class ProgressBar:
 
     def draw(self, label: str = "") -> None:
         """Erase the current line and redraw the bar at its current count."""
-        sys.stdout.write("\r\033[2K" + self._render(label))
+        sys.stdout.write(line_reset() + self._render(label))
         sys.stdout.flush()
 
     def tick(self, label: str = "") -> None:
@@ -756,6 +826,9 @@ class ProgressBar:
 
     def clear(self) -> None:
         """Erase the bar's line. Call once at the end of the loop, and
-        before each interleaved error/warning line."""
-        sys.stdout.write("\r\033[2K")
+        before each interleaved error/warning line.
+
+        This serves the ONE caller holding the bar. Any other writer sharing
+        the console prefixes `line_reset()` to its own row instead."""
+        sys.stdout.write(line_reset())
         sys.stdout.flush()

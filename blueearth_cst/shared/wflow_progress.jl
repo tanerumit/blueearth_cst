@@ -38,6 +38,21 @@ module WflowProgress
 
 using Logging
 
+"""
+    format_elapsed(seconds) -> String
+
+`h:mm:ss`, the one duration spelling on the console -- the same rendering as
+`snake_utils.format_elapsed` (DONE lines, run summary, heartbeat) and
+`progress.format_duration` (the bar). The completion rows used to print
+`293.3 s` beside a DONE line saying `0:04:53` for the same job.
+"""
+function format_elapsed(seconds::Real)
+    total = max(round(Int, seconds), 0)
+    h, rem = divrem(total, 3600)
+    m, s = divrem(rem, 60)
+    return string(h, ":", lpad(m, 2, '0'), ":", lpad(s, 2, '0'))
+end
+
 # The frame the Python relay parses. `[cst-progress]` is a sentinel rather than
 # a percentage-bearing sentence so an ordinary log row that happens to contain a
 # number cannot match it, and so a frame is recognisable without knowing which
@@ -60,7 +75,7 @@ Wflow instruments its timestep loop and nothing else, so two long windows report
 nothing at all: Julia's package load and JIT for `using Wflow`, and the
 `Wflow.Model(config)` construction inside `Wflow.run` (~45 s on the rapid
 fixture, uninstrumented upstream). The Python tee's silence watchdog used to
-fill both with a yellow `still running, 1m00s elapsed` -- once per WF1 run,
+fill both with a yellow `still running, 0:01:00 elapsed` -- once per WF1 run,
 which reads as reasonable, but once per MEMBER in a WF3 batch, times the batches
 running concurrently, which does not.
 

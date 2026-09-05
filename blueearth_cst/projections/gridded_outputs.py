@@ -25,7 +25,7 @@ def validate_removed_gridded_options(config: Mapping[str, object]) -> list[str]:
                 "near-duplicate of it. Remove the key from your config."
             )
         warnings.append(
-            f"WARNING analyze_projections: `{key}` is obsolete and ignored "
-            "(S8-08c); the gridded outputs were removed. Delete the key."
+            f"`{key}` is obsolete and ignored (S8-08c); the gridded outputs "
+            "were removed. Delete the key."
         )
     return warnings

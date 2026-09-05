@@ -40,6 +40,7 @@ Columns are sorted numerically, not lexically: as text, ``1010`` sorts before
 """
 
 import re
+import sys
 from pathlib import Path
 from typing import Dict, List
 
@@ -200,10 +201,27 @@ def write_tidy_tables(
 
 
 if __name__ == "__main__":
+    # parents[2] is the REPO ROOT (file -> shared/ -> blueearth_cst/ -> root).
+    # Inserted HERE rather than at module level so importing this module for its
+    # table functions does not mutate `sys.path`.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
+    from blueearth_cst.shared.snake_utils import log_row, tee_to_log
+
     # Snakemake `script:` entry point: reads snakemake.input/output, never argv.
     sm = snakemake  # noqa: F821 - injected by Snakemake
     # `sm.output[0]` rather than a named output: rule 1.14b declares the whole
     # table set now (one per configured variable), and every member shares the
     # directory this needs. Indexing position 0 stays correct however many
     # there are, and does not have to track the declaration's name.
-    write_tidy_tables(sm.input.csv_path, Path(sm.output[0]).parent)
+    out_dir = Path(sm.output[0]).parent
+    # Teed and announced, where this rule used to write its tables in silence:
+    # it declares a `log:`, so `merge_logs` opened a section for it on every run
+    # and found nothing to put under it.
+    with tee_to_log(sm.log[0]):
+        written = write_tidy_tables(sm.input.csv_path, out_dir)
+        # One file named, several counted -- `flush_figure_bundles`' grammar,
+        # because a rule that writes ONE table should say which.
+        if len(written) == 1:
+            log_row(f"wrote {written[0]}", module="export")
+        else:
+            log_row(f"wrote {len(written)} table(s) -> {out_dir}", module="export")

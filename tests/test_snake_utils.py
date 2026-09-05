@@ -11,7 +11,6 @@ import os
 import re
 import sys
 import time
-import warnings
 import zlib
 from pathlib import Path
 
@@ -22,7 +21,6 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
     _compact_log_line,
     _cr_overwrite,
     _drop_redraw_frames,
-    _fmt_elapsed,
     _Heartbeat,
     _log_path_parts,
     _relativize_paths,
@@ -96,7 +94,23 @@ def test_compact_shortens_timestamp_and_drops_dotted_name():
     )
     # date + milliseconds dropped -> HH:MM:SS; dotted name dropped; module kept
     assert _compact_log_line(line) == (
-        "18:03:38 - model - Initializing wflow_sbm model.\n"
+        "18:03:38 - model - Initializing wflow_sbm model\n"
+    )
+
+
+def test_compact_drops_a_single_trailing_stop():
+    """hydromt ends its messages with a full stop; our rows end with none.
+
+    One convention across the log, and a stop after a path (`staticmaps.nc.`)
+    is the one place it read as part of the path. Only ONE stop goes, so an
+    ellipsis survives.
+    """
+    stamp = "2026-07-21 18:03:38,474 - hydromt.model.model - model - INFO - "
+    assert _compact_log_line(stamp + "Writing grid data to a/staticmaps.nc.\n") == (
+        "18:03:38 - model - Writing grid data to a/staticmaps.nc\n"
+    )
+    assert (
+        _compact_log_line(stamp + "Writing...\n") == "18:03:38 - model - Writing...\n"
     )
 
 
@@ -174,7 +188,7 @@ def test_compact_drops_a_component_prefix_that_repeats_the_module():
         "wflow_sbm.geoms: Writing geoms to staticgeoms/basins.geojson.\n"
     )
     assert _compact_log_line(line) == (
-        "11:13:01 - geoms - Writing geoms to staticgeoms/basins.geojson.\n"
+        "11:13:01 - geoms - Writing geoms to staticgeoms/basins.geojson\n"
     )
 
 
@@ -186,7 +200,7 @@ def test_compact_keeps_a_component_prefix_that_says_something_else():
     )
     assert _compact_log_line(line) == (
         "11:13:01 - spatial - wflow_sbm.staticmaps: Writing region to "
-        "staticgeoms/region.geojson.\n"
+        "staticgeoms/region.geojson\n"
     )
 
 
@@ -1023,15 +1037,21 @@ def test_drop_redraw_frames_keeps_content_after_a_cr_less_final_frame():
 
 
 def test_tee_keeps_a_bar_out_of_the_console_but_in_the_log(tmp_path, capsys):
+    # The sentinel is the row hydromt prints right after a dask bar. It was
+    # `forcing - Write forcing file` until that row joined `_TEE_CONSOLE_MUTED`,
+    # at which point this test failed for the wrong cause: a muted sentinel
+    # proves nothing about bars. Keep this one UNMUTED -- delivering it is what
+    # the assertion below actually tests.
     log = tmp_path / "rule.log"
+    row = "08:12:03 - forcing - Writing file <model>/forcing/inmaps.nc\n"
     with tee_to_log(log):
         for pct in (0, 42, 100):
             sys.stdout.write(f"\r[{'#' * (pct // 10):<10}] | {pct}% Completed | 7.08 s")
         sys.stdout.write("\n")
-        sys.stdout.write("08:12:03 - forcing - Write forcing file\n")
+        sys.stdout.write(row)
     console = capsys.readouterr().out
     assert "% Completed" not in console
-    assert "08:12:03 - forcing - Write forcing file" in console
+    assert row.rstrip() in console
     persisted = log.read_text(encoding="utf-8")
     assert "100% Completed" in persisted  # the durable record keeps the final state
 
@@ -1126,6 +1146,115 @@ def test_tee_persists_the_same_summary_whatever_the_console_is(tmp_path):
     assert "40.0%" not in written[0]
 
 
+# --- line reset over a standing progress frame -------------------------------
+#
+# A frame is left standing between redraws (`\r<frame>`, cursor at its end), so
+# the next writer to start a logical line must clear it or its row is APPENDED
+# to the bar. The writers are in different processes under `-c 3`, which is why
+# the fix is cursor state rather than a shared flag.
+
+_LINE_RESET = "\r\033[2K"
+
+
+def _unreset(text):
+    """Drop the line reset these writers prefix to every row they start.
+
+    Used by the COLOUR tests, whose subject is the paint tier: the reset is
+    unconditional on a terminal and would otherwise have to be spelled into
+    every one of them, which is how an assertion about one thing quietly
+    starts gating another. It also carries a carriage return, and
+    ``str.splitlines`` splits on that -- so a test reading ``out.splitlines()``
+    would see a phantom empty row before every line.
+    """
+    return text.replace(_LINE_RESET, "")
+
+
+def test_line_reset_is_the_erase_sequence_on_a_terminal():
+    assert su._line_reset(_LiveConsole(tty=True)) == _LINE_RESET
+
+
+def test_line_reset_is_empty_off_a_terminal():
+    """Off a terminal the escape would be literal text in a captured run."""
+    assert su._line_reset(_LiveConsole(tty=False)) == ""
+
+
+def test_line_reset_survives_no_color(monkeypatch):
+    """`NO_COLOR` asks for no colour, not for an unmanaged cursor."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    assert su._line_reset(_LiveConsole(tty=True)) == _LINE_RESET
+
+
+def test_tee_clears_a_standing_frame_before_an_ordinary_row(tmp_path, monkeypatch):
+    """The defect: `13:18:23 - DONE ...` landing on the tail of an open bar."""
+    monkeypatch.setenv("NO_COLOR", "1")  # assert on the escape under test alone
+    log = tmp_path / "rule.log"
+    live = _LiveConsole(tty=True)
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(live, handle)
+        tee.write_redraw("\rforcing  ====------  40.0%  0:03 | eta 0:04")
+        tee.write("08:12:03 - a - b\n")
+        tee.close()
+
+    console = live.getvalue()
+    assert console.index("08:12:03") > console.index(_LINE_RESET)
+    assert "40.0%08:12:03" not in console
+
+
+def test_tee_keeps_the_reset_off_the_log_file(tmp_path):
+    """The escape is console-only; no escape code may ever reach `logs/`."""
+    log = tmp_path / "rule.log"
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(_LiveConsole(tty=True), handle)
+        tee.write_redraw("\rforcing  ====------  40.0%  0:03 | eta 0:04")
+        tee.write("08:12:03 - a - b\n")
+        tee.close()
+
+    assert "\033" not in log.read_text(encoding="utf-8")
+
+
+def test_tee_does_not_reset_a_line_no_frame_is_standing_on(tmp_path, monkeypatch):
+    """An ordinary partial write also leaves the cursor mid-line, and erasing
+    THAT would destroy a library's multi-write row."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    log = tmp_path / "rule.log"
+    live = _LiveConsole(tty=True)
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(live, handle)
+        tee.write("08:12:03 - a - ")
+        tee.write("b\n")
+        tee.close()
+
+    assert live.getvalue() == "08:12:03 - a - b\n"
+
+
+def test_tee_does_not_reset_after_the_bar_closed_its_own_line(tmp_path, monkeypatch):
+    """`finish` writes the terminating newline, so nothing is left standing."""
+    monkeypatch.setenv("NO_COLOR", "1")
+    log = tmp_path / "rule.log"
+    live = _LiveConsole(tty=True)
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(live, handle)
+        tee.write_redraw("\rforcing  ==========  100.0%  0:07 elapsed")
+        tee.write_redraw("\n")
+        tee.write("08:12:03 - a - b\n")
+        tee.close()
+
+    assert not live.getvalue().endswith(_LINE_RESET + "08:12:03 - a - b\n")
+
+
+def test_tee_writes_no_escape_over_a_frame_off_a_terminal(tmp_path):
+    """Nothing overwrote anything there, so there is nothing to clear."""
+    log = tmp_path / "rule.log"
+    live = _LiveConsole(tty=False)
+    with open(log, "w", encoding="utf-8") as handle:
+        tee = su._Tee(live, handle)
+        tee.write_redraw("\rforcing  ====------  40.0%  0:03 | eta 0:04")
+        tee.write("08:12:03 - a - b\n")
+        tee.close()
+
+    assert "\033" not in live.getvalue()
+
+
 # --- repeated source name ----------------------------------------------------
 
 
@@ -1165,11 +1294,27 @@ def test_compact_matches_a_windows_spelt_path_stem():
 
 
 @pytest.mark.parametrize(
-    "seconds, expected",
-    [(0, "0s"), (45, "45s"), (134, "2m14s"), (3600, "1h00m00s"), (3980, "1h06m20s")],
+    ("label", "expected"),
+    [
+        ("2.05_merge", "Rule 2.05: merge"),
+        (
+            "2.04_fetch_gcm_slice/cmip6_INM_x",
+            "Rule 2.04: fetch_gcm_slice  [cmip6_INM_x]",
+        ),
+        (
+            "3.12_perturb_climate_realization/rlz_1_st_2",
+            "Rule 3.12: perturb_climate_realization  [rlz 1 | st 2]",
+        ),
+        ("3.15_run_wflow/batch_0", "Rule 3.15: run_wflow  [batch 0]"),
+        ("1.14b_export_wflow_tables", "Rule 1.14b: export_wflow_tables"),
+        ("busy_rule", "busy_rule"),
+    ],
 )
-def test_fmt_elapsed(seconds, expected):
-    assert _fmt_elapsed(seconds) == expected
+def test_heartbeat_identity_spells_the_job_as_the_run_and_done_lines_do(
+    label, expected
+):
+    """The watchdog knows the job by its log-parts label; the console does not."""
+    assert su._heartbeat_identity(label) == expected
 
 
 def test_heartbeat_fires_on_silence_and_summarizes():
@@ -1177,9 +1322,19 @@ def test_heartbeat_fires_on_silence_and_summarizes():
     hb = _Heartbeat("2.05_merge", stream, interval=0.05).start()
     time.sleep(0.16)  # stay silent well past the interval
     hb.stop()
-    out = stream.getvalue()
-    assert "still running" in out and "2.05_merge" in out  # heartbeat fired
-    assert "done in" in out  # stop() prints the summary
+    lines = stream.getvalue().splitlines()
+    # Row grammar: stamp, `heartbeat` module, the job's console spelling, and
+    # the duration in the DONE line's own `h:mm:ss`.
+    assert re.fullmatch(
+        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge still running, "
+        r"\d:\d\d:\d\d elapsed",
+        lines[0],
+    ), lines[0]
+    assert re.fullmatch(
+        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge done in \d:\d\d:\d\d",
+        lines[-1],
+    ), lines[-1]
+    assert "2.05_merge" not in stream.getvalue()
 
 
 def test_heartbeat_suppressed_while_active():
@@ -1320,6 +1475,23 @@ def test_tee_mutes_hydromt_model_open_boilerplate(tmp_path, capsys, row):
     assert row.split(" - ", 2)[2].rstrip() in log.read_text(encoding="utf-8")
 
 
+def test_tee_mutes_hydromt_boilerplate_after_its_full_stop_is_dropped(tmp_path, capsys):
+    """The mute sees the COMPACTED row, which has no closing stop.
+
+    A prefix spelled with hydromt's `.` matched nothing once the compactor
+    started dropping it -- three rows came back on the console for a day.
+    """
+    log = tmp_path / "rule.log"
+    raw = (
+        "2026-09-05 12:24:52,001 - hydromt_wflow.wflow_base - tables - INFO - "
+        "Reading model table files.\n"
+    )
+    with tee_to_log(log, heartbeat_interval=0):
+        sys.stdout.write(raw)
+    assert "Reading model table files" not in capsys.readouterr().out
+    assert "tables - Reading model table files" in log.read_text(encoding="utf-8")
+
+
 def test_tee_mutes_a_row_whose_component_prefix_survived_compaction(tmp_path, capsys):
     """`grid - wflow_sbm.states: No grid data found` keeps its prefix by design.
 
@@ -1332,6 +1504,46 @@ def test_tee_mutes_a_row_whose_component_prefix_survived_compaction(tmp_path, ca
         sys.stdout.write(row)
     assert "No grid data found" not in capsys.readouterr().out
     assert "wflow_sbm.states: No grid data found" in log.read_text(encoding="utf-8")
+
+
+def test_tee_mutes_the_forcing_write_announcement_but_not_the_path(tmp_path, capsys):
+    """`Write forcing file` announces what the NEXT row states with its target.
+
+    The pair is one fact twice, so the opener is muted -- but the row that names
+    the file is the one a reader is actually looking for, and a mute that took
+    both would be the defect. WF3 writes one forcing file per member, so this is
+    a row per downscale rule, not a one-off.
+    """
+    log = tmp_path / "rule.log"
+    with tee_to_log(log, heartbeat_interval=0):
+        sys.stdout.write("14:02:03 - forcing - Write forcing file\n")
+        sys.stdout.write(
+            "14:02:03 - forcing - Writing file <experiment>/inmaps_rlz_1_st_3.nc\n"
+        )
+    out = capsys.readouterr().out
+    logged = log.read_text(encoding="utf-8")
+    assert "Write forcing file" not in out
+    assert "Writing file <experiment>/inmaps_rlz_1_st_3.nc" in out
+    # The durable record keeps everything; only the console mirror drops a row.
+    assert "Write forcing file" in logged
+    assert "Writing file <experiment>/inmaps_rlz_1_st_3.nc" in logged
+
+
+def test_forcing_mute_cannot_silence_a_raised_level(tmp_path, capsys):
+    """The rename case announces itself at WARNING and must survive the mute.
+
+    That row is the reason the opener is safe to drop: it names both paths
+    itself, so it never depended on `Write forcing file` as its anchor.
+    """
+    log = tmp_path / "rule.log"
+    row = (
+        "14:02:03 - forcing - WARNING - Write forcing file skipped: "
+        "inmaps_historical.nc already exists.\n"
+    )
+    with tee_to_log(log, heartbeat_interval=0):
+        sys.stdout.write(row)
+    assert "already exists" in capsys.readouterr().out
+    assert "already exists" in log.read_text(encoding="utf-8")
 
 
 @pytest.mark.parametrize(
@@ -1540,34 +1752,33 @@ def test_tee_to_log_heartbeat_goes_to_console_not_log(tmp_path, capsys):
 # ---------------------------------------------------------------------------
 
 
-def test_warn_in_repo_project_dir_warns(tmp_path):
+def test_warn_in_repo_project_dir_warns(tmp_path, capsys):
     repo = tmp_path / "repo"
     (repo / "scratch_run").mkdir(parents=True)
-    with pytest.warns(UserWarning, match="inside the repository tree"):
-        fired = su.warn_if_project_dir_in_repo(repo / "scratch_run", repo)
+    fired = su.warn_if_project_dir_in_repo(repo / "scratch_run", repo)
     assert fired is True
+    err = capsys.readouterr().err
+    assert "inside the repo tree" in err and "scratch_run" in err
 
 
-def test_warn_exempt_test_case_is_silent(tmp_path):
+def test_warn_exempt_test_case_is_silent(tmp_path, capsys):
     """The fixture exemption: the baseline seed config is TRACKED, and a
     tracked config cannot carry a machine-specific absolute path."""
     repo = tmp_path / "repo"
     (repo / "test_case" / "test_local").mkdir(parents=True)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")  # any warning becomes a failure
-        fired = su.warn_if_project_dir_in_repo(repo / "test_case" / "test_local", repo)
+    fired = su.warn_if_project_dir_in_repo(repo / "test_case" / "test_local", repo)
     assert fired is False
+    assert capsys.readouterr().err == ""
 
 
-def test_warn_absolute_out_of_tree_is_silent(tmp_path):
+def test_warn_absolute_out_of_tree_is_silent(tmp_path, capsys):
     repo = tmp_path / "repo"
     repo.mkdir()
     outside = tmp_path / "elsewhere" / "my_project"
     outside.mkdir(parents=True)
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        fired = su.warn_if_project_dir_in_repo(outside, repo)
+    fired = su.warn_if_project_dir_in_repo(outside, repo)
     assert fired is False
+    assert capsys.readouterr().err == ""
 
 
 def test_warn_uses_containment_not_string_prefix(tmp_path):
@@ -1576,14 +1787,11 @@ def test_warn_uses_containment_not_string_prefix(tmp_path):
     passes the three cases above and fails both of these."""
     repo = tmp_path / "repo"
     (repo / "test_caseX").mkdir(parents=True)
-    with pytest.warns(UserWarning):
-        assert su.warn_if_project_dir_in_repo(repo / "test_caseX", repo) is True
+    assert su.warn_if_project_dir_in_repo(repo / "test_caseX", repo) is True
 
     sibling = tmp_path / "repo_other"
     sibling.mkdir()
-    with warnings.catch_warnings():
-        warnings.simplefilter("error")
-        assert su.warn_if_project_dir_in_repo(sibling, repo) is False
+    assert su.warn_if_project_dir_in_repo(sibling, repo) is False
 
 
 # --- climate_store_rule (R07 B1) ---------------------------------------------
@@ -2276,6 +2484,46 @@ def test_console_finish_line_carries_number_wildcards_elapsed_and_counter():
     ), done
 
 
+def test_console_start_line_replays_the_last_reported_counter():
+    """A long fan-out shows its position WHILE it runs, not only as it finishes.
+
+    The number is Snakemake's own, replayed -- so the bracket means the same
+    thing on both lines, and a START may legitimately repeat the FINISH above
+    it when nothing has completed in between.
+    """
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _job_info(1, "perturb", "Rule 3.12: perturb  [rlz 1 | st 1]"),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=8, total=37),
+        _job_info(2, "perturb", "Rule 3.12: perturb  [rlz 1 | st 2]"),
+    )
+    lines = out.splitlines()
+    # The FIRST start line precedes any progress record, so it carries none.
+    assert lines[0].endswith("[rlz 1 | st 1]"), lines[0]
+    assert re.search(r"RUN .*\[rlz 1 \| st 2\]  \[8/37\]$", lines[-1]), lines[-1]
+
+
+def test_console_start_counter_is_snakemakes_number_not_a_second_one():
+    """Starts are not counted; an unreported job moves nothing.
+
+    An independent counter would drift on a restarted, grouped, or already-up-
+    to-date job, which is why the finish line holds for Snakemake's record
+    rather than incrementing. The start line inherits that discipline: three
+    jobs may start against one reported count.
+    """
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _console_record(event="progress", done=5, total=37),
+        _job_info(1, "perturb", "Rule 3.12: perturb  [rlz 1 | st 1]"),
+        _job_info(2, "perturb", "Rule 3.12: perturb  [rlz 1 | st 2]"),
+        _job_info(3, "perturb", "Rule 3.12: perturb  [rlz 1 | st 3]"),
+    )
+    assert out.count("[5/37]") == 3, out
+
+
 def test_console_finish_line_uses_the_banner_wildcard_grammar():
     """`[rlz 1 | st 0]`, not Snakemake's `rlz=1, st=0` -- one grammar, two lines."""
     handler = _console_handler()
@@ -2303,6 +2551,41 @@ def test_console_finish_line_drops_the_num_suffix_the_banner_drops():
         _console_record(event="progress", done=1, total=1),
     )
     assert "[rlz 1 | st 2]" in out and "rlz_num" not in out
+
+
+def test_console_finish_line_drops_the_key_suffix_the_banner_drops():
+    """`series_key` is the WILDCARD's name; `series` is the console's, on both lines.
+
+    WF2's banners write `series {wildcards.series_key}`, so a finish line
+    rendering the raw key put `[series_key cmip6_x]` directly under
+    `[series cmip6_x]` -- the `_num` defect one suffix along.
+    """
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _job_info(1, "r", "x", {"series_key": "cmip6_x"}),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=1, total=1),
+    )
+    assert "[series cmip6_x]" in out and "series_key" not in out
+
+
+def test_console_start_counter_sits_on_the_banner_line_of_a_multiline_message():
+    """`rule all` is a banner plus one target per line; the counter is the job's.
+
+    Appended to the whole message it landed after the LAST target path
+    (`benchmarks/wf1_benchmarks.md  [19/20]`), where it read as part of the
+    path. It belongs on the line that names the job; the targets are untouched.
+    """
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _console_record(event="progress", done=19, total=20),
+        _job_info(1, "all", "Rule 1.00: all  [proj]\n    a/x.csv\n    logs/wf1.log"),
+    )
+    lines = out.splitlines()
+    assert lines[0].endswith("Rule 1.00: all  [proj]  [19/20]"), lines[0]
+    assert lines[1:] == ["    a/x.csv", "    logs/wf1.log"], lines[1:]
 
 
 def test_console_finish_line_keeps_a_wildcard_actually_named_num():
@@ -2371,6 +2654,100 @@ def test_console_scheduler_chatter_is_muted():
         _console_record("Touching output file x/.model_reference_ok."),
     ]
     assert _emit(handler, *muted) == ""
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        "14:02:03 - log - HydroMT version: 1.3.1\n",
+        "14:02:03 - model - update: setup_precip_forcing\n",
+        "14:02:03 - model - setup_temp_pet_forcing.pet_method=debruin\n",
+    ],
+)
+def test_tee_mutes_the_hydromt_cli_update_chatter(tmp_path, capsys, row):
+    """Rule 1.10's `hydromt update -vv` announces its version three times, then
+    names each step and echoes every keyword of it. The log part keeps them."""
+    log = tmp_path / "rule.log"
+    with tee_to_log(log, heartbeat_interval=0):
+        sys.stdout.write(row)
+    assert row.split(" - ", 2)[2].rstrip() not in capsys.readouterr().out
+    assert row.split(" - ", 2)[2].rstrip() in log.read_text(encoding="utf-8")
+
+
+def test_paint_body_demotes_the_two_benign_hydromt_warnings():
+    """Painted as body, text and level untouched; any other WARNING stays orange."""
+    demoted = [
+        "14:02:03 - forcing - WARNING - Write forcing skipped: dataset is empty (no variables or data)\n",
+        "14:02:03 - states - WARNING - CRS not found in states data, setting to model CRS\n",
+    ]
+    for row in demoted:
+        painted = su._paint_body(row, True)
+        assert painted == su._ansi(row.rstrip("\n"), su._ANSI_BODY) + "\n", painted
+    kept = "14:02:03 - states - WARNING - state file not found, using cold start\n"
+    assert su._ANSI_ALERT in su._paint_body(kept, True)
+    # The match is module AND prefix: the same words under another module keep
+    # their colour, so the list cannot widen by accident.
+    other = "14:02:03 - model - WARNING - CRS not found in states data, setting to model CRS\n"
+    assert su._ANSI_ALERT in su._paint_body(other, True)
+
+
+def test_log_row_flushes_after_its_one_write(monkeypatch):
+    """Off a terminal stdout is block-buffered, so an unflushed row lands after
+    the DONE line Snakemake writes from the parent process."""
+    events = []
+
+    class _Recorder:
+        def write(self, text):
+            events.append("write")
+            return len(text)
+
+        def flush(self):
+            events.append("flush")
+
+    monkeypatch.setattr(su.sys, "stdout", _Recorder())
+    log_row("one chunk", module="fetch")
+    assert events == ["write", "flush"]
+
+
+def test_console_job_stats_collapse_to_one_line():
+    """22 lines on WF1, every count 1; what a reader wants is the run's size
+    and which rules fan out."""
+    handler = _console_handler()
+    table = (
+        "Job stats:\njob                              count\n"
+        "-----------------------------  -------\n"
+        "all                                  1\n"
+        "downscale_climate_realization       10\n"
+        "perturb_climate_realization          8\n"
+        "run_wflow_batch_0                    1\n"
+        "total                               20\n"
+    )
+    out = _emit(handler, _console_record(table, event="run_info"))
+    assert out == (
+        "20 jobs across 4 rules  "
+        "(downscale_climate_realization x10, perturb_climate_realization x8)\n"
+    ), out
+    flat = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\nall  1\nx  1\ntotal  2\n",
+            event="run_info",
+        ),
+    )
+    assert flat == "2 jobs across 2 rules\n", flat
+    one = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\nall  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    assert one == "1 job across 1 rule\n", one
+
+
+def test_console_an_unparsed_run_info_passes_through():
+    handler = _console_handler()
+    out = _emit(handler, _console_record("Nothing to be done.", event="run_info"))
+    assert out == "Nothing to be done.\n"
 
 
 def test_console_the_preamble_is_left_alone():
@@ -2454,6 +2831,23 @@ def test_console_no_escape_codes_when_the_stream_is_not_a_tty():
     assert "\033" not in out
 
 
+def test_console_clears_the_line_before_a_row_on_a_terminal(monkeypatch):
+    """The finish line is printed by the PARENT while a job's bar is open.
+
+    The bar is drawn in the job's own process, so nothing in this handler can
+    know one is standing; it clears the line unconditionally instead. Asserted
+    without colour so the escape under test is the only one in the output.
+    """
+    monkeypatch.setenv("NO_COLOR", "1")
+    base = _logging.StreamHandler(_LiveConsole(tty=True))
+    base.name = "DefaultStreamHandler"
+    base.setFormatter(_logging.Formatter("%(message)s"))
+    handler = su._ConsoleHandler(base)
+    _emit(handler, _job_info(1, "r", "Rule 1.01: r"))
+
+    assert handler.stream.getvalue().startswith(_LINE_RESET)
+
+
 def test_console_a_finish_with_no_start_falls_back_to_snakemakes_own_text():
     """`--quiet rules` drops the start record; the finish must still name the rule.
 
@@ -2531,7 +2925,7 @@ def test_console_paints_a_start_and_a_finish_in_two_different_tiers():
         _console_record(event="job_finished", job_id=1),
         _console_record(event="progress", done=1, total=4),
     )
-    run_line, done_line = out.splitlines()
+    run_line, done_line = _unreset(out).splitlines()
     assert su._ANSI_RUN != su._ANSI_DONE != su._ANSI_BODY
     for line, code in ((run_line, su._ANSI_RUN), (done_line, su._ANSI_DONE)):
         opener = f"\033[{code}m"
@@ -2550,14 +2944,19 @@ def test_console_honours_no_color_even_on_a_tty(monkeypatch):
     """
     monkeypatch.setenv("NO_COLOR", "1")
     out = _emit(_colour_handler(), _console_record("Building DAG of jobs..."))
-    assert out == "Building DAG of jobs..." + "\n", repr(out)
-    assert "\033" not in out
+    # The line reset stays: `NO_COLOR` asks for no colour, not for a cursor
+    # left sitting on whatever a concurrent job's progress bar drew there.
+    assert out == _LINE_RESET + "Building DAG of jobs..." + "\n", repr(out)
+    assert "\033[0m" not in out
+    assert f"\033[{su._ANSI_BODY}m" not in out
 
 
 def test_console_paints_an_informational_snakemake_line_in_the_body_tier():
     handler = _colour_handler()
     out = _emit(handler, _console_record("Building DAG of jobs..."))
-    assert out == f"\033[{su._ANSI_BODY}mBuilding DAG of jobs...\033[0m\n", repr(out)
+    assert _unreset(out) == f"\033[{su._ANSI_BODY}mBuilding DAG of jobs...\033[0m\n", (
+        repr(out)
+    )
 
 
 def test_console_never_recolours_a_warning_or_an_error():
@@ -2568,7 +2967,7 @@ def test_console_never_recolours_a_warning_or_an_error():
         _console_record("state file missing", level=_logging.WARNING),
         _console_record("Error in rule x:", level=_logging.ERROR, event="job_error"),
     )
-    assert "\033" not in out, repr(out)
+    assert "\033" not in _unreset(out), repr(out)
 
 
 def test_rule_banner_registers_its_number_for_the_finish_line(monkeypatch):
@@ -2843,7 +3242,7 @@ def test_heartbeat_paints_the_alarm_and_not_the_all_clear():
     hb = su._Heartbeat("2.05_merge", stream, interval=0.05).start()
     time.sleep(0.16)
     hb.stop()
-    out = stream.getvalue()
+    out = _unreset(stream.getvalue())
     stall = next(line for line in out.splitlines() if "still running" in line)
     done = next(line for line in out.splitlines() if "done in" in line)
     assert stall.startswith(f"\033[{su._ANSI_WARN}m"), stall
@@ -2855,7 +3254,7 @@ def test_heartbeat_paints_the_failure_verdict(monkeypatch):
     stream = _TTYStringIO()
     hb = su._Heartbeat("3.15_run_wflow", stream, interval=10.0).start()
     hb.stop(failed=True)
-    assert stream.getvalue().startswith(f"\033[{su._ANSI_WARN}m")
+    assert _unreset(stream.getvalue()).startswith(f"\033[{su._ANSI_WARN}m")
 
 
 def test_run_summary_failure_keeps_its_note_out_of_the_key_column():

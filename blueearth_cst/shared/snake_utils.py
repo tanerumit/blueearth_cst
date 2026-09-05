@@ -20,7 +20,6 @@ import sys
 import threading
 import time
 import traceback
-import warnings
 import zlib
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
@@ -148,6 +147,13 @@ def _compact_log_line(text):
         message = prefixed.group(2)
     message = _DATA_SOURCE_READ_RE.sub(r"\1 from ", message)
     message = _drop_repeated_source_name(message)
+    # hydromt ends most messages with a full stop and our own rows end with
+    # none, so a log mixed `staticmaps.nc.` and `wflow_sbm.toml.` with
+    # `-> basin_cells.csv` on adjacent rows -- and a stop after a path is the
+    # one place it reads as part of the path. One convention: no stop. Only a
+    # SINGLE trailing stop goes, so an ellipsis (`Writing...`) is left alone.
+    if message.endswith(".") and not message.endswith(".."):
+        message = message[:-1]
     return _log_row_text(hms, module, level, message) + ("\n" if had_newline else "")
 
 
@@ -700,14 +706,10 @@ def warn_if_project_dir_in_repo(project_dir, repo_root) -> bool:
     if rel.parts and rel.parts[0] in _PROJECT_DIR_EXEMPT_NAMES:
         return False
 
-    warnings.warn(
-        f"project_dir resolves inside the repository tree "
-        f"({rel.as_posix()!r} under {root_resolved}). Generated model and "
-        f"result artifacts should be written OUTSIDE the toolbox source; set "
-        f"project_dir to an absolute path elsewhere. Exempt: "
-        f"{'/'.join(sorted(_PROJECT_DIR_EXEMPT_NAMES))}/.",
-        UserWarning,
-        stacklevel=2,
+    warn_row(
+        f"project_dir is inside the repo tree ({rel.as_posix()!r}); "
+        f"write run artifacts outside the source",
+        module="config",
     )
     return True
 
@@ -2266,15 +2268,35 @@ def member_index_regex(width: int) -> str:
     return branches[0] if width == 1 else "(?:" + "|".join(branches) + ")"
 
 
-def _fmt_elapsed(seconds):
-    """Format a duration compactly: ``45s``, ``2m14s``, ``1h03m20s``."""
-    seconds = int(round(seconds))
-    hours, minutes, secs = seconds // 3600, (seconds % 3600) // 60, seconds % 60
-    if hours:
-        return f"{hours}h{minutes:02d}m{secs:02d}s"
-    if minutes:
-        return f"{minutes}m{secs:02d}s"
-    return f"{secs}s"
+_HEARTBEAT_LABEL_RE = re.compile(r"^(\d+\.\d+[a-z]?)_([^/]+)(?:/(.+))?$")
+_MEMBER_PART_RE = re.compile(r"^[a-z]+_\d+(?:_[a-z]+_\d+)*$")
+
+
+def _heartbeat_identity(label):
+    """Spell a rule-log label the way the RUN and DONE lines spell the job.
+
+    The watchdog is built from the log path, so it knows the job as
+    ``2.04_fetch_gcm_slice/cmip6_INM_...`` -- the parts directory -- while the
+    lines above and below its notice say ``Rule 2.04: fetch_gcm_slice
+    [cmip6_INM_...]``. One job, two spellings on adjacent lines, which is the
+    defect the console grammar exists to prevent; this is the translation.
+
+    A member part of the ``rlz_1_st_2`` shape is rendered ``[rlz 1 | st 2]``,
+    the banner's own grammar for an index wildcard (`rule_banner`); any other
+    part is bracketed as it is. A label that is not ``<W.NN>_<name>`` -- a
+    test's ``busy_rule``, an ad-hoc path -- is returned unchanged.
+    """
+    match = _HEARTBEAT_LABEL_RE.match(str(label))
+    if not match:
+        return str(label)
+    number, name, part = match.groups()
+    identity = f"{rule_id(number)} {name}"
+    if not part:
+        return identity
+    if _MEMBER_PART_RE.match(part):
+        tokens = part.split("_")
+        part = " | ".join(f"{k} {v}" for k, v in zip(tokens[::2], tokens[1::2]))
+    return f"{identity}  [{part}]"
 
 
 class _Heartbeat:
@@ -2355,7 +2377,7 @@ class _Heartbeat:
         preserved even though placement is not.
         """
         return [
-            f"... quiet for {_fmt_elapsed(end - start)} "
+            f"... quiet for {format_elapsed(end - start)} "
             f"({self._wall_at(start)} -> {self._wall_at(end)})"
             for start, end in self._quiet
         ]
@@ -2368,11 +2390,30 @@ class _Heartbeat:
         # evaluated when this class is DEFINED, and the colour constants are
         # declared further down the module (beside the console handler that owns
         # the scheme). Naming one here would be a NameError at import.
+        #
+        # `text` is the MESSAGE; the row is assembled here so every notice this
+        # watchdog prints has the stamp and module column the lines around it
+        # have. It used to print `   ... 2.04_fetch/<key>: still running, 2m00s
+        # elapsed` -- no stamp, the log-parts spelling of the job, and a fourth
+        # duration format -- between a RUN and a DONE line that agreed on all
+        # three. The identity is the job's console spelling (`_heartbeat_identity`).
+        row = _log_row_text(
+            f"{datetime.now():%H:%M:%S}",
+            "heartbeat",
+            "INFO",
+            f"{_heartbeat_identity(self._label)} {text}",
+        )
         try:
             # Console-only by design (`quiet_rows` is the durable copy), so the
-            # colour here can never reach a file.
+            # colour -- and the line reset -- here can never reach a file. The
+            # reset covers a progress frame a concurrent job may have left
+            # standing; see `_line_reset`. Unconditional, because this method
+            # only ever writes whole, newline-terminated notices.
             self._stream.write(
-                _paint_body(text, _console_colour(self._stream), code or _ANSI_BODY)
+                _line_reset(self._stream)
+                + _paint_body(
+                    row + "\n", _console_colour(self._stream), code or _ANSI_BODY
+                )
             )
             self._stream.flush()
         except Exception:
@@ -2400,12 +2441,9 @@ class _Heartbeat:
                 # opened here, so `stop()` has none to close.
                 if self._on_stall is not None and self._on_stall():
                     continue
-                elapsed = _fmt_elapsed(now - self._start)
+                elapsed = format_elapsed(now - self._start)
                 self._noticed = True
-                self._emit(
-                    f"   ... {self._label}: still running, {elapsed} elapsed\n",
-                    _ANSI_WARN,
-                )
+                self._emit(f"still running, {elapsed} elapsed", _ANSI_WARN)
             elif quiet_since is not None:
                 # Output resumed: `last` is when, so the gap closes there.
                 self._quiet.append((quiet_since, last))
@@ -2453,14 +2491,12 @@ class _Heartbeat:
         self._thread.join(timeout=1.0)
         if not (failed or self._noticed):
             return
-        elapsed = _fmt_elapsed(time.monotonic() - self._start)
+        elapsed = format_elapsed(time.monotonic() - self._start)
         verb = "failed after" if failed else "done in"
         # Yellow on the failure verdict only. `done in` is the all-clear that
         # closes a yellow `still running`, and painting it too would make the
         # resolution as loud as the alarm.
-        self._emit(
-            f"   ... {self._label}: {verb} {elapsed}\n", _ANSI_WARN if failed else None
-        )
+        self._emit(f"{verb} {elapsed}", _ANSI_WARN if failed else None)
 
 
 def _cr_overwrite(line):
@@ -2722,9 +2758,33 @@ _TEE_CONSOLE_MUTED = (
     ("config", "Reading model config file from "),
     ("config", "Reading default config file from "),
     ("wflow_base", "Supported Wflow.jl version "),
-    ("tables", "Reading model table files."),
-    ("tables", "No tables found, skip writing."),
-    ("grid", "No grid data found, skip writing."),
+    # Spelled WITHOUT hydromt's closing full stop: `_compact_log_line` drops it
+    # before the row reaches this table, so a prefix that carried it matched
+    # nothing (2026-09-05 -- three rows came back on the console the day the
+    # stop went).
+    ("tables", "Reading model table files"),
+    ("tables", "No tables found, skip writing"),
+    ("grid", "No grid data found, skip writing"),
+    # `Write forcing file` announces the write hydromt is ABOUT to do; the next
+    # row, `Writing file <path>`, states the same fact and names the target. The
+    # pair does bracket a decision -- hydromt renames the file when one already
+    # exists and overwriting is off -- but that case announces ITSELF at
+    # WARNING and names both paths, so the opening row is never the anchor that
+    # makes the rename legible. Muting it costs nothing and saves a row per
+    # forcing write: once in a WF1 build, and once per member in WF3, where
+    # every downscale rule writes one.
+    ("forcing", "Write forcing file"),
+    # Rule 1.10 drives `hydromt update` through its CLI at `-vv`, which is what
+    # puts hydromt's rows in the rule's log at all -- and at that level the CLI
+    # also announces its version (three times, once per logger it configures),
+    # names each `setup_*` step it is about to run, and echoes every keyword
+    # of that step as `setup_x.param=value`. The version is a property of the
+    # environment, and the parameter echo is the build recipe the rule's own
+    # `-i` file already holds; ~25 rows per forcing write that say nothing a
+    # reader of the CONSOLE is waiting for. The log part keeps all of them.
+    ("log", "HydroMT version: "),
+    ("model", "update: "),
+    ("model", "setup_"),
     # hydromt echoes the object store URI it is about to read. WF2 already
     # printed that URI one row earlier, from `fetch_gcm_raw`, in BOTH the
     # pinned and the globbed branch -- so this row is a duplicate that costs
@@ -2860,6 +2920,13 @@ class _Tee:
         self._on_activity = on_activity  # called on each write (heartbeat reset)
         self._pending = ""  # current, not-yet-newline-terminated log line
         self._in_redraw = False  # console-side state for _drop_redraw_frames
+        #: Whether a streamed progress frame is standing on the console line,
+        #: i.e. the cursor sits at the end of a frame this tee wrote and did not
+        #: terminate. Set by the redraw path ONLY: an ordinary partial write also
+        #: leaves the cursor mid-line, but there the next write is the rest of
+        #: that same line and erasing it would destroy a library's multi-write
+        #: row. See `_line_reset`.
+        self._frame_standing = False
         # Set by ``close``. A tee OUTLIVES its log file: ``tee_to_log`` closes
         # the file when its `with open(...)` exits, and anything still holding a
         # reference to this object then has a live handle onto a dead sink.
@@ -2886,7 +2953,21 @@ class _Tee:
         if _redraw:
             shown, self._in_redraw = out, False
         if shown and not _muted_on_console(shown):
-            self._live.write(_paint_body(shown, self._colour))
+            # The CONSOLE copy only. `out` below feeds `_pending` and the log
+            # file, and the module's standing contract is that no escape code
+            # ever reaches `logs/` -- which is also why `shared.progress` may
+            # not emit this itself: its one string goes to both sinks, while
+            # here the two are already separate.
+            reset = ""
+            if self._frame_standing and not _redraw:
+                reset = _line_reset(self._live)
+                self._frame_standing = False
+            self._live.write(reset + _paint_body(shown, self._colour))
+            if _redraw:
+                # A frame is standing unless this write closed the bar's line
+                # (`DaskProgress.finish` writes the terminating newline through
+                # the same redraw path).
+                self._frame_standing = not shown.endswith("\n")
         # After close the console is still open and still the right place for
         # this text; only the log file is gone. Writing to a closed file raises
         # ValueError, and a raise HERE is the expensive kind: these late writes
@@ -3680,6 +3761,52 @@ def log_row(message, module="cst", level="INFO"):
     sys.stdout.write(
         _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n"
     )
+    # Flushed, because off a terminal Python block-buffers stdout: under a
+    # redirect or in CI a rule's rows then all arrived AFTER its DONE line,
+    # which Snakemake writes from the parent process. On a terminal the stream
+    # is line-buffered and this is a no-op. Guarded, since the tee and the
+    # test doubles standing in for stdout do not all offer `flush`.
+    flush = getattr(sys.stdout, "flush", None)
+    if flush is not None:
+        flush()
+
+
+def warn_row(message, module="cst"):
+    """Print one WARNING row to stderr, in :func:`log_row`'s grammar and colour.
+
+    The PARSE-TIME counterpart of `log_row`. A Snakefile's top-of-file checks
+    run before Snakemake builds its logging stack and before any rule opens a
+    tee, so neither :func:`install_console_style` nor :class:`_Tee` is there to
+    style what they print -- and each site had invented its own spelling:
+    ``warnings.warn`` (which prepends ``<file>:<line>: UserWarning:`` and echoes
+    the source line under it, three lines for one sentence), a bare ``print``
+    with a hand-written ``WARNING <workflow>:`` prefix, and a ``log_row`` on
+    stdout. Four spellings of one thing, none of them the colour the same
+    warning gets once a rule is running.
+
+    ``HH:MM:SS - <module> - WARNING - <message>``, where ``module`` names the
+    component that noticed (``config``, ``reference_window``) exactly as an
+    in-run row names ``states`` or ``data_source``. **The colour is not chosen
+    here**: :func:`_paint_body` reads the severity out of the row's own text, so
+    this is painted by the same rule that paints a warning arriving from
+    hydromt -- one funnel, not a second scheme that has to be kept in step.
+
+    stderr rather than stdout, because a parse-time row belongs to the RUN's
+    console and has no rule log to land in; that also keeps it out of a piped
+    ``--dry-run`` DAG, which callers redirect.
+
+    **From a Snakefile, keep ``module=...`` off the start of a line.**
+    ``module`` is a Snakemake KEYWORD, and its parser reads a line opening with
+    ``module=`` as the ``module`` directive -- ``SyntaxError: Expected name or
+    colon after module keyword``, raised at parse time before any rule exists.
+    A single-line call is fine (the token is then mid-expression); a call broken
+    across lines is not. Build the message into a local first and pass it in one
+    line, as ``run_stress_test.smk`` does. The parameter keeps the name anyway,
+    because :func:`log_row` has always spelled it that way and two names for one
+    field costs more at every call site than this costs at one.
+    """
+    text = _log_row_text(f"{datetime.now():%H:%M:%S}", module, "WARNING", str(message))
+    sys.stderr.write(_paint_body(text + "\n", _console_colour(sys.stderr)))
 
 
 # Figures written by `save_figure` since the last flush, as
@@ -3920,8 +4047,51 @@ _SEVERITY_PATTERNS = (
 )
 
 
+#: hydromt WARNINGs that are painted as BODY on the console -- text untouched,
+#: level field kept, log file unchanged; only the colour is withheld.
+#:
+#: The mute table above refuses a WARNING by construction, and that stays
+#: right: a prefix muted for volume must never be able to silence a warning.
+#: These two are a different case. Each fires on every full model write --
+#: `Write forcing skipped` on the three build rules that have no forcing yet,
+#: `CRS not found in states data` on all four -- and neither says anything a
+#: reader can act on: the model has no forcing until rule 1.10 by design, and
+#: hydromt sets the CRS it says it could not find. On a clean WF1 build they
+#: are the ONLY yellow on the console, which is the defect: colour that fires
+#: on every run stops meaning anything, and the one warning worth seeing then
+#: sits among seven that are not.
+#:
+#: ENUMERATED, module and message prefix, exactly as the mute table is, and
+#: for the same reason: a reworded upstream message stops matching and is
+#: painted as a warning again, which is the safe direction. The row is still
+#: in the log with its level, so nothing is lost; do not add to this list for
+#: volume -- that is what the mute table is for, and it is INFO-only.
+_DEMOTED_WARNINGS = (
+    ("forcing", "Write forcing skipped: dataset is empty"),
+    ("states", "CRS not found in states data"),
+)
+
+
+def _demoted_warning(line):
+    """Whether ``line`` is a WARNING row on the enumerated demotion list."""
+    fields = line.strip().split(" - ", 3)
+    if len(fields) != 4 or fields[2] != "WARNING":
+        return False
+    _stamp, module, _level, message = fields
+    return any(
+        module == demoted_module and message.startswith(prefix)
+        for demoted_module, prefix in _DEMOTED_WARNINGS
+    )
+
+
 def _severity_code(line):
-    """The SGR code a line's own text demands, or ``None`` for the caller's."""
+    """The SGR code a line's own text demands, or ``None`` for the caller's.
+
+    A row on ``_DEMOTED_WARNINGS`` answers ``None`` before the patterns are
+    consulted, so it takes the caller's tier -- body, on every console path.
+    """
+    if _demoted_warning(line):
+        return None
     for pattern, code in _SEVERITY_PATTERNS:
         if pattern.search(line):
             return code
@@ -3931,6 +4101,35 @@ def _severity_code(line):
 def _ansi(text, code):
     """Wrap ``text`` in an SGR code. Callers decide WHETHER to colour."""
     return f"\033[{code}m{text}{_ANSI_RESET}"
+
+
+def _line_reset(stream):
+    """The escape that puts ``stream``'s cursor on a CLEAN line, or ``""``.
+
+    A progress frame is left STANDING on the console line between redraws: the
+    bar in ``shared.progress`` writes ``\\r<frame>`` and stops there, so the
+    cursor sits at the frame's end with the frame still visible. Any writer that
+    then starts a new logical line appends to it -- ``13:18:23 - DONE Rule 0.03``
+    landing on the tail of an ``era5 store`` bar with no line break between them
+    (observed 2026-09-03, on a ``-c 3`` WF0 run). This is the same defect
+    :func:`_pad_line_over` fixes for ``run_and_tee``; that path never reached the
+    writers here, which is why the convention has to be restated as an escape.
+
+    ``\\r`` returns to column 0 and ``\\x1b[2K`` erases the line, so the caller's
+    text lands on a clean one whatever was standing and whoever drew it. That
+    matters because the writers are in DIFFERENT PROCESSES -- the bar in a rule's
+    job, the finish line in Snakemake's parent -- so no in-process flag can
+    coordinate them and only cursor state can.
+
+    Gated on ``isatty`` ALONE, deliberately, and not on :func:`_console_colour`:
+    ``NO_COLOR`` asks for no colour, not for an unmanaged cursor, and folding the
+    two together would hand anyone who sets it the bug back. Off a terminal the
+    escape would be literal text in a captured run artifact, so there it is
+    ``""`` -- and off a terminal nothing overwrites anything, so no frame is ever
+    left standing to clear.
+    """
+    isatty = getattr(stream, "isatty", None)
+    return "\r\033[2K" if bool(isatty and isatty()) else ""
 
 
 def _console_colour(stream):
@@ -4464,10 +4663,19 @@ def _console_wildcard_key(key):
 
     Only a TRAILING ``_num``, and only when something is left of it, so a
     wildcard actually named ``num`` keeps its name.
+
+    ``_key`` is dropped on the same terms: WF2 fans out over ``series_key``,
+    and its banners write ``series {wildcards.series_key}``, so without this
+    the START line said ``[series cmip6_...]`` and the FINISH line under it
+    ``[series_key cmip6_...]`` -- the one-fact-two-spellings defect again, one
+    suffix along. Both suffixes are `dev/reference/naming.md` conventions for
+    what KIND of field a wildcard is, which is why they belong off a console
+    that shows the value beside the name.
     """
-    return (
-        key[: -len("_num")] if key.endswith("_num") and len(key) > len("_num") else key
-    )
+    for suffix in ("_num", "_key"):
+        if key.endswith(suffix) and len(key) > len(suffix):
+            return key[: -len(suffix)]
+    return key
 
 
 class _ConsoleHandler(logging.StreamHandler):
@@ -4548,6 +4756,11 @@ class _ConsoleHandler(logging.StreamHandler):
             self.addFilter(inherited)
         self._started = {}  # jobid -> (rule name, wildcards, monotonic start)
         self._finished = []  # jobids awaiting the progress record's counter
+        #: Last counter Snakemake reported, replayed onto the START line so a
+        #: long fan-out shows its position while it runs rather than only as
+        #: each member finishes. Snakemake's number, shown earlier -- NOT a
+        #: second counter, for the reason set out in :meth:`_render`.
+        self._progress = (None, None)
         # Rule names whose summary clause has already been printed once. Held on
         # the INSTANCE, unlike `_RULE_NUMBERS`/`_RULE_SUMMARIES`, which are
         # module-level and outlive one workflow: `run_workflows.py` drives four
@@ -4566,7 +4779,12 @@ class _ConsoleHandler(logging.StreamHandler):
                 text = self._render(record)
             if not text:
                 return
-            self.stream.write(text + self.terminator)
+            # Reset the line first: a job running under `-c 3` may have a
+            # progress frame standing on it, drawn from ANOTHER PROCESS, and
+            # this handler's row would otherwise be appended to that frame with
+            # no break between them. See `_line_reset`; unconditional, because
+            # every row this handler writes is whole and terminator-suffixed.
+            self.stream.write(_line_reset(self.stream) + text + self.terminator)
             self.flush()
         except BrokenPipeError:
             raise
@@ -4580,7 +4798,7 @@ class _ConsoleHandler(logging.StreamHandler):
         try:
             pending = "\n".join(self._drain(None, None))
             if pending:
-                self.stream.write(pending + self.terminator)
+                self.stream.write(_line_reset(self.stream) + pending + self.terminator)
                 self.flush()
         except Exception:  # noqa: BLE001 -- teardown must not raise
             pass
@@ -4610,12 +4828,15 @@ class _ConsoleHandler(logging.StreamHandler):
 
         if event == "progress":
             lines = self._drain(fields.get("done"), fields.get("total"))
+            self._progress = (fields.get("done"), fields.get("total"))
         else:
             lines = self._drain(None, None)
             if event == "job_info":
                 lines.append(self._start_line(fields, record))
             elif event == "job_started":
                 pass  # "Execute N jobs..." -- scheduler bookkeeping
+            elif event == "run_info":
+                lines.append(self._paint(self._run_info_line(record), _ANSI_BODY))
             elif not self._muted(record, event):
                 # Body tier for what is informational only. A WARNING or an ERROR keeps
                 # Snakemake's own colouring, which is the one thing on this
@@ -4632,6 +4853,49 @@ class _ConsoleHandler(logging.StreamHandler):
                 lines.append(shown)
 
         return "\n".join(line for line in lines if line) or None
+
+    def _run_info_line(self, record):
+        """Collapse Snakemake's ``Job stats:`` table to one line.
+
+        The table is one row per rule plus a total: 22 lines on WF1, where
+        every count is 1 and the rule names are the same ones about to scroll
+        past on the RUN lines. What a reader wants from it is the SIZE of the
+        run and which rules fan out, so that is what the line keeps::
+
+            37 jobs across 21 rules  (downscale_climate_realization x10, perturb_climate_realization x8)
+
+        Parsed from the message text, because ``run_info`` carries only that
+        text (``dag.stats`` formats the table before logging it). Parsing is
+        by the ``<name>  <count>`` shape of a table row; the header, the rule
+        line and the ``total`` row are skipped by that shape, and a message
+        that yields no rows -- a reworded table, or some other ``run_info`` --
+        is passed through as Snakemake formatted it. Fails open, like every
+        other cosmetic rule here.
+        """
+        text = self.format(record)
+        counts = {}
+        for row in text.splitlines():
+            match = re.fullmatch(r"(\S+)\s+(\d+)", row.strip())
+            if match and match.group(1) != "total":
+                counts[match.group(1)] = int(match.group(2))
+        if not counts:
+            return text
+        jobs = sum(counts.values())
+        rules = len(counts)
+        line = (
+            f"{jobs} job{'s' if jobs != 1 else ''} across "
+            f"{rules} rule{'s' if rules != 1 else ''}"
+        )
+        fanned = [
+            f"{name} x{count}"
+            for name, count in sorted(
+                counts.items(), key=lambda item: (-item[1], item[0])
+            )
+            if count > 1
+        ]
+        if fanned:
+            line = f"{line}  ({', '.join(fanned)})"
+        return line
 
     def _muted(self, record, event):
         """Whether a plain INFO line is one of the muted ones.
@@ -4668,7 +4932,29 @@ class _ConsoleHandler(logging.StreamHandler):
             # that rule -- reshaping it into one line would delete it.
             return self.format(record)
         message = self._trim_summary(fields.get("rule_name"), message)
-        return self._paint(f"{self._now()} - {_MARKER_RUN} {message}", _ANSI_RUN)
+        # The counter, replayed from the last progress record. The bracket means
+        # the SAME thing on both lines -- jobs complete out of the total -- so a
+        # START line and the FINISH line above it can legitimately show the same
+        # number: nothing has finished in between. That repetition is the honest
+        # rendering; the alternative, numbering starts instead, is the
+        # independent counter :meth:`_render` refuses.
+        #
+        # Absent until Snakemake has reported once, so the first job of a run
+        # starts with no counter. That is the same `is not None` guard the
+        # finish line uses, and it degrades to today's line rather than to a
+        # placeholder that would have to be explained.
+        done, total = self._progress
+        tail = f"  [{done}/{total}]" if done is not None and total else ""
+        # On the FIRST line of the message, never after the last: `rule all`'s
+        # `target_banner` is a banner plus one target per line, and appending
+        # here put the counter on the tail of the final target path
+        # (`benchmarks/wf1_benchmarks.md  [19/20]`), where it read as part of
+        # the path. The counter describes the job, so it sits on the line that
+        # names the job; the targets below are untouched.
+        head, sep, rest = message.partition("\n")
+        return self._paint(
+            f"{self._now()} - {_MARKER_RUN} {head}{tail}{sep}{rest}", _ANSI_RUN
+        )
 
     def _trim_summary(self, rule_name, message):
         """Drop the rule's constant summary clause after its FIRST start line.

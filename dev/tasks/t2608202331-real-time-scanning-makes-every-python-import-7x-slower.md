@@ -1,23 +1,16 @@
 ---
 title: Real-time scanning makes every Python import ~7x slower
-type: todo-item
-status: backlog
-effort: 1
+type: watch-item
 area: environment / dev machine
 origin: test-runtime profiling (2026-08-20)
-queue:
 created: 2026-08-20
-updated: 2026-08-20
+updated: 2026-09-04
 ---
 
 > [!note] Overview
-> **What** — Exclude the pixi env prefix (and ideally the repo) from ESET real-time scanning on this machine. Needs admin, and may be governed by IT policy, so it is an owner decision rather than a repo change.
-> **Why** — One import hydromt pulls 3,173 modules at 4.79 ms each -- roughly 7x the normal per-module cost -- which is most of the gap between this machine running the full suite in 59 minutes and CI running the same command in about 9.
-> **Effort** — small
-
-## Progress
-
-- [ ] <first step>
+> **What** — Every Python import on this dev machine costs ~7x its normal per-module price, because the pixi prefix sits inside ESET's real-time scan surface. The fix is an exclusion, and **on 2026-09-04 the owner confirmed that permission is not obtainable**, so this is now a standing property of the machine rather than work.
+> **Why** — It is most of the gap between this machine running the full suite in 59 minutes and CI running the same command in about 9. Anyone comparing a local timing against CI, or profiling a slow pipeline step, will re-derive this from scratch unless it is written down — and the diagnosis below is measured, not guessed.
+> **Trigger** — Admin rights on ESET exclusions become available, IT policy changes, or the work moves to a machine without the scanner. Any of those converts this back to a `todo-item` under the same ID, and the exclusion paths and expected payoff are already recorded below.
 
 ## Cause: measured, 2026-08-20
 
@@ -55,5 +48,15 @@ Reading or setting ESET exclusions needs administrator rights, which is why this
 Verify by re-running `python -X importtime -c "import hydromt"` and comparing the per-module figure, then re-timing the four dry-runs recorded in [[t2608202307]].
 
 ## Relationship to the other speed items
+
+**Converted to a watch-item 2026-09-04.** The exclusion is unavailable: the
+owner cannot obtain the permission, and on a Windows 11 Enterprise machine the
+setting is IT-governed. Nothing below is retracted — the cause is measured and
+still holds — but there is no action to take, so this stops being queued work
+and becomes a fact to read when a local-vs-CI timing looks wrong.
+
+**Consequence for [[t2609041718]]:** the per-process import cost is now
+permanent, which roughly doubles what merging WF1 rules 1.07-1.09 would save.
+That is recorded there; it does not by itself justify the merge.
 
 This composes with [[t2608202307]] rather than replacing it. The scanner makes each import expensive; the parse-time import makes the Snakefiles pay for one they do not need. Fixing either helps; fixing both compounds. Nothing here affects CI, which already runs the same suite in about nine minutes.

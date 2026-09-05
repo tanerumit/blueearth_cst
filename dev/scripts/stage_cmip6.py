@@ -401,14 +401,14 @@ class _SliceConsole:
     parent in completion order -- so nothing it prints can join the entry list
     that is the tool's console. This sorts instead:
 
-    * an **INFO** row is DROPPED. `fetching <entry>`, `pinned gn/v1`,
+    * an **INFO** row is DROPPED. `Fetching <entry>`, `Pinned gn/v1`,
       `store calendar=noleap` each say a third time that this slice is being
       worked on. Dropped from the console only: every row still reaches the
       slice's own log part in full, because this is the tee's live sink and
       not its log handle.
     * a **WARNING or ERROR** row is COLLECTED, stripped of its stamp and module,
       and returned to the parent, which prints it INDENTED UNDER the slice's
-      entry. `irregular grid, applying the bbox directly` and `more than one
+      entry. `Irregular grid, applying the bbox directly` and `More than one
       version on the store` are findings about one source, and a reader should
       not have to match a name across two rows to learn which.
     * **anything else** is PRINTED, live and flushed. A traceback, a library's
@@ -1020,7 +1020,7 @@ def main(argv=None):
     # exactly how a staging run is captured (`stage_cmip6.py > run.log`). The
     # result is a file where the workers' warnings sit above the banner and
     # nowhere near the slice rows they belong to; measured on a 6-slice run,
-    # two `irregular grid` warnings landed at lines 4-5 of a 40-line report.
+    # two `Irregular grid` warnings landed at lines 4-5 of a 40-line report.
     # Line buffering costs nothing at this row count and restores true order.
     try:
         sys.stdout.reconfigure(line_buffering=True)

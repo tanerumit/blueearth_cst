@@ -367,7 +367,7 @@ def pin_tail(template_uri, pin_uri):
     `<grid_label>/<version>` the store index recorded -- so the pinned URI and
     the entry's own template differ by EXACTLY that string, and everything
     ahead of it (activity, institution, model, experiment, member, table) is
-    already on the `fetching <entry>` row printed one line earlier.
+    already on the `Fetching <entry>` row printed one line earlier.
 
     Naming the tail rather than the URI takes the row from ~130 characters to
     ~56 and drops nothing a reader could act on: the pin IS the fact the row
@@ -709,15 +709,15 @@ def fetch_raw_slice(
         # (`series_identity.series_key`), so the name and the path restated each
         # other, and `cache_hit` restated the outcome in implementation
         # vocabulary. The basename alone carries all of it -- and it is the
-        # spelling the `wrote raw` row already uses, so the two outcomes of this
+        # spelling the `Wrote raw` row already uses, so the two outcomes of this
         # rule now read as a pair.
         #
         # "already staged" rather than "already fetched": the file being present
         # is not what earns this row. `cache_hit` compares the DIGEST, so a
         # slice on disk whose recipe has moved is not skipped -- it re-fetches
-        # and reports through the `fetching` row below.
+        # and reports through the `Fetching` row below.
         log_row(
-            f"already staged, skipping {os.path.basename(raw_nc_out)}",
+            f"Already staged, skipping {os.path.basename(raw_nc_out)}",
             module="fetch",
         )
         # S8-08(a): a slice cached BEFORE the units fix still claims the
@@ -740,7 +740,7 @@ def fetch_raw_slice(
             series_identity.write_netcdf_atomic(repaired, raw_nc_out)
             repaired.close()
             log_row(
-                f"repaired stale units on the cached slice: {sorted(stale)}",
+                f"Repaired stale units on the cached slice: {sorted(stale)}",
                 module="fetch",
             )
         os.utime(raw_nc_out, None)
@@ -763,7 +763,7 @@ def fetch_raw_slice(
     # `test_series_identity.py::test_acquisition_window_is_fixed_per_experiment_class`
     # for the two values, `test_fetch_gcm_raw.py` for the stamped attribute --
     # so a change making the window per-model turns those red, next to this.
-    log_row(f"fetching {resolve_entry_name(catalog_entry, member)}", module="fetch")
+    log_row(f"Fetching {resolve_entry_name(catalog_entry, member)}", module="fetch")
 
     os.makedirs(os.path.dirname(raw_nc_out) or ".", exist_ok=True)
 
@@ -837,7 +837,7 @@ def fetch_raw_slice(
         # named, while a glob is precisely the case where WHICH URI was used
         # is not derivable -- it is the pattern whose match set could change.
         log_row(
-            f"no single pin; keeping the URI glob: {entry_spec.get('uri', '')}",
+            f"No single pin; keeping the URI glob: {entry_spec.get('uri', '')}",
             module="fetch",
         )
         if ambiguous:
@@ -846,7 +846,7 @@ def fetch_raw_slice(
             # merge cleanly this is the only notice that the source was chosen
             # for the operator rather than by them.
             log_row(
-                f"more than one version on the store "
+                f"More than one version on the store "
                 f"({ambiguous_versions_phrase(ambiguous)}): {entry}",
                 module="fetch",
                 level="WARNING",
@@ -866,7 +866,7 @@ def fetch_raw_slice(
         # the row above names the entry. See `pin_tail` for where the full URI
         # still lives.
         log_row(
-            f"pinned {pin_tail(str(entry_spec.get('uri', '')), pin_uri)}, "
+            f"Pinned {pin_tail(str(entry_spec.get('uri', '')), pin_uri)}, "
             "no bucket listing",
             module="fetch",
         )
@@ -918,7 +918,7 @@ def fetch_raw_slice(
             # 175 characters of explanation on every one of ~27 affected models is
             # not.
             log_row(
-                f"irregular grid, applying the bbox directly: {entry}",
+                f"Irregular grid, applying the bbox directly: {entry}",
                 module="fetch",
                 level="WARNING",
             )
@@ -1030,7 +1030,7 @@ def fetch_raw_slice(
 
     series_identity.write_netcdf_atomic(data, raw_nc_out)
     log_row(
-        f"wrote raw {os.path.basename(raw_nc_out)} "
+        f"Wrote raw {os.path.basename(raw_nc_out)} "
         f"({os.path.getsize(raw_nc_out) / 1e6:.2f} MB, {len(index) if index is not None else 0} steps)",
         module="fetch",
     )

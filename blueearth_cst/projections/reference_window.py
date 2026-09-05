@@ -113,14 +113,14 @@ def window_warnings(window: ReferenceWindow, shared_window=None) -> list[str]:
 
     if window.clipped:
         lines.append(
-            f"reference window clipped: {window.requested_label} -> "
+            f"Reference window clipped: {window.requested_label} -> "
             f"{window.effective_label} (the historical experiment ends "
             f"{HISTORICAL_END_YEAR})"
         )
 
     if window.n_years < SHORT_WINDOW_YEARS:
         lines.append(
-            f"short reference window: {window.n_years} years "
+            f"Short reference window: {window.n_years} years "
             f"({window.effective_label}); the design length is "
             f"{SHORT_WINDOW_YEARS}"
         )
@@ -130,7 +130,7 @@ def window_warnings(window: ReferenceWindow, shared_window=None) -> list[str]:
         shared = _years(shared_window)
         if window.effective != shared and window.requested == shared:
             lines.append(
-                f"reference window no longer aligns with shared.historical_window "
+                f"Reference window no longer aligns with shared.historical_window "
                 f"{shared[0]}-{shared[1]}; the clip to {window.effective_label} "
                 f"broke it"
             )

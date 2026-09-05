@@ -216,7 +216,7 @@ if __name__ == "__main__":
             )
             dropped = sorted(set(before) - set(doc["run_stress_test"]))
             log_row(
-                f"experiment config recorded for {doc['experiment_name']!r} "
+                f"Experiment config recorded for {doc['experiment_name']!r} "
                 f"({len(doc['run_stress_test'])} setting(s))"
                 + (
                     f"; migrated forward, dropped retired key(s): {', '.join(dropped)}"

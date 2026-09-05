@@ -1603,7 +1603,7 @@ def test_tee_keeps_a_local_data_source_read_on_the_console(tmp_path, capsys):
     [
         "gcsfs extended-filesystem switch = 'false'",
         "store calendar=noleap (tas)",
-        "wrote raw cmip6_NCC_NorESM2-MM_ssp245_r1i1p1f1.nc (0.07 MB, 1032 steps)",
+        "Wrote raw cmip6_NCC_NorESM2-MM_ssp245_r1i1p1f1.nc (0.07 MB, 1032 steps)",
     ],
 )
 def test_tee_mutes_the_fetch_rows_that_repeat_the_run_or_the_artifact(
@@ -1631,7 +1631,7 @@ def test_tee_keeps_the_fetch_row_that_says_which_slice_is_being_read(tmp_path, c
     stays on the console whatever else from `fetch` is muted for volume.
     """
     log = tmp_path / "rule.log"
-    row = "fetching cmip6_NCC/NorESM2-MM_ssp245_r1i1p1f1"
+    row = "Fetching cmip6_NCC/NorESM2-MM_ssp245_r1i1p1f1"
     with tee_to_log(log, heartbeat_interval=0):
         log_row(row, module="fetch")
     assert "NorESM2-MM_ssp245" in capsys.readouterr().out

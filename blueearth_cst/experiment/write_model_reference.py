@@ -77,7 +77,7 @@ if __name__ == "__main__":
                 out_path=sm.output.model_reference,
             )
             log_row(
-                f"model reference: {doc['model_path']} digest "
+                f"Model reference: {doc['model_path']} digest "
                 f"{doc['digest'][:12]}... over {len(doc['inputs'])} input(s)",
                 module="experiment",
             )

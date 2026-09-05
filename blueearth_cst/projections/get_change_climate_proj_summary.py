@@ -73,7 +73,7 @@ def summary_climate_proj(
     # merge summary maps across models, scnearios and horizons.
     prefix = "annual_change_scalar_stats"
     # for prefix in prefixes:
-    log_row(f"merging netcdf files {prefix}", module="change")
+    log_row(f"Merging netcdf files {prefix}", module="change")
     # Step 4c: filter_nonempty is GONE. It existed to drop the dummy empty
     # netCDFs stage A used to write for absent sources; since 4a an unresolved
     # combination never becomes a job, so every file in this list carries data and

@@ -277,7 +277,7 @@ def _catalog_entries(data_sources) -> dict:
         entries = hydromt.DataCatalog(data_libs=data_sources).to_dict()
     except Exception as exc:  # noqa: BLE001 -- provenance is not worth a failed rule
         log_row(
-            f"could not read catalog metadata from {data_sources}: {exc}",
+            f"Could not read catalog metadata from {data_sources}: {exc}",
             module="compare",
             level="WARNING",
         )
@@ -708,7 +708,7 @@ def plot_comparison_figures(
         window = mutual_window(list(opened.values()))
         if window is None and len(opened) > 1:
             log_row(
-                "the sources' extracted periods do not overlap; each is drawn "
+                "The sources' extracted periods do not overlap; each is drawn "
                 "over its own record and the figures say so",
                 module="compare",
                 level="WARNING",

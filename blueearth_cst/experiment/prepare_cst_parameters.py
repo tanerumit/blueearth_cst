@@ -301,7 +301,7 @@ def prep_cst_parameters(
     # grid this experiment will actually run -- the one number a reader of this
     # rule wants -- and twelve rows per member is WG-2's monthly grain.
     log_row(
-        f"wrote {lookup_fn} ({len(lookup)} rows, {len(lookup) // 12} member(s))",
+        f"Wrote {lookup_fn} ({len(lookup)} rows, {len(lookup) // 12} member(s))",
         module="experiment",
     )
 

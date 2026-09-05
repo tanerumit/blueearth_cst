@@ -397,9 +397,9 @@ def test_stage_one_routes_the_fetch_through_the_workflow_tee(tmp_path, capsys):
 
     def _fake_fetch(**kwargs):
         log_row("gcsfs extended-filesystem switch = 'false'", module="fetch")
-        log_row("fetching cmip6_X/Y_historical_r1i1p1f1", module="fetch")
+        log_row("Fetching cmip6_X/Y_historical_r1i1p1f1", module="fetch")
         log_row(
-            "irregular grid, applying the bbox directly: cmip6_X/Y_historical_r1i1p1f1",
+            "Irregular grid, applying the bbox directly: cmip6_X/Y_historical_r1i1p1f1",
             module="fetch",
             level="WARNING",
         )
@@ -435,13 +435,13 @@ def test_stage_one_routes_the_fetch_through_the_workflow_tee(tmp_path, capsys):
     # NOTHING the fetch says reaches the console live: the parent prints one
     # numbered line per slice, and a worker cannot number itself.
     assert "extended-filesystem switch" not in out
-    assert "fetching cmip6_X/Y_historical" not in out
-    assert "irregular grid" not in out
+    assert "Fetching cmip6_X/Y_historical" not in out
+    assert "Irregular grid" not in out
     # the WARNING comes back as a notice for the parent to attach, with its
     # stamp, module and the entry name it repeats all stripped
-    assert notices == ["WARNING - irregular grid, applying the bbox directly"]
+    assert notices == ["WARNING - Irregular grid, applying the bbox directly"]
     # the log part is the durable copy of all three rows, entry name included
-    for row in ("extended-filesystem switch", "fetching cmip6_X/Y", "irregular grid"):
+    for row in ("extended-filesystem switch", "Fetching cmip6_X/Y", "Irregular grid"):
         assert row in logged, row
 
 

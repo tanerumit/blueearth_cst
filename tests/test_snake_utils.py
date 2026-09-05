@@ -1450,6 +1450,23 @@ def test_tee_mutes_hydromt_model_open_boilerplate(tmp_path, capsys, row):
     assert row.split(" - ", 2)[2].rstrip() in log.read_text(encoding="utf-8")
 
 
+def test_tee_mutes_hydromt_boilerplate_after_its_full_stop_is_dropped(tmp_path, capsys):
+    """The mute sees the COMPACTED row, which has no closing stop.
+
+    A prefix spelled with hydromt's `.` matched nothing once the compactor
+    started dropping it -- three rows came back on the console for a day.
+    """
+    log = tmp_path / "rule.log"
+    raw = (
+        "2026-09-05 12:24:52,001 - hydromt_wflow.wflow_base - tables - INFO - "
+        "Reading model table files.\n"
+    )
+    with tee_to_log(log, heartbeat_interval=0):
+        sys.stdout.write(raw)
+    assert "Reading model table files" not in capsys.readouterr().out
+    assert "tables - Reading model table files" in log.read_text(encoding="utf-8")
+
+
 def test_tee_mutes_a_row_whose_component_prefix_survived_compaction(tmp_path, capsys):
     """`grid - wflow_sbm.states: No grid data found` keeps its prefix by design.
 
@@ -2612,6 +2629,100 @@ def test_console_scheduler_chatter_is_muted():
         _console_record("Touching output file x/.model_reference_ok."),
     ]
     assert _emit(handler, *muted) == ""
+
+
+@pytest.mark.parametrize(
+    "row",
+    [
+        "14:02:03 - log - HydroMT version: 1.3.1\n",
+        "14:02:03 - model - update: setup_precip_forcing\n",
+        "14:02:03 - model - setup_temp_pet_forcing.pet_method=debruin\n",
+    ],
+)
+def test_tee_mutes_the_hydromt_cli_update_chatter(tmp_path, capsys, row):
+    """Rule 1.10's `hydromt update -vv` announces its version three times, then
+    names each step and echoes every keyword of it. The log part keeps them."""
+    log = tmp_path / "rule.log"
+    with tee_to_log(log, heartbeat_interval=0):
+        sys.stdout.write(row)
+    assert row.split(" - ", 2)[2].rstrip() not in capsys.readouterr().out
+    assert row.split(" - ", 2)[2].rstrip() in log.read_text(encoding="utf-8")
+
+
+def test_paint_body_demotes_the_two_benign_hydromt_warnings():
+    """Painted as body, text and level untouched; any other WARNING stays orange."""
+    demoted = [
+        "14:02:03 - forcing - WARNING - Write forcing skipped: dataset is empty (no variables or data)\n",
+        "14:02:03 - states - WARNING - CRS not found in states data, setting to model CRS\n",
+    ]
+    for row in demoted:
+        painted = su._paint_body(row, True)
+        assert painted == su._ansi(row.rstrip("\n"), su._ANSI_BODY) + "\n", painted
+    kept = "14:02:03 - states - WARNING - state file not found, using cold start\n"
+    assert su._ANSI_ALERT in su._paint_body(kept, True)
+    # The match is module AND prefix: the same words under another module keep
+    # their colour, so the list cannot widen by accident.
+    other = "14:02:03 - model - WARNING - CRS not found in states data, setting to model CRS\n"
+    assert su._ANSI_ALERT in su._paint_body(other, True)
+
+
+def test_log_row_flushes_after_its_one_write(monkeypatch):
+    """Off a terminal stdout is block-buffered, so an unflushed row lands after
+    the DONE line Snakemake writes from the parent process."""
+    events = []
+
+    class _Recorder:
+        def write(self, text):
+            events.append("write")
+            return len(text)
+
+        def flush(self):
+            events.append("flush")
+
+    monkeypatch.setattr(su.sys, "stdout", _Recorder())
+    log_row("one chunk", module="fetch")
+    assert events == ["write", "flush"]
+
+
+def test_console_job_stats_collapse_to_one_line():
+    """22 lines on WF1, every count 1; what a reader wants is the run's size
+    and which rules fan out."""
+    handler = _console_handler()
+    table = (
+        "Job stats:\njob                              count\n"
+        "-----------------------------  -------\n"
+        "all                                  1\n"
+        "downscale_climate_realization       10\n"
+        "perturb_climate_realization          8\n"
+        "run_wflow_batch_0                    1\n"
+        "total                               20\n"
+    )
+    out = _emit(handler, _console_record(table, event="run_info"))
+    assert out == (
+        "20 jobs across 4 rules  "
+        "(downscale_climate_realization x10, perturb_climate_realization x8)\n"
+    ), out
+    flat = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\nall  1\nx  1\ntotal  2\n",
+            event="run_info",
+        ),
+    )
+    assert flat == "2 jobs across 2 rules\n", flat
+    one = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\nall  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    assert one == "1 job across 1 rule\n", one
+
+
+def test_console_an_unparsed_run_info_passes_through():
+    handler = _console_handler()
+    out = _emit(handler, _console_record("Nothing to be done.", event="run_info"))
+    assert out == "Nothing to be done.\n"
 
 
 def test_console_the_preamble_is_left_alone():

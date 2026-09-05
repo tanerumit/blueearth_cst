@@ -2728,9 +2728,13 @@ _TEE_CONSOLE_MUTED = (
     ("config", "Reading model config file from "),
     ("config", "Reading default config file from "),
     ("wflow_base", "Supported Wflow.jl version "),
-    ("tables", "Reading model table files."),
-    ("tables", "No tables found, skip writing."),
-    ("grid", "No grid data found, skip writing."),
+    # Spelled WITHOUT hydromt's closing full stop: `_compact_log_line` drops it
+    # before the row reaches this table, so a prefix that carried it matched
+    # nothing (2026-09-05 -- three rows came back on the console the day the
+    # stop went).
+    ("tables", "Reading model table files"),
+    ("tables", "No tables found, skip writing"),
+    ("grid", "No grid data found, skip writing"),
     # `Write forcing file` announces the write hydromt is ABOUT to do; the next
     # row, `Writing file <path>`, states the same fact and names the target. The
     # pair does bracket a decision -- hydromt renames the file when one already
@@ -2740,6 +2744,17 @@ _TEE_CONSOLE_MUTED = (
     # forcing write: once in a WF1 build, and once per member in WF3, where
     # every downscale rule writes one.
     ("forcing", "Write forcing file"),
+    # Rule 1.10 drives `hydromt update` through its CLI at `-vv`, which is what
+    # puts hydromt's rows in the rule's log at all -- and at that level the CLI
+    # also announces its version (three times, once per logger it configures),
+    # names each `setup_*` step it is about to run, and echoes every keyword
+    # of that step as `setup_x.param=value`. The version is a property of the
+    # environment, and the parameter echo is the build recipe the rule's own
+    # `-i` file already holds; ~25 rows per forcing write that say nothing a
+    # reader of the CONSOLE is waiting for. The log part keeps all of them.
+    ("log", "HydroMT version: "),
+    ("model", "update: "),
+    ("model", "setup_"),
     # hydromt echoes the object store URI it is about to read. WF2 already
     # printed that URI one row earlier, from `fetch_gcm_raw`, in BOTH the
     # pinned and the globbed branch -- so this row is a duplicate that costs
@@ -3716,6 +3731,14 @@ def log_row(message, module="cst", level="INFO"):
     sys.stdout.write(
         _log_row_text(f"{datetime.now():%H:%M:%S}", module, level, message) + "\n"
     )
+    # Flushed, because off a terminal Python block-buffers stdout: under a
+    # redirect or in CI a rule's rows then all arrived AFTER its DONE line,
+    # which Snakemake writes from the parent process. On a terminal the stream
+    # is line-buffered and this is a no-op. Guarded, since the tee and the
+    # test doubles standing in for stdout do not all offer `flush`.
+    flush = getattr(sys.stdout, "flush", None)
+    if flush is not None:
+        flush()
 
 
 def warn_row(message, module="cst"):
@@ -3994,8 +4017,51 @@ _SEVERITY_PATTERNS = (
 )
 
 
+#: hydromt WARNINGs that are painted as BODY on the console -- text untouched,
+#: level field kept, log file unchanged; only the colour is withheld.
+#:
+#: The mute table above refuses a WARNING by construction, and that stays
+#: right: a prefix muted for volume must never be able to silence a warning.
+#: These two are a different case. Each fires on every full model write --
+#: `Write forcing skipped` on the three build rules that have no forcing yet,
+#: `CRS not found in states data` on all four -- and neither says anything a
+#: reader can act on: the model has no forcing until rule 1.10 by design, and
+#: hydromt sets the CRS it says it could not find. On a clean WF1 build they
+#: are the ONLY yellow on the console, which is the defect: colour that fires
+#: on every run stops meaning anything, and the one warning worth seeing then
+#: sits among seven that are not.
+#:
+#: ENUMERATED, module and message prefix, exactly as the mute table is, and
+#: for the same reason: a reworded upstream message stops matching and is
+#: painted as a warning again, which is the safe direction. The row is still
+#: in the log with its level, so nothing is lost; do not add to this list for
+#: volume -- that is what the mute table is for, and it is INFO-only.
+_DEMOTED_WARNINGS = (
+    ("forcing", "Write forcing skipped: dataset is empty"),
+    ("states", "CRS not found in states data"),
+)
+
+
+def _demoted_warning(line):
+    """Whether ``line`` is a WARNING row on the enumerated demotion list."""
+    fields = line.strip().split(" - ", 3)
+    if len(fields) != 4 or fields[2] != "WARNING":
+        return False
+    _stamp, module, _level, message = fields
+    return any(
+        module == demoted_module and message.startswith(prefix)
+        for demoted_module, prefix in _DEMOTED_WARNINGS
+    )
+
+
 def _severity_code(line):
-    """The SGR code a line's own text demands, or ``None`` for the caller's."""
+    """The SGR code a line's own text demands, or ``None`` for the caller's.
+
+    A row on ``_DEMOTED_WARNINGS`` answers ``None`` before the patterns are
+    consulted, so it takes the caller's tier -- body, on every console path.
+    """
+    if _demoted_warning(line):
+        return None
     for pattern, code in _SEVERITY_PATTERNS:
         if pattern.search(line):
             return code
@@ -4739,6 +4805,8 @@ class _ConsoleHandler(logging.StreamHandler):
                 lines.append(self._start_line(fields, record))
             elif event == "job_started":
                 pass  # "Execute N jobs..." -- scheduler bookkeeping
+            elif event == "run_info":
+                lines.append(self._paint(self._run_info_line(record), _ANSI_BODY))
             elif not self._muted(record, event):
                 # Body tier for what is informational only. A WARNING or an ERROR keeps
                 # Snakemake's own colouring, which is the one thing on this
@@ -4755,6 +4823,49 @@ class _ConsoleHandler(logging.StreamHandler):
                 lines.append(shown)
 
         return "\n".join(line for line in lines if line) or None
+
+    def _run_info_line(self, record):
+        """Collapse Snakemake's ``Job stats:`` table to one line.
+
+        The table is one row per rule plus a total: 22 lines on WF1, where
+        every count is 1 and the rule names are the same ones about to scroll
+        past on the RUN lines. What a reader wants from it is the SIZE of the
+        run and which rules fan out, so that is what the line keeps::
+
+            37 jobs across 21 rules  (downscale_climate_realization x10, perturb_climate_realization x8)
+
+        Parsed from the message text, because ``run_info`` carries only that
+        text (``dag.stats`` formats the table before logging it). Parsing is
+        by the ``<name>  <count>`` shape of a table row; the header, the rule
+        line and the ``total`` row are skipped by that shape, and a message
+        that yields no rows -- a reworded table, or some other ``run_info`` --
+        is passed through as Snakemake formatted it. Fails open, like every
+        other cosmetic rule here.
+        """
+        text = self.format(record)
+        counts = {}
+        for row in text.splitlines():
+            match = re.fullmatch(r"(\S+)\s+(\d+)", row.strip())
+            if match and match.group(1) != "total":
+                counts[match.group(1)] = int(match.group(2))
+        if not counts:
+            return text
+        jobs = sum(counts.values())
+        rules = len(counts)
+        line = (
+            f"{jobs} job{'s' if jobs != 1 else ''} across "
+            f"{rules} rule{'s' if rules != 1 else ''}"
+        )
+        fanned = [
+            f"{name} x{count}"
+            for name, count in sorted(
+                counts.items(), key=lambda item: (-item[1], item[0])
+            )
+            if count > 1
+        ]
+        if fanned:
+            line = f"{line}  ({', '.join(fanned)})"
+        return line
 
     def _muted(self, record, event):
         """Whether a plain INFO line is one of the muted ones.

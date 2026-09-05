@@ -123,7 +123,7 @@ Ranked by rows saved per run, then by how visible the clash is.
 
 ## Progress
 
-- [ ] Items 1, 2, 9, 12 (console handler and tee -- one commit)
+- [x] Items 1, 2, 9, 12 (console handler and tee -- one commit)
 - [ ] Items 3, 4 (durations and the heartbeat -- one commit)
 - [ ] Items 5, 6, 7, 8, 10 (per-rule rows)
 - [ ] Item 11 (case sweep), last

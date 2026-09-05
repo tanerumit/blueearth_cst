@@ -2268,15 +2268,35 @@ def member_index_regex(width: int) -> str:
     return branches[0] if width == 1 else "(?:" + "|".join(branches) + ")"
 
 
-def _fmt_elapsed(seconds):
-    """Format a duration compactly: ``45s``, ``2m14s``, ``1h03m20s``."""
-    seconds = int(round(seconds))
-    hours, minutes, secs = seconds // 3600, (seconds % 3600) // 60, seconds % 60
-    if hours:
-        return f"{hours}h{minutes:02d}m{secs:02d}s"
-    if minutes:
-        return f"{minutes}m{secs:02d}s"
-    return f"{secs}s"
+_HEARTBEAT_LABEL_RE = re.compile(r"^(\d+\.\d+[a-z]?)_([^/]+)(?:/(.+))?$")
+_MEMBER_PART_RE = re.compile(r"^[a-z]+_\d+(?:_[a-z]+_\d+)*$")
+
+
+def _heartbeat_identity(label):
+    """Spell a rule-log label the way the RUN and DONE lines spell the job.
+
+    The watchdog is built from the log path, so it knows the job as
+    ``2.04_fetch_gcm_slice/cmip6_INM_...`` -- the parts directory -- while the
+    lines above and below its notice say ``Rule 2.04: fetch_gcm_slice
+    [cmip6_INM_...]``. One job, two spellings on adjacent lines, which is the
+    defect the console grammar exists to prevent; this is the translation.
+
+    A member part of the ``rlz_1_st_2`` shape is rendered ``[rlz 1 | st 2]``,
+    the banner's own grammar for an index wildcard (`rule_banner`); any other
+    part is bracketed as it is. A label that is not ``<W.NN>_<name>`` -- a
+    test's ``busy_rule``, an ad-hoc path -- is returned unchanged.
+    """
+    match = _HEARTBEAT_LABEL_RE.match(str(label))
+    if not match:
+        return str(label)
+    number, name, part = match.groups()
+    identity = f"{rule_id(number)} {name}"
+    if not part:
+        return identity
+    if _MEMBER_PART_RE.match(part):
+        tokens = part.split("_")
+        part = " | ".join(f"{k} {v}" for k, v in zip(tokens[::2], tokens[1::2]))
+    return f"{identity}  [{part}]"
 
 
 class _Heartbeat:
@@ -2357,7 +2377,7 @@ class _Heartbeat:
         preserved even though placement is not.
         """
         return [
-            f"... quiet for {_fmt_elapsed(end - start)} "
+            f"... quiet for {format_elapsed(end - start)} "
             f"({self._wall_at(start)} -> {self._wall_at(end)})"
             for start, end in self._quiet
         ]
@@ -2370,6 +2390,19 @@ class _Heartbeat:
         # evaluated when this class is DEFINED, and the colour constants are
         # declared further down the module (beside the console handler that owns
         # the scheme). Naming one here would be a NameError at import.
+        #
+        # `text` is the MESSAGE; the row is assembled here so every notice this
+        # watchdog prints has the stamp and module column the lines around it
+        # have. It used to print `   ... 2.04_fetch/<key>: still running, 2m00s
+        # elapsed` -- no stamp, the log-parts spelling of the job, and a fourth
+        # duration format -- between a RUN and a DONE line that agreed on all
+        # three. The identity is the job's console spelling (`_heartbeat_identity`).
+        row = _log_row_text(
+            f"{datetime.now():%H:%M:%S}",
+            "heartbeat",
+            "INFO",
+            f"{_heartbeat_identity(self._label)} {text}",
+        )
         try:
             # Console-only by design (`quiet_rows` is the durable copy), so the
             # colour -- and the line reset -- here can never reach a file. The
@@ -2378,7 +2411,9 @@ class _Heartbeat:
             # only ever writes whole, newline-terminated notices.
             self._stream.write(
                 _line_reset(self._stream)
-                + _paint_body(text, _console_colour(self._stream), code or _ANSI_BODY)
+                + _paint_body(
+                    row + "\n", _console_colour(self._stream), code or _ANSI_BODY
+                )
             )
             self._stream.flush()
         except Exception:
@@ -2406,12 +2441,9 @@ class _Heartbeat:
                 # opened here, so `stop()` has none to close.
                 if self._on_stall is not None and self._on_stall():
                     continue
-                elapsed = _fmt_elapsed(now - self._start)
+                elapsed = format_elapsed(now - self._start)
                 self._noticed = True
-                self._emit(
-                    f"   ... {self._label}: still running, {elapsed} elapsed\n",
-                    _ANSI_WARN,
-                )
+                self._emit(f"still running, {elapsed} elapsed", _ANSI_WARN)
             elif quiet_since is not None:
                 # Output resumed: `last` is when, so the gap closes there.
                 self._quiet.append((quiet_since, last))
@@ -2459,14 +2491,12 @@ class _Heartbeat:
         self._thread.join(timeout=1.0)
         if not (failed or self._noticed):
             return
-        elapsed = _fmt_elapsed(time.monotonic() - self._start)
+        elapsed = format_elapsed(time.monotonic() - self._start)
         verb = "failed after" if failed else "done in"
         # Yellow on the failure verdict only. `done in` is the all-clear that
         # closes a yellow `still running`, and painting it too would make the
         # resolution as loud as the alarm.
-        self._emit(
-            f"   ... {self._label}: {verb} {elapsed}\n", _ANSI_WARN if failed else None
-        )
+        self._emit(f"{verb} {elapsed}", _ANSI_WARN if failed else None)
 
 
 def _cr_overwrite(line):

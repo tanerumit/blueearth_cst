@@ -33,7 +33,7 @@ using Dates  # stdlib -- resolves via LOAD_PATH's `@stdlib` entry, so it needs n
 # itself needs only stdlib `Logging`. Members 2..N open theirs inside
 # `run_with_progress`.
 include(joinpath(@__DIR__, "..", "shared", "wflow_progress.jl"))
-using .WflowProgress: open_frame, run_with_progress
+using .WflowProgress: open_frame, run_with_progress, format_elapsed
 
 isempty(ARGS) || open_frame(first(splitext(basename(ARGS[1]))))
 
@@ -63,7 +63,7 @@ for (k, t) in enumerate(ARGS)
         # The member tag is the bar's LABEL, which is what lets the relay tell
         # one member's bar from the next within a batch and close each line.
         dt = @elapsed run_with_progress(Wflow, t; label = tag)
-        row("[$(k)/$(total)] $(tag)  $(round(dt; digits=1)) s")
+        row("[$(k)/$(total)] $(tag)  $(format_elapsed(dt))")
         flush(stdout)
     catch e
         # `FAILED` rather than the old `FAIL`: the console picks a row's colour

@@ -21,7 +21,6 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
     _compact_log_line,
     _cr_overwrite,
     _drop_redraw_frames,
-    _fmt_elapsed,
     _Heartbeat,
     _log_path_parts,
     _relativize_paths,
@@ -1295,11 +1294,27 @@ def test_compact_matches_a_windows_spelt_path_stem():
 
 
 @pytest.mark.parametrize(
-    "seconds, expected",
-    [(0, "0s"), (45, "45s"), (134, "2m14s"), (3600, "1h00m00s"), (3980, "1h06m20s")],
+    ("label", "expected"),
+    [
+        ("2.05_merge", "Rule 2.05: merge"),
+        (
+            "2.04_fetch_gcm_slice/cmip6_INM_x",
+            "Rule 2.04: fetch_gcm_slice  [cmip6_INM_x]",
+        ),
+        (
+            "3.12_perturb_climate_realization/rlz_1_st_2",
+            "Rule 3.12: perturb_climate_realization  [rlz 1 | st 2]",
+        ),
+        ("3.15_run_wflow/batch_0", "Rule 3.15: run_wflow  [batch 0]"),
+        ("1.14b_export_wflow_tables", "Rule 1.14b: export_wflow_tables"),
+        ("busy_rule", "busy_rule"),
+    ],
 )
-def test_fmt_elapsed(seconds, expected):
-    assert _fmt_elapsed(seconds) == expected
+def test_heartbeat_identity_spells_the_job_as_the_run_and_done_lines_do(
+    label, expected
+):
+    """The watchdog knows the job by its log-parts label; the console does not."""
+    assert su._heartbeat_identity(label) == expected
 
 
 def test_heartbeat_fires_on_silence_and_summarizes():
@@ -1307,9 +1322,19 @@ def test_heartbeat_fires_on_silence_and_summarizes():
     hb = _Heartbeat("2.05_merge", stream, interval=0.05).start()
     time.sleep(0.16)  # stay silent well past the interval
     hb.stop()
-    out = stream.getvalue()
-    assert "still running" in out and "2.05_merge" in out  # heartbeat fired
-    assert "done in" in out  # stop() prints the summary
+    lines = stream.getvalue().splitlines()
+    # Row grammar: stamp, `heartbeat` module, the job's console spelling, and
+    # the duration in the DONE line's own `h:mm:ss`.
+    assert re.fullmatch(
+        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge still running, "
+        r"\d:\d\d:\d\d elapsed",
+        lines[0],
+    ), lines[0]
+    assert re.fullmatch(
+        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge done in \d:\d\d:\d\d",
+        lines[-1],
+    ), lines[-1]
+    assert "2.05_merge" not in stream.getvalue()
 
 
 def test_heartbeat_suppressed_while_active():

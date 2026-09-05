@@ -98,6 +98,39 @@ def test_compact_shortens_timestamp_and_drops_dotted_name():
     )
 
 
+def test_compact_shortens_hydromts_forcing_exists_warning():
+    """Three sentences and ~290 characters, two of them an inapplicable remedy.
+
+    hydromt tells the reader to change `input.path_forcing` in "the build
+    inifile"; this pipeline sets that key programmatically in rule 1.10, so the
+    remedy names a file nobody here edits. The fact and its consequence stay,
+    because a duplicate forcing file written under a generated name is real and
+    is what the reader has to act on.
+    """
+    line = (
+        "2026-09-05 15:20:18,001 - hydromt_wflow.components.forcing - forcing - "
+        "WARNING - Netcdf forcing file `m/forcing/inmaps_historical.nc` already "
+        "exists and overwriting is not enabled. To overwrite netcdf forcing file: "
+        "change name `input.path_forcing` in setup_config section of the build "
+        "inifile or allow overwriting with `overwrite` flag. A default name will "
+        "be generated.\n"
+    )
+    assert _compact_log_line(line) == (
+        "15:20:18 - forcing - WARNING - m/forcing/inmaps_historical.nc exists and "
+        "overwriting is off; writing under a generated name\n"
+    )
+
+
+def test_compact_leaves_a_reworded_forcing_warning_alone():
+    """Cosmetic filters fail toward PRINTING; an upstream reword is not silenced."""
+    line = (
+        "2026-09-05 15:20:18,001 - hydromt_wflow.components.forcing - forcing - "
+        "WARNING - Netcdf forcing file `m/f.nc` already exists; overwriting "
+        "disabled. A default name will be generated.\n"
+    )
+    assert "overwriting disabled" in _compact_log_line(line)
+
+
 def test_compact_drops_a_single_trailing_stop():
     """hydromt ends its messages with a full stop; our rows end with none.
 

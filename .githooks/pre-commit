@@ -12,15 +12,21 @@
 #     git config core.hooksPath .githooks
 #
 # Only STAGED notebooks are checked, so an unstaged working copy you are
-# actively running does not block an unrelated commit.
+# actively running does not block an unrelated commit. `--staged` also makes
+# the checker read each notebook's content FROM THE INDEX: a commit records the
+# index, so staging a notebook with outputs and then stripping the working copy
+# without re-staging must still be rejected. It was not, until 2026-09-06 --
+# the hook selected staged NAMES and the checker then read working-tree FILES.
 #
-# NUL-DELIMITED, and that is not fastidiousness. The first version of this hook
-# captured the file list into a variable and passed it unquoted, so the shell
-# word-split it: `docs/notebooks/Climate Stress Test.ipynb` arrived as three
-# fragments, none of which exists. The checker skipped them and the hook printed
-# "ok". Two of the three tracked notebooks have spaces in their names, so the
-# hook passed while checking NOTHING -- caught the same day, by noticing it
-# reported 7 notebooks in a directory holding 3.
+# THE FILE LIST IS DISCOVERED INSIDE THE CHECKER, not piped in, and that is not
+# fastidiousness. The first version of this hook captured the list into a
+# variable and passed it unquoted, so the shell word-split it:
+# `docs/notebooks/Climate Stress Test.ipynb` arrived as three fragments, none
+# of which exists. The checker skipped them and the hook printed "ok". Two of
+# the three tracked notebooks have spaces in their names, so the hook passed
+# while checking NOTHING -- caught the same day, by noticing it reported 7
+# notebooks in a directory holding 3. With no path crossing a shell boundary
+# there is nothing left to split.
 
 set -e
 
@@ -30,8 +36,7 @@ else
     exit 0
 fi
 
-if ! git diff --cached --name-only --diff-filter=ACM -z -- '*.ipynb' \
-    | xargs -0 pixi run python dev/scripts/notebook_outputs.py --check; then
+if ! pixi run python dev/scripts/notebook_outputs.py --check --staged; then
     echo ""
     echo "pre-commit: REJECTED. Strip them and stage again:"
     echo "    pixi run python dev/scripts/notebook_outputs.py --strip"

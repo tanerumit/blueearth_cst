@@ -913,8 +913,8 @@ _ADVANCED_SETTINGS_SCHEMA = {
         # (`parameter-placement.md` M3, owner ruling `Q-E`).
         "hydrography": "catalog_entry_name",
         "basin_index": "catalog_entry_name",
-        "max_subbasins_per_basin": "positive_int",
-        "gauge_snap_tolerance_m": "positive_float",
+        "max_subbasins": "positive_int",
+        "snap_tolerance_m": "positive_float",
         "spell_factor": "monthly_factors",
         "change_factor_stats": "statistic_names",
     },

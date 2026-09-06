@@ -19,9 +19,7 @@ from blueearth_cst.shared.snake_utils import (
 #: (ADR 0003 §11). The VALUE lives in ``config/advanced_settings.yml`` under
 #: ``defaults:``, with the colour-ramp argument for the number itself; a project
 #: overrides it with ``basin.delineation.max_subbasins``.
-DEFAULT_MAX_SUBBASINS_PER_BASIN = ADVANCED_SETTINGS["defaults"][
-    "max_subbasins_per_basin"
-]
+DEFAULT_MAX_SUBBASINS_PER_BASIN = ADVANCED_SETTINGS["defaults"]["max_subbasins"]
 #: The hard cap, unchanged: `Bnnn-Snn` gives two digits of local subbasin
 #: number. A limit, where the above is a default — which is why it stays HERE,
 #: beside the identifier format it comes from, rather than joining its
@@ -30,7 +28,7 @@ MAX_LOCAL_SUBBASIN_NUMBER = 99
 #: How far a gauge may be moved onto the derived river network, in metres. The
 #: VALUE lives in ``config/advanced_settings.yml`` under ``defaults:``; a project
 #: overrides it with ``basin.delineation.snap_tolerance_m``.
-DEFAULT_GAUGE_SNAP_TOLERANCE_M = ADVANCED_SETTINGS["defaults"]["gauge_snap_tolerance_m"]
+DEFAULT_GAUGE_SNAP_TOLERANCE_M = ADVANCED_SETTINGS["defaults"]["snap_tolerance_m"]
 DEFAULT_RIVER_UPAREA_KM2 = 32.0
 
 

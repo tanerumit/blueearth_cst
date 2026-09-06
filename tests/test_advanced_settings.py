@@ -35,8 +35,8 @@ VALID = {
         "water_year_start": "Jan",
         "hydrography": "merit_hydro_ihu",
         "basin_index": "merit_hydro_index",
-        "max_subbasins_per_basin": 11,
-        "gauge_snap_tolerance_m": 10000.0,
+        "max_subbasins": 11,
+        "snap_tolerance_m": 10000.0,
         "spell_factor": [1.0] * 12,
         "change_factor_stats": ["mean", "median", "std"],
     },
@@ -72,8 +72,8 @@ def test_the_six_C36_defaults_come_from_the_file_too():
     assert su.DEFAULT_HYDROGRAPHY == defaults["hydrography"]
     assert su.DEFAULT_BASIN_INDEX == defaults["basin_index"]
     assert su.DEFAULT_SPELL_FACTOR == defaults["spell_factor"]
-    assert DEFAULT_MAX_SUBBASINS_PER_BASIN == defaults["max_subbasins_per_basin"]
-    assert DEFAULT_GAUGE_SNAP_TOLERANCE_M == defaults["gauge_snap_tolerance_m"]
+    assert DEFAULT_MAX_SUBBASINS_PER_BASIN == defaults["max_subbasins"]
+    assert DEFAULT_GAUGE_SNAP_TOLERANCE_M == defaults["snap_tolerance_m"]
     assert list(DEFAULT_STATS) == defaults["change_factor_stats"]
 
 
@@ -222,18 +222,18 @@ def test_a_malformed_catalog_entry_name_is_rejected(tmp_path, bad):
 
 @pytest.mark.parametrize("bad", [0, -1, "10000", True, None])
 def test_a_non_positive_snap_tolerance_is_rejected(tmp_path, bad):
-    payload = _with_default("gauge_snap_tolerance_m", bad)
-    with pytest.raises(ValueError, match="defaults.gauge_snap_tolerance_m"):
+    payload = _with_default("snap_tolerance_m", bad)
+    with pytest.raises(ValueError, match="defaults.snap_tolerance_m"):
         su.load_advanced_settings(_write(tmp_path, payload))
 
 
 def test_an_integer_snap_tolerance_is_accepted_and_widened(tmp_path):
     """`10000` should not have to be written `10000.0` to be a distance."""
     resolved = su.load_advanced_settings(
-        _write(tmp_path, _with_default("gauge_snap_tolerance_m", 10000))
+        _write(tmp_path, _with_default("snap_tolerance_m", 10000))
     )
-    assert resolved["defaults"]["gauge_snap_tolerance_m"] == 10000.0
-    assert isinstance(resolved["defaults"]["gauge_snap_tolerance_m"], float)
+    assert resolved["defaults"]["snap_tolerance_m"] == 10000.0
+    assert isinstance(resolved["defaults"]["snap_tolerance_m"], float)
 
 
 @pytest.mark.parametrize(

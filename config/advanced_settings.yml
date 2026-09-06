@@ -152,7 +152,7 @@ defaults:
   # digits of local subbasin number, so 99 is a limit no config may relax and
   # lives beside the identifier format it comes from
   # (`spatial/config.MAX_LOCAL_SUBBASIN_NUMBER`).
-  max_subbasins_per_basin: 11
+  max_subbasins: 11
 
   # How far, in metres, a gauge may be moved onto the derived river network.
   # Overridable per project via `basin.delineation.snap_tolerance_m`.
@@ -163,7 +163,7 @@ defaults:
   # ~1 km resolution, which is the trade this default takes — a gauge silently
   # snapped to the WRONG tributary is worse than one that fails to snap, so
   # lower it on a basin with braided or closely-spaced channels.
-  gauge_snap_tolerance_m: 10000.0
+  snap_tolerance_m: 10000.0
 
   # Monthly spell-length coefficients the stress test applies when a project
   # names none. Overridable per project via `stress_test.spell_factors.dry` and

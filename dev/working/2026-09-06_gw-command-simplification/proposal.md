@@ -1,6 +1,6 @@
 # `gw` command simplification — proposal
 
-**Date:** 2026-09-06 · **Status:** step 1 (help gating) implemented; steps 2–4 proposed · **Branch:** `chore/gw-shortcuts-improvements`
+**Date:** 2026-09-06 · **Status:** steps 1–2 implemented (`help` gating, `work`, `temp`); steps 3–4 (`land`, `drop`) proposed · **Branch:** `chore/gw-shortcuts-improvements`
 
 Where the code lives: `~/OneDrive - Stichting Deltares/Documents/PowerShell/profile.ps1`
 (the `gw` function, `$GwVerbs` table, `GwWriteHelp`, `GwLaneContext`). Backend:
@@ -256,9 +256,55 @@ Verified in a `-NoProfile` child shell against this worktree:
 | `gw task-scope --help` (hidden) | reaches the backend's argparse — still dispatches |
 | `TabExpansion2 'gw integration-h'` | completes `integration-hold` — still completes |
 
+### Step 2 — `gw work` and `gw temp` (landed 2026-09-06)
+
+`profile.ps1` only. Both are `Local = $true`, because each must `Set-Location` in
+the *calling* shell — a Python child cannot, which is why `cd` already lives here.
+
+- `GwBackend($root)` extracted from the dispatcher, so local verbs reach the backend
+  through one candidate list instead of a second copy.
+- `GwSplitBranch($branch, $types)` turns one argument into `--type` + `--task`:
+  `fix/gw-options` → `--type fix --task gw-options`; a bare slug is a `chore`; an
+  unknown prefix errors and names the closed set. `temp` additionally allows `lane`.
+- `GwInvokeBackend` runs the backend against the **primary** worktree (`$worktrees[0]`)
+  with stderr merged, returns text + exit code. Arguments after the branch pass
+  through verbatim, so `--session`, `--base`, `--no-reseed`, `--dry-run` all work.
+- `gw work` parses the advisory `task-start --no-launch` JSON record and cds to its
+  `worktree`. `--dry-run` emits `action: would_allocate` with **no** `worktree` key,
+  so it correctly does not move the shell.
+- `gw temp` takes `create`'s last output line as the path and cds there if it is a
+  directory. It prints a heads-up before provisioning, suppressed under
+  `--no-provision` / `--dry-run`.
+- `Work` group added to `$GwGroupOrder`; `work` is `Show = 'advisory'` because
+  `--no-launch` is advisory-only. Examples line now shows `gw work fix/gw-options`.
+
+**One defect found and fixed while testing.** `create` defaults `--base` to the
+primary's `HEAD` — the trap `landing-merge.md` documents, where a detached primary
+bases the new worktree on whatever is checked out. `task-start` resolves the trunk
+itself; `GwTrunk` now gives `temp` the same order (the `trunk:` key, then
+`origin/HEAD`), and an explicit `--base` still wins.
+
+Verified in `-NoProfile` child shells:
+
+| Check | Result |
+|---|---|
+| `gw work fix/gw-probe --no-reseed` | claimed session-2, branched off `main`, cd'd there, printed `→ session-2 · fix/gw-probe`; `git rev-parse` in the new shell confirmed the branch |
+| `gw work … --dry-run` | prints the plan, shell does **not** move |
+| `gw work` / `gw work bogus/thing` | usage line / `'bogus/' is not a branch type. Use one of: …` |
+| `gw temp spike-x --dry-run` | `from origin/main` (was `from HEAD` before the fix); no cd |
+| `gw temp spike-x --base HEAD --dry-run` | `from HEAD` — explicit base still wins |
+| `gw temp feat/spike-y --dry-run` | `spike-y on new branch feat/spike-y` |
+| `gw`, `gw task-status` | unchanged — the `GwBackend` refactor did not disturb dispatch |
+| `gw w`⇥ | completes `work` |
+
+**Probe cleanup, worth knowing for step 4.** Reverting the live `gw work` test took
+three steps: detach session-2, `git branch -D fix/gw-probe`, and **delete the
+`session-claim` file in session-2's git dir**. That third one is not obvious and a
+stale claim makes the next `task-start` refuse the session. `gw drop` must remove it.
+
 ## Suggested order
 
 1. ~~Help gating + `Show` field.~~ **Done.**
-2. `gw work` and `gw temp` — thin wrappers over `task-start --no-launch` and `create`.
+2. ~~`gw work` and `gw temp` — thin wrappers over `task-start --no-launch` and `create`.~~ **Done.**
 3. `gw land` with the automatic primary-checkout hop.
 4. `gw drop` — new code, needs the confirmation semantics above to be right.

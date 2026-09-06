@@ -1380,6 +1380,69 @@ def test_heartbeat_suppressed_while_active():
     assert "still running" not in stream.getvalue()  # never beeped
 
 
+def _still_running(stream):
+    return [line for line in stream.getvalue().splitlines() if "still running" in line]
+
+
+def test_heartbeat_notices_back_off():
+    """A long silence is ONE situation, not one situation per minute.
+
+    Measured 2026-09-06: a machine that hibernated mid-run woke to 535 notices
+    per job over an 8h55m gap, every one the same sentence with a different
+    number. Bounds are loose because this drives the real clock -- what is
+    being proven is the SHAPE, that notices thin out, not an exact count. A
+    fixed interval would print ~18 here; the backoff prints a handful.
+    """
+    stream = io.StringIO()
+    hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
+    time.sleep(0.9)  # stay silent across several would-be intervals
+    hb.stop()
+    notices = _still_running(stream)
+    assert 2 <= len(notices) <= 9, notices
+
+
+def test_heartbeat_backoff_is_what_thins_the_notices(monkeypatch):
+    """Non-vacuity for the test above, using the cap as the switch.
+
+    `next_notice += min(next_notice, _HEARTBEAT_MAX_STEP)` with a cap of zero
+    adds nothing, which IS the fixed-interval behaviour this replaced. Same
+    silence, same interval, many times the lines -- so the bound above is
+    measuring the backoff and not merely the speed of the machine.
+    """
+    monkeypatch.setattr(su, "_HEARTBEAT_MAX_STEP", 0.0)
+    stream = io.StringIO()
+    hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
+    time.sleep(0.9)
+    hb.stop()
+    assert len(_still_running(stream)) > 9
+
+
+def test_heartbeat_keeps_its_first_notice_prompt():
+    """The backoff must not delay the notice someone is actually waiting for."""
+    stream = io.StringIO()
+    hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
+    time.sleep(0.16)
+    hb.stop()
+    assert _still_running(stream), "the first notice still lands at the interval"
+
+
+def test_heartbeat_backoff_resets_when_output_resumes():
+    """A new silence is a new question, answered at the base interval again.
+
+    Without the reset, a job that went quiet, spoke, then hung would wait out
+    the previous silence's inflated threshold before saying so -- which is the
+    watchdog failing at exactly the moment it exists for.
+    """
+    stream = io.StringIO()
+    hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
+    time.sleep(0.5)  # let the threshold grow
+    before = len(_still_running(stream))
+    hb.touch()  # output resumed: the gap closes and the backoff resets
+    time.sleep(0.2)  # a NEW silence, a few base intervals long
+    hb.stop()
+    assert len(_still_running(stream)) > before
+
+
 def test_heartbeat_hands_a_stall_to_the_bar_when_one_is_open():
     """`on_stall` answering the stall replaces the notice, and the summary too.
 

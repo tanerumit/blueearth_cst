@@ -2325,6 +2325,15 @@ def _heartbeat_identity(label):
     return f"{identity}  [{part}]"
 
 
+#: How far apart the heartbeat's notices are allowed to drift, in seconds.
+#: The gap between notices doubles until it reaches this, then holds -- so a
+#: silence of any length costs a bounded number of lines while the FIRST notice
+#: still lands at the base interval, which is the one a person is waiting for.
+#: Half an hour: long enough that an overnight run is a couple of dozen lines,
+#: short enough that a notice is never the reason you doubt the job is alive.
+_HEARTBEAT_MAX_STEP = 1800.0
+
+
 class _Heartbeat:
     """Console-only watchdog that makes a stalled rule visible while it runs.
 
@@ -2341,6 +2350,12 @@ class _Heartbeat:
     console would otherwise be frozen, which is the "is it stuck?" case. A lone
     ``time.monotonic()`` float assignment is atomic under the GIL, so ``touch()``
     needs no lock.
+
+    Notices BACK OFF once they start: the first lands at ``interval`` and each
+    one pushes the next further out, up to ``_HEARTBEAT_MAX_STEP``. A long
+    silence is one situation, not one situation per minute, and the durable
+    record already treated it that way — :meth:`quiet_rows` writes one row per
+    contiguous silence however many notices the console showed.
 
     Writes **only** to ``stream`` (the live console, captured before any tee
     swap); nothing here ever reaches the rule's log file — the persisted log
@@ -2451,12 +2466,27 @@ class _Heartbeat:
         # iterations so one contiguous silence yields ONE recorded period no
         # matter how many notices it prints.
         quiet_since = None
+        # The silence a notice requires. It starts at the base interval and each
+        # notice pushes it out -- doubling, then by `_HEARTBEAT_MAX_STEP` once
+        # doubling would exceed that. A fixed interval printed one line a minute
+        # for as long as the silence lasted: a machine that hibernated mid-run
+        # woke to 535 notices per job (8h55m, measured 2026-09-06), every one of
+        # them the same sentence with a different number. The same silence now
+        # costs 22. What must NOT change is the first notice, which still lands
+        # at the base interval, because that is the one someone is waiting for.
+        next_notice = self._interval
+        # The THREAD still wakes every interval. Backing the wake off too would
+        # blind the watchdog to output resuming, and `next_notice` could then be
+        # half an hour stale when the next silence began.
         while not self._stop.wait(self._interval):
             now = time.monotonic()
             last = self._last
-            if now - last >= self._interval:
+            silence = now - last
+            if silence >= self._interval:
                 if quiet_since is None:
                     quiet_since = last
+                if silence < next_notice:
+                    continue  # still silent, not yet time to say so again
                 # A rule that is drawing a progress bar answers the stall in the
                 # bar's own line: the hook redraws it with the clock advanced,
                 # which is the only fact the notice carries, and the notice's
@@ -2465,15 +2495,23 @@ class _Heartbeat:
                 # -- only its console presentation changed, so `quiet_rows` is
                 # unaffected. `_noticed` stays unset too: no yellow bracket was
                 # opened here, so `stop()` has none to close.
+                #
+                # The backoff does not advance here: it counts NOTICES, and this
+                # branch prints none.
                 if self._on_stall is not None and self._on_stall():
                     continue
                 elapsed = format_elapsed(now - self._start)
                 self._noticed = True
                 self._emit(f"still running, {elapsed} elapsed", _ANSI_WARN)
+                next_notice += min(next_notice, _HEARTBEAT_MAX_STEP)
             elif quiet_since is not None:
-                # Output resumed: `last` is when, so the gap closes there.
+                # Output resumed: `last` is when, so the gap closes there. The
+                # backoff resets with it -- the next silence is a new question,
+                # and answering it half an hour late because an earlier one ran
+                # long would defeat the watchdog.
                 self._quiet.append((quiet_since, last))
                 quiet_since = None
+                next_notice = self._interval
         if quiet_since is not None:
             # Still silent when the rule ended -- close the period at the stop,
             # not at `_last`, or the final and usually most interesting gap is

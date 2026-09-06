@@ -123,6 +123,73 @@ defaults:
   # crosses New Year — and therefore invalidates a baseline recorded under Jan.
   water_year_start: Jan
 
+  # Catalog ENTRY NAMES the model-free basin delineation reads. Overridable per
+  # project via `basin.sources.hydrography` and `basin.sources.basin_index`.
+  #
+  # Equal to the shipped `config/defaults/wflow_build_model.yml` `setup_basemaps`
+  # values, so a project that declares neither key keeps building the same basin
+  # — and rule 3.00b's guard digest stays byte-identical, since the digest
+  # serializes the config dict as it stands.
+  #
+  # They are a PAIR: the index is the spatial lookup for the hydrography it was
+  # built from, so changing one without the other asks a catalog for a basin the
+  # other cannot find. Whatever you set here must be registered in the data
+  # catalog passed to hydromt with `-d`.
+  hydrography: merit_hydro_ihu
+  basin_index: merit_hydro_index
+
+  # Ceiling on automatically-derived subbasins, PER PARENT BASIN (ADR 0003 §11).
+  # Overridable per project via `basin.delineation.max_subbasins`.
+  #
+  # Eleven, not twelve or twenty: twelve is the practical limit for a qualitative
+  # colour ramp a reader can tell apart (ColorBrewer `Set3` and `Paired` both stop
+  # there), so 11 keeps ONE basin's subbasin map legible with a legend entry per
+  # unit. The argument holds per basin only — a three-basin project reaches 33
+  # units and exceeds any qualitative ramp regardless, which is the figure's
+  # problem to solve rather than this default's.
+  #
+  # The HARD cap is a different number and is not here: `Bnnn-Snn` gives two
+  # digits of local subbasin number, so 99 is a limit no config may relax and
+  # lives beside the identifier format it comes from
+  # (`spatial/config.MAX_LOCAL_SUBBASIN_NUMBER`).
+  max_subbasins: 11
+
+  # How far, in metres, a gauge may be moved onto the derived river network.
+  # Overridable per project via `basin.delineation.snap_tolerance_m`.
+  #
+  # A tolerance rather than a limit: a gauge coordinate and a globally-derived
+  # flow network disagree by roughly a cell, and refusing to snap leaves the
+  # gauge on a hillslope draining nothing. 10 km is generous at MERIT-IHU's
+  # ~1 km resolution, which is the trade this default takes — a gauge silently
+  # snapped to the WRONG tributary is worse than one that fails to snap, so
+  # lower it on a basin with braided or closely-spaced channels.
+  snap_tolerance_m: 10000.0
+
+  # Monthly spell-length coefficients the stress test applies when a project
+  # names none. Overridable per project via `stress_test.spell_factors.dry` and
+  # `.wet` in the run_stress_test file, each taking its own list of 12.
+  #
+  # Twelve 1.0s is the IDENTITY for both factors — no spell-length adjustment —
+  # which is why "absent" can default at all here, where `transient_change`
+  # refuses instead. Twelve entries, one per calendar month, always: weathergenr
+  # indexes them by month, so a shorter list would be recycled by R rather than
+  # rejected and would perturb the wrong months in silence.
+  spell_factor: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+  # The statistics WF2 emits per change factor when a project names none.
+  # Overridable per project via `stats` in the analyze_projections file.
+  #
+  # Three, not the eight an earlier revision shipped. The dropped five were `var`
+  # and four tail quantiles computed over a ~20-year window, which makes `q_90`
+  # "effectively the second-highest of 20 values" (R8 design §5.6) — a number the
+  # window cannot support, presented as though it could. A project that opts back
+  # into a quantile gets it LABELLED with its effective sample size (`q_90[n=20]`),
+  # so the weakness travels with the value instead of being left in a footnote.
+  #
+  # Any xarray reduction name, or `q_<percentile>`; the set is open because the
+  # percentile is.
+  change_factor_stats: [mean, median, std]
+
 runtime:
 
   # Wflow.jl `--threads`. A TOOLBOX setting with no per-project override;

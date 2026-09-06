@@ -25,6 +25,7 @@ from blueearth_cst.projections.calendar_weights import month_length_weights
 from blueearth_cst.projections.change_factor_table import COMPANION_SEP
 from blueearth_cst.projections.variable_spec import canonical_kind, change_kind
 from blueearth_cst.shared.collection_utils import intersection
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS
 
 # %%
 
@@ -111,11 +112,18 @@ def hydrological_year_bounds(ds_time, start_month_hyd_year="Jan"):
     return start, end, n_years
 
 
-#: Step 5d: what a run emits unless it opts into more. Today's eight statistics
-#: were computed over a ~20-year window, which makes `q_90` "effectively the
-#: second-highest of 20 values" (design §5.6) -- a number the window cannot
-#: support, shipped as though it could.
-DEFAULT_STATS = ("mean", "median", "std")
+#: Step 5d: what a run emits unless it opts into more. The VALUE lives in
+#: ``config/advanced_settings.yml`` under ``defaults:``, with the reason the
+#: earlier eight were cut to three; a project overrides it with `stats` in the
+#: analyze_projections file.
+#:
+#: Not hashed by `kernel_hash`, and was not before either: the reductions read it
+#: as a module GLOBAL, so it appears in `co_names` and never in `co_consts`.
+#: Changing the emitted set therefore does not re-derive the cached series --
+#: which is correct, since the statistics are computed downstream of them.
+#: A tuple, where the setting is a list: this is a fixed set for the run, and
+#: the reducers below build their own list from it.
+DEFAULT_STATS = tuple(ADVANCED_SETTINGS["defaults"]["change_factor_stats"])
 
 
 def quantile_label(stat_name, n_years):

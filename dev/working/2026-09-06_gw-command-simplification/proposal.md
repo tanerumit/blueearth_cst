@@ -1,6 +1,6 @@
 # `gw` command simplification — proposal
 
-**Date:** 2026-09-06 · **Status:** steps 1–2 implemented (`help` gating, `work`, `temp`); steps 3–4 (`land`, `drop`) proposed · **Branch:** `chore/gw-shortcuts-improvements`
+**Date:** 2026-09-06 · **Status:** implemented — `help` gating, `work`, `temp`, `land`, `drop` · **Branch:** `chore/gw-shortcuts-improvements`
 
 Where the code lives: `~/OneDrive - Stichting Deltares/Documents/PowerShell/profile.ps1`
 (the `gw` function, `$GwVerbs` table, `GwWriteHelp`, `GwLaneContext`). Backend:
@@ -126,27 +126,28 @@ never pushes, so this stays a local operation — pushing remains explicit, as
 
 With no argument and run from inside a session worktree, the branch is the current one.
 
-### `gw drop [<branch>] [-Force]`
+### `gw drop [<branch>] [--force]`
 
 ```powershell
 gw drop                         # abandon the current session's branch
-gw drop chore/spike-x -Force
+gw drop chore/spike-x --force
 ```
 
 No backend equivalent exists; this is new code and should be honest about that.
 Behaviour:
 
 1. Refuse if the worktree is dirty (uncommitted work is not what "drop" is for) —
-   unless `-Force`.
+   unless `--force`.
 2. Count commits not reachable from trunk (`git rev-list --count trunk..<branch>`).
-   If non-zero, **print the count and the subject lines and require `-Force`.** A temp
+   If non-zero, **print the count and the subject lines and require `--force`.** A temp
    lane legitimately has commits you mean to throw away; a slip on the wrong branch
    does not.
 3. Detach the session worktree (`git switch --detach`), then `git branch -D <branch>`.
 4. For a worktree created by `gw temp`, also `git worktree remove` it.
 
-`git branch -D` leaves the commits in the reflog for the usual ~90 days, so this is
-recoverable in practice. Say so in the confirmation line.
+The dropped commits stay recoverable until gc — see the correction under **Steps 3–4**,
+which found the obvious "it's in the reflog" claim to be false. Say so in the
+confirmation line.
 
 ### `gw temp <name>`
 
@@ -302,9 +303,82 @@ three steps: detach session-2, `git branch -D fix/gw-probe`, and **delete the
 `session-claim` file in session-2's git dir**. That third one is not obvious and a
 stale claim makes the next `task-start` refuse the session. `gw drop` must remove it.
 
+### Steps 3–4 — `gw land` and `gw drop` (landed 2026-09-06)
+
+**Both verbs have two shapes, because the backend knows only one.** `task-land`
+resolves through `advisory_session_records()`, which iterates
+`read_session_slots(primary)` and nothing else — so a `gw temp` worktree is invisible
+to it. A configured session delegates to the backend; a task worktree runs
+`references/parallel-landing.md`'s linked-worktree procedure locally.
+
+That reference is the authority for the local path, and its **ordering is what carries
+the safety**, so it is transcribed rather than paraphrased:
+
+1. Staged changes in the primary block the merge even without path overlap — named and
+   refused up front. Unstaged and untracked files do **not** block; the merge attempt is
+   their gate. Nothing is ever stashed or reset to clear the way.
+2. Rebase immediately before the merge, so the branch is a strict descendant and the
+   merge cannot conflict.
+3. Merge `--no-ff` from the primary.
+4. `--verify`, if given, runs in the primary. On failure: stop, merge NOT reverted, say so.
+5. **`merge-base --is-ancestor` gates all cleanup — never the merge's exit code.** A merge
+   that never receives its branch argument merges the branch's configured upstream, prints
+   `Already up to date`, and exits 0 having done nothing; cleanup at that point discards
+   the work.
+6. Only then remove the worktree and delete the branch.
+
+No recovery path is reimplemented. On any non-zero exit both verbs stop, state what the
+repository now looks like, and name the command that finishes the job — advisory mode
+already leaves recovery manual, and a second conflict-resolver in PowerShell is where
+work would get lost.
+
+`gw drop` is new code with no backend equivalent (`task-recover --action release` demands
+ancestry proof, which an abandoned branch by definition lacks). It refuses a dirty
+worktree, then lists the commits not on the trunk and refuses again, both overridable with
+`--force`. On the session path it detaches the slot **and deletes the `session-claim`
+file** — the requirement the step-2 probe turned up; left behind, it makes the next
+`task-start` refuse the session as held. `create` never writes a claim, so its absence on a
+temp worktree is normal, not an error.
+
+**Windows-specific:** both verbs `Set-Location` to the primary *before* removing a
+worktree. `git worktree remove` fails with a sharing violation when the directory is a
+live process's cwd, and standing in the worktree you are landing is the normal case.
+
+Verified in a scratch repository (six cases) and against the real repository (three):
+
+| Check | Result |
+|---|---|
+| `gw land` from inside a task worktree | merged `--no-ff`, worktree removed, branch deleted, shell moved to the primary |
+| `gw land` with a dirty task worktree | refused, worktree intact |
+| `gw land` with **staged** changes in the primary | refused by name, branch survived |
+| `gw land` with **unstaged** changes in the primary | landed, and reported the loose path it landed over |
+| `gw land` with a detached primary | refused |
+| `gw drop` with unlanded commits | listed them, refused; `--force` then dropped and freed the worktree |
+| `gw drop <session-branch>` (real repo) | detached session-2, removed `session-claim`, deleted the branch; `gw work --session session-2` immediately reallocated it |
+| `gw land <session-branch>` (real repo) | delegated to `task-land`, `LANDED`, slot parked, claim cleared, branch deleted, `target_sha` unmoved — **run from a different worktree, confirming the automatic primary hop** |
+| arg handling | `--bogus`, bare `--verify`, `gw drop --verify`, unknown selector, branch-less session all refused with the usage line |
+
+**Two corrections that came out of testing.**
+
+- The drop message originally said the commits stay "in the reflog for ~90 days". They do
+  not: deleting a branch takes its reflog with it, and removing a worktree takes its
+  per-worktree HEAD log too, so `git reflog` finds nothing. Confirmed — the commits survive
+  only as unreachable objects. The message now says
+  `git fsck --unreachable, then git branch <name> <sha>`.
+- `git worktree remove` **does** delete ignored files, `.pixi/` included. So landing a
+  temp worktree succeeds without `--force`, but it also destroys that worktree's
+  provisioned environment — the `pixi install` + `pixi run install` cost from `gw temp` is
+  paid again next time. That is inherent to disposable worktrees, and the reason a session
+  slot is the cheaper home for anything you will come back to.
+
+**The cost of `temp` you were not shown when choosing it:** a disposable worktree sits
+outside the `task-*` lifecycle entirely — no claim, no session record, invisible to
+`task-status` and `task-land`. That invisibility is precisely why `land` and `drop` each
+needed a second, local implementation.
+
 ## Suggested order
 
 1. ~~Help gating + `Show` field.~~ **Done.**
 2. ~~`gw work` and `gw temp` — thin wrappers over `task-start --no-launch` and `create`.~~ **Done.**
-3. `gw land` with the automatic primary-checkout hop.
-4. `gw drop` — new code, needs the confirmation semantics above to be right.
+3. ~~`gw land` with the automatic primary-checkout hop.~~ **Done.**
+4. ~~`gw drop` — new code, needs the confirmation semantics above to be right.~~ **Done.**

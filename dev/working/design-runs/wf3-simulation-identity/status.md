@@ -1,0 +1,102 @@
+---
+run: wf3-simulation-identity
+target-repo: blueearth_cst
+genre: workflow-spec
+author-binding: cst-architect
+started: 2026-09-06
+variant: lean
+stage: 1-draft
+external-rounds-completed: 0
+dispatches:
+  opus: 1
+  fable: 0
+gates:
+  G1: pending
+  G2: pending
+flags: [intake-in-place, methodology-emphasis]
+---
+
+## Run configuration
+
+**Intake is NOT copied into this run dir.** It lives at
+`dev/milestones/r12/simulation-identity-intake.md` — already committed at the
+durable location, cited by `dev/roadmap.md` by that path, and it declares itself
+frozen once a run opens. Two copies of a frozen 39 KB document is divergence risk
+for no gain, and it already satisfies the stage-7 landing checklist item (a).
+Every author and reviewer brief cites that path as `intake.md`.
+Flag: `intake-in-place`.
+
+**Stage 0 was discharged before the run opened.** The intake carries all four
+stage-0 obligations — derived-artifact register, evidence register,
+gate-materialization check, and the framework-feasibility probes (P1–P5). It is
+not re-run.
+
+**`domain-content: yes`** — set from the intake's § Genre mapping: *"It carries a
+method component: whether a hydrological simulator is legitimately indifferent to
+the provenance of its forcing, and what that indifference costs at the reduction.
+That component is why the run needs a method-literate reviewer and not only a
+repo-fit one."* Stage 1b is therefore mandatory, and the external brief carries
+the domain-referee lens set.
+
+**No seed.** The intake § Seeding rules it: a fresh draft from the intake plus two
+named inputs (`wf3-experiment-v2-design-review-record.md`, and `design-v4.md`
+§3.1/§5.1 at tag `archive/wf3-experiment-v2` as *input, not starting point*).
+
+## Owner emphasis directive — 2026-09-06
+
+> *"The design-review-loop run shall primarily focus on methodology, scientific
+> coherence and architectural design, rather than execution-related issues."*
+
+Recorded here, not in the intake, which is frozen. What it changes:
+
+- **Stage 1b carries the run's weight** and takes Fable's first claim, per the
+  skill's tier rule.
+- **The external brief's lens set is domain-referee first** — method validity,
+  scientific coherence, architectural coherence of the three-stage decomposition
+  — with repo-fit and execution mechanics explicitly de-prioritised.
+- **A promotion to `full` spawns the architecture lens; the repo-fit lens is
+  spawned only if a finding requires it**, with the reason logged.
+
+What it does **not** change: the risk lens still runs, the external round still
+runs, both gates stand, and the convergence/ledger/arbitration contract is
+unaltered. It also does not waive the two *architectural* feasibility probes —
+P1 and P2 decide whether the seam this design proposes can exist at all, which is
+design feasibility, not execution polish. P3–P5 ride to the task brief.
+
+## Role bindings
+
+| Responsibility | Binding | Tier |
+|---|---|---|
+| Driver | interactive session | Opus |
+| Author (draft, revisions, finalize) | `cst-architect` | Opus |
+| Stage 1b — scientific & methodological soundness | `model-validator` + `claim-evaluation` | **Fable** |
+| Stage 2 — risk & assumptions | `critical-thinker` | Opus |
+| Stage 2 (on promotion) — architecture | `cst-architect` (fresh spawn, review mode) | Opus |
+| Stage 2 (only if a finding requires) — repo fit | `python-engineer` review mode | Opus |
+| External | headless `codex exec` (GPT), codex-cli 0.153.2 | — |
+
+The domain lens is deliberately **not** `cst-architect` — that is the author
+binding, and reusing it would collapse author and reviewer. `model-validator` is
+the fit: intake gaps 4 and 6 (metric grain; the Class B GEV's record-length
+estimator precondition) are estimator questions in its scope.
+
+`claim-evaluation` is absent from this session's skill catalog and is resolved at
+`~/workspace/brain/artifacts/skills/claim-evaluation/SKILL.md` — the domain-lens
+brief names that path.
+
+## Landing target
+
+`dev/milestones/r12/wf3-simulation-identity-design.md`, matching the
+`stress-test-lookup-*` sibling naming.
+
+## Stage log
+
+- [done] 0-intake — outputs: `dev/milestones/r12/simulation-identity-intake.md`
+  (pre-existing, revision 2, commit `d50427e4`); run dir + `status.md`
+- [done] 0b-probes-P1-P2 — `python-engineer`, Opus — outputs: `probe-p1-p2.md`.
+  P1 **feasible with conditions, no checkpoint**; P2 **feasible with conditions,
+  but `ruleorder` measured to FAIL and the two-column seam measured insufficient**.
+  Two results bind the draft: the intake's 1→2 seam spec is falsified as written,
+  and the in-file claim at `run_stress_test.smk:1015` is a false negative on a
+  seeded dry-run. `probe-p1-p2.md` joins the author input set.
+- [open] 1-draft — `cst-architect`, Opus; expected output: `design-v1.md`

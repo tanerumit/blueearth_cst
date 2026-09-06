@@ -9,7 +9,12 @@ value in force).
 import pytest
 import yaml
 
+from blueearth_cst.projections.get_change_climate_proj import DEFAULT_STATS
 from blueearth_cst.shared import snake_utils as su
+from blueearth_cst.spatial.config import (
+    DEFAULT_GAUGE_SNAP_TOLERANCE_M,
+    DEFAULT_MAX_SUBBASINS_PER_BASIN,
+)
 
 
 def _write(tmp_path, payload):
@@ -28,6 +33,12 @@ VALID = {
         "batch_disk_headroom_fraction": 0.25,
         "seed": 123,
         "water_year_start": "Jan",
+        "hydrography": "merit_hydro_ihu",
+        "basin_index": "merit_hydro_index",
+        "max_subbasins_per_basin": 11,
+        "gauge_snap_tolerance_m": 10000.0,
+        "spell_factor": [1.0] * 12,
+        "change_factor_stats": ["mean", "median", "std"],
     },
     "runtime": {"julia_threads": 4, "julia_version": "1.11.7"},
 }
@@ -44,6 +55,39 @@ def test_the_shipped_file_is_where_the_constants_come_from():
     assert su.DEFAULT_JULIA_THREADS == on_disk["runtime"]["julia_threads"]
     assert su.DEFAULT_SEED == on_disk["defaults"]["seed"]
     assert su.DEFAULT_WATER_YEAR_START == on_disk["defaults"]["water_year_start"]
+
+
+def test_the_six_C36_defaults_come_from_the_file_too():
+    """`C-36`: each of these backed a config key from a Python literal, so the
+    key and its fallback lived in different tiers and a user reading the config
+    could not discover what a key defaults to (`parameter-placement.md` M3).
+
+    Three of the six are read from modules OUTSIDE `snake_utils`, which is the
+    half a grep of one file would miss: a literal left behind in
+    `spatial/config.py` or in the projections reducer would still satisfy every
+    other test in this file.
+    """
+    on_disk = yaml.safe_load(su.ADVANCED_SETTINGS_PATH.read_text(encoding="utf-8"))
+    defaults = on_disk["defaults"]
+    assert su.DEFAULT_HYDROGRAPHY == defaults["hydrography"]
+    assert su.DEFAULT_BASIN_INDEX == defaults["basin_index"]
+    assert su.DEFAULT_SPELL_FACTOR == defaults["spell_factor"]
+    assert DEFAULT_MAX_SUBBASINS_PER_BASIN == defaults["max_subbasins_per_basin"]
+    assert DEFAULT_GAUGE_SNAP_TOLERANCE_M == defaults["gauge_snap_tolerance_m"]
+    assert list(DEFAULT_STATS) == defaults["change_factor_stats"]
+
+
+def test_the_C36_move_changed_no_value():
+    """The move is non-breaking by construction, so the shipped values are the
+    ones the Python literals held. Written out rather than compared to the file:
+    this is the check that would catch a transcription slip in the YAML, which
+    reading the YAML back cannot."""
+    assert su.DEFAULT_HYDROGRAPHY == "merit_hydro_ihu"
+    assert su.DEFAULT_BASIN_INDEX == "merit_hydro_index"
+    assert su.DEFAULT_SPELL_FACTOR == [1.0] * 12
+    assert DEFAULT_MAX_SUBBASINS_PER_BASIN == 11
+    assert DEFAULT_GAUGE_SNAP_TOLERANCE_M == 10_000.0
+    assert tuple(DEFAULT_STATS) == ("mean", "median", "std")
 
 
 def test_the_shipped_file_lives_under_config():
@@ -134,11 +178,11 @@ def test_an_unquoted_two_part_version_reaches_the_validator_as_a_float(tmp_path)
     """The failure mode the quoting rule exists for, exercised through YAML
     rather than asserted about it."""
     path = tmp_path / "advanced_settings.yml"
+    # Every section but `runtime:` comes from the fixture, so a schema addition
+    # cannot turn this into a "missing key" test that still passes its `match`.
+    body = {k: v for k, v in VALID.items() if k != "runtime"}
     path.write_text(
-        "constraints:\n  min_historical_years: 16\n  max_flagged_months: 3\n"
-        "defaults:\n  batch_disk_headroom_fraction: 0.25\n"
-        "  seed: 123\n  water_year_start: Jan\n"
-        "runtime:\n  julia_threads: 4\n  julia_version: 1.11\n",
+        yaml.safe_dump(body) + "runtime:\n  julia_threads: 4\n  julia_version: 1.11\n",
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="float"):
@@ -157,3 +201,68 @@ def test_a_non_mapping_file_is_rejected(tmp_path):
     path.write_text("- just\n- a list\n", encoding="utf-8")
     with pytest.raises(ValueError, match="not a YAML mapping"):
         su.load_advanced_settings(path)
+
+
+# --- the C-36 validators ---------------------------------------------------
+
+
+def _with_default(key, value):
+    return {**VALID, "defaults": {**VALID["defaults"], key: value}}
+
+
+@pytest.mark.parametrize("bad", ["", " ", "merit hydro", "merit_hydro_ihu ", 1, None])
+def test_a_malformed_catalog_entry_name_is_rejected(tmp_path, bad):
+    """Only the SHAPE is checkable here — whether the name resolves is a
+    property of the catalog passed with `-d`. What this catches is the slip that
+    reaches hydromt as a lookup for a source nobody registered."""
+    payload = _with_default("hydrography", bad)
+    with pytest.raises(ValueError, match="defaults.hydrography"):
+        su.load_advanced_settings(_write(tmp_path, payload))
+
+
+@pytest.mark.parametrize("bad", [0, -1, "10000", True, None])
+def test_a_non_positive_snap_tolerance_is_rejected(tmp_path, bad):
+    payload = _with_default("gauge_snap_tolerance_m", bad)
+    with pytest.raises(ValueError, match="defaults.gauge_snap_tolerance_m"):
+        su.load_advanced_settings(_write(tmp_path, payload))
+
+
+def test_an_integer_snap_tolerance_is_accepted_and_widened(tmp_path):
+    """`10000` should not have to be written `10000.0` to be a distance."""
+    resolved = su.load_advanced_settings(
+        _write(tmp_path, _with_default("gauge_snap_tolerance_m", 10000))
+    )
+    assert resolved["defaults"]["gauge_snap_tolerance_m"] == 10000.0
+    assert isinstance(resolved["defaults"]["gauge_snap_tolerance_m"], float)
+
+
+@pytest.mark.parametrize(
+    "bad", [[1.0] * 11, [1.0] * 13, [], "111111111111", [1.0] * 11 + ["x"], None]
+)
+def test_a_spell_factor_that_is_not_twelve_numbers_is_rejected(tmp_path, bad):
+    """The LENGTH is the point: weathergenr indexes these by month, so R would
+    recycle an eleven-element list rather than reject it, and the run would
+    perturb the wrong months in silence."""
+    payload = _with_default("spell_factor", bad)
+    with pytest.raises(ValueError, match="defaults.spell_factor"):
+        su.load_advanced_settings(_write(tmp_path, payload))
+
+
+@pytest.mark.parametrize(
+    "bad", [[], "mean", ["mean", "mean"], ["q 90"], ["q_00"], ["q_100"], [3], None]
+)
+def test_a_malformed_statistic_set_is_rejected(tmp_path, bad):
+    payload = _with_default("change_factor_stats", bad)
+    with pytest.raises(ValueError, match="defaults.change_factor_stats"):
+        su.load_advanced_settings(_write(tmp_path, payload))
+
+
+@pytest.mark.parametrize("ok", [["q_95"], ["mean", "q_5"], ["var", "median"]])
+def test_the_statistic_set_is_open_not_an_enumeration_of_todays_eight(tmp_path, ok):
+    """`q_95` is computed correctly by parsing the percentile out of the name,
+    so a closed list of the four documented quantiles would refuse a statistic
+    the code supports."""
+    resolved = su.load_advanced_settings(
+        _write(tmp_path, _with_default("change_factor_stats", ok))
+    )
+    assert resolved["defaults"]["change_factor_stats"] == ok

@@ -9,20 +9,28 @@ from dataclasses import dataclass
 from pathlib import PureWindowsPath
 from typing import Any
 
-from blueearth_cst.shared.snake_utils import DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY
+from blueearth_cst.shared.snake_utils import (
+    ADVANCED_SETTINGS,
+    DEFAULT_BASIN_INDEX,
+    DEFAULT_HYDROGRAPHY,
+)
 
 #: Default ceiling on automatically-derived subbasins, PER PARENT BASIN
-#: (ADR 0003 §11). Eleven, not twelve or twenty: twelve is the practical limit
-#: for a qualitative colour ramp a reader can tell apart (ColorBrewer ``Set3``
-#: and ``Paired`` both stop there), so 11 keeps ONE basin's subbasin map legible
-#: with a legend entry per unit. The argument holds per basin only — a
-#: three-basin project reaches 33 units and exceeds any qualitative ramp
-#: regardless, which is the figure's problem to solve, not the default's.
-DEFAULT_MAX_SUBBASINS_PER_BASIN = 11
+#: (ADR 0003 §11). The VALUE lives in ``config/advanced_settings.yml`` under
+#: ``defaults:``, with the colour-ramp argument for the number itself; a project
+#: overrides it with ``basin.delineation.max_subbasins``.
+DEFAULT_MAX_SUBBASINS_PER_BASIN = ADVANCED_SETTINGS["defaults"][
+    "max_subbasins_per_basin"
+]
 #: The hard cap, unchanged: `Bnnn-Snn` gives two digits of local subbasin
-#: number. A limit, where the above is a default.
+#: number. A limit, where the above is a default — which is why it stays HERE,
+#: beside the identifier format it comes from, rather than joining its
+#: neighbour in the settings file: no config may relax it.
 MAX_LOCAL_SUBBASIN_NUMBER = 99
-DEFAULT_GAUGE_SNAP_TOLERANCE_M = 10_000.0
+#: How far a gauge may be moved onto the derived river network, in metres. The
+#: VALUE lives in ``config/advanced_settings.yml`` under ``defaults:``; a project
+#: overrides it with ``basin.delineation.snap_tolerance_m``.
+DEFAULT_GAUGE_SNAP_TOLERANCE_M = ADVANCED_SETTINGS["defaults"]["gauge_snap_tolerance_m"]
 DEFAULT_RIVER_UPAREA_KM2 = 32.0
 
 

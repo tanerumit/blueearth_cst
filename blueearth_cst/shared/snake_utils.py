@@ -907,6 +907,16 @@ _ADVANCED_SETTINGS_SCHEMA = {
         "batch_disk_headroom_fraction": "unit_fraction",
         "seed": "nonnegative_int",
         "water_year_start": "month_abbrev",
+        # `C-36`: six defaults that backed a config key from a Python literal,
+        # so the key and the value it falls back to lived in different tiers and
+        # a reader of the config could not discover either from the other
+        # (`parameter-placement.md` M3, owner ruling `Q-E`).
+        "hydrography": "catalog_entry_name",
+        "basin_index": "catalog_entry_name",
+        "max_subbasins_per_basin": "positive_int",
+        "gauge_snap_tolerance_m": "positive_float",
+        "spell_factor": "monthly_factors",
+        "change_factor_stats": "statistic_names",
     },
     # `julia_threads` moved here from `defaults:` with `C-54`, which removed the
     # per-project override. `defaults:` is for values a project could have
@@ -1004,12 +1014,132 @@ def _version_string(value, where: str) -> str:
     return value
 
 
+def _positive_float(value, where: str) -> float:
+    """A number > 0, with no upper bound.
+
+    Separate from ``_unit_fraction`` because a metric tolerance is not a share
+    of anything: 10000.0 is a legitimate value and 1.0 is not an implicit
+    ceiling. Accepts an int so ``10000`` need not be written ``10000.0``.
+    """
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        raise ValueError(
+            f"{where} must be a number, got {value!r} ({type(value).__name__})"
+        )
+    if float(value) <= 0:
+        raise ValueError(f"{where} must be > 0, got {value}")
+    return float(value)
+
+
+def _catalog_entry_name(value, where: str) -> str:
+    """A hydromt data-catalog entry name.
+
+    Only the SHAPE is checkable here — whether the name resolves is a property
+    of the catalog passed with ``-d``, which this file cannot see and must not
+    pretend to. What it does catch is the failure that reads as a missing
+    dataset: an empty string or a stray space, which reaches hydromt as a
+    lookup for a source nobody registered.
+    """
+    if not isinstance(value, str):
+        raise ValueError(
+            f"{where} must be a catalog entry name, got {value!r} "
+            f"({type(value).__name__})"
+        )
+    token = value.strip()
+    if not token or token != value or any(c.isspace() for c in token):
+        raise ValueError(
+            f"{where} must be a catalog entry name with no whitespace, got {value!r}"
+        )
+    return token
+
+
+def _monthly_factors(value, where: str) -> list[float]:
+    """Twelve numbers, one per calendar month.
+
+    The LENGTH is the whole check. These reach weathergenr, which indexes them
+    by month, so R would recycle or truncate a ten-element list rather than
+    reject it and the run would perturb the wrong months in silence. Same
+    predicate ``validate_spell_factor`` holds the per-project override to.
+    """
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(
+            f"{where} must be a list of 12 monthly coefficients, got "
+            f"{value!r} ({type(value).__name__})"
+        )
+    if len(value) != 12:
+        raise ValueError(
+            f"{where} must have 12 entries, one per month, got {len(value)}"
+        )
+    out = []
+    for index, item in enumerate(value, start=1):
+        if isinstance(item, bool) or not isinstance(item, (int, float)):
+            raise ValueError(f"{where}[{index}] must be a number, got {item!r}")
+        out.append(float(item))
+    return out
+
+
+#: A quantile statistic, ``q_`` plus its percentile. The digit count is NOT
+#: bounded here: `q_100` must reach the range check and be named as an
+#: out-of-range percentile, rather than falling through as a reduction
+#: method that would fail much later inside `getattr`.
+_QUANTILE_STAT_RE = re.compile(r"^q_(\d+)$")
+
+
+def _statistic_names(value, where: str) -> list[str]:
+    """A non-empty set of statistic names WF2 can actually compute.
+
+    Deliberately not a closed enumeration. Each name is either ``q_<percentile>``
+    — dispatched by parsing the number out, so the admissible set is every
+    percentile rather than the four that happen to be documented — or an xarray
+    reduction method looked up with ``getattr`` on the grouped object. Listing
+    today's eight would refuse ``q_95``, which the code computes correctly.
+
+    So the check is the shape both branches require: a non-empty, duplicate-free
+    sequence of bare identifiers, with a quantile's percentile in range. A
+    misspelled reduction still reaches ``getattr`` and fails there, by name, on
+    the object that would have computed it — which is a better message than
+    anything this function could invent.
+    """
+    if isinstance(value, (str, bytes)) or not isinstance(value, Sequence):
+        raise ValueError(
+            f"{where} must be a list of statistic names, got {value!r} "
+            f"({type(value).__name__})"
+        )
+    if not value:
+        raise ValueError(
+            f"{where} must name at least one statistic; an empty set writes "
+            f"change-factor tables with no values in them"
+        )
+    out = []
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, str) or not item.isidentifier():
+            raise ValueError(
+                f"{where}[{index}] must be a statistic name like 'mean' or "
+                f"'q_90', got {item!r}"
+            )
+        quantile = _QUANTILE_STAT_RE.match(item)
+        if quantile and not 1 <= int(quantile.group(1)) <= 99:
+            raise ValueError(
+                f"{where}[{index}] must be a percentile in 1..99, got {item!r}"
+            )
+        if item in out:
+            raise ValueError(f"{where}[{index}] repeats {item!r}")
+        out.append(item)
+    # A list, not a tuple: `load_advanced_settings` round-trips the file, and a
+    # validator that changed the container type would make the resolved settings
+    # unequal to the YAML they came from for no gain.
+    return out
+
+
 _VALIDATORS = {
     "positive_int": _positive_int,
     "nonnegative_int": _nonnegative_int,
     "month_abbrev": _month_abbrev,
     "unit_fraction": _unit_fraction,
     "version_string": _version_string,
+    "positive_float": _positive_float,
+    "catalog_entry_name": _catalog_entry_name,
+    "monthly_factors": _monthly_factors,
+    "statistic_names": _statistic_names,
 }
 
 
@@ -1540,13 +1670,13 @@ def slugify_window(start, end) -> str:
     return f"{_day_slug(start, 'starttime')}_{_day_slug(end, 'endtime')}"
 
 
-#: Catalog ENTRY NAMES the model-free basin delineation defaults to. Equal to
-#: the shipped ``config/defaults/wflow_build_model.yml`` ``setup_basemaps``
-#: values, so an existing config that declares neither key keeps building the
-#: same basin (and rule 3.00b's guard digest stays byte-identical, since the
-#: digest serializes the config dict as-is).
-DEFAULT_HYDROGRAPHY = "merit_hydro_ihu"
-DEFAULT_BASIN_INDEX = "merit_hydro_index"
+#: Catalog ENTRY NAMES the model-free basin delineation defaults to. The VALUES
+#: live in ``config/advanced_settings.yml`` under ``defaults:``, with the reason
+#: they equal the shipped ``config/defaults/wflow_build_model.yml``
+#: ``setup_basemaps`` values; a project overrides them with
+#: ``basin.sources.hydrography`` and ``basin.sources.basin_index``.
+DEFAULT_HYDROGRAPHY = ADVANCED_SETTINGS["defaults"]["hydrography"]
+DEFAULT_BASIN_INDEX = ADVANCED_SETTINGS["defaults"]["basin_index"]
 
 #: Climate sources that carry PRECIPITATION ONLY.
 #:
@@ -2175,8 +2305,10 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
 #: shipped reproducer.
 DEFAULT_WFLOW_OUTVARS = ["river discharge", "actual evapotranspiration"]
 
-#: Twelve 1.0s — no spell-length adjustment, the identity for both factors.
-DEFAULT_SPELL_FACTOR = [1.0] * 12
+#: Twelve 1.0s — no spell-length adjustment, the identity for both factors. The
+#: VALUE lives in ``config/advanced_settings.yml`` under ``defaults:``; a project
+#: overrides it per factor with ``stress_test.spell_factors.dry`` and ``.wet``.
+DEFAULT_SPELL_FACTOR = list(ADVANCED_SETTINGS["defaults"]["spell_factor"])
 
 
 def validate_spell_factor(value, where: str) -> list[float]:

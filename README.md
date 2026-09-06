@@ -182,6 +182,17 @@ the all-workflow runner; bare `simulate_system.smk` invocation is unsupported.
 `--dry-run` shows a partial DAG until a missing source or metric checkpoint has
 resolved its content identity. Each workflow executes once per invocation.
 
+Snakemake flags go after a `--` sentinel and are appended verbatim to every
+invoked workflow — this is how you pass `--rerun-incomplete`, `--dry-run`,
+`--notemp`, `--unlock` or `-p`, since the wrapper's own flags are only
+`--config`, `--cores` and `--simulation-target`:
+
+```console
+$ pixi run python scripts/run_workflows.py \
+    --config test_case/project_config_baseline.yml \
+    -- --rerun-incomplete
+```
+
 ### Retained results and metrics-only
 
 Collections live under `scenarios/collections/<collection_id>/`, selected by the

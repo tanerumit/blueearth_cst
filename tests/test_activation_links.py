@@ -52,6 +52,34 @@ def test_wrapped_bullets_are_read_whole():
     assert sets["manifest-explicit"] == ["delta"]
 
 
+def test_an_indented_block_after_a_list_is_not_absorbed_into_it():
+    """Continuation stops at the first non-indented, non-bullet line.
+
+    Otherwise a code block or wrapped paragraph placed after a list would have
+    its backticked words read as members of the last bullet's set.
+    """
+    doc = (
+        "- **Roles (1):** `alpha`.\n"
+        "\n"
+        "Prose in between.\n"
+        "\n"
+        "  `not-a-role` appears in an indented block.\n"
+    )
+    assert ca._named_sets(doc)["roles"] == ["alpha"]
+
+
+def test_the_claude_scope_count_is_stated_and_matches_the_farm():
+    """The one claim no name comparison covers.
+
+    Claude scope is explicit + every promoting `always` binding, so it moves
+    when a ROLE changes and the manifest does not. The record states it only
+    as a count; if that count stops being parseable the check goes quiet.
+    """
+    counts = ca._stated_counts(ca.RECORD.read_text(encoding="utf-8"))
+    assert "claude main-thread scope" in counts
+    assert counts["claude main-thread scope"] >= counts["manifest-explicit"]
+
+
 def test_a_broken_link_is_reported(tmp_path, monkeypatch):
     """The link check must fail on a bad link, not just pass on a good tree."""
     (tmp_path / "a.md").write_text("see [x](./nope.md)", encoding="utf-8")

@@ -60,14 +60,20 @@ def _bullets(text: str) -> list[str]:
     the first line -- which looks like a set that shrank.
     """
     joined: list[str] = []
+    open_bullet = False
     for line in text.splitlines():
         if line.startswith("- "):
             joined.append(line)
-        elif joined and line.startswith("  ") and line.strip():
+            open_bullet = True
+        elif open_bullet and line.startswith("  ") and line.strip():
             joined[-1] += " " + line.strip()
-        elif not line.strip():
-            joined.append("")
-    return [b for b in joined if b]
+        else:
+            # Anything else ends the bullet -- a blank line, a heading, or an
+            # unindented paragraph. Without this the accumulator would swallow
+            # an indented block that merely FOLLOWS a list, and names picked
+            # out of prose would look like set members.
+            open_bullet = False
+    return joined
 
 
 def _named_sets(text: str) -> dict[str, list[str]]:
@@ -82,6 +88,22 @@ def _named_sets(text: str) -> dict[str, list[str]]:
         if names:
             found[label] = sorted(names)
     return found
+
+
+def _stated_counts(text: str) -> dict[str, int]:
+    """The `(n)` each set bullet declares, whether or not it lists names.
+
+    The Claude-scope bullet states a delta ("those 10 + `testing-policy`")
+    rather than a list, so its count is the only checkable form -- and it is
+    the number that went stale last time (the record said 19 where 10 were
+    linked). Checking names alone would leave exactly that claim unverified.
+    """
+    counts: dict[str, int] = {}
+    for bullet in _bullets(text):
+        m = _SET_LINE.match(bullet)
+        if m:
+            counts[m.group("label").strip().lower()] = int(m.group("count"))
+    return counts
 
 
 def _linked(directory: Path) -> list[str]:
@@ -136,6 +158,25 @@ def check_names() -> tuple[list[str], bool]:
         problems.append(
             "manifest-explicit skills missing from .claude/skills/: "
             + ", ".join(sorted(stated_explicit - claude))
+        )
+
+    # The Claude scope is explicit + every promoting `always` binding, so it
+    # moves when a ROLE changes even though nothing in the manifest did. Its
+    # count is the record's only claim about that, and nothing above touches
+    # it: drop `testing-policy: always` from the roles that carry it and every
+    # other check here still passes.
+    counts = _stated_counts(RECORD.read_text(encoding="utf-8"))
+    stated_scope = counts.get("claude main-thread scope")
+    if stated_scope is None:
+        problems.append(
+            "the record states no 'Claude main-thread scope (n)' -- "
+            "has the bullet been renamed?"
+        )
+    elif stated_scope != len(claude):
+        problems.append(
+            f"claude main-thread scope: the record says {stated_scope}, "
+            f".claude/skills/ holds {len(claude)} "
+            f"({', '.join(sorted(claude))})"
         )
     return problems, True
 

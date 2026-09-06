@@ -1,6 +1,8 @@
 # `gw` command simplification — proposal
 
-**Date:** 2026-09-06 · **Status:** implemented — `help` gating, `work`, `temp`, `land`, `drop` · **Branch:** `chore/gw-shortcuts-improvements`
+**Date:** 2026-09-06 · **Status:** implemented — `help` gating, `work`, `temp`, `land`, `drop` · **Branch:** `chore/gw-shortcuts-improvements` (landed)
+
+> One defect surfaced by the acceptance test — `git worktree remove` is not atomic — is written up in [`addendum-orphaned-worktree.md`](addendum-orphaned-worktree.md), together with its fix.
 
 Where the code lives: `~/OneDrive - Stichting Deltares/Documents/PowerShell/profile.ps1`
 (the `gw` function, `$GwVerbs` table, `GwWriteHelp`, `GwLaneContext`). Backend:

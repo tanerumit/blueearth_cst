@@ -4026,6 +4026,7 @@ _ANSI_RUN = "94"  # bright blue
 _ANSI_DONE = "92"  # bright green
 _ANSI_BODY = "38;5;250"  # light grey
 _ANSI_DIM = "38;5;243"  # dim grey -- the plan block's up-to-date rows
+_ANSI_TITLE = "1"  # bold -- the workflow title, opening and closing
 _ANSI_FAIL = "91"  # bright red
 _ANSI_WARN = "93"  # bright yellow
 _ANSI_ALERT = "38;5;208"  # orange
@@ -4531,11 +4532,11 @@ def run_summary(
     experiment (``logs/_parts/<experiment>``), so a derived ``logs/_parts``
     would send the reader to the parent of the directory they want.
 
-    Grouped and labelled like :func:`run_header`, so a run closes in the shape
-    it opened in: a head line, a blank, then a labelled group whose rows indent
-    one step further. The label is a VERB (``wrote``) because that is what these
-    rows are -- artifacts this run produced -- as against the header's ``run``
-    (what this run is) and ``path tokens`` (how to read the lines between).
+    Shaped like :func:`run_header`, so a run closes in the shape it opened in:
+    a ruled title, a blank, then one aligned column of rows. The ``wrote``
+    label and the second indent level went with the header's ``run`` and
+    ``path tokens`` groups on 2026-09-06 -- with two rows under it, the label
+    was a third of the block spent naming rows rather than being one.
 
     A FAILED verdict is painted red (``_ANSI_FAIL``), gated on stderr being a
     colour console. The success verdict is not painted at all: what matters is
@@ -4548,6 +4549,7 @@ def run_summary(
     head = f"{workflow} {verdict}"
     if elapsed_seconds is not None:
         head = f"{head} in {format_elapsed(elapsed_seconds)}"
+    plain_head = head
     if failed:
         # Coloured HERE, unlike `rule_banner`, and the difference is where the
         # string goes: a banner reaches a log file and an error block, where an
@@ -4555,7 +4557,17 @@ def run_summary(
         # else -- every Snakefile writes it to stderr and no log receives it --
         # so painting it here cannot leak. Asked of stderr for the same reason.
         head = _paint_body(head, _console_colour(sys.stderr), _ANSI_FAIL)
-    lines.extend([head, "", "  wrote"])
+    else:
+        # Success: the NAME is bold and the verdict is not, which matches the
+        # opening title. A failure stays wholly red instead -- one loud signal
+        # beats two competing ones, and red already says everything bold would.
+        head = (
+            _paint_body(workflow, _console_colour(sys.stderr), _ANSI_TITLE)
+            + head[len(workflow) :]
+        )
+    # Sized on the plain text built above, before any painting: `head` may
+    # already carry escape codes, which are not columns.
+    lines.extend([head, title_rule(plain_head), ""])
     if failed:
         parts = os.fspath(log_parts_dir or f"{project_dir}/logs/_parts")
         rows = [("log parts", f"{parts}/")]
@@ -4564,8 +4576,7 @@ def run_summary(
             ("log", f"{project_dir}/logs/{log_name}"),
             ("benchmarks", f"{project_dir}/benchmarks/{benchmarks_name}"),
         ]
-    width = max(len(key) for key, _ in rows)
-    lines.extend(f"    {key.ljust(width)}  {value}" for key, value in rows)
+    lines.extend(meta_row_lines(rows))
     if failed:
         # A NOTE, not a row: it names no artifact, so giving it a key column
         # would file a sentence under a heading meaning "paths this run wrote".
@@ -4705,6 +4716,38 @@ def _console_wildcard_key(key):
     return key
 
 
+#: The run header, held for the console handler to print once Snakemake has
+#: reported the job counts. `onstart:` fires BEFORE that record, so a header
+#: written there can only sit above the plan; holding it is what lets the
+#: rules follow the title directly and the path tokens sit next to the lines
+#: that use them. `None` until a Snakefile declares one.
+_RUN_HEADER = None
+
+#: Whether `install_console_style` took effect. When it did not there is no
+#: handler to print the held header, so `open_run_header` writes it itself --
+#: the header must never be the thing a styling failure silently removes.
+_CONSOLE_STYLE_ACTIVE = False
+
+
+def open_run_header(workflow, project_dir, config_path=None, **details):
+    """Declare the run's header. Call from ``onstart:``, after the style.
+
+    Holds the header for :class:`_ConsoleHandler`, which prints it together
+    with the plan block so the title, the rules and the path tokens form one
+    structure. Falls back to writing it immediately -- in the old order, which
+    is the only order available without the job counts -- when the console
+    style is not active.
+    """
+    global _RUN_HEADER
+    if _CONSOLE_STYLE_ACTIVE:
+        _RUN_HEADER = (workflow, project_dir, config_path, dict(details))
+        return True
+    sys.stderr.write(
+        "\n" + run_header(workflow, project_dir, config_path, **details) + "\n\n"
+    )
+    return False
+
+
 #: Rules kept OUT of the plan block. ``rule all`` is a target aggregator: it
 #: declares no output and does no work, but Snakemake counts it as a job -- so
 #: the block's "5 of 19 rules" and Snakemake's own "6 jobs" differ by exactly
@@ -4772,7 +4815,7 @@ def _plan_rows(counts):
 
 
 def _plan_head(rows, jobs, unlisted=0):
-    """The block's first line: the size and shape of what is about to happen.
+    """The run's size and shape, as a bare clause with no prefix or indent.
 
     ``unlisted`` is rules Snakemake is about to run that the ledger cannot
     name, because they never called :func:`rule_banner` and so registered no
@@ -4800,7 +4843,11 @@ def _plan_head(rows, jobs, unlisted=0):
         head = f"{head}, {jobs} job{'s' if jobs != 1 else ''}"
     if unlisted:
         head = f"{head}, {unlisted} unlisted"
-    return f"  plan -- {head}"
+    # BARE -- no `plan --` prefix and no indent. The two callers frame it
+    # differently: the opening block joins it to the workflow title, and the
+    # standalone block (no header declared) prefixes it. Returning it decorated
+    # put `wf1 build_model   plan -- 7 of 19 ...` on the title line.
+    return head
 
 
 def _plan_lines(counts):
@@ -4927,6 +4974,8 @@ class _ConsoleHandler(logging.StreamHandler):
         # Snakefiles, and a shared set would give the second and later ones a
         # console on which no summary was ever printed at all.
         self._summarized = set()
+        # The opening block is printed once, by whichever record is first.
+        self._opened = False
         self._emit_lock = threading.Lock()
         isatty = getattr(self.stream, "isatty", None)
         self._color = bool(isatty and isatty()) and not os.environ.get("NO_COLOR")
@@ -4991,6 +5040,12 @@ class _ConsoleHandler(logging.StreamHandler):
             self._progress = (fields.get("done"), fields.get("total"))
         else:
             lines = self._drain(None, None)
+            if event != "run_info":
+                # Whichever record comes first opens the run; `run_info`
+                # normally does and carries the plan with it.
+                opening = self._opening()
+                if opening:
+                    lines.append("\n".join(opening) + "\n")
             if event == "job_info":
                 lines.append(self._start_line(fields, record))
             elif event == "job_started":
@@ -5013,6 +5068,59 @@ class _ConsoleHandler(logging.StreamHandler):
                 lines.append(shown)
 
         return "\n".join(line for line in lines if line) or None
+
+    def _opening(self, plan=None):
+        """The run's opening block, or ``[]`` when no header was declared.
+
+        Layout, and why this is assembled HERE rather than at ``onstart:``::
+
+            wf2 analyze_projections -- 7 of 9 rules to run, 13 jobs
+            ------------------------------------------------------
+
+              >  2.01  snapshot_config
+                 2.02  delineate_region
+
+              project        .tmp/test_run
+              <projections>  data/climate/projections/cmip6
+
+        The plan summary rides on the TITLE, and the path tokens sit directly
+        above the lines that spell paths with them. Neither is possible from
+        ``onstart:``, which fires before Snakemake reports any job count -- so
+        a header written there can only sit above the plan, which is where it
+        sat until 2026-09-06 and why the rules began eleven lines down.
+
+        Emitted at most once per run, on whichever record arrives first. That
+        is normally ``run_info`` and the title then carries the plan; if
+        anything else beats it the header still prints, without the summary and
+        without the rules, and `run_info` renders the plan on its own after.
+        Losing the header entirely is the one outcome worth guarding against.
+        """
+        if _RUN_HEADER is None or self._opened:
+            return []
+        self._opened = True
+        workflow, project_dir, config_path, details = _RUN_HEADER
+        summary = "" if plan is None else f" -- {plan[0]}"
+        title = self._paint(workflow, _ANSI_TITLE)
+        if summary:
+            title += self._paint(summary, _ANSI_BODY)
+        # A leading blank, because Snakemake's own preamble ends flush against
+        # this and the title otherwise reads as its last line. The rule is
+        # sized on the UNPAINTED text: escape codes are not columns.
+        lines = [
+            "",
+            title,
+            self._paint(title_rule(workflow + summary), _ANSI_BODY),
+            "",
+        ]
+        if plan is not None:
+            lines.extend(
+                self._paint(row, _ANSI_RUN if running else _ANSI_DIM)
+                for row, running in plan[1]
+            )
+            lines.append("")
+        rows = run_meta_rows(project_dir, config_path, details)
+        lines.extend(self._paint(row, _ANSI_BODY) for row in meta_row_lines(rows))
+        return lines
 
     def _plan_block(self, record):
         """The run's rules, one per line, keyed on rule id.
@@ -5037,18 +5145,24 @@ class _ConsoleHandler(logging.StreamHandler):
         text = self.format(record)
         counts = _run_info_counts(text)
         plan = _plan_lines(counts) if counts else None
-        if plan is None:
+        opening = self._opening(plan)
+        if opening:
+            painted = opening
+        elif plan is None:
             return [self._paint(self._run_info_line(record), _ANSI_BODY)]
-        head, rows = plan
-        painted = [self._paint(head, _ANSI_BODY), ""]
-        painted.extend(
-            self._paint(row, _ANSI_RUN if running else _ANSI_DIM)
-            for row, running in rows
-        )
+        else:
+            # No header declared -- a bare `snakemake -s` without `onstart:`,
+            # and in the tests. The plan still stands on its own.
+            head, rows = plan
+            painted = [self._paint(f"  plan -- {head}", _ANSI_BODY), ""]
+            painted.extend(
+                self._paint(row, _ANSI_RUN if running else _ANSI_DIM)
+                for row, running in rows
+            )
         # ONE element, newlines and all. `_render` joins its lines through a
         # truthiness filter, so a blank passed as its own element is dropped --
         # the block's internal air has to travel inside a single string. The
-        # trailing newline is what separates the plan from the first RUN line.
+        # trailing newline is what separates the block from the first RUN line.
         return ["\n".join(painted) + "\n"]
 
     def _run_info_line(self, record):
@@ -5247,6 +5361,18 @@ class _ConsoleHandler(logging.StreamHandler):
         return _ansi(text, code) if self._color and text else text
 
 
+def _console_style_took():
+    """Record that a console handler is live, and say so.
+
+    `open_run_header` reads this: with a handler there is something to print
+    the held header, and without one the header has to be written on the spot.
+    A styling failure must never be the reason a run loses its header.
+    """
+    global _CONSOLE_STYLE_ACTIVE
+    _CONSOLE_STYLE_ACTIVE = True
+    return True
+
+
 def install_console_style():
     """Restyle Snakemake's terminal output; return whether it took effect.
 
@@ -5289,10 +5415,10 @@ def install_console_style():
             if getattr(handler, "name", None) != "DefaultStreamHandler":
                 continue
             if isinstance(handler, _ConsoleHandler):
-                return True  # a second Snakefile in one process (tests)
+                return _console_style_took()  # a second Snakefile (tests)
             handlers[index] = _ConsoleHandler(handler)
             listener.handlers = tuple(handlers)
-            return True
+            return _console_style_took()
     except Exception:  # noqa: BLE001 -- never fail a run over console styling
         return False
     return False
@@ -5341,28 +5467,49 @@ def run_header(workflow, project_dir, config_path=None, **details):
     """
     # Forward slashes, like every path the folder rows below and the log
     # headers print: one block mixing `C:\a\b` with `a/b` reads as two trees.
-    run_rows = [("project", os.fspath(project_dir).replace(os.sep, "/"))]
+    rows = run_meta_rows(project_dir, config_path, details)
+    lines = [workflow, "-" * len(workflow), ""]
+    lines.extend(meta_row_lines(rows))
+    return "\n".join(lines)
+
+
+def run_meta_rows(project_dir, config_path=None, details=None):
+    """``[(key, value)]`` for the run's metadata block: what run this is.
+
+    The declared path tokens are appended to the run's own facts rather than
+    kept in a second labelled group. They were split until 2026-09-06, with the
+    tokens under ``path tokens -- these folders print as <name> in every line
+    below``; the label and the split are gone because the ANGLE BRACKETS
+    already say which rows are a legend, and under the current layout these
+    rows sit directly above the lines that use them rather than eleven lines
+    away. Four lines of the old block named rows instead of being rows.
+    """
+    rows = [("project", os.fspath(project_dir).replace(os.sep, "/"))]
     if config_path:
         # No project root passed: the config is not a project artifact, and
         # stripping one would render a config that happens to live INSIDE the
         # project as a bare relative path indistinguishable from an output.
         # This still applies the `<repo>` and `<site-packages>` rewrites.
-        run_rows.append(("config", _relativize_paths(os.fspath(config_path), "")))
-    run_rows.extend((key, str(value)) for key, value in details.items())
-    token_rows = _folder_rows(project_dir)
-    # One width across BOTH groups, so the value column is a single column down
-    # the whole block rather than restarting at each label.
-    width = max(len(key) for key, _ in run_rows + token_rows)
+        rows.append(("config", _relativize_paths(os.fspath(config_path), "")))
+    rows.extend((key, str(value)) for key, value in (details or {}).items())
+    rows.extend(_folder_rows(project_dir))
+    return rows
 
-    def row(key, value):
-        return f"    {key.ljust(width)}  {value}"
 
-    lines = [workflow, "", "  run"]
-    lines.extend(row(key, value) for key, value in run_rows)
-    if token_rows:
-        lines.append("")
-        lines.append(
-            "  path tokens -- these folders print as <name> in every line below"
-        )
-        lines.extend(row(key, value) for key, value in token_rows)
-    return "\n".join(lines)
+def meta_row_lines(rows):
+    """Render ``[(key, value)]`` as one aligned, single-indent column."""
+    if not rows:
+        return []
+    width = max(len(key) for key, _ in rows)
+    return [f"  {key.ljust(width)}  {value}" for key, value in rows]
+
+
+def title_rule(text):
+    """The ``-`` rule under a workflow title (treatment T2).
+
+    Plain ASCII, so it reaches a redirect, a log file and CI, where the bold
+    does not -- the same reason the plan block marks its running rules with a
+    ``>`` as well as a colour. Drawn to the text it underlines, so it can never
+    wrap a narrow console.
+    """
+    return "-" * len(text)

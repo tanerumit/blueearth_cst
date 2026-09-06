@@ -2475,12 +2475,32 @@ class _Heartbeat:
         # costs 22. What must NOT change is the first notice, which still lands
         # at the base interval, because that is the one someone is waiting for.
         next_notice = self._interval
+        # The last `touch()` this loop has already accounted for. Resumption is
+        # detected by this value CHANGING, not by catching a tick while
+        # `now - last < interval`: the thread wakes every `interval` and the
+        # gap it is measuring is also `interval`, so whether any tick lands
+        # inside a short burst of output is down to alignment. It was a coin
+        # flip before 2026-09-06, which mattered little when the only cost was
+        # a quiet period recorded late, and matters now that the backoff resets
+        # with it -- a missed reset leaves the next silence waiting out the
+        # previous one's inflated threshold.
+        seen = self._last
         # The THREAD still wakes every interval. Backing the wake off too would
         # blind the watchdog to output resuming, and `next_notice` could then be
         # half an hour stale when the next silence began.
         while not self._stop.wait(self._interval):
             now = time.monotonic()
             last = self._last
+            if last != seen:
+                # Output happened since the previous tick. `last` is when, so a
+                # quiet period closes exactly where it did before.
+                if quiet_since is not None:
+                    self._quiet.append((quiet_since, last))
+                    quiet_since = None
+                # A new silence is a new question, answered at the base
+                # interval again -- see the note on `next_notice`.
+                next_notice = self._interval
+                seen = last
             silence = now - last
             if silence >= self._interval:
                 if quiet_since is None:
@@ -2504,14 +2524,6 @@ class _Heartbeat:
                 self._noticed = True
                 self._emit(f"still running, {elapsed} elapsed", _ANSI_WARN)
                 next_notice += min(next_notice, _HEARTBEAT_MAX_STEP)
-            elif quiet_since is not None:
-                # Output resumed: `last` is when, so the gap closes there. The
-                # backoff resets with it -- the next silence is a new question,
-                # and answering it half an hour late because an earlier one ran
-                # long would defeat the watchdog.
-                self._quiet.append((quiet_since, last))
-                quiet_since = None
-                next_notice = self._interval
         if quiet_since is not None:
             # Still silent when the rule ended -- close the period at the stop,
             # not at `_last`, or the final and usually most interesting gap is
@@ -4540,46 +4552,52 @@ def run_summary(
 ):
     """Return the end-of-run console block for an ``onsuccess``/``onerror``.
 
-    Snakemake ends a run with its own one-line verdict and nothing about what
-    the run PRODUCED. Two artifacts every run of this toolbox writes are
-    consequently invisible unless you already know they exist: the merged log
-    (rule W.17/W.18 folds the per-rule parts into one file, then deletes them)
-    and the benchmark table (a rule column plus a TOTAL row). This names both.
+        Snakemake ends a run with its own one-line verdict and nothing about what
+        the run PRODUCED. Two artifacts every run of this toolbox writes are
+        consequently invisible unless you already know they exist: the merged log
+        (rule W.17/W.18 folds the per-rule parts into one file, then deletes them)
+        and the benchmark table (a rule column plus a TOTAL row). This names both.
 
-    Reported as PATHS rather than contents: they are the two things a person
-    needs in order to answer "what happened", and printing either inline would
-    reproduce on every run the noise these console changes exist to remove.
+        Reported as PATHS rather than contents: they are the two things a person
+        needs in order to answer "what happened", and printing either inline would
+        reproduce on every run the noise these console changes exist to remove.
 
-    ``elapsed_seconds`` is optional because a Snakefile has to measure it
-    itself -- Snakemake exposes no run duration to these handlers. It is
-    wall-clock from Snakefile PARSE, so it includes DAG construction; that is a
-    second or two on these workflows and is not worth a second clock.
+        ``elapsed_seconds`` is optional because a Snakefile has to measure it
+        itself -- Snakemake exposes no run duration to these handlers. It is
+        wall-clock from Snakefile PARSE, so it includes DAG construction; that is a
+        second or two on these workflows and is not worth a second clock.
 
-    Deliberately absent: a job count. Neither handler is given one, and
-    reconstructing it from the DAG would report jobs SCHEDULED rather than jobs
-    RUN -- a number that reads as authoritative and is wrong whenever anything
-    was already up to date.
+        Deliberately absent: a job count. Neither handler is given one, and
+        reconstructing it from the DAG would report jobs SCHEDULED rather than jobs
+        RUN -- a number that reads as authoritative and is wrong whenever anything
+        was already up to date.
 
-    The failure form names the log-parts directory as well, because on failure
-    the merged log does not exist yet: rule W.17 is a normal rule and does not
-    run when an upstream job fails, so the per-rule parts are still the only
-    record. ``show-failed-logs`` (profiles/default/config.yaml) prints the
-    failing job's own log inline; this points at everything around it.
+        The failure form names the log-parts directory as well, because on failure
+        the merged log does not exist yet: rule W.17 is a normal rule and does not
+        run when an upstream job fails, so the per-rule parts are still the only
+        record. ``show-failed-logs`` (profiles/default/config.yaml) prints the
+        failing job's own log inline; this points at everything around it.
 
-    ``log_parts_dir`` is passed rather than derived: WF3 keys its parts by
-    experiment (``logs/_parts/<experiment>``), so a derived ``logs/_parts``
-    would send the reader to the parent of the directory they want.
+        ``log_parts_dir`` is passed rather than derived: WF3 keys its parts by
+        experiment (``logs/_parts/<experiment>``), so a derived ``logs/_parts``
+        would send the reader to the parent of the directory they want.
 
-    Shaped like :func:`run_header`, so a run closes in the shape it opened in:
-    a ruled title, a blank, then one aligned column of rows. The ``wrote``
-    label and the second indent level went with the header's ``run`` and
-    ``path tokens`` groups on 2026-09-06 -- with two rows under it, the label
-    was a third of the block spent naming rows rather than being one.
+    A FAILURE is shaped like :func:`run_header` -- a ruled title, a blank, then
+        one aligned column -- so a run closes in the shape it opened in. The
+        ``wrote`` label and the second indent level went with the header's ``run``
+        and ``path tokens`` groups on 2026-09-06.
 
-    A FAILED verdict is painted red (``_ANSI_FAIL``), gated on stderr being a
-    colour console. The success verdict is not painted at all: what matters is
-    that a failed run looks different from every other run WITHOUT being read,
-    and colouring both would turn the pair into a field to be read instead.
+        A SUCCESS is one line, and the asymmetry is the point: on success rule
+        ``all`` has just listed every target it produced, the log and the benchmark
+        table among them, so a block repeating two of those paths said nothing new.
+        On FAILURE rule ``all`` never ran, the merged log does not exist yet, and
+        the log-parts directory is the only record there is -- so the block that
+        names it is the only place that fact appears.
+
+        A FAILED verdict is painted red (``_ANSI_FAIL``), gated on stderr being a
+        colour console. The success verdict is not painted at all: what matters is
+        that a failed run looks different from every other run WITHOUT being read,
+        and colouring both would turn the pair into a field to be read instead.
     """
     project_dir = os.fspath(project_dir)
     lines = []
@@ -4605,16 +4623,22 @@ def run_summary(
         )
     # Sized on the plain text built above, before any painting: `head` may
     # already carry escape codes, which are not columns.
+    if not failed:
+        # ONE LINE on success. The `log` and `benchmarks` rows this used to
+        # carry are already among rule `all`'s targets, printed by
+        # `target_banner` a few lines above -- so the block restated two paths
+        # the reader had just seen, under a rule, after a blank. What is NOT
+        # said anywhere else is the duration, so that is what survives.
+        #
+        # It survives rather than going with them because two readers depend on
+        # it: a workflow run DIRECTLY has no other statement of how long it
+        # took, and `scripts/run_workflows.py` deliberately prints no band of
+        # its own on success precisely because this line exists (its module
+        # docstring says so, and `tests/test_run_workflows.py` pins it).
+        return head
     lines.extend([head, title_rule(plain_head), ""])
-    if failed:
-        parts = os.fspath(log_parts_dir or f"{project_dir}/logs/_parts")
-        rows = [("log parts", f"{parts}/")]
-    else:
-        rows = [
-            ("log", f"{project_dir}/logs/{log_name}"),
-            ("benchmarks", f"{project_dir}/benchmarks/{benchmarks_name}"),
-        ]
-    lines.extend(meta_row_lines(rows))
+    parts = os.fspath(log_parts_dir or f"{project_dir}/logs/_parts")
+    lines.extend(meta_row_lines([("log parts", f"{parts}/")]))
     if failed:
         # A NOTE, not a row: it names no artifact, so giving it a key column
         # would file a sentence under a heading meaning "paths this run wrote".

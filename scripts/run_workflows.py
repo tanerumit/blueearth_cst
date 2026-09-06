@@ -79,10 +79,11 @@ Contract (pinned, design §7 (a)-(g), plus (h) for the console):
        and the paths written.
 
      There is deliberately NO closing band on SUCCESS. Every workflow already
-     signs off with its own `wfN <name> done in <h:mm:ss>` and the paths it
-     wrote, so a runner band saying the same thing one line later was a second
-     copy of the same fact -- differing only in that the runner's clock also
-     counts process startup. The per-workflow durations survive in the closing
+     signs off with its own `wfN <name> done in <h:mm:ss>`, so a runner band
+     saying the same thing one line later was a second copy of the same fact --
+     differing only in that the runner's clock also counts process startup.
+     (That sign-off is one line as of 2026-09-06: the paths it used to list are
+     rule `all`'s targets, printed just above it.) The per-workflow durations survive in the closing
      block, which is where a reader compares them anyway. A FAILURE is not
      duplicated: a workflow that dies prints no sign-off, so that band is the
      only place the exit code and the stop decision are stated.
@@ -811,8 +812,8 @@ def _closing_block(
     names are Snakefile constants (`wf3_run_stress_test_<experiment>.log` is
     built from a resolved experiment id), so reconstructing them here would put
     a second definition of each in the one place that cannot notice when it
-    drifts -- and each workflow's own `run_summary` has already named its exact
-    log a few lines above.
+    drifts -- and rule `all`'s own target list has already named each exact log
+    a few lines above.
     """
     root = os.fspath(project_dir).replace(os.sep, "/")
     verdict = "FAILED" if failed else "done"

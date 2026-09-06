@@ -3439,8 +3439,15 @@ def test_a_rule_log_header_defines_every_token_its_rows_use(declare_folders, tmp
     assert "# <model>: models/hydrology/wflow" in header.splitlines()
 
 
-def test_run_summary_closes_the_run_in_the_shape_it_opened_in():
-    """Ruled head, blank, one aligned column -- the header's shape exactly."""
+def test_run_summary_closes_a_success_in_one_line():
+    """The duration, and nothing else.
+
+    The `log` and `benchmarks` rows this used to carry are already among rule
+    `all`'s targets, printed just above. What survives is the one fact stated
+    nowhere else -- and two readers need it: a workflow run directly has no
+    other duration, and `run_workflows.py` prints no success band of its own
+    precisely because this line exists.
+    """
     out = su.run_summary(
         "wf3 run_stress_test",
         "test_case/test_rapid",
@@ -3448,13 +3455,7 @@ def test_run_summary_closes_the_run_in_the_shape_it_opened_in():
         "wf3_benchmarks.md",
         elapsed_seconds=176,
     )
-    assert out.splitlines() == [
-        "wf3 run_stress_test done in 0:02:56",
-        "-----------------------------------",
-        "",
-        "  log         test_case/test_rapid/logs/wf3_run_stress_test.log",
-        "  benchmarks  test_case/test_rapid/benchmarks/wf3_benchmarks.md",
-    ]
+    assert out.splitlines() == ["wf3 run_stress_test done in 0:02:56"]
 
 
 def test_run_summary_paints_only_the_failed_verdict(monkeypatch):
@@ -3505,8 +3506,13 @@ def test_heartbeat_paints_the_failure_verdict(monkeypatch):
     assert _unreset(stream.getvalue()).startswith(f"\033[{su._ANSI_WARN}m")
 
 
-def test_run_summary_failure_keeps_its_note_out_of_the_key_column():
-    """The note names no artifact, so it is not a row under `wrote`."""
+def test_run_summary_failure_keeps_the_block_a_success_no_longer_needs():
+    """On failure rule `all` never ran, so this is the only record there is.
+
+    The merged log does not exist yet -- rule W.17 is a normal rule and does
+    not run when an upstream job fails -- so the log-parts directory is named
+    nowhere else. The note beneath it names no artifact, so it is not a row.
+    """
     out = su.run_summary(
         "wf3 run_stress_test",
         "test_case/test_rapid",

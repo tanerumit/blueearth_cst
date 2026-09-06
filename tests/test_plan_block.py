@@ -113,18 +113,23 @@ def test_numbers_sort_lexicographically(rules):
 
 
 # --- the head line ----------------------------------------------------------
+#
+# BARE: no `plan --` prefix and no indent. The opening block joins it to the
+# workflow title (`wf1 build_model -- 2 of 19 rules to run, ...`) and the
+# standalone block prefixes it; returning it decorated put the prefix in the
+# middle of the title line.
 
 
 def test_head_says_all_to_run_when_nothing_is_up_to_date(rules):
     rules({"a": "1.01", "b": "1.02"})
     head, _ = su._plan_lines({"a": 1, "b": 1})
-    assert head == "  plan -- 2 rules, all to run"
+    assert head == "2 rules, all to run"
 
 
 def test_head_names_both_halves_on_a_partial_run(rules):
     rules({"a": "1.01", "b": "1.02", "c": "1.03"})
     head, _ = su._plan_lines({"a": 1})
-    assert head == "  plan -- 1 of 3 rules to run, 2 up to date"
+    assert head == "1 of 3 rules to run, 2 up to date"
 
 
 def test_head_carries_the_job_count_only_when_something_fans_out(rules):
@@ -140,7 +145,7 @@ def test_head_carries_the_job_count_only_when_something_fans_out(rules):
 def test_a_single_rule_is_not_pluralized(rules):
     rules({"a": "1.01"})
     head, _ = su._plan_lines({"a": 1})
-    assert head == "  plan -- 1 rule, all to run"
+    assert head == "1 rule, all to run"
 
 
 # --- the rows ---------------------------------------------------------------
@@ -198,7 +203,7 @@ def test_every_rule_up_to_date_still_renders(rules):
     """Reachable when only the excluded `all` job remains."""
     rules({"all": "1.00", "a": "1.01"})
     head, rows = su._plan_lines({"all": 1})
-    assert head == "  plan -- 1 rule, all up to date"
+    assert head == "1 rule, all up to date"
     assert not any(">" in text for text, _ in rows)
 
 

@@ -2814,6 +2814,119 @@ def test_console_run_info_renders_the_plan_block(monkeypatch):
     ), out
 
 
+# --- the opening block (title + plan + metadata, assembled at run_info) ------
+
+
+def _declared_header(monkeypatch, **details):
+    """Declare a run header the way `open_run_header` does from `onstart:`."""
+    monkeypatch.setattr(
+        su, "_RUN_HEADER", ("wf1 build_model", "test_case/test_rapid", None, details)
+    )
+    monkeypatch.setattr(su, "_RULE_NUMBERS", {"a": "1.01", "b": "1.02"})
+
+
+def test_console_opening_puts_the_rules_under_the_title(monkeypatch):
+    """Scheme A: the plan summary rides on the title, metadata follows the rules.
+
+    Neither is reachable from `onstart:`, which fires before Snakemake reports
+    any job count -- so this whole block is assembled here.
+    """
+    _declared_header(monkeypatch)
+    out = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    lines = out.split("\n")
+    assert lines[0] == ""  # air above, or Snakemake's preamble runs into it
+    assert lines[1] == "wf1 build_model -- 1 of 2 rules to run, 1 up to date"
+    assert lines[2] == "-" * len(lines[1])  # treatment T2
+    assert lines[3] == ""
+    assert lines[4] == "  >  1.01  a"
+    assert lines[5] == "     1.02  b"
+    assert lines[6] == ""
+    assert lines[7] == "  project  test_case/test_rapid"
+
+
+def test_console_opening_rule_spans_the_whole_title(monkeypatch):
+    """Including the plan clause -- an underline stopping short reads as a typo."""
+    _declared_header(monkeypatch, experiment="experiment_rapid")
+    out = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\nb  1\ntotal  2\n",
+            event="run_info",
+        ),
+    )
+    title, rule = out.split("\n")[1:3]
+    assert rule == "-" * len(title)
+    assert title.endswith("all to run")
+
+
+def test_console_opening_prints_once(monkeypatch):
+    """A second record must not repeat the header."""
+    _declared_header(monkeypatch)
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+        _job_info(1, "a", "Rule 1.01: a"),
+    )
+    assert out.count("wf1 build_model") == 1, out
+
+
+def test_console_opening_survives_a_run_without_run_info(monkeypatch):
+    """Whichever record is first opens the run.
+
+    `run_info` normally is, and carries the plan. If anything beats it the
+    header still prints -- losing it entirely is the outcome worth guarding
+    against, and a header is not something a styling detail may drop.
+    """
+    _declared_header(monkeypatch)
+    out = _emit(_console_handler(), _job_info(1, "a", "Rule 1.01: a"))
+    lines = out.split("\n")
+    assert lines[1] == "wf1 build_model"  # no plan clause, none was reported
+    assert lines[2] == "-" * len("wf1 build_model")
+    assert "  project  test_case/test_rapid" in lines
+
+
+def test_console_plan_stands_alone_when_no_header_was_declared(monkeypatch):
+    """A bare `snakemake -s` without `onstart:`, and every test above."""
+    monkeypatch.setattr(su, "_RUN_HEADER", None)
+    monkeypatch.setattr(su, "_RULE_NUMBERS", {"a": "1.01", "b": "1.02"})
+    out = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    assert out.startswith("  plan -- 1 of 2 rules to run, 1 up to date")
+
+
+def test_open_run_header_writes_immediately_without_a_console(monkeypatch):
+    """A styling failure must never be the reason a run loses its header."""
+    monkeypatch.setattr(su, "_CONSOLE_STYLE_ACTIVE", False)
+    monkeypatch.setattr(su, "_RUN_HEADER", None)
+    stream = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", stream)
+    assert su.open_run_header("wf1 build_model", "test_case/test_rapid") is False
+    assert "wf1 build_model" in stream.getvalue()
+    assert su._RUN_HEADER is None  # nothing held for a handler that is not there
+
+
+def test_open_run_header_holds_it_for_the_console(monkeypatch):
+    monkeypatch.setattr(su, "_CONSOLE_STYLE_ACTIVE", True)
+    monkeypatch.setattr(su, "_RUN_HEADER", None)
+    stream = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", stream)
+    assert su.open_run_header("wf1 build_model", "test_case/test_rapid") is True
+    assert stream.getvalue() == ""  # held, not written
+    assert su._RUN_HEADER[0] == "wf1 build_model"
+
+
 def test_console_an_unparsed_run_info_passes_through():
     handler = _console_handler()
     out = _emit(handler, _console_record("Nothing to be done.", event="run_info"))
@@ -3187,10 +3300,11 @@ def test_install_console_style_fails_open(monkeypatch):
 
 
 def test_run_header_shape_matches_run_summary():
-    """Same head-then-indented-rows block, so a run opens and closes alike.
+    """Ruled title, blank, one aligned column -- opening and closing alike.
 
-    With no declared folders there is one group, so the block is the `run`
-    label and its rows -- the legend appears only when there is one to give.
+    The `run` and `path tokens` group labels went on 2026-09-06: with the
+    console handler owning the block, the token rows sit directly above the
+    lines that use them and the angle brackets already say what they are.
     """
     out = su.run_header(
         "wf3 run_stress_test",
@@ -3200,11 +3314,11 @@ def test_run_header_shape_matches_run_summary():
     )
     assert out.splitlines() == [
         "wf3 run_stress_test",
+        "-------------------",
         "",
-        "  run",
-        "    project     test_case/test_rapid2",
-        "    config      test_case/project_config_rapid.yml",
-        "    experiment  experiment_rapid",
+        "  project     test_case/test_rapid2",
+        "  config      test_case/project_config_rapid.yml",
+        "  experiment  experiment_rapid",
     ]
 
 
@@ -3222,14 +3336,12 @@ def test_run_header_states_the_declared_folders(declare_folders):
         model=os.path.join(project, "models", "hydrology", "wflow"),
     )
     lines = su.run_header("wf1 build_model", project).splitlines()
-    rows = [line for line in lines if line.startswith("    ")]
+    rows = [line for line in lines if line.startswith("  ") and line.strip()]
     assert [row.split()[0] for row in rows] == ["project", "<data>", "<model>"]
     assert rows[1].endswith("data/wflow_global/hydromt")
     assert rows[2].endswith("models/hydrology/wflow")
-    # The two kinds of row are separated and each group says what it is: the
-    # `<name>` rows are a legend for the body, not more facts about the run.
-    assert "  run" in lines
-    assert any(line.startswith("  path tokens") for line in lines), lines
+    # One column now, no group labels: the `<name>` rows announce themselves.
+    assert lines[1] == "-" * len("wf1 build_model")
     assert "" in lines  # blank-line separation, not a wall
 
 
@@ -3238,9 +3350,9 @@ def test_run_header_aligns_both_groups_on_one_value_column():
     out = su.run_header(
         "wf3 run_stress_test", "test_case/test_rapid", experiment="experiment_rapid"
     )
-    rows = [line for line in out.splitlines() if line.startswith("    ")]
+    rows = [line for line in out.splitlines() if line.startswith("  ") and line.strip()]
     # Where the VALUE starts: past the indent, the key, and the gutter.
-    columns = {re.match(r" {4}\S+ +", row).end() for row in rows}
+    columns = {re.match(r" {2}\S+ +", row).end() for row in rows}
     assert len(columns) == 1, rows
 
 
@@ -3265,7 +3377,7 @@ def test_a_rule_log_header_defines_every_token_its_rows_use(declare_folders, tmp
 
 
 def test_run_summary_closes_the_run_in_the_shape_it_opened_in():
-    """Head, blank, labelled group, rows indented one step further."""
+    """Ruled head, blank, one aligned column -- the header's shape exactly."""
     out = su.run_summary(
         "wf3 run_stress_test",
         "test_case/test_rapid",
@@ -3275,10 +3387,10 @@ def test_run_summary_closes_the_run_in_the_shape_it_opened_in():
     )
     assert out.splitlines() == [
         "wf3 run_stress_test done in 0:02:56",
+        "-----------------------------------",
         "",
-        "  wrote",
-        "    log         test_case/test_rapid/logs/wf3_run_stress_test.log",
-        "    benchmarks  test_case/test_rapid/benchmarks/wf3_benchmarks.md",
+        "  log         test_case/test_rapid/logs/wf3_run_stress_test.log",
+        "  benchmarks  test_case/test_rapid/benchmarks/wf3_benchmarks.md",
     ]
 
 
@@ -3291,8 +3403,11 @@ def test_run_summary_paints_only_the_failed_verdict(monkeypatch):
     monkeypatch.setattr(sys, "stderr", _FakeTTY())
     failed = su.run_summary("wf3", "p", "l.log", "b.md", failed=True)
     ok = su.run_summary("wf3", "p", "l.log", "b.md")
+    # A failure is WHOLLY red: one loud signal, not red competing with bold.
     assert failed.splitlines()[0] == su._ansi("wf3 FAILED", su._ANSI_FAIL)
-    assert "\033" not in ok
+    assert su._ANSI_FAIL not in ok
+    # A success bolds the NAME only, matching the opening title.
+    assert ok.splitlines()[0] == su._ansi("wf3", su._ANSI_TITLE) + " done"
 
 
 def test_run_summary_verdict_is_plain_when_stderr_is_not_a_console(monkeypatch):
@@ -3339,9 +3454,9 @@ def test_run_summary_failure_keeps_its_note_out_of_the_key_column():
     )
     assert out.splitlines() == [
         "wf3 run_stress_test FAILED",
+        "--------------------------",
         "",
-        "  wrote",
-        "    log parts  test_case/test_rapid/logs/_parts/experiment_rapid/",
+        "  log parts  test_case/test_rapid/logs/_parts/experiment_rapid/",
         "",
         "  the failing job's own log is printed above",
     ]
@@ -3369,9 +3484,9 @@ def test_run_header_omits_rows_a_workflow_does_not_have():
     out = su.run_header("wf1 build_model", "test_case/test_rapid")
     assert out.splitlines() == [
         "wf1 build_model",
+        "---------------",
         "",
-        "  run",
-        "    project  test_case/test_rapid",
+        "  project  test_case/test_rapid",
     ]
 
 

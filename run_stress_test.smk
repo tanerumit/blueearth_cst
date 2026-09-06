@@ -16,7 +16,7 @@ from blueearth_cst.shared.provenance import append_journal_line, configuration_i
 from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retired_experiment_keys
 from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, warn_row, window_year_pair, install_console_style, run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, warn_row, window_year_pair, install_console_style, run_header, open_run_header
 from blueearth_cst.experiment.check_project_consistency import guarded_section_paths
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -1540,16 +1540,12 @@ def _header():
         # separately. Snakemake's next line goes to the OTHER stream, so it
         # could land between the two and the block ran on mid-row
         # (`experiment_rapidJob stats:`, seen 2026-08-15).
-        sys.stderr.write(
-            "\n"
-            + run_header(
-                "wf3 run_stress_test",
-                project_dir,
-                config_path,
-                experiment=experiment,
-                batching=_batch_sizing.summary(),
-            )
-            + "\n\n"
+        open_run_header(
+            "wf3 run_stress_test",
+            project_dir,
+            config_path,
+            experiment=experiment,
+            batching=_batch_sizing.summary(),
         )
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more

@@ -47,11 +47,38 @@ arrow in it.
 - `dev/scripts/semantic_tree_diff.py` — `COPIED_CONFIG_PATH_MAP`, keyed old -> new
 - `--map old=new` arguments recorded in milestone records
 
+### A seventh instance, harvested from the note that carried it
+
+`dev/tasks/t2608191733a-rename-snake-config-yml-to-project-config-yml-repo-wide.md`
+was corrupted by `51469c05` — the `C-85` rename commit itself — and went
+undetected until the note was closed on 2026-09-06. Two lines, both prose:
+
+```
+28  > **What** — Rename every `project_config_*.yml` seed and template to
+29  > `project_config_*.yml`, and update the `.gitignore` un-ignore glob, tests,
+...
+33  > experiment. `project_config_` says what the file *is*; `project_config_` says
+34  > which program reads it. The second is the less durable fact: ...
+```
+
+Line 33 is the sharpest specimen the repo has: a sentence whose whole point is
+to CONTRAST the two spellings, now contrasting a name with itself. The note's
+frontmatter `title:` escaped, because the sweep matched the backticked code span
+and the title carries the name bare — so the same note holds a correct record
+and a destroyed one, three lines apart.
+
+This is the form the detector will find hardest and the one that actually bit:
+**prose**, not an `old:`/`new:` pair. The five entries above are weighted toward
+structured pairs, which are the easy half. The block above IS the fixture — the
+note itself was removed at closure, so quote it from here rather than looking
+for the file; the uncorrupted original is at `51469c05^`.
+
 ## Progress
 
 - [ ] Enumerate the record forms; decide which are mechanically recognisable
 - [ ] Decide where it lives — a class inside the sweep, or its own script
-- [ ] Falsify it against R14's six real instances, recovered from git history
+- [ ] Falsify it against R14's six historical instances plus the seventh, which
+      is still in the tree and needs no archaeology
 
 ## Links
 

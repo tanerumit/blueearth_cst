@@ -25,32 +25,22 @@ import argparse
 import json
 import re
 import sys
-from dataclasses import dataclass, field
 from pathlib import Path
 
-REPO_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(REPO_ROOT) not in sys.path:
-    sys.path.insert(0, str(REPO_ROOT))
+_REPO_ROOT = Path(__file__).resolve().parent.parent.parent
+if str(_REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(_REPO_ROOT))
 
-
-@dataclass(frozen=True)
-class Allowance:
-    """One class of legitimate hit, with the reason it is legitimate."""
-
-    name: str
-    reason: str
-    paths: tuple[str, ...] = ()
-    path_globs: tuple[str, ...] = ()
-    line_patterns: tuple[str, ...] = field(default=())
-
-    def covers(self, path: Path, line: str) -> bool:
-        rel = path.relative_to(REPO_ROOT).as_posix()
-        if rel in self.paths:
-            return True
-        if any(Path(rel).match(glob) for glob in self.path_globs):
-            return True
-        return any(re.search(pattern, line) for pattern in self.line_patterns)
-
+# `Allowance`, the walk and the excluded directories moved to `sweep_common`
+# when the second sweep arrived, so the two cannot drift on what an allowance
+# is or which directories are out of scope. Re-exported here because this
+# module's importers name them.
+from dev.scripts.sweep_common import (  # noqa: E402
+    REPO_ROOT,
+    Allowance,
+    classify,
+    iter_lines,
+)
 
 #: Ordered, and the order is the explanation: the first class that covers a hit
 #: is the reason recorded for it.
@@ -292,8 +282,6 @@ SEARCHED = (
     "AGENTS.md",
 )
 
-EXCLUDED_DIRS = ("_site", ".quarto", ".pixi", "__pycache__", ".tmp", ".git")
-
 
 def surviving_leaves() -> set[str]:
     """Leaf names that are ALSO valid v2 keys, and so cannot be swept by name.
@@ -392,29 +380,12 @@ def sweep(root: Path = REPO_ROOT):
         # YAML, and docs — where a fenced example is what misleads a reader.
         return bool(yaml_key.match(line))
 
-    defects, allowed = [], []
-    seen: set[Path] = set()
-    for glob in SEARCHED:
-        for path in root.glob(glob):
-            if path in seen or not path.is_file():
-                continue
-            if any(part in EXCLUDED_DIRS for part in path.parts):
-                continue
-            seen.add(path)
-            try:
-                text = path.read_text(encoding="utf-8")
-            except (UnicodeDecodeError, OSError):
-                continue
-            for lineno, line in enumerate(text.splitlines(), 1):
-                if not matches(path, line):
-                    continue
-                for allowance in ALLOWANCES:
-                    if allowance.covers(path, line):
-                        allowed.append((path, lineno, line.strip(), allowance.name))
-                        break
-                else:
-                    defects.append((path, lineno, line.strip(), "UNCLASSIFIED"))
-    return defects, allowed
+    hits = (
+        (path, lineno, line)
+        for path, lineno, line in iter_lines(SEARCHED, root)
+        if matches(path, line)
+    )
+    return classify(hits, ALLOWANCES)
 
 
 def main(argv=None) -> int:

@@ -75,7 +75,9 @@ Outputs land under `project_dir`, set in the config. Production `project_dir` li
 
 The split itself is stated in `AGENTS.md` § Repo Map, which is what shipped modules cite by name.
 
-`dev/scripts/` is not only executables. It also holds libraries `tests/` imports via `sys.path` — `semantic_tree_diff.py` (tree comparators and the project-tree inventory) and `cross_workflow_inputs.py` (stages the wf1 leaves WF2/WF3 need on disk). A bare-checkout CI run imports both, so an import-time error there fails the suite on both legs. Treat them as contract surfaces with test consumers.
+`dev/scripts/` is not only executables. It also holds libraries `tests/` imports via `sys.path` — `semantic_tree_diff.py` (tree comparators and the project-tree inventory) and `cross_workflow_inputs.py` (stages the wf1 leaves WF2/WF3 need on disk), and `sweep_common.py` (the `Allowance`, walk and fail-closed `Floor` shared by the sweeps). A bare-checkout CI run imports both, so an import-time error there fails the suite on both legs. Treat them as contract surfaces with test consumers.
+
+**Two sweeps, and they ask opposite questions.** `sweep_stale_spellings.py` asks *is this spelling dead* — most of its hits are legitimate, so its work is in the declared allowance classes. `sweep_identity_renames.py` asks *does this line still say what it was written to say*, and fires on `X -> X` rename records whose two sides are both live spellings; nearly every hit is a defect, so its work is in recognising the record FORMS. Neither edits. Both **fail closed**: an unclassified hit is a defect, and a form that can no longer see its own subject matter reports that instead of reporting a clean tree — R14's own re-measure returned zero and flagged MORE while knowing LESS, which is the shape both are built against.
 
 **When something in `dev/scripts/` acquires a run-path caller, move the shared part into the shipped package** rather than importing `dev/` from a run; a user's checkout is not guaranteed to have it. A list of paths that both a run and a fixture need belongs in `blueearth_cst/shared/`, while staging machinery only tests call stays in `dev/`.
 

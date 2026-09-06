@@ -202,3 +202,37 @@ def test_the_templates_it_reads_are_the_ones_a_user_copies():
     assert names
     assert all(name.startswith("config/templates/project_config") for name in names)
     assert (REPO_ROOT / "config" / "templates").is_dir()
+
+
+def test_the_shipped_seeds_are_a_pinned_gap_not_silent_coverage():
+    """The check reads the TEMPLATES. The filled-in seeds under `test_case/`
+    carry keys the templates do not declare, and a green run says nothing about
+    those — so the gap is measured here rather than left to be discovered.
+
+    Extending the declared side to the seeds needs a reader form for dataclass
+    fields first: `source`, `canonical`, `units` and `change` are `VariableSpec`
+    fields read by construction, not by subscript, and would report as unread.
+    """
+    import yaml
+
+    def leaves(node, out):
+        if isinstance(node, dict):
+            for key, value in node.items():
+                out.add(key)
+                leaves(value, out)
+        elif isinstance(node, list):
+            for value in node:
+                leaves(value, out)
+        return out
+
+    seed_leaves = set()
+    for path in sorted((REPO_ROOT / "test_case").glob("project_config_*.yml")):
+        leaves(yaml.safe_load(path.read_text(encoding="utf-8")), seed_leaves)
+
+    undeclared = seed_leaves - set(declared_keys())
+    assert seed_leaves, "no shipped seed configs found; the gap cannot be measured"
+    assert {"build_config", "waterbodies_config"} <= undeclared, (
+        "a seed key the templates do not document is the MIRROR question this "
+        "check does not ask; if these two gained template entries, update the "
+        "boundary note in `TEMPLATE_GLOB` rather than deleting this assertion"
+    )

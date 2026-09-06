@@ -53,6 +53,20 @@ from dev.scripts.sweep_common import (  # noqa: E402
 #: The declared side: the templates a user copies. `config/defaults/` is NOT
 #: here — those are build configs a rule reads wholesale and hands to hydromt,
 #: whose vocabulary is hydromt's rather than ours (AGENTS.md, Hard Constraints).
+#: Nor is `config/templates/archive/`, which the glob's `project_config*` prefix
+#: excludes anyway: its README withholds support and says a stale key there
+#: fails at parse time rather than being ignored.
+#:
+#: **The shipped seeds under `test_case/` are a KNOWN GAP, measured rather than
+#: assumed.** On 2026-09-07 they carried 58 leaf names against the templates'
+#: 53, and 11 the templates do not declare. Two of those are real config keys
+#: (`build_config`, `waterbodies_config`, both read) — a template documentation
+#: gap, which is this check's MIRROR question and not this one. Most of the rest
+#: are `VariableSpec` fields (`source`, `canonical`, `units`, `change`), read by
+#: dataclass construction rather than by subscript, so extending the declared
+#: side to the seeds needs a reader form for that first or it would report four
+#: keys that are read perfectly well. Filed rather than half-done; the boundary
+#: is pinned by a test so a green run is not mistaken for full coverage.
 TEMPLATE_GLOB = "config/templates/project_config*.template.yml"
 
 #: A YAML key line, live or commented at its default. The template header says

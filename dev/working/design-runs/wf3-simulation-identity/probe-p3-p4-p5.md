@@ -210,11 +210,17 @@ rename. It needs **two rows added in the same commit** for the design's new arti
 | **GF-6 (a)** | `[assumed]`, P4 unexecuted | **measured, holds** — a changed `params:` value schedules the rule; also holds for a **dict**-valued param mutated at a nested key | `p4/`, cases (a), dict-1 |
 | **GF-6 (b)** | `[assumed]` | **measured on both halves** — an imported module's body change does **not** schedule (`code` covers the `script:` file only); a source digest in `params:` **does** | `p4/` (b), (b′); `p4b/` code-1, code-2 |
 | **GF-8** | `[assumed]` | **measured, holds — for a different reason than stated.** The rename classifies IDENTITY under existing directory prefixes; no inventory rule names the member token. But the design's two new `config/` leaves classify UNMAPPED and must be added in the same commit | `p5_classify.py`; `semantic_tree_diff.py:270-524` |
-| **GF-16** | `[assumed]`, "same `ancient()` trap as GF-6" | **premise falsified, claim split.** Rule 3.09 carries `params: stress_test_cfg` since `b5052339` (2026-08-21), so case (a) is **already closed in the tree**; case (b) — a change to a module its script imports — remains open and needs the same digest as 3.16 | `run_stress_test.smk:888`; `dev/milestones/r12/stress-test-lookup-intake.md:141` (E5, 2026-08-15) predates it |
+| **GF-16** | `[assumed]`, "same `ancient()` trap as GF-6" | **premise falsified; claim split, and BOTH halves now measured on the real rule (see Addendum).** Rule 3.09 carries `params: stress_test_cfg` since `b5052339` (2026-08-21), so case (a) is **already closed in the tree**; case (b) — a change to a module its script imports — remains open and needs the same digest as 3.16 | `run_stress_test.smk:888`; `dev/milestones/r12/stress-test-lookup-intake.md:141` (E5, 2026-08-15) predates it |
 
 ## Not settled, and what it would take
 
-1. **The real-rule differential for 3.09 and 3.16.** Not run. Two independent obstacles
+1. ~~**The real-rule differential for 3.09 and 3.16.**~~ **SETTLED for 3.09** by the
+   authorised run — see the Addendum. The 3.16 half is still not run and is not worth
+   authorising (mechanism measured; rule shape read at `:1244-1284`). The obstacles
+   recorded below are what made the *cheap* route necessary, and are kept for the
+   record.
+
+   Two independent obstacles
    in this worktree, both measured:
    - the control dry-run schedules **all 43 jobs** — `check_project_consistency` reports
      `code has changed since last execution` and cascades — so no rule's scheduling is
@@ -280,3 +286,63 @@ rename. It needs **two rows added in the same commit** for the design's new arti
   with `git checkout --`.
 - Git status at finish: `?? dev/working/design-runs/wf3-simulation-identity/probe-p3-p4-p5.md`
   only — **no modifications to tracked files**.
+
+## Addendum — P4 real-rule differential, executed 2026-09-07 (authorised)
+
+The owner authorised the `--until prepare_stress_test_grid` run proposed in "Not
+settled" #1. It was executed. Everything below is measured on the real rule 3.09.
+
+**Method** — `pixi run snakemake -c3 -s run_stress_test.smk --configfile
+test_case/snake_config_baseline.yml --notemp --until prepare_stress_test_grid`.
+Dry-run first: **2 jobs** (3.01 `check_project_consistency`, 3.09). Real run: **9 s**
+total, exit 0, both jobs done. Then three probes, each a dry-run of the same target:
+(1) clean; (2) after editing `stress_test.temp.mean.max` `3.0`→`3.1` in
+`test_case/snake_config_baseline_run_stress_test.yml`; (3) after a body edit to
+`snake_utils.stress_test_grid` — the module 3.09's script
+(`blueearth_cst/experiment/prepare_cst_parameters.py:23`) imports — with the config
+back at its committed value, so `params.stress_test_cfg` is byte-identical.
+Both tracked files restored with `git checkout --`.
+
+**Result**
+
+| probe | 3.09 scheduled? | reason | `--list-params-changes` |
+|---|---|---|---|
+| clean, immediately after the run | **NO** — `total 0` | — | nothing |
+| `stress_test` config edit | **YES**, and it is the *only* job (`total 1`) | `params have changed since last execution: prepare_stress_test_grid` | names `test_case/test_local/experiments/experiment/config/stress_test_lookup.csv` |
+| imported-module body edit, params unchanged | **NO** — `total 0` | — | (not queried) |
+
+**GF-16, re-split as it should read**
+
+- **GF-16 (a) — a declaration edit that changes the resolved `stress_test` mapping
+  re-fires rule 3.09. ALREADY CLOSED IN THE TREE — measured, not assumed.** Closed by
+  `params: stress_test_cfg = stress_test_cfg` (`run_stress_test.smk:888`, added in
+  `b5052339`, 2026-08-21). **The design must not claim to close this**, and must not
+  present it as a risk it mitigates; it inherits it. Its only obligation is not to
+  remove that param. Falsifier, should anyone want to re-check: the run above.
+- **GF-16 (b) — a change to a module rule 3.09's script IMPORTS does not re-fire it.
+  OPEN, measured open.** `snake_utils.stress_test_grid` is exactly such a module, and
+  it is the grid arithmetic. Snakemake's `code` trigger covers
+  `prepare_cst_parameters.py` and stops there. **Falsifier for the design:** with a
+  grain-declaration source digest in 3.09's `params:`, edit the grouping/enumeration
+  module's body without touching the config, dry-run
+  `--until prepare_stress_test_grid`, and assert 3.09 is scheduled. Today that same
+  edit yields `total 0`.
+
+**Provenance of the stale claim — true when recorded, stale six days later.**
+`dev/milestones/r12/stress-test-lookup-intake.md:141` records E5 ("Rule 3.09 is deaf
+to `stress_test` edits", citing `run_stress_test.smk:819-821`, `config = ancient(...)`
+and no `params:`) as **Verified 2026-08-15**. It was correct on that date. `b5052339`
+(2026-08-21) added the `params:` and invalidated it. The claim then propagated
+forward into `stress-test-lookup-design.md:1034`, `:1170`, `:2689` and into
+`simulation-identity-intake.md:388`, where it is the entire rationale for probe P4.
+This is a **record that went stale**, not a document that was wrong — the distinction
+matters, because the fix is a dated re-verification of E5 wherever it is cited, not a
+correction of the milestone record (which is sealed and correct as of its date).
+
+**On the `.snakemake/metadata/` inconsistency** — one line, added because the run
+supplied it and no hunting was needed. After the run the store held **108** records,
+of which **3** are keyed by the workdir-relative path `test_case/test_local/...`
+(base64 prefix `dGVzdF9jYXNl`); before it, **0** of 105 were. So the store location
+and key form the earlier scan used were right, and the scan's negative result stands.
+The inconsistency — `--list-changes code` naming `test_local` paths that had no
+record — is therefore unchanged and still unexplained. Left as reported.

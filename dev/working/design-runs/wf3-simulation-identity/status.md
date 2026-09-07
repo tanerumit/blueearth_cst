@@ -410,6 +410,24 @@ experiment: `--notemp --until prepare_stress_test_grid` on
 **Authorised by the driver** as comfortably inside the owner's cost boundary,
 which was set against multi-hour `RLZ_NUM x ST_NUM` Wflow runs.
 
+**EXECUTED — 9 seconds, exit 0, 2 jobs.** Both cases now measured on the real
+rule, not merely on a standalone model:
+
+- **GF-16 case (a) — CLOSED in the tree.** Editing `stress_test.temp.mean.max`
+  in `test_case/snake_config_baseline_run_stress_test.yml` scheduled 3.09 and
+  *only* 3.09 (`total 1`), sole reason *"params have changed since last
+  execution: prepare_stress_test_grid"*, with `--list-params-changes` naming
+  `stress_test_lookup.csv`. The clean dry-run immediately before was `total 0`.
+  **The design must not claim to close this** — it inherits it from `b5052339`,
+  and its only obligation is not to remove that param.
+- **GF-16 case (b) — measured OPEN.** With the config back at its committed
+  value so `params.stress_test_cfg` was byte-identical, editing the *body* of
+  `snake_utils.stress_test_grid` — the module `prepare_cst_parameters.py:23`
+  imports, and the grid arithmetic itself — yielded `total 0`. Snakemake's
+  `code` trigger covers `prepare_cst_parameters.py` and stops there. This is the
+  case the design's source digest exists to close, and it is now measured on the
+  real rule rather than predicted from a model.
+
 ### Reported, not explained — an inconsistency the probe stopped on
 
 `.snakemake/metadata/` holds 105 records, none decoding to `test_local` (verified

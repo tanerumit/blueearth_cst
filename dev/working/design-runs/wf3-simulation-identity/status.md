@@ -178,3 +178,38 @@ into HM-7's normative surface and `unit_index` invariant 5, where an out-of-repo
 consumer re-implements from it. So the design does not introduce a wrong number;
 it would entrench a wrong reason and permanently discard recoverable
 per-realization spread for two metrics.
+
+## G1 — owner rulings (in progress)
+
+### R-1 — Class C's month is fixed once, shared by every realization (2026-09-07)
+
+Owner, verbatim:
+
+> *"wetmonth shall be the same across all realizations (needs to be selected in
+> advance). We shall not pool different calendar months together for this
+> metric."*
+
+**This is a ruling on semantics, and it settles the `reference` half of
+`domain-1`.** It confirms that the behaviour in the code today
+(`export_wflow_results.py:361-364` — `_category_month` called once, globally,
+from the `st_0` baseline, before the member loop) is **correct and intended**,
+and it forbids the alternative the design's prose asserts is happening
+(`design-v1.md:588`: *"Class C pools because `idxmax()` selects one month and
+different realizations select different ones"*). Under this ruling that sentence
+does not merely mis-describe the code — it describes a method the owner has now
+explicitly rejected.
+
+Consequences that follow without further ruling:
+
+- Class C's `reference` field is **required, not optional**, for this metric —
+  it is what guarantees one shared month, and a family that registers no
+  reference grouping may not carry a Class-C metric.
+- The reference stays a **per-family registered grouping** (the `bundle_by`
+  pattern at `design-v1.md:570-576`), so the baseline concept lives in
+  `scenario_families.py` and **W3 is parameterized rather than settled**.
+- A per-realization month selection is now a **design error**, not merely an
+  unchosen alternative, and the design must say so.
+
+Still open, and put back to the owner: whether the results file stores one row
+per realization (`grain: run`) or one pooled row. The ruling makes per-run
+values well-defined and exactly averaging back, so both remain constructible.

@@ -700,7 +700,7 @@ def validate_hm3(
 _HM4_REQUIRED_TIME = ("calendar", "starttime", "endtime", "timestepsecs")
 
 
-def validate_hm4(cfg: Any) -> list[str]:
+def validate_hm4(cfg: Any, *, require_output_state: bool = True) -> list[str]:
     """HM-4 — run configuration (``wflow_sbm.toml``, base + per-cst).
 
     Pinned surface — the TOML fields OUR code reads/rewrites (design §5.3):
@@ -716,6 +716,8 @@ def validate_hm4(cfg: Any) -> list[str]:
     is ``proleptic_gregorian``, the wf3 rewrite is ``standard`` — both valid; the
     field's *presence* is the contract, its value is a documented rewrite fact).
     """
+    # WF1 retains final states. WF3 opts out because no downstream rule reads
+    # them; initialization and state-variable mappings remain unchanged.
     label = "HM-4"
     if not isinstance(cfg, Mapping):
         return [f"{label}: TOML config is not a mapping ({type(cfg).__name__})"]
@@ -733,7 +735,10 @@ def validate_hm4(cfg: Any) -> list[str]:
     if not isinstance(state, Mapping):
         diffs.append(f"{label}: '[state]' section absent")
     else:
-        for key in ("path_input", "path_output"):
+        required_state = (
+            ("path_input", "path_output") if require_output_state else ("path_input",)
+        )
+        for key in required_state:
             if key not in state:
                 diffs.append(f"{label}: '[state].{key}' absent")
     inp = cfg.get("input")

@@ -170,11 +170,9 @@ rlz_future <- weathergenr::apply_climate_perturbations(
    # oversight. There is deliberately no seed key in the
    # `apply_climate_perturbations` config section -- one seed cannot diverge.
    seed               = yaml$generate_weather$seed,
-   # C34/F16. PET is computed twice in this chain -- here, and again from the
-   # perturbed temperature by rule 3.14's setup_temp_pet_forcing -- by two
-   # different methods, neither of which was chosen. Surfaced at weathergenr's
-   # own default so this step's method is now stated; whether the first result
-   # is used at all is the open half of F16 and is NOT settled here.
+   # Inert with compute_pet=false: HydroMT computes the PET Wflow consumes
+   # from the perturbed meteorology. Kept as an explicit option for callers
+   # that deliberately enable generator PET.
    pet_method         = acp$pet_method
 )
 

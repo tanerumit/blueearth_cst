@@ -221,7 +221,6 @@ WATER_YEAR_START = resolve_water_year_start(get_config(climate_cfg, "water_year_
 # as the one tolerated offender precisely so adopting julia_prefix would shrink
 # that set; it is now empty.
 julia_threads = DEFAULT_JULIA_THREADS  # C-54: no project override; advanced_settings owns it
-wflow_julia = julia_prefix(julia_threads)
 
 RLZ_NUM = get_config(my_cfg, "n_realizations", 1)  # C-29
 
@@ -1075,6 +1074,9 @@ rule generate_weather_realizations:
         # cross-language copy of the padding rule is invisible to --dry-run.
         rlz_width = RLZ_WIDTH,
         st_width = ST_WIDTH,
+    threads: 1
+    resources:
+        mem_mb = 2048,
     log:
         f"{LOG_PARTS_DIR}/3.11_generate_weather_realizations.log",
     benchmark:
@@ -1113,6 +1115,9 @@ rule perturb_climate_realization:
         weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     output:
         rlz_st_nc = temp(f"{wg_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".nc")
+    threads: 1
+    resources:
+        mem_mb = 2048,
     log:
         f"{LOG_PARTS_DIR}/3.12_perturb_climate_realization/" + "rlz_{rlz_num}_st_{st_num}.log",
     benchmark:
@@ -1181,6 +1186,9 @@ rule downscale_climate_realization:
         # the store move and every subsequent change to the realization NC dir
         # (now climate/weathergenr/output/).
         oro_path = f"{store_dir}/orography.nc",
+    threads: 1
+    resources:
+        mem_mb = 2048,
     log:
         f"{LOG_PARTS_DIR}/3.14_downscale_climate_realization/" + "rlz_{rlz_num}_st_{st_num}.log",
     benchmark:
@@ -1209,17 +1217,17 @@ except Exception:
 # B is bounded by all three of §6.1's ceilings. The parallelism one (B ≈ ceil(K/N))
 # keeps the cores busy; `batch_size_max` bounds the failure blast radius (C5 is
 # DEGRADED to the batch, so B is also how many members one bad run takes down);
-# and the DISK ceiling — peak temp() footprint p × B × (forcing + state), since
-# both the 3.14 forcing NC and the 3.15 outstates NC are held for a whole batch
-# with p batches in flight — is the one §6.1 calls BINDING on large
+# and the DISK ceiling — peak temp() footprint p × B × forcing, since
+# the 3.14 forcing NCs are held for a whole batch with p batches in flight —
+# is the one §6.1 calls BINDING on large
 # RLZ_NUM×ST_NUM runs.
 #
 # The disk ceiling was unimplemented until 2026-08-18 (P3-3 GN-3 / task
 # t2608071216): the default was the parallelism ceiling alone, which scales B UP
 # with sweep size and so grows peak disk as the sweep grows — backwards from what
 # §6.1 asks. `batch_size_max` bounded the blast radius but is a constant, not a
-# disk computation. `batch_sizing` supplies the missing term, estimating a member
-# from WF1's own persisted forcing and outstates files (the per-member NCs are
+# disk computation. `batch_sizing` estimates forcing from WF1's persisted file
+# (the per-member NCs are
 # temp() and do not exist at parse time). It only ever LOWERS B, never raises it,
 # and an unavailable estimate — a fresh project, WF1 not yet run — degrades to the
 # previous behaviour rather than failing: a safety cap must not become a new way
@@ -1245,12 +1253,24 @@ _explicit_batch_size = get_config(_compute_cfg, "batch_size", None, optional=Tru
 if _explicit_batch_size is not None:
     _explicit_batch_size = _positive_batch_key("compute.batch_size", _explicit_batch_size)
 
+# Snakemake cores are a total CPU budget, not a count of Julia processes.
+# Per-rule thread overrides may lower the allocation; use the smallest as a
+# conservative concurrency estimate for the disk cap.
+_thread_overrides = getattr(workflow.resource_settings, "overwrite_threads", {})
+_batch_threads = min(
+    [julia_threads] + [
+        int(value) for name, value in _thread_overrides.items()
+        if name.startswith("run_wflow_batch_")
+    ]
+)
+_batch_parallelism = max(1, _cores // max(1, min(_cores, _batch_threads)))
+
 _batch_sizing = resolve_batch_size(
     member_count=len(_k_members),
-    cores=_cores,
+    cores=_batch_parallelism,
     batch_size_max=batch_size_max,
     explicit=_explicit_batch_size,
-    footprint=measure_member_footprint(basin_dir, SIM_WINDOW_START, SIM_WINDOW_END),
+    footprint=measure_member_footprint(basin_dir, SIM_WINDOW_START, SIM_WINDOW_END, write_states=False),
     headroom_bytes=disk_headroom_bytes(
         project_dir,
         fraction=ADVANCED_SETTINGS["defaults"]["batch_disk_headroom_fraction"],
@@ -1314,17 +1334,19 @@ for _b, _members in _batches.items():
         output:
             csvs = [f"{runs_dir}/output/rlz_{rlz_ix(r)}_st_{st_ix(c)}.csv"
                     for (r, c) in _members],
-            states = [temp(f"{runs_dir}/output/outstates_rlz_{rlz_ix(r)}_st_{st_ix(c)}.nc")
-                      for (r, c) in _members],
+        threads: julia_threads
+        resources:
+            mem_mb = 2048,
         params:
             members = _members,
             driver = _batch_driver,
+            wflow_julia = lambda wildcards, threads: julia_prefix(threads),
         log:
             f"{LOG_PARTS_DIR}/3.15_run_wflow/batch_{_b}.log",
         benchmark:
             f"{BENCH_PARTS_DIR}/3.15_run_wflow/batch_{_b}.tsv",
         shell:
-            """python -u "{run_logged}" "{log}" -- {wflow_julia} "{params.driver}" {input.tomls}"""
+            """python -u "{run_logged}" "{log}" -- {params.wflow_julia} "{params.driver}" {input.tomls}"""
 
 # 3.16  derive_wflow_indicators — reduce runs to the two indicator tables
 rule derive_wflow_indicators:
@@ -1360,6 +1382,9 @@ rule derive_wflow_indicators:
         # calendar year: a Jan-Dec year splits a flood season crossing New
         # Year across two years and understates the annual maximum.
         water_year_start = WATER_YEAR_START,
+    threads: 1
+    resources:
+        mem_mb = 1024,
     log:
         f"{LOG_PARTS_DIR}/3.16_derive_wflow_indicators.log",
     benchmark:

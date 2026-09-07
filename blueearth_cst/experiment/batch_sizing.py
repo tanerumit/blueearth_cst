@@ -1,11 +1,10 @@
 """Size WF3's Wflow batches against the disk they will actually fill.
 
-Rule 3.15 runs ``B`` Wflow members per Julia session. Both of the sweep's
-``temp()`` classes -- rule 3.14's per-member forcing NC and 3.15's own
-per-member outstates NC -- are held for a whole batch rather than a whole
-member, and Snakemake keeps ``p`` batch jobs in flight at ``-c N``. So peak
-transient disk is ``p x B x (forcing + state)``: raising ``B`` for throughput
-buys that throughput with disk.
+Rule 3.15 runs ``B`` Wflow members per Julia session and holds rule 3.14's
+forcing NetCDFs for the whole batch. With ``p`` concurrent batches, current
+WF3 peak transient disk is ``p x B x forcing``. The helper retains optional
+state-size accounting for callers that write final states; WF3 passes
+``write_states=False``.
 
 P3-3 design section 6.1 calls this the **binding** constraint on large
 ``RLZ_NUM x ST_NUM`` runs, and the landed default did not implement it. It was
@@ -44,12 +43,12 @@ Measured on the rapid fixture (2026-08-18): the historical file is 1379
 bytes/timestep and a member's is 1378, a 0.07 % difference; predicting the
 4.530 MB member from the 3.527 MB historical file lands within 0.07 %.
 
-The state anchor needs no scaling at all: outstates is a single snapshot of the
+The optional state anchor is unused by current WF3. It needs no scaling: outstates is a single snapshot of the
 model's state variables, so its size is set by the grid and is independent of
 how long the run was.
 
 Both anchors are the WF1 model's own files, so they cannot describe a different
-grid than the members will use. If either is missing -- a fresh project, a
+grid than the members will use. If a required anchor is missing -- a fresh project, a
 ``--dry-run`` before WF1 has ever run -- the estimate is simply unavailable and
 the disk ceiling does not apply. **This is a safety cap, so it never raises and
 never blocks**: an unavailable estimate degrades to the previous behaviour
@@ -159,15 +158,16 @@ def _days_in_years(startyear, endyear):
     return (date(endyear, 12, 31) - date(startyear, 1, 1)).days + 1
 
 
-def measure_member_footprint(basin_dir, sim_start, sim_end):
+def measure_member_footprint(basin_dir, sim_start, sim_end, *, write_states=True):
     """Estimate one member's ``temp()`` footprint, or ``None`` if it cannot be.
 
     ``None`` is an ordinary outcome, not an error: WF1 may not have run yet.
+    Set ``write_states=False`` for runs that do not emit a final-state snapshot.
     """
     basin = Path(basin_dir)
     forcing_anchor = basin.joinpath(*FORCING_ANCHOR)
     state_anchor = basin.joinpath(*STATE_ANCHOR)
-    if not forcing_anchor.is_file() or not state_anchor.is_file():
+    if not forcing_anchor.is_file() or (write_states and not state_anchor.is_file()):
         return None
 
     hist_steps = _netcdf_timesteps(forcing_anchor)
@@ -177,7 +177,7 @@ def measure_member_footprint(basin_dir, sim_start, sim_end):
     member_steps = _days_in_years(sim_start, sim_end)
     try:
         hist_bytes = os.path.getsize(forcing_anchor)
-        state_bytes = os.path.getsize(state_anchor)
+        state_bytes = os.path.getsize(state_anchor) if write_states else 0
     except OSError:
         return None
 

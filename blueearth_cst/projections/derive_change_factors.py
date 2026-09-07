@@ -13,14 +13,9 @@ unchanged. Only the orchestration moves. A non-zero characterized diff on the
 summary artifacts is therefore a defect in this file, not a judgement call — which
 is the whole reason the functions were left where they were.
 
-What changes shape:
-
-* the per-point `annual_change_scalar_stats-{point_key}_{horizon}.nc` files were
-  Snakemake `temp()` outputs and are now **job-internal intermediates** with the
-  same lifetime — written, consumed by the merge, removed. `summary_climate_proj`
-  reads model/scenario/horizon from dataset *coords*, never from the filename, so
-  relocating them is safe (checked before the move, not assumed);
-* one log and one benchmark instead of a per-part tree under `2.04_monthly_change/`.
+Per-point annual/monthly results remain in memory through the merge, figures,
+and tidy tables. Each validated scalar series is loaded and closed once per job.
+The file-writing helpers remain available for direct callers.
 
 Stage B's input set is explicit (design risk-06 / revision 4): the rule declares
 exactly the expanded `{series_key}` list built from the resolved combination set,
@@ -38,9 +33,7 @@ Invoked from ``analyze_projections.smk`` via ``script:``; reads
 
 import csv
 import os
-import tempfile
 
-import hydromt  # noqa: F401 -- registers the xarray .raster accessor (.raster.vars below)
 import xarray as xr
 
 from blueearth_cst.projections import provenance as _prov
@@ -62,7 +55,8 @@ from blueearth_cst.projections.get_change_climate_proj import (
     hydrological_year_bounds,
 )
 from blueearth_cst.projections.get_change_climate_proj_summary import (
-    summary_climate_proj,
+    combine_changes,
+    plot_change_summary,
 )
 from blueearth_cst.projections.variable_spec import VariableSpec
 from blueearth_cst.shared.snake_utils import log_row, tee_to_log
@@ -78,11 +72,10 @@ YDIMS = ("y", "latitude", "lat")
 # avoid, so the private name is the lesser evil.
 
 
-def derive_one_point(
+def derive_point_datasets(
     *,
     series_path_hist,
     series_path,
-    change_nc_out,
     time_tuple_hist,
     time_tuple_fut,
     name_horizon,
@@ -96,6 +89,8 @@ def derive_one_point(
     min_reference=None,
     clim_project_dir=None,
     water_year_start="Jan",
+    series_cache=None,
+    reference_cache=None,
 ):
     """Change factors for one (model, scenario, member) at one horizon.
 
@@ -107,24 +102,26 @@ def derive_one_point(
     makes — so the composition record annotates the numbers with the window that
     produced them rather than with a recomputed guess.
     """
-    # --- step 2b backstop: the series must match the current inputs -----------
-    # Design D9 route (b) / risk-03 mechanism 2. An assertion INSIDE the job, not
-    # a scheduling property, so it holds however Snakemake was invoked -- a series
-    # restored from a backup, produced by an older checkout, or surviving a
-    # non-default --rerun-triggers still fails the run instead of quietly entering
-    # the change factors.
+    # Caches belong to this job only. Every cache entry is keyed by the expected
+    # identity, so a shared path with inconsistent expectations still fails.
+    series_cache = {} if series_cache is None else series_cache
+    datasets = []
+    expected = []
     for label, path, components in (
         ("historical", series_path_hist, dict(digest_components_hist)),
         (name_scenario, series_path, dict(digest_components_fut)),
     ):
-        series_identity.assert_series_identity(
-            path,
-            series_identity.series_digest(components, region_fp),
-            f"{name_model} {label}",
-        )
-
-    ds_hist_time = xr.open_dataset(series_path_hist)
-    ds_clim_time = xr.open_dataset(series_path)
+        digest = series_identity.series_digest(components, region_fp)
+        key = (os.path.abspath(str(path)), digest)
+        if key not in series_cache:
+            with xr.open_dataset(path) as source:
+                series_identity.assert_series_identity(
+                    path, digest, f"{name_model} {label}", observed_attrs=source.attrs
+                )
+                series_cache[key] = source.load()
+        datasets.append(series_cache[key])
+        expected.append(digest)
+    ds_hist_time, ds_clim_time = datasets
 
     # Step 4c: the `if len(ds_clim_time) > 0` guard and its dummy-netCDF
     # else-branch are gone. Since 4a an unresolved combination never becomes a
@@ -177,6 +174,20 @@ def derive_one_point(
         )
     assert_weightable(calendar, source=f"{name_model} {name_scenario}")
 
+    # The cache is bound to one validated historical series and analysis
+    # configuration, never to a future horizon or scenario.
+    reference_cache = {} if reference_cache is None else reference_cache
+    reference_key = (
+        expected[0],
+        tuple(time_tuple_hist),
+        calendar,
+        water_year_start,
+        tuple(stats) if stats is not None else None,
+        tuple(sorted((k, tuple(v)) for k, v in (variable_spec or {}).items())),
+        tuple(sorted((min_reference or {}).items())),
+    )
+    cached_reference = reference_cache.setdefault(reference_key, {})
+
     stats_annual_change = get_change_annual_clim_proj(
         ds_hist_time,
         ds_clim_time,
@@ -184,6 +195,7 @@ def derive_one_point(
         stats=stats,
         variable_spec=variable_spec,
         start_month_hyd_year=water_year_start,
+        _reference_cache=cached_reference,
     )
     stats_annual_change = stats_annual_change.assign_coords(
         {"horizon": f"{name_horizon}"}
@@ -192,32 +204,66 @@ def derive_one_point(
         ..., "clim_project", "model", "scenario", "horizon", "member"
     )
 
-    dvars = stats_annual_change.raster.vars
-    stats_annual_change.to_netcdf(
-        change_nc_out, encoding={k: {"zlib": True} for k in dvars}
-    )
-
-    # Step 6a-ii: the same combination's change per CALENDAR MONTH. Written beside
-    # the annual file rather than returned, so the merge step handles both the
-    # same way and a failure leaves neither half-written.
     monthly_change = get_change_monthly_clim_proj(
         ds_hist_time,
         ds_clim_time,
         stats=stats,
         variable_spec=variable_spec,
         min_reference=min_reference,
+        _reference_cache=cached_reference,
     )
     monthly_change = monthly_change.assign_coords(
         {"horizon": f"{name_horizon}"}
     ).expand_dims(["horizon"])
-    monthly_change.to_netcdf(
-        str(change_nc_out).replace(".nc", "_monthly.nc"),
-        encoding={k: {"zlib": True} for k in monthly_change.raster.vars},
-    )
+    facts = (ref_start, ref_end, ref_n_years, hor_start, hor_end)
+    return stats_annual_change, monthly_change, facts
 
-    ds_hist_time.close()
-    ds_clim_time.close()
-    return ref_start, ref_end, ref_n_years, hor_start, hor_end
+
+def derive_one_point(
+    *,
+    series_path_hist,
+    series_path,
+    change_nc_out,
+    time_tuple_hist,
+    time_tuple_fut,
+    name_horizon,
+    name_model,
+    name_scenario,
+    region_fp,
+    digest_components_hist,
+    digest_components_fut,
+    stats=None,
+    variable_spec=None,
+    min_reference=None,
+    clim_project_dir=None,
+    water_year_start="Jan",
+):
+    """Preserve the file-writing API for callers outside Stage B."""
+    annual, monthly, facts = derive_point_datasets(
+        series_path_hist=series_path_hist,
+        series_path=series_path,
+        time_tuple_hist=time_tuple_hist,
+        time_tuple_fut=time_tuple_fut,
+        name_horizon=name_horizon,
+        name_model=name_model,
+        name_scenario=name_scenario,
+        region_fp=region_fp,
+        digest_components_hist=digest_components_hist,
+        digest_components_fut=digest_components_fut,
+        stats=stats,
+        variable_spec=variable_spec,
+        min_reference=min_reference,
+        clim_project_dir=clim_project_dir,
+        water_year_start=water_year_start,
+    )
+    annual.to_netcdf(
+        change_nc_out, encoding={k: {"zlib": True} for k in annual.data_vars}
+    )
+    monthly.to_netcdf(
+        str(change_nc_out).replace(".nc", "_monthly.nc"),
+        encoding={k: {"zlib": True} for k in monthly.data_vars},
+    )
+    return facts
 
 
 #: Fields of the IN-MEMORY composition record, in design §5.7 order. One row per
@@ -382,9 +428,6 @@ if "snakemake" in globals():
         )
         log_row(f"reference_window {_facts}", module="change")
 
-        # The per-point files were `temp()` rule outputs; they are job-internal
-        # now, with the same lifetime. TemporaryDirectory removes them even if the
-        # merge raises, which the old temp() could not promise mid-DAG.
         # Snakemake params carry plain data; rebuild the typed spec here so the
         # aggregation looks up fields by name rather than by list position.
         VARIABLE_SPEC = {
@@ -396,93 +439,62 @@ if "snakemake" in globals():
         # effective horizon window is a property of a series AND the horizon it
         # was sliced to.
         horizon_facts = {}
-        with tempfile.TemporaryDirectory(prefix="cst_change_") as work_dir:
-            change_files = []
-            monthly_files = []
-            for point in points:
-                for horizon_name, horizon_window in horizons.items():
-                    out_nc = os.path.join(
-                        work_dir,
-                        f"annual_change_scalar_stats-{point['point_key']}"
-                        f"_{horizon_name}.nc",
-                    )
-                    ref_start, ref_end, ref_n_years, hor_start, hor_end = (
-                        derive_one_point(
-                            series_path_hist=point["series_path_hist"],
-                            series_path=point["series_path"],
-                            change_nc_out=out_nc,
-                            time_tuple_hist=_to_str_tuple(sm.params.time_horizon_hist),
-                            time_tuple_fut=_to_str_tuple(horizon_window),
-                            name_horizon=horizon_name,
-                            name_model=point["model"],
-                            name_scenario=point["scenario"],
-                            region_fp=region_fp,
-                            digest_components_hist=point["digest_components_hist"],
-                            digest_components_fut=point["digest_components_fut"],
-                            stats=sm.params.stats,
-                            water_year_start=sm.params.water_year_start,
-                            variable_spec=VARIABLE_SPEC,
-                            min_reference=sm.params.min_reference,
-                            clim_project_dir=clim_project_dir,
-                        )
-                    )
-                    change_files.append(out_nc)
-                    monthly_files.append(out_nc.replace(".nc", "_monthly.nc"))
-                    # Same for every horizon of a point (the reference window does
-                    # not depend on the horizon), so recording it repeatedly is
-                    # harmless and keeps the loop single-pass.
-                    resolved_facts[point["point_key"]] = {
-                        "series_key": point["series_key"],
-                        "reference_series_key": point["reference_series_key"],
-                        "tier": point["tier"],
-                        "reference_window_effective": (
-                            f"{ref_start:%Y-%m-%d} / {ref_end:%Y-%m-%d}"
-                        ),
-                        "n_hyd_years_reference": ref_n_years,
-                    }
-                    horizon_facts[(point["point_key"], horizon_name)] = (
-                        f"{hor_start:%Y-%m-%d} / {hor_end:%Y-%m-%d}"
-                    )
+        series_cache = {}
+        reference_cache = {}
+        annual_changes = []
+        monthly_changes = []
+        for point in points:
+            for horizon_name, horizon_window in horizons.items():
+                annual, monthly, facts = derive_point_datasets(
+                    series_path_hist=point["series_path_hist"],
+                    series_path=point["series_path"],
+                    time_tuple_hist=_to_str_tuple(sm.params.time_horizon_hist),
+                    time_tuple_fut=_to_str_tuple(horizon_window),
+                    name_horizon=horizon_name,
+                    name_model=point["model"],
+                    name_scenario=point["scenario"],
+                    region_fp=region_fp,
+                    digest_components_hist=point["digest_components_hist"],
+                    digest_components_fut=point["digest_components_fut"],
+                    stats=sm.params.stats,
+                    water_year_start=sm.params.water_year_start,
+                    variable_spec=VARIABLE_SPEC,
+                    min_reference=sm.params.min_reference,
+                    clim_project_dir=clim_project_dir,
+                    series_cache=series_cache,
+                    reference_cache=reference_cache,
+                )
+                ref_start, ref_end, ref_n_years, hor_start, hor_end = facts
+                annual_changes.append(annual)
+                monthly_changes.append(monthly)
+                # Same for every horizon of a point (the reference window does
+                # not depend on the horizon), so recording it repeatedly is
+                # harmless and keeps the loop single-pass.
+                resolved_facts[point["point_key"]] = {
+                    "series_key": point["series_key"],
+                    "reference_series_key": point["reference_series_key"],
+                    "tier": point["tier"],
+                    "reference_window_effective": (
+                        f"{ref_start:%Y-%m-%d} / {ref_end:%Y-%m-%d}"
+                    ),
+                    "n_hyd_years_reference": ref_n_years,
+                }
+                horizon_facts[(point["point_key"], horizon_name)] = (
+                    f"{hor_start:%Y-%m-%d} / {hor_end:%Y-%m-%d}"
+                )
 
-            log_row(
-                f"Merging {len(change_files)} change file(s) into the summary",
-                module="change",
-            )
-            summary_climate_proj(
-                clim_dir=clim_project_dir,
-                clim_files=change_files,
-                horizons=horizons,
-                # S8-05: the wide merge lands here, not in summary/.
-                wide_dir=work_dir,
-            )
-
-            # Read the wide merge back INSIDE the temp scope -- it is deleted with
-            # the directory, so the old post-block read would be reading a deleted
-            # file. Eager, same as monthly_merged below and for the same reason.
-            #
-            # The read-back itself is deliberate and unchanged: the tidy table must
-            # describe what was PERSISTED, so a reshape can never disagree with the
-            # artifact it claims to reshape.
-            with xr.open_dataset(
-                os.path.join(work_dir, "annual_change_scalar_stats_summary.nc")
-            ) as _merged:
-                merged = _merged.load()
-
-            # Step 6a-ii: merge the per-point MONTHLY files. Done inside the temp
-            # directory, because that is where they live -- reading them after the
-            # context exits would be reading deleted files. Eager and closed, for
-            # the reason bf1f4a5 and e592ec3 both landed on: a lazy multi-file read
-            # feeding a write parks dask's pool on the HDF5 lock, and open handles
-            # stop the directory being removed.
-            with xr.open_mfdataset(
-                monthly_files, coords="minimal", combine="by_coords"
-            ) as _lazy:
-                monthly_merged = _lazy.load()
+        merged = combine_changes(annual_changes)
+        monthly_merged = xr.combine_by_coords(
+            monthly_changes,
+            coords="minimal",
+            compat="no_conflicts",
+            join="outer",
+            combine_attrs="override",
+        )
+        plot_change_summary(merged, clim_project_dir, horizons)
 
         # --- step 6a-i: the tidy annual change-factor table (design §5.9) ----
-        # `merged` was read back inside the temp scope above. S8-05 made the wide
-        # file a job-internal intermediate: the tidy tables supersede it, and
-        # nothing outside this job ever read it.
+        # The cloud and tidy tables consume the same merged dataset.
         #
         # S8-04: two facts, both varying. Everything else this dict used to carry
         # was constant across every row (the nominal windows, n_years), hardcoded
@@ -581,8 +593,13 @@ if "snakemake" in globals():
             for path in (point["series_path_hist"], point["series_path"]):
                 key = os.path.splitext(os.path.basename(path))[0]
                 if key not in series_attrs:
-                    with xr.open_dataset(path) as _s:
-                        series_attrs[key] = dict(_s.attrs)
+                    series_attrs[key] = dict(
+                        next(
+                            dataset.attrs
+                            for (cached_path, _), dataset in series_cache.items()
+                            if cached_path == os.path.abspath(str(path))
+                        )
+                    )
         document = _prov.build(
             clim_project=os.path.basename(clim_project_dir),
             reference_record=sm.params.reference_record,

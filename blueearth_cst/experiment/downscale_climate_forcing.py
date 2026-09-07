@@ -116,7 +116,7 @@ def downscale_climate_forcing(
     # of the filename and into a `rlz_<r>/` directory, making the stem `cst_<m>`;
     # R9 removes the level and puts the index back, and R11 P2 renamed the member
     # token, making it `rlz_<r>_st_<m>`.
-    # Every pointer built from `run_name` -- outstates, the output CSV, and now
+    # Every output pointer built from `run_name` -- the output CSV and
     # the per-member log -- follows automatically. That is the payoff of deriving
     # from the declared path instead of reconstructing it.
     run_name, out_prefix = member_pointer_base(config_out_fn)
@@ -156,7 +156,6 @@ def downscale_climate_forcing(
             "state.path_input": str(
                 Path(model_root, "instate", "instates.nc").resolve()
             ),
-            "state.path_output": f"{out_prefix}outstates_{run_name}.nc",
             "input.path_static": str(Path(model_root, "staticmaps.nc").resolve()),
             "input.path_forcing": str(fn_out.resolve()),
             "output.csv.path": f"{out_prefix}{run_name}.csv",
@@ -173,6 +172,10 @@ def downscale_climate_forcing(
             "logging.path_log": f"{out_prefix}{run_name}.log",
         }
     )
+
+    # WF3 consumes only the CSV. Remove the inherited output pointer while
+    # retaining state.path_input and state.variables for warm initialization.
+    mod.config.data.get("state", {}).pop("path_output", None)
 
     mod.setup_precip_forcing(
         precip_fn=climate_name,

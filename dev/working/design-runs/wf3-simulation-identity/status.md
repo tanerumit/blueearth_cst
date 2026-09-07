@@ -13,7 +13,7 @@ dispatches:
 gates:
   G1: approved 2026-09-07; returned+re-approved 2026-09-07 (panel scope divergence)
   G2: pending
-flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full]
+flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full, domain-7-needs-G2-ratification]
 ---
 
 ## Run configuration
@@ -145,6 +145,16 @@ brief names that path.
   common-random-numbers index, so spelling a GCM as `rlz` asserts a pairing that
   does not exist.
 - [open] 4-external-r1 — `codex exec` (GPT), clean-room on `design-v2.md`.
+  Brief instantiated as `review-brief.md` (contract half immutable; framing block
+  filled at dispatch from R-1..R-6).
+  - attempt 1 **BLOCKED 2026-09-07 ~17:35 Istanbul** — vendor quota refusal:
+    *"You've hit your usage limit … try again at Sep 8th, 2026 12:53 AM."*
+    **`codex exec` exited 0 and wrote no `-o` file**; caught by checking the
+    artifact, not the exit status (see `observations.md`).
+    Read-only intent held: `git status --short` shows only driver-owned files.
+    This is `roles-and-recovery.md` § Failure modes, row 1 (`codex exec`
+    unavailable) — **pause and report; the user chooses**. Not retried, because
+    the refusal names a limit and a reset time, not a fault.
   - attempt 1 **FAILED 2026-09-07 00:17** — HTTP 429, session limit, reset
     03:30 Europe/Istanbul. Classified **resource exhaustion**, not retryable
     transport (`roles-and-recovery.md` § Classifying a failed spawn). Left a
@@ -333,3 +343,21 @@ reached the timing question from the other.
 
 If the check fails, the decomposition is in question and the run returns to G1 —
 which is precisely why it is worth one page now rather than a migration later.
+
+## Carried to G2 for ratification — `domain-7`
+
+`domain-7` is a **major** finding filed `deferred`. `findings-and-closure.md`
+§ Ledger rules admits `deferred` only for `minor`, so the row is out of grammar,
+and § Convergence requires every `major` to be accepted-and-resolved, withdrawn
+by its reviewer, or **adjudicated by the user**.
+
+The author's text is not the problem — it is more accurate than any available
+enum value. The finding is correct, the design states its position, and the
+substantive gap (no fit uncertainty crosses the seam; after R-2 the residual is
+Class B alone) is deliberately **not** closed. `accepted` would certify a fix
+that does not exist.
+
+**Therefore: the owner ratifies or overturns this at G2.** It is not a defect in
+the revision and it does not block the external round. Recorded in
+`observations.md` as a skill gap — the disposition enum has no honest slot for
+"major, correct, deliberately not closed".

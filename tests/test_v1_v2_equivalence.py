@@ -22,6 +22,16 @@ same claim without requiring a loader that no longer exists.
 
 The v1 side is `tests/data/v1_split/`, a byte-for-byte copy of the shipped
 configs as they stood at `79b76334`, immediately before the rewriter ran.
+
+**The v1 capture is frozen; the shipped configs are not.** A deliberate edit to
+a shipped config after the migration shows up here as an equivalence failure,
+and it is not a migration defect — the migration was faithful and this module
+proved it. Such changes go in `POST_MIGRATION_CHANGES` with the value the config
+is expected to hold NOW and the reason it moved, so the numerical guard survives
+the edit instead of being skipped away. That distinction matters here more than
+anywhere: three of the four sets have nothing else, and the first two entries in
+that table are on `baseline_linux`, on the very keys a skip would have stopped
+checking.
 """
 
 from __future__ import annotations
@@ -60,6 +70,50 @@ WORKFLOWS = (
     "analyze_projections",
     "run_stress_test",
 )
+
+
+#: Values a LATER, deliberate change moved away from what the migration
+#: produced. Not migration defects — the migration was faithful and this module
+#: proved it — but this module compares against a v1 capture frozen at
+#: `79b76334`, so any post-migration edit to a shipped config lands here.
+#:
+#: Each entry carries the value the config is expected to hold NOW, so the
+#: numerical guard is kept rather than skipped. That matters most for
+#: `baseline_linux` and `wf2_fast`, which this module says have nothing else
+#: standing between them and a silently different run — a skip would take away
+#: the only check they get, on exactly the key that just moved.
+#:
+#: Same discipline as `test_run_historical_is_gone_and_that_is_the_declared_difference`
+#: below: a deliberate divergence is PINNED, not waved through, so it cannot
+#: become indistinguishable from an oversight. An entry whose config drifts back
+#: to the v1 value fails here too.
+POST_MIGRATION_CHANGES = {
+    ("baseline", "simulation_window"): (
+        {"start": 2046, "end": 2054},
+        "`t2608222155`, landed 2026-09-07: the baseline stress test moved from "
+        "seventeen years around 2078 to nine around 2050. The END year is what "
+        "costs — `compute_nr_years` anchors the generated series at 2010 and "
+        "spans to it (`C-67`), so 2086 generated 76 years to simulate 17. The "
+        "manifest was deliberately NOT re-recorded with it",
+    ),
+    ("baseline_linux", "simulation_window"): (
+        {"start": 2046, "end": 2054},
+        "the same edit, applied to the twin. `t2608241414` requires the two "
+        "baseline sets to differ only in `project_dir`, `catalog` and the "
+        "`config_path` names, and `test_cli.py` enforces it",
+    ),
+    ("baseline_linux", "climate.window"): (
+        {"start": 2000, "end": 2016},
+        "`t2608241414`, landed 2026-09-07: the Linux set had drifted to a "
+        "21-year historical window against the Windows set's 17 while its own "
+        "header claimed the two were the same basin. Twinned on an owner ruling",
+    ),
+}
+
+
+def _post_migration(stem, what):
+    """The expected current value and its reason, or ``(None, None)``."""
+    return POST_MIGRATION_CHANGES.get((stem, what), (None, None))
 
 
 def _load_v1(stem):
@@ -182,6 +236,18 @@ def test_the_climate_window_is_the_same_period(stem):
         pytest.skip(f"{stem} declares no historical_window")
     after = composed["climate"]["window"]
 
+    expected, why = _post_migration(stem, "climate.window")
+    if expected is not None:
+        assert after == expected, f"{stem}: {why}"
+        assert before["starttime"] != f"{after['start']}-01-01T00:00:00" or (
+            before["endtime"] != f"{after['end']}-12-31T00:00:00"
+        ), (
+            f"{stem}: `climate.window` is recorded as a deliberate "
+            f"post-migration change but now matches the v1 capture again. If it "
+            f"was reverted on purpose, delete the POST_MIGRATION_CHANGES entry"
+        )
+        return
+
     assert before["starttime"] == f"{after['start']}-01-01T00:00:00"
     assert before["endtime"] == f"{after['end']}-12-31T00:00:00"
 
@@ -235,8 +301,26 @@ def test_the_simulation_window_is_the_period_the_run_used(stem):
     composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
     after = composed["workflows"]["run_stress_test"]["simulation_window"]
 
-    assert after["start"] == int(horizon - math.ceil(length / 2))
-    assert after["end"] == int(horizon + round(length / 2))
+    migrated = {
+        "start": int(horizon - math.ceil(length / 2)),
+        "end": int(horizon + round(length / 2)),
+    }
+
+    expected, why = _post_migration(stem, "simulation_window")
+    if expected is not None:
+        assert {"start": after["start"], "end": after["end"]} == expected, (
+            f"{stem}: {why}"
+        )
+        assert after["start"] != migrated["start"] or after["end"] != migrated["end"], (
+            f"{stem}: `simulation_window` is recorded as a deliberate "
+            f"post-migration change but resolves to the migrated window again. "
+            f"If it was reverted on purpose, delete the POST_MIGRATION_CHANGES "
+            f"entry"
+        )
+        return
+
+    assert after["start"] == migrated["start"]
+    assert after["end"] == migrated["end"]
 
 
 @pytest.mark.parametrize("stem", SETS)

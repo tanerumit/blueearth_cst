@@ -422,7 +422,7 @@ CONTRACT wrong rather than the pipeline — as the WG-4 `crs`/`category` clause
 above records, where the contract demanded catalog metadata as netCDF global
 attrs the artifact does not carry.
 
-**Cheaper targeted form.** The full-sweep command below works, but only three
+**Cheaper targeted form.** The full-sweep command below works, but only two
 artifact paths are actually needed (`rlz_1_st_1`), so naming them as targets is
 enough and avoids re-running the batches that are already up to date:
 
@@ -430,13 +430,11 @@ enough and avoids re-running the batches that are already up to date:
 snakemake -c 3 -s run_stress_test.smk \
   --configfile test_case/project_config_baseline.yml --notemp \
   test_case/test_local/experiments/experiment/climate/weathergenr/output/rlz_1_st_1.nc \
-  test_case/test_local/experiments/experiment/hydrology/wflow/forcing/inmaps_rlz_1_st_1.nc \
-  test_case/test_local/experiments/experiment/hydrology/wflow/output/outstates_rlz_1_st_1.nc
+  test_case/test_local/experiments/experiment/hydrology/wflow/forcing/inmaps_rlz_1_st_1.nc
 ```
 
-Expect roughly twenty jobs and a few minutes. Note the `temp()` cascade — asking for
-one intermediate re-runs 3.11 (which emits **all** realizations) and therefore all
-twelve 3.12 jobs plus `run_wflow_batch_0`; there is no cheaper single-cst path.
+The generator emits all realizations together, but these targets require only
+the selected member's perturbation and downscaling. No Wflow batch is needed.
 
 **Capture sketch** (run from the repo root inside `pixi shell`, after the wf1
 model exists — wf3 needs `models/hydrology/wflow/` artifacts):
@@ -457,14 +455,11 @@ skip-guards test for):
 | `validate_wg4` | WG-4 generator output NC | `<exp>/climate/weathergenr/output/rlz_<n>_st_<m>.nc` |
 | `validate_wg6` | WG-6 downscaled forcing NC | `<exp>/hydrology/wflow/forcing/inmaps_rlz_<n>_st_<m>.nc` |
 
-(HM-6b's `output/outstates_rlz_<n>_st_<m>.nc` is captured by the same run — documented
-in the hydrological-model seam doc.)
+WF3 no longer emits HM-6b final states; `--notemp` retains only artifacts
+that are still declared.
 
-**Which cases un-skip:** with these artifacts present, `test_wg4_integration` and
-`test_wg6_integration` here (plus `test_hm6b_integration` in the other seam doc)
-stop hitting their `pytest.skip` and run their on-disk assertion — the **three**
-temp validators' *on-disk* integration checks flip from skip-until-captured to
-green. The guards resolve to the real-artifact path automatically once the files
+**Which cases un-skip:** `test_wg4_integration` and `test_wg6_integration`
+run their on-disk assertions when these two forcing artifacts are present. The guards resolve to the real-artifact path automatically once the files
 exist.
 
 **Budget for a first-contact failure.** The skip *guards* need no change to run a

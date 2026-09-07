@@ -8,7 +8,7 @@ area: wf2 / wf3 performance
 origin: Owner implementation request 2026-09-06
 queue:
 created: 2026-09-06
-updated: 2026-09-06
+updated: 2026-09-07
 ---
 
 > [!note] Overview
@@ -18,4 +18,8 @@ updated: 2026-09-06
 
 ## Progress
 
-- [ ] <first step>
+- [x] Implement six scoped performance changes in session-4.
+- [x] Verify numerical equivalence and obtain GPT-5.6 review.
+- [ ] Complete full regression and baseline gates, then integrate.
+
+Evidence: `dev/reference/wf2-wf3-performance.md`.

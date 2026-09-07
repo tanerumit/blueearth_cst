@@ -68,10 +68,10 @@ defaults:
   # deliberately: this one is a policy ("never eat more than a quarter of what
   # is free"), the project key is a budget ("you may use 40 GB").
   #
-  # Rule 3.15 runs B members per Julia session and holds BOTH `temp()` classes
-  # — 3.14's forcing NC and 3.15's outstates NC — for the whole batch, with p
-  # batches in flight at `-c N`. Peak transient disk is therefore
-  # `p x B x (forcing + state)`, so B is a disk knob as much as a throughput
+  # Rule 3.15 runs B members per Julia session and holds 3.14's forcing NCs
+  # for the whole batch, with p batches in flight within the `-c N` CPU budget.
+  # Peak transient disk is `p x B x forcing` (WF3 writes no final states),
+  # so B is a disk knob as much as a throughput
   # one. P3-3 design §6.1 calls this the BINDING constraint on large
   # `RLZ_NUM x ST_NUM` runs.
   #
@@ -199,8 +199,9 @@ runtime:
   # thing for this one.
   #
   # Wflow parallelizes over grid CELLS, so raising this pays on a large basin
-  # and does nothing on a small one. It is NOT Snakemake's `--cores`: the two
-  # multiply, so keep `--cores N x julia_threads <= logical CPUs`.
+  # and does nothing on a small one. WF3 now reserves these threads within
+  # Snakemake's total --cores budget (and scales down when that budget is smaller).
+  # WF1 still launches one Julia job with this fixed thread count.
   #
   # 4 is one leg of the frozen resource triple `(-c 3, --threads 4, B=1)` that
   # every recorded performance baseline was measured at

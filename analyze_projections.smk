@@ -1025,6 +1025,9 @@ rule fetch_gcm_slice:
         raw_digest_components = lambda wildcards: _si.raw_components(
             series_digest_components(*SERIES[wildcards.series_key])
         ),
+    threads: 1
+    resources:
+        mem_mb = 1024,
     log:
         LOG_PARTS_DIR + "/2.04_fetch_gcm_slice/{series_key}.log",
     benchmark:
@@ -1073,6 +1076,9 @@ rule reduce_gcm_series:
         acquisition_window = lambda wildcards: list(_si.acquisition_window(SERIES[wildcards.series_key][1])),
         store_index = STORE_INDEX,
         buffer_cells = REGION_BUFFER_CELLS,
+    threads: 1
+    resources:
+        mem_mb = 1024,
     log:
         LOG_PARTS_DIR + "/2.05_reduce_gcm_series/{series_key}.log",
     benchmark:
@@ -1083,8 +1089,8 @@ rule reduce_gcm_series:
 # Replaces monthly_change (fanned out per point_key x horizon) + its aggregator
 # monthly_change_scalar_merge. The design gives stage B one job with no fan-out.
 # The per-point change netCDFs were temp() outputs of the fan-out; they are now
-# job-internal intermediates with the same lifetime (the script uses a
-# TemporaryDirectory), so nothing durable changed shape.
+# in-memory datasets; no temporary NetCDFs are written. Durable outputs retain
+# their existing shape.
 rule derive_change_factors:
     message: rule_banner("2.06", "derive_change_factors", summary="compare each horizon against the reference period")
     input:
@@ -1111,7 +1117,7 @@ rule derive_change_factors:
         # Verified before removal: run_stress_test.smk and
         # blueearth_cst/experiment/ referenced them zero times, and rule 2.07
         # declared the `.nc` as an input it never opened. The `.nc` survives as a
-        # job-internal intermediate, because the tidy reshape reads it back.
+        # in-memory dataset shared by the tidy tables and cloud figures.
         # Both cloud views, drawn from this rule's own stage-B merge. The
         # combined one is present only for a multi-horizon config, which is what
         # `figure_relative_paths` decides -- so this list is exactly what the
@@ -1197,6 +1203,9 @@ rule derive_change_factors:
             }
             for key, (model, scenario, member) in POINT_KEYS.items()
         ],
+    threads: 1
+    resources:
+        mem_mb = 1024,
     log:
         f"{LOG_PARTS_DIR}/2.06_derive_change_factors.log",
     benchmark:
@@ -1242,6 +1251,9 @@ rule plot_gcm_timeseries:
         # and stripping every `cst_*` attr, so it was a lossier, untraceable copy
         # of the tier it duplicated. The durable timeseries tier is `scalar/`;
         # `summary/*_change_factors_*.csv` is the analysis-ready form.
+    threads: 1
+    resources:
+        mem_mb = 1024,
     log:
         f"{LOG_PARTS_DIR}/2.07_plot_gcm_timeseries.log",
     benchmark:

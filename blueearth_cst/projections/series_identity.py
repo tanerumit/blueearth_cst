@@ -884,6 +884,8 @@ def assert_series_identity(
     path: str | os.PathLike,
     expected_digest: str,
     series_label: str,
+    *,
+    observed_attrs: Mapping | None = None,
 ) -> None:
     """Fail loud when a series on disk was not derived from the current inputs.
 
@@ -893,7 +895,9 @@ def assert_series_identity(
     backup, produced by an older checkout, or surviving a non-default
     ``--rerun-triggers`` configuration.
     """
-    attrs = read_series_attrs(path)
+    # A caller already holding an open dataset can validate that exact handle
+    # without opening the file a second time. Other callers keep the disk read.
+    attrs = read_series_attrs(path) if observed_attrs is None else observed_attrs
     found_version = attrs.get("cst_schema_version")
     if found_version != SCHEMA_VERSION:
         raise RuntimeError(

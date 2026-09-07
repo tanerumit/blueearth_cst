@@ -6,7 +6,6 @@ import os
 from pathlib import Path
 from typing import Dict, List, Union
 
-import hydromt  # noqa: F401 -- registers the xarray .raster accessor (ds.raster.vars below)
 import xarray as xr
 
 from blueearth_cst.projections import projection_figures, projection_plots
@@ -96,7 +95,7 @@ def summary_climate_proj(
         clim_files, coords="minimal", preprocess=preprocess_coords
     ) as _ds_lazy:
         ds = _ds_lazy.load()
-    dvars = ds.raster.vars
+    dvars = ds.data_vars
     # S8-05: the wide merge is a JOB-INTERNAL intermediate, not an artifact.
     #
     # It used to land as three files under summary/ --
@@ -122,6 +121,22 @@ def summary_climate_proj(
         encoding={k: {"zlib": True} for k in dvars},
     )
 
+    plot_change_summary(ds, clim_dir, horizons)
+
+
+def combine_changes(datasets):
+    """Combine basin-scalar results without serializing intermediate NetCDFs."""
+    return xr.combine_by_coords(
+        [preprocess_coords(ds) for ds in datasets],
+        coords="minimal",
+        compat="no_conflicts",
+        join="outer",
+        combine_attrs="override",
+    )
+
+
+def plot_change_summary(ds, clim_dir, horizons):
+    """Draw the cloud from the same in-memory dataset used by the tidy tables."""
     # just keep mean for temp and precip for the change-factor cloud
     df = ds.sel(stats="mean").to_dataframe().reset_index()
     missing = [c for c in ("model", "scenario", "horizon") if c not in df.columns]

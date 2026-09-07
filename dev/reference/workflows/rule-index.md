@@ -1289,8 +1289,9 @@ keys logs by batch id, not by rule identifier; applying the six-call-site rule
 mechanically here would rename a `LOG_RULES` entry that has no rule to match and
 break the merge.
 
-**Writes.** `<runs>/output/rlz_<n>_st_<m>.csv` per member ·
-`<runs>/output/outstates_rlz_<n>_st_<m>.nc` per member (`temp()`).
+**Writes.** `<runs>/output/rlz_<n>_st_<m>.csv` per member.
+No final-state NetCDF is emitted: WF3 has no consumer for it. Input states
+remain configured. Julia threads are reserved within Snakemake's core budget.
 
 #### 3.16 · `derive_wflow_indicators`
 

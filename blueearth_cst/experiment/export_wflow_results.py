@@ -328,7 +328,7 @@ def analyze_wflow_results(
     def read(path):
         return pd.read_csv(path, index_col=0, parse_dates=True)
 
-    first = read(csv_fns[0])
+    first = pd.read_csv(csv_fns[0], nrows=0, index_col=0)
     q_locations = gauge_columns(first.columns)
 
     # -- resolve every non-discharge variable's columns, ONCE, before reducing --
@@ -359,11 +359,6 @@ def analyze_wflow_results(
     # that with the month itself moving. Requires the baseline runs to exist,
     # which ST_START = 0 guarantees whenever run_historical is set.
     wet_month = dry_month = None
-    if q_locations and 0 in runs:
-        baseline = pd.concat([read(p)[list(q_locations)] for p in runs[0].values()])
-        wet_month = _category_month(baseline, "wet")
-        dry_month = _category_month(baseline, "dry")
-
     rows: dict = {token: [] for token in indicator_tokens}
     log_row(
         f"Reducing {len(csv_fns)} runs into {len(indicator_tokens)} indicator "
@@ -375,11 +370,32 @@ def analyze_wflow_results(
         st_id = f"{st:0{st_width}d}"
         by_rlz = runs[st]
 
+        # Parse each realization once for every requested output. Retain only
+        # discharge for the pooled statistics; other daily columns are released.
+        per_rlz = {}
+        for rlz, path in sorted(by_rlz.items()):
+            sim = read(path)
+            if "q" in rows and q_locations:
+                per_rlz[rlz] = sim[list(q_locations)]
+            for token, locations in subcatchment_locations.items():
+                values = pd.Series(
+                    {
+                        c: float(_annual(sim[c], basin_reduction(token), anchor).mean())
+                        for c in locations
+                    }
+                )
+                rows[token] += _rows(
+                    basin_metric_name(token), st_id, rlz, values, locations
+                )
+            del sim
+
         # ---- discharge ------------------------------------------------------
         if "q" in rows and q_locations:
-            per_rlz = {
-                rlz: read(p)[list(q_locations)] for rlz, p in sorted(by_rlz.items())
-            }
+            if st == 0:
+                baseline = pd.concat(per_rlz.values())
+                wet_month = _category_month(baseline, "wet")
+                dry_month = _category_month(baseline, "dry")
+                del baseline
 
             # Class A: per realization. Linear in years, so the finer grain
             # averages back to the pooled value exactly and nothing is lost.
@@ -430,7 +446,12 @@ def analyze_wflow_results(
 
             # Class C: pooled, at the month fixed from the baseline.
             if wet_month is not None:
-                pooled = pd.concat(per_rlz.values())
+                pooled = pd.concat(
+                    [
+                        sim[sim.index.month.isin([wet_month, dry_month])]
+                        for sim in per_rlz.values()
+                    ]
+                )
                 for statistic, month in (
                     ("wetmonth_mean", wet_month),
                     ("drymonth_mean", dry_month),
@@ -442,27 +463,6 @@ def analyze_wflow_results(
                         _month_mean(pooled, month, anchor),
                         q_locations,
                     )
-
-        # ---- the per-subcatchment variables ----------------------------------
-        # Per realization, for the same reason class A is: these are "annual
-        # statistic, then mean over years", so the finest grain is available and
-        # ruling (b1) says the table carries it and lets downstream aggregate.
-        #
-        # And per LOCATION, for a reason that is not a preference: the model
-        # declares these with `map = "subcatchment"`, so a run emits one column per
-        # subcatchment and no whole-basin column exists to reduce. Q11 forbids
-        # manufacturing one here by area-weighting -- whether subcatchments nest or
-        # tile decides whether that mean is even valid -- so the finest grain the
-        # run offers is the grain the table carries, on both axes.
-        for token, locations in subcatchment_locations.items():
-            metric = basin_metric_name(token)
-            how = basin_reduction(token)
-            for rlz, path in sorted(by_rlz.items()):
-                sim = read(path)
-                values = pd.Series(
-                    {c: float(_annual(sim[c], how, anchor).mean()) for c in locations}
-                )
-                rows[token] += _rows(metric, st_id, rlz, values, locations)
 
     # -- write ----------------------------------------------------------------
     for token in indicator_tokens:

@@ -158,6 +158,8 @@ def get_change_monthly_clim_proj(
     start_month_hyd_year="Jan",
     variable_spec=None,
     min_reference=None,
+    *,
+    _reference_cache=None,
 ):
     """Change factors per CALENDAR MONTH (design §5.6, step 6a-ii).
 
@@ -183,6 +185,9 @@ def get_change_monthly_clim_proj(
     import xarray as xr
 
     stats = list(DEFAULT_STATS) if stats is None else list(stats)
+    # Private Stage-B cache: scoped to one historical series and complete
+    # analysis configuration. Direct callers get a fresh cache on every call.
+    reference = {} if _reference_cache is None else _reference_cache
 
     ds_hist_time = _to_datetime_index(ds_hist_time)
     ds_clim_time = _to_datetime_index(ds_clim_time)
@@ -207,13 +212,17 @@ def get_change_monthly_clim_proj(
         clim_by_month = clim.groupby("time.month")
 
         for stat_name in stats:
+            key = ("monthly", var, stat_name, str(hist_start), str(hist_end))
             if "q_" in stat_name:
                 q = int(stat_name.split("_")[1]) / 100
-                hist_stat = hist_by_month.quantile(q, "time")
+                if key not in reference:
+                    reference[key] = hist_by_month.quantile(q, "time")
                 clim_stat = clim_by_month.quantile(q, "time")
             else:
-                hist_stat = getattr(hist_by_month, stat_name)("time")
+                if key not in reference:
+                    reference[key] = getattr(hist_by_month, stat_name)("time")
                 clim_stat = getattr(clim_by_month, stat_name)("time")
+            hist_stat = reference[key]
 
             # S8-04: the FUTURE LEVEL, for the table's `absolute_value`. Emitted
             # for every variable and every statistic, because it is what
@@ -267,6 +276,8 @@ def get_change_annual_clim_proj(
     start_month_hyd_year="Jan",
     calendar=None,
     variable_spec=None,
+    *,
+    _reference_cache=None,
 ):
     """
 
@@ -295,6 +306,9 @@ def get_change_annual_clim_proj(
     # Step 5d: `stats=None` means the v2.0 default set, not "all eight".
     # Passed explicitly by callers that opt into tail quantiles.
     stats = list(DEFAULT_STATS) if stats is None else list(stats)
+    # Private Stage-B cache: scoped to one historical series and complete
+    # analysis configuration. Direct callers get a fresh cache on every call.
+    reference = {} if _reference_cache is None else _reference_cache
 
     # cftime-safe slicing: convert any CMIP6-native cftime index up front so the
     # pd.Timestamp hydrological-year bounds below apply to a pandas-native index
@@ -342,7 +356,7 @@ def get_change_annual_clim_proj(
     # exercise -- they construct synthetic series with no calendar to speak of.
     # Production always passes one: derive_change_factors reads `cst_calendar` off
     # the series and stage B refuses an unknown one (falsifier G5).
-    def _annual(da, freq, how):
+    def _aggregate_annual(da, freq, how):
         """Annual aggregate of a monthly series, month-length weighted."""
         if calendar is None:
             return getattr(da.resample(time=freq), how)("time")
@@ -371,6 +385,22 @@ def get_change_annual_clim_proj(
         # divides.
         return (weighted / w.resample(time=freq).sum("time")).rename(da.name)
 
+    def _annual(da, freq, how, *, historical=False):
+        if not historical:
+            return _aggregate_annual(da, freq, how)
+        key = (
+            "annual",
+            da.name,
+            freq,
+            how,
+            calendar,
+            str(start_hyd_year_hist),
+            str(end_hyd_year_hist),
+        )
+        if key not in reference:
+            reference[key] = _aggregate_annual(da, freq, how)
+        return reference[key]
+
     ds = []
     for var in intersection(ds_hist_time.data_vars, ds_clim_time.data_vars):
         # Step 5e-iii: the AGGREGATION follows `canonical`, the change arithmetic
@@ -384,6 +414,7 @@ def get_change_annual_clim_proj(
                 ),
                 f"YS-{start_month_hyd_year.upper()[:3]}",
                 "sum",
+                historical=True,
             ).sel(
                 scenario=ds_hist_time.scenario.values[0],
             )
@@ -412,6 +443,7 @@ def get_change_annual_clim_proj(
                 ),
                 f"YS-{start_month_hyd_year.upper()[:3]}",
                 "mean",
+                historical=True,
             ).sel(scenario=ds_hist_time.scenario.values[0])
         else:  # for temp
             # additive for temp
@@ -421,6 +453,7 @@ def get_change_annual_clim_proj(
                 ),
                 f"YS-{start_month_hyd_year.upper()[:3]}",
                 "mean",
+                historical=True,
             ).sel(
                 scenario=ds_hist_time.scenario.values[0],
             )
@@ -437,13 +470,25 @@ def get_change_annual_clim_proj(
 
         # calc statistics
         for stat_name in stats:  # , stat_props in stats_dic.items():
+            key = (
+                "annual-stat",
+                var,
+                stat_name,
+                calendar,
+                start_month_hyd_year,
+                str(start_hyd_year_hist),
+                str(end_hyd_year_hist),
+            )
             if "q_" in stat_name:
                 qvalue = int(stat_name.split("_")[1]) / 100
-                hist_stat = getattr(hist, "quantile")(qvalue, "time")
+                if key not in reference:
+                    reference[key] = getattr(hist, "quantile")(qvalue, "time")
                 clim_stat = getattr(clim, "quantile")(qvalue, "time")
             else:
-                hist_stat = getattr(hist, stat_name)("time")
+                if key not in reference:
+                    reference[key] = getattr(hist, stat_name)("time")
                 clim_stat = getattr(clim, stat_name)("time")
+            hist_stat = reference[key]
 
             if change_kind(variable_spec, var) == "relative":
                 change = (clim_stat - hist_stat) / hist_stat * 100
@@ -483,8 +528,11 @@ def get_change_annual_clim_proj(
             # historical values carried across the scenarios they are the
             # reference for. Caught by recomputing the change from the two levels
             # and comparing it against the change column, on every row.
+            level_key = ("level", *key)
+            if level_key not in reference:
+                reference[level_key] = _stat_of(hist_level)
             reference_stat = (
-                _stat_of(hist_level)
+                reference[level_key]
                 .drop_vars("scenario", errors="ignore")
                 .broadcast_like(level_stat)
             )

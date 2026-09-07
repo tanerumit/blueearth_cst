@@ -127,11 +127,10 @@ generate_weather:
 # 2026-08-12; surfacing them makes each one a stated choice rather than an
 # accident, which is the same reason C34 surfaced pet_method.
 apply_climate_perturbations:
-  compute_pet: true
-  pet_method: hargreaves     # PET method for the PERTURBATION step. PET is
-                             # computed again downstream by rule 3.14 with a
-                             # different method; which result is used is the
-                             # open half of F16 and is NOT settled here.
+  compute_pet: false        # Rule 3.14 computes the PET consumed by Wflow from
+                             # perturbed temperature, pressure and radiation.
+                             # The generator's PET is not a downscaling input.
+  pet_method: hargreaves     # Used only if compute_pet is explicitly enabled.
   qm_fit_method: mme         # quantile-mapping fit method
   scale_var_with_mean: true
   enforce_target_mean: true
@@ -186,10 +185,8 @@ apply_climate_perturbations:
   # rather than in this file: it is a perturbation AXIS, and an axis reaches
   # rule 3.12 through the st_<m>.csv lookup. Wiring it would mean a new lookup
   # column and a new grid dimension, not a key here. Worth knowing that it
-  # matters: this section computes Hargreaves PET, which goes as the square
-  # root of the diurnal range, so holding the range fixed under warming is a
-  # choice rather than a neutral default (upstream measures +3.7% to +14.7% PET
-  # at +4 degC across a plausible range of it).
+  # matters if generator PET is enabled: Hargreaves depends on diurnal range.
+  # The default leaves PET calculation to HydroMT's forcing setup.
 
 # weathergenr::write_netcdf — realization and perturbed-series output. Read by
 # BOTH rule 3.11 and rule 3.12, which is why it is one shared section.

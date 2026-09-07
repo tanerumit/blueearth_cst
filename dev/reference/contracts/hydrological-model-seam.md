@@ -190,8 +190,10 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
     `datetime.datetime`, so **both** the wf3 forcing time axis and the TOML are
     moved to `standard`.
   - `dir_output = "."` (flat, no `run_default/` subdir).
-  - `state.path_output = "outstates_<climate_name>.nc"` — so the wf3 warm state
-    lands **flat**, unlike wf1 (HM-6a).
+  - `state.path_output` is removed for WF3: its final state is unconsumed.
+    `state.path_input` and `state.variables` remain for initialization.
+    `validate_hm4(..., require_output_state=False)` validates this variant;
+    WF1 retains the default requirement for a final-state pointer.
 - **Also pinned (read-reliance):**
   - `[input.forcing]` — the block **keys are wflow CSDMS Standard Names** (e.g.
     `atmosphere_water__precipitation_volume_flux`,
@@ -272,30 +274,14 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   (`[state.variables]` — wflow-owned).
 - **validator:** **none** (existence pinned transitively via HM-4).
 
-## HM-6b — wf3 warm state (temp, skip-until-captured)
+## HM-6b — retired WF3 final-state output
 
-- **path pattern:** `<exp>/hydrology/wflow/output/outstates_rlz_<n>_st_<m>.nc`
-  (flat, alongside HM-5).
-- **producer → consumer:** rule 3.15 `run_wflow` → **(nothing in-repo)**.
-- **THIN — "named output sink, unconsumed" (corrects the intake's chaining
-  hint).** Verified: the per-cst TOML keeps `cold_start__flag = true` and
-  declares **no `instates` input** on rule 3.15; wf3 fans out in parallel over
-  `(rlz, cst)` with no cross-cst edge — **no warm-state chaining invariant** our
-  DAG relies on (design §5.3 warm-state finding).
-- **contract surface:** the file is a declared wflow state **output** whose name
-  (`outstates_rlz_<n>_st_<m>.nc`, under the experiment's `output/` — wf3 keeps
-`dir_output="."` and carries the `config/` → `output/` hop in the pointer, HM-4)
-  our rewrite sets.
-- **temp() lifecycle:** **`temp()`** in wf3 — deleted, absent on the fixture.
-- **structural note:** the wf1/wf3 split mirrors HM-2/WG-6 structurally, but is
-  **disanalogous on content** — forcing (HM-2/WG-6) is consumed, warm state is
-  not — so the split does **not** imply an independent wf1 validator (hence HM-6a
-  carries none).
-- **deliberately unpinned:** the entire state-variable schema
-  (`[state.variables]` — wflow-owned).
-- **validator:** `validate_hm6b` — **skip-until-captured on disk** (temp()
-  content absent by default); logic proven every suite by a synthetic pass/fail
-  pair. See the `--notemp` capture procedure below.
+WF3 no longer emits `outstates_rlz_<n>_st_<m>.nc`. The file was an unconsumed
+temporary sink; removing `state.path_output` avoids writing it without changing
+initialization or the simulation CSV. No cross-member state chaining exists.
+
+`validate_hm6b` remains available for older captured state files, with its
+synthetic schema checks. `--notemp` does not recreate this retired output.
 
 ## HM-7 — response-surface reduction (one indicator table per variable)
 
@@ -750,7 +736,7 @@ executes on **every** checkout, fixture or not. HM-2 unit attrs are asserted
 | `validate_hm5` | HM-5 | wf1 `run_default/output.csv`; wf3 `<exp>/hydrology/wflow/output/rlz_<n>_st_<m>.csv` | wf1 `output.csv` is `temp()` → skip-until-captured, or run with `--notemp`; **yes** for the wf3 per-cst CSVs (NOT `temp()`) |
 | `validate_hm_gauge_column_identity` (relational) | HM-4 → HM-5 → HM-7 gauge-column identity | per-cst TOMLs + the per-cst run CSVs + `q_indicators.csv` | **yes** (all inputs persist) |
 | *(HM-6a)* | HM-6a | `models/hydrology/wflow/run_default/outstate/outstates.nc` | **no validator** — existence pinned transitively via HM-4's `[state].path_output` |
-| `validate_hm6b` | HM-6b | `<exp>/hydrology/wflow/output/outstates_rlz_<n>_st_<m>.nc` | **no** — `temp()` content absent; skip-until-captured on disk, synthetic-proven every suite |
+| `validate_hm6b` | HM-6b | `<exp>/hydrology/wflow/output/outstates_rlz_<n>_st_<m>.nc` | **retired output** — validator retained for historical captures only |
 | `validate_hm7` | HM-7 | `<exp>/results/<token>_indicators.csv` (one per `model.outvars` entry) | **yes** (persists; `rule all`, manifested) |
 
 One validator lives OUTSIDE that module, deliberately:
@@ -760,47 +746,10 @@ above). It obeys the same invariants but pins a RELATIONSHIP between two trees
 rather than the shape of one artifact, so it is a sibling rather than an
 `HM-<n>` entry. It is continuously verified on the built fixture.
 
-### `--notemp` capture procedure (temp() on-disk validators)
+### Capturing current temporary forcing artifacts
 
-The `temp()`-content validator `validate_hm6b` (HM-6b, the wf3 warm state) has
-**no on-disk integration check on the default fixture**: `outstates_rlz_<n>_st_<m>.nc`
-is wrapped in Snakemake `temp()` and deleted after rule 3.15 finishes, so it does
-not survive a completed run. Its Layer-2 integration case
-(`test_hm6b_integration`) carries **both** the `_FIXTURE_ABSENT` skipif and a
-runtime `pytest.skip("temp() artifact absent; capture via --notemp")` guarding on
-the NC's presence. Its logic is proven on **every** checkout by its Layer-1
-synthetic pass/fail pair regardless.
-
-**This milestone does NOT run the capture** — passing `--notemp` and letting the
-artifact persist would modify the untracked `test_case/test_local` fixture, out of
-a contracts-only milestone. The procedure below is the one-command lift a
-**future run** performs when full on-disk coverage is wanted (design OQ-4).
-
-**Capture sketch** (run from the repo root inside `pixi shell`, after the wf1
-model exists — wf3 needs `models/hydrology/wflow/` artifacts):
-
-```bash
-snakemake all -c 3 -s run_stress_test.smk \
-  --configfile test_case/project_config_baseline.yml --notemp
-```
-
-`--notemp` tells Snakemake **not** to delete `temp()`-flagged outputs after their
-consuming jobs complete, so the run leaves the intermediate netCDFs on disk.
-
-**Paths that then appear** under `test_case/test_local` (the path the skip-guard
-tests for):
-
-| validator | artifact captured | fixture path (`<exp>` = `experiments/experiment`) |
-|---|---|---|
-| `validate_hm6b` | HM-6b wf3 warm state NC | `<exp>/hydrology/wflow/output/outstates_rlz_<n>_st_<m>.nc` |
-
-(The same run also captures WG-4 `rlz_<n>_st_<m>.nc` and WG-6
-`inmaps_rlz_<n>_st_<m>.nc` — documented in the weather-generator seam doc.)
-
-**Which cases un-skip:** with these artifacts present, `test_hm6b_integration`
-here (plus `test_wg4_integration` and `test_wg6_integration` on the other seam)
-stop hitting their `pytest.skip` and run their on-disk assertion — the **three**
-temp validators' *on-disk* integration checks flip from skip-until-captured to
-green. No test code or validator changes; the guards resolve to the real-artifact
-path automatically once the files exist. Re-running **without** `--notemp` (or a
-`snakemake --delete-temp-output`) restores the default temp-deleted fixture state.
+Use `--notemp` to retain WG-4 generator output and WG-6 downscaled forcing,
+as described in [the weather-generator seam](weather-generator-seam.md).
+It does not emit the retired HM-6b final state. Its legacy integration test runs
+only when an older captured file is present; new WF3 runs validate their TOMLs
+with `require_output_state=False`.

@@ -1098,7 +1098,7 @@ def test_hm4_integration():
         "rb",
     ) as f:
         per_member = tomllib.load(f)
-    assert ic.validate_hm4(per_member) == []
+    assert ic.validate_hm4(per_member, require_output_state=False) == []
 
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
@@ -1252,6 +1252,8 @@ def test_wg6_integration():
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
 def test_hm6b_integration():
     if not os.path.exists(_HM6B_NC):
-        pytest.skip(_TEMP_ABSENT)
+        pytest.skip(
+            "legacy WF3 final-state capture absent; current runs do not emit it"
+        )
     with _open_ds(_HM6B_NC) as ds:
         assert ic.validate_hm6b(ds) == []

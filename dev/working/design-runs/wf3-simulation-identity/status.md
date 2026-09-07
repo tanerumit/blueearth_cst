@@ -5,10 +5,10 @@ genre: workflow-spec
 author-binding: cst-architect
 started: 2026-09-06
 variant: full
-stage: 3-revision-r1
+stage: 4-external-r1
 external-rounds-completed: 0
 dispatches:
-  opus: 4
+  opus: 5
   fable: 1
 gates:
   G1: approved 2026-09-07; returned+re-approved 2026-09-07 (panel scope divergence)
@@ -129,8 +129,22 @@ brief names that path.
 - [done] G1-return — **re-approved 2026-09-07**. Both scope-divergent points
   ruled: R-5 (`risk-6`/C-3) and R-6 (`risk-3`). No change to the selected
   alternative, so review continues rather than restarting.
-- [open] 3-revision-r1 — `cst-architect` (fresh spawn), Opus; expected outputs:
-  `design-v2.md`, `ledger.md` (31 rows), `candidate-family-schema.md`.
+- [done] 3-revision-r1 — `cst-architect`, Opus — outputs: `design-v2.md` (2668
+  lines, from 1565), `ledger.md` (31/31 rows), `candidate-family-schema.md`.
+  Split **30 accepted · 0 rejected · 1 deferred · 0 withdrawn**.
+  **Driver structural checks PASS** (run, not taken on report): 31 rows, no ID
+  missing or duplicated, all three severity divergences preserved unharmonised
+  (`arch-6` major / `risk-11` minor; `arch-7` major / `risk-8` minor; `risk-1`
+  major / `arch-8` minor), `## Alternatives considered` non-empty at 12 entries.
+  **R-6 discharged: E18 CONFIRMED, not refuted** — so the run does NOT return to
+  G1. The confirmation rests on different ground than the intake's: the intake
+  argued raggedness, which a rectangular 6x3x2 GCM set defeats;
+  `candidate-family-schema.md` §3 confirms it semantically instead — `st_id` is a
+  foreign key into `stress_test_lookup.csv` and a `(ssp245, 2050)` pair has no
+  row there without importing WF2's change-factor computation, and `rlz` is a
+  common-random-numbers index, so spelling a GCM as `rlz` asserts a pairing that
+  does not exist.
+- [open] 4-external-r1 — `codex exec` (GPT), clean-room on `design-v2.md`.
   - attempt 1 **FAILED 2026-09-07 00:17** — HTTP 429, session limit, reset
     03:30 Europe/Istanbul. Classified **resource exhaustion**, not retryable
     transport (`roles-and-recovery.md` § Classifying a failed spawn). Left a

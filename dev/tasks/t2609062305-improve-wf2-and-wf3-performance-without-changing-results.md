@@ -20,6 +20,6 @@ updated: 2026-09-07
 
 - [x] Implement six scoped performance changes in session-4.
 - [x] Verify numerical equivalence and obtain GPT-5.6 review.
-- [ ] Complete full regression and baseline gates, then integrate.
+- [x] Complete full regression, baseline and post-rebase gates; ready for local integration.
 
 Evidence: `dev/reference/wf2-wf3-performance.md`.

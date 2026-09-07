@@ -35,6 +35,14 @@ Probes and command logs are retained locally under `.tmp/scratchpad/2026-09-06_2
 - `pixi run python dev/scripts/check_baseline.py check`: all seven targets match. This covers the regenerated reductions; it does not claim a fresh full 14-member stochastic simulation run.
 - Regenerated WF2 change-factor cloud rendered and visually inspected.
 
+- `pixi run test-full`: 3,276 passed, 9 skipped, 1 expected failure (875.93 seconds). Opt-in full-workflow integration tests were skipped; the targeted real-run probes above cover the changed numerical paths.
+
+The baseline equivalence runs used the pre-rebase baseline configuration at `26c81500` (17-year WF3 window and `far` WF2 horizon). Concurrent main changes later shortened that configuration; the baseline manifest has intentionally not yet been updated (see `AGENTS.md`). This performance validation establishes equivalence for the recorded configuration, not numerical equivalence between those different windows.
+
+- Post-rebase `pixi run test-fast`: 3,303 passed, 8 skipped, 1 expected failure (381.18 seconds), including the additional checks landed concurrently on main.
+
+- Post-rebase CLI dry-runs: 20 passed; lint and formatting passed.
+
 ## Review decisions
 
 GPT-5.6 review prompted restoration of the explicit file-wrapper signature, broader monthly/cross-scenario coverage, the PET NetCDF seam probe, and refreshed state-file documentation. Configurable memory estimates and honest Julia accounting remain with their limitations stated above. One header-only CSV read is retained to resolve columns cheaply; each simulation's full data is parsed once. The HM-4 validator's optional output-state mode remains backward-compatible with historical captures; the real generated TOML and Wflow probe establish that new runs omit the pointer. Additional schema validation for inconsistent later CSV headers is pre-existing behavior outside this refactor.

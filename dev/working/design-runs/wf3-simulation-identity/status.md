@@ -5,13 +5,13 @@ genre: workflow-spec
 author-binding: cst-architect
 started: 2026-09-06
 variant: full
-stage: G1-return
+stage: 3-revision-r1
 external-rounds-completed: 0
 dispatches:
   opus: 4
   fable: 1
 gates:
-  G1: approved 2026-09-07
+  G1: approved 2026-09-07; returned+re-approved 2026-09-07 (panel scope divergence)
   G2: pending
 flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full]
 ---
@@ -126,9 +126,11 @@ brief names that path.
   write-then-mark case in `run-artifacts.md`. Artifact verified complete on disk
   (11 findings, closing section present, verdict consistent), so it was accepted
   rather than re-dispatched. No dispatch spent.
-- [open] G1-return — the panel's findings admit scope-divergent resolutions on
-  two points (`risk-6`/C-3 and `risk-3`); returning to the gate before spending
-  the revision, per `stage-contracts.md` § Gate return from the panel.
+- [done] G1-return — **re-approved 2026-09-07**. Both scope-divergent points
+  ruled: R-5 (`risk-6`/C-3) and R-6 (`risk-3`). No change to the selected
+  alternative, so review continues rather than restarting.
+- [open] 3-revision-r1 — `cst-architect` (fresh spawn), Opus; expected outputs:
+  `design-v2.md`, `ledger.md` (31 rows), `candidate-family-schema.md`.
   - attempt 1 **FAILED 2026-09-07 00:17** — HTTP 429, session limit, reset
     03:30 Europe/Istanbul. Classified **resource exhaustion**, not retryable
     transport (`roles-and-recovery.md` § Classifying a failed spawn). Left a
@@ -282,3 +284,38 @@ binding on the author's revision. R-2 sharpens it rather than resolving it: the
 results file now changes both its column set and its row count, so the author
 owes a working comparison instrument either way. Spawn repo-fit only if the
 architecture lens or the external round raises a second instrument-level defect.
+
+### R-5 — W4 is DIRECTION, not a ruling; A3 must be re-argued on merits (risk-6 / C-3)
+
+Ruled 2026-09-07 at the gate return. W4 sits under the intake's
+`## Working direction — initial, NOT settled` heading and carries that weight —
+it is a direction a design run may test and argue against, not a decision.
+
+**Consequence for the revision:** the single mixed sequence **stays**, but §6's
+rejection of alternative A3 (two id sequences) may not rest on *"W4 rules against
+it"*. It must be rejected — or accepted — on its own merits. The deference is the
+defect, not the conclusion.
+
+What made this a gate question rather than author work: the draft **already
+departs from W4 once, deliberately and with reasons** (§5.5.1, two column names
+over one sequence). Treating W4 as binding in §6 and as advisory in §5.5.1 is
+internally inconsistent whichever reading of W4 wins, and only the owner could say
+which reading to standardise on.
+
+### R-6 — E18 is settled BEFORE G2, as a milestone precondition (risk-3, domain-10)
+
+Ruled 2026-09-07 at the gate return. E18 — *"a user-supplied or GCM-downscaled
+scenario set is not expressible as `(rlz, st)`"* — is the premise the whole change
+rests on, and the intake marks it **HYPOTHESIS — asserted, no artifact exists**.
+As drafted it is first testable only after the migration's point of no cheap
+return.
+
+**Required before G2:** a **one-page candidate second-family schema**, written as
+`candidate-family-schema.md` in the run dir, and *checked against the design's own
+scenario-table schema*. It is not a second family and ships no producer — the
+intake's non-goal stands. It is the cheapest artifact that can falsify E18, and
+`domain-10` proposed exactly this instrument from the method side while `risk-3`
+reached the timing question from the other.
+
+If the check fails, the decomposition is in question and the run returns to G1 —
+which is precisely why it is worth one page now rather than a migration later.

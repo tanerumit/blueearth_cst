@@ -30,7 +30,6 @@
 | [t2608241413](tasks/t2608241413-the-generated-series-is-anchored-to-a-hardcoded-2010.md)                                                    | The generated series is anchored to a hardcoded 2010                                                     | wf3 / weather generator                     | R14                                            |     | backlog |
 | [t2608242212](tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md)                                                | Give the analysis variable set a config surface (R14 C-48)                                               | wf0 / wf1 climate figures                   | R14                                            |     | backlog |
 | [t2608301524](tasks/t2608301524-a-crlf-checkout-of-pixi-lock-re-keys-every-cmip6-series.md)                                                 | A CRLF checkout of pixi.lock re-keys every CMIP6 series                                                  | projections / series identity               | R14 Gate 5                                     |     | backlog |
-| [t2609062305](tasks/t2609062305-improve-wf2-and-wf3-performance-without-changing-results.md)                                                | Improve WF2 and WF3 performance without changing results                                                 | wf2 / wf3 performance                       | Owner implementation request 2026-09-06        |     | active  |
 
 ## Watching
 

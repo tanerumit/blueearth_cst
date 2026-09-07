@@ -5,13 +5,13 @@ genre: workflow-spec
 author-binding: cst-architect
 started: 2026-09-06
 variant: full
-stage: G1
+stage: 2-internal-panel
 external-rounds-completed: 0
 dispatches:
   opus: 2
   fable: 1
 gates:
-  G1: pending
+  G1: approved 2026-09-07
   G2: pending
 flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full]
 ---
@@ -112,8 +112,12 @@ brief names that path.
   directive the repo-fit lens is held back unless a finding requires it —
   `domain-5` (the baseline gate is structurally unable to check this change) is
   the candidate that may force it.
-- [open] G1 — human gate, framing. Three framing-level findings go to the owner:
-  domain-1 (blocking), domain-2, domain-3.
+- [done] G1 — **approved 2026-09-07**. Framing, constraints and decision
+  criteria stand as the intake declares them; the provisional alternative (the
+  three-stage decomposition with a family-blind seam) is approved. All three
+  framing-level domain findings ruled **with the lens** — R-1..R-4 below.
+- [open] 2-internal-panel — promoted shape: `critical-thinker` (risk) +
+  `cst-architect` (architecture), both Opus, on `design-v1.md`.
   - attempt 1 **FAILED 2026-09-07 00:17** — HTTP 429, session limit, reset
     03:30 Europe/Istanbul. Classified **resource exhaustion**, not retryable
     transport (`roles-and-recovery.md` § Classifying a failed spawn). Left a
@@ -213,3 +217,57 @@ Consequences that follow without further ruling:
 Still open, and put back to the owner: whether the results file stores one row
 per realization (`grain: run`) or one pooled row. The ruling makes per-run
 values well-defined and exactly averaging back, so both remain constructible.
+
+### R-2 — Class C stores per-realization rows (`grain: run`) — domain-1 ACCEPTED
+
+Ruled 2026-09-07. The blocking finding is **accepted in full**. Class C is
+declared `grain: run` with a required `reference`, not `grain: bundle`.
+
+Rationale as put and ruled: R-1 makes the per-realization values well-defined and
+exactly averaging back to the pooled value, so storing the finer grain loses
+nothing and preserves per-realization spread — a reader can see whether the
+wet-month response at a design point is consistent across realizations or driven
+by one outlier draw. This is decision criterion D5 applied as the design itself
+argues it for Class A.
+
+Accepted cost: the results file gains rows for these two metrics, so **HM-7's
+pinned surface and the baseline both move**. That cost was stated at the gate and
+taken deliberately.
+
+### R-3 — the paired-sampling property is DECLARED in the family registry — domain-2 ACCEPTED
+
+Ruled 2026-09-07. `derived_from` is not only a DAG edge: in the stochastic family
+it carries common random numbers (`run_stress_test.smk:1020` — every design point
+perturbs the *same* realization's baseline draw), which makes contrasts between
+design points paired rather than differences between independent samples.
+
+The family registry gains a declared field for it, so a future family with an
+empty `derived_from` produces an unpaired surface **that is marked as such**
+rather than one that silently reads like the current one. Prose-only was offered
+and declined.
+
+### R-4 — `min_blocks` is expressed per return period — domain-3 ACCEPTED
+
+Ruled 2026-09-07. The precondition becomes a required
+**blocks-per-return-period ratio** — one constant per metric, but a statement
+about the extrapolation rather than about the sample alone, so it distinguishes a
+20-year level from a 200-year level fitted on the same block sample. Both periods
+are already in scope (`RETURN_PERIOD_PEAK_YR`, `RETURN_PERIOD_LOW_YR`, imported
+by the reduction module), so no new input is needed.
+
+The design must therefore **pick the ratio**: Q7's calibration becomes a
+precondition of this milestone rather than a follow-on question. Shipping the
+absolute floor as a declared placeholder was offered and declined.
+
+### Panel dispatch note — repo-fit lens HELD BACK
+
+The promotion entitles the run to both the architecture and repo-fit lenses. Only
+the architecture lens is spawned, per the owner's methodology-over-execution
+directive. Reason logged: the one execution-instrument defect in play — `domain-5`
+(`check_baseline.py:786-797,861-874` keys rows on every non-value column and so
+structurally fails on a column-set change, leaving GF-9's *"no number moves"*
+claim with no instrument) — is **already filed as a major finding** and is
+binding on the author's revision. R-2 sharpens it rather than resolving it: the
+results file now changes both its column set and its row count, so the author
+owes a working comparison instrument either way. Spawn repo-fit only if the
+architecture lens or the external round raises a second instrument-level defect.

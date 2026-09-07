@@ -8,7 +8,7 @@ variant: full
 stage: 4-external-r1
 external-rounds-completed: 0
 dispatches:
-  opus: 5
+  opus: 6
   fable: 1
 gates:
   G1: approved 2026-09-07; returned+re-approved 2026-09-07 (panel scope divergence)
@@ -361,3 +361,58 @@ that does not exist.
 the revision and it does not block the external round. Recorded in
 `observations.md` as a skill gap — the disposition enum has no honest slot for
 "major, correct, deliberately not closed".
+
+## Probes P3/P4/P5 — executed 2026-09-07, during the external-round pause
+
+Output: `probe-p3-p4-p5.md`. Four claims moved off `[assumed]`; one premise
+falsified.
+
+| gate | was | now |
+|---|---|---|
+| GF-7 (hydromt key) | `[argued]` | **measured, holds** — hydromt 1.3.1 resolves a one-entry catalog keyed `run_0007` via both `get_source` and `get_rasterdataset`. Grammar limits measured: `[`/`]` break the URI resolver, `.` truncates the key; `run_<padded int>` is safe |
+| GF-6 (a) | `[assumed]` | **measured, holds** — a changed `params:` value schedules, scalar and nested-dict alike |
+| GF-6 (b) | `[assumed]` | **measured, and the trap is real** — a change to a module the `script:` imports does NOT schedule, because the `code` trigger stops at the script file. The design's source-digest fix was measured to close it, and to over-fire on comment-only edits |
+| GF-8 (tree-check) | `[assumed]` | **measured, holds — for a different reason than §9 states.** No inventory rule names the member token, so every renamed per-run path classifies IDENTITY under existing directory prefixes; `build_project_tree_rules` needs no change *for the rename*. But the design's two NEW files (`config/scenario_table.csv`, `config/.scenario_table.sha256`) classify **UNMAPPED** and need rows at `semantic_tree_diff.py:462-488` in the same commit |
+
+### FALSIFIED — rule 3.09 is no longer deaf, and three R12 documents say it is
+
+**Driver-verified.** `prepare_stress_test_grid` (`run_stress_test.smk:874`) carries
+`params:` at `:880`, including `stress_test_cfg = stress_test_cfg` at `:888`. It
+was added by `b5052339` (2026-08-21, the R13 config split).
+
+The claim it refutes was **true when recorded and went stale six days later**:
+`stress-test-lookup-intake.md:141` (E5) verified *"`config = ancient(config_path)`,
+and the rule carries no `params:`"* on **2026-08-15**. That fact then propagated
+forward and is still asserted in:
+
+- `simulation-identity-intake.md:388` — P4's entire rationale (*"the
+  `ancient()`/no-`params:` trap is live in this workflow (rule 3.09 is deaf to
+  `stress_test` edits)"*)
+- `stress-test-lookup-design.md:1034`, `:1170`, `:2689`
+
+**Consequence for this run:** GF-16 case (a) is **already closed in the tree**, so
+the design must not claim to close it. Only case (b) — the function-body change —
+remains open, and P4 measured both the trap and the fix for it. `arch-7` and
+`risk-8` were filed against the stale premise; their *mechanism* concern survives
+intact (case b), their *rule-3.09-has-no-params* framing does not.
+
+This is the second stale in-repo fact this run has caught by executing rather than
+reading — the first was `run_stress_test.smk:1015`'s CyclicGraphException claim.
+Both were true when written.
+
+### Not settled without a run
+
+The real-rule differential on 3.09/3.16. The control dry-run schedules all 43 jobs
+via a consistency-rule code trigger, and `--list-params-changes` is null on the
+real tree both before and after a genuine `stress_test` edit. Cheapest sufficient
+experiment: `--notemp --until prepare_stress_test_grid` on
+`snake_config_baseline.yml`, twice — **minutes, no weathergenr, no Wflow**.
+**Authorised by the driver** as comfortably inside the owner's cost boundary,
+which was set against multi-hour `RLZ_NUM x ST_NUM` Wflow runs.
+
+### Reported, not explained — an inconsistency the probe stopped on
+
+`.snakemake/metadata/` holds 105 records, none decoding to `test_local` (verified
+twice), yet `--list-changes code` names six `test_local` paths. Stopped after
+three attempts under the no-progress circuit breaker and reported rather than
+rationalised. It does not change any verdict above.

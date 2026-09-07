@@ -10,6 +10,29 @@ created: 2026-08-22
 updated: 2026-08-23
 ---
 
+> [!done] Config edits LANDED 2026-09-07 at `241e1a79` — manifest deliberately not re-recorded
+> Owner ruling: land the config edits only. Both baseline twins now run
+> `simulation_window: 2046-2054` with the analyze_projections horizon moved onto
+> it as `mid` (was `far: 2070-2090` against a 2070-2086 window). In R14's
+> spellings the note's two knobs are ONE key: `C-67` folded
+> `horizontime_climate` + `run_length`/2 into `simulation_window.end`, and that
+> end year is what sets the generated-series length — 76 years became 44.
+>
+> **`dev/baseline/manifest.json` is now behind the config, on purpose.** A
+> `check_baseline.py check` reports moved rows and that is expected, not a
+> defect; the values ride the next re-record that happens for another reason.
+> Recorded in `AGENTS.md`, `dev/reference/validation-ladder.md` and both config
+> headers so nobody meets it cold.
+>
+> The ladder's falsified cost paragraph is rewritten (it claimed ~2.6x / ~1.7x;
+> measured ~1.2x, with rapid's weather generation actually SLOWER). With both
+> configs on nine years, rapid's remaining advantage is the grid: 10 members
+> against 14 — that sentence in the ladder now says so.
+>
+> **What is left is exactly the two things worth more than this was**, both
+> needing an owner decision rather than a code change. The item stays open for
+> them.
+
 > [!note] Overview
 > **What** — Cut the wall-clock of a full `test_local` baseline run, then re-record `dev/baseline/manifest.json` from the slimmer config.
 > **Why** — Every milestone seal and every numeric-output change pays a full baseline run; R14 will force a re-record anyway because it rewrites the config YAMLs the manifest fingerprints, so the slimming is free to land in front of it.
@@ -237,9 +260,13 @@ this same re-record), [[t2608202331]] (the actual lever).
 - [ ] Owner decision on [[t2608202331]] — the ESET/pixi exclusion, worth far
       more than everything below
 - [ ] Decide whether a Wflow sysimage is worth boarding (P3-3 ranked it -39%)
-- [ ] Edit `run_length` and `horizontime_climate` plus the coupled
-      `future_horizons.far` — **riding along with the re-record R14 forces**,
-      not as a standalone gate; the payback is 10-25 gates otherwise
-- [ ] Re-record from the primary, WF1 with `--notemp`
-- [ ] Correct `dev/reference/validation-ladder.md` and `AGENTS.md`, including
-      the falsified "~2.6x / ~1.7x" claim
+- [x] Edit the window and the coupled horizon — landed 2026-09-07 (`241e1a79`)
+      as `simulation_window: 2046-2054` + `future_windows` `mid`, on both twins.
+      One key, not two: `C-67` folded the old pair into `simulation_window.end`
+- [ ] Re-record from the primary, WF1 with `--notemp` — **not done, and not to
+      be done for this item alone.** Fold it into the next re-record that
+      happens for another reason
+- [x] Correct `dev/reference/validation-ladder.md`, including the falsified
+      "~2.6x / ~1.7x" claim. `AGENTS.md` needed no correction — its config
+      paragraph carries no measured numbers — but both it and the ladder gained
+      the note that the manifest is intentionally behind the config

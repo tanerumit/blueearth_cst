@@ -165,6 +165,59 @@ def test_snakefile_cli_build_model_linux_config():
     assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
 
 
+def test_the_linux_baseline_set_is_a_twin_of_the_windows_one():
+    """One `baseline` name, one experiment — the ratchet for `t2608241414`.
+
+    The two sets had drifted on NINE keys across four files while the Linux
+    project file's header claimed they were the same basin: the resolution
+    (0.0062475 against 0.00833), the historical window (21 years against 17),
+    the emitted variables, the output locations and observed series (unset
+    against the tracked CSVs), the wf1 engine block (absent), one of the three
+    CMIP6 models, the reference window, the future horizons (near+far against
+    far), and the WF3 simulation window — which sat inside the Linux set's
+    `near` horizon while the Windows one sat inside its `far`.
+
+    Nothing caught it because nothing compared them. End-to-end validation on
+    Linux is deferred, so this set's whole obligation is to parse cleanly and to
+    stay a twin, and any cross-platform reading of baseline numbers is unsound
+    the moment it is not one.
+
+    Compared as PARSED documents, not as text, so a comment or a key reordering
+    is free while a value change is not.
+    """
+    import copy
+
+    def _load(name):
+        path = Path(SNAKEDIR, "test_case", name)
+        return yaml.safe_load(path.read_text(encoding="utf-8"))
+
+    # The three keys that MUST differ, and the only ones. `project_dir` and
+    # `catalog` are the reason the Linux set exists; `config_path` names the
+    # sibling files, which are different files by construction.
+    windows = _load("project_config_baseline.yml")
+    linux = _load("project_config_baseline_linux.yml")
+    for doc in (windows, linux):
+        doc["project"].pop("project_dir")
+        doc["project"].pop("catalog")
+        for stanza in doc["workflows"].values():
+            stanza.pop("config_path", None)
+    assert linux == windows, (
+        "project_config_baseline_linux.yml has drifted from its twin; only "
+        "project.project_dir, project.catalog and the config_path names may "
+        "differ"
+    )
+
+    for workflow in ("build_model", "analyze_projections", "run_stress_test"):
+        a = _load(f"project_config_baseline_{workflow}.yml")
+        b = _load(f"project_config_baseline_linux_{workflow}.yml")
+        assert b == copy.deepcopy(a), (
+            f"project_config_baseline_linux_{workflow}.yml has drifted from "
+            f"project_config_baseline_{workflow}.yml; the two baseline sets "
+            f"describe one experiment and differ only in the project file's "
+            f"paths"
+        )
+
+
 @pytest.mark.workflow_contract
 def test_in_repo_project_dir_warning_reaches_the_stream(tmp_path):
     """O-22 end to end: the parse-time warning is actually surfaced.
@@ -248,12 +301,27 @@ def test_observation_configs_use_yaml_null():
     configs in the wild still carry it. Tolerated on the way in, not emitted on
     the way out.
     """
-    for cfg_path in (config_fn, linux_config_fn):
+    # Checked over EVERY shipped seed plus the fixture, and as a SPELLING rather
+    # than as an absence. It asserted `is None` on two hand-picked configs until
+    # `t2608241414` gave the Linux set a real observations path — at which point
+    # a test whose docstring is about how "not provided" is written started
+    # failing because something WAS provided. The property survives a config
+    # gaining a value; the earlier phrasing did not.
+    # The glob also matches the per-workflow files beside each project file, and
+    # those are not composable entry points — `load_composed_config` refuses one
+    # for declaring no `schema_version`. Selected by CONTENT rather than by a
+    # name pattern, so a seed added with a different suffix is still covered.
+    shipped = [
+        path
+        for path in sorted(Path(SNAKEDIR, "test_case").glob("project_config_*.yml"))
+        if "workflows:" in path.read_text(encoding="utf-8")
+    ]
+    assert shipped, "no shipped seed configs found; this test would pass vacuously"
+    for cfg_path in [Path(config_fn), *shipped]:
         cfg = load_composed_config(cfg_path)
-        basin = cfg["basin"]
         mc = cfg["workflows"]["build_model"]
         values = {
-            "basin.output_locations": basin["output_locations"],
+            "basin.output_locations": cfg["basin"]["output_locations"],
             # `C-56`: a mapping keyed by variable. The property is unchanged --
             # an unset observation is YAML null, not the string "None" -- but
             # it now lives one level down, under the outvar it belongs to.
@@ -262,9 +330,11 @@ def test_observation_configs_use_yaml_null():
             ),
         }
         for key, value in values.items():
-            assert value is None, (
-                f"{cfg_path}:{key} is {value!r}; shipped configs use YAML "
-                f"null, not the legacy 'None' string"
+            assert value is None or (
+                isinstance(value, str) and value.strip().lower() != "none"
+            ), (
+                f"{cfg_path}:{key} is {value!r}; shipped configs spell "
+                f"'not provided' as YAML null, never as the string 'None'"
             )
 
 

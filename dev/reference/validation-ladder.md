@@ -33,11 +33,19 @@ Default to `project_config_rapid.yml`. Reach for `project_config_baseline.yml` o
 | `project_config_baseline.yml` | `test_case/test_local` | recording or checking `dev/baseline/manifest.json`, `tree-check`, a milestone seal, any number you will quote |
 | `project_config_wf2_fast.yml` | `test_case/test_dev` | WF2 code iteration only — 2 series, and it drops `st_0` |
 
-Rapid costs ~2.6× less wflow time (10 members × 9 forcing years, vs 14 × 17) and ~1.7× less weather generation (46 generated years, vs 78). To move the second number, change the END of `simulation_window` rather than its start: `compute_nr_years` anchors the generated series at 2010, so it spans 2010 → `simulation_window.end`. (`C-67` folded the former `horizontime_climate` + `run_length`/2 into that one declared year.)
+**Rapid's advantage is the GRID, not the years.** Both configs now simulate nine years (2046–2054) and generate the same ~44-year series — `t2608222155` moved the baseline off 17 years around 2078 on 2026-09-07. What is left is 10 members against 14: rapid's 2 × 2 grid plus `st_0` against baseline's 2 × 3.
+
+This paragraph claimed "~2.6× less wflow time and ~1.7× less weather generation" until that item MEASURED it, and both halves were wrong. Per-member wflow cost is about `16 s + 0.59 s × simulated years`, so a 17-year member spent about 10 s simulating and about 16 s starting up — the window was worth ~18%, not 50%, and the measured whole-workflow gap was about 1.2×. Weather generation went the other way entirely: rapid's `3.11_generate_weather_realizations` took 45.8 s against baseline's 29.0 s. **The cost here is process startup**, not simulated years: the first member of a batch costs about 80 s more than the rest (Julia JIT plus the cold SBM path), which at three batches plus wf1's standalone run is roughly 320 s — a quarter of the run — spent starting Julia.
+
+To change the generated-series length, change the END of `simulation_window` rather than its start: `compute_nr_years` anchors the series at 2010, so it spans 2010 → `simulation_window.end`. (`C-67` folded the former `horizontime_climate` + `run_length`/2 into that one declared year.) Whatever you set must stay inside a `future_windows` entry in the analyze_projections file — the alignment is computed independently of both keys, so a missed edit misaligns silently.
 
 Rapid is cheap, not narrow. It gets `st_0`, which is what the two class-C month indicators derive from — and since `C-69` every config does, so this is no longer a way a config can quietly give up 2 of 11 `q` metrics — and it keeps two CMIP6 models, since a one-model config never runs the ensemble reduction. A config that gives up coverage must say which, as `wf2_fast` does.
 
 Record the baseline from `project_config_baseline.yml` and nothing else; never point `check_baseline.py` at the rapid tree.
+
+**The baseline manifest is BEHIND the baseline config, on purpose (`t2608222155`).** On 2026-09-07 the baseline set moved to a nine-year `simulation_window` (2046-2054) and the matching `mid` horizon; `dev/baseline/manifest.json` was deliberately NOT re-recorded, because the saving is 4-8% and a re-record costs a full run that repays after 10 to 25 gates.
+
+**A `check` right now PASSES, and that pass means nothing about the current config.** The fixture tree still holds the pre-2026-09-07 run and the manifest was recorded from it, so the two agree with each other and with a config neither reflects. The divergence appears the moment the pipeline is RE-RUN: every wf2 and wf3 numeric target moves — nine simulated years against seventeen, a 44-year generated series against 76, and change factors over `mid: 2046-2054` instead of `far: 2070-2090`. Target PATHS are unchanged, so it reports changed VALUES rather than missing targets. That diff IS the re-record; read it as expected, not as a defect.
 
 ## Read the CI run after you push
 

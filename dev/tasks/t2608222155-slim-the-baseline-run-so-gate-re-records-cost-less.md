@@ -10,6 +10,39 @@ created: 2026-08-22
 updated: 2026-08-23
 ---
 
+> [!done] Config edits LANDED 2026-09-07 at `241e1a79` — manifest deliberately not re-recorded
+> Owner ruling: land the config edits only. Both baseline twins now run
+> `simulation_window: 2046-2054` with the analyze_projections horizon moved onto
+> it as `mid` (was `far: 2070-2090` against a 2070-2086 window). In R14's
+> spellings the note's two knobs are ONE key: `C-67` folded
+> `horizontime_climate` + `run_length`/2 into `simulation_window.end`, and that
+> end year is what sets the generated-series length — 76 years became 44.
+>
+> **`dev/baseline/manifest.json` is now behind the config, on purpose** — and
+> the trap is subtler than it first reads. A `check` today PASSES (verified:
+> 7/7 targets match at `f5d9c929`), because the fixture tree still holds the
+> pre-edit run and the manifest was recorded from it; the two agree with each
+> other and with a config neither reflects. The divergence appears on the next
+> RE-RUN, where every wf2 and wf3 numeric target moves. Target paths are
+> unchanged, so it is changed values rather than missing targets.
+>
+> An earlier revision of this banner, and of the same warning in `AGENTS.md` and
+> the ladder, claimed a check today reports moved rows. It does not — running it
+> is what settled the question, and a warning that is wrong in the direction of
+> "expect noise" is worse than none.
+>
+> Recorded in `AGENTS.md`, `dev/reference/validation-ladder.md` and both config
+> headers so nobody meets it cold.
+>
+> The ladder's falsified cost paragraph is rewritten (it claimed ~2.6x / ~1.7x;
+> measured ~1.2x, with rapid's weather generation actually SLOWER). With both
+> configs on nine years, rapid's remaining advantage is the grid: 10 members
+> against 14 — that sentence in the ladder now says so.
+>
+> **What is left is exactly the two things worth more than this was**, both
+> needing an owner decision rather than a code change. The item stays open for
+> them.
+
 > [!note] Overview
 > **What** — Cut the wall-clock of a full `test_local` baseline run, then re-record `dev/baseline/manifest.json` from the slimmer config.
 > **Why** — Every milestone seal and every numeric-output change pays a full baseline run; R14 will force a re-record anyway because it rewrites the config YAMLs the manifest fingerprints, so the slimming is free to land in front of it.
@@ -220,6 +253,21 @@ say which.*
 `AGENTS.md` section Validation ladder, and the header comments in
 `project_config_baseline*.yml`, which state their own values as reasons.
 
+## The next re-record clears TWO layers, not one
+
+`dev/baseline/manifest.json` was already mixed-provenance before this: wf1 was
+restored at `t260719a` while the wf2 and wf3 rows are pre-restoration. The
+window move stales the wf2/wf3 half a second time, so whoever re-records is
+clearing two layers rather than one, and the diff will be large for reasons
+that have nothing to do with each other.
+
+[[t2608131718]]'s two stale flat config copies come along in the same diff,
+which is fine — that item wants exactly this and nothing else. The weathergenr
+2.0.0 attribution ([[t2608220920]]) is NOT a constraint any more: it closed
+2026-08-25 on commit-level evidence, so the next re-record has one fewer thing
+to sequence around than this item's own "What this discharges" section below
+still implies.
+
 ## What this discharges
 
 - [[t2608220920]] — the indicator baseline predates the weathergenr 2.0.0
@@ -237,9 +285,13 @@ this same re-record), [[t2608202331]] (the actual lever).
 - [ ] Owner decision on [[t2608202331]] — the ESET/pixi exclusion, worth far
       more than everything below
 - [ ] Decide whether a Wflow sysimage is worth boarding (P3-3 ranked it -39%)
-- [ ] Edit `run_length` and `horizontime_climate` plus the coupled
-      `future_horizons.far` — **riding along with the re-record R14 forces**,
-      not as a standalone gate; the payback is 10-25 gates otherwise
-- [ ] Re-record from the primary, WF1 with `--notemp`
-- [ ] Correct `dev/reference/validation-ladder.md` and `AGENTS.md`, including
-      the falsified "~2.6x / ~1.7x" claim
+- [x] Edit the window and the coupled horizon — landed 2026-09-07 (`241e1a79`)
+      as `simulation_window: 2046-2054` + `future_windows` `mid`, on both twins.
+      One key, not two: `C-67` folded the old pair into `simulation_window.end`
+- [ ] Re-record from the primary, WF1 with `--notemp` — **not done, and not to
+      be done for this item alone.** Fold it into the next re-record that
+      happens for another reason
+- [x] Correct `dev/reference/validation-ladder.md`, including the falsified
+      "~2.6x / ~1.7x" claim. `AGENTS.md` needed no correction — its config
+      paragraph carries no measured numbers — but both it and the ladder gained
+      the note that the manifest is intentionally behind the config

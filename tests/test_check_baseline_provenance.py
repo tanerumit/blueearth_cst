@@ -13,6 +13,7 @@ reference; only a byte-size mismatch at the R07 gate forced the question
 misattribution visible instead of silent.
 """
 
+import argparse
 import json
 import subprocess
 import sys
@@ -133,3 +134,70 @@ def test_matching_provenance_is_quiet(tmp_path, capsys):
     cb.cmd_check(_check(m, tmp_path))
     out = capsys.readouterr().out
     assert "WARNING" not in out and "predates" not in out
+
+
+# --- the flag must describe the checkout, not this command's own output -------
+
+
+def test_provenance_is_captured_before_record_writes_anything(monkeypatch, tmp_path):
+    """`record` writes the TRACKED sidecar reference tables while fingerprinting.
+
+    Reading provenance afterwards made `dirty` describe this command's own
+    output: R13's pass-1 re-record stamped `dirty: true` from a clean checkout
+    detached at 9cbb72a, with a porcelain status containing only the
+    `dev/baseline/indicator_ref/*.csv` that `record` had just written. Pass 2
+    rewrote no sidecar and stamped `false` from a checkout in the same
+    condition — the control case, unplanned.
+
+    The ordering IS the fix, so the ordering is what this pins. A test on the
+    flag's value alone would pass against the broken version on any checkout
+    that happened to be dirty already.
+    """
+    calls = []
+
+    monkeypatch.setattr(
+        cb, "git_provenance", lambda *a, **k: calls.append("provenance") or {}
+    )
+    monkeypatch.setattr(
+        cb,
+        "compute_manifest",
+        lambda *a, **k: (calls.append("fingerprint") or {}, []),
+    )
+    monkeypatch.setattr(
+        cb,
+        "record_discharge",
+        lambda *a, **k: (calls.append("write discharge sidecar") or {}, []),
+    )
+    monkeypatch.setattr(
+        cb,
+        "record_indicator",
+        lambda *a, **k: (calls.append("write indicator sidecar") or {}, []),
+    )
+
+    args = argparse.Namespace(
+        workflow=None,
+        manifest=tmp_path / "manifest.json",
+        project_dir=str(tmp_path / "project"),
+    )
+    assert cb.cmd_record(args) == 0
+    assert calls[0] == "provenance", calls
+
+
+def test_the_recorded_flag_is_the_one_that_was_captured(monkeypatch, tmp_path):
+    """Not a tautology: it pins that the captured value REACHES the payload,
+    which a fix that captured early and then called `git_provenance()` again in
+    the payload would fail."""
+    stamp = {"branch": "b", "commit": "c" * 12, "dirty": False}
+    monkeypatch.setattr(cb, "git_provenance", lambda *a, **k: stamp)
+    monkeypatch.setattr(cb, "compute_manifest", lambda *a, **k: ({}, []))
+    monkeypatch.setattr(cb, "record_discharge", lambda *a, **k: ({}, []))
+    monkeypatch.setattr(cb, "record_indicator", lambda *a, **k: ({}, []))
+
+    args = argparse.Namespace(
+        workflow=None,
+        manifest=tmp_path / "manifest.json",
+        project_dir=str(tmp_path / "project"),
+    )
+    assert cb.cmd_record(args) == 0
+    written = json.loads((tmp_path / "manifest.json").read_text())
+    assert written["recorded_by"] == stamp

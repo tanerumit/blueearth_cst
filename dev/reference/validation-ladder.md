@@ -43,7 +43,9 @@ Rapid is cheap, not narrow. It gets `st_0`, which is what the two class-C month 
 
 Record the baseline from `project_config_baseline.yml` and nothing else; never point `check_baseline.py` at the rapid tree.
 
-**The baseline manifest is BEHIND the baseline config, on purpose (`t2608222155`).** On 2026-09-07 the baseline set moved to a nine-year `simulation_window` (2046-2054) and the matching `mid` horizon; `dev/baseline/manifest.json` was deliberately NOT re-recorded, because the saving is 4-8% and a re-record costs a full run that repays after 10 to 25 gates. So a `check_baseline.py check` today reports moved rows and that is EXPECTED, not a defect. The values ride the next re-record that happens for another reason; until then, read a baseline diff against that fact first.
+**The baseline manifest is BEHIND the baseline config, on purpose (`t2608222155`).** On 2026-09-07 the baseline set moved to a nine-year `simulation_window` (2046-2054) and the matching `mid` horizon; `dev/baseline/manifest.json` was deliberately NOT re-recorded, because the saving is 4-8% and a re-record costs a full run that repays after 10 to 25 gates.
+
+**A `check` right now PASSES, and that pass means nothing about the current config.** The fixture tree still holds the pre-2026-09-07 run and the manifest was recorded from it, so the two agree with each other and with a config neither reflects. The divergence appears the moment the pipeline is RE-RUN: every wf2 and wf3 numeric target moves — nine simulated years against seventeen, a 44-year generated series against 76, and change factors over `mid: 2046-2054` instead of `far: 2070-2090`. Target PATHS are unchanged, so it reports changed VALUES rather than missing targets. That diff IS the re-record; read it as expected, not as a defect.
 
 ## Read the CI run after you push
 

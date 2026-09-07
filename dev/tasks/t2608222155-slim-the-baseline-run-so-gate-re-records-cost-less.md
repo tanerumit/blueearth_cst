@@ -18,9 +18,19 @@ updated: 2026-08-23
 > `horizontime_climate` + `run_length`/2 into `simulation_window.end`, and that
 > end year is what sets the generated-series length — 76 years became 44.
 >
-> **`dev/baseline/manifest.json` is now behind the config, on purpose.** A
-> `check_baseline.py check` reports moved rows and that is expected, not a
-> defect; the values ride the next re-record that happens for another reason.
+> **`dev/baseline/manifest.json` is now behind the config, on purpose** — and
+> the trap is subtler than it first reads. A `check` today PASSES (verified:
+> 7/7 targets match at `f5d9c929`), because the fixture tree still holds the
+> pre-edit run and the manifest was recorded from it; the two agree with each
+> other and with a config neither reflects. The divergence appears on the next
+> RE-RUN, where every wf2 and wf3 numeric target moves. Target paths are
+> unchanged, so it is changed values rather than missing targets.
+>
+> An earlier revision of this banner, and of the same warning in `AGENTS.md` and
+> the ladder, claimed a check today reports moved rows. It does not — running it
+> is what settled the question, and a warning that is wrong in the direction of
+> "expect noise" is worse than none.
+>
 > Recorded in `AGENTS.md`, `dev/reference/validation-ladder.md` and both config
 > headers so nobody meets it cold.
 >
@@ -242,6 +252,21 @@ say which.*
 "78 years", "17 calendar years", and the falsified "~2.6x / ~1.7x" claim),
 `AGENTS.md` section Validation ladder, and the header comments in
 `project_config_baseline*.yml`, which state their own values as reasons.
+
+## The next re-record clears TWO layers, not one
+
+`dev/baseline/manifest.json` was already mixed-provenance before this: wf1 was
+restored at `t260719a` while the wf2 and wf3 rows are pre-restoration. The
+window move stales the wf2/wf3 half a second time, so whoever re-records is
+clearing two layers rather than one, and the diff will be large for reasons
+that have nothing to do with each other.
+
+[[t2608131718]]'s two stale flat config copies come along in the same diff,
+which is fine — that item wants exactly this and nothing else. The weathergenr
+2.0.0 attribution ([[t2608220920]]) is NOT a constraint any more: it closed
+2026-08-25 on commit-level evidence, so the next re-record has one fewer thing
+to sequence around than this item's own "What this discharges" section below
+still implies.
 
 ## What this discharges
 

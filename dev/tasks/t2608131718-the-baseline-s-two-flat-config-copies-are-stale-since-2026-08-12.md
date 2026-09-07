@@ -7,6 +7,14 @@ created: 2026-08-13
 updated: 2026-08-13
 ---
 
+> [!info] 2026-09-07 — the re-record this waits for got further away, and larger
+> [[t2608222155]] landed the baseline window edits at `241e1a79` WITHOUT a
+> re-record (owner ruling: config edits only). So the copies stay stale, and the
+> re-record that eventually clears them will also carry a nine-year
+> `simulation_window` against seventeen and a `mid` horizon against `far` —
+> every wf2 and wf3 numeric target. Read that diff as two unrelated causes in
+> one pass rather than as one large surprise.
+
 > [!note] Overview
 > **What** — `dev/baseline/manifest.json` records both flat config copies at the
 > hash they had on 2026-08-12. Three commits have changed the source config

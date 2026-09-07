@@ -1097,6 +1097,25 @@ def cmd_record(args: argparse.Namespace) -> int:
     selected = set(args.workflow) if getattr(args, "workflow", None) else None
     ref_dir = args.manifest.parent
 
+    # BEFORE any fingerprinting, because fingerprinting WRITES. The sidecar
+    # reference tables under `dev/baseline/` are tracked, so by the time the
+    # payload is built `git status --porcelain` is non-empty with this command's
+    # own output and `dirty` reads true on a checkout that was clean.
+    #
+    # Measured, not reasoned: R13's pass-1 re-record (primary detached at
+    # 9cbb72a, clean tree) recorded `dirty: true` with a porcelain status
+    # containing only ` M dev/baseline/indicator_ref/74ed83c06b2e7e6c.csv`,
+    # which `record` had just written. Pass 2 moved three config snapshots but
+    # no data target, rewrote no sidecar, and recorded `dirty: false` from a
+    # checkout in the same condition -- an unplanned control case.
+    #
+    # The flag misfired precisely when a re-record CHANGED values, which is the
+    # case it exists to annotate, so "the code matches no commit" became
+    # indistinguishable from "a reference table moved". Capturing first is also
+    # the more honest reading: the question is what the checkout was when the
+    # run happened, not what this command left behind.
+    recorded_by = git_provenance()
+
     manifest, missing = compute_manifest(
         args.project_dir, workflows=selected, include_figures=_want_figures(args)
     )
@@ -1142,8 +1161,10 @@ def cmd_record(args: argparse.Namespace) -> int:
         "project_dir": args.project_dir,
         # R7-21: who wrote this. The fixture is branch-shared mutable state, so
         # without provenance a later `check` cannot tell "my code drifted" from
-        # "another branch last wrote this tree".
-        "recorded_by": git_provenance(),
+        # "another branch last wrote this tree". Captured at the TOP of this
+        # function, before the sidecars this command writes could dirty the
+        # tree it is reporting on.
+        "recorded_by": recorded_by,
         "targets": targets,
     }
     args.manifest.parent.mkdir(parents=True, exist_ok=True)

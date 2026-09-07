@@ -4,8 +4,8 @@ target-repo: blueearth_cst
 genre: workflow-spec
 author-binding: cst-architect
 started: 2026-09-06
-variant: lean
-stage: 1b-domain-review
+variant: full
+stage: G1
 external-rounds-completed: 0
 dispatches:
   opus: 2
@@ -13,7 +13,7 @@ dispatches:
 gates:
   G1: pending
   G2: pending
-flags: [intake-in-place, methodology-emphasis]
+flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full]
 ---
 
 ## Run configuration
@@ -102,8 +102,18 @@ brief names that path.
 - [done] 1-draft — `cst-architect`, Opus — outputs: `design-v1.md` (1565 lines,
   11 sections, 10 alternatives). Structural checks pass. The draft reports four
   intake/repo defects; the driver verified two of them directly (see below).
-- [open] 1b-domain-review — `model-validator` + `claim-evaluation`, **Fable**;
-  expected output: `internal-review-domain.md`
+- [done] 1b-domain-review — `model-validator` + `claim-evaluation`, **Fable** —
+  outputs: `internal-review-domain.md`. Verdict **revise**: 1 blocking, 6 major,
+  3 minor. Evidence register dispositioned E1..E20; **E12 and E13 contested**,
+  E18/E19 `untestable as stated`.
+  **PROMOTION lean -> full** fires here on the first `blocking` finding
+  (`stage-contracts.md` § Default and full panels): external cap lifts to 2, and
+  the stage-2 panel gains the architecture lens. Per the owner's emphasis
+  directive the repo-fit lens is held back unless a finding requires it —
+  `domain-5` (the baseline gate is structurally unable to check this change) is
+  the candidate that may force it.
+- [open] G1 — human gate, framing. Three framing-level findings go to the owner:
+  domain-1 (blocking), domain-2, domain-3.
   - attempt 1 **FAILED 2026-09-07 00:17** — HTTP 429, session limit, reset
     03:30 Europe/Istanbul. Classified **resource exhaustion**, not retryable
     transport (`roles-and-recovery.md` § Classifying a failed spawn). Left a
@@ -137,3 +147,34 @@ conditions, not regressions this design introduces**:
 Unverified as yet, carried to G1 as the draft's claims rather than the driver's:
 the nine-clause recount (gap 7), and the seam-spec insufficiency (which
 `probe-p1-p2.md` measured directly).
+
+## Driver premise verification — domain-1 (blocking), 2026-09-07
+
+Checked before the gate, because the owner rules on this one.
+
+**The lens's premise is CONFIRMED in code.**
+
+- The Class-C month is fixed **once, globally**, outside the member loop, from
+  the `st_0` baseline: `export_wflow_results.py:361-364`
+  (`if q_locations and 0 in runs:` -> `_category_month(baseline, "wet"/"dry")`).
+  The design's stated reason for Class C's bundle grain — *"different
+  realizations select different months"* — describes a mechanism **that does not
+  exist in the code**.
+- The Class-C value is `_month_mean(pooled, month, anchor)` over
+  `pooled = pd.concat(per_rlz.values())` (`:431-441`), and `_month_mean` is
+  `frame[frame.index.month == month].resample(anchor).mean().mean()`
+  (`:173-175`) — filter to the month, mean per water year, mean over years.
+- That is the same "annual statistic, then mean over years" structure the code
+  itself cites to keep Class A per-realization: *"Linear in years, so the finer
+  grain averages back to the pooled value exactly and nothing is lost"*
+  (`:384-385`). For equal-length realizations on one calendar the pooled
+  Class-C value is therefore exactly the mean of the per-realization values, so
+  a **per-run grain both exists and is finer**.
+
+**Pre-existing condition or regression?** Mixed, and the distinction matters at
+the gate. The *behaviour* is pre-existing — Class C emits `POOLED_REALIZATION`
+today (`:441`). What `design-v1.md` would add is the **justification**, pinned
+into HM-7's normative surface and `unit_index` invariant 5, where an out-of-repo
+consumer re-implements from it. So the design does not introduce a wrong number;
+it would entrench a wrong reason and permanently discard recoverable
+per-realization spread for two metrics.

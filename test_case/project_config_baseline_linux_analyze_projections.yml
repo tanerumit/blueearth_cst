@@ -21,7 +21,12 @@ variables:
 reference_window:
   start: 2000
   end: 2014
+# Same years as the stress test's `simulation_window`, so the projections land
+# on the period the stress test simulates. Moved with it on 2026-09-07
+# (`t2608222155`); the horizon was `far: 2070-2090` while the window was
+# 2070-2086. The alignment is computed independently of these keys, so a missed
+# edit here misaligns SILENTLY.
 future_windows:
-- start: 2070
-  end: 2090
-  name: far
+- start: 2046
+  end: 2054
+  name: mid

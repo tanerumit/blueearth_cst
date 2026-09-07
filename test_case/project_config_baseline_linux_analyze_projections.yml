@@ -1,11 +1,12 @@
-# analyze_projections (wf2) -- baseline linux set
+# analyze_projections (wf2) -- baseline linux set. A twin of the non-linux
+# file; see the header of `project_config_baseline_linux.yml`.
 
 catalog: config/catalogs/cmip6_data.yml
 ensemble: cmip6
 
 models:
 - NOAA-GFDL/GFDL-ESM4
-- CMCC/CMCC-ESM2
+- INM/INM-CM4-8
 - INM/INM-CM5-0
 scenarios: [ssp245, ssp585]
 members:
@@ -16,13 +17,11 @@ variables:
   precip: {source: precip, canonical: rate, units: mm/day, change: relative}
   temp: {source: temp, canonical: state, units: degC, change: absolute}
 
+# Ends 2014, where the CMIP6 historical runs stop.
 reference_window:
-  start: 1980
-  end: 2010
+  start: 2000
+  end: 2014
 future_windows:
-- start: 2030
-  end: 2060
-  name: near
 - start: 2070
-  end: 2100
+  end: 2090
   name: far

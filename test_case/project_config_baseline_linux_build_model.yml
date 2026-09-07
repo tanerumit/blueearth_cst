@@ -1,5 +1,9 @@
-# build_model (wf1) -- baseline linux set
+# build_model (wf1) -- baseline linux set. A twin of the non-linux file; see
+# the header of `project_config_baseline_linux.yml`.
 
-# No observed series. To add one, key it by a variable in `model.outvars`
-# and set `basin.output_locations` in the project file.
+engine:
+  build_config: config/defaults/wflow_build_model.yml
+  waterbodies_config: config/defaults/wflow_update_waterbodies.yml
+
 observations:
+  river discharge: test_case/test_data/observations_timeseries.csv

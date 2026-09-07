@@ -1,11 +1,13 @@
-# run_stress_test (wf3) -- baseline linux set
+# run_stress_test (wf3) -- baseline linux set. A twin of the non-linux file;
+# see the header of `project_config_baseline_linux.yml`.
 
 experiment_name: experiment
 n_realizations: 2
 
+# Seventeen years around 2078, inside the far horizon of analyze_projections.
 simulation_window:
-  start: 2040
-  end: 2060
+  start: 2070
+  end: 2086
 
 climate_perturbations:
   temp:

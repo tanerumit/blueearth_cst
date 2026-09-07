@@ -5,11 +5,11 @@ genre: workflow-spec
 author-binding: cst-architect
 started: 2026-09-06
 variant: lean
-stage: 1-draft
+stage: 1b-domain-review
 external-rounds-completed: 0
 dispatches:
-  opus: 1
-  fable: 0
+  opus: 2
+  fable: 1
 gates:
   G1: pending
   G2: pending
@@ -99,4 +99,41 @@ brief names that path.
   Two results bind the draft: the intake's 1→2 seam spec is falsified as written,
   and the in-file claim at `run_stress_test.smk:1015` is a false negative on a
   seeded dry-run. `probe-p1-p2.md` joins the author input set.
-- [open] 1-draft — `cst-architect`, Opus; expected output: `design-v1.md`
+- [done] 1-draft — `cst-architect`, Opus — outputs: `design-v1.md` (1565 lines,
+  11 sections, 10 alternatives). Structural checks pass. The draft reports four
+  intake/repo defects; the driver verified two of them directly (see below).
+- [open] 1b-domain-review — `model-validator` + `claim-evaluation`, **Fable**;
+  expected output: `internal-review-domain.md`
+  - attempt 1 **FAILED 2026-09-07 00:17** — HTTP 429, session limit, reset
+    03:30 Europe/Istanbul. Classified **resource exhaustion**, not retryable
+    transport (`roles-and-recovery.md` § Classifying a failed spawn). Left a
+    complete 889-byte section skeleton, zero content.
+  - attempt 2 dispatched 04:09 Istanbul, **after the named reset time had
+    passed** — so the rung's "wait for the limit to clear" is satisfied, not
+    bypassed. Briefed to **resume the partial in place**: fill the existing
+    skeleton, do not restructure it. See `observations.md`.
+
+## Driver premise verification — 2026-09-07
+
+Two of the draft's four reported input defects, checked against the repo before
+they reach G1 as claims. Both **confirmed**, and both are **pre-existing
+conditions, not regressions this design introduces**:
+
+- **E13 mis-attributes the member naming pattern.** The intake's evidence
+  register cites it as WG-2 at `weather-generator-seam.md:238-245`. Line 238 sits
+  under `## WG-4 — generator output netCDFs` (heading at `:226`); WG-2 begins at
+  `:110` and is the *perturbation grid*, whose artifact is
+  `stress_test_lookup.csv` per the validator table at `:386`. The clause belongs
+  to WG-4. Consequence: the intake's scope gap 7 ("three contract clauses
+  change") is counting the wrong ones.
+- **HM-7's contract document is stale against its own validator.**
+  `hydrological-model-seam.md:310-319` pins "exactly seven columns, in this
+  order: metric, location, st_id, rlz_id, temp_change, precip_change, value".
+  `interchange_contracts.py:842` asserts five —
+  `metric, location, st_id, rlz_id, value` — and its own docstring at `:843-850`
+  narrates the axis columns being removed. The doc did not follow. **Independent
+  of this design**, and live today.
+
+Unverified as yet, carried to G1 as the draft's claims rather than the driver's:
+the nine-clause recount (gap 7), and the seam-spec insufficiency (which
+`probe-p1-p2.md` measured directly).

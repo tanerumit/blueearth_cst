@@ -5,10 +5,10 @@ genre: workflow-spec
 author-binding: cst-architect
 started: 2026-09-06
 variant: full
-stage: 2-internal-panel
+stage: G1-return
 external-rounds-completed: 0
 dispatches:
-  opus: 2
+  opus: 4
   fable: 1
 gates:
   G1: approved 2026-09-07
@@ -116,8 +116,19 @@ brief names that path.
   criteria stand as the intake declares them; the provisional alternative (the
   three-stage decomposition with a family-blind seam) is approved. All three
   framing-level domain findings ruled **with the lens** — R-1..R-4 below.
-- [open] 2-internal-panel — promoted shape: `critical-thinker` (risk) +
-  `cst-architect` (architecture), both Opus, on `design-v1.md`.
+- [done] 2-internal-panel — `critical-thinker` (risk) + `cst-architect`
+  (architecture), both Opus — outputs: `internal-review-risk.md` (revise; 6
+  major, 5 minor), `internal-review-architecture.md` (revise; 7 major, 3 minor),
+  `internal-review-index.md`. **31 findings across three lenses: 1 blocking, 19
+  major, 11 minor.**
+  The risk lens died on a session limit (HTTP 429, reset 12:00 Europe/Istanbul)
+  **after** writing its complete file and before returning its summary — the
+  write-then-mark case in `run-artifacts.md`. Artifact verified complete on disk
+  (11 findings, closing section present, verdict consistent), so it was accepted
+  rather than re-dispatched. No dispatch spent.
+- [open] G1-return — the panel's findings admit scope-divergent resolutions on
+  two points (`risk-6`/C-3 and `risk-3`); returning to the gate before spending
+  the revision, per `stage-contracts.md` § Gate return from the panel.
   - attempt 1 **FAILED 2026-09-07 00:17** — HTTP 429, session limit, reset
     03:30 Europe/Istanbul. Classified **resource exhaustion**, not retryable
     transport (`roles-and-recovery.md` § Classifying a failed spawn). Left a

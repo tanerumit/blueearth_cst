@@ -12,16 +12,18 @@ dispatches:
   fable: 1
   codex-cst-architect: 1
 gates:
-  G1: scope expansion approved 2026-09-09; revised design and domain review pending
+  G1: adapter and two-workflow scope expansions approved 2026-09-09; revised design and domain review pending
   G2: pending
-flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full, domain-7-needs-G2-ratification, adapter-scope-expanded]
+flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full, domain-7-needs-G2-ratification, adapter-scope-expanded, two-workflow-destination]
 ---
 
 ## Run configuration
 
 **Current scope authority:** the frozen intake below, R-1..R-6 in this record,
-and `scope-expansion-2026-09-09.md`. The owner approved broader simulator-adapter
-boundaries on 2026-09-09. `design-v2.md` remains the latest authored design; it
+and `scope-expansion-2026-09-09.md` (addendum v2). The owner approved broader
+simulator-adapter boundaries and then two independently runnable workflows on
+2026-09-09. The addendum supersedes the frozen intake's deferred workflow split;
+R-1..R-6 remain in force. `design-v2.md` remains the latest authored design; it
 has **not** incorporated this expansion. Do not resume external round 1 against
 v2 as though it covered the expanded scope. The next author revision must
 integrate the addendum and the P3/P4/P5 corrections recorded below, followed by
@@ -84,6 +86,37 @@ the author owns only the new addendum. No nested delegation.
 Rebased the clean, local branch onto `main` on 2026-09-09 without conflicts;
 `git diff --check` passed before editing. This is a deliberate feature branch;
 the scope record is committed here and the unfinished design run remains open.
+
+## Further scope expansion — two workflows, 2026-09-09
+
+Owner, verbatim, after the proposal for two independently runnable workflows
+with three logical stages and contract extraction before entry-point extraction:
+
+> yes, lets expand it in this direction
+
+**Approved destination:** scenario generation produces a durable scenario
+collection; impact simulation consumes it independently and exposes metrics as
+an independently targetable third stage. Metrics initially remain within impact
+simulation, without a third workflow entry point. The earlier approval of
+adapters inside one WF3 becomes the intermediate implementation step, rather
+than the final architecture. The intake and v2 remain untouched historical inputs.
+
+**New obligations:** readiness and identity of the scenario collection; paths,
+retention, cleanup ownership, and stale-input detection; independent prerequisites;
+retained response inputs for metrics-only execution; and migration of the runner,
+config composition, workflow names, tests, and live user references. The wider
+execution-control system remains out of scope, but these handoff requirements do
+not. See addendum v2 §§3, 4.7, 7, and 8 for the concrete scope and falsifiers.
+
+**Sequence:** specify the handoff and independent-execution contracts, establish
+and test them within existing WF3, then extract the two entry points. No code,
+entry-point name, or config schema is selected or changed by this scope record.
+No production second backend or third metrics workflow is authorized.
+
+**Run state:** scope approval is recorded; successor design and refreshed domain
+review remain pending. External rounds completed remains zero. This bounded
+follow-up updates the scope record inline; no additional author/reviewer dispatch
+or completed review is claimed. Existing R-1..R-6 and their review history stand.
 
 ## Owner emphasis directive — 2026-09-06
 

@@ -5,18 +5,28 @@ genre: workflow-spec
 author-binding: cst-architect
 started: 2026-09-06
 variant: full
-stage: 4-external-r1
+stage: scope-expansion-recorded-awaiting-revision
 external-rounds-completed: 0
 dispatches:
   opus: 6
   fable: 1
+  codex-cst-architect: 1
 gates:
-  G1: approved 2026-09-07; returned+re-approved 2026-09-07 (panel scope divergence)
+  G1: scope expansion approved 2026-09-09; revised design and domain review pending
   G2: pending
-flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full, domain-7-needs-G2-ratification]
+flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full, domain-7-needs-G2-ratification, adapter-scope-expanded]
 ---
 
 ## Run configuration
+
+**Current scope authority:** the frozen intake below, R-1..R-6 in this record,
+and `scope-expansion-2026-09-09.md`. The owner approved broader simulator-adapter
+boundaries on 2026-09-09. `design-v2.md` remains the latest authored design; it
+has **not** incorporated this expansion. Do not resume external round 1 against
+v2 as though it covered the expanded scope. The next author revision must
+integrate the addendum and the P3/P4/P5 corrections recorded below, followed by
+domain review of the changed contract before presenting the revised framing.
+Prior reviews and ledger dispositions remain evidence about their named versions.
 
 **Intake is NOT copied into this run dir.** It lives at
 `dev/milestones/r12/simulation-identity-intake.md` — already committed at the
@@ -41,6 +51,39 @@ the domain-referee lens set.
 **No seed.** The intake § Seeding rules it: a fresh draft from the intake plus two
 named inputs (`wf3-experiment-v2-design-review-record.md`, and `design-v4.md`
 §3.1/§5.1 at tag `archive/wf3-experiment-v2` as *input, not starting point*).
+
+## Scope expansion — owner approval, 2026-09-09
+
+Owner, verbatim, after the proposal to broaden R12 to simulator adapters while
+retaining the stochastic generator and Wflow as the production implementations:
+
+> yes, lets broaden to cover as you describe
+
+The approved direction is **explicit adapters inside the existing WF3**:
+scenario generation; simulator-owned forcing preparation, execution and native
+output interpretation; a response-series interface for metrics; compatibility
+validation; and synthetic substitution tests. The scope and revision handoff are
+recorded in `scope-expansion-2026-09-09.md`. This approval authorizes the expanded
+scope, not an unreviewed implementation or acceptance of a future design version.
+R-1..R-6 remain in force. The existing `run_id` / `unit_id` distinction in v2
+already addresses the neutral-name concern in the proposal; no new rename is
+authorized by that concern alone.
+
+**Run transition:** return from the paused external round to scope reconciliation.
+External rounds completed remains zero. Next: author a self-contained successor
+to v2, refresh the changed domain review, and present its concrete framing before
+resuming external review. No previous review covers the adapter expansion.
+
+**Dispatch:** one fresh `cst_architect` author for the bounded scope addendum,
+using the registered Codex role (`gpt-5.6-sol`, high). Historical Opus/Fable counts
+are preserved; this dispatch is counted separately. The former provider's tier
+names are unavailable in this runtime. The driver owns status and reconciliation;
+the author owns only the new addendum. No nested delegation.
+
+**Workspace:** session-3, `feat/wp3-improvements`, advisory occupied slot.
+Rebased the clean, local branch onto `main` on 2026-09-09 without conflicts;
+`git diff --check` passed before editing. This is a deliberate feature branch;
+the scope record is committed here and the unfinished design run remains open.
 
 ## Owner emphasis directive — 2026-09-06
 

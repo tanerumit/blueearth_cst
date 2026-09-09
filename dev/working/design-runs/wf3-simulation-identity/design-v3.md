@@ -57,11 +57,11 @@ different grains, with pooled rows represented by `POOLED_REALIZATION = 0` in a
 column otherwise holding a realization id. [cited: `export_wflow_results.py`,
 `indicator_tables.py`]
 
-E18, the premise that a second scenario family cannot honestly use `(rlz, st)`,
+E18, the premise that a second scenario type cannot honestly use `(rlz, st)`,
 is confirmed by `candidate-family-schema.md`. A numerically rectangular GCM set
 still fails semantically: `st_id` is a foreign key to the stochastic perturbation
 lookup and `rlz` asserts common-random-number pairing that a GCM label does not
-carry. This design does not build that family; the paper schema only establishes
+carry. This design does not build that scenario type; the paper schema only establishes
 that a neutral run identity is warranted.
 
 The approved destination is now **two independently runnable workflows and
@@ -86,7 +86,7 @@ generate_scenarios.smk                         simulate_system.smk
 Its user-facing name is **Simulate system behavior**: it simulates long-term
 system behavior under perturbed climate scenarios, with terminology that also
 accommodates future non-climate scenarios. This naming does not expand the
-production backends or scenario families authorized by this design.
+production backends or scenario types authorized by this design.
 Its `metrics` target can recompute metrics from retained responses without
 invoking Wflow. These names are selected proposals and are migration surfaces,
 not descriptions of current files.
@@ -102,9 +102,9 @@ workflow. No projection product selects, constrains, or drives a scenario run.
 
 1. Replace filename-parsed `(rlz, st)` with sequential `run_id` handles scoped
    to an immutable scenario collection.
-2. Make the system simulator family-blind: it consumes an identified forcing
+2. Make the system simulator independent of scenario type: it consumes an identified forcing
    record, a built model, and result-affecting settings, without receiving
-   `rlz`, `st_id`, unperturbed-case flags, or a family payload.
+   `rlz`, `st_id`, unperturbed-case flags, or a scenario type payload.
 3. Retain `run_id` for runs and `unit_id` for run-or-bundle metric units, with
    one mixed sequence, one width, and an explicit index that gives every unit's
    membership.
@@ -128,9 +128,9 @@ workflow. No projection product selects, constrains, or drives a scenario run.
 | ID | Constraint | Consequence here |
 |---|---|---|
 | S1 | Three stages and three contracts; no one table solves all three | Scenario table, response inventory, and unit index remain distinct |
-| S2 | Simulator sees the built model and run list, never family columns | The collection consumer view excludes the family block and derivation edges |
+| S2 | Simulator sees the built model and run list, never scenario type columns | The collection consumer view excludes the scenario type block and derivation edges |
 | S3 | Bundling belongs to metrics | Bundle declarations and membership exist only in stage 3 |
-| S4 | Build for the current bottom-up assessment | Only the stochastic family is implemented in production |
+| S4 | Build for the current bottom-up assessment | Only the stochastic scenario type is implemented in production |
 | S5 | Perturbations are scenario-neutral stochastic forcing | `weathergenr` remains the production generator |
 | S6 | CMIP6 is a terminal plausibility overlay | `analyze_projections` has no outgoing edge into generation or simulation |
 | S7 | No local calibration | Stage 2 consumes the model WF1 built from global data |
@@ -174,7 +174,8 @@ retired config key. [cited: `config_composition.py`, `run_stress_test.smk`]
 
 | term | meaning in this design |
 |---|---|
-| scenario | One fully specified forcing case, including its realization and perturbation for the stochastic family; not just a design point. Today's generated scenarios are climate scenarios. |
+| scenario | One fully specified forcing case, including its realization and perturbation for the stochastic scenario type; not just a design point. Today's generated scenarios are climate scenarios. |
+| scenario type / `scenario_type` | Classification that selects scenario construction and interpretation rules; currently `stochastic`. Each collection contains exactly one scenario type. |
 | scenario collection | The durable set of scenario records, forcing artifacts, and provenance published by stage 1. |
 | design point | One prescribed perturbation combination, shared across stochastic realizations. |
 | realization | One stochastic weather draw; its perturbed descendants retain that draw's identity and pairing. |
@@ -316,7 +317,7 @@ route demonstrates boundary neutrality, not a supported backend.
 1. One scenario-table row is one potential simulation run.
 2. `run_id` has no embedded feature and is meaningful only inside its collection.
 3. Simulation rules address scenarios only by `run_id`; no simulator rule reads the
-   family block or `derived_from`.
+   scenario type block or `derived_from`.
 4. The scenario collection is immutable after its ready manifest is published.
 5. A consumer records both `collection_id` and `collection_revision` and verifies
    both before using a byte.
@@ -338,7 +339,7 @@ route demonstrates boundary neutrality, not a supported backend.
 
 **Artifact:** `<collection>/scenario_table.csv`. UTF-8, LF, comma-separated,
 header present, no index column. Id columns are read as text in every language.
-One table carries exactly one scenario family.
+One table carries exactly one scenario type.
 
 **Universal core, exactly and in order:**
 
@@ -353,20 +354,20 @@ same table; self-reference, cycles, and missing ancestors are refused before the
 generation DAG is built. Empty does not mean unperturbed. It means only that this
 row has no in-collection forcing ancestor.
 
-After the core comes the labelled family block. The first column is
-`scenario_family`, and the remaining names are registered by the provider. The
+After the core comes the labelled scenario type block. The first column is
+`scenario_type`, and the remaining names are registered by the provider. The
 current production block is:
 
 | column | type | meaning |
 |---|---|---|
-| `scenario_family` | text | literal `stochastic` |
+| `scenario_type` | text | literal `stochastic` |
 | `rlz` | zero-padded decimal text | stochastic realization draw |
 | `st_id` | zero-padded decimal text or empty | foreign key to `stress_test_lookup.csv`; empty for the unperturbed row |
 
-The family registry also declares:
+The scenario type registry also declares:
 
 ```text
-family                    stochastic
+scenario_type             stochastic
 pairing                   paired_across_design_points
 completeness              configured_cross_product
 surface_axes              stress_test_lookup
@@ -375,9 +376,9 @@ reference_grouping        unperturbed_by_realization
 
 `paired_across_design_points` is accepted only when non-empty `derived_from`
 edges support the claim. A paired declaration with all edges empty is refused
-(`domain-2`, GF-18). A family may instead declare `independent` or `none`.
+(`domain-2`, GF-18). A scenario type may instead declare `independent` or `none`.
 
-For the stochastic family, table order is normative and deterministic:
+For the stochastic scenario type, table order is normative and deterministic:
 
 1. increasing `rlz`;
 2. within each realization, the unperturbed row first;
@@ -386,26 +387,26 @@ For the stochastic family, table order is normative and deterministic:
 The perturbed rows must equal the configured cross-product of
 `1..n_realizations × 1..ST_NUM`, and exactly one unperturbed row exists per
 realization. Completeness is checked against configured axes, not observed axes,
-so uniformly missing rows cannot redefine the expected set. A family without a
+so uniformly missing rows cannot redefine the expected set. A scenario type without a
 declared expected cardinality is reported `UNCHECKABLE` by name rather than
 passed (`domain-9`).
 
 R14 fixes the current stochastic evaluation set: every row, including every
 unperturbed `st_0` row, has `evaluated: true`. The retired `run_historical` key
 must not be read, accepted, translated into `evaluated`, or mentioned as a
-remedy. A fixture-only family may include an unevaluated forcing ancestor to
+remedy. A fixture-only scenario type may include an unevaluated forcing ancestor to
 exercise the general invariant that a metric reference must resolve to an
 evaluated run.
 
 `forcing_uri` is absent. Stage 1 owns the forcing location through the collection
 inventory after generation; a source URI is not part of the simulator seam and
-no supplied-family ingest path is being built.
+no ingest path for supplied scenarios is being built.
 
 ### 5.2 Parse-time enumeration
 
 The stochastic scenario rows are returned by a pure function of the composed
 generation config. It reads `n_realizations`, `simulation_window`,
-`climate_perturbations`, the resolved seed, and the registered family rules; it
+`climate_perturbations`, the resolved seed, and the registered scenario type rules; it
 does no I/O. The generation Snakefile uses that in-memory object to expand the
 DAG and a rule writes the identical object to `scenario_table.csv`.
 
@@ -429,12 +430,12 @@ The logical provider interface is:
 ```text
 enumerate(generation_spec) -> ordered ScenarioRows
 generate_roots(root_rows, source_inputs) -> ClimateArtifacts
-transform(derived_row, ancestor_artifact, family_payload) -> ClimateArtifact
+transform(derived_row, ancestor_artifact, scenario_type_payload) -> ClimateArtifact
 describe(artifact) -> ForcingDescriptor
 ```
 
 Only the provider may interpret `rlz`, `st_id`, the perturbation lookup, or any
-other family field. Rule addressing is by `run_id`; the family payload is selected
+other scenario type field. Rule addressing is by `run_id`; the scenario type payload is selected
 by `run_id` and handed opaquely to the provider. The collection publisher and
 simulation consumer do not interpret it.
 
@@ -461,8 +462,8 @@ forcing/run_<run_id>.nc
 collection.json
 ```
 
-`stress_test_lookup.csv` is present for the stochastic family and retains WG-2's
-existing monthly perturbation schema. It has no `st_0` row. A family that does
+`stress_test_lookup.csv` is present for the stochastic scenario type and retains WG-2's
+existing monthly perturbation schema. It has no `st_0` row. A scenario type that does
 not use that lookup omits the file and says so in `collection_intent.json`.
 
 All paths stored in either manifest are POSIX-style paths relative to the
@@ -482,11 +483,11 @@ This record is immutable and written before generation. Its required shape is:
   "schema_version": "scenario-collection/1",
   "canonicalization_id": "collection-canon/1",
   "collection_id": "<sha256>",
-  "scenario_family": "stochastic",
+  "scenario_type": "stochastic",
   "provider": {"name": "weathergenr", "revision": "<immutable digest>"},
   "generation_config": {"path": "generation_config.json", "sha256": "<sha256>"},
   "scenario_spec": {
-    "family": "stochastic",
+    "scenario_type": "stochastic",
     "n_realizations": 0,
     "n_design_points": 0,
     "unperturbed_per_realization": 1,
@@ -562,7 +563,7 @@ Required shape:
   "intent_path": "collection_intent.json",
   "intent_sha256": "<sha256>",
   "scenario_table": {"path": "scenario_table.csv", "sha256": "<sha256>"},
-  "family_artifacts": [
+  "scenario_type_artifacts": [
     {"role": "perturbation_lookup", "path": "stress_test_lookup.csv", "sha256": "<sha256>"}
   ],
   "forcing": [
@@ -588,7 +589,7 @@ Required shape:
 ```
 
 The forcing array is sorted by numeric `run_id`; variables are sorted by
-canonical name; family artifacts are sorted by role then path. Every table row
+canonical name; scenario type artifacts are sorted by role then path. Every table row
 has exactly one forcing entry, including an unevaluated ancestor. No extra forcing
 entry is permitted. `size_bytes` is informative but checked; SHA-256 is
 authoritative. `collection_revision` is the §8.2 digest and excludes itself.
@@ -597,7 +598,7 @@ Readiness validation performs, in order:
 
 1. schema and canonicalization version support;
 2. `collection_id` recomputation from the intent;
-3. intent, scenario-table, family-artifact, and forcing path confinement;
+3. path confinement for intent, scenario table, scenario type artifacts, and forcing;
 4. exact file existence, size, and SHA-256 comparison;
 5. scenario-table schema, ordering, forest, completeness, pairing, and id-width
    checks;
@@ -753,7 +754,7 @@ Snakemake may retain separate rules for those operations so resource requests,
 logs, retry boundaries, and per-run visibility remain observable. The adapter
 boundary is responsibility and interface, not a requirement to collapse jobs.
 
-The adapter receives one family-blind `RunForcing` record:
+The adapter receives one `RunForcing` record independent of scenario type:
 
 ```text
 run_id
@@ -764,7 +765,7 @@ collection_id
 collection_revision
 ```
 
-It does not receive `scenario_family`, `rlz`, `st_id`, `derived_from`, pairing,
+It does not receive `scenario_type`, `rlz`, `st_id`, `derived_from`, pairing,
 the perturbation lookup, or a provider payload. A synthetic collection with no
 `rlz`/`st_id` must reach the dummy simulator through this same record.
 
@@ -959,7 +960,7 @@ simulation request, never mutation of the completed request.
 
 The wet or dry month is resolved **once per metric set**, from the registered
 reference grouping, before per-run values are computed. For the stochastic
-family that grouping selects every unperturbed run and pools their response
+scenario type that grouping selects every unperturbed run and pools their response
 years. The current Q5 behavior remains: `_category_month` chooses from the first
 gauge column and the chosen month is shared by every location and realization.
 It is not recomputed per location or per run.
@@ -975,17 +976,17 @@ old pooled Class-C value
 That equality is the premise of R-2 and is tested by the migration comparator;
 it is not presumed from a zero perturbation. A reference group with no evaluated
 run, an incompatible response, or more than one selected month refuses before
-any results table is written. The message names metric, family, grouping,
+any results table is written. The message names metric, scenario type, grouping,
 expected reference, and observed members. The retired `run_historical` key is
 never suggested as a remedy.
 
 ### 7.3 Metric bundles
 
-`bundle_by` names a function registered for the scenario family. For stochastic
+`bundle_by` names a function registered for the scenario type. For stochastic
 scenarios, `same_design_point` groups equal `st_id` across realizations. Empty
 `st_id` is a real grouping key; implementations must retain it (`dropna=False`
 where pandas is used). The unperturbed Class-B bundle therefore always exists in
-the current family.
+the current scenario type.
 
 A valid metric bundle:
 
@@ -993,7 +994,7 @@ A valid metric bundle:
 2. equals exactly the membership returned by its declared grouping;
 3. does not silently drop an empty/null grouping key;
 4. satisfies the metric's response compatibility and estimator preconditions;
-5. agrees with the family's pairing declaration and `derived_from` evidence;
+5. agrees with the scenario type's pairing declaration and `derived_from` evidence;
 6. is ordered by numeric `run_id` for every non-commutative operation; and
 7. is recorded once in `unit_index.csv` for that metric set.
 
@@ -1031,7 +1032,7 @@ unit_id,grain,member_run_id
 
 A run unit has one row, `grain=run`, and `member_run_id=unit_id`. A bundle unit
 has one row per member, `grain=bundle`. The table is long so membership is joined,
-not parsed. It carries no bundle label or family column; meaning comes from
+not parsed. It carries no bundle label or scenario type column; meaning comes from
 joining member runs to `scenario_table.csv` and the registered grouping.
 
 Each indicator table has exactly four columns:
@@ -1123,9 +1124,9 @@ Class A and C preserve per-run spread; Class B does not. A companion metric name
 can add intervals later without changing the four-column schema. The trigger is
 a requirement to interpret threshold crossings with estimator uncertainty.
 
-Each ready metric set records the family's pairing value and surface-axis
+Each ready metric set records the scenario type's pairing value and surface-axis
 declaration. Stage 3 reads stochastic axes through `stress_test_lookup.csv`.
-A family without declared axes is reported as not surface-plottable. No stage
+A scenario type without declared axes is reported as not surface-plottable. No stage
 derives a CMIP change factor. Projection products, if overlaid later, remain
 terminal plausibility evidence and never select scenarios.
 
@@ -1178,7 +1179,7 @@ without the original project config:
 
 ```json
 {
-  "family": "stochastic",
+  "scenario_type": "stochastic",
   "n_realizations": 2,
   "n_design_points": 4,
   "unperturbed_per_realization": 1,
@@ -1216,7 +1217,7 @@ collection_revision = SHA256(canon({
     collection_id,
     intent_sha256,
     scenario_table_sha256,
-    family_artifact_inventory,
+    scenario_type_artifact_inventory,
     ordered_forcing_inventory_with_descriptors,
 }))
 ```
@@ -1326,7 +1327,7 @@ This re-expresses v2 GF-16/GF-17 rather than carrying their stale mechanism:
   collection id/revision, or response inventory. That separation is now the
   falsifier, replacing v2's requirement that grain changes re-fire 3.09.
 - Width changes only when the explicit capacity changes and therefore create a
-  new collection id. A family-column rename requires a schema-version or
+  new collection id. A rename of a scenario type column requires a schema-version or
   semantic-registry change; it cannot masquerade as unchanged intent.
 
 ### 8.6 Interrupted generation tradeoff
@@ -1367,7 +1368,7 @@ not promises that a proposed rule name already exists:
 | configure and execute `weathergenr` | generation | uses the provider interface and independent seed resolution |
 | create unperturbed and perturbed climate netCDFs | generation | publishes `forcing/run_<run_id>.nc` under one immutable collection |
 | verify weather-generator catalog/grid | generation | validates collection cardinality, descriptors, and inventory; per-run intermediates remain `temp(...)` where they are not collection artifacts |
-| validate model reference and prepare Wflow forcing/catalog/TOML | simulation | consumes only the collection's family-blind run-forcing view |
+| validate model reference and prepare Wflow forcing/catalog/TOML | simulation | consumes only the collection's run-forcing view, independent of scenario type |
 | execute flat Wflow batches | simulation | keeps resource and log visibility; associates records explicitly by `run_id` |
 | export Wflow responses | simulation | writes native artifacts plus the neutral response inventory |
 | reduce indicators | metric stage inside simulation | reads `ResponseSeries`, metric declarations, and the unit namespace |
@@ -1402,7 +1403,7 @@ contract clause remains verbatim.
 
 | clause | successor normative clause |
 |---|---|
-| WG-2 perturbation lookup | `<collection>/stress_test_lookup.csv`; schema, multiplier semantics, precision, and domain remain unchanged. `st_id` is same-width text within the lookup and joins the stochastic family block. Every non-empty scenario `st_id` resolves; the unperturbed empty key has no lookup row. The provider receives the id from the table, never a filename. |
+| WG-2 perturbation lookup | `<collection>/stress_test_lookup.csv`; schema, multiplier semantics, precision, and domain remain unchanged. `st_id` is same-width text within the lookup and joins the stochastic scenario type block. Every non-empty scenario `st_id` resolves; the unperturbed empty key has no lookup row. The provider receives the id from the table, never a filename. |
 | WG-4 weather forcing | `<collection>/forcing/run_<run_id>.nc`, exactly one per scenario row. The existing raster shape, `{precip,temp}` minimum, CRS, and asserted-if-present metadata rules remain. **Its old `temp()` lifecycle is superseded:** these are durable inventoried collection artifacts, including unperturbed files, and no consumer may delete them. |
 | WG-5 per-run HydroMT catalog | `<exp>/hydrology/wflow/config/run_<run_id>.yml`, `temp()`, one per evaluated run, with one `run_<run_id>` entry. The existing emitted HydroMT data-catalog field subset remains unchanged. Entry keys equal the evaluated run set across the catalog set. |
 | WG-6 prepared forcing | `<exp>/hydrology/wflow/forcing/inmaps_run_<run_id>.nc`, one per evaluated run. Existing raster/content rules and temporary adapter lifecycle remain. |
@@ -1439,7 +1440,7 @@ The successor ADR also carries the neighbouring sealed-ruling dispositions:
   batch rules are flat rather than realization-wildcard groups; and a failed
   batch names `run_id`, which resolves to fuller context in the table.
 - **C28 is superseded.** Its denormalized axis columns already disappeared, and
-  `st_id` is family-specific. Results carry only `unit_id`; axes are reached by
+  `st_id` is specific to the scenario type. Results carry only `unit_id`; axes are reached by
   joins. The existing hard stop on an unknown stochastic axis survives and cites
   the successor ADR.
 - **C25's ordered, scoped-run-id principle stands, while its physical experiment
@@ -1510,7 +1511,7 @@ resolved seed. Both are forbidden.
 
 The new generation resolver accepts an explicit integer or `auto`. An explicit
 integer is used unchanged. `auto` applies a versioned domain-separated mapping
-to the canonical generation seed material: family, generation configuration
+to the canonical generation seed material: scenario type, generation configuration
 excluding `seed` and execution-only fields, and source-inventory digest. It does
 not include `experiment_name`, a simulation setting, output path, timestamp, or
 `collection_id`. The intent records `seed_request`, `resolved_seed`, and
@@ -1646,7 +1647,7 @@ uses `--notemp` when its discharge output is part of that recording.
 
 | problem | selected change | expected effect | affected stages |
 |---|---|---|---|
-| filenames encode scenario meaning | scenario table plus opaque sequential `run_id` | explicit joins and family-blind simulation | all three |
+| filenames encode scenario meaning | scenario table plus opaque sequential `run_id` | explicit joins and simulation independent of scenario type | all three |
 | generator requires a built Wflow context | durable collection and climate-only leaves | independent generation and reuse | generation, runner |
 | metrics influence forcing ids | explicit capacity and metric-set identity | metric edits no longer invalidate collection or simulation | generation, metrics |
 | native Wflow CSV is a hidden metric interface | response inventory plus `ResponseSeries` reader | simulator-specific parsing ends at adapter | simulation, metrics |
@@ -1723,7 +1724,7 @@ implementation result may be reported as measured until the named gate runs.
 | GF-7 | HydroMT resolves every `run_` catalog entry | one real rapid preparation reads the intended source for each run |
 | GF-8 | inventory recognizes the successor trees | `tree-check` reports no undeclared new leaves after a complete rapid run; renamed prefixes already classify as P5 measured |
 | GF-10 | every result unit resolves with one grain | synthetic pass/fail contract pairs plus all completed result tables |
-| GF-11 | simulator never receives family concepts | AST/signature test plus synthetic family lacking `rlz`/`st_id` reaches dummy simulator |
+| GF-11 | simulator never receives scenario type concepts | AST/signature test plus synthetic scenario type lacking `rlz`/`st_id` reaches dummy simulator |
 | GF-12 | stale collection/simulation reuse refuses | changed ready byte, collection revision, model digest, setting, or response request names the mismatched digest before execution |
 | GF-13 | empty `st_id` remains a Class-B grouping key | unperturbed metric bundle exists in index and carries both return-level rows |
 | GF-14 | unevaluated metric reference refuses generally | fixture-only unevaluated reference raises a named parse-time error; no retired toggle is accepted |
@@ -1759,7 +1760,7 @@ the old table shape and cannot compare a column and row-count migration. On two
 fresh runs made from the same current config and code except for the identity
 landing, the comparator:
 
-1. joins old `(rlz_id, st_id)` to the new scenario-table family block and
+1. joins old `(rlz_id, st_id)` to the new scenario type block in the scenario table and
    `run_id`, then through `unit_index.csv` to `unit_id`;
 2. compares every Class-A per-run row one-to-one within `INDICATOR_RTOL` and the
    existing group-relative absolute tolerance;
@@ -1823,7 +1824,7 @@ draft.
 | R-5 / W4 | §§2.2, 8.1, 10, 12.1 GF-16/GF-17 |
 | R-6 / E18 | §§1, 2.2, 5.1 |
 | W1, W2 | §§7.4, 8.1 |
-| W3 | §§5.1–5.3, 7.2; family reference stays registered rather than embedded |
+| W3 | §§5.1–5.3, 7.2; scenario type reference stays registered rather than embedded |
 | D1, D2 | §§4.3–4.4, 5.3, 6.3, 12.1 GF-11 |
 | D3 | §§5.5–5.7, 8.2, 8.5 |
 | D4, D5 | §§7.1–7.5 |
@@ -1834,7 +1835,7 @@ draft.
 V3 preserves all earlier gate identifiers GF-1 through GF-18 and records their
 changed premises in §12.1. New split-specific falsifiers are GF-19 through GF-27.
 Earlier evidence E1–E17 remains the basis for eliminating parsed ids, sentinels,
-and hidden bundling; E18 is confirmed by the candidate-family schema; E19's
+and hidden bundling; E18 is confirmed by the candidate scenario-type schema; E19's
 overlay-coordinate concern remains outside the execution seam; E20's member
 hash role is subsumed by collection and response artifact digests (§§8.2–8.4).
 
@@ -1846,13 +1847,13 @@ Every cumulative-ledger id remains accepted except the explicitly deferred
 | finding IDs | v3 resolution |
 |---|---|
 | `domain-1`, `domain-8` | per-run Class C with one shared reference month; §§7.2, 12.3 |
-| `domain-2`, `domain-10` | pairing evidence and confirmed neutral-family need; §§1, 5.1 |
+| `domain-2`, `domain-10` | pairing evidence and confirmed neutral-scenario-type need; §§1, 5.1 |
 | `domain-3`, `domain-4` | ratio-shaped return-level precondition and reachable falsifier; §§7.5, 12.1 |
 | `domain-5` | executable Class A/B/C crosswalk and coverage comparator; §12.3 |
 | `domain-6` | general unevaluated-reference fixture without retired config; §§5.1, 7.2, GF-14 |
 | `domain-7` | **deferred** fit-uncertainty transport; §7.6 and §11.2 |
 | `domain-9` | configured-axis payload and completeness; §§5.1, 5.5, GF-24 |
-| `arch-1`, `arch-2` | family-blind simulator and no unsupported forcing URI; §§5.3, 6.3 |
+| `arch-1`, `arch-2` | simulator independent of scenario type and no unsupported forcing URI; §§5.3, 6.3 |
 | `arch-3`, `risk-4` | `run_` inventory keys and evaluated-set equality; §§5.6, 6.7, 9.1 |
 | `arch-4`, `arch-10` | complete standalone unit/index invariants and discovered width; §§7.4, 8.1 |
 | `arch-5` | current always-evaluated unperturbed cases and explicit requested run set; §§5.1, 6.7 |
@@ -1881,10 +1882,11 @@ dispositions.
 | v3 | 2026-09-09 | proposed, unreviewed successor | incorporates approved two-workflow scope expansions; durable scenario collection; simulator-neutral response view; independent metrics mode; revised fingerprints, readiness, retention, config/runner migration; current R14 config facts; and corrected P3/P4/P5 premises |
 | v3 naming revision | 2026-09-09 | owner-approved naming; design still unreviewed | selects “Simulate system behavior” and `simulate_system.smk`; aligns workflow/config/runner names and proposed simulation-run identifiers to describe long-term behavior under scenarios |
 | v3 terminology revision | 2026-09-09 | owner-approved terminology; design still unreviewed | defines scenario, design point, realization, metric bundle/unit, response series, and metric/indicator value; separates unperturbed, historical, reference, and regression baseline; renames collection-wide `simulation_run_id` / `simulation_run.json` to `simulation_id` / `simulation.json`, with `simulation/1` and `SimulationFrozenError`, preserving `run_id` and `unit_id` semantics |
+| v3 scenario-type revision | 2026-09-09 | owner-approved terminology; design still unreviewed | replaces family with scenario type (`stochastic`) throughout the proposed contract, including `scenario_type`, payload/artifact identifiers, registry declarations, and simulator independence; preserves historical source filenames and classification semantics |
 
 V3 intentionally supersedes v2's one-entry-point non-goal, metric-coupled width,
 in-place success-marker guard, live `run_historical` premise, and experiment-name
 seed dependency. It preserves v2's run/unit identities, settled method rulings,
-family-blind seam, explicit grain, formulas, comparator obligations, and finding
+seam independent of scenario type, explicit grain, formulas, comparator obligations, and finding
 traceability. Proposed choices remain proposals until the named empirical gates
 and reviews accept them.

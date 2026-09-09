@@ -35,7 +35,8 @@ after the v3 draft, with `simulate_system.smk` as its proposed entry point.
 The naming revision below supersedes the second-workflow label in earlier
 scope records; their original wording remains historical evidence. The owner also
 approved the terminology amendment recorded below: v3 §2.4 is the current
-vocabulary, and the collection-wide identity is `simulation_id` in `simulation.json`.
+vocabulary, including scenario type (`scenario_type: stochastic`) in place of family,
+and the collection-wide identity is `simulation_id` in `simulation.json`.
 
 **Intake is NOT copied into this run dir.** It lives at
 `dev/milestones/r12/simulation-identity-intake.md` — already committed at the
@@ -599,3 +600,16 @@ Execution attempt denotes an actual invocation or retry, without adding machiner
 
 This approves terminology only. V3 remains proposed and unreviewed, with the
 existing domain-review and framing gates pending. No runtime implementation changed.
+
+## Owner-approved scenario-type amendment — 2026-09-09
+
+The owner prefers type over family for the `stochastic` classification.
+Applied throughout the proposed v3 contract: `scenario_family` becomes
+`scenario_type`; registry keys use `scenario_type`; payload, artifact-list, and
+artifact-inventory identifiers use the `scenario_type_` prefix. Prose names
+scenario types and describes the simulator as independent of scenario type.
+The terminology table defines the classification and one-type-per-collection rule.
+Classification semantics, production scope, and method remain unchanged.
+
+Earlier design/review records and the cited `candidate-family-schema.md` filename
+retain their historical wording. V3 remains proposed and unreviewed.

@@ -30,6 +30,11 @@ it covered the expanded scope. Next: refresh domain review of the changed
 contract, then present the revised framing before resuming external review.
 Prior reviews and ledger dispositions remain evidence about their named versions.
 
+**Current naming authority:** the owner approved **Simulate system behavior**
+after the v3 draft, with `simulate_system.smk` as its proposed entry point.
+The naming revision below supersedes the second-workflow label in earlier
+scope records; their original wording remains historical evidence.
+
 **Intake is NOT copied into this run dir.** It lives at
 `dev/milestones/r12/simulation-identity-intake.md` — already committed at the
 durable location, cited by `dev/roadmap.md` by that path, and it declares itself
@@ -161,6 +166,22 @@ Only documentation checks apply;
 no runtime tests, scientific runs, formal review verdict, or G2 acceptance are
 claimed. Prior design versions, review records, ledger, probes, and scope addendum
 remain unchanged.
+
+## Successor workflow naming — 2026-09-09
+
+Owner approved “Simulate system behavior” and requested the change. This name
+describes long-term system behavior under perturbed climate scenarios and
+accommodates future non-climate scenarios without implying discrete-event
+impact assessment. The destination pair is **Generate scenarios → Simulate
+system behavior**.
+
+Updated the live v3 draft in place: `simulate_impacts.smk` → `simulate_system.smk`,
+the corresponding workflow stanza, seed-config filename, and runner references;
+`impact_run_id` / `impact_run.json` → `simulation_run_id` / `simulation_run.json`,
+with matching proposed schema, environment, and error names. The registered
+`impact_model` capability slot retains its canonical name and `not_applicable`
+binding. This is a naming revision only; scope, contracts, and review gates stand.
+No runtime files were changed. Earlier scope/design/review records are preserved.
 
 ## Owner emphasis directive — 2026-09-06
 

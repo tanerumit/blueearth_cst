@@ -48,7 +48,7 @@ inside `run_stress_test.smk`:
 
 1. define and generate the climate scenario set;
 2. prepare Wflow forcing and simulate one response per scenario; and
-3. reduce retained responses into metrics at run or bundle grain.
+3. reduce retained responses into metrics for one case or a metric bundle.
 
 The fusion is expressed through `(rlz, st_id)` in paths. The reducer reconstructs
 those fields by applying `_MEMBER_IN_STEM` to each Wflow CSV filename, so a
@@ -104,7 +104,7 @@ workflow. No projection product selects, constrains, or drives a scenario run.
    to an immutable scenario collection.
 2. Make the system simulator family-blind: it consumes an identified forcing
    record, a built model, and result-affecting settings, without receiving
-   `rlz`, `st_id`, baseline flags, or a family payload.
+   `rlz`, `st_id`, unperturbed-case flags, or a family payload.
 3. Retain `run_id` for runs and `unit_id` for run-or-bundle metric units, with
    one mixed sequence, one width, and an explicit index that gives every unit's
    membership.
@@ -135,7 +135,7 @@ workflow. No projection product selects, constrains, or drives a scenario run.
 | S6 | CMIP6 is a terminal plausibility overlay | `analyze_projections` has no outgoing edge into generation or simulation |
 | S7 | No local calibration | Stage 2 consumes the model WF1 built from global data |
 | S8 | HydroMT, hydromt_wflow, and Wflow conventions are used verbatim | The adapter wraps their public inputs/outputs; it does not reimplement them |
-| R-1 | Class C uses one month selected once and shared across realizations | The reference resolver runs once per results set, before per-run reduction |
+| R-1 | Class C uses one month selected once and shared across realizations | The reference resolver runs once per metric set, before per-run reduction |
 | R-2 | Class C is stored at `grain: run` | Each realization retains its own Class-C value |
 | R-3 | Pairing is declared and evidenced | `paired_across_design_points` requires supporting `derived_from` edges |
 | R-4 | Return-level admissibility is expressed per return period | The formula and refusal in §7.5 remain binding |
@@ -167,8 +167,34 @@ retired config key. [cited: `config_composition.py`, `run_stress_test.smk`]
 - No general manifest, namespace-claim, fencing-token, attempt, quarantine, or
   resume platform. The bounded ready-marker, immutability, retention, and stale
   consumption rules in §§5–6 are required by the split and stop there.
-- No implementation, code edit, baseline re-record, or scientific experiment in
+- No implementation, code edit, regression-baseline re-record, or scientific experiment in
   this design stage.
+
+### 2.4 Terminology
+
+| term | meaning in this design |
+|---|---|
+| scenario | One fully specified forcing case, including its realization and perturbation for the stochastic family; not just a design point. Today's generated scenarios are climate scenarios. |
+| scenario collection | The durable set of scenario records, forcing artifacts, and provenance published by stage 1. |
+| design point | One prescribed perturbation combination, shared across stochastic realizations. |
+| realization | One stochastic weather draw; its perturbed descendants retain that draw's identity and pairing. |
+| run / `run_id` | A collection-scoped case handle assigned before simulation, including to a forcing-only ancestor. It does not identify an execution attempt. The existing `grain: run` spelling denotes a metric for one evaluated case. |
+| simulation / `simulation_id` | The collection-wide stage-2 object identified by the collection, model, simulator, settings, and response request. |
+| execution attempt | An actual invocation or retry; no attempt-tracking platform is added here. |
+| response series | A simulated time series exposed through the response interface, before metric calculation. |
+| metric bundle | The declared group of evaluated cases supplying a bundle-grain metric. Membership is distinct from pooling, which is an estimator operation on those members' data. |
+| metric unit / `unit_id` | The single evaluated case or metric bundle to which a metric value belongs. Bare `unit` in index contracts abbreviates metric unit; physical units describe response quantities. |
+| metric / indicator value | A metric is a declared calculation; an indicator value is its reported result. Existing `<token>_indicators.csv` filenames retain this meaning. |
+| unperturbed | Generated forcing with no imposed climate perturbation. |
+| historical | The historical forcing period or WF1 simulation. |
+| reference | The explicitly selected comparator or metric-reference group. |
+| baseline | Always qualified: code baseline for the inspected revision, regression baseline for the numerical fixture/manifest. Use unperturbed or reference for scientific cases according to their role. |
+
+An unperturbed generated series is not thereby equivalent to the historical
+simulation. The existing `st_0` comparability question remains out of scope.
+`run_id` and `unit_id` retain their approved identities and sequence rules;
+`simulation_id` names the distinct collection-wide identity. The conceptual
+chain is scenario collection → simulations → response series → metrics.
 
 ## 3. Capability-slot mapping and validation ownership
 
@@ -318,13 +344,13 @@ One table carries exactly one scenario family.
 
 | column | type | nullable | meaning |
 |---|---|---|---|
-| `run_id` | zero-padded decimal text at width `W` | no | collection-scoped run handle; the only scenario-derived value admitted to simulator paths |
+| `run_id` | zero-padded decimal text at width `W` | no | collection-scoped case handle, assigned before execution; the only scenario-derived value admitted to simulator paths |
 | `derived_from` | `run_id` text | yes | generation dependency: this forcing transforms the named forcing; empty means generated without another collection row |
 | `evaluated` | lowercase `true`/`false` | no | whether a simulation response is required; false is reserved for a forcing-only ancestor |
 
 `derived_from` edges must form a forest. Every non-empty value resolves in the
 same table; self-reference, cycles, and missing ancestors are refused before the
-generation DAG is built. Empty does not mean baseline. It means only that this
+generation DAG is built. Empty does not mean unperturbed. It means only that this
 row has no in-collection forcing ancestor.
 
 After the core comes the labelled family block. The first column is
@@ -357,7 +383,7 @@ For the stochastic family, table order is normative and deterministic:
 2. within each realization, the unperturbed row first;
 3. then increasing `st_id` from the configured perturbation lookup.
 
-The non-baseline rows must equal the configured cross-product of
+The perturbed rows must equal the configured cross-product of
 `1..n_realizations × 1..ST_NUM`, and exactly one unperturbed row exists per
 realization. Completeness is checked against configured axes, not observed axes,
 so uniformly missing rows cannot redefine the expected set. A family without a
@@ -613,26 +639,26 @@ refuses while a retained simulation manifest references the collection unless th
 owner also supplies an explicit force option. No automatic age-based deletion is
 part of this design.
 
-## 6. Stage 2 contract: simulation run and simulator adapter
+## 6. Stage 2 contract: simulation and simulator adapter
 
-### 6.1 Simulation run identity and namespace
+### 6.1 Simulation identity and namespace
 
 The human namespace remains `<project_dir>/experiments/<experiment_name>/`.
 `experiment_name` chooses where one simulation assessment is written; it is not its
-freshness identity. The immutable machine identity is `simulation_run_id`, defined in
+freshness identity. The immutable machine identity is `simulation_id`, defined in
 §8.3.
 
 Two experiment names may consume the same collection without copying or changing
 it. One experiment name may not change collection revision, model digest,
 simulator binding, settings, or requested response set after successful
-simulation. A mismatch with retained outputs raises `SimulationRunFrozenError` and
+simulation. A mismatch with retained outputs raises `SimulationFrozenError` and
 names the changed digest. The remedy is a new experiment name or explicit removal
 of that experiment's simulation outputs; the collection remains untouched.
 
 The simulation root contains:
 
 ```text
-config/simulation_run.json
+config/simulation.json
 config/response_request.json
 config/simulator_settings.json
 config/simulator_adapter_code_inventory.json
@@ -655,14 +681,14 @@ Nothing parses it. Warm-state lifecycle remains governed by the Wflow contract;
 it is not required for metrics-only recomputation unless a declared response
 reader actually needs it.
 
-### 6.2 `simulation_run.json`
+### 6.2 `simulation.json`
 
 Required fields:
 
 ```json
 {
-  "schema_version": "simulation-run/1",
-  "simulation_run_id": "<sha256>",
+  "schema_version": "simulation/1",
+  "simulation_id": "<sha256>",
   "experiment_name": "<name>",
   "collection": {
     "manifest_path": "<normalized path>",
@@ -682,7 +708,7 @@ Required fields:
 `response_request.json` is immutable simulation input. It persists the ordered
 variable/location/time/units/missingness request and the complete
 `expected_series` key set derived from evaluated runs and requested locations.
-Its digest enters `simulation_run_id`; a consumer validates coverage from the
+Its digest enters `simulation_id`; a consumer validates coverage from the
 persisted payload without a live model. Selected metric declarations keep their
 own requirements in `metrics.json` and do not rewrite this simulation request.
 
@@ -691,9 +717,9 @@ settings projection. `simulator_adapter_code_inventory.json` lists invoked and
 imported repository code with byte digests. `simulation_environment.json` persists
 the immutable environment descriptor and dependency/lock revisions. Their
 digests are identity inputs; live comparison is required only to execute or
-claim reproduction. `simulation_run_id` is recomputed from these documents, the
+claim reproduction. `simulation_id` is recomputed from these documents, the
 recorded collection identity, and `model_digest`. Its calculation excludes
-`simulation_run_id`, `experiment_name`, and the mutable completion fields.
+`simulation_id`, `experiment_name`, and the mutable completion fields.
 
 The existing pointer-derived `model_digest` and `model_reference.yml` remain the
 model fingerprint; this design does not replace them with a shorter file list.
@@ -705,7 +731,7 @@ The initial record is written before simulation with
 `response_inventory_sha256` null. Completing stage 2 fills it by atomic
 replacement. Metric-set completions live only in their immutable `metrics.json`
 manifests, so multiple metric sets do not mutate the simulation record. The response
-completion fact does not enter `simulation_run_id`. Immutable inputs may never be
+completion fact does not enter `simulation_id`. Immutable inputs may never be
 edited after a successful response inventory exists.
 
 ### 6.3 Simulator adapter boundary
@@ -764,7 +790,7 @@ metadata. This design adds no private unit, calendar, or regridding algorithm.
 Compatibility and freshness are independent. A compatible file whose digest no
 longer matches the collection inventory is stale and refused by collection
 validation. An unchanged forcing with a changed model or setting has a different
-`simulation_run_id` and cannot reuse the old response.
+`simulation_id` and cannot reuse the old response.
 
 ### 6.5 Batch execution and failure visibility
 
@@ -825,7 +851,7 @@ run succeeds:
 ```json
 {
   "schema_version": "response-inventory/1",
-  "simulation_run_id": "<sha256>",
+  "simulation_id": "<sha256>",
   "collection_id": "<sha256>",
   "collection_revision": "<sha256>",
   "model_digest": "<sha256>",
@@ -953,7 +979,7 @@ any results table is written. The message names metric, family, grouping,
 expected reference, and observed members. The retired `run_historical` key is
 never suggested as a remedy.
 
-### 7.3 Bundling
+### 7.3 Metric bundles
 
 `bundle_by` names a function registered for the scenario family. For stochastic
 scenarios, `same_design_point` groups equal `st_id` across realizations. Empty
@@ -961,7 +987,7 @@ scenarios, `same_design_point` groups equal `st_id` across realizations. Empty
 where pandas is used). The unperturbed Class-B bundle therefore always exists in
 the current family.
 
-A valid bundle:
+A valid metric bundle:
 
 1. contains only unique evaluated runs from one collection;
 2. equals exactly the membership returned by its declared grouping;
@@ -975,7 +1001,7 @@ A run may belong to different bundles for different declared groupings. Bundle
 membership is never added to the scenario table, collection inventory, simulator
 adapter, or response inventory.
 
-### 7.4 Unit index and result tables
+### 7.4 Metric-unit index and result tables
 
 Each immutable metric-set directory contains:
 
@@ -989,7 +1015,7 @@ Each immutable metric-set directory contains:
 `metric_set_id` is defined in §8.4. A new metric definition produces a new
 directory and never overwrites a prior accepted result set. `metrics.json` is
 written last as its ready marker. Its required content is `schema_version`,
-`status: ready`, `metric_set_id`, `simulation_run_id`, collection id/revision,
+`status: ready`, `metric_set_id`, `simulation_id`, collection id/revision,
 response-inventory path/digest, the complete selected metric declarations,
 metric-definition digest, grouping/reference semantics, unit-index path/digest,
 an ordered indicator-table inventory of token/path/digest/row count, and
@@ -1082,9 +1108,9 @@ does not fit, omit, or emit a caveated row.
 
 At the current periods (`T=10` peak, `T=2` low flow), the floor binds for both.
 The ratio becomes discriminating for `T>10`. The rapid fixture's current 18
-pooled years and baseline fixture's current 18 pooled years pass; a one-
-realization nine-year bundle refuses. The old v2 text naming 32 baseline blocks
-described the pre-R14 baseline window and is not a current-tree fact.
+pooled years and regression-baseline fixture's current 18 pooled years pass; a one-
+realization nine-year bundle refuses. The old v2 text naming 32 regression-baseline blocks
+described the pre-R14 regression-baseline window and is not a current-tree fact.
 
 The stricter `2.0` ratio remains an alternative methodological tightening. It is
 not silently introduced by this architecture migration.
@@ -1212,7 +1238,7 @@ the recorded `intent_sha256` covers the complete immutable intent.
 settings_sha256 = SHA256(canon(simulator_settings.json))
 simulation_response_request_sha256 = SHA256(canon(response_request.json))
 
-simulation_run_id = SHA256(canon({
+simulation_id = SHA256(canon({
     collection_id,
     collection_revision,
     model_digest,
@@ -1230,14 +1256,14 @@ model moves `model_digest`; changed physics or output selection moves settings o
 response request; changed adapter logic moves the code digest. Equal sequential
 ids never authorize reuse.
 
-Every equation input is stored in `simulation_run.json` or one of its referenced
+Every equation input is stored in `simulation.json` or one of its referenced
 documents; no original workflow config or live environment is needed to
-recompute it. `simulation_run_id` omits itself, `experiment_name`, execution facts,
+recompute it. `simulation_id` omits itself, `experiment_name`, execution facts,
 and completion fields. The recorded `model_digest` is sufficient for identity
 recomputation; simulation still requires the referenced model to verify and use
 that digest.
 
-`response_request.json` is persisted beside `simulation_run.json`. It is the
+`response_request.json` is persisted beside `simulation.json`. It is the
 immutable **simulation response request**, not the union of currently selected
 metric requirements. It contains the
 ordered required variable/location/time/units/missingness declarations plus an
@@ -1257,7 +1283,7 @@ metric_definition_sha256 = SHA256(canon({
 }))
 
 metric_set_id = SHA256(canon({
-    simulation_run_id,
+    simulation_id,
     response_inventory_sha256,
     metric_definition_sha256,
 }))
@@ -1273,7 +1299,7 @@ Changing only a formula, grouping body, reference rule, or grain changes
 inventory remain reusable. Changing metric selection in a way that needs a
 response already retained also schedules only stage 3. A required response absent
 from the retained set causes `MissingResponseRequirement`; it does not silently
-change `simulation_run_id` or run Wflow in metrics-only mode.
+change `simulation_id` or run Wflow in metrics-only mode.
 
 ### 8.5 Invalidation matrix
 
@@ -1284,7 +1310,7 @@ change `simulation_run_id` or run Wflow in metrics-only mode.
 | model digest, simulator setting, adapter code/environment | reusable | new simulation identity; simulate | new metric set |
 | immutable simulation response request | reusable | new simulation identity; simulate the enlarged request | new metric set |
 | selected metric set whose requirements are already retained | reusable | reusable and **must not rerun** | new metric set only |
-| selected metric requires an unretained series | reusable | metrics-only refuses; a separately requested enlarged simulation run is required | no result until satisfied |
+| selected metric requires an unretained series | reusable | metrics-only refuses; a separately requested simulation with an enlarged response request is required | no result until satisfied |
 | metric formula, grain, grouping/reference body | reusable and **must not rerun** | reusable and **must not rerun** | new metric set only |
 | batch size, cores, operation | reusable | same scientific identity | unchanged results identity |
 
@@ -1567,7 +1593,7 @@ available; it performs the same read-only resolution and requires the ready
 manifest without invoking its producer. `manifest_path` is forbidden with
 `generated` and mandatory with `manifest`, so selection cannot fall back. The
 resolved path, selector, collection id, and revision are recorded in
-`simulation_run.json`.
+`simulation.json`.
 
 ### 9.6 Reference-atomic landing and output migration
 
@@ -1577,23 +1603,23 @@ reference-atomic branch landing: README and AGENTS workflow tables/commands,
 workflow-name and config-shape migration docs, rule index, naming and seam
 contracts, DAG renderer examples, test fixtures, `scripts/run_workflows.py`,
 `config_composition.py`, `cross_workflow_leaves.py`, indicator glossary,
-surface readers, baseline tooling, the tracked indicator reference, and the
+surface readers, regression-baseline tooling, the tracked indicator reference, and the
 in-repository Climate Stress Test notebook. Historical milestone and probe files
 remain sealed with their then-valid names.
 
 Old experiment output is not renamed in place. A migrated generation produces a
-new content-addressed collection; a simulation run writes a new experiment namespace.
+new content-addressed collection; a simulation writes a new experiment namespace.
 The migration note carries the deterministic old `(rlz, st_id)` to new `run_id`
 crosswalk and the old pooled-sentinel to bundle-unit mapping. Half-renamed trees
 are unsupported and refused.
 
-The numerical comparison cannot use the currently retained baseline manifest as
+The numerical comparison cannot use the currently retained regression-baseline manifest as
 its pre-change side. The repository documents that manifest and fixture tree as
-pre-R14 while the current baseline config uses the nine-year window; the next run
+pre-R14 while the current regression-baseline config uses the nine-year window; the next run
 will move values for that reason alone. The identity migration therefore records
 a fresh **pre-change** run and a post-change run from the same current composed
 config in separate output roots, then applies §12.3's crosswalk. It does not
-overwrite the standing baseline until the identity comparison is accepted. WF1
+overwrite the standing regression baseline until the identity comparison is accepted. WF1
 uses `--notemp` when its discharge output is part of that recording.
 
 ## 10. Alternatives and decision reversals
@@ -1691,7 +1717,7 @@ implementation result may be reported as measured until the named gate runs.
 | GF-1 | `derived_from` alternation and ancestor input compose on a fresh project | P2b first; then a fresh generation DAG has no ambiguity/cycle and a missing ancestor fails cleanly |
 | GF-2 | empty `derived_from` matches no transform rule | synthetic no-edge fixture schedules root generation only |
 | GF-3 | scenario enumeration is parse-time derivable without checkpoint | one fresh invocation builds the complete expected DAG; no checkpoint/two-pass behavior |
-| GF-4 | current baseline is always evaluated under R14 | every stochastic unperturbed row is `evaluated:true`, scheduled, and inventoried; old `run_historical` is refused, not revived |
+| GF-4 | current unperturbed cases are always evaluated under R14 | every stochastic unperturbed row is `evaluated:true`, scheduled, and inventoried; old `run_historical` is refused, not revived |
 | GF-5 | empty scenario set refuses | `EmptyScenarioSetError`; no successful zero-job generation |
 | GF-6 | grouping/declaration body changes rerun only stage 3 | metric-set id changes while collection and response digests remain byte-identical |
 | GF-7 | HydroMT resolves every `run_` catalog entry | one real rapid preparation reads the intended source for each run |
@@ -1699,7 +1725,7 @@ implementation result may be reported as measured until the named gate runs.
 | GF-10 | every result unit resolves with one grain | synthetic pass/fail contract pairs plus all completed result tables |
 | GF-11 | simulator never receives family concepts | AST/signature test plus synthetic family lacking `rlz`/`st_id` reaches dummy simulator |
 | GF-12 | stale collection/simulation reuse refuses | changed ready byte, collection revision, model digest, setting, or response request names the mismatched digest before execution |
-| GF-13 | empty `st_id` remains a Class-B grouping key | baseline bundle exists in index and carries both return-level rows |
+| GF-13 | empty `st_id` remains a Class-B grouping key | unperturbed metric bundle exists in index and carries both return-level rows |
 | GF-14 | unevaluated metric reference refuses generally | fixture-only unevaluated reference raises a named parse-time error; no retired toggle is accepted |
 | GF-15 | return-level count gate is reachable | synthetic bundle at `required-1` refuses and names metric, unit, period, required, actual |
 | GF-16 | stage-1 freshness is independent of metric/grouping code | imported provider-body change moves collection id; metric/grouping change cannot move any collection artifact |
@@ -1758,7 +1784,7 @@ after every Snakefile or config-shape edit. Because the landing changes
 the pre-merge gate is `pixi run test-full`, with output redirected to a file.
 Before the milestone seals: run P2b, fresh dry-runs for both entry points and
 both simulation modes, one rapid generation/simulation execution, `tree-check`, GF-9,
-and the standing baseline/tree comparison under its documented current-config
+and the standing regression-baseline/tree comparison under its documented current-config
 limitations. No such command has run for this design draft.
 
 Model-validator acceptance is required separately for:
@@ -1829,7 +1855,7 @@ Every cumulative-ledger id remains accepted except the explicitly deferred
 | `arch-1`, `arch-2` | family-blind simulator and no unsupported forcing URI; §§5.3, 6.3 |
 | `arch-3`, `risk-4` | `run_` inventory keys and evaluated-set equality; §§5.6, 6.7, 9.1 |
 | `arch-4`, `arch-10` | complete standalone unit/index invariants and discovered width; §§7.4, 8.1 |
-| `arch-5` | current always-evaluated baseline and explicit requested run set; §§5.1, 6.7 |
+| `arch-5` | current always-evaluated unperturbed cases and explicit requested run set; §§5.1, 6.7 |
 | `arch-6`, `risk-11` | complete reference-atomic live inventory; §9.6 |
 | `arch-7`, `risk-8` | separated provider/metric code digests and invalidation; §§8.2–8.5 |
 | `arch-8`, `risk-1` | content-addressed immutable readiness and honest interrupted-run limitation; §§5.6–5.7, 8.6 |
@@ -1854,6 +1880,7 @@ dispositions.
 | v2 | 2026-09-07 | historical reviewed revision | incorporated 31 internal findings and R-1..R-6; selected one-workflow logical three-stage design |
 | v3 | 2026-09-09 | proposed, unreviewed successor | incorporates approved two-workflow scope expansions; durable scenario collection; simulator-neutral response view; independent metrics mode; revised fingerprints, readiness, retention, config/runner migration; current R14 config facts; and corrected P3/P4/P5 premises |
 | v3 naming revision | 2026-09-09 | owner-approved naming; design still unreviewed | selects “Simulate system behavior” and `simulate_system.smk`; aligns workflow/config/runner names and proposed simulation-run identifiers to describe long-term behavior under scenarios |
+| v3 terminology revision | 2026-09-09 | owner-approved terminology; design still unreviewed | defines scenario, design point, realization, metric bundle/unit, response series, and metric/indicator value; separates unperturbed, historical, reference, and regression baseline; renames collection-wide `simulation_run_id` / `simulation_run.json` to `simulation_id` / `simulation.json`, with `simulation/1` and `SimulationFrozenError`, preserving `run_id` and `unit_id` semantics |
 
 V3 intentionally supersedes v2's one-entry-point non-goal, metric-coupled width,
 in-place success-marker guard, live `run_historical` premise, and experiment-name

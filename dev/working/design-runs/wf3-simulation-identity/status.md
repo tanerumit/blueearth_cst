@@ -33,7 +33,9 @@ Prior reviews and ledger dispositions remain evidence about their named versions
 **Current naming authority:** the owner approved **Simulate system behavior**
 after the v3 draft, with `simulate_system.smk` as its proposed entry point.
 The naming revision below supersedes the second-workflow label in earlier
-scope records; their original wording remains historical evidence.
+scope records; their original wording remains historical evidence. The owner also
+approved the terminology amendment recorded below: v3 §2.4 is the current
+vocabulary, and the collection-wide identity is `simulation_id` in `simulation.json`.
 
 **Intake is NOT copied into this run dir.** It lives at
 `dev/milestones/r12/simulation-identity-intake.md` — already committed at the
@@ -575,3 +577,25 @@ rule, not merely on a standalone model:
 twice), yet `--list-changes code` names six `test_local` paths. Stopped after
 three attempts under the no-progress circuit breaker and reported rather than
 rationalised. It does not change any verdict above.
+
+## Owner-approved terminology amendment — 2026-09-09
+
+Owner: “OK. I agree with this plan. Can you update the terms that need to change?”
+
+Applied to `design-v3.md`: keep Generate scenarios and Simulate system behavior;
+define scenario collection, scenario, design point, realization, response series,
+metric bundle, metric unit, and metric versus indicator value in §2.4. Distinguish
+unperturbed generated forcing, historical forcing/WF1, metric references, and the
+regression baseline without resolving the deferred `st_0` comparability question.
+
+The collection-wide stage-2 object is a simulation: `simulation_run_id` becomes
+`simulation_id`, `simulation_run.json` becomes `simulation.json`, schema version
+`simulation-run/1` becomes `simulation/1`, and `SimulationRunFrozenError` becomes
+`SimulationFrozenError`. All v3 schemas, fingerprint formulas, paths, and prose
+follow these names. The prior naming entry remains historical evidence.
+`run_id` remains a collection-scoped case handle assigned before execution;
+`unit_id`, grain values, mixed sequencing, and scientific calculations are unchanged.
+Execution attempt denotes an actual invocation or retry, without adding machinery.
+
+This approves terminology only. V3 remains proposed and unreviewed, with the
+existing domain-review and framing gates pending. No runtime implementation changed.

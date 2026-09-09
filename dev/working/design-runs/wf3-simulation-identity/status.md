@@ -5,14 +5,14 @@ genre: workflow-spec
 author-binding: cst-architect
 started: 2026-09-06
 variant: full
-stage: scope-expansion-recorded-awaiting-revision
+stage: successor-design-v3-drafted-awaiting-domain-review
 external-rounds-completed: 0
 dispatches:
   opus: 6
   fable: 1
-  codex-cst-architect: 1
+  codex-cst-architect: 2
 gates:
-  G1: adapter and two-workflow scope expansions approved 2026-09-09; revised design and domain review pending
+  G1: adapter and two-workflow scope expansions approved 2026-09-09; v3 drafted, refreshed domain review and revised framing acceptance pending
   G2: pending
 flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full, domain-7-needs-G2-ratification, adapter-scope-expanded, two-workflow-destination]
 ---
@@ -23,11 +23,11 @@ flags: [intake-in-place, methodology-emphasis, promoted-lean-to-full, domain-7-n
 and `scope-expansion-2026-09-09.md` (addendum v2). The owner approved broader
 simulator-adapter boundaries and then two independently runnable workflows on
 2026-09-09. The addendum supersedes the frozen intake's deferred workflow split;
-R-1..R-6 remain in force. `design-v2.md` remains the latest authored design; it
-has **not** incorporated this expansion. Do not resume external round 1 against
-v2 as though it covered the expanded scope. The next author revision must
-integrate the addendum and the P3/P4/P5 corrections recorded below, followed by
-domain review of the changed contract before presenting the revised framing.
+R-1..R-6 remain in force. `design-v3.md` is the latest authored design and
+incorporates this expansion and the P3/P4/P5 corrections recorded below. It is
+**proposed and unreviewed**. Do not resume external round 1 against v2 as though
+it covered the expanded scope. Next: refresh domain review of the changed
+contract, then present the revised framing before resuming external review.
 Prior reviews and ledger dispositions remain evidence about their named versions.
 
 **Intake is NOT copied into this run dir.** It lives at
@@ -117,6 +117,50 @@ No production second backend or third metrics workflow is authorized.
 review remain pending. External rounds completed remains zero. This bounded
 follow-up updates the scope record inline; no additional author/reviewer dispatch
 or completed review is claimed. Existing R-1..R-6 and their review history stand.
+
+## Successor design authoring — 2026-09-09
+
+Owner request:
+
+> yes, lets create the successor design first
+
+Dispatched a fresh registered `cst_architect` author for `design-v3.md`, using
+`gpt-5.6-sol` (high), counted separately from the historical provider tiers.
+The author owns only that successor file; the driver owns this record. The
+input set is the frozen intake, v2, ledger and original review records, all gate
+rulings above, and their incorporated scope/evidence artifacts. The first write
+was a recoverable draft skeleton. No nested delegation or runtime edits.
+
+This turn is the successor-draft stage. Domain and external reviews remain
+pending; neither a review verdict nor design acceptance follows from producing
+the draft. Driver reconciliation checks scope, prior-ruling coverage, citations,
+and structural consistency before reporting the draft complete.
+
+**Draft delivered:** `design-v3.md` specifies the durable scenario collection,
+simulator-owned forcing preparation and response interpretation, independently
+targetable metrics, identity and retention rules, and the two-entry-point
+migration. Its implementation sequence establishes contracts inside WF3 before
+extracting the successor workflows. Proposed names and schemas remain proposals.
+
+Reconciliation addressed current R14 config and baseline facts, acyclic seed
+migration, reconstruction of identities from retained metadata, metric-blind
+run-id allocation, metrics-only prerequisites, and runner/handoff ownership.
+Material proposals needing review include explicit unit-id capacity and refusing
+same-intent partial collection reuse until cleanup. The P2b composition probe,
+target-selection feasibility, substitution fixtures, numerical migration, and
+domain-7 fit-uncertainty disposition remain open gates; no execution evidence is
+claimed for them. All 31 prior finding IDs remain traceable in the successor.
+
+This is a documentation-only deliverable. Structural checks passed: all 31 prior
+finding IDs and GF-1 through GF-27 are present, code fences balance, and the draft
+has no trailing whitespace. SHA-256 comparison confirmed all 13 other run
+artifacts unchanged. `git diff --check` passed for the status update; the staged
+check also covers the newly added draft before commit.
+
+Only documentation checks apply;
+no runtime tests, scientific runs, formal review verdict, or G2 acceptance are
+claimed. Prior design versions, review records, ledger, probes, and scope addendum
+remain unchanged.
 
 ## Owner emphasis directive — 2026-09-06
 

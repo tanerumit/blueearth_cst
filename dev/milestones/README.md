@@ -37,7 +37,7 @@ milestone's record stays as it was written.
 | `r09/` | R9 — Generated project tree | 2026-08-07 | `r09-project-tree` |
 | `r10/` | R10 — Rule naming | 2026-08-07 | `r10-rule-naming` |
 | `r11/` | R11 — WF3 artifacts and identification | 2026-08-08 | `r11-wf3-artifacts` |
-| `r12/` | R12 — WF3 execution model | — *(open)* | `r12-wf3-execution` |
+| `r12/` | R12 — Scenario generation and system simulation | — *(design accepted 2026-09-10)* | `r12-wf3-execution` |
 | `r13/` | R13 — Config tiers | — *(registered)* | `r13-config-tiers` |
 
 Phase grouping: `phase-1/` is Phase 1 (Foundation); `r01`–`r06` are Phase 2

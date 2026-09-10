@@ -1,0 +1,872 @@
+diff --git a/dev/working/design-runs/wf3-simulation-identity/design-v4.md b/dev/working/design-runs/wf3-simulation-identity/design-v5.md
+index 1e32b4b3..fbc5aff3 100644
+--- a/dev/working/design-runs/wf3-simulation-identity/design-v4.md
++++ b/dev/working/design-runs/wf3-simulation-identity/design-v5.md
+@@ -1,25 +1,29 @@
+ # Scenario generation and system behavior simulation: WF3 successor design
+ 
+-> **design-v4 — proposed revision; not reviewer-approved.** Run `wf3-simulation-identity`, milestone
++> **design-v5 — proposed revision; not reviewer-approved.** Run `wf3-simulation-identity`, milestone
+ > R12. Genre: software-system workflow specification with methodological
+ > decisions. Date: **2026-09-09**. Code baseline:
+ > `4e26c2394dd002f7dfb61b1943e002866c6ca4bf`.
+ > Revision source checkout recorded by the v3 domain reviewer:
+ > `7e4f5031ea2354b523b64fec5648072fe517e3dd`; this is provenance for the
+ > authoring/review state and does not replace the source-code baseline.
++> V5 authoring checkout: `7e4f5031ea2354b523b64fec5648072fe517e3dd`.
++> Revision input: v4 SHA-256
++> `5511344AE8D0EA818723734A986B119A80EE524DFEA61C397975613205B5AE55`;
++> authoritative findings: `external-review-r1.md`, `ext1-1` through `ext1-4`.
+ >
+ > **Scope authority.** The frozen
+ > `dev/milestones/r12/simulation-identity-intake.md`; owner rulings R-1 through
+ > R-6 in `status.md`; and approved addendum v2 in
+ > `scope-expansion-2026-09-09.md`; and the G1-v3 correction ruling dated
+-> 2026-09-09. This revision supersedes `design-v3.md` as the proposed design.
+-> It does not alter the intake, v1/v2/v3, reviews, ledger history,
++> 2026-09-09. This revision supersedes `design-v4.md` as the proposed design.
++> It does not alter the intake, v1/v2/v3/v4, reviews, ledger history,
+ > probes, or status record.
+ >
+-> **Review state.** Author self-review is complete.
+-> The Astra domain review of v3 required revision; it did not review or approve
+-> v4. Scientific evaluation and clean-room external review of this revision are
+-> still pending. No implementation or scientific run has been performed for v4.
++> **Review state.** Author self-review complete. The Astra external review of v4
++> required revision; it did not review or approve v5. Scoped delta verification
++> and owner approval remain pending. No implementation or scientific run is
++> authorized or claimed by this revision.
+ >
+ > **Lifecycle.** Temporary while the design-review run is open. If accepted, the
+ > maintained-current destination is
+@@ -29,8 +33,9 @@
+ > **Normative-body budget.** Comparable accepted designs range from 1,041 lines
+ > (`r14/config-shape-design.md`) through 1,640 (`r05/climate-experiment-design.md`)
+ > to 2,946 (`r12/stress-test-lookup-design.md`). This revision targets
+-> **1,200–2,100 lines**. V4 uses the upper end because the G1-v3 package adds
+-> scientific validation and provenance contracts that must remain self-contained.
++> **1,200–2,400 lines** (v4: 2,067 lines, budget ceiling 2,100). V5 raises the
++> ceiling by 300 lines for explicit preparation handoff and runtime identity
++> planning contracts; the revised benchmark replaces its prior acceptance text.
+ > It retains schemas, invariants, formulas, migration
+ > mappings, and falsifiers while leaving round-by-round argument in v2 and the
+ > review ledger.
+@@ -423,13 +428,15 @@ no ingest path for supplied scenarios is being built.
+ 
+ The stochastic scenario rows are returned by a pure function of the composed
+ generation config. It reads `n_realizations`, `simulation_window`,
+-`climate_perturbations`, the resolved seed, and the registered scenario type rules; it
++`climate_perturbations`, the requested seed policy, and the registered scenario type rules; it
+ does no I/O. The generation Snakefile uses that in-memory object to expand the
+ DAG and a rule writes the identical object to `scenario_table.csv`.
++Row enumeration does not need the resolved `auto` integer; the source checkpoint
++resolves that later, before any stochastic draw.
+ 
+-This preserves P1's measured feasible case. A file written by a rule and then
+-read at module scope in the same invocation would require a checkpoint or a
+-second invocation; it is forbidden. A guarded parse-time read returning `[]` is
++This preserves P1's measured feasible case for **row enumeration**. A scenario
++table written by a rule must not be read at module scope in that invocation.
++A guarded parse-time read returning `[]` is
+ also forbidden because P1 measured exit 0 with zero scenario jobs. The minter
+ raises `EmptyScenarioSetError` on a zero-row table.
+ 
+@@ -440,6 +447,46 @@ states—producer subtree resolvable, subtree missing, and no derived rows. P2
+ measured the two ingredients separately and measured `ruleorder` to fail; it did
+ **not** measure their composition. A fresh-project in-workflow gate follows P2b.
+ 
++The rows are known before source extraction; their final **directory** is not.
++The selected scheduling contract (`ext1-3`) uses a source-planning checkpoint:
++
++1. From composed config, resolve the existing climate preparation targets and
++   a `generation_request_id`: SHA-256 of the requested generation config
++   (including requested seed, excluding its not-yet-resolved integer),
++   declared source locators/preparation settings, provider/preparation code and
++   environment descriptors. This planning key excludes unavailable extracted
++   bytes and is **not** `collection_id` or evidence of source freshness.
++2. `prepare_collection_sources` depends on the complete historical extraction,
++   basin/region inputs, and §5.4a preparation closure, using generation-owned
++   preparation rules where needed. Its declared output is
++   `<project_dir>/scenario_plans/<generation_request_id>/plan.json`.
++   After inputs exist it digests their actual bytes, resolves the seed and
++   collection intent, and writes the plan atomically. The plan stores schema
++   `scenario-plan/1`, request id/payload, exact source inventory and digest,
++   resolved intent/id, expected collection-manifest path and a canonical
++   `plan_sha256` excluding itself. It makes no collection ready.
++3. `all` uses an input function calling the checkpoint's public `.get()`;
++   only after completion does it return the exact collection-manifest target.
++   Generation rules use that resolved `collection_id` as a constrained wildcard
++   and the already-enumerated rows. Every such job depends on the plan and checks
++   that its id matches the plan; no filesystem scan discovers scenario rows.
++4. A collection-initialization rule owns §5.7's single directory claim. The
++   checkpoint never claims that directory. The producer rechecks live source
++   digests before generation/publication; changed bytes invalidate the plan or
++   refuse reuse, never mutate an existing intent.
++
++The plan is rebuildable scheduling state outside the collection. Every invocation
++preflights an existing plan's recorded live source inventory, even if Snakemake
++would schedule no job; stale bytes refuse with the affected source and rebuild
++instruction. An old request key cannot certify changed sources. Source/config/code changes use declared
++dependencies and digest-bearing params; missing sources schedule their actual
++preparation producers. No module-scope writer or second user invocation is
++permitted. A fresh dry-run reports the pending checkpoint and unresolved
++collection id; it cannot claim to have listed the complete post-checkpoint DAG.
++The public checkpoint/input-function mechanism is documented by
++[Snakemake](https://snakemake.readthedocs.io/en/stable/snakefiles/rules.html#data-dependent-conditional-execution);
++its composition in this repository remains untested (GF-29).
++
+ ### 5.3 Generator adapter
+ 
+ The logical provider interface is:
+@@ -477,7 +524,7 @@ retention, or endpoint semantics (`domain-v3-6`).
+ ### 5.4 Collection location and files
+ 
+ `<project_dir>/scenario_collections/<collection_id>/` is the collection root.
+-`collection_id` is the 64-character lowercase SHA-256 defined in §8.1, so two
++`collection_id` is the 64-character lowercase SHA-256 defined in §8.2, so two
+ different generation intents cannot share a directory. The root contains:
+ 
+ ```text
+@@ -486,6 +533,9 @@ generation_config.json
+ source_inventory.json
+ provider_code_inventory.json
+ generation_environment.json
++preparation_context.json
++preparation_catalog.yml
++ancillary/<artifact-id>/<source-basename>
+ scenario_table.csv
+ stress_test_lookup.csv
+ forcing/run_<run_id>.nc
+@@ -504,6 +554,58 @@ select a collection follows the repository's existing rule for ordinary paths
+ (resolved from the run directory); its normalized resolved path and digests are
+ recorded in the simulation manifest.
+ 
++### 5.4a Preparation-input closure (`ext1-2`)
++
++At the code baseline, `downscale_climate_forcing.py` consumes `fn_in`,
++`data_libs`, `precip_source`, `oro_path`, model root and simulation window; it
++clones a catalog entry and selects PET and forcing-elevation inputs.
++`prepare_climate_data_catalog.py` preserves `harmonise_dims`/CRS while dropping
++source unit/rename adapters because generated variables are already normalized.
++For CHIRPS/CHIRPS-global it reads the extraction's local `orography.nc`.
++Other sources resolve `<precip_source>_orography` through the input catalogs.
++Thus portable consumption requires the actual preparation closure, not just
++generated precipitation/temperature. [cited: these scripts and rule 3.14 at the
++declared code baseline]
++
++| existing input | explicit owner and successor |
++|---|---|
++| `fn_in` | collection forcing inventory, one artifact per `run_id` |
++| `DATA_SOURCES` / `data_libs` | generation's source resolver materializes the consumed catalog entries in `preparation_catalog.yml`, with required URI targets copied into `ancillary/`; original catalogs are generation provenance only |
++| `clim_source` / `precip_source` | producer resolves physical preparation context once: generated-forcing reader metadata, PET method and forcing-elevation source; source label remains provenance, never a stage-2 branch selector |
++| CHIRPS `oro_path` | copy the existing source-grid sidecar byte-for-byte into the collection; preserve its grid, units, CRS, nodata and catalog driver metadata |
++| other catalog-selected forcing elevation / auxiliary reads | resolve and package every file actually required by the current preparation call with original catalog semantics; no fallback to a live catalog or remote source at consumption |
++| model root/static maps/state/TOML | WF1 model reference and existing model digest, owned by simulation |
++| `sim_start`, `sim_end`, correction settings | simulation settings projection; checked against collection forcing coverage |
++| per-run catalog, forcing and TOML output paths | simulation adapter outputs; paths do not supply physical metadata |
++
++`preparation_context.json` has schema `forcing-preparation/1`, a required
++`generated_forcing_reader` record using the current HydroMT catalog field
++subset, `pet_method` (`makkink` for current E-OBS, `debruin` for the other current
++sources), `forcing_elevation` (catalog key plus ancillary artifact id), and
++`catalog` (relative path and SHA-256). Its `ancillary` array contains unique id,
++role, relative path, SHA-256, size and extracted spatial/variable descriptor.
++Arrays sort by role then id; the context document digest covers the whole
++record. Even a branch with no ancillary requirements must declare an empty
++array, with an explicit absence reason, rather than omit the contract.
++
++The packaged catalog retains the current driver/preprocess/CRS semantics and
++contains only entries needed for this preparation. Every URI is a confined
++collection-relative artifact; the adapter supplies the per-run generated file
++to the reader template. Packaging may rewrite URI/root locations, but may not
++change units, transforms, resolution, clipping or elevation values. Record the
++resolved entries and original source digests in `source_inventory.json` before
++intent resolution; include packaging code in the provider-code inventory.
++Before `collection_id` exists, preparation resolves the source files and computes
++the context/catalog's final relative-path representation and digests in the
++source plan. Collection initialization copies those exact inputs to the resolved
++collection root and verifies them; no checkpoint input points into that as-yet
++unknown directory. Copying is byte preserving, not another data transformation.
++Unavailable or unenumerated ancillary dependencies cause
++`IncompletePreparationContext` before collection publication. This is the
++existing preparation path made portable, not another scenario provider or data
++method. A source whose closure cannot be packaged fails the gate rather than
++silently falling back or narrowing the supported source set.
++
+ ### 5.5 `collection_intent.json`
+ 
+ This record is immutable and written before generation. Its required shape is:
+@@ -529,6 +631,7 @@ This record is immutable and written before generation. Its required shape is:
+   "source_inventory": {"path": "source_inventory.json", "sha256": "<sha256>"},
+   "provider_code": {"path": "provider_code_inventory.json", "sha256": "<sha256>"},
+   "environment": {"path": "generation_environment.json", "sha256": "<sha256>"},
++  "preparation_context": {"path": "preparation_context.json", "sha256": "<sha256>"},
+   "scenario_semantics_sha256": "<sha256>",
+   "unit_id_capacity": 0,
+   "unit_id_width": 0,
+@@ -596,6 +699,7 @@ Required shape:
+   "scenario_type_artifacts": [
+     {"role": "perturbation_lookup", "path": "stress_test_lookup.csv", "sha256": "<sha256>"}
+   ],
++  "preparation_context": {"path": "preparation_context.json", "sha256": "<sha256>"},
+   "forcing": [
+     {
+       "run_id": "001",
+@@ -628,12 +732,14 @@ Readiness validation performs, in order:
+ 
+ 1. schema and canonicalization version support;
+ 2. `collection_id` recomputation from the intent;
+-3. path confinement for intent, scenario table, scenario type artifacts, and forcing;
++3. path confinement for intent, scenario table, scenario type artifacts, forcing,
++   preparation context/catalog and every ancillary URI;
+ 4. exact file existence, size, and SHA-256 comparison;
+ 5. scenario-table schema, ordering, forest, completeness, pairing, and id-width
+    checks;
+ 6. one-to-one run-to-forcing inventory coverage;
+-7. descriptor extraction from each file and exact comparison with the recorded
++7. preparation-context closure and descriptors, and descriptor extraction from
++   each forcing file and exact comparison with the recorded
+    source-forcing descriptor, including calendar and actual endpoints; and
+ 8. `collection_revision` recomputation.
+ 
+@@ -656,7 +762,8 @@ No file is overwritten in place, and a recomputation that produces different
+ bytes for the same intent is a reproducibility failure rather than a new revision
+ silently replacing the old one.
+ 
+-Collection forcing files are durable outputs and must not be wrapped in
++Collection forcing, preparation context/catalog and ancillary files are durable
++outputs and must not be wrapped in
+ Snakemake `temp()`. Provider work files that are neither inventoried nor needed
+ for reproduction remain temporary. No consumer cleanup rule may delete or mutate
+ the collection.
+@@ -791,6 +898,7 @@ run_id
+ forcing_path
+ forcing_sha256
+ ForcingDescriptor
++PreparationContext  # verified physical context, catalog and ancillary paths/digests
+ collection_id
+ collection_revision
+ ```
+@@ -811,7 +919,13 @@ the perturbation lookup, or a provider payload. A synthetic collection with no
+   performs.
+ 
+ The adapter compares every `ForcingDescriptor` before any preparation or Wflow
+-process starts. Variable absence, unit mismatch, incompatible space, unsupported
++process starts. It also verifies `PreparationContext`, opens only its packaged
++catalog/ancillary closure, and records the resolved PET/elevation/reader settings
++in prepared-run metadata. The current PET/correction algorithms stay unchanged;
++the adapter receives their resolved physical inputs without selecting on
++`scenario_type` or the historical source label. Missing, stale or grid-incompatible
++ancillary data refuses before preparation, naming the artifact and mismatch.
++Variable absence, unit mismatch, incompatible space, unsupported
+ calendar, wrong timestep/label, insufficient coverage, or forbidden missingness
+ raises `IncompatibleForcingError` naming `run_id`, field, required value, observed
+ value, and source artifact. A conversion is allowed only when it is an existing
+@@ -961,9 +1075,12 @@ standalone feasibility probe must show:
+    fail before any simulation command;
+ 4. requesting `all`, `metrics`, a metric filename, or a Wflow filename cannot
+    bypass the configured operation; and
+-5. a dry-run and a real fixture invocation agree on which rules are present.
++5. a dry-run and a real fixture invocation agree on allowed producer classes,
++   while a fresh dry-run explicitly reports unresolved checkpoint targets; and
++6. the metric-planning checkpoint (§8.4a) resolves the final metric set from
++   newly completed responses within that same `all` invocation (GF-30).
+ 
+-If conditional rule definition cannot satisfy those five without private
++If conditional rule definition cannot satisfy these without private
+ Snakemake APIs, entry-point extraction pauses. The fallback is a thin shipped
+ runner selecting one of two explicit rule modules inside the same
+ `simulate_system.smk`; creating a third workflow is not an allowed fallback.
+@@ -985,6 +1102,7 @@ registry. Every metric declares:
+ | `return_period` | years or `None` |
+ | `blocks_per_return_period` | positive ratio or `None` |
+ | `implementation_revision` | immutable digest of the metric and imported reducer code |
++| `value_validity` | explicit finite/missing/non-finite/physical-domain policy, including refusal behavior; preserve each current metric's numerical semantics |
+ 
+ The registry keeps current internal statistic keys separate from emitted output
+ names. `Q_METRIC_SUFFIXES` remains the authoritative mapping from an internal
+@@ -1086,7 +1204,8 @@ written last as its ready marker. Its required content is `schema_version`,
+ response-inventory path/digest, the complete selected metric declarations,
+ metric-definition digest, metric-execution environment path/digest,
+ grouping/reference semantics and resolved Class-C reference provenance,
+-unit-index path/digest,
++unit-index path/digest, exact expected result keys (§7.4 below),
++return-level validation scope/status (§7.5),
+ an ordered indicator-table inventory of token/path/digest/row count, and
+ `metrics_manifest_sha256`. The manifest digest is canonical SHA-256 with only
+ `metrics_manifest_sha256` omitted; no timestamp or mtime enters it. Thus every
+@@ -1140,12 +1259,38 @@ The validator asserts:
+    is complete in both required directions, with the unperturbed empty key
+    outside the lookup by construction; and
+ 10. each emitted variable, location, and time basis satisfies the persisted
+-    response request.
++    response request and selected declaration;
++11. emitted `(metric, location, unit_id)` keys are globally unique across all
++    indicator tables and equal the independent expected key set; and
++12. each expected value satisfies that metric's persisted `value_validity` policy.
+ 
+ Invariant 6 is evaluated from declarations and scenario rows, not from emitted
+ tables, so a minter and writer cannot agree on the same omission. A forcing-only
+ unevaluated row has a climate file and no run unit, response, or metric row.
+ 
++Before reduction, the planner constructs `expected_result_keys` independently
++of all emitted rows. For each selected metric it resolves applicable units from
++its declared grain and grouping, and required locations from its declaration
++and the persisted simulation response request. A run-grain metric requires
++every evaluated run; a bundle-grain metric requires every declared bundle.
++For each applicable unit, every required location contributes exactly one key.
++Location applicability must be an explicit declaration rule: it cannot be
++inferred from nonempty output, a successfully fitted subset, or an intersection
++that silently drops missing member locations. A required response absent in
++any member refuses; extra retained responses do not expand a metric's locations.
++
++`metrics.json` persists this sorted key array (metric, location, numeric unit
++order), its canonical digest, and the declaration-to-unit/location resolution
++used to derive it. Validation independently rederives the keys from persisted
++declarations, scenario rows, request and bundle membership; it checks both the
++stored expected array and the emitted keys. Duplicates, missing keys and extra
++keys are separate failures with counts and named keys. A prohibited value
++refuses the whole metric set; it cannot be handled by omitting its row. Missing
++values are allowed only where the declaration explicitly permits their current
++encoding. Class-B count or fit refusal never publishes a ready metric set.
++GF-10 applies on every publication and subsequent consumption, including
++metrics-only recomputation, not just the one-off migration comparator (`ext1-4`).
++
+ ### 7.5 Return-level estimator precondition
+ 
+ Return-level acceptance has three separate gates: minimum-sample screening,
+@@ -1213,36 +1358,88 @@ described the pre-R14 regression-baseline window and is not a current-tree fact.
+ The stricter `2.0` ratio remains an alternative methodological tightening. It is
+ not silently introduced by this architecture migration.
+ 
+-The values `1.0` and `10` remain **provisional screening heuristics**. The
+-following grid and tolerances are **author-proposed scientific acceptance
+-criteria awaiting Astra model-validator review**; G1 approved the obligation to
+-add explicit bounded criteria, not these numerical choices. Using the
+-unchanged estimator, draw 1,000 deterministically seeded samples for each cell
+-of GEV shape `{-0.2, 0.0, 0.2}` × usable-block count `{10, 18, 30, 60}` at unit
+-location and scale; evaluate the 10-year upper and 2-year lower quantiles against
+-their analytic GEV values. Report fit-refusal rate, median signed relative error,
+-median absolute relative error, and 90th-percentile absolute relative error for
+-every cell. The provisional policy may be described as scientifically validated
+-only for cells where at least 95% of samples yield valid fits, absolute median
+-bias is at most 10%, and 90th-percentile absolute relative error is at most 50%
+-for the 10-year level and 25% for the 2-year level. Every boundary cell at
+-`n=10` and the current-config cell at `n=18` must pass for the corresponding
+-shipped metric before the screening values receive that description. Failure
+-leaves the count policy usable only as an explicitly limited operational
+-screen; it triggers a separate owner method ruling and does not automatically
+-select ratio `2.0`, change the estimator, remove partial years, or add intervals.
+-The validation record pins RNG seed, xclim/SciPy environment, analytic
+-parameterization, cell counts, and complete results. It does not claim
+-stationarity, independent annual extrema, fit precision outside the tested
+-matrix, or basin-model adequacy.
++The values `1.0` and `10` remain **provisional screening heuristics**. Estimator
++benchmarking and validation of that operational screening policy are distinct
++claims (`ext1-1`). For a generating GEV with location `mu`, scale `sigma>0`
++and standardized true quantile `z_p`, `q_p=mu+sigma*z_p`. Relative error
++`(qhat_p-q_p)/abs(q_p)` changes with location even when standardized estimation
++error is unchanged. Passing one location/scale choice therefore cannot validate
++a count-only rule for arbitrary discharge regimes. [argued: location-scale algebra]
++
++**Estimator benchmark, proposed and unexecuted.** All cell choices and numerical
++tolerances below await Astra model-validator review and owner acceptance before
++execution; none was ratified by G1 or external round 1. Use the unchanged
++xclim/SciPy fitting path, pin its GEV shape sign convention explicitly, and draw
++1,000 deterministically seeded standardized samples for each shape
++`{-0.2, 0.0, 0.2}` × usable-block count `{10, 18, 30, 60}`. Evaluate the current
++10-year upper (`p=0.9`) and 2-year lower (`p=0.5`) levels. The current 2-year
++minimum is thus the median of annual seven-day minima, not a claim about a more
++extreme lower-tail probability. Fit refusals count against the full 1,000 draws;
++error summaries are conditional on valid fits and report their denominator.
++
++For every fit report signed scale-normalized error
++`e_sigma=(qhat_p-q_p)/sigma`, its median, median absolute error and 90th-percentile
++absolute error. This measure is location-invariant and uses **generating** scale,
++never fitted scale as an error denominator. Proposed benchmark pass criteria
++are valid-fit rate at least 95%, absolute median `e_sigma` at most 0.10, and
++90th-percentile `abs(e_sigma)` at most 0.50 (upper) or 0.25 (lower).
++
++For relative-error diagnostics reuse each standardized sample at generating
++scale one and locations `mu=rho-z_p`, for `rho=q_p/sigma` in
++`{0, 0.05, 0.5, 2, 10}`. These controlled offsets span zero, near-zero, and
++progressively larger signal relative to variation; they are sensitivity cases,
++**not empirically established discharge-regime frequencies or a representative
++basin sample**. Refit the translated samples to expose numerical non-equivariance
++and require scale-error summaries to remain consistent with the same translated
++draws: proposed paired `e_sigma` tolerance `1e-6` absolute and unchanged fit-validity
++classification, both reviewed before execution. Report every deviation, with no
++silent optimizer retuning to pass the equivalence diagnostic.
++Report all signed/absolute relative summaries wherever `rho!=0`; at zero record
++`undefined` and the scale error, never epsilon-divide or silently exclude the case.
++The GEV samples can contain negative values: these are mathematical estimator
++fixtures, not generated discharge; do not truncate them and change the model.
++
++The v4 relative criteria (absolute median bias ≤10%, 90th-percentile absolute
++error ≤50% upper / ≤25% lower) remain **proposed benchmark criteria only** for
++the explicitly tested `rho={0.5,2,10}` cells. Both scale and relative criteria
++must pass for a qualified claim at those cells. The zero/near-zero low-flow
++cases are diagnostic and outside any validated relative-error domain. Every
++cell, failure and undefined diagnostic is reported; no average across locations
++or shapes can hide a failed cell. Boundary `n=10` and current `n=18` cells are
++mandatory, and no pass extrapolates to untested shapes, counts, ratios or
++dependent/nonstationary blocks. The benchmark record pins RNG and seeds, analytic
++parameterization, environment, exact criteria, all counts/results, and reviewer
++decision; changing its criteria after seeing results requires a new reviewed record.
++
++**Screening-policy status.** Even a reviewed and successful benchmark establishes
++only estimator performance in its declared cells. It does not scientifically
++validate `1.0`/`10`, establish independence of pooled blocks, or identify the
++true generating ratio for an observed bundle. Those values retain
++`screening_policy_status: provisional_operational` in every metric set. A future
++policy-validity claim requires a separately approved domain/applicability and
++block-dependence assessment connecting the proposed count rule to the intended
++systems; that work is outside this migration. Failure of benchmark criteria
++goes to the owner for a method ruling; it never automatically selects ratio
++`2.0`, changes the estimator, removes partial years or adds fit intervals.
++
++`metrics.json` persists a `return_level_validation` record: screening ratio and
++floor; `screening_policy_status`; `benchmark_status` (`not_run`, `failed`, or
++`reviewed_bounded`); accepted benchmark record path/digest or null; exact tested
++shape/count/quantile/ratio domain (empty when `not_run`); approved criteria or null; and
++`application_scope: operational_screen_only`. It always states that relative
++error near zero is unvalidated and actual-bundle applicability is unestablished.
++The benchmark is not matched to a real bundle merely from fitted parameters.
++The immutable referenced report is copied into the metric set when present.
++These validation declarations and report digest enter metric identity (§8.4),
++so a later evidence annotation creates a new set, never changes a ready manifest.
+ 
+ ### 7.6 Fit uncertainty and surface metadata
+ 
+ The retained position from `domain-7` remains explicit: the toolbox emits
+ point estimates that pass the operational sample and fit-validity checks, and
+-carries no Class-B fit interval across this seam. Until §7.5's author-proposed
+-criteria pass scientific review and execution, these estimates are not described
+-as scientifically adequate merely because the count and fit gates pass.
++carries no Class-B fit interval across this seam. Count/fit validity and a passed
++bounded estimator benchmark do not establish the adequacy of an actual bundle;
++§7.5's application and policy limitations remain in its metadata.
+ Class A and C preserve per-run spread; Class B does not. A companion metric name
+ can add intervals later without changing the four-column schema. The trigger is
+ a requirement to interpret threshold crossings with estimator uncertainty.
+@@ -1333,6 +1530,7 @@ collection_id = SHA256(canon({
+     provider_name_and_revision,
+     provider_code_sha256,
+     environment_sha256,
++    preparation_context_sha256,
+     unit_id_capacity,
+ }))
+ 
+@@ -1341,11 +1539,13 @@ collection_revision = SHA256(canon({
+     intent_sha256,
+     scenario_table_sha256,
+     scenario_type_artifact_inventory,
++    preparation_context_sha256,  # includes catalog and complete ancillary inventory
+     ordered_forcing_inventory_with_descriptors,
+ }))
+ ```
+ 
+-`collection_id` is known before generation and names the directory.
++`collection_id` is known after source preparation and before stochastic
++generation, and names the directory (§5.2).
+ `collection_revision` proves the produced bytes and metadata. Sequential ids are
+ handles; neither digest replaces them.
+ 
+@@ -1404,6 +1604,7 @@ metric_definition_sha256 = SHA256(canon({
+     grouping_registry_semantics,
+     reference_registry_semantics,
+     resolved_reference_provenance,
++    return_level_validation_declaration_and_report_sha256,
+     metric_and_imported_reducer_code_sha256,
+ }))
+ 
+@@ -1430,18 +1631,78 @@ response already retained also schedules only stage 3. A required response absen
+ from the retained set causes `MissingResponseRequirement`; it does not silently
+ change `simulation_id` or run Wflow in metrics-only mode.
+ 
++### 8.4a Metric planning after response completion (`ext1-3`)
++
++`metric_set_id` is deliberately unknown until response inventory and Class-C
++reference resolution exist. A second supported Snakemake checkpoint,
++`plan_metric_set`, bridges this boundary within `simulate_system.smk`:
++
++1. At parse time compute a `metric_request_id` from `simulation_id`, the
++   selected declarations, grouping/reference semantics and code digests,
++   stage-3 environment and §7.5 validation declaration/report digest. Exclude
++   unavailable response-inventory digest and resolved reference provenance.
++   This is a scheduling key, never a scientific result identity.
++2. The checkpoint depends on completed `response_inventory.json`, its declared
++   native artifacts, and the immutable request/declaration/environment inputs.
++   Native output paths are enumerated from the stage-2 run/request contract;
++   their bytes and reference months are not read before their producers finish.
++   In simulation mode the response producers are present; in metrics-only they
++   are external validated leaves and no simulation producer is defined.
++3. At execution it verifies complete retained responses, resolves Class-C
++   references exactly as §7.2, creates bundle memberships/expected result keys,
++   and computes §8.4's final identity. It atomically writes
++   `<exp>/results/metric_plans/<metric_request_id>/plan.json`, schema
++   `metric-plan/1`, containing request id/payload, actual response digest,
++   resolved reference provenance, expected unit/key sets, environment and
++   validation descriptors, `metric_set_id`, exact target paths and canonical
++   `plan_sha256` excluding itself. No metric value is written by this checkpoint.
++4. The `all`/`metrics` target input function calls this checkpoint's public
++   `.get()`, reads the completed plan and returns the exact `metrics.json`
++   target. Reduction and publication rules use constrained `metric_set_id`
++   wildcards, depend on the plan, and reject any id not equal to its resolved id.
++   Indicator files and manifest remain declared DAG outputs, not hidden
++   runtime side effects. The final publisher checks all §7.4 invariants and
++   writes `metrics.json` last; the plan is never a ready-result marker.
++
++Plans are rebuildable and excluded from scientific identities: all result-
++affecting plan contents already enter the final identity. Native artifact bytes
++are reverified before planning/reduction and on every invocation's existing-plan
++preflight, even for a no-job DAG. Existing plans are reusable only after checking
++their request and response digests. A stale plan is rebuilt or
++refused, never used to select an older result. No new checkpoint platform,
++execution-attempt record, global lock or resume guarantee is introduced.
++
++In metrics-only mode all determining responses must exist, so the same planner
++can compute the expected identity read-only at parse time to validate a direct
++metric filename. Only the selected set's declared output filenames are allowed;
++the execution checkpoint still validates and materializes its plan. Unknown or
++mismatched filenames refuse. In fresh simulation mode the supported target is
++`all`; its final identity is resolved after stage 2 without a second invocation.
++Success reports exact collection id/path and metric-set id/path; the runner
++reads the selected plans and validates those exact ready manifests. No `latest`
++pointer, directory scan or fallback to a retained set is allowed. A fresh
++dry-run reports that metric identity awaits responses instead of inventing it.
++GF-30 must demonstrate this entire transition from absent responses.
++For both checkpoints, final ready-artifact reuse must occur before any scheduled
++rule can remove published files. Use the supported output-preservation mechanism
++(`update(...)` where a revalidation rule retains an existing output), never a
++`directory()` rule over an existing immutable collection/result set. Forced-rerun
++fixtures must prove that unchanged outputs survive and mismatches refuse.
++
+ ### 8.5 Invalidation matrix
+ 
+ | changed fact | collection | stage-2 responses | metric set |
+ |---|---|---|---|
+ | generation config, seed, source inventory, provider code/environment | new `collection_id`; regenerate | new simulation identity | new metric set |
+ | generated forcing byte or descriptor | collection revision mismatch; refuse mutation | stale/refuse | stale/refuse |
++| packaged preparation context/catalog/ancillary source | new intent on source change; in-place ready mutation refuses | new collection revision/identity invalidates responses | new metric set |
+ | model digest, simulator setting, adapter code/environment | reusable | new simulation identity; simulate | new metric set |
+ | immutable simulation response request | reusable | new simulation identity; simulate the enlarged request | new metric set |
+ | selected metric set whose requirements are already retained | reusable | reusable and **must not rerun** | new metric set only |
+ | selected metric requires an unretained series | reusable | metrics-only refuses; a separately requested simulation with an enlarged response request is required | no result until satisfied |
+ | metric formula, grain, grouping/reference body | reusable and **must not rerun** | reusable and **must not rerun** | new metric set only |
+ | metric execution environment or numerical dependency resolution | reusable | reusable and **must not rerun** | new metric set only |
++| return-level validation declaration/report | reusable | reusable and **must not rerun** | new metric set; scientific values need not change |
+ | batch size, cores, operation | reusable | same scientific identity | unchanged results identity |
+ 
+ This re-expresses v2 GF-16/GF-17 rather than carrying their stale mechanism:
+@@ -1466,7 +1727,9 @@ config before the success marker and retry. Content-addressed collection intent
+ preserves that case differently: changing config produces a new `collection_id`
+ and leaves the failed directory isolated. It does not preserve in-place repair of
+ a **same-intent partial collection**. The bounded claim in §5.7 refuses that
+-directory until explicit cleanup, and no checkpoint is reused.
++directory until explicit cleanup, and no completed forcing artifact is reused
++from that partial collection. Rebuildable identity-planning checkpoints (§§5.2,
++8.4a) are distinct from scientific-artifact recovery and do not change this rule.
+ 
+ This is deliberate scope restraint, not a claim of equivalent resumability. It
+ may waste completed forcing files after an interruption, but cannot treat partial
+@@ -1516,11 +1779,12 @@ The replacement declares leaves by consumer and operation:
+ 
+ | consumer/operation | required external leaves | accepted producer |
+ |---|---|---|
+-| scenario generation | declared historical climate source and required basin/region artifacts | their existing climate/data preparation owner; never `build_model` merely to obtain Wflow state |
++| scenario generation | raw source/catalog and basin facts needed by generation-owned preparation, or already-prepared equivalents | existing climate/data preparation; missing extraction is produced within generation before §5.2's checkpoint, never by invoking `build_model` for Wflow state |
+ | simulation `simulate-and-metrics` | ready collection manifest; WF1 config snapshot, Wflow TOML, `.outputs_configured` | external collection or `generate_scenarios`; `build_model` for the three model leaves |
+ | simulation `metrics-only` | ready collection manifest; simulation record; response request and ready response inventory/native artifacts | a prior completed system simulation |
+ 
+-The helper validates leaves. It does not add producer edges across entry points.
++The helper validates external leaves; generation-owned derived extraction is
++not preflighted as an external leaf. It does not add producer edges across entry points.
+ The runner may tell a user which disabled workflow normally produces a missing
+ leaf, but each Snakefile treats it as external and refuses independently.
+ 
+@@ -1540,7 +1804,7 @@ contract clause remains verbatim.
+ | HM-4 Wflow config | `<exp>/hydrology/wflow/config/run_<run_id>.toml`, one per evaluated run; existing TOML content, pinned key subset, and HydroMT/Wflow conventions stand. |
+ | HM-5 native response | `<exp>/hydrology/wflow/output/run_<run_id>.csv`, one per evaluated run; existing columns, units, time axis, and numerical output semantics stand. Stage 3 reaches it only through `response_inventory.json`. |
+ | HM-6b warm state | `<exp>/hydrology/wflow/output/outstates_run_<run_id>.nc`, one per evaluated run, `temp()`; existing content and lifecycle stand. |
+-| HM-7 result interchange | `<exp>/results/metric_sets/<metric_set_id>/<token>_indicators.csv`, exactly `metric,location,unit_id,value`, with `unit_index.csv` and `metrics.json` in the same ready metric set. Existing variable tokens, location spelling, value precision, and metric vocabulary stand subject to R-2. |
++| HM-7 result interchange | `<exp>/results/metric_sets/<metric_set_id>/<token>_indicators.csv`, exactly `metric,location,unit_id,value`, with `unit_index.csv` and `metrics.json` in the same ready metric set. Require globally unique keys exactly equal to the independently derived declaration/unit/location key set, plus metric-specific value validity. Existing tokens, location spelling, precision and vocabulary stand subject to R-2. |
+ 
+ For WG-5, `validate_wg5` changes its selector from `rlz_` to `run_`, changes its
+ docstring pattern, and changes the empty-selection diagnostic to
+@@ -1556,6 +1820,8 @@ computes it from run counts, bundles, metric declarations, or repository code.
+ A mixed-width set is malformed. Consumers join before grouping and refuse every
+ unresolved unit. `validate_hm7` checks the exact header and vocabulary; each
+ result id and member id domain; declared metric grain; all §7.4 unit invariants;
++exact expected-key equality and uniqueness independent of emitted tables;
++each metric's value-validity policy;
+ and stochastic design coverage through
+ `unit_id → member_run_id → scenario_table.st_id → stress_test_lookup.st_id`,
+ including at least one unit resolving to the empty unperturbed key. The latter
+@@ -1690,9 +1956,11 @@ after every earlier enabled producer in the fixed sequence has completed. Thus a
+ fresh all-enabled invocation checks WF1 leaves after `build_model`, not before
+ the build that creates them. The runner applies these preflights:
+ 
+-1. if generation is enabled, compute the intended content-addressed path and
+-   invoke the generator; the generator alone atomically claims the directory and
+-   applies §5.7's reuse/partial-state rules—the runner makes no second claim;
++1. if generation is enabled, compute only the generation request key and invoke
++   the generator once. Its source checkpoint resolves the final collection id
++   after extraction; its initialization rule alone claims the collection and
++   applies §5.7. On success the runner reads the exact request's plan, checks its
++   source/intent digests and validates that plan's ready collection manifest;
+ 2. if system simulation is enabled while generation is disabled, validate the
+    configured ready collection as an external leaf;
+ 3. for `simulate-and-metrics`, require the WF1 leaves and model digest whether
+@@ -1712,14 +1980,15 @@ scenario_collection:
+ ```
+ 
+ `generated` means exactly the collection intent produced by the composed
+-`generate_scenarios` workflow in this same project config. Before invoking the
+-generator, the runner calls the shared pure intent resolver, including the
+-prepared source inventory, and holds the resulting expected
+-`<project_dir>/scenario_collections/<collection_id>/collection.json` path in
+-memory. After generation exits, it validates that exact ready manifest and
+-passes that path as the resolved simulation input. It never scans the collection
+-directory, follows a `latest` pointer, or selects an older ready collection. A
+-mismatch between the precomputed id and produced manifest is a hard failure.
++`generate_scenarios` workflow in this same project config. Its request key can
++be named before extraction; its content identity cannot. After generation exits,
++the runner recomputes intent from the plan's verified source inventory, validates
++the exact `<project_dir>/scenario_collections/<collection_id>/collection.json`,
++and passes that path to simulation. It never scans collection directories,
++follows `latest`, or selects an older ready collection. Any disagreement between
++request, plan, recomputed intent and ready manifest is a hard failure. This is
++one documented runner invocation with one generation invocation, even when
++historical extraction was absent on entry.
+ 
+ `selection: manifest` requires an explicit normalized `manifest_path` and is the
+ portable independent-consumer form; it does not require original generator
+@@ -1731,6 +2000,14 @@ manifest without invoking its producer. `manifest_path` is forbidden with
+ resolved path, selector, collection id, and revision are recorded in
+ `simulation.json`.
+ 
++The generation success summary names its resolved collection; the simulation
++success summary names the final metric set selected by §8.4a's plan. Direct
++commands remain `snakemake all -s generate_scenarios.smk --configfile <project>`
++and `snakemake all -s simulate_system.smk --configfile <project>` (with the
++required cores/environment options). Metrics-only uses target `metrics` and its
++configured operation. Fresh direct generation and fresh direct simulation each
++complete in one command; an unresolved dry-run is explicitly a partial DAG view.
++
+ ### 9.6 Reference-atomic landing and output migration
+ 
+ Landing 3 retires `run_stress_test.smk`, its stanza, and its workflow file after
+@@ -1749,6 +2026,14 @@ The migration note carries the deterministic old `(rlz, st_id)` to new `run_id`
+ crosswalk and the old pooled-sentinel to bundle-unit mapping. Half-renamed trees
+ are unsupported and refused.
+ 
++Migration also packages the preparation closure before declaring a collection
++ready; old generated files alone are insufficient. Add inventory rules for
++`scenario_plans/`, preparation context/catalog/ancillary artifacts and
++`results/metric_plans/`, along with the revised manifests. Update runner and
++direct-command docs to explain delayed identity resolution and success-path
++reporting. Plan files are generated scheduling artifacts, never portable
++handoff substitutes; portable consumers retain the collection manifest selector.
++
+ The numerical comparison cannot use the currently retained regression-baseline manifest as
+ its pre-change side. The repository documents that manifest and fixture tree as
+ pre-R14 while the current regression-baseline config uses the nine-year window; the next run
+@@ -1775,6 +2060,10 @@ uses `--notemp` when its discharge output is part of that recording.
+ | mutable human-named collection | approachable paths | rejected: reuse and stale-consumption decisions become ambiguous | none within the approved split; aliases may point to immutable ids later |
+ | keep an indefinite old compatibility wrapper | easier transition | rejected: it cannot express independent producer/consumer ownership without guessing | a time-bounded external-client obligation with an explicit sunset and unambiguous mapping |
+ | tighten `blocks_per_return_period` to `2.0` | more conservative extrapolation | deferred methodological choice; would reject current short bundles | owner validation of the threshold and acceptance of the affected run cost |
++| two explicit runner passes around source preparation and metric planning | statically named DAGs in each pass | not selected: direct Snakefile commands would need an extra invocation or mandatory wrapper, weakening the approved independent-entry-point guarantee | checkpoint composition fails GF-29/GF-30, followed by owner approval of a changed invocation contract |
++| two bounded identity-planning checkpoints | preserves content identities and one invocation per entry point | selected; initial dry-run cannot enumerate post-checkpoint targets, and plans require stale-input validation | supported Snakemake composition proves infeasible; no private-API fallback is authorized |
++| external simulation ancillary inventory | avoids copying large source-grid assets per collection | not selected: consumer needs an additional portable input package and identity surface | measured duplication cost outweighs self-contained collection portability under a newly approved contract |
++| qualify count policy from a fixed-location GEV benchmark | inexpensive numerical pass/fail | rejected: relative errors depend on generating location-to-scale ratio; tested estimator cells do not prove applicability to real bundles | reviewed policy-level applicability evidence; no bounded matrix alone reverses this conclusion |
+ 
+ ## 11. Consequences, roadmap, and remaining risks
+ 
+@@ -1811,13 +2100,17 @@ uses `--notemp` when its discharge output is part of that recording.
+ - Wflow forcing compatibility and numerical equivalence after path/config
+   extraction require real validation. Structural fixture success cannot accept
+   scientific equivalence.
+-- The target/operation parse-time mechanism and direct-filename behavior are
+-  unprobed. Entry-point extraction waits on the §6.8 feasibility gate.
++- The target/operation mechanism, two planning checkpoints and direct-filename
++  behavior are unprobed. Entry-point extraction waits on §6.8 and GF-29/GF-30.
++- Ancillary packaging adds durable bytes. The supported CHIRPS and other
++  preparation paths must pass GF-31 without live source catalogs; a failed
++  closure cannot be hidden by dropping that source from migration coverage.
+ - Class-B `1.0` and screening floor `10` are provisional operational values.
+-  They may be called scientifically validated only after §7.5's bounded matrix
+-  passes; even then the claim is limited to that matrix and is not an uncertainty
+-  interval, stationarity result, or basin-skill result. Historical `domain-7`
+-  remains deferred: no fit interval crosses the seam.
++  A successful §7.5 benchmark qualifies estimator cells only; it cannot validate
++  those values as a policy or establish actual-bundle adequacy. Zero/near-zero
++  relative-error applicability remains unvalidated and persisted. Historical
++  `domain-7` remains explicitly **for owner ratification or overturning at G2**:
++  no fit interval crosses the seam and this revision does not close that major.
+ - The response request must be chosen with likely metric needs in mind. A later
+   metric needing an unretained variable requires a new simulation run; metrics-only
+   correctly refuses rather than expanding scope silently.
+@@ -1840,12 +2133,16 @@ uses `--notemp` when its discharge output is part of that recording.
+    disk volume are unmeasured. No cap is inferred from their absence.
+ 8. The R-2 Class-C averaging premise must pass on equal-calendar old/new outputs;
+    it is not accepted merely because the formula is linear.
+-9. Return-level thresholds need §7.5's bounded methodological validation;
+-   passing the count and fit-validity gates establishes only operational
+-   admissibility under this design.
++9. §7.5's revised estimator benchmark awaits reviewed criteria and execution;
++   policy validation is a separate future method decision. Count/fit validity
++   establishes only operational admissibility under this design.
+ 10. E19 remains outside current production scope: no operational example yet
+     establishes that a future provider's reference period, temporal aggregation,
+     units, and surface coordinates are scientifically comparable.
++11. Fresh source preparation and fresh response-dependent metric planning must
++    both pass their single-invocation checkpoints (GF-29/GF-30).
++12. The packaged preparation closure must reproduce the existing source-catalog
++    path after the original climate store/catalogs are unavailable (GF-31).
+ 
+ ## 12. Validation plan: claim to falsifier
+ 
+@@ -1858,18 +2155,18 @@ implementation result may be reported as measured until the named gate runs.
+ |---|---|---|
+ | GF-1 | `derived_from` alternation and ancestor input compose on a fresh project | P2b first; then a fresh generation DAG has no ambiguity/cycle and a missing ancestor fails cleanly |
+ | GF-2 | empty `derived_from` matches no transform rule | synthetic no-edge fixture schedules root generation only |
+-| GF-3 | scenario enumeration is parse-time derivable without checkpoint | one fresh invocation builds the complete expected DAG; no checkpoint/two-pass behavior |
++| GF-3 | scenario rows are parse-time derivable without reading a generated table | exact row set is known before source extraction; no row-discovery checkpoint or second invocation; the distinct directory-identity checkpoint is GF-29 |
+ | GF-4 | current unperturbed cases are always evaluated under R14 | every stochastic unperturbed row is `evaluated:true`, scheduled, and inventoried; old `run_historical` is refused, not revived |
+ | GF-5 | empty scenario set refuses | `EmptyScenarioSetError`; no successful zero-job generation |
+ | GF-6 | grouping/declaration body or metric execution environment changes rerun only stage 3 | each change independently creates a new metric-set id while collection and response digests remain byte-identical; the environment case changes a recorded numerical dependency descriptor with repository source unchanged |
+ | GF-7 | HydroMT resolves every `run_` catalog entry | one real rapid preparation reads the intended source for each run |
+ | GF-8 | inventory recognizes the successor trees | `tree-check` reports no undeclared new leaves after a complete rapid run; renamed prefixes already classify as P5 measured |
+-| GF-10 | every result unit resolves with one grain | synthetic pass/fail contract pairs plus all completed result tables |
++| GF-10 | every expected metric-location-unit key occurs exactly once with valid grain/value | independently derive the exact expected set; remove one return-level row at one gauge/design point and duplicate another while retaining the complete unit index and overall design coverage: each must refuse; test missing/extra keys and metric-specific invalid values on fresh and metrics-only publication |
+ | GF-11 | simulator never receives scenario type concepts | AST/signature test plus synthetic scenario type lacking `rlz`/`st_id` reaches dummy simulator |
+ | GF-12 | stale collection/simulation reuse refuses | changed ready byte, collection revision, model digest, setting, or response request names the mismatched digest before execution |
+ | GF-13 | empty `st_id` remains a Class-B grouping key | unperturbed metric bundle exists in index and carries both return-level rows |
+ | GF-14 | unevaluated metric reference refuses generally | fixture-only unevaluated reference raises a named parse-time error; no retired toggle is accepted |
+-| GF-15 | return-level sample screening, fit validity, and methodological adequacy are separate | `required-1` refuses with metric/unit/location/count/coverage; constant blocks, location-specific missingness, injected fit failure, invalid parameters, and non-finite quantile each refuse by the named contract; the bounded seeded matrix in §7.5 reports every cell and alone decides whether `1.0`/`10` may be called scientifically validated |
++| GF-15 | screening, fit validity, estimator benchmarking and policy applicability remain distinct | `required-1`, constant blocks, missingness, injected fit failure, invalid parameters and non-finite quantiles refuse; execute only reviewed §7.5 cells/criteria, report scale and relative errors plus all zero/near-zero cases, and check translation behavior; even a benchmark pass leaves policy provisional and real-bundle/near-zero limitations persisted |
+ | GF-16 | stage-1 freshness is independent of metric/grouping code | imported provider-body change moves collection id; metric/grouping change cannot move any collection artifact |
+ | GF-17 | interrupted/config/width behavior matches §8.6 | same-intent partial refuses cleanup; changed intent uses new directory; metric growth within capacity leaves collection unchanged; overflow refuses explicitly |
+ | GF-18 | pairing claims require exact same-realization ancestry | paired fixture with all-empty edges, one missing perturbed edge, cross-realization ancestry, and a perturbed-parent chain each refuse before generation; roots have no parents; distinct realizations have distinct roots; an instrumented transform proves it consumes the declared direct ancestor; an independent fixture may pass, without treating distinct ids as proof of independent draws |
+@@ -1894,6 +2191,9 @@ those mechanisms survive the durable split.
+ | GF-26 | projections remain terminal | generated DAGs have no WF2 input; full runner schedules WF2 last; no projection digest enters any collection/simulation identity |
+ | GF-27 | seed resolution is acyclic, migration-preserving, and independent of namespace headroom | renaming simulation experiment cannot change new collection; old explicit/default/auto each resolve to their pre-split integer; capacity-only and id-width-only variants preserve `resolved_seed` and forcing values under a run crosswalk while creating the required distinct collection namespace; collection-id construction has no seed cycle |
+ | GF-28 | calendar and endpoint migration preserves the current adapter path | bounded fixtures cover a leap year, right-labelled terminal timestamp, and non-January water year; source/prepared/response calendars, conversion/clip operations, actual endpoints, partial blocks, and annual reductions match the pre-change comparator or fail with a reported mismatch and no silent repair |
++| GF-29 | source preparation precedes collection identity within one invocation | start with historical extraction, source plan and collection absent and all Wflow leaves unavailable; direct generation `all` must prepare sources, resolve actual-byte identity, generate and report the exact ready collection in one command; repeat through the runner; source-byte change must invalidate/refuse an old plan, and dry-run must name unresolved targets honestly |
++| GF-30 | fresh responses precede final metric identity within one invocation | start with responses, metric plan and metric set absent; direct simulation `all` must execute stage 2, resolve reference months/response digest through the checkpoint and publish/report the matching metric set in one command; repeat through runner and metrics-only retained-response mode, exercise valid/mismatched direct filenames, stale plans, forced rerun and unchanged-result reuse |
++| GF-31 | preparation handoff is portable for every supported source branch | CHIRPS and CHIRPS-global fixtures package source-grid orography and reader/PET context; make original store/catalog paths unavailable, prepare via the collection and compare actual forcing values, grid/time/units and result-affecting TOML settings with the existing path; use exact same-environment values excluding only declared path/metadata relocation; missing/changed ancillary files refuse before preparation; include non-CHIRPS catalog-orography and E-OBS PET branches |
+ 
+ ### 12.3 Numerical migration gate (GF-9)
+ 
+@@ -1932,7 +2232,8 @@ after every Snakefile or config-shape edit. Because the landing changes
+ the pre-merge gate is `pixi run test-full`, with output redirected to a file.
+ Before the milestone seals: run P2b, fresh dry-runs for both entry points and
+ both simulation modes, one rapid generation/simulation execution, `tree-check`, GF-9,
+-GF-15's bounded methodological matrix, GF-28's temporal preservation fixtures,
++GF-15's reviewed bounded estimator benchmark, GF-28's temporal preservation fixtures,
++GF-29/GF-30's fresh checkpoint executions and GF-31's portable preparation comparison,
+ and the standing regression-baseline/tree comparison under its documented current-config
+ limitations. No such command has run for this design draft.
+ 
+@@ -1946,9 +2247,10 @@ Model-validator acceptance is required separately for:
+   source/prepared/response calendar and endpoint chain; and
+ - metrics: response coverage, estimator preconditions, metric vocabulary,
+   explicit Class-C reference-location migration, stage-3 environment identity,
+-  per-location fit validity, the bounded GEV screening validation, and
+-  result/index integrity. The model-validator record states whether `1.0`/`10`
+-  passed §7.5's bounded criteria; absence or failure leaves them provisional.
++  per-location fit validity, §7.5's bounded estimator criteria and scope limits,
++  and exact result-key/index integrity. The model-validator record distinguishes
++  benchmark outcomes from screening-policy status; `1.0`/`10` remain provisional
++  regardless of a matrix pass. Scientific tolerance approval precedes execution.
+ 
+ ## 13. Implementation ownership briefs
+ 
+@@ -1957,7 +2259,7 @@ draft.
+ 
+ | owner | implementation scope | deliverable | acceptance gates |
+ |---|---|---|---|
+-| Python engineer | logical adapters, manifests/digests, validators, Snakefiles, config composition, runner, tests, reference migration | reference-atomic implementation in the files inventoried by §9.6 | GF-1..GF-28 structural gates, CLI/full suite, tree check |
++| Python engineer | logical adapters, manifests/digests, validators, Snakefiles, config composition, runner, tests, reference migration | reference-atomic implementation in the files inventoried by §9.6 | GF-1..GF-31 structural gates, CLI/full suite, tree check |
+ | model builder | bind current weathergenr and Wflow operations to the specified provider/simulator interfaces; retain execution resources/logs | production bindings and rapid fixture outputs | generator and simulation model-validator handoffs |
+ | geospatial data analyst | verify source inventory and forcing descriptors for climate/grid metadata | descriptor and compatibility assessment | path/CRS/grid/time/unit acceptance |
+ | model validator | judge generated forcing and Wflow response equivalence/plausibility | signed stage-1 and stage-2 acceptance records | §12.4 criteria; no stage integrates before return |
+@@ -1968,7 +2270,7 @@ draft.
+ 
+ ### 14.1 Decision-to-section map
+ 
+-| retained decision | disposition in v3 |
++| retained decision | disposition in v5 |
+ |---|---|
+ | S1–S8 | §§2.2, 3, 4, 5–7, 9.1 |
+ | R-1, R-2 | §§2.2, 7.2, 12.3 |
+@@ -1985,8 +2287,8 @@ draft.
+ | D7 | §§4.2, 9.5 |
+ | D8 | §12 |
+ 
+-V4 preserves all earlier gate identifiers GF-1 through GF-27 and records their
+-changed premises in §12.1. The temporal-preservation falsifier is GF-28.
++V5 preserves GF-1 through GF-28 and records changed premises in §12.1.
++GF-29/GF-30 settle fresh identity planning; GF-31 settles preparation portability.
+ Earlier evidence E1–E17 remains the basis for eliminating parsed ids, sentinels,
+ and hidden bundling; E18 is confirmed by the candidate scenario-type schema; E19's
+ overlay-coordinate concern remains outside the execution seam; E20's member
+@@ -1994,11 +2296,11 @@ hash role is subsumed by collection and response artifact digests (§§8.2–8.4
+ 
+ #### 14.1a Qualified evidence closure from the v3 domain review
+ 
+-The frozen intake remains unchanged. V4 carries the authoritative review's
++The frozen intake remains unchanged. V5 carries the authoritative review's
+ qualified dispositions rather than converting historical premises into blanket
+ endorsement (`domain-v3-7`):
+ 
+-| premise | qualification retained in v4 | settling observation / scope limit |
++| premise | qualification retained in v5 | settling observation / scope limit |
+ |---|---|---|
+ | E6 | Realization-wildcard batching has expired, but failure-identification needs have not: batch filenames are batch keyed while the Julia driver still associates success/failure messages with each TOML-derived run tag. | Stage 2 preserves explicit per-`run_id` failure association (§6.5); no further production change is required. |
+ | E13 | The current member naming pattern and pinned-surface wording are in WG-4, not WG-2. | Reading the live seam headings settles attribution; §9.2 already replaces WG-4 correctly. |
+@@ -2008,9 +2310,11 @@ endorsement (`domain-v3-7`):
+ ### 14.2 Finding-to-section map
+ 
+ Every cumulative-ledger id remains accepted except the explicitly deferred
+-`domain-7`; v3 changes mechanisms where the approved split supersedes v2.
++`domain-7`, which still requires an explicit G2 owner ruling. V5 changes only
++the four external-finding contracts and their forced cross-references; it
++preserves the seven v3-domain corrections, refining `domain-v3-3` via `ext1-1`.
+ 
+-| finding IDs | v3 resolution |
++| finding IDs | current resolution |
+ |---|---|
+ | `domain-1`, `domain-8` | per-run Class C with one shared reference month; §§7.2, 12.3 |
+ | `domain-2`, `domain-10` | pairing evidence and confirmed neutral-scenario-type need; §§1, 5.1 |
+@@ -2041,9 +2345,13 @@ Every cumulative-ledger id remains accepted except the explicitly deferred
+ | `domain-v3-5` | explicit seed-material projection excludes capacity and identity/storage choices; §§9.4, 12.2 GF-27 |
+ | `domain-v3-6` | source/prepared/response calendars and current conversion/clip/endpoint behavior are explicit preservation cases; §§5.3, 6.4, 6.6–6.7, 7.5, 12.2 GF-28 |
+ | `domain-v3-7` | E6/E13/E17/E19 retain qualified dispositions and settling observations; §14.1a |
++| `ext1-1` | estimator/policy separation, scale-normalized errors, explicit ratio matrix including zero/near-zero, persisted validation limits and unchanged provisional screening; §§7.4–7.6, 8.4, 10–12 GF-15 |
++| `ext1-2` | inventory and ownership of catalog/PET/elevation inputs, packaged ancillary closure, neutral `PreparationContext`, content identity and portable source-branch comparison; §§5.4a–5.7, 6.3–6.4, 8.2, 9.6, GF-31 |
++| `ext1-3` | bounded source and metric planning checkpoints, pure row enumeration, final content identities, direct/runner single-invocation behavior and fresh-state falsifiers; §§5.2, 6.8, 8.4a, 9.1/9.5–9.6, GF-3/GF-29/GF-30 |
++| `ext1-4` | independently expected and globally unique metric-location-unit keys, metric-specific validity, ready-marker refusal and negative fixtures; §§7.1/7.4, 9.2, GF-10 |
+ 
+ This table covers all ten original `domain-*`, ten `arch-*`, eleven `risk-*`,
+-and seven `domain-v3-*` ids in the cumulative ledger. It does not change the
++seven `domain-v3-*`, and four `ext1-*` ids in the cumulative ledger. It does not change the
+ original reviews or their dispositions.
+ 
+ ### 14.3 Revision history
+@@ -2057,11 +2365,12 @@ original reviews or their dispositions.
+ | v3 terminology revision | 2026-09-09 | owner-approved terminology; design still unreviewed | defines scenario, design point, realization, metric bundle/unit, response series, and metric/indicator value; separates unperturbed, historical, reference, and regression baseline; renames collection-wide `simulation_run_id` / `simulation_run.json` to `simulation_id` / `simulation.json`, with `simulation/1` and `SimulationFrozenError`, preserving `run_id` and `unit_id` semantics |
+ | v3 scenario-type revision | 2026-09-09 | owner-approved terminology; design still unreviewed | replaces family with scenario type (`stochastic`) throughout the proposed contract, including `scenario_type`, payload/artifact identifiers, registry declarations, and simulator independence; preserves historical source filenames and classification semantics |
+ | v4 | 2026-09-09 | proposed revision; not reviewer-approved | incorporates the G1-v3 correction package: exact stochastic ancestry, explicit Class-C reference provenance, separate GEV screening/fit-validity/bounded-validation contracts, metric-execution environment identity, capacity-free automatic seed material, temporal preservation gates, and qualified E6/E13/E17/E19 closure |
++| v5 | 2026-09-09 | proposed revision; not reviewer-approved | accepts all four external-r1 majors: separates estimator benchmarking from policy validation, packages neutral preparation context and ancillary closure, adds two bounded identity-planning checkpoints with fresh single-invocation gates, and validates exact unique result keys; preserves source baseline and all seven v3-domain corrections |
+ 
+-V4 retains v3's intentional supersession of v2's one-entry-point non-goal, metric-coupled width,
++V5 retains v3's intentional supersession of v2's one-entry-point non-goal, metric-coupled width,
+ in-place success-marker guard, live `run_historical` premise, and experiment-name
+ seed dependency. It preserves v2's run/unit identities, settled method rulings,
+ seam independent of scenario type, explicit grain, formulas, comparator obligations, and finding
+-traceability. V4 does not claim that the provisional GEV thresholds or any
++traceability. V5 does not claim that the provisional GEV thresholds or any
+ unrun numerical result pass. Proposed choices remain proposals until the named
+ empirical gates and reviews accept them.

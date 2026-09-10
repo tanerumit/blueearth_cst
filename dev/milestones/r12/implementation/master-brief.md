@@ -50,6 +50,12 @@ The accepted migration deliberately uses `run_stress_test.smk` as a serial carri
 2. **New criteria only:** before GF-15's proposed benchmark or any proposed change to an accepted tolerance, obtain Astra model-validator review and owner acceptance. GF-9, GF-28, and GF-31 already carry accepted criteria; execute them without another criteria-approval pause, with Astra model validation judging the results.
 3. **Material deviation only:** pause if supported Snakemake APIs cannot satisfy the accepted one-invocation contract, a scientific value changes outside accepted tolerances, or implementation would alter a selected interface/method. Ordinary implementation choices do not reopen design approval.
 
+**Gate 3 ruling — 2026-09-10:** owner approved the mandatory simulation runner
+after the measured target bypass. It validates targets before one Snakemake
+invocation and selects two fixed rule modules; bare simulation Snakefile commands
+are no longer the supported target-contract interface. Direct generation remains
+supported. This gate is discharged; prove the replacement and continue P0.
+
 ### Cross-cutting validation
 
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
@@ -60,7 +66,7 @@ The accepted migration deliberately uses `run_stress_test.smk` as a serial carri
 
 ### Phase brief index
 
-- [P0 — feasibility and baseline preparation](phase-0-feasibility-baseline.md) — held at Master Gate 3: P2b passed; operation/target counterexample requires owner ruling; remaining probes and snapshot pending
+- [P0 — feasibility and baseline preparation](phase-0-feasibility-baseline.md) — feasibility and fresh snapshot complete; awaiting named model-validator comparison-evidence acceptance
 - [P1 — logical contract extraction](phase-1-contract-extraction.md) — not started
 - [P2 — durable handoffs](phase-2-durable-handoffs.md) — not started
 - [P3 — workflow extraction and migration](phase-3-workflow-extraction.md) — not started

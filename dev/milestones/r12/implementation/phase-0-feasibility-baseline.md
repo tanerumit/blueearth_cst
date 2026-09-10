@@ -4,7 +4,7 @@
 
 - Follow repository `AGENTS.md`, the [accepted design](../wf3-simulation-identity-design.md) §§5.2, 6.8, 8.4a, 9.6, 12, and [readiness](readiness.md).
 - Environment readiness and synthetic P2b passed. The operation/target probe
-  reached Master Gate 3; no model execution has run.
+  reached Master Gate 3; the owner approved the mandatory simulation runner.
 - P2b must pass before landing 1. Operation/target and checkpoint feasibility must pass before landing 3.
 - The standing baseline predates the current nine-year config and cannot be GF-9's reference.
 
@@ -28,11 +28,11 @@ No production adapter, successor manifest, entry-point/config migration, estimat
 
 - [x] Re-run the readiness source/environment checks against the execution checkout and record any changed premise.
 - [x] Implement P2b as a standalone synthetic Snakefile: producer subtree resolvable, subtree missing, and no derived rows. Exercise row-derived wildcard alternation plus ancestor input together; do not use `ruleorder` or private APIs.
-- [ ] Probe the §6.8 operation/target matrix for `all`, `metrics`, exact metric filename, and Wflow filename in both modes. Show defined producer classes in dry-run and real fixture execution.
-- [ ] Probe source-planning and metric-planning checkpoint/input-function composition in one invocation, including honest unresolved fresh dry-runs. These are feasibility results, not GF-29/GF-30 end-to-end passes.
-- [ ] Choose explicit `<PRECHANGE_CONFIG>`, `<PRECHANGE_ROOT>`, `<POSTCHANGE_CONFIG>`, `<POSTCHANGE_ROOT>`, and sidecar manifest paths. Both configs must compose to identical scientific settings and keep the `project_config_` prefix; output roots must be separate from the standing baseline and from each other.
-- [ ] Define the pre-change provenance record: config/source/model/code/environment digests, resolved seed, command, expected targets, and `--notemp` WF1 requirement. Do not execute until released.
-- [ ] After Master Gate 1, the model builder runs the current WF1 and WF3 pre-change workflows into `<PRECHANGE_ROOT>` (`--notemp` on WF1), retains the raw outputs and every scope-dependent model check, records separate manifest/reference sidecars and the complete command log under `dev/milestones/r12/implementation/evidence/p0/`, and hands outputs to model validation for completeness/provenance review. Preserve the root read-only for the later GF-9 crosswalk. WF2 is intentionally excluded because projections are a terminal overlay and do not drive this migration comparison.
+- [x] Probe the §6.8 operation/target matrix for `all`, `metrics`, exact metric filename, and Wflow filename in both modes. Show defined producer classes in dry-run and real fixture execution.
+- [x] Probe source-planning and metric-planning checkpoint/input-function composition in one invocation, including honest unresolved fresh dry-runs. These are feasibility results, not GF-29/GF-30 end-to-end passes.
+- [x] Choose explicit `<PRECHANGE_CONFIG>`, `<PRECHANGE_ROOT>`, `<POSTCHANGE_CONFIG>`, `<POSTCHANGE_ROOT>`, and sidecar manifest paths. Both configs must compose to identical scientific settings and keep the `project_config_` prefix; output roots must be separate from the standing baseline and from each other.
+- [x] Define the pre-change provenance record: config/source/model/code/environment digests, resolved seed, command, expected targets, and `--notemp` WF1 requirement. Do not execute until released.
+- [x] After Master Gate 1, the model builder runs the current WF1 and WF3 pre-change workflows into `<PRECHANGE_ROOT>` (`--notemp` on WF1), retains the raw outputs and every scope-dependent model check, records separate manifest/reference sidecars and complete command logs in the isolated run home, linked from `dev/milestones/r12/implementation/evidence/p0/`, and hands outputs to model validation for completeness/provenance review. Preserve the root read-only for the later GF-9 crosswalk. WF2 is intentionally excluded because projections are a terminal overlay and do not drive this migration comparison.
 - [ ] Mark the snapshot accepted as comparison evidence before any P1 edit changes provider/simulator/reducer call sites or numerical outputs. Missing, stale, partially written, or scientifically non-current evidence blocks those edits.
 
 ### Commit plan
@@ -44,10 +44,10 @@ No production adapter, successor manifest, entry-point/config migration, estimat
 
 ### Validation
 
-- Per fixture edit: `pixi run pytest tests/test_r12_wf3_feasibility.py` (P2b and the operation/target counterexample are implemented; remaining probes are not).
+- Per fixture edit: `pixi run pytest tests/test_r12_wf3_feasibility.py` (29 cases cover P2b, the counterexample, mandatory runner and checkpoint lifecycles).
 - Once after fixture completion: direct Snakemake dry-run and real synthetic invocation commands recorded by the fixture; require the same allowed producer classes.
 - Once before P1: P2b three-state evidence must pass. Any ambiguity, zero-job success, missing clean refusal, private API need, or second required invocation blocks P1.
-- Once before P3: operation/target and both checkpoint feasibility cases pass. If conditional rules cannot satisfy §6.8, stop for Master Gate 3; the only accepted fallback is the thin runner selecting two explicit rule modules inside `simulate_system.smk`.
+- Once before P3: operation/target and both checkpoint feasibility cases pass. The owner discharged Master Gate 3 by selecting the mandatory runner and two explicit rule modules inside `simulate_system.smk`; prove that replacement. A further material one-invocation failure returns to the gate.
 - After execution release, the model builder records the pre-change side with `pixi run python dev/scripts/check_baseline.py record --project-dir <PRECHANGE_ROOT> --manifest <PRECHANGE_MANIFEST> --workflow build_model --workflow run_stress_test`; capture the command output in the P0 evidence directory. The explicit scope covers the model and stress-test outputs needed by the migration and excludes WF2's terminal overlay. This recorder supplements the preserved raw outputs and all scope-dependent model checks; it does not implement GF-9.
 
 ### Acceptance criteria
@@ -78,9 +78,17 @@ Wflow targets succeed without metrics (including zero-job success for a retained
 output); conditional producer definitions cannot provide the accepted target
 exclusivity. Metrics-only producer omission correctly refuses a Wflow target.
 See the [gate evidence and fallback proposal](evidence/p0/operation-target-feasibility.md).
-The full matrix checkbox remains open: these diagnostic cases reject the
-candidate, and do not accept a replacement. Checkpoint probes and numerical
-capture stop here pending the owner ruling on the invocation contract.
+Those diagnostic cases rejected the conditional-rule candidate. The owner then approved the mandatory
+simulation runner, discharging this gate. Replacement runner/checkpoint probes
+and fresh numerical capture resumed under the existing P0 execution release.
+
+Replacement feasibility passed: 29 cases, followed by the two affected lifecycle
+cases after the final missing-plan correction; CLI 20 passed, lint and formatting
+passed. See [runner/checkpoint evidence](evidence/p0/runner-checkpoint-feasibility.md).
+Fresh WF1 (20 jobs) and WF3 (41 jobs) completed; the isolated four-target manifest
+record/check passed. [Snapshot evidence and handoff](evidence/p0/prechange-snapshot.md)
+records 242 artifact hashes and coverage. **Stopped at P0 comparison-evidence
+acceptance: named model-validator review remains required before P1.**
 
 ### Task constraints
 

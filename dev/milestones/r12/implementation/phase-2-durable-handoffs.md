@@ -4,7 +4,7 @@
 
 - Follow repository `AGENTS.md`, [master brief](master-brief.md), and accepted §§5.2, 5.4–5.7, 6.1–6.8, 8.2–8.6, 9.5 resolution rules, and 12.
 - P1 is integrated. Current `run_stress_test.smk` remains the sole production entry point and comparison harness.
-- P0 proved supported checkpoint and operation mechanics; GF-29/GF-30 still require actual implemented single-invocation behavior.
+- Entry prerequisite: P0 proves supported checkpoint and mandatory-runner operation mechanics; GF-29/GF-30 still require actual implemented single-invocation behavior. P2 uses the test harness against current WF3; P3 ships the dedicated simulation runner.
 
 ### Goal
 
@@ -46,7 +46,7 @@ No new entry points, five-stanza config, runner order change, live-reference ren
 - Per edit: proposed narrow tests and existing `pixi run pytest tests/test_downscale_climate_forcing.py tests/test_prepare_climate_data_catalog.py tests/test_interchange_contracts.py tests/test_export_wflow_results.py`.
 - Per Python commit: lint/format; after each Snakefile/signature change: `pixi run pytest tests/test_cli.py`.
 - Once per commit group: relevant GF-6..GF-7, GF-10, GF-12, GF-16..GF-18, GF-22..GF-24 tests from [validation-map](validation-map.md).
-- Once before P3: run GF-29/GF-30 mechanism-equivalent fresh single-invocation evidence through the current-WF3 carrier and synthetic harness, without claiming successor-entry-point or migrated-runner coverage; run GF-32 multi-collection resolution fixtures and GF-31 portability comparison for every supported source branch. P3 must repeat GF-29/GF-30 through the final direct entry points and runner.
+- Once before P3: run GF-29/GF-30 mechanism-equivalent fresh single-invocation evidence through the current-WF3 carrier and synthetic harness, without claiming successor-entry-point or migrated-runner coverage; run GF-32 multi-collection resolution fixtures and GF-31 portability comparison for every supported source branch. P3 must repeat GF-29/GF-30 through direct generation, the dedicated simulation runner and the all-workflow runner.
 - Model-validator handoffs: collection completeness/pairing/calendar/units; forcing compatibility and Wflow completion/equivalence; response/metric coverage and estimator preconditions. Astra evaluates GF-31 against its already accepted criteria without a new approval gate.
 
 ### Acceptance criteria

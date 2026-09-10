@@ -16,7 +16,7 @@ No compatibility wrapper, in-place output rename, third metrics workflow, provid
 
 ### Allowed scope
 
-**Proposed paths:** root `generate_scenarios.smk`, `simulate_system.smk`; `config/templates/project_config.generate_scenarios.template.yml`, `project_config.simulate_system.template.yml`; per-seed `project_config_<seed>_generate_scenarios.yml` and `project_config_<seed>_simulate_system.yml`; GF-9 crosswalk tool/test; successor ADR at `dev/decisions/<NEXT_ADR_NUMBER>-<APPROVED_SLUG>.md`.
+**Proposed paths:** root `generate_scenarios.smk`, `simulate_system.smk`; mandatory runner `scripts/simulate_system.py` and its two fixed rule modules; `config/templates/project_config.generate_scenarios.template.yml`, `project_config.simulate_system.template.yml`; per-seed `project_config_<seed>_generate_scenarios.yml` and `project_config_<seed>_simulate_system.yml`; GF-9 crosswalk tool/test; successor ADR at `dev/decisions/<NEXT_ADR_NUMBER>-<APPROVED_SLUG>.md`.
 
 **Exact workflow/config/runner targets:** `run_stress_test.smk` (retire); `scripts/run_workflows.py`, `plot_workflow_dag.py`, `run_snake_docker.sh`, `run_snake_test.cmd`, `suggest_experiment_name.py`, `migrate_project_config.py`; `blueearth_cst/shared/config_composition.py`, `cross_workflow_leaves.py`; `pixi.toml`; `config/templates/project_config.template.yml`, `project_config.run_stress_test.template.yml`; current project config sets under `test_case/` for `rapid`, `baseline`, `baseline_linux`, `wf2_fast`; matching current `tests/project_config_fixture*.yml` and `tests/data/v2/project_config_v2_probe*.yml`. Legacy `tests/data/v1_split/` inputs retain their deliberate old shapes; update only migration/refusal expectations that consume them.
 
@@ -30,7 +30,7 @@ No compatibility wrapper, in-place output rename, third metrics workflow, provid
 
 - [ ] Add the two selected Snakefiles and assign ids/rule prefixes `wf3/3.xx` and `wf4/4.xx`; generation has no model edge, simulation cannot produce a collection, and metrics remain an operation/target inside simulation.
 - [ ] Split every project file into five closed stanzas and workflow-owned files. Preserve ordinary-path resolution and `project_config_` prefix. Migrate old explicit/default/auto seeds to their old resolved integer; new `auto` uses the acyclic accepted projection.
-- [ ] Update runner order to `analyze_climate → generate_scenarios → build_model → simulate_system → analyze_projections`, with workflow-local preflights after relevant producers and identical direct-invocation enforcement.
+- [ ] Update runner order to `analyze_climate → generate_scenarios → build_model → simulate_system → analyze_projections`, with workflow-local preflights after relevant producers. The dedicated mandatory simulation runner shares target validation with the all-workflow runner; direct generation remains supported. Bare simulation Snakefile invocation no longer carries the target contract (owner-approved P0 Gate 3 ruling).
 - [ ] Replace fixed cross-workflow leaves by consumer/operation; preserve independent generation, model leaves for simulate mode, and retained-only leaves for metrics-only.
 - [ ] Replace all nine WG/HM clauses and live validators per §9.2; update output inventory for `scenario_plans/`, collection preparation artifacts, `results/metric_plans/`, simulation/response manifests, and metric sets.
 - [ ] Update every live §9.6 reference and executable example in one landing. Preserve C24/C25/C28 and all other sealed/historical files verbatim; add the successor ADR and maintained-current index/references required by repository rules.
@@ -57,7 +57,7 @@ GF-9 evidence may be committed immediately before this atomic landing only if it
 
 ### Acceptance criteria
 
-Five stanzas compose; both direct commands and the runner complete in one invocation; generation is model-independent; simulation cannot generate; metrics-only cannot simulate; projections remain terminal; all live old references refuse or are migrated; GF-1..GF-32 and signed stage handoffs pass; the old entry point/stanza/template are absent.
+Five stanzas compose; direct generation, the dedicated simulation runner and the all-workflow runner each honor the one-invocation contract; generation is model-independent; simulation cannot generate; metrics-only cannot simulate; projections remain terminal; all live old references refuse or are migrated; GF-1..GF-32 and signed stage handoffs pass; the old entry point/stanza/template are absent.
 
 ### Output requirements
 

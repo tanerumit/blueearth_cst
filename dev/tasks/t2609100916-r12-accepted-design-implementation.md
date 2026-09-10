@@ -1,7 +1,7 @@
 ---
 title: Implement the accepted R12 workflow design
 type: todo-item
-status: blocked
+status: active
 branch: feat/wp3-improvements
 effort: 2
 area: wf3
@@ -13,7 +13,7 @@ updated: 2026-09-10
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — The reviewed design is accepted; runtime feasibility, numerical migration and scientific validation remain unexecuted.
+> **Why** — P0 feasibility and fresh reference capture passed; comparison-evidence acceptance and production migration remain outstanding.
 > **Effort** — large
 
 ## Progress
@@ -23,7 +23,8 @@ updated: 2026-09-10
 - [x] Inspect source/environment readiness and specify feasibility/baseline prerequisites.
 - [x] Release P0 execution and recheck source/environment readiness on 2026-09-10.
 - [x] Prove synthetic P2b composition in all three states, with dry-run and real execution.
-- [ ] Execute P0 synthetic feasibility tests and capture the fresh pre-change snapshot.
+- [x] Execute P0 synthetic feasibility tests and capture the fresh pre-change snapshot.
+- [ ] Obtain named model-validator acceptance of P0 comparison evidence before P1.
 - [ ] Execute implementation only within subsequently authorized scope.
 
 ## Refs
@@ -55,7 +56,28 @@ updated: 2026-09-10
   The operation/target probe then reached **Master Gate 3**: direct Wflow targets
   bypass metrics in simulation mode. Producer omission works in metrics-only,
   but conditional rules do not enforce the accepted target-pair exclusivity.
-- Awaiting owner ruling on the proposed mandatory simulation runner versus
-  relaxing the direct-command target restriction. Evidence and concrete fallback:
+- Owner approved the mandatory simulation runner on 2026-09-10. Target validation
+  precedes one Snakemake invocation; direct generation remains supported. Evidence:
   `dev/milestones/r12/implementation/evidence/p0/operation-target-feasibility.md`.
-  Checkpoint probes and the fresh pre-change snapshot are held at this gate.
+  This Gate 3 decision is discharged; replacement probes and the fresh pre-change
+  snapshot completed. No new scientific criteria or method change was approved.
+- Runner/checkpoint evidence passed (29 tests, then 2 affected lifecycle tests);
+  CLI 20 passed, lint and format-check passed. WF1 completed 20 jobs and WF3 41.
+  The isolated manifest recorded and checked four targets; the snapshot inventory
+  hashes 242 artifacts. Stop: named model-validator acceptance before P1.
+  Handoff: `dev/milestones/r12/implementation/evidence/p0/prechange-snapshot.md`.
+
+## Improvement candidate captured during P0
+
+- Target: `snakemake` skill, `references/rule-design.md`, Outputs And Failure Semantics.
+- Gap: its `update(...)` rule covers pre-job deletion and successful forced reuse,
+  but does not distinguish failed-job cleanup or Snakemake's timestamp refresh.
+- Proposed rule: verify preserved bytes both on successful reuse and on named
+  refusal; `update(...)` alone does not establish failure retention. Put checks
+  that must preserve existing published artifacts before job scheduling and do
+  not infer a content rewrite from a timestamp refresh.
+- Evidence: P0's forced checkpoint probe retained bytes while mtime changed;
+  mismatch raised inside the publication job caused output cleanup. The fixture
+  was corrected to refuse an already-corrupt publication in read-only preflight.
+  This concerns any Snakemake workflow revalidating persistent outputs, not CST
+  science. No skill files were edited.

@@ -56,14 +56,19 @@ requested-target inspection mechanism was established, and the conditional DSL
 counterexample fails the accepted exclusivity guarantee. This is not a claim
 that every possible upstream extension has been ruled out.
 
-## Decision required
+## Owner ruling — approved 2026-09-10
+
+The owner approved making the simulation runner mandatory. Master Gate 3 is
+discharged for this interface change. The selected contract below now governs
+replacement feasibility and implementation; it does not claim those tests have
+already passed. The original conditional-DSL observations remain unchanged.
 
 The design already names the fallback: a thin shipped runner selecting one of
 two explicit rule modules within the same simulation workflow. Adopting it
 requires reconciling §9.5, which currently promises a bare Snakemake simulation
 command and says that the runner is never the only safety boundary.
 
-Recommended ruling: make the shipped simulation runner the supported invocation
+Selected ruling: make the shipped simulation runner the supported invocation
 boundary for operation/target validation. It validates the actual target list
 before invoking Snakemake, selects the simulation-plus-metrics or metrics-only
 rule module, and preserves one-command execution. Generation retains its direct
@@ -119,11 +124,13 @@ cases remain to be tested against the owner-selected replacement. Checkpoint
 composition was not started. No full suite, model run or numerical baseline
 comparison was performed; no production behavior changed.
 
-## Work held at the gate
+## Work resumed after the gate
 
-Checkpoint composition, the isolated fresh pre-change run, and production
-extraction remain unexecuted. Snapshot preparation confirmed the unchanged
+Runner replacement and checkpoint composition resumed; the isolated fresh
+pre-change WF1 run started after configuration/provenance checks. Production
+extraction remains unexecuted. Snapshot preparation confirmed the unchanged
 baseline settings: ERA5 for 2000–2016, two realizations, a 2 × 3 perturbation
 grid, simulation years 2046–2054, experiment name `experiment`, and default
-seed 123. No new snapshot config or output root was created. The owner must
-rule on Master Gate 3 before the selected invocation contract is implemented.
+seed 123. The isolated snapshot configs and run root are recorded in
+[snapshot evidence](prechange-snapshot.md). No further approval is needed for
+this selected invocation contract; a new material deviation returns to its gate.

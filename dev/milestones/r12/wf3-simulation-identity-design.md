@@ -1,5 +1,10 @@
 # Scenario generation and system behavior simulation: WF3 successor design
 
+> **Owner-approved execution amendment — 2026-09-10.** Master Gate 3 selected
+> the mandatory simulation runner after the P0 operation/target counterexample.
+> The maintained contract below incorporates that ruling; frozen v6 review
+> records remain unchanged. [Evidence and ruling](implementation/evidence/p0/operation-target-feasibility.md).
+
 > **Accepted design — maintained-current.** Reviewed candidate `design-v6`, run `wf3-simulation-identity`, milestone
 > R12. Genre: software-system workflow specification with methodological
 > decisions. Date: **2026-09-10**. Code baseline:
@@ -287,7 +292,8 @@ supported top-level pairs are `simulate-and-metrics` + `all` and
 `metrics-only` + `metrics`; the latter also admits a direct filename inside the
 selected metric-set directory. Mixed pairs, a Wflow filename in metrics-only
 mode, multiple targets spanning both stages, and an unrecognized target refuse
-at parse time and name the supported pairs. A bare default invocation is exactly
+in the mandatory simulation runner before Snakemake is launched and name the
+supported pairs. A bare default runner invocation is exactly
 `simulate-and-metrics` + `all`; it never infers metrics-only from retained files.
 
 The `metrics` target is therefore a deliberate target mode. At Snakefile parse time it
@@ -304,11 +310,15 @@ response inventory and stage 3 consumes it. Both paths call the same metric
 implementation and validate the same response-series protocol; the only
 difference is whether stage 2 producers are admitted to the DAG.
 
-How requested targets are inspected before rule definition is an unproven
-Snakemake integration premise, not an assumed API. The feasibility gate in
-§6.8 must establish the supported public mechanism, including direct filenames
-and dry-runs, before extraction. If it cannot, the specified shipped-runner
-fallback selects explicit rule modules and enforces the same pair matrix.
+The owner-selected mandatory runner parses its own requested targets, enforces
+the pair matrix, and selects one of two fixed rule modules within
+`simulate_system.smk`. P0 measured that conditional rules alone admit direct
+simulation-output targets without metrics; no supported Snakefile parse-time
+target-inspection mechanism was established. Bare simulation Snakefile commands
+are therefore not the supported invocation boundary. The runner performs one
+Snakemake invocation; this does not add a third workflow or a second planning
+pass. Its synthetic matrix and checkpoint compositions passed P0 on 2026-09-10;
+production integration and final-entry-point evidence remain required before extraction.
 
 ### 4.2 Logical adapters first, entry points second
 
@@ -461,7 +471,8 @@ A guarded parse-time read returning `[]` is
 also forbidden because P1 measured exit 0 with zero scenario jobs. The minter
 raises `EmptyScenarioSetError` on a zero-row table.
 
-The `derived_from` mechanism must pass the still-unexecuted P2b composition gate
+The `derived_from` mechanism must pass the P2b composition gate (synthetic P0
+evidence passed on 2026-09-10)
 before implementation landing 1: a standalone Snakefile combines the
 data-derived wildcard alternation with the ancestor input function in three
 states—producer subtree resolvable, subtree missing, and no derived rows. P2
@@ -1124,10 +1135,13 @@ standalone feasibility probe must show:
 6. the metric-planning checkpoint (§8.4a) resolves the final metric set from
    newly completed responses within that same `all` invocation (GF-30).
 
-If conditional rule definition cannot satisfy these without private
-Snakemake APIs, entry-point extraction pauses. The fallback is a thin shipped
-runner selecting one of two explicit rule modules inside the same
-`simulate_system.smk`; creating a third workflow is not an allowed fallback.
+Master Gate 3 selected the thin mandatory simulation runner on 2026-09-10.
+It validates the actual target list before launching Snakemake and selects one
+of two explicit rule modules inside the same `simulate_system.smk`. Inventory
+and artifact preflights remain in the metrics-only module, which defines no
+simulation producers. Creating a third workflow or using private Snakemake APIs
+is not authorized. A further failure of the one-invocation/checkpoint contract
+returns to Master Gate 3.
 
 ## 7. Stage 3 contract: metric declarations, units, and results
 
@@ -2022,8 +2036,12 @@ the build that creates them. The runner applies these preflights:
    validate its retained collection, request, response inventory, and artifacts;
 5. reject an operation/target mismatch before launching Snakemake.
 
-A direct Snakefile invocation enforces the same conditions. The runner is never
-the only safety boundary.
+The dedicated simulation runner and `scripts/run_workflows.py` share one
+operation/target validation path. That runner is mandatory for simulation
+invocation; a bare `snakemake -s simulate_system.smk` command does not carry the
+target-pair contract and is not a supported user command. Mode-specific
+inventory and artifact checks remain in the Snakefile modules, and metrics-only
+still defines no simulation producers. Direct generation remains supported.
 
 Routine simulation config has no collection selector:
 
@@ -2071,11 +2089,13 @@ switch retained responses to another collection.
 Routine success summaries name the resolved seed, generated collection path,
 `experiment_name` when applicable, and artifact paths; detailed provenance names
 the internal collection, simulation, and metric-set identities. Direct commands
-remain `snakemake all -s generate_scenarios.smk --configfile <project>`
-and `snakemake all -s simulate_system.smk --configfile <project>` (with the
-required cores/environment options). Metrics-only uses target `metrics` and its
-configured operation. Fresh direct generation and fresh direct simulation each
-complete in one command; an unresolved dry-run is explicitly a partial DAG view.
+use `snakemake all -s generate_scenarios.smk --configfile <project>` for generation
+and `python scripts/simulate_system.py --config <project> --target all` for
+simulation (with the required cores/environment options). Metrics-only uses
+`--target metrics` or the exact selected metric-set filename and its configured
+operation. The dedicated runner defaults to target `all`; it never changes
+operation based on retained files. Both supported entry points complete in one
+command; an unresolved dry-run is explicitly a partial DAG view.
 
 ### 9.6 Reference-atomic landing and output migration
 
@@ -2130,7 +2150,7 @@ uses `--notemp` when its discharge output is part of that recording.
 | mutable human-named collection | approachable paths | rejected: reuse and stale-consumption decisions become ambiguous | none within the approved split; aliases may point to immutable ids later |
 | keep an indefinite old compatibility wrapper | easier transition | rejected: it cannot express independent producer/consumer ownership without guessing | a time-bounded external-client obligation with an explicit sunset and unambiguous mapping |
 | tighten `blocks_per_return_period` to `2.0` | more conservative extrapolation | deferred methodological choice; would reject current short bundles | owner validation of the threshold and acceptance of the affected run cost |
-| two explicit runner passes around source preparation and metric planning | statically named DAGs in each pass | not selected: direct Snakefile commands would need an extra invocation or mandatory wrapper, weakening the approved independent-entry-point guarantee | checkpoint composition fails GF-29/GF-30, followed by owner approval of a changed invocation contract |
+| two explicit runner passes around source preparation and metric planning | statically named DAGs in each pass | not selected: the mandatory simulation runner must still execute one Snakemake invocation; two planning passes weaken that guarantee | checkpoint composition fails GF-29/GF-30, followed by owner approval of a changed invocation contract |
 | two bounded identity-planning checkpoints | preserves content identities and one invocation per entry point | selected; initial dry-run cannot enumerate post-checkpoint targets, and plans require stale-input validation | supported Snakemake composition proves infeasible; no private-API fallback is authorized |
 | external simulation ancillary inventory | avoids copying large source-grid assets per collection | not selected: consumer needs an additional portable input package and identity surface | measured duplication cost outweighs self-contained collection portability under a newly approved contract |
 | qualify count policy from a fixed-location GEV benchmark | inexpensive numerical pass/fail | rejected: relative errors depend on generating location-to-scale ratio; tested estimator cells do not prove applicability to real bundles | reviewed policy-level applicability evidence; no bounded matrix alone reverses this conclusion |
@@ -2191,10 +2211,11 @@ uses `--notemp` when its discharge output is part of that recording.
 
 ### 11.3 Empirical premises still open
 
-1. P2b has not run. Its three-state composition result is a pre-implementation
-   gate, despite v2 having accidentally described it as measured in one place.
-2. Conditional target selection must be proven through supported Snakemake
-   surfaces for default, mixed, direct-filename, and dry-run invocations.
+1. P2b passed its synthetic three-state composition gate on 2026-09-10;
+   fresh-project integrated generation still requires GF-1 acceptance.
+2. Conditional target selection failed P0. The owner-approved mandatory runner
+   passed synthetic default, mixed, direct-filename and dry-run cases. Production
+   integration must establish the same contract before extraction.
 3. The current stochastic provider must reproduce old climate bytes or explain
    every intended metadata-only difference after collection extraction.
 4. Wflow must accept the neutral run-forcing adapter with identical result-
@@ -2213,8 +2234,9 @@ uses `--notemp` when its discharge output is part of that recording.
 10. E19 remains outside current production scope: no operational example yet
     establishes that a future provider's reference period, temporal aggregation,
     units, and surface coordinates are scientifically comparable.
-11. Fresh source preparation and fresh response-dependent metric planning must
-    both pass their single-invocation checkpoints (GF-29/GF-30).
+11. Synthetic source and metric checkpoint lifecycles passed P0. Fresh production
+    source preparation and response-dependent metric planning must still pass
+    their single-invocation checkpoints (GF-29/GF-30).
 12. The packaged preparation closure must reproduce the existing source-catalog
     path after the original climate store/catalogs are unavailable (GF-31).
 13. Default and advanced collection resolution, including metrics-only selection
@@ -2263,12 +2285,12 @@ those mechanisms survive the durable split.
 | GF-22 | metrics-only never schedules simulation or silently switches retained identity | supported target/operation matrix passes; `experiment_name` selects one immutable simulation; changed current generation/model/simulation settings are reported as ignored, not used as selectors; missing inventory/variable/artifact fails before any Wflow command; mixed/default/direct targets are covered |
 | GF-23 | ready collections are immutable, reusable, and reference-protected | two experiments consume one revision; attempted mutation refuses; deletion lists exact referencing simulations and requires explicit force |
 | GF-24 | persisted payloads make coverage self-contained | unmounted original sources and absent live model still allow collection/response completeness validation; missing expected row/series refuses |
-| GF-25 | config/runner migration is closed and complete | five stanzas compose; routine scaffold has no collection selector/fingerprint; old stanza/keys/current old command refuse with migration text; runner and direct invocation agree |
+| GF-25 | config/runner migration is closed and complete | five stanzas compose; routine scaffold has no collection selector/fingerprint; old stanza/keys/current old command refuse with migration text; dedicated simulation and all-workflow runners share target validation; direct generation agrees with its runner invocation |
 | GF-26 | projections remain terminal | generated DAGs have no WF2 input; full runner schedules WF2 last; no projection digest enters any collection/simulation identity |
 | GF-27 | seed resolution is acyclic, migration-preserving, and independent of namespace headroom | renaming simulation experiment cannot change new collection; old explicit/default/auto each resolve to their pre-split integer; capacity-only and id-width-only variants preserve `resolved_seed` and forcing values under a run crosswalk while creating the required distinct collection namespace; collection-id construction has no seed cycle |
 | GF-28 | calendar and endpoint migration preserves the current adapter path | bounded fixtures cover a leap year, right-labelled terminal timestamp, and non-January water year; source/prepared/response calendars, conversion/clip operations, actual endpoints, partial blocks, and annual reductions match the pre-change comparator or fail with a reported mismatch and no silent repair |
 | GF-29 | source preparation precedes collection identity within one invocation | start with historical extraction, source plan and collection absent and all Wflow leaves unavailable; direct generation `all` must prepare sources, resolve actual-byte identity, generate and report the exact ready collection in one command; repeat through the runner; source-byte change must invalidate/refuse an old plan, and dry-run must name unresolved targets honestly |
-| GF-30 | fresh responses precede final metric identity within one invocation | start with responses, metric plan and metric set absent; direct simulation `all` must execute stage 2, resolve reference months/response digest through the checkpoint and publish/report the matching metric set in one command; repeat through runner and metrics-only retained-response mode, exercise valid/mismatched direct filenames, stale plans, forced rerun and unchanged-result reuse |
+| GF-30 | fresh responses precede final metric identity within one invocation | start with responses, metric plan and metric set absent; the dedicated simulation runner with target `all` must execute stage 2, resolve reference months/response digest through the checkpoint and publish/report the matching metric set in one command; repeat through the all-workflow runner and metrics-only retained-response mode, exercise valid/mismatched direct filenames, stale plans, forced rerun and unchanged-result reuse |
 | GF-31 | preparation handoff is portable for every supported source branch | CHIRPS and CHIRPS-global fixtures package source-grid orography and reader/PET context; make original store/catalog paths unavailable, prepare via the collection and compare actual forcing values, grid/time/units and result-affecting TOML settings with the existing path; use exact same-environment values excluding only declared path/metadata relocation; missing/changed ancillary files refuse before preparation; include non-CHIRPS catalog-orography and E-OBS PET branches |
 | GF-32 | routine and advanced collection resolution are deterministic and exact | with several retained collections, omission selects only the verified request-plan manifest; missing/stale plan gives the named repair and never scans/falls back; explicit manifest works without generation sources; metrics-only reopens only its recorded simulation/collection, and a different explicit manifest refuses |
 
@@ -2313,7 +2335,9 @@ GF-15's reviewed bounded estimator benchmark, GF-28's temporal preservation fixt
 GF-29/GF-30's fresh checkpoint executions, GF-31's portable preparation comparison,
 GF-32's resolution-mode fixtures,
 and the standing regression-baseline/tree comparison under its documented current-config
-limitations. No such command has run for this design draft.
+limitations. P0 execution evidence records only the synthetic checks and
+pre-change snapshot actually completed; it does not establish these production
+successor gates.
 
 Model-validator acceptance is required separately for:
 
@@ -2448,6 +2472,7 @@ original reviews or their dispositions.
 | v5 | 2026-09-09 | scoped-review approved; superseded before G2 | accepts all four external-r1 majors: separates estimator benchmarking from policy validation, packages neutral preparation context and ancillary closure, adds two bounded identity-planning checkpoints with fresh single-invocation gates, and validates exact unique result keys; preserves source baseline and all seven v3-domain corrections |
 | v6 | 2026-09-10 | proposed owner-authorized revision; scoped verification pending | removes routine fingerprint/selector inputs; resolves the exact project generation plan by default; retains optional explicit-manifest reuse; makes metrics-only select frozen experiment provenance; preserves all scientific, identity, readiness, checkpoint, capacity, and validation contracts |
 | v6 acceptance | 2026-09-10 | accepted; maintained-current | scoped Astra verification approved v6 with no new findings; owner approved the reviewed v6 unchanged, accepted the disclosed Class-B fit-interval limitation, and discharged G2; normative design content is unchanged from reviewed v6 |
+| P0 Gate 3 ruling | 2026-09-10 | owner-approved execution amendment | mandatory simulation runner selected after measured direct-target bypass; §§4.1, 6.8 and 9.5 now locate target validation before the single Snakemake invocation; generation retains direct invocation, two rule modules preserve operation isolation, and scientific/checkpoint contracts remain unchanged |
 
 V6 retains v3's intentional supersession of v2's one-entry-point non-goal, metric-coupled width,
 in-place success-marker guard, live `run_historical` premise, and experiment-name

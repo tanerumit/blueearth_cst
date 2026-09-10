@@ -6,7 +6,10 @@ Execution update, 2026-09-10: the GF-1 P0 prerequisite (synthetic P2b) passes;
 its production and final-entry-point checks remain outstanding. The operation/
 target precursor to GF-22 reached [Master Gate 3](evidence/p0/operation-target-feasibility.md);
 conditional rules fail target exclusivity, although metrics-only producer omission
-works. Other GF statuses remain at the preparation state. See [P2b evidence](evidence/p0/p2b-feasibility.md).
+works. The owner approved the mandatory runner; its synthetic matrix and both
+checkpoint lifecycles now pass. Production GF-22/GF-29/GF-30 remain unimplemented.
+Fresh WF1/WF3 reference capture and its isolated manifest check passed; named
+model-validator acceptance is pending. Other GF statuses remain at the preparation state. See [P2b evidence](evidence/p0/p2b-feasibility.md).
 
 Existing reusable checks:
 
@@ -39,7 +42,7 @@ Existing reusable checks:
 | 19 | Python engineer + model validator / P3 | Generation needs/model rule appears in fresh DAG | **NOT IMPLEMENTED** — successor CLI test plus real rapid generation without WF1 leaves |
 | 20 | Python engineer / P3 | Simulation DAG can produce collection or missing/not-ready collection proceeds | **NOT IMPLEMENTED** — successor CLI test in `tests/test_cli.py` |
 | 21 | Python engineer + model validator / P1 | Dummy/Wflow readers need different metric code or Wflow name reaches metric | **NOT IMPLEMENTED** — `pixi run pytest tests/test_response_series.py -k reader_neutral_metrics` |
-| 22 | Python engineer / P2 | Metrics-only schedules Wflow, switches identity, or incomplete state reaches execution | **P0 precursor held at Master Gate 3; production NOT IMPLEMENTED** — diagnostic `tests/test_r12_wf3_feasibility.py -k operation`; full operation/target matrix awaits owner ruling |
+| 22 | Python engineer / P2 | Metrics-only schedules Wflow, switches identity, or incomplete state reaches execution | **P0 mandatory-runner precursor PASSED; production NOT IMPLEMENTED** — `tests/test_r12_wf3_feasibility.py`; owner-approved runner enforces the synthetic matrix |
 | 23 | Python engineer / P2 | Mutation succeeds, shared reuse fails, or referenced delete lacks force | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_collection.py -k immutability_reuse_delete` |
 | 24 | Python engineer + model validator / P2 | Unmounted sources/absent model prevent persisted coverage validation or missing row/series passes | **NOT IMPLEMENTED** — `pixi run pytest tests/test_response_inventory.py -k self_contained_coverage` |
 | 25 | Python engineer / P3 | Five stanzas/direct/runner disagree or old surfaces do not refuse with migration text | **NOT IMPLEMENTED** — extend `tests/test_config_composition.py`, `test_run_workflows.py`, `test_cli.py` |

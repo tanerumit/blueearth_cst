@@ -1,0 +1,722 @@
+CASE: source; INVOCATION: fresh-dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\source-checkpoint.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--dry-run"
+]
+P0_UNRESOLVED collection identity awaits source checkpoint
+host: <HOST>
+Building DAG of jobs...
+Job stats:
+job                           count
+--------------------------  -------
+all                               1
+extract_source                    1
+prepare_collection_sources        1
+total                             3
+
+
+[Thu Sep 10 21:23:55 2026]
+rule extract_source:
+    input: raw/source.txt
+    output: prepared/source.txt
+    jobid: 2
+    reason: Missing output files: prepared/source.txt
+    resources: tmpdir=<TBD>
+[Thu Sep 10 21:23:55 2026]
+checkpoint prepare_collection_sources:
+    input: raw/source.txt, prepared/source.txt
+    output: planning/source.json
+    jobid: 1
+    reason: Missing output files: <TBD>; Input files updated by another job: prepared/source.txt
+    resources: tmpdir=<TBD>
+DAG of jobs will be updated after completion.
+
+[Thu Sep 10 21:23:55 2026]
+rule all:
+    input: <TBD>
+    jobid: 0
+    reason: Input files updated by another job: <TBD>
+    resources: tmpdir=<TBD>
+Job stats:
+job                           count
+--------------------------  -------
+all                               1
+extract_source                    1
+prepare_collection_sources        1
+total                             3
+
+Reasons:
+    (check individual jobs above for details)
+    input files updated by another job:
+        all, prepare_collection_sources
+    output files have to be generated:
+        extract_source, prepare_collection_sources
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+The run involves checkpoint jobs, which will result in alteration of the DAG of jobs (e.g. adding more jobs) after their completion.
+
+CASE: source; INVOCATION: fresh-execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\source-checkpoint.smk",
+  "--cores",
+  "1",
+  "--nocolor"
+]
+P0_UNRESOLVED collection identity awaits source checkpoint
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                           count
+--------------------------  -------
+all                               1
+extract_source                    1
+prepare_collection_sources        1
+total                             3
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:23:58 2026]
+localrule extract_source:
+    input: raw/source.txt
+    output: prepared/source.txt
+    jobid: 2
+    reason: Missing output files: prepared/source.txt
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:23:58 2026]
+Finished jobid: 2 (Rule: extract_source)
+1 of 3 steps (33%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:23:58 2026]
+localcheckpoint prepare_collection_sources:
+    input: raw/source.txt, prepared/source.txt
+    output: planning/source.json
+    jobid: 1
+    reason: Missing output files: <TBD>; Input files updated by another job: prepared/source.txt
+    resources: tmpdir=<HOST_TEMP>
+DAG of jobs will be updated after completion.
+[Thu Sep 10 21:23:58 2026]
+Finished jobid: 1 (Rule: prepare_collection_sources)
+2 of 3 steps (67%) done
+Updating checkpoint dependencies.
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:23:58 2026]
+localrule publish_collection:
+    input: planning/source.json
+    output: collections/dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae/manifest.json (update)
+    jobid: 5
+    reason: Missing output files: collections/dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae/manifest.json
+    wildcards: collection_id=dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:23:58 2026]
+Finished jobid: 5 (Rule: publish_collection)
+3 of 4 steps (75%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:23:58 2026]
+localrule all:
+    input: collections/dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae/manifest.json
+    jobid: 0
+    reason: Input files updated by another job: collections/dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae/manifest.json
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:23:58 2026]
+Finished jobid: 0 (Rule: all)
+4 of 4 steps (100%) done
+Complete log(s): <WORKTREE>\.tmp\scratchpad\2026-09-10_2046\plan-loss-fixed\test_checkpoint_fresh_reuse_an0\.snakemake\log\2026-09-10T212358.082232.snakemake.log
+
+CASE: source; INVOCATION: forced-reuse
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\source-checkpoint.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--forceall"
+]
+P0_REUSED collections\dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae\manifest.json
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                           count
+--------------------------  -------
+all                               1
+extract_source                    1
+prepare_collection_sources        1
+total                             3
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:01 2026]
+localrule extract_source:
+    input: raw/source.txt
+    output: prepared/source.txt
+    jobid: 2
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:01 2026]
+Finished jobid: 2 (Rule: extract_source)
+1 of 3 steps (33%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:01 2026]
+localcheckpoint prepare_collection_sources:
+    input: raw/source.txt, prepared/source.txt
+    output: planning/source.json
+    jobid: 1
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+DAG of jobs will be updated after completion.
+[Thu Sep 10 21:24:01 2026]
+Finished jobid: 1 (Rule: prepare_collection_sources)
+2 of 3 steps (67%) done
+Updating checkpoint dependencies.
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:01 2026]
+localrule publish_collection:
+    input: planning/source.json
+    output: collections/dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae/manifest.json (update)
+    jobid: 5
+    reason: Forced execution
+    wildcards: collection_id=dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:01 2026]
+Finished jobid: 5 (Rule: publish_collection)
+3 of 4 steps (75%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:01 2026]
+localrule all:
+    input: collections/dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae/manifest.json
+    jobid: 0
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:01 2026]
+Finished jobid: 0 (Rule: all)
+4 of 4 steps (100%) done
+Complete log(s): <WORKTREE>\.tmp\scratchpad\2026-09-10_2046\plan-loss-fixed\test_checkpoint_fresh_reuse_an0\.snakemake\log\2026-09-10T212401.242874.snakemake.log
+
+CASE: source; INVOCATION: forced-mismatch
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\source-checkpoint.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--forceall"
+]
+ValueError in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 16:
+ImmutablePublicationMismatch: collections\dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae\manifest.json
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 16, in <module>
+
+CASE: source; INVOCATION: missing-plan-mismatch
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\source-checkpoint.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--forceall"
+]
+P0_UNRESOLVED collection identity awaits source checkpoint
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                           count
+--------------------------  -------
+all                               1
+extract_source                    1
+prepare_collection_sources        1
+total                             3
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:06 2026]
+localrule extract_source:
+    input: raw/source.txt
+    output: prepared/source.txt
+    jobid: 2
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:06 2026]
+Finished jobid: 2 (Rule: extract_source)
+1 of 3 steps (33%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:06 2026]
+localcheckpoint prepare_collection_sources:
+    input: raw/source.txt, prepared/source.txt
+    output: planning/source.json
+    jobid: 1
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+DAG of jobs will be updated after completion.
+[Thu Sep 10 21:24:06 2026]
+Finished jobid: 1 (Rule: prepare_collection_sources)
+2 of 3 steps (67%) done
+Updating checkpoint dependencies.
+InputFunctionException in rule publish_collection in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 64:
+Error:
+  ValueError: ImmutablePublicationMismatch: collections\dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae\manifest.json
+Wildcards:
+  collection_id=dd6ec850dd7681d8c54cae4a30915f63f9390b8f31919ec9984bd2acd6fff8ae
+Traceback:
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 60, in selected_source (rule publish_collection, line 92, <WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk)
+
+CASE: source; INVOCATION: stale-plan
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\source-checkpoint.smk",
+  "--cores",
+  "1",
+  "--nocolor"
+]
+ValueError in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 13:
+StaleSourcePlan: raw/source.txt or prepared/source.txt; rebuild plan
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 13, in <module>
+
+CASE: source; INVOCATION: stale-dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\source-checkpoint.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--dry-run"
+]
+ValueError in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 13:
+StaleSourcePlan: raw/source.txt or prepared/source.txt; rebuild plan
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 13, in <module>
+
+CASE: source; INVOCATION: stale-execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\source-checkpoint.smk",
+  "--cores",
+  "1",
+  "--nocolor"
+]
+ValueError in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 13:
+StaleSourcePlan: raw/source.txt or prepared/source.txt; rebuild plan
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\source-checkpoint.smk", line 13, in <module>
+
+CASE: metric; INVOCATION: fresh-dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\simulation-runner.py",
+  "--dry-run"
+]
+P0_LAUNCH_SNAKEMAKE
+P0_UNRESOLVED metric identity awaits response checkpoint
+host: <HOST>
+Building DAG of jobs...
+Job stats:
+job                   count
+------------------  -------
+all                       1
+inventory_response        1
+plan_metrics              1
+simulate_response         1
+total                     4
+
+
+[Thu Sep 10 21:24:15 2026]
+rule simulate_response:
+    output: hydrology/wflow/output.csv
+    jobid: 3
+    reason: Missing output files: hydrology/wflow/output.csv
+    resources: tmpdir=<TBD>
+[Thu Sep 10 21:24:15 2026]
+rule inventory_response:
+    input: hydrology/wflow/output.csv
+    output: retained/inventory.json
+    jobid: 2
+    reason: Missing output files: retained/inventory.json; Input files updated by another job: hydrology/wflow/output.csv
+    resources: tmpdir=<TBD>
+[Thu Sep 10 21:24:15 2026]
+checkpoint plan_metrics:
+    input: retained/inventory.json, hydrology/wflow/output.csv
+    output: planning/metric.json
+    jobid: 1
+    reason: Missing output files: <TBD>; Input files updated by another job: hydrology/wflow/output.csv, retained/inventory.json
+    resources: tmpdir=<TBD>
+DAG of jobs will be updated after completion.
+
+[Thu Sep 10 21:24:15 2026]
+rule all:
+    input: <TBD>
+    jobid: 0
+    reason: Input files updated by another job: <TBD>
+    resources: tmpdir=<TBD>
+Job stats:
+job                   count
+------------------  -------
+all                       1
+inventory_response        1
+plan_metrics              1
+simulate_response         1
+total                     4
+
+Reasons:
+    (check individual jobs above for details)
+    input files updated by another job:
+        all, inventory_response, plan_metrics
+    output files have to be generated:
+        inventory_response, plan_metrics, simulate_response
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+The run involves checkpoint jobs, which will result in alteration of the DAG of jobs (e.g. adding more jobs) after their completion.
+
+CASE: metric; INVOCATION: fresh-execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\simulation-runner.py"
+]
+P0_LAUNCH_SNAKEMAKE
+P0_UNRESOLVED metric identity awaits response checkpoint
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                   count
+------------------  -------
+all                       1
+inventory_response        1
+plan_metrics              1
+simulate_response         1
+total                     4
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:17 2026]
+localrule simulate_response:
+    output: hydrology/wflow/output.csv
+    jobid: 3
+    reason: Missing output files: hydrology/wflow/output.csv
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:17 2026]
+Finished jobid: 3 (Rule: simulate_response)
+1 of 4 steps (25%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:17 2026]
+localrule inventory_response:
+    input: hydrology/wflow/output.csv
+    output: retained/inventory.json
+    jobid: 2
+    reason: Missing output files: retained/inventory.json; Input files updated by another job: hydrology/wflow/output.csv
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:17 2026]
+Finished jobid: 2 (Rule: inventory_response)
+2 of 4 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:17 2026]
+localcheckpoint plan_metrics:
+    input: retained/inventory.json, hydrology/wflow/output.csv
+    output: planning/metric.json
+    jobid: 1
+    reason: Missing output files: <TBD>; Input files updated by another job: hydrology/wflow/output.csv, retained/inventory.json
+    resources: tmpdir=<HOST_TEMP>
+DAG of jobs will be updated after completion.
+[Thu Sep 10 21:24:17 2026]
+Finished jobid: 1 (Rule: plan_metrics)
+3 of 4 steps (75%) done
+Updating checkpoint dependencies.
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:17 2026]
+localrule reduce_metric:
+    input: planning/metric.json, hydrology/wflow/output.csv
+    output: metrics/b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa/metrics.json (update)
+    jobid: 6
+    reason: Missing output files: metrics/b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa/metrics.json
+    wildcards: metric_id=b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:17 2026]
+Finished jobid: 6 (Rule: reduce_metric)
+4 of 5 steps (80%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:17 2026]
+localrule all:
+    input: metrics/b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa/metrics.json
+    jobid: 0
+    reason: Input files updated by another job: metrics/b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa/metrics.json
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:17 2026]
+Finished jobid: 0 (Rule: all)
+5 of 5 steps (100%) done
+Complete log(s): <WORKTREE>\.tmp\scratchpad\2026-09-10_2046\plan-loss-fixed\test_checkpoint_fresh_reuse_an1\.snakemake\log\2026-09-10T212417.169508.snakemake.log
+
+CASE: metric; INVOCATION: forced-reuse
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\simulation-runner.py",
+  "--forceall"
+]
+P0_LAUNCH_SNAKEMAKE
+P0_REUSED metrics\b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa\metrics.json
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                   count
+------------------  -------
+all                       1
+inventory_response        1
+plan_metrics              1
+simulate_response         1
+total                     4
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:20 2026]
+localrule simulate_response:
+    output: hydrology/wflow/output.csv
+    jobid: 3
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:20 2026]
+Finished jobid: 3 (Rule: simulate_response)
+1 of 4 steps (25%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:20 2026]
+localrule inventory_response:
+    input: hydrology/wflow/output.csv
+    output: retained/inventory.json
+    jobid: 2
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:20 2026]
+Finished jobid: 2 (Rule: inventory_response)
+2 of 4 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:20 2026]
+localcheckpoint plan_metrics:
+    input: retained/inventory.json, hydrology/wflow/output.csv
+    output: planning/metric.json
+    jobid: 1
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+DAG of jobs will be updated after completion.
+[Thu Sep 10 21:24:20 2026]
+Finished jobid: 1 (Rule: plan_metrics)
+3 of 4 steps (75%) done
+Updating checkpoint dependencies.
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:20 2026]
+localrule reduce_metric:
+    input: planning/metric.json, hydrology/wflow/output.csv
+    output: metrics/b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa/metrics.json (update)
+    jobid: 6
+    reason: Forced execution
+    wildcards: metric_id=b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:20 2026]
+Finished jobid: 6 (Rule: reduce_metric)
+4 of 5 steps (80%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:20 2026]
+localrule all:
+    input: metrics/b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa/metrics.json
+    jobid: 0
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:20 2026]
+Finished jobid: 0 (Rule: all)
+5 of 5 steps (100%) done
+Complete log(s): <WORKTREE>\.tmp\scratchpad\2026-09-10_2046\plan-loss-fixed\test_checkpoint_fresh_reuse_an1\.snakemake\log\2026-09-10T212420.228026.snakemake.log
+
+CASE: metric; INVOCATION: forced-mismatch
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\simulation-runner.py",
+  "--forceall"
+]
+P0_LAUNCH_SNAKEMAKE
+ValueError in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 3:
+ImmutablePublicationMismatch: metrics\b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa\metrics.json
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 3, in <module>
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\fixture_contracts.py", line 81, in verify_metric_plan
+
+CASE: metric; INVOCATION: missing-plan-mismatch
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\simulation-runner.py",
+  "--forceall"
+]
+P0_LAUNCH_SNAKEMAKE
+P0_UNRESOLVED metric identity awaits response checkpoint
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                   count
+------------------  -------
+all                       1
+inventory_response        1
+plan_metrics              1
+simulate_response         1
+total                     4
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:25 2026]
+localrule simulate_response:
+    output: hydrology/wflow/output.csv
+    jobid: 3
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:25 2026]
+Finished jobid: 3 (Rule: simulate_response)
+1 of 4 steps (25%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:25 2026]
+localrule inventory_response:
+    input: hydrology/wflow/output.csv
+    output: retained/inventory.json
+    jobid: 2
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:24:25 2026]
+Finished jobid: 2 (Rule: inventory_response)
+2 of 4 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:24:25 2026]
+localcheckpoint plan_metrics:
+    input: retained/inventory.json, hydrology/wflow/output.csv
+    output: planning/metric.json
+    jobid: 1
+    reason: Forced execution
+    resources: tmpdir=<HOST_TEMP>
+DAG of jobs will be updated after completion.
+[Thu Sep 10 21:24:25 2026]
+Finished jobid: 1 (Rule: plan_metrics)
+3 of 4 steps (75%) done
+Updating checkpoint dependencies.
+InputFunctionException in rule reduce_metric in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 36:
+Error:
+  ValueError: ImmutablePublicationMismatch: metrics\b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa\metrics.json
+Wildcards:
+  metric_id=b31bbe2a0212a9ea99c73a4f044860d8e8f903cce671c84c89bfa222b208bafa
+Traceback:
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 32, in selected_response (rule reduce_metric, line 45, <WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk)
+
+CASE: metric; INVOCATION: stale-plan
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\simulation-runner.py"
+]
+P0_LAUNCH_SNAKEMAKE
+ValueError in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 3:
+StaleMetricPlan: planning\metric.json; remove the plan and rebuild
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 3, in <module>
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\fixture_contracts.py", line 78, in verify_metric_plan
+
+CASE: metric; INVOCATION: stale-dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\simulation-runner.py",
+  "--dry-run"
+]
+P0_LAUNCH_SNAKEMAKE
+ValueError in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 3:
+StaleResponseArtifact: hydrology\wflow\output.csv
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 3, in <module>
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\fixture_contracts.py", line 77, in verify_metric_plan
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\fixture_contracts.py", line 62, in metric_plan
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\fixture_contracts.py", line 56, in validate_inventory
+
+CASE: metric; INVOCATION: stale-execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\simulation-runner.py"
+]
+P0_LAUNCH_SNAKEMAKE
+ValueError in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 3:
+StaleResponseArtifact: hydrology\wflow\output.csv
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\metric-checkpoint.smk", line 3, in <module>
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\fixture_contracts.py", line 77, in verify_metric_plan
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\fixture_contracts.py", line 62, in metric_plan
+  File "<WORKTREE>\dev\milestones\r12\implementation\feasibility\fixture_contracts.py", line 56, in validate_inventory

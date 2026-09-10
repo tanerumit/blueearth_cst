@@ -28,6 +28,14 @@ config keys, WG-4 output shape) is derived **read-only** from
 `blueearth_cst/weathergen/{global.R,generate_weather.R,impose_climate_change.R}`
 — those files are never edited.
 
+R12 P1 routes rules 3.11/3.12 through
+`blueearth_cst/experiment/scenario_provider.py`. It selects roots and ancestors
+from pure scenario rows and passes the existing positional arguments to these R
+scripts. Native output paths and this WG contract remain the current carrier.
+Effective forcing units and verbatim native labels are distinct; the current
+ERA5 interpretation is traced in
+`dev/milestones/r12/implementation/evidence/p1-forcing-units.md`.
+
 **Fixture branch = era5.** Branch-specific facts (chirps precip-only, the chirps
 orography sidecar) are documented from code and tagged **not fixture-verified
 (no chirps fixture)** where no chirps fixture exists — never faked green.

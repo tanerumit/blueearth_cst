@@ -16,6 +16,8 @@ from blueearth_cst.shared.provenance import append_journal_line, configuration_i
 from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retired_experiment_keys
 from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
+from blueearth_cst.experiment.scenario_provider import legacy_member_name
+from blueearth_cst.experiment.scenario_rows import stochastic_rows, validate_stochastic
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, warn_row, window_year_pair, install_console_style, run_header, open_run_header
 from blueearth_cst.experiment.check_project_consistency import guarded_section_paths
 from blueearth_cst.shared.config_composition import compose_config
@@ -274,6 +276,26 @@ ST_START = 0
 # `{st_num}`) are untouched, since the padding rides on the wildcard's VALUE.
 ST_WIDTH = index_width(ST_NUM)
 RLZ_WIDTH = index_width(RLZ_NUM)
+
+# P1 carrier: transient logical ids only; output paths and configs remain native.
+# This explicit run-only capacity does not reserve a durable collection namespace.
+# P2/P3 will obtain that namespace from the required generation setting.
+_row_capacity = RLZ_NUM * (ST_NUM + 1)
+SCENARIO_ROWS = stochastic_rows(RLZ_NUM, ST_NUM, unit_id_capacity=_row_capacity)
+validate_stochastic(SCENARIO_ROWS, n_realizations=RLZ_NUM, st_num=ST_NUM, unit_id_capacity=_row_capacity)
+_rows_by_id = {row.run_id: row for row in SCENARIO_ROWS}
+_rows_by_member = {legacy_member_name(row, st_width=ST_WIDTH): row for row in SCENARIO_ROWS}
+_root_rows = tuple(row for row in SCENARIO_ROWS if not row.derived_from)
+
+
+def _provider_row(wildcards):
+    return _rows_by_member[f"rlz_{wildcards.rlz_num}_st_{wildcards.st_num}"]
+
+
+def _provider_ancestor(wildcards):
+    row = _provider_row(wildcards)
+    ancestor = _rows_by_id[row.derived_from]
+    return f"{wg_dir}/output/{legacy_member_name(ancestor, st_width=ST_WIDTH)}.nc"
 
 
 def rlz_ix(n):
@@ -1003,7 +1025,7 @@ rule prepare_weathergen_config:
         # what the generator produces.
         default_config = "config/defaults/weathergen_config.yml",
         # The store the generator will read, declared here so THIS rule can
-        # check it -- rule 3.11 is a `shell:` running R and cannot. `ancient`
+        # check it before rule 3.11's provider invokes R. `ancient`
         # for the same reason 3.11 uses it: a re-extraction must not by itself
         # re-run the config prep.
         #
@@ -1067,8 +1089,11 @@ rule generate_weather_realizations:
         basin_cells = ancient(f"{store_dir}/basin_cells.csv"),
         weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     output:
-        temp([f"{wg_dir}/output/rlz_{rlz_ix(n)}_st_{ST_BASELINE}.nc" for n in range(1, RLZ_NUM+1)])
+        temp([f"{wg_dir}/output/{legacy_member_name(row, st_width=ST_WIDTH)}.nc" for row in _root_rows])
     params:
+        operation = "generate_roots",
+        rows = [row.as_record() for row in _root_rows],
+        output_dir = f"{wg_dir}/output",
         # The R composes its own output filenames, so it needs the SAME widths
         # this rule's output: declaration used. Passed, never re-derived -- a
         # cross-language copy of the padding rule is invisible to --dry-run.
@@ -1081,8 +1106,8 @@ rule generate_weather_realizations:
         f"{LOG_PARTS_DIR}/3.11_generate_weather_realizations.log",
     benchmark:
         f"{BENCH_PARTS_DIR}/3.11_generate_weather_realizations.tsv",
-    shell:
-        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/generate_weather.R {input.climate_nc} {input.weathergen_config} {params.rlz_width} {params.st_width} {input.basin_cells}"""
+    script:
+        "blueearth_cst/experiment/scenario_provider.py"
 
 # 3.12  perturb_climate_realization — impose perturbations per rlz/cst (st_num >= 1)
 rule perturb_climate_realization:
@@ -1102,7 +1127,7 @@ rule perturb_climate_realization:
     wildcard_constraints:
         st_num=member_index_regex(ST_WIDTH),
     input:
-        rlz_nc = f"{wg_dir}/output/rlz_"+"{rlz_num}"+f"_st_{ST_BASELINE}.nc",
+        rlz_nc = _provider_ancestor,
         # A CONSTANT input now: one table for the whole experiment, not one file
         # per member. The member id no longer arrives through the filename -- it
         # is passed as a positional argument and the R filters on it, asserting
@@ -1115,6 +1140,9 @@ rule perturb_climate_realization:
         weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
     output:
         rlz_st_nc = temp(f"{wg_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".nc")
+    params:
+        operation = "transform",
+        row = lambda wildcards: _provider_row(wildcards).as_record(),
     threads: 1
     resources:
         mem_mb = 2048,
@@ -1122,8 +1150,8 @@ rule perturb_climate_realization:
         f"{LOG_PARTS_DIR}/3.12_perturb_climate_realization/" + "rlz_{rlz_num}_st_{st_num}.log",
     benchmark:
         f"{BENCH_PARTS_DIR}/3.12_perturb_climate_realization/" + "rlz_{rlz_num}_st_{st_num}.tsv",
-    shell:
-        """python -u "{run_logged}" "{log}" -- Rscript --vanilla blueearth_cst/weathergen/impose_climate_change.R {input.rlz_nc} {input.weathergen_config} {input.lookup_csv} {output.rlz_st_nc} {wildcards.st_num}"""
+    script:
+        "blueearth_cst/experiment/scenario_provider.py"
 
 # 3.13 was write_climate_data_catalog, removed 2026-08-18. It built ONE hydromt
 # catalog naming every member, and rule 3.14 read a single entry out of it — so

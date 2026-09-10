@@ -24,8 +24,8 @@ No durable collection/simulation/metric manifests, metrics-only path, planning c
 
 ### Required changes (checklist)
 
-- [ ] Implement pure deterministic stochastic row enumeration, forest/completeness/pairing validation, explicit `unit_id_capacity`, and `EmptyScenarioSetError`; persist the same rows later without rereading a generated table.
-- [ ] Wrap current R generation/transform operations in the accepted provider interface. R developer owns R changes; model builder confirms operation parity. Provider alone interprets `rlz`, `st_id`, `derived_from`, and pairing.
+- [x] Implement pure deterministic stochastic row enumeration, forest/completeness/pairing validation, explicit `unit_id_capacity`, and `EmptyScenarioSetError`; persist the same rows later without rereading a generated table.
+- [x] Wrap current R generation/transform operations in the accepted provider interface. R developer owns R changes; model builder confirms operation parity. Provider alone interprets `rlz`, `st_id`, `derived_from`, and pairing.
 - [ ] Wrap preparation/execution/native reading in the simulator interface. Its `RunForcing` input exposes only `run_id`, forcing/descriptor/preparation context, and collection ids; no scenario-type concepts cross the seam.
 - [ ] Introduce validated `ResponseSeries`/set and make metric functions consume it. Native Wflow filenames, headers, and selectors terminate at the reader.
 - [ ] Encode current metric declarations, run/bundle grain, response needs, Class-C reference rules, unit-index semantics, and operational count/fit refusals exactly as §§7.1–7.5 specify. Python engineering implements; Astra model validation judges scientific consequences.
@@ -77,13 +77,28 @@ The existing workflow was not edited, so no CLI or numerical rerun was needed
 for this standalone increment. These checks do not establish GF-1's integrated
 DAG, GF-18's consumption of the ancestor bytes, or complete P1 acceptance.
 
-**Binding gate:** the validator found native forcing unit labels inconsistent
+**Initial binding gate (discharged):** the validator found native forcing unit labels inconsistent
 with apparent effective units, including generated `temp: units=K` and prepared
 `temp: units=m, unit=degree C.`. Pressure and radiation labels are also implicated.
 See the [separate P1 disposition](evidence/p0/prechange-snapshot.md#separate-p1-forcing-metadata-disposition).
-Production descriptor/compatibility binding is held until an explicit trace
-through current generation/catalog transformations establishes effective units.
+The [reviewed unit trace](evidence/p1-forcing-units.md) established effective units
+through current generation/catalog transformations and discharged this hold for ERA5.
 Preserve native bytes and retain raw attributes separately; do not infer physical
 units from ranges or add conversions. A verified interpretation can be documented
 as an implementation binding; an unresolved interpretation or numerical repair
 returns to the accepted scientific/method decision gate.
+
+The provider is now integrated into rules 3.11/3.12 with existing R arguments
+and output paths. Its source/ancestor methods and descriptor have 16 passing
+row/provider tests; the CLI gate passed 20. A fresh real-R rehearsal produced
+all 14 baseline-config forcing files **byte-identical** to P0. The named
+generation handoff is in [generation evidence](evidence/p1-generation-handoff.md).
+Other source-unit interpretations, Wflow compatibility/execution and metrics
+remain outside this acceptance.
+
+`response_series.py` also defines standalone neutral series, metadata/coverage
+validation and bundle compatibility (15 tests passed). Its current typed-time
+binding supports Gregorian datetime64 only and refuses incompatible calendars.
+It is not yet connected to the native Wflow reader or metric call sites; the
+simulator/response and metric checkboxes therefore remain open. The dedicated
+`forcing_descriptor.py` holds physical types without provider payload dependencies.

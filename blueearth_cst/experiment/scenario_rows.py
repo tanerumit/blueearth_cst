@@ -36,6 +36,20 @@ class ScenarioRow:
             **dict(self.payload),
         }
 
+    @classmethod
+    def from_record(cls, record: Mapping[str, str]) -> "ScenarioRow":
+        """Restore a row passed through Snakemake's serializable params."""
+        if record["evaluated"] not in {"true", "false"}:
+            raise ValueError("evaluated must be textual true or false")
+        core = {"run_id", "derived_from", "evaluated", "scenario_type"}
+        return cls(
+            record["run_id"],
+            record["derived_from"],
+            record["evaluated"] == "true",
+            record["scenario_type"],
+            tuple((key, value) for key, value in record.items() if key not in core),
+        )
+
 
 def _positive_integer(value: object, field: str) -> int:
     """Refuse coercions that would change a declared count."""

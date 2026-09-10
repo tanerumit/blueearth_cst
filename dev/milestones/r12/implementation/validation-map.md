@@ -10,7 +10,9 @@ works. The owner approved the mandatory runner; its synthetic matrix and both
 checkpoint lifecycles now pass. Production GF-22/GF-29/GF-30 remain unimplemented.
 Fresh WF1/WF3 reference capture and its isolated manifest check passed; named
 model-validator accepted the snapshot. Pure P1 rows now have 13 passing tests;
-production binding awaits the separate unit-provenance gate. Other GF statuses
+the ERA5 unit-provenance gate is discharged and generation wrappers preserve all
+14 reference forcing files byte-for-byte. Neutral response checks pass separately;
+simulator/metric integration is outstanding. Other GF statuses
 remain at the preparation state. See [P2b evidence](evidence/p0/p2b-feasibility.md).
 
 Existing reusable checks:

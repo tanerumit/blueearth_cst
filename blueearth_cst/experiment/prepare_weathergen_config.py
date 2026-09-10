@@ -186,8 +186,7 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import log_row, tee_to_log
 
         with tee_to_log(sm.log[0]):
-            # The store the generator reads, checked HERE because rule 3.11 is a
-            # `shell:` running R and cannot check it, and because weathergenr's
+            # Check the store before rule 3.11's provider invokes R; weathergenr's
             # own failure on a short record arrives twenty rules from anything
             # that could explain it (the R3 defect). See the rule's comment for
             # why the params rerun-trigger alone is not enough.

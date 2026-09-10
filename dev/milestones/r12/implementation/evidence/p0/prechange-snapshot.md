@@ -172,6 +172,13 @@ criteria against the fresh successor run before equivalence is accepted.
 
 ### Separate P1 forcing-metadata disposition
 
+**Superseded hold, 2026-09-10:** the named model-validator
+[ERA5 unit-trace acceptance](../p1-forcing-units.md#named-model-validator-review)
+discharges the binding hold for the verified ERA5 path. The original findings
+and prerequisite below are retained as the reason for that review; they do not
+block the accepted explicit interpretation. Other bindings remain outside its
+scope.
+
 **HOLD the production forcing-descriptor/compatibility binding for the named
 metadata consultation; P0 ACCEPT and pure scenario-row extraction remain valid.**
 The follow-up inspection required by design §§5.3/6.4 found a broader distinction

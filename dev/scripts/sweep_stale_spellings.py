@@ -219,9 +219,18 @@ ALLOWANCES = (
         ),
     ),
     Allowance(
+        name="scenario enumeration's retired-toggle refusal",
+        reason=(
+            "the pure scenario enumerator rejects the retired historical toggle "
+            "before selecting rows. Only its exact membership guard is allowed; "
+            "a value read or fallback remains a stale reader"
+        ),
+        line_patterns=(r'^\s*if "run_historical" in generation_spec:\s*$',),
+    ),
+    Allowance(
         name="a refusal test's input document",
         reason=(
-            "these three modules exist to assert that a v1 spelling is REFUSED, "
+            "these modules contain tests asserting that a v1 spelling is REFUSED, "
             "and constructing the document to be refused means writing the key. "
             "Named individually rather than as a `tests/**` glob ON PURPOSE: "
             "the two live v1 readers this sweep first caught "
@@ -232,6 +241,7 @@ ALLOWANCES = (
             "tests/test_config_composition.py",
             "tests/test_experiment_config.py",
             "tests/test_indicator_tables.py",
+            "tests/test_scenario_rows.py",
         ),
     ),
     Allowance(

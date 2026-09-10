@@ -13,7 +13,7 @@ updated: 2026-09-10
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 is accepted and P1 has started; forcing-unit provenance gates production binding.
+> **Why** — P0 is accepted; P1 generation preserves the reference, while simulator and metric integration remain.
 > **Effort** — large
 
 ## Progress
@@ -97,3 +97,10 @@ commit `56e950c1`; the capture below records the original finding.
   trace current transforms and obtain reviewed effective-unit interpretation.
   Preserve native bytes; numeric conversion or unresolved physics needs a method
   decision. Details: `dev/milestones/r12/implementation/phase-1-contract-extraction.md`.
+
+- Unit trace reviewed and accepted for the existing ERA5 binding; hold discharged.
+  Integrated provider wrappers into rules 3.11/3.12 with unchanged R operations.
+  Real-R rehearsal: 14/14 forcing files byte-identical to the accepted reference.
+  Row/provider tests: 16 passed; neutral response tests: 15 passed; CLI: 20 passed.
+  Generation handoff: `dev/milestones/r12/implementation/evidence/p1-generation-handoff.md`.
+  Simulator/metrics remain pending; no complete P1 or GF-9 claim.

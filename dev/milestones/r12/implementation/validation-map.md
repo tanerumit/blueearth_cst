@@ -9,7 +9,9 @@ conditional rules fail target exclusivity, although metrics-only producer omissi
 works. The owner approved the mandatory runner; its synthetic matrix and both
 checkpoint lifecycles now pass. Production GF-22/GF-29/GF-30 remain unimplemented.
 Fresh WF1/WF3 reference capture and its isolated manifest check passed; named
-model-validator acceptance is pending. Other GF statuses remain at the preparation state. See [P2b evidence](evidence/p0/p2b-feasibility.md).
+model-validator accepted the snapshot. Pure P1 rows now have 13 passing tests;
+production binding awaits the separate unit-provenance gate. Other GF statuses
+remain at the preparation state. See [P2b evidence](evidence/p0/p2b-feasibility.md).
 
 Existing reusable checks:
 
@@ -23,7 +25,7 @@ Existing reusable checks:
 |---|---|---|---|
 | 1 | Python engineer / P0 composition; P1 integrated DAG; P3 final generation | P2b or fresh generation DAG has ambiguity/cycle, or missing ancestor does not refuse | **P0 P2b PASSED; production checks NOT IMPLEMENTED** — `pixi run pytest tests/test_r12_wf3_feasibility.py -k p2b`; follow with fresh-project current-carrier and final generation DAG checks in `tests/test_cli.py` |
 | 2 | Python engineer / P1 | Empty edge schedules a transform | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k empty_edge_schedules_roots_only` |
-| 3 | Python engineer / P1 | Rows require generated-table read, row checkpoint, or second invocation | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k rows_are_parse_time_pure` |
+| 3 | Python engineer / P1 | Rows require generated-table read, row checkpoint, or second invocation | **PURE FUNCTION PASSED; DAG integration pending** — `pixi run pytest tests/test_scenario_rows.py -k rows_are_parse_time_pure` |
 | 4 | Python engineer / P1 | Any stochastic unperturbed row is unevaluated/uninventoried or retired toggle is accepted | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k unperturbed_is_evaluated` |
 | 5 | Python engineer / P1 | Empty set exits successfully or schedules zero jobs | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k empty_set_refuses` |
 | 6 | Python engineer / P2 | Metric/grouping/environment change moves collection/response digests or fails to move metric id | **NOT IMPLEMENTED** — `pixi run pytest tests/test_metric_plan.py -k metric_only_invalidation` |

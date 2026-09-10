@@ -13,7 +13,7 @@ updated: 2026-09-10
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 feasibility and fresh reference capture passed; comparison-evidence acceptance and production migration remain outstanding.
+> **Why** — P0 is accepted and P1 has started; forcing-unit provenance gates production binding.
 > **Effort** — large
 
 ## Progress
@@ -24,7 +24,8 @@ updated: 2026-09-10
 - [x] Release P0 execution and recheck source/environment readiness on 2026-09-10.
 - [x] Prove synthetic P2b composition in all three states, with dry-run and real execution.
 - [x] Execute P0 synthetic feasibility tests and capture the fresh pre-change snapshot.
-- [ ] Obtain named model-validator acceptance of P0 comparison evidence before P1.
+- [x] Obtain named model-validator acceptance of P0 comparison evidence before P1.
+- [ ] Complete P1 logical contracts and the three model-validator handoffs.
 - [ ] Execute implementation only within subsequently authorized scope.
 
 ## Refs
@@ -69,6 +70,9 @@ updated: 2026-09-10
 
 ## Improvement candidate captured during P0
 
+Implemented with owner approval in the canonical brain skill, v0.6.1,
+commit `56e950c1`; the capture below records the original finding.
+
 - Target: `snakemake` skill, `references/rule-design.md`, Outputs And Failure Semantics.
 - Gap: its `update(...)` rule covers pre-job deletion and successful forced reuse,
   but does not distinguish failed-job cleanup or Snakemake's timestamp refresh.
@@ -81,3 +85,15 @@ updated: 2026-09-10
   was corrected to refuse an already-corrupt publication in read-only preflight.
   This concerns any Snakemake workflow revalidating persistent outputs, not CST
   science. No skill files were edited.
+
+## P1 started — 2026-09-10
+
+- Named Astra model-validator accepted P0 after independent integrity/config/model
+  checks; evidence contains the verdict and its scope limits.
+- Added pure scenario-row enumeration and configured ancestry/completeness checks;
+  13 tests passed, repository lint and formatting passed. No runtime integration yet.
+- Production binding is held at the unit-provenance gate: generated and prepared
+  forcing carry inconsistent physical-unit labels. The next bounded step is to
+  trace current transforms and obtain reviewed effective-unit interpretation.
+  Preserve native bytes; numeric conversion or unresolved physics needs a method
+  decision. Details: `dev/milestones/r12/implementation/phase-1-contract-extraction.md`.

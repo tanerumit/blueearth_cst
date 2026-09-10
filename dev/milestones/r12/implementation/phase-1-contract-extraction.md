@@ -59,3 +59,31 @@ Return the landing diff, changed call graph, narrow/CLI/lint results, GF evidenc
 ### Task constraints
 
 No hidden cap, fallback, defaulted response metadata, or private upstream patch. Preserve projection terminality and the accepted Class-B uncertainty limitation.
+
+### Execution progress — 2026-09-10
+
+The named Astra model-validator accepted the P0 snapshot as comparison evidence;
+the owner then released P1 by asking to continue. Pure row contracts are now in
+`blueearth_cst/experiment/scenario_rows.py`: capacity-padded ids, immutable
+ordered rows, textual record serialization, forest validation, configured
+stochastic cross-product and same-realization direct-root ancestry. Every
+stochastic row is evaluated; empty sets, the retired toggle and insufficient
+capacity refuse. Capacity is an explicit function argument; this increment adds
+no config setting or durable identity. No production rule calls this module yet.
+
+`pixi run --as-is python -m pytest tests/test_scenario_rows.py -q` passed
+**13 tests in 0.11 s**. Repository lint and format-check passed (296 files).
+The existing workflow was not edited, so no CLI or numerical rerun was needed
+for this standalone increment. These checks do not establish GF-1's integrated
+DAG, GF-18's consumption of the ancestor bytes, or complete P1 acceptance.
+
+**Binding gate:** the validator found native forcing unit labels inconsistent
+with apparent effective units, including generated `temp: units=K` and prepared
+`temp: units=m, unit=degree C.`. Pressure and radiation labels are also implicated.
+See the [separate P1 disposition](evidence/p0/prechange-snapshot.md#separate-p1-forcing-metadata-disposition).
+Production descriptor/compatibility binding is held until an explicit trace
+through current generation/catalog transformations establishes effective units.
+Preserve native bytes and retain raw attributes separately; do not infer physical
+units from ranges or add conversions. A verified interpretation can be documented
+as an implementation binding; an unresolved interpretation or numerical repair
+returns to the accepted scientific/method decision gate.

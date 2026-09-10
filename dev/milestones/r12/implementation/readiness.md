@@ -14,7 +14,8 @@ conditional producers do not enforce the accepted operation/target exclusivity.
 The owner approved the mandatory runner; replacement probes and the isolated
 pre-change run completed. Runner/checkpoint feasibility passed; WF1 and WF3
 completed and the isolated manifest check passed. Named model-validator acceptance
-is the remaining P0 gate. See [snapshot evidence](evidence/p0/prechange-snapshot.md).
+discharged P0. Its separate forcing-metadata finding holds P1 production binding;
+see [snapshot evidence](evidence/p0/prechange-snapshot.md).
 Inspected 2026-09-10 in session-3 on `feat/wp3-improvements`.
 Source commit: `dffa4625c9c1f01bd8a77e0d91ae1a0a8f3538e8`.
 This is a dated operational inventory, not scientific acceptance. Recheck it

@@ -33,7 +33,7 @@ No production adapter, successor manifest, entry-point/config migration, estimat
 - [x] Choose explicit `<PRECHANGE_CONFIG>`, `<PRECHANGE_ROOT>`, `<POSTCHANGE_CONFIG>`, `<POSTCHANGE_ROOT>`, and sidecar manifest paths. Both configs must compose to identical scientific settings and keep the `project_config_` prefix; output roots must be separate from the standing baseline and from each other.
 - [x] Define the pre-change provenance record: config/source/model/code/environment digests, resolved seed, command, expected targets, and `--notemp` WF1 requirement. Do not execute until released.
 - [x] After Master Gate 1, the model builder runs the current WF1 and WF3 pre-change workflows into `<PRECHANGE_ROOT>` (`--notemp` on WF1), retains the raw outputs and every scope-dependent model check, records separate manifest/reference sidecars and complete command logs in the isolated run home, linked from `dev/milestones/r12/implementation/evidence/p0/`, and hands outputs to model validation for completeness/provenance review. Preserve the root read-only for the later GF-9 crosswalk. WF2 is intentionally excluded because projections are a terminal overlay and do not drive this migration comparison.
-- [ ] Mark the snapshot accepted as comparison evidence before any P1 edit changes provider/simulator/reducer call sites or numerical outputs. Missing, stale, partially written, or scientifically non-current evidence blocks those edits.
+- [x] Mark the snapshot accepted as comparison evidence before any P1 edit changes provider/simulator/reducer call sites or numerical outputs. Missing, stale, partially written, or scientifically non-current evidence blocks those edits.
 
 ### Commit plan
 
@@ -87,8 +87,12 @@ cases after the final missing-plan correction; CLI 20 passed, lint and formattin
 passed. See [runner/checkpoint evidence](evidence/p0/runner-checkpoint-feasibility.md).
 Fresh WF1 (20 jobs) and WF3 (41 jobs) completed; the isolated four-target manifest
 record/check passed. [Snapshot evidence and handoff](evidence/p0/prechange-snapshot.md)
-records 242 artifact hashes and coverage. **Stopped at P0 comparison-evidence
-acceptance: named model-validator review remains required before P1.**
+records 242 artifact hashes and coverage. The named Astra model-validator handoff
+accepted comparison-evidence fitness on 2026-09-10, independently rechecking
+config equality, all hashes, response coverage and model provenance. **P0 is
+complete; the snapshot prerequisite for P1 is discharged.** The verdict records
+predecessor temporal endpoints and suspect native forcing unit labels for the
+later metadata and numerical crosswalk; it makes no model-skill claim.
 
 ### Task constraints
 

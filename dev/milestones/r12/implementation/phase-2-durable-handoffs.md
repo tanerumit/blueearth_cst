@@ -60,3 +60,19 @@ Return manifest examples, identity inputs, invalidation observations, retained-b
 ### Task constraints
 
 No silent retention cap, same-intent partial resume, normalized response copy unless separately justified, or broader execution-control platform. Routine configuration never exposes machine identities.
+
+### Execution checkpoint — 2026-09-10
+
+Owner instruction to continue R12 releases the next P2 increment after recorded
+P1 acceptance. Pure `content_identity.py` implements collection-canon/1, strict
+persisted JSON reading, confined artifact paths, semantic-row hashing, and the
+two §8.2 identity projections. No production caller or scientific operation
+changed. [Checkpoint evidence](evidence/p2/identity-foundation.md) records exact
+checks and the read-only Python-engineer review.
+
+Next: implement collection initialization/publication and full persisted-state
+validation using these primitives, then portable preparation closure and the
+source-planning checkpoint. The first checklist item remains open: identities
+alone do not implement immutable payloads, ready-marker publication, or complete
+validation. Production collection integration still requires its named scientific
+handoff; simulation/response and metric-set persistence follow in order.

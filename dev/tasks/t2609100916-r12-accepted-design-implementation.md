@@ -26,6 +26,7 @@ updated: 2026-09-10
 - [x] Execute P0 synthetic feasibility tests and capture the fresh pre-change snapshot.
 - [x] Obtain named model-validator acceptance of P0 comparison evidence before P1.
 - [x] Complete P1 logical contracts and the three model-validator handoffs.
+- [x] Start P2 with verified pure collection identity primitives.
 - [ ] Execute implementation only within subsequently authorized scope.
 
 ## Refs
@@ -118,3 +119,14 @@ commit `56e950c1`; the capture below records the original finding.
 - P1 acceptance gate passed. P2 durable collections, simulation/response records,
   metric sets and metrics-only operation remain. GF-15 benchmarking still needs
   its stated review/owner criteria gate; no benchmark or milestone-seal claim.
+
+## P2 started — 2026-09-10
+
+- Owner instructed continuation after P1 acceptance. Added collection-canon/1
+  encoding/reading, confined paths, scenario semantics and intent/revision hashes.
+- Focused identity/row/provider suite: 60 passed; lint, format-check and compilation
+  passed. Read-only Python-engineer review found no actionable identity defects.
+- This is a foundation checkpoint only: no ready collections or runtime wiring.
+  Next is immutable collection storage and complete validation, then portable
+  preparation and the source checkpoint. See
+  `dev/milestones/r12/implementation/evidence/p2/identity-foundation.md`.

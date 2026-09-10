@@ -68,6 +68,6 @@ supported. This gate is discharged; prove the replacement and continue P0.
 
 - [P0 — feasibility and baseline preparation](phase-0-feasibility-baseline.md) — complete; named model-validator accepted comparison evidence
 - [P1 — logical contract extraction](phase-1-contract-extraction.md) — acceptance gate passed: adapters integrated, three bounded scientific handoffs accepted, combined software gate passed
-- [P2 — durable handoffs](phase-2-durable-handoffs.md) — not started
+- [P2 — durable handoffs](phase-2-durable-handoffs.md) — started: pure collection identity primitives verified; durable publication and production integration pending
 - [P3 — workflow extraction and migration](phase-3-workflow-extraction.md) — not started
 - [GF-1..GF-32 validation map](validation-map.md)

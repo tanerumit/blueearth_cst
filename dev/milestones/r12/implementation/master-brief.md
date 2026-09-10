@@ -2,7 +2,7 @@
 
 ### Goal
 
-Implement the accepted [R12 v6 design](../wf3-simulation-identity-design.md) without changing its method, interfaces, or three-landings sequence. This program starts only after execution scope is released; this preparation creates no production implementation or scientific result.
+Implement the accepted [R12 v6 design](../wf3-simulation-identity-design.md) without changing its method, interfaces, or three-landings sequence. P0 execution was released on 2026-09-10 by the owner's instruction to continue with the next logical step; P2b is the first bounded increment. Preparation itself created no production implementation or scientific result.
 
 ### Subsystem map
 
@@ -60,7 +60,7 @@ The accepted migration deliberately uses `run_stress_test.smk` as a serial carri
 
 ### Phase brief index
 
-- [P0 — feasibility and baseline preparation](phase-0-feasibility-baseline.md) — not started
+- [P0 — feasibility and baseline preparation](phase-0-feasibility-baseline.md) — in progress: readiness rechecked; P2b passed; remaining probes and snapshot pending
 - [P1 — logical contract extraction](phase-1-contract-extraction.md) — not started
 - [P2 — durable handoffs](phase-2-durable-handoffs.md) — not started
 - [P3 — workflow extraction and migration](phase-3-workflow-extraction.md) — not started

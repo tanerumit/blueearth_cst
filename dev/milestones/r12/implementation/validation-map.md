@@ -2,6 +2,10 @@
 
 Status at preparation baseline `dffa4625…`: every successor-specific GF is **NOT IMPLEMENTED**. Existing commands below protect predecessor behavior but do not count as a GF pass. Proposed test paths are labels for implementation ownership, not current files.
 
+Execution update, 2026-09-10: the GF-1 P0 prerequisite (synthetic P2b) passes;
+its production and final-entry-point checks remain outstanding. All other GF
+statuses remain at the preparation state. See [P2b evidence](evidence/p0/p2b-feasibility.md).
+
 Existing reusable checks:
 
 - Current seams/metrics: `pixi run pytest tests/test_indicator_tables.py tests/test_interchange_contracts.py tests/test_export_wflow_results.py`
@@ -12,7 +16,7 @@ Existing reusable checks:
 
 | GF | Owner / phase | Claim falsifier | Command status / proposed test |
 |---|---|---|---|
-| 1 | Python engineer / P0 composition; P1 integrated DAG; P3 final generation | P2b or fresh generation DAG has ambiguity/cycle, or missing ancestor does not refuse | **NOT IMPLEMENTED** — `pixi run pytest tests/test_r12_wf3_feasibility.py -k p2b`; follow with fresh-project current-carrier and final generation DAG checks in `tests/test_cli.py` |
+| 1 | Python engineer / P0 composition; P1 integrated DAG; P3 final generation | P2b or fresh generation DAG has ambiguity/cycle, or missing ancestor does not refuse | **P0 P2b PASSED; production checks NOT IMPLEMENTED** — `pixi run pytest tests/test_r12_wf3_feasibility.py -k p2b`; follow with fresh-project current-carrier and final generation DAG checks in `tests/test_cli.py` |
 | 2 | Python engineer / P1 | Empty edge schedules a transform | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k empty_edge_schedules_roots_only` |
 | 3 | Python engineer / P1 | Rows require generated-table read, row checkpoint, or second invocation | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k rows_are_parse_time_pure` |
 | 4 | Python engineer / P1 | Any stochastic unperturbed row is unevaluated/uninventoried or retired toggle is accepted | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k unperturbed_is_evaluated` |

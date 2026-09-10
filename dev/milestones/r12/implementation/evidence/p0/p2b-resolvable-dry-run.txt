@@ -1,0 +1,62 @@
+host: <HOST>
+Building DAG of jobs...
+Job stats:
+job                  count
+-----------------  -------
+all                      1
+produce_root             2
+transform_forcing        2
+total                    5
+
+
+[Thu Sep 10 20:51:25 2026]
+rule produce_root:
+    output: forcing/root-a.txt
+    jobid: 2
+    reason: Missing output files: forcing/root-a.txt
+    wildcards: run_id=root-a
+    resources: tmpdir=<TBD>
+[Thu Sep 10 20:51:25 2026]
+rule produce_root:
+    output: forcing/root-b.txt
+    jobid: 4
+    reason: Missing output files: forcing/root-b.txt
+    wildcards: run_id=root-b
+    resources: tmpdir=<TBD>
+[Thu Sep 10 20:51:25 2026]
+rule transform_forcing:
+    input: forcing/root-b.txt
+    output: forcing/child-b.txt
+    jobid: 3
+    reason: Missing output files: forcing/child-b.txt; Input files updated by another job: forcing/root-b.txt
+    wildcards: run_id=child-b
+    resources: tmpdir=<TBD>
+[Thu Sep 10 20:51:25 2026]
+rule transform_forcing:
+    input: forcing/root-a.txt
+    output: forcing/child-a.txt
+    jobid: 1
+    reason: Missing output files: forcing/child-a.txt; Input files updated by another job: forcing/root-a.txt
+    wildcards: run_id=child-a
+    resources: tmpdir=<TBD>
+[Thu Sep 10 20:51:25 2026]
+rule all:
+    input: forcing/child-a.txt, forcing/child-b.txt
+    jobid: 0
+    reason: Input files updated by another job: forcing/child-b.txt, forcing/child-a.txt
+    resources: tmpdir=<TBD>
+Job stats:
+job                  count
+-----------------  -------
+all                      1
+produce_root             2
+transform_forcing        2
+total                    5
+
+Reasons:
+    (check individual jobs above for details)
+    input files updated by another job:
+        all, transform_forcing
+    output files have to be generated:
+        produce_root, transform_forcing
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.

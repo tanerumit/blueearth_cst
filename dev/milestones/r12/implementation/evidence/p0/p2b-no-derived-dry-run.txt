@@ -1,0 +1,44 @@
+host: <HOST>
+Building DAG of jobs...
+Job stats:
+job             count
+------------  -------
+all                 1
+produce_root        2
+total               3
+
+
+[Thu Sep 10 20:51:33 2026]
+rule produce_root:
+    output: forcing/root-b.txt
+    jobid: 2
+    reason: Missing output files: forcing/root-b.txt
+    wildcards: run_id=root-b
+    resources: tmpdir=<TBD>
+[Thu Sep 10 20:51:33 2026]
+rule produce_root:
+    output: forcing/root-a.txt
+    jobid: 1
+    reason: Missing output files: forcing/root-a.txt
+    wildcards: run_id=root-a
+    resources: tmpdir=<TBD>
+[Thu Sep 10 20:51:33 2026]
+rule all:
+    input: forcing/root-a.txt, forcing/root-b.txt
+    jobid: 0
+    reason: Input files updated by another job: forcing/root-a.txt, forcing/root-b.txt
+    resources: tmpdir=<TBD>
+Job stats:
+job             count
+------------  -------
+all                 1
+produce_root        2
+total               3
+
+Reasons:
+    (check individual jobs above for details)
+    input files updated by another job:
+        all
+    output files have to be generated:
+        produce_root
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.

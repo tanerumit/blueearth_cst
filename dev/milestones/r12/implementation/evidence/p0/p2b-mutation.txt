@@ -1,0 +1,123 @@
+F
+================================== FAILURES ===================================
+____________ test_p2b_alternation_and_ancestor_compose[resolvable] ____________
+
+tmp_path = WindowsPath('C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-10_2046/p2b-mutation-run/test_p2b_alternation_and_ances0')
+state = 'resolvable'
+
+    @pytest.mark.parametrize("state", ["resolvable", "missing", "no-derived"])
+    def test_p2b_alternation_and_ancestor_compose(tmp_path: Path, state: str) -> None:
+        """Require the intended jobs and exact ancestor consumption in both modes."""
+        environment = os.environ.copy()
+        environment.pop("SNAKEMAKE_PROFILE", None)
+        environment.pop("SNAKEMAKE_WORKFLOW_PROFILE", None)
+        command = [
+            sys.executable,
+            "-m",
+            "snakemake",
+            "all",
+            "--snakefile",
+            str(FIXTURE),
+            "--cores",
+            "1",
+            "--nocolor",
+            "--config",
+            f"state={state}",
+        ]
+        for mode in ("dry-run", "execute"):
+            invocation = command + (["--dry-run"] if mode == "dry-run" else [])
+            result = subprocess.run(
+                invocation,
+                cwd=tmp_path,
+                env=environment,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            output = result.stdout + result.stderr
+            (tmp_path / f"{mode}.log").write_text(output, encoding="utf-8")
+            (tmp_path / f"{mode}-command.json").write_text(
+                json.dumps(invocation, indent=2), encoding="utf-8"
+            )
+            if state == "missing":
+                assert result.returncode != 0, output
+                assert "MissingInputException" in output, output
+                assert "rule transform_forcing" in output, output
+                assert "forcing/root-" in output.replace("\\", "/"), output
+                assert not list(tmp_path.glob("forcing/*.txt"))
+                continue
+
+            assert result.returncode == 0, output
+            expected = {"all": 1, "produce_root": 2, "total": 3}
+            if state == "resolvable":
+                expected.update(transform_forcing=2, total=5)
+>           assert _job_counts(output) == expected, output
+E           AssertionError: host: <HOST>
+E             Building DAG of jobs...
+E             Job stats:
+E             job                  count
+E             -----------------  -------
+E             all                      1
+E             produce_root             1
+E             transform_forcing        2
+E             total                    4
+E
+E
+E             [Thu Sep 10 20:52:19 2026]
+E             rule produce_root:
+E                 output: forcing/root-b.txt
+E                 jobid: 2
+E                 reason: Missing output files: forcing/root-b.txt
+E                 wildcards: run_id=root-b
+E                 resources: tmpdir=<TBD>
+E             [Thu Sep 10 20:52:19 2026]
+E             rule transform_forcing:
+E                 input: forcing/root-b.txt
+E                 output: forcing/child-b.txt
+E                 jobid: 3
+E                 reason: Missing output files: forcing/child-b.txt; Input files updated by another job: forcing/root-b.txt
+E                 wildcards: run_id=child-b
+E                 resources: tmpdir=<TBD>
+E             [Thu Sep 10 20:52:19 2026]
+E             rule transform_forcing:
+E                 input: forcing/root-b.txt
+E                 output: forcing/child-a.txt
+E                 jobid: 1
+E                 reason: Missing output files: forcing/child-a.txt; Input files updated by another job: forcing/root-b.txt
+E                 wildcards: run_id=child-a
+E                 resources: tmpdir=<TBD>
+E             [Thu Sep 10 20:52:19 2026]
+E             rule all:
+E                 input: forcing/child-a.txt, forcing/child-b.txt
+E                 jobid: 0
+E                 reason: Input files updated by another job: forcing/child-a.txt, forcing/child-b.txt
+E                 resources: tmpdir=<TBD>
+E             Job stats:
+E             job                  count
+E             -----------------  -------
+E             all                      1
+E             produce_root             1
+E             transform_forcing        2
+E             total                    4
+E
+E             Reasons:
+E                 (check individual jobs above for details)
+E                 input files updated by another job:
+E                     all, transform_forcing
+E                 output files have to be generated:
+E                     produce_root, transform_forcing
+E             This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+E
+E           assert {'all': 1, 'p...m_forcing': 2} == {'all': 1, 'p...m_forcing': 2}
+E
+E             Omitting 2 identical items, use -vv to show
+E             Differing items:
+E             {'produce_root': 1} != {'produce_root': 2}
+E             {'total': 4} != {'total': 5}
+E             Use -v to get more diff
+
+.tmp\scratchpad\2026-09-10_2046\p2b-mutation\test_p2b_mutation.py:76: AssertionError
+=========================== short test summary info ===========================
+FAILED .tmp/scratchpad/2026-09-10_2046/p2b-mutation/test_p2b_mutation.py::test_p2b_alternation_and_ancestor_compose[resolvable]
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 2 deselected in 1.96s

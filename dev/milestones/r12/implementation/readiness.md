@@ -1,6 +1,13 @@
 # R12 implementation readiness
 
-Status: preparation completed; implementation and numerical runs not started.
+Status at preparation: preparation completed; implementation and numerical runs not started.
+
+Execution update, 2026-09-10: P0 is released and readiness was rechecked at
+`123e91b1`; source and installed-version premises below are unchanged. The
+synthetic P2b fixture now passes all three states. See the
+[P2b execution evidence](evidence/p0/p2b-feasibility.md) for scope and checks.
+No production numerical run has started. The remainder of this document records
+the preparation inventory, not the successor's current test count.
 Inspected 2026-09-10 in session-3 on `feat/wp3-improvements`.
 Source commit: `dffa4625c9c1f01bd8a77e0d91ae1a0a8f3538e8`.
 This is a dated operational inventory, not scientific acceptance. Recheck it

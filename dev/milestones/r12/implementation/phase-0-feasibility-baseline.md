@@ -25,8 +25,8 @@ No production adapter, successor manifest, entry-point/config migration, estimat
 
 ### Required changes (checklist)
 
-- [ ] Re-run the readiness source/environment checks against the execution checkout and record any changed premise.
-- [ ] Implement P2b as a standalone synthetic Snakefile: producer subtree resolvable, subtree missing, and no derived rows. Exercise row-derived wildcard alternation plus ancestor input together; do not use `ruleorder` or private APIs.
+- [x] Re-run the readiness source/environment checks against the execution checkout and record any changed premise.
+- [x] Implement P2b as a standalone synthetic Snakefile: producer subtree resolvable, subtree missing, and no derived rows. Exercise row-derived wildcard alternation plus ancestor input together; do not use `ruleorder` or private APIs.
 - [ ] Probe the §6.8 operation/target matrix for `all`, `metrics`, exact metric filename, and Wflow filename in both modes. Show defined producer classes in dry-run and real fixture execution.
 - [ ] Probe source-planning and metric-planning checkpoint/input-function composition in one invocation, including honest unresolved fresh dry-runs. These are feasibility results, not GF-29/GF-30 end-to-end passes.
 - [ ] Choose explicit `<PRECHANGE_CONFIG>`, `<PRECHANGE_ROOT>`, `<POSTCHANGE_CONFIG>`, `<POSTCHANGE_ROOT>`, and sidecar manifest paths. Both configs must compose to identical scientific settings and keep the `project_config_` prefix; output roots must be separate from the standing baseline and from each other.
@@ -56,6 +56,21 @@ P2b passes before P1; supported public Snakemake surfaces can enforce operation/
 ### Output requirements
 
 Return committed feasibility fixtures/evidence, exact commands and versions, the selected pre/post paths, and a pass/fail decision for each accepted mechanism. Record red-then-fixed behavior, not only terminal passes.
+
+### Execution progress — 2026-09-10
+
+Master Gate 1 is released by the owner's instruction to continue with the next
+logical step. P2b is the first bounded implementation increment. At source
+`123e91b1`, the runtime/config/test comparison against the accepted design
+baseline is empty and `main` is already ancestral. The environment check passed
+again; installed Python, Snakemake, pytest, HydroMT, hydromt-wflow and weathergenr
+versions match the readiness inventory. No production numerical run has started.
+
+P2b passes in all three states, in dry-run and real execution. The
+[evidence record](evidence/p0/p2b-feasibility.md) documents exact producer counts,
+ancestor-content checks and the missing-subtree refusal. Remaining P0 work is
+the operation/target matrix, checkpoint composition and isolated pre-change
+snapshot; P2b alone does not complete GF-1 or release numerical rewiring.
 
 ### Task constraints
 

@@ -15,7 +15,11 @@ from blueearth_cst.experiment.forcing_descriptor import (
     UnitInterpretation,
     describe_forcing,
 )
-from blueearth_cst.experiment.scenario_rows import ScenarioRow, enumerate_stochastic
+from blueearth_cst.experiment.scenario_rows import (
+    ScenarioRow,
+    enumerate_stochastic,
+    validate_stochastic,
+)
 
 
 @dataclass(frozen=True)
@@ -44,6 +48,37 @@ def _execute(command: list[str], log_path: Path) -> None:
     result = run_and_tee(command, log_path)
     if result:
         raise CalledProcessError(result, command)
+
+
+def metric_groups(
+    rows: Sequence[ScenarioRow],
+    *,
+    n_realizations: int,
+    st_num: int,
+    unit_id_capacity: int,
+) -> tuple[dict[str, tuple[str, ...]], tuple[str, ...], dict[str, int]]:
+    """Resolve same-design-point bundles, reference members and P1 row labels.
+
+    This registered stochastic grouping is outside the simulator and reducer.
+    The empty design key is retained as the unperturbed bundle.
+    """
+    validate_stochastic(
+        rows,
+        n_realizations=n_realizations,
+        st_num=st_num,
+        unit_id_capacity=unit_id_capacity,
+    )
+    groups: dict[str, list[str]] = {}
+    realizations = {}
+    for row in rows:
+        payload = dict(row.payload)
+        groups.setdefault(payload["st_id"], []).append(row.run_id)
+        realizations[row.run_id] = int(payload["rlz"])
+    return (
+        {key: tuple(members) for key, members in groups.items()},
+        tuple(row.run_id for row in rows if not row.derived_from),
+        realizations,
+    )
 
 
 def legacy_member_name(row: ScenarioRow, *, st_width: int) -> str:

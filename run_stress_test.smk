@@ -16,7 +16,7 @@ from blueearth_cst.shared.provenance import append_journal_line, configuration_i
 from blueearth_cst.shared.indicator_tables import indicator_tables, refuse_retired_experiment_keys
 from blueearth_cst.shared.surface_axes import warn_on_heterogeneous_design
 from blueearth_cst.experiment.prepare_cst_parameters import refuse_out_of_domain_multipliers
-from blueearth_cst.experiment.scenario_provider import legacy_member_name
+from blueearth_cst.experiment.scenario_provider import legacy_member_name, metric_groups
 from blueearth_cst.experiment.scenario_rows import stochastic_rows, validate_stochastic
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, climate_store_rule, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, file_digest_or_absent, get_config, julia_prefix, index_width, member_index_regex, patch_psutil_windows_benchmark, project_slug, region_rule, rule_banner, run_summary, spatial_units_rule, resolve_seed, resolve_water_year_start, stress_test_grid, validate_spell_factor, target_banner, validate_experiment_name, warn_if_project_dir_in_repo, warn_row, window_year_pair, install_console_style, run_header, open_run_header
 from blueearth_cst.experiment.check_project_consistency import guarded_section_paths
@@ -1203,6 +1203,9 @@ rule downscale_climate_realization:
     params:
         model_dir = basin_dir,
         clim_source = clim_source,
+        run_id = lambda wildcards: _provider_row(wildcards).run_id,
+        native_output_path = f"{runs_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".csv",
+        native_log_path = f"{runs_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".log",
         sim_window_start = SIM_WINDOW_START,
         sim_window_end = SIM_WINDOW_END,
         # Orography sidecar for the chirps/chirps_global branch: the store
@@ -1368,20 +1371,28 @@ for _b, _members in _batches.items():
         params:
             members = _members,
             driver = _batch_driver,
+            batch_records = [str(_b), *[
+                value for (r, c) in _members for value in (
+                    _rows_by_member[f"rlz_{rlz_ix(r)}_st_{st_ix(c)}"].run_id,
+                    f"{runs_dir}/config/rlz_{rlz_ix(r)}_st_{st_ix(c)}.toml",
+                    f"{runs_dir}/output/rlz_{rlz_ix(r)}_st_{st_ix(c)}.csv",
+                )
+            ]],
             wflow_julia = lambda wildcards, threads: julia_prefix(threads),
         log:
             f"{LOG_PARTS_DIR}/3.15_run_wflow/batch_{_b}.log",
         benchmark:
             f"{BENCH_PARTS_DIR}/3.15_run_wflow/batch_{_b}.tsv",
         shell:
-            """python -u "{run_logged}" "{log}" -- {params.wflow_julia} "{params.driver}" {input.tomls}"""
+            """python -u "{run_logged}" "{log}" -- {params.wflow_julia} "{params.driver}" {params.batch_records:q}"""
 
 # 3.16  derive_wflow_indicators — reduce runs to the two indicator tables
 rule derive_wflow_indicators:
     message: rule_banner("3.16", "derive_wflow_indicators", summary="reduce the runs to the response-surface indicators")
     input:
         rlz_csv_fns = expand((f"{runs_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".csv"), rlz_num=[rlz_ix(n) for n in range(1, RLZ_NUM+1)], st_num=[st_ix(m) for m in range(ST_START, ST_NUM+1)]),
-        # D22: this rule reads NO parameter artifact at all. It needed the
+        run_tomls = [f"{runs_dir}/config/{legacy_member_name(row, st_width=ST_WIDTH)}.toml" for row in SCENARIO_ROWS],
+        # D22: this rule reads no perturbation table. It needed the
         # per-member grid for the axis VALUES, which are now derived at reporting
         # time from the lookup (HM-7), and the design table for the id WIDTH,
         # which comes from `index_width(st_num)` -- the same shared helper rule
@@ -1394,16 +1405,21 @@ rule derive_wflow_indicators:
         **{f"{token}_indicators": f"{results_dir}/{fname}"
            for token, fname in INDICATOR_TABLES.items()},
     params:
+        run_artifacts = [{"run_id": row.run_id,
+                          "csv_path": f"{runs_dir}/output/{legacy_member_name(row, st_width=ST_WIDTH)}.csv",
+                          "toml_path": f"{runs_dir}/config/{legacy_member_name(row, st_width=ST_WIDTH)}.toml"}
+                         for row in SCENARIO_ROWS],
+        metric_groups = metric_groups(SCENARIO_ROWS, n_realizations=RLZ_NUM, st_num=ST_NUM, unit_id_capacity=_row_capacity)[0],
+        reference_run_ids = metric_groups(SCENARIO_ROWS, n_realizations=RLZ_NUM, st_num=ST_NUM, unit_id_capacity=_row_capacity)[1],
+        realization_labels = metric_groups(SCENARIO_ROWS, n_realizations=RLZ_NUM, st_num=ST_NUM, unit_id_capacity=_row_capacity)[2],
         results_dir = results_dir,
         # The tokens the writer must emit, in config order. Passed as a param
         # rather than re-derived in the script so the DAG and the writer cannot
         # disagree about which tables exist.
         indicator_tokens = list(INDICATOR_TABLES),
         st_num = ST_NUM,
-        # D22's run-coverage check verifies what actually RAN against
-        # ST_START..ST_NUM. ST_START is 0 with run_historical and 1 without, so
-        # it must be passed rather than assumed -- a hardcoded 0 would make the
-        # check fail on every run_historical: false config.
+        # The current carrier retains the legacy table range; provider rows
+        # and grouping validation require every unperturbed run explicitly.
         st_start = ST_START,
         # The annual reductions below are the RESPONSE SURFACE, so the
         # basin's own water year has to reach them rather than a hardcoded

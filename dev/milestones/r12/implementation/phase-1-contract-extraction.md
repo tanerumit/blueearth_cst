@@ -26,11 +26,11 @@ No durable collection/simulation/metric manifests, metrics-only path, planning c
 
 - [x] Implement pure deterministic stochastic row enumeration, forest/completeness/pairing validation, explicit `unit_id_capacity`, and `EmptyScenarioSetError`; persist the same rows later without rereading a generated table.
 - [x] Wrap current R generation/transform operations in the accepted provider interface. R developer owns R changes; model builder confirms operation parity. Provider alone interprets `rlz`, `st_id`, `derived_from`, and pairing.
-- [ ] Wrap preparation/execution/native reading in the simulator interface. Its `RunForcing` input exposes only `run_id`, forcing/descriptor/preparation context, and collection ids; no scenario-type concepts cross the seam.
-- [ ] Introduce validated `ResponseSeries`/set and make metric functions consume it. Native Wflow filenames, headers, and selectors terminate at the reader.
-- [ ] Encode current metric declarations, run/bundle grain, response needs, Class-C reference rules, unit-index semantics, and operational count/fit refusals exactly as §§7.1–7.5 specify. Python engineering implements; Astra model validation judges scientific consequences.
-- [ ] Add test-only synthetic provider and dummy simulator that cannot be selected by production config.
-- [ ] Route current WF3 through the adapters with no entry-point/config rename and no unintended numerical change.
+- [x] Wrap preparation/execution/native reading in the simulator interface. Its `RunForcing` input exposes only `run_id`, forcing/descriptor/preparation context, and collection ids; no scenario-type concepts cross the seam.
+- [x] Introduce validated `ResponseSeries`/set and make metric functions consume it. Native Wflow filenames, headers, and selectors terminate at the reader.
+- [x] Encode current metric declarations, run/bundle grain, response needs, Class-C reference rules, unit-index semantics, and operational count/fit refusals exactly as §§7.1–7.5 specify. Python engineering implements; Astra model validation judges scientific consequences.
+- [x] Add test-only synthetic provider and dummy simulator that cannot be selected by production config.
+- [x] Route current WF3 through the adapters with no entry-point/config rename and no unintended numerical change.
 
 ### Commit plan
 
@@ -99,6 +99,26 @@ remain outside this acceptance.
 `response_series.py` also defines standalone neutral series, metadata/coverage
 validation and bundle compatibility (15 tests passed). Its current typed-time
 binding supports Gregorian datetime64 only and refuses incompatible calendars.
-It is not yet connected to the native Wflow reader or metric call sites; the
-simulator/response and metric checkboxes therefore remain open. The dedicated
-`forcing_descriptor.py` holds physical types without provider payload dependencies.
+It is now connected through `wflow_response_reader.py` to the production metric
+call site. The dedicated `forcing_descriptor.py` holds physical types without
+provider payload dependencies.
+
+### Integrated P1 handoff — 2026-09-10
+
+Generation checkpoint `11ea019e` is committed. The simulator/metric increment
+routes rules 3.14–3.16 through neutral records and explicit batch associations.
+One real ERA5 preparation matches P0 scientifically and its Wflow CSV matches
+byte-for-byte; all 14 native response arrays/times and all 686 current table
+values match P0. The logical unit-index planner remains in memory, and the
+five-column P1 writer preserves the current pooled Class-C projection while
+computing the declared per-run values separately. No P2 persistence is claimed.
+
+Named review and gate evidence:
+[simulator handoff](evidence/p1-simulator-handoff.md),
+[response/metric handoff](evidence/p1-response-metric-handoff.md), and
+[source bindings](evidence/p1-source-binding-review.md).
+Combined CLI: **20 passed in 36.78 s**. Final full suite:
+**3,473 passed, 9 skipped, 1 xfailed in 720.17 s**. Focused final metric/reader/
+dummy checks passed 17 tests; lint and formatting passed (309 files).
+All three named scientific handoffs are accepted within their documented P1
+scope. **P1 acceptance gate passed.** P2 durable handoffs remain separate work.

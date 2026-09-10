@@ -1,0 +1,75 @@
+{
+  "run_id": "01",
+  "source_sha256": "1f9748f99e0cdbf06c2f84285ccf94027fbb6a4326767f9c9704a84987f4ffc7",
+  "forcing_identical": true,
+  "forcing_byte_identical": false,
+  "scientific_toml_identical": true,
+  "path_changes": {
+    "input.path_static": [
+      "../../../../../models/hydrology/wflow/staticmaps.nc",
+      "../model/staticmaps.nc"
+    ],
+    "input.path_forcing": [
+      "../forcing/inmaps_rlz_1_st_0.nc",
+      "../forcing/inmaps_rlz_1_st_0.nc"
+    ],
+    "state.path_input": [
+      "../../../../../models/hydrology/wflow/instate/instates.nc",
+      "../model/instate/instates.nc"
+    ]
+  },
+  "native_csv_identical": true,
+  "native_csv_byte_identical": true,
+  "scope": "P1 one-member ERA5 preparation and explicit Julia execution; run_id 01 maps to existing rlz_1_st_0 artifacts; 2046-2054.",
+  "frozen_p0_root": "C:/Users/taner/workspace/_workbench/blueearth-cst-r12/2026-09-10/prechange",
+  "scratch_root": ".tmp/scratchpad/2026-09-10_2046/simulator-rehearsal",
+  "comparison_methods": {
+    "source": "SHA256 unchanged before/after rehearsal",
+    "toml": "Parsed dictionaries equal after removing input.path_static, input.path_forcing and state.path_input; all removed values reported in path_changes",
+    "forcing": "xarray.testing.assert_identical",
+    "native_csv": "pandas.testing.assert_frame_equal(check_exact=True) and SHA256 equality"
+  },
+  "validation": [
+    {
+      "log": ".tmp/scratchpad/2026-09-10_2046/p1-simulator-narrow-fixed.log",
+      "seconds": 9.14,
+      "command": "pixi run --as-is python -m pytest tests/test_simulator_adapter.py tests/test_downscale_climate_forcing.py tests/test_run_wflow_batch.py tests/test_snake_utils.py::test_the_log_pointer_is_keyed_the_same_way_as_the_other_two -x -q",
+      "passed": 42
+    },
+    {
+      "log": ".tmp/scratchpad/2026-09-10_2046/p1-simulator-cli.log",
+      "seconds": 37.12,
+      "command": "pixi run --as-is python -m pytest tests/test_cli.py -x -q",
+      "passed": 20
+    }
+  ],
+  "rehearsal_command": "C:/Users/taner/AppData/Local/pixi/bin/pixi.exe run --as-is python .tmp/scratchpad/2026-09-10_2046/rehearse-simulator.py",
+  "julia_prefix": "julia +1.11.7 --project=. --threads 2",
+  "source_hashes_raw_checkout_sha256": {
+    ".tmp/scratchpad/2026-09-10_2046/rehearse-simulator.py": "f6107de50bb779ec1e60d8344091049f56f5cde248580543aed080d8193981e1",
+    "blueearth_cst/experiment/run_wflow_batch.jl": "6f280162d2ec62a1647e31df5d03483c76bd433b67ce15425078339d75bff79c",
+    "config/catalogs/deltares_data.yml": "459d6135261ed5fbdf323c5146d3a17741b79afeeb3c3cea1a5750893055c6c2",
+    "blueearth_cst/experiment/simulator_adapter.py": "3fa7e11f2b552d277380e2c516dc0b91865bb798755bffdd49c8ddee8842f4ac",
+    "blueearth_cst/experiment/forcing_descriptor.py": "c781fff8e44857f57d3a92fe6ca1029331178af94a757ce8506700f702f2e37b",
+    "blueearth_cst/experiment/downscale_climate_forcing.py": "172c361618a1bc8624786753a7b1acba6ae1f733f9f5cb3de24d553e5f00df84"
+  },
+  "limitations": [
+    "Prepared NetCDF binary bytes differ; values, coordinates and attributes match.",
+    "One ERA5 member only; no empirical CHIRPS/global simulation claim.",
+    "P1 context is transient, not a P2 portable preparation closure.",
+    "No write-capable model handle targeted frozen P0; built model copied into scratch before preparation. Source hash preservation was checked; no whole-tree post-run hash audit was performed.",
+    "Source hashes capture raw checkout bytes after comment-only clarification; Git newline normalization can change code-file hashes."
+  ],
+  "post_review_formatting": {
+    "blueearth_cst/experiment/downscale_climate_forcing.py": {
+      "before_sha256": "172c361618a1bc8624786753a7b1acba6ae1f733f9f5cb3de24d553e5f00df84",
+      "after_sha256": "99e7dd5f1185650d7546944d348bacb2871542521b1da8a0e41821184764997a",
+      "only_line_endings_changed": true
+    },
+    "tests/test_snake_utils.py": {
+      "before_sha256": "aafcf6c577186f70b2927001172612b50a880458a1c535350020c7d9c71e8d46",
+      "after_sha256": "d0f6ac3b037f2ba663ca075fae57d03e73e76921814d1b8d09fea586c2465bcf",
+      "only_line_endings_changed": true
+    }
+  }
+}

@@ -11,9 +11,12 @@ checkpoint lifecycles now pass. Production GF-22/GF-29/GF-30 remain unimplemente
 Fresh WF1/WF3 reference capture and its isolated manifest check passed; named
 model-validator accepted the snapshot. Pure P1 rows now have 13 passing tests;
 the ERA5 unit-provenance gate is discharged and generation wrappers preserve all
-14 reference forcing files byte-for-byte. Neutral response checks pass separately;
-simulator/metric integration is outstanding. Other GF statuses
-remain at the preparation state. See [P2b evidence](evidence/p0/p2b-feasibility.md).
+14 reference forcing files byte-for-byte. Simulator/metric adapters are integrated;
+all three named P1 handoffs have bounded acceptance. One prepared forcing/native
+run and all 686 current table values preserve P0. Combined CLI passed 20 tests;
+the full suite passed 3,473 (9 skipped, 1 xfailed), final focused checks passed 17,
+and lint/format passed. See [P2b evidence](evidence/p0/p2b-feasibility.md)
+and [P1 phase evidence](phase-1-contract-extraction.md).
 
 Existing reusable checks:
 
@@ -25,27 +28,27 @@ Existing reusable checks:
 
 | GF | Owner / phase | Claim falsifier | Command status / proposed test |
 |---|---|---|---|
-| 1 | Python engineer / P0 composition; P1 integrated DAG; P3 final generation | P2b or fresh generation DAG has ambiguity/cycle, or missing ancestor does not refuse | **P0 P2b PASSED; production checks NOT IMPLEMENTED** — `pixi run pytest tests/test_r12_wf3_feasibility.py -k p2b`; follow with fresh-project current-carrier and final generation DAG checks in `tests/test_cli.py` |
-| 2 | Python engineer / P1 | Empty edge schedules a transform | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k empty_edge_schedules_roots_only` |
-| 3 | Python engineer / P1 | Rows require generated-table read, row checkpoint, or second invocation | **PURE FUNCTION PASSED; DAG integration pending** — `pixi run pytest tests/test_scenario_rows.py -k rows_are_parse_time_pure` |
-| 4 | Python engineer / P1 | Any stochastic unperturbed row is unevaluated/uninventoried or retired toggle is accepted | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k unperturbed_is_evaluated` |
-| 5 | Python engineer / P1 | Empty set exits successfully or schedules zero jobs | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k empty_set_refuses` |
+| 1 | Python engineer / P0 composition; P1 integrated DAG; P3 final generation | P2b or fresh generation DAG has ambiguity/cycle, or missing ancestor does not refuse | **P0/P1 PASSED; P3 pending** — P2b fixture, current-carrier `tests/test_cli.py` on fresh staged WF1 leaves, and real provider graph; final entry points do not yet exist |
+| 2 | Python engineer / P1 | Empty edge schedules a transform | **P1 PASSED** — `tests/test_scenario_rows.py`, `tests/test_scenario_provider.py`; actual graph has two roots and twelve transforms |
+| 3 | Python engineer / P1 | Rows require generated-table read, row checkpoint, or second invocation | **P1 PASSED** — `tests/test_scenario_rows.py::test_rows_are_parse_time_pure`; current-carrier CLI and one-invocation provider rehearsal |
+| 4 | Python engineer / P1 | Any stochastic unperturbed row is unevaluated/uninventoried or retired toggle is accepted | **P1 logical contract PASSED** — row enumeration/refusal tests; durable inventory belongs to P2 |
+| 5 | Python engineer / P1 | Empty set exits successfully or schedules zero jobs | **P1 PASSED** — `tests/test_scenario_rows.py::test_empty_set_retired_toggle_and_capacity_refuse` |
 | 6 | Python engineer / P2 | Metric/grouping/environment change moves collection/response digests or fails to move metric id | **NOT IMPLEMENTED** — `pixi run pytest tests/test_metric_plan.py -k metric_only_invalidation` |
 | 7 | Model builder + model validator / P2 | Any real rapid `run_` catalog resolves the wrong source | **NOT IMPLEMENTED** — proposed `tests/test_run_catalogs.py` plus one rapid preparation |
 | 8 | Python engineer / P3 | Complete rapid tree has undeclared successor leaves | **NOT IMPLEMENTED** — extend `tests/test_project_tree_inventory.py`; run `pixi run python dev/scripts/snapshot_project_tree.py --config <POSTCHANGE_CONFIG> --project-dir <POSTCHANGE_ROOT>` |
 | 9 | Python engineer + Astra model validator / P3 | Any unexplained A/B delta, C mean mismatch, order-sensitive reference, duplicate, or lost row | **NOT IMPLEMENTED** — proposed GF-9 crosswalk tool/test and two fresh same-config runs |
 | 10 | Python engineer + model validator / P2 | Missing/duplicate/extra/invalid expected key publishes ready | **NOT IMPLEMENTED** — `pixi run pytest tests/test_metric_plan.py -k exact_result_keys` |
-| 11 | Python engineer / P1 | Simulator signature/AST contains scenario fields or neutral fixture cannot reach dummy | **NOT IMPLEMENTED** — `pixi run pytest tests/test_simulator_adapter.py -k scenario_neutral_boundary` |
+| 11 | Python engineer / P1 | Simulator signature/AST contains scenario fields or neutral fixture cannot reach dummy | **P1 PASSED** — `tests/test_simulator_adapter.py` neutral fields/preparation and `tests/test_neutral_simulator_seams.py` complete dummy path |
 | 12 | Python engineer / P2 | Changed byte/revision/model/settings/request reaches execution before named refusal | **NOT IMPLEMENTED** — `pixi run pytest tests/test_simulation_record.py -k stale_reuse_refuses` |
-| 13 | Python engineer + model validator / P1 | Empty `st_id` bundle or either return-level row is absent | **NOT IMPLEMENTED** — `pixi run pytest tests/test_metric_registry.py -k unperturbed_bundle` |
-| 14 | Python engineer / P1 | Unevaluated reference is accepted or old toggle returns | **NOT IMPLEMENTED** — `pixi run pytest tests/test_metric_registry.py -k unevaluated_reference_refuses` |
-| 15 | Python engineer + Astra model validator / P1 + seal gate | Screening/fit/benchmark/policy collapse, refusals fail, or benchmark hides cells/limitations | **NOT IMPLEMENTED** — proposed operational tests in `tests/test_metric_registry.py`; benchmark command awaits reviewed record |
+| 13 | Python engineer + model validator / P1 | Empty `st_id` bundle or either return-level row is absent | **P1 PASSED** — registry empty-key test, exact 686-row comparison including unperturbed return levels |
+| 14 | Python engineer + model validator / P1 | Unevaluated reference is accepted or old toggle returns | **P1 PASSED** — explicit unevaluated-reference refusal in `tests/test_metric_registry.py` and retired-toggle row test |
+| 15 | Python engineer + Astra model validator / P1 + seal gate | Screening/fit/benchmark/policy collapse, refusals fail, or benchmark hides cells/limitations | **Operational P1 checks PASSED; benchmark NOT RUN** — count/constant/invalid-parameter/exception fixtures and estimator parity; criteria review/owner gate still precedes benchmark |
 | 16 | Python engineer / P2 | Provider-body change does not move collection id or metric code moves it | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_collection.py -k stage_identity_separation` |
 | 17 | Python engineer / P2 | Partial same-intent mutates/reuses, changed intent shares dir, metric growth within fixed capacity changes the collection, or overflow is silent | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_collection.py -k 'partial or capacity'` |
-| 18 | Python engineer + model validator / P1 | Invalid ancestry passes or transform consumes a different ancestor | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_rows.py -k pairing_ancestry` |
+| 18 | Python engineer + model validator / P1 | Invalid ancestry passes or transform consumes a different ancestor | **P1 PASSED** — row pairing/completeness tests, distinct ancestor-byte provider test, reviewed real 14-file generation comparison |
 | 19 | Python engineer + model validator / P3 | Generation needs/model rule appears in fresh DAG | **NOT IMPLEMENTED** — successor CLI test plus real rapid generation without WF1 leaves |
 | 20 | Python engineer / P3 | Simulation DAG can produce collection or missing/not-ready collection proceeds | **NOT IMPLEMENTED** — successor CLI test in `tests/test_cli.py` |
-| 21 | Python engineer + model validator / P1 | Dummy/Wflow readers need different metric code or Wflow name reaches metric | **NOT IMPLEMENTED** — `pixi run pytest tests/test_response_series.py -k reader_neutral_metrics` |
+| 21 | Python engineer + model validator / P1 | Dummy/Wflow readers need different metric code or Wflow name reaches metric | **P1 PASSED** — NPZ dummy and Wflow reader both feed `reduce_run`; neutral metadata tests and named response/metric review |
 | 22 | Python engineer / P2 | Metrics-only schedules Wflow, switches identity, or incomplete state reaches execution | **P0 mandatory-runner precursor PASSED; production NOT IMPLEMENTED** — `tests/test_r12_wf3_feasibility.py`; owner-approved runner enforces the synthetic matrix |
 | 23 | Python engineer / P2 | Mutation succeeds, shared reuse fails, or referenced delete lacks force | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_collection.py -k immutability_reuse_delete` |
 | 24 | Python engineer + model validator / P2 | Unmounted sources/absent model prevent persisted coverage validation or missing row/series passes | **NOT IMPLEMENTED** — `pixi run pytest tests/test_response_inventory.py -k self_contained_coverage` |

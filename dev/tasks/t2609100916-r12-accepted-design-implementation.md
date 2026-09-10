@@ -13,7 +13,7 @@ updated: 2026-09-10
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 is accepted; P1 generation preserves the reference, while simulator and metric integration remain.
+> **Why** — P0 and P1 are accepted. All three P1 scientific handoffs and the combined software gate passed; durable handoffs follow in P2.
 > **Effort** — large
 
 ## Progress
@@ -25,7 +25,7 @@ updated: 2026-09-10
 - [x] Prove synthetic P2b composition in all three states, with dry-run and real execution.
 - [x] Execute P0 synthetic feasibility tests and capture the fresh pre-change snapshot.
 - [x] Obtain named model-validator acceptance of P0 comparison evidence before P1.
-- [ ] Complete P1 logical contracts and the three model-validator handoffs.
+- [x] Complete P1 logical contracts and the three model-validator handoffs.
 - [ ] Execute implementation only within subsequently authorized scope.
 
 ## Refs
@@ -104,3 +104,17 @@ commit `56e950c1`; the capture below records the original finding.
   Row/provider tests: 16 passed; neutral response tests: 15 passed; CLI: 20 passed.
   Generation handoff: `dev/milestones/r12/implementation/evidence/p1-generation-handoff.md`.
   Simulator/metrics remain pending; no complete P1 or GF-9 claim.
+
+## P1 acceptance — 2026-09-10
+
+- Generation checkpoint: `11ea019e`. Simulator and metric adapters now route
+  current WF3 through explicit run records, neutral responses and declarations.
+- All three named model-validator handoffs accepted. One real ERA5 preparation
+  matches P0 scientifically and its native CSV is byte-identical; all 14 response
+  arrays/times and 686 current table values match. CHIRPS interpretation is
+  code-derived, and E-OBS retains the pre-existing WF1 refusal.
+- Final `test-full`: 3,473 passed, 9 skipped, 1 xfailed in 720.17 s. Combined CLI:
+  20 passed; final focused metric/reader/dummy checks: 17 passed. Lint/format pass.
+- P1 acceptance gate passed. P2 durable collections, simulation/response records,
+  metric sets and metrics-only operation remain. GF-15 benchmarking still needs
+  its stated review/owner criteria gate; no benchmark or milestone-seal claim.

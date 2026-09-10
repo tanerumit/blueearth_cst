@@ -1273,6 +1273,11 @@ member's own one-entry hydromt catalog first: a bare path cannot carry
 `preprocess=harmonise_dims` or `crs=4326`, because hydromt_wflow's setup methods
 pass no `source_kwargs`.
 
+R12 P1 resolves source-specific unit/PET/elevation context before entering the
+neutral simulator adapter. The adapter validates the forcing descriptor and
+physical input digests, then applies the existing HydroMT preparation operations.
+The current filenames remain unchanged.
+
 **Writes.** `<runs>/forcing/inmaps_rlz_<n>_st_<m>.nc` (`temp()`) ·
 `<runs>/config/rlz_<n>_st_<m>.toml` · `<runs>/config/rlz_<n>_st_<m>.yml`
 (`temp()`).
@@ -1289,6 +1294,10 @@ keys logs by batch id, not by rule identifier; applying the six-call-site rule
 mechanically here would rename a `LOG_RULES` entry that has no rule to match and
 break the merge.
 
+The driver receives a batch id followed by explicit `(run_id, toml_path,
+native_output_path)` records in increasing numeric run order. It never derives
+run identity from a TOML stem; failures identify the batch and all affected runs.
+
 **Writes.** `<runs>/output/rlz_<n>_st_<m>.csv` per member.
 No final-state NetCDF is emitted: WF3 has no consumer for it. Input states
 remain configured. Julia threads are reserved within Snakemake's core budget.
@@ -1297,11 +1306,16 @@ remain configured. Julia threads are reserved within Snakemake's core budget.
 
 **Does.** Reduces every member's run to the indicator tables that form the
 response surface — one per configured output variable. WF3's terminal product.
-Reads **no parameter artifact at all**: it needed the per-member grid for the
+Reads **no perturbation parameter table**: it needed the per-member grid for the
 axis values, which are now derived at reporting time from the lookup (HM-7), and
 the design table for the id width, which comes from `index_width(st_num)`.
-Verifies before any reduction work that the members which actually RAN cover
-`ST_START..ST_NUM` — what ran, rather than what was declared.
+R12 P1 supplies explicit run-to-CSV/TOML associations and validated provider
+groupings. The native reader verifies physical parameters, calendar, timestep and
+coverage against each run TOML, then emits neutral series. Metric declarations
+control requirements, grain, explicit Class-C reference and return-level
+count/fit refusals. Native filename/header interpretation ends at that reader.
+The P1 writer retains pooled Class-C table values; the logical run-grain values
+are computed separately for the later result-contract migration.
 
 **Writes.** `<exp>/results/<token>_indicators.csv`, five columns
 (`metric, location, st_id, rlz_id, value`). The axis columns were removed on

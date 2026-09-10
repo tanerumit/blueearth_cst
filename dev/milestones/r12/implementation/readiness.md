@@ -17,6 +17,13 @@ completed and the isolated manifest check passed. Named model-validator acceptan
 discharged P0. Its separate forcing-metadata finding was resolved for the existing
 ERA5 path by the [reviewed unit trace](evidence/p1-forcing-units.md). Generation
 wrapper preservation evidence is in the [P1 handoff](evidence/p1-generation-handoff.md).
+The [simulator handoff](evidence/p1-simulator-handoff.md) and
+[response/metric handoff](evidence/p1-response-metric-handoff.md) now have named
+bounded acceptance: one prepared/executed ERA5 member and all 14 native responses
+plus 686 current table values preserve P0. Adapters are integrated; the final
+combined gate passed 3,473 tests (9 skipped, 1 xfailed), with CLI/lint/format checks
+also passing. P2 durable identities, inventories and
+metrics-only execution remain the next phase.
 Inspected 2026-09-10 in session-3 on `feat/wp3-improvements`.
 Source commit: `dffa4625c9c1f01bd8a77e0d91ae1a0a8f3538e8`.
 This is a dated operational inventory, not scientific acceptance. Recheck it

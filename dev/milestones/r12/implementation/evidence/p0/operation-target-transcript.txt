@@ -1,0 +1,403 @@
+CASE: simulation-all; MODE: dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=simulate-and-metrics",
+  "--dry-run"
+]
+P0_PARSE_COMPLETE operation=simulate-and-metrics
+host: <HOST>
+Building DAG of jobs...
+Job stats:
+job                  count
+-----------------  -------
+all                      1
+reduce_metric            1
+simulate_response        1
+total                    3
+
+
+[Thu Sep 10 21:02:12 2026]
+rule simulate_response:
+    output: hydrology/wflow/output.csv
+    jobid: 2
+    reason: Missing output files: hydrology/wflow/output.csv
+    resources: tmpdir=<TBD>
+[Thu Sep 10 21:02:12 2026]
+rule reduce_metric:
+    input: hydrology/wflow/output.csv
+    output: metrics/selected/result.txt
+    jobid: 1
+    reason: Missing output files: metrics/selected/result.txt; Input files updated by another job: hydrology/wflow/output.csv
+    resources: tmpdir=<TBD>
+[Thu Sep 10 21:02:12 2026]
+rule all:
+    input: metrics/selected/result.txt
+    jobid: 0
+    reason: Input files updated by another job: metrics/selected/result.txt
+    resources: tmpdir=<TBD>
+Job stats:
+job                  count
+-----------------  -------
+all                      1
+reduce_metric            1
+simulate_response        1
+total                    3
+
+Reasons:
+    (check individual jobs above for details)
+    input files updated by another job:
+        all, reduce_metric
+    output files have to be generated:
+        reduce_metric, simulate_response
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+
+CASE: simulation-all; MODE: execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "all",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=simulate-and-metrics"
+]
+P0_PARSE_COMPLETE operation=simulate-and-metrics
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                  count
+-----------------  -------
+all                      1
+reduce_metric            1
+simulate_response        1
+total                    3
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:02:15 2026]
+localrule simulate_response:
+    output: hydrology/wflow/output.csv
+    jobid: 2
+    reason: Missing output files: hydrology/wflow/output.csv
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:02:15 2026]
+Finished jobid: 2 (Rule: simulate_response)
+1 of 3 steps (33%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:02:15 2026]
+localrule reduce_metric:
+    input: hydrology/wflow/output.csv
+    output: metrics/selected/result.txt
+    jobid: 1
+    reason: Missing output files: metrics/selected/result.txt; Input files updated by another job: hydrology/wflow/output.csv
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:02:15 2026]
+Finished jobid: 1 (Rule: reduce_metric)
+2 of 3 steps (67%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:02:15 2026]
+localrule all:
+    input: metrics/selected/result.txt
+    jobid: 0
+    reason: Input files updated by another job: metrics/selected/result.txt
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:02:15 2026]
+Finished jobid: 0 (Rule: all)
+3 of 3 steps (100%) done
+Complete log(s): <WORKTREE>\.tmp\scratchpad\2026-09-10_2046\operation-target-fixed\test_operation_conditional_rul0\.snakemake\log\2026-09-10T210215.245387.snakemake.log
+
+CASE: metrics-only-metrics; MODE: dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "metrics",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=metrics-only",
+  "--dry-run"
+]
+P0_PARSE_COMPLETE operation=metrics-only
+host: <HOST>
+Building DAG of jobs...
+Job stats:
+job              count
+-------------  -------
+metrics              1
+reduce_metric        1
+total                2
+
+
+[Thu Sep 10 21:02:18 2026]
+rule reduce_metric:
+    input: hydrology/wflow/output.csv
+    output: metrics/selected/result.txt
+    jobid: 1
+    reason: Missing output files: metrics/selected/result.txt
+    resources: tmpdir=<TBD>
+[Thu Sep 10 21:02:18 2026]
+rule metrics:
+    input: metrics/selected/result.txt
+    jobid: 0
+    reason: Input files updated by another job: metrics/selected/result.txt
+    resources: tmpdir=<TBD>
+Job stats:
+job              count
+-------------  -------
+metrics              1
+reduce_metric        1
+total                2
+
+Reasons:
+    (check individual jobs above for details)
+    input files updated by another job:
+        metrics
+    output files have to be generated:
+        reduce_metric
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+
+CASE: metrics-only-metrics; MODE: execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "metrics",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=metrics-only"
+]
+P0_PARSE_COMPLETE operation=metrics-only
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job              count
+-------------  -------
+metrics              1
+reduce_metric        1
+total                2
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:02:20 2026]
+localrule reduce_metric:
+    input: hydrology/wflow/output.csv
+    output: metrics/selected/result.txt
+    jobid: 1
+    reason: Missing output files: metrics/selected/result.txt
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:02:20 2026]
+Finished jobid: 1 (Rule: reduce_metric)
+1 of 2 steps (50%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:02:20 2026]
+localrule metrics:
+    input: metrics/selected/result.txt
+    jobid: 0
+    reason: Input files updated by another job: metrics/selected/result.txt
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:02:20 2026]
+Finished jobid: 0 (Rule: metrics)
+2 of 2 steps (100%) done
+Complete log(s): <WORKTREE>\.tmp\scratchpad\2026-09-10_2046\operation-target-fixed\test_operation_conditional_rul1\.snakemake\log\2026-09-10T210220.328697.snakemake.log
+
+CASE: simulation-wflow-fresh; MODE: dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "hydrology/wflow/output.csv",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=simulate-and-metrics",
+  "--dry-run"
+]
+P0_PARSE_COMPLETE operation=simulate-and-metrics
+host: <HOST>
+Building DAG of jobs...
+Job stats:
+job                  count
+-----------------  -------
+simulate_response        1
+total                    1
+
+
+[Thu Sep 10 21:02:24 2026]
+rule simulate_response:
+    output: hydrology/wflow/output.csv
+    jobid: 0
+    reason: Missing output files: hydrology/wflow/output.csv
+    resources: tmpdir=<TBD>
+Job stats:
+job                  count
+-----------------  -------
+simulate_response        1
+total                    1
+
+Reasons:
+    (check individual jobs above for details)
+    output files have to be generated:
+        simulate_response
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+
+CASE: simulation-wflow-fresh; MODE: execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "hydrology/wflow/output.csv",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=simulate-and-metrics"
+]
+P0_PARSE_COMPLETE operation=simulate-and-metrics
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job                  count
+-----------------  -------
+simulate_response        1
+total                    1
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 21:02:27 2026]
+localrule simulate_response:
+    output: hydrology/wflow/output.csv
+    jobid: 0
+    reason: Missing output files: hydrology/wflow/output.csv
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 21:02:27 2026]
+Finished jobid: 0 (Rule: simulate_response)
+1 of 1 steps (100%) done
+Complete log(s): <WORKTREE>\.tmp\scratchpad\2026-09-10_2046\operation-target-fixed\test_operation_conditional_rul2\.snakemake\log\2026-09-10T210227.320224.snakemake.log
+
+CASE: simulation-wflow-existing; MODE: dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "hydrology/wflow/output.csv",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=simulate-and-metrics",
+  "--dry-run"
+]
+P0_PARSE_COMPLETE operation=simulate-and-metrics
+host: <HOST>
+Building DAG of jobs...
+Nothing to be done (all requested files are present and up to date).
+1 jobs have missing provenance/metadata so that it in part cannot be used to trigger re-runs.
+Rules with missing metadata: simulate_response
+
+CASE: simulation-wflow-existing; MODE: execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "hydrology/wflow/output.csv",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=simulate-and-metrics"
+]
+P0_PARSE_COMPLETE operation=simulate-and-metrics
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Nothing to be done (all requested files are present and up to date).
+
+CASE: metrics-only-wflow-existing; MODE: dry-run
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "hydrology/wflow/output.csv",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=metrics-only",
+  "--dry-run"
+]
+P0_PARSE_COMPLETE operation=metrics-only
+host: <HOST>
+Building DAG of jobs...
+MissingRuleException:
+No rule to produce hydrology/wflow/output.csv (if you use input functions make sure that they don't raise unexpected exceptions).
+
+CASE: metrics-only-wflow-existing; MODE: execute
+[
+  "<WORKTREE>\\.pixi\\envs\\default\\python.exe",
+  "-m",
+  "snakemake",
+  "hydrology/wflow/output.csv",
+  "--snakefile",
+  "<WORKTREE>\\dev\\milestones\\r12\\implementation\\feasibility\\operation-target.smk",
+  "--cores",
+  "1",
+  "--nocolor",
+  "--config",
+  "operation=metrics-only"
+]
+P0_PARSE_COMPLETE operation=metrics-only
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+MissingRuleException:
+No rule to produce hydrology/wflow/output.csv (if you use input functions make sure that they don't raise unexpected exceptions).

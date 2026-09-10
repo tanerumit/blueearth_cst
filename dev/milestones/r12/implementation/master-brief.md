@@ -60,7 +60,7 @@ The accepted migration deliberately uses `run_stress_test.smk` as a serial carri
 
 ### Phase brief index
 
-- [P0 — feasibility and baseline preparation](phase-0-feasibility-baseline.md) — in progress: readiness rechecked; P2b passed; remaining probes and snapshot pending
+- [P0 — feasibility and baseline preparation](phase-0-feasibility-baseline.md) — held at Master Gate 3: P2b passed; operation/target counterexample requires owner ruling; remaining probes and snapshot pending
 - [P1 — logical contract extraction](phase-1-contract-extraction.md) — not started
 - [P2 — durable handoffs](phase-2-durable-handoffs.md) — not started
 - [P3 — workflow extraction and migration](phase-3-workflow-extraction.md) — not started

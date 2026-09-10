@@ -3,7 +3,8 @@
 ### Context
 
 - Follow repository `AGENTS.md`, the [accepted design](../wf3-simulation-identity-design.md) §§5.2, 6.8, 8.4a, 9.6, 12, and [readiness](readiness.md).
-- The environment checks passed, but no successor gate or model execution has run.
+- Environment readiness and synthetic P2b passed. The operation/target probe
+  reached Master Gate 3; no model execution has run.
 - P2b must pass before landing 1. Operation/target and checkpoint feasibility must pass before landing 3.
 - The standing baseline predates the current nine-year config and cannot be GF-9's reference.
 
@@ -43,7 +44,7 @@ No production adapter, successor manifest, entry-point/config migration, estimat
 
 ### Validation
 
-- Per fixture edit: `pixi run pytest tests/test_r12_wf3_feasibility.py` **[NOT IMPLEMENTED until this phase creates it]**.
+- Per fixture edit: `pixi run pytest tests/test_r12_wf3_feasibility.py` (P2b and the operation/target counterexample are implemented; remaining probes are not).
 - Once after fixture completion: direct Snakemake dry-run and real synthetic invocation commands recorded by the fixture; require the same allowed producer classes.
 - Once before P1: P2b three-state evidence must pass. Any ambiguity, zero-job success, missing clean refusal, private API need, or second required invocation blocks P1.
 - Once before P3: operation/target and both checkpoint feasibility cases pass. If conditional rules cannot satisfy §6.8, stop for Master Gate 3; the only accepted fallback is the thin runner selecting two explicit rule modules inside `simulate_system.smk`.
@@ -71,6 +72,15 @@ P2b passes in all three states, in dry-run and real execution. The
 ancestor-content checks and the missing-subtree refusal. Remaining P0 work is
 the operation/target matrix, checkpoint composition and isolated pre-change
 snapshot; P2b alone does not complete GF-1 or release numerical rewiring.
+
+The operation/target probe reached **Master Gate 3**. Simulation-mode direct
+Wflow targets succeed without metrics (including zero-job success for a retained
+output); conditional producer definitions cannot provide the accepted target
+exclusivity. Metrics-only producer omission correctly refuses a Wflow target.
+See the [gate evidence and fallback proposal](evidence/p0/operation-target-feasibility.md).
+The full matrix checkbox remains open: these diagnostic cases reject the
+candidate, and do not accept a replacement. Checkpoint probes and numerical
+capture stop here pending the owner ruling on the invocation contract.
 
 ### Task constraints
 

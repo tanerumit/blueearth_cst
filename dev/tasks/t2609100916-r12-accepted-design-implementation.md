@@ -1,7 +1,7 @@
 ---
 title: Implement the accepted R12 workflow design
 type: todo-item
-status: active
+status: blocked
 branch: feat/wp3-improvements
 effort: 2
 area: wf3
@@ -52,5 +52,10 @@ updated: 2026-09-10
   is already an ancestor of the execution checkout (`123e91b1`). Environment
   check passed again with weathergenr 2.0.0 and Wflow present.
 - P2b passed; see `dev/milestones/r12/implementation/evidence/p0/p2b-feasibility.md`.
-  The next bounded step is the operation/target matrix probe, followed by the
-  two checkpoint-composition probes and fresh pre-change snapshot.
+  The operation/target probe then reached **Master Gate 3**: direct Wflow targets
+  bypass metrics in simulation mode. Producer omission works in metrics-only,
+  but conditional rules do not enforce the accepted target-pair exclusivity.
+- Awaiting owner ruling on the proposed mandatory simulation runner versus
+  relaxing the direct-command target restriction. Evidence and concrete fallback:
+  `dev/milestones/r12/implementation/evidence/p0/operation-target-feasibility.md`.
+  Checkpoint probes and the fresh pre-change snapshot are held at this gate.

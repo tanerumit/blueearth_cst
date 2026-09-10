@@ -35,27 +35,38 @@ GCM producer, general execution-control platform, or repair of `st_0` comparabil
 - Forbidden: edits to frozen review records, sealed decisions, upstream packages,
   generated catalogs, lockfiles, or the numerical baseline during preparation.
 
+### Progress
+
+Preparation completed 2026-09-10. The [master implementation brief](implementation/master-brief.md)
+links four phase briefs and the complete GF-1..32 validation map. The
+[readiness record](implementation/readiness.md) distinguishes verified environment
+and CLI checks from unimplemented successor tests and unexecuted numerical gates.
+The immediate next execution task is P0's synthetic P2b feasibility fixture,
+followed by the scoped model-builder pre-change snapshot before numerical rewiring.
+No production implementation, synthetic feasibility run, or scientific run was
+performed by this preparation task.
+
 ### Required changes (checklist)
 
-- [ ] Reconcile the source baseline recorded in the design with the current
+- [x] Reconcile the source baseline recorded in the design with the current
   checkout; use `git rev-parse HEAD`, `git status --short`, and `rg --files` to
   remeasure the affected file inventory. Record changes in premises explicitly.
-- [ ] Produce a master implementation brief and bounded phase briefs following
+- [x] Produce a master implementation brief and bounded phase briefs following
   the accepted landing sequence: logical contract/adapter extraction in current
   WF3, durable handoff in current WF3, then entry-point/config/runner extraction.
   Use the exact sequence and blocking prerequisites in §4.2; do not invent a
   competing migration plan.
-- [ ] Assign every §9.6 migration surface and §13 ownership handoff to a phase.
+- [x] Assign every §9.6 migration surface and §13 ownership handoff to a phase.
   Include future supersession of sealed decisions without editing their records.
-- [ ] Carry every GF-1 through GF-32 claim and falsifier from §12 into the phase
+- [x] Carry every GF-1 through GF-32 claim and falsifier from §12 into the phase
   index, with its execution command or an explicit command-to-be-implemented
   status. Do not mistake proposed fixtures for checks that already exist.
-- [ ] Materialize the P2b, operation/target and checkpoint feasibility tasks before
+- [x] Materialize the P2b, operation/target and checkpoint feasibility tasks before
   entry-point extraction; record failure/stop conditions from §§6.8 and 12.
-- [ ] Plan the pre-change numerical snapshot under current `AGENTS.md` baseline
+- [x] Plan the pre-change numerical snapshot under current `AGENTS.md` baseline
   constraints. The frozen intake contains old config names and fixture premises;
   use accepted design §9.6 and current repository facts instead of copying them.
-- [ ] Give scientific/model validation to the §13 domain owners, using Astra for
+- [x] Give scientific/model validation to the §13 domain owners, using Astra for
   scientific and methodological evaluations as the owner requested.
 
 ### Validation

@@ -1,0 +1,20 @@
+usage: check_baseline.py record [-h] [--project-dir PROJECT_DIR]
+                                [--manifest MANIFEST] [--include-figures]
+                                [--workflow {build_model,analyze_projections,run_stress_test}]
+
+options:
+  -h, --help            show this help message and exit
+  --project-dir PROJECT_DIR
+                        Project directory (default: test_case/test_local)
+  --manifest MANIFEST   Manifest path (default: dev\baseline\manifest.json)
+  --include-figures     Include figure targets (png). Excluded by default: a
+                        figure is a terminal artifact nothing downstream
+                        reads, and it is fingerprinted by BYTE SIZE, so any
+                        cosmetic edit fails the gate without indicating a
+                        defect. Record and check must pass this flag
+                        identically.
+  --workflow {build_model,analyze_projections,run_stress_test}
+                        Record ONLY the given workflow(s) and MERGE into the
+                        existing manifest (other workflows' rows are
+                        preserved). Repeatable. Omit to record all targets
+                        (overwrite).

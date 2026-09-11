@@ -150,6 +150,11 @@ commit `56e950c1`; the capture below records the original finding.
 
 ## Improvement candidate captured during P2
 
+Implemented with owner approval in the canonical brain skill, v0.7.0,
+commit `bf032d70`. Agent-system status and reference word budgets passed;
+the repository-wide strict check retained unrelated findings. The capture below
+records the original finding; vendored project skills were not edited.
+
 - Target: `python-discipline` skill, `references/hazards.md`, Data integrity.
 - Gap: reserved output names can be bypassed by Windows case/trailing-dot/space
   aliases or an internal symlink even when lexical traversal is rejected.

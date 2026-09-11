@@ -1,22 +1,136 @@
 """Update a wflow model with downscaled climate forcing for one realization."""
 
 import os
+from copy import deepcopy
 from pathlib import Path
 
 import hydromt
+import yaml
 from hydromt_wflow import WflowSbmModel
 
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import (
     prepare_clim_data_catalog,
 )
+from blueearth_cst.climate_analysis.prepare_climate_data_catalog import (
+    resolved_unit_interpretation as resolved_unit_interpretation,
+)
 from blueearth_cst.experiment.forcing_descriptor import (
     ClimateArtifact,
-    UnitInterpretation,
     describe_forcing,
 )
 from blueearth_cst.experiment.forcing_window import forcing_window
 from blueearth_cst.shared.progress import hydromt_progress
 from blueearth_cst.shared.provenance import file_sha256
+
+
+def collection_run_forcing(
+    manifest_path, run_id, catalog_out, *, validated_collection=None
+):
+    """Bind a validated retained collection to the neutral preparation adapter.
+
+    Only the transient, per-run catalog is written. No source catalog or source
+    label participates in choosing elevation, PET or units at consumption time.
+    The caller supplies an output path outside the immutable collection. An
+    invocation controller may pass its fully validated collection snapshot to
+    avoid scanning every other run for each job. The marker, context, selected
+    forcing and ancillary bytes are still rechecked before writing anything.
+    """
+    from blueearth_cst.experiment.content_identity import (
+        confined_path,
+        read_canonical_json,
+    )
+    from blueearth_cst.experiment.forcing_descriptor import (
+        collection_forcing_descriptor,
+        describe_ancillary,
+        reader_unit_interpretation,
+    )
+    from blueearth_cst.experiment.scenario_collection import read_collection
+    from blueearth_cst.experiment.simulator_adapter import (
+        ArtifactReference,
+        PreparationContext,
+        RunForcing,
+    )
+
+    manifest_path = Path(manifest_path)
+    root = manifest_path.parent.resolve(strict=True)
+    manifest_path = root / manifest_path.name
+    output = Path(catalog_out).resolve()
+    if output.is_relative_to(root):
+        raise ValueError("transient preparation catalog must be outside the collection")
+    if validated_collection is None:
+        manifest = read_collection(
+            manifest_path,
+            describe_forcing=collection_forcing_descriptor,
+            describe_ancillary=describe_ancillary,
+        )
+    else:
+        if manifest_path.name != "collection.json":
+            raise ValueError("expected collection.json ready marker")
+        manifest = read_canonical_json(confined_path(root, manifest_path.name))
+        if manifest != validated_collection:
+            raise ValueError("collection changed after invocation validation")
+    selected = [item for item in manifest["forcing"] if item["run_id"] == run_id]
+    if len(selected) != 1:
+        raise ValueError(f"collection has no unique forcing for run_id={run_id}")
+    item = selected[0]
+    context = read_canonical_json(
+        confined_path(root, manifest["preparation_context"]["path"])
+    )
+    from blueearth_cst.experiment.content_identity import content_sha256
+
+    if content_sha256(context) != manifest["preparation_context"]["sha256"]:
+        raise ValueError("retained preparation context changed")
+    for artifact in [item, context["catalog"], *context["ancillary"]]:
+        path = confined_path(root, artifact["path"])
+        if file_sha256(path) != artifact["sha256"] or (
+            "size_bytes" in artifact and path.stat().st_size != artifact["size_bytes"]
+        ):
+            raise ValueError(
+                f"retained preparation artifact changed: {artifact['path']}"
+            )
+    elevation = context["forcing_elevation"]
+    if elevation is None:
+        raise ValueError("Wflow preparation requires a retained forcing elevation")
+    catalog = yaml.safe_load(
+        confined_path(root, context["catalog"]["path"]).read_text(encoding="utf-8")
+    )
+    for entry in catalog.values():
+        entry["uri"] = str(confined_path(root, entry["uri"]))
+    if "forcing" in catalog:
+        raise ValueError("ancillary catalog uses reserved generated forcing key")
+    forcing_path = confined_path(root, item["path"])
+    reader = context["generated_forcing_reader"]
+    catalog["forcing"] = deepcopy(reader)
+    catalog["forcing"]["uri"] = str(forcing_path)
+    output.parent.mkdir(parents=True, exist_ok=True)
+    output.write_text(yaml.safe_dump(catalog, sort_keys=True), encoding="utf-8")
+    physical_context = PreparationContext(
+        (ArtifactReference(output, file_sha256(output)),),
+        tuple(
+            ArtifactReference(confined_path(root, entry["path"]), entry["sha256"])
+            for entry in context["ancillary"]
+        ),
+        "forcing",
+        elevation["catalog_key"],
+        context["pet_method"],
+        True,
+        True,
+        ("cftime_to_datetime64", "clip_to_configured_window", "refresh_toml_endpoints"),
+    )
+    descriptor = describe_forcing(
+        ClimateArtifact(run_id, forcing_path),
+        reader_unit_interpretation(reader),
+        time_label="interval_end",
+    )
+    return RunForcing(
+        run_id,
+        forcing_path,
+        item["sha256"],
+        descriptor,
+        physical_context,
+        manifest["collection_id"],
+        manifest["collection_revision"],
+    )
 
 
 def forcing_chunksize(size):
@@ -48,64 +162,6 @@ def _as_list(data_libs):
     if isinstance(data_libs, (str, os.PathLike)):
         return [os.fspath(data_libs)]
     return [os.fspath(item) for item in data_libs]
-
-
-def resolved_unit_interpretation(data_libs, precip_source):
-    """Verify the reviewed daily source arithmetic before interpreting labels.
-
-    This checks the consumed adapter, not merely its catalog name. CHIRPS keeps
-    its precipitation/time-shift binding and inherits the six ERA5 auxiliaries
-    through the existing extraction path. E-OBS remains unsupported by WF1.
-    """
-    paths = _as_list(data_libs)
-    entries = hydromt.DataCatalog(data_libs=paths).to_dict()
-    hybrid = precip_source in {"chirps", "chirps_global"}
-    selected = entries["era5" if hybrid else precip_source]
-    expected = {
-        "unit_add": {"temp": -273.15, "temp_min": -273.15, "temp_max": -273.15},
-        "unit_mult": {"kin": 0.000277778, "kout": 0.000277778, "press_msl": 0.01},
-        "rename": {
-            "msl": "press_msl",
-            "ssrd": "kin",
-            "t2m": "temp",
-            "tisr": "kout",
-            "tmax": "temp_max",
-            "tmin": "temp_min",
-            "tp": "precip",
-        },
-    }
-    adapter = selected.get("data_adapter", {})
-    if any(adapter.get(key, {}) != value for key, value in expected.items()):
-        raise ValueError(
-            f"UnverifiedForcingUnits: {precip_source} catalog arithmetic differs from reviewed daily binding"
-        )
-    if hybrid:
-        adapter = entries[precip_source].get("data_adapter", {})
-        if (
-            adapter.get("rename") != {"precipitation": "precip"}
-            or adapter.get("unit_add") != {"time": 86400}
-            or adapter.get("unit_mult", {})
-        ):
-            raise ValueError(
-                f"UnverifiedForcingUnits: {precip_source} precipitation/time adapter differs from reviewed binding"
-            )
-    return UnitInterpretation(
-        revision="daily-catalog-hydromt1.3.1-weathergenr2.0.0/1",
-        evidence=(
-            "dev/milestones/r12/implementation/evidence/p1-forcing-units.md; "
-            f"selected={precip_source}; catalogs={[(path, file_sha256(path)) for path in paths]}; "
-            f"extraction_sha256={file_sha256(Path(__file__).parents[1] / 'climate_analysis' / 'extract_historical_climate.py')}"
-        ),
-        variables=(
-            ("precip", "mm/day"),
-            ("temp", "degC"),
-            ("temp_min", "degC"),
-            ("temp_max", "degC"),
-            ("press_msl", "hPa"),
-            ("kin", "W/m2"),
-            ("kout", "W/m2"),
-        ),
-    )
 
 
 def downscale_climate_forcing(
@@ -223,6 +279,7 @@ def downscale_climate_forcing(
 def prepare_model_forcing(run_forcing, model_reference, settings):
     """Apply the predecessor HydroMT preparation with explicit physical context."""
     context = run_forcing.preparation_context
+    temporal_operations = []
     fn_out = settings.forcing_path
     starttime, endtime = settings.first_time, settings.last_time
     model_root = model_reference.root
@@ -241,6 +298,11 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
 
     physical_catalog = hydromt.DataCatalog(data_libs=data_libs)
     forcing_grid = physical_catalog.get_rasterdataset(climate_name, variables=["temp"])
+    if (
+        run_forcing.descriptor.calendar == "noleap"
+        and str(forcing_grid.time.dt.calendar) == "proleptic_gregorian"
+    ):
+        temporal_operations.append("hydromt_reader_to_datetime64")
     elevation_grid = physical_catalog.get_rasterdataset(
         oro_source, variables=["elevtn"]
     )
@@ -281,7 +343,7 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
             # Pass ABSOLUTE paths: hydromt_wflow's config.write re-relativizes any
             # absolute same-mount value against the new toml's own directory on
             # write, emitting the correct relative pointer (verified against the
-            # vendored make_config_paths_relative; design §5/§5a).
+            # vendored make_config_paths_relative; design Â§5/Â§5a).
             # state.path_input is inert under reinit=true but set for future
             # warm-state safety.
             "state.path_input": str(
@@ -333,17 +395,20 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
     forcing = mod.forcing.data
     if hasattr(forcing.indexes["time"], "to_datetimeindex"):
         forcing["time"] = forcing.indexes["time"].to_datetimeindex(time_unit="ns")
+        temporal_operations.append("cftime_to_datetime64")
 
     # weathergen has off-by-one timestamps at the year boundaries; clip the forcing
     # in place via the component's data.
     for var in list(forcing.data_vars):
         forcing[var] = forcing[var].sel(time=slice(starttime, endtime))
+    temporal_operations.append("clip_to_configured_window")
 
     # Refresh starttime/endtime from the actual forcing axis (weathergen quirk).
     last_var = next(iter(forcing.data_vars))
     times = forcing[last_var].time.values
     mod.config.set("time.starttime", str(times[0])[:19])
     mod.config.set("time.endtime", str(times[-1])[:19])
+    temporal_operations.append("refresh_toml_endpoints")
 
     # Write forcing + per-realization toml to absolute paths so the model root
     # (which is the source hydrology_model dir) doesn't have to be moved.
@@ -353,7 +418,91 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
         filename=config_out_name,
         config_root=Path(config_out_root).resolve(),
     )
+    if settings.temporal_path is not None:
+        import pandas as pd
+
+        from blueearth_cst.experiment.content_identity import canonical_json_bytes
+
+        prepared_start, prepared_end = str(times[0])[:19], str(times[-1])[:19]
+        temporal = {
+            "source_calendar": run_forcing.descriptor.calendar,
+            "prepared_forcing_calendar": str(forcing.time.dt.calendar),
+            "response_calendar": mod.config.data["time"]["calendar"],
+            "operations": temporal_operations,
+            "prepared_start": prepared_start,
+            "prepared_end": prepared_end,
+            "response_start": str(
+                pd.Timestamp(prepared_start)
+                + pd.Timedelta(seconds=mod.config.data["time"]["timestepsecs"])
+            ),
+            "response_end": str(pd.Timestamp(prepared_end)),
+            "time_label": "interval_end",
+        }
+        settings.temporal_path.write_bytes(canonical_json_bytes(temporal))
     mod.close()  # commit any deferred writes
+
+
+def prepare_collection_run(
+    manifest_path,
+    run_id,
+    *,
+    model_root,
+    catalog_out,
+    config_out,
+    forcing_out,
+    native_output,
+    native_log,
+    sim_start,
+    sim_end,
+    temporal_out,
+    validated_collection=None,
+):
+    """Prepare one retained member with the reviewed physical Wflow binding."""
+    from blueearth_cst.experiment.simulator_adapter import (
+        ForcingRequirement,
+        ModelReference,
+        PreparationSettings,
+        prepare,
+        validate_forcing,
+    )
+
+    forcing = collection_run_forcing(
+        manifest_path, run_id, catalog_out, validated_collection=validated_collection
+    )
+    first, last = forcing_window(sim_start, sim_end)
+    variables = (
+        ("precip", "mm/day"),
+        ("temp", "degC"),
+        ("press_msl", "hPa"),
+        ("kin", "W/m2"),
+    )
+    if forcing.preparation_context.pet_method == "debruin":
+        variables += (("kout", "W/m2"),)
+    requirement = ForcingRequirement(
+        variables,
+        "EPSG:4326",
+        ("longitude", "latitude", "time"),
+        ("noleap", "standard", "proleptic_gregorian"),
+        86400,
+        "interval_end",
+        first,
+        last,
+        False,
+    )
+    return prepare(
+        run_id,
+        validate_forcing(forcing, requirement),
+        ModelReference(Path(model_root), requirement),
+        PreparationSettings(
+            Path(config_out),
+            Path(forcing_out),
+            Path(native_output),
+            Path(native_log),
+            first,
+            last,
+            Path(temporal_out),
+        ),
+    )
 
 
 if __name__ == "__main__":
@@ -362,23 +511,32 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import tee_to_log
 
         with tee_to_log(sm.log[0]):
-            downscale_climate_forcing(
-                config_out_fn=sm.output.toml,
-                fn_out=sm.output.nc,
-                fn_in=sm.input.nc,
-                data_libs=sm.input.data_sources,
+            from blueearth_cst.experiment.simulation_record import (
+                SimulationFrozenError,
+                read_simulation,
+            )
+
+            record = read_simulation(Path(sm.input.simulation).parent.parent)
+            if (
+                record["response_inventory_sha256"] is not None
+                or Path(sm.params.native_output_path).exists()
+            ):
+                raise SimulationFrozenError(
+                    "native responses already exist; use a new experiment name"
+                )
+            prepare_collection_run(
+                manifest_path=sm.input.collection,
+                run_id=sm.params.run_id,
                 model_root=sm.params.model_dir,
-                precip_source=sm.params.clim_source,
                 sim_start=sm.params.sim_window_start,
                 sim_end=sm.params.sim_window_end,
                 catalog_out=sm.output.catalog,
-                oro_path=sm.params.oro_path,
-                run_id=sm.params.run_id,
-                unit_interpretation=resolved_unit_interpretation(
-                    sm.input.data_sources, sm.params.clim_source
-                ),
-                native_output_path=sm.params.native_output_path,
-                native_log_path=sm.params.native_log_path,
+                config_out=sm.output.toml,
+                forcing_out=sm.output.nc,
+                native_output=sm.params.native_output_path,
+                native_log=sm.params.native_log_path,
+                temporal_out=sm.output.temporal,
+                validated_collection=sm.params.validated_collection,
             )
     else:
         raise ValueError("This script should be run from a snakemake environment")

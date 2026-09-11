@@ -210,19 +210,25 @@ def test_the_rule_declares_the_file_and_reaches_rule_all():
     was here, and without a number to keep in step.
     """
     text = _SNAKEFILE.read_text(encoding="utf-8")
-    start = text.index("rule write_experiment_config:")
-    block = text[start : text.index("\nrule ", start + 1)]
+    block = _rule_block(text, "write_experiment_config")
     assert "config/experiment.yml" in block[block.index("output:") :]
     assert (
         "experiment_config"
-        in text[text.index("WF3_TARGETS = {") : text.index("rule all:")]
+        in text[
+            text.index("WF3_TARGETS = {") : text.index(
+                "rule all:", text.index("WF3_TARGETS = {")
+            )
+        ]
     )
 
 
 def _rule_block(text, name):
     start = text.index(f"rule {name}:")
-    end = text.find("\nrule ", start + 1)
-    return text[start:] if end < 0 else text[start:end]
+    import re
+
+    following = re.search(r"\n[ \t]*(?:rule|checkpoint) ", text[start + 1 :])
+    end = start + 1 + following.start() if following else len(text)
+    return text[start:end]
 
 
 def test_the_freeze_marker_is_rule_3_18s_own_output():
@@ -254,7 +260,9 @@ def test_the_merged_log_is_keyed_by_the_experiment():
     must carry the id -- otherwise two experiments write one file and the freeze
     marker cannot tell them apart."""
     text = _SNAKEFILE.read_text(encoding="utf-8")
-    line = next(ln for ln in text.splitlines() if ln.startswith("WORKFLOW_LOG_NAME"))
+    line = next(
+        ln for ln in text.splitlines() if ln.lstrip().startswith("WORKFLOW_LOG_NAME")
+    )
     assert "{experiment}" in line, line
 
 

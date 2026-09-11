@@ -2,6 +2,10 @@
 
 Status at preparation: preparation completed; implementation and numerical runs not started.
 
+Current phase update, 2026-09-11: [P2 is accepted](evidence/p2/acceptance.md).
+The preparation and P0/P1 inventories below remain dated evidence; P3 extraction
+is the next phase.
+
 Execution update, 2026-09-10: P0 is released and readiness was rechecked at
 `123e91b1`; source and installed-version premises below are unchanged. The
 synthetic P2b fixture now passes all three states. See the

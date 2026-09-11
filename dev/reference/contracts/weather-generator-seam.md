@@ -1,5 +1,13 @@
 # Contract: weather-generator seam (WG-1 .. WG-6)
 
+> **R12 P2 carrier update:** current generated forcing is retained under
+> `scenario_collections/<collection_id>/forcing/run_<run_id>.nc`; temporary R
+> staging is under `scenario_plans/<generation_request_id>/generation/`.
+> The fixture paths and historical producer shape below describe the predecessor
+> capture. Current handoffs and accepted preservation evidence are in
+> [P2 acceptance](../../milestones/r12/implementation/evidence/p2/acceptance.md).
+> P3 owns the final entry-point/reference migration.
+
 > **Genre:** dev-facing interchange contract. **Audience:** a future *swapper* —
 > someone replacing `weathergenr` with an alternative weather generator, or the
 > R6 model-flexibility work — read end-to-end. Not an end-user doc (hence `dev/`,

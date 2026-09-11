@@ -1,0 +1,203 @@
+{
+  "note": "Excerpts only; paths replaced for readability. These are not standalone ready manifests.",
+  "collection_fields": [
+    "collection_id",
+    "collection_revision",
+    "forcing",
+    "intent_path",
+    "intent_sha256",
+    "preparation_context",
+    "scenario_table",
+    "scenario_type_artifacts",
+    "schema_version",
+    "status"
+  ],
+  "collection_first_forcing": {
+    "descriptor": {
+      "end": "2055-12-31 00:00:00",
+      "source_calendar": "noleap",
+      "spatial_representation_sha256": "c9e2e5aba00c4633439d2c381851d0808de6c9c5bb552a67ec4726e04e80d06a",
+      "start": "2010-01-01 00:00:00",
+      "time_label": "interval_end",
+      "timestep": "P1D",
+      "variables": [
+        {
+          "missing_value": {
+            "_FillValue": {
+              "nonfinite": "nan"
+            }
+          },
+          "name": "kin",
+          "units": "W/m2"
+        },
+        {
+          "missing_value": {
+            "_FillValue": {
+              "nonfinite": "nan"
+            }
+          },
+          "name": "kout",
+          "units": "W/m2"
+        },
+        {
+          "missing_value": {
+            "_FillValue": {
+              "nonfinite": "nan"
+            }
+          },
+          "name": "precip",
+          "units": "mm/day"
+        },
+        {
+          "missing_value": {
+            "_FillValue": {
+              "nonfinite": "nan"
+            }
+          },
+          "name": "press_msl",
+          "units": "hPa"
+        },
+        {
+          "missing_value": {
+            "_FillValue": {
+              "nonfinite": "nan"
+            }
+          },
+          "name": "temp",
+          "units": "degC"
+        },
+        {
+          "missing_value": {
+            "_FillValue": {
+              "nonfinite": "nan"
+            }
+          },
+          "name": "temp_max",
+          "units": "degC"
+        },
+        {
+          "missing_value": {
+            "_FillValue": {
+              "nonfinite": "nan"
+            }
+          },
+          "name": "temp_min",
+          "units": "degC"
+        }
+      ]
+    },
+    "path": "forcing/run_01.nc",
+    "run_id": "01",
+    "sha256": "1f9748f99e0cdbf06c2f84285ccf94027fbb6a4326767f9c9704a84987f4ffc7",
+    "size_bytes": 4085186
+  },
+  "simulation": {
+    "collection": {
+      "collection_id": "2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b",
+      "collection_revision": "fed6fdc9fdc437a5184b766db7d99e59050b5b8af5e962de5c58fdd972a2bf2b",
+      "manifest_path": "<project_dir>/scenario_collections/2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b/collection.json",
+      "resolution_mode": "explicit-manifest"
+    },
+    "environment": {
+      "path": "simulation_environment.json",
+      "sha256": "acdefbd936856701d87365e6b925ef1dee2e772474d2fad1a2f5d4d554b1c1ba"
+    },
+    "experiment_name": "p2_explicit",
+    "model": {
+      "model_digest": "f0f5c03b91aba524b1fd3a5b7c192fbf2929fa413cb024ed9d45ee582adec6bc",
+      "reference_path": "config/model_reference.yml"
+    },
+    "response_inventory_sha256": "944ebfd2125b0bf780a168e377ea477fcef28192454889c580c191309bec9259",
+    "response_request": {
+      "path": "response_request.json",
+      "sha256": "0f4739c15a2f0933d83ae23e209a37c527dd7ad272b7cffb1a654251c90ac53a"
+    },
+    "schema_version": "simulation/1",
+    "settings": {
+      "path": "simulator_settings.json",
+      "sha256": "cd37680b91d0b17e70ba1d77caed5fe6d301c3ffc12bb4a85bd43857d58b7ff2"
+    },
+    "simulation_id": "04ab1bc6153034c0bfdad77b137466587bdec9833089c7164b047f0e70a005eb",
+    "simulator": {
+      "name": "wflow",
+      "revision": "682f7cbd11a9a4428f3f9d63fbaeeb416e3a0664e7ad187b9f233a5718188d58"
+    },
+    "simulator_adapter_code": {
+      "path": "simulator_adapter_code_inventory.json",
+      "sha256": "a0a92e0bb4d1e0fdb10b9184413a4ce05011cae4567934de2828b60916c858a0"
+    }
+  },
+  "response_fields": [
+    "artifacts",
+    "collection_id",
+    "collection_revision",
+    "model_digest",
+    "response_inventory_sha256",
+    "response_request",
+    "schema_version",
+    "series",
+    "settings_sha256",
+    "simulation_id",
+    "simulator",
+    "temporal_preparation"
+  ],
+  "response_first_series": {
+    "artifact": 0,
+    "calendar": "standard",
+    "end": "2054-12-31 00:00:00",
+    "location_id": "102",
+    "location_ordinal": 0,
+    "missing_value": "NaN",
+    "native_selector": {
+      "column": "gwr_102",
+      "temporal_path": "../hydrology/wflow/config/rlz_1_st_0.temporal.json",
+      "temporal_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "toml_path": "../hydrology/wflow/config/rlz_1_st_0.toml",
+      "toml_sha256": "bfaab009d97794a2cb56dc3ee9775daf239105a5f2c5d240b8465362ef330e02"
+    },
+    "run_id": "01",
+    "start": "2046-01-02 00:00:00",
+    "time_label": "interval_end",
+    "timestep": "P1D",
+    "units": "mm dt-1",
+    "variable": "gwr"
+  },
+  "metric_fields": [
+    "bundle_membership_sha256",
+    "collection_id",
+    "collection_revision",
+    "declarations",
+    "expected_result_keys",
+    "groups",
+    "indicator_tables",
+    "metric_definition",
+    "metric_definition_sha256",
+    "metric_environment",
+    "metric_set_id",
+    "metrics_manifest_sha256",
+    "resolved_references",
+    "response_inventory",
+    "response_request",
+    "return_level_evidence",
+    "return_level_validation",
+    "schema_version",
+    "simulation_id",
+    "status",
+    "unit_index"
+  ],
+  "metric_set_id": "2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade",
+  "metric_tables": [
+    {
+      "path": "gwr_indicators.csv",
+      "row_count": 56,
+      "sha256": "cea695df0af5af01f962e02582786547879baa6777d360a29ec5b4c9c5947472",
+      "token": "gwr"
+    },
+    {
+      "path": "q_indicators.csv",
+      "row_count": 700,
+      "sha256": "2d9dd339ed0c0de93e9140ba0a1061fbce00925a0cbca993772c5133cd8250b7",
+      "token": "q"
+    }
+  ]
+}

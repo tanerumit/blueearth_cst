@@ -181,8 +181,226 @@ def describe(
     return describe_forcing(artifact, interpretation, time_label="interval_end")
 
 
+def plan_collection(
+    project_dir,
+    request,
+    *,
+    generation_config,
+    scenario_spec,
+    source_inputs,
+    provider_code,
+    environment,
+    preparation_context,
+):
+    """Resolve collection identity only after every declared source exists.
+
+    ``source_inputs`` maps a scientific role to a resolved local path. Generated
+    execution paths belong to scheduling state, never this source inventory.
+    This planner performs no collection writes and does not resolve random seeds.
+    """
+    from blueearth_cst.experiment.collection_resolution import scenario_plan
+    from blueearth_cst.experiment.content_identity import (
+        collection_id,
+        content_sha256,
+        scenario_semantics_sha256,
+    )
+    from blueearth_cst.experiment.scenario_rows import stochastic_rows
+    from blueearth_cst.shared.provenance import file_sha256
+
+    capacity = generation_config["unit_id_capacity"]
+    rows = stochastic_rows(
+        scenario_spec["n_realizations"],
+        scenario_spec["n_design_points"],
+        unit_id_capacity=capacity,
+    )
+    inventory = []
+    for role, source in sorted(source_inputs.items()):
+        path = Path(source).resolve(strict=True)
+        inventory.append(
+            {
+                "role": role,
+                "path": path.as_posix(),
+                "sha256": file_sha256(path),
+                "size_bytes": path.stat().st_size,
+                "metadata": {},
+            }
+        )
+    documents = {
+        "generation_config": generation_config,
+        "source_inventory": inventory,
+        "provider_code": provider_code,
+        "environment": environment,
+        "preparation_context": preparation_context,
+    }
+    names = {
+        "generation_config": "generation_config.json",
+        "source_inventory": "source_inventory.json",
+        "provider_code": "provider_code_inventory.json",
+        "environment": "generation_environment.json",
+        "preparation_context": "preparation_context.json",
+    }
+    intent = {
+        "schema_version": "scenario-collection/1",
+        "canonicalization_id": "collection-canon/1",
+        "scenario_type": "stochastic",
+        "provider": {"name": "weathergenr", "revision": content_sha256(provider_code)},
+        "scenario_spec": scenario_spec,
+        "scenario_semantics_sha256": scenario_semantics_sha256(rows),
+        "unit_id_capacity": capacity,
+        "unit_id_width": len(str(capacity)),
+        "run_count": len(rows),
+        **{
+            key: {"path": names[key], "sha256": content_sha256(value)}
+            for key, value in documents.items()
+        },
+    }
+    intent["collection_id"] = collection_id(intent)
+    return scenario_plan(project_dir, request, intent, inventory, documents)
+
+
+def initialize_planned_collection(
+    project_dir, plan, invocation_id, *, lookup_path, catalog_bytes, ancillary_sources
+):
+    """Write reviewed portable inputs before authorizing row-generation jobs."""
+    import csv
+    import io
+
+    from blueearth_cst.experiment.content_identity import (
+        canonical_json_bytes,
+        content_sha256,
+    )
+    from blueearth_cst.experiment.scenario_collection import initialize_collection_jobs
+    from blueearth_cst.experiment.scenario_rows import stochastic_rows
+
+    intent = plan["intent"]
+    documents = plan["documents"]
+    payloads = {
+        intent[key]["path"]: canonical_json_bytes(value)
+        for key, value in documents.items()
+    }
+    if set(documents) != {
+        "generation_config",
+        "source_inventory",
+        "provider_code",
+        "environment",
+        "preparation_context",
+    }:
+        raise ValueError("source plan lacks the complete initialization documents")
+    for key, value in documents.items():
+        if content_sha256(value) != intent[key]["sha256"]:
+            raise ValueError(f"source plan {key} differs from intent")
+    context = documents["preparation_context"]
+    import hashlib
+
+    if hashlib.sha256(catalog_bytes).hexdigest() != context["catalog"]["sha256"]:
+        raise ValueError("planned preparation catalog changed")
+    from blueearth_cst.shared.provenance import file_sha256
+
+    if set(ancillary_sources) != {entry["path"] for entry in context["ancillary"]}:
+        raise ValueError("planned ancillary inventory changed")
+    for entry in context["ancillary"]:
+        path = Path(ancillary_sources[entry["path"]])
+        if (
+            file_sha256(path) != entry["sha256"]
+            or path.stat().st_size != entry["size_bytes"]
+        ):
+            raise ValueError("planned ancillary bytes changed")
+        payloads[entry["path"]] = path
+    spec = intent["scenario_spec"]
+    rows = stochastic_rows(
+        spec["n_realizations"],
+        spec["n_design_points"],
+        unit_id_capacity=intent["unit_id_capacity"],
+    )
+    table = io.StringIO(newline="")
+    writer = csv.DictWriter(
+        table, fieldnames=list(rows[0].as_record()), lineterminator="\n"
+    )
+    writer.writeheader()
+    writer.writerows(row.as_record() for row in rows)
+    payloads["scenario_table.csv"] = table.getvalue().encode("utf-8")
+    payloads["stress_test_lookup.csv"] = Path(lookup_path)
+    payloads[context["catalog"]["path"]] = catalog_bytes
+    return initialize_collection_jobs(project_dir, plan, invocation_id, payloads)
+
+
+def publish_planned_collection(project_dir, plan, invocation_id):
+    """Reopen every declared row and publish the immutable ready marker last."""
+    from blueearth_cst.experiment.content_identity import (
+        collection_revision,
+        confined_path,
+    )
+    from blueearth_cst.experiment.forcing_descriptor import (
+        collection_forcing_descriptor,
+        describe_ancillary,
+    )
+    from blueearth_cst.experiment.scenario_collection import (
+        _job_collection_claim,
+        publish_collection,
+    )
+    from blueearth_cst.experiment.scenario_rows import stochastic_rows
+    from blueearth_cst.shared.provenance import file_sha256
+
+    claim = _job_collection_claim(project_dir, plan, invocation_id)
+    intent = plan["intent"]
+    spec = intent["scenario_spec"]
+    rows = stochastic_rows(
+        spec["n_realizations"],
+        spec["n_design_points"],
+        unit_id_capacity=intent["unit_id_capacity"],
+    )
+
+    def reference(relative):
+        return {
+            "path": relative,
+            "sha256": file_sha256(confined_path(claim.root, relative)),
+        }
+
+    reader = plan["documents"]["preparation_context"]["generated_forcing_reader"]
+    forcing = []
+    for row in rows:
+        relative = f"forcing/run_{row.run_id}.nc"
+        path = confined_path(claim.root, relative)
+        forcing.append(
+            {
+                "run_id": row.run_id,
+                **reference(relative),
+                "size_bytes": path.stat().st_size,
+                "descriptor": collection_forcing_descriptor(path, reader),
+            }
+        )
+    manifest = {
+        "schema_version": "scenario-collection/1",
+        "status": "ready",
+        "collection_id": intent["collection_id"],
+        "intent_path": "collection_intent.json",
+        "intent_sha256": plan["intent_sha256"],
+        "scenario_table": reference("scenario_table.csv"),
+        "scenario_type_artifacts": [
+            {"role": "perturbation_lookup", **reference("stress_test_lookup.csv")}
+        ],
+        "preparation_context": intent["preparation_context"],
+        "forcing": forcing,
+    }
+    manifest["collection_revision"] = collection_revision(manifest)
+    return publish_collection(
+        claim,
+        manifest,
+        describe_forcing=collection_forcing_descriptor,
+        describe_ancillary=describe_ancillary,
+    )
+
+
 if __name__ == "__main__" and "snakemake" in globals():
     sm = globals()["snakemake"]
+    from blueearth_cst.experiment.content_identity import read_canonical_json
+    from blueearth_cst.experiment.scenario_collection import _job_collection_claim
+
+    if read_canonical_json(Path(sm.input.source_plan)) != sm.params.collection_plan:
+        raise ValueError("source plan changed before provider execution")
+    _job_collection_claim(
+        sm.params.project_dir, sm.params.collection_plan, sm.params.invocation_id
+    )
     if sm.params.operation == "generate_roots":
         generate_roots(
             tuple(ScenarioRow.from_record(record) for record in sm.params.rows),

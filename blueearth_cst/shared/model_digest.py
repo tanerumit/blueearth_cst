@@ -163,6 +163,11 @@ def model_digest(model_root, toml_name: str = MODEL_TOML_NAME) -> str:
         contents, so it is identical on Windows and Linux for the same model.
     """
     entries = model_digest_entries(model_root, toml_name)
+    return model_digest_from_entries(entries)
+
+
+def model_digest_from_entries(entries) -> str:
+    """Recompute the same identity from retained pointer-derived input hashes."""
     h = hashlib.sha256()
     h.update(f"cst-model-digest-v{DIGEST_VERSION}\n".encode())
     for rel, content in entries:

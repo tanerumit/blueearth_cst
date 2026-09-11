@@ -55,10 +55,11 @@ class ImmutableCollectionError(ValueError):
 
 @dataclass(frozen=True)
 class CollectionClaim:
-    """In-process handle returned only after exclusive directory initialization.
+    """Writer handle returned after exclusive directory initialization.
 
-    Do not persist or reconstruct this handle to resume a partial collection.
-    The owner must explicitly delete a partial directory before starting again.
+    Workflow jobs may reconstruct it only through a verified receipt belonging
+    to the same initialization invocation. A later invocation cannot resume a
+    partial collection; the owner must explicitly delete it before starting again.
     """
 
     root: Path
@@ -217,7 +218,13 @@ def _check_claim(claim: CollectionClaim) -> None:
     """Keep the handle bound to its original immutable intent and real directory."""
     if claim.root.is_symlink() or claim.root.resolve() != claim.root:
         raise ImmutableCollectionError(f"collection {claim.root}: claim root changed")
-    observed = file_sha256(claim.root / "collection_intent.json")
+    intent_path = claim.root / "collection_intent.json"
+    marker = claim.root / "collection.json"
+    if intent_path.is_symlink() or marker.is_symlink():
+        raise ImmutableCollectionError(
+            f"collection {claim.root}: aliased control record"
+        )
+    observed = file_sha256(confined_path(claim.root, "collection_intent.json"))
     if observed != claim.intent_sha256:
         raise ImmutableCollectionError(
             f"collection {claim.root}: intent expected {claim.intent_sha256}; observed {observed}"
@@ -875,3 +882,181 @@ def collection_size(root: Path) -> tuple[int, int]:
             count += 1
             total += path.stat().st_size
     return count, total
+
+
+def _initialization_path(project, plan, invocation_id):
+    if (
+        not isinstance(invocation_id, str)
+        or re.fullmatch(r"[0-9a-f]{32}", invocation_id) is None
+    ):
+        raise ImmutableCollectionError(
+            "initializer requires the current invocation UUID"
+        )
+    _sha256(plan["generation_request_id"], "generation_request_id")
+    expected = content_sha256(
+        {key: value for key, value in plan.items() if key != "plan_sha256"}
+    )
+    if (
+        expected != plan["plan_sha256"]
+        or content_sha256(plan["request"]) != plan["generation_request_id"]
+    ):
+        raise ImmutableCollectionError("initialization source plan digest differs")
+    relative = f"scenario_plans/{plan['generation_request_id']}/initializations/{invocation_id}.json"
+    path = confined_path(project, relative)
+    if path != project / relative:
+        raise ImmutableCollectionError("initialization receipt path is aliased")
+    return path
+
+
+def _job_collection_claim(project_dir, plan, invocation_id):
+    """Authorize only jobs of the current explicitly supplied initialization."""
+    project = Path(project_dir).resolve()
+    path = _initialization_path(project, plan, invocation_id)
+    expected = {
+        "invocation_id": invocation_id,
+        "collection_id": plan["collection_id"],
+        "intent_sha256": plan["intent_sha256"],
+        "plan_sha256": plan["plan_sha256"],
+    }
+    try:
+        _equal("initialization receipt", expected, read_canonical_json(path))
+        _sha256(plan["collection_id"], "collection_id")
+        root = confined_path(project, f"scenario_collections/{plan['collection_id']}")
+        if root != project / "scenario_collections" / plan["collection_id"]:
+            raise ValueError("collection writer path is aliased")
+        _equal(
+            "initialized intent",
+            plan["intent"],
+            read_canonical_json(confined_path(root, "collection_intent.json")),
+        )
+        _equal(
+            "initialized intent digest",
+            plan["intent_sha256"],
+            file_sha256(confined_path(root, "collection_intent.json")),
+        )
+        return CollectionClaim(root, plan["intent_sha256"])
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        raise ImmutableCollectionError(
+            f"current invocation has no valid collection initialization: {exc}"
+        ) from exc
+
+
+def initialize_collection_jobs(project_dir, plan, invocation_id, payloads):
+    """Exclusively initialize the collection, then publish one invocation receipt.
+
+    Receipts are scheduling state outside scientific identity. They authorize no
+    later invocation, retry recovery, lease or ownership transfer. The parent
+    launcher supplies a fresh ID and propagates that same ID to its child jobs.
+    """
+    from blueearth_cst.experiment.content_identity import atomic_record
+
+    project = Path(project_dir).resolve()
+    receipt = _initialization_path(project, plan, invocation_id)
+    if receipt.exists():
+        claim = _job_collection_claim(project, plan, invocation_id)
+        if (claim.root / "collection.json").exists():
+            raise ImmutableCollectionError(
+                "ready reuse does not confer writer authorization"
+            )
+        return claim
+    claim = claim_collection(project, plan["intent"])
+    for name, payload in payloads.items():
+        write_collection_payload(claim, name, payload)
+    receipt.parent.mkdir(parents=True, exist_ok=True)
+    atomic_record(
+        receipt,
+        {
+            "invocation_id": invocation_id,
+            "collection_id": plan["collection_id"],
+            "intent_sha256": plan["intent_sha256"],
+            "plan_sha256": plan["plan_sha256"],
+        },
+    )
+    return claim
+
+
+def collection_references(project_dir: Path, selected_id: str) -> list[str]:
+    """List every retained simulation reference, refusing unreadable records."""
+    _sha256(selected_id, "collection_id")
+    project = Path(project_dir).resolve()
+    references = []
+    for path in sorted((project / "experiments").glob("*/config/simulation.json")):
+        if not path.resolve().is_relative_to(project):
+            raise ImmutableCollectionError(f"simulation record escapes project: {path}")
+        try:
+            record = read_canonical_json(path)
+            referenced = record["collection"]["collection_id"]
+            _sha256(referenced, "simulation.collection_id")
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            raise ImmutableCollectionError(
+                f"cannot establish references from {path}: {exc}"
+            ) from exc
+        if referenced == selected_id:
+            references.append(path.relative_to(project).as_posix())
+    return references
+
+
+def list_collections(project_dir: Path) -> list[dict[str, Any]]:
+    """Report all collection directories, retained bytes and simulation references.
+
+    A marker's presence is reported without claiming validated readiness. This is
+    the explicit inspection path; automatic collection selection never scans it.
+    """
+    project = Path(project_dir).resolve()
+    store = project / "scenario_collections"
+    if not store.exists():
+        return []
+    records = []
+    for path in sorted(store.iterdir()):
+        _sha256(path.name, "collection directory")
+        if path.is_symlink() or not path.resolve().is_relative_to(project):
+            raise ImmutableCollectionError(f"collection directory is an alias: {path}")
+        if not path.is_dir():
+            raise ImmutableCollectionError(f"unexpected collection store file: {path}")
+        count, size = collection_size(path)
+        records.append(
+            {
+                "collection_id": path.name,
+                "path": path.as_posix(),
+                "marker_present": (path / "collection.json").exists(),
+                "file_count": count,
+                "size_bytes": size,
+                "simulation_references": collection_references(project, path.name),
+            }
+        )
+    return records
+
+
+def delete_collection(
+    project_dir: Path, selected_id: str, *, force: bool = False
+) -> dict[str, Any]:
+    """Explicitly delete one named collection; retained references require force.
+
+    Call only from an explicit deletion action. Normal generation, simulation
+    and retention summaries never invoke this function. Return byte accounting.
+    """
+    _sha256(selected_id, "collection_id")
+    if type(force) is not bool:
+        raise TypeError("force must be an explicit boolean")
+    project = Path(project_dir).resolve(strict=True)
+    store = project / "scenario_collections"
+    target = store / selected_id
+    if store.is_symlink() or target.is_symlink() or target.resolve() != target:
+        raise ImmutableCollectionError(
+            f"refuse deletion through a collection alias: {target}"
+        )
+    if not target.resolve().is_relative_to(project) or target.parent != store:
+        raise ImmutableCollectionError(f"collection deletion escapes project: {target}")
+    references = collection_references(project, selected_id)
+    if references and not force:
+        raise ImmutableCollectionError(
+            f"collection {selected_id} is referenced by {references}; explicit force required"
+        )
+    count, size = collection_size(target)
+    shutil.rmtree(target)
+    return {
+        "collection_id": selected_id,
+        "file_count": count,
+        "size_bytes": size,
+        "simulation_references": references,
+    }

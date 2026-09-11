@@ -23,7 +23,11 @@ SNAKEFILES = [
 def _rule_block(snakefile: Path, name: str) -> str:
     """Return one rule body from a Snakefile."""
     text = snakefile.read_text(encoding="utf-8")
-    match = re.search(rf"^rule {name}:\n(.*?)(?=^rule |\Z)", text, re.S | re.M)
+    match = re.search(
+        rf"^[ \t]*rule {name}:\n(.*?)(?=^[ \t]*(?:rule|checkpoint) |\Z)",
+        text,
+        re.S | re.M,
+    )
     assert match, f"rule {name} not found in {snakefile.name}"
     return match.group(1)
 
@@ -242,7 +246,9 @@ def test_every_workflow_registers_all_three_lifecycle_handlers(snakefile_name):
     text = (REPO / snakefile_name).read_text(encoding="utf-8")
 
     for handler in ("onstart:", "onsuccess:", "onerror:"):
-        assert f"\n{handler}\n" in text, f"{snakefile_name} lacks {handler}"
+        assert re.search(rf"^[ \t]*{handler}$", text, re.M), (
+            f"{snakefile_name} lacks {handler}"
+        )
     assert '_journal("success")' in text
     assert '_journal("failed")' in text
 

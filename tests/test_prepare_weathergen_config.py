@@ -209,10 +209,10 @@ def test_f7_the_template_is_a_declared_input_of_rule_3_10():
         encoding="utf-8"
     )
     rule = re.search(
-        r"rule prepare_weathergen_config:.*?\n    output:", snakefile, re.S
+        r"rule prepare_weathergen_config:.*?\n[ \t]+output:", snakefile, re.S
     )
     assert rule, "rule prepare_weathergen_config not found"
-    inputs = re.search(r"\n    input:(.*)", rule.group(0), re.S).group(1)
+    inputs = re.search(r"\n[ \t]+input:(.*)", rule.group(0), re.S).group(1)
     assert "config/defaults/weathergen_config.yml" in inputs, (
         "F7 regression: the weathergen template is not declared as an input of "
         "rule 3.10, so editing it will not re-trigger the rule"

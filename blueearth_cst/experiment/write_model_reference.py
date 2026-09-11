@@ -57,6 +57,10 @@ def write_model_reference(
     """Build the reference and write it as YAML. Returns the document."""
     doc = build_model_reference(model_dir, project_dir, toml_name)
     out_path = Path(out_path)
+    if out_path.exists():
+        if yaml.safe_load(out_path.read_text(encoding="utf-8")) != doc:
+            raise ValueError("model reference changed; use a new experiment name")
+        return doc
     out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(
         yaml.safe_dump(doc, sort_keys=False, default_flow_style=False),

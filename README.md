@@ -219,11 +219,12 @@ and appends nothing, so a gap in the dates means nothing needed doing, not that
 nobody looked.
 
 To tell whether outputs are current, compare the sidecar beside them with the
-record: `<basin_dir>/evaluation/run_metadata.json` (WF1),
-`<exp_dir>/results/run_metadata.json` (WF3), and WF2's existing
+record: `<basin_dir>/evaluation/run_metadata.json` (WF1) and WF2's existing
 `summary/provenance.json`. A `configuration_inputs_sha256` that differs from
 the run record's means the outputs predate the recorded configuration; the
-journal then names the runs on either side.
+journal then names the runs on either side. WF3 instead validates its frozen
+simulation, native response inventory and selected immutable metric set; see
+[WF3 retained handoffs](docs/wf3-retained-handoffs.md).
 
 For the model build, `models/hydrology/wflow/hydromt_build_config.yml` and
 `hydromt_update_waterbodies.yml` record the values hydromt was **actually
@@ -423,8 +424,11 @@ $ snakemake all -c 1 -s analyze_projections.smk --configfile test_case/project_c
 Prepares future weather realizations and stress-test perturbations, runs them
 through the hydrological model, and aggregates the discharge statistics.
 
-Every artifact this workflow writes hangs off
-`<project_dir>/experiments/<experiment_name>/`. That config key is **optional**.
+Generated forcing is shared under `<project_dir>/scenario_collections/`;
+simulation records and metric sets live under
+`<project_dir>/experiments/<experiment_name>/`. See
+[WF3 retained handoffs](docs/wf3-retained-handoffs.md) for selection, reuse and
+metrics-only operation. The experiment-name config key is **optional**.
 Left unset, it defaults to the project's own name plus the date the experiment
 was first created — a `project_dir` of `/data/gabon_0108` gives
 `experiments/gabon_0108_20260805/`.

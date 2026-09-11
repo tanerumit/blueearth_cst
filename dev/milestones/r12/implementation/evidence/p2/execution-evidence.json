@@ -1,0 +1,159 @@
+{
+  "scope": "R12 P2 current WF3 carrier; not P3 runner or milestone seal",
+  "experiments": {
+    "p2_explicit": {
+      "simulation_id": "04ab1bc6153034c0bfdad77b137466587bdec9833089c7164b047f0e70a005eb",
+      "collection": {
+        "collection_id": "2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b",
+        "collection_revision": "fed6fdc9fdc437a5184b766db7d99e59050b5b8af5e962de5c58fdd972a2bf2b",
+        "manifest_path": "<project_dir>/scenario_collections/2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b/collection.json",
+        "resolution_mode": "explicit-manifest"
+      },
+      "response_inventory_sha256": "944ebfd2125b0bf780a168e377ea477fcef28192454889c580c191309bec9259",
+      "response_series": 126,
+      "metric_sets": [
+        "2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade",
+        "930e59f0429a5dc62a3c29ffec89653d832a8c6b091646fa8de46d695edd0364"
+      ]
+    },
+    "p2_project_final": {
+      "simulation_id": "04ab1bc6153034c0bfdad77b137466587bdec9833089c7164b047f0e70a005eb",
+      "collection": {
+        "collection_id": "2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b",
+        "collection_revision": "fed6fdc9fdc437a5184b766db7d99e59050b5b8af5e962de5c58fdd972a2bf2b",
+        "manifest_path": "<project_dir>/scenario_collections/2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b/collection.json",
+        "resolution_mode": "project-generation"
+      },
+      "response_inventory_sha256": "944ebfd2125b0bf780a168e377ea477fcef28192454889c580c191309bec9259",
+      "response_series": 126,
+      "metric_sets": [
+        "2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade"
+      ]
+    }
+  },
+  "exact_resolution": {
+    "routine_collection": "2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b",
+    "explicit_collections": [
+      "2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b",
+      "da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8"
+    ],
+    "unplanned_request_refused": true,
+    "retained_size": [
+      25,
+      67543649
+    ],
+    "references": [
+      "experiments/experiment/config/simulation.json",
+      "experiments/p2_explicit/config/simulation.json",
+      "experiments/p2_project_final/config/simulation.json",
+      "experiments/p2_simulation_final/config/simulation.json"
+    ]
+  },
+  "collection_ready_reuse": [
+    {
+      "mode": "reuse",
+      "exit_code": 0,
+      "collection_bytes_and_mtimes_unchanged": true,
+      "no_added_collections": true
+    },
+    {
+      "mode": "force",
+      "exit_code": 0,
+      "collection_bytes_and_mtimes_unchanged": true,
+      "no_added_collections": true
+    }
+  ],
+  "forced_simulation": {
+    "exit_code": 0,
+    "retained_files": 121,
+    "changed_or_missing": [],
+    "added": [],
+    "mtime_only_changes": [
+      "experiments\\p2_explicit\\config\\model_reference.yml",
+      "experiments\\p2_explicit\\results\\metric_sets\\2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade\\gwr_indicators.csv",
+      "experiments\\p2_explicit\\results\\metric_sets\\2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade\\metrics.json",
+      "experiments\\p2_explicit\\results\\metric_sets\\2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade\\metric_environment.json",
+      "experiments\\p2_explicit\\results\\metric_sets\\2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade\\q_indicators.csv",
+      "experiments\\p2_explicit\\results\\metric_sets\\2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade\\unit_index.csv"
+    ],
+    "retained_bytes": 140139321
+  },
+  "stale_plan": {
+    "stale_refusal_exit": 1,
+    "explicit_source_checkpoint_repair_exit": 0,
+    "retained_files_preserved": 154,
+    "original_plan_restored_by_checkpoint": true
+  },
+  "offline_metrics": {
+    "rules": [
+      "prepare_metric_plan",
+      "publish_metric_set",
+      "metrics"
+    ],
+    "model_and_data_directories_unavailable_during_run": true,
+    "julia_absent_from_path": true,
+    "other_workflow_configs_missing": true,
+    "selected_metric_tokens": [
+      "gwr"
+    ],
+    "directories_restored": true
+  },
+  "source_logs": [
+    {
+      "name": "p2-carrier-generation-4.log",
+      "sha256": "2558f006aacd7d93fceb219ea290947b7ef657171006552e33f425ffa9c65e03",
+      "size_bytes": 41953,
+      "lines_total": 434,
+      "lines_retained": 68
+    },
+    {
+      "name": "p2-carrier-force.log",
+      "sha256": "f7ae98f39b643d8d9132dd584bcb0970662ad53d4d68c8c58a72b26bb3796a5c",
+      "size_bytes": 4198,
+      "lines_total": 70,
+      "lines_retained": 12
+    },
+    {
+      "name": "p2-explicit-all.log",
+      "sha256": "f1e0322e84e302995023e9c02c1253ae24b43348a568520e4f0d42d477071e95",
+      "size_bytes": 34887,
+      "lines_total": 272,
+      "lines_retained": 57
+    },
+    {
+      "name": "p2-project-all.log",
+      "sha256": "f05c391182b43713dbecf30bcf575a701468277848481b6dd1d76ac9d66e553c",
+      "size_bytes": 37519,
+      "lines_total": 303,
+      "lines_retained": 69
+    },
+    {
+      "name": "p2-forced-simulation.log",
+      "sha256": "800dd753edf73baedbee9c7bcc3f7a97fbb59041a1f32305d5a3397b18a19417",
+      "size_bytes": 5587,
+      "lines_total": 74,
+      "lines_retained": 17
+    },
+    {
+      "name": "p2-offline.log",
+      "sha256": "5385c984e208c5450bd200584f5011776b7c227fe50906829c70c6a6c6275e9b",
+      "size_bytes": 5629,
+      "lines_total": 56,
+      "lines_retained": 10
+    },
+    {
+      "name": "p2-stale-refusal.log",
+      "sha256": "472519d2777a1bf8ea594702e5227f2cf540c24a30ac7c502b3ebdabdd321075",
+      "size_bytes": 1385,
+      "lines_total": 7,
+      "lines_retained": 0
+    },
+    {
+      "name": "p2-stale-repair.log",
+      "sha256": "64398b29a0864b66b45b44bdba79a82d257e2257051a39528eddaed75da68077",
+      "size_bytes": 4070,
+      "lines_total": 58,
+      "lines_retained": 8
+    }
+  ]
+}

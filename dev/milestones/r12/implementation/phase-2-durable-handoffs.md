@@ -24,14 +24,14 @@ No new entry points, five-stanza config, runner order change, live-reference ren
 
 ### Required changes (checklist)
 
-- [ ] Implement canonical identities and immutable payloads exactly as §§5.5–5.6, 6.2/6.7, 8.2–8.4a specify; every stored path is confined and every ready marker is written last atomically.
-- [ ] Implement source-planning checkpoint, pure-row scheduling, collection initialization claim, durable forcing/preparation closure, exact ready reuse, partial refusal, and reference-aware explicit deletion/listing.
-- [ ] Package `preparation_context.json`, reduced catalog, and every ancillary byte for CHIRPS, CHIRPS-global, non-CHIRPS orography, and E-OBS PET branches; no consumption fallback to live catalogs.
-- [ ] Implement simulation freeze/identity, response request, response inventory, native reopening and full expected-series validation. Preserve batch resource/log visibility and current HydroMT/Wflow operations.
-- [ ] Implement metric request/plan/final identity, immutable metric-set publication, long `unit_index.csv`, exact expected result keys, Class-C provenance, and validation declarations.
-- [ ] Implement §6.8 metrics-only and the full operation/target matrix. `experiment_name` selects one recorded simulation; missing requirements never schedule Wflow.
-- [ ] Implement deterministic project-plan versus explicit-manifest resolution with no directory scan, `latest`, fallback, or config-supplied digest.
-- [ ] Prove forced-rerun output preservation, stale-plan refusal, digest invalidation, and no hidden mutation before P3.
+- [x] Implement canonical identities and immutable payloads exactly as §§5.5–5.6, 6.2/6.7, 8.2–8.4a specify; every stored path is confined and every ready marker is written last atomically.
+- [x] Implement source-planning checkpoint, pure-row scheduling, collection initialization claim, durable forcing/preparation closure, exact ready reuse, partial refusal, and reference-aware explicit deletion/listing.
+- [x] Package `preparation_context.json`, reduced catalog, and every ancillary byte for CHIRPS, CHIRPS-global, non-CHIRPS orography, and E-OBS PET branches; no consumption fallback to live catalogs.
+- [x] Implement simulation freeze/identity, response request, response inventory, native reopening and full expected-series validation. Preserve batch resource/log visibility and current HydroMT/Wflow operations.
+- [x] Implement metric request/plan/final identity, immutable metric-set publication, long `unit_index.csv`, exact expected result keys, Class-C provenance, and validation declarations.
+- [x] Implement §6.8 metrics-only and the full operation/target matrix. `experiment_name` selects one recorded simulation; missing requirements never schedule Wflow.
+- [x] Implement deterministic project-plan versus explicit-manifest resolution with no directory scan, `latest`, fallback, or config-supplied digest.
+- [x] Prove forced-rerun output preservation, stale-plan refusal, digest invalidation, and no hidden mutation before P3.
 
 ### Commit plan
 
@@ -89,3 +89,12 @@ forcing/ancillary extraction and portable preparation closure, then implement
 source planning/resolution, reference-aware deletion and current-WF3 publication.
 Production collection integration still requires its named scientific handoff;
 simulation/response and metric-set persistence follow in order.
+
+### P2 acceptance — 2026-09-11
+
+All required changes and current-carrier acceptance gates are complete. The
+[acceptance record](evidence/p2/acceptance.md) supersedes the partial checkpoint
+status above and links the signed scientific handoffs, exact manifests, byte
+accounting, checkpoint traces and software results. Final full suite: 3,657
+passed, 9 skipped, 1 xfailed; final CLI: 20 passed; lint/format passed. P3 remains
+unstarted and must repeat the final-entry-point/runner gates.

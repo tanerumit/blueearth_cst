@@ -21,6 +21,8 @@ from blueearth_cst.experiment.scenario_collection import (
     ScenarioCollectionNotReady,
     claim_collection,
     collection_size,
+    delete_collection,
+    list_collections,
     publish_collection,
     read_collection,
     reuse_collection,
@@ -583,3 +585,96 @@ def test_distinct_intent_gets_distinct_directory(planned):
     other = claim_collection(claim.root.parent.parent, changed)
     assert other.root != claim.root
     assert other.root.name == changed["collection_id"]
+
+
+def test_referenced_collection_requires_explicit_force_for_deletion(planned):
+    claim, intent, manifest, *_ = planned
+    publish_collection(claim, manifest, **CHECKS)
+    project = claim.root.parent.parent
+    simulation = project / "experiments" / "retained" / "config" / "simulation.json"
+    simulation.parent.mkdir(parents=True)
+    simulation.write_bytes(
+        canonical_json_bytes({"collection": {"collection_id": intent["collection_id"]}})
+    )
+    records = list_collections(project)
+    assert records[0]["simulation_references"] == [
+        "experiments/retained/config/simulation.json"
+    ]
+    before = _snapshot(claim.root)
+    with pytest.raises(ImmutableCollectionError, match="force required"):
+        delete_collection(project, intent["collection_id"])
+    assert _snapshot(claim.root) == before
+    deleted = delete_collection(project, intent["collection_id"], force=True)
+    assert deleted["size_bytes"] == records[0]["size_bytes"]
+    assert not claim.root.exists()
+    assert simulation.exists()
+
+
+def test_unreadable_simulation_blocks_reference_aware_delete(planned):
+    claim, intent, *_ = planned
+    project = claim.root.parent.parent
+    simulation = project / "experiments" / "broken" / "config" / "simulation.json"
+    simulation.parent.mkdir(parents=True)
+    simulation.write_bytes(b"broken record")
+    with pytest.raises(ImmutableCollectionError, match="cannot establish references"):
+        delete_collection(project, intent["collection_id"], force=True)
+    assert claim.root.exists()
+
+
+def test_same_invocation_workers_and_later_partial_refusal(planned, tmp_path):
+    from blueearth_cst.experiment.collection_resolution import scenario_plan
+    from blueearth_cst.experiment.content_identity import read_canonical_json
+    from blueearth_cst.experiment.scenario_collection import (
+        _job_collection_claim,
+        initialize_collection_jobs,
+    )
+
+    original, intent, manifest, *_ = planned
+    project = tmp_path / "multi-job-project"
+    plan = scenario_plan(
+        project,
+        {"fixture": "same-invocation"},
+        intent,
+        read_canonical_json(original.root / "source_inventory.json"),
+    )
+    payloads = {
+        path.relative_to(original.root).as_posix(): path
+        for path in original.root.rglob("*")
+        if path.is_file()
+        and path.name != "collection_intent.json"
+        and "forcing" not in path.relative_to(original.root).parts
+    }
+    initialize_collection_jobs(project, plan, "1" * 32, payloads)
+    with pytest.raises(ImmutableCollectionError):
+        _job_collection_claim(project, plan, "2" * 32)
+    with pytest.raises(ImmutableCollectionError):
+        initialize_collection_jobs(project, plan, "2" * 32, payloads)
+    for entry in manifest["forcing"]:
+        worker = _job_collection_claim(project, plan, "1" * 32)
+        write_collection_payload(worker, entry["path"], original.root / entry["path"])
+    publisher = _job_collection_claim(project, plan, "1" * 32)
+    publish_collection(publisher, manifest, **CHECKS)
+    assert read_collection(publisher.root / "collection.json", **CHECKS) == manifest
+    with pytest.raises(ImmutableCollectionError, match="writer authorization"):
+        initialize_collection_jobs(project, plan, "1" * 32, payloads)
+
+
+def test_initializer_crash_before_receipt_cannot_resume(planned, tmp_path):
+    from blueearth_cst.experiment.collection_resolution import scenario_plan
+    from blueearth_cst.experiment.content_identity import read_canonical_json
+    from blueearth_cst.experiment.scenario_collection import initialize_collection_jobs
+
+    original, intent, *_ = planned
+    project = tmp_path / "crashed-initializer"
+    plan = scenario_plan(
+        project,
+        {"fixture": "crash"},
+        intent,
+        read_canonical_json(original.root / "source_inventory.json"),
+    )
+    with pytest.raises(FileNotFoundError):
+        initialize_collection_jobs(
+            project, plan, "1" * 32, {"missing.nc": tmp_path / "absent.nc"}
+        )
+    with pytest.raises(ImmutableCollectionError):
+        initialize_collection_jobs(project, plan, "1" * 32, {})

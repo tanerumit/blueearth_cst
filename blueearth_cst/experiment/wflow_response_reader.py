@@ -18,6 +18,7 @@ class NativeRunArtifacts:
 
     csv_path: Path
     toml_path: Path
+    temporal_path: Path | None = None
 
 
 @dataclass(frozen=True)

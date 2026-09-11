@@ -111,6 +111,7 @@ class PreparationSettings:
     native_log_path: Path
     first_time: str
     last_time: str
+    temporal_path: Path | None = None
 
 
 @dataclass(frozen=True)
@@ -122,6 +123,7 @@ class PreparedRun:
     native_output_path: Path
     forcing_path: Path
     preparation_context: PreparationContext
+    temporal_path: Path | None = None
 
 
 def requirements(
@@ -231,6 +233,7 @@ def prepare(
         settings.native_output_path,
         settings.forcing_path,
         validated_forcing.forcing.preparation_context,
+        settings.temporal_path,
     )
 
 
@@ -248,6 +251,89 @@ def validate_ancillary_grid(
             f"run_id={run_id}: ancillary_grid; required=aligned covering elevation, "
             f"observed={elevation_grid.raster.crs}, {elevation_grid.raster.bounds}; artifact={artifact}"
         )
+
+
+def plan_native_response_request(
+    model_toml,
+    run_ids,
+    *,
+    julia_command,
+    header_path,
+    first_time,
+    last_time,
+    calendar="standard",
+    timestep_seconds=86400,
+):
+    """Ask the installed Wflow reader for output order before any simulation.
+
+    This uses Wflow's own map traversal/header code rather than reproducing its
+    grid ordering in Python. The resulting request is independent of metrics and
+    later CSV contents. The header is a declared planning artifact owned by the
+    caller; no model file is changed and no simulation is executed.
+    """
+    import subprocess
+    import tomllib
+
+    import pandas as pd
+
+    from blueearth_cst.experiment.response_inventory import make_response_request
+    from blueearth_cst.experiment.wflow_response_reader import NATIVE_VARIABLES
+
+    program = """using Wflow
+config = Wflow.Config(ARGS[1])
+Wflow.NCDataset(Wflow.input_path(config, config.input.path_static)) do dataset
+    headers = Wflow.csv_header(config.output.csv.column, dataset, config)
+    open(ARGS[2], "w") do stream
+        for header in headers
+            println(stream, header)
+        end
+    end
+end
+"""
+    model_toml, header_path = Path(model_toml).resolve(), Path(header_path).resolve()
+    header_path.parent.mkdir(parents=True, exist_ok=True)
+    subprocess.run(
+        [*julia_command, "-e", program, str(model_toml), str(header_path)], check=True
+    )
+    headers = header_path.read_text(encoding="utf-8").splitlines()
+    if not headers or len(set(headers)) != len(headers):
+        raise ValueError("native output plan has empty or duplicate headers")
+    with model_toml.open("rb") as handle:
+        columns = tomllib.load(handle)["output"]["csv"]["column"]
+    declared = []
+    covered = set()
+    for variable, (header, parameter, units) in NATIVE_VARIABLES.items():
+        entries = [item for item in columns if item.get("header") == header]
+        if not entries:
+            continue
+        if any(item.get("parameter") != parameter for item in entries):
+            raise ValueError(f"native output {header} has an unsupported parameter")
+        selected = [name for name in headers if name.startswith(header + "_")]
+        if not selected:
+            raise ValueError(f"native output {header} has no mapped locations")
+        covered.update(selected)
+        declared.append(
+            {
+                "variable": variable,
+                "locations": [name[len(header) + 1 :] for name in selected],
+                "units": units,
+                "calendar": calendar,
+                "timestep": "P1D"
+                if timestep_seconds == 86400
+                else f"PT{timestep_seconds:g}S",
+                "time_label": "interval_end",
+                "start": str(
+                    pd.Timestamp(first_time) + pd.Timedelta(seconds=timestep_seconds)
+                ),
+                "end": str(pd.Timestamp(last_time)),
+                "missing_value": "NaN",
+            }
+        )
+    if covered != set(headers):
+        raise ValueError(
+            f"unsupported native output headers: {sorted(set(headers) - covered)}"
+        )
+    return make_response_request(run_ids, declared)
 
 
 def batch_arguments(batch_id: str, runs: Sequence[PreparedRun]) -> list[str]:
@@ -289,4 +375,8 @@ def execute(
         raise FileNotFoundError(
             f"run_id={prepared_run.run_id}: {prepared_run.native_output_path}"
         )
-    return NativeRunArtifacts(prepared_run.native_output_path, prepared_run.toml_path)
+    return NativeRunArtifacts(
+        prepared_run.native_output_path,
+        prepared_run.toml_path,
+        prepared_run.temporal_path,
+    )

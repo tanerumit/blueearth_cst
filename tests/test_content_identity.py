@@ -270,3 +270,28 @@ def test_revision_covers_ordered_bytes_and_descriptors():
     assert collection_revision(manifest) == revision
     manifest["forcing"][0]["descriptor"]["units"] = "m"
     assert collection_revision(manifest) != revision
+
+
+def test_code_inventory_follows_package_initializers_and_relative_imports(tmp_path):
+    from blueearth_cst.experiment.content_identity import repository_code_inventory
+
+    package = tmp_path / "blueearth_cst"
+    child = package / "stage"
+    child.mkdir(parents=True)
+    (package / "__init__.py").write_text("from . import helper\n")
+    (package / "helper.py").write_text("VALUE = 1\n")
+    (child / "__init__.py").write_text("from .. import helper\n")
+    (child / "entry.py").write_text("from . import inner\n")
+    (child / "inner.py").write_text("VALUE = 2\n")
+    inventory = repository_code_inventory(tmp_path, ["blueearth_cst/stage/entry.py"])
+    assert {entry["path"] for entry in inventory} == {
+        "blueearth_cst/__init__.py",
+        "blueearth_cst/helper.py",
+        "blueearth_cst/stage/__init__.py",
+        "blueearth_cst/stage/entry.py",
+        "blueearth_cst/stage/inner.py",
+    }
+    (package / "__init__.py").write_text("from . import helper\nVALUE = 3\n")
+    assert inventory != repository_code_inventory(
+        tmp_path, ["blueearth_cst/stage/entry.py"]
+    )

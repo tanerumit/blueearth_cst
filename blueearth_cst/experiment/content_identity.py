@@ -6,9 +6,12 @@ schema, inventory, ordering, and physical descriptors require collection
 validation before publication or consumption.
 """
 
+import ast
 import hashlib
 import json
+import os
 import re
+import tempfile
 from collections.abc import Mapping, Sequence
 from pathlib import Path, PureWindowsPath
 from typing import Any
@@ -53,6 +56,223 @@ def canonical_json_bytes(value: Any) -> bytes:
 def content_sha256(value: Any) -> str:
     """Hash collection-canon/1 bytes, without provenance type tags."""
     return hashlib.sha256(canonical_json_bytes(value)).hexdigest()
+
+
+def atomic_record(path: Path, document: Any, *, replace: bool = False) -> None:
+    """Atomically publish canonical bytes at a caller-validated path.
+
+    Exclusive publication refuses an existing path. Replacement is reserved for
+    explicitly mutable plans or completion facts; callers own their state checks.
+    """
+    path = Path(path)
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=path.parent, delete=False) as handle:
+            temporary = Path(handle.name)
+            handle.write(canonical_json_bytes(document))
+            handle.flush()
+            os.fsync(handle.fileno())
+        if replace:
+            os.replace(temporary, path)
+        else:
+            os.link(temporary, path)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
+def repository_code_inventory(
+    repo_root: Path, entry_paths: Sequence[str]
+) -> list[dict[str, str]]:
+    """Inventory declared executables and their static repository Python imports.
+
+    R/Julia include files are supplied explicitly as entry paths. No top-N bound
+    or sampling applies. Imported external packages belong in the stage's
+    environment descriptor, rather than this repository source inventory.
+    """
+    root = Path(repo_root).resolve()
+    pending = [confined_path(root, name) for name in entry_paths]
+    observed = set()
+    while pending:
+        path = pending.pop()
+        if path in observed:
+            continue
+        if not path.is_file():
+            raise FileNotFoundError(f"invoked repository code is missing: {path}")
+        observed.add(path)
+        if path.suffix != ".py":
+            continue
+        module_parts = list(path.relative_to(root).with_suffix("").parts)
+        package_parts = module_parts[:-1]
+        for depth in range(1, len(package_parts) + 1):
+            initializer = root.joinpath(*package_parts[:depth], "__init__.py")
+            if initializer.is_file():
+                pending.append(initializer)
+        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8-sig"))):
+            names = []
+            if isinstance(node, ast.Import):
+                names = [item.name for item in node.names]
+            elif isinstance(node, ast.ImportFrom):
+                prefix = (
+                    package_parts[: len(package_parts) - node.level + 1]
+                    if node.level
+                    else []
+                )
+                base = ".".join([*prefix, *([node.module] if node.module else [])])
+                names = [base, *(f"{base}.{item.name}" for item in node.names)]
+            for name in names:
+                if not name.startswith("blueearth_cst"):
+                    continue
+                relative = name.replace(".", "/")
+                for candidate in (f"{relative}.py", f"{relative}/__init__.py"):
+                    target = confined_path(root, candidate)
+                    if target.is_file():
+                        pending.append(target)
+    return [
+        {
+            "path": path.relative_to(root).as_posix(),
+            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        }
+        for path in sorted(observed)
+    ]
+
+
+def stage_environment(
+    python_roots: Sequence[str],
+    *,
+    include_weathergen: bool = False,
+    julia_manifest: Path | None = None,
+    julia_command: Sequence[str] = ("julia",),
+) -> dict[str, Any]:
+    """Record resolved stage dependencies and installed native package revisions.
+
+    Stage projections avoid making an unrelated package installation invalidate
+    every scientific stage. Active Python dependency markers/extras and installed
+    Conda native dependencies are followed without truncation. R's generator
+    dependencies are read from the library R actually resolves.
+    """
+    import importlib.metadata as metadata
+    import platform
+    import subprocess
+    import sys
+
+    from packaging.requirements import Requirement
+    from packaging.utils import canonicalize_name
+
+    packages = {"python": platform.python_version(), "platform": platform.platform()}
+    distributions = {}
+    pending = [(name, "") for name in python_roots]
+    visited = set()
+    while pending:
+        name, extra = pending.pop()
+        key = (canonicalize_name(name), extra)
+        if key in visited:
+            continue
+        visited.add(key)
+        try:
+            distribution = metadata.distribution(name)
+        except metadata.PackageNotFoundError:
+            if key[0] in {canonicalize_name(root) for root in python_roots}:
+                raise
+            # Conda's dependency recipe may differ from wheel METADATA. Retain
+            # that observed absence explicitly; never install or invent a version.
+            packages[f"python:{key[0]}"] = "not-installed"
+            distributions[key[0]] = {"status": "not-installed"}
+            continue
+        canonical = canonicalize_name(distribution.metadata["Name"])
+        packages[f"python:{canonical}"] = distribution.version
+        distributions[canonical] = {
+            "version": distribution.version,
+            "metadata_sha256": hashlib.sha256(
+                (distribution.read_text("METADATA") or "").encode()
+            ).hexdigest(),
+        }
+        for requirement_text in distribution.requires or []:
+            requirement = Requirement(requirement_text)
+            if requirement.marker is not None and not requirement.marker.evaluate(
+                {"extra": extra}
+            ):
+                continue
+            pending.append((requirement.name, ""))
+            pending.extend((requirement.name, item) for item in requirement.extras)
+    conda = {}
+    for path in (Path(sys.prefix) / "conda-meta").glob("*.json"):
+        record = json.loads(path.read_text(encoding="utf-8"))
+        conda[canonicalize_name(record["name"])] = record
+    native_pending = ["python", *distributions]
+    if include_weathergen:
+        program = """db <- installed.packages()
+roots <- c("weathergenr", "ncdf4", "yaml")
+deps <- unique(c(roots, unlist(tools::package_dependencies(roots, db=db, which=c("Depends","Imports","LinkingTo"), recursive=TRUE))))
+cat("R\\t", as.character(getRversion()), "\\n", sep="")
+for (name in sort(setdiff(deps, "R"))) {
+  d <- packageDescription(name)
+  revision <- if (is.null(d$RemoteSha)) "" else paste0("+", d$RemoteSha)
+  cat(name, "\\t", d$Version, revision, "\\n", sep="")
+}
+"""
+        result = subprocess.run(
+            ["Rscript", "--vanilla", "-e", program],
+            check=True,
+            capture_output=True,
+            text=True,
+        )
+        for line in result.stdout.splitlines():
+            name, revision = line.split("\t")
+            if not name or not revision:
+                raise ValueError(
+                    "R dependency resolution returned an incomplete revision"
+                )
+            packages[f"R:{name}"] = revision
+            native_pending.append("r-base" if name == "R" else f"r-{name.lower()}")
+    native = {}
+    while native_pending:
+        name = canonicalize_name(native_pending.pop())
+        if name in native or name not in conda:
+            continue
+        record = conda[name]
+        native[name] = {
+            key: record.get(key)
+            for key in ("name", "version", "build", "sha256", "md5", "depends")
+        }
+        packages[f"conda:{name}"] = f"{record['version']}+{record['build']}"
+        native_pending.extend(
+            dependency.split()[0] for dependency in record.get("depends", [])
+        )
+    locks = {
+        "installed-python-distribution-metadata": content_sha256(distributions),
+        "installed-conda-dependency-records": content_sha256(native),
+    }
+    if julia_manifest is not None:
+        import tomllib
+
+        manifest = tomllib.loads(Path(julia_manifest).read_text(encoding="utf-8"))
+        actual = subprocess.run(
+            [*julia_command, "--startup-file=no", "-e", "print(VERSION)"],
+            check=True,
+            capture_output=True,
+            text=True,
+        ).stdout.strip()
+        if actual.split(".")[:2] != manifest["julia_version"].split(".")[:2]:
+            raise ValueError(
+                "executing Julia major/minor differs from the locked manifest"
+            )
+        packages["julia"] = actual
+        packages["julia-manifest-version"] = manifest["julia_version"]
+        for name, entries in manifest["deps"].items():
+            packages[f"julia:{name}"] = ";".join(
+                str(entry.get("version", "stdlib"))
+                + ":"
+                + entry.get("git-tree-sha1", entry["uuid"])
+                for entry in entries
+            )
+        locks["Manifest.toml"] = hashlib.sha256(
+            Path(julia_manifest).read_bytes()
+        ).hexdigest()
+    return {
+        "packages": dict(sorted(packages.items())),
+        "locks": dict(sorted(locks.items())),
+    }
 
 
 def _unique_object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:

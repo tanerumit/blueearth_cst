@@ -1,0 +1,264 @@
+{
+  "reviewer": "model-validator (/root/model_validator_p2)",
+  "date": "2026-09-11",
+  "verdict": "ACCEPT — bounded scientific preservation and retained-artifact handoff",
+  "scope": "Current-carrier explicit ERA5 experiment; not whole P2 or GF15 acceptance",
+  "collection_comparison": {
+    "collection_id": "2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b",
+    "collection_revision": "fed6fdc9fdc437a5184b766db7d99e59050b5b8af5e962de5c58fdd972a2bf2b",
+    "ancestry_and_completeness": true,
+    "n_days": 16790,
+    "source_calendar": "noleap",
+    "start": "2010-01-01",
+    "end": "2055-12-31",
+    "source_grid": [
+      5,
+      4
+    ],
+    "nonfinite_count": 0,
+    "comparisons": [
+      {
+        "run_id": "01",
+        "reference": "rlz_1_st_0.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "02",
+        "reference": "rlz_1_st_1.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "03",
+        "reference": "rlz_1_st_2.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "04",
+        "reference": "rlz_1_st_3.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "05",
+        "reference": "rlz_1_st_4.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "06",
+        "reference": "rlz_1_st_5.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "07",
+        "reference": "rlz_1_st_6.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "08",
+        "reference": "rlz_2_st_0.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "09",
+        "reference": "rlz_2_st_1.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "10",
+        "reference": "rlz_2_st_2.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "11",
+        "reference": "rlz_2_st_3.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "12",
+        "reference": "rlz_2_st_4.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "13",
+        "reference": "rlz_2_st_5.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      },
+      {
+        "run_id": "14",
+        "reference": "rlz_2_st_6.nc",
+        "arrays_identical": true,
+        "bytes_identical": true
+      }
+    ]
+  },
+  "response_metric_comparison": {
+    "experiment": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p2-carrier\\project\\experiments\\p2_explicit",
+    "simulation_id": "04ab1bc6153034c0bfdad77b137466587bdec9833089c7164b047f0e70a005eb",
+    "collection": {
+      "collection_id": "2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b",
+      "collection_revision": "fed6fdc9fdc437a5184b766db7d99e59050b5b8af5e962de5c58fdd972a2bf2b",
+      "manifest_path": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p2-carrier/project/scenario_collections/2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b/collection.json",
+      "resolution_mode": "explicit-manifest"
+    },
+    "metric_set_id": "2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade",
+    "response_inventory_sha256": "944ebfd2125b0bf780a168e377ea477fcef28192454889c580c191309bec9259",
+    "metrics_manifest_sha256": "3674c3743427f6aeded14adfd332e160b4427843803f41d37a8f8fc3f63ce0fa",
+    "native": {
+      "runs": 14,
+      "series": 126,
+      "observations_per_series": 3286,
+      "start": "2046-01-02",
+      "end": "2054-12-31",
+      "exact_values_time_and_bytes": true,
+      "hashes": [
+        {
+          "run_id": "01",
+          "native_sha256": "c72955959eaa7490a32593f4624507a899c3eab08ad007364fe21d94838b47c7"
+        },
+        {
+          "run_id": "02",
+          "native_sha256": "e4b6d427871dfa4bf94562b71c07295b0b79e54799a4495c6cd9b711e23ce6fc"
+        },
+        {
+          "run_id": "03",
+          "native_sha256": "e56d487b5361870369a89de53729eb9c7b8bd3312f7b98a4aa4898e4a5f2253c"
+        },
+        {
+          "run_id": "04",
+          "native_sha256": "a39ad63286963a07aca4492c1db0493ecf2c824261de84838dc63eefe8e296d0"
+        },
+        {
+          "run_id": "05",
+          "native_sha256": "65ab5a460cb0c95bd8da3a87fc543b134447b9b6505fe733bb0212e69dd10c1f"
+        },
+        {
+          "run_id": "06",
+          "native_sha256": "793043daf9427101f891e5157bb01a05e0390e5bec85a7393ac7faa7a7eee088"
+        },
+        {
+          "run_id": "07",
+          "native_sha256": "6b11dea065f261a66275bf2b47ccbe24f3973e46732826e6ffbaa8c1f5247b60"
+        },
+        {
+          "run_id": "08",
+          "native_sha256": "41c66cd16599e9c7c05adb0fface89f0caf5a582db2c65933a42404653228ce7"
+        },
+        {
+          "run_id": "09",
+          "native_sha256": "1a3c70e88f98f10e93226473156dd6bb9fce784060375867f0f37bdf627dc3eb"
+        },
+        {
+          "run_id": "10",
+          "native_sha256": "f2f3948c6147aabdb070ef8a095b8a4c8d4d86913b72ea4440846ed9d56830a8"
+        },
+        {
+          "run_id": "11",
+          "native_sha256": "72a4f3b8771d3849db4167e108d61426ef55c436f54df7c3bbba1d0455ae708b"
+        },
+        {
+          "run_id": "12",
+          "native_sha256": "0c329ebbd2ea84a7b2e288278196baeb68c90c6b7aa5aec899d1539471d45d49"
+        },
+        {
+          "run_id": "13",
+          "native_sha256": "dcebd59f6fa9c494161b4149a761e236a72055a6f363baeaf039d161180cdbbb"
+        },
+        {
+          "run_id": "14",
+          "native_sha256": "ecfebe000c650c93b7368f25b21d0537307c63b501cfcb77bbf7f1eb99c863a6"
+        }
+      ]
+    },
+    "metrics": {
+      "row_count": 756,
+      "q_rows": 700,
+      "gwr_rows": 56,
+      "unit_index_rows": 28,
+      "run_units": 14,
+      "bundle_units": 7,
+      "A_B_exact_P0": 616,
+      "C_independent_run_exact": 140,
+      "C_pooled_projection_exact_P0": 70,
+      "class_c_reference": {
+        "dry": {
+          "counts": [
+            [
+              "01",
+              "2046-01-02 00:00:00",
+              "2054-12-31 00:00:00",
+              9,
+              108
+            ],
+            [
+              "08",
+              "2046-01-02 00:00:00",
+              "2054-12-31 00:00:00",
+              9,
+              108
+            ]
+          ],
+          "month": 8,
+          "reference_location_id": "101",
+          "run_ids": [
+            "01",
+            "08"
+          ],
+          "selection_statistic": "monthly sum followed by argmax/argmin",
+          "tie_rule": "first label in ascending calendar-month order",
+          "which": "dry"
+        },
+        "wet": {
+          "counts": [
+            [
+              "01",
+              "2046-01-02 00:00:00",
+              "2054-12-31 00:00:00",
+              9,
+              108
+            ],
+            [
+              "08",
+              "2046-01-02 00:00:00",
+              "2054-12-31 00:00:00",
+              9,
+              108
+            ]
+          ],
+          "month": 11,
+          "reference_location_id": "101",
+          "run_ids": [
+            "01",
+            "08"
+          ],
+          "selection_statistic": "monthly sum followed by argmax/argmin",
+          "tie_rule": "first label in ascending calendar-month order",
+          "which": "wet"
+        }
+      },
+      "water_year_anchor": "YS-JAN",
+      "GEV_fits": 70,
+      "blocks_per_member": [
+        9,
+        9
+      ],
+      "total_blocks": 18,
+      "required_blocks": 10,
+      "return_level_validation": {
+        "benchmark": "not assessed",
+        "status": "provisional_operational"
+      }
+    }
+  }
+}

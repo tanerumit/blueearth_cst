@@ -78,6 +78,19 @@ def test_writing_produces_readable_yaml(tmp_path):
     assert yaml.safe_load(out.read_text(encoding="utf-8")) == written
 
 
+def test_reference_reuse_and_drift_preserve_retained_bytes(tmp_path):
+    root = _model(tmp_path)
+    out = tmp_path / "experiments/e/config/model_reference.yml"
+    written = write_model_reference(root, tmp_path, out)
+    before = out.read_bytes(), out.stat().st_mtime_ns
+    assert write_model_reference(root, tmp_path, out) == written
+    assert (out.read_bytes(), out.stat().st_mtime_ns) == before
+    (root / "staticmaps.nc").write_bytes(b"CHANGED")
+    with pytest.raises(ValueError, match="new experiment name"):
+        write_model_reference(root, tmp_path, out)
+    assert (out.read_bytes(), out.stat().st_mtime_ns) == before
+
+
 # ---------------------------------------------------------------------------
 # Drift detection
 # ---------------------------------------------------------------------------
@@ -177,8 +190,9 @@ def test_a_digest_version_change_is_reported_as_incomparable(tmp_path):
 def _rule_block(name: str) -> str:
     text = SNAKEFILE.read_text(encoding="utf-8")
     start = text.index(f"rule {name}:")
-    nxt = text.find("\nrule ", start + 1)
-    return text[start : nxt if nxt != -1 else len(text)]
+    following = re.search(r"\n[ \t]*(?:rule|checkpoint) ", text[start + 1 :])
+    end = start + 1 + following.start() if following else len(text)
+    return text[start:end]
 
 
 def test_the_guard_gates_the_first_rule_that_touches_the_model():

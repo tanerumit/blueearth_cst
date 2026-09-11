@@ -112,7 +112,7 @@ def test_the_member_catalog_is_temporary(downscale):
 
 @pytest.mark.slow
 @pytest.mark.workflow_contract
-def test_the_downscale_rule_reads_only_its_own_member(downscale):
+def test_the_downscale_rule_reads_only_its_own_member(downscale, monkeypatch, tmp_path):
     """The barrier regression test.
 
     Every input is either that member's own file (carrying the wildcards), a
@@ -120,14 +120,25 @@ def test_the_downscale_rule_reads_only_its_own_member(downscale):
     naming a DIFFERENT member -- which is what an `expand` over the grid
     produces -- is the fan-in coming back.
     """
-    member_token = "{rlz_num}"
-    inputs = [str(path) for path in downscale.input]
-    # Non-vacuity: an empty or wildcard-free input list would pass the loop
-    # below while saying nothing, which is the failure mode this whole module
-    # exists to prevent.
-    assert any(member_token in text for text in inputs), inputs
+    from types import SimpleNamespace
+
+    selector = downscale.input.nc
+    assert callable(selector)
+    marker = tmp_path / "collection.json"
+    monkeypatch.setitem(selector.__globals__, "_selected_collection", lambda wc: marker)
+    rows = selector.__globals__["SCENARIO_ROWS"]
+    assert len(rows) > 1
+    selected = []
+    for row in rows:
+        payload = dict(row.payload)
+        wc = SimpleNamespace(rlz_num=payload["rlz"], st_num=payload["st_id"] or "0")
+        path = Path(selector(wc))
+        assert path == tmp_path / "forcing" / f"run_{row.run_id}.nc"
+        selected.append(path)
+    assert len(set(selected)) == len(rows)
     for path in downscale.input:
+        if callable(path):
+            continue
         text = str(path)
-        if member_token in text:
-            continue  # this member's own, whichever member that is
         assert "rlz_" not in Path(text).name, f"input names another member: {text}"
+        assert not text.endswith(".nc"), f"unexpected forcing fan-in: {text}"

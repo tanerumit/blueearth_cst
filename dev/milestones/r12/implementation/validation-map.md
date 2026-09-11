@@ -1,5 +1,12 @@
 # R12 GF-1..GF-32 validation map
 
+Current phase update, 2026-09-11: [P2 acceptance](evidence/p2/acceptance.md)
+records executable current-carrier GF-29/GF-30, bounded GF-31, GF-32 and the
+operation/target matrix. The final software gate passed 3,657 tests. P3 must
+repeat the checkpoint gates through its final entry points and runners; GF-15
+benchmark adequacy and milestone-seal comparisons remain separate. The
+preparation-baseline status and phase allocation below are historical context.
+
 Status at preparation baseline `dffa4625…`: every successor-specific GF is **NOT IMPLEMENTED**. Existing commands below protect predecessor behavior but do not count as a GF pass. Proposed test paths are labels for implementation ownership, not current files.
 
 Execution update, 2026-09-10: the GF-1 P0 prerequisite (synthetic P2b) passes;

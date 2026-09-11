@@ -13,6 +13,37 @@ rule — translate through [What changed](#what-changed) before reading one in
 
 ## On the numbers
 
+### R12 P2 current-WF3 overlay
+
+The WF3 diagram and numbered-rule descriptions below retain the predecessor
+organization during the serial R12 migration. Current `all` selects immutable
+metric sets; `derive_wflow_indicators` and its old metadata rule are no longer
+on that default path. These additional carrier rules/checkpoints provide the
+current handoffs:
+
+| Rule/checkpoint | Purpose |
+|---|---|
+| `prepare_collection_sources` | Resolve the exact source inventory and mutable project plan after required producer inputs exist. |
+| `initialize_scenario_collection` | Claim a fresh collection and issue this invocation's worker receipt. |
+| `retain_scenario_forcing` | Retain one authorized opaque run's generated forcing. |
+| `publish_scenario_collection` | Validate all portable payloads and publish the collection marker last. |
+| `scenarios` | Current-carrier generation aggregate; explicit source-plan repair targets its checkpoint. |
+| `freeze_wflow_simulation` | Freeze model/collection/settings/environment and the independent native response request. |
+| `publish_native_responses` | Validate all requested native CSV/TOML/temporal evidence and complete the simulation. |
+| `responses` | Native-response aggregate. |
+| `prepare_metric_plan` | Resolve response-dependent metric identities, groups, references and exact targets. |
+| `publish_metric_set` | Publish complete tables, membership, environment and the sole readiness marker. |
+| `metrics` | Selected metric-set aggregate. |
+
+Metrics-only defines only the metric checkpoint/publication/aggregates.
+Completed normal simulations likewise have no preparation or Wflow producers.
+Explicit-manifest selection bypasses source producers. See
+[current handoffs](../../../docs/wf3-retained-handoffs.md) and
+[P2 acceptance](../../milestones/r12/implementation/evidence/p2/acceptance.md).
+P3 owns the final entry-point and numbering/reference migration.
+
+### Numbered predecessor rules
+
 `W.NN` is the rule's position in its workflow's **logical order**: data first,
 then model build, then run, then records. Numbering is contiguous within each
 workflow and every dependency points from a lower number to a higher one, so a
@@ -163,7 +194,7 @@ Paths are relative to `project_dir`, with these shorthands:
 | `<store>/` | `data/climate/historical/<clim_source>_<window>/` |
 | `<proj>/` | `data/climate/projections/<ensemble>/` |
 | `<exp>/` | `experiments/<experiment_name>/` |
-| `<wg>/` | `<exp>/climate/weathergenr/` |
+| `<wg>/` | `<project>/scenario_plans/<generation_request_id>/generation/` (P2 staging; predecessor captures use `<exp>/climate/weathergenr/`) |
 | `<runs>/` | `<exp>/hydrology/wflow/` |
 
 ---

@@ -13,7 +13,7 @@ updated: 2026-09-11
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 and P1 are accepted. All three P1 scientific handoffs and the combined software gate passed; durable handoffs follow in P2.
+> **Why** — P0, P1 and P2 are accepted. Durable handoffs, retained-only metrics, scientific comparisons and software gates passed; P3 workflow/config/runner extraction remains.
 > **Effort** — large
 
 ## Progress
@@ -28,6 +28,8 @@ updated: 2026-09-11
 - [x] Complete P1 logical contracts and the three model-validator handoffs.
 - [x] Start P2 with verified pure collection identity primitives.
 - [x] Verify adapter-backed collection claim, publication, reading and reuse.
+- [x] Complete P2 production handoffs, exact resolution, metrics-only and scientific/software acceptance.
+- [ ] Complete P3 workflow/config/runner extraction and repeat final-entry-point gates.
 - [ ] Execute implementation only within subsequently authorized scope.
 
 ## Refs
@@ -147,6 +149,21 @@ commit `56e950c1`; the capture below records the original finding.
 - Next: bind real forcing/ancillary descriptor extraction and package the
   preparation closure for all supported sources, obtain the named scientific
   handoff, and implement source planning/resolution and current-WF3 integration.
+
+## P2 acceptance — 2026-09-11
+
+- Completed current-WF3 collection, frozen simulation/native response, metric-set
+  and metrics-only integration. Exact project/explicit resolution, reference-aware
+  retention, forced preservation and stale-plan repair have executable evidence.
+- Current-carrier GF-29/GF-30, bounded GF-31 and GF-32 passed. Two complete
+  experiments share one collection and simulation identity. Offline metrics-only
+  produced a new set without live model/data/configs or Julia.
+- Named scientific handoff accepted 14 exact forcing files, 126 exact native
+  response series and all 756 metric keys, including independent Class-C checks.
+- Final full suite: 3,657 passed, 9 skipped, 1 xfailed; final CLI: 20 passed;
+  lint and formatting passed. No standing-baseline or GF-15 benchmark claim.
+- Acceptance/evidence: `dev/milestones/r12/implementation/evidence/p2/acceptance.md`.
+- Next phase is P3; its entry-point/config/runner migration remains unstarted.
 
 ## Improvement candidate captured during P2
 

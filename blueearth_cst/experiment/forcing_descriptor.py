@@ -2,10 +2,153 @@
 
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import xarray as xr
 from pyproj import CRS
+
+from blueearth_cst.experiment.content_identity import content_sha256
+
+
+def _metadata_value(value: Any) -> Any:
+    """Encode native numeric metadata without nonstandard JSON NaN literals."""
+    if isinstance(value, np.ndarray):
+        return _metadata_value(value.tolist())
+    if isinstance(value, np.generic):
+        return _metadata_value(value.item())
+    if isinstance(value, float) and not np.isfinite(value):
+        return {
+            "nonfinite": "nan" if np.isnan(value) else ("inf" if value > 0 else "-inf")
+        }
+    if isinstance(value, (list, tuple)):
+        return [_metadata_value(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _metadata_value(item) for key, item in value.items()}
+    if value is None or type(value) in (str, int, float, bool):
+        return value
+    raise ValueError(f"unsupported physical metadata type: {type(value).__name__}")
+
+
+def _spatial_description(ds: xr.Dataset, *, require_crs: bool = True) -> dict[str, Any]:
+    """Describe the actual grid, including auxiliary coordinates and CRS metadata."""
+    if "spatial_ref" not in ds and require_crs:
+        raise ValueError("missing spatial_ref")
+    attrs = ds.spatial_ref.attrs if "spatial_ref" in ds else {}
+    wkt = attrs.get("crs_wkt") or attrs.get("spatial_ref")
+    if not wkt and require_crs:
+        raise ValueError("spatial_ref has no CRS WKT")
+    coordinates = {}
+    for name, coordinate in sorted(ds.coords.items()):
+        if name in {"time", "spatial_ref"} or "time" in coordinate.dims:
+            continue
+        coordinates[name] = {
+            "dimensions": list(coordinate.dims),
+            "dtype": coordinate.dtype.name,
+            "values": _metadata_value(coordinate.values),
+            "attributes": _metadata_value(coordinate.attrs),
+        }
+    if not coordinates:
+        raise ValueError("physical artifact has no spatial coordinates")
+    return {
+        "crs": CRS.from_wkt(wkt).to_string() if wkt else None,
+        "spatial_ref": _metadata_value(attrs),
+        "dimensions": {
+            name: size for name, size in sorted(ds.sizes.items()) if name != "time"
+        },
+        "coordinates": coordinates,
+    }
+
+
+def _missing_encoding(variable: xr.DataArray) -> dict[str, Any] | None:
+    """Retain the on-disk fill declarations separately from decoded missingness."""
+    result = {
+        key: _metadata_value(variable.encoding.get(key, variable.attrs.get(key)))
+        for key in ("_FillValue", "missing_value")
+        if key in variable.encoding or key in variable.attrs
+    }
+    return result or None
+
+
+def reader_unit_interpretation(reader: dict[str, Any]) -> "UnitInterpretation":
+    """Read the explicit persisted binding; never infer units from native labels."""
+    try:
+        binding = reader["metadata"]["cst_unit_interpretation"]
+        if set(binding) != {"revision", "evidence", "variables"}:
+            raise ValueError("unexpected unit interpretation fields")
+        result = UnitInterpretation(
+            binding["revision"],
+            binding["evidence"],
+            tuple((name, units) for name, units in binding["variables"]),
+        )
+        if not all(
+            isinstance(value, str) for value in (result.revision, result.evidence)
+        ):
+            raise ValueError("unit interpretation evidence must be text")
+        if not all(
+            isinstance(value, str) for pair in result.variables for value in pair
+        ):
+            raise ValueError("unit interpretation variables must be text")
+        result.validate({name for name, _ in result.variables})
+        return result
+    except (KeyError, TypeError, ValueError) as exc:
+        raise ValueError(f"invalid persisted unit interpretation: {exc}") from exc
+
+
+def collection_forcing_descriptor(path: Path, reader: dict[str, Any]) -> dict[str, Any]:
+    """Extract collection/1 metadata from a real forcing and evidenced unit binding."""
+    descriptor = describe_forcing(
+        ClimateArtifact(path.stem, path),
+        reader_unit_interpretation(reader),
+        time_label="interval_end",
+    )
+    seconds = descriptor.timestep_seconds
+    timestep = "P1D" if seconds == 86400 else f"PT{seconds:g}S"
+    with xr.open_dataset(path) as ds:
+        return {
+            "source_calendar": descriptor.calendar,
+            "timestep": timestep,
+            "time_label": descriptor.time_label,
+            "start": descriptor.first_time,
+            "end": descriptor.last_time,
+            "spatial_representation_sha256": content_sha256(_spatial_description(ds)),
+            "variables": [
+                {
+                    "name": item.name,
+                    "units": item.units,
+                    "missing_value": _missing_encoding(ds[item.name]),
+                }
+                for item in descriptor.variables
+            ],
+        }
+
+
+def describe_ancillary(path: Path) -> dict[str, Any]:
+    """Observe a packaged NetCDF ancillary without a live catalog or expected descriptor."""
+    with xr.open_dataset(path) as ds:
+        # Native elevation files may carry CRS only in the retained catalog.
+        # Report that absence rather than inventing a CRS from coordinate names.
+        spatial = _spatial_description(ds, require_crs=False)
+        variables = []
+        for name in sorted(set(ds.data_vars) - {"spatial_ref"}):
+            variable = ds[name]
+            variables.append(
+                {
+                    "name": name,
+                    "units": variable.attrs.get("units"),
+                    "dimensions": list(variable.dims),
+                    "attributes": _metadata_value(variable.attrs),
+                    "missing_value": _missing_encoding(variable),
+                    "missing_count": int((~np.isfinite(variable)).sum().item()),
+                }
+            )
+        if not variables:
+            raise ValueError("ancillary has no physical variables")
+        return {
+            "crs": spatial["crs"],
+            "spatial_representation_sha256": content_sha256(spatial),
+            "variables": variables,
+        }
 
 
 @dataclass(frozen=True)

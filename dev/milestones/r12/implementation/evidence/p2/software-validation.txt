@@ -1,0 +1,43 @@
+P2 software validation, 2026-09-11. Full logs remain in the task scratch directory.
+
+Command: pixi run --as-is test-full
+Log: p2-acceptance-full.log
+SHA256: 2d1936d8b016a02b8e8a5b1802ac7cc4ca61767a0416b2dd53581c73341aa2dd
+Bytes: 27804
+==== 3657 passed, 9 skipped, 1 xfailed, 8845 warnings in 797.82s (0:13:17) ====
+
+Command: pixi run --as-is pytest tests/test_cli.py -q
+Log: p2-acceptance-cli.log
+SHA256: c3043740717a273c42630ee43e49ad977bfef5e5206fc23dd5cfa5eb495f5a21
+Bytes: 102
+20 passed in 36.22s
+
+Command: pixi run --as-is lint
+Log: p2-acceptance-lint.log
+SHA256: eaaf28741858b7d5c6d71bd50089f7eb62cc4ebb15dd5848b51d18bdf89a1b9d
+Bytes: 119
+All checks passed!
+
+Command: pixi run --as-is format-check
+Log: p2-acceptance-format.log
+SHA256: c5c9a5748fcdf6c13af7cb9c7df26de6dc324b4c52f33239ea92bf052e448741
+Bytes: 155
+325 files already formatted
+
+Command: pytest: seven modules covering initial full-suite failures
+Log: p2-full-failures-fixed.log
+SHA256: 266679818a31418ed7bd27c73f7ec349bb875100d8025e73c4a361e56ad16d4c
+Bytes: 184
+119 passed in 18.82s
+
+Command: pytest: current-carrier target matrix and retained-only executable dry-run
+Log: p2-current-carrier-agent.log
+SHA256: 5c14b0aa433e2ae3d041ed31ee3aab0a4b3e2bba2687e05de5c0444c3634b62a
+Bytes: 112
+17 passed in 81.63s (0:01:21)
+
+Command: pytest: actual helper-to-native-planner clock contract
+Log: simulation-clock-agent.log
+SHA256: 50efd373c6478e64a493e4f402add7dc9899dfd48b9f8358ce4877693669333d
+Bytes: 101
+10 passed in 3.12s

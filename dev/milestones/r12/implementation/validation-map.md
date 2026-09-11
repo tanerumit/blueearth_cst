@@ -18,6 +18,14 @@ the full suite passed 3,473 (9 skipped, 1 xfailed), final focused checks passed 
 and lint/format passed. See [P2b evidence](evidence/p0/p2b-feasibility.md)
 and [P1 phase evidence](phase-1-contract-extraction.md).
 
+P2 infrastructure update, 2026-09-11: identity and adapter-backed collection
+lifecycle tests pass (112 combined). Partial refusal, changed-intent separation,
+read-only ready reuse, live-input drift, descriptor mismatch and path-alias
+falsifiers now have synthetic evidence. GF-17/GF-23 are **partially implemented**;
+production source planning, reference-aware deletion, physical binding and
+scientific acceptance remain pending. See
+[collection lifecycle evidence](evidence/p2/collection-lifecycle.md).
+
 Existing reusable checks:
 
 - Current seams/metrics: `pixi run pytest tests/test_indicator_tables.py tests/test_interchange_contracts.py tests/test_export_wflow_results.py`
@@ -44,13 +52,13 @@ Existing reusable checks:
 | 14 | Python engineer + model validator / P1 | Unevaluated reference is accepted or old toggle returns | **P1 PASSED** — explicit unevaluated-reference refusal in `tests/test_metric_registry.py` and retired-toggle row test |
 | 15 | Python engineer + Astra model validator / P1 + seal gate | Screening/fit/benchmark/policy collapse, refusals fail, or benchmark hides cells/limitations | **Operational P1 checks PASSED; benchmark NOT RUN** — count/constant/invalid-parameter/exception fixtures and estimator parity; criteria review/owner gate still precedes benchmark |
 | 16 | Python engineer / P2 | Provider-body change does not move collection id or metric code moves it | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_collection.py -k stage_identity_separation` |
-| 17 | Python engineer / P2 | Partial same-intent mutates/reuses, changed intent shares dir, metric growth within fixed capacity changes the collection, or overflow is silent | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_collection.py -k 'partial or capacity'` |
+| 17 | Python engineer / P2 | Partial same-intent mutates/reuses, changed intent shares dir, metric growth within fixed capacity changes the collection, or overflow is silent | **PARTIAL — infrastructure**: `tests/test_scenario_collection.py` proves partial refusal and distinct-intent directories; P1 rows guard capacity. Production source-plan/metric-growth separation remains pending |
 | 18 | Python engineer + model validator / P1 | Invalid ancestry passes or transform consumes a different ancestor | **P1 PASSED** — row pairing/completeness tests, distinct ancestor-byte provider test, reviewed real 14-file generation comparison |
 | 19 | Python engineer + model validator / P3 | Generation needs/model rule appears in fresh DAG | **NOT IMPLEMENTED** — successor CLI test plus real rapid generation without WF1 leaves |
 | 20 | Python engineer / P3 | Simulation DAG can produce collection or missing/not-ready collection proceeds | **NOT IMPLEMENTED** — successor CLI test in `tests/test_cli.py` |
 | 21 | Python engineer + model validator / P1 | Dummy/Wflow readers need different metric code or Wflow name reaches metric | **P1 PASSED** — NPZ dummy and Wflow reader both feed `reduce_run`; neutral metadata tests and named response/metric review |
 | 22 | Python engineer / P2 | Metrics-only schedules Wflow, switches identity, or incomplete state reaches execution | **P0 mandatory-runner precursor PASSED; production NOT IMPLEMENTED** — `tests/test_r12_wf3_feasibility.py`; owner-approved runner enforces the synthetic matrix |
-| 23 | Python engineer / P2 | Mutation succeeds, shared reuse fails, or referenced delete lacks force | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_collection.py -k immutability_reuse_delete` |
+| 23 | Python engineer / P2 | Mutation succeeds, shared reuse fails, or referenced delete lacks force | **PARTIAL — infrastructure**: `tests/test_scenario_collection.py` proves byte/mtime-preserving reuse and named drift refusal. Production reuse and reference-aware deletion remain pending |
 | 24 | Python engineer + model validator / P2 | Unmounted sources/absent model prevent persisted coverage validation or missing row/series passes | **NOT IMPLEMENTED** — `pixi run pytest tests/test_response_inventory.py -k self_contained_coverage` |
 | 25 | Python engineer / P3 | Five stanzas/direct/runner disagree or old surfaces do not refuse with migration text | **NOT IMPLEMENTED** — extend `tests/test_config_composition.py`, `test_run_workflows.py`, `test_cli.py` |
 | 26 | Python engineer + CST architect / P3 | WF2 edge/digest enters successor identities or runner does not place WF2 last | **NOT IMPLEMENTED** — successor DAG/runner tests |

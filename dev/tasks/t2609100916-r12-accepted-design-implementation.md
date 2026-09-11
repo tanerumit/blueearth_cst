@@ -8,7 +8,7 @@ area: wf3
 origin: R12
 queue:
 created: 2026-09-10
-updated: 2026-09-10
+updated: 2026-09-11
 ---
 
 > [!note] Overview
@@ -27,6 +27,7 @@ updated: 2026-09-10
 - [x] Obtain named model-validator acceptance of P0 comparison evidence before P1.
 - [x] Complete P1 logical contracts and the three model-validator handoffs.
 - [x] Start P2 with verified pure collection identity primitives.
+- [x] Verify adapter-backed collection claim, publication, reading and reuse.
 - [ ] Execute implementation only within subsequently authorized scope.
 
 ## Refs
@@ -130,3 +131,33 @@ commit `56e950c1`; the capture below records the original finding.
   Next is immutable collection storage and complete validation, then portable
   preparation and the source checkpoint. See
   `dev/milestones/r12/implementation/evidence/p2/identity-foundation.md`.
+
+## P2 collection lifecycle — 2026-09-11
+
+- Added fresh in-process collection claims, exclusive payload writes, atomic
+  ready publication, complete generic stochastic inventory checks, mandatory
+  descriptor extraction callbacks, portable consumer reads and explicit live-input
+  producer reuse checks. Source planning and production readers remain unbound.
+- Combined identity/collection/row/provider tests: 112 passed. Lint,
+  format-check and compilation passed. Read-only Python-engineer review accepted
+  the infrastructure scope after reproduced path-alias and driver-validation
+  findings were fixed. No production or scientific acceptance is claimed.
+- Evidence and retained-byte example:
+  `dev/milestones/r12/implementation/evidence/p2/collection-lifecycle.md`.
+- Next: bind real forcing/ancillary descriptor extraction and package the
+  preparation closure for all supported sources, obtain the named scientific
+  handoff, and implement source planning/resolution and current-WF3 integration.
+
+## Improvement candidate captured during P2
+
+- Target: `python-discipline` skill, `references/hazards.md`, Data integrity.
+- Gap: reserved output names can be bypassed by Windows case/trailing-dot/space
+  aliases or an internal symlink even when lexical traversal is rejected.
+- Proposed rule: compare resolved reserved paths using platform path equality;
+  reject nonportable Windows aliases before writes and confine the ready marker
+  itself before reading it. Add discriminating alias tests for immutable outputs.
+- Evidence: tests reproduced marker creation through `COLLECTION.JSON` and an
+  internal symlink, plus acceptance of trailing-dot/space and device-name paths;
+  an external ready-marker symlink also bypassed the initial consumer check.
+- Scope: applies to immutable manifests, lock files and other reserved outputs
+  across filesystem-backed tools. No skill or role files changed.

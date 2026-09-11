@@ -10,7 +10,7 @@ import hashlib
 import json
 import re
 from collections.abc import Mapping, Sequence
-from pathlib import Path
+from pathlib import Path, PureWindowsPath
 from typing import Any
 
 from blueearth_cst.experiment.scenario_rows import ScenarioRow
@@ -88,6 +88,10 @@ def confined_path(root: Path, relative: str) -> Path:
         or not relative
         or any(character in relative for character in ("\\", ":", "\x00"))
         or any(segment in ("", ".", "..") for segment in relative.split("/"))
+        or any(
+            segment.rstrip(" .") != segment or PureWindowsPath(segment).is_reserved()
+            for segment in relative.split("/")
+        )
     ):
         raise ValueError(f"expected a confined relative POSIX path, got {relative!r}")
     resolved_root = root.resolve()

@@ -70,9 +70,22 @@ two §8.2 identity projections. No production caller or scientific operation
 changed. [Checkpoint evidence](evidence/p2/identity-foundation.md) records exact
 checks and the read-only Python-engineer review.
 
-Next: implement collection initialization/publication and full persisted-state
-validation using these primitives, then portable preparation closure and the
-source-planning checkpoint. The first checklist item remains open: identities
-alone do not implement immutable payloads, ready-marker publication, or complete
-validation. Production collection integration still requires its named scientific
-handoff; simulation/response and metric-set persistence follow in order.
+This identity checkpoint is followed by the lifecycle checkpoint below.
+
+### Collection lifecycle checkpoint — 2026-09-11
+
+`scenario_collection.py` adds exclusive fresh claims and writes, atomic ready
+publication, adapter-backed validation, portable consumer reads, live-input
+producer reuse and retained-byte accounting. The combined identity/collection/
+row/provider suite passed 112 tests; lint, formatting and compilation passed.
+Read-only Python-engineer review accepted the corrected infrastructure scope.
+[Lifecycle evidence](evidence/p2/collection-lifecycle.md) records the synthetic
+manifest, representation choices and limitations.
+
+The physical extractors are mandatory dependencies and currently bound only by
+test doubles. This does not establish production descriptor fidelity or GF-31.
+The first two phase checklist items therefore remain open. Next bind real
+forcing/ancillary extraction and portable preparation closure, then implement
+source planning/resolution, reference-aware deletion and current-WF3 publication.
+Production collection integration still requires its named scientific handoff;
+simulation/response and metric-set persistence follow in order.

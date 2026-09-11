@@ -150,6 +150,15 @@ def test_resolved_escape_is_refused(tmp_path):
         confined_path(root, "link/forcing.nc")
 
 
+@pytest.mark.parametrize(
+    "relative",
+    ["collection.json.", "collection.json ", "dir./payload.nc", "NUL", "aux.nc"],
+)
+def test_windows_alias_spellings_are_not_portable_artifact_paths(tmp_path, relative):
+    with pytest.raises(ValueError, match="path"):
+        confined_path(tmp_path, relative)
+
+
 @pytest.fixture
 def intent():
     return {

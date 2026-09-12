@@ -1,8 +1,8 @@
-# WF3 retained collections, responses and metrics
+# WF3/WF4 retained collections, responses and metrics
 
-R12 P2 keeps `run_stress_test.smk` and the existing project/workflow config
-files. A normal `snakemake all -s run_stress_test.smk --configfile <project> -c 2`
-now publishes three independently identified handoffs:
+WF3 `generate_scenarios.smk` publishes durable scenario collections. WF4
+`simulate_system.smk`, invoked through `scripts/simulate_system.py`, consumes a
+ready collection and publishes native responses and metric sets:
 
 | Handoff | Location beneath `project_dir` | Readiness marker |
 |---|---|---|
@@ -24,16 +24,13 @@ benchmark status remains **not assessed**.
 
 ## Selection and invalidation
 
-Without a selector, the source checkpoint resolves the exact project request
-at `scenario_plans/<generation_request_id>/plan.json`. It validates current
-source bytes, preparation, provider code and environment before reusing the
-named collection. Other collections do not affect selection. Missing generated
-prerequisites can be produced during this combined P2 workflow; a stale retained
-plan refuses reuse rather than falling back to another collection.
-The refusal names the exact `snakemake scenarios` command, with
-`--forcerun prepare_collection_sources`, to rebuild that mutable plan.
+Without a selector, simulation validates the exact project request at
+`scenario_plans/<generation_request_id>/plan.json`, including current source
+bytes, preparation, provider code and environment. Other collections do not
+affect selection. Missing or stale state refuses simulation and names the direct
+`generate_scenarios.smk` command required to produce a current collection.
 
-For independent reuse, add only this mapping to the existing WF3 workflow file:
+For independent reuse, add only this mapping to the simulation workflow file:
 
 ```yaml
 scenario_collection:
@@ -41,9 +38,9 @@ scenario_collection:
 ```
 
 This mode validates the complete retained collection without opening its
-original generation sources. Generation settings can be omitted; the current
-stochastic carrier obtains its scheduling shape from the collection. The live
-model and `simulation_window` remain simulation inputs. Never configure a
+original generation sources. The generation file and its original inputs are unnecessary. The collection
+provides scenario membership and its declared simulation window; the live model
+remains required for simulation. Never configure a
 collection digest or a `latest` selector.
 
 A changed collection, model, simulator adapter, environment or simulation
@@ -57,17 +54,15 @@ reference selection or metric execution dependencies selects a new metric set,
 without changing simulation identity. Ready sets are immutable; malformed,
 partial or byte-changed sets refuse reuse.
 
-## Metrics-only during P2
+## Metrics-only
 
-P2's operation/target gate is an implementation harness; the dedicated public
-simulation runner and separate generation entry point are P3 work. To exercise
-the current carrier's retained-only operation:
+Set `operation: metrics-only` in the simulation workflow file, then run:
 
 ```console
-pixi run python dev/milestones/r12/implementation/evidence/p2/current-carrier-runner.py --config <project> --operation metrics-only --target metrics --cores 2
+pixi run python scripts/simulate_system.py --config <project> --target metrics --cores 2
 ```
 
-The existing WF3 file needs `experiment_name`; optional `metrics` selects
+The simulation file needs `experiment_name`; optional `metrics` selects
 registered variable tokens such as `[q, gwr]`. The project
 `climate.water_year_start` supplies the reduction year anchor. The operation
 reads frozen simulation/response provenance and its recorded collection; it
@@ -77,7 +72,7 @@ requirements fail before execution. Supplied live generation/model/simulation
 settings are reported as ignored. An optional manifest selector can only assert
 the same retained collection identity and revision.
 
-Allowed harness targets are `all` for `simulate-and-metrics`, or `metrics`/one
+Allowed targets are `all` for `simulate-and-metrics`, or `metrics`/one
 exact selected metric-set file for `metrics-only`. Mixed targets, Wflow targets,
 unknown targets and files belonging to another metric set are rejected before
 Snakemake launches.
@@ -91,7 +86,7 @@ referenced deletion unless explicitly forced. No age-based eviction or automatic
 cleanup is performed. Do not manually remove a referenced collection or edit
 its manifest to repair a failed validation.
 
-P2 retains the predecessor `seed: auto` behavior, which derives the seed from
-the experiment name. Use the same explicit seed (or the unchanged default) when
-demonstrating cross-experiment generation reuse. Capacity-free automatic seed
-resolution and final runner/config migration remain P3 work.
+Migration pins every old explicit, default or automatic seed to its resolved
+integer. New `seed: auto` is resolved from the versioned generation projection
+and actual source content, before collection identity is constructed. Experiment
+names, identifier capacity and storage locators do not select stochastic draws.

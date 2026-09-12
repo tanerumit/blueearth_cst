@@ -827,9 +827,9 @@ def suggest_experiment_name(project_dir, today: str) -> str:
 def validate_experiment_name(name: str, project_dir) -> str:
     """Validate ``experiment_name`` as a safe ``experiments/<name>/`` path segment.
 
-    Centralized slug validation for the wf3 experiment subtree
+    Centralized slug validation for the WF4 experiment subtree
     (dev/milestones/p31/experiment-structure-design.md §2b). Called once at
-    ``run_stress_test.smk`` parse time, BEFORE ``exp_dir`` (and every
+    simulation configuration preflight, BEFORE ``exp_dir`` (and every
     derived output/params path) is built, so all paths are constructed only from
     a vetted value. Parse-time is correct here: a malformed name makes the entire
     DAG ill-defined, so failing under ``--dry-run`` is the intended behavior
@@ -2020,7 +2020,7 @@ def climate_store_rule(
     (R07 B1).
 
     ONE rule definition, declared in ``build_model.smk`` (rule 1.04) and
-    ``run_stress_test.smk`` (rule 3.08) as ``extract_historical_climate``, and
+    ``generate_scenarios.smk`` (rule 3.02) as ``extract_historical_climate``, and
     generated per candidate source by ``analyze_climate.smk`` (rule 0.04) as
     ``extract_historical_climate_<source>``. All three resolve to the same
     store directory, so whichever workflow runs first extracts and the others
@@ -2220,7 +2220,7 @@ def _reject_unknown_axis_subkeys(stress_test_cfg: Mapping) -> None:
                 "Remove it rather than expecting it to perturb anything."
             )
         raise ValueError(
-            f"workflows.run_stress_test.climate_perturbations.{axis} carries "
+            f"workflows.generate_scenarios.climate_perturbations.{axis} carries "
             f"unsupported key(s) {unknown}; it accepts {sorted(allowed)}.{detail}"
         )
 
@@ -2273,7 +2273,7 @@ def stress_test_grid(stress_test_cfg: Mapping) -> tuple[int, int, int]:
     Parameters
     ----------
     stress_test_cfg : Mapping
-        The ``workflows.run_stress_test.climate_perturbations`` config section,
+        The ``workflows.generate_scenarios.climate_perturbations`` config section,
         with ``temp`` and ``precip`` axis sub-sections each carrying
         ``n_levels``.
 
@@ -2356,7 +2356,7 @@ def index_width(count: int) -> int:
     a consumer joining a plot to its run needs no integer coercion.
 
     **The width is stable for an experiment's life.** It is a function of
-    ``ST_NUM`` / ``RLZ_NUM``, and both live in the ``run_stress_test``
+    ``ST_NUM`` / ``RLZ_NUM``, and both live in the ``generate_scenarios``
     section that ``experiment.yml`` freezes at first successful run — so a grid
     change that would move the width already forces a new experiment via
     ``check_not_frozen``. No existing tree can be renamed underneath itself.
@@ -2383,7 +2383,7 @@ def member_index_regex(width: int) -> str:
     1. **Bar the reserved baseline.** ``st_0`` (``st_00`` at width 2) is written
        by ``generate_weather_realizations``; rule 3.12 must never become a
        second producer of it, which surfaces as a ``CyclicGraphException``
-       (``run_stress_test.smk``, rule 3.12's own comment).
+       (``generate_scenarios.smk``, rule 3.08's own comment).
     2. **Reject an UNPADDED name outright.** At width 2, ``st_1`` fails to match
        and Snakemake raises ``MissingRuleException`` rather than routing it.
        A lax pattern would accept both spellings, so a producer that forgot to
@@ -2733,7 +2733,7 @@ def _pad_line_over(text, columns):
     everything past its own end standing -- which is how a bar's summary row
     kept a stale ``eta 0:12`` hanging off it, and how an ordinary log row landed
     looking like it had been appended to the bar with no line break between them
-    (both observed 2026-08-18, on WF3's batched Wflow runs).
+    (both observed 2026-08-18, on WF4's batched Wflow runs).
 
     Padding goes before the trailing newline, and on the FIRST line of a
     multi-line chunk, because the frame occupies the line the cursor is on and
@@ -2788,7 +2788,7 @@ def _drop_redraw_frames(text, in_redraw):
 
 
 #: Julia wraps ONE log record across several lines with box-drawing glyphs: a#: ``┌`` head, zero or more ``│`` continuations, and a ``└`` tail. Wflow emits
-#: dozens per run, so a WF3 experiment that runs the model 20 times spent ~500
+#: dozens per run, so a WF4 experiment that runs the model 20 times spent ~500
 #: console rows on records that are 20 distinct sentences.
 #:
 #: Two continuation shapes, and they fold differently. Julia hard-wraps a long
@@ -2979,7 +2979,7 @@ _TEE_CONSOLE_MUTED = (
     # exists and overwriting is off -- but that case announces ITSELF at
     # WARNING and names both paths, so the opening row is never the anchor that
     # makes the rename legible. Muting it costs nothing and saves a row per
-    # forcing write: once in a WF1 build, and once per member in WF3, where
+    # forcing write: once in a WF1 build, and once per run in WF4, where
     # every downscale rule writes one.
     ("forcing", "Write forcing file"),
     # Rule 1.10 drives `hydromt update` through its CLI at `-vv`, which is what
@@ -3456,7 +3456,7 @@ def run_and_tee(command, log_path):
         # which Popen cannot pass on. Its default is UNIVERSAL NEWLINES, and
         # that turned every `\r` into a `\n` — so Wflow's progress bar, which
         # redraws one line ~40 times per model run, arrived as ~40 separate
-        # lines. A WF3 experiment runs the model 20 times, and the result was
+        # lines. A WF4 experiment runs the model 20 times, and the result was
         # ~2000 of the log's 4000 rows being frames of a bar that is meant to
         # occupy ONE. Preserving `\r` lets `_cr_overwrite` do to a Julia bar
         # exactly what it already did to a Python one.
@@ -4009,7 +4009,7 @@ def warn_row(message, module="cst"):
     colon after module keyword``, raised at parse time before any rule exists.
     A single-line call is fine (the token is then mid-expression); a call broken
     across lines is not. Build the message into a local first and pass it in one
-    line, as ``run_stress_test.smk`` does. The parameter keeps the name anyway,
+    line, as ``generate_scenarios.smk`` does. The parameter keeps the name anyway,
     because :func:`log_row` has always spelled it that way and two names for one
     field costs more at every call site than this costs at one.
     """
@@ -5475,7 +5475,7 @@ class _ConsoleHandler(logging.StreamHandler):
         from the registry and prints unchanged, which is also what happens if
         the two ever fall out of step.
 
-        Keyed on the rule NAME, so WF3's per-batch rules (``run_wflow_batch_1``,
+        Keyed on the rule NAME, so WF4's per-batch rules (``run_wflow_batch_1``,
         ``_2``, ...) are distinct rules and each prints its summary once. That
         is a handful of lines on a run, and it is deliberate: they are separate
         rules with separate numbers everywhere else on this console.

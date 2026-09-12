@@ -1,4 +1,4 @@
-# Indicator glossary — every spelling of every WF3 output variable
+# Indicator glossary — every spelling of every WF4 output variable
 
 One output variable carries **five names** by the time it reaches a result table,
 and they are not interchangeable. This file is the one place all five sit in one

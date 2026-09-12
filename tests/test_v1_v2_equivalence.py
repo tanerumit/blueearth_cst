@@ -156,6 +156,19 @@ def _resolve_v2(composed, path):
         return _get(composed, rest)
     if workflow == "*":
         return None, False
+    if workflow == "run_stress_test":
+        workflow = (
+            "simulate_system"
+            if rest.split(".")[0]
+            in {
+                "experiment_name",
+                "compute",
+                "metrics",
+                "operation",
+                "scenario_collection",
+            }
+            else "generate_scenarios"
+        )
     return _get((composed.get("workflows") or {}).get(workflow) or {}, rest)
 
 
@@ -269,7 +282,7 @@ def test_the_perturbation_grid_has_the_same_member_count(stem):
         pytest.skip(f"{stem} declares no stress_test section")
 
     composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
-    after = composed["workflows"]["run_stress_test"]["climate_perturbations"]
+    after = composed["workflows"]["generate_scenarios"]["climate_perturbations"]
 
     v1_members = (before["temp"]["step_num"] + 1) * (before["precip"]["step_num"] + 1)
     assert stress_test_grid(after)[2] == v1_members, (
@@ -299,7 +312,7 @@ def test_the_simulation_window_is_the_period_the_run_used(stem):
         length = 20
 
     composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
-    after = composed["workflows"]["run_stress_test"]["simulation_window"]
+    after = composed["workflows"]["generate_scenarios"]["simulation_window"]
 
     migrated = {
         "start": int(horizon - math.ceil(length / 2)),
@@ -336,7 +349,7 @@ def test_run_historical_is_gone_and_that_is_the_declared_difference(stem):
     _, had_key = _get(wf3, "run_historical")
 
     composed = load_composed_config(REPO_ROOT / "test_case" / f"{V2_PREFIX}{stem}.yml")
-    after = composed["workflows"]["run_stress_test"]
+    after = composed["workflows"]["generate_scenarios"]
 
     assert "run_historical" not in after, (
         f"{stem}: `run_historical` survived the migration. `C-69` deletes it and "

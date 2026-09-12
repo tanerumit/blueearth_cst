@@ -1,0 +1,11 @@
+{
+  "status": "comment_only_executable_AST_identical",
+  "path": "scripts/run_workflows.py",
+  "executed_inventory_sha256": "b12a76551cf13b9bce3f96e5d8125954ae70dbfc88278e32f93a90f3e980be98",
+  "reviewed_inventory_sha256": "376ae0edeed8283b4cfd0cec9667ef07f97e4966e019d300af5df5b9f7d6c04b",
+  "before_sha256": "f0701a4e46fe15a04157fafddc478eb2ffc53a2bf592b46c52363bed661d578f",
+  "after_sha256": "6fe45f15be9488c6c01fa9797041146a5ada6dc383d83a8f9fee0f529720550c",
+  "AST_sha256": "666a08a6113d4fb81b79cf92f9546dec11e367ee7d4eb64b7857aeaa8e59a6c1",
+  "diff": "--- executed/scripts/run_workflows.py\n+++ reviewed/scripts/run_workflows.py\n@@ -55,15 +55,12 @@\n     region_geojson_path,\r\n )\r\n \r\n-# Fixed run order (climate -> model -> projections -> experiment). Each maps to\r\n-# its Snakefile and the per-workflow flags preserved verbatim from the runners\r\n-# (design \u00a77(f)): --keep-going on analyze_projections only.\r\n-#\r\n-# `analyze_climate` leads because it is model-free and the other three are not:\r\n-# it produces the shared region, vector foundation and climate store that\r\n-# build_model reads, so running it first means those exist before the model\r\n-# build asks for them. The order is fixed, not derived -- the wrapper does no\r\n-# freshness checking (see the module docstring).\r\n+# Fixed order: climate -> generation -> model -> simulation -> projections.\r\n+# WF0 is optional and supplies shared region and climate inputs. Generation and\r\n+# model construction are independent prerequisites of simulation; projections\r\n+# are terminal. Consumer preflights run after the preceding enabled producers.\r\n+# Each workflow maps to its Snakefile and preserved execution flags below;\r\n+# only analyze_projections uses --keep-going.\r\n WORKFLOW_ORDER = (\r\n     \"analyze_climate\",\r\n     \"generate_scenarios\",\r\n",
+  "scope": "All other 192 executed runtime source files remain byte-identical; scientific runs are not repeated for this non-executable comment correction."
+}

@@ -1,5 +1,7 @@
 # Task Brief — P3 reference-atomic workflow extraction
 
+**P3 migration accepted, 2026-09-12.** [Acceptance and evidence](evidence/p3/acceptance.md). GF15 benchmark adequacy and milestone sealing remain separate owner-gated work.
+
 ### Context
 
 - Follow repository `AGENTS.md`, [master brief](master-brief.md), and accepted §§4.2 landing 3, 9, 11–13.
@@ -28,15 +30,15 @@ No compatibility wrapper, in-place output rename, third metrics workflow, provid
 
 ### Required changes (checklist)
 
-- [ ] Add the two selected Snakefiles and assign ids/rule prefixes `wf3/3.xx` and `wf4/4.xx`; generation has no model edge, simulation cannot produce a collection, and metrics remain an operation/target inside simulation.
-- [ ] Split every project file into five closed stanzas and workflow-owned files. Preserve ordinary-path resolution and `project_config_` prefix. Migrate old explicit/default/auto seeds to their old resolved integer; new `auto` uses the acyclic accepted projection.
-- [ ] Update runner order to `analyze_climate → generate_scenarios → build_model → simulate_system → analyze_projections`, with workflow-local preflights after relevant producers. The dedicated mandatory simulation runner shares target validation with the all-workflow runner; direct generation remains supported. Bare simulation Snakefile invocation no longer carries the target contract (owner-approved P0 Gate 3 ruling).
-- [ ] Replace fixed cross-workflow leaves by consumer/operation; preserve independent generation, model leaves for simulate mode, and retained-only leaves for metrics-only.
-- [ ] Replace all nine WG/HM clauses and live validators per §9.2; update output inventory for `scenario_plans/`, collection preparation artifacts, `results/metric_plans/`, simulation/response manifests, and metric sets.
-- [ ] Update every live §9.6 reference and executable example in one landing. Preserve C24/C25/C28 and all other sealed/historical files verbatim; add the successor ADR and maintained-current index/references required by repository rules.
-- [ ] Refuse old stanza/commands/keys with migration text. Do not leave half-renamed trees or an indefinite wrapper.
-- [ ] Implement and run GF-9 against separate fresh same-config pre/post roots. Record deterministic old `(rlz,st_id)`→`run_id` and pooled-sentinel→bundle mappings, two-way row coverage, Class-A/B tolerance, Class-C mean relation, two opposite-season gauges, and order-reversal invariance.
-- [ ] Only after GF-9 acceptance, update standing baseline ownership/targets if the milestone plan calls for it; record all justified drift. Never use the stale standing tree as GF-9's old side.
+- [x] Add the two selected Snakefiles and assign ids/rule prefixes `wf3/3.xx` and `wf4/4.xx`; generation has no model edge, simulation cannot produce a collection, and metrics remain an operation/target inside simulation.
+- [x] Split every project file into five closed stanzas and workflow-owned files. Preserve ordinary-path resolution and `project_config_` prefix. Migrate old explicit/default/auto seeds to their old resolved integer; new `auto` uses the acyclic accepted projection.
+- [x] Update runner order to `analyze_climate → generate_scenarios → build_model → simulate_system → analyze_projections`, with workflow-local preflights after relevant producers. The dedicated mandatory simulation runner shares target validation with the all-workflow runner; direct generation remains supported. Bare simulation Snakefile invocation no longer carries the target contract (owner-approved P0 Gate 3 ruling).
+- [x] Replace fixed cross-workflow leaves by consumer/operation; preserve independent generation, model leaves for simulate mode, and retained-only leaves for metrics-only.
+- [x] Replace all nine WG/HM clauses and live validators per §9.2; update output inventory for `scenario_plans/`, collection preparation artifacts, `results/metric_plans/`, simulation/response manifests, and metric sets.
+- [x] Update every live §9.6 reference and executable example in one landing. Preserve C24/C25/C28 and all other sealed/historical files verbatim; add the successor ADR and maintained-current index/references required by repository rules.
+- [x] Refuse old stanza/commands/keys with migration text. Do not leave half-renamed trees or an indefinite wrapper.
+- [x] Implement and run GF-9 against separate fresh same-config pre/post roots. Record deterministic old `(rlz,st_id)`→`run_id` and pooled-sentinel→bundle mappings, two-way row coverage, Class-A/B tolerance, Class-C mean relation, two opposite-season gauges, and order-reversal invariance.
+- [x] Only after GF-9 acceptance, update standing baseline ownership/targets if the milestone plan calls for it; record all justified drift. Never use the stale standing tree as GF-9's old side.
 
 ### Commit plan
 

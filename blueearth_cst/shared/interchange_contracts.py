@@ -6,7 +6,7 @@ alternative implementation:
 
 - the **weather-generator seam** (``weathergenr`` today): validators
   ``validate_wg1``..``validate_wg6`` + the relational
-  ``validate_wg5_catalog_grid``;
+  ``validate_wg5_catalog_runs``;
 - the **hydrological-model seam** (Wflow-SBM built by hydromt today):
   validators ``validate_hm1``..``validate_hm7`` (no ``validate_hm6a`` — its
   contract surface is pinned transitively by HM-4) + the relational
@@ -522,7 +522,7 @@ def _validate_catalog_entry(key: str, entry: Any, label: str) -> list[str]:
 
 
 def validate_wg5(cfg: Any) -> list[str]:
-    """WG-5 — a member's hydromt climate data catalog (``rlz_<n>_st_<m>.yml``).
+    """WG-5 — a member's hydromt climate data catalog (``run_<run_id>.yml``).
 
     One file per member since 2026-08-18, written by rule 3.14 beside that
     member's TOML as a ``temp()`` output. It was one
@@ -533,14 +533,14 @@ def validate_wg5(cfg: Any) -> list[str]:
     N-entry one.
 
     Pinned-as-reliance (design §5.2): OUR emitted subset of the hydromt
-    data-catalog schema — for every ``rlz_<n>_st_<m>`` entry the driver /
+    data-catalog schema — for every ``run_<run_id>`` entry the driver /
     metadata fields ``{uri, driver.name=raster_xarray,
     driver.options.preprocess=harmonise_dims, driver.options.lock=false,
     metadata.crs=4326, metadata.category=meteo, data_type=RasterDataset}``.
 
     This pins per-entry *bookkeeping* only, NOT the NC content the entries point
     at (that is WG-4 / WG-6's contract) and NOT the entry-key grid completeness
-    (that is the relational ``validate_wg5_catalog_grid``). The ``uri`` VALUE is
+    (that is the relational ``validate_wg5_catalog_runs``). The ``uri`` VALUE is
     deliberately unpinned (machine-scoped absolute path); only its presence is
     checked.
     """
@@ -549,10 +549,10 @@ def validate_wg5(cfg: Any) -> list[str]:
         return [f"{label}: catalog is not a mapping ({type(cfg).__name__})"]
     diffs: list[str] = []
     entries = {
-        k: v for k, v in cfg.items() if isinstance(k, str) and k.startswith("rlz_")
+        k: v for k, v in cfg.items() if isinstance(k, str) and k.startswith("run_")
     }
     if not entries:
-        diffs.append(f"{label}: no 'rlz_<n>_st_<m>' entries in catalog")
+        diffs.append(f"{label}: no 'run_<run_id>' entries in catalog")
     for key in sorted(entries):
         diffs += _validate_catalog_entry(key, entries[key], label)
     return diffs
@@ -817,8 +817,6 @@ def validate_hm5(df: Any) -> list[str]:
 #: did not during the 2026-08-05 tavg/prcp rename only because both were edited
 #: in the same commit.
 from blueearth_cst.shared.indicator_tables import (  # noqa: E402
-    INDICATOR_COLUMNS,
-    POOLED_REALIZATION,
     metric_grain,
 )
 
@@ -826,223 +824,202 @@ from blueearth_cst.shared.indicator_tables import (  # noqa: E402
 #: the catalog-key expectation below and the Snakefile's own filenames cannot
 #: disagree about how wide an index is. `snake_utils` does not import this
 #: module, so the direction is one-way and no cycle exists.
-from blueearth_cst.shared.snake_utils import index_width  # noqa: E402
 
 #: The five HM-7 columns, in order. Imported from the writer's own module rather
 #: than restated, so the producer and its validator cannot disagree about the
 #: header -- the failure mode this pairing exists to prevent.
-HM7_COLUMNS = INDICATOR_COLUMNS
+HM7_COLUMNS = ("metric", "location", "unit_id", "value")
 
 
-def validate_hm7(tables: dict, rlz_num: int | None = None, lookup=None) -> list[str]:
-    """HM-7 — response-surface reduction, ONE LONG TABLE PER OUTPUT VARIABLE.
+def validate_hm7(
+    tables: dict,
+    *,
+    unit_index,
+    scenario_table,
+    declarations,
+    locations,
+    lookup,
+    unit_id_capacity: int,
+    response_request: Mapping,
+) -> list[str]:
+    """HM-7: exact retained metric keys and stochastic membership (R12 Â§9.2).
 
-    ``tables`` maps variable token to parsed table (``{"q": df, "aet": df}``).
-    ``rlz_num`` is optional; supply it to check the ``rlz_id`` domain.
-    ``lookup`` is the parsed ``stress_test_lookup.csv``; supply it to check
-    completeness and the ``st_0`` partition.
-
-    **The header this asserts, exactly and in order:**
-
-        metric, location, st_id, rlz_id, value
-
-    R11 CR-2 replaced the two wide tables with a fixed SIX-column long shape
-    (``metric, temp_change, precip_change, realization_id, location, value``);
-    C28 added ``st_id`` to make it seven, and the 2026-08-11 owner ruling reordered
-    those seven identifier-first and renamed ``realization_id`` to ``rlz_id``. The
-    axis columns were then REMOVED, taking it to five. The counts in that sentence
-    are the historical ones and are not a typo.
-
-    **Removing them is the point rather than a simplification.** They held a
-    month-length-weighted ANNUAL mean of the member's twelve monthly
-    perturbations, which misreports any seasonal design -- +30% imposed in JJA is
-    +7.6% on the axis -- and baking one collapse into the results made every other
-    axis unrecoverable from them. The axis is now derived at reporting time from
-    the lookup; the specification is the HM-7 record and the reference
-    implementation is ``shared/surface_axes.py``.
-
-    What has held throughout is the property that matters: the header no longer
-    grows with the gauge count, which is why this validator can assert it exactly
-    rather than by membership — the previous version had to widen to a membership
-    test precisely because the shape was config-dependent in the wrong dimension.
-    A reorder does not touch that property, which is why it is a cheap change.
-
-    Three things it asserts that nothing else can:
-
-    - **``metric`` agrees with the table it is in.** The composite carries the
-      variable, so no ``variable`` column exists; the redundancy is safe only if
-      something checks it, which is what normalisation would have given free.
-    - **The vocabulary.** Enumerated since 2026-08-12. It was a pattern while the
-      two return-level suffixes interpolated the ``Tpeak``/``Tlow`` config keys,
-      because enumerating would have rejected every project whose return periods
-      differed from the fixture's; those keys are now toolbox constants, so the
-      set of legal names is closed.
-    - **The grain invariant.** ``rlz_id = 0`` means pooled — a numeric
-      sentinel in a numeric key column, which is safe only because no metric
-      emits both grains. If that ever stops holding, the sentinel must become a
-      string, and this check is what would catch it.
-
-    Superseded and worth not re-deriving: the axis columns were spelled
-    ``tavg``/``prcp`` until 2026-08-05, the repo's only violation of the
-    ``precip``/``temp`` vocabulary. The ``RT_*.csv`` side tables are gone as of
-    R9 P3 — no in-repo consumer, written via ``params`` rather than declared, so
-    invisible to ``--dry-run``. Nothing replaces them.
-
-    **C28 (R11 P2) added ``st_id`` alongside the perturbation columns**, ruled
-    "at this stage" with an explicit revisit when a third dimension arrives. The
-    revisit happened: the answer was to remove the axis columns rather than add a
-    third, so ``st_id`` now stands alone as the member key and the header is
-    fixed against the stress-dimension count. C28's second obligation — the
-    writer refusing a design table carrying an axis this header cannot express —
-    retires with them, because the header expresses no axis. The CONTRACT barrier
-    stands: a new lookup column still needs a C28 ruling.
-
-    **What the cache-drift check is replaced by.** With one artifact there is no
-    second derivation to disagree with, so that whole failure class is eliminated
-    structurally rather than left unchecked. Completeness survives, in BOTH
-    directions and re-pointed at the lookup, together with the ``st_0``
-    partition — expected in the tables, expected absent from the lookup. Those
-    checks are skipped, not failed, when ``lookup`` is None: a caller that has
-    only the tables can still assert everything else.
-
-    Original pinned surface, for the record (design §5.3): ``q_indicators.csv``
-    header ``statistic,temp_change,precip_change,<gauge-cols>``;
-    ``basin_indicators.csv`` the axis plus one column per configured
-    ``*_basavg`` variable.
-
-    The gauge-location tie to HM-4/HM-5 is checked by the relational
-    ``validate_hm_gauge_column_identity``, which post-CR-2 compares the
-    ``location`` column's value set rather than the header's column set — the same
-    invariant, expressed against a header that no longer varies.
+    All inputs are parsed retained artifacts. ``locations`` maps variable tokens
+    to the response request's locations, never locations inferred from results.
+    Declarations are the persisted complete metric declarations, as mappings.
     """
+    import math
+
+    import pandas as pd
+
+    from blueearth_cst.experiment.response_inventory import validate_response_request
+    from blueearth_cst.shared.surface_axes import resolve_unit_design
+
     label = "HM-7"
-    diffs: list[str] = []
-    for token, table in sorted(tables.items()):
-        name = f"{token}_indicators.csv"
-        columns = _columns(table)
-        if columns != list(HM7_COLUMNS):
-            diffs.append(
-                f"{label}: {name} header is {columns}, expected exactly "
-                f"{list(HM7_COLUMNS)} in that order"
-            )
-            continue  # every check below reads these columns by name
+    diffs = []
+    try:
+        validate_response_request(response_request)
+        design, width = resolve_unit_design(unit_index, scenario_table)
+    except (ValueError, KeyError, TypeError) as exc:
+        return [f"{label}: {exc}"]
+    if type(unit_id_capacity) is not int or unit_id_capacity < 1:
+        return [f"{label}: unit_id_capacity must be a positive integer"]
+    if any(int(unit) > unit_id_capacity for unit in design):
+        diffs.append(f"{label}: unit ids exceed collection capacity")
+    if list(scenario_table["run_id"]) != [
+        f"{number:0{width}d}" for number in range(1, len(scenario_table) + 1)
+    ]:
+        diffs.append(
+            f"{label}: scenario run domain is not the complete ordered collection"
+        )
+    if lookup is None:
+        return diffs + [f"{label}: stochastic lookup is required"]
+    diffs.extend(validate_wg2(lookup))
+    lookup_ids = set(lookup["st_id"]) if "st_id" in lookup else set()
+    if set(scenario_table["st_id"]) != lookup_ids | {""}:
+        diffs.append(
+            f"{label}: scenario design coverage differs from lookup plus empty baseline"
+        )
 
-        metrics = sorted({str(m) for m in table["metric"]})
-        if not metrics:
-            diffs.append(f"{label}: {name} has no rows")
+    units = {key: group for key, group in unit_index.groupby("unit_id")}
+    grains = {key: group.iloc[0]["grain"] for key, group in units.items()}
+    evaluated = scenario_table[
+        scenario_table["evaluated"].map(lambda value: value is True or value == "true")
+    ]
+    response_variables = {
+        item["variable"]: item for item in response_request["variables"]
+    }
+    if response_request["run_ids"] != evaluated["run_id"].tolist():
+        diffs.append(f"{label}: response request differs from evaluated scenario rows")
+    if locations != {
+        token: item["locations"] for token, item in response_variables.items()
+    }:
+        diffs.append(
+            f"{label}: location domain differs from the retained response request"
+        )
+    definitions = {}
+    expected_tokens = set()
+    expected = set()
+    bundle_required = False
+    for declaration in declarations:
+        try:
+            name = declaration["name"]
+            token = declaration["required_responses"]["variable"]
+            grain = declaration["grain"]
+            policy = declaration["value_validity"]
+            required_locations = locations[token]
+            response = response_variables[token]
+        except (KeyError, TypeError) as exc:
+            diffs.append(
+                f"{label}: incomplete declaration or response locations: {exc}"
+            )
             continue
-
-        # The composite carries the variable, so `variable` needs no column of
-        # its own -- but that redundancy is only safe if something asserts the
-        # two agree. This is what normalisation would have given for free.
-        wrong_variable = [m for m in metrics if not m.startswith(f"{token}_")]
-        if wrong_variable:
-            diffs.append(
-                f"{label}: {name} carries metric(s) {wrong_variable} that do not "
-                f"begin with the table's own variable token {token + '_'!r}"
+        requirement = declaration["required_responses"]
+        try:
+            physical_match = (
+                response["units"] == requirement["units"]
+                and response["calendar"] in requirement["calendars"]
+                and pd.Timedelta(response["timestep"]).total_seconds()
+                == requirement["timestep_seconds"]
+                and response["time_label"] == requirement["time_label"]
+                and pd.Timestamp(response["start"]) <= pd.Timestamp(response["end"])
             )
-
-        unknown = [m for m in metrics if metric_grain(token, m) is None]
-        if unknown:
+        except (ValueError, TypeError, KeyError):
+            physical_match = False
+        if not physical_match:
+            diffs.append(f"{label}: response physical/time basis differs for {name!r}")
+        if name in definitions or metric_grain(token, name) is None:
+            diffs.append(f"{label}: duplicate or unrecognised metric {name!r}")
+        if not name.startswith(token + "_"):
+            diffs.append(f"{label}: metric {name!r} disagrees with variable {token!r}")
+        if grain not in {"run", "bundle"}:
+            diffs.append(f"{label}: invalid declared grain {grain!r}")
+        if policy not in {
+            "finite required; reject invalid GEV fit; no clipping",
+            "finite or native-reduction NaN; refuse infinity; no clipping",
+        }:
+            diffs.append(f"{label}: unsupported value-validity policy {policy!r}")
+        if not required_locations or len(set(required_locations)) != len(
+            required_locations
+        ):
+            diffs.append(f"{label}: response locations must be nonempty and unique")
+        if grain == "bundle":
+            bundle_required = True
+            if declaration.get("bundle_by") not in {"same_design_point", "st_id"}:
+                diffs.append(f"{label}: unsupported stochastic bundle grouping")
+        definitions[name] = declaration
+        expected_tokens.add(token)
+        expected.update(
+            (name, location, unit)
+            for unit, unit_grain in grains.items()
+            if unit_grain == grain
+            for location in required_locations
+        )
+    if not definitions:
+        diffs.append(f"{label}: no selected metric declarations")
+    expected_bundles = {}
+    if bundle_required:
+        for number, (key, group) in enumerate(
+            evaluated.groupby("st_id", sort=True), start=len(scenario_table) + 1
+        ):
+            expected_bundles[f"{number:0{width}d}"] = set(group["run_id"])
+        if "" not in set(evaluated["st_id"]):
             diffs.append(
-                f"{label}: {name} carries unrecognised metric(s) {unknown}; the "
-                f"vocabulary is in blueearth_cst/shared/indicator_tables.py"
+                f"{label}: stochastic bundle metrics require empty-key baseline members"
             )
-
-        if rlz_num is not None:
-            allowed = {POOLED_REALIZATION} | set(range(1, int(rlz_num) + 1))
-            stray = sorted({int(r) for r in table["rlz_id"]} - allowed)
-            if stray:
-                diffs.append(
-                    f"{label}: {name} has rlz_id {stray}, outside "
-                    f"{{0}} and 1..{rlz_num}"
-                )
-
-        # The grain invariant. `rlz_id = 0` is a numeric sentinel in a
-        # numeric key column, which is safe ONLY because no metric emits both
-        # grains -- otherwise `groupby('rlz_id')` folds pooled rows in as
-        # another realization. Asserted here because 0 cannot announce itself.
-        for metric in metrics:
-            grain = metric_grain(token, metric)
-            if grain is None:
+    actual_bundles = {
+        key: set(group["member_run_id"])
+        for key, group in units.items()
+        if grains[key] == "bundle"
+    }
+    if actual_bundles != expected_bundles:
+        diffs.append(
+            f"{label}: bundle unit set or membership differs from selected declarations"
+        )
+    if set(tables) != expected_tokens:
+        diffs.append(f"{label}: indicator token inventory differs from declarations")
+    actual = []
+    for token, table in tables.items():
+        if _columns(table) != list(HM7_COLUMNS):
+            diffs.append(f"{label}: {token} header must be exactly {list(HM7_COLUMNS)}")
+            continue
+        seen_designs = set()
+        for row in table.itertuples(index=False):
+            key = (row.metric, row.location, row.unit_id)
+            actual.append(key)
+            definition = definitions.get(row.metric)
+            if not isinstance(row.unit_id, str) or row.unit_id not in design:
+                diffs.append(f"{label}: unresolved unit_id {row.unit_id!r}")
                 continue
-            ids = {
-                int(r)
-                for r, m in zip(table["rlz_id"], table["metric"])
-                if str(m) == metric
-            }
-            if grain == "pooled" and ids != {POOLED_REALIZATION}:
+            seen_designs.add(design[row.unit_id])
+            if (
+                definition is None
+                or definition["required_responses"]["variable"] != token
+            ):
                 diffs.append(
-                    f"{label}: {name} metric {metric!r} is pooled-only but carries "
-                    f"rlz_id {sorted(ids)}; expected {{0}} alone"
+                    f"{label}: undeclared metric or wrong table for {row.metric!r}"
                 )
-            if grain == "per-realization" and POOLED_REALIZATION in ids:
-                diffs.append(
-                    f"{label}: {name} metric {metric!r} is per-realization but "
-                    f"carries the pooled sentinel rlz_id 0"
+                continue
+            if grains[row.unit_id] != definition["grain"]:
+                diffs.append(f"{label}: metric {row.metric!r} has the wrong unit grain")
+            try:
+                value = float(row.value)
+                finite_required = definition["value_validity"].startswith(
+                    "finite required"
                 )
-    # -- completeness and the st_0 partition, against the LOOKUP ------------
-    #
-    # The cache-drift check retired with the cache. With one artifact there is no
-    # second derivation to disagree with, so that failure class is eliminated
-    # structurally rather than merely left unchecked -- which is a stronger
-    # outcome than the check it replaces.
-    #
-    # What must NOT retire with it is the guarantee the check was providing, so
-    # both directions of completeness survive and are re-pointed at the lookup.
-    # The design -> results direction was added at R11 P3 because its absence hid
-    # a defect: a seed config with `run_historical: false` dropped the st_0
-    # baseline, and because Q5 fixes the class-C month FROM that baseline,
-    # `q_wettest_month_mean` and `q_driest_month_mean` were skipped entirely --
-    # 180 rows and two of eleven metrics gone, with this validator green. A
-    # per-row check is stronger than a fingerprint for the rows that exist and
-    # says nothing at all about the rows that do not.
-    if lookup is not None:
-        lookup_ids = {str(v) for v in lookup["st_id"].tolist()}
-        width = max((len(i) for i in lookup_ids), default=1)
-        baseline_token = "0".zfill(width)
-        for token, table in sorted(tables.items()):
-            name = f"{token}_indicators.csv"
-            if "st_id" not in table.columns:
-                continue  # the header check above already reported it
-            seen = {str(v).zfill(width) for v in table["st_id"].tolist()}
-
-            # The st_0 partition. Expected IN the tables and expected ABSENT
-            # from the lookup; either violated is a divergence. Two identical
-            # all-zero rows would otherwise be indistinguishable from an
-            # identity member's, and they are not the same scenario -- st_0 is
-            # the raw generated series while every member is that series
-            # round-tripped through a perturbation that is NOT the identity at
-            # unit factors.
-            if baseline_token in lookup_ids:
-                diffs.append(
-                    f"{label}: the lookup carries {baseline_token!r}, which is "
-                    f"the reserved unperturbed baseline and has no parameters"
-                )
-            if baseline_token not in seen:
-                diffs.append(
-                    f"{label}: {name} carries no {baseline_token!r} rows. The "
-                    f"baseline is expected in the tables even though it is "
-                    f"absent from the lookup -- two of eleven q metrics are "
-                    f"derived FROM it. Check `run_historical` / ST_START"
-                )
-
-            missing = sorted(lookup_ids - seen, key=_st_sort_key)
-            if missing:
-                diffs.append(
-                    f"{label}: the lookup declares st_id {missing} that produced "
-                    f"NO rows in {name}. A member that never ran is not a "
-                    f"smaller table -- it is a response surface with holes in "
-                    f"it, or a biased one if the missing members sit at one end "
-                    f"of the grid"
-                )
-            unknown_ids = sorted(seen - lookup_ids - {baseline_token}, key=_st_sort_key)
-            if unknown_ids:
-                diffs.append(
-                    f"{label}: {name} carries st_id {unknown_ids}, which the "
-                    f"lookup does not define and which is not the baseline"
-                )
-
+                invalid = math.isinf(value) or (finite_required and math.isnan(value))
+            except (ValueError, TypeError):
+                invalid = True
+            if invalid:
+                diffs.append(f"{label}: invalid value for {key!r}")
+        if seen_designs != lookup_ids | {""}:
+            diffs.append(f"{label}: {token} stochastic design coverage is incomplete")
+    if len(actual) != len(set(actual)):
+        diffs.append(f"{label}: globally duplicate result keys")
+    if set(actual) != expected:
+        diffs.append(
+            f"{label}: result keys differ from independent declaration/unit/location set"
+        )
     return diffs
 
 
@@ -1072,15 +1049,15 @@ def _st_sort_key(st_id: str):
 
 
 def validate_wg4(ds: Any) -> list[str]:
-    """WG-4 — generator output netCDF content (``rlz_<n>_st_<m>.nc``).
+    """WG-4 — durable collection forcing (``forcing/run_<run_id>.nc``).
 
     Pinned surface (design §5.2): a ``(time, lat, lon)`` raster the hydromt
     catalog (WG-5) reads — at least ``precip`` and ``temp`` on an EPSG:4326 grid
     carrying a ``spatial_ref`` CRS descriptor. The exact variable superset and
     internal attrs are deliberately unpinned.
 
-    ``temp()`` content — absent on the completed fixture (skip-until-captured on
-    disk); this logic is proven every suite by a synthetic pass/fail pair.
+    One inventoried durable file per scenario row, including unperturbed rows.
+    Consumers must not delete these artifacts after model preparation.
 
     Grid axes are accepted as either ``(latitude, longitude)`` or the shorter
     ``(lat, lon)`` a swap may emit — the contract is the raster (time, y, x)
@@ -1092,7 +1069,7 @@ def validate_wg4(ds: Any) -> list[str]:
     attrs: its CRS travels the CF/rioxarray way, in the ``spatial_ref``
     coordinate's ``crs_wkt`` (``ID["EPSG",4326]``), while ``crs: 4326`` and
     ``category: meteo`` are supplied by the generated **data catalog** —
-    the member's own ``rlz_<n>_st_<m>.yml``, which is exactly where hydromt reads
+    the member's own ``run_<run_id>.yml``, which is exactly where hydromt reads
     them and exactly what ``validate_wg5`` already pins
     (``metadata.crs`` / ``metadata.category``). Requiring them as file-level
     global attrs asserted the right values on the wrong surface; the pipeline
@@ -1119,7 +1096,7 @@ def validate_wg4(ds: Any) -> list[str]:
 
 
 def validate_wg6(ds: Any) -> list[str]:
-    """WG-6 — downscaled Wflow forcing content (``inmaps_rlz_<n>_st_<m>.nc``).
+    """WG-6 — prepared forcing content (``inmaps_run_<run_id>.nc``).
 
     The wf3 twin of ``inmaps_historical.nc`` — the SAME contract as HM-2 (design
     §5.2/§5.3): ``(time, latitude, longitude)`` ``float32`` ``precip`` / ``pet``
@@ -1134,7 +1111,7 @@ def validate_wg6(ds: Any) -> list[str]:
 
 
 def validate_hm6b(ds: Any) -> list[str]:
-    """HM-6b — wf3 warm state content (``outstates_rlz_<n>_st_<m>.nc``).
+    """HM-6b — simulator warm state content (``outstates_run_<run_id>.nc``).
 
     THIN — an unconsumed named sink (design §5.3): nothing in-repo reads it, so
     the contract pins only that it is a wflow state **output** — an
@@ -1303,41 +1280,48 @@ def validate_hm_gauge_column_identity(
     return diffs
 
 
-def validate_wg5_catalog_grid(
-    catalog_cfg: Any,
-    rlz_num: int,
-    st_num: int,
+def validate_wg5_catalog_runs(
+    catalogs: Mapping, evaluated_run_ids: Sequence[str]
 ) -> list[str]:
-    """Relational: the WG-5 catalog entry-key grid vs the INTENDED grid (design §5.5).
+    """Check each run's catalog and the exact evaluated-run key inventory.
 
-    Expected entry keys exactly ``{rlz_<n>_st_<m> : n in 1..rlz_num,
-    m in 0..st_num}`` — **st_0 included** (rule 3.08 consumes both the st_0
-    list and the perturbed ``expand`` grid, ``run_stress_test.smk:318-319``).
-    Both missing AND unexpected keys are reported. A dropped or extra catalog
-    entry is invisible to per-artifact ``validate_wg5`` (each remaining entry is
-    well-formed) but breaks the realization x cst fan-out rule 3.09 depends on.
-
-    ``rlz_num`` / ``st_num`` are the run's *recorded* intent — the caller derives
-    them from the experiment's config snapshot via ``stress_test_grid``
-    (``shared/snake_utils.py``), so the check is self-consistent with the tree
-    even if the tracked test config later drifts.
+    ``catalogs`` maps intended opaque run_id to its parsed per-run catalog.
+    Ancillary entries remain legal; only run_ entries participate in this seam.
     """
-    label = "wg5-catalog-grid"
-    if not isinstance(catalog_cfg, Mapping):
-        return [f"{label}: catalog is not a mapping ({type(catalog_cfg).__name__})"]
-    # Keys carry the ZERO-PADDED member index (C27), and the widths derive from
-    # the same counts this function already takes -- so the expectation moves
-    # with the filenames without a signature change.
-    rlz_w, st_w = index_width(rlz_num), index_width(st_num)
-    expected = {
-        f"rlz_{n:0{rlz_w}d}_st_{m:0{st_w}d}"
-        for n in range(1, rlz_num + 1)
-        for m in range(0, st_num + 1)
-    }
-    present = {k for k in catalog_cfg if isinstance(k, str) and k.startswith("rlz_")}
-    diffs: list[str] = []
-    for key in sorted(expected - present):
-        diffs.append(f"{label}: expected catalog entry {key!r} missing")
-    for key in sorted(present - expected):
-        diffs.append(f"{label}: unexpected catalog entry {key!r} present")
+    label = "wg5-catalog-runs"
+    if not isinstance(catalogs, Mapping):
+        return [f"{label}: catalogs must map intended run ids to parsed catalogs"]
+    expected = list(evaluated_run_ids)
+    if (
+        not expected
+        or len(expected) != len(set(expected))
+        or any(
+            not isinstance(run, str)
+            or not run.isascii()
+            or not run.isdigit()
+            or int(run) < 1
+            for run in expected
+        )
+    ):
+        return [f"{label}: evaluated run ids must be unique positive decimal text"]
+    diffs = []
+    if set(catalogs) != set(expected):
+        diffs.append(f"{label}: catalog set differs from evaluated scenario rows")
+    present = []
+    for intended, catalog in catalogs.items():
+        diffs.extend(validate_wg5(catalog))
+        if not isinstance(catalog, Mapping):
+            continue
+        keys = [
+            key for key in catalog if isinstance(key, str) and key.startswith("run_")
+        ]
+        if keys != [f"run_{intended}"]:
+            diffs.append(
+                f"{label}: catalog for {intended!r} must contain only run_{intended}"
+            )
+        present.extend(keys)
+    if len(present) != len(set(present)) or set(present) != {
+        f"run_{run}" for run in expected
+    }:
+        diffs.append(f"{label}: aggregate entry keys differ from evaluated run set")
     return diffs

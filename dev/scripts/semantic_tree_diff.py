@@ -328,11 +328,11 @@ def build_project_tree_rules(
     # `wf3_anything.log`. `[a-z0-9_]+` is validate_experiment_name's grammar.
     # The two `_parts/` prefixes already cover WF3's `<experiment>/` level.
     same_rx(r"logs/wf[012]_[^/]+\.log")
-    same_rx(r"logs/wf3_run_stress_test_[a-z0-9_]+\.log")
+    same_rx(r"logs/wf[34]_(generate_scenarios|simulate_system)_[a-z0-9_]+\.log")
     same("logs/_parts/")
     same("logs/dag/")
     same_rx(r"benchmarks/wf[012]_benchmarks\.md")
-    same_rx(r"benchmarks/wf3_benchmarks_[a-z0-9_]+\.md")
+    same_rx(r"benchmarks/wf[34]_benchmarks_[a-z0-9_]+\.md")
     same("benchmarks/_parts/")
 
     # -- config/ --------------------------------------------------------------
@@ -458,66 +458,59 @@ def build_project_tree_rules(
     # basin_area, to `data/spatial/plots/`. A leftover directory there is stale
     # output from a pre-0007 run and SHOULD report as undeclared.
 
-    # -- experiments/<id>/ ----------------------------------------------------
+    # R12 durable generation artifacts and rebuildable exact-request plans.
+    digest = r"[0-9a-f]{64}"
+    collection = rf"scenario_collections/{digest}"
     for leaf in (
-        ".project_consistency_ok",
-        "config/project_config_run_stress_test.yml",
-        "config/model_reference.yml",
-        "config/experiment.yml",
-        # The stress-test parameter lookup, beside the config snapshot whose
-        # settings produced it. Replaced `config/stress_test_design.csv` and
-        # absorbed `climate/weathergenr/_work/st_<m>.csv` -- measured: without
-        # this row the new artifact classifies UNMAPPED on every run.
-        "config/stress_test_lookup.csv",
-        # WF3's run record. It sits DIRECTLY in the experiment's config bin,
-        # not under `config/runs/` like WF1's and WF2's: per arch-10 the WF3
-        # snapshot stays inside the experiment, which IS the partition here.
-        # So it needs its own row and cannot ride the `config/runs/` prefix
-        # below.
-        "config/run_record.yml",
-        # The bin's own README, written UNCONDITIONALLY by
-        # `copy_config_files._write_readme` on every run -- the same helper that
-        # writes `config/runs/README.md`, which the project-level prefix already
-        # covers. This one needs its own row because the experiment's `config/`
-        # is enumerated leaf by leaf rather than declared as a prefix, so its
-        # sibling was covered and it was not. An inventory gap since the README
-        # was introduced, and invisible until the whole-directory
-        # `climate/weathergenr/` prefix was narrowed and the remaining unmapped
-        # paths became few enough to read.
-        "config/README.md",
+        "collection.json",
+        "collection_intent.json",
+        "scenario_table.csv",
+        "generation_config.json",
+        "source_inventory.json",
+        "provider_code_inventory.json",
+        "generation_environment.json",
+        "preparation_context.json",
+        "preparation_catalog.yml",
+        "stress_test_lookup.csv",
     ):
-        same(f"experiments/{e}/{leaf}")
-    for directory in (
-        # Still a prefix: it holds the GENERATED experiment catalog, and a
-        # project may also have copies here from before the R4 predicate.
-        "config/catalogs/",
-        # `config/runs/` is GONE from this list (2026-08-13). WF3's record moved
-        # to `config/run_record.yml` above -- the experiment IS the partition, so
-        # it needs no per-workflow subdirectory -- and the bundles that were the
-        # directory's only other occupants are retired. Keeping the prefix would
-        # declare a directory nothing writes, which is how an orphan goes
-        # unreported: the retired bundle under it stayed GREEN while its WF1 and
-        # WF2 siblings correctly went red.
-        "results/",
-        "hydrology/wflow/",
+        same_rx(rf"{collection}/{re.escape(leaf)}")
+    same_rx(rf"{collection}/forcing/run_[0-9]+\.nc")
+    same_rx(rf"{collection}/ancillary/[^/]+/[^/]+")
+    same_rx(rf"scenario_plans/{digest}/plan\.json")
+    same_rx(rf"scenario_plans/{digest}/initializations/[^/]+\.json")
+    same_rx(
+        rf"scenario_plans/{digest}/generation/config/(weathergen_config\.yml|stress_test_lookup\.csv)"
+    )
+    same_rx(
+        rf"scenario_plans/{digest}/generation/output/(rlz_[0-9]+_st_[0-9]+\.nc|sim_dates\.csv)"
+    )
+    same_rx(rf"scenario_plans/{digest}/generation/output/resampled_dates\.csv")
+    same_rx(rf"scenario_plans/{digest}/generation/plots/[^/]+\.(png|pdf)")
+
+    # Simulation identities are frozen separately from metric-set identities.
+    same(f"experiments/{e}/.model_reference_ok")
+    for leaf in (
+        "project_config_simulate_system.yml",
+        "model_reference.yml",
+        "simulation.json",
+        "simulator_settings.json",
+        "simulator_adapter_code_inventory.json",
+        "simulation_environment.json",
+        "response_request.json",
     ):
-        same(f"experiments/{e}/{directory}")
-    # `climate/weathergenr/` is NARROWED to its three live subdirectories rather
-    # than declared whole. The fixture holds exactly these plus the retired
-    # `_work/`, so the narrowing is exact — and it is what makes a leftover
-    # `_work/` report as undeclared instead of riding a whole-directory prefix.
-    # Declaring the parent would accept the very orphan the migration creates,
-    # which is the failure mode the `config/runs/` note above already records.
-    for directory in ("config/", "output/", "plots/"):
-        same(f"experiments/{e}/climate/weathergenr/{directory}")
-    # `logs/` and `benchmarks/` are deliberately ABSENT since 2026-08-11: WF3's
-    # run records moved to the project's own logs/ and benchmarks/, keyed by
-    # experiment in the filename. A file under `experiments/<id>/logs/` is now
-    # stale output from an earlier run and SHOULD report as undeclared — the same
-    # reasoning `{wflow}/plots/` carries above.
-    # Belt and braces on the experiment id: a tree may hold OTHER experiments
-    # than the one this config names, and they are legitimate rather than
-    # orphaned. Registered last so the named experiment's narrower rows win.
+        same(f"experiments/{e}/config/{leaf}")
+    same(f"experiments/{e}/responses/response_inventory.json")
+    same_rx(rf"experiments/{exp}/results/metric_plans/{digest}/plan\.json")
+    metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
+    for leaf in ("metrics.json", "metric_environment.json", "unit_index.csv"):
+        same_rx(rf"{metric_set}/{re.escape(leaf)}")
+    same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_indicators\.csv")
+    native = rf"experiments/{exp}/hydrology/wflow"
+    same_rx(rf"{native}/config/run_[0-9]+\.(toml|yml|temporal\.json)")
+    same_rx(rf"{native}/forcing/inmaps_run_[0-9]+\.nc")
+    same_rx(rf"{native}/output/run_[0-9]+\.(csv|log)")
+    same_rx(rf"{native}/output/outstates_run_[0-9]+\.nc")
+
     rules.append((re.compile(rf"(experiments/(?!{exp}/)[^/]+/.*)"), r"\1"))
     return rules
 

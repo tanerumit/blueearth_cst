@@ -33,7 +33,10 @@ path_static = "staticmaps.nc"
 path_forcing = "forcing/inmaps_historical.nc"
 """
 
-SNAKEFILE = Path(__file__).resolve().parents[1] / "run_stress_test.smk"
+SNAKEFILE = (
+    Path(__file__).resolve().parents[1]
+    / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
+)
 
 
 def _model(tmp_path):
@@ -275,14 +278,11 @@ def test_the_writer_declares_its_model_inputs_ancient():
             assert "ancient(" in line, f"model input not ancient(): {line.strip()}"
 
 
-def test_rule_3_00b_sentinels_are_untouched():
-    """The brief gates 3.00b's declared inputs and sentinel paths behind
-    approval, because they carry the incremental-execution constraint. The new
-    guard uses its OWN sentinel; this pins that 3.00b was not co-opted."""
-    guard_00b = _rule_block("check_project_consistency")
-    assert ".model_reference_ok" not in guard_00b
-    assert ".project_consistency_ok" in guard_00b
-    assert ".guard_ok" in guard_00b
+def test_frozen_simulation_is_the_successor_to_the_project_snapshot_guard():
+    text = SNAKEFILE.read_text(encoding="utf-8")
+    assert "check_project_consistency" not in text
+    assert "checkpoint freeze_wflow_simulation:" in text
+    assert "SimulationFrozenError" in text
 
 
 # The declared-label-is-registered check that used to live here is GONE, folded
@@ -314,17 +314,22 @@ def _script_modules():
     """
     from blueearth_cst.shared.snake_utils import REGION_SCRIPT
 
-    repo = SNAKEFILE.parent
-    found = {REGION_SCRIPT}
+    repo = Path(__file__).resolve().parents[1]
+    found = {repo / REGION_SCRIPT}
     # `*.smk`, and asserted non-empty: this globbed `Snakefile_*` until the
     # 2026-08-14 rename, after which it matched nothing and the caller checked
     # an empty script set while staying green.
     entry_points = sorted(repo.glob("*.smk"))
     assert entry_points, f"no workflow entry points (*.smk) under {repo}"
-    for snakefile in entry_points:
+    for snakefile in entry_points + sorted(
+        (repo / "blueearth_cst/experiment/rules").glob("*.smk")
+    ):
         text = snakefile.read_text(encoding="utf-8")
-        found |= set(re.findall(r'script:\s*"([^"]+\.py)"', text))
-    return sorted(repo / rel for rel in found if (repo / rel).is_file())
+        found |= {
+            snakefile.parent / rel
+            for rel in re.findall(r'script:\s*"([^"]+\.py)"', text)
+        }
+    return sorted(path.resolve() for path in found if path.is_file())
 
 
 def test_no_script_module_carries_a_future_import():

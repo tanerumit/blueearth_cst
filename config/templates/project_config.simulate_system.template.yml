@@ -1,0 +1,30 @@
+# =============================================================================
+#  simulate_system (wf4) -- simulations and metrics from a ready collection
+# =============================================================================
+#
+# Runs the model on a ready climate collection and reduces its responses.
+# The routine collection selection comes from the project generation plan. Keep this
+# next to the project file.
+
+
+# -----------------------------------------------------------------------------
+#  EXPERIMENT
+# -----------------------------------------------------------------------------
+
+# Name of the experiment folder. Default: project name plus the date of the
+# first run, reused afterwards. To pick one: scripts/suggest_experiment_name.py
+#experiment_name: my_experiment
+
+# simulate-and-metrics | metrics-only (retained completed responses)
+operation: simulate-and-metrics
+
+
+# -----------------------------------------------------------------------------
+#  COMPUTE
+# -----------------------------------------------------------------------------
+
+# How model runs are grouped. Larger batches need more disk at once.
+#compute:
+#  batch_size_max: 8                       # most runs per batch
+#  batch_size: 4                           # fixed batch size (skips automatic sizing)
+#  disk_headroom_gb: 40                    # disk to keep free; default is a share of free space

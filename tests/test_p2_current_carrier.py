@@ -1,4 +1,4 @@
-"""P2 current-WF3 harness targets; these are not P3 runner acceptance tests."""
+"""Successor runner target matrix and retained-only operation isolation."""
 
 import importlib.util
 import subprocess
@@ -26,9 +26,7 @@ from tests.test_simulation_record import inputs  # noqa: F401
 from tests.test_wflow_response_reader import native  # noqa: F401
 
 REPO = Path(__file__).resolve().parents[1]
-HARNESS = (
-    REPO / "dev/milestones/r12/implementation/evidence/p2/current-carrier-runner.py"
-)
+HARNESS = REPO / "scripts/simulate_system.py"
 
 
 @pytest.fixture
@@ -47,6 +45,7 @@ def carrier_state(metric_inputs, tmp_path):  # noqa: F811
         yaml.safe_dump(
             {
                 "experiment_name": root.name,
+                "operation": "metrics-only",
                 "metrics": ["gwr"],
                 "water_year_start": "jan",
                 "seed": "ignored",
@@ -64,7 +63,7 @@ def carrier_state(metric_inputs, tmp_path):  # noqa: F811
                     "catalog": str(tmp_path / "missing-generation.yml"),
                 },
                 "workflows": {
-                    "run_stress_test": {"enabled": True, "config_path": workflow.name},
+                    "simulate_system": {"enabled": True, "config_path": workflow.name},
                     "build_model": {
                         "enabled": True,
                         "config_path": "missing-model.yml",
@@ -111,19 +110,34 @@ def test_current_carrier_operation_target_matrix(
         "mixed": ["metrics", plan["targets"]["gwr"]],
         "unknown": ["unknown"],
     }
-    argv = ["--config", str(config), "--operation", operation]
+    source = yaml.safe_load(config.read_text())
+    workflow_path = (
+        config.parent / source["workflows"]["simulate_system"]["config_path"]
+    )
+    settings = yaml.safe_load(workflow_path.read_text())
+    settings["operation"] = operation
+    workflow_path.write_text(yaml.safe_dump(settings), encoding="utf-8")
+    argv = ["--config", str(config)]
     if target != "default":
         argv += ["--target", *targets[target]]
     allowed = (
         operation == "simulate-and-metrics" and target in {"default", "all"}
     ) or (operation == "metrics-only" and target in {"metrics", "selected"})
     if allowed:
+        invocation_dir = root.parents[1] / "config/runs/invocations"
+        assert not invocation_dir.exists()
         assert harness.main(argv) == 0
         assert len(calls) == 1
         command, kwargs = calls[0]
         assert command[:3] == [sys.executable, "-m", "snakemake"]
         assert command[3] == ("all" if target == "default" else targets[target][0])
-        assert kwargs["env"]["CST_WF3_OPERATION"] == operation
+        assert kwargs["env"]["CST_SIMULATION_OPERATION"] == operation
+        records = list(invocation_dir.glob("simulation-*.json"))
+        assert len(records) == 1
+        record = read_canonical_json(records[0])
+        assert record["status"] == "succeeded"
+        assert record["exit_code"] == 0
+        assert record["operation"] == operation
     else:
         with pytest.raises(SystemExit) as error:
             harness.main(argv)
@@ -141,8 +155,6 @@ def test_current_carrier_metrics_only_dry_run_without_live_inputs(
             str(HARNESS),
             "--config",
             str(config),
-            "--operation",
-            "metrics-only",
             "--target",
             "metrics",
             "--dry-run",
@@ -156,7 +168,7 @@ def test_current_carrier_metrics_only_dry_run_without_live_inputs(
     output = result.stdout + result.stderr
     (tmp_path / "current-carrier-dry-run.log").write_text(output, encoding="utf-8")
     assert result.returncode == 0, output
-    assert "P2_LAUNCH_SNAKEMAKE" in output
+    assert "simulate_system: metrics" in output
     assert "prepare_metric_plan" in output
     for producer in (
         "generate_weather_realizations",

@@ -33,7 +33,7 @@ TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
 CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
-SNAKEFILE = "run_stress_test.smk"
+SNAKEFILE = "simulate_system.smk"
 RULE_NAME = "downscale_climate_realization"
 
 
@@ -60,12 +60,14 @@ def _parse_workflow(snakefile: str, config_path):
         return workflow
 
 
-@pytest.fixture(scope="module")
-def workflow():
-    return _parse_workflow(SNAKEFILE, CONFIG_FN)
+@pytest.fixture()
+def workflow(tmp_path, monkeypatch):
+    from tests.simulation_workflow_fixture import parse_simulation_workflow
+
+    return parse_simulation_workflow(tmp_path, monkeypatch)
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def downscale(workflow):
     return workflow.get_rule(RULE_NAME)
 
@@ -125,15 +127,16 @@ def test_the_downscale_rule_reads_only_its_own_member(downscale, monkeypatch, tm
     selector = downscale.input.nc
     assert callable(selector)
     marker = tmp_path / "collection.json"
-    monkeypatch.setitem(selector.__globals__, "_selected_collection", lambda wc: marker)
-    rows = selector.__globals__["SCENARIO_ROWS"]
+    monkeypatch.setitem(
+        selector.__globals__, "SELECTION", {"manifest_path": str(marker)}
+    )
+    rows = selector.__globals__["RUN_IDS"]
     assert len(rows) > 1
     selected = []
-    for row in rows:
-        payload = dict(row.payload)
-        wc = SimpleNamespace(rlz_num=payload["rlz"], st_num=payload["st_id"] or "0")
+    for run_id in rows:
+        wc = SimpleNamespace(run_id=run_id)
         path = Path(selector(wc))
-        assert path == tmp_path / "forcing" / f"run_{row.run_id}.nc"
+        assert path == tmp_path / "forcing" / f"run_{run_id}.nc"
         selected.append(path)
     assert len(set(selected)) == len(rows)
     for path in downscale.input:

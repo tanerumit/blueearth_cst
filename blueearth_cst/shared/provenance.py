@@ -191,7 +191,7 @@ def project_config(
     another workflow's digest.
 
     A path may instead be an EXCLUSION, written with a leading ``-``:
-    ``-workflows.run_stress_test.compute`` selects the section and then prunes
+    ``-workflows.simulate_system.compute`` selects the section and then prunes
     that child from it. Two properties make this the right shape rather than a
     caller-side prune of the config:
 

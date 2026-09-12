@@ -128,340 +128,106 @@ docker pull containers.deltares.nl/CST/cst_workflows:0.1.0
 
 ## Running
 
-The toolbox provides four [Snakemake](https://snakemake.github.io/) workflows:
+The five workflows separate historical characterization, generation, model
+construction, simulation and projection analysis:
 
-- **analyze_climate.smk** — characterises the basin's historical climate from
-  one or more gridded datasets, **without building a hydrology model**. Run it
-  alone to answer *which forcing dataset should this basin use?*, which matters
-  because the toolbox does no local calibration.
-- **build_model.smk** — builds a Wflow model from global data for the
-  selected region and runs / analyses it for a historical period.
-- **analyze_projections.smk** — derives future climate statistics
-  (temperature and precipitation change) for a chosen set of CMIP scenarios and
-  GCMs.
-- **run_stress_test.smk** — generates future weather realizations,
-  applies stress-test perturbations, and runs the hydrological model on each
-  realization × stress combination.
+| Entry point | Id | Purpose |
+|---|---|---|
+| `analyze_climate.smk` | wf0 | Optional model-free historical climate analysis |
+| `generate_scenarios.smk` | wf3 | Generate and retain a scenario collection |
+| `build_model.smk` | wf1 | Build Wflow-SBM and run historical forcing |
+| `simulate_system.smk` through `scripts/simulate_system.py` | wf4 | Simulate a ready collection or reduce retained responses |
+| `analyze_projections.smk` | wf2 | CMIP6 plausibility overlay |
 
-Configuration is YAML-driven, and a project's configuration is a **set of
-files**: one project file plus one file per workflow, kept together in one
-directory. The project file is the only `--configfile` target — it holds
-`project:`, the `shared:` settings more than one workflow reads, and a short
-stanza per workflow saying whether it runs and which file carries its settings.
-The file you open to change WF1 therefore contains WF1's settings and nothing
-else. See `docs/migration-config-tiers.md` for the layout in full, and for
-migrating a single-file config written before 2026-08.
+Generation and model construction are independent prerequisites of simulation.
+Projections never drive generation. Run WF0 alone when selecting historical
+forcing; otherwise run it first or omit it.
 
-Start from `config/templates/project_config.template.yml` and the
-`project_config.<workflow>.template.yml` files beside it, which annotate every
-option inline; a filled-in worked example is `test_case/project_config_baseline.yml`
-with its siblings, and `test_case/project_config_rapid.yml`
-is the same basin sized for a quick end-to-end run rather than for results.
-Each of the shipped example configs sits
-beside the project it writes into, the same way a real project keeps its config
-next to its `project_dir`. Data catalogs live under `config/catalogs/`, and
-`config/templates/` holds both the config scaffold above and the hydromt / wflow /
-weathergen build templates that rules consume — `config/templates/README.md` says
-which is which.
+### Configuration
 
-Paths inside a config are resolved against the **working directory** you run
-Snakemake from (the repo root), not against the config's own location — so
-`project_dir: test_case/test_local` means the same thing wherever the config file
-lives.
+Start from `test_case/project_config_rapid.yml` for execution checks. A project
+file has five closed `{enabled, config_path}` stanzas. Each settings file sits
+beside it; `config_path` resolves from the project file, while ordinary paths
+resolve from the working directory. Shared basin, climate and model keys stay
+in the project file. Production `project_dir` belongs outside the checkout.
 
-Each run writes its generated model and result artifacts to the `project_dir`
-set in the config. For production use, point `project_dir` at a location
-**outside the repository tree** so outputs are kept separate from the toolbox
-source. (The in-repo `test_case/test_local` directory is a dev/test convention
-only.)
+Generation owns realization count, simulation window, perturbations, generator
+settings, seed and unit capacity. Simulation owns `experiment_name`, the required
+`operation`, optional `scenario_collection: {manifest_path: ...}`, compute controls
+and metric selection. Existing seeds are preserved by
+`scripts/migrate_project_config.py`; new `auto` seeds are independent of experiment
+names and identifier capacity. See [configuration migration](docs/migration-config-shape.md).
 
-### Configuration and run provenance
+### Commands
 
-Each workflow keeps its established current config copy for project-consistency
-checks, and writes one **`run_record.yml`** describing the run it just did:
-
-- `<project_dir>/config/runs/build_model/run_record.yml`
-- `<project_dir>/config/runs/analyze_projections/run_record.yml`
-- `<exp_dir>/config/run_record.yml` — inside the experiment, which is WF3's
-  natural partition
-
-The record is **current-only**: it describes the most recent run and is
-replaced, not accumulated. It carries the toolbox commit (and whether the
-checkout was dirty), the `pixi.lock` and `Manifest.toml` hashes, the source
-config's own digest, the resolved `advanced_settings` — which appear in no
-other file in the project — and one entry per referenced external input.
-
-It also carries **two digests, answering different questions**.
-`effective_config_sha256` is configuration identity: the settings the workflow
-was asked to run under. `configuration_inputs_sha256` is wider — it folds in
-the toolbox commit, the lock files, and the bytes of every referenced catalog
-and template, so it answers "did this run see the same configuration-side
-inputs as that one". Use the wide one to compare runs; the narrow one moves
-only when the settings move. **Neither covers scientific data identity**: a
-remote or mutable dataset can change under an unchanged catalog entry without
-moving either digest.
-
-Only the keys a workflow actually reads go into its digests, so editing the
-`run_stress_test` section does not invalidate the model-creation record.
-
-**A referenced file is copied into the project only when the toolbox repository
-cannot give it back.** A catalog or template that lives in the checkout, is
-tracked, and is unmodified is recorded by its git blob id rather than copied —
-duplicating what version control already holds serves nobody. Anything else is
-copied, including everything in a deployed container, which has no `.git` to
-interrogate and so cannot prove a file is recoverable.
-
-**`<project_dir>/config/runs/journal.jsonl`** is the append-only ledger: two
-lines per run, sharing an `invocation_id`, recording start and outcome. One
-journal per project; WF3 lines name their experiment. It records **executed**
-runs — a `snakemake` invocation that finds everything up to date does no work
-and appends nothing, so a gap in the dates means nothing needed doing, not that
-nobody looked.
-
-To tell whether outputs are current, compare the sidecar beside them with the
-record: `<basin_dir>/evaluation/run_metadata.json` (WF1) and WF2's existing
-`summary/provenance.json`. A `configuration_inputs_sha256` that differs from
-the run record's means the outputs predate the recorded configuration; the
-journal then names the runs on either side. WF3 instead validates its frozen
-simulation, native response inventory and selected immutable metric set; see
-[WF3 retained handoffs](docs/wf3-retained-handoffs.md).
-
-For the model build, `models/hydrology/wflow/hydromt_build_config.yml` and
-`hydromt_update_waterbodies.yml` record the values hydromt was **actually
-handed** — which is not the same as the build template, because arguments are
-replaced with the spatial products P1 produced and some are derived at call
-time.
-
-Runs launched through `scripts/run_workflows.py` additionally write one
-immutable invocation manifest under `<project_dir>/config/runs/invocations/`. It
-records enabled workflows, sanitized arguments, start/end status, config and
-lock-file digests, and Git/runtime identity. A direct `snakemake` invocation
-still writes its run record, journal line and sidecars — only the
-across-workflow invocation manifest is the wrapper's.
-
-Each workflow records itself in **one log and one benchmark table**, both
-regenerated on every run:
-
-- **analyze_climate.smk** — `logs/wf0_analyze_climate.log`
-- **build_model.smk** — `logs/wf1_build_model.log`
-- **analyze_projections.smk** — `logs/wf2_analyze_projections.log`
-- **run_stress_test.smk** —
-  `logs/wf3_run_stress_test_<experiment>.log`
-
-All four land in the project's own `logs/`, so one run's records sit side by
-side. WF3 is experiment-scoped, so its records carry the experiment id in the
-**filename** rather than under `experiments/<name>/`; that subtree holds only the
-experiment's own inputs and products (`config/`, `climate/`, `hydrology/`,
-`results/`).
-
-Rules log to `logs/_parts/` while they run — WF3 one level deeper, under
-`logs/_parts/<experiment>/`, so two experiments can never merge each other's
-parts. A final `gather_logs` rule merges the parts into the single log — one
-`== W.NN  rule_name` section per rule — then deletes them. Benchmarks work the
-same way, into `benchmarks/wf<N>_benchmarks.md` and
-`benchmarks/wf3_benchmarks_<experiment>.md`. See `docs/migration-r08-wf2.md`
-("One log per workflow") for the format and for cleaning up per-rule logs left by
-earlier runs.
-
-### Running from pixi shell
-
-Activate the env, then invoke `snakemake` against the Snakefile and config of
-your choice:
+Activate `pixi shell`, or prefix commands with `pixi run`:
 
 ```console
-$ pixi shell
-$ cd blueearth_cst
-$ snakemake all -c 1 -s build_model.smk \
-    --configfile test_case/project_config_baseline.yml
+snakemake all -c 3 -s analyze_climate.smk --configfile test_case/project_config_rapid.yml
+snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
+snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml
+python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
+snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
 ```
 
-See the per-workflow sections below for the recommended sequences (DAG
-visualization, unlocking, full run).
-
-Common `snakemake` flags:
-
-- `-s`: which Snakefile to run.
-- `--configfile`: path to the YAML config.
-- `-c`: number of cores (more than 1 enables parallelism).
-- `--dry-run` (`-n`): list rule executions without running them.
-- `--unlock`: clear the working-directory lock left by a crash.
-- `--keep-going` (`-k`): keep running independent jobs after a failure.
-
-For all options see the [Snakemake CLI
-documentation](https://snakemake.readthedocs.io/en/stable/executing/cli.html).
-More example invocations are in `scripts/run_snake_test.cmd`.
-
-### Running all enabled workflows with the wrapper
-
-Instead of invoking each Snakefile by hand, `scripts/run_workflows.py` reads the
-`workflows.<name>.enabled` flags in a full-orchestration config and runs
-`snakemake` for exactly the enabled workflows, in order (climate → model →
-projections → experiment):
+Or run all enabled workflows in that fixed convenience order:
 
 ```console
-$ pixi run python scripts/run_workflows.py \
-    --config test_case/project_config_baseline.yml
+pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml --cores 3
 ```
 
-Contract:
+Preflights run immediately before their consumer, after preceding producers.
+Direct generation is supported. Simulation must use its dedicated runner or
+the all-workflow runner; bare `simulate_system.smk` invocation is unsupported.
+`--dry-run` shows a partial DAG until a missing source or metric checkpoint has
+resolved its content identity. Each workflow executes once per invocation.
 
-- Accepts **full-orchestration configs only** — a config carrying a `workflows:`
-  section with all four subsections, each with an `enabled:` key (the
-  `project_config_baseline*.yml` / `project_config.template.yml` class). The
-  single-workflow `project_config_projections_*.yml` configs — parked under
-  `config/templates/archive/` and unmaintained — carry no `workflows:` section
-  and are run directly with `snakemake -s` instead.
-- A missing `workflows:` section or `<name>.enabled` key is a **hard error**
-  naming the absent key, not a silent default.
-- `enabled:` must parse to a real boolean: unquoted `true` / `false` / `yes` /
-  `no` / `on` / `off` are accepted; quoted `"true"` or integers `1` / `0` are
-  rejected.
-- The wrapper **stops on the first nonzero Snakemake exit and returns that
-  code** — a failed upstream workflow is not followed by a downstream run.
-- `--cores N` and any arguments after a `--` sentinel forward to every
-  invocation; each workflow keeps its own flags (`--keep-going` on projections
-  only).
-- Every valid wrapper invocation, including a dry-run, no-op, or failed child,
-  receives a unique atomically finalized manifest under
-  `<project_dir>/config/runs/invocations/`. Passthrough `--config` overrides are
-  sanitized and recorded there; each workflow's own `run_record.yml` remains
-  authoritative for the merged Snakemake config.
-- The wrapper **narrates its own run**, and every line it speaks is bounded by a
-  full-width `=` rule that nothing else in the console draws — so a rule means
-  the runner, not the workflow it launched. It opens with the project, folder,
-  config and cores plus a sequence diagram numbering the enabled workflows and
-  marking the disabled ones; hands off to each workflow at both its edges
-  (`[1/4]  wf0 analyze_climate  --  starting 12:17:24`, and later `done in
-  0:02:13` or `FAILED (exit N) after …`); and closes with a verdict, the total
-  elapsed, each workflow's duration and the paths it wrote — including the
-  invocation manifest above. It deliberately does **not** use the
-  `HH:MM:SS - <module> - …` grammar every line reported from inside a workflow
-  wears, and is correspondingly unaffected by `CST_LOG_LEVEL`, which quietens
-  those rule logs rather than the frame around them.
+### Retained results and metrics-only
 
-**Skip semantics.** `enabled: false` means the wrapper does not invoke that
-Snakefile, so its outputs are not produced. It does **not** delete that
-workflow's prior outputs and does **not** guarantee downstream freshness: an
-enabled downstream workflow consumes whatever prerequisite artifacts already
-exist on disk (or fails with `MissingInputException` if they are absent) —
-identical to invoking a single Snakefile directly. You are responsible for the
-staleness of what a downstream workflow consumes when you disable its
-prerequisite.
+Collections live under `scenario_collections/<collection_id>/`, selected by the
+exact `scenario_plans/<generation_request_id>/plan.json` or an explicit manifest.
+Simulation never creates missing collections. A missing or stale plan names the
+generation command required to resolve it; no directory scan or latest fallback
+is used.
 
-### Re-running an experiment after a model rebuild
+Each `experiments/<experiment_name>/` retains `config/simulation.json`, its native
+`hydrology/wflow/output/run_<run_id>.csv` responses and
+`responses/response_inventory.json`. Metric sets live in
+`results/metric_sets/<metric_set_id>/`; their tables contain
+`metric,location,unit_id,value`, joined through `unit_index.csv` to scenario rows.
+Model-grid forcing and per-run catalogs are temporary. Collection forcing and
+native responses are durable.
 
-An experiment records the Wflow model it was run against, and
-`check_model_reference` refuses to re-run it if that model has since changed —
-otherwise new model state would be mixed into old results. **Expect this refusal
-after any WF1 rebuild, including one that changed nothing numeric.**
-`forcing/inmaps_historical.nc` is not byte-reproducible: hydromt's write varies
-the HDF5 chunk/encoding layout between runs while the values stay identical, so
-a rebuild trips the guard on layout alone.
-
-The guard is correct and must not be loosened. `write_model_reference` declares
-its model inputs `ancient()` deliberately — a reference that refreshed whenever
-the model changed would always match, and the comparison would be decorative.
-
-**Re-recording the reference is an operator decision, not a chore.** It means
-*"this experiment now accepts the rebuilt model."* Before you do it, read what
-the error names:
-
-- If `forcing/inmaps_historical.nc` is the **only** changed input, this is the
-  known layout-only case. Delete the experiment's `config/model_reference.yml`
-  and let `write_model_reference` regenerate it on the next run.
-- If **anything else** is named — `staticmaps.nc`, `wflow_sbm.toml`, or the
-  forcing alongside them — the guard has found something real. Do not re-record.
-  Create a new experiment: the recorded one is not re-runnable against different
-  physics or state.
-
-The cost of accepting this is recorded rather than hidden: a re-record that
-becomes routine is how a genuine drift eventually gets waved through. That is
-the failure mode to watch for, not the noise itself. Tracked as a watch-item on
-the dev board (`[R10-12]`), which re-opens if a re-record ever masks a real
-drift or if hydromt gains a documented way to pin forcing encoding.
-
-### Running from docker image
-
-> [!WARNING]
-> **v0.1.0-alpha only.** `scripts/run_snake_docker.sh` targets the upstream
-> conda-based image. Not supported on the v0.2.0-alpha pixi-based fork; deferred
-> per "Deferred: Linux replication" in `dev/roadmap.md`.
-
-A script is available to run via Docker: `scripts/run_snake_docker.sh`.
-
-### build_model.smk
-
-Builds a hydrological Wflow model and runs / analyses it for a historical
-period.
+To reduce existing responses, set `operation: metrics-only` and the existing
+`experiment_name` in the simulation settings file, then run:
 
 ```console
-$ python scripts/plot_workflow_dag.py -s build_model.smk --configfile test_case/project_config_baseline.yml
-$ snakemake --unlock -s build_model.smk --configfile test_case/project_config_baseline.yml
-$ snakemake all -c 1 -s build_model.smk --configfile test_case/project_config_baseline.yml
+pixi run python scripts/simulate_system.py --config <project-config> --target metrics
 ```
 
-The first command renders a DAG visualization (requires Graphviz's `dot`). It
-writes into `<project_dir>/logs/dag/`, creating the directory itself, named
-after the run that would produce it: `<project_name>_wf<N>_dag.png`, with
-workflow 3 carrying its experiment id (`<project_name>_wf3_<experiment>_dag.png`)
-the same way its log and benchmark table do. It renders the graph and runs nothing. The second command
-clears any leftover working-directory lock from a prior crash. The third runs
-the workflow.
+The all-workflow runner accepts `--simulation-target metrics` for this operation;
+disable other workflows when only retained reduction is wanted. Default target
+`all` never infers an operation from files. Metrics-only requires no live model,
+generation inputs or Julia. Changed simulation inputs require a new experiment;
+changed metrics select a new immutable metric set. See
+[retained handoffs](docs/wf3-retained-handoffs.md) and
+[workflow migration](docs/migration-workflow-names.md).
 
-### analyze_projections.smk
+### Logs and DAGs
 
-Derives future climate statistics (expected temperature and precipitation
-change) for selected CMIP scenarios and GCMs.
+WF0/WF1/WF2 retain their project-level logs and provenance records. Generation
+parts are scoped by generation request under `logs/_parts/generate_scenarios/`;
+simulation parts are scoped by experiment under `logs/_parts/simulate_system/`.
+Benchmark parts use the same scope beneath `benchmarks/_parts/`. The all-workflow
+runner retains an invocation record under `config/runs/invocations/`.
 
 ```console
-$ python scripts/plot_workflow_dag.py -s analyze_projections.smk --configfile test_case/project_config_baseline.yml
-$ snakemake --unlock -s analyze_projections.smk --configfile test_case/project_config_baseline.yml
-$ snakemake all -c 1 -s analyze_projections.smk --configfile test_case/project_config_baseline.yml --keep-going
+pixi run python scripts/plot_workflow_dag.py -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
+pixi run python scripts/plot_workflow_dag.py -s simulate_system.smk --configfile test_case/project_config_rapid.yml
 ```
 
-### run_stress_test.smk
-
-Prepares future weather realizations and stress-test perturbations, runs them
-through the hydrological model, and aggregates the discharge statistics.
-
-Generated forcing is shared under `<project_dir>/scenario_collections/`;
-simulation records and metric sets live under
-`<project_dir>/experiments/<experiment_name>/`. See
-[WF3 retained handoffs](docs/wf3-retained-handoffs.md) for selection, reuse and
-metrics-only operation. The experiment-name config key is **optional**.
-Left unset, it defaults to the project's own name plus the date the experiment
-was first created — a `project_dir` of `/data/gabon_0108` gives
-`experiments/gabon_0108_20260805/`.
-
-The default **reuses** an existing dated experiment before creating a new one,
-so a run tomorrow lands in the same directory as a run today and incremental
-reruns keep working. (An unconditional current-date name would send each day's
-run at an empty directory: every job re-runs, yesterday's outputs are orphaned,
-and `--dry-run` reports a full rebuild with no stated reason.) Resolution never
-creates the directory — it happens at parse time, which also runs under
-`--dry-run` and `--unlock`.
-
-To pin a deliberate name — a scenario label, or a second experiment beside the
-first — run this once, before the first climate-experiment run:
-
-```console
-$ pixi run python scripts/suggest_experiment_name.py <your config>
-$ pixi run python scripts/suggest_experiment_name.py <your config> --name dry_scenario
-```
-
-It reserves the directory atomically (versioning a *generated* collision to
-`_v2`; a name you chose is never silently renamed) and writes
-`workflows.run_stress_test.experiment_name` back into the config, leaving its
-comments and layout intact. `--dry-run` prints the suggestion without writing.
-An **existing value is never overwritten**: the experiment directory is what a
-completed run's outputs are addressed by, so silently renaming it would strand
-them. Clear the key by hand to go back to the default.
-
-```console
-$ python scripts/plot_workflow_dag.py -s run_stress_test.smk --configfile test_case/project_config_baseline.yml
-$ snakemake --unlock -s run_stress_test.smk --configfile test_case/project_config_baseline.yml
-$ snakemake all -c 1 -s run_stress_test.smk --configfile test_case/project_config_baseline.yml
-```
+The graph helper applies the shared simulation target validator. Graphs live
+under the project's `logs/dag/`; simulation graphs include the experiment name.
 
 ## Testing
 

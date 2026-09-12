@@ -69,5 +69,5 @@ supported. This gate is discharged; prove the replacement and continue P0.
 - [P0 — feasibility and baseline preparation](phase-0-feasibility-baseline.md) — complete; named model-validator accepted comparison evidence
 - [P1 — logical contract extraction](phase-1-contract-extraction.md) — acceptance gate passed: adapters integrated, three bounded scientific handoffs accepted, combined software gate passed
 - [P2 — durable handoffs](phase-2-durable-handoffs.md) — complete: current-carrier checkpoint/resolution/metrics-only gates, bounded scientific handoffs and final software checks accepted; see [acceptance](evidence/p2/acceptance.md)
-- [P3 — workflow extraction and migration](phase-3-workflow-extraction.md) — not started
+- [P3 — workflow extraction and migration](phase-3-workflow-extraction.md) — accepted: successor interfaces, scientific/orchestration handoffs and final full software gate pass; GF15 adequacy and milestone seal remain separately owner-gated
 - [GF-1..GF-32 validation map](validation-map.md)

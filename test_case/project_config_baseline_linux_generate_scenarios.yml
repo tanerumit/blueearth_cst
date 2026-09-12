@@ -1,7 +1,6 @@
-# run_stress_test (wf3) -- baseline linux set. A twin of the non-linux file;
+# generate_scenarios (wf3) -- baseline linux set. A twin of the non-linux file;
 # see the header of `project_config_baseline_linux.yml`.
 
-experiment_name: experiment
 n_realizations: 2
 
 # Nine years around 2050, inside the `mid` horizon of analyze_projections.
@@ -41,3 +40,4 @@ climate_perturbations:
   spell_factors:
     dry: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     wet: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+seed: 123

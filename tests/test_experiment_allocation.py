@@ -161,9 +161,9 @@ def test_concurrent_reservation_yields_exactly_one_winner(tmp_path):
 
 
 def _cfg(tmp_path, stem="cfg", experiment_name=None):
-    """A project config plus the run_stress_test settings file it points at.
+    """A project config plus the simulate_system settings file it points at.
 
-    Two files since R13: `experiment_name` is a run_stress_test setting, so the
+    Two files since R13: `experiment_name` is a simulate_system setting, so the
     runner writes it into that workflow's own file and the project config only
     points at it. Returns the PROJECT config, which is what the runner takes.
     """
@@ -180,7 +180,7 @@ def _cfg(tmp_path, stem="cfg", experiment_name=None):
             {
                 "project": {"project_dir": str(tmp_path).replace("\\", "/")},
                 "workflows": {
-                    "run_stress_test": {
+                    "simulate_system": {
                         "enabled": True,
                         "config_path": settings.name,
                     }
@@ -193,8 +193,8 @@ def _cfg(tmp_path, stem="cfg", experiment_name=None):
 
 
 def _settings_of(tmp_path, stem="cfg"):
-    """The run_stress_test settings file `_cfg` writes beside the project config."""
-    return tmp_path / f"{stem}_run_stress_test.yml"
+    """The simulate_system settings file `_cfg` writes beside the project config."""
+    return tmp_path / f"{stem}_simulate_system.yml"
 
 
 def _written_name(tmp_path, stem="cfg"):

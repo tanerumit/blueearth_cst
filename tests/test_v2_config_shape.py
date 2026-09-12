@@ -34,7 +34,12 @@ V2_CONFIG = REPO_ROOT / "tests" / "data" / "v2" / "project_config_v2_probe.yml"
 #: The entry points that dry-run clean on v2. P1 delivered the first two by
 #: moving the T1 reads; P1b added `analyze_projections` by moving WF2's T2 key
 #: readers (`C-25`, `C-59`, `C-60`, `C-63`).
-V2_CLEAN = ("analyze_climate", "build_model", "analyze_projections", "run_stress_test")
+V2_CLEAN = (
+    "analyze_climate",
+    "build_model",
+    "analyze_projections",
+    "generate_scenarios",
+)
 
 
 def _dry_run(snakefile: str) -> str:

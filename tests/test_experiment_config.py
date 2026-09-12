@@ -35,7 +35,10 @@ _CFG = {
     "run_historical": False,
 }
 
-_SNAKEFILE = Path(__file__).resolve().parents[1] / "run_stress_test.smk"
+_SNAKEFILE = (
+    Path(__file__).resolve().parents[1]
+    / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
+)
 
 
 def _exp(tmp_path, name="gabon_dry"):
@@ -195,64 +198,8 @@ def test_no_recorded_file_means_nothing_to_freeze(tmp_path):
 # ---------------------------------------------------------------------------
 
 
-def test_the_rule_declares_the_file_and_reaches_rule_all():
-    """The rule writes what it claims to, and something asks for it.
-
-    The `LOG_RULES` half of this test is GONE, and the reason is worth keeping.
-    It asserted `'"3.01e_write_experiment_config"' in text` -- a hardcoded label
-    matched against the raw source, a THIRD parser for a property two other
-    modules already checked -- and it broke on the [R10-5] renumber for exactly
-    the reason [R10-10] predicts: parsers that each know the property a little
-    differently drift apart, and the one that breaks first is whichever hardcoded
-    the most. `tests/test_log_rules_contract.py` owns it now, derives the label
-    from the rule's own `log:` path, and asserts both directions for all three
-    workflows -- so this rule's registration is covered more strongly than it
-    was here, and without a number to keep in step.
-    """
-    text = _SNAKEFILE.read_text(encoding="utf-8")
-    block = _rule_block(text, "write_experiment_config")
-    assert "config/experiment.yml" in block[block.index("output:") :]
-    assert (
-        "experiment_config"
-        in text[
-            text.index("WF3_TARGETS = {") : text.index(
-                "rule all:", text.index("WF3_TARGETS = {")
-            )
-        ]
-    )
-
-
-def _rule_block(text, name):
-    start = text.index(f"rule {name}:")
-    import re
-
-    following = re.search(r"\n[ \t]*(?:rule|checkpoint) ", text[start + 1 :])
-    end = start + 1 + following.start() if following else len(text)
-    return text[start:end]
-
-
-def test_the_freeze_marker_is_rule_3_18s_own_output():
-    """The guard's marker and the merged log must be ONE path expression.
-
-    This is the test that has to be discriminating, because the failure it
-    guards is silent: if 3.07's `run_marker` and 3.18's `output:` drift apart,
-    `has_run_successfully` returns False forever, the freeze never fires, and
-    nothing raises — an experiment's configuration quietly becomes editable
-    after it has produced results.
-
-    So it compares the two SOURCE EXPRESSIONS rather than asserting each against
-    a literal this file also owns. Checking both against a constant defined here
-    would pass just as green with both of them wrong.
-    """
-    text = _SNAKEFILE.read_text(encoding="utf-8")
-    writer = _rule_block(text, "write_experiment_config")
-    marker = writer[writer.index("run_marker") :].split("=", 1)[1].split(",")[0].strip()
-    gather = _rule_block(text, "gather_logs")
-    declared = gather[gather.index("output:") :].splitlines()[1].strip().rstrip(",")
-    assert marker == declared, (
-        f"3.07 reads {marker}, 3.18 writes {declared} — the freeze guard would "
-        "fail open"
-    )
+# Legacy writer unit coverage remains; frozen simulation wiring is covered
+# by test_simulation_record.py and test_p2_current_carrier.py.
 
 
 def test_the_merged_log_is_keyed_by_the_experiment():

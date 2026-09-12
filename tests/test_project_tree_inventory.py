@@ -54,14 +54,14 @@ COVERED: dict[str, list[str]] = {
         # 2026-08-11, keyed by experiment in the FILENAME; its scratch parts
         # stay experiment-scoped one level down, so two experiments cannot
         # merge each other's.
-        f"logs/wf3_run_stress_test_{E}.log",
+        f"logs/wf4_simulate_system_{E}.log",
         "logs/_parts/1.01b_delineate_region.log",
         f"logs/_parts/{E}/3.11_generate_weather_realizations.log",
         "logs/dag/test_wf1_dag.png",
         f"logs/dag/test_wf3_{E}_dag.png",
         "benchmarks/wf1_benchmarks.md",
         "benchmarks/wf2_benchmarks.md",
-        f"benchmarks/wf3_benchmarks_{E}.md",
+        f"benchmarks/wf4_benchmarks_{E}.md",
         "benchmarks/_parts/1.02_prepare_spatial_maps.tsv",
         f"benchmarks/_parts/{E}/3.16_derive_wflow_indicators.tsv",
     ],
@@ -165,48 +165,35 @@ COVERED: dict[str, list[str]] = {
         "models/hydrology/wflow/hydromt_update_waterbodies.yml",
     ],
     "experiments": [
-        f"experiments/{E}/.project_consistency_ok",
-        f"experiments/{E}/config/project_config_run_stress_test.yml",
+        f"experiments/{E}/.model_reference_ok",
+        f"experiments/{E}/config/simulation.json",
         f"experiments/{E}/config/model_reference.yml",
-        f"experiments/{E}/config/experiment.yml",
-        # No row for a generated climate catalog. Rule 3.13 wrote one naming
-        # every member until 2026-08-18; rule 3.14 now writes its own one-entry
-        # file beside each member's TOML as a `temp()` output, so a finished run
-        # leaves none behind. WF1's `models/hydrology/wflow/config/
-        # climate_store_catalog.yml` above is NOT the same case -- it is read by
-        # a `hydromt update` CLI child, which needs a real file on disk.
-        # WF3's record sits DIRECTLY in the experiment's config bin, not under
-        # config/runs/ like WF1's and WF2's: per arch-10 the WF3 snapshot stays
-        # inside the experiment, which IS the partition here. It therefore has
-        # its own inventory row rather than riding the config/runs/ prefix.
-        f"experiments/{E}/config/run_record.yml",
-        f"experiments/{E}/results/run_metadata.json",
-        # The experiment's own logs/ and benchmarks/ are GONE (2026-08-11) --
-        # their rows moved to "root" above, and a file left at the old location
-        # must now report UNMAPPED (see UNDECLARED below).
-        f"experiments/{E}/results/q_indicators.csv",
-        # `results/basin_indicators.csv` sat here until 2026-08-09
-        # (t2608082010). R11 CR-2 replaced the two WIDE tables with one LONG
-        # table per output variable, so nothing writes that path again and this
-        # sample asserted an inventory rule against a path that can no longer
-        # occur. The rule it exercised is still covered by q_indicators.csv
-        # above.
-        f"experiments/{E}/climate/weathergenr/output/sim_dates.csv",
-        f"experiments/{E}/climate/weathergenr/config/weathergen_config.yml",
-        # `climate/weathergenr/_work/st_4.csv` moved to UNDECLARED on
-        # 2026-08-16: the per-member grid is absorbed by
-        # `config/stress_test_lookup.csv` (below) and `_work/` is deleted, so a
-        # file there is stale output from a pre-migration run.
-        f"experiments/{E}/config/stress_test_lookup.csv",
-        # The bin's own README, written unconditionally every run by the same
-        # helper as `config/runs/README.md`. Its sibling rode the project-level
-        # prefix while this one had no row at all, because the experiment's
-        # config/ is enumerated leaf by leaf.
-        f"experiments/{E}/config/README.md",
-        f"experiments/{E}/climate/weathergenr/plots/obs_power_spectra.png",
-        f"experiments/{E}/hydrology/wflow/config/rlz_1_st_2.toml",
-        f"experiments/{E}/hydrology/wflow/output/rlz_1_st_2.csv",
-        f"experiments/{E}/hydrology/wflow/output/rlz_1_st_2.log",
+        f"experiments/{E}/config/response_request.json",
+        f"experiments/{E}/config/simulator_settings.json",
+        f"experiments/{E}/responses/response_inventory.json",
+        f"experiments/{E}/results/metric_plans/{'a' * 64}/plan.json",
+        f"experiments/{E}/results/metric_sets/{'b' * 64}/metrics.json",
+        f"experiments/{E}/results/metric_sets/{'b' * 64}/unit_index.csv",
+        f"experiments/{E}/results/metric_sets/{'b' * 64}/q_indicators.csv",
+        f"experiments/{E}/hydrology/wflow/config/run_001.toml",
+        f"experiments/{E}/hydrology/wflow/config/run_001.temporal.json",
+        f"experiments/{E}/hydrology/wflow/config/run_001.yml",
+        f"experiments/{E}/hydrology/wflow/forcing/inmaps_run_001.nc",
+        f"experiments/{E}/hydrology/wflow/output/run_001.csv",
+        f"experiments/{E}/hydrology/wflow/output/run_001.log",
+        f"experiments/{E}/hydrology/wflow/output/outstates_run_001.nc",
+    ],
+    "collections": [
+        f"scenario_collections/{'c' * 64}/collection.json",
+        f"scenario_collections/{'c' * 64}/scenario_table.csv",
+        f"scenario_collections/{'c' * 64}/forcing/run_001.nc",
+        f"scenario_collections/{'c' * 64}/stress_test_lookup.csv",
+        f"scenario_collections/{'c' * 64}/preparation_catalog.yml",
+        f"scenario_collections/{'c' * 64}/ancillary/dem/static.nc",
+        f"scenario_plans/{'a' * 64}/plan.json",
+        f"scenario_plans/{'a' * 64}/initializations/invocation.json",
+        f"scenario_plans/{'a' * 64}/generation/config/weathergen_config.yml",
+        f"scenario_plans/{'a' * 64}/generation/output/resampled_dates.csv",
     ],
 }
 
@@ -225,7 +212,14 @@ def test_every_produced_shape_is_covered(section, rel):
 
 def test_coverage_is_not_trivially_satisfied():
     """Guard on the guard: every destination root is exercised."""
-    assert set(COVERED) == {"root", "config", "data", "models", "experiments"}
+    assert set(COVERED) == {
+        "root",
+        "config",
+        "data",
+        "models",
+        "experiments",
+        "collections",
+    }
     assert len(ALL_COVERED) >= 60
 
 
@@ -272,6 +266,8 @@ UNDECLARED = [
     "hydrology_model/staticmaps.nc",  # pre-R9
     "spatial/geoms/basins.geojson",  # pre-R9
     "unknown_root/anything.txt",
+    f"experiments/{E}/.model_reference_unknown",
+    f"scenario_plans/{'a' * 64}/generation/output/unknown_dates.csv",
 ]
 
 
@@ -328,7 +324,7 @@ def test_other_experiments_are_covered_but_not_the_project_root():
     stray.
     """
     assert _kind("experiments/another_run/results/q_indicators.csv") == "IDENTITY"
-    assert _kind(f"experiments/{E}/results/q_indicators.csv") == "IDENTITY"
+    assert _kind(f"experiments/{E}/results/q_indicators.csv") == "UNMAPPED"
 
 
 def test_the_inventory_is_identity_everywhere():

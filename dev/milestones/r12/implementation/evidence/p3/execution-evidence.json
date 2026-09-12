@@ -1,0 +1,328 @@
+{
+  "status": "operational_checks_passed_pending_final_software_and_handoff",
+  "scope": "P3 GF25/GF29/GF30/GF32 final interfaces; no GF15 or milestone seal claim",
+  "operations": [
+    {
+      "interface": "dedicated",
+      "case": "reuse",
+      "report": "operations-dedicated-reuse.json",
+      "report_sha256": "be7b9768ded57dadfd87d95689c0b71dd7fb983908c861eb36e268258dd8c704",
+      "commands": 4,
+      "preserved_files": 125
+    },
+    {
+      "interface": "dedicated",
+      "case": "targets",
+      "report": "operations-dedicated-targets.json",
+      "report_sha256": "a0dd9409dcd311877e515ae3b8a7d20ae1b60c75b158dbca1f2e5fa93490de16",
+      "commands": 4,
+      "preserved_files": 125
+    },
+    {
+      "interface": "dedicated",
+      "case": "stale",
+      "report": "operations-dedicated-stale.json",
+      "report_sha256": "07d45002aee3504ef7dbf5e83b92e177a6526d2dce36803e15f957a9733dda2f",
+      "commands": 5,
+      "preserved_files": 125
+    },
+    {
+      "interface": "dedicated",
+      "case": "selection",
+      "report": "operations-dedicated-selection.json",
+      "report_sha256": "54c81fa4b7c67812c57d0d57f6db57ab16558f77d7c92c837191046c6a34dcda",
+      "commands": 3,
+      "preserved_files": 125
+    },
+    {
+      "interface": "all",
+      "case": "reuse",
+      "report": "operations-all-reuse.json",
+      "report_sha256": "d93cac0844c3c6cf458e83c762aa4978936fb8239b11c4ab6624fe45261167d9",
+      "commands": 4,
+      "preserved_files": 121
+    },
+    {
+      "interface": "all",
+      "case": "targets",
+      "report": "operations-all-targets.json",
+      "report_sha256": "21db121105d67cf504f2b4abe48306799dd65ed01d5a6014aecd9d5102b0fc04",
+      "commands": 4,
+      "preserved_files": 121
+    },
+    {
+      "interface": "all",
+      "case": "stale",
+      "report": "operations-all-stale.json",
+      "report_sha256": "598db26de5b40c93ef5bb20dc57ab74a6bb72c05bea69b4157272a0e48beec8f",
+      "commands": 5,
+      "preserved_files": 121
+    },
+    {
+      "interface": "all",
+      "case": "selection",
+      "report": "operations-all-selection.json",
+      "report_sha256": "220ac233eff01759e550f134a5ff24496b8466f7bafe2b5e75658fe55b48798e",
+      "commands": 3,
+      "preserved_files": 125
+    }
+  ],
+  "artifacts": {
+    "direct": {
+      "paths": {
+        "config": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project_config_p3.yml",
+        "scenario_plan": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project/scenario_plans/0867267ab9c2b543d5aff50afa428b50b93ef057ac92dca8c3993ec05d54a9b5/plan.json",
+        "manifest": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project/scenario_collections/71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88/collection.json",
+        "experiment": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project\\experiments\\p3_final",
+        "metric_plan": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project\\experiments\\p3_final\\results\\metric_plans\\412a481d2edde4f35a0dc59feb6b29c24c11427b62c8a2b200828ee2f67c81a0\\plan.json",
+        "metric_manifest": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project/experiments/p3_final/results/metric_sets/49ca015882e8396f4fd46930b9a95be3ccbd4dfcaf2d5c7840bf1b3df95aa665/metrics.json"
+      },
+      "simulation": {
+        "collection": {
+          "collection_id": "71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88",
+          "collection_revision": "5c21f75dc5cc4354ee32bd9983e1a39d55fea09944eb5bc20657dd8318010885",
+          "manifest_path": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project/scenario_collections/71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88/collection.json",
+          "resolution_mode": "project-generation"
+        },
+        "environment": {
+          "path": "simulation_environment.json",
+          "sha256": "acdefbd936856701d87365e6b925ef1dee2e772474d2fad1a2f5d4d554b1c1ba"
+        },
+        "experiment_name": "p3_final",
+        "model": {
+          "model_digest": "f0f5c03b91aba524b1fd3a5b7c192fbf2929fa413cb024ed9d45ee582adec6bc",
+          "reference_path": "config/model_reference.yml"
+        },
+        "response_inventory_sha256": "3238e59a15148e94b64c3c3d7f8639a3da9a5623cd329ec4ec9cc4afe5300eb1",
+        "response_request": {
+          "path": "response_request.json",
+          "sha256": "0f4739c15a2f0933d83ae23e209a37c527dd7ad272b7cffb1a654251c90ac53a"
+        },
+        "schema_version": "simulation/1",
+        "settings": {
+          "path": "simulator_settings.json",
+          "sha256": "cd37680b91d0b17e70ba1d77caed5fe6d301c3ffc12bb4a85bd43857d58b7ff2"
+        },
+        "simulation_id": "3a8c1fc6c633687bb95736f3c5f76cf8ac323927db32af7f767f8bde03a41a10",
+        "simulator": {
+          "name": "wflow",
+          "revision": "682f7cbd11a9a4428f3f9d63fbaeeb416e3a0664e7ad187b9f233a5718188d58"
+        },
+        "simulator_adapter_code": {
+          "path": "simulator_adapter_code_inventory.json",
+          "sha256": "00ea814b0a02680f82775cf69ce89554f0262cea575a5829a48fb359fb7d68f7"
+        }
+      },
+      "metric_manifest_sha256": "74095313f3c83d1749a65a0a7ddafb59213e740bd69590b77e47ff5474ecad9e",
+      "scenario_plan_sha256": "6877980a63be93a88928f1711557d0cbfd25f28c6ad37fffb25610d1ab8aaa53",
+      "metric_plan_sha256": "f3516db3ee17d8d7cd3daecea544e3758ad56ddc5ef1161318b2596256e0c700"
+    },
+    "runner": {
+      "paths": {
+        "config": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-runner\\project_config_p3.yml",
+        "scenario_plan": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-runner/project/scenario_plans/c7db1a863b9c17acf69b0c467f4cf5a96c56fcab03e78a68f44ea711d86fd2ac/plan.json",
+        "manifest": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-runner/project/scenario_collections/382ea628574513c6d1d31c75d6f9904b943e553c51fb8f8061b0476b85b6cd6d/collection.json",
+        "experiment": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-runner\\project\\experiments\\p3_final",
+        "metric_plan": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-runner\\project\\experiments\\p3_final\\results\\metric_plans\\60648bbbb490115b47fe3b9eff677b2c3291242eaf847fb7a734c530ea752271\\plan.json",
+        "metric_manifest": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-runner/project/experiments/p3_final/results/metric_sets/c1f94aa4045882507887735472aec069fa39ec4985fd524e00fe400019d0c5f2/metrics.json"
+      },
+      "simulation": {
+        "collection": {
+          "collection_id": "382ea628574513c6d1d31c75d6f9904b943e553c51fb8f8061b0476b85b6cd6d",
+          "collection_revision": "4f49e542fd40f546cd92fcc9f697e29592b33d70475e51c3ed7f9dfeb5969991",
+          "manifest_path": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-runner/project/scenario_collections/382ea628574513c6d1d31c75d6f9904b943e553c51fb8f8061b0476b85b6cd6d/collection.json",
+          "resolution_mode": "project-generation"
+        },
+        "environment": {
+          "path": "simulation_environment.json",
+          "sha256": "acdefbd936856701d87365e6b925ef1dee2e772474d2fad1a2f5d4d554b1c1ba"
+        },
+        "experiment_name": "p3_final",
+        "model": {
+          "model_digest": "f0f5c03b91aba524b1fd3a5b7c192fbf2929fa413cb024ed9d45ee582adec6bc",
+          "reference_path": "config/model_reference.yml"
+        },
+        "response_inventory_sha256": "9772ea5b572a1db32d26877e47f966449514c928c75933229d4736cd98e4ca1a",
+        "response_request": {
+          "path": "response_request.json",
+          "sha256": "0f4739c15a2f0933d83ae23e209a37c527dd7ad272b7cffb1a654251c90ac53a"
+        },
+        "schema_version": "simulation/1",
+        "settings": {
+          "path": "simulator_settings.json",
+          "sha256": "cd37680b91d0b17e70ba1d77caed5fe6d301c3ffc12bb4a85bd43857d58b7ff2"
+        },
+        "simulation_id": "b295b21b107163db4966bd1630f7e9437d757214d0f558261ed5863fbf5e9f78",
+        "simulator": {
+          "name": "wflow",
+          "revision": "682f7cbd11a9a4428f3f9d63fbaeeb416e3a0664e7ad187b9f233a5718188d58"
+        },
+        "simulator_adapter_code": {
+          "path": "simulator_adapter_code_inventory.json",
+          "sha256": "00ea814b0a02680f82775cf69ce89554f0262cea575a5829a48fb359fb7d68f7"
+        }
+      },
+      "metric_manifest_sha256": "0441fc429247e16c20e8de0193765592415ebcd7c72102c24386babd4efddb20",
+      "scenario_plan_sha256": "2f5602e14d948e35ee86317774fd8158fbc1343aa00ce80ed2171b8533e33fcb",
+      "metric_plan_sha256": "deb98a7eeeda099936837bc9e70ea5f8009d39867258fd6ce64bbb838104b652"
+    }
+  },
+  "logs": [
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct-generation-dry.log",
+      "sha256": "9564f300b730e004eb1104de263c907e62726be2a0e5ec82bf4454364aba736c",
+      "lines": 68,
+      "excerpt_lines": 2,
+      "omitted_lines": 66
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct-generation.log",
+      "sha256": "3b8b7f7b6e2593b032e2fb7d8afb9ad14d65c73ae2f0db2a089e05c9ace3087f",
+      "lines": 640,
+      "excerpt_lines": 7,
+      "omitted_lines": 633
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct-simulation-dry.log",
+      "sha256": "24aa537b65c7393220103f809d96962d052910d09c165182d074ef742364eb70",
+      "lines": 68,
+      "excerpt_lines": 3,
+      "omitted_lines": 65
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct-simulation.log",
+      "sha256": "d761e7e3aecb150b9814c3c70d463289e411d7fa2c516e2e1a64b9881fe89864",
+      "lines": 397,
+      "excerpt_lines": 8,
+      "omitted_lines": 389
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-runner-generation-dry.log",
+      "sha256": "0effbbdee12b557408c3bbc0391dba75d6249492145f69686d647cb319623c9c",
+      "lines": 121,
+      "excerpt_lines": 3,
+      "omitted_lines": 118
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-runner-generation.log",
+      "sha256": "e30a7d658c1413103aa419942bf02adbbd3685abb12ab0508c04cec55227f7f2",
+      "lines": 689,
+      "excerpt_lines": 8,
+      "omitted_lines": 681
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-runner-simulation-dry.log",
+      "sha256": "5a151e24f43c739298e66fc328ed970539a09749b58a4a98bc80de2546b2ee7d",
+      "lines": 121,
+      "excerpt_lines": 3,
+      "omitted_lines": 118
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-runner-simulation.log",
+      "sha256": "607eefab3aa954e2371a2ea22f0c71b47e014b1f7414b8795fc5fc282bab2baf",
+      "lines": 446,
+      "excerpt_lines": 8,
+      "omitted_lines": 438
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-offline.log",
+      "sha256": "098cf8ea6a7875629ef7ac1dd4b3a7b0bfeec166c93cc2e39208f7933b3359fb",
+      "lines": 56,
+      "excerpt_lines": 6,
+      "omitted_lines": 50
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-gf9-direct.log",
+      "sha256": "4d65125296f316729b112ef5db933fbf5fa9fb441b87edb0d52b3b236c30716b",
+      "lines": 45,
+      "excerpt_lines": 1,
+      "omitted_lines": 44
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-gf9-runner.log",
+      "sha256": "77b3e6883d95c405a2f70d1674c4ec562b3ec1f2bdc09fecb54346c2dec890a5",
+      "lines": 45,
+      "excerpt_lines": 1,
+      "omitted_lines": 44
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-notebook-final-fixed.log",
+      "sha256": "3bc7a1e8d3bc9e3169d21f5ee50823f28f9093fc53558a883745caf8be609ce4",
+      "lines": 57,
+      "excerpt_lines": 13,
+      "omitted_lines": 44
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-direct-tree-final.log",
+      "sha256": "ff3b68c3922abfba049d54d6224ff274cef089d35510584b6177241d82118e46",
+      "lines": 434,
+      "excerpt_lines": 1,
+      "omitted_lines": 433
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-runner-tree-final.log",
+      "sha256": "d582b06d1b83877b179cdf62783efa77074e20f208ad669a2eef0dbae34a8eda",
+      "lines": 238,
+      "excerpt_lines": 1,
+      "omitted_lines": 237
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-inventory-tests.log",
+      "sha256": "b34ffcf2f30805764230fb1dc2dd51f3e9829127f41ed2ac39fe8245bad2b853",
+      "lines": 4,
+      "excerpt_lines": 1,
+      "omitted_lines": 3
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf27-final-configs\\capacity-21.log",
+      "sha256": "91f28cfbc329fabde50579517bb70cf13299faf99b410b84aff5a1271febad2a",
+      "lines": 608,
+      "excerpt_lines": 7,
+      "omitted_lines": 601
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf27-final-configs\\capacity-22.log",
+      "sha256": "4c4dfdf0109c1845d5460a7612f1a048a5f563d0e3982c10951b188e050ea2cd",
+      "lines": 611,
+      "excerpt_lines": 7,
+      "omitted_lines": 604
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf27-final-configs\\capacity-100.log",
+      "sha256": "dd05c67dcf5f641c9d7569d2e0050f6a71a1f87ecbfc88780c074c9e030be2b4",
+      "lines": 614,
+      "excerpt_lines": 7,
+      "omitted_lines": 607
+    },
+    {
+      "path": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf27-final-configs\\comparison.log",
+      "sha256": "7ad111567d8a1c653b5d02b53c5992df90144be4a4996fc7dd4b85a5d50b27b1",
+      "lines": 5,
+      "excerpt_lines": 1,
+      "omitted_lines": 4
+    }
+  ],
+  "offline": {
+    "operation": "metrics-only",
+    "tokens": [
+      "gwr"
+    ],
+    "jobs": 3,
+    "models_and_data_restored": true,
+    "probe_sha256": "7e6dac8a61c820797853b36dc16052647ed365e44c7936a27bc7abac2f6d3468",
+    "conditions": "Scratch models/data relocated; Julia absent from PATH; live catalog and generation/model/projection config paths missing. finally restored directories."
+  },
+  "generation_model_absence": {
+    "direct": {
+      "enabling_script_sha256": "90cccf3a6c5ef32b95d4bb139ed6814d3fa400294f753ccf869e11cd7086358c",
+      "enabling_log_sha256": "79a6d9dbaee23ba6c21c666a42ae330579290cd7e66bfb378723dae30f34b267",
+      "invariant": "Helper refuses an existing model directory; model copied from P0 only after collection publication."
+    },
+    "runner": {
+      "enabling_script_sha256": "90cccf3a6c5ef32b95d4bb139ed6814d3fa400294f753ccf869e11cd7086358c",
+      "enabling_log_sha256": "df17496f50c5b474360796488d9ddc2d912fefdad8f75e49d8c25420ec8e1104",
+      "invariant": "Helper refuses an existing model directory; model copied from P0 only after collection publication."
+    }
+  },
+  "elapsed_time_scope": "Invocation wall times are provenance only, not performance benchmark evidence."
+}

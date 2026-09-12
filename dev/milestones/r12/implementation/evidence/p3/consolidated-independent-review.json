@@ -1,0 +1,363 @@
+{
+  "status": "accepted_bounded_P3_migration_GF15_adequacy_and_seal_pending",
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "execution_evidence_sha256": "3deda29d0c03ce8d7f14d7ad399cb77074f17a1be688475bf55db01610f208c4",
+  "report_count": 8,
+  "command_count": 32,
+  "retained_unique_files_rehashed": 246,
+  "reports": [
+    {
+      "report": "operations-dedicated-reuse.json",
+      "sha256": "be7b9768ded57dadfd87d95689c0b71dd7fb983908c861eb36e268258dd8c704",
+      "commands": 4,
+      "preserved_files": 125
+    },
+    {
+      "report": "operations-dedicated-targets.json",
+      "sha256": "a0dd9409dcd311877e515ae3b8a7d20ae1b60c75b158dbca1f2e5fa93490de16",
+      "commands": 4,
+      "preserved_files": 125
+    },
+    {
+      "report": "operations-dedicated-stale.json",
+      "sha256": "07d45002aee3504ef7dbf5e83b92e177a6526d2dce36803e15f957a9733dda2f",
+      "commands": 5,
+      "preserved_files": 125
+    },
+    {
+      "report": "operations-dedicated-selection.json",
+      "sha256": "54c81fa4b7c67812c57d0d57f6db57ab16558f77d7c92c837191046c6a34dcda",
+      "commands": 3,
+      "preserved_files": 125
+    },
+    {
+      "report": "operations-all-reuse.json",
+      "sha256": "d93cac0844c3c6cf458e83c762aa4978936fb8239b11c4ab6624fe45261167d9",
+      "commands": 4,
+      "preserved_files": 121
+    },
+    {
+      "report": "operations-all-targets.json",
+      "sha256": "21db121105d67cf504f2b4abe48306799dd65ed01d5a6014aecd9d5102b0fc04",
+      "commands": 4,
+      "preserved_files": 121
+    },
+    {
+      "report": "operations-all-stale.json",
+      "sha256": "598db26de5b40c93ef5bb20dc57ab74a6bb72c05bea69b4157272a0e48beec8f",
+      "commands": 5,
+      "preserved_files": 121
+    },
+    {
+      "report": "operations-all-selection.json",
+      "sha256": "220ac233eff01759e550f134a5ff24496b8466f7bafe2b5e75658fe55b48798e",
+      "commands": 3,
+      "preserved_files": 125
+    }
+  ],
+  "commands": [
+    {
+      "interface": "dedicated",
+      "case": "reuse",
+      "label": "simulation-reuse",
+      "exit_code": 0,
+      "log_sha256": "a223260c52488b41fcade2207770e5c2f4e4e210290031059340d798acf520fb",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "reuse",
+      "label": "simulation-force",
+      "exit_code": 0,
+      "log_sha256": "2197545a22b473ffebc3bf8915a5ee540af11def92518e1e50d1a1cef556412b",
+      "mtime_only_count": 5
+    },
+    {
+      "interface": "dedicated",
+      "case": "reuse",
+      "label": "metrics-reuse",
+      "exit_code": 0,
+      "log_sha256": "0788e4d6cca443d344d8d6a3d665f5728198d4772a98a528a7ee1eded91e61e7",
+      "mtime_only_count": 5
+    },
+    {
+      "interface": "dedicated",
+      "case": "reuse",
+      "label": "metrics-force",
+      "exit_code": 0,
+      "log_sha256": "266a96a722bc30a47fb47804c849e5c1e7bf7ce267d34d715030651a2adfeb10",
+      "mtime_only_count": 5
+    },
+    {
+      "interface": "dedicated",
+      "case": "targets",
+      "label": "valid-selected-file",
+      "exit_code": 0,
+      "log_sha256": "b9386eb09cbbd3e8564e61d37e73033fb96cb84e3a1fd61fc2691c769dd42b85",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "targets",
+      "label": "forbidden-native-file",
+      "exit_code": 2,
+      "log_sha256": "95d9e7d63e773f8ba5ecb7f9c054f014654d8efd916bfb13d350a7e76942a44a",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "targets",
+      "label": "wrong-metric-set",
+      "exit_code": 2,
+      "log_sha256": "ae2d706717cfd1df878e0ff17956e301fa26cc9274df9c5af06835ddd2c75983",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "targets",
+      "label": "forbidden-metric-plan-repair",
+      "exit_code": 2,
+      "log_sha256": "95d9e7d63e773f8ba5ecb7f9c054f014654d8efd916bfb13d350a7e76942a44a",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "stale",
+      "label": "missing-source-plan-refusal",
+      "exit_code": 1,
+      "log_sha256": "1c4586677073a958b7c4efd5549845da1baa58944ede0ac25fbf4eb03e0ad1f0",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "stale",
+      "label": "stale-source-refusal",
+      "exit_code": 1,
+      "log_sha256": "f240ba81a804fb79ae20c918bab8b12cbbc4981e0ead00f2e8d453293acdb484",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "stale",
+      "label": "forbidden-source-plan-repair",
+      "exit_code": 2,
+      "log_sha256": "95d9e7d63e773f8ba5ecb7f9c054f014654d8efd916bfb13d350a7e76942a44a",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "stale",
+      "label": "stale-metric-refusal",
+      "exit_code": 1,
+      "log_sha256": "86b355aa65d385e6e36ea03e475466c7797f9194b79b4f303af4ce0d41bd9628",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "stale",
+      "label": "forbidden-metric-plan-repair",
+      "exit_code": 2,
+      "log_sha256": "95d9e7d63e773f8ba5ecb7f9c054f014654d8efd916bfb13d350a7e76942a44a",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "selection",
+      "label": "default-among-several",
+      "exit_code": 0,
+      "log_sha256": "fd6688ff39f1e5be8be45063c3f0820afc90a174da72767e6f87595989a27cd2",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "selection",
+      "label": "explicit-retained-metrics",
+      "exit_code": 0,
+      "log_sha256": "b9386eb09cbbd3e8564e61d37e73033fb96cb84e3a1fd61fc2691c769dd42b85",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "dedicated",
+      "case": "selection",
+      "label": "explicit-mismatch",
+      "exit_code": 2,
+      "log_sha256": "96c8329d31a58ba25bd7a6ad137246e8b621beb52c17955e2134afd8d6f4633a",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "reuse",
+      "label": "simulation-reuse",
+      "exit_code": 0,
+      "log_sha256": "c06591abffa94d72b7f55a872168a1427eea0f8a267f5aa522c6aa2d81616d16",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "reuse",
+      "label": "simulation-force",
+      "exit_code": 0,
+      "log_sha256": "c441f13ad95ffe778943c9be06de73359377c207ee36efde6a4f4c3809941c08",
+      "mtime_only_count": 5
+    },
+    {
+      "interface": "all",
+      "case": "reuse",
+      "label": "metrics-reuse",
+      "exit_code": 0,
+      "log_sha256": "e318dd52ef2bf4845fcd52fea89ccb2d434a91bd7f559691fbbb58c5dfe26382",
+      "mtime_only_count": 5
+    },
+    {
+      "interface": "all",
+      "case": "reuse",
+      "label": "metrics-force",
+      "exit_code": 0,
+      "log_sha256": "8907142d13cb99ed31438027503dba1788f1955ff71837fb9fc08baaa511f845",
+      "mtime_only_count": 5
+    },
+    {
+      "interface": "all",
+      "case": "targets",
+      "label": "valid-selected-file",
+      "exit_code": 0,
+      "log_sha256": "a687537088dcad94187818ff1de754918f972c6a74c15d3986761a83e9774128",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "targets",
+      "label": "forbidden-native-file",
+      "exit_code": 2,
+      "log_sha256": "43976ce8ce3f85a8bb22016e58602b072e8dd85aa95f4940bf8490f0500660f5",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "targets",
+      "label": "wrong-metric-set",
+      "exit_code": 2,
+      "log_sha256": "285702dc2df7a9470763f5da5f06958d5d03aec8270adee703ca3f66e6ea1c77",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "targets",
+      "label": "forbidden-metric-plan-repair",
+      "exit_code": 2,
+      "log_sha256": "43eb34cbbee616f019a6e48971e7888e91b7c2f3a1246f9a40a17c81df0f9bfb",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "stale",
+      "label": "missing-source-plan-refusal",
+      "exit_code": 1,
+      "log_sha256": "3335bc8b43c8da9688998308410a0edf0eb650d503bf4d86c3cb7e778631719c",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "stale",
+      "label": "stale-source-refusal",
+      "exit_code": 1,
+      "log_sha256": "10c4f426a7472fd48ace21d6f4a54526ead4741f1af6f412bb19665a7da7d141",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "stale",
+      "label": "forbidden-source-plan-repair",
+      "exit_code": 2,
+      "log_sha256": "9c012b4436f07f4525237941a2abb2e36451144fad276d05cbd51962a33149b0",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "stale",
+      "label": "stale-metric-refusal",
+      "exit_code": 1,
+      "log_sha256": "f9c5057d9387048ff5079ee19b3a839c25d5ca1484091a96ef9f49882e748731",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "stale",
+      "label": "forbidden-metric-plan-repair",
+      "exit_code": 2,
+      "log_sha256": "d8dadee949a7f81e21759642fb5c48f49b60c7f78f509f18bf659684d6980c32",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "selection",
+      "label": "default-among-several",
+      "exit_code": 0,
+      "log_sha256": "0a0af1e5fd9e9df819d64d09b763e02a961cee32b6b08c50e4d351d0534ec1d8",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "selection",
+      "label": "explicit-retained-metrics",
+      "exit_code": 0,
+      "log_sha256": "e0ab54e2cb8fe8a4305c6b110e653857750117061d9f0e56865e5908f4512e33",
+      "mtime_only_count": 0
+    },
+    {
+      "interface": "all",
+      "case": "selection",
+      "label": "explicit-mismatch",
+      "exit_code": 2,
+      "log_sha256": "30c3074dc140b3d41713f5aee09b10b68e9048d3ec4c99cae05ff57e71ffac04",
+      "mtime_only_count": 0
+    }
+  ],
+  "execution_log_hashes_verified": 19,
+  "comment_provenance_sha256": "9cbc2e18b3d3547a9857974fac671c0f8334e1d1098d832f321a0bc7c7c0014a",
+  "executed_inventory_digest": "b12a76551cf13b9bce3f96e5d8125954ae70dbfc88278e32f93a90f3e980be98",
+  "reviewed_inventory_digest": "376ae0edeed8283b4cfd0cec9667ef07f97e4966e019d300af5df5b9f7d6c04b",
+  "source_files": 193,
+  "only_changed_runtime_file": "scripts/run_workflows.py",
+  "remaining_192_sources_byte_identical": true,
+  "runner_before_bytes_reconstructed_and_hash_verified": true,
+  "runner_AST_identity_verified": true,
+  "full_software": {
+    "full_log_sha256": "746ecca925a2d7d90c877009e4b3874f68552c15c563a8cdba386d5fff28efe9",
+    "counts": {
+      "passed": 3705,
+      "skipped": 15,
+      "xfailed": 1,
+      "warnings": 8845
+    },
+    "verified_software_log_count": 9,
+    "reviewed_runtime_inventory_unchanged": true,
+    "status": "passed",
+    "software_validation_sha256": "b3900a6e0e242c4a029ca03b3e1d3e4e8b6f408b2fe09ac179e27975e5858941",
+    "limits": "15 skips: 12 stale-standing-fixture cases and 3 opt-in integration cases; 1 expected upstream HydroMT round-trip failure; Linux/remote CI not run",
+    "elapsed_seconds": 803.06,
+    "exit_code": 0,
+    "command": "pixi run --as-is test-full (pytest tests/)"
+  },
+  "limits": "Bounded P3 migration handoff; GF15 adequacy and milestone seal excluded",
+  "postgate_eof_reconciliation": {
+    "CLI_result": "20 passed in 38.08s",
+    "current_runtime_hashes_verified": 193,
+    "path": "generate_scenarios.smk",
+    "scope": "Original scientific and full-suite inventory/log bindings preserved. No scientific/full-suite repetition warranted; final staged whitespace and exact-byte audit remain coordinator Git gates.",
+    "commit_inventory_digest": "7a7c6510854031a69e76ed3bf3c0a420200069d41098c3e552bf5310f0c9e1d0",
+    "CLI_log_sha256": "9bfc7f9eb178e5bc41013527e57db1f57603378a269e11fb5987a6fd13dcf937",
+    "CLI_command": "pixi run --as-is pytest tests/test_cli.py",
+    "status": "accepted_nonexecuting_EOF_change_CLI_passed",
+    "before_sha256": "bf88fe7a765d30f4f0127ca8b689986b27c39f5fa1f8207e467afdf66005f279",
+    "after_sha256": "b7b52a54b919372065152907e9085069b4f1466b60697d4a94aab24f8806690a",
+    "date": "2026-09-12",
+    "full_tested_inventory_digest": "376ae0edeed8283b4cfd0cec9667ef07f97e4966e019d300af5df5b9f7d6c04b",
+    "CLI_exit_code": 0,
+    "postgate_record_sha256": "b1b89c20f8e7f9020fb3ca60641f08466d66c874249409cd583a689369bf173e",
+    "reconstruction": "Append exactly CRLF to commit bytes to reproduce full-tested SHA256",
+    "other_full_tested_sources_byte_identical": 192,
+    "removed_bytes": 2
+  }
+}

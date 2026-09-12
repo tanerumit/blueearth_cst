@@ -1,0 +1,1423 @@
+{
+  "status": "accepted_bounded_direct_GF9_GF28_pending_GF27_runner_software",
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "comparison_sha256": "2e08b2060d4c3d53d77ff0d33469cfa88c806f86e5fb23c9da23b8fa1ab528b1",
+  "metric_manifest_sha256": "74095313f3c83d1749a65a0a7ddafb59213e740bd69590b77e47ff5474ecad9e",
+  "response_inventory_sha256": "e3790395d9e70082d014fd092752fc10178c228936b93904fb97fb9866b709ec",
+  "simulation_id": "3a8c1fc6c633687bb95736f3c5f76cf8ac323927db32af7f767f8bde03a41a10",
+  "collection_id": "71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88",
+  "collection_revision": "5c21f75dc5cc4354ee32bd9983e1a39d55fea09944eb5bc20657dd8318010885",
+  "metric_set_id": "49ca015882e8396f4fd46930b9a95be3ccbd4dfcaf2d5c7840bf1b3df95aa665",
+  "native": [
+    {
+      "run_id": "01",
+      "old_member": "rlz_1_st_0",
+      "sha256": "c72955959eaa7490a32593f4624507a899c3eab08ad007364fe21d94838b47c7",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "02",
+      "old_member": "rlz_1_st_1",
+      "sha256": "e4b6d427871dfa4bf94562b71c07295b0b79e54799a4495c6cd9b711e23ce6fc",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "03",
+      "old_member": "rlz_1_st_2",
+      "sha256": "e56d487b5361870369a89de53729eb9c7b8bd3312f7b98a4aa4898e4a5f2253c",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "04",
+      "old_member": "rlz_1_st_3",
+      "sha256": "a39ad63286963a07aca4492c1db0493ecf2c824261de84838dc63eefe8e296d0",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "05",
+      "old_member": "rlz_1_st_4",
+      "sha256": "65ab5a460cb0c95bd8da3a87fc543b134447b9b6505fe733bb0212e69dd10c1f",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "06",
+      "old_member": "rlz_1_st_5",
+      "sha256": "793043daf9427101f891e5157bb01a05e0390e5bec85a7393ac7faa7a7eee088",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "07",
+      "old_member": "rlz_1_st_6",
+      "sha256": "6b11dea065f261a66275bf2b47ccbe24f3973e46732826e6ffbaa8c1f5247b60",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "08",
+      "old_member": "rlz_2_st_0",
+      "sha256": "41c66cd16599e9c7c05adb0fface89f0caf5a582db2c65933a42404653228ce7",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "09",
+      "old_member": "rlz_2_st_1",
+      "sha256": "1a3c70e88f98f10e93226473156dd6bb9fce784060375867f0f37bdf627dc3eb",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "10",
+      "old_member": "rlz_2_st_2",
+      "sha256": "f2f3948c6147aabdb070ef8a095b8a4c8d4d86913b72ea4440846ed9d56830a8",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "11",
+      "old_member": "rlz_2_st_3",
+      "sha256": "72a4f3b8771d3849db4167e108d61426ef55c436f54df7c3bbba1d0455ae708b",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "12",
+      "old_member": "rlz_2_st_4",
+      "sha256": "0c329ebbd2ea84a7b2e288278196baeb68c90c6b7aa5aec899d1539471d45d49",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "13",
+      "old_member": "rlz_2_st_5",
+      "sha256": "dcebd59f6fa9c494161b4149a761e236a72055a6f363baeaf039d161180cdbbb",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    },
+    {
+      "run_id": "14",
+      "old_member": "rlz_2_st_6",
+      "sha256": "ecfebe000c650c93b7368f25b21d0537307c63b501cfcb77bbf7f1eb99c863a6",
+      "series": 9,
+      "observations_per_series": 3286,
+      "exact_values_times_bytes": true
+    }
+  ],
+  "metric_counts": {
+    "old": 686,
+    "new": 756,
+    "by_class_old": {
+      "A": 546,
+      "B": 70,
+      "C": 70
+    },
+    "unmatched_new": 0,
+    "duplicate_joins": 0
+  },
+  "independent_reference": {
+    "location": "101",
+    "months": {
+      "wet": 11,
+      "dry": 8
+    },
+    "runs": [
+      "01",
+      "08"
+    ]
+  },
+  "class_c": [
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "101",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1040",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1020",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1010",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1030",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "101",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1040",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1020",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1010",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1030",
+      "st_id": "0",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "101",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1040",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1020",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1010",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1030",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "101",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1040",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1020",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1010",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1030",
+      "st_id": "1",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "101",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1040",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1020",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1010",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1030",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "101",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1040",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1020",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1010",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1030",
+      "st_id": "2",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "101",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1040",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1020",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1010",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1030",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "101",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1040",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1020",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1010",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1030",
+      "st_id": "3",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "101",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1040",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1020",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1010",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1030",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "101",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1040",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1020",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1010",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1030",
+      "st_id": "4",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "101",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1040",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1020",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1010",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1030",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "101",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1040",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1020",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1010",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1030",
+      "st_id": "5",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "101",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1040",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1020",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1010",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_wettest_month_mean",
+      "location": "1030",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "101",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1040",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1020",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1010",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    },
+    {
+      "metric": "q_driest_month_mean",
+      "location": "1030",
+      "st_id": "6",
+      "raw_mean_publication_exact": true,
+      "member_publications_exact": 2
+    }
+  ],
+  "fit_checks": [
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "15",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "15",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "15",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "15",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "15",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "15",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "15",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "15",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "15",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "15",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "16",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "16",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "16",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "16",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "16",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "16",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "16",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "16",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "16",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "16",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "17",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "17",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "17",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "17",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "17",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "17",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "17",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "17",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "17",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "17",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "18",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "18",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "18",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "18",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "18",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "18",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "18",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "18",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "18",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "18",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "19",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "19",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "19",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "19",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "19",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "19",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "19",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "19",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "19",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "19",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "20",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "20",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "20",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "20",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "20",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "20",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "20",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "20",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "20",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "20",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "21",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "21",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "21",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "21",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_10yr_max",
+      "unit_id": "21",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "21",
+      "location": "101",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "21",
+      "location": "1010",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "21",
+      "location": "1020",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "21",
+      "location": "1030",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "unit_id": "21",
+      "location": "1040",
+      "member_counts": [
+        9,
+        9
+      ],
+      "finite_parameters_positive_scale": true
+    }
+  ],
+  "retained_only_gwr_metric_set": "d354a347e50cb03dbc5c538e929cf7411be8758c38f3cdcc15aec36f323790ff",
+  "retained_only_gwr_exact_rows": 56,
+  "discrimination_review": {
+    "comparator_numeric_perturbation_rejected": true,
+    "lost_row_rejected": true,
+    "duplicate_row_rejected": true,
+    "actual_reversal_variants": 4,
+    "opposite_season_fixture": {
+      "reference": {
+        "wet": {
+          "run_ids": [
+            "01",
+            "08"
+          ],
+          "reference_location_id": "9",
+          "month": 7,
+          "which": "wet",
+          "counts": [
+            [
+              "01",
+              "2019-01-02 00:00:00",
+              "2022-12-31 00:00:00",
+              4,
+              48
+            ],
+            [
+              "08",
+              "2019-01-02 00:00:00",
+              "2022-12-31 00:00:00",
+              4,
+              48
+            ]
+          ],
+          "selection_statistic": "monthly sum followed by argmax/argmin",
+          "tie_rule": "first label in ascending calendar-month order"
+        },
+        "dry": {
+          "run_ids": [
+            "01",
+            "08"
+          ],
+          "reference_location_id": "9",
+          "month": 1,
+          "which": "dry",
+          "counts": [
+            [
+              "01",
+              "2019-01-02 00:00:00",
+              "2022-12-31 00:00:00",
+              4,
+              48
+            ],
+            [
+              "08",
+              "2019-01-02 00:00:00",
+              "2022-12-31 00:00:00",
+              4,
+              48
+            ]
+          ],
+          "selection_statistic": "monthly sum followed by argmax/argmin",
+          "tie_rule": "first label in ascending calendar-month order"
+        }
+      },
+      "variants_equal": 4,
+      "wrong_gauge_control": {
+        "reference_location_id": "2",
+        "wet_month": 1
+      },
+      "opposite_peaks": {
+        "9": 7,
+        "2": 1
+      },
+      "retained_ordinals": {
+        "9": 0,
+        "2": 1
+      },
+      "leap_day_present": true
+    }
+  },
+  "limits": "Migration preservation only; two realizations; no held-out skill or predictive uncertainty; GF15 adequacy not assessed; GF27/final runner/full software pending"
+}

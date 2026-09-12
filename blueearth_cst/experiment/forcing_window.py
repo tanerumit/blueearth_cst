@@ -2,7 +2,7 @@
 
 Its own module rather than living beside its main consumer in
 ``downscale_climate_forcing``, because that module imports ``hydromt_wflow`` at
-module scope. ``run_stress_test.smk`` needs this window at PARSE time to size
+module scope. ``generate_scenarios.smk`` needs this window at PARSE time to size
 Wflow batches against the disk (:mod:`blueearth_cst.experiment.batch_sizing`),
 and a Snakefile cannot pay a hydromt import to learn two integers.
 

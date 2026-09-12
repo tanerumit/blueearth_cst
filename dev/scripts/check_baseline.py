@@ -103,6 +103,8 @@ MANIFEST_VERSION = 3
 SIG_FIGS = 10
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 
 
 def git_provenance(repo_root: Path = REPO_ROOT) -> dict | None:
@@ -327,15 +329,20 @@ TARGETS: list[tuple[str, str, str]] = [
     # on numeric noise that indicates no defect. Compared against a stored
     # reference table with a per-group tolerance instead -- see the indicator
     # block and INDICATOR_ATOL_FRAC.
-    ("run_stress_test", "indicator", "{exp_dir}/results/q_indicators.csv"),
+    ("simulate_system", "indicator", "{metric_set_dir}/q_indicators.csv"),
     (
-        "run_stress_test",
+        "simulate_system",
         "yaml",
-        "{exp_dir}/config/project_config_run_stress_test.yml",
+        "{exp_dir}/config/simulation.json",
     ),
 ]
 
-WORKFLOWS = ("build_model", "analyze_projections", "run_stress_test")
+WORKFLOWS = (
+    "build_model",
+    "analyze_projections",
+    "generate_scenarios",
+    "simulate_system",
+)
 
 #: Fingerprint kinds that are FIGURES rather than data. Excluded by default.
 #:
@@ -376,6 +383,9 @@ def active_targets(
 
 
 def resolve(template: str, project_dir: str) -> str:
+    metric_set_dir = ""
+    if "{metric_set_dir}" in template:
+        metric_set_dir = resolve_metric_set_dir(project_dir)
     return template.format(
         project_dir=project_dir,
         clim_project_dir=f"{project_dir}/data/climate/projections/{CLIM_PROJECT}",
@@ -383,7 +393,66 @@ def resolve(template: str, project_dir: str) -> str:
         # need the bare project name as well as the directory built from it.
         clim_project=CLIM_PROJECT,
         exp_dir=f"{project_dir}/experiments/{EXPERIMENT_NAME}",
+        metric_set_dir=metric_set_dir,
     )
+
+
+def resolve_metric_set_dir(project_dir: str) -> str:
+    """Resolve the baseline's sole metric plan; never select by mtime or glob rank.
+
+    A tree with no successor plan or multiple plans needs an explicitly selected
+    baseline fixture before this gate can compare it. Legacy result paths are
+    never a fallback. This does not rewrite or bless a standing baseline.
+    """
+    from blueearth_cst.experiment.content_identity import (
+        content_sha256,
+        read_canonical_json,
+    )
+
+    experiment = Path(project_dir) / "experiments" / EXPERIMENT_NAME
+    plans = list((experiment / "results/metric_plans").glob("*/plan.json"))
+    if len(plans) != 1:
+        raise ValueError(
+            f"baseline requires exactly one retained metric plan, found {len(plans)}; "
+            "select a dedicated baseline fixture (legacy tables are not a successor baseline)"
+        )
+    plan = read_canonical_json(plans[0])
+    if (
+        plan.get("schema_version") != "metric-plan/1"
+        or content_sha256(
+            {key: value for key, value in plan.items() if key != "plan_sha256"}
+        )
+        != plan.get("plan_sha256")
+        or content_sha256(plan["request"]) != plan.get("metric_request_id")
+        or plans[0].parent.name != plan["metric_request_id"]
+    ):
+        raise ValueError("baseline metric plan digest or request identity differs")
+    identity = plan["metric_set_id"]
+    if (
+        not isinstance(identity, str)
+        or len(identity) != 64
+        or any(c not in "0123456789abcdef" for c in identity)
+    ):
+        raise ValueError("baseline metric set id is not canonical SHA-256")
+    destination = experiment / "results/metric_sets" / identity
+    marker = read_canonical_json(destination / "metrics.json")
+    if (
+        marker.get("schema_version") != "metric-set/1"
+        or marker.get("status") != "ready"
+        or marker.get("metric_set_id") != identity
+        or content_sha256(
+            {
+                key: value
+                for key, value in marker.items()
+                if key != "metrics_manifest_sha256"
+            }
+        )
+        != marker.get("metrics_manifest_sha256")
+        or marker.get("response_inventory", {}).get("sha256")
+        != plan.get("response_inventory_sha256")
+    ):
+        raise ValueError("baseline metric marker differs from the selected plan")
+    return destination.as_posix()
 
 
 def round_sig(x: float | None, n: int = SIG_FIGS) -> float | None:

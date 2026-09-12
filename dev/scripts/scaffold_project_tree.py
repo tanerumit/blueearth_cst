@@ -53,9 +53,11 @@ DEFAULT_EXTRAS = Path(__file__).resolve().parent / "scaffold_extras.yml"
 DEFAULT_OUT = REPO_ROOT / ".tmp/scaffold"
 
 SNAKEFILES = {
+    0: "analyze_climate.smk",
     1: "build_model.smk",
     2: "analyze_projections.smk",
-    3: "run_stress_test.smk",
+    3: "generate_scenarios.smk",
+    4: "simulate_system.smk",
 }
 
 _LOG_PLACEHOLDER = """\
@@ -80,6 +82,11 @@ def _scratch_config(config_path: Path, project_dir: Path, dest: Path) -> Path:
     """Write a copy of ``config_path`` whose project_dir points at the scratch tree."""
     cfg = yaml.safe_load(config_path.read_text(encoding="utf-8"))
     cfg["project"]["project_dir"] = project_dir.as_posix()
+    for stanza in (cfg.get("workflows") or {}).values():
+        if stanza.get("config_path"):
+            stanza["config_path"] = (
+                config_path.resolve().parent / stanza["config_path"]
+            ).as_posix()
     dest.write_text(yaml.safe_dump(cfg), encoding="utf-8")
     return dest
 
@@ -174,7 +181,7 @@ def _log_paths(snakefile: str, experiment: str) -> list[str]:
         if base in roots and name not in roots:
             roots[name] = roots[base] + _resolve_experiment(tail).rstrip("/") + "/"
     # `.log` NAME constants (WORKFLOW_LOG_NAME = "wf1_build_model.log", and
-    # WF3's f-string f"wf3_run_stress_test_{experiment}.log") are interpolated
+    # WF3's f-string f"wf4_simulate_system_{experiment}.log") are interpolated
     # into the merged-log path, which would otherwise reduce to `logs/1` under
     # the wildcard substitution below and be dropped.
     #
@@ -317,7 +324,7 @@ def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     ap.add_argument(
-        "--workflows", default="1,2,3", help="comma-separated, e.g. 1 or 1,3"
+        "--workflows", default="0,1,2", help="comma-separated; supported: 0,1,2"
     )
     ap.add_argument("--out", type=Path, default=DEFAULT_OUT)
     ap.add_argument("--rename-map", type=Path, default=None)
@@ -332,6 +339,13 @@ def main(argv: list[str] | None = None) -> int:
             stream.reconfigure(encoding="utf-8", errors="replace")
 
     workflows = [int(w) for w in args.workflows.split(",") if w.strip()]
+    if any(w in {3, 4} for w in workflows):
+        ap.error(
+            "WF3/WF4 use dynamic retained-artifact checkpoints and cannot be "
+            "scaffolded from a dummy tree. Run the workflow, then inspect with "
+            "snapshot_project_tree.py --config <project> --project-dir <root>. "
+            "Use --workflows 0,1,2 for model/climate layout scaffolds."
+        )
     project_dir = args.out.resolve()
     if project_dir.exists() and not args.keep:
         shutil.rmtree(project_dir)
@@ -340,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
     experiment = (
         yaml.safe_load(args.config.read_text(encoding="utf-8"))
         .get("workflows", {})
-        .get("run_stress_test", {})
+        .get("simulate_system", {})
         .get("experiment_name", "experiment")
     )
 

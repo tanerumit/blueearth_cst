@@ -20,9 +20,12 @@ workflows:
     enabled: true
     config_path: project_config_fixture_analyze_projections.yml
 
-  run_stress_test:
+  generate_scenarios:
     enabled: true
-    config_path: project_config_fixture_run_stress_test.yml
+    config_path: project_config_fixture_generate_scenarios.yml
+  simulate_system:
+    enabled: true
+    config_path: project_config_fixture_simulate_system.yml
 basin:
   region: "{'subbasin': [9.738, 0.4212], 'uparea': 70}"
   resolution: 0.0062475

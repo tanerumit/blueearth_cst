@@ -1,0 +1,371 @@
+{
+  "status": "accepted_bounded_GF27_pending_final_software_orchestration",
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "comparison_sha256": "f04e9e0e78afdcb5791141d5c0f763f604ebfedfd48de38eac2e3933e92895db",
+  "variants": [
+    {
+      "capacity": 21,
+      "id_width": 2,
+      "collection_id": "8fe8b35b958aee6facf909429361cc777f0dc8610b4aad25237699d73a6e69e6",
+      "collection_revision": "f8db5d142eaef09c6ca1890b74d2b47ff57e9e8b236b7bdd91bf90a64cffbe6c",
+      "manifest_sha256": "753c420544deae049e17cc5c4454ad4ddc83d9377f545caf327a0c59dd4cca58",
+      "generation_config_sha256": "721c05b5759df8df6e405581efa0be20e813a64f0761c429f10f6139ee4f8b15",
+      "resolved_seed": 568532465,
+      "source_projection_sha256": "a9dd6a0fde1b22f729967c2f1c4c992f1391a05aa9f254ceae83d43c136e4031",
+      "members": [
+        {
+          "rlz": "1",
+          "st_id": "",
+          "run_id": "01",
+          "forcing_sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "1",
+          "run_id": "02",
+          "forcing_sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "2",
+          "run_id": "03",
+          "forcing_sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "3",
+          "run_id": "04",
+          "forcing_sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "4",
+          "run_id": "05",
+          "forcing_sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "5",
+          "run_id": "06",
+          "forcing_sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "6",
+          "run_id": "07",
+          "forcing_sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "",
+          "run_id": "08",
+          "forcing_sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "1",
+          "run_id": "09",
+          "forcing_sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "2",
+          "run_id": "10",
+          "forcing_sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "3",
+          "run_id": "11",
+          "forcing_sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "4",
+          "run_id": "12",
+          "forcing_sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "5",
+          "run_id": "13",
+          "forcing_sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "6",
+          "run_id": "14",
+          "forcing_sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba",
+          "exact_array_coordinate_attribute_equality": true
+        }
+      ]
+    },
+    {
+      "capacity": 22,
+      "id_width": 2,
+      "collection_id": "477ef08702a47c5004fb4f88beea3ef97bd97ddfc343750b6877fc3c4eb74007",
+      "collection_revision": "1c7cb39f286e53b61874bc2d8bc64860fd49e70c553b064832fae5e2ea10d9c5",
+      "manifest_sha256": "374179e91805da6f2457d2cb0398077e5fd8750f73dd273a81f212039eea853c",
+      "generation_config_sha256": "7296569e8e89efd9c03aea176edf403a4dce9677a674b5c7d3297390ed34c145",
+      "resolved_seed": 568532465,
+      "source_projection_sha256": "a9dd6a0fde1b22f729967c2f1c4c992f1391a05aa9f254ceae83d43c136e4031",
+      "members": [
+        {
+          "rlz": "1",
+          "st_id": "",
+          "run_id": "01",
+          "forcing_sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "1",
+          "run_id": "02",
+          "forcing_sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "2",
+          "run_id": "03",
+          "forcing_sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "3",
+          "run_id": "04",
+          "forcing_sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "4",
+          "run_id": "05",
+          "forcing_sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "5",
+          "run_id": "06",
+          "forcing_sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "6",
+          "run_id": "07",
+          "forcing_sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "",
+          "run_id": "08",
+          "forcing_sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "1",
+          "run_id": "09",
+          "forcing_sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "2",
+          "run_id": "10",
+          "forcing_sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "3",
+          "run_id": "11",
+          "forcing_sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "4",
+          "run_id": "12",
+          "forcing_sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "5",
+          "run_id": "13",
+          "forcing_sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "6",
+          "run_id": "14",
+          "forcing_sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba",
+          "exact_array_coordinate_attribute_equality": true
+        }
+      ]
+    },
+    {
+      "capacity": 100,
+      "id_width": 3,
+      "collection_id": "04a60cb01f94f632f4e1413b8c2e0fbc0f40442be2e5ad21da38c5777682efb3",
+      "collection_revision": "42db0be4ad5120aff656b9941cc186a8ef70133029612744bb8676495bd9c374",
+      "manifest_sha256": "a4577a7280614c1fb6cf6100313b2e33f3374a41f920f0dec8925613358dd981",
+      "generation_config_sha256": "93f8c17b0c8fb3c1ae65d0c42477395b18ed529074929be8dd59ce8c0aa85300",
+      "resolved_seed": 568532465,
+      "source_projection_sha256": "a9dd6a0fde1b22f729967c2f1c4c992f1391a05aa9f254ceae83d43c136e4031",
+      "members": [
+        {
+          "rlz": "1",
+          "st_id": "",
+          "run_id": "001",
+          "forcing_sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "1",
+          "run_id": "002",
+          "forcing_sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "2",
+          "run_id": "003",
+          "forcing_sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "3",
+          "run_id": "004",
+          "forcing_sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "4",
+          "run_id": "005",
+          "forcing_sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "5",
+          "run_id": "006",
+          "forcing_sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "1",
+          "st_id": "6",
+          "run_id": "007",
+          "forcing_sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "",
+          "run_id": "008",
+          "forcing_sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "1",
+          "run_id": "009",
+          "forcing_sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "2",
+          "run_id": "010",
+          "forcing_sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "3",
+          "run_id": "011",
+          "forcing_sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "4",
+          "run_id": "012",
+          "forcing_sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "5",
+          "run_id": "013",
+          "forcing_sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6",
+          "exact_array_coordinate_attribute_equality": true
+        },
+        {
+          "rlz": "2",
+          "st_id": "6",
+          "run_id": "014",
+          "forcing_sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba",
+          "exact_array_coordinate_attribute_equality": true
+        }
+      ]
+    }
+  ],
+  "renaming": {
+    "original_config": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf27-final-configs\\project_config_capacity_100.yml",
+    "original_config_sha256": "f93e8b54cc3f58a2a750126041b7348b0832af74e6cbd5f8f152826c897c8700",
+    "renamed_config": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf27-experiment-rename\\project_config_renamed.yml",
+    "renamed_config_sha256": "4c91c1070c2890970742169180707d3b0f787164e6dd5762ab7ec1e5744e5c17",
+    "original_experiment_name": "p3_final",
+    "renamed_experiment_name": "p3_gf27_renamed",
+    "only_simulation_setting_changed": "experiment_name",
+    "selection": {
+      "resolution_mode": "project-generation",
+      "manifest_path": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project/scenario_collections/04a60cb01f94f632f4e1413b8c2e0fbc0f40442be2e5ad21da38c5777682efb3/collection.json",
+      "collection_id": "04a60cb01f94f632f4e1413b8c2e0fbc0f40442be2e5ad21da38c5777682efb3",
+      "collection_revision": "42db0be4ad5120aff656b9941cc186a8ef70133029612744bb8676495bd9c374"
+    },
+    "protected_input_sha256_before_and_after": {
+      "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf27-final-configs\\project_config_capacity_100.yml": "f93e8b54cc3f58a2a750126041b7348b0832af74e6cbd5f8f152826c897c8700",
+      "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project_config_simulate_system.yml": "90880a621304a416d84542b5221b913c67ed07090fa8bd851fe4902f86ef93cd",
+      "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project\\scenario_plans\\d4fc58858288cfcf743248d390dc1d2e2b0d7f20f55ec5c770ce76d51c7844e3\\plan.json": "aa8de516983f6c0c7f2b8cfdaa6afe51920c9087fe16b457fbeeb1a3d01ff7da",
+      "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project\\scenario_collections\\04a60cb01f94f632f4e1413b8c2e0fbc0f40442be2e5ad21da38c5777682efb3\\collection.json": "a4577a7280614c1fb6cf6100313b2e33f3374a41f920f0dec8925613358dd981"
+    },
+    "source_plans_original_configs_unchanged": true
+  },
+  "legacy_seed_migration": "Existing parametrized default/zero/explicit/old-auto test inspected; final full software result pending",
+  "limits": "Actual auto-seed generation preservation across three namespace capacities and read-only experiment-rename resolution; no Wflow/pytest/Snakemake executed by reviewer; GF15 adequacy excluded",
+  "independent_discrimination": {
+    "source_forcing": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project\\scenario_collections\\8fe8b35b958aee6facf909429361cc777f0dc8610b4aad25237699d73a6e69e6\\forcing\\run_01.nc",
+    "original_comparator_arithmetic_preserves_precip_attrs_in_this_environment": true,
+    "explicit_data_only_precip_perturbation": 1.0,
+    "all_attributes_preserved": true,
+    "all_other_variables_and_coordinates_identical": true,
+    "precipitation_values_changed": true,
+    "exact_comparison_rejects": true
+  }
+}

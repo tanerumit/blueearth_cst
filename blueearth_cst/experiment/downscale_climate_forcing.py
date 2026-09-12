@@ -96,12 +96,13 @@ def collection_run_forcing(
     )
     for entry in catalog.values():
         entry["uri"] = str(confined_path(root, entry["uri"]))
-    if "forcing" in catalog:
+    forcing_key = f"run_{run_id}"
+    if forcing_key in catalog:
         raise ValueError("ancillary catalog uses reserved generated forcing key")
     forcing_path = confined_path(root, item["path"])
     reader = context["generated_forcing_reader"]
-    catalog["forcing"] = deepcopy(reader)
-    catalog["forcing"]["uri"] = str(forcing_path)
+    catalog[forcing_key] = deepcopy(reader)
+    catalog[forcing_key]["uri"] = str(forcing_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(yaml.safe_dump(catalog, sort_keys=True), encoding="utf-8")
     physical_context = PreparationContext(
@@ -110,7 +111,7 @@ def collection_run_forcing(
             ArtifactReference(confined_path(root, entry["path"]), entry["sha256"])
             for entry in context["ancillary"]
         ),
-        "forcing",
+        forcing_key,
         elevation["catalog_key"],
         context["pet_method"],
         True,

@@ -34,6 +34,151 @@ from scripts.migrate_project_config import (
 V1_SPLIT = "tests/data/v1_split"
 
 
+@pytest.mark.parametrize("seed", [None, 0, 8123, "auto"])
+def test_current_v2_split_preserves_seed_and_path_anchors(tmp_path, seed):
+    import zlib
+
+    import yaml
+
+    from blueearth_cst.shared.config_composition import (
+        WORKFLOW_NAMES,
+        load_composed_config,
+    )
+    from scripts.migrate_project_config import migrate_project
+
+    nested = tmp_path / "workflow settings"
+    nested.mkdir()
+    old = nested / "project_config_case_run_stress_test.yml"
+    settings = {
+        "experiment_name": "fixed_name",
+        "n_realizations": 3,
+        "simulation_window": {"start": 2046, "end": 2054},
+        "weathergen_config": "ordinary/relative.yml",
+        "unit_id_capacity": 100,
+        "compute": {"batch_size_max": 7},
+        "metrics": ["kept_verbatim"],
+        "scenario_collection": {"manifest_path": "relative/collection.json"},
+    }
+    if seed is not None:
+        settings["seed"] = seed
+    old.write_text(yaml.safe_dump(settings), encoding="utf-8")
+    project = tmp_path / "project_config_case.yml"
+    project.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 2,
+                "climate": {"selected": "era5", "sources": ["era5"]},
+                "workflows": {
+                    "run_stress_test": {
+                        "enabled": True,
+                        "config_path": old.relative_to(tmp_path).as_posix(),
+                    }
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    old_bytes = old.read_bytes()
+    migrate_project(project, write=True)
+    result = load_composed_config(project)
+    assert set(result["workflows"]) == set(WORKFLOW_NAMES)
+    generation = result["workflows"]["generate_scenarios"]
+    simulation = result["workflows"]["simulate_system"]
+    expected_seed = 123 if seed is None else seed
+    if seed == "auto":
+        expected_seed = zlib.crc32(b"fixed_name") % 2**31
+    assert generation["seed"] == expected_seed
+    assert generation["weathergen_config"] == "ordinary/relative.yml"
+    assert generation["unit_id_capacity"] == 100
+    assert "experiment_name" not in generation
+    assert simulation == {
+        "enabled": True,
+        "experiment_name": "fixed_name",
+        "compute": settings["compute"],
+        "metrics": settings["metrics"],
+        "scenario_collection": settings["scenario_collection"],
+        "operation": "simulate-and-metrics",
+    }
+    declaration = yaml.safe_load(project.read_text(encoding="utf-8"))
+    assert declaration["workflows"]["generate_scenarios"]["config_path"] == (
+        "workflow settings/project_config_case_generate_scenarios.yml"
+    )
+    assert old.with_suffix(".yml.v2.bak").read_bytes() == old_bytes
+    assert "already" in migrate_project(project, write=True)[0]
+
+
+def test_old_auto_without_name_is_refused_without_writes(tmp_path):
+    import yaml
+
+    from scripts.migrate_project_config import migrate_project
+
+    old = tmp_path / "project_config_case_run_stress_test.yml"
+    old.write_text("seed: auto\n", encoding="utf-8")
+    project = tmp_path / "project_config_case.yml"
+    project.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 2,
+                "workflows": {
+                    "run_stress_test": {"enabled": True, "config_path": old.name}
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    before = {path.name: path.read_bytes() for path in tmp_path.iterdir()}
+    with pytest.raises(MigrationError, match="cannot preserve.*seed"):
+        migrate_project(project, write=True)
+    assert {path.name: path.read_bytes() for path in tmp_path.iterdir()} == before
+
+
+@pytest.mark.parametrize("collision", ["successor", "backup", "staging"])
+def test_workflow_split_refuses_existing_outputs_without_overwriting(
+    tmp_path, collision
+):
+    import yaml
+
+    from scripts.migrate_project_config import migrate_project
+
+    old = tmp_path / "project_config_case_run_stress_test.yml"
+    old.write_text("experiment_name: fixed\nseed: 17\n", encoding="utf-8")
+    project = tmp_path / "project_config_case.yml"
+    project.write_text(
+        yaml.safe_dump(
+            {
+                "schema_version": 2,
+                "workflows": {
+                    "run_stress_test": {"enabled": False, "config_path": old.name}
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    if collision == "staging":
+        staging = tmp_path / ".migrate_staging"
+        staging.mkdir()
+        (staging / "keep.txt").write_text("do not remove", encoding="utf-8")
+    else:
+        conflict = (
+            tmp_path / "project_config_case_generate_scenarios.yml"
+            if collision == "successor"
+            else project.with_suffix(".yml.v2.bak")
+        )
+        conflict.write_text("do not overwrite", encoding="utf-8")
+    before = {
+        p.relative_to(tmp_path): p.read_bytes()
+        for p in tmp_path.rglob("*")
+        if p.is_file()
+    }
+    with pytest.raises(MigrationError, match="exists|existing"):
+        migrate_project(project, write=True)
+    assert {
+        p.relative_to(tmp_path): p.read_bytes()
+        for p in tmp_path.rglob("*")
+        if p.is_file()
+    } == before
+
+
 class TestStepNumToNLevels:
     """`C-31` — the one transform whose failure mode is silent."""
 

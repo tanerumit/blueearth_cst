@@ -3,9 +3,10 @@ title: "Configuring a project"
 subtitle: "A set of YAML files describes a basin, and each workflow reads its own"
 ---
 
-The toolbox has no command-line interface. Everything a run needs comes from
+Scientific settings come from
 **a set of configuration files**: one project file, plus one file per workflow.
-You pass the *project* file to `--configfile` and it names the others.
+Pass the *project* file to Snakemake's `--configfile`, or to the simulation
+runner's `--config`; it names the others.
 
 Start from `config/templates/`, which annotates every option inline. Copy the
 whole set — its header says which template becomes which file.
@@ -63,9 +64,12 @@ workflows:
   analyze_projections:
     enabled: true
     config_path: project_config_rapid_analyze_projections.yml
-  run_stress_test:
+  generate_scenarios:
     enabled: true
-    config_path: project_config_rapid_run_stress_test.yml
+    config_path: project_config_rapid_generate_scenarios.yml
+  simulate_system:
+    enabled: true
+    config_path: project_config_rapid_simulate_system.yml
 ```
 
 **`schema_version: 2` is required.** It is checked before anything else, so a

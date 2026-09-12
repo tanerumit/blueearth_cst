@@ -1,19 +1,19 @@
 ---
 title: Implement the accepted R12 workflow design
 type: todo-item
-status: active
+status: blocked
 branch: feat/wp3-improvements
 effort: 2
 area: wf3
 origin: R12
 queue:
 created: 2026-09-10
-updated: 2026-09-11
+updated: 2026-09-12
 ---
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0, P1 and P2 are accepted. Durable handoffs, retained-only metrics, scientific comparisons and software gates passed; P3 workflow/config/runner extraction remains.
+> **Why** — P0 through P3 are accepted. The workflow/config/runner migration and final scientific/software checks pass. Remaining GF15 benchmarking and milestone sealing await owner acceptance of the reviewed benchmark criteria.
 > **Effort** — large
 
 ## Progress
@@ -29,10 +29,43 @@ updated: 2026-09-11
 - [x] Start P2 with verified pure collection identity primitives.
 - [x] Verify adapter-backed collection claim, publication, reading and reuse.
 - [x] Complete P2 production handoffs, exact resolution, metrics-only and scientific/software acceptance.
-- [ ] Complete P3 workflow/config/runner extraction and repeat final-entry-point gates.
-- [ ] Execute implementation only within subsequently authorized scope.
+- [x] Complete P3 workflow/config/runner extraction and repeat final-entry-point gates.
+- [x] Execute implementation only within authorized scope.
+- [ ] Obtain owner acceptance of the reviewed GF15 benchmark criteria, then execute and review the benchmark.
+- [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+P3 final execution update, 2026-09-12: both fresh generation interfaces passed
+37/37 jobs and both simulation interfaces passed 25/25; physical offline metrics
+passed three jobs. All 32 final reuse/refusal/selection checks passed. Astra
+accepted GF9/GF27/GF28/GF31 scientific preservation. Both output inventories and
+the notebook reader/analysis cells pass. Final lint/format pass; the final full
+suite passed 3,705 tests, with 15 skipped and one expected failure. See
+`dev/milestones/r12/implementation/evidence/p3/acceptance.md`. GF15 benchmark
+criteria still require owner acceptance under Master Gate 2; this is the recorded
+blocker. No milestone-seal claim. The session branch remains assigned to R12.
+
+P3 started on 2026-09-11 under the owner's continuation instruction. Configuration
+migration, successor entry points and operation isolation are being implemented.
+The first generation smoke completed; 20 migrated CLI checks passed. These are
+iteration checks, not GF-9 or final acceptance. Scratch and preserved P2 code:
+`.tmp/scratchpad/2026-09-11_0010/`. The atomic landing remains uncommitted until
+the final reference sweep, scientific handoffs and software gates pass.
+
+P3 resumed on 2026-09-11. The old workflow/current seeds/template are retired in
+the working diff; successor rules are fully numbered. Runtime targeted gate:
+127 passed; config/runner gate: 287 passed with two scanner failures, both fixed
+and verified by a 20-test rerun. Lint, format and compilation passed. The final
+full suite is running. Guides, contract references, notebook and stage diagram
+are being migrated with the runtime.
+
+The development GF-9 comparator reports 616 exact Class-A/B rows and independent
+Class-C publication/pooled-mean agreement. Its earlier Class-C failure compared
+the mean of rounded publications with a rounded pooled mean; the corrected
+comparison preserves the accepted raw mean relation and records the publication
+rounding delta separately. Astra review confirmed this follows accepted criteria;
+final fresh-run provenance and named scientific acceptance remain pending.
 
 - Accepted design: `dev/milestones/r12/wf3-simulation-identity-design.md`.
 - Preparation handoff: `dev/milestones/r12/wf3-simulation-identity-task-brief.md`.

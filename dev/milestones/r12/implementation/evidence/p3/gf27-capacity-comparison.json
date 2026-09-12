@@ -1,0 +1,1115 @@
+{
+  "status": "passed_pending_named_review",
+  "comparator_sha256": "e13584a7cd5e4892b05863b4e63573ace1830998fe7cb737cdb756cd49b335a4",
+  "variants": [
+    {
+      "capacity": 21,
+      "width": 2,
+      "manifest": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project\\scenario_collections\\8fe8b35b958aee6facf909429361cc777f0dc8610b4aad25237699d73a6e69e6\\collection.json",
+      "manifest_sha256": "753c420544deae049e17cc5c4454ad4ddc83d9377f545caf327a0c59dd4cca58",
+      "collection_id": "8fe8b35b958aee6facf909429361cc777f0dc8610b4aad25237699d73a6e69e6",
+      "collection_revision": "f8db5d142eaef09c6ca1890b74d2b47ff57e9e8b236b7bdd91bf90a64cffbe6c",
+      "resolved_seed": 568532465,
+      "seed_resolution": {
+        "projection": {
+          "climate_perturbations": {
+            "precip": {
+              "mean": {
+                "max": [
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3
+                ],
+                "min": [
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7
+                ]
+              },
+              "n_levels": 3,
+              "trajectory": "transient",
+              "variance": {
+                "max": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "min": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "spell_factors": {
+              "dry": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wet": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "temp": {
+              "mean": {
+                "max": [
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0
+                ],
+                "min": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "n_levels": 2,
+              "trajectory": "transient"
+            }
+          },
+          "generator_settings": {
+            "apply_climate_perturbations": {
+              "compute_pet": false,
+              "diagnostic": false,
+              "enforce_target_mean": true,
+              "exaggerate_extremes": false,
+              "extreme_k": 1.2,
+              "extreme_prob_threshold": 0.95,
+              "pet_method": "hargreaves",
+              "precip_cap_mm_day": null,
+              "precip_cap_quantile": null,
+              "precip_floor_mm_day": null,
+              "precip_intensity_threshold": 0,
+              "precip_occurrence_transient": true,
+              "qm_fit_method": "mme",
+              "scale_var_with_mean": true
+            },
+            "generate_weather": {
+              "annual_knn_n": 100,
+              "dry_spell_factor": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "extreme_q": 0.8,
+              "n_realizations": 2,
+              "n_years": 46,
+              "relax_order": [
+                "wavelet",
+                "sd",
+                "tail_low",
+                "tail_high",
+                "mean"
+              ],
+              "start_year": 2010,
+              "vars": [
+                "precip",
+                "temp",
+                "temp_min",
+                "temp_max"
+              ],
+              "warm_filter_bounds": [],
+              "warm_pool_size": 25000,
+              "warm_signif": 0.8,
+              "warm_var": "precip",
+              "wet_q": 0.2,
+              "wet_spell_factor": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "year_start_month": 1
+            },
+            "precip": {
+              "transient_change": true
+            },
+            "run_weather_generator": {},
+            "temp": {
+              "transient_change": true
+            },
+            "write_netcdf": {
+              "calendar": "noleap",
+              "signif_digits": null,
+              "spatial_ref": "spatial_ref"
+            }
+          },
+          "n_realizations": 2,
+          "provider_revision": "d1878f8cdadc16b65ccb76fba3367d858c334fa1e10e60cc7f2f5ca27811f401",
+          "scenario_type": "stochastic",
+          "schema_version": "generation-seed-material/1",
+          "simulation_window": {
+            "end": 2054,
+            "start": 2046
+          },
+          "source_inventory_sha256": "a1909924b5824841defb937145fe8d4b437db90c1c33a44774b219a8113cfdff",
+          "water_year_start": "Jan"
+        },
+        "projection_sha256": "a9dd6a0fde1b22f729967c2f1c4c992f1391a05aa9f254ceae83d43c136e4031",
+        "resolved_seed": 568532465,
+        "seed_request": "auto",
+        "seed_resolution_id": "4c1419ecb4e3ce1ab28e3b4b00b524e4ae537dde7da2c960d060f41e11c19030"
+      },
+      "forcing": [
+        {
+          "rlz": "1",
+          "st_id": "",
+          "base_run": "01",
+          "run_id": "01",
+          "arrays_attributes_exact": true,
+          "sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1",
+          "base_sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1"
+        },
+        {
+          "rlz": "1",
+          "st_id": "1",
+          "base_run": "02",
+          "run_id": "02",
+          "arrays_attributes_exact": true,
+          "sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4",
+          "base_sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4"
+        },
+        {
+          "rlz": "1",
+          "st_id": "2",
+          "base_run": "03",
+          "run_id": "03",
+          "arrays_attributes_exact": true,
+          "sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd",
+          "base_sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd"
+        },
+        {
+          "rlz": "1",
+          "st_id": "3",
+          "base_run": "04",
+          "run_id": "04",
+          "arrays_attributes_exact": true,
+          "sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546",
+          "base_sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546"
+        },
+        {
+          "rlz": "1",
+          "st_id": "4",
+          "base_run": "05",
+          "run_id": "05",
+          "arrays_attributes_exact": true,
+          "sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe",
+          "base_sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe"
+        },
+        {
+          "rlz": "1",
+          "st_id": "5",
+          "base_run": "06",
+          "run_id": "06",
+          "arrays_attributes_exact": true,
+          "sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca",
+          "base_sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca"
+        },
+        {
+          "rlz": "1",
+          "st_id": "6",
+          "base_run": "07",
+          "run_id": "07",
+          "arrays_attributes_exact": true,
+          "sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340",
+          "base_sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340"
+        },
+        {
+          "rlz": "2",
+          "st_id": "",
+          "base_run": "08",
+          "run_id": "08",
+          "arrays_attributes_exact": true,
+          "sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef",
+          "base_sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef"
+        },
+        {
+          "rlz": "2",
+          "st_id": "1",
+          "base_run": "09",
+          "run_id": "09",
+          "arrays_attributes_exact": true,
+          "sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0",
+          "base_sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0"
+        },
+        {
+          "rlz": "2",
+          "st_id": "2",
+          "base_run": "10",
+          "run_id": "10",
+          "arrays_attributes_exact": true,
+          "sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30",
+          "base_sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30"
+        },
+        {
+          "rlz": "2",
+          "st_id": "3",
+          "base_run": "11",
+          "run_id": "11",
+          "arrays_attributes_exact": true,
+          "sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6",
+          "base_sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6"
+        },
+        {
+          "rlz": "2",
+          "st_id": "4",
+          "base_run": "12",
+          "run_id": "12",
+          "arrays_attributes_exact": true,
+          "sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448",
+          "base_sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448"
+        },
+        {
+          "rlz": "2",
+          "st_id": "5",
+          "base_run": "13",
+          "run_id": "13",
+          "arrays_attributes_exact": true,
+          "sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6",
+          "base_sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6"
+        },
+        {
+          "rlz": "2",
+          "st_id": "6",
+          "base_run": "14",
+          "run_id": "14",
+          "arrays_attributes_exact": true,
+          "sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba",
+          "base_sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba"
+        }
+      ]
+    },
+    {
+      "capacity": 22,
+      "width": 2,
+      "manifest": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project\\scenario_collections\\477ef08702a47c5004fb4f88beea3ef97bd97ddfc343750b6877fc3c4eb74007\\collection.json",
+      "manifest_sha256": "374179e91805da6f2457d2cb0398077e5fd8750f73dd273a81f212039eea853c",
+      "collection_id": "477ef08702a47c5004fb4f88beea3ef97bd97ddfc343750b6877fc3c4eb74007",
+      "collection_revision": "1c7cb39f286e53b61874bc2d8bc64860fd49e70c553b064832fae5e2ea10d9c5",
+      "resolved_seed": 568532465,
+      "seed_resolution": {
+        "projection": {
+          "climate_perturbations": {
+            "precip": {
+              "mean": {
+                "max": [
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3
+                ],
+                "min": [
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7
+                ]
+              },
+              "n_levels": 3,
+              "trajectory": "transient",
+              "variance": {
+                "max": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "min": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "spell_factors": {
+              "dry": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wet": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "temp": {
+              "mean": {
+                "max": [
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0
+                ],
+                "min": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "n_levels": 2,
+              "trajectory": "transient"
+            }
+          },
+          "generator_settings": {
+            "apply_climate_perturbations": {
+              "compute_pet": false,
+              "diagnostic": false,
+              "enforce_target_mean": true,
+              "exaggerate_extremes": false,
+              "extreme_k": 1.2,
+              "extreme_prob_threshold": 0.95,
+              "pet_method": "hargreaves",
+              "precip_cap_mm_day": null,
+              "precip_cap_quantile": null,
+              "precip_floor_mm_day": null,
+              "precip_intensity_threshold": 0,
+              "precip_occurrence_transient": true,
+              "qm_fit_method": "mme",
+              "scale_var_with_mean": true
+            },
+            "generate_weather": {
+              "annual_knn_n": 100,
+              "dry_spell_factor": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "extreme_q": 0.8,
+              "n_realizations": 2,
+              "n_years": 46,
+              "relax_order": [
+                "wavelet",
+                "sd",
+                "tail_low",
+                "tail_high",
+                "mean"
+              ],
+              "start_year": 2010,
+              "vars": [
+                "precip",
+                "temp",
+                "temp_min",
+                "temp_max"
+              ],
+              "warm_filter_bounds": [],
+              "warm_pool_size": 25000,
+              "warm_signif": 0.8,
+              "warm_var": "precip",
+              "wet_q": 0.2,
+              "wet_spell_factor": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "year_start_month": 1
+            },
+            "precip": {
+              "transient_change": true
+            },
+            "run_weather_generator": {},
+            "temp": {
+              "transient_change": true
+            },
+            "write_netcdf": {
+              "calendar": "noleap",
+              "signif_digits": null,
+              "spatial_ref": "spatial_ref"
+            }
+          },
+          "n_realizations": 2,
+          "provider_revision": "d1878f8cdadc16b65ccb76fba3367d858c334fa1e10e60cc7f2f5ca27811f401",
+          "scenario_type": "stochastic",
+          "schema_version": "generation-seed-material/1",
+          "simulation_window": {
+            "end": 2054,
+            "start": 2046
+          },
+          "source_inventory_sha256": "a1909924b5824841defb937145fe8d4b437db90c1c33a44774b219a8113cfdff",
+          "water_year_start": "Jan"
+        },
+        "projection_sha256": "a9dd6a0fde1b22f729967c2f1c4c992f1391a05aa9f254ceae83d43c136e4031",
+        "resolved_seed": 568532465,
+        "seed_request": "auto",
+        "seed_resolution_id": "4c1419ecb4e3ce1ab28e3b4b00b524e4ae537dde7da2c960d060f41e11c19030"
+      },
+      "forcing": [
+        {
+          "rlz": "1",
+          "st_id": "",
+          "base_run": "01",
+          "run_id": "01",
+          "arrays_attributes_exact": true,
+          "sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1",
+          "base_sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1"
+        },
+        {
+          "rlz": "1",
+          "st_id": "1",
+          "base_run": "02",
+          "run_id": "02",
+          "arrays_attributes_exact": true,
+          "sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4",
+          "base_sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4"
+        },
+        {
+          "rlz": "1",
+          "st_id": "2",
+          "base_run": "03",
+          "run_id": "03",
+          "arrays_attributes_exact": true,
+          "sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd",
+          "base_sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd"
+        },
+        {
+          "rlz": "1",
+          "st_id": "3",
+          "base_run": "04",
+          "run_id": "04",
+          "arrays_attributes_exact": true,
+          "sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546",
+          "base_sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546"
+        },
+        {
+          "rlz": "1",
+          "st_id": "4",
+          "base_run": "05",
+          "run_id": "05",
+          "arrays_attributes_exact": true,
+          "sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe",
+          "base_sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe"
+        },
+        {
+          "rlz": "1",
+          "st_id": "5",
+          "base_run": "06",
+          "run_id": "06",
+          "arrays_attributes_exact": true,
+          "sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca",
+          "base_sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca"
+        },
+        {
+          "rlz": "1",
+          "st_id": "6",
+          "base_run": "07",
+          "run_id": "07",
+          "arrays_attributes_exact": true,
+          "sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340",
+          "base_sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340"
+        },
+        {
+          "rlz": "2",
+          "st_id": "",
+          "base_run": "08",
+          "run_id": "08",
+          "arrays_attributes_exact": true,
+          "sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef",
+          "base_sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef"
+        },
+        {
+          "rlz": "2",
+          "st_id": "1",
+          "base_run": "09",
+          "run_id": "09",
+          "arrays_attributes_exact": true,
+          "sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0",
+          "base_sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0"
+        },
+        {
+          "rlz": "2",
+          "st_id": "2",
+          "base_run": "10",
+          "run_id": "10",
+          "arrays_attributes_exact": true,
+          "sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30",
+          "base_sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30"
+        },
+        {
+          "rlz": "2",
+          "st_id": "3",
+          "base_run": "11",
+          "run_id": "11",
+          "arrays_attributes_exact": true,
+          "sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6",
+          "base_sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6"
+        },
+        {
+          "rlz": "2",
+          "st_id": "4",
+          "base_run": "12",
+          "run_id": "12",
+          "arrays_attributes_exact": true,
+          "sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448",
+          "base_sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448"
+        },
+        {
+          "rlz": "2",
+          "st_id": "5",
+          "base_run": "13",
+          "run_id": "13",
+          "arrays_attributes_exact": true,
+          "sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6",
+          "base_sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6"
+        },
+        {
+          "rlz": "2",
+          "st_id": "6",
+          "base_run": "14",
+          "run_id": "14",
+          "arrays_attributes_exact": true,
+          "sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba",
+          "base_sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba"
+        }
+      ]
+    },
+    {
+      "capacity": 100,
+      "width": 3,
+      "manifest": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct\\project\\scenario_collections\\04a60cb01f94f632f4e1413b8c2e0fbc0f40442be2e5ad21da38c5777682efb3\\collection.json",
+      "manifest_sha256": "a4577a7280614c1fb6cf6100313b2e33f3374a41f920f0dec8925613358dd981",
+      "collection_id": "04a60cb01f94f632f4e1413b8c2e0fbc0f40442be2e5ad21da38c5777682efb3",
+      "collection_revision": "42db0be4ad5120aff656b9941cc186a8ef70133029612744bb8676495bd9c374",
+      "resolved_seed": 568532465,
+      "seed_resolution": {
+        "projection": {
+          "climate_perturbations": {
+            "precip": {
+              "mean": {
+                "max": [
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3,
+                  1.3
+                ],
+                "min": [
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7,
+                  0.7
+                ]
+              },
+              "n_levels": 3,
+              "trajectory": "transient",
+              "variance": {
+                "max": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ],
+                "min": [
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0,
+                  1.0
+                ]
+              }
+            },
+            "spell_factors": {
+              "dry": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "wet": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ]
+            },
+            "temp": {
+              "mean": {
+                "max": [
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0,
+                  3.0
+                ],
+                "min": [
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0,
+                  0.0
+                ]
+              },
+              "n_levels": 2,
+              "trajectory": "transient"
+            }
+          },
+          "generator_settings": {
+            "apply_climate_perturbations": {
+              "compute_pet": false,
+              "diagnostic": false,
+              "enforce_target_mean": true,
+              "exaggerate_extremes": false,
+              "extreme_k": 1.2,
+              "extreme_prob_threshold": 0.95,
+              "pet_method": "hargreaves",
+              "precip_cap_mm_day": null,
+              "precip_cap_quantile": null,
+              "precip_floor_mm_day": null,
+              "precip_intensity_threshold": 0,
+              "precip_occurrence_transient": true,
+              "qm_fit_method": "mme",
+              "scale_var_with_mean": true
+            },
+            "generate_weather": {
+              "annual_knn_n": 100,
+              "dry_spell_factor": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "extreme_q": 0.8,
+              "n_realizations": 2,
+              "n_years": 46,
+              "relax_order": [
+                "wavelet",
+                "sd",
+                "tail_low",
+                "tail_high",
+                "mean"
+              ],
+              "start_year": 2010,
+              "vars": [
+                "precip",
+                "temp",
+                "temp_min",
+                "temp_max"
+              ],
+              "warm_filter_bounds": [],
+              "warm_pool_size": 25000,
+              "warm_signif": 0.8,
+              "warm_var": "precip",
+              "wet_q": 0.2,
+              "wet_spell_factor": [
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0,
+                1.0
+              ],
+              "year_start_month": 1
+            },
+            "precip": {
+              "transient_change": true
+            },
+            "run_weather_generator": {},
+            "temp": {
+              "transient_change": true
+            },
+            "write_netcdf": {
+              "calendar": "noleap",
+              "signif_digits": null,
+              "spatial_ref": "spatial_ref"
+            }
+          },
+          "n_realizations": 2,
+          "provider_revision": "d1878f8cdadc16b65ccb76fba3367d858c334fa1e10e60cc7f2f5ca27811f401",
+          "scenario_type": "stochastic",
+          "schema_version": "generation-seed-material/1",
+          "simulation_window": {
+            "end": 2054,
+            "start": 2046
+          },
+          "source_inventory_sha256": "a1909924b5824841defb937145fe8d4b437db90c1c33a44774b219a8113cfdff",
+          "water_year_start": "Jan"
+        },
+        "projection_sha256": "a9dd6a0fde1b22f729967c2f1c4c992f1391a05aa9f254ceae83d43c136e4031",
+        "resolved_seed": 568532465,
+        "seed_request": "auto",
+        "seed_resolution_id": "4c1419ecb4e3ce1ab28e3b4b00b524e4ae537dde7da2c960d060f41e11c19030"
+      },
+      "forcing": [
+        {
+          "rlz": "1",
+          "st_id": "",
+          "base_run": "01",
+          "run_id": "001",
+          "arrays_attributes_exact": true,
+          "sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1",
+          "base_sha256": "7d2a3453277957f26f15886fe570e033483a2898b7af17981da9e377db33c4a1"
+        },
+        {
+          "rlz": "1",
+          "st_id": "1",
+          "base_run": "02",
+          "run_id": "002",
+          "arrays_attributes_exact": true,
+          "sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4",
+          "base_sha256": "0d543f8274274fd54606b1f570ae3cb6036773bcde3202d8aa27b6f6f8a2f2c4"
+        },
+        {
+          "rlz": "1",
+          "st_id": "2",
+          "base_run": "03",
+          "run_id": "003",
+          "arrays_attributes_exact": true,
+          "sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd",
+          "base_sha256": "ec4d204755793a534a2b2deb2cfd0e28e922ec48b908d9e1e312c2604ebc25dd"
+        },
+        {
+          "rlz": "1",
+          "st_id": "3",
+          "base_run": "04",
+          "run_id": "004",
+          "arrays_attributes_exact": true,
+          "sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546",
+          "base_sha256": "98f12df641a8ae63ea9f54235a55357bb3b5106b495e621363bf76fd145e9546"
+        },
+        {
+          "rlz": "1",
+          "st_id": "4",
+          "base_run": "05",
+          "run_id": "005",
+          "arrays_attributes_exact": true,
+          "sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe",
+          "base_sha256": "aa1c8ac009d90b5329e3d4a9487768c8f2de6474eba3b6ebdb1c082eb887dffe"
+        },
+        {
+          "rlz": "1",
+          "st_id": "5",
+          "base_run": "06",
+          "run_id": "006",
+          "arrays_attributes_exact": true,
+          "sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca",
+          "base_sha256": "bf7021864dd227066848acfe981303cfd2455ea369023c41c79eca50f6921fca"
+        },
+        {
+          "rlz": "1",
+          "st_id": "6",
+          "base_run": "07",
+          "run_id": "007",
+          "arrays_attributes_exact": true,
+          "sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340",
+          "base_sha256": "8561ec70c07245047bf17bf0c232ed1e57bd8b2527faeb496ef189aea5d14340"
+        },
+        {
+          "rlz": "2",
+          "st_id": "",
+          "base_run": "08",
+          "run_id": "008",
+          "arrays_attributes_exact": true,
+          "sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef",
+          "base_sha256": "0d5300b63df347938444b7ebe1286bfa7d0a9d3c63a20b031f1341701571ccef"
+        },
+        {
+          "rlz": "2",
+          "st_id": "1",
+          "base_run": "09",
+          "run_id": "009",
+          "arrays_attributes_exact": true,
+          "sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0",
+          "base_sha256": "01837be025fafc913adaa5bf2d16c67906ab1a2ebb67226a2a0c8918ada6acc0"
+        },
+        {
+          "rlz": "2",
+          "st_id": "2",
+          "base_run": "10",
+          "run_id": "010",
+          "arrays_attributes_exact": true,
+          "sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30",
+          "base_sha256": "a464bc89514b1110b2d1d5dc042e207222c65072b4bb03a085edaf5249e32b30"
+        },
+        {
+          "rlz": "2",
+          "st_id": "3",
+          "base_run": "11",
+          "run_id": "011",
+          "arrays_attributes_exact": true,
+          "sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6",
+          "base_sha256": "512927a1e9bfa883453f8832c646e36d888059b318e2c7a2b45a0da31546dbb6"
+        },
+        {
+          "rlz": "2",
+          "st_id": "4",
+          "base_run": "12",
+          "run_id": "012",
+          "arrays_attributes_exact": true,
+          "sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448",
+          "base_sha256": "b59a4352bf485b3abc0f53b7f32662fb681fd1477c2811928b15f7c20567e448"
+        },
+        {
+          "rlz": "2",
+          "st_id": "5",
+          "base_run": "13",
+          "run_id": "013",
+          "arrays_attributes_exact": true,
+          "sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6",
+          "base_sha256": "ead51193bd96865b0d088412b0325fc99b704006e9e64df299e2bdb1292f3bf6"
+        },
+        {
+          "rlz": "2",
+          "st_id": "6",
+          "base_run": "14",
+          "run_id": "014",
+          "arrays_attributes_exact": true,
+          "sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba",
+          "base_sha256": "762e7028d9ef360ee45625d0b5b7a5fa9f5bd190634d3fbe7b27c6dcf3a1eaba"
+        }
+      ]
+    }
+  ],
+  "positive_perturbation_rejected": true,
+  "scope": "Actual auto-seed capacity/width generation only; no simulation or GF15"
+}

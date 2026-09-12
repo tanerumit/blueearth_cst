@@ -89,7 +89,7 @@ _PROSE_REST = re.compile(r"^\s+[A-Z][a-z]+\s+[a-z]")
 #: left exactly one key reportable, which is a green run that means nothing.
 #: `t1`/`t2` are the loader's names for the two config tiers; `raw` is the
 #: freshly-parsed document.
-_CFG_NAME = r"(?:[a-z_]*(?:cfg|config|settings|stanza|section|params)[a-z_]*|t1|t2|raw)"
+_CFG_NAME = r"(?:[a-z_]*(?:cfg|config|settings|stanza|section|params)[a-z_]*|t1|t2|raw|workflows|perturbations)"
 
 #: A subscript chain, and EVERY segment of it counts as a read. `min` reaches a
 #: reader only through `stress_test_cfg["temp"]["mean"]["min"]`, and so do
@@ -193,11 +193,12 @@ def reader_surfaces(root: Path = REPO_ROOT) -> list[Path]:
             "analyze_climate",
             "build_model",
             "analyze_projections",
-            "run_stress_test",
+            "generate_scenarios",
+            "simulate_system",
         )
     ]
     for package in ("blueearth_cst", "scripts"):
-        for pattern in ("*.py", "*.R"):
+        for pattern in ("*.py", "*.R", "*.smk"):
             found += sorted((root / package).rglob(pattern))
     return [
         path for path in found if path.is_file() and "__pycache__" not in path.parts

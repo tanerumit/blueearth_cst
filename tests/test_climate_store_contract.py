@@ -1,7 +1,7 @@
 """R07 B1: the three ``extract_historical_climate`` declarations are ONE rule.
 
 The store producer is declared as ``extract_historical_climate`` in
-``build_model.smk`` (rule 1.04) and ``run_stress_test.smk`` (rule 3.08), both
+``build_model.smk`` (rule 1.04) and ``generate_scenarios.smk`` (rule 3.08), both
 from the same ``snake_utils.climate_store_rule`` object.
 ``analyze_projections.smk`` declares it NOT AT ALL — ADR 0003 removed it, and
 ``test_wf2_declares_no_store_and_no_extraction`` is what keeps it removed.
@@ -236,7 +236,7 @@ def declarations(request, config_variants):
     out = {"_variant": request.param}
     for label, snakefile in (
         ("wf1", "build_model.smk"),
-        ("wf3", "run_stress_test.smk"),
+        ("wf3", "generate_scenarios.smk"),
     ):
         workflow = _parse_workflow(snakefile, config_path)
         rule = workflow.get_rule(RULE_NAME)
@@ -390,13 +390,10 @@ def test_retired_declarations_are_gone(declarations):
 
 
 @pytest.mark.workflow_contract
-def test_guard_keeps_its_receipt_but_loses_its_edge(declarations):
-    """Rule 3.00b is untouched; only rule 3.08's DAG edge to ``.guard_ok`` retires."""
+def test_generation_has_no_model_consistency_guard(declarations):
+    """Generation owns its sources and has no WF1 model/snapshot dependency."""
     wf3_workflow, producer = declarations["wf3"]
-    guard = wf3_workflow.get_rule("check_project_consistency")
-    guard_outputs = sorted(guard.output.keys())
-    assert guard_outputs == ["guard_ok", "sentinel"], guard_outputs
-    assert str(guard.output.guard_ok).endswith("/.guard_ok")
+    assert "check_project_consistency" not in {rule.name for rule in wf3_workflow.rules}
 
     producer_inputs = {str(path).replace("\\", "/") for path in producer.input}
     assert not any(".guard_ok" in path for path in producer_inputs)
@@ -438,17 +435,14 @@ def test_chirps_branch_declares_and_consumes_one_orography_path(tmp_path):
     cfg["climate"]["sources"] = ["chirps_global"]
     cfg_path = write_config(tmp_path, cfg, stem="project_config_chirps")
 
-    workflow = _parse_workflow("run_stress_test.smk", cfg_path)
+    workflow = _parse_workflow("generate_scenarios.smk", cfg_path)
     producer = workflow.get_rule(RULE_NAME)
-    consumer = workflow.get_rule("downscale_climate_realization")
+    consumer = workflow.get_rule("prepare_collection_sources")
 
     oro_out = str(producer.output.oro_nc)
     assert oro_out.endswith("/orography.nc"), oro_out
     assert "chirps_global_orography" not in oro_out
-    assert str(consumer.params.oro_path) == oro_out, (
-        "the catalog builder's oro_path must resolve to the emitted sidecar, got "
-        f"{consumer.params.oro_path!r} vs {oro_out!r}"
-    )
+    assert oro_out in list(map(str, consumer.expand_input({})[0]))
 
     # wf1 declares the same sidecar output on the same branch.
     wf1 = _parse_workflow("build_model.smk", cfg_path)
@@ -628,23 +622,9 @@ def test_wf0_relaxes_the_floor_for_candidates_only(tmp_path):
 
 
 @pytest.mark.workflow_contract
-def test_wf3_config_prep_declares_the_store_so_it_can_check_it(tmp_path):
-    """Rule 3.10 guards what rule 3.11 cannot.
-
-    3.11 is a `shell:` running R, so the floor check has to sit in the Python
-    rule ahead of it. The edge is `ancient()` for the same reason 3.11's is: a
-    re-extraction must not by itself re-run the config prep.
-    """
-    workflow = _parse_workflow("run_stress_test.smk", CONFIG_FN)
-    rule = workflow.get_rule("prepare_weathergen_config")
-
+def test_generation_plan_declares_the_store_before_seed_resolution(tmp_path):
+    """Actual source bytes and the historical floor precede the generator config."""
+    workflow = _parse_workflow("generate_scenarios.smk", CONFIG_FN)
+    rule = workflow.get_rule("prepare_collection_sources")
     store_nc = str(workflow.get_rule(RULE_NAME).output.climate_nc)
-    assert str(rule.input.climate_nc) == store_nc
-    ancient_paths = {str(f) for f in rule.input if getattr(f, "is_ancient", False)}
-    assert store_nc in ancient_paths, (
-        f"the store input must be ancient(), got ancient inputs {ancient_paths}"
-    )
-    # The source name travels too, so the message can say WHICH source fell short.
-    assert str(rule.params.clim_source) == str(
-        workflow.get_rule(RULE_NAME).params.clim_source
-    )
+    assert store_nc in list(map(str, rule.expand_input({})[0]))

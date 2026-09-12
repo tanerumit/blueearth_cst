@@ -216,7 +216,7 @@ def test_bind_retained_collection_after_original_files_removed(retained, tmp_pat
     assert run.collection_revision == manifest["collection_revision"]
     assert run.descriptor.variables[0].units == "degC"
     catalog = yaml.safe_load((tmp_path / "run-catalog.yml").read_text())
-    assert set(catalog) == {"elevation", "forcing"}
+    assert set(catalog) == {"elevation", "run_01"}
     assert run.preparation_context.pet_method == "debruin"
     assert before == {
         str(path): path.read_bytes() for path in root.rglob("*") if path.is_file()

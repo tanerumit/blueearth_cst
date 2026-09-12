@@ -207,7 +207,12 @@ def test_the_linux_baseline_set_is_a_twin_of_the_windows_one():
         "differ"
     )
 
-    for workflow in ("build_model", "analyze_projections", "run_stress_test"):
+    for workflow in (
+        "build_model",
+        "analyze_projections",
+        "generate_scenarios",
+        "simulate_system",
+    ):
         a = _load(f"project_config_baseline_{workflow}.yml")
         b = _load(f"project_config_baseline_linux_{workflow}.yml")
         assert b == copy.deepcopy(a), (
@@ -467,7 +472,7 @@ def test_analyze_projections_owns_its_region():
 
 
 @pytest.mark.workflow_contract
-def test_snakefile_cli_run_stress_test(config_with_staged_region):
+def test_snakefile_cli_generate_scenarios(config_with_staged_region):
     """Workflow 3 dry-run builds a clean DAG on the test config (R5 fixed the cycle).
 
     Pre-R5 this tripped a CyclicGraphException at rule
@@ -480,8 +485,15 @@ def test_snakefile_cli_run_stress_test(config_with_staged_region):
     unbuilt cross-workflow leaf). Was a CyclicGraphException ratchet pre-R5
     (dev/tasks/ § R3).
     """
-    result = _dry_run("run_stress_test.smk", cfg=config_with_staged_region)
+    result = _dry_run("generate_scenarios.smk", cfg=config_with_staged_region)
     assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
+
+
+@pytest.mark.workflow_contract
+def test_simulation_requires_validated_runner(config_with_staged_region):
+    result = _dry_run("simulate_system.smk", cfg=config_with_staged_region)
+    assert result.returncode != 0
+    assert "scripts/simulate_system.py" in result.stdout + result.stderr
 
 
 #: Every file that writes a run banner to `sys.stderr` under a broad `except`.
@@ -491,7 +503,6 @@ BANNER_SOURCES = (
     "analyze_climate.smk",
     "analyze_projections.smk",
     "build_model.smk",
-    "run_stress_test.smk",
     "scripts/run_workflows.py",
 )
 

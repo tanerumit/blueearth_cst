@@ -1,6 +1,6 @@
 # Workflow notebooks
 
-Three notebooks, one per workflow, meant to be read in order. Each names the
+Three notebooks cover model building, projection analysis and the two-stage stress test. Each names the
 Snakefile it drives, walks the settings file that controls it, renders the job
 graph, runs it, and then *reads* the results rather than only displaying them.
 
@@ -8,9 +8,9 @@ graph, runs it, and then *reads* the results rather than only displaying them.
 |---|---|---|---|
 | 1 | [Model building](<Model building.ipynb>) | `build_model.smk` | Delineates the basin, extracts a historical climate store, builds and forces a Wflow-SBM model with hydromt, runs it once, and evaluates it against observed discharge. |
 | 2 | [Climate projections](<Climate projections.ipynb>) | `analyze_projections.smk` | Fetches CMIP6 slices for the basin and derives monthly and annual change factors per model, scenario and horizon — the plausibility overlay, not a driver of the stress test. |
-| 3 | [Climate stress test](<Climate Stress Test.ipynb>) | `run_stress_test.smk` | Generates stochastic weather realizations, perturbs them across a temperature × precipitation grid, runs Wflow for every combination, and reduces the result to a response surface. |
+| 3 | [Climate stress test](<Climate Stress Test.ipynb>) | `generate_scenarios.smk` + `scripts/simulate_system.py` | Generates stochastic weather realizations, perturbs them across a temperature × precipitation grid, runs Wflow for every combination, and reduces the result to a response surface. |
 
-Run them in order. Notebook 3 does not rebuild the model — it binds to the one
+Run model building before simulation; projection analysis is an independent terminal overlay. Notebook 3 does not rebuild the model — it binds to the one
 notebook 1 left behind, and refuses to run against a stale build.
 
 ## Running them
@@ -167,7 +167,7 @@ citation.
 | CMIP6 | `config/catalogs/cmip6_data.yml` | Climate projections | Eyring et al. (2016). doi:10.5194/gmd-9-1937-2016 |
 
 Which land-cover, LAI and soil products a run actually used is set by
-`shared.basin.spatial_sources.{lulc,lai,soil}`; the waterbody sources come from
+`basin.spatial_sources.{lulc,lai,soil}`; the waterbody sources come from
 `config/defaults/wflow_update_waterbodies.yml`.
 
 *The basin, the model and the results in these notebooks are for illustration.
@@ -176,7 +176,7 @@ evaluation section for what that means when reading the numbers.*
 
 ## Related reading
 
-- `README.md` — how the three workflows fit together.
+- `README.md` — how the five workflows fit together.
 - `docs/cst-toolbox-technical-note-2025.md` — the stress-test method and the
   design rationale behind it. Read this before changing *what* a workflow
   computes.

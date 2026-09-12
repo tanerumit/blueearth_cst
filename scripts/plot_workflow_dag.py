@@ -10,7 +10,7 @@ project's run, so it belongs under that config's own ``project_dir``, carrying
 the project name and the workflow number:
 
     <project_dir>/logs/dag/<project_name>_wf<N>_dag.png              (wf1, wf2)
-    <project_dir>/logs/dag/<project_name>_wf3_<experiment>_dag.png   (wf3)
+    <project_dir>/logs/dag/<project_name>_wf4_<experiment>_dag.png   (wf4)
 
 **In the project's own ``logs/``, under ``logs/dag/``** (R9 design v10, principles
 P4 and P7). R7 put this under ``config/dag/`` on the reasoning that a run is
@@ -21,8 +21,8 @@ records out of it, while P7 places every artifact at the scope of the producer
 that wrote it. A DAG render is a generated record OF A RUN, so it goes with the
 run's other records.
 
-WF3's render was experiment-scoped (``experiments/<id>/logs/dag/``) until
-2026-08-11, when WF3's run records moved up to the project's ``logs/`` and
+WF4's render was experiment-scoped (``experiments/<id>/logs/dag/``) until
+2026-08-11, when WF4's run records moved up to the project's ``logs/`` and
 ``benchmarks/`` and the experiment lost those two directories. P7 still holds --
 the render still names its producing run -- but the experiment id now rides in
 the FILENAME, exactly as it does for the merged log and the benchmark table. It
@@ -42,12 +42,12 @@ config; every ``dev/scripts/`` tool reports on the repository instead
 Usage (inside ``pixi shell``, or via ``pixi run``, from the repo root)::
 
     python scripts/plot_workflow_dag.py -s build_model.smk --configfile <cfg>
-    python scripts/plot_workflow_dag.py -s run_stress_test.smk --configfile <cfg> \\
+    python scripts/plot_workflow_dag.py -s simulate_system.smk --configfile <cfg> \\
         --mode rulegraph --format svg
 
     # anything after `--` is forwarded to snakemake verbatim
     python scripts/plot_workflow_dag.py -s analyze_projections.smk --configfile <cfg> \\
-        -- --config workflows='{"run_stress_test": {"enabled": false}}'
+        -- --config workflows='{"simulate_system": {"enabled": false}}'
 
 A `--config` override reaches the project config before composition, so it can
 toggle a workflow or repoint a stanza's ``config_path`` -- but a project
@@ -97,11 +97,12 @@ WORKFLOW_NUMBER = {
     "analyze_climate.smk": 0,
     "build_model.smk": 1,
     "analyze_projections.smk": 2,
-    "run_stress_test.smk": 3,
+    "generate_scenarios.smk": 3,
+    "simulate_system.smk": 4,
 }
 
 # Where under project_dir the graph lands. One directory for all three
-# workflows since 2026-08-11 -- WF3's is told apart by its filename, not by a
+# workflows since 2026-08-11 -- WF4's is told apart by its filename, not by a
 # directory level.
 PLOT_SUBDIR = Path("logs") / "dag"
 
@@ -111,20 +112,20 @@ def plot_relpath(
 ) -> Path:
     """The DAG render's path relative to ``project_dir``.
 
-    ``logs/dag/<project_name>_wf<N>_<mode>.<fmt>``, with WF3 carrying its
+    ``logs/dag/<project_name>_wf<N>_<mode>.<fmt>``, with WF4 carrying its
     ``experiment_name`` between the workflow number and the mode -- the same
-    scheme the merged log (``wf3_run_stress_test_<experiment>.log``) and the
-    benchmark table (``wf3_benchmarks_<experiment>.md``) use. Directory and
-    filename are built together because for WF3 they are one decision: the id
+    scheme the merged log (``wf4_simulate_system_<experiment>.log``) and the
+    benchmark table (``wf4_benchmarks_<experiment>.md``) use. Directory and
+    filename are built together because for WF4 they are one decision: the id
     has to appear in exactly one of them, and it is the name.
 
-    A WF3 config carrying no experiment name yields the plain ``_wf3_`` stem:
+    A WF4 config carrying no experiment name yields the plain ``_wf4_`` stem:
     the render is a convenience artifact and must not fail a user's command over
     a missing optional key.
     """
     stem = f"{project_name}_wf{number}"
-    if number == 3:
-        experiment = ((config.get("workflows") or {}).get("run_stress_test") or {}).get(
+    if number == 4:
+        experiment = ((config.get("workflows") or {}).get("simulate_system") or {}).get(
             "experiment_name"
         )
         if experiment:
@@ -150,7 +151,7 @@ def workflow_number(snakefile: Path) -> int:
 def read_project(config_path: Path) -> tuple[Path, str, dict]:
     """``(project_dir, project_name, config)`` from a workflow config.
 
-    The parsed config comes back too, so the caller can place a WF3 render
+    The parsed config comes back too, so the caller can place a WF4 render
     at its experiment's scope without re-reading the file.
 
     Handles both config shapes in the repo: the R01 sectioned schema
@@ -171,7 +172,7 @@ def read_project(config_path: Path) -> tuple[Path, str, dict]:
     if isinstance(config, dict) and "workflows" in config:
         # A PROJECT config, so COMPOSE it (R13 D-12.0). A raw load finds a
         # two-key stanza, `experiment` below comes back None, the
-        # `if experiment:` branch is skipped, and every WF3 render silently
+        # `if experiment:` branch is skipped, and every WF4 render silently
         # loses the experiment id from the filename this tool is documented
         # to produce.
         #
@@ -229,7 +230,15 @@ def build_graph(
         str(config_path),
         *extra,
     ]
-    result = subprocess.run(command, cwd=REPO_ROOT, capture_output=True, text=True)
+    environment = None
+    if snakefile.name == "simulate_system.smk":
+        from blueearth_cst.experiment.simulation_runner import simulation_command
+
+        checked, environment = simulation_command(config_path, [target], 1, extra)
+        command = [*checked, f"--{mode}", "dot"]
+    result = subprocess.run(
+        command, cwd=REPO_ROOT, capture_output=True, text=True, env=environment
+    )
     if result.returncode != 0:
         tail = "\n".join(result.stderr.strip().splitlines()[-25:])
         raise DagPlotError(

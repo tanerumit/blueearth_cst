@@ -30,7 +30,7 @@ def _config(project_dir):
             "window": {"start": 2000, "end": 2020},
         },
         "workflows": {
-            "run_stress_test": {"experiment_name": "my_experiment"},
+            "simulate_system": {"experiment_name": "my_experiment"},
             "analyze_projections": {"ensemble": "cmip6"},
         },
     }
@@ -81,7 +81,7 @@ def test_a_sub_day_window_fails_loud():
 
     **Asserted against `slugify_window` directly, not through a config.** `C-70`
     retyped `climate.window` to INCLUSIVE YEARS, so a sub-day window is no longer
-    expressible in a project file — `map_parameters` converts through
+    expressible in a project file â€” `map_parameters` converts through
     `historical_window_bounds`, which yields midnight on both ends by
     construction, and the guard is unreachable from that direction.
 
@@ -151,7 +151,7 @@ def _tree(tmp_path):
 
     Both sides are in TODAY's layout. Until 2026-08-11 this fixture was
     pre-migration and these tests passed `--map r09`; that one-way map is
-    retired (`dev/reviews/2026-08-11_test-suite-bloat-assessment.md` §6a) and
+    retired (`dev/reviews/2026-08-11_test-suite-bloat-assessment.md` Â§6a) and
     the only map left is the post-migration inventory.
     """
     proj = tmp_path / "proj"

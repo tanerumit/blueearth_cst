@@ -1,5 +1,26 @@
 # R12 GF-1..GF-32 validation map
 
+## Current P3 boundary — 2026-09-12
+
+Bounded P3 migration acceptance passed, including the final full suite:
+3,705 passed, 15 skipped and one expected failure. The consolidated
+[scientific/orchestration handoff](evidence/p3/scientific-orchestration-handoff.md)
+closes the scientific, orchestration, provenance and software conditions.
+[Coordinator evidence](evidence/p3/acceptance.md) links every final execution,
+identity, crosswalk and repair. GF15 adequacy and milestone sealing remain open.
+
+| Gates | Current evidence |
+|---|---|
+| GF1–8, GF10–14, GF16–24, GF26 | Accepted P1/P2 logical and durable-handoff contracts; their maintained tests pass in the final successor software suite. |
+| GF9, GF28 | Both fresh entry-point/runner runs have signed numerical and temporal preservation acceptance against immutable P0. |
+| GF15 | Operational screening/fit validity preserved. Benchmark not run; reviewed new criteria still require owner approval before the seal-stage execution. |
+| GF25 | Five-stanza migration and mandatory runner are implemented; final CLI checks pass. Old current entry point/stanza/template are retired, with migration/refusal tests in the full gate. |
+| GF27 | Three actual automatic-seed capacity/width runs and an experiment-rename check have signed acceptance. |
+| GF29, GF30, GF32 | Fresh generation/simulation through both interfaces, physical offline metrics, and 32 reuse/refusal/selection checks pass. |
+| GF31 | Four-branch portable-preparation comparison has signed bounded acceptance, retaining the documented synthetic CHIRPS and dormant E-OBS limits. |
+
+## Earlier checkpoints and preparation allocation
+
 Current phase update, 2026-09-11: [P2 acceptance](evidence/p2/acceptance.md)
 records executable current-carrier GF-29/GF-30, bounded GF-31, GF-32 and the
 operation/target matrix. The final software gate passed 3,657 tests. P3 must

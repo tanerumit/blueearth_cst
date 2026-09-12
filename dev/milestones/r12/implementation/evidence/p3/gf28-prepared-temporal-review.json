@@ -1,0 +1,571 @@
+{
+  "status": "prepared_temporal_preservation_passed_final_responses_pending",
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "frozen_source_inventory_digest": "b12a76551cf13b9bce3f96e5d8125954ae70dbfc88278e32f93a90f3e980be98",
+  "frozen_source_inventory_file_sha256": "2f72970eb910c6d331c426b8bf86413fac1b6df4e3e090842d640bad5049a643",
+  "collection_manifest_sha256": "c534e1cffc8ef03840bf2ccb73ed068121b3cb9cc673a44dfa8c250dfb30c66d",
+  "runs": [
+    {
+      "run_id": "01",
+      "old_member": "rlz_1_st_0",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "3b30121492a271266803494f157e8c0ea80ad355629b425cf9db92f7d0ad1be2",
+      "new_prepared_sha256": "c85a4dcb91443f1a25fc4350b12f281216b5c24774bdfeb9e5bf656daefe915d",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "bfaab009d97794a2cb56dc3ee9775daf239105a5f2c5d240b8465362ef330e02",
+      "new_toml_sha256": "21bb0f08cb83b3d0ac5e60423533ab4ae065a2214b1e6633c254199c7c901c31"
+    },
+    {
+      "run_id": "02",
+      "old_member": "rlz_1_st_1",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "5ec4bf80ff5a9c00937a59569adca6ec31e195466bc9fa190d9e98c9a8e3259b",
+      "new_prepared_sha256": "673455ecc668fd647d509f4fe5a03b48106331ef4a7aeb6f3eaa660de8eac3c9",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "243b5fbefd573c9a9dde4ff494c006b86f3bab86eb967f434d21f1706952b217",
+      "new_toml_sha256": "938c6b9f8576a8b11619fcb215c95b0a69c691fac17458d54bb8495bf6810af2"
+    },
+    {
+      "run_id": "03",
+      "old_member": "rlz_1_st_2",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "a640cd2cbbfaf53ddc6f820ce216be6de915347cee41067f29bfc8eaac5fc582",
+      "new_prepared_sha256": "b8a166cc9ee85df7ee236a235a8c23e398a63c369bcf32df9cd79dd2bad41752",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "b4bdbab1acc4454ec40e31ef453eb54ba6a59ffb869bee2d81addd4ae2dfd84e",
+      "new_toml_sha256": "b23bb2d71ddd91a9a45aa7584cd5cbcfe3d0497d6223078f5d1bb5e7305177f4"
+    },
+    {
+      "run_id": "04",
+      "old_member": "rlz_1_st_3",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "ffc340eda9b0554dfe7e6c8d9023f57646ebbe7e67ab65dd0aa960eab9f5a588",
+      "new_prepared_sha256": "042adbe949cf084499dde0ad1b8afed60f783e85c591bec7ecc4e1ab09aa5994",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "0908fd72dbc14c4f190c4d02a691a9bfc88511fbcd149bcb5216b3735297dc54",
+      "new_toml_sha256": "d745ce6bb3c496ebc9c9c8b7f533bdb37cbf52cf16d4f774b671505f9b9353ab"
+    },
+    {
+      "run_id": "05",
+      "old_member": "rlz_1_st_4",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "22258d46583d5dd317050627b4c692e64735c512f28d744b5e9b0d4d69f45cb2",
+      "new_prepared_sha256": "ea6aa275218a8b953393b1175a2ae2d04fcade863b9ca010c62f2fa106edd2e7",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "cc13eb50d5094bb7f3e4c022d3e3bb959bf05931b95f7bf046bdfaa983f291b9",
+      "new_toml_sha256": "3c4cd7afe35af0c6ab9577aa9ec6a1a783d7053cc2d21eed6f3294ac0e0f0605"
+    },
+    {
+      "run_id": "06",
+      "old_member": "rlz_1_st_5",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "429c0ee00d753eacfe205bd446e90c73739d9139722f82d37588e3902b2d7b94",
+      "new_prepared_sha256": "c32cb9cb19f4e5ed44f09a2ca57a9d4e56a26877d18e3a652698eac91bff153d",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "c595cb296d7f08cf8c3e9159e57aa927da1b3bb146d6cec3401fffa565e6a08a",
+      "new_toml_sha256": "9c5cb7fcd262e05c224028876d1670c2bfcbd28552a6bfba60e8e2b527c39064"
+    },
+    {
+      "run_id": "07",
+      "old_member": "rlz_1_st_6",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "4b9f8a889a8058bbd8d45623af7dd10b373ad84260a936e9f6aeeaf4e1227e40",
+      "new_prepared_sha256": "a102c93abc55aaeba61ef8a2b68f33cdc844f01f5b1d62bcdee3b6f63aca828e",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "aaacc6805817cc325a52722e5cc8e4285faf02b193a56be3ab94afbdae5408af",
+      "new_toml_sha256": "9c9a00ced32190c711a10014ee0e0bf0550e4c400fb61273b44e15952d5dac06"
+    },
+    {
+      "run_id": "08",
+      "old_member": "rlz_2_st_0",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "f85316c028471ba12a927b5bf0ba255826762480d25275f72e7d5e7ec1783f4f",
+      "new_prepared_sha256": "060e5a5875d1b0ee3aa70d90af336dff3973d8f656d8e7ffcf1d24951ac8d52f",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "bc97bc193f1c24a26bf2ca1205909748120f43c3128e90fbbc3905024d366a33",
+      "new_toml_sha256": "b40142c9621c4edb9e76a4e22fe66a359bd7a8f0d38fd6cd921cf3ba149972a6"
+    },
+    {
+      "run_id": "09",
+      "old_member": "rlz_2_st_1",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "6ebededae644ae2d68bc9f2e76e62c2d9fda3e4cbdef093a54c0faa8ca7d3b5b",
+      "new_prepared_sha256": "17c137d3fa44171932b99f92bbdacbce926ce1e4ddd72f75244a72da8bc2dbc7",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "62c95a907b6899e9f0b48ee24772d6fb8de39f807db1c2ca636fb3500cf3a236",
+      "new_toml_sha256": "4e67cec1cb8a03e63768e3cbb0934f82f76c23808f6ecff684c84e05c735c5b6"
+    },
+    {
+      "run_id": "10",
+      "old_member": "rlz_2_st_2",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "5a579e71eece51dd7990d708409678dbc9d316c3b1f45226cefeee9bd9740577",
+      "new_prepared_sha256": "252d2f6216f4ec85d7c2c0b8f46e65db03ad89ec697d8b4bf65ed65bb0d182a9",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "1315c4e11593ed27c0d1a6acbd56058d5171f3f0da00b26524c9a5d08c45cb68",
+      "new_toml_sha256": "3171090138cb112bf0c48dd1ade4011ddb762c8adeafd91c67a561045841f6f8"
+    },
+    {
+      "run_id": "11",
+      "old_member": "rlz_2_st_3",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "66f615e2b3f100ac4760913d81e66c2add83be38c468777f21393d414d16afaa",
+      "new_prepared_sha256": "2b8d94ca193a067f1e8717bfb8213f93546024fa3e955877bc4de8937ab6ec42",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "14ea60b7f8ead2a00c4494e0b04f50b64f9a86d0252054d64bacb7364739d821",
+      "new_toml_sha256": "04542eefcc805d416b62bfb92bed60f761ff07afd425b1bb79f40f8346cfbf84"
+    },
+    {
+      "run_id": "12",
+      "old_member": "rlz_2_st_4",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "581b4a60c93625278a124d70bc08fe56c5207951eebace0d6e17b2c5f183fe3b",
+      "new_prepared_sha256": "07d1cd788a95bcee180d8f2f2be1421d7e7cc571e7c3a146894bb0d73aaf9816",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "c191f6f71492e16c06dc6313af18c8e27916029488fefae0fc54a43c029c12f3",
+      "new_toml_sha256": "9d6dc8d241ebc9a677e667c9f607e16c6b39c0c4caebd8a91a6a6b787605b16a"
+    },
+    {
+      "run_id": "13",
+      "old_member": "rlz_2_st_5",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "da2e3d2e3a30d80a51f2729cc323ba851a08b30786c9949415a65adde6b4bee8",
+      "new_prepared_sha256": "072893c7a65895663b30949dde5cbdf4c13192685ebc2291baef1413235bbc41",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "a249dcce3f5353ab4937ea26cd0d446e022ed5a4abc9efa75b30a2e2a9d8f4b4",
+      "new_toml_sha256": "225ce1ddc3d0768b3383af2ac668ca8c352eb8087525f5e5ae0a4b6aadfb2c11"
+    },
+    {
+      "run_id": "14",
+      "old_member": "rlz_2_st_6",
+      "source_clock": {
+        "count": 16790,
+        "start": "2010-01-01 00:00:00",
+        "end": "2055-12-31 00:00:00",
+        "calendar": "noleap"
+      },
+      "prepared_clock_count": 3287,
+      "prepared_start": "2046-01-01 00:00:00",
+      "prepared_end": "2054-12-31 00:00:00",
+      "leap_days": [
+        "2048-02-29",
+        "2052-02-29"
+      ],
+      "time_values_attrs_exact": true,
+      "daily_spacing_exact": true,
+      "toml_time_section_exact": true,
+      "sidecar": {
+        "operations": [
+          "hydromt_reader_to_datetime64",
+          "clip_to_configured_window",
+          "refresh_toml_endpoints"
+        ],
+        "prepared_end": "2054-12-31T00:00:00",
+        "prepared_forcing_calendar": "proleptic_gregorian",
+        "prepared_start": "2046-01-01T00:00:00",
+        "response_calendar": "standard",
+        "response_end": "2054-12-31 00:00:00",
+        "response_start": "2046-01-02 00:00:00",
+        "source_calendar": "noleap",
+        "time_label": "interval_end"
+      },
+      "old_prepared_sha256": "5bc2a98d2cf8152d4cc28ba309d74e2036bab0d3cd73dc7800c79b2733a6af96",
+      "new_prepared_sha256": "353d9e274c96f0f0ac324f94ec51bf73dc5182b5cc2468e335c9c98c448bf1b1",
+      "sidecar_sha256": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7",
+      "old_toml_sha256": "3b6fb6cd713d0a2a1fdb74839f1cb405b29205f701c89e1334a253f84b22ec9f",
+      "new_toml_sha256": "a082ae0cf52322224bbb77f30127ac7949009e964b215b0dff62e580f5801cae"
+    }
+  ],
+  "limits": "Read-only source/prepared clocks and TOML endpoints; final native responses and reductions remain pending completed GF9; non-January tests inspected, not rerun"
+}

@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Union
 
 # numpy, pandas and yaml are DEFERRED into the functions that use them.
-# `run_stress_test.smk` imports this module at PARSE time for the single refusal
+# `generate_scenarios.smk` imports this module at PARSE time for the single refusal
 # `refuse_out_of_domain_multipliers` (D35), which reads a config dict and
 # nothing else -- so a module-level import bought the numeric stack (~4.6s) on
 # every WF3 dry-run and every real run in order to validate a YAML section. The
@@ -15,7 +15,7 @@ from typing import Union
 # Snakefile prepends its basedir to sys.path before invoking script: rules, but
 # guard here so the module is import-clean for unit tests too -- and for the
 # PARSE-TIME call to refuse_out_of_domain_multipliers below (D35), which
-# run_stress_test.smk makes before the DAG is built.
+# generate_scenarios.smk makes before the DAG is built.
 # parents[2] is the REPO ROOT (file -> experiment/ -> blueearth_cst/ ->
 # root); parent.parent stopped at the package dir, from which
 # `import blueearth_cst.shared...` cannot resolve (O-07).
@@ -177,7 +177,7 @@ def prep_cst_parameters(
     stress_test_cfg : dict, optional
         The already-resolved ``stress_test`` section. The rule passes it as a
         param (R13 D-10.6) so this module never re-reads the config from
-        disk: since the split, ``workflows.run_stress_test.stress_test``
+        disk: since the split, ``workflows.generate_scenarios.stress_test``
         exists in no single file a caller could hand over. Passing the
         section is also what gives rule 3.09 a rerun trigger at all -- its
         only config input is ``ancient()``, which by construction triggers
@@ -199,10 +199,10 @@ def prep_cst_parameters(
 
         composed = load_composed_config(
             config_fn,
-            entry="run_stress_test",
-            declared_sections=("workflows.run_stress_test",),
+            entry="generate_scenarios",
+            declared_sections=("workflows.generate_scenarios",),
         )
-        stress_test_cfg = composed["workflows"]["run_stress_test"][
+        stress_test_cfg = composed["workflows"]["generate_scenarios"][
             "climate_perturbations"
         ]
 

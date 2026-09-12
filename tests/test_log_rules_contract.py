@@ -51,7 +51,7 @@ WORKFLOWS = [
     "analyze_climate.smk",
     "build_model.smk",
     "analyze_projections.smk",
-    "run_stress_test.smk",
+    "generate_scenarios.smk",
 ]
 
 #: The directory every per-rule log part lives under, in all four workflows.
@@ -285,3 +285,13 @@ def test_declared_labels_read_in_rule_number_order(snakefile, variant, config_pa
 # reordering the blocks to match the numbers would be a behaviour risk taken for
 # cosmetics. `W.NN` is the rule's position in the workflow's logical order, not
 # its offset in the file.
+
+
+def test_simulation_labels_match_producers_and_order(tmp_path, monkeypatch):
+    """Included WF4 rules retain every log part in numerical merge order."""
+    from tests.simulation_workflow_fixture import parse_simulation_workflow
+
+    workflow = parse_simulation_workflow(tmp_path, monkeypatch)
+    declared = _declared_log_rules(workflow, "simulate_system.smk")
+    assert set(declared) == _labels_with_producers(workflow)
+    assert declared == sorted(set(declared))

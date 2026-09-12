@@ -23,7 +23,7 @@ In this workflow's own config file, reached through its
 - `simulation_window` — `{start, end}`, INCLUSIVE calendar years.
 
 `model.outvars` is **no longer owned here**: R14 `C-19` moved it to the
-project file, because WF3 reads it too and a key two workflows read has
+project file, because WF4 reads it too and a key two workflows read has
 to have one home.
 
 ## Reads from `shared`
@@ -167,7 +167,7 @@ workflows 2/3; not in this `rule all`):
 
 *`{basin_dir}/run_default/output.csv` was listed here and is not a
 downstream-contract artifact: `dev/scripts/cross_workflow_inputs.py` stages only
-the TOML, `.outputs_configured` and `region.geojson`, so no WF2/WF3 rule ever
+the TOML, `.outputs_configured` and `region.geojson`, so no WF2/WF4 rule ever
 consumed it. Rule 1.14 declares it `temp()`, so a successful run does not leave
 it at all — the readable per-variable tables (rule 1.14b) are what
 `run_default/` holds.*
@@ -199,8 +199,7 @@ exposes every artifact through HydroMT without containing Wflow configuration.
   `blueearth_cst/shared/merge_logs.py` and then **deletes** the parts, and
   `gather_benchmarks` (1.14) merges the benchmarks into one
   `benchmarks/wf1_benchmarks.md` (Markdown table, `rule` column + `TOTAL` row)
-  via `merge_benchmarks.py`. All three workflows follow this scheme — WF2 2.07,
-  WF3 3.13.)
+  via `merge_benchmarks.py`. All five workflows collect their own scoped parts.)
   — ephemeral run artifacts (R3 §6); not manifest targets, not committed. The
   `1.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9). The
   spatial and Wflow-build rules use `1.02_prepare_spatial_maps` and
@@ -211,7 +210,7 @@ exposes every artifact through HydroMT without containing Wflow configuration.
 - **Workflow 2** (`analyze_projections.smk`) reads
   `staticgeoms/region.geojson` (as an `ancient(...)` input to
   `monthly_stats_hist`/`_fut`).
-- **Workflow 3** (`run_stress_test.smk`) reads the built model,
+- **Workflow 4** (`simulate_system.smk` through `scripts/simulate_system.py`) reads the built model,
   its `wflow_sbm.toml`, and the forcing layout.
 
 ## Outlet-naming convention (R3 §4 decision)

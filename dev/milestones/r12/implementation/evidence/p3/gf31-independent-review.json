@@ -1,0 +1,160 @@
+{
+  "status": "accepted_bounded_GF31_pending_full_P3",
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "comparison_sha256": "572259548016138845e3687b95f624ae6ad421cf5b3207d62de4c376f5265679",
+  "probe_sha256": "20fa8f901ee96bba56edb8f33da71bb69005e3bc9a89187cebf13f5c78fb8394",
+  "final_source_inventory_sha256": "2f72970eb910c6d331c426b8bf86413fac1b6df4e3e090842d640bad5049a643",
+  "raw_log_sha256": "516fb18a65e90e677da93dc995e4c43cff23ec17e60b013f35d4b51d50fc6391",
+  "branches": [
+    {
+      "branch": "era5",
+      "collection_id": "b08d61ccd9f520afe3040006ebc0539f0012a8590ab4b9d965e266025fced419",
+      "manifest_sha256": "f38366c865eeb4f74a6df2c33697bc021fb8692ec17a33f4f2b387a17e8aaa49",
+      "prepared_old_sha256": "738d68d7888122941c5221263d6c10058c3be29d2dfcb7d16b47eb80f51ae910",
+      "prepared_new_sha256": "bde575f1200226a8aa9971bf4af43a0254751c2314005f4fc43654fa14cff22c",
+      "old_toml_sha256": "fc117d0b68c8d39e43ae59be834a7c333340244d5660aaf53c1004d36aced850",
+      "new_toml_sha256": "fc117d0b68c8d39e43ae59be834a7c333340244d5660aaf53c1004d36aced850",
+      "shape": {
+        "time": 3287,
+        "latitude": 16,
+        "longitude": 24
+      },
+      "endpoints": [
+        "2046-01-01T00:00:00.000000000",
+        "2054-12-31T00:00:00.000000000"
+      ],
+      "values_coordinates_exact": true,
+      "remaining_attributes_exact": true,
+      "selector_relocations": {
+        "precip.precip_fn": [
+          "forcing",
+          "run_01"
+        ],
+        "pet.pet_fn": [
+          "forcing",
+          "run_01"
+        ],
+        "temp.temp_fn": [
+          "forcing",
+          "run_01"
+        ]
+      },
+      "complete_parsed_tomls_exact": true,
+      "source_paths_absent": true,
+      "positive_numeric_perturbation_rejected": true
+    },
+    {
+      "branch": "chirps",
+      "collection_id": "5716b9642b44eab986550aa02d47db1da8b0949159a9ca8b5eb3dad29eed23f8",
+      "manifest_sha256": "674052da4caeeae2c7c45cfa9e82db99e43bea84fe4c8cbfb3ec376d6e8ac538",
+      "prepared_old_sha256": "9155d3a9675e121d057458ab66f265ee5039b613cbcf7b98d68c824a11de29d8",
+      "prepared_new_sha256": "db7c567df9b152ef190f0bfb7e257a548f09371888b97d477317cf13f8fe375d",
+      "old_toml_sha256": "fc117d0b68c8d39e43ae59be834a7c333340244d5660aaf53c1004d36aced850",
+      "new_toml_sha256": "fc117d0b68c8d39e43ae59be834a7c333340244d5660aaf53c1004d36aced850",
+      "shape": {
+        "time": 3287,
+        "latitude": 16,
+        "longitude": 24
+      },
+      "endpoints": [
+        "2046-01-01T00:00:00.000000000",
+        "2054-12-31T00:00:00.000000000"
+      ],
+      "values_coordinates_exact": true,
+      "remaining_attributes_exact": true,
+      "selector_relocations": {
+        "precip.precip_fn": [
+          "forcing",
+          "run_01"
+        ],
+        "pet.pet_fn": [
+          "forcing",
+          "run_01"
+        ],
+        "temp.temp_fn": [
+          "forcing",
+          "run_01"
+        ]
+      },
+      "complete_parsed_tomls_exact": true,
+      "source_paths_absent": true,
+      "positive_numeric_perturbation_rejected": true
+    },
+    {
+      "branch": "chirps_global",
+      "collection_id": "8ceb11c08b5cdc9a21a7d57a18ca948c9f25f6984d232c9efab07587963a71f8",
+      "manifest_sha256": "7d9639a1c2daf7ab80a0ae5b10ac9fb30f803be88373f969810c401ddb738a1e",
+      "prepared_old_sha256": "ac0ac337b0f9d024e92e4cbffc320f554811d2d5e3176902c8682c558a9a4743",
+      "prepared_new_sha256": "66f111f4ca5056d2fc4d88b0e0858c9fbd49ee69afe8c57956ceea1991a02e21",
+      "old_toml_sha256": "fc117d0b68c8d39e43ae59be834a7c333340244d5660aaf53c1004d36aced850",
+      "new_toml_sha256": "fc117d0b68c8d39e43ae59be834a7c333340244d5660aaf53c1004d36aced850",
+      "shape": {
+        "time": 3287,
+        "latitude": 16,
+        "longitude": 24
+      },
+      "endpoints": [
+        "2046-01-01T00:00:00.000000000",
+        "2054-12-31T00:00:00.000000000"
+      ],
+      "values_coordinates_exact": true,
+      "remaining_attributes_exact": true,
+      "selector_relocations": {
+        "precip.precip_fn": [
+          "forcing",
+          "run_01"
+        ],
+        "pet.pet_fn": [
+          "forcing",
+          "run_01"
+        ],
+        "temp.temp_fn": [
+          "forcing",
+          "run_01"
+        ]
+      },
+      "complete_parsed_tomls_exact": true,
+      "source_paths_absent": true,
+      "positive_numeric_perturbation_rejected": true
+    },
+    {
+      "branch": "eobs",
+      "collection_id": "bd6852604ee9c9b96de63dddf111ed4c670ce57afde13be82c5e89d6687a0d2c",
+      "manifest_sha256": "1b2ca8f30ab0eb80a5348ed60b3919a37fee73a4dc3060f1328d3a7c5c36bfa8",
+      "prepared_old_sha256": "982d6c794d1178ac89917894ad9475189f246a418e3f0a678564baab2afd9c44",
+      "prepared_new_sha256": "a648a05c63af43ac54b74276553682928a7dee9991cd530b1461fcae2e4ad071",
+      "old_toml_sha256": "fc117d0b68c8d39e43ae59be834a7c333340244d5660aaf53c1004d36aced850",
+      "new_toml_sha256": "fc117d0b68c8d39e43ae59be834a7c333340244d5660aaf53c1004d36aced850",
+      "shape": {
+        "time": 3287,
+        "latitude": 16,
+        "longitude": 24
+      },
+      "endpoints": [
+        "2046-01-01T00:00:00.000000000",
+        "2054-12-31T00:00:00.000000000"
+      ],
+      "values_coordinates_exact": true,
+      "remaining_attributes_exact": true,
+      "selector_relocations": {
+        "precip.precip_fn": [
+          "forcing",
+          "run_01"
+        ],
+        "pet.pet_fn": [
+          "forcing",
+          "run_01"
+        ],
+        "temp.temp_fn": [
+          "forcing",
+          "run_01"
+        ]
+      },
+      "complete_parsed_tomls_exact": true,
+      "source_paths_absent": true,
+      "positive_numeric_perturbation_rejected": true
+    }
+  ],
+  "limits": "ERA5 generated values with synthetic elevation; CHIRPS branch preservation only; EOBS dormant branch; no Wflow execution or predictive skill assessment"
+}

@@ -31,6 +31,41 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dev" / "scripts"))
 import check_baseline as cb  # noqa: E402
 
 
+def _write_metric_plan_fixture(project_dir):
+    """Synthetic ready-plan linkage; numeric target payloads are written separately."""
+    from blueearth_cst.experiment.content_identity import (
+        canonical_json_bytes,
+        content_sha256,
+    )
+
+    root = Path(project_dir) / "experiments" / cb.EXPERIMENT_NAME / "results"
+    request = {"fixture": "metric request"}
+    request_id = content_sha256(request)
+    set_id = "a" * 64
+    plan = {
+        "schema_version": "metric-plan/1",
+        "request": request,
+        "metric_request_id": request_id,
+        "metric_set_id": set_id,
+        "response_inventory_sha256": "b" * 64,
+    }
+    plan["plan_sha256"] = content_sha256(plan)
+    path = root / "metric_plans" / request_id / "plan.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(canonical_json_bytes(plan))
+    marker = {
+        "schema_version": "metric-set/1",
+        "status": "ready",
+        "metric_set_id": set_id,
+        "response_inventory": {"sha256": "b" * 64},
+    }
+    marker["metrics_manifest_sha256"] = content_sha256(marker)
+    target = root / "metric_sets" / set_id / "metrics.json"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(canonical_json_bytes(marker))
+    return path, target
+
+
 def _write_target(path: str, kind: str) -> None:
     """Write a minimal but valid file for the given target kind."""
     p = Path(path)
@@ -53,14 +88,40 @@ def _write_target(path: str, kind: str) -> None:
         # A long indicator table (R11 Q8). Two groups so the per-group tolerance
         # has something to group by; the comparator's own cases live in
         # tests/test_check_baseline_indicator.py.
-        rows = ["metric,st_id,rlz_id,location,value"]
+        rows = ["metric,location,unit_id,value"]
         for metric, base in (("q_mean", 10.0), ("q_low", 0.5)):
             rows += [
-                f"{metric},{i:02d},0,101,{base * (1.0 + 0.1 * i)!r}" for i in range(5)
+                f"{metric},101,{i + 1:02d},{base * (1.0 + 0.1 * i)!r}" for i in range(5)
             ]
         p.write_text("\n".join(rows) + "\n")
     else:  # pragma: no cover - guard against a new untested kind
         raise ValueError(f"unhandled kind: {kind}")
+
+
+def test_baseline_metric_plan_refuses_legacy_fallback_and_ambiguity(tmp_path):
+    legacy = tmp_path / "experiments" / cb.EXPERIMENT_NAME / "results/q_indicators.csv"
+    legacy.parent.mkdir(parents=True)
+    legacy.write_text("metric,location,st_id,rlz_id,value\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="exactly one retained metric plan"):
+        cb.resolve_metric_set_dir(str(tmp_path))
+    plan, marker = _write_metric_plan_fixture(str(tmp_path))
+    assert cb.resolve_metric_set_dir(str(tmp_path)) == marker.parent.as_posix()
+    another = plan.parent.parent / ("c" * 64) / "plan.json"
+    another.parent.mkdir()
+    another.write_bytes(plan.read_bytes())
+    with pytest.raises(ValueError, match="found 2"):
+        cb.resolve_metric_set_dir(str(tmp_path))
+
+
+def test_baseline_metric_plan_refuses_changed_ready_marker(tmp_path):
+    _, marker = _write_metric_plan_fixture(str(tmp_path))
+    doc = json.loads(marker.read_text())
+    doc["response_inventory"]["sha256"] = "c" * 64
+    from blueearth_cst.experiment.content_identity import canonical_json_bytes
+
+    marker.write_bytes(canonical_json_bytes(doc))
+    with pytest.raises(ValueError, match="marker differs"):
+        cb.resolve_metric_set_dir(str(tmp_path))
 
 
 def _record_ns(project_dir, manifest_path, workflow=None, include_figures=False):
@@ -93,6 +154,7 @@ def project(tmp_path):
     Returns (project_dir, manifest_path). Both point under tmp_path.
     """
     project_dir = str(tmp_path)
+    _write_metric_plan_fixture(project_dir)
     for _workflow, kind, template in cb.TARGETS:
         _write_target(cb.resolve(template, project_dir), kind)
 
@@ -113,7 +175,7 @@ def test_targets_tagged_with_expected_cardinality():
     template target. Its `png` kind is still exercised by `basin_area.png` and
     `forcing_precip_map.png`, and the run's NUMBERS are covered by `output.csv`
     and `performance_metrics.csv`, which the baseline does track.
-    `run_stress_test` dropped from 3 to 2 at R11 CR-2: `basin_indicators.csv`
+    `simulate_system` dropped from 3 to 2 at R11 CR-2: `basin_indicators.csv`
     no longer exists, and the seed config declares only `river discharge`, so it
     emits one indicator table. A project configuring more output variables gets
     more tables — but this list describes the SEED tree, which is why the number
@@ -123,7 +185,7 @@ def test_targets_tagged_with_expected_cardinality():
     assert counts == {
         "build_model": 4,
         "analyze_projections": 6,
-        "run_stress_test": 2,
+        "simulate_system": 2,
     }
 
 
@@ -170,7 +232,7 @@ def test_unselected_missing_target_ignored(project, capsys):
     """An unselected (workflow-3) target missing on disk is ignored by a scoped
     check -> returns 0, count stays 11."""
     project_dir, manifest_path = project
-    victim = cb.resolve("{exp_dir}/results/q_indicators.csv", project_dir)
+    victim = cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
     Path(victim).unlink()
 
     rc = cb.cmd_check(
@@ -204,7 +266,7 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
         "{clim_project_dir}/summary/{clim_project}_change_factors_annual.csv",
         project_dir,
     )
-    exp_path = cb.resolve("{exp_dir}/results/q_indicators.csv", project_dir)
+    exp_path = cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
     cp_before, exp_before = before[cp_path], before[exp_path]
 
     # Mutate a wf1 target AND a wf2 target on disk; then merge-record only wf1.

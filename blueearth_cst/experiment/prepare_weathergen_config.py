@@ -70,7 +70,7 @@ def _transient_flag(stress_test_cfg, variable):
         value = stress_test_cfg[variable]["trajectory"]
     except (KeyError, TypeError):
         raise ValueError(
-            f"workflows.run_stress_test.climate_perturbations.{variable}"
+            f"workflows.generate_scenarios.climate_perturbations.{variable}"
             ".trajectory is required (`C-32`; it was `transient_change: true`). "
             "It decides whether the perturbation ramps over the run "
             "(`transient`) or is held flat across it (`constant`), and the "
@@ -78,7 +78,7 @@ def _transient_flag(stress_test_cfg, variable):
         ) from None
     if value not in TRAJECTORY_KINDS:
         raise ValueError(
-            f"workflows.run_stress_test.climate_perturbations.{variable}"
+            f"workflows.generate_scenarios.climate_perturbations.{variable}"
             f".trajectory must be one of {sorted(TRAJECTORY_KINDS)}, got "
             f"{value!r}. `C-32` replaced the boolean `transient_change` with "
             "this enum; `true` becomes `transient` and `false` becomes "

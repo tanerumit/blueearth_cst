@@ -49,3 +49,9 @@ LICENSE      text
 *.xls   binary
 *.RData binary
 *.rds   binary
+
+# R12 acceptance records bind exact bytes, including reviewed probe sources.
+# Preserve their recorded hashes across Windows and Linux checkouts.
+dev/milestones/r12/implementation/evidence/p3/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/p3/*.txt -whitespace
+dev/milestones/r12/implementation/evidence/final/test-full.log -text -whitespace

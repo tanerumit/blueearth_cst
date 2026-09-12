@@ -1,11 +1,10 @@
-# run_stress_test settings, v2. Filled by P1b, which moved this workflow's T2
+# generate_scenarios settings, v2. Filled by P1b, which moved this workflow's T2
 # reads; it was empty under P1, which moved the T1 reads only.
 #
 # D-7.9: this file and its `config_path` stanza travel together -- an empty
 # file is legal, a MISSING file with `config_path` still declared is not.
 
-experiment_name: v2_probe
-seed: auto
+seed: 1548079376
 n_realizations: 2                      # C-29, was `realizations_num`
 
 # C-67: `horizontime_climate: 2050` + `run_length: 8` resolved to 2046..2054,
@@ -41,10 +40,3 @@ climate_perturbations:
   spell_factors:
     dry: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     wet: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
-
-# C-34: the three batch/disk knobs, regrouped. A regroup only -- P2 decides what
-# `CONFIG_PROJECTION` does with the section.
-compute:
-  batch_size_max: 8
-
-# `run_historical` is absent: C-69 DELETED it and `st_0` is always produced.

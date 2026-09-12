@@ -1,15 +1,11 @@
-# run_stress_test (wf3) -- rapid set
+# generate_scenarios (wf3) -- wf2_fast set
 
-experiment_name: experiment_rapid
 n_realizations: 2
 
-# Nine years around 2050. Return periods are read off 18 pooled years
-# (2 realizations x 9), enough to exercise the fit, not a number to interpret.
 simulation_window:
-  start: 2046
-  end: 2054
+  start: 2070
+  end: 2090
 
-# 2 x 2 levels plus the baseline: the smallest grid with a surface.
 climate_perturbations:
   temp:
     n_levels: 2
@@ -18,7 +14,7 @@ climate_perturbations:
       min: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
       max: [3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0, 3.0]
   precip:
-    n_levels: 2
+    n_levels: 3
     trajectory: transient
     mean:
       min: [0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7, 0.7]
@@ -29,3 +25,4 @@ climate_perturbations:
   spell_factors:
     dry: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
     wet: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+seed: 123

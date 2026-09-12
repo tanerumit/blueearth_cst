@@ -1,22 +1,19 @@
 # =============================================================================
-#  run_stress_test (wf3) -- the climate stress test
+#  generate_scenarios (wf3) -- durable climate scenario collection
 # =============================================================================
 #
 # Generates weather series, perturbs them across a temperature x precipitation
-# grid, runs the model on each, and builds the response surface. Keep this
+# grid, and publishes the immutable collection. Keep this
 # next to the project file.
 
 
 # -----------------------------------------------------------------------------
-#  EXPERIMENT
+#  GENERATION
 # -----------------------------------------------------------------------------
 
-# Name of the experiment folder. Default: project name plus the date of the
-# first run, reused afterwards. To pick one: scripts/suggest_experiment_name.py
-#experiment_name: my_experiment
-
-# Random seed. `auto` derives it from the experiment name.
-#seed: auto                               # integer | auto
+# `auto` derives from climate-draw settings and the source inventory.
+# It does not depend on an experiment name or collection storage path.
+seed: auto                               # integer | auto
 
 n_realizations: 2                         # weather series per grid point
 
@@ -60,12 +57,5 @@ climate_perturbations:
   #  wet: [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
 
 
-# -----------------------------------------------------------------------------
-#  COMPUTE
-# -----------------------------------------------------------------------------
-
-# How model runs are grouped. Larger batches need more disk at once.
-#compute:
-#  batch_size_max: 8                       # most runs per batch
-#  batch_size: 4                           # fixed batch size (skips automatic sizing)
-#  disk_headroom_gb: 40                    # disk to keep free; default is a share of free space
+# Advanced namespace capacity; choose at least the run-plus-bundle count.
+#unit_id_capacity: 10000

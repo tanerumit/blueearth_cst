@@ -55,10 +55,9 @@ def _plain(value):
 
 
 def metrics_only_configuration(config_path):
-    """Read only the selected experiment and metric settings in the P2 carrier.
+    """Read only the selected experiment and metric settings.
 
-    The P3 runner will own the successor config dialect. This current-carrier
-    projection deliberately never composes generation or model workflow files.
+    This projection never opens generation or model workflow files.
     """
     import yaml
 
@@ -70,12 +69,11 @@ def metrics_only_configuration(config_path):
 
     path = Path(config_path).resolve()
     project = yaml.safe_load(path.read_text(encoding="utf-8"))
-    descriptor = project["workflows"]["run_stress_test"]
-    if (
-        set(descriptor) != {"enabled", "config_path"}
-        or descriptor["enabled"] is not True
+    descriptor = project["workflows"]["simulate_system"]
+    if set(descriptor) != {"enabled", "config_path"} or not isinstance(
+        descriptor["enabled"], bool
     ):
-        raise ValueError("metrics-only requires an enabled run_stress_test config_path")
+        raise ValueError("metrics-only requires an enabled simulate_system config_path")
     workflow = yaml.safe_load(
         (path.parent / descriptor["config_path"]).read_text(encoding="utf-8")
     )
@@ -115,7 +113,7 @@ def metrics_only_configuration(config_path):
     climate = project.get("climate") or {}
     anchor = f"YS-{resolve_water_year_start(climate.get('water_year_start')).upper()}"
     ignored = [
-        f"run_stress_test.{key}"
+        f"simulate_system.{key}"
         for key in sorted(workflow)
         if key not in {"experiment_name", "metrics", "scenario_collection"}
     ]

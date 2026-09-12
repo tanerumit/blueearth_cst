@@ -1,5 +1,9 @@
 """Compose a tiered project config (T1 + per-workflow T2) into today's shape.
 
+R12 splits the retired run_stress_test stanza into generate_scenarios and
+simulate_system. Composition never translates the old stanza: the explicit
+migration tool preserves its resolved seed before splitting configuration.
+
 R13 splits the monolithic project config into a **T1** project file carrying
 closed ``{enabled, config_path}`` workflow stanzas plus **T2** files holding one
 workflow's settings each. This module is the loader that puts them back
@@ -11,7 +15,7 @@ one of its decisions.
 
 **The composition invariant (D-8.1) is the whole point.** ``compose_config``
 returns a mapping whose shape is identical to the pre-split ``config`` dict:
-``config["workflows"]["run_stress_test"]`` and ``config["shared"]["basin"]``
+``config["workflows"]["generate_scenarios"]`` and ``config["basin"]``
 resolve exactly as they did, to exactly the same values.
 Because that holds, ``effective_config_digest``, ``guarded_sections_digest``, the
 experiment freeze, ``resolve_simulation_window`` and every ``get_config`` call
@@ -144,7 +148,22 @@ WORKFLOW_NAMES: tuple[str, ...] = (
     "analyze_climate",
     "build_model",
     "analyze_projections",
-    "run_stress_test",
+    "generate_scenarios",
+    "simulate_system",
+)
+
+GENERATION_KEYS = frozenset(
+    {
+        "n_realizations",
+        "simulation_window",
+        "climate_perturbations",
+        "weathergen_config",
+        "seed",
+        "unit_id_capacity",
+    }
+)
+SIMULATION_KEYS = frozenset(
+    {"experiment_name", "scenario_collection", "operation", "compute", "metrics"}
 )
 
 #: Names that belong to T1 whether or not the current T1 declares them —
@@ -278,7 +297,7 @@ RETIRED_KEYS: dict[str, str] = {
     "T1.shared.water_year_start": ("regrouped as `climate.water_year_start` (`C-53`)"),
     "T1.shared.wflow_outvars": "regrouped as `model.outvars` (`C-19`)",
     "T1.shared.seed": (
-        "moved DOWN to `seed:` at the top of the run_stress_test file (`C-51`) "
+        "moved DOWN to `seed:` at the top of the generate_scenarios file (`C-51`) "
         "-- one workflow runs the weather generator, so one workflow owns it"
     ),
     "T1.shared.julia_threads": (
@@ -290,35 +309,31 @@ RETIRED_KEYS: dict[str, str] = {
         "deleted (`C-77`) -- the reporting surface is removed from the config "
         "entirely, and with it the hoist mechanism that carried it"
     ),
-    "T2.run_stress_test.run_historical": (
+    "T2.*.run_historical": (
         "deleted (`C-69`) -- `st_0`, the unperturbed baseline, is now ALWAYS "
         "produced. If this was `false`, the run gains two month indicators it "
         "should always have had"
     ),
-    "T2.run_stress_test.stress_test": (
+    "T2.*.stress_test": (
         "renamed to `climate_perturbations:` (`C-68`) -- and inside it "
         "`step_num` becomes `n_levels` (which is step_num + 1, `C-31`) and "
         "`transient_change: true` becomes `trajectory: transient` (`C-32`)"
     ),
-    "T2.run_stress_test.realizations_num": "renamed to `n_realizations` (`C-29`)",
-    "T2.run_stress_test.horizontime_climate": (
+    "T2.*.realizations_num": "renamed to `n_realizations` (`C-29`)",
+    "T2.*.horizontime_climate": (
         "folded with `run_length` into `simulation_window: {start, end}` "
         "(`C-67`) -- INCLUSIVE years, declared rather than derived from a "
         "centre and a span"
     ),
-    "T2.run_stress_test.run_length": (
+    "T2.*.run_length": (
         "folded with `horizontime_climate` into `simulation_window: "
         "{start, end}` (`C-67`) -- INCLUSIVE years. Note the old pair spanned "
         "`run_length + 1` calendar years whenever the halves snapped outward, "
         "so copy the window the run actually used, not the length."
     ),
-    "T2.run_stress_test.batch_size": "regrouped as `compute.batch_size` (`C-34`)",
-    "T2.run_stress_test.batch_size_max": (
-        "regrouped as `compute.batch_size_max` (`C-34`)"
-    ),
-    "T2.run_stress_test.disk_headroom_gb": (
-        "regrouped as `compute.disk_headroom_gb` (`C-34`)"
-    ),
+    "T2.*.batch_size": "regrouped as `compute.batch_size` (`C-34`)",
+    "T2.*.batch_size_max": ("regrouped as `compute.batch_size_max` (`C-34`)"),
+    "T2.*.disk_headroom_gb": ("regrouped as `compute.disk_headroom_gb` (`C-34`)"),
     # `C-33`'s two spell factors are NOT listed. They live INSIDE
     # `stress_test:`, beside `temp:`/`precip:` rather than under them, and
     # the T2 matcher below partitions on the first dot -- so a nested path
@@ -390,6 +405,9 @@ RETIRED_KEYS: dict[str, str] = {
 IDENTITY_COMPARISONS: frozenset[tuple[str, str]] = frozenset(
     {
         ("blueearth_cst/experiment/check_project_consistency.py", "*"),
+        # The mandatory runner selects its own closed stanza from raw T1.
+        ("blueearth_cst/experiment/simulation_runner.py", "*"),
+        ("blueearth_cst/experiment/simulation_runner.py", "generate_scenarios"),
     }
 )
 
@@ -407,8 +425,8 @@ OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
         # that legitimately holds the whole set at once, which is what
         # D-11.2b's preflight requires (`C-38`).
         ("scripts/migrate_project_config.py", "*"),
-        ("scripts/suggest_experiment_name.py", "run_stress_test"),
-        ("scripts/plot_workflow_dag.py", "run_stress_test"),
+        ("scripts/suggest_experiment_name.py", "simulate_system"),
+        ("scripts/plot_workflow_dag.py", "simulate_system"),
         # R13's `scripts/split_project_config.py` held a fourth entry here for
         # its already-split detector. It retired with the tool (R14 Gate A), and
         # the entry had to go in the same commit: this enumeration is checked
@@ -587,7 +605,7 @@ def _check_climate_selection(
     if selected is None:
         needs = [
             name
-            for name in ("build_model", "run_stress_test")
+            for name in ("build_model", "generate_scenarios")
             if (workflows.get(name) or {}).get("enabled")
         ]
         if not needs:
@@ -660,7 +678,7 @@ def _check_trajectories(bodies: Mapping[str, Mapping[str, Any]]) -> None:
     Defaulting either way would silently produce a response surface computed
     under an assumption nobody made.
     """
-    body = bodies.get("run_stress_test") or {}
+    body = bodies.get("generate_scenarios") or {}
     perturbations = body.get("climate_perturbations")
     if not isinstance(perturbations, Mapping):
         return
@@ -672,7 +690,7 @@ def _check_trajectories(bodies: Mapping[str, Mapping[str, Any]]) -> None:
     ]
     if missing:
         raise ValueError(
-            "the run_stress_test config declares "
+            "the generate_scenarios config declares "
             f"`climate_perturbations` for {missing!r} with no `trajectory:`.\n"
             "  `trajectory:` is REQUIRED on every axis and has NO default, "
             "deliberately: `constant` holds the perturbation flat across the "
@@ -927,7 +945,7 @@ def compose_config(
         This Snakefile's ``CONFIG_PROJECTION`` tuple, passed in rather than
         restated here. ``R(entry)`` is derived from it:
         ``{entry} | {s.split(".")[1] for s in declared_sections if s.startswith("workflows.")}``.
-        For WF3 that yields ``{run_stress_test, build_model, analyze_projections}``
+        For generation that yields ``{generate_scenarios}``
         because WF3's ``CONFIG_PROJECTION`` is itself derived from
         ``guarded_sections`` — so the loader is one more consumer of the same
         maintained literal rather than a second copy of it.
@@ -984,6 +1002,15 @@ def compose_config(
     workflows = t1.get("workflows") or {}
     if not isinstance(workflows, Mapping):
         raise ValueError(f"{t1_path}: `workflows:` must be a mapping if present.")
+    if "run_stress_test" in workflows:
+        raise ValueError(
+            f"{t1_path}: workflows.run_stress_test is retired. Split it into "
+            "workflows.generate_scenarios and workflows.simulate_system using "
+            f"python {MIGRATION_COMMAND} <this file>."
+        )
+    unknown = set(workflows) - set(WORKFLOW_NAMES)
+    if unknown:
+        raise ValueError(f"{t1_path}: unknown workflow stanza(s): {sorted(unknown)!r}")
 
     # D-9.1 over EVERY stanza present, then resolve every declared path once.
     probes: list[_Probe] = []
@@ -1040,6 +1067,15 @@ def compose_config(
     _check_climate_selection(t1, workflows, t1_path)
     _check_observations(t1, bodies)
     _check_trajectories(bodies)
+    for owner, forbidden, destination in (
+        ("generate_scenarios", SIMULATION_KEYS, "simulate_system"),
+        ("simulate_system", GENERATION_KEYS, "generate_scenarios"),
+    ):
+        misplaced = set(bodies.get(owner) or {}) & forbidden
+        if misplaced:
+            raise ValueError(
+                f"{owner} file: {sorted(misplaced)!r} belong in {destination}."
+            )
 
     composed: dict[str, Any] = {
         key: value for key, value in t1.items() if key != "workflows"
@@ -1103,7 +1139,7 @@ _STAGE_OWNER: dict[str, str] = {
     "climate_analysis": "analyze_climate",
     "model": "build_model",
     "projections": "analyze_projections",
-    "experiment": "run_stress_test",
+    "experiment": "simulate_system",
 }
 
 _NAMES_ALT = "|".join(WORKFLOW_NAMES)
@@ -1226,6 +1262,11 @@ def _strip_prose(source: str) -> str:
 
 def _owner_of(rel: str) -> str | None:
     """Return the workflow a scanned file owns, or ``None``."""
+    if rel in {
+        "blueearth_cst/experiment/generation_plan.py",
+        "blueearth_cst/experiment/prepare_cst_parameters.py",
+    }:
+        return "generate_scenarios"
     parts = Path(rel).parts
     if len(parts) == 1:
         return _SNAKEFILE_OWNER.get(parts[0])

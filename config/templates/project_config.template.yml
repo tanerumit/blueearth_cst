@@ -11,7 +11,8 @@
 #   project_config.analyze_climate.template.yml      -> project_config_analyze_climate.yml
 #   project_config.build_model.template.yml          -> project_config_build_model.yml
 #   project_config.analyze_projections.template.yml  -> project_config_analyze_projections.yml
-#   project_config.run_stress_test.template.yml      -> project_config_run_stress_test.yml
+#   project_config.generate_scenarios.template.yml -> project_config_generate_scenarios.yml
+#   project_config.simulate_system.template.yml    -> project_config_simulate_system.yml
 #
 #   snakemake all -c 3 -s build_model.smk --configfile project_config.yml
 #
@@ -116,6 +117,9 @@ workflows:
   analyze_projections:
     enabled: true
     config_path: project_config.analyze_projections.template.yml
-  run_stress_test:
+  generate_scenarios:
     enabled: true
-    config_path: project_config.run_stress_test.template.yml
+    config_path: project_config.generate_scenarios.template.yml
+  simulate_system:
+    enabled: true
+    config_path: project_config.simulate_system.template.yml

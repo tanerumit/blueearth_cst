@@ -69,11 +69,11 @@ def _run(cfg, *extra):
 
 
 def _cfg(tmp_path, experiment_name=None):
-    """A project config plus the run_stress_test settings file it points at.
+    """A project config plus the simulate_system settings file it points at.
 
     Returns the PROJECT config path, which is what the command takes; use
     ``_settings_of`` for the file it writes into. Two files rather than one
-    since R13: `experiment_name` is a run_stress_test setting, so it lives in
+    since R13: `experiment_name` is a simulate_system setting, so it lives in
     that workflow's own file and the project config only points at it.
 
     project_dir must be under tmp_path. Since R9 P4 the command RESERVES the
@@ -97,7 +97,7 @@ def _cfg(tmp_path, experiment_name=None):
     doc = {
         "project": {"project_dir": str(project_dir).replace("\\", "/")},
         "workflows": {
-            "run_stress_test": {
+            "simulate_system": {
                 "enabled": True,
                 "config_path": _settings_of(tmp_path).name,
             }
@@ -109,8 +109,8 @@ def _cfg(tmp_path, experiment_name=None):
 
 
 def _settings_of(tmp_path):
-    """The run_stress_test settings file `_cfg` writes beside the project config."""
-    return tmp_path / "cfg_run_stress_test.yml"
+    """The simulate_system settings file `_cfg` writes beside the project config."""
+    return tmp_path / "cfg_simulate_system.yml"
 
 
 def test_cli_writes_when_absent(tmp_path):
@@ -196,7 +196,7 @@ def test_the_template_config_does_not_hardcode_an_experiment_name():
     template = load_composed_config(
         SNAKEDIR / "config/templates/project_config.template.yml"
     )
-    section = template["workflows"]["run_stress_test"]
+    section = template["workflows"]["simulate_system"]
     assert "experiment_name" not in section, (
         "project_config.template.yml must not set experiment_name: a copied "
         "template would inherit the placeholder, and "
@@ -213,14 +213,14 @@ def test_the_test_fixtures_deliberately_KEEP_a_fixed_name():
         "test_case/project_config_wf2_fast.yml",
     ):
         doc = load_composed_config(SNAKEDIR / rel)
-        assert doc["workflows"]["run_stress_test"]["experiment_name"]
+        assert doc["workflows"]["simulate_system"]["experiment_name"]
 
 
 # --- the write must not destroy the config it edits ----------------------------
 
 
 def _annotated_cfg(tmp_path, body):
-    """A project config plus its run_stress_test settings file, written as TEXT.
+    """A project config plus its simulate_system settings file, written as TEXT.
 
     ``body`` is the SETTINGS file's content, at column zero -- that file's top
     level is the workflow's own keys, which is where ``experiment_name`` now
@@ -232,7 +232,7 @@ def _annotated_cfg(tmp_path, body):
     """
     project_dir = tmp_path / "Gabon"
     project_dir.mkdir(exist_ok=True)
-    settings = tmp_path / "cfg_run_stress_test.yml"
+    settings = tmp_path / "cfg_simulate_system.yml"
     settings.write_text(body, encoding="utf-8")
     p = tmp_path / "cfg.yml"
     p.write_text(
@@ -243,9 +243,9 @@ def _annotated_cfg(tmp_path, body):
         + "  # where output goes\n"
         "\n"
         "workflows:\n"
-        "  run_stress_test:\n"
+        "  simulate_system:\n"
         "    enabled: true\n"
-        "    config_path: cfg_run_stress_test.yml\n",
+        "    config_path: cfg_simulate_system.yml\n",
         encoding="utf-8",
     )
     return p, settings
@@ -333,7 +333,7 @@ def test_a_config_with_no_settings_file_reserves_nothing(tmp_path):
         "project:\n"
         "  project_dir: " + str(project_dir).replace("\\", "/") + "\n"
         "workflows:\n"
-        "  run_stress_test:\n"
+        "  simulate_system:\n"
         "    enabled: true\n",
         encoding="utf-8",
     )
@@ -372,7 +372,7 @@ def test_the_shipped_template_is_editable_by_this_command(tmp_path):
         "project_config.*.template.yml"
     ):
         shutil.copy(sibling, tmp_path / sibling.name)
-    settings = tmp_path / "project_config.run_stress_test.template.yml"
+    settings = tmp_path / "project_config.simulate_system.template.yml"
 
     doc = yaml.safe_load(cfg.read_text(encoding="utf-8"))
     project_dir = tmp_path / "Gabon"

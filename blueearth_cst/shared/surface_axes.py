@@ -34,7 +34,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Mapping, Optional, Sequence, Union
 
 # pandas is DEFERRED into the three functions that actually touch it
-# (`read_lookup`, `read_indicators`, `_member_values`). `run_stress_test.smk`
+# (`read_lookup`, `read_indicators`, `_member_values`). `generate_scenarios.smk`
 # imports this module at PARSE time for `warn_on_heterogeneous_design`, which
 # reads no frame -- so a module-level import bought pandas (~4.5s) on every WF3
 # dry-run and every real run, to validate a config section. (R14 P1 removed the
@@ -294,16 +294,106 @@ def read_lookup(lookup_path: Union[str, Path]) -> pd.DataFrame:
 
 
 def read_indicators(indicators_path: Union[str, Path]) -> pd.DataFrame:
-    """Read an indicator table with ``st_id`` forced to TEXT.
+    """Read a successor indicator table with ``unit_id`` forced to TEXT.
 
-    Sits beside :func:`read_lookup` so the library owns BOTH reads. A caller who
-    loaded the frame some other way is still repaired by :func:`join_axes`, which
-    re-pads both key columns before partitioning -- but owning the read is what
-    makes the repair unnecessary in the common case.
+    Sits beside :func:`read_lookup` so the library owns both reads. Consumers
+    preserve ids exactly; membership joins refuse lost padding rather than
+    guessing a different unit's identity.
     """
     import pandas as pd
 
-    return pd.read_csv(indicators_path, dtype={"st_id": str})
+    return pd.read_csv(indicators_path, dtype={"unit_id": str})
+
+
+def resolve_unit_design(unit_index, scenario_table):
+    """Resolve each unit through explicit membership, preserving textual ids.
+
+    Returns ``(unit_id -> st_id, width)``. Width is discovered from the index,
+    never inferred from a count. A bundle may describe only one design point.
+    """
+    if list(unit_index.columns) != ["unit_id", "grain", "member_run_id"]:
+        raise SurfaceMemberMismatchError(
+            "unit index must have exactly unit_id,grain,member_run_id"
+        )
+    if not {"run_id", "evaluated", "st_id"} <= set(scenario_table.columns):
+        raise SurfaceMemberMismatchError(
+            "scenario table lacks run_id, evaluated or st_id"
+        )
+    identifiers = list(unit_index["unit_id"])
+    if not identifiers or any(
+        not isinstance(value, str)
+        or not re.fullmatch(r"[0-9]+", value)
+        or int(value) < 1
+        for value in identifiers
+    ):
+        raise LookupKeyWidthError("unit ids must be nonempty positive decimal text")
+    widths = {len(value) for value in identifiers}
+    if len(widths) != 1:
+        raise LookupKeyWidthError("unit index mixes unit_id widths")
+    width = widths.pop()
+    runs = list(scenario_table["run_id"])
+    if len(runs) != len(set(runs)) or any(
+        not isinstance(value, str)
+        or not re.fullmatch(r"[0-9]+", value)
+        or len(value) != width
+        or int(value) < 1
+        for value in runs
+    ):
+        raise SurfaceMemberMismatchError(
+            "scenario run ids must be unique text at index width"
+        )
+    if any(
+        value not in (True, False, "true", "false")
+        for value in scenario_table["evaluated"]
+    ):
+        raise SurfaceMemberMismatchError("scenario evaluated flags must be boolean")
+    scenarios = scenario_table.set_index("run_id")
+    evaluated = {
+        row.run_id
+        for row in scenario_table.itertuples()
+        if row.evaluated is True or row.evaluated == "true"
+    }
+    if any(not isinstance(value, str) for value in scenario_table["st_id"]):
+        raise SurfaceMemberMismatchError(
+            "scenario st_id must be text, with an empty baseline key"
+        )
+    if unit_index.duplicated().any():
+        raise SurfaceMemberMismatchError("unit index repeats membership rows")
+    resolved = {}
+    run_units = set()
+    for unit, group in unit_index.groupby("unit_id", sort=False):
+        grains = set(group["grain"])
+        members = list(group["member_run_id"])
+        if len(grains) != 1 or not grains <= {"run", "bundle"}:
+            raise SurfaceMemberMismatchError(
+                f"unit {unit!r} has invalid or mixed grains"
+            )
+        if not set(members) <= evaluated:
+            raise SurfaceMemberMismatchError(
+                f"unit {unit!r} has unresolved or unevaluated members"
+            )
+        grain = next(iter(grains))
+        if grain == "run":
+            if members != [unit]:
+                raise SurfaceMemberMismatchError(
+                    f"run unit {unit!r} must have one self-membership"
+                )
+            run_units.add(unit)
+        elif int(unit) <= max(map(int, runs)):
+            raise SurfaceMemberMismatchError(
+                "bundle ids must follow the complete collection run domain"
+            )
+        designs = set(scenarios.loc[members, "st_id"])
+        if len(designs) != 1:
+            raise SurfaceMemberMismatchError(
+                f"unit {unit!r} spans more than one design point"
+            )
+        resolved[unit] = next(iter(designs))
+    if run_units != evaluated:
+        raise SurfaceMemberMismatchError(
+            "run units differ from exactly the evaluated scenario rows"
+        )
+    return resolved, width
 
 
 def key_width(lookup_df: pd.DataFrame) -> int:
@@ -391,7 +481,7 @@ def _validate_months(months, surface_id: str, position: str) -> tuple:
 def parse_surfaces(config: Mapping) -> list:
     """Parse and REFUSE the ``reporting.surfaces`` declaration, at parse time.
 
-    Called from ``run_stress_test.smk`` beside the other parse-time refusals, so
+    Called from ``generate_scenarios.smk`` beside the other parse-time refusals, so
     a malformed declaration fails ``--dry-run`` and ``pytest tests/test_cli.py``
     is its gate. Absent or empty yields :data:`DEFAULT_SURFACE`.
 
@@ -771,22 +861,30 @@ def _degenerate_caption(variable: str, held, months) -> str:
 
 
 def join_axes(
-    indicators_df: pd.DataFrame, lookup_df: pd.DataFrame, surface: Surface
+    indicators_df: pd.DataFrame,
+    lookup_df: pd.DataFrame,
+    surface: Surface,
+    *,
+    unit_index: pd.DataFrame,
+    scenario_table: pd.DataFrame,
 ) -> SurfaceJoin:
     """Place indicator rows on a surface, partitioning the baseline out.
 
-    Padding happens HERE and nowhere else. ``derive_axis`` reads one table, so its
-    index is whatever the lookup holds; only this function sees a second frame
-    with a second provenance. The obvious implementer's error is to pad
-    defensively in both, which double-pads any consumer that composes them.
+    Join units to scenario design points before grouping. Empty ``st_id`` is
+    the unperturbed baseline. Ids are exact text and are never re-padded.
     """
-    width = key_width(lookup_df)
-    baseline_token = "0".zfill(width)
-
-    lookup_df = lookup_df.copy()
-    lookup_df["st_id"] = lookup_df["st_id"].astype(str).str.zfill(width)
+    key_width(lookup_df)
+    design, width = resolve_unit_design(unit_index, scenario_table)
+    baseline_token = ""
     indicators_df = indicators_df.copy()
-    indicators_df["st_id"] = indicators_df["st_id"].astype(str).str.zfill(width)
+    if "unit_id" not in indicators_df or any(
+        not isinstance(value, str) or value not in design
+        for value in indicators_df["unit_id"]
+    ):
+        raise SurfaceMemberMismatchError(
+            "indicator table has unresolved unit_id values"
+        )
+    indicators_df["st_id"] = indicators_df["unit_id"].map(design)
 
     indicator_ids = set(indicators_df["st_id"])
     lookup_ids = set(lookup_df["st_id"])

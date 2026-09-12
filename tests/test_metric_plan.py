@@ -409,7 +409,7 @@ def test_metrics_only_project_anchor_and_collection_assertion(
                 "climate": {"water_year_start": "oct"},
                 "model": {"name": "unavailable-model"},
                 "workflows": {
-                    "run_stress_test": {"enabled": True, "config_path": workflow.name}
+                    "simulate_system": {"enabled": True, "config_path": workflow.name}
                 },
             }
         ),

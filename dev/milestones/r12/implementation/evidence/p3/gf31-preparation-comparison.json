@@ -1,0 +1,138 @@
+[
+  {
+    "branch": "era5",
+    "fixture": "P0 ERA5 generated values; constant synthetic elevation",
+    "pet_method": "debruin",
+    "original_paths_unavailable": true,
+    "forcing_identical_except_declared_selectors": true,
+    "selector_attribute_relocations": {
+      "precip.precip_fn": [
+        "forcing",
+        "run_01"
+      ],
+      "pet.pet_fn": [
+        "forcing",
+        "run_01"
+      ],
+      "temp.temp_fn": [
+        "forcing",
+        "run_01"
+      ]
+    },
+    "positive_perturbation_rejected": true,
+    "complete_toml_identical": true,
+    "final_generated_catalog_key": "run_01",
+    "toml_identical_excluding_reported_paths": true,
+    "paths": {
+      "input.path_forcing": [
+        "forcing.nc",
+        "forcing.nc"
+      ]
+    },
+    "collection_manifest": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\era5\\project\\scenario_collections\\b08d61ccd9f520afe3040006ebc0539f0012a8590ab4b9d965e266025fced419\\collection.json",
+    "prepared_old": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\era5\\old\\forcing.nc",
+    "prepared_new": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\era5\\new\\forcing.nc"
+  },
+  {
+    "branch": "chirps",
+    "fixture": "P0 ERA5 generated values; constant synthetic elevation",
+    "pet_method": "debruin",
+    "original_paths_unavailable": true,
+    "forcing_identical_except_declared_selectors": true,
+    "selector_attribute_relocations": {
+      "precip.precip_fn": [
+        "forcing",
+        "run_01"
+      ],
+      "pet.pet_fn": [
+        "forcing",
+        "run_01"
+      ],
+      "temp.temp_fn": [
+        "forcing",
+        "run_01"
+      ]
+    },
+    "positive_perturbation_rejected": true,
+    "complete_toml_identical": true,
+    "final_generated_catalog_key": "run_01",
+    "toml_identical_excluding_reported_paths": true,
+    "paths": {
+      "input.path_forcing": [
+        "forcing.nc",
+        "forcing.nc"
+      ]
+    },
+    "collection_manifest": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\chirps\\project\\scenario_collections\\5716b9642b44eab986550aa02d47db1da8b0949159a9ca8b5eb3dad29eed23f8\\collection.json",
+    "prepared_old": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\chirps\\old\\forcing.nc",
+    "prepared_new": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\chirps\\new\\forcing.nc"
+  },
+  {
+    "branch": "chirps_global",
+    "fixture": "P0 ERA5 generated values; constant synthetic elevation",
+    "pet_method": "debruin",
+    "original_paths_unavailable": true,
+    "forcing_identical_except_declared_selectors": true,
+    "selector_attribute_relocations": {
+      "precip.precip_fn": [
+        "forcing",
+        "run_01"
+      ],
+      "pet.pet_fn": [
+        "forcing",
+        "run_01"
+      ],
+      "temp.temp_fn": [
+        "forcing",
+        "run_01"
+      ]
+    },
+    "positive_perturbation_rejected": true,
+    "complete_toml_identical": true,
+    "final_generated_catalog_key": "run_01",
+    "toml_identical_excluding_reported_paths": true,
+    "paths": {
+      "input.path_forcing": [
+        "forcing.nc",
+        "forcing.nc"
+      ]
+    },
+    "collection_manifest": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\chirps_global\\project\\scenario_collections\\8ceb11c08b5cdc9a21a7d57a18ca948c9f25f6984d232c9efab07587963a71f8\\collection.json",
+    "prepared_old": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\chirps_global\\old\\forcing.nc",
+    "prepared_new": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\chirps_global\\new\\forcing.nc"
+  },
+  {
+    "branch": "eobs",
+    "fixture": "P0 ERA5 generated values; constant synthetic elevation",
+    "pet_method": "makkink",
+    "original_paths_unavailable": true,
+    "forcing_identical_except_declared_selectors": true,
+    "selector_attribute_relocations": {
+      "precip.precip_fn": [
+        "forcing",
+        "run_01"
+      ],
+      "pet.pet_fn": [
+        "forcing",
+        "run_01"
+      ],
+      "temp.temp_fn": [
+        "forcing",
+        "run_01"
+      ]
+    },
+    "positive_perturbation_rejected": true,
+    "complete_toml_identical": true,
+    "final_generated_catalog_key": "run_01",
+    "toml_identical_excluding_reported_paths": true,
+    "paths": {
+      "input.path_forcing": [
+        "forcing.nc",
+        "forcing.nc"
+      ]
+    },
+    "collection_manifest": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\eobs\\project\\scenario_collections\\bd6852604ee9c9b96de63dddf111ed4c670ce57afde13be82c5e89d6687a0d2c\\collection.json",
+    "prepared_old": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\eobs\\old\\forcing.nc",
+    "prepared_new": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf31-final-physical2\\eobs\\new\\forcing.nc"
+  }
+]

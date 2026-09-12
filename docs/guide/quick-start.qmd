@@ -26,17 +26,19 @@ already be on your `PATH`.
 
 ## The shape of a run
 
-Four Snakemake workflows, run in order, sharing one configuration file:
+Five workflows share one project configuration set:
 
 ```{mermaid}
 flowchart LR
-    wf0["wf0 · analyze_climate<br/>historical climate"] --> wf1
-    wf1["wf1 · build_model<br/>Wflow-SBM + historical run"] --> wf3
-    wf2["wf2 · analyze_projections<br/>CMIP6 change factors"] -.plausibility overlay.-> wf3
-    wf3["wf3 · run_stress_test<br/>the stress test"]
+    wf0["wf0 · analyze_climate<br/>optional historical analysis"]
+    wf1["wf1 · build_model<br/>Wflow-SBM + historical run"] --> wf4
+    wf3["wf3 · generate_scenarios<br/>ready collection"] --> wf4
+    wf4["wf4 · simulate_system<br/>responses and metrics"]
+    wf2["wf2 · analyze_projections<br/>terminal plausibility overlay"]
 ```
 
-Only wf1 → wf3 is a hard dependency. **wf0 is optional** for the pipeline: it
+Generation and model construction are independent prerequisites of simulation.
+**wf0 is optional** for the pipeline: it
 produces the region, vector layers and climate store that wf1 also declares, so
 running it first simply means those already exist when the build asks. Run it
 *alone* when your question is which forcing dataset to use. **wf2 never drives a
@@ -65,9 +67,10 @@ From the repository root, inside the pixi environment:
 pixi shell
 
 snakemake all -c 3 -s analyze_climate.smk     --configfile test_case/project_config_rapid.yml
+snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
 snakemake all -c 3 -s build_model.smk         --configfile test_case/project_config_rapid.yml
+python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
 snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
-snakemake all -c 3 -s run_stress_test.smk     --configfile test_case/project_config_rapid.yml
 ```
 
 Or let the wrapper run whichever workflows the config enables, in order:
@@ -98,13 +101,15 @@ test_case/test_rapid/
   data/spatial/         basin, subbasins, rivers, gauge locations, and their plots
   data/climate/         the historical climate store, and the CMIP6 slices
   models/hydrology/     the Wflow-SBM model, its forcing, its run, its evaluation
-  experiments/<name>/   one stress test: weather realizations, runs, results
+  scenario_plans/       exact generation requests
+  scenario_collections/ durable forcing and portable preparation inputs
+  experiments/<name>/   one simulation identity, native responses and metric sets
   logs/                 one log per workflow
   benchmarks/           per-rule timings
   config/runs/          what each run was configured with (see Reading the outputs)
 ```
 
-The stress test's payoff is in `experiments/<name>/results/`: the hydrological
+The stress test's payoff is in `experiments/<name>/results/metric_sets/`: the hydrological
 indicators computed for every temperature × precipitation combination, which
 form the response surface.
 

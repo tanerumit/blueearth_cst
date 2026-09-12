@@ -1,13 +1,5 @@
 # Contract: weather-generator seam (WG-1 .. WG-6)
 
-> **R12 P2 carrier update:** current generated forcing is retained under
-> `scenario_collections/<collection_id>/forcing/run_<run_id>.nc`; temporary R
-> staging is under `scenario_plans/<generation_request_id>/generation/`.
-> The fixture paths and historical producer shape below describe the predecessor
-> capture. Current handoffs and accepted preservation evidence are in
-> [P2 acceptance](../../milestones/r12/implementation/evidence/p2/acceptance.md).
-> P3 owns the final entry-point/reference migration.
-
 > **Genre:** dev-facing interchange contract. **Audience:** a future *swapper* —
 > someone replacing `weathergenr` with an alternative weather generator, or the
 > R6 model-flexibility work — read end-to-end. Not an end-user doc (hence `dev/`,
@@ -19,7 +11,7 @@
 
 ## Scope and method
 
-The **weather-generator seam** is the point in `run_stress_test.smk`
+The **weather-generator seam** is the point in `generate_scenarios.smk`
 (wf3) where the stochastic weather generator could be swapped for an alternative
 without re-architecting the rest of the pipeline. `weathergenr` (R) is the
 current occupant, but **this contract is generator-agnostic**: it pins what wf3
@@ -36,13 +28,11 @@ config keys, WG-4 output shape) is derived **read-only** from
 `blueearth_cst/weathergen/{global.R,generate_weather.R,impose_climate_change.R}`
 — those files are never edited.
 
-R12 P1 routes rules 3.11/3.12 through
-`blueearth_cst/experiment/scenario_provider.py`. It selects roots and ancestors
-from pure scenario rows and passes the existing positional arguments to these R
-scripts. Native output paths and this WG contract remain the current carrier.
-Effective forcing units and verbatim native labels are distinct; the current
-ERA5 interpretation is traced in
-`dev/milestones/r12/implementation/evidence/p1-forcing-units.md`.
+The provider binds pure scenario rows to the unchanged R generator operations.
+WF3 publishes durable forcing and a portable preparation context. WF4 consumes
+the collection through the Wflow adapter. Native metadata and effective units
+are recorded separately; see the accepted
+[unit trace](../../milestones/r12/implementation/evidence/p1-forcing-units.md).
 
 **Fixture branch = era5.** Branch-specific facts (chirps precip-only, the chirps
 orography sidecar) are documented from code and tagged **not fixture-verified
@@ -73,7 +63,7 @@ per artifact (a literal 14-column table is illegible).
   `<key> = <clim_source>_<startYYYYMMDD>_<endYYYYMMDD>` (P3-1 keyed store).
 - **producer:** rule `extract_historical_climate`
   (`blueearth_cst/climate_analysis/extract_historical_climate.py`) — ONE rule,
-  declared identically in `run_stress_test.smk` (3.08) and
+  declared identically in `generate_scenarios.smk` (3.02) and
   `build_model.smk` (1.04) from `snake_utils.climate_store_rule`
   (R07 B1). Its inputs are the data catalog and the project region artifact
   `spatial/geoms/region.geojson`; the extent is still model-free, but it is
@@ -81,7 +71,7 @@ per artifact (a literal 14-column table is illegible).
   than per store key. The store records the extent it cut to in the
   extraction's own attributes (`region_bbox`, `region_geojson_sha256`,
   `region_source`).
-- **consumer:** rule 3.11 `generate_weather_realizations` (weathergenr
+- **consumer:** rule 3.07 `generate_weather_realizations` (weathergenr
   `generate_weather.R`), passed in as `climate_nc`.
 - **dims:** `(time, latitude, longitude)`.
 - **coords:** `time` — `datetime64[ns]`, daily, `calendar=proleptic_gregorian`;
@@ -125,21 +115,13 @@ consumer reads while keeping the divergence honestly on the record.
 
 ## WG-2 — stress-test perturbation grid
 
-- **path pattern:** `<exp>/config/stress_test_lookup.csv` — **one file for the
-  whole experiment**. Replaced the per-member
-  `<exp>/climate/weathergenr/_work/st_<m>.csv` on 2026-08-16, together with the
-  derived cache `<exp>/config/stress_test_design.csv`, which it absorbs.
-  `_work/` is deleted. The rename to `lookup` signals that **the shape moved**,
-  not merely the path. It sits beside the config snapshot whose settings
-  produced it: it is a record of what ran, not scratch.
-- **producer:** rule 3.09 `prepare_stress_test_grid`
-  (`blueearth_cst/experiment/prepare_cst_parameters.py`).
-- **consumer:** rule 3.12 `perturb_climate_realization` (weathergenr
-  `impose_climate_change.R`), passed in as `lookup_csv` — a **constant** input,
-  no longer carrying the member wildcard. The member id arrives as a positional
-  argument and the script filters on it. It is **no longer an `input:` on rule
-  3.16**: the reduction reads no parameter artifact at all, since the axis is
-  derived at reporting time (HM-7).
+- **path pattern:** `<collection>/stress_test_lookup.csv`, retained with the
+  collection. Producer staging is under
+  `scenario_plans/<generation_request_id>/generation/config/`.
+- **producer:** WF3 `prepare_stress_test_grid` and collection publication.
+- **consumer:** the stochastic provider reads the scenario row's explicit
+  `st_id`; reporting derives axes from the retained lookup. Simulation and
+  metric identities never reconstruct membership from filenames.
 - **shape:** a CSV with **header exactly**
   `st_id,month,temp_change,precip_change,precip_variance_change`, and
   **`12 × ST_NUM` rows** — twelve per member, `month ∈ 1..12`, members
@@ -172,16 +154,16 @@ consumer reads while keeping the divergence honestly on the record.
   floor to *validate its own producer*; a consumer reading a lookup needs only
   the bound.
 - **`st_id`:** the member id, **zero-padded** to a width derived from `ST_NUM`
-  (C27: `01 … 12` at twelve points, unpadded below ten), **textually identical**
-  to the member filename token, so the two are ONE token. **Read it as a
+  (C27: `01 … 12` at twelve points, unpadded below ten), **identical**
+  to the scenario table stochastic block key. **Read it as a
   string** — `pd.read_csv` with no `dtype` returns `01` as `1` and every join
   silently misses. R readers pass `colClasses = c(st_id = "character")`.
   **Every `st_id` in one table has the same width**, which is what lets a
   consumer infer the join key's width from the table itself rather than needing
   `ST_NUM` passed alongside it. A table mixing widths is malformed.
-- **`st_0` has NO row.** The table covers members `1..ST_NUM` only. `st_0` is
+- **The unperturbed scenario has NO lookup row.** The table covers members `1..ST_NUM` only. The empty scenario `st_id` is
   the reserved unperturbed baseline (naming.md §4): it has no parameters, is
-  produced by rule 3.11 rather than by perturbation, and rule 3.12 never runs
+  produced by generation rather than perturbation, and perturbation never runs
   for it. Its **absence is load-bearing**, not incidental — it is what makes
   "not on the surface" a structural fact rather than a convention, and an
   all-zero `st_0` row would be indistinguishable from an identity member's row
@@ -192,11 +174,10 @@ consumer reads while keeping the divergence honestly on the record.
   COLUMN, and adding one requires a C28 ruling — the shape barrier is gone, the
   contract barrier is not. Refused at write time by
   `prepare_cst_parameters._KNOWN_AXES`.
-- **temp() lifecycle:** not `temp()`; a `rule all` target (`WF3_TARGETS` entry
-  `stress_test_lookup`), so it persists.
+- **Lifecycle:** the published lookup is retained in the collection inventory.
 - **pinned surface:** the exact header and column order; the `12 × ST_NUM` row
   count with a complete, duplicate-free `(st_id, month)` grid; the
-  `(st_id, month)` sort order; `st_id` as zero-padded TEXT at the filename's
+  `(st_id, month)` sort order; `st_id` as zero-padded TEXT at the scenario key's
   width, **one width for the whole table**; `st_0` ABSENT; the
   additive-vs-percent column semantics.
 - **deliberately unpinned:** the numeric values themselves (they are the
@@ -206,27 +187,27 @@ consumer reads while keeping the divergence honestly on the record.
 
 ## WG-3 — weathergenr config surface
 
-- **path pattern:** `<exp>/climate/weathergenr/config/weathergen_config.yml` —
+- **path pattern:** `scenario_plans/<generation_request_id>/generation/config/weathergen_config.yml` —
   **one file** since C29.
-- **producer:** rule 3.10 `prepare_weathergen_config`
+- **producer:** rule 3.06 `prepare_weathergen_config`
   (`blueearth_cst/experiment/prepare_weathergen_config.py`).
-- **consumer:** rules 3.11 and 3.12 (both R side), which read the same file.
+- **consumer:** rules 3.07 and 3.08 (both R side), which read the same file.
 - **one config, not one per member (C29).** Do not reintroduce a per-member
   `weathergen_config_*.yml`: nothing in it varied except the output
   filename — split into prefix and suffix because `weathergenr::write_netcdf`
-  takes them separately — and Snakemake already knew it as rule 3.12's own
-  declared output, so it is passed as the 4th CLI argument and split in R. Its
+  takes them separately — and Snakemake already knew it as rule 3.08's own
+  declared output, so the provider passes it to R. Its
   two `trajectory` flags moved into this file and are now pinned here. At
   RLZ_NUM=10, ST_NUM=88 the removal drops 880 YAMLs plus their logs and
   benchmark parts. The rest of what it carried — copies of the `stress_test`
   step counts and monthly min/max ranges — was never read (finding F6) and
   deliberately did **not** move: the values that perturb a run come from
   `stress_test_lookup.csv`.
-- **shape (YAML):** the weathergenr config surface — top-level
-  `general.variables` (list ⊆ `{precip, temp, temp_min, temp_max}`) and
-  `generateWeatherSeries.{warm.*, knn.sample.num, month.start, warm.variable,
-  seed, evaluate.*, dry.spell.change[12], wet.spell.change[12], output.path,
-  sim.year.start, sim.year.num, nc.file.prefix, n_realizations}`.
+- **Shape:** sections named for the current upstream functions:
+  `generate_weather`, `apply_climate_perturbations`, and `write_netcdf`, plus
+  `temp.transient_change` and `precip.transient_change`.
+  `generate_weather.vars` is a list. The required consumed keys are pinned by
+  `_WG3_SECTIONS` and `validate_wg3` in `interchange_contracts.py`.
 - **pinned surface:** **the key set + types the R side reads** (derived
   read-only from `global.R` / `generate_weather.R`), NOT weathergenr's
   semantics. Upstream-spelled keys (`warm.signif.level`, `dot.case`) are
@@ -239,250 +220,72 @@ consumer reads while keeping the divergence honestly on the record.
 *ranges* — a replacement generator may define its own config surface entirely, so
 WG-3 is the *current* generator's contract, not a universal one.
 
-## WG-4 — generator output netCDFs (baseline + perturbed)
+## WG-4 — durable generated forcing
 
-- **path pattern:** `<exp>/climate/weathergenr/output/rlz_<n>_st_0.nc` (baseline)
-  and `<exp>/climate/weathergenr/output/rlz_<n>_st_<m>.nc` (`m ≥ 1`, perturbed).
-  R07 B5 dissolved `realization_<n>/`; the index stays in the file name.
-- **producer:** rule 3.11 (st_0) / rule 3.12 (st_m).
-- **consumer:** rule 3.14 `downscale_climate_realization` (rule 3.13
-  `write_climate_data_catalog` is retired; 3.14 reads only its own member).
-- **shape:** the **generator OUTPUT contract** — a raster netCDF the hydromt
-  catalog reads: `(time, lat, lon)` daily grid with **at least `precip`, `temp`**
-  (+ `pet` if present) on an EPSG:4326 grid carrying a `spatial_ref` CRS
-  descriptor (so `raster_xarray` + `harmonise_dims` load it — WG-5).
-- **naming pattern:** `rlz_<n>_st_<m>.nc` — a **DAG-globbed pattern**
-  (rule 3.14 wildcards; rule 3.12 `expand` over the grid).
-- **temp() lifecycle:** **`temp()`** (both st_0 and st_m). Deleted after
-  consumers finish — **absent on the completed fixture**.
-- **pinned surface:** the `(time, lat, lon)` raster shape, the minimal
-  `{precip, temp}` variable set, the `spatial_ref` CRS descriptor, the
-  DAG-globbed naming pattern.
-- **deliberately unpinned:** exact variable superset, internal attrs.
-- **`crs` / `category`: asserted-IF-PRESENT, NOT required.** Do not require them
-  as netCDF **global attrs** — the real artifact carries **empty global attrs**. Its
-  CRS travels the CF/rioxarray way — the `spatial_ref` coordinate's `crs_wkt`,
-  ending `ID["EPSG",4326]` — and `crs: 4326` / `category: meteo` are supplied by
-  the generated **data catalog** (WG-5's `metadata.crs` / `metadata.category`),
-  which is the surface hydromt actually reads and which `validate_wg5` already
-  pins. So the original wording asserted the right values on the wrong surface:
-  **the pipeline was never non-conformant — the contract was.** `validate_wg4`
-  now flags a *present but contradictory* value and accepts absence.
-- **validator:** `validate_wg4` — **captured and green** as of 2026-07-25 (see
-  the `--notemp` capture procedure below); logic also proven every suite by
-  synthetic pass/fail pairs, including absence-is-ok and
-  contradiction-still-fails cases.
+- **Path:** `<collection>/forcing/run_<run_id>.nc`, exactly one inventoried
+  forcing artifact per scenario row, including unperturbed rows.
+- **Producer:** WF3 provider generation/perturbation followed by
+  `retain_scenario_forcing` and `publish_scenario_collection`.
+- **Consumer:** WF4's preparation adapter. `run_id` is opaque, textual and
+  zero-padded; ancestry and design keys come from `scenario_table.csv`.
+- **Content:** the existing daily `(time, lat, lon)` raster with at least
+  `precip` and `temp`, plus adapter-required variables. EPSG:4326 is carried
+  through `spatial_ref`; global `crs`/`category` attributes are checked if
+  present, not required. Effective units, calendar, endpoints and grid are
+  inventoried by the forcing descriptor without rewriting native bytes.
+- **Lifecycle:** durable. Temporary R staging is a producer implementation
+  detail; consumers cannot delete published forcing, including unperturbed data.
+- **Validation:** `validate_wg4` checks the raster subset; collection readers
+  additionally verify complete membership, hashes and extracted descriptors.
 
-## WG-5 — hydromt climate data catalog (side channel)
+## WG-5 — per-run HydroMT catalog
 
-- **path pattern:** `<runs>/config/rlz_<n>_st_<m>.yml` — ONE per member,
-  `temp()`, beside that member's TOML. One catalog per member, not one aggregate
-  file naming every member: the entries differ only in `uri`, so an aggregate
-  forces its producer to fan in over the whole sweep.
-- **producer:** rule 3.14 `downscale_climate_realization`, calling
-  `blueearth_cst/climate_analysis/prepare_climate_data_catalog.py` (rule 3.13
-  `write_climate_data_catalog` is retired).
-- **consumer:** rule 3.14 `downscale_climate_realization` (as the `-d` catalog).
-- **shape (pinned-as-reliance — hydromt data-catalog schema, OUR emitted
-  subset):** one entry per `rlz_<n>_st_<m>` (**including `st_0`**), each
-  `{uri, driver.name = raster_xarray, driver.options.preprocess = harmonise_dims,
-  driver.options.lock = false, metadata.crs = 4326, metadata.category = meteo,
-  data_type = RasterDataset}`.
-- **cross-artifact invariant:** the **entry-key set = the realization × cst
-  grid**. Checked against the intended grid by the relational validator
-  `validate_wg5_catalog_grid` (below).
-- **temp() lifecycle:** not `temp()` — persists (the NCs it points at do not).
-- **pinned surface:** the per-entry driver/metadata fields above; the entry-key
-  grid.
-- **deliberately unpinned:** provenance metadata block values; **the `uri`
-  value** — an absolute machine-scoped path (fixture:
-  `C:\Users\...\rlz_1_st_1.nc`) emitted by `prepare_climate_data_catalog.py`.
-  Portability is not a current contract; any future `uri`-resolving guard is
-  machine-scoped (design arch-5).
-- **validators:** `validate_wg5` (per-entry driver/metadata schema) **and** the
-  relational `validate_wg5_catalog_grid` (entry-key grid completeness).
+- **Path:** `<exp>/hydrology/wflow/config/run_<run_id>.yml`, one per evaluated run.
+- **Producer/consumer:** WF4 `downscale_climate_realization`; the catalog points
+  to retained collection forcing for that run.
+- **Pinned emitted subset:** exactly one `run_<run_id>` entry containing `uri`,
+  `driver.name: raster_xarray`, `driver.options.preprocess: harmonise_dims`,
+  `driver.options.lock: false`, `metadata.crs: 4326`, `metadata.category: meteo`,
+  and `data_type: RasterDataset`. HydroMT owns the schema and interpretation.
+- **Lifecycle:** temporary, recreated only for preparation. Portability belongs
+  to the collection's packaged preparation context, not the absolute `uri` in a
+  temporary adapter catalog.
+- **Validation:** `validate_wg5` validates each emitted entry;
+  `validate_wg5_catalog_runs` checks the catalog map against the evaluated run
+  set and requires each catalog to name its intended run only. These checks do
+  not substitute for WG-4 or WG-6 content validation.
 
-**WG-5 checks bookkeeping only, NOT WG-4/WG-6 NC content (design §5.5).** WG-5
-pins that a well-formed catalog *entry* exists per realization × cst; it pins
-**nothing** about the NC's dims, variable names, units, or grid (that content is
-WG-4 / WG-6's). `validate_wg5_catalog_grid` strengthens the *entry-key
-completeness* check but likewise says nothing about NC content. The NC-content
-contract is skip-until-captured with **no indirect proxy** — an "inmaps_rlz shape
-≈ inmaps_historical shape" proxy would be confirmation bias, not a check of the
-real artifact.
+## WG-6 — prepared Wflow forcing (WF4)
 
-## WG-6 — downscaled Wflow forcing (wf3)
+- **Path:** `<exp>/hydrology/wflow/forcing/inmaps_run_<run_id>.nc`.
+- **Producer:** WF4 `downscale_climate_realization`.
+- **Consumer:** WF4 Wflow batches.
+- **Content:** the model-grid forcing contract in [HM-2](hydrological-model-seam.md#hm-2--wflow-forcing-inmaps):
+  daily `float32` `precip`, `pet`, `temp`, model grid and CRS. Preparation retains
+  the existing calendar conversion, clipping and PET conventions; temporal
+  records expose actual endpoints instead of silently repairing them.
+- **Lifecycle:** temporary. Use the simulation runner with `-- --notemp` when
+  retaining these files for an on-disk contract check.
+- **Validation:** `validate_wg6`/`validate_hm2` plus the adapter's temporal record.
 
-- **path pattern:** `<exp>/hydrology/wflow/forcing/inmaps_rlz_<n>_st_<m>.nc`.
-  This is wflow-GRID forcing, so R07 B5 files it on the hydrology side, not
-  under `climate/weathergenr/output/`. Both indices are in the file name.
-- **producer:** rule 3.14 `downscale_climate_realization`
-  (`blueearth_cst/experiment/downscale_climate_forcing.py`).
-- **consumer:** rule 3.15 `run_wflow`.
-- **shape:** **Wflow forcing on the MODEL grid** — the wf3 twin of
-  `inmaps_historical.nc`; the same contract as HM-2 (see the hydrological-model
-  seam doc, HM-2): `(time, lat, lon)` `float32` `precip` / `pet` / `temp` on the
-  staticmaps grid, `spatial_ref` EPSG:4326 + `GeoTransform`, daily. This is the
-  wflow-seam forcing input; **pinned once in HM-2, cross-referenced here.**
-- **naming pattern:** `forcing/inmaps_rlz_<n>_st_<m>.nc`.
-- **temp() lifecycle:** **`temp()`** — deleted after rule 3.15 finishes,
-  **absent on the completed fixture**.
-- **pinned surface:** as HM-2 (dims, `precip`/`pet`/`temp` names + `float32`,
-  the model-grid `(lat,lon)`, EPSG:4326 + `GeoTransform`, daily).
-- **deliberately unpinned:** as HM-2.
-- **validator:** `validate_wg6` — **skip-until-captured on disk** (temp()
-  content absent by default); logic proven by a synthetic pass/fail pair. See the
-  `--notemp` capture procedure below.
+## Substitution and validation
 
----
+A replacement generator implements the scenario-provider contract and publishes
+a complete collection: scenario rows, forcing, effective descriptors, source and
+environment identities, and portable preparation inputs. It must preserve
+declared ancestry and scenario semantics. It does not change HydroMT or Wflow.
 
-## Excluded — not interchange artifacts
+`blueearth_cst/shared/interchange_contracts.py` owns `validate_wg1` through
+`validate_wg6` and `validate_wg5_catalog_runs`. Dataset validators accept parsed
+datasets; the relational catalog validator requires the independent evaluated
+run set. A missing temporary artifact is an unavailable check, not a pass.
 
-These persisted artifacts are **deliberately outside the contract**: none has a
-downstream DAG-tracked consumer, so their absence from the inventory is
-intentional. Do not add them to a substitute engine's obligations.
-
-- `experiments/<exp>/climate/weathergenr/output/{sim_dates.csv, resampled_dates.csv}` —
-  weathergenr-internal run diagnostics. Verified: neither name appears as a
-  produced or consumed path in any Snakefile, Python module, or R script.
-- `spatial/geoms/region.geojson` (rule `delineate_region`, ADR 0003) - the
-  delineated polygon the extraction bbox came from. Provenance for WG-1. It
-  IS a DAG-tracked input of `extract_historical_climate` and of rule 1.06; what
-  has no DAG-tracked consumer is the extraction's `region_*` attributes,
-  which record the same fact inside the data. Retired with ADR 0003: the
-  per-store-key `data/climate/historical/<key>/store_region.geojson`.
-  wf1's model-parity plots read WG-1 itself, so no separate wf1 extraction
-  exists.
-
-The completeness audit (both rule graphs walked) otherwise **confirms**
-WG-1..WG-6 cover every interchange handoff at this seam; pipeline-internal
-intermediates (build configs, guard/sequencing sentinels, log/benchmark gathers)
-are correctly out.
-
----
-
-## Bounded-substitution walkthrough — replacing weathergenr
-
-A drop-in generator (design §5.6) must:
-
-- **Consume** WG-1 (`extract_historical.nc`, the 7-var K grid) and WG-2 (the
-  `stress_test_lookup.csv` perturbation grid) — or provide its own reader for
-  them.
-- **Produce** WG-4 netCDFs at the DAG-globbed paths
-  `climate/weathergenr/output/rlz_<n>_st_<m>.nc` (incl. `st_0`), each a `(time, lat, lon)`
-  EPSG:4326 raster with ≥ `precip`, `temp` and `crs=4326` / `category=meteo`, so
-  the hydromt catalog (WG-5) loads it via `raster_xarray` + `harmonise_dims`.
-- **Repo files it replaces:** rules 3.10–3.12 `shell:` / `script:` targets in
-  `run_stress_test.smk` (the two `Rscript --vanilla` bodies pointing at
-  `weathergen/*.R`, plus the two config-prep scripts if the WG-3 config surface
-  changes).
-- **Files it must NOT change (the pinned boundaries):** rule 3.08 (WG-1
-  producer), rule 3.14 (WG-5 catalog + WG-6 downscale — it owns both since the
-  catalog became per-member).
-- **Contracts it must satisfy:** WG-1 / WG-2 (in), WG-4 shape + naming (out),
-  and — if it emits its own catalog — WG-5 **including the catalog↔grid
-  invariant** (an entry per realization × cst incl. `st_0`). Acceptance check:
-  validators `validate_wg1`, `validate_wg2`, `validate_wg4`, `validate_wg5` plus
-  the relational `validate_wg5_catalog_grid`.
-
----
-
-## Validator index
-
-Validators live in `blueearth_cst/shared/interchange_contracts.py` (added by a
-later commit; this index is the spec that commit implements against). Each is a
-pure `-> list[str]` divergence report (empty ⇒ pass); no `assert` /
-`AssertionError` in the bodies (`-O`-safe liftability, design §6.5). Every
-validator additionally carries a Layer-1 synthetic pass/fail test pair that
-executes on **every** checkout, fixture or not.
-
-| validator | artifact(s) | fixture path (era5) | continuously verified? |
-|---|---|---|---|
-| `validate_wg1` | WG-1 | `data/climate/historical/<key>/extract_historical.nc` | **yes** (persists); chirps facts **not fixture-verified (no chirps fixture)** |
-| `validate_wg2` | WG-2 | `<exp>/config/stress_test_lookup.csv` | **yes** (persists) |
-| `validate_wg3` | WG-3 | `<exp>/climate/weathergenr/config/weathergen_config.yml` (the per-member config is gone — C29) | **yes** (persists) |
-| `validate_wg4` | WG-4 | `<exp>/climate/weathergenr/output/rlz_<n>_st_<m>.nc` | **captured 2026-07-25** — `temp()` content, absent until a `--notemp` capture; green on the real artifact **after** the `crs`/`category` correction; synthetic-proven every suite |
-| `validate_wg5` | WG-5 | `<runs>/config/rlz_<n>_st_<m>.yml` | `temp()` — absent until a `--notemp` capture, then every member's file is checked; synthetic-proven every suite |
-| `validate_wg5_catalog_grid` (relational) | WG-5 entry-key grid vs intended `rlz × cst` (incl. `st_0`) | the UNION of `<runs>/config/rlz_<n>_st_<m>.yml` + the run's config snapshot | `temp()` since 2026-08-18 — the union of the per-member files is the set the aggregate catalog used to hold, so the validator is unchanged; needs a `--notemp` capture |
-| `validate_wg6` | WG-6 | `<exp>/hydrology/wflow/forcing/inmaps_rlz_<n>_st_<m>.nc` | **captured 2026-07-25** — `temp()` content, absent until a `--notemp` capture; green on the real artifact unchanged; synthetic-proven every suite |
-
-`validate_wg5_catalog_grid(catalog_cfg, rlz_num, st_num) -> list[str]` checks the
-WG-5 entry-key set against the **intended** grid: expected keys exactly
-`{rlz_<n>_st_<m> : n ∈ 1..rlz_num, m ∈ 0..st_num}` (**st_0 included** — rule
-3.14 is instantiated over both the st_0 members and the perturbed grid).
-Applied to the UNION of the per-member catalogs. Missing and unexpected keys are each
-reported. The intended grid is derived from the run's *recorded* P3-1 config
-snapshot (`<exp>/config/project_config_run_stress_test.yml`) via the same
-`stress_test_grid` helper the Snakefile uses (`shared/snake_utils.py:336`), so
-the check is self-consistent with the tree even if the tracked test config later
-drifts. A dropped or extra catalog entry is invisible to per-artifact
-`validate_wg5` (each remaining entry is well-formed) but breaks the
-realization × cst fan-out rule 3.14 depends on.
-
-### `--notemp` capture procedure (temp() on-disk validators)
-
-The `temp()`-content validators `validate_wg4` (WG-4) and `validate_wg6` (WG-6)
-have **no on-disk integration check on the default fixture**: both artifacts are
-wrapped in Snakemake `temp()` and deleted after their consumers finish, so no
-`rlz_<n>_st_<m>.nc` / `inmaps_rlz_<n>_st_<m>.nc` survive a completed run. Their
-Layer-2 integration cases (`test_wg4_integration`, `test_wg6_integration`) carry
-**both** the `_FIXTURE_ABSENT` skipif and a runtime
-`pytest.skip("temp() artifact absent; capture via --notemp")` guarding on the
-NC's presence. Their logic is proven on **every** checkout by their Layer-1
-synthetic pass/fail pairs regardless.
-
-**Run the capture when a validator changes; do not assume it will pass.** A
-`temp()` validator is proven only against synthetic fixtures until a capture puts
-it in front of the real artifact, and that is the one check that can show the
-CONTRACT wrong rather than the pipeline — as the WG-4 `crs`/`category` clause
-above records, where the contract demanded catalog metadata as netCDF global
-attrs the artifact does not carry.
-
-**Cheaper targeted form.** The full-sweep command below works, but only two
-artifact paths are actually needed (`rlz_1_st_1`), so naming them as targets is
-enough and avoids re-running the batches that are already up to date:
-
-```bash
-snakemake -c 3 -s run_stress_test.smk \
-  --configfile test_case/project_config_baseline.yml --notemp \
-  test_case/test_local/experiments/experiment/climate/weathergenr/output/rlz_1_st_1.nc \
-  test_case/test_local/experiments/experiment/hydrology/wflow/forcing/inmaps_rlz_1_st_1.nc
+```console
+snakemake all -c 3 -s generate_scenarios.smk --configfile <project-config.yml>
+python scripts/simulate_system.py --config <project-config.yml> --target all --cores 3 -- --notemp
 ```
 
-The generator emits all realizations together, but these targets require only
-the selected member's perturbation and downscaling. No Wflow batch is needed.
-
-**Capture sketch** (run from the repo root inside `pixi shell`, after the wf1
-model exists — wf3 needs `models/hydrology/wflow/` artifacts):
-
-```bash
-snakemake all -c 3 -s run_stress_test.smk \
-  --configfile test_case/project_config_baseline.yml --notemp
-```
-
-`--notemp` tells Snakemake **not** to delete `temp()`-flagged outputs after their
-consuming jobs complete, so the run leaves the intermediate netCDFs on disk.
-
-**Paths that then appear** under `test_case/test_local` (the paths the
-skip-guards test for):
-
-| validator | artifact captured | fixture path (`<exp>` = `experiments/experiment`) |
-|---|---|---|
-| `validate_wg4` | WG-4 generator output NC | `<exp>/climate/weathergenr/output/rlz_<n>_st_<m>.nc` |
-| `validate_wg6` | WG-6 downscaled forcing NC | `<exp>/hydrology/wflow/forcing/inmaps_rlz_<n>_st_<m>.nc` |
-
-WF3 no longer emits HM-6b final states; `--notemp` retains only artifacts
-that are still declared.
-
-**Which cases un-skip:** `test_wg4_integration` and `test_wg6_integration`
-run their on-disk assertions when these two forcing artifacts are present. The guards resolve to the real-artifact path automatically once the files
-exist.
-
-**Budget for a first-contact failure.** The skip *guards* need no change to run a
-capture, but the capture itself can reveal that a validator encoded an assumption
-the artifact never satisfied. Treat that as a likely outcome rather than a
-surprise, and be ready to correct the contract instead of the pipeline.
-
-**Restore** the default temp-deleted fixture state with
-`snakemake --delete-temp-output` (verified 2026-07-25 to return the tree to a
-byte-identical state, checked with `dev/scripts/semantic_tree_diff.py`).
+Historical ERA5 captures and bounded source-branch preservation evidence are
+recorded in [P2 acceptance](../../milestones/r12/implementation/evidence/p2/acceptance.md).
+Those records establish their stated scope; they do not claim validation of an
+arbitrary replacement generator or every possible forcing dataset.

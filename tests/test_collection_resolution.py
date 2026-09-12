@@ -33,7 +33,7 @@ def ready_plan(planned):  # noqa: F811 - imported fixture
     kwargs = dict(
         live_sources=sources,
         expected_intent=intent,
-        generation_command="snakemake all -s run_stress_test.smk",
+        generation_command="snakemake all -s generate_scenarios.smk",
     )
     return project, request, plan, kwargs, code, environment
 
@@ -57,7 +57,7 @@ def test_exact_project_plan_and_source_free_explicit_resolution(ready_plan):
 
 def test_missing_request_never_falls_back_to_ready_collection(ready_plan):
     project, request, _, kwargs, _, _ = ready_plan
-    with pytest.raises(GeneratedCollectionUnavailable, match="run_stress_test"):
+    with pytest.raises(GeneratedCollectionUnavailable, match="generate_scenarios"):
         verify_scenario_plan(project, {**request, "different": True}, **kwargs)
 
 

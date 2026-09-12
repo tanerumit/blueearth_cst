@@ -71,6 +71,33 @@ def _rows(mapping):
     return {row["id"]: row for row in mapping["rows"]}
 
 
+def _retired_path_matches(retired, path):
+    """Match the loader's single workflow wildcard without broadening key paths."""
+    pattern = retired.split(".")
+    parts = path.split(".")
+    return len(pattern) == len(parts) and all(
+        expected == actual or (index == 1 and pattern[0] == "T2" and expected == "*")
+        for index, (expected, actual) in enumerate(zip(pattern, parts))
+    )
+
+
+@pytest.mark.parametrize(
+    "retired,path,expected",
+    [
+        ("T2.*.stress_test", "T2.run_stress_test.stress_test", True),
+        ("T2.*.stress_test", "T2.generate_scenarios.stress_test", True),
+        ("T2.*.stress_test", "T2.generate_scenarios.stress_test.temp", False),
+        ("T2.*.stress_test", "T2.generate_scenarios.seed", False),
+        ("T2.*.stress_test", "T1.generate_scenarios.stress_test", False),
+        ("T2.build_model.seed", "T2.generate_scenarios.seed", False),
+    ],
+)
+def test_retired_workflow_wildcard_preserves_tier_key_and_depth(
+    retired, path, expected
+):
+    assert _retired_path_matches(retired, path) is expected
+
+
 def test_every_register_row_has_a_mapping_entry(mapping, register_ids):
     """D-11.2a, direction 1. A row with no entry is work nothing will do."""
     missing = sorted(register_ids - set(_rows(mapping)))
@@ -103,7 +130,13 @@ def test_the_mapping_covers_every_retired_key(mapping):
         for move in (row.get("moves") or [])
         if move.get("old_path")
     }
-    unmapped = sorted(set(RETIRED_KEYS) - mapped)
+    # R12 broadened former WF3 refusals to every workflow. The archived R14
+    # mapping still names the workflow that owned each spelling at migration.
+    unmapped = sorted(
+        retired
+        for retired in RETIRED_KEYS
+        if not any(_retired_path_matches(retired, path) for path in mapped)
+    )
     assert not unmapped, (
         f"{len(unmapped)} key(s) are refused by the loader but absent from the "
         f"mapping, so no migration path exists for them: {unmapped}"
@@ -157,7 +190,9 @@ def test_every_mapped_source_is_refused_by_the_loader(mapping):
 
             parts = old.split(".")
             by_retired = any(
-                ".".join(parts[:n]) in RETIRED_KEYS for n in range(len(parts), 1, -1)
+                _retired_path_matches(retired, ".".join(parts[:n]))
+                for n in range(len(parts), 1, -1)
+                for retired in RETIRED_KEYS
             )
             # `T1.<section>` — the closed top level refuses an undeclared one.
             by_closed_t1 = len(parts) == 2 and parts[1] not in T1_TOP_LEVEL

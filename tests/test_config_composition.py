@@ -37,11 +37,40 @@ from blueearth_cst.shared import config_composition as cc
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
+
+def test_retired_workflow_names_both_replacements(tmp_path):
+    path = write_split(tmp_path, bodies={"run_stress_test": {}})
+    with pytest.raises(ValueError, match="generate_scenarios.*simulate_system"):
+        cc.load_composed_config(path)
+
+
+@pytest.mark.parametrize("workflow", ["generate_scenario", "simulate", "unknown"])
+def test_unknown_workflow_stanza_is_refused(tmp_path, workflow):
+    path = write_split(tmp_path, bodies={workflow: {}})
+    with pytest.raises(ValueError, match="unknown workflow stanza"):
+        cc.load_composed_config(path)
+
+
+@pytest.mark.parametrize(
+    "owner,key,other",
+    [("simulate_system", key, "generate_scenarios") for key in cc.GENERATION_KEYS]
+    + [("generate_scenarios", key, "simulate_system") for key in cc.SIMULATION_KEYS],
+)
+def test_split_workflow_settings_cannot_cross_ownership(tmp_path, owner, key, other):
+    path = write_split(tmp_path, bodies={owner: {key: {}}})
+    with pytest.raises(ValueError, match=f"belong in {other}"):
+        cc.load_composed_config(path)
+
+
 #: The real ``CONFIG_PROJECTION`` of each entry point, and the ``R(entry)`` it
 #: must produce (§8.3). Restated here rather than imported because a Snakefile
 #: is not importable — which is exactly why the design passes the projection in
 #: as an argument instead of restating it inside the loader.
 PROJECTIONS = {
+    "simulate_system": (
+        ("project", "basin", "climate", "model", "workflows.simulate_system"),
+        {"simulate_system"},
+    ),
     "analyze_climate": (
         ("project", "basin", "climate", "model", "workflows.analyze_climate"),
         {"analyze_climate"},
@@ -54,7 +83,7 @@ PROJECTIONS = {
         ("project", "basin", "climate", "model", "workflows.analyze_projections"),
         {"analyze_projections"},
     ),
-    "run_stress_test": (
+    "generate_scenarios": (
         (
             "project",
             "basin",
@@ -62,9 +91,9 @@ PROJECTIONS = {
             "model",
             "workflows.analyze_projections",
             "workflows.build_model",
-            "workflows.run_stress_test",
+            "workflows.generate_scenarios",
         ),
-        {"run_stress_test", "build_model", "analyze_projections"},
+        {"generate_scenarios", "build_model", "analyze_projections"},
     ),
 }
 
@@ -156,7 +185,7 @@ def test_composed_document_equals_the_monolith_it_was_split_from(tmp_path):
         "analyze_projections": {"ensemble": "cmip6", "scenarios": ["ssp245"]},
     }
     t1_path = write_split(tmp_path / "cfg", bodies=bodies)
-    composed = compose(t1_path, "run_stress_test")
+    composed = compose(t1_path, "generate_scenarios")
 
     monolith = yaml.safe_load(t1_path.read_text(encoding="utf-8"))
     for name, body in bodies.items():
@@ -192,9 +221,9 @@ def test_enabled_comes_first_so_recorded_bytes_are_stable(tmp_path):
     fixes by putting it there.
     """
     t1_path = write_split(
-        tmp_path / "cfg", bodies={"run_stress_test": {"n_realizations": 2}}
+        tmp_path / "cfg", bodies={"generate_scenarios": {"n_realizations": 2}}
     )
-    section = compose(t1_path, "run_stress_test")["workflows"]["run_stress_test"]
+    section = compose(t1_path, "generate_scenarios")["workflows"]["generate_scenarios"]
     assert list(section) == ["enabled", "n_realizations"]
 
 
@@ -214,8 +243,8 @@ def test_omitted_config_path_composes_to_an_empty_body(tmp_path):
     composed, paths = cc.compose_config(
         yaml.safe_load(t1_path.read_text(encoding="utf-8")),
         t1_path,
-        "run_stress_test",
-        PROJECTIONS["run_stress_test"][0],
+        "generate_scenarios",
+        PROJECTIONS["generate_scenarios"][0],
     )
     assert composed["workflows"]["build_model"] == {"enabled": True}
     assert composed["workflows"]["analyze_projections"] == {"enabled": True}
@@ -233,7 +262,7 @@ def test_empty_t2_file_is_accepted_as_no_settings(tmp_path):
 def test_no_section_is_hoisted_out_of_its_workflow(tmp_path):
     """R14 D-10.1. A T2 file's top-level section stays in that workflow.
 
-    R13 D-10.4 carried `reporting:` OUT of ``workflows.run_stress_test`` so a
+    R13 D-10.4 carried `reporting:` OUT of ``workflows.generate_scenarios`` so a
     figure caption sat outside ``CONFIG_PROJECTION``, the effective-config
     digest and the experiment freeze. `C-77` removes `reporting:` from the
     config surface, which empties the map, and R14 retires the mechanism rather
@@ -246,15 +275,15 @@ def test_no_section_is_hoisted_out_of_its_workflow(tmp_path):
     t1_path = write_split(
         tmp_path / "cfg",
         bodies={
-            "run_stress_test": {
+            "generate_scenarios": {
                 "n_realizations": 2,
                 "captions": {"title": "Gabon"},
                 "anything_else": {"k": "v"},
             }
         },
     )
-    composed = compose(t1_path, "run_stress_test")
-    section = composed["workflows"]["run_stress_test"]
+    composed = compose(t1_path, "generate_scenarios")
+    section = composed["workflows"]["generate_scenarios"]
     assert section["captions"] == {"title": "Gabon"}
     assert section["anything_else"] == {"k": "v"}
     assert "captions" not in composed
@@ -577,7 +606,7 @@ def test_two_stanzas_sharing_one_file_are_refused(tmp_path, second):
         encoding="utf-8",
     )
     with pytest.raises(ValueError, match="resolve to the same file"):
-        compose(t1_path, "run_stress_test")
+        compose(t1_path, "generate_scenarios")
 
 
 # ---------------------------------------------------------------------------
@@ -630,7 +659,7 @@ def test_stanza_closure_is_checked_outside_this_entry_points_scope(tmp_path):
                 "project": {},
                 "workflows": {
                     "build_model": {"enabled": True},
-                    "run_stress_test": {"enabled": True, "realizations_num": 2},
+                    "generate_scenarios": {"enabled": True, "realizations_num": 2},
                 },
             }
         ),
@@ -720,7 +749,7 @@ def test_an_independent_same_named_pair_across_two_t2_files_parses(tmp_path):
             "analyze_projections": {"output_dir": "climate/cmip6"},
         },
     )
-    composed = compose(t1_path, "run_stress_test")
+    composed = compose(t1_path, "generate_scenarios")
     assert composed["workflows"]["build_model"]["output_dir"] == "models/wflow"
     assert composed["workflows"]["analyze_projections"]["output_dir"] == "climate/cmip6"
 
@@ -737,7 +766,7 @@ def test_a_shared_key_is_refused_in_a_file_outside_this_entry_points_scope(tmp_p
         sections={"basin": {"region": "x"}, "climate": {"selected": "era5"}},
         bodies={
             "build_model": {"a": 1},
-            "run_stress_test": {"basin": {"region": "planted"}},
+            "generate_scenarios": {"basin": {"region": "planted"}},
         },
     )
     with pytest.raises(ValueError, match="basin"):
@@ -762,9 +791,9 @@ def test_a_broken_file_outside_scope_is_skipped_and_inside_scope_is_fatal(
     directory = tmp_path / "cfg"
     t1_path = write_split(
         directory,
-        bodies={"build_model": {"a": 1}, "run_stress_test": {"b": 2}},
+        bodies={"build_model": {"a": 1}, "generate_scenarios": {"b": 2}},
     )
-    wf3_file = directory / "project_config_test_run_stress_test.yml"
+    wf3_file = directory / "project_config_test_generate_scenarios.yml"
     if breakage == "missing":
         wf3_file.unlink()
     elif breakage == "unparseable":
@@ -775,11 +804,11 @@ def test_a_broken_file_outside_scope_is_skipped_and_inside_scope_is_fatal(
     # WF1 does not load the WF3 file: skipped, logged, and the run proceeds.
     composed = compose(t1_path, "build_model")
     assert composed["workflows"]["build_model"]["a"] == 1
-    assert "run_stress_test" in capsys.readouterr().out
+    assert "generate_scenarios" in capsys.readouterr().out
 
     # WF3 does load it, so the identical file is a hard error.
     with pytest.raises(ValueError):
-        compose(t1_path, "run_stress_test")
+        compose(t1_path, "generate_scenarios")
 
 
 # ---------------------------------------------------------------------------
@@ -973,11 +1002,11 @@ def test_load_composed_config_without_an_entry_loads_every_resolvable_file(tmp_p
         bodies={
             "build_model": {"a": 1},
             "analyze_projections": {"b": 2},
-            "run_stress_test": {"experiment_name": "gabon"},
+            "simulate_system": {"experiment_name": "gabon"},
         },
     )
     composed = cc.load_composed_config(t1_path)
-    assert composed["workflows"]["run_stress_test"]["experiment_name"] == "gabon"
+    assert composed["workflows"]["simulate_system"]["experiment_name"] == "gabon"
     assert composed["workflows"]["build_model"]["a"] == 1
     assert composed["workflows"]["analyze_projections"]["b"] == 2
 
@@ -987,15 +1016,15 @@ def test_a_broken_workflow_file_does_not_break_a_tool(tmp_path, capsys):
     whose WF3 config is mid-edit, instead of reporting nothing at all."""
     directory = tmp_path / "cfg"
     t1_path = write_split(
-        directory, bodies={"build_model": {"a": 1}, "run_stress_test": {"b": 2}}
+        directory, bodies={"build_model": {"a": 1}, "generate_scenarios": {"b": 2}}
     )
-    (directory / "project_config_test_run_stress_test.yml").write_text(
+    (directory / "project_config_test_generate_scenarios.yml").write_text(
         "a: [1, 2\n", encoding="utf-8"
     )
     composed = cc.load_composed_config(t1_path)
     assert composed["workflows"]["build_model"]["a"] == 1
-    assert composed["workflows"]["run_stress_test"] == {"enabled": True}
-    assert "run_stress_test" in capsys.readouterr().out
+    assert composed["workflows"]["generate_scenarios"] == {"enabled": True}
+    assert "generate_scenarios" in capsys.readouterr().out
 
 
 # ---------------------------------------------------------------------------
@@ -1052,7 +1081,7 @@ def test_write_config_round_trips_through_compose(tmp_path):
     # `compute:` rather than `reporting:`, which `C-77` removed from the config
     # surface entirely -- the loader refuses it now, so it could no longer serve
     # as a payload. The property under test is the round trip, not the key.
-    cfg["workflows"]["run_stress_test"]["compute"] = {"batch_size": 4}
+    cfg["workflows"]["simulate_system"]["compute"] = {"batch_size": 4}
     assert cc.load_composed_config(write_config(tmp_path, cfg)) == cfg
 
 
@@ -1098,10 +1127,10 @@ def test_the_hoisted_key_reaches_both_readers_from_shared(tmp_path):
         },
         bodies={
             "build_model": {"engine": {"build_config": "x.yml"}},
-            "run_stress_test": {},
+            "generate_scenarios": {},
         },
     )
-    for entry in ("build_model", "run_stress_test"):
+    for entry in ("build_model", "generate_scenarios"):
         composed = compose(t1_path, entry)
         assert composed["model"]["outvars"] == ["river discharge"]
 
@@ -1323,19 +1352,19 @@ def test_a_retired_t2_key_is_refused_and_names_its_new_home(tmp_path):
     """Row 2, in a workflow file."""
     t1_path = write_split(
         tmp_path / "cfg",
-        bodies={"run_stress_test": {"realizations_num": 2, "run_historical": True}},
+        bodies={"generate_scenarios": {"realizations_num": 2, "run_historical": True}},
     )
     with pytest.raises(ValueError) as excinfo:
-        compose(t1_path, "run_stress_test")
+        compose(t1_path, "generate_scenarios")
     message = str(excinfo.value)
     assert "n_realizations" in message, "name the key it became"
     assert "st_0" in message, "and say what deleting `run_historical` does"
-    assert "run_stress_test file" in message, "and which file to open"
+    assert "generate_scenarios file" in message, "and which file to open"
 
 
 def test_a_retired_key_is_refused_in_any_workflow_file(tmp_path):
     """The ``T2.*`` wildcard: some names are gone everywhere, not in one file."""
-    for owner in ("build_model", "run_stress_test"):
+    for owner in ("build_model", "generate_scenarios"):
         t1_path = write_split(
             tmp_path / owner, bodies={owner: {"reporting": {"title": "anywhere"}}}
         )
@@ -1380,11 +1409,11 @@ def test_unset_climate_selection_is_valid_with_only_wf0_enabled(tmp_path):
             "basin": {"region": "x"},
             "climate": {"sources": ["era5", "chirps"]},
         },
-        bodies={"analyze_climate": {}, "build_model": {}, "run_stress_test": {}},
+        bodies={"analyze_climate": {}, "build_model": {}, "generate_scenarios": {}},
         enabled={
             "analyze_climate": True,
             "build_model": False,
-            "run_stress_test": False,
+            "generate_scenarios": False,
         },
     )
     composed = compose(t1_path, "analyze_climate")
@@ -1459,10 +1488,10 @@ def test_a_perturbation_axis_without_a_trajectory_is_refused(tmp_path, axis):
     perturbations[axis].pop("trajectory")
     t1_path = write_split(
         tmp_path / "cfg",
-        bodies={"run_stress_test": {"climate_perturbations": perturbations}},
+        bodies={"generate_scenarios": {"climate_perturbations": perturbations}},
     )
     with pytest.raises(ValueError) as excinfo:
-        compose(t1_path, "run_stress_test")
+        compose(t1_path, "generate_scenarios")
     message = str(excinfo.value)
     assert axis in message
     assert "NO default" in message, "say there is no default"
@@ -1475,7 +1504,7 @@ def test_both_axes_with_a_trajectory_compose(tmp_path):
     t1_path = write_split(
         tmp_path / "cfg",
         bodies={
-            "run_stress_test": {
+            "generate_scenarios": {
                 "climate_perturbations": {
                     "temp": {"n_levels": 2, "trajectory": "constant"},
                     "precip": {"n_levels": 3, "trajectory": "transient"},
@@ -1483,7 +1512,7 @@ def test_both_axes_with_a_trajectory_compose(tmp_path):
             }
         },
     )
-    section = compose(t1_path, "run_stress_test")["workflows"]["run_stress_test"]
+    section = compose(t1_path, "generate_scenarios")["workflows"]["generate_scenarios"]
     assert section["climate_perturbations"]["temp"]["trajectory"] == "constant"
 
 

@@ -1,0 +1,9 @@
+{
+  "binding": "3ef0f96b4b8865350d7e657a7303189d5c1b96ed8c1830b5ca4438ebfceaec3c",
+  "sha256": "61d32c36d4304366f32cdae0da49c0d6ed08fab4c7f0d9454dea941899dfe323",
+  "file": "fits.jsonl.gz",
+  "fits": 550,
+  "quantiles": 600,
+  "accepted_fits": 550,
+  "seconds": 3.843251700003748
+}

@@ -65,6 +65,8 @@ dev/milestones/r12/implementation/evidence/gf15-normalized-qualification/** -tex
 dev/milestones/r12/implementation/evidence/gf15-normalized-qualification/*.log -whitespace
 dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/**/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-lmoments-qualification/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-lmoments-qualification/**/*.log -whitespace
 
 # Accepted GF15 method and verbatim review records carry byte-level digests.
 dev/milestones/r12/gf15-alternative-estimator-review/** -text -whitespace

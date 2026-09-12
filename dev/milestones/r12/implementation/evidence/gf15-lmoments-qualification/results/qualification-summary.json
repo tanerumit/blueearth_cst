@@ -1,0 +1,53 @@
+{
+  "stage": "Stage 2 observed mechanical outcomes; Stage 3 scientific verdict pending",
+  "counts": {
+    "fits": 132000,
+    "quantiles": 144000,
+    "individual_cells_per_estimator": 144,
+    "translation_pairs": 120000,
+    "pairwise_rows": 432000
+  },
+  "individual_outcomes": {
+    "A": {
+      "accepted_quantiles": 144000,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    },
+    "B": {
+      "accepted_quantiles": 143915,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    },
+    "C": {
+      "accepted_quantiles": 144000,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    }
+  },
+  "translation": {
+    "categories": {
+      "both_accepted": 120000,
+      "first_only": 0,
+      "second_only": 0,
+      "both_refused": 0
+    },
+    "numeric_failures": 0,
+    "max_absolute_delta_scale_error": 5.88373794130348e-12,
+    "passed_cells": 120,
+    "cells": 120
+  },
+  "mechanical_gate_conjunction": false,
+  "independent_qualification_acceptance": null
+}

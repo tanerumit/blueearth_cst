@@ -13,7 +13,7 @@ updated: 2026-09-12
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 through P3, the alternative-estimator design and Stage 1 readiness are accepted. Awaiting separate owner release of the full Stage 2 qualification matrix. GF15 adequacy and milestone sealing remain open.
+> **Why** — Stage 2's complete L-moment matrix is retained and mechanically verified; observed accuracy gates fail while every translation pair passes. Awaiting Stage 3 independent assessment. GF15 adequacy and milestone sealing remain open.
 > **Effort** — large
 
 ## Progress
@@ -47,7 +47,9 @@ updated: 2026-09-12
 - [x] Finalize the accepted design/review archive and prepare the bounded Stage 1 readiness brief.
 - [x] Obtain Stage 1 execution authorization on 2026-09-12 ("continue to Stage 1").
 - [x] Complete Stage 1 readiness and obtain independent acceptance of attempt-2 on 2026-09-12.
-- [ ] Execute and independently assess the alternative full matrix after its separate release.
+- [x] Obtain Stage 2 execution authorization on 2026-09-12 ("continue" after the Stage 1 completion handoff).
+- [x] Execute the complete alternative Stage 2 matrix after separate release; mechanically complete, observed accuracy gates fail.
+- [ ] Obtain Stage 3 release and independent assessment of the alternative full matrix.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
@@ -374,3 +376,33 @@ retains the original unaccepted attempt, source snapshot and red/green regressio
 logs. Next: owner release of the unchanged 132,000-fit / 144,000-quantile Stage 2
 matrix, followed by the separate Stage 3 qualification assessment. Readiness
 acceptance neither reverses A/B failures nor establishes candidate adequacy.
+
+## Stage 2 full matrix released — 2026-09-12
+
+Owner instruction "continue" after Stage 1 completion releases the stated next
+step: one complete 132,000-fit / 144,000-quantile matrix under the accepted design.
+The python-engineer owns the isolated qualification harness, raw evidence and
+mechanical summaries; the driver owns provenance, status and integration.
+Requested Astra medium honors the owner's pin; effective settings are unreported.
+Stage 3 independent assessment, production integration and sealing remain separate.
+Scratch: `.tmp/scratchpad/2026-09-11_0010/gf15-lmoments-qualification/`.
+The accepted Stage 1 adapter/environment and all prior evidence remain frozen.
+
+**Stage 2 complete — 2026-09-12.** All 240 chunks completed in 1,054.82 seconds
+including reductions/audit: 132,000 accepted fits, 144,000 quantiles, 144 cells per
+A/B/C, 432,000 paired comparison rows and 120,000 translation pairs. Candidate C
+passes 3/24 baseline scale cells, 18/144 total scale cells and 6/72 eligible
+scale-plus-relative cells; the observed gate conjunction is false. A/B retain
+the same cell pass counts under their original acceptance semantics.
+Every candidate translation pair is both accepted and passes; maximum absolute
+scale-error difference is `5.88373794130348e-12` against `1e-6`.
+
+No warnings or refusals occurred. Support/nonfinite-log-density diagnostics occur
+in 880 fits in each coordinate and remain diagnostic under the accepted policy.
+Branch counts: 11 positive snaps, 113,256 positive rational and 18,733 nonpositive
+rational; neither Newton branch nor pre-inversion refusal was reached.
+The [execution handoff](../milestones/r12/implementation/evidence/gf15-lmoments-qualification/execution-handoff.md)
+and immutable raw records support the next independent assessment. Completion
+SHA-256: `e0586b299381114a9ff20e22bdf1dd9c1a8d670ed90fe210a4e4ae004ee34845`.
+Stage 3 remains unexecuted; no independent qualification acceptance, production
+integration, new estimator search or milestone seal follows from Stage 2.

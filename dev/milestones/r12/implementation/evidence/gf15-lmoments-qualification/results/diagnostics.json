@@ -1,0 +1,24 @@
+{
+  "fits": 132000,
+  "accepted_fits": 132000,
+  "branches": {
+    "preinversion_refusal": 0,
+    "positive_snap": 11,
+    "positive_rational": 113256,
+    "nonpositive_rational": 18733,
+    "newton_rational": 0,
+    "newton_alternate": 0
+  },
+  "refusals": {},
+  "warnings": {},
+  "exception_refusals": 0,
+  "fit_seconds": 943.1009207969328,
+  "sample_outside_support_fits": {
+    "normalized": 880,
+    "physical": 880
+  },
+  "nonfinite_log_density_fits": {
+    "normalized": 880,
+    "physical": 880
+  }
+}

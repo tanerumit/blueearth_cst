@@ -1,0 +1,25 @@
+{
+  "status": "stage_2_complete_pending_independent_stage_3",
+  "binding": "3ef0f96b4b8865350d7e657a7303189d5c1b96ed8c1830b5ca4438ebfceaec3c",
+  "mechanical_audit_sha256": "25bfff7aee0ee4026265ca728d751349d188967e5c1a3b4773aa08168322d600",
+  "qualification_summary_sha256": "1f5084379d16e7f17aa732795c8ad81bed62437823d2d8d9efe525d8c3842b00",
+  "counts": {
+    "fits": 132000,
+    "quantiles": 144000,
+    "individual_cells_per_estimator": 144,
+    "translation_pairs": 120000,
+    "pairwise_rows": 432000
+  },
+  "mechanical_gate_conjunction": false,
+  "seconds": 1054.8219048000028,
+  "fit_chunk_phase_seconds": 993.5277854000014,
+  "chunk_seconds": 983.8285573999892,
+  "reused_chunks": 0,
+  "command": [
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv\\Scripts\\python.exe",
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-qualification/qualify-lmoments.py",
+    "run",
+    "--output",
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-qualification/results"
+  ]
+}

@@ -152,6 +152,22 @@ of a diagnostic endpoint veto; the first attempt and regression evidence remain
 retained. Production/configuration/baseline hashes are unchanged. The next owner
 boundary is Stage 2's full qualification matrix; GF15 adequacy remains unproven.
 
+**Stage 2 released — 2026-09-12:** owner instructed "continue" after the Stage 1
+handoff. One complete retained matrix is authorized, using the frozen candidate
+and unchanged criteria. The isolated harness and evidence live under
+`evidence/gf15-lmoments-qualification/`. Statistical failures remain visible and
+do not truncate execution; input, control or unexpected software failures stop
+the attempt. Stage 3's independent verdict remains a separate handoff.
+
+**Stage 2 complete — 2026-09-12:** the [execution handoff](evidence/gf15-lmoments-qualification/execution-handoff.md)
+retains the complete mechanically verified L-moment matrix: 132,000 accepted
+fits and 144,000 quantile rows. Observed accuracy gates still fail (3/24 baseline,
+6/72 eligible scale-plus-relative cells). All 120,000 translation pairs pass;
+maximum absolute scale-error difference is `5.88373794130348e-12`. The unchanged
+adapter/environment and predecessor evidence remain frozen. Await Stage 3's
+independent recomputation and signed scientific verdict; no production adoption
+or seal is implied.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

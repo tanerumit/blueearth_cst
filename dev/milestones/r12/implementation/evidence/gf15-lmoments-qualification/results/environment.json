@@ -1,0 +1,47 @@
+{
+  "authorization": {
+    "date": "2026-09-12",
+    "owner_instruction": "continue to Stage 1",
+    "scope": "isolated implementation/install/fixed controls/input audit; no full matrix or production integration"
+  },
+  "base_executable": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default\\python.exe",
+  "base_executable_sha256": "a7564ce2b593db9ede125b448afc21ca2ee2717ceea49874e5ffe5e62bceabd9",
+  "base_prefix": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default",
+  "executable": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv\\Scripts\\python.exe",
+  "install_report_sha256": "3cc8b104dbe1bedb64b5ab020ba16c52ad727f11816aa39b563275cd35e79e18",
+  "lmoments3_python_files": {
+    "__init__.py": "1d2c066a2ec4925bb838b7680d63ae8ae87c5234aa3c986d6ebe81500d75d6e2",
+    "distr.py": "f8859d11f10c3206e3e5009c1b238a328c6c9215b1cc7436800160fa929bb2ee",
+    "stats.py": "03d008bffdc5a22d2373e87fd280682bc816572cf99e0b9e8810cc3b1ae3d2d0",
+    "tests/__init__.py": "49d166f06204960feed9b1784b14258b59e1719d96fb009014c0748319089c0c",
+    "tests/test_lmoments.py": "08b4cf75065fadce21350eea4c711cecaaa62d12640ca7786aea4ba4330910ec",
+    "tests/test_samlmu_speed.py": "fc72e8ae6478578925abdfcd1937ca1591701c6d6a461355451a77f34717cc61"
+  },
+  "module_paths": {
+    "lmoments3": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv\\Lib\\site-packages\\lmoments3\\__init__.py",
+    "numpy": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv\\Lib\\site-packages\\numpy\\__init__.py",
+    "scipy": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv\\Lib\\site-packages\\scipy\\__init__.py"
+  },
+  "packages": {
+    "Pygments": "2.21.0",
+    "colorama": "0.4.6",
+    "iniconfig": "2.3.0",
+    "lmoments3": "1.0.8",
+    "numpy": "2.4.6",
+    "packaging": "26.3",
+    "pip": "25.0.1",
+    "pluggy": "1.6.0",
+    "pytest": "9.0.3",
+    "scipy": "1.18.0"
+  },
+  "platform": "Windows-11-10.0.26200-SP0",
+  "prefix": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv",
+  "protected_file_count": 177,
+  "protected_manifest_sha256": "16d6c8eb189755db52a63ca16256def9e70afd2716afc54f284d779535ec9ee5",
+  "python_build": "3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 16:36:12) [MSC v.1944 64 bit (AMD64)]",
+  "python_version": "3.12.13",
+  "requirements_sha256": "00fe378dd48a506212977db263de1045edb180232a4e19d5a148d7bc96b9ecda",
+  "source_head": "3c0bd40e6f821b71f1d3b4053b881295879bf375",
+  "stage": "GF15 Stage 1 readiness",
+  "wheel_manifest_sha256": "540779702e93c0b01f5e18d993f96f41f2053663b3b5f9662de83f2894cb1bc8"
+}

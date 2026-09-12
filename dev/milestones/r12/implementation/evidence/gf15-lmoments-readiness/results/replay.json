@@ -1,0 +1,7 @@
+{
+  "exact_numerical_replay": true,
+  "recomputed_numerical_passes": 2,
+  "numerical_sha256": "9ca079d325f2fce865343e9f60583f0ca55153d7876dc3bb73040edb32720748",
+  "chunk_reuse_and_fault_controls": "test-controls.log; test_namespace_replay_and_interruption",
+  "no_network_claim": "not asserted"
+}

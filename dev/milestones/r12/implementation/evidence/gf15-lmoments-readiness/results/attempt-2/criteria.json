@@ -1,0 +1,60 @@
+{
+  "approval": "Owner approved exact section 7.5 / P3 scientific-review-preparation criteria on 2026-09-12 before execution; coordinator recorded Master Gate 2.",
+  "shapes_scipy_c": [
+    -0.2,
+    0.0,
+    0.2
+  ],
+  "extreme_value_shape_xi": "xi=-c",
+  "usable_counts": [
+    10,
+    18,
+    30,
+    60
+  ],
+  "probabilities": [
+    0.9,
+    0.5
+  ],
+  "ratios_true_quantile_over_generating_scale": [
+    0.0,
+    0.05,
+    0.5,
+    2.0,
+    10.0
+  ],
+  "draws_per_base_cell": 1000,
+  "base_cells": 12,
+  "total_fits": 132000,
+  "total_quantile_rows": 144000,
+  "rng": "numpy.Generator(PCG64(SeedSequence([20260912, shape_index, count])))",
+  "master_seed": 20260912,
+  "quantile_formula": "z_p=-expm1(c*log(-log(p)))/c; c=0: -log(-log(p))",
+  "generating_scale": 1.0,
+  "standardized_location": 0.0,
+  "translated_location": "rho-z_p",
+  "sample_generation": "inverse CDF of (0,1) PCG64 uniforms; no clipping/truncation/redrawing",
+  "valid_rate_min": 0.95,
+  "median_scale_abs_max": 0.1,
+  "p90_abs_scale_max": {
+    "0.9": 0.5,
+    "0.5": 0.25
+  },
+  "translation_paired_abs_max": 1e-06,
+  "translation_validity_unchanged": true,
+  "relative_qualified_ratios": [
+    0.5,
+    2.0,
+    10.0
+  ],
+  "median_relative_abs_max": 0.1,
+  "p90_abs_relative_max": {
+    "0.9": 0.5,
+    "0.5": 0.25
+  },
+  "quantile_summary_method": "numpy quantile method=linear; summaries conditional on valid fits; refusals/full 1000 denominator",
+  "zero_relative": "undefined; null, never epsilon-divided",
+  "low_level_meaning": "p=.5: median of annual seven-day minima; IID block fixtures do not simulate block extraction, dependence or real discharge",
+  "estimator": "unchanged xclim.indices.stats.fit(DataArray(sample,dims=time,name=gf15),dist=genextreme); separate scalar parametric_quantile(p=.9) and (p=.5); production finite parameters/positive scale/finite quantile/constant-sample checks",
+  "scientific_claim_boundary": "tested IID stationary GEV cells only; does not qualify screening floor/ratio or observed bundles; failure returns to owner; no retuning"
+}

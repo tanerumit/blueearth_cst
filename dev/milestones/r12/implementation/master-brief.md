@@ -137,6 +137,21 @@ is not released by design acceptance. Original GF15 criteria and both failed
 qualification records remain authoritative. A readiness pass would not establish
 GF15 adequacy, production applicability or milestone-seal acceptance.
 
+**Stage 1 readiness released — 2026-09-12:** owner instructed "continue to
+Stage 1", authorizing the isolated environment, candidate/reference implementation,
+fixed readiness controls and complete predecessor mapping in the accepted brief.
+Work is under `evidence/gf15-lmoments-readiness/`. The next boundary is independent
+readiness acceptance; full matrix execution and production integration remain
+separate. Shared Pixi/locks, predecessor evidence and GF15 criteria stay unchanged.
+
+**Stage 1 readiness accepted — 2026-09-12:** the [signed independent handoff](evidence/gf15-lmoments-readiness/results/independent/scientific-handoff.md)
+accepts frozen attempt-2. All 45 focused tests, three population controls, 19 branch
+controls and 88 dual-precision quantile comparisons pass, with exact replay and
+the complete predecessor audit. Independent review found and verified the repair
+of a diagnostic endpoint veto; the first attempt and regression evidence remain
+retained. Production/configuration/baseline hashes are unchanged. The next owner
+boundary is Stage 2's full qualification matrix; GF15 adequacy remains unproven.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

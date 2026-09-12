@@ -13,7 +13,7 @@ updated: 2026-09-12
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 through P3 and the alternative-estimator design are accepted. The Stage 1 readiness brief is prepared; execution awaits owner authorization. GF15 adequacy and milestone sealing remain open.
+> **Why** — P0 through P3, the alternative-estimator design and Stage 1 readiness are accepted. Awaiting separate owner release of the full Stage 2 qualification matrix. GF15 adequacy and milestone sealing remain open.
 > **Effort** — large
 
 ## Progress
@@ -45,7 +45,8 @@ updated: 2026-09-12
 - [x] Complete remaining design reviews, revision and G2 on 2026-09-12.
 - [x] Prepare and accept the alternative-estimator design with existing criteria fixed; preserve all review evidence.
 - [x] Finalize the accepted design/review archive and prepare the bounded Stage 1 readiness brief.
-- [ ] Obtain Stage 1 execution authorization, complete readiness and obtain independent acceptance.
+- [x] Obtain Stage 1 execution authorization on 2026-09-12 ("continue to Stage 1").
+- [x] Complete Stage 1 readiness and obtain independent acceptance of attempt-2 on 2026-09-12.
 - [ ] Execute and independently assess the alternative full matrix after its separate release.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
@@ -58,7 +59,7 @@ was approved at G2 on 2026-09-12, including recorded finding dispositions. The
 preserves four design versions, two external reviews, the full internal panel,
 all 23 finding IDs and approved scoped verification. The next assignment is
 [Stage 1 readiness](../milestones/r12/implementation/gf15-lmoments-readiness-brief.md),
-awaiting execution authorization. No alternative candidate fitting, installation
+released for execution on 2026-09-12. Before this release, no alternative candidate fitting, installation
 or production integration has occurred; R12 remains unsealed.
 
 Alternative-estimator proposal authorized on 2026-09-12: owner requested
@@ -329,3 +330,47 @@ records the original finding; vendored project skills were not edited.
   an external ready-marker symlink also bypassed the initial consumer check.
 - Scope: applies to immutable manifests, lock files and other reserved outputs
   across filesystem-backed tools. No skill or role files changed.
+
+## Stage 1 alternative-estimator readiness released — 2026-09-12
+
+Owner instruction "continue to Stage 1" overrides the brief's pending execution
+state and authorizes its isolated dependency installation, implementation, fixed
+controls and complete predecessor audit. Full qualification remains separate.
+Allocation planned before dispatch: driver owns environment/provenance and task
+integration; python-engineer owns adapter/oracle/harness/tests/fixed evidence;
+model-validator independently judges the frozen handoff. Requested Astra medium
+honors the owner's pin; effective worker settings are not separately reported.
+Scratch: .tmp/scratchpad/2026-09-11_0010/gf15-lmoments-readiness/. Shared Pixi,
+production and prior evidence remain read-only. No baseline/seal work is released.
+
+Stage 1 iteration evidence: pinned isolated environment installed and verified;
+all three original population controls pass; the complete 732-file/receipt D4
+audit reports both unique 144,000-key sets. First full fixed numerical controls
+pass 19 branch rows and 88 dual-precision normalized/physical CDF comparisons.
+These are executor iteration results, not final independent readiness acceptance.
+Behavioral discrimination, immutable replay and the final frozen run follow.
+
+The first frozen run passed 44 tests, the complete input audit and fixed numerical
+controls, but independent review found a D6 endpoint-rounding counterexample:
+an optional CDF diagnostic could reject a valid rounded quantile. That attempt
+is not accepted. Preserve its evidence; repair diagnostic support handling and
+run a new frozen attempt with a discriminating regression before signoff.
+
+**Stage 1 accepted — 2026-09-12.** The [signed scientific handoff](../milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/scientific-handoff.md)
+accepts attempt-2 after resolving the endpoint diagnostic defect. All 45 focused
+tests, three population controls, 19 branch controls and 88 dual-precision
+normalized/physical comparisons pass; fixed numerical replay is exact. Complete
+732-file/receipt audits and independent joins verify 144,000 keys for each
+predecessor. The validator independently checks all 88 enclosures at 150 digits.
+All 177 protected files and six installed lmoments3 source files remain unchanged.
+Repository Ruff lint/format and the additional independent probe's scoped checks
+pass using shared Python equivalents because the Pixi CLI is unavailable.
+Full suite, baseline and candidate matrix runs are outside this stage.
+
+Attempt-2 completion SHA-256:
+`7cba09d4bf7af14a93b08e9deedff7b48dd5fe019cd1baf9e992a11bf651338c`.
+The [bundle](../milestones/r12/implementation/evidence/gf15-lmoments-readiness/README.md)
+retains the original unaccepted attempt, source snapshot and red/green regression
+logs. Next: owner release of the unchanged 132,000-fit / 144,000-quantile Stage 2
+matrix, followed by the separate Stage 3 qualification assessment. Readiness
+acceptance neither reverses A/B failures nor establishes candidate adequacy.

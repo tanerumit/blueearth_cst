@@ -1,0 +1,54 @@
+{
+  "utc": "2026-09-12T19:30:38.244306+00:00",
+  "command": [
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv\\Scripts\\python.exe",
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/check-readiness.py",
+    "run-fixed",
+    "--output",
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/attempt-2",
+    "--scratch",
+    ".tmp/scratchpad/2026-09-11_0010/gf15-lmoments-readiness/worker/final-controls-2"
+  ],
+  "python": "3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 16:36:12) [MSC v.1944 64 bit (AMD64)]",
+  "source": {
+    "candidate_adapter.py": "616b5ee21fb3b66599dfdde5846eb422489b539535a74b46fbf79216e7d1826c",
+    "check-readiness.py": "486afffacc12046ec1cc34c945c38b7a915f6b56f623c3cd1663d3f6330e1935",
+    "independent-review.py": "9403872eb5c9298679c0b7308c8c27f4e44d655dd86046a6878c474f25748060",
+    "README.md": "8ced5c0ff4872c518cb5a2714da7d47d480dbe6965b27c790f12dc80c271f78c",
+    "reference_oracle.py": "5bf7458b1b158c36548f6c3dd5ee55861c582129093248951b7473d0eb62b251",
+    "test_readiness.py": "e32eac58be55fb856463e3145d543bb87d392cfcf54e8dfe69c59adf732c0476"
+  },
+  "environment_inventory_sha256": "fb3262d800004311cc25f2fe4a12c9a3f37928e096472a1a76e61e2acb16e48d",
+  "input_anchors": {
+    "gf15/artifact-inventory.json": "3f13145d29c377a1c92042b3845695ce293edd58e565e17a67851767026719e1",
+    "gf15-normalized-qualification/artifact-inventory.json": "07148bb3b165ef2d1785fb49fc57908d260009cd7885c7b39712e1148aefdf4a",
+    "gf15/results/criteria.json": "988611b6d239b95f7542f8d67470395e4997ac61dd97198fd075fdcba552d643",
+    "gf15/results/provenance.json": "0d85d2a63c6be70683e2a1485de7bfc6266a265fd383cf96b124b6facdc67db2",
+    "gf15-normalized-qualification/results/provenance.json": "a1ea18808890a1c270e75a35441b1bb4eecdb901551c6fafce0565be822686ae"
+  },
+  "expected_outputs": [
+    "input-audit.json",
+    "numerical-controls.json",
+    "test-controls.log",
+    "criteria.json",
+    "completion.json"
+  ],
+  "matrix_authorized": false,
+  "stage": "Stage 1 implementation readiness only",
+  "verified_before": {
+    "protected_files": 177,
+    "installed_lmoments3_sources": 6,
+    "runtime_versions": {
+      "Pygments": "2.21.0",
+      "colorama": "0.4.6",
+      "iniconfig": "2.3.0",
+      "lmoments3": "1.0.8",
+      "numpy": "2.4.6",
+      "packaging": "26.3",
+      "pip": "25.0.1",
+      "pluggy": "1.6.0",
+      "pytest": "9.0.3",
+      "scipy": "1.18.0"
+    }
+  }
+}

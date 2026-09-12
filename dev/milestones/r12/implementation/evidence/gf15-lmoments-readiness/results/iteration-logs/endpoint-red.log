@@ -1,0 +1,35 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_______ test_endpoint_rounding_is_not_vetoed_by_probability_diagnostic ________
+
+    def test_endpoint_rounding_is_not_vetoed_by_probability_diagnostic() -> None:
+        """A valid rounded endpoint must survive an unresolved diagnostic residual."""
+>       result = checks.quantile_gate({"c": 60., "loc": 0., "scale": 60.}, .9, 1., 1., 1.)
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+dev\milestones\r12\implementation\evidence\gf15-lmoments-readiness\test_readiness.py:438: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+dev\milestones\r12\implementation\evidence\gf15-lmoments-readiness\check-readiness.py:308: in quantile_gate
+    probability_residual = log_cdf_standard(standardized, c).exp() - Interval.point(
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+x = Interval(lo=Decimal('0.01666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666...66666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666666667'))
+c = Decimal('60')
+
+    def log_cdf_standard(x: Decimal | Interval, c: Decimal) -> Interval:
+        """Evaluate only the forward log-CDF, with outward support extensions."""
+        if not c:
+            x_interval = x if isinstance(x, Interval) else Interval.point(x)
+            return -(-x_interval).exp()
+        w = 1 - Interval.point(c) * x
+        if w.hi <= 0:
+            return Interval.point(0 if c > 0 else Decimal("-Infinity"))
+        if w.lo <= 0:
+>           raise ArithmeticError("support endpoint membership unresolved")
+E           ArithmeticError: support endpoint membership unresolved
+
+dev\milestones\r12\implementation\evidence\gf15-lmoments-readiness\reference_oracle.py:249: ArithmeticError
+=========================== short test summary info ===========================
+FAILED dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_endpoint_rounding_is_not_vetoed_by_probability_diagnostic
+1 failed, 44 deselected in 2.18s

@@ -1,0 +1,32 @@
+[
+  {
+    "path": "effective-environment.json",
+    "bytes": 3051,
+    "sha256": "7c5d5a29307f21435bdc751b6a598c6c4fc2123455e95f3b02f0e20d0cf71a41"
+  },
+  {
+    "path": "install-report.json",
+    "bytes": 151691,
+    "sha256": "3cc8b104dbe1bedb64b5ab020ba16c52ad727f11816aa39b563275cd35e79e18"
+  },
+  {
+    "path": "protected-files.json",
+    "bytes": 20692,
+    "sha256": "16d6c8eb189755db52a63ca16256def9e70afd2716afc54f284d779535ec9ee5"
+  },
+  {
+    "path": "README.md",
+    "bytes": 3691,
+    "sha256": "ca737507a751cdf216e4df5ebafd087e94b979e4b632ef1d48d35c3855aa8e7a"
+  },
+  {
+    "path": "requirements.txt",
+    "bytes": 858,
+    "sha256": "00fe378dd48a506212977db263de1045edb180232a4e19d5a148d7bc96b9ecda"
+  },
+  {
+    "path": "wheels.json",
+    "bytes": 1893,
+    "sha256": "540779702e93c0b01f5e18d993f96f41f2053663b3b5f9662de83f2894cb1bc8"
+  }
+]

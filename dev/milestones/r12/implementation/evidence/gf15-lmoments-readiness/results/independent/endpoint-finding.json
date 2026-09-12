@@ -1,0 +1,11 @@
+{
+  "reviewer": "model-validator",
+  "status": "blocking before correction",
+  "check_readiness_sha256": "4b0cf591a8b47c865ca6301dfbd011dced830221575c05a5e298ccf11aea26fd",
+  "reference_oracle_sha256": "5bf7458b1b158c36548f6c3dd5ee55861c582129093248951b7473d0eb62b251",
+  "probe": "quantile_gate({'c':60.0,'loc':0.0,'scale':60.0},0.9,1.0,1.0,1.0)",
+  "observed": "ArithmeticError: support endpoint membership unresolved",
+  "location": "check-readiness.py:308 diagnostic probability residual -> reference_oracle.py:249",
+  "reason": "The exact support endpoint is 1. True quantile is 1-(-ln(p))^60 and rounds to 1. The quantile-space gate and rounding-cell support intersection pass; outward standardization around 1/60 makes the optional CDF diagnostic straddle support. D6 permits this rounded endpoint and the diagnostic must not override its quantile-space gate.",
+  "scope": "validation-only finite counterexample; no candidate matrix fit or estimator change"
+}

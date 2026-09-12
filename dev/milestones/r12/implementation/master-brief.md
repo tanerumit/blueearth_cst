@@ -58,6 +58,20 @@ supported. This gate is discharged; prove the replacement and continue P0.
 
 ### Cross-cutting validation
 
+**Gate 2 ruling — 2026-09-12:** owner approved execution of the exact
+[reviewed GF15 criteria](evidence/p3/scientific-review-preparation.md#gf15-recommendation-for-the-owner-gate)
+after the P3 completion handoff. The benchmark proceeds with the unchanged
+estimator and criteria. A failed criterion returns to the owner for a method
+ruling; the approval does not validate the screening policy or real-bundle
+applicability.
+
+**GF15 result — 2026-09-12:** all approved cells completed; the retained-draw
+audit passed, but accuracy and translation criteria failed. The
+[scientific handoff](evidence/gf15/scientific-handoff.md) records the bounded
+failure and unchanged policy/estimator. Section 7.5 now requires the owner method
+ruling; R12 remains unsealed. [Standing baseline/tree status](evidence/standing-seal-status.md)
+records the separate successor-fixture prerequisite.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

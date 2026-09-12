@@ -1,0 +1,50 @@
+{
+  "status": "passed",
+  "analytic_vs_scipy": [
+    {
+      "scipy_c": -0.2,
+      "maximum_absolute_delta": 4.440892098500626e-16
+    },
+    {
+      "scipy_c": 0.0,
+      "maximum_absolute_delta": 0.0
+    },
+    {
+      "scipy_c": 0.2,
+      "maximum_absolute_delta": 4.440892098500626e-16
+    }
+  ],
+  "production_reduce_bundle_exact_parity": [
+    {
+      "metric": "q_return_level_10yr_max",
+      "estimate": 3.9773738074134077,
+      "parameters": [
+        -0.2084617522951551,
+        -0.4286253641834715,
+        1.5344362402391485
+      ],
+      "total_blocks": 10,
+      "exact": true
+    },
+    {
+      "metric": "q_return_level_2yr_7day_min",
+      "estimate": 0.15580755064278795,
+      "parameters": [
+        -0.2084617522951551,
+        -0.4286253641834715,
+        1.5344362402391485
+      ],
+      "total_blocks": 10,
+      "exact": true
+    }
+  ],
+  "discrimination": [
+    "constant sample refusal",
+    "perfect synthetic errors pass",
+    "+1 scale error fails",
+    "51/1000 refusals fail",
+    "zero relative error is undefined",
+    "2e-6 paired perturbation retained as 1000 translation failures"
+  ],
+  "optimizer_flag": "not exposed by installed xclim ML/dist.fit path; parameter validity is not global-optimum certification"
+}

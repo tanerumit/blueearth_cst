@@ -1,0 +1,245 @@
+{
+  "verification_status": "passed",
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "selection": "Three distinct shape/count/probability/draw keys with largest absolute observed paired scale-error deltas; selected after complete matrix for diagnosis only",
+  "fits_replayed": 6,
+  "criterion_and_estimator_changes": false,
+  "review_script_sha256": "830d8829f7bbb925f4194408b537d89d822b43b31152b089f47d5bbd9cce5dd4",
+  "cases": [
+    {
+      "baseline": {
+        "shape_c": -0.2,
+        "shape_index": 0,
+        "n": 10,
+        "draw": 662,
+        "p": 0.9,
+        "valid": true,
+        "estimate": 1730422350.0013072,
+        "parameters_c_loc_scale": [
+          -10.157796840151118,
+          -1.113689460410094,
+          2.0773619490275266
+        ],
+        "failure": null,
+        "warnings": [],
+        "ratio": null,
+        "mu": 0.0,
+        "sigma": 1.0,
+        "true_quantile": 2.842137032512669,
+        "scale_error": 1730422347.1591702,
+        "relative_error": null
+      },
+      "translated": {
+        "shape_c": -0.2,
+        "shape_index": 0,
+        "n": 10,
+        "draw": 662,
+        "p": 0.9,
+        "valid": true,
+        "estimate": 4292800398.0514665,
+        "parameters_c_loc_scale": [
+          -10.570115942409227,
+          -1.9597348020397503,
+          2.1203736793414945
+        ],
+        "failure": null,
+        "warnings": [],
+        "ratio": 2.0,
+        "mu": -0.8421370325126691,
+        "sigma": 1.0,
+        "true_quantile": 2.0,
+        "scale_error": 4292800396.0514665,
+        "relative_error": 2146400198.0257332,
+        "translation_validity_same": true,
+        "paired_scale_error_delta": 2562378048.8922963,
+        "translation_pass": false
+      },
+      "sample": [
+        7.082186341614773,
+        -0.07043154219402245,
+        -0.4682920349509903,
+        0.5188519612871356,
+        0.3919714963816989,
+        -1.1808321509676845,
+        6.695172895048131,
+        4.1572481446144725,
+        -1.3164822556139648,
+        -1.3181985662337625
+      ],
+      "sample_file": "samples-c0-n10.npy",
+      "sample_file_sha256": "d4d31acd7971da58c2430f7cb9647ee3db30061093f1d5cd568bedc62541c970",
+      "replays": [
+        {
+          "ratio": null,
+          "exact_parameter_and_quantile_replay": true,
+          "negative_log_likelihood": 13.998572223465048,
+          "nonfinite_log_density_count": 0
+        },
+        {
+          "ratio": 2.0,
+          "exact_parameter_and_quantile_replay": true,
+          "negative_log_likelihood": 13.31208935472429,
+          "nonfinite_log_density_count": 0
+        }
+      ],
+      "baseline_parameters_mapped_to_translated_sample_nll": 13.998570395406391
+    },
+    {
+      "baseline": {
+        "shape_c": -0.2,
+        "shape_index": 0,
+        "n": 10,
+        "draw": 819,
+        "p": 0.9,
+        "valid": true,
+        "estimate": 370935664.11723775,
+        "parameters_c_loc_scale": [
+          -9.792314718975035,
+          -0.7063289624475391,
+          0.9770982773602581
+        ],
+        "failure": null,
+        "warnings": [],
+        "ratio": null,
+        "mu": 0.0,
+        "sigma": 1.0,
+        "true_quantile": 2.842137032512669,
+        "scale_error": 370935661.2751007,
+        "relative_error": null
+      },
+      "translated": {
+        "shape_c": -0.2,
+        "shape_index": 0,
+        "n": 10,
+        "draw": 819,
+        "p": 0.9,
+        "valid": true,
+        "estimate": 8170.545178792502,
+        "parameters_c_loc_scale": [
+          -5.171552906183216,
+          -3.076119020729772,
+          0.37304936540041167
+        ],
+        "failure": null,
+        "warnings": [],
+        "ratio": 0.5,
+        "mu": -2.342137032512669,
+        "sigma": 1.0,
+        "true_quantile": 0.5,
+        "scale_error": 8170.045178792502,
+        "relative_error": 16340.090357585004,
+        "translation_validity_same": true,
+        "paired_scale_error_delta": -370927491.22992194,
+        "translation_pass": false
+      },
+      "sample": [
+        0.5261638142309838,
+        -0.6640084860268072,
+        -0.8037989935271463,
+        -0.07892001613149979,
+        -0.5828011967562988,
+        0.08669380200822818,
+        3.6803595006729237,
+        2.7716839590809017,
+        -0.8061111186942552,
+        0.35784251885480045
+      ],
+      "sample_file": "samples-c0-n10.npy",
+      "sample_file_sha256": "d4d31acd7971da58c2430f7cb9647ee3db30061093f1d5cd568bedc62541c970",
+      "replays": [
+        {
+          "ratio": null,
+          "exact_parameter_and_quantile_replay": true,
+          "negative_log_likelihood": 8.216583673038507,
+          "nonfinite_log_density_count": 0
+        },
+        {
+          "ratio": 0.5,
+          "exact_parameter_and_quantile_replay": true,
+          "negative_log_likelihood": 12.233072844977364,
+          "nonfinite_log_density_count": 0
+        }
+      ],
+      "baseline_parameters_mapped_to_translated_sample_nll": 8.216584392571075
+    },
+    {
+      "baseline": {
+        "shape_c": -0.2,
+        "shape_index": 0,
+        "n": 10,
+        "draw": 797,
+        "p": 0.9,
+        "valid": true,
+        "estimate": 6210199.150344884,
+        "parameters_c_loc_scale": [
+          -8.369936055559592,
+          -0.771226090035279,
+          0.34332397884324184
+        ],
+        "failure": null,
+        "warnings": [],
+        "ratio": null,
+        "mu": 0.0,
+        "sigma": 1.0,
+        "true_quantile": 2.842137032512669,
+        "scale_error": 6210196.308207852,
+        "relative_error": null
+      },
+      "translated": {
+        "shape_c": -0.2,
+        "shape_index": 0,
+        "n": 10,
+        "draw": 797,
+        "p": 0.9,
+        "valid": true,
+        "estimate": 71410426.42325453,
+        "parameters_c_loc_scale": [
+          -9.296082188397047,
+          -3.0957011754548276,
+          0.5455002047930182
+        ],
+        "failure": null,
+        "warnings": [],
+        "ratio": 0.5,
+        "mu": -2.342137032512669,
+        "sigma": 1.0,
+        "true_quantile": 0.5,
+        "scale_error": 71410425.92325453,
+        "relative_error": 142820851.84650907,
+        "translation_validity_same": true,
+        "paired_scale_error_delta": 65200229.61504668,
+        "translation_pass": false
+      },
+      "sample": [
+        -0.24548142065915052,
+        10.981706441581371,
+        0.1635298314446867,
+        2.887813186769875,
+        -0.804913218462723,
+        1.2958334206473339,
+        0.7314409454289681,
+        -0.8122447992996187,
+        -0.7524035909768358,
+        2.2081172429212357
+      ],
+      "sample_file": "samples-c0-n10.npy",
+      "sample_file_sha256": "d4d31acd7971da58c2430f7cb9647ee3db30061093f1d5cd568bedc62541c970",
+      "replays": [
+        {
+          "ratio": null,
+          "exact_parameter_and_quantile_replay": true,
+          "negative_log_likelihood": 13.95612442073342,
+          "nonfinite_log_density_count": 0
+        },
+        {
+          "ratio": 0.5,
+          "exact_parameter_and_quantile_replay": true,
+          "negative_log_likelihood": 13.03128878924835,
+          "nonfinite_log_density_count": 0
+        }
+      ],
+      "baseline_parameters_mapped_to_translated_sample_nll": 13.956124453335695
+    }
+  ]
+}

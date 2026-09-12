@@ -13,13 +13,17 @@ identity, crosswalk and repair. GF15 adequacy and milestone sealing remain open.
 |---|---|
 | GF1–8, GF10–14, GF16–24, GF26 | Accepted P1/P2 logical and durable-handoff contracts; their maintained tests pass in the final successor software suite. |
 | GF9, GF28 | Both fresh entry-point/runner runs have signed numerical and temporal preservation acceptance against immutable P0. |
-| GF15 | Operational screening/fit validity preserved. Benchmark not run; reviewed new criteria still require owner approval before the seal-stage execution. |
+| GF15 | Operational screening/fit validity preserved. Owner-approved benchmark completed on 2026-09-12: 132,000 fits, 144,000 quantiles; audit passed, scientific criteria failed. Only 3/24 baseline scale cells pass, all six `n=18` cells fail, and 118,457/120,000 translation pairs exceed tolerance. [Scientific handoff](evidence/gf15/scientific-handoff.md); owner method ruling required. |
 | GF25 | Five-stanza migration and mandatory runner are implemented; final CLI checks pass. Old current entry point/stanza/template are retired, with migration/refusal tests in the full gate. |
 | GF27 | Three actual automatic-seed capacity/width runs and an experiment-rename check have signed acceptance. |
 | GF29, GF30, GF32 | Fresh generation/simulation through both interfaces, physical offline metrics, and 32 reuse/refusal/selection checks pass. |
 | GF31 | Four-branch portable-preparation comparison has signed bounded acceptance, retaining the documented synthetic CHIRPS and dormant E-OBS limits. |
 
 ## Earlier checkpoints and preparation allocation
+
+The [standing baseline/tree inspection](evidence/standing-seal-status.md)
+records the separate legacy-fixture seal limitation. Neither benchmark failure
+nor an unchanged legacy tree is a milestone-seal pass.
 
 Current phase update, 2026-09-11: [P2 acceptance](evidence/p2/acceptance.md)
 records executable current-carrier GF-29/GF-30, bounded GF-31, GF-32 and the

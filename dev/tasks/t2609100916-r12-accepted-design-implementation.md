@@ -13,7 +13,7 @@ updated: 2026-09-12
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 through P3 are accepted. The workflow/config/runner migration and final scientific/software checks pass. Remaining GF15 benchmarking and milestone sealing await owner acceptance of the reviewed benchmark criteria.
+> **Why** — P0 through P3 are accepted. The approved GF15 benchmark completed and failed its accuracy and translation criteria. Execution and audit passed; a separate owner method ruling is required before adequacy or sealing can proceed.
 > **Effort** — large
 
 ## Progress
@@ -31,10 +31,32 @@ updated: 2026-09-12
 - [x] Complete P2 production handoffs, exact resolution, metrics-only and scientific/software acceptance.
 - [x] Complete P3 workflow/config/runner extraction and repeat final-entry-point gates.
 - [x] Execute implementation only within authorized scope.
-- [ ] Obtain owner acceptance of the reviewed GF15 benchmark criteria, then execute and review the benchmark.
+- [x] Obtain owner acceptance of the reviewed GF15 benchmark criteria on 2026-09-12.
+- [x] Execute and review the approved GF15 benchmark: all 132,000 fits complete; scientific criteria failed.
+- [ ] Obtain the owner method ruling on GF15 accuracy and translation failures; carry out its authorized follow-up.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+GF15 completed on 2026-09-12: all 144,000 quantile records and 132,000 fits
+are retained. Independent review verified all cell decisions and 36 exact fit
+replays. Only 3/24 baseline scale cells pass; all six current `n=18` cells fail.
+Translation deviations exceed `1e-6` in 118,457/120,000 pairs; all fits remain
+valid. See [scientific handoff](../milestones/r12/implementation/evidence/gf15/scientific-handoff.md).
+This is the new blocker under accepted design section 7.5, not a request to
+reapprove the original criteria. Production estimators, screening policy,
+immutable metric sets and the standing baseline are unchanged.
+
+Read-only [standing seal checks](../milestones/r12/implementation/evidence/standing-seal-status.md)
+also confirm that the local legacy fixture is not a successor baseline: no
+retained metric plan, two stale config snapshot paths and 75 unmapped paths.
+Fresh P3 inventories/crosswalks remain accepted; R12 remains unsealed.
+
+GF15 released on 2026-09-12: owner replied "yes i approve. Proceed to next step"
+to the reviewed criteria linked in the P3 completion handoff. Master Gate 2 is
+discharged for those exact criteria. P3 is committed as `868c4b7c`. The existing
+Astra model-validator owns the bounded benchmark and its scientific report;
+estimator changes and post-result criterion changes remain outside this approval.
 
 P3 final execution update, 2026-09-12: both fresh generation interfaces passed
 37/37 jobs and both simulation interfaces passed 25/25; physical offline metrics
@@ -43,8 +65,8 @@ accepted GF9/GF27/GF28/GF31 scientific preservation. Both output inventories and
 the notebook reader/analysis cells pass. Final lint/format pass; the final full
 suite passed 3,705 tests, with 15 skipped and one expected failure. See
 `dev/milestones/r12/implementation/evidence/p3/acceptance.md`. GF15 benchmark
-criteria still require owner acceptance under Master Gate 2; this is the recorded
-blocker. No milestone-seal claim. The session branch remains assigned to R12.
+criteria required owner acceptance under Master Gate 2; the approval above
+clears that blocker. No milestone-seal claim. The session branch remains assigned to R12.
 
 P3 started on 2026-09-11 under the owner's continuation instruction. Configuration
 migration, successor entry points and operation isolation are being implemented.

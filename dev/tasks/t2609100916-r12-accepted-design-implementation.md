@@ -13,7 +13,7 @@ updated: 2026-09-12
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 through P3 are accepted. The approved GF15 benchmark completed and failed its accuracy and translation criteria. Execution and audit passed; a separate owner method ruling is required before adequacy or sealing can proceed.
+> **Why** — P0 through P3 are accepted. The approved GF15 investigation reproduced hidden optimizer-budget exhaustion in extreme fits and confirmed that broad accuracy failures persist beyond those extremes. A reviewed candidate-method decision is next; production behavior and the original failed benchmark remain unchanged.
 > **Effort** — large
 
 ## Progress
@@ -33,10 +33,31 @@ updated: 2026-09-12
 - [x] Execute implementation only within authorized scope.
 - [x] Obtain owner acceptance of the reviewed GF15 benchmark criteria on 2026-09-12.
 - [x] Execute and review the approved GF15 benchmark: all 132,000 fits complete; scientific criteria failed.
-- [ ] Obtain the owner method ruling on GF15 accuracy and translation failures; carry out its authorized follow-up.
+- [x] Obtain owner approval for a bounded fitting-stability and sample-size investigation on 2026-09-12.
+- [x] Complete the approved investigation: all 132,000 retained fits inspected, 186 exact traces, causes and limitations recorded.
+- [ ] Obtain any required method/criteria ruling before changing the estimator or qualifying a replacement.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+Investigation completed on 2026-09-12: all 180 fixed-grid traces reported
+optimizer convergence, while all six extreme-witness traces exhausted 600
+function evaluations. The parameters and quantiles replay exactly; the current
+parameter-only fitting interface conceals those termination failures. The
+percentage-based initial simplex also changes under location translation.
+All six `n=18` accuracy cells still fail after a descriptive exclusion of the
+largest 1% of absolute errors; this is not a replacement acceptance test or a
+complete decomposition of sampling and optimizer error. See the
+[investigation handoff](../milestones/r12/implementation/evidence/gf15-investigation/scientific-handoff.md).
+The next decision is a reviewed candidate-method study, not another approval of
+the original benchmark or a production change inferred from this diagnosis.
+
+Investigation released on 2026-09-12: owner replied "yes i approve it" to the
+recommended bounded investigation with production behavior unchanged. The
+failed benchmark is committed as `2c9a0a30` and remains immutable. New diagnostics
+belong under `evidence/gf15-investigation/`; they examine the retained failure
+witnesses, fitting behavior and finite-sample accuracy without executing a new
+estimator qualification or changing scientific thresholds.
 
 GF15 completed on 2026-09-12: all 144,000 quantile records and 132,000 fits
 are retained. Independent review verified all cell decisions and 36 exact fit

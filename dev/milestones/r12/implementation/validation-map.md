@@ -21,6 +21,13 @@ identity, crosswalk and repair. GF15 adequacy and milestone sealing remain open.
 
 ## Earlier checkpoints and preparation allocation
 
+The owner-approved [GF15 investigation](evidence/gf15-investigation/scientific-handoff.md)
+is complete: all retained fits inspected and 186 exact optimizer traces. Six
+extreme-witness fits hit the 600-evaluation limit, which the parameter-only
+interface conceals. Broad `n=18` accuracy failures persist beyond the largest
+1% of errors. These findings guide the next method decision; they do not change
+the original failed benchmark or qualify production return levels.
+
 The [standing baseline/tree inspection](evidence/standing-seal-status.md)
 records the separate legacy-fixture seal limitation. Neither benchmark failure
 nor an unchanged legacy tree is a milestone-seal pass.

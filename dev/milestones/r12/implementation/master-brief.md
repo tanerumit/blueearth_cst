@@ -72,6 +72,22 @@ failure and unchanged policy/estimator. Section 7.5 now requires the owner metho
 ruling; R12 remains unsealed. [Standing baseline/tree status](evidence/standing-seal-status.md)
 records the separate successor-fixture prerequisite.
 
+**Investigation ruling — 2026-09-12:** owner approved the recommended bounded
+investigation of fitting stability and sample-size accuracy, keeping production
+behavior unchanged. The original GF15 failure record remains immutable. This
+authorizes diagnostic tracing and analysis of retained witnesses; replacement
+estimator execution, changed criteria and adequacy/seal acceptance remain
+separate method decisions after the investigation.
+
+**Investigation result — 2026-09-12:** the
+[bounded diagnosis](evidence/gf15-investigation/scientific-handoff.md) inspected
+all 132,000 retained fits and reproduced 186 optimizer traces exactly. The six
+extreme witness fits exhausted their evaluation budget; the fixed-grid 180
+reported convergence. Accuracy failures persist after descriptive outlier
+exclusion. Original evidence and production behavior remain unchanged. A
+reviewed candidate-method decision is now needed; no new qualification or
+milestone-seal claim follows from diagnostic completion.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

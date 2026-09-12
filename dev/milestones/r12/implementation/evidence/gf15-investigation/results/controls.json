@@ -1,0 +1,10 @@
+{
+  "status": "passed",
+  "toy_quadratic_exact": true,
+  "toy_success_status": 0,
+  "toy_monotone_status": 1,
+  "toy_monotone_nfev": 200,
+  "scalar_penalized_objective_equals_finite_vectorized_nll": true,
+  "unsupported_sample_detected": true,
+  "toy_cases_not_GEV_performance_evidence": true
+}

@@ -1,0 +1,36 @@
+{
+  "approved_scope": "Owner approved bounded fitting-stability and sample-size investigation on 2026-09-12 after GF15 failure; production unchanged",
+  "original_evidence": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15",
+  "whole_retained_fit_count": 132000,
+  "trace_selection": {
+    "predetermined_draw_ids": [
+      0,
+      499,
+      999
+    ],
+    "shapes_scipy_c": [
+      -0.2,
+      0.0,
+      0.2
+    ],
+    "counts": [
+      10,
+      18,
+      30,
+      60
+    ],
+    "per_draw": "baseline once plus p={.9,.5} x rho={0,10}; five fits",
+    "predetermined_fits": 180,
+    "witness_fits": 6,
+    "total_fits": 186,
+    "witness_source": "original translation-outlier-review.json, same three distinct worst cases and their baselines",
+    "interpretation": "fixed diagnostic grid plus purposive extremes; no frequency extrapolation to entire matrix from traces"
+  },
+  "tracing": "spy on _minimize_neldermead; forward every positional and keyword argument unchanged; wrap objective to record identical returned values; record result object; no optimizer/tolerance/start/full_output/retall overrides",
+  "likelihood": "public unpenalized genextreme.logpdf across all retained fits; feasibility/nonfinite log-density counts retained; actual penalized objective recorded in traces",
+  "sampling": "all24 baseline cells; robust error quantiles, all extremes, top10/1000 contribution and explicitly diagnostic trim; original acceptance decisions untouched",
+  "oracle_scale": "asymptotic empirical-quantile standard error sqrt(p*(1-p)/n)/f(qp), descriptive only; not a GEV-MLE bound, interval or alternative estimator run",
+  "no_new_qualification": true,
+  "no_modified_method_runs": true,
+  "no_screening_policy_change": true
+}

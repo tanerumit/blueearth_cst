@@ -61,3 +61,5 @@ dev/milestones/r12/implementation/evidence/gf15-investigation/** -text whitespac
 dev/milestones/r12/implementation/evidence/gf15-investigation/*.log -whitespace
 dev/milestones/r12/implementation/evidence/gf15-candidates/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 dev/milestones/r12/implementation/evidence/gf15-candidates/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-normalized-qualification/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-normalized-qualification/*.log -whitespace

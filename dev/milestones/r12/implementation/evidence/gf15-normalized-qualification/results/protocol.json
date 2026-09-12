@@ -1,0 +1,26 @@
+{
+  "candidate": "B, committed compare-candidates.py fit_case unchanged",
+  "matrix": {
+    "base_cells": 12,
+    "draws_per_cell": 1000,
+    "fits": 132000,
+    "quantiles": 144000,
+    "pairs": 120000,
+    "summary_cells": 144
+  },
+  "samples": "Original immutable .npy arrays; no RNG invocation, clipping, filtering or additional draws",
+  "translation": "original retained mu=rho-z_p; generating sigma=1; same arrays plus mu",
+  "normalization": "sample mean and population std(ddof=0); same optimizer defaults; affine back-transform scalar xclim quantiles",
+  "status": "Exact committed B refusal policy; preserve all raw unsuccessful outputs; no fallback",
+  "baseline_acceptance": "One baseline fit requests both scalar quantiles, both must be finite; fit-level refusal shared",
+  "pair_qualification": "Separate both-accepted numerical pass/fail, both-refused no numerical proof, validity-changed. Require unchanged classifications on all 1000 pairs, no failed both-accepted numerical comparison, nonempty comparisons, and >=95% accepted in each baseline/translated cell. Both-refused never numerical pass.",
+  "accuracy": "Unchanged criteria, conditional accepted errors with 1000 attempted denominator; all 24 baseline scale cells and 72 eligible translated scale+relative cells must pass; all 120 translated cells must pass translation/validity gates",
+  "zero_near_zero": "rho=0 relative error undefined; rho=.05 diagnostic only; all raw and accepted scale and relative summaries retained",
+  "chunks": 240,
+  "draws_per_chunk": 50,
+  "workers": 4,
+  "retention": "Every fit/status/parameter/quantile/normalization/warning/failure and final optimizer simplex retained; objective evaluation counts checked but full per-evaluation histories not retained",
+  "resume": "Only completed chunk files with exact companion hash/count and frozen source/protocol binding reused",
+  "validation": "Prior inventories and installed sources; inherited discriminating controls plus summary gate controls; 186 embedded exact B replays; coordinator independent raw arithmetic audit",
+  "qualification_boundary": "IID stationary GEV fixtures only; no production integration, screening-floor ruling or observed hydrological adequacy"
+}

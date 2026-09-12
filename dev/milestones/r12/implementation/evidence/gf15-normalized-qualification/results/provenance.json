@@ -1,0 +1,46 @@
+{
+  "utc": "2026-09-12T11:42:16.882413+00:00",
+  "inputs": {
+    "gf15": {
+      "inventory_sha256": "3f13145d29c377a1c92042b3845695ce293edd58e565e17a67851767026719e1",
+      "files_verified": 276,
+      "no_extra_files": true
+    },
+    "gf15-investigation": {
+      "inventory_sha256": "f1d5776067a2ed1fef537e95b2437aa3de538ade116ca9d31cc3196fd3e62bab",
+      "files_verified": 16,
+      "no_extra_files": true
+    },
+    "gf15-candidates": {
+      "inventory_sha256": "54d72c074c55b3ed9abfac664340da4d22a18a8a8d00df1d9e9ad4f5c0a61fbb",
+      "files_verified": 14,
+      "no_extra_files": true
+    }
+  },
+  "sources": {
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15\\benchmark-estimator.py": "d754c6f09d6f93a2e57e73c7d8a7f8e8d56bb749f3dc071ff0ca31ef9c13ba41",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\blueearth_cst\\experiment\\metric_registry.py": "9a4c197c30aa42f3ab4a26d7c2fe81781436d6a056259dcb71f0aa891b370abb",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\blueearth_cst\\experiment\\response_series.py": "148f4f51059adbaa902f0b53b7e4cbed65e9758384fa3c9f2bab67faab2788e9",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\blueearth_cst\\shared\\metrics_definition.py": "db1cef42cf4badceb9eee6928125b8b12ee585b49ad35f21eb4e73712f6108f9",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\blueearth_cst\\shared\\indicator_tables.py": "26f7be28f0f19bf658cf82c42d4f6b499db1eabba1cc5f3533e56f313b9234b5",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\pixi.lock": "ca888ef1c4547ee0624fc4da319de87fd9284418b2fbe16171118bc8f7b64041",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\pixi.toml": "9186364c0a5db742f3ef3b4743fa57a7bf8b65cb10e418ed9717b59f28ea474c",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\wf3-simulation-identity-design.md": "dbea7094d3aaa8eacd92e9f3d98562948ed1f4ab6ef8d131f8f5fec5746549f9",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\p3\\scientific-review-preparation.md": "9387d26a3b58a4131112712ede0ddbd71f961415952e63ab78579567bf971e20",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default\\Lib\\site-packages\\xclim\\indices\\stats.py": "6b4485e9716d7b8eadafd0e6eb7f08f2e9f6e334023a7275ad47c1e9ab8bff17",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default\\Lib\\site-packages\\scipy\\stats\\_continuous_distns.py": "d401e2c8b627ce88c8d627b15fc6103bcea58784d4ce9150588f54d491cb1a89",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default\\Lib\\site-packages\\scipy\\stats\\_distn_infrastructure.py": "7e77b0a64d61b925a762acc4824f277abdd544d80ca3a16dd142175cc9a4f92d",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default\\Lib\\site-packages\\scipy\\optimize\\_optimize.py": "f5ad5bc0ec01d9f0adafad622631a59ab8efc90019f41efbbef19c8b2feaf430",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-candidates\\compare-candidates.py": "340d4922d8cce58a0a9b100816d852695ad3113d7ca2fc37dc71e2be562f5d3b",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-investigation\\investigate-estimator.py": "6c771b2efbc57addc1f39d6b2e114c323b105354ee8bf6cef60447a069933d82",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-normalized-qualification\\qualify-normalized.py": "551cedd6a43cce3e6b572f532e395a3e46b20104dde0a596422661306ae62606"
+  },
+  "python": "3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 16:36:12) [MSC v.1944 64 bit (AMD64)]",
+  "versions": {
+    "numpy": "2.4.6",
+    "scipy": "1.18.0",
+    "xclim": "0.60.0",
+    "xarray": "2026.4.0",
+    "pandas": "3.0.3"
+  }
+}

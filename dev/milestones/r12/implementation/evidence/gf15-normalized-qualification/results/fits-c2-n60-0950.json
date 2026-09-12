@@ -1,0 +1,10 @@
+{
+  "file": "fits-c2-n60-0950.jsonl.gz",
+  "sha256": "73f49a1dd943b244c27d6d4d82cadbe7c59e2814c80b60d1bb9948f3621652ac",
+  "binding": "2f2108abc8346765be66d88e0ea6cb45e6b4d61ab0101e9116c11dc9d97ba55a",
+  "fits": 550,
+  "quantiles": 600,
+  "accepted": 550,
+  "evaluations": 60115,
+  "seconds": 31.95727190001344
+}

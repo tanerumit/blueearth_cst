@@ -21,12 +21,24 @@ identity, crosswalk and repair. GF15 adequacy and milestone sealing remain open.
 
 ## Earlier checkpoints and preparation allocation
 
+The owner-approved [full B qualification](evidence/gf15-normalized-qualification/scientific-handoff.md)
+completed all 132,000 fits with unchanged samples, criteria and optimizer
+settings. Independent audit passed; scientific qualification failed. Only 3/24
+baseline scale cells and 6/72 eligible scale-plus-relative cells pass, including
+no current `n=18` baseline cell. There are 78 refused fits; all cell valid-fit
+rates nevertheless exceed 95%. Translation has 119,899 numerical passes,
+30 numerical failures, 70 both-refused pairs and one validity change across
+120,000 pairs; 106/120 translation cells pass. The 186 candidate B cases replay
+exactly. GF15 adequacy, production integration and sealing remain unapproved,
+pending an owner method ruling under section 7.5.
+
 The owner-approved [bounded candidate comparison](evidence/gf15-candidates/scientific-handoff.md)
 completed 372 fits. Status-only A preserves original raw results; normalized B
 passes 144/144 both-accepted translation pairs versus A's 2/144. Both refuse six
 extreme fits, leaving three both-refused witness pairs each without numerical
 proof. A B-only full qualification attempt is recommended under the existing
-criteria; it has not run and no accuracy or production qualification is claimed.
+criteria; its subsequent failed outcome is recorded above. The subset itself
+establishes no accuracy or production qualification.
 
 The owner-approved [GF15 investigation](evidence/gf15-investigation/scientific-handoff.md)
 is complete: all retained fits inspected and 186 exact optimizer traces. Six

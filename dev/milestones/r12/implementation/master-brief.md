@@ -101,8 +101,31 @@ production integration, fallback estimator, or changed screening policy.
 results; the normalized candidate passed all 144 both-accepted translation pairs.
 Both refused the six extreme fits. The three both-refused pairs per candidate
 are not numerical proof. B merits a full qualification attempt under unchanged
-criteria, but that larger study remains a separate owner scope decision. No
+criteria, subject to a separate owner execution-scope decision. No
 accuracy-adequacy, production-integration or seal approval follows from this subset.
+The subsequent authorization and full-study outcome are recorded below.
+
+**Full normalized-qualification ruling — 2026-09-12:** owner approved B-only
+execution of the original 132,000-fit, 144,000-quantile matrix using retained
+samples and unchanged criteria. Normalization and explicit optimizer-status
+refusal are fixed to the candidate study committed as `743a4d24`. New evidence
+belongs under `evidence/gf15-normalized-qualification/`. Refusals retain full
+draw denominators; both-refused pairs are not numerical-equivalence successes.
+This authorizes execution and assessment, not production integration, retuning,
+fallback, changed screening policy, or milestone sealing.
+
+**Full normalized-qualification result — 2026-09-12:** all 132,000 fits and
+144,000 quantiles completed; the independent audit passed. Scientific
+qualification failed: 3/24 baseline accuracy cells and 6/72 eligible relative
+cells pass; all six current `n=18` baseline cells fail. All cells meet the 95%
+valid-fit threshold, with 78 refused fits in total. Of 120,000 translation pairs,
+119,899 pass numerically, 30 fail, 70 are both refused without numerical proof,
+and one changes validity; 106/120 translation cells pass. The maximum accepted
+paired difference is `4.5263e-6` against the unchanged `1e-6` limit. All 186
+embedded candidate cases replay exactly. See the
+[signed handoff](evidence/gf15-normalized-qualification/scientific-handoff.md).
+Section 7.5 still requires an owner method ruling; neither normalization nor
+successful evidence verification establishes GF15 adequacy or permits sealing.
 
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.

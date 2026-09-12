@@ -13,7 +13,7 @@ updated: 2026-09-12
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 through P3 are accepted. The bounded candidate study is complete: normalization passes all 144 both-accepted translation comparisons and both candidates refuse the six extreme fits. Full qualification of the normalized candidate is the next scope decision; accuracy adequacy and production integration remain unapproved.
+> **Why** — P0 through P3 are accepted. Full normalized-B qualification completed and its independent audit passed, but scientific criteria failed: only 3/24 baseline accuracy cells pass, all six current n=18 cells fail, and translation has 30 numerical failures plus one validity change. An owner method ruling is required; R12 remains unsealed.
 > **Effort** — large
 
 ## Progress
@@ -37,10 +37,35 @@ updated: 2026-09-12
 - [x] Complete the approved investigation: all 132,000 retained fits inspected, 186 exact traces, causes and limitations recorded.
 - [x] Obtain owner approval for status-only and normalized-fitting candidates on the same 186 diagnostic cases on 2026-09-12.
 - [x] Complete and review 372 candidate fits: A preserves raw results; B passes all 144 both-accepted translation pairs; both refuse six extreme fits.
-- [ ] Obtain any required ruling for full qualification or production integration after the candidate study.
+- [x] Obtain owner approval for B-only full qualification on the original matrix on 2026-09-12.
+- [x] Execute and independently assess B-only full qualification: 132,000 fits complete; audit passed, scientific qualification failed.
+- [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+Full normalized qualification completed on 2026-09-12 in 36.1 minutes: 132,000
+fits, 144,000 quantiles and 120,000 translation pairs. B accepts 131,922 fits and
+refuses 78 optimizer-budget failures. All cells meet the 95% valid-fit criterion,
+but only 3/24 baseline scale cells and 6/72 eligible scale-plus-relative cells
+pass; all six `n=18` baseline cells fail. Translation outcomes are 119,899
+numerical passes, 30 numerical failures, 70 both-refused pairs without numerical
+proof and one validity change. Maximum both-accepted paired difference is
+`4.5263e-6`, above the unchanged `1e-6` criterion; 106/120 translation cells pass.
+The 186 embedded B cases replay exactly. The independent audit verifies every
+fit, quantile, pair and cell decision; prior evidence and criteria remain exact.
+See [full qualification handoff](../milestones/r12/implementation/evidence/gf15-normalized-qualification/scientific-handoff.md).
+Normalization improves conditioning but does not establish accuracy adequacy.
+No production integration, criterion change, screening change or seal follows.
+
+Full normalized qualification released on 2026-09-12: owner replied "yes i approve"
+to B-only execution of all 132,000 fits and 144,000 primary quantiles using the
+original retained samples and unchanged criteria, with no production integration.
+The bounded comparison is committed as `743a4d24`. New evidence belongs under
+`evidence/gf15-normalized-qualification/`; all prior evidence remains immutable.
+Refusals count against full draw denominators, and both-refused translation
+pairs remain distinct from numerical-equivalence successes. No fallback,
+optimizer retuning, screening change or criterion change is authorized.
 
 Candidate comparison completed on 2026-09-12: each candidate ran the same 186
 fits and 225 primary quantiles. A reproduced every original raw result and

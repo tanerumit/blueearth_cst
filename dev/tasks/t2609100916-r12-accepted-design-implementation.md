@@ -13,7 +13,7 @@ updated: 2026-09-12
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 through P3 are accepted. The approved GF15 investigation reproduced hidden optimizer-budget exhaustion in extreme fits and confirmed that broad accuracy failures persist beyond those extremes. A reviewed candidate-method decision is next; production behavior and the original failed benchmark remain unchanged.
+> **Why** — P0 through P3 are accepted. The bounded candidate study is complete: normalization passes all 144 both-accepted translation comparisons and both candidates refuse the six extreme fits. Full qualification of the normalized candidate is the next scope decision; accuracy adequacy and production integration remain unapproved.
 > **Effort** — large
 
 ## Progress
@@ -35,10 +35,31 @@ updated: 2026-09-12
 - [x] Execute and review the approved GF15 benchmark: all 132,000 fits complete; scientific criteria failed.
 - [x] Obtain owner approval for a bounded fitting-stability and sample-size investigation on 2026-09-12.
 - [x] Complete the approved investigation: all 132,000 retained fits inspected, 186 exact traces, causes and limitations recorded.
-- [ ] Obtain any required method/criteria ruling before changing the estimator or qualifying a replacement.
+- [x] Obtain owner approval for status-only and normalized-fitting candidates on the same 186 diagnostic cases on 2026-09-12.
+- [x] Complete and review 372 candidate fits: A preserves raw results; B passes all 144 both-accepted translation pairs; both refuse six extreme fits.
+- [ ] Obtain any required ruling for full qualification or production integration after the candidate study.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+Candidate comparison completed on 2026-09-12: each candidate ran the same 186
+fits and 225 primary quantiles. A reproduced every original raw result and
+passed 2/144 both-accepted translation comparisons; B passed 144/144, with maximum
+paired scale-error difference `2.3892e-13`. Each refused six optimizer-budget
+failures; the three both-refused witness pairs provide no numerical-equivalence
+proof. Maximum accepted B estimate change was about 0.001597 generating-scale
+units. See [candidate handoff](../milestones/r12/implementation/evidence/gf15-candidates/scientific-handoff.md).
+The subset supports a full qualification attempt for B, not an adequacy claim.
+No full matrix, production integration, criterion change or fallback was run.
+
+Candidate study released on 2026-09-12: owner replied "yes I approve. proceed to
+next step" to the status-only wrapper and normalized-fitting comparison on the
+same 186 cases, with unchanged criteria and no production integration. The
+approved normalization uses sample mean and population standard deviation
+(`ddof=0`), followed by mapping fitted parameters and quantiles back. No fallback,
+changed optimizer settings, new draws or full qualification matrix is included.
+The investigation is committed as `0e1a85b9`; new evidence belongs under
+`evidence/gf15-candidates/`.
 
 Investigation completed on 2026-09-12: all 180 fixed-grid traces reported
 optimizer convergence, while all six extreme-witness traces exhausted 600

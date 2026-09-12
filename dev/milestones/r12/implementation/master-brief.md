@@ -88,6 +88,22 @@ exclusion. Original evidence and production behavior remain unchanged. A
 reviewed candidate-method decision is now needed; no new qualification or
 milestone-seal claim follows from diagnostic completion.
 
+**Candidate-study ruling — 2026-09-12:** owner approved the status-only wrapper
+and mean/population-standard-deviation normalized candidate on the same 186
+diagnostic cases. Existing GEV likelihood, optimizer defaults and GF15 criteria
+remain fixed. New evidence belongs under `evidence/gf15-candidates/`; original
+records remain immutable. This is not approval for a full qualification matrix,
+production integration, fallback estimator, or changed screening policy.
+
+**Candidate-study result — 2026-09-12:** the
+[bounded comparison](evidence/gf15-candidates/scientific-handoff.md) completed
+372 fits and 450 quantiles. The status-only candidate preserved original raw
+results; the normalized candidate passed all 144 both-accepted translation pairs.
+Both refused the six extreme fits. The three both-refused pairs per candidate
+are not numerical proof. B merits a full qualification attempt under unchanged
+criteria, but that larger study remains a separate owner scope decision. No
+accuracy-adequacy, production-integration or seal approval follows from this subset.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

@@ -21,6 +21,13 @@ identity, crosswalk and repair. GF15 adequacy and milestone sealing remain open.
 
 ## Earlier checkpoints and preparation allocation
 
+The owner-approved [bounded candidate comparison](evidence/gf15-candidates/scientific-handoff.md)
+completed 372 fits. Status-only A preserves original raw results; normalized B
+passes 144/144 both-accepted translation pairs versus A's 2/144. Both refuse six
+extreme fits, leaving three both-refused witness pairs each without numerical
+proof. A B-only full qualification attempt is recommended under the existing
+criteria; it has not run and no accuracy or production qualification is claimed.
+
 The owner-approved [GF15 investigation](evidence/gf15-investigation/scientific-handoff.md)
 is complete: all retained fits inspected and 186 exact optimizer traces. Six
 extreme-witness fits hit the 600-evaluation limit, which the parameter-only

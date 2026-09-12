@@ -1,0 +1,5413 @@
+{
+  "status": "bounded_candidate_diagnostics_complete_no_qualification_claim",
+  "fits": 372,
+  "primary_scalar_quantiles": 450,
+  "summary": [
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "attempted_fits": 180,
+      "accepted_fits": 180,
+      "refused_fits": 0,
+      "attempted_quantiles": 216,
+      "accepted_quantiles": 216,
+      "optimizer_status_counts": {
+        "0": 180,
+        "1": 0,
+        "2": 0
+      },
+      "estimator_exceptions": 0,
+      "warning_records": 0,
+      "attempted_pairs": 144,
+      "pair_outcomes": {
+        "passed": 2,
+        "failed_numeric": 142,
+        "both_refused_no_numerical_proof": 0,
+        "validity_changed": 0
+      },
+      "raw_pair_delta": {
+        "requested": 144,
+        "finite_denominator": 144,
+        "missing_or_nonfinite": 0,
+        "median_signed": 1.832391041761694e-06,
+        "median_absolute": 3.8295401058596745e-05,
+        "p90_absolute": 0.00014545401687082746,
+        "maximum_absolute": 0.0013128442825576236
+      },
+      "both_accepted_pair_delta": {
+        "requested": 144,
+        "finite_denominator": 144,
+        "missing_or_nonfinite": 0,
+        "median_signed": 1.832391041761694e-06,
+        "median_absolute": 3.8295401058596745e-05,
+        "p90_absolute": 0.00014545401687082746,
+        "maximum_absolute": 0.0013128442825576236
+      }
+    },
+    {
+      "candidate": "A",
+      "selection": "witness",
+      "attempted_fits": 6,
+      "accepted_fits": 0,
+      "refused_fits": 6,
+      "attempted_quantiles": 9,
+      "accepted_quantiles": 0,
+      "optimizer_status_counts": {
+        "0": 0,
+        "1": 6,
+        "2": 0
+      },
+      "estimator_exceptions": 0,
+      "warning_records": 0,
+      "attempted_pairs": 3,
+      "pair_outcomes": {
+        "passed": 0,
+        "failed_numeric": 0,
+        "both_refused_no_numerical_proof": 3,
+        "validity_changed": 0
+      },
+      "raw_pair_delta": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 65200229.61504668,
+        "median_absolute": 370927491.22992194,
+        "p90_absolute": 2124087937.3598216,
+        "maximum_absolute": 2562378048.8922963
+      },
+      "both_accepted_pair_delta": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      }
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "attempted_fits": 180,
+      "accepted_fits": 180,
+      "refused_fits": 0,
+      "attempted_quantiles": 216,
+      "accepted_quantiles": 216,
+      "optimizer_status_counts": {
+        "0": 180,
+        "1": 0,
+        "2": 0
+      },
+      "estimator_exceptions": 0,
+      "warning_records": 0,
+      "attempted_pairs": 144,
+      "pair_outcomes": {
+        "passed": 144,
+        "failed_numeric": 0,
+        "both_refused_no_numerical_proof": 0,
+        "validity_changed": 0
+      },
+      "raw_pair_delta": {
+        "requested": 144,
+        "finite_denominator": 144,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0,
+        "median_absolute": 5.023759186428833e-15,
+        "p90_absolute": 2.0056178939853463e-14,
+        "maximum_absolute": 2.389199948993337e-13
+      },
+      "both_accepted_pair_delta": {
+        "requested": 144,
+        "finite_denominator": 144,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0,
+        "median_absolute": 5.023759186428833e-15,
+        "p90_absolute": 2.0056178939853463e-14,
+        "maximum_absolute": 2.389199948993337e-13
+      }
+    },
+    {
+      "candidate": "B",
+      "selection": "witness",
+      "attempted_fits": 6,
+      "accepted_fits": 0,
+      "refused_fits": 6,
+      "attempted_quantiles": 9,
+      "accepted_quantiles": 0,
+      "optimizer_status_counts": {
+        "0": 0,
+        "1": 6,
+        "2": 0
+      },
+      "estimator_exceptions": 0,
+      "warning_records": 0,
+      "attempted_pairs": 3,
+      "pair_outcomes": {
+        "passed": 0,
+        "failed_numeric": 0,
+        "both_refused_no_numerical_proof": 3,
+        "validity_changed": 0
+      },
+      "raw_pair_delta": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0,
+        "median_absolute": 7.275957614183426e-12,
+        "p90_absolute": 26423952.213294625,
+        "maximum_absolute": 33029940.26661828
+      },
+      "both_accepted_pair_delta": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      }
+    }
+  ],
+  "descriptive_error_strata": [
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19936879984724482,
+        "median_absolute": 0.2581873806202792,
+        "p90_absolute": 0.44150538918864674,
+        "maximum_absolute": 0.4873348913307386
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19936879984724482,
+        "median_absolute": 0.2581873806202792,
+        "p90_absolute": 0.44150538918864674,
+        "maximum_absolute": 0.4873348913307386
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1994293272999228,
+        "median_absolute": 0.2581607377762228,
+        "p90_absolute": 0.4414673055343435,
+        "maximum_absolute": 0.48729394747387367
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1994293272999228,
+        "median_absolute": 0.2581607377762228,
+        "p90_absolute": 0.4414673055343435,
+        "maximum_absolute": 0.48729394747387367
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19940852337086667,
+        "median_absolute": 0.25826310680506914,
+        "p90_absolute": 0.4414993422965811,
+        "maximum_absolute": 0.48730840116945906
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19940852337086667,
+        "median_absolute": 0.25826310680506914,
+        "p90_absolute": 0.4414993422965811,
+        "maximum_absolute": 0.48730840116945906
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.019940852337086666,
+        "median_absolute": 0.025826310680506913,
+        "p90_absolute": 0.044149934229658114,
+        "maximum_absolute": 0.04873084011694591
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.019940852337086666,
+        "median_absolute": 0.025826310680506913,
+        "p90_absolute": 0.044149934229658114,
+        "maximum_absolute": 0.04873084011694591
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477160610310541,
+        "median_absolute": 0.8477160610310541,
+        "p90_absolute": 1.8768353930302284,
+        "maximum_absolute": 2.134115226030022
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477160610310541,
+        "median_absolute": 0.8477160610310541,
+        "p90_absolute": 1.8768353930302284,
+        "maximum_absolute": 2.134115226030022
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8476843270746501,
+        "median_absolute": 0.8476843270746501,
+        "p90_absolute": 1.8767114391114694,
+        "maximum_absolute": 2.133968217120674
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8476843270746501,
+        "median_absolute": 0.8476843270746501,
+        "p90_absolute": 1.8767114391114694,
+        "maximum_absolute": 2.133968217120674
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477539930827227,
+        "median_absolute": 0.8477539930827227,
+        "p90_absolute": 1.8767781101895047,
+        "maximum_absolute": 2.1340341394662
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477539930827227,
+        "median_absolute": 0.8477539930827227,
+        "p90_absolute": 1.8767781101895047,
+        "maximum_absolute": 2.1340341394662
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08477539930827227,
+        "median_absolute": 0.08477539930827227,
+        "p90_absolute": 0.18767781101895048,
+        "maximum_absolute": 0.21340341394662002
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08477539930827227,
+        "median_absolute": 0.08477539930827227,
+        "p90_absolute": 0.18767781101895048,
+        "maximum_absolute": 0.21340341394662002
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6700949958133016,
+        "median_absolute": 0.6700949958133016,
+        "p90_absolute": 0.6903386112565713,
+        "maximum_absolute": 0.6953995151173886
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6700949958133016,
+        "median_absolute": 0.6700949958133016,
+        "p90_absolute": 0.6903386112565713,
+        "maximum_absolute": 0.6953995151173886
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6700967962623638,
+        "median_absolute": 0.6700967962623638,
+        "p90_absolute": 0.6903422550354117,
+        "maximum_absolute": 0.6954036197286737
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6700967962623638,
+        "median_absolute": 0.6700967962623638,
+        "p90_absolute": 0.6903422550354117,
+        "maximum_absolute": 0.6954036197286737
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.670100283005219,
+        "median_absolute": 0.670100283005219,
+        "p90_absolute": 0.6903470531626894,
+        "maximum_absolute": 0.695408745702057
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.670100283005219,
+        "median_absolute": 0.670100283005219,
+        "p90_absolute": 0.6903470531626894,
+        "maximum_absolute": 0.695408745702057
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.0670100283005219,
+        "median_absolute": 0.0670100283005219,
+        "p90_absolute": 0.06903470531626894,
+        "maximum_absolute": 0.0695408745702057
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.0670100283005219,
+        "median_absolute": 0.0670100283005219,
+        "p90_absolute": 0.06903470531626894,
+        "maximum_absolute": 0.0695408745702057
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05357593535936056,
+        "median_absolute": 0.5640221465915163,
+        "p90_absolute": 1.3546044783908466,
+        "maximum_absolute": 1.552250061340679
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05357593535936056,
+        "median_absolute": 0.5640221465915163,
+        "p90_absolute": 1.3546044783908466,
+        "maximum_absolute": 1.552250061340679
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05358450610797716,
+        "median_absolute": 0.5639895363605527,
+        "p90_absolute": 1.3547691828885753,
+        "maximum_absolute": 1.5524640945205808
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05358450610797716,
+        "median_absolute": 0.5639895363605527,
+        "p90_absolute": 1.3547691828885753,
+        "maximum_absolute": 1.5524640945205808
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05226309107680294,
+        "median_absolute": 0.5640596576896186,
+        "p90_absolute": 1.3549435991120902,
+        "maximum_absolute": 1.552664584467708
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05226309107680294,
+        "median_absolute": 0.5640596576896186,
+        "p90_absolute": 1.3549435991120902,
+        "maximum_absolute": 1.552664584467708
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.005226309107680294,
+        "median_absolute": 0.05640596576896186,
+        "p90_absolute": 0.13549435991120903,
+        "maximum_absolute": 0.1552664584467708
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.005226309107680294,
+        "median_absolute": 0.05640596576896186,
+        "p90_absolute": 0.13549435991120903,
+        "maximum_absolute": 0.1552664584467708
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1554304751093178,
+        "median_absolute": 0.1554304751093178,
+        "p90_absolute": 0.2247932741306969,
+        "maximum_absolute": 0.2421339738860417
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1554304751093178,
+        "median_absolute": 0.1554304751093178,
+        "p90_absolute": 0.2247932741306969,
+        "maximum_absolute": 0.2421339738860417
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15543598871828768,
+        "median_absolute": 0.15543598871828768,
+        "p90_absolute": 0.22479553449101197,
+        "maximum_absolute": 0.24213542093419305
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15543598871828768,
+        "median_absolute": 0.15543598871828768,
+        "p90_absolute": 0.22479553449101197,
+        "maximum_absolute": 0.24213542093419305
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15546497787579305,
+        "median_absolute": 0.15546497787579305,
+        "p90_absolute": 0.2248472199004606,
+        "maximum_absolute": 0.2421927804066275
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15546497787579305,
+        "median_absolute": 0.15546497787579305,
+        "p90_absolute": 0.2248472199004606,
+        "maximum_absolute": 0.2421927804066275
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.015546497787579305,
+        "median_absolute": 0.015546497787579305,
+        "p90_absolute": 0.02248472199004606,
+        "maximum_absolute": 0.02421927804066275
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.015546497787579305,
+        "median_absolute": 0.015546497787579305,
+        "p90_absolute": 0.02248472199004606,
+        "maximum_absolute": 0.02421927804066275
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10128768003452526,
+        "median_absolute": 0.10128768003452526,
+        "p90_absolute": 0.38774537530165065,
+        "maximum_absolute": 0.45935979911843194
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10128768003452526,
+        "median_absolute": 0.10128768003452526,
+        "p90_absolute": 0.38774537530165065,
+        "maximum_absolute": 0.45935979911843194
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10144928027563571,
+        "median_absolute": 0.10144928027563571,
+        "p90_absolute": 0.3878178082668675,
+        "maximum_absolute": 0.4594099402646754
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10144928027563571,
+        "median_absolute": 0.10144928027563571,
+        "p90_absolute": 0.3878178082668675,
+        "maximum_absolute": 0.4594099402646754
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1010800607392568,
+        "median_absolute": 0.1010800607392568,
+        "p90_absolute": 0.38774232194409,
+        "maximum_absolute": 0.45940788724529824
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1010800607392568,
+        "median_absolute": 0.1010800607392568,
+        "p90_absolute": 0.38774232194409,
+        "maximum_absolute": 0.45940788724529824
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.010108006073925679,
+        "median_absolute": 0.010108006073925679,
+        "p90_absolute": 0.038774232194408995,
+        "maximum_absolute": 0.04594078872452982
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.010108006073925679,
+        "median_absolute": 0.010108006073925679,
+        "p90_absolute": 0.038774232194408995,
+        "maximum_absolute": 0.04594078872452982
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.036285432003700824,
+        "median_absolute": 0.036285432003700824,
+        "p90_absolute": 0.17785052370840082,
+        "maximum_absolute": 0.21324179663457582
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.036285432003700824,
+        "median_absolute": 0.036285432003700824,
+        "p90_absolute": 0.17785052370840082,
+        "maximum_absolute": 0.21324179663457582
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.03635963861931912,
+        "median_absolute": 0.03635963861931912,
+        "p90_absolute": 0.17793810647611297,
+        "maximum_absolute": 0.2133327234403114
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.03635963861931912,
+        "median_absolute": 0.03635963861931912,
+        "p90_absolute": 0.17793810647611297,
+        "maximum_absolute": 0.2133327234403114
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.036337144570497415,
+        "median_absolute": 0.036337144570497415,
+        "p90_absolute": 0.17788452340585403,
+        "maximum_absolute": 0.21327136811469316
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.036337144570497415,
+        "median_absolute": 0.036337144570497415,
+        "p90_absolute": 0.17788452340585403,
+        "maximum_absolute": 0.21327136811469316
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0036337144570497415,
+        "median_absolute": 0.0036337144570497415,
+        "p90_absolute": 0.0177884523405854,
+        "maximum_absolute": 0.021327136811469315
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0036337144570497415,
+        "median_absolute": 0.0036337144570497415,
+        "p90_absolute": 0.0177884523405854,
+        "maximum_absolute": 0.021327136811469315
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04198153954234751,
+        "median_absolute": 0.04198153954234751,
+        "p90_absolute": 0.4604026358358647,
+        "maximum_absolute": 0.565007909909244
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04198153954234751,
+        "median_absolute": 0.04198153954234751,
+        "p90_absolute": 0.4604026358358647,
+        "maximum_absolute": 0.565007909909244
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04194379458778341,
+        "median_absolute": 0.04194379458778341,
+        "p90_absolute": 0.4604917244456309,
+        "maximum_absolute": 0.5651287069100928
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04194379458778341,
+        "median_absolute": 0.04194379458778341,
+        "p90_absolute": 0.4604917244456309,
+        "maximum_absolute": 0.5651287069100928
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.042074422166921366,
+        "median_absolute": 0.042074422166921366,
+        "p90_absolute": 0.46043827464776577,
+        "maximum_absolute": 0.5650292377679769
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.042074422166921366,
+        "median_absolute": 0.042074422166921366,
+        "p90_absolute": 0.46043827464776577,
+        "maximum_absolute": 0.5650292377679769
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.004207442216692137,
+        "median_absolute": 0.004207442216692137,
+        "p90_absolute": 0.046043827464776574,
+        "maximum_absolute": 0.056502923776797685
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.004207442216692137,
+        "median_absolute": 0.004207442216692137,
+        "p90_absolute": 0.046043827464776574,
+        "maximum_absolute": 0.056502923776797685
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.2575546533740118,
+        "median_absolute": 0.2575546533740118,
+        "p90_absolute": 0.5047679260140042,
+        "maximum_absolute": 0.5665712441740023
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.2575546533740118,
+        "median_absolute": 0.2575546533740118,
+        "p90_absolute": 0.5047679260140042,
+        "maximum_absolute": 0.5665712441740023
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.2575869258782928,
+        "median_absolute": 0.2575869258782928,
+        "p90_absolute": 0.5048072817247913,
+        "maximum_absolute": 0.5666123706864159
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.2575869258782928,
+        "median_absolute": 0.2575869258782928,
+        "p90_absolute": 0.5048072817247913,
+        "maximum_absolute": 0.5666123706864159
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.2575135357430458,
+        "median_absolute": 0.2575135357430458,
+        "p90_absolute": 0.5047836554638767,
+        "maximum_absolute": 0.5666011853940844
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.2575135357430458,
+        "median_absolute": 0.2575135357430458,
+        "p90_absolute": 0.5047836554638767,
+        "maximum_absolute": 0.5666011853940844
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.02575135357430458,
+        "median_absolute": 0.02575135357430458,
+        "p90_absolute": 0.050478365546387675,
+        "maximum_absolute": 0.056660118539408444
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.02575135357430458,
+        "median_absolute": 0.02575135357430458,
+        "p90_absolute": 0.050478365546387675,
+        "maximum_absolute": 0.056660118539408444
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782639445584369,
+        "median_absolute": 0.6782639445584369,
+        "p90_absolute": 0.8053950622512809,
+        "maximum_absolute": 0.8371778416744919
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782639445584369,
+        "median_absolute": 0.6782639445584369,
+        "p90_absolute": 0.8053950622512809,
+        "maximum_absolute": 0.8371778416744919
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782555452712533,
+        "median_absolute": 0.6782555452712533,
+        "p90_absolute": 0.8054285903849003,
+        "maximum_absolute": 0.8372218516633121
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782555452712533,
+        "median_absolute": 0.6782555452712533,
+        "p90_absolute": 0.8054285903849003,
+        "maximum_absolute": 0.8372218516633121
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782252858079882,
+        "median_absolute": 0.6782252858079882,
+        "p90_absolute": 0.8054249320609411,
+        "maximum_absolute": 0.8372248436241794
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782252858079882,
+        "median_absolute": 0.6782252858079882,
+        "p90_absolute": 0.8054249320609411,
+        "maximum_absolute": 0.8372248436241794
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.06782252858079882,
+        "median_absolute": 0.06782252858079882,
+        "p90_absolute": 0.08054249320609412,
+        "maximum_absolute": 0.08372248436241794
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.06782252858079882,
+        "median_absolute": 0.06782252858079882,
+        "p90_absolute": 0.08054249320609412,
+        "maximum_absolute": 0.08372248436241794
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.32102467494108744,
+        "median_absolute": 0.32102467494108744,
+        "p90_absolute": 0.3549898480939167,
+        "maximum_absolute": 0.363481141382124
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.32102467494108744,
+        "median_absolute": 0.32102467494108744,
+        "p90_absolute": 0.3549898480939167,
+        "maximum_absolute": 0.363481141382124
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.32100315874901725,
+        "median_absolute": 0.32100315874901725,
+        "p90_absolute": 0.35505078601964113,
+        "maximum_absolute": 0.3635626928372971
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.32100315874901725,
+        "median_absolute": 0.32100315874901725,
+        "p90_absolute": 0.35505078601964113,
+        "maximum_absolute": 0.3635626928372971
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.3209624621195868,
+        "median_absolute": 0.3209624621195868,
+        "p90_absolute": 0.3550026062408701,
+        "maximum_absolute": 0.36351264227119096
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.3209624621195868,
+        "median_absolute": 0.3209624621195868,
+        "p90_absolute": 0.3550026062408701,
+        "maximum_absolute": 0.36351264227119096
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.03209624621195868,
+        "median_absolute": 0.03209624621195868,
+        "p90_absolute": 0.03550026062408701,
+        "maximum_absolute": 0.036351264227119096
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.03209624621195868,
+        "median_absolute": 0.03209624621195868,
+        "p90_absolute": 0.03550026062408701,
+        "maximum_absolute": 0.036351264227119096
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.5245462673385524,
+        "median_absolute": 0.5245462673385524,
+        "p90_absolute": 0.8638486466724316,
+        "maximum_absolute": 0.9486742415059013
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.5245462673385524,
+        "median_absolute": 0.5245462673385524,
+        "p90_absolute": 0.8638486466724316,
+        "maximum_absolute": 0.9486742415059013
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.524650627683205,
+        "median_absolute": 0.524650627683205,
+        "p90_absolute": 0.8638992703397239,
+        "maximum_absolute": 0.9487114310038536
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.524650627683205,
+        "median_absolute": 0.524650627683205,
+        "p90_absolute": 0.8638992703397239,
+        "maximum_absolute": 0.9487114310038536
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.5245534335954964,
+        "median_absolute": 0.5245534335954964,
+        "p90_absolute": 0.8639196261321012,
+        "maximum_absolute": 0.9487611742662523
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.5245534335954964,
+        "median_absolute": 0.5245534335954964,
+        "p90_absolute": 0.8639196261321012,
+        "maximum_absolute": 0.9487611742662523
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05245534335954964,
+        "median_absolute": 0.05245534335954964,
+        "p90_absolute": 0.08639196261321011,
+        "maximum_absolute": 0.09487611742662523
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05245534335954964,
+        "median_absolute": 0.05245534335954964,
+        "p90_absolute": 0.08639196261321011,
+        "maximum_absolute": 0.09487611742662523
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.1750156125278429,
+        "median_absolute": 0.1750156125278429,
+        "p90_absolute": 0.214201951541481,
+        "maximum_absolute": 0.22399853629489053
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.1750156125278429,
+        "median_absolute": 0.1750156125278429,
+        "p90_absolute": 0.214201951541481,
+        "maximum_absolute": 0.22399853629489053
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.17505672013071216,
+        "median_absolute": 0.17505672013071216,
+        "p90_absolute": 0.21423712476509754,
+        "maximum_absolute": 0.22403222592369387
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.17505672013071216,
+        "median_absolute": 0.17505672013071216,
+        "p90_absolute": 0.21423712476509754,
+        "maximum_absolute": 0.22403222592369387
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.17508107195851608,
+        "median_absolute": 0.17508107195851608,
+        "p90_absolute": 0.21419446762143365,
+        "maximum_absolute": 0.22397281653716306
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.17508107195851608,
+        "median_absolute": 0.17508107195851608,
+        "p90_absolute": 0.21419446762143365,
+        "maximum_absolute": 0.22397281653716306
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.017508107195851608,
+        "median_absolute": 0.017508107195851608,
+        "p90_absolute": 0.021419446762143364,
+        "maximum_absolute": 0.022397281653716305
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.017508107195851608,
+        "median_absolute": 0.017508107195851608,
+        "p90_absolute": 0.021419446762143364,
+        "maximum_absolute": 0.022397281653716305
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.4944209964230897,
+        "median_absolute": 0.4944209964230897,
+        "p90_absolute": 0.5430164412527251,
+        "maximum_absolute": 0.555165302460134
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.4944209964230897,
+        "median_absolute": 0.4944209964230897,
+        "p90_absolute": 0.5430164412527251,
+        "maximum_absolute": 0.555165302460134
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.49442002450991396,
+        "median_absolute": 0.49442002450991396,
+        "p90_absolute": 0.542978316981715,
+        "maximum_absolute": 0.5551178900996652
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.49442002450991396,
+        "median_absolute": 0.49442002450991396,
+        "p90_absolute": 0.542978316981715,
+        "maximum_absolute": 0.5551178900996652
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.4944297920050129,
+        "median_absolute": 0.4944297920050129,
+        "p90_absolute": 0.5430563376083949,
+        "maximum_absolute": 0.5552129740092404
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.4944297920050129,
+        "median_absolute": 0.4944297920050129,
+        "p90_absolute": 0.5430563376083949,
+        "maximum_absolute": 0.5552129740092404
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.049442979200501294,
+        "median_absolute": 0.049442979200501294,
+        "p90_absolute": 0.054305633760839495,
+        "maximum_absolute": 0.05552129740092404
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.049442979200501294,
+        "median_absolute": 0.049442979200501294,
+        "p90_absolute": 0.054305633760839495,
+        "maximum_absolute": 0.05552129740092404
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1382002271444593,
+        "median_absolute": 0.1382002271444593,
+        "p90_absolute": 0.2151437986502569,
+        "maximum_absolute": 0.2343796915267063
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1382002271444593,
+        "median_absolute": 0.1382002271444593,
+        "p90_absolute": 0.2151437986502569,
+        "maximum_absolute": 0.2343796915267063
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1381302719661558,
+        "median_absolute": 0.1381302719661558,
+        "p90_absolute": 0.21505432123002416,
+        "maximum_absolute": 0.23428533354599126
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1381302719661558,
+        "median_absolute": 0.1381302719661558,
+        "p90_absolute": 0.21505432123002416,
+        "maximum_absolute": 0.23428533354599126
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.13816584438155743,
+        "median_absolute": 0.13816584438155743,
+        "p90_absolute": 0.21507569031638168,
+        "maximum_absolute": 0.23430315180008776
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.13816584438155743,
+        "median_absolute": 0.13816584438155743,
+        "p90_absolute": 0.21507569031638168,
+        "maximum_absolute": 0.23430315180008776
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.013816584438155744,
+        "median_absolute": 0.013816584438155744,
+        "p90_absolute": 0.02150756903163817,
+        "maximum_absolute": 0.023430315180008775
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.013816584438155744,
+        "median_absolute": 0.013816584438155744,
+        "p90_absolute": 0.02150756903163817,
+        "maximum_absolute": 0.023430315180008775
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.37695268710348806,
+        "median_absolute": 0.37695268710348806,
+        "p90_absolute": 0.5362331138043664,
+        "maximum_absolute": 0.5760532204795861
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.37695268710348806,
+        "median_absolute": 0.37695268710348806,
+        "p90_absolute": 0.5362331138043664,
+        "maximum_absolute": 0.5760532204795861
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.37698058970842263,
+        "median_absolute": 0.37698058970842263,
+        "p90_absolute": 0.5362144369804847,
+        "maximum_absolute": 0.5760228987985001
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.37698058970842263,
+        "median_absolute": 0.37698058970842263,
+        "p90_absolute": 0.5362144369804847,
+        "maximum_absolute": 0.5760228987985001
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3769160290300295,
+        "median_absolute": 0.3769160290300295,
+        "p90_absolute": 0.5362669053589204,
+        "maximum_absolute": 0.5761046244411432
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3769160290300295,
+        "median_absolute": 0.3769160290300295,
+        "p90_absolute": 0.5362669053589204,
+        "maximum_absolute": 0.5761046244411432
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.037691602903002955,
+        "median_absolute": 0.037691602903002955,
+        "p90_absolute": 0.053626690535892044,
+        "maximum_absolute": 0.057610462444114316
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.037691602903002955,
+        "median_absolute": 0.037691602903002955,
+        "p90_absolute": 0.053626690535892044,
+        "maximum_absolute": 0.057610462444114316
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039266057169713,
+        "median_absolute": 0.5039266057169713,
+        "p90_absolute": 0.5081474664793665,
+        "maximum_absolute": 0.5092026816699653
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039266057169713,
+        "median_absolute": 0.5039266057169713,
+        "p90_absolute": 0.5081474664793665,
+        "maximum_absolute": 0.5092026816699653
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039430379795472,
+        "median_absolute": 0.5039430379795472,
+        "p90_absolute": 0.5081525271190274,
+        "maximum_absolute": 0.5092048994038975
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039430379795472,
+        "median_absolute": 0.5039430379795472,
+        "p90_absolute": 0.5081525271190274,
+        "maximum_absolute": 0.5092048994038975
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5040610795893503,
+        "median_absolute": 0.5040610795893503,
+        "p90_absolute": 0.5081460044225526,
+        "maximum_absolute": 0.5091672356308532
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5040610795893503,
+        "median_absolute": 0.5040610795893503,
+        "p90_absolute": 0.5081460044225526,
+        "maximum_absolute": 0.5091672356308532
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.050406107958935034,
+        "median_absolute": 0.050406107958935034,
+        "p90_absolute": 0.05081460044225526,
+        "maximum_absolute": 0.05091672356308532
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.050406107958935034,
+        "median_absolute": 0.050406107958935034,
+        "p90_absolute": 0.05081460044225526,
+        "maximum_absolute": 0.05091672356308532
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3391939490776652,
+        "median_absolute": 0.3391939490776652,
+        "p90_absolute": 0.47901117267726095,
+        "maximum_absolute": 0.5139654785771599
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3391939490776652,
+        "median_absolute": 0.3391939490776652,
+        "p90_absolute": 0.47901117267726095,
+        "maximum_absolute": 0.5139654785771599
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3391774830061718,
+        "median_absolute": 0.3391774830061718,
+        "p90_absolute": 0.479118306113324,
+        "maximum_absolute": 0.514103511890112
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3391774830061718,
+        "median_absolute": 0.3391774830061718,
+        "p90_absolute": 0.479118306113324,
+        "maximum_absolute": 0.514103511890112
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.339172015125941,
+        "median_absolute": 0.339172015125941,
+        "p90_absolute": 0.4790060504585785,
+        "maximum_absolute": 0.5139645592917379
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.339172015125941,
+        "median_absolute": 0.339172015125941,
+        "p90_absolute": 0.4790060504585785,
+        "maximum_absolute": 0.5139645592917379
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0339172015125941,
+        "median_absolute": 0.0339172015125941,
+        "p90_absolute": 0.04790060504585785,
+        "maximum_absolute": 0.05139645592917379
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0339172015125941,
+        "median_absolute": 0.0339172015125941,
+        "p90_absolute": 0.04790060504585785,
+        "maximum_absolute": 0.05139645592917379
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07964410605680716,
+        "median_absolute": 0.09948696874993962,
+        "p90_absolute": 0.44824273501362416,
+        "maximum_absolute": 0.5354316765795453
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07964410605680716,
+        "median_absolute": 0.09948696874993962,
+        "p90_absolute": 0.44824273501362416,
+        "maximum_absolute": 0.5354316765795453
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07962669178648574,
+        "median_absolute": 0.09948129623429208,
+        "p90_absolute": 0.4481601181209814,
+        "maximum_absolute": 0.5353298235926537
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07962669178648574,
+        "median_absolute": 0.09948129623429208,
+        "p90_absolute": 0.4481601181209814,
+        "maximum_absolute": 0.5353298235926537
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07968356236240126,
+        "median_absolute": 0.0994907294461953,
+        "p90_absolute": 0.44818297044920996,
+        "maximum_absolute": 0.5353560306999636
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07968356236240126,
+        "median_absolute": 0.0994907294461953,
+        "p90_absolute": 0.44818297044920996,
+        "maximum_absolute": 0.5353560306999636
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.007968356236240126,
+        "median_absolute": 0.00994907294461953,
+        "p90_absolute": 0.044818297044921,
+        "maximum_absolute": 0.053535603069996364
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.007968356236240126,
+        "median_absolute": 0.00994907294461953,
+        "p90_absolute": 0.044818297044921,
+        "maximum_absolute": 0.053535603069996364
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18551650072638903,
+        "median_absolute": 0.18551650072638903,
+        "p90_absolute": 0.7922105055683137,
+        "maximum_absolute": 0.9438840067787948
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18551650072638903,
+        "median_absolute": 0.18551650072638903,
+        "p90_absolute": 0.7922105055683137,
+        "maximum_absolute": 0.9438840067787948
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.1855216909939943,
+        "median_absolute": 0.1855216909939943,
+        "p90_absolute": 0.7920738465299867,
+        "maximum_absolute": 0.9437118854139848
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.1855216909939943,
+        "median_absolute": 0.1855216909939943,
+        "p90_absolute": 0.7920738465299867,
+        "maximum_absolute": 0.9437118854139848
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18545215740390475,
+        "median_absolute": 0.18545215740390475,
+        "p90_absolute": 0.792123026445551,
+        "maximum_absolute": 0.9437907437059625
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18545215740390475,
+        "median_absolute": 0.18545215740390475,
+        "p90_absolute": 0.792123026445551,
+        "maximum_absolute": 0.9437907437059625
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.018545215740390475,
+        "median_absolute": 0.018545215740390475,
+        "p90_absolute": 0.0792123026445551,
+        "maximum_absolute": 0.09437907437059626
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.018545215740390475,
+        "median_absolute": 0.018545215740390475,
+        "p90_absolute": 0.0792123026445551,
+        "maximum_absolute": 0.09437907437059626
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08952201020342809,
+        "median_absolute": 0.12101563871292492,
+        "p90_absolute": 0.2879331332696635,
+        "maximum_absolute": 0.32966250690884813
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08952201020342809,
+        "median_absolute": 0.12101563871292492,
+        "p90_absolute": 0.2879331332696635,
+        "maximum_absolute": 0.32966250690884813
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08953671567702381,
+        "median_absolute": 0.12096777975909415,
+        "p90_absolute": 0.2880587942936977,
+        "maximum_absolute": 0.32983154792734853
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08953671567702381,
+        "median_absolute": 0.12096777975909415,
+        "p90_absolute": 0.2880587942936977,
+        "maximum_absolute": 0.32983154792734853
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08952093927239346,
+        "median_absolute": 0.12094403760149319,
+        "p90_absolute": 0.28793308260885836,
+        "maximum_absolute": 0.32968034386069967
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08952093927239346,
+        "median_absolute": 0.12094403760149319,
+        "p90_absolute": 0.28793308260885836,
+        "maximum_absolute": 0.32968034386069967
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.008952093927239346,
+        "median_absolute": 0.012094403760149319,
+        "p90_absolute": 0.028793308260885837,
+        "maximum_absolute": 0.03296803438606997
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.008952093927239346,
+        "median_absolute": 0.012094403760149319,
+        "p90_absolute": 0.028793308260885837,
+        "maximum_absolute": 0.03296803438606997
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.23105572653046402,
+        "median_absolute": 0.23105572653046402,
+        "p90_absolute": 0.32988740604967864,
+        "maximum_absolute": 0.3545953259294823
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.23105572653046402,
+        "median_absolute": 0.23105572653046402,
+        "p90_absolute": 0.32988740604967864,
+        "maximum_absolute": 0.3545953259294823
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.2309768353901882,
+        "median_absolute": 0.2309768353901882,
+        "p90_absolute": 0.3299036982081132,
+        "maximum_absolute": 0.35463541391259445
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.2309768353901882,
+        "median_absolute": 0.2309768353901882,
+        "p90_absolute": 0.3299036982081132,
+        "maximum_absolute": 0.35463541391259445
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.23105451762006446,
+        "median_absolute": 0.23105451762006446,
+        "p90_absolute": 0.3298951038285022,
+        "maximum_absolute": 0.35460525038061164
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.23105451762006446,
+        "median_absolute": 0.23105451762006446,
+        "p90_absolute": 0.3298951038285022,
+        "maximum_absolute": 0.35460525038061164
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.023105451762006447,
+        "median_absolute": 0.023105451762006447,
+        "p90_absolute": 0.03298951038285022,
+        "maximum_absolute": 0.035460525038061165
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.023105451762006447,
+        "median_absolute": 0.023105451762006447,
+        "p90_absolute": 0.03298951038285022,
+        "maximum_absolute": 0.035460525038061165
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24701156980132583,
+        "median_absolute": 0.24701156980132583,
+        "p90_absolute": 0.2584134698914733,
+        "maximum_absolute": 0.26126394491401017
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24701156980132583,
+        "median_absolute": 0.24701156980132583,
+        "p90_absolute": 0.2584134698914733,
+        "maximum_absolute": 0.26126394491401017
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24703654451882295,
+        "median_absolute": 0.24703654451882295,
+        "p90_absolute": 0.2584157219691354,
+        "maximum_absolute": 0.26126051633171354
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24703654451882295,
+        "median_absolute": 0.24703654451882295,
+        "p90_absolute": 0.2584157219691354,
+        "maximum_absolute": 0.26126051633171354
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24697841257038178,
+        "median_absolute": 0.24697841257038178,
+        "p90_absolute": 0.2584146585579454,
+        "maximum_absolute": 0.2612737200548363
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24697841257038178,
+        "median_absolute": 0.24697841257038178,
+        "p90_absolute": 0.2584146585579454,
+        "maximum_absolute": 0.2612737200548363
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.024697841257038177,
+        "median_absolute": 0.024697841257038177,
+        "p90_absolute": 0.02584146585579454,
+        "maximum_absolute": 0.02612737200548363
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.024697841257038177,
+        "median_absolute": 0.024697841257038177,
+        "p90_absolute": 0.02584146585579454,
+        "maximum_absolute": 0.02612737200548363
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.045693112520440504,
+        "median_absolute": 0.045693112520440504,
+        "p90_absolute": 0.3246109308455945,
+        "maximum_absolute": 0.394340385426883
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.045693112520440504,
+        "median_absolute": 0.045693112520440504,
+        "p90_absolute": 0.3246109308455945,
+        "maximum_absolute": 0.394340385426883
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.045587845348790346,
+        "median_absolute": 0.045587845348790346,
+        "p90_absolute": 0.32452715485297984,
+        "maximum_absolute": 0.3942619822290272
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.045587845348790346,
+        "median_absolute": 0.045587845348790346,
+        "p90_absolute": 0.32452715485297984,
+        "maximum_absolute": 0.3942619822290272
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04572079007065355,
+        "median_absolute": 0.04572079007065355,
+        "p90_absolute": 0.3246322700800889,
+        "maximum_absolute": 0.3943601400824477
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04572079007065355,
+        "median_absolute": 0.04572079007065355,
+        "p90_absolute": 0.3246322700800889,
+        "maximum_absolute": 0.3943601400824477
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.004572079007065355,
+        "median_absolute": 0.004572079007065355,
+        "p90_absolute": 0.03246322700800889,
+        "maximum_absolute": 0.03943601400824477
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.004572079007065355,
+        "median_absolute": 0.004572079007065355,
+        "p90_absolute": 0.03246322700800889,
+        "maximum_absolute": 0.03943601400824477
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "witness",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 2.425544612746715,
+        "median_absolute": 2.425544612746715,
+        "p90_absolute": 5.8975198669041085,
+        "maximum_absolute": 6.765513680443457
+      },
+      "accepted_only_scale_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "witness",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 370935661.2751007,
+        "median_absolute": 370935661.2751007,
+        "p90_absolute": 1458525009.9823563,
+        "maximum_absolute": 1730422347.1591702
+      },
+      "accepted_only_scale_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "witness",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 0.5,
+      "raw_scale_error": {
+        "requested": 2,
+        "finite_denominator": 2,
+        "missing_or_nonfinite": 0,
+        "median_signed": 35709297.98421666,
+        "median_absolute": 35709297.98421666,
+        "p90_absolute": 64270200.33544696,
+        "maximum_absolute": 71410425.92325453
+      },
+      "accepted_only_scale_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "raw_relative_error": {
+        "requested": 2,
+        "finite_denominator": 2,
+        "missing_or_nonfinite": 0,
+        "median_signed": 71418595.96843332,
+        "median_absolute": 71418595.96843332,
+        "p90_absolute": 128540400.67089392,
+        "maximum_absolute": 142820851.84650907
+      },
+      "accepted_only_relative_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "A",
+      "selection": "witness",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 2.0,
+      "raw_scale_error": {
+        "requested": 1,
+        "finite_denominator": 1,
+        "missing_or_nonfinite": 0,
+        "median_signed": 4292800396.0514665,
+        "median_absolute": 4292800396.0514665,
+        "p90_absolute": 4292800396.0514665,
+        "maximum_absolute": 4292800396.0514665
+      },
+      "accepted_only_scale_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "raw_relative_error": {
+        "requested": 1,
+        "finite_denominator": 1,
+        "missing_or_nonfinite": 0,
+        "median_signed": 2146400198.0257332,
+        "median_absolute": 2146400198.0257332,
+        "p90_absolute": 2146400198.0257332,
+        "maximum_absolute": 2146400198.0257332
+      },
+      "accepted_only_relative_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19936303822116969,
+        "median_absolute": 0.2581568471563052,
+        "p90_absolute": 0.4415003071797074,
+        "maximum_absolute": 0.4873361721855579
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19936303822116969,
+        "median_absolute": 0.2581568471563052,
+        "p90_absolute": 0.4415003071797074,
+        "maximum_absolute": 0.4873361721855579
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19936303822116744,
+        "median_absolute": 0.25815684715631015,
+        "p90_absolute": 0.4415003071797086,
+        "maximum_absolute": 0.4873361721855582
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19936303822116744,
+        "median_absolute": 0.25815684715631015,
+        "p90_absolute": 0.4415003071797086,
+        "maximum_absolute": 0.4873361721855582
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19936303822117019,
+        "median_absolute": 0.2581568471562896,
+        "p90_absolute": 0.44150030717970384,
+        "maximum_absolute": 0.48733617218555736
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.19936303822117019,
+        "median_absolute": 0.2581568471562896,
+        "p90_absolute": 0.44150030717970384,
+        "maximum_absolute": 0.48733617218555736
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.01993630382211702,
+        "median_absolute": 0.02581568471562896,
+        "p90_absolute": 0.044150030717970384,
+        "maximum_absolute": 0.048733617218555736
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.01993630382211702,
+        "median_absolute": 0.02581568471562896,
+        "p90_absolute": 0.044150030717970384,
+        "maximum_absolute": 0.048733617218555736
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477275057044142,
+        "median_absolute": 0.8477275057044142,
+        "p90_absolute": 1.8768300487402003,
+        "maximum_absolute": 2.1341056844991466
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477275057044142,
+        "median_absolute": 0.8477275057044142,
+        "p90_absolute": 1.8768300487402003,
+        "maximum_absolute": 2.1341056844991466
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477275057044165,
+        "median_absolute": 0.8477275057044165,
+        "p90_absolute": 1.876830048740201,
+        "maximum_absolute": 2.134105684499147
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477275057044165,
+        "median_absolute": 0.8477275057044165,
+        "p90_absolute": 1.876830048740201,
+        "maximum_absolute": 2.134105684499147
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477275057044142,
+        "median_absolute": 0.8477275057044142,
+        "p90_absolute": 1.8768300487402005,
+        "maximum_absolute": 2.134105684499147
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.8477275057044142,
+        "median_absolute": 0.8477275057044142,
+        "p90_absolute": 1.8768300487402005,
+        "maximum_absolute": 2.134105684499147
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08477275057044142,
+        "median_absolute": 0.08477275057044142,
+        "p90_absolute": 0.18768300487402007,
+        "maximum_absolute": 0.2134105684499147
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08477275057044142,
+        "median_absolute": 0.08477275057044142,
+        "p90_absolute": 0.18768300487402007,
+        "maximum_absolute": 0.2134105684499147
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6701387017567975,
+        "median_absolute": 0.6701387017567975,
+        "p90_absolute": 0.6903557291877531,
+        "maximum_absolute": 0.6954099860454921
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6701387017567975,
+        "median_absolute": 0.6701387017567975,
+        "p90_absolute": 0.6903557291877531,
+        "maximum_absolute": 0.6954099860454921
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6701387017567809,
+        "median_absolute": 0.6701387017567809,
+        "p90_absolute": 0.6903557291877597,
+        "maximum_absolute": 0.6954099860455044
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6701387017567809,
+        "median_absolute": 0.6701387017567809,
+        "p90_absolute": 0.6903557291877597,
+        "maximum_absolute": 0.6954099860455044
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6701387017568035,
+        "median_absolute": 0.6701387017568035,
+        "p90_absolute": 0.6903557291877771,
+        "maximum_absolute": 0.6954099860455205
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6701387017568035,
+        "median_absolute": 0.6701387017568035,
+        "p90_absolute": 0.6903557291877771,
+        "maximum_absolute": 0.6954099860455205
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.06701387017568035,
+        "median_absolute": 0.06701387017568035,
+        "p90_absolute": 0.06903557291877771,
+        "maximum_absolute": 0.06954099860455205
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.06701387017568035,
+        "median_absolute": 0.06701387017568035,
+        "p90_absolute": 0.06903557291877771,
+        "maximum_absolute": 0.06954099860455205
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05385976083616706,
+        "median_absolute": 0.564087631041585,
+        "p90_absolute": 1.3544133406371575,
+        "maximum_absolute": 1.5519947680360504
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05385976083616706,
+        "median_absolute": 0.564087631041585,
+        "p90_absolute": 1.3544133406371575,
+        "maximum_absolute": 1.5519947680360504
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05385976083640598,
+        "median_absolute": 0.5640876310416192,
+        "p90_absolute": 1.3544133406371643,
+        "maximum_absolute": 1.5519947680360506
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05385976083640598,
+        "median_absolute": 0.5640876310416192,
+        "p90_absolute": 1.3544133406371643,
+        "maximum_absolute": 1.5519947680360506
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05385976083610622,
+        "median_absolute": 0.5640876310414935,
+        "p90_absolute": 1.3544133406371441,
+        "maximum_absolute": 1.5519947680360566
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05385976083610622,
+        "median_absolute": 0.5640876310414935,
+        "p90_absolute": 1.3544133406371441,
+        "maximum_absolute": 1.5519947680360566
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.005385976083610622,
+        "median_absolute": 0.05640876310414935,
+        "p90_absolute": 0.1354413340637144,
+        "maximum_absolute": 0.15519947680360566
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.005385976083610622,
+        "median_absolute": 0.05640876310414935,
+        "p90_absolute": 0.1354413340637144,
+        "maximum_absolute": 0.15519947680360566
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15543983535703182,
+        "median_absolute": 0.15543983535703182,
+        "p90_absolute": 0.22485507325606302,
+        "maximum_absolute": 0.2422088827308208
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15543983535703182,
+        "median_absolute": 0.15543983535703182,
+        "p90_absolute": 0.22485507325606302,
+        "maximum_absolute": 0.2422088827308208
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15543983535704048,
+        "median_absolute": 0.15543983535704048,
+        "p90_absolute": 0.22485507325606666,
+        "maximum_absolute": 0.2422088827308232
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15543983535704048,
+        "median_absolute": 0.15543983535704048,
+        "p90_absolute": 0.22485507325606666,
+        "maximum_absolute": 0.2422088827308232
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15543983535703276,
+        "median_absolute": 0.15543983535703276,
+        "p90_absolute": 0.2248550732560723,
+        "maximum_absolute": 0.2422088827308322
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.15543983535703276,
+        "median_absolute": 0.15543983535703276,
+        "p90_absolute": 0.2248550732560723,
+        "maximum_absolute": 0.2422088827308322
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.015543983535703276,
+        "median_absolute": 0.015543983535703276,
+        "p90_absolute": 0.02248550732560723,
+        "maximum_absolute": 0.02422088827308322
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.015543983535703276,
+        "median_absolute": 0.015543983535703276,
+        "p90_absolute": 0.02248550732560723,
+        "maximum_absolute": 0.02422088827308322
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10106455874912168,
+        "median_absolute": 0.10106455874912168,
+        "p90_absolute": 0.38794945656945057,
+        "maximum_absolute": 0.4596706810245328
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10106455874912168,
+        "median_absolute": 0.10106455874912168,
+        "p90_absolute": 0.38794945656945057,
+        "maximum_absolute": 0.4596706810245328
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10106455874912323,
+        "median_absolute": 0.10106455874912323,
+        "p90_absolute": 0.3879494565694525,
+        "maximum_absolute": 0.4596706810245348
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10106455874912323,
+        "median_absolute": 0.10106455874912323,
+        "p90_absolute": 0.3879494565694525,
+        "maximum_absolute": 0.4596706810245348
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10106455874912257,
+        "median_absolute": 0.10106455874912257,
+        "p90_absolute": 0.38794945656950264,
+        "maximum_absolute": 0.4596706810245976
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.10106455874912257,
+        "median_absolute": 0.10106455874912257,
+        "p90_absolute": 0.38794945656950264,
+        "maximum_absolute": 0.4596706810245976
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.010106455874912258,
+        "median_absolute": 0.010106455874912258,
+        "p90_absolute": 0.03879494565695026,
+        "maximum_absolute": 0.04596706810245976
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.010106455874912258,
+        "median_absolute": 0.010106455874912258,
+        "p90_absolute": 0.03879494565695026,
+        "maximum_absolute": 0.04596706810245976
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.03629945467291512,
+        "median_absolute": 0.03629945467291512,
+        "p90_absolute": 0.17789219388260644,
+        "maximum_absolute": 0.21329037868502926
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.03629945467291512,
+        "median_absolute": 0.03629945467291512,
+        "p90_absolute": 0.17789219388260644,
+        "maximum_absolute": 0.21329037868502926
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.03629945467292106,
+        "median_absolute": 0.03629945467292106,
+        "p90_absolute": 0.17789219388261504,
+        "maximum_absolute": 0.21329037868503853
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.03629945467292106,
+        "median_absolute": 0.03629945467292106,
+        "p90_absolute": 0.17789219388261504,
+        "maximum_absolute": 0.21329037868503853
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.03629945467292828,
+        "median_absolute": 0.03629945467292828,
+        "p90_absolute": 0.1778921938826116,
+        "maximum_absolute": 0.21329037868503242
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.03629945467292828,
+        "median_absolute": 0.03629945467292828,
+        "p90_absolute": 0.1778921938826116,
+        "maximum_absolute": 0.21329037868503242
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0036299454672928276,
+        "median_absolute": 0.0036299454672928276,
+        "p90_absolute": 0.01778921938826116,
+        "maximum_absolute": 0.021329037868503244
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.0036299454672928276,
+        "median_absolute": 0.0036299454672928276,
+        "p90_absolute": 0.01778921938826116,
+        "maximum_absolute": 0.021329037868503244
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.0423702270713644,
+        "median_absolute": 0.0423702270713644,
+        "p90_absolute": 0.4606042348279754,
+        "maximum_absolute": 0.5651627367671281
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.0423702270713644,
+        "median_absolute": 0.0423702270713644,
+        "p90_absolute": 0.4606042348279754,
+        "maximum_absolute": 0.5651627367671281
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.0423702270713644,
+        "median_absolute": 0.0423702270713644,
+        "p90_absolute": 0.460604234827968,
+        "maximum_absolute": 0.5651627367671188
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.0423702270713644,
+        "median_absolute": 0.0423702270713644,
+        "p90_absolute": 0.460604234827968,
+        "maximum_absolute": 0.5651627367671188
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": -0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04237022707136262,
+        "median_absolute": 0.04237022707136262,
+        "p90_absolute": 0.460604234827968,
+        "maximum_absolute": 0.5651627367671193
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04237022707136262,
+        "median_absolute": 0.04237022707136262,
+        "p90_absolute": 0.460604234827968,
+        "maximum_absolute": 0.5651627367671193
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.004237022707136262,
+        "median_absolute": 0.004237022707136262,
+        "p90_absolute": 0.0460604234827968,
+        "maximum_absolute": 0.05651627367671193
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.004237022707136262,
+        "median_absolute": 0.004237022707136262,
+        "p90_absolute": 0.0460604234827968,
+        "maximum_absolute": 0.05651627367671193
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.2575904645103784,
+        "median_absolute": 0.2575904645103784,
+        "p90_absolute": 0.5048221760477182,
+        "maximum_absolute": 0.5666301039320532
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.2575904645103784,
+        "median_absolute": 0.2575904645103784,
+        "p90_absolute": 0.5048221760477182,
+        "maximum_absolute": 0.5666301039320532
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.25759046451036915,
+        "median_absolute": 0.25759046451036915,
+        "p90_absolute": 0.5048221760477196,
+        "maximum_absolute": 0.5666301039320573
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.25759046451036915,
+        "median_absolute": 0.25759046451036915,
+        "p90_absolute": 0.5048221760477196,
+        "maximum_absolute": 0.5666301039320573
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.25759046451037193,
+        "median_absolute": 0.25759046451037193,
+        "p90_absolute": 0.5048221760477176,
+        "maximum_absolute": 0.566630103932054
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.25759046451037193,
+        "median_absolute": 0.25759046451037193,
+        "p90_absolute": 0.5048221760477176,
+        "maximum_absolute": 0.566630103932054
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.025759046451037194,
+        "median_absolute": 0.025759046451037194,
+        "p90_absolute": 0.05048221760477176,
+        "maximum_absolute": 0.056663010393205406
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.025759046451037194,
+        "median_absolute": 0.025759046451037194,
+        "p90_absolute": 0.05048221760477176,
+        "maximum_absolute": 0.056663010393205406
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782345117665203,
+        "median_absolute": 0.6782345117665203,
+        "p90_absolute": 0.8054106918935525,
+        "maximum_absolute": 0.8372047369253106
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782345117665203,
+        "median_absolute": 0.6782345117665203,
+        "p90_absolute": 0.8054106918935525,
+        "maximum_absolute": 0.8372047369253106
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.678234511766528,
+        "median_absolute": 0.678234511766528,
+        "p90_absolute": 0.8054106918935656,
+        "maximum_absolute": 0.837204736925325
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.678234511766528,
+        "median_absolute": 0.678234511766528,
+        "p90_absolute": 0.8054106918935656,
+        "maximum_absolute": 0.837204736925325
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782345117665187,
+        "median_absolute": 0.6782345117665187,
+        "p90_absolute": 0.8054106918935418,
+        "maximum_absolute": 0.8372047369252975
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.6782345117665187,
+        "median_absolute": 0.6782345117665187,
+        "p90_absolute": 0.8054106918935418,
+        "maximum_absolute": 0.8372047369252975
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.06782345117665187,
+        "median_absolute": 0.06782345117665187,
+        "p90_absolute": 0.08054106918935416,
+        "maximum_absolute": 0.08372047369252975
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.06782345117665187,
+        "median_absolute": 0.06782345117665187,
+        "p90_absolute": 0.08054106918935416,
+        "maximum_absolute": 0.08372047369252975
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.32107558004099995,
+        "median_absolute": 0.32107558004099995,
+        "p90_absolute": 0.35500967587380444,
+        "maximum_absolute": 0.36349319983200556
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.32107558004099995,
+        "median_absolute": 0.32107558004099995,
+        "p90_absolute": 0.35500967587380444,
+        "maximum_absolute": 0.36349319983200556
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.32107558004099995,
+        "median_absolute": 0.32107558004099995,
+        "p90_absolute": 0.355009675873809,
+        "maximum_absolute": 0.3634931998320112
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.32107558004099995,
+        "median_absolute": 0.32107558004099995,
+        "p90_absolute": 0.355009675873809,
+        "maximum_absolute": 0.3634931998320112
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.3210755800410219,
+        "median_absolute": 0.3210755800410219,
+        "p90_absolute": 0.3550096758738114,
+        "maximum_absolute": 0.3634931998320088
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.3210755800410219,
+        "median_absolute": 0.3210755800410219,
+        "p90_absolute": 0.3550096758738114,
+        "maximum_absolute": 0.3634931998320088
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.032107558004102185,
+        "median_absolute": 0.032107558004102185,
+        "p90_absolute": 0.03550096758738114,
+        "maximum_absolute": 0.03634931998320088
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.032107558004102185,
+        "median_absolute": 0.032107558004102185,
+        "p90_absolute": 0.03550096758738114,
+        "maximum_absolute": 0.03634931998320088
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.524658839517115,
+        "median_absolute": 0.524658839517115,
+        "p90_absolute": 0.8639488980591239,
+        "maximum_absolute": 0.9487714126946261
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.524658839517115,
+        "median_absolute": 0.524658839517115,
+        "p90_absolute": 0.8639488980591239,
+        "maximum_absolute": 0.9487714126946261
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.5246588395171274,
+        "median_absolute": 0.5246588395171274,
+        "p90_absolute": 0.863948898059131,
+        "maximum_absolute": 0.9487714126946318
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.5246588395171274,
+        "median_absolute": 0.5246588395171274,
+        "p90_absolute": 0.863948898059131,
+        "maximum_absolute": 0.9487714126946318
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.5246588395171194,
+        "median_absolute": 0.5246588395171194,
+        "p90_absolute": 0.863948898059126,
+        "maximum_absolute": 0.9487714126946276
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.5246588395171194,
+        "median_absolute": 0.5246588395171194,
+        "p90_absolute": 0.863948898059126,
+        "maximum_absolute": 0.9487714126946276
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05246588395171194,
+        "median_absolute": 0.05246588395171194,
+        "p90_absolute": 0.08639488980591259,
+        "maximum_absolute": 0.09487714126946276
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.05246588395171194,
+        "median_absolute": 0.05246588395171194,
+        "p90_absolute": 0.08639488980591259,
+        "maximum_absolute": 0.09487714126946276
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.17502425640442193,
+        "median_absolute": 0.17502425640442193,
+        "p90_absolute": 0.21416502226495981,
+        "maximum_absolute": 0.22395021373009427
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.17502425640442193,
+        "median_absolute": 0.17502425640442193,
+        "p90_absolute": 0.21416502226495981,
+        "maximum_absolute": 0.22395021373009427
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.175024256404419,
+        "median_absolute": 0.175024256404419,
+        "p90_absolute": 0.21416502226495024,
+        "maximum_absolute": 0.22395021373008306
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.175024256404419,
+        "median_absolute": 0.175024256404419,
+        "p90_absolute": 0.21416502226495024,
+        "maximum_absolute": 0.22395021373008306
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.17502425640442176,
+        "median_absolute": 0.17502425640442176,
+        "p90_absolute": 0.21416502226496484,
+        "maximum_absolute": 0.2239502137301006
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.17502425640442176,
+        "median_absolute": 0.17502425640442176,
+        "p90_absolute": 0.21416502226496484,
+        "maximum_absolute": 0.2239502137301006
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.017502425640442177,
+        "median_absolute": 0.017502425640442177,
+        "p90_absolute": 0.021416502226496485,
+        "maximum_absolute": 0.02239502137301006
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.017502425640442177,
+        "median_absolute": 0.017502425640442177,
+        "p90_absolute": 0.021416502226496485,
+        "maximum_absolute": 0.02239502137301006
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.4946997535295803,
+        "median_absolute": 0.4946997535295803,
+        "p90_absolute": 0.5429713616982759,
+        "maximum_absolute": 0.5550392637404498
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.4946997535295803,
+        "median_absolute": 0.4946997535295803,
+        "p90_absolute": 0.5429713616982759,
+        "maximum_absolute": 0.5550392637404498
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.4946997535296349,
+        "median_absolute": 0.4946997535296349,
+        "p90_absolute": 0.5429713616982765,
+        "maximum_absolute": 0.5550392637404369
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.4946997535296349,
+        "median_absolute": 0.4946997535296349,
+        "p90_absolute": 0.5429713616982765,
+        "maximum_absolute": 0.5550392637404369
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.49469975352958073,
+        "median_absolute": 0.49469975352958073,
+        "p90_absolute": 0.5429713616982866,
+        "maximum_absolute": 0.5550392637404631
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.49469975352958073,
+        "median_absolute": 0.49469975352958073,
+        "p90_absolute": 0.5429713616982866,
+        "maximum_absolute": 0.5550392637404631
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.04946997535295807,
+        "median_absolute": 0.04946997535295807,
+        "p90_absolute": 0.05429713616982866,
+        "maximum_absolute": 0.05550392637404631
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.04946997535295807,
+        "median_absolute": 0.04946997535295807,
+        "p90_absolute": 0.05429713616982866,
+        "maximum_absolute": 0.05550392637404631
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1381030914220746,
+        "median_absolute": 0.1381030914220746,
+        "p90_absolute": 0.215131641249467,
+        "maximum_absolute": 0.23438877870631508
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.1381030914220746,
+        "median_absolute": 0.1381030914220746,
+        "p90_absolute": 0.215131641249467,
+        "maximum_absolute": 0.23438877870631508
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.13810309142206745,
+        "median_absolute": 0.13810309142206745,
+        "p90_absolute": 0.21513164124946624,
+        "maximum_absolute": 0.23438877870631594
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.13810309142206745,
+        "median_absolute": 0.13810309142206745,
+        "p90_absolute": 0.21513164124946624,
+        "maximum_absolute": 0.23438877870631594
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.13810309142206734,
+        "median_absolute": 0.13810309142206734,
+        "p90_absolute": 0.2151316412494637,
+        "maximum_absolute": 0.2343887787063128
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.13810309142206734,
+        "median_absolute": 0.13810309142206734,
+        "p90_absolute": 0.2151316412494637,
+        "maximum_absolute": 0.2343887787063128
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.013810309142206734,
+        "median_absolute": 0.013810309142206734,
+        "p90_absolute": 0.02151316412494637,
+        "maximum_absolute": 0.02343887787063128
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.013810309142206734,
+        "median_absolute": 0.013810309142206734,
+        "p90_absolute": 0.02151316412494637,
+        "maximum_absolute": 0.02343887787063128
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3769801390033005,
+        "median_absolute": 0.3769801390033005,
+        "p90_absolute": 0.5362726918885253,
+        "maximum_absolute": 0.5760958301098316
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3769801390033005,
+        "median_absolute": 0.3769801390033005,
+        "p90_absolute": 0.5362726918885253,
+        "maximum_absolute": 0.5760958301098316
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.37698013900331273,
+        "median_absolute": 0.37698013900331273,
+        "p90_absolute": 0.5362726918885317,
+        "maximum_absolute": 0.5760958301098364
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.37698013900331273,
+        "median_absolute": 0.37698013900331273,
+        "p90_absolute": 0.5362726918885317,
+        "maximum_absolute": 0.5760958301098364
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.0,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3769801390032974,
+        "median_absolute": 0.3769801390032974,
+        "p90_absolute": 0.5362726918885166,
+        "maximum_absolute": 0.5760958301098213
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.3769801390032974,
+        "median_absolute": 0.3769801390032974,
+        "p90_absolute": 0.5362726918885166,
+        "maximum_absolute": 0.5760958301098213
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.037698013900329744,
+        "median_absolute": 0.037698013900329744,
+        "p90_absolute": 0.05362726918885166,
+        "maximum_absolute": 0.05760958301098214
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.037698013900329744,
+        "median_absolute": 0.037698013900329744,
+        "p90_absolute": 0.05362726918885166,
+        "maximum_absolute": 0.05760958301098214
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039125239268704,
+        "median_absolute": 0.5039125239268704,
+        "p90_absolute": 0.5081598147721704,
+        "maximum_absolute": 0.5092216374834955
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039125239268704,
+        "median_absolute": 0.5039125239268704,
+        "p90_absolute": 0.5081598147721704,
+        "maximum_absolute": 0.5092216374834955
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039125239268704,
+        "median_absolute": 0.5039125239268704,
+        "p90_absolute": 0.5081598147721704,
+        "maximum_absolute": 0.5092216374834955
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039125239268704,
+        "median_absolute": 0.5039125239268704,
+        "p90_absolute": 0.5081598147721704,
+        "maximum_absolute": 0.5092216374834955
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039125239268678,
+        "median_absolute": 0.5039125239268678,
+        "p90_absolute": 0.5081598147721784,
+        "maximum_absolute": 0.5092216374835061
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.5039125239268678,
+        "median_absolute": 0.5039125239268678,
+        "p90_absolute": 0.5081598147721784,
+        "maximum_absolute": 0.5092216374835061
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.05039125239268678,
+        "median_absolute": 0.05039125239268678,
+        "p90_absolute": 0.050815981477217845,
+        "maximum_absolute": 0.05092216374835061
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.05039125239268678,
+        "median_absolute": 0.05039125239268678,
+        "p90_absolute": 0.050815981477217845,
+        "maximum_absolute": 0.05092216374835061
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.33923044083875853,
+        "median_absolute": 0.33923044083875853,
+        "p90_absolute": 0.4790492630468603,
+        "maximum_absolute": 0.5140039685988858
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.33923044083875853,
+        "median_absolute": 0.33923044083875853,
+        "p90_absolute": 0.4790492630468603,
+        "maximum_absolute": 0.5140039685988858
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.33923044083875875,
+        "median_absolute": 0.33923044083875875,
+        "p90_absolute": 0.4790492630468571,
+        "maximum_absolute": 0.5140039685988816
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.33923044083875875,
+        "median_absolute": 0.33923044083875875,
+        "p90_absolute": 0.4790492630468571,
+        "maximum_absolute": 0.5140039685988816
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.33923044083873144,
+        "median_absolute": 0.33923044083873144,
+        "p90_absolute": 0.47904926304685314,
+        "maximum_absolute": 0.5140039685988835
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.33923044083873144,
+        "median_absolute": 0.33923044083873144,
+        "p90_absolute": 0.47904926304685314,
+        "maximum_absolute": 0.5140039685988835
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.033923044083873144,
+        "median_absolute": 0.033923044083873144,
+        "p90_absolute": 0.04790492630468531,
+        "maximum_absolute": 0.051400396859888356
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.033923044083873144,
+        "median_absolute": 0.033923044083873144,
+        "p90_absolute": 0.04790492630468531,
+        "maximum_absolute": 0.051400396859888356
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.0796810762334545,
+        "median_absolute": 0.09945012098302447,
+        "p90_absolute": 0.44816583581903313,
+        "maximum_absolute": 0.5353447645280353
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.0796810762334545,
+        "median_absolute": 0.09945012098302447,
+        "p90_absolute": 0.44816583581903313,
+        "maximum_absolute": 0.5353447645280353
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07968107623345447,
+        "median_absolute": 0.09945012098302451,
+        "p90_absolute": 0.44816583581903313,
+        "maximum_absolute": 0.5353447645280353
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07968107623345447,
+        "median_absolute": 0.09945012098302451,
+        "p90_absolute": 0.44816583581903313,
+        "maximum_absolute": 0.5353447645280353
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07968107623345766,
+        "median_absolute": 0.09945012098300943,
+        "p90_absolute": 0.44816583581902486,
+        "maximum_absolute": 0.5353447645280287
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.07968107623345766,
+        "median_absolute": 0.09945012098300943,
+        "p90_absolute": 0.44816583581902486,
+        "maximum_absolute": 0.5353447645280287
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.007968107623345766,
+        "median_absolute": 0.009945012098300943,
+        "p90_absolute": 0.044816583581902485,
+        "maximum_absolute": 0.05353447645280287
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.007968107623345766,
+        "median_absolute": 0.009945012098300943,
+        "p90_absolute": 0.044816583581902485,
+        "maximum_absolute": 0.05353447645280287
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18552654793866585,
+        "median_absolute": 0.18552654793866585,
+        "p90_absolute": 0.7921369201493369,
+        "maximum_absolute": 0.9437895132020045
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18552654793866585,
+        "median_absolute": 0.18552654793866585,
+        "p90_absolute": 0.7921369201493369,
+        "maximum_absolute": 0.9437895132020045
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18552654793867052,
+        "median_absolute": 0.18552654793867052,
+        "p90_absolute": 0.7921369201493343,
+        "maximum_absolute": 0.9437895132020002
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18552654793867052,
+        "median_absolute": 0.18552654793867052,
+        "p90_absolute": 0.7921369201493343,
+        "maximum_absolute": 0.9437895132020002
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 18,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18552654793866452,
+        "median_absolute": 0.18552654793866452,
+        "p90_absolute": 0.7921369201493363,
+        "maximum_absolute": 0.9437895132020042
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.18552654793866452,
+        "median_absolute": 0.18552654793866452,
+        "p90_absolute": 0.7921369201493363,
+        "maximum_absolute": 0.9437895132020042
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.018552654793866453,
+        "median_absolute": 0.018552654793866453,
+        "p90_absolute": 0.07921369201493364,
+        "maximum_absolute": 0.09437895132020042
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.018552654793866453,
+        "median_absolute": 0.018552654793866453,
+        "p90_absolute": 0.07921369201493364,
+        "maximum_absolute": 0.09437895132020042
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08955438411247202,
+        "median_absolute": 0.12101451665608698,
+        "p90_absolute": 0.28794251291414263,
+        "maximum_absolute": 0.32967451197865655
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08955438411247202,
+        "median_absolute": 0.12101451665608698,
+        "p90_absolute": 0.28794251291414263,
+        "maximum_absolute": 0.32967451197865655
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08955438411246841,
+        "median_absolute": 0.1210145166560882,
+        "p90_absolute": 0.2879425129141429,
+        "maximum_absolute": 0.32967451197865655
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08955438411246841,
+        "median_absolute": 0.1210145166560882,
+        "p90_absolute": 0.2879425129141429,
+        "maximum_absolute": 0.32967451197865655
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08955438411247307,
+        "median_absolute": 0.1210145166560892,
+        "p90_absolute": 0.2879425129141495,
+        "maximum_absolute": 0.3296745119786646
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.08955438411247307,
+        "median_absolute": 0.1210145166560892,
+        "p90_absolute": 0.2879425129141495,
+        "maximum_absolute": 0.3296745119786646
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.008955438411247307,
+        "median_absolute": 0.01210145166560892,
+        "p90_absolute": 0.028794251291414955,
+        "maximum_absolute": 0.03296745119786646
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.008955438411247307,
+        "median_absolute": 0.01210145166560892,
+        "p90_absolute": 0.028794251291414955,
+        "maximum_absolute": 0.03296745119786646
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.2310383268751195,
+        "median_absolute": 0.2310383268751195,
+        "p90_absolute": 0.32990991128953373,
+        "maximum_absolute": 0.35462780739313726
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.2310383268751195,
+        "median_absolute": 0.2310383268751195,
+        "p90_absolute": 0.32990991128953373,
+        "maximum_absolute": 0.35462780739313726
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.23103832687511305,
+        "median_absolute": 0.23103832687511305,
+        "p90_absolute": 0.3299099112895306,
+        "maximum_absolute": 0.35462780739313504
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.23103832687511305,
+        "median_absolute": 0.23103832687511305,
+        "p90_absolute": 0.3299099112895306,
+        "maximum_absolute": 0.35462780739313504
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 30,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.23103832687511172,
+        "median_absolute": 0.23103832687511172,
+        "p90_absolute": 0.32990991128955544,
+        "maximum_absolute": 0.35462780739316635
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.23103832687511172,
+        "median_absolute": 0.23103832687511172,
+        "p90_absolute": 0.32990991128955544,
+        "maximum_absolute": 0.35462780739316635
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.02310383268751117,
+        "median_absolute": 0.02310383268751117,
+        "p90_absolute": 0.032990991128955545,
+        "maximum_absolute": 0.035462780739316635
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.02310383268751117,
+        "median_absolute": 0.02310383268751117,
+        "p90_absolute": 0.032990991128955545,
+        "maximum_absolute": 0.035462780739316635
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24699848838088395,
+        "median_absolute": 0.24699848838088395,
+        "p90_absolute": 0.2583585646233008,
+        "maximum_absolute": 0.26119858368390503
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24699848838088395,
+        "median_absolute": 0.24699848838088395,
+        "p90_absolute": 0.2583585646233008,
+        "maximum_absolute": 0.26119858368390503
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24699848838088367,
+        "median_absolute": 0.24699848838088367,
+        "p90_absolute": 0.25835856462330076,
+        "maximum_absolute": 0.26119858368390503
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24699848838088367,
+        "median_absolute": 0.24699848838088367,
+        "p90_absolute": 0.25835856462330076,
+        "maximum_absolute": 0.26119858368390503
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.5,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24699848838088556,
+        "median_absolute": 0.24699848838088556,
+        "p90_absolute": 0.25835856462329543,
+        "maximum_absolute": 0.2611985836838979
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.24699848838088556,
+        "median_absolute": 0.24699848838088556,
+        "p90_absolute": 0.25835856462329543,
+        "maximum_absolute": 0.2611985836838979
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.024699848838088557,
+        "median_absolute": 0.024699848838088557,
+        "p90_absolute": 0.025835856462329547,
+        "maximum_absolute": 0.026119858368389794
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.024699848838088557,
+        "median_absolute": 0.024699848838088557,
+        "p90_absolute": 0.025835856462329547,
+        "maximum_absolute": 0.026119858368389794
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04560680944756079,
+        "median_absolute": 0.04560680944756079,
+        "p90_absolute": 0.32452505371297247,
+        "maximum_absolute": 0.39425461477932533
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04560680944756079,
+        "median_absolute": 0.04560680944756079,
+        "p90_absolute": 0.32452505371297247,
+        "maximum_absolute": 0.39425461477932533
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 0.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04560680944756079,
+        "median_absolute": 0.04560680944756079,
+        "p90_absolute": 0.3245250537129753,
+        "maximum_absolute": 0.3942546147793289
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04560680944756079,
+        "median_absolute": 0.04560680944756079,
+        "p90_absolute": 0.3245250537129753,
+        "maximum_absolute": 0.3942546147793289
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "predetermined",
+      "shape_c": 0.2,
+      "n": 60,
+      "p": 0.9,
+      "ratio": 10.0,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04560680944756257,
+        "median_absolute": 0.04560680944756257,
+        "p90_absolute": 0.3245250537129664,
+        "maximum_absolute": 0.39425461477931734
+      },
+      "accepted_only_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.04560680944756257,
+        "median_absolute": 0.04560680944756257,
+        "p90_absolute": 0.3245250537129664,
+        "maximum_absolute": 0.39425461477931734
+      },
+      "raw_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.004560680944756257,
+        "median_absolute": 0.004560680944756257,
+        "p90_absolute": 0.03245250537129664,
+        "maximum_absolute": 0.03942546147793173
+      },
+      "accepted_only_relative_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": -0.004560680944756257,
+        "median_absolute": 0.004560680944756257,
+        "p90_absolute": 0.03245250537129664,
+        "maximum_absolute": 0.03942546147793173
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "witness",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.5,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 0.840357402155484,
+        "median_absolute": 0.840357402155484,
+        "p90_absolute": 1.8765936419840914,
+        "maximum_absolute": 2.1356527019412432
+      },
+      "accepted_only_scale_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "witness",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": null,
+      "raw_scale_error": {
+        "requested": 3,
+        "finite_denominator": 3,
+        "missing_or_nonfinite": 0,
+        "median_signed": 62453879.34095782,
+        "median_absolute": 62453879.34095782,
+        "p90_absolute": 163584086.6735187,
+        "maximum_absolute": 188866638.50665888
+      },
+      "accepted_only_scale_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "raw_relative_error": null,
+      "accepted_only_relative_error": null,
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "witness",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 0.5,
+      "raw_scale_error": {
+        "requested": 2,
+        "finite_denominator": 2,
+        "missing_or_nonfinite": 0,
+        "median_signed": 77940466.94981371,
+        "median_absolute": 77940466.94981371,
+        "p90_absolute": 140257451.98199522,
+        "maximum_absolute": 155836698.2400406
+      },
+      "accepted_only_scale_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "raw_relative_error": {
+        "requested": 2,
+        "finite_denominator": 2,
+        "missing_or_nonfinite": 0,
+        "median_signed": 155880933.89962742,
+        "median_absolute": 155880933.89962742,
+        "p90_absolute": 280514903.96399045,
+        "maximum_absolute": 311673396.4800812
+      },
+      "accepted_only_relative_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    },
+    {
+      "candidate": "B",
+      "selection": "witness",
+      "shape_c": -0.2,
+      "n": 10,
+      "p": 0.9,
+      "ratio": 2.0,
+      "raw_scale_error": {
+        "requested": 1,
+        "finite_denominator": 1,
+        "missing_or_nonfinite": 0,
+        "median_signed": 62453879.34095782,
+        "median_absolute": 62453879.34095782,
+        "p90_absolute": 62453879.34095782,
+        "maximum_absolute": 62453879.34095782
+      },
+      "accepted_only_scale_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "raw_relative_error": {
+        "requested": 1,
+        "finite_denominator": 1,
+        "missing_or_nonfinite": 0,
+        "median_signed": 31226939.67047891,
+        "median_absolute": 31226939.67047891,
+        "p90_absolute": 31226939.67047891,
+        "maximum_absolute": 31226939.67047891
+      },
+      "accepted_only_relative_error": {
+        "requested": 0,
+        "finite_denominator": 0,
+        "missing_or_nonfinite": 0,
+        "median_signed": null,
+        "median_absolute": null,
+        "p90_absolute": null,
+        "maximum_absolute": null
+      },
+      "note": "descriptive subset only, no 1000-draw-cell pass claim; relative error undefined at ratio zero"
+    }
+  ]
+}

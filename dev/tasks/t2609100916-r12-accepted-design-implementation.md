@@ -13,7 +13,7 @@ updated: 2026-09-12
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — P0 through P3 are accepted. Full normalized-B qualification completed and its independent audit passed, but scientific criteria failed: only 3/24 baseline accuracy cells pass, all six current n=18 cells fail, and translation has 30 numerical failures plus one validity change. An owner method ruling is required; R12 remains unsealed.
+> **Why** — P0 through P3 and the alternative-estimator design are accepted. The Stage 1 readiness brief is prepared; execution awaits owner authorization. GF15 adequacy and milestone sealing remain open.
 > **Effort** — large
 
 ## Progress
@@ -39,10 +39,34 @@ updated: 2026-09-12
 - [x] Complete and review 372 candidate fits: A preserves raw results; B passes all 144 both-accepted translation pairs; both refuse six extreme fits.
 - [x] Obtain owner approval for B-only full qualification on the original matrix on 2026-09-12.
 - [x] Execute and independently assess B-only full qualification: 132,000 fits complete; audit passed, scientific qualification failed.
+- [x] Obtain owner authorization for a reviewed alternative-estimator proposal on 2026-09-12.
+- [x] Draft the L-moment/PWM GEV proposal and obtain scientific review: approve, two minor clarifications, no blocking/major findings.
+- [x] Obtain G1 selection of the concrete provisional L-moment GEV estimator on 2026-09-12.
+- [x] Complete remaining design reviews, revision and G2 on 2026-09-12.
+- [x] Prepare and accept the alternative-estimator design with existing criteria fixed; preserve all review evidence.
+- [x] Finalize the accepted design/review archive and prepare the bounded Stage 1 readiness brief.
+- [ ] Obtain Stage 1 execution authorization, complete readiness and obtain independent acceptance.
+- [ ] Execute and independently assess the alternative full matrix after its separate release.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+The [accepted alternative-estimator design](../milestones/r12/gf15-alternative-estimator-design.md)
+was approved at G2 on 2026-09-12, including recorded finding dispositions. The
+[archived review run](../milestones/r12/gf15-alternative-estimator-review/status.md)
+preserves four design versions, two external reviews, the full internal panel,
+all 23 finding IDs and approved scoped verification. The next assignment is
+[Stage 1 readiness](../milestones/r12/implementation/gf15-lmoments-readiness-brief.md),
+awaiting execution authorization. No alternative candidate fitting, installation
+or production integration has occurred; R12 remains unsealed.
+
+Alternative-estimator proposal authorized on 2026-09-12: owner requested
+"continue with the recomended option" after the full-B failure was committed as
+`85d0b8b6`. The active [review run](../milestones/r12/gf15-alternative-estimator-review/status.md)
+prepares a method proposal with primary-source support, serious alternatives and
+an explicit qualification plan. Proposal/review authorization does not approve
+fitting, dependency installation, production integration or altered criteria.
 
 Full normalized qualification completed on 2026-09-12 in 36.1 minutes: 132,000
 fits, 144,000 quantiles and 120,000 translation pairs. B accepts 131,922 fits and

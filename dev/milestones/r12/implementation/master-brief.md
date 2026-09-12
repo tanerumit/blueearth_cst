@@ -127,6 +127,16 @@ embedded candidate cases replay exactly. See the
 Section 7.5 still requires an owner method ruling; neither normalization nor
 successful evidence verification establishes GF15 adequacy or permits sealing.
 
+**Alternative-estimator design accepted — 2026-09-12:** owner approved the
+[range-normalized L-moment/PWM GEV design](../gf15-alternative-estimator-design.md)
+and all recorded resolutions after two external rounds, owner arbitration and an
+approved scoped v4 review. The [complete review archive](../gf15-alternative-estimator-review/status.md)
+preserves prior versions and verdicts. The next bounded assignment is
+[Stage 1 implementation readiness](gf15-lmoments-readiness-brief.md); its execution
+is not released by design acceptance. Original GF15 criteria and both failed
+qualification records remain authoritative. A readiness pass would not establish
+GF15 adequacy, production applicability or milestone-seal acceptance.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

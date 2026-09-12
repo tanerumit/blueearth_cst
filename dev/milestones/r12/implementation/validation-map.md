@@ -13,7 +13,7 @@ identity, crosswalk and repair. GF15 adequacy and milestone sealing remain open.
 |---|---|
 | GF1–8, GF10–14, GF16–24, GF26 | Accepted P1/P2 logical and durable-handoff contracts; their maintained tests pass in the final successor software suite. |
 | GF9, GF28 | Both fresh entry-point/runner runs have signed numerical and temporal preservation acceptance against immutable P0. |
-| GF15 | Operational screening/fit validity preserved. Owner-approved benchmark completed on 2026-09-12: 132,000 fits, 144,000 quantiles; audit passed, scientific criteria failed. Only 3/24 baseline scale cells pass, all six `n=18` cells fail, and 118,457/120,000 translation pairs exceed tolerance. [Scientific handoff](evidence/gf15/scientific-handoff.md); owner method ruling required. |
+| GF15 | Operational contracts preserved. Original and normalized-B full qualification audits passed but scientific adequacy failed (3/24 baseline cells; all six n=18 cells fail). The [alternative design](../gf15-alternative-estimator-design.md) is owner-approved; [Stage 1 readiness](gf15-lmoments-readiness-brief.md) awaits execution authorization. No candidate qualification, production integration or seal approval follows. |
 | GF25 | Five-stanza migration and mandatory runner are implemented; final CLI checks pass. Old current entry point/stanza/template are retired, with migration/refusal tests in the full gate. |
 | GF27 | Three actual automatic-seed capacity/width runs and an experiment-rename check have signed acceptance. |
 | GF29, GF30, GF32 | Fresh generation/simulation through both interfaces, physical offline metrics, and 32 reuse/refusal/selection checks pass. |

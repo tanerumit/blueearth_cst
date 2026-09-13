@@ -183,6 +183,22 @@ pairs pass. GF15 remains unresolved and now requires an owner method ruling;
 no further estimator search, scientific threshold change, production integration
 or R12 seal is released by this assessment.
 
+**Threefold error limits selected — 2026-09-13:** owner requested less strict
+accuracy targets and selected [policy gf15-accuracy-3x-v1](evidence/gf15-accuracy-3x/README.md)
+for reassessment. Absolute median limits become 0.30 and upper/lower P90 limits
+1.50/0.75 for both scale and relative error; fit validity, translation and all-cell
+acceptance are unchanged. Re-score signed retained summaries without refitting.
+Original criteria/results remain immutable; this post-results policy selection
+does not retrospectively validate the original estimator or production use.
+
+**Threefold reassessment complete — 2026-09-13:** the [signed policy handoff](evidence/gf15-accuracy-3x/scientific-handoff.md)
+finds the relaxed conjunction still false: 124/144 C cells pass, including 23/24
+baseline and 55/72 eligible combined cells. All n=18 baseline cells pass, but five
+n=18 relative-error cells fail. One n=10 upper-quantile scale failure repeats
+across its translations; 14 additional failures occur only in relative error at
+rho=0.5. Translation remains fully passing. Original evidence is immutable; this
+owner-selected re-score uses no new fits and does not establish fresh validation.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

@@ -13,7 +13,7 @@ updated: 2026-09-13
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — Stage 3 independently confirms that the L-moment run is mechanically valid but fails GF15 accuracy criteria. All three candidate assessments are complete; an owner method ruling is needed before further GF15 work. Production integration and milestone sealing remain open.
+> **Why** — The original and owner-selected threefold accuracy policies both fail. The revised policy passes 124/144 cells and all n=18 baseline cells, but leaves 20 failed cells. A further owner method decision is needed; production integration and milestone sealing remain open.
 > **Effort** — large
 
 ## Progress
@@ -51,6 +51,8 @@ updated: 2026-09-13
 - [x] Execute the complete alternative Stage 2 matrix after separate release; mechanically complete, observed accuracy gates fail.
 - [x] Obtain Stage 3 release on 2026-09-13 ("Yes, proceed to independent assessment").
 - [x] Complete Stage 3 independent assessment on 2026-09-13: exact audit passed; candidate failed fixed-matrix qualification.
+- [x] Obtain owner selection of threefold scale/relative error limits on 2026-09-13.
+- [x] Complete the versioned threefold-policy reassessment: 124/144 cells pass; the all-cell conjunction remains false.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
@@ -440,3 +442,30 @@ development matrix, with unquantified finite Monte Carlo uncertainty. It neither
 establishes general estimator unsuitability nor excuses fixed-criterion failures.
 Next is an owner method ruling; no additional estimator search, threshold change,
 screening change, production integration or milestone seal is authorized.
+
+## Threefold accuracy policy released — 2026-09-13
+
+Owner selected "lets tripple and check if that will be enough" after comparing
+twofold and threefold relaxation. [Policy gf15-accuracy-3x-v1](../milestones/r12/implementation/evidence/gf15-accuracy-3x/README.md)
+sets absolute median error to 0.30 and upper/lower P90 absolute error to 1.50/0.75,
+in both generating-scale and relative units. Validity, translation, cohorts,
+ratio eligibility and the all-cell conjunction remain unchanged. A model-validator
+re-scores the signed retained summaries without fitting. Original failures stay
+frozen; the new policy is a post-results owner choice, not fresh validation.
+Scratch: `.tmp/scratchpad/2026-09-11_0010/gf15-accuracy-3x/`.
+
+**Threefold reassessment complete — 2026-09-13.** The [signed policy handoff](../milestones/r12/implementation/evidence/gf15-accuracy-3x/scientific-handoff.md)
+confirms C passes 23/24 baseline cells, 138/144 scale cells, 55/72 eligible combined
+cells and 124/144 overall cells. All six n=18 baseline cells pass; five n=18
+relative-error cells still fail. The c=-0.2, n=10, p=0.9 baseline has absolute
+median error 0.354849373 versus 0.30 and P90 1.915472207 versus 1.50. Its scale
+failure repeats at five translations; 14 additional failures are relative-only,
+all at rho=0.5. All 120,000 translation pairs remain passing.
+
+The re-score verified signed inputs and exactly reproduced all 432 original
+cell decisions before changing thresholds. Boundary checks, an actual corrupted
+P90 reducer, compilation and Ruff checks passed. No new fits or baseline/full-suite
+runs occurred. Signed verdict SHA-256:
+`bbac4358ad2ca06eef68b4c583f1fce07fb2efac21539865d11f04a52f74b987`.
+The original failed assessment remains intact. Tripling does not release
+production integration or sealing, and no further relaxation is authorized.

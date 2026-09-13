@@ -1,0 +1,28 @@
+{
+  "frozen_utc": "2026-09-13T05:17:48.010890+00:00",
+  "bindings": {
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15\\results\\criteria.json": "988611b6d239b95f7542f8d67470395e4997ac61dd97198fd075fdcba552d643",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-lmoments-assessment\\artifact-inventory.json": "8d1acd62f132d332048e2cebf2d1be52809787c65b04cbca3496ec9872d72f2d",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-lmoments-assessment\\signed-verdict.json": "4580f25ddc7a1432735448a9976240c757c59d2ca3253ff5d162cbcadc0fe375",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-lmoments-assessment\\results\\individual-cells.json": "274c49700c1c2c2ecb153713e2199dddc9b9168775a14f6a67ef8c2af0695bbd",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-lmoments-assessment\\results\\translation-cells.json": "33dc29b8d3e6bf7d8e6f284bb4e9670fda3861a2e811061ca49c54fe25c89617",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-lmoments-assessment\\results\\audit-results.json": "7f6e69719f15dc522b10b8a8f36e3ef303cccd372927a4ca7891504258567261",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\rescore.py": "d0a185d19a84eb50f4ef9b11ea8ffd362e06398433a3945579c763b50007fb81",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\check-rescore.py": "08cb20301aff9899779ad9b8a9e734c5c9dcdc7a7c5e97da54206e07f1a3553f",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\criteria.json": "8f4a0e2fe3b9aca0dafd8cd885dab11a609dccaa62cd1dafcd175a8372ff3cb0",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\README.md": "9f31324b0899a8cc21126dbf0cad3142342187ed4a067276b7b8633200445562",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\scientific-handoff.md": "4e216461c76e6400f1e84f0818cbeea6ddca449fa56115097f01a4f068a4ab12",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\verification\\boundary.log": "d8247654b6ebd85a2da16816d123d11d1b03ac77e221805a3b69082bee2acfa7",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\verification\\check-before.log": "052c0daf87858dc2aefb35239b8e210584039d8dcc11dbd225647d14d75e4b1f",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\verification\\commands.md": "6b635794404a5c8d1b6e951c270a637ab9bea80e9c9e0a9f5fc2f2c0206ac642",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\verification\\compile.log": "eed5ee77ad308877cf0773a5c155449e454684de614a3cdb3ae6e03fbc7fdb41",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\verification\\format.log": "81e0708af79a682467b0ecbd3453a0a33cfcbbe2812201b4d4f405f78ded2976",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\verification\\lint.log": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\verification\\mutation.log": "67cca7341f0a17057fe9e61594316c988261e28286bab4f52de917ebbf5ea40e",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-accuracy-3x\\verification\\run-mutation.py": "b359d571aeeb459e1d9a2eebbaafc5d63a9e666f5c485eb39e7d9a183661ce22"
+  },
+  "python": "3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 16:36:12) [MSC v.1944 64 bit (AMD64)]",
+  "executable": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv\\Scripts\\python.exe",
+  "platform": "Windows-11-10.0.26200-SP0",
+  "stage3_inventory_entries_verified": 25
+}

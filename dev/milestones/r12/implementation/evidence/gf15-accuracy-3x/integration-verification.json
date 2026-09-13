@@ -1,0 +1,25 @@
+{
+  "status": "threefold_policy_reassessment_verified_still_fails",
+  "signed_verdict_sha256": "bbac4358ad2ca06eef68b4c583f1fce07fb2efac21539865d11f04a52f74b987",
+  "criteria_sha256": "8f4a0e2fe3b9aca0dafd8cd885dab11a609dccaa62cd1dafcd175a8372ff3cb0",
+  "protected_files_unchanged": 177,
+  "checks": [
+    {
+      "command": ".pixi/envs/default/python.exe -B -m ruff check .",
+      "result": "passed"
+    },
+    {
+      "command": ".pixi/envs/default/python.exe -B -m ruff format --check .",
+      "result": "passed"
+    }
+  ],
+  "task_command_substitution": "Pixi CLI unavailable; existing Ruff task commands run with shared environment Python",
+  "skipped": [
+    "new fits",
+    "full suite",
+    "baseline",
+    "production integration",
+    "holdout/resampling"
+  ],
+  "claim_boundary": "Owner-selected post-results policy; original failure remains intact; no fresh scientific validation"
+}

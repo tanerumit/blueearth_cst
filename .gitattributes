@@ -83,3 +83,4 @@ dev/milestones/r12/implementation/gf15-lmoments-readiness-brief.md -text -whites
 dev/milestones/r12/gf15-production-adapter-review/** -text -whitespace
 dev/milestones/r12/gf15-production-adapter-design.md -text -whitespace
 dev/working/design-runs/gf15-production-adapter/** -text -whitespace
+dev/milestones/r12/implementation/evidence/gf15-production-integration/** -text -whitespace

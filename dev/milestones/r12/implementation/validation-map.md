@@ -19,8 +19,11 @@ external and promoted-panel findings. Independent scoped verification approves
 v3 with zero findings after an explicit round2 waiver; owner G2 approval was
 given on2026-09-14. The [accepted design](../gf15-production-adapter-design.md)
 and [implementation handoff](gf15-production-integration-brief.md) are finalized.
-Stage1 snapshot/setup discovery is in progress. No production parity or
-integration acceptance is inferred from design review.
+Stage1 captured the complete P3 comparison snapshot with matching hashes;
+independent integrity review passed with the original collection anchor preserved.
+Pixi setup and a Linux execution route
+remain unresolved; see [readiness](evidence/gf15-production-integration/stage-1-readiness.md).
+No production parity or integration acceptance is inferred from design review.
 
 | Gates | Current evidence |
 |---|---|

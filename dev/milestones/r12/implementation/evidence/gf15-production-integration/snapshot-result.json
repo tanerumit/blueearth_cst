@@ -1,0 +1,10 @@
+{
+  "source": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-final-direct",
+  "snapshot": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\prechange\\p3-final-direct",
+  "files": 446,
+  "bytes": 657950010,
+  "all_copy_hashes_match": true,
+  "copied_files_read_only": true,
+  "portable": false,
+  "limitation": "Immutable manifests retain original absolute paths; original anchored reader dependencies must remain available. Independent integrity review outstanding."
+}

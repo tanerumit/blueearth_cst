@@ -5,6 +5,12 @@ Date: 2026-09-14. Governed by AGENTS.md and the owner-approved
 The design controls every numerical and identity decision; these briefs assign
 its execution, without adding scientific claims or relaxing its gates.
 
+Current execution boundary, 2026-09-14: [snapshot integrity](evidence/gf15-production-integration/snapshot-integrity-review.md)
+passed, conditional on preserving the original absolute collection anchor.
+[Setup discovery](evidence/gf15-production-integration/stage-1-readiness.md)
+could not establish Pixi or a Linux execution route. Stage1 remains incomplete;
+owner chooses local Linux provisioning or an identified existing Linux runner.
+
 ## Subsystems and sequence
 
 | Stage | Brief / responsibility | Blocking edge |

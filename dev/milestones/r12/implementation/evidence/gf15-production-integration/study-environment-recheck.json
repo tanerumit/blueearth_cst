@@ -1,0 +1,12 @@
+{
+  "python": "3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 16:36:12) [MSC v.1944 64 bit (AMD64)]",
+  "packages": {
+    "numpy": "2.4.6",
+    "scipy": "1.18.0",
+    "lmoments3": "1.0.8"
+  },
+  "sources": {
+    "__init__.py": "1d2c066a2ec4925bb838b7680d63ae8ae87c5234aa3c986d6ebe81500d75d6e2",
+    "distr.py": "f8859d11f10c3206e3e5009c1b238a328c6c9215b1cc7436800160fa929bb2ee"
+  }
+}

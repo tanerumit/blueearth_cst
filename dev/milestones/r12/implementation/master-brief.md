@@ -236,8 +236,11 @@ all10 original findings, including the live-environment freshness gap. Round2
 is explicitly waived; independent scoped verification approves exact v3 with
 zero findings. Owner approved G2 on2026-09-14. The [accepted adapter design](../gf15-production-adapter-design.md),
 verbatim review archive and [four-stage implementation handoff](gf15-production-integration-brief.md)
-are finalized. Stage1 snapshot/setup discovery is in progress; implementation
-and production/platform parity remain unexecuted.
+are finalized and committed33c89350. Stage1 captured a verified read-only snapshot
+of the complete P3 comparison; independent integrity review passed with its
+original collection anchor retained as a condition. Pixi
+setup and a Linux execution route remain unresolved prerequisites; implementation
+and production/platform parity remain unexecuted. See [Stage1 readiness](evidence/gf15-production-integration/stage-1-readiness.md).
 
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.

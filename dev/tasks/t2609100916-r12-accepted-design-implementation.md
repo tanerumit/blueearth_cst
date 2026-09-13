@@ -1,7 +1,7 @@
 ---
 title: Implement the accepted R12 workflow design
 type: todo-item
-status: active
+status: blocked
 branch: feat/wp3-improvements
 effort: 2
 area: wf3
@@ -13,7 +13,7 @@ updated: 2026-09-14
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — Owner approved production-adapter v3 at G2 on2026-09-14. Accepted design and four-stage implementation handoff are finalized; Stage1 snapshot/setup discovery is in progress. Production parity and standing baseline/tree gates remain open.
+> **Why** — G2 design/handoff committed33c89350. Stage1 snapshot passed independent integrity review, conditional on preserving its original collection anchor. Setup needs Pixi and a Linux execution route (local WSL or an identified runner); implementation/parity and seal gates remain open.
 > **Effort** — large
 
 ## Progress
@@ -60,7 +60,8 @@ updated: 2026-09-14
 - [x] Obtain G1 framing choice for the proposed provisional-use integration: Option A approved 2026-09-13.
 - [x] Review the concrete production adapter, dependency and validation-report identity contract: v3 scoped verification approves, all10 findings resolved; external round2 explicitly waived.
 - [x] Obtain G2 approval of exact production-adapter design v3 on2026-09-14; finalize accepted design and four-stage implementation handoff.
-- [ ] Complete production-integration Stage1 snapshot/setup and independent integrity review.
+- [x] Capture the production-integration pre-change snapshot and pass independent integrity review on2026-09-14; preserve original collection anchor.
+- [ ] Complete production-integration Stage1 isolated Pixi setup and Linux execution qualification.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
@@ -562,3 +563,13 @@ read-only Claude Opus. The verbatim review returns revise on v2: ext1-1 major
 minor (requested-probability/evidence binding). Mechanical convergence failed;
 the required full-panel promotion is underway before author revision. Prior
 export blocker is cleared; no implementation or empirical parity is claimed.
+
+2026-09-14: all10 design findings resolved; scoped review approved v3 and owner
+approved G2. Accepted design/archive and four-stage implementation brief committed
+as33c89350. [Stage1 readiness](../milestones/r12/implementation/evidence/gf15-production-integration/stage-1-readiness.md)
+finds the complete P3 comparison (756 metric keys) and records the external
+read-only snapshot (446 files, 657950010 bytes, matching hashes). Its original
+collection anchor must remain available. [Independent integrity review](../milestones/r12/implementation/evidence/gf15-production-integration/snapshot-integrity-review.md)
+passes all892 source/copy checks and both readers; Pixi setup and Linux execution remain unresolved. Next owner decision
+is local Linux provisioning versus an identified existing Linux runner, with
+exact D7 targets preserved. No production implementation has started.

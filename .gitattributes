@@ -73,6 +73,8 @@ dev/milestones/r12/implementation/evidence/gf15-accuracy-3x/** -text whitespace=
 dev/milestones/r12/implementation/evidence/gf15-accuracy-3x/**/*.log -whitespace
 dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/**/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-production-applicability/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-production-applicability/**/*.log -whitespace
 
 # Accepted GF15 method and verbatim review records carry byte-level digests.
 dev/milestones/r12/gf15-alternative-estimator-review/** -text -whitespace

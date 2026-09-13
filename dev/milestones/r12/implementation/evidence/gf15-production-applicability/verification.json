@@ -1,0 +1,14 @@
+{
+  "inspection_replay": "exact JSON equality",
+  "protected_files_unchanged": 177,
+  "local_links_verified": 11,
+  "checks": [
+    ".pixi/envs/default/python.exe -B -m ruff check .",
+    ".pixi/envs/default/python.exe -B -m ruff format --check ."
+  ],
+  "checks_result": "passed",
+  "pixi_substitution": "Pixi absent; existing task commands used shared Python",
+  "new_fits": 0,
+  "production_changes": false,
+  "assessment_scope": "read-only production applicability and integration readiness"
+}

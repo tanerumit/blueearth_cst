@@ -7,7 +7,11 @@ Bounded P3 migration acceptance passed, including the final full suite:
 [scientific/orchestration handoff](evidence/p3/scientific-orchestration-handoff.md)
 closes the scientific, orchestration, provenance and software conditions.
 [Coordinator evidence](evidence/p3/acceptance.md) links every final execution,
-identity, crosswalk and repair. GF15 passes the owner-selected eightfold policy on the retained candidate matrix; production applicability/integration and milestone sealing remain open.
+identity, crosswalk and repair. GF15 passes the owner-selected eightfold policy on
+the retained candidate matrix. The [production applicability assessment](evidence/gf15-production-applicability/scientific-assessment.md)
+recommends reviewing a provisional-use adapter; the [readiness report](evidence/gf15-production-applicability/integration-readiness.md)
+identifies incomplete validation metadata and missing candidate dependency.
+Production integration and milestone sealing remain open.
 
 | Gates | Current evidence |
 |---|---|

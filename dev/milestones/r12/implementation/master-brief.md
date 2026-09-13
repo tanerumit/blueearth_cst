@@ -212,6 +212,18 @@ has not improved. Original and threefold failures remain intact. Production
 applicability/integration and the [standing baseline/tree prerequisites](evidence/standing-seal-status.md)
 remain to be resolved before R12 can be sealed.
 
+**Production applicability/readiness assessed — 2026-09-13:** the
+[scientific assessment](evidence/gf15-production-applicability/scientific-assessment.md)
+recommends a separately reviewed C adapter for provisional operational estimates.
+Actual-bundle adequacy remains unestablished; it is not required for that limited
+scope, while complete persisted limitations are required. The
+[readiness report](evidence/gf15-production-applicability/integration-readiness.md)
+records a pre-existing metadata gap: current planning rejects reviewed benchmark
+annotations and cannot copy their report. Production still uses the predecessor;
+the candidate dependency is absent. Next is concrete adapter/dependency and
+validation-report/identity review, followed by measured implementation acceptance.
+No production change, new fit or baseline execution occurred in this assessment.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

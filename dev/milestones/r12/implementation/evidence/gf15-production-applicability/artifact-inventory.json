@@ -1,0 +1,42 @@
+[
+  {
+    "path": "format.log",
+    "bytes": 29,
+    "sha256": "de58db0659d60f0ad8134e6a9d776b53286cbe2f8bf7a77d5605781dfa587e99"
+  },
+  {
+    "path": "inspect-integration.py",
+    "bytes": 1281,
+    "sha256": "5af8b519e35d7dc7b79b26c0fe41cf88882b3edb38ba16484c8bef1bdcb88098"
+  },
+  {
+    "path": "inspection.json",
+    "bytes": 1885,
+    "sha256": "4a8fe73ae46cce5d136d891f98234feb1dd41d047c27379f2c976c8eed2f2687"
+  },
+  {
+    "path": "integration-readiness.md",
+    "bytes": 8774,
+    "sha256": "e11107fb8c31de7baa74ba758e95c96b07b1b7f42ab7372f5e6d02475196efc7"
+  },
+  {
+    "path": "lint.log",
+    "bytes": 20,
+    "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+  },
+  {
+    "path": "scientific-assessment.md",
+    "bytes": 15967,
+    "sha256": "ea75dc3111c32f7ae8b84fdea19a30556326ce3b7415469c993c62b9ba913b75"
+  },
+  {
+    "path": "source-inventory.json",
+    "bytes": 6194,
+    "sha256": "c723932cd29464a9c62e6c529127976653573cd2e96f7cef166daa83d69d4241"
+  },
+  {
+    "path": "verification.json",
+    "bytes": 498,
+    "sha256": "e5b2f7fda781d9d5a3c97abf17576cc01fe65064e5148d2d71a35e8eda71c686"
+  }
+]

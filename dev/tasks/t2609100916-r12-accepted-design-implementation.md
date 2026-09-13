@@ -1,7 +1,7 @@
 ---
 title: Implement the accepted R12 workflow design
 type: todo-item
-status: blocked
+status: active
 branch: feat/wp3-improvements
 effort: 2
 area: wf3
@@ -13,7 +13,7 @@ updated: 2026-09-13
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — The owner-selected eightfold accuracy policy passes all 144 retained candidate cells. Original and threefold failures remain intact. Production applicability/integration and standing baseline/tree requirements remain open before sealing.
+> **Why** — The eightfold policy passes all retained candidate cells. Applicability assessment recommends a reviewed production adapter for provisional operational estimates; implementation must also repair incomplete validation metadata and bind the benchmark report to metric identity. Production integration and standing baseline/tree gates remain open.
 > **Effort** — large
 
 ## Progress
@@ -55,6 +55,8 @@ updated: 2026-09-13
 - [x] Complete the versioned threefold-policy reassessment: 124/144 cells pass; the all-cell conjunction remains false.
 - [x] Obtain owner selection of eightfold scale/relative error limits on 2026-09-13 ("8x").
 - [x] Complete the eightfold-policy reassessment: all 144 candidate cells and all 120,000 translation pairs pass under the revised policy.
+- [x] Complete production applicability/readiness assessment: recommend reviewed provisional-use adapter with complete evidence metadata; document production gaps.
+- [ ] Review the concrete production adapter, dependency and validation-report identity contract.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
@@ -493,3 +495,28 @@ dedicated successor baseline and explained old-to-new comparison described in
 the [standing seal status](../milestones/r12/implementation/evidence/standing-seal-status.md).
 R12 remains unsealed; adopting this accuracy policy does not itself adopt the
 candidate in production. Scratch: `.tmp/scratchpad/2026-09-11_0010/gf15-accuracy-8x/`.
+
+## Production applicability assessment — 2026-09-13
+
+Owner instruction "yes, move on to the next step" released the production
+applicability/readiness assessment. The [model-validator assessment](../milestones/r12/implementation/evidence/gf15-production-applicability/scientific-assessment.md)
+recommends reviewing candidate C for provisional operational point estimates,
+with no actual-bundle adequacy claim. Real-bundle validation is not a prerequisite
+of that limited contract; complete persisted limitations and technical fidelity
+are prerequisites. This is a recommendation for adapter review, not production
+acceptance.
+
+The [integration readiness report](../milestones/r12/implementation/evidence/gf15-production-applicability/integration-readiness.md)
+identifies a pre-existing section 7.5 metadata gap: the live planner accepts only
+the minimal unassessed object and has no benchmark report-copy path. A read-only
+runtime probe reproduced the rejection of reviewed evidence. Production still
+uses xclim/SciPy; lmoments3 is absent from the shared environment and Pixi is absent
+from PATH. Dependency setup belongs in the reviewed integration work, without
+mutating the shared environment as a shortcut.
+
+Next is the separately reviewed adapter and complete metadata/report/identity
+contract required by the accepted candidate design. Preserve extraction,
+provisional screening, exact refusal-versus-fault semantics, and old ready sets;
+prove candidate parity and metrics-only reuse before production acceptance.
+No new fits, production changes, dependency changes or baseline runs occurred.
+Scratch: `.tmp/scratchpad/2026-09-11_0010/gf15-production-applicability/`.

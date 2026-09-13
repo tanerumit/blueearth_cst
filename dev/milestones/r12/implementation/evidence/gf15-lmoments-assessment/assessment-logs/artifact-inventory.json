@@ -1,0 +1,47 @@
+[
+  {
+    "path": "compile.log",
+    "bytes": 43,
+    "sha256": "59b5747a3b9bcbda25176f16cba29424e7b0952dc35c2b66d7daf8b41fe752fa"
+  },
+  {
+    "path": "final-audit.log",
+    "bytes": 748,
+    "sha256": "5b2502a9c89e9969fd9d4a8e3a4e46136d49feb9de6b8df6c30a16ddc7bac4f6"
+  },
+  {
+    "path": "format.log",
+    "bytes": 26,
+    "sha256": "7688ae71c60af2e4266827abb3678cc2145655f587daf33dfa649dbac2c619c3"
+  },
+  {
+    "path": "lint.log",
+    "bytes": 20,
+    "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+  },
+  {
+    "path": "mutation.log",
+    "bytes": 1209,
+    "sha256": "fb275fa37da4afb9347e1caeae96a75112926e707880a482a20628f96bd23c6a"
+  },
+  {
+    "path": "probe-1.log",
+    "bytes": 1040,
+    "sha256": "56129a57356cf398d93b64171af1afe365d8552b9696261ab9ea6b71e11485b5"
+  },
+  {
+    "path": "probe-2.log",
+    "bytes": 1049,
+    "sha256": "19a87a13c66f48f1fd5af6a03fe44630b420a4a71f233f2b2a297e44fed42f0a"
+  },
+  {
+    "path": "probe-3.log",
+    "bytes": 748,
+    "sha256": "5b2502a9c89e9969fd9d4a8e3a4e46136d49feb9de6b8df6c30a16ddc7bac4f6"
+  },
+  {
+    "path": "wrong-denominator.py",
+    "bytes": 40217,
+    "sha256": "81e903992acf410ec1bc7465f0498f4c3734a52d9397be63927b73d88f5e7192"
+  }
+]

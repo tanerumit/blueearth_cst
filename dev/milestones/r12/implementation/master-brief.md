@@ -168,6 +168,21 @@ adapter/environment and predecessor evidence remain frozen. Await Stage 3's
 independent recomputation and signed scientific verdict; no production adoption
 or seal is implied.
 
+**Stage 3 released — 2026-09-13:** owner explicitly authorized independent
+assessment. A fresh model-validator will recompute the complete retained matrix's
+counts, errors, individual gates, paired comparisons, translations and branch
+coverage and issue a signed scientific verdict. Existing evidence and method
+choices remain frozen; the assessment lives under `evidence/gf15-lmoments-assessment/`.
+
+**Stage 3 complete — 2026-09-13:** the [signed independent assessment](evidence/gf15-lmoments-assessment/scientific-handoff.md)
+confirms complete mechanical integrity and failed L-moment qualification. All
+retained counts, errors, individual/paired summaries, margins and gates reproduce
+exactly, without tolerance waiver or new fits. Only 3/24 baseline and 6/72 eligible
+combined cells pass; all six n=18 baseline cells fail. All 120,000 translation
+pairs pass. GF15 remains unresolved and now requires an owner method ruling;
+no further estimator search, scientific threshold change, production integration
+or R12 seal is released by this assessment.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

@@ -1,0 +1,11 @@
+Integrity, signed controls, environment, and discrimination passed
+Traceback (most recent call last):
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\dev\milestones\r12\implementation\evidence\gf15-lmoments-assessment\audit-retained.py", line 899, in <module>
+    audit(Path.cwd(), args.output)
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\dev\milestones\r12\implementation\evidence\gf15-lmoments-assessment\audit-retained.py", line 465, in audit
+    equal(
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\dev\milestones\r12\implementation\evidence\gf15-lmoments-assessment\audit-retained.py", line 52, in equal
+    require(actual == expected, (context, actual, expected))
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\dev\milestones\r12\implementation\evidence\gf15-lmoments-assessment\audit-retained.py", line 37, in require
+    raise AssertionError(context)
+AssertionError: (('B scale', (-0.2, 10, 345, 0.9, None)), 197782.5882375889, None)

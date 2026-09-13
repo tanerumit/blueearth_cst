@@ -1,0 +1,15 @@
+Integrity, signed controls, environment, and discrimination passed
+All predecessor records, receipts, sample arrays and complete keys passed
+Candidate raw records checked: c=-0.2, n=10
+Candidate raw records checked: c=-0.2, n=18
+Candidate raw records checked: c=-0.2, n=30
+Candidate raw records checked: c=-0.2, n=60
+Candidate raw records checked: c=0.0, n=10
+Candidate raw records checked: c=0.0, n=18
+Candidate raw records checked: c=0.0, n=30
+Candidate raw records checked: c=0.0, n=60
+Candidate raw records checked: c=0.2, n=10
+Candidate raw records checked: c=0.2, n=18
+Candidate raw records checked: c=0.2, n=30
+Candidate raw records checked: c=0.2, n=60
+COMPLETE: exact independent audit passed; candidate qualification=False

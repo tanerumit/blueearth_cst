@@ -1,0 +1,114 @@
+{
+  "status": "complete_independent_audit_passed",
+  "scientific_gate_conjunction": false,
+  "comparison_policy": "Exact decoded values, including all floats; no numerical tolerance or gate waiver.",
+  "counts": {
+    "fits": 132000,
+    "quantiles": 144000,
+    "individual_cells_per_estimator": 144,
+    "translation_pairs": 120000,
+    "pairwise_rows": 432000
+  },
+  "stage2_files_rehashed": 749,
+  "protected_files": 177,
+  "selected_predecessor_files": 732,
+  "additional_preflight": 1,
+  "chunk_receipts": 240,
+  "installed_lmoments3_sources": 6,
+  "individual_outcomes": {
+    "A": {
+      "accepted_quantiles": 144000,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    },
+    "B": {
+      "accepted_quantiles": 143915,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    },
+    "C": {
+      "accepted_quantiles": 144000,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    }
+  },
+  "translation": {
+    "categories": {
+      "both_accepted": 120000,
+      "first_only": 0,
+      "second_only": 0,
+      "both_refused": 0
+    },
+    "numeric_failures": 0,
+    "max_absolute_delta_scale_error": 5.88373794130348e-12,
+    "passed_cells": 120,
+    "cells": 120
+  },
+  "diagnostics": {
+    "fits": 132000,
+    "accepted_fits": 132000,
+    "branches": {
+      "preinversion_refusal": 0,
+      "positive_snap": 11,
+      "positive_rational": 113256,
+      "nonpositive_rational": 18733,
+      "newton_rational": 0,
+      "newton_alternate": 0
+    },
+    "refusals": {},
+    "warnings": {},
+    "exception_refusals": 0,
+    "fit_seconds": 943.1009207969328,
+    "sample_outside_support_fits": {
+      "normalized": 880,
+      "physical": 880
+    },
+    "nonfinite_log_density_fits": {
+      "normalized": 880,
+      "physical": 880
+    }
+  },
+  "reached_branches": [
+    "nonpositive_rational",
+    "positive_rational",
+    "positive_snap"
+  ],
+  "signed_control_branches": [
+    "newton_alternate",
+    "newton_rational",
+    "nonpositive_rational",
+    "positive_rational",
+    "positive_snap"
+  ],
+  "discrimination_detected": [
+    "wrong range denominator",
+    "zero confused with baseline",
+    "boolean disguised as number",
+    "wrong all-draw denominator",
+    "duplicate canonical row"
+  ],
+  "all_432_individual_and_432_paired_cells_exact": true,
+  "all_432000_pair_and_120000_translation_rows_exact": true,
+  "new_fits": 0,
+  "seconds": 40.89244660001714,
+  "source_sha256": "0d415f8a66d44f6bdaa66c24be83921fa5180e944e2d5d5b9669034cc8413252",
+  "input_anchors": {
+    "artifact-inventory.json": "404ed2d38185b81692cab8dc144acda4e854ae106a5768f7075d0b31f0556781",
+    "results/provenance.json": "3ef0f96b4b8865350d7e657a7303189d5c1b96ed8c1830b5ca4438ebfceaec3c",
+    "results/completion.json": "e0586b299381114a9ff20e22bdf1dd9c1a8d670ed90fe210a4e4ae004ee34845",
+    "results/mechanical-audit.json": "25bfff7aee0ee4026265ca728d751349d188967e5c1a3b4773aa08168322d600",
+    "results/qualification-summary.json": "1f5084379d16e7f17aa732795c8ad81bed62437823d2d8d9efe525d8c3842b00"
+  }
+}

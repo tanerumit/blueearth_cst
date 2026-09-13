@@ -1,0 +1,25 @@
+{
+  "utc": "2026-09-13T04:44:37.598319+00:00",
+  "source_sha256": "0d415f8a66d44f6bdaa66c24be83921fa5180e944e2d5d5b9669034cc8413252",
+  "command": [
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-assessment/audit-retained.py",
+    "--output",
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-assessment/results"
+  ],
+  "python": "3.12.13 | packaged by conda-forge | (main, Mar  5 2026, 16:36:12) [MSC v.1944 64 bit (AMD64)]",
+  "executable": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\gf15-lmoments-readiness\\venv\\Scripts\\python.exe",
+  "executable_sha256": "b2eb23f362fafa314757a9b8e13bc17e17102c6842f821f301324f56674cd756",
+  "packages": {
+    "colorama": "0.4.6",
+    "iniconfig": "2.3.0",
+    "lmoments3": "1.0.8",
+    "numpy": "2.4.6",
+    "packaging": "26.3",
+    "pip": "25.0.1",
+    "pluggy": "1.6.0",
+    "Pygments": "2.21.0",
+    "pytest": "9.0.3",
+    "scipy": "1.18.0"
+  },
+  "stage2_inventory_sha256": "404ed2d38185b81692cab8dc144acda4e854ae106a5768f7075d0b31f0556781"
+}

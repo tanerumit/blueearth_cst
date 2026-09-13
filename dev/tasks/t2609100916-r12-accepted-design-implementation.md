@@ -8,12 +8,12 @@ area: wf3
 origin: R12
 queue:
 created: 2026-09-10
-updated: 2026-09-12
+updated: 2026-09-13
 ---
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — Stage 2's complete L-moment matrix is retained and mechanically verified; observed accuracy gates fail while every translation pair passes. Awaiting Stage 3 independent assessment. GF15 adequacy and milestone sealing remain open.
+> **Why** — Stage 3 independently confirms that the L-moment run is mechanically valid but fails GF15 accuracy criteria. All three candidate assessments are complete; an owner method ruling is needed before further GF15 work. Production integration and milestone sealing remain open.
 > **Effort** — large
 
 ## Progress
@@ -49,7 +49,8 @@ updated: 2026-09-12
 - [x] Complete Stage 1 readiness and obtain independent acceptance of attempt-2 on 2026-09-12.
 - [x] Obtain Stage 2 execution authorization on 2026-09-12 ("continue" after the Stage 1 completion handoff).
 - [x] Execute the complete alternative Stage 2 matrix after separate release; mechanically complete, observed accuracy gates fail.
-- [ ] Obtain Stage 3 release and independent assessment of the alternative full matrix.
+- [x] Obtain Stage 3 release on 2026-09-13 ("Yes, proceed to independent assessment").
+- [x] Complete Stage 3 independent assessment on 2026-09-13: exact audit passed; candidate failed fixed-matrix qualification.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
@@ -406,3 +407,36 @@ and immutable raw records support the next independent assessment. Completion
 SHA-256: `e0586b299381114a9ff20e22bdf1dd9c1a8d670ed90fe210a4e4ae004ee34845`.
 Stage 3 remains unexecuted; no independent qualification acceptance, production
 integration, new estimator search or milestone seal follows from Stage 2.
+
+## Stage 3 independent assessment released — 2026-09-13
+
+Owner instruction "Yes, proceed to independent assessment" releases a fresh
+model-validator's recomputation and signed verdict on the frozen Stage 2 matrix.
+The validator owns independent audit code and evidence under
+`evidence/gf15-lmoments-assessment/`; the driver owns provenance, status and Git.
+Requested Astra medium honors the owner's pin; effective runtime settings are
+unreported. All prior evidence, estimator code, thresholds and production remain
+read-only. No new fits, data, resampling, estimator search or integration is released.
+Scratch: `.tmp/scratchpad/2026-09-11_0010/gf15-lmoments-assessment/`.
+
+**Stage 3 complete — 2026-09-13.** The [signed independent handoff](../milestones/r12/implementation/evidence/gf15-lmoments-assessment/scientific-handoff.md)
+confirms a mechanically valid run and failed candidate qualification. Independent
+recomputation exactly matches all 132,000 fits / 144,000 quantile records, 432
+individual cells, 432 paired cells, 432,000 comparison rows and 120,000 translations.
+No numerical tolerance or gate waiver was used, and no new fit was executed.
+Candidate accuracy passes 3/24 baseline cells, 18/144 scale cells and 6/72 eligible
+combined cells; all six n=18 baseline cells fail. Every translation pair passes.
+
+The final immutable audit took 40.89 seconds. A corrupted denominator was caught
+by the independent checker. All 749 Stage 2 files, Stage 1 bindings, 732 selected
+predecessor files plus preflight, 240 candidate receipts, 177 protected files and
+six installed lmoments3 source files were verified. Parent repository Ruff checks
+pass using the existing shared interpreter because the Pixi CLI is unavailable.
+Signed verdict SHA-256:
+`4580f25ddc7a1432735448a9976240c757c59d2ca3253ff5d162cbcadc0fe375`.
+
+GF15 remains unresolved. The assessment is conditional on the adaptively reused
+development matrix, with unquantified finite Monte Carlo uncertainty. It neither
+establishes general estimator unsuitability nor excuses fixed-criterion failures.
+Next is an owner method ruling; no additional estimator search, threshold change,
+screening change, production integration or milestone seal is authorized.

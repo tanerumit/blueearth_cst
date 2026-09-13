@@ -199,6 +199,19 @@ across its translations; 14 additional failures occur only in relative error at
 rho=0.5. Translation remains fully passing. Original evidence is immutable; this
 owner-selected re-score uses no new fits and does not establish fresh validation.
 
+**Eightfold policy adopted and reassessed — 2026-09-13:** owner selected "8x".
+[Policy gf15-accuracy-8x-v1](evidence/gf15-accuracy-8x/README.md) sets absolute
+signed median limits to 0.80 and upper/lower P90 absolute limits to 4.00/2.00
+for scale and relative error, preserving every other gate. The
+[scientific handoff](evidence/gf15-accuracy-8x/scientific-handoff.md) confirms
+24/24 baseline, 72/72 eligible combined and 144/144 overall C cells pass;
+all 36 n=18 cells and all 120,000 translation pairs pass. This is a conditional
+pass on retained development data under an owner-selected post-results policy.
+Relative P90 limits allow 400% upper and 200% lower error; estimator accuracy
+has not improved. Original and threefold failures remain intact. Production
+applicability/integration and the [standing baseline/tree prerequisites](evidence/standing-seal-status.md)
+remain to be resolved before R12 can be sealed.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

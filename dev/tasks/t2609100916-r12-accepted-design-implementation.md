@@ -13,7 +13,7 @@ updated: 2026-09-13
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — The original and owner-selected threefold accuracy policies both fail. The revised policy passes 124/144 cells and all n=18 baseline cells, but leaves 20 failed cells. A further owner method decision is needed; production integration and milestone sealing remain open.
+> **Why** — The owner-selected eightfold accuracy policy passes all 144 retained candidate cells. Original and threefold failures remain intact. Production applicability/integration and standing baseline/tree requirements remain open before sealing.
 > **Effort** — large
 
 ## Progress
@@ -53,6 +53,8 @@ updated: 2026-09-13
 - [x] Complete Stage 3 independent assessment on 2026-09-13: exact audit passed; candidate failed fixed-matrix qualification.
 - [x] Obtain owner selection of threefold scale/relative error limits on 2026-09-13.
 - [x] Complete the versioned threefold-policy reassessment: 124/144 cells pass; the all-cell conjunction remains false.
+- [x] Obtain owner selection of eightfold scale/relative error limits on 2026-09-13 ("8x").
+- [x] Complete the eightfold-policy reassessment: all 144 candidate cells and all 120,000 translation pairs pass under the revised policy.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
@@ -469,3 +471,25 @@ runs occurred. Signed verdict SHA-256:
 `bbac4358ad2ca06eef68b4c583f1fce07fb2efac21539865d11f04a52f74b987`.
 The original failed assessment remains intact. Tripling does not release
 production integration or sealing, and no further relaxation is authorized.
+
+## Eightfold accuracy policy — 2026-09-13
+
+Owner selected "8x" after the further sensitivity comparison. The versioned
+[policy and decision record](../milestones/r12/implementation/evidence/gf15-accuracy-8x/README.md)
+sets absolute signed median limits to 0.80 and upper/lower P90 absolute limits
+to 4.00/2.00 in both generating-scale and relative units. All other rules remain
+unchanged. The [scientific handoff](../milestones/r12/implementation/evidence/gf15-accuracy-8x/scientific-handoff.md)
+confirms 24/24 baseline, 72/72 eligible combined and 144/144 overall C cells pass;
+all 36 n=18 cells and all 120,000 translation pairs pass.
+
+This resolves the retained-matrix accuracy failure under the selected policy.
+The relative limits permit 80% absolute signed median error and 400%/200%
+upper/lower P90 absolute error. This is an adaptive, post-results policy choice,
+not fresh validation or an improvement in estimator accuracy. Original and
+threefold assessments remain frozen. No new fits were needed.
+
+Next: resolve candidate production applicability/integration, then establish the
+dedicated successor baseline and explained old-to-new comparison described in
+the [standing seal status](../milestones/r12/implementation/evidence/standing-seal-status.md).
+R12 remains unsealed; adopting this accuracy policy does not itself adopt the
+candidate in production. Scratch: `.tmp/scratchpad/2026-09-11_0010/gf15-accuracy-8x/`.

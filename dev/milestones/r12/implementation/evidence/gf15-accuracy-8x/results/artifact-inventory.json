@@ -1,0 +1,32 @@
+[
+  {
+    "path": "failures.json",
+    "bytes": 507,
+    "sha256": "aa51d9dde6fa539e5422587edba22daf654b59ce583c852e65bbb3c7f22ba107"
+  },
+  {
+    "path": "individual-cells.json",
+    "bytes": 345118,
+    "sha256": "591ff4764b13575d173b77120fe44b2db79fc4ea425e0030fc96850e927954d6"
+  },
+  {
+    "path": "signed-verdict.json",
+    "bytes": 6549,
+    "sha256": "2c51dbf5f5d4a31badcc368f60e6fc26d94736c2a5046ff3efec90e2c3b6670c"
+  },
+  {
+    "path": "source-freeze.json",
+    "bytes": 5799,
+    "sha256": "f6399f11382dbf711fc4556954a12fca201eea31fac66e7f508e641aa8aabb90"
+  },
+  {
+    "path": "summary.json",
+    "bytes": 21585,
+    "sha256": "1ad501ecd359fd46a3e3846b896dd310e0105134bccb52e9afc1faa0225d120a"
+  },
+  {
+    "path": "translation-cells.json",
+    "bytes": 36348,
+    "sha256": "33dc29b8d3e6bf7d8e6f284bb4e9670fda3861a2e811061ca49c54fe25c89617"
+  }
+]

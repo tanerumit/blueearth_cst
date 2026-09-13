@@ -1,0 +1,45 @@
+```markdown
+---
+verdict: revise
+doc_version: design-v2.md
+findings:
+  - id: ext1-1
+    severity: major
+    section: "D8. Metrics-only migration and acceptance sequence"
+    finding: The design changes what the `return_level_10yr_max` / `return_level_2yr_7day_min` columns mean while declaring `export_wflow_results.py` a preservation surface, and specifies no estimator discriminator anywhere in the exported artifact.
+    rationale: "The exported table is written as a bare CSV of `INDICATOR_COLUMNS` (`export_wflow_results.py:615-619`, mirrored at 475-482); the only estimator provenance is `evidence[\"return_levels\"]`, which is returned in memory and lands in the metric-set manifest (`metric_plan.py:598`), not beside the table. After migration a pre-change and a post-change table are byte-schema-identical, carry identical metric names, and hold values from xclim/SciPy MLE and L-moment candidate C respectively, with nothing in either file to tell them apart. A consumer that joins, concatenates or diffs two vintages outside the experiment tree silently mixes estimators. This is the hazard the toolbox states as its own vocabulary standard — `indicator_tables.py:183-193` fixed the return periods in code precisely so that rows cannot be \"identical-looking ... meaning different things ... indistinguishable once the file left the project folder\" — and the design's own cost list (\"Observable gains / Costs\") does not disposition it. D5-D6 bind report bytes, dependency source hashes and reader checks meticulously; the one artifact users actually read is left outside that apparatus while its semantics change."
+    suggested_fix: "Either (a) emit a sibling provenance record alongside the indicator tables carrying `metric_set_id`, `estimator_id` and the D4 declaration digest, written with the tables and covered by the D8 handoff 3/4 comparison, or (b) if the export byte surface must stay untouched, state that constraint explicitly in D8, require the vintage hazard to be recorded in the 2/4 user-docs deliverable and the migration record, and add it to the design's Costs paragraph."
+  - id: ext1-2
+    severity: minor
+    section: "D1. Preserve production estimands and extraction"
+    finding: The existing pre-fit constant-sample guard `np.ptp(sample) == 0` (`metric_registry.py:437-440`) is neither retained nor removed by the design.
+    rationale: "D1 enumerates exactly what survives ahead of the adapter (`required=max(ceil(1.0*T),10)` and `InsufficientReturnLevelBlocks`) and omits this guard, while D3 states that only `FitResult.status=refused` maps to `InvalidReturnLevelFit` with a structured `fit_result`. If an implementer keeps the guard, a constant sample raises `InvalidReturnLevelFit` with no `fit_result` and no refusal code, and the \"C mapping\" falsifier \"Fixed-sample study/production acceptance/refusal codes agree exactly\" cannot hold for that input, since the study path refuses it at D2's Normalize step as `invalid_range`. If the implementer drops it, an existing pre-fit check has been removed without the design saying so. Publication aborts either way, so no wrong value is published, but the refusal-code parity gate at handoff 2/4 is left undecidable for this case."
+    suggested_fix: "Add one sentence to D1 stating that the `np.ptp(sample) == 0` guard is removed and constant samples refuse through the adapter as `invalid_range`, so all pre-fit refusals other than `InsufficientReturnLevelBlocks` carry a `FitResult`."
+  - id: ext1-3
+    severity: minor
+    section: "D4. Complete validation declaration"
+    finding: Nothing binds the probabilities actually requested from `fit_case` to the `tested_domain.probabilities` literal the declaration publishes.
+    rationale: "`tested_domain` hard-codes `probabilities [.9,.5]`, matching `criteria.json` and today's `RETURN_PERIOD_PEAK_YR = 10` / `RETURN_PERIOD_LOW_YR = 2` (`indicator_tables.py:185-186`, consumed at `metric_registry.py:403`). D1 fixes those probabilities normatively, but no runtime assertion enforces it, and D5's planning and reader checks verify schema, source bindings and digests only. `indicator_tables.py:357-361` documents changing a return period as a supported deliberate toolbox edit; after such an edit the set would still publish `benchmark_status: reviewed_bounded` with a `tested_domain` that no longer covers the applied probability, and definition/declaration consistency would still validate. Every other evidence binding in D5 is machine-checked; this one rests on prose."
+    suggested_fix: "Require the planner (or the reducer before calling `fit_case`) to assert that every requested probability is a member of the declared `tested_domain.probabilities`, refusing with a typed error otherwise."
+---
+
+## Basis
+
+I read `design-v2.md` and settled the premises it cites directly: `metric_registry.py` (`reduce_bundle`, lines 363-461), `metric_plan.py` (lines 120-185, 590-660), `content_identity.py` (`repository_code_inventory`, `stage_environment`), `export_wflow_results.py` (lines 560-621), `indicator_tables.py` (lines 183-209), and the E1 evidence files `gf15-accuracy-8x/criteria.json`, `results/summary.json`, `results/signed-verdict.json`.
+
+## What checks out
+
+**E1 is stated accurately.** `summary.json` gives C: original `all_combined_passed` 15/144, 3x 124/144, 8x 144/144, `baseline_scale_passed` 24/24, `eligible_scale_and_relative_passed` 72/72, `all_individual_gates_passed: true` at 8x only; `translation_unchanged.categories.both_accepted` = 120000 with `both_refused` 0 and `max_absolute_delta_scale_error` 5.88e-12. The design's counts reconcile with `criteria.json`'s cell algebra (12 base cells × 2 probabilities = 24 baseline; × 5 ratios = 120 translation; 144 total; 3 qualified ratios × 24 = 72 eligible; 12000 + 120000 = `total_fits` 132000; 24000 + 120000 = `total_quantile_rows` 144000). The D4 threshold prose matches `criteria.json` exactly, with "upper/lower" resolving to the `p90_abs_scale_max` keys `"0.9": 4.00` / `"0.5": 2.00`, and the relative limits likewise.
+
+**The numerical mapping in D2 is correct and matches the frozen study.** The PWM/L-moment identities (`l1=b0`, `l2=2b1−b0`, `λ3=6b2−6b1+b0`) are standard; `z=−expm1(c·log(−log p))/c` with the `c=0` branch is verbatim `criteria.json`'s `quantile_formula` and agrees with the scipy `genextreme` parameterisation implied by `ξ=−c`; `c>−1` is the finite-mean L-moment domain, not a tuned bound. The unbiasedness wording is defensible: range normalisation by sample `min`/`ptp` is an affine map applied to the realised sample, so `a+s·λ̂_k(y)` recovers `λ̂_k(x)` identically in exact arithmetic, and the draft claims nothing beyond that.
+
+**Several non-obvious consistencies hold.** `reduce_bundle`'s member-local extraction, `int(run_id)` ordering, seven-observation rolling mean before annual minima, and `compatible_bundle` all match D1. D3's "Preserve reduction of all tables before payload writing" matches the existing invariant at `export_wflow_results.py:613`. `repository_code_inventory` walks the full AST, so the D2/D6 combination — adapter statically discoverable, `lmoments3` imported lazily — is coherent and keeps the "read an old ready set without lmoments3" falsifier satisfiable, since old-set verification never reaches `stage_environment`. The D4/D5 digest direction is acyclic. `criteria.json` is embedded whole, so `accuracy_multiplier: 8`, `scientific_claim_boundary` and `original_criteria_sha256` travel with every new set; the eightfold relaxation is not laundered.
+
+**The joint-acceptance hazard D1 flags is real and correctly handled.** The study scored two probabilities per fit under conjunction while production makes separate scalar calls; for C this is empirically vacuous (`accepted_quantiles` 144000/144000, zero refusals), and D1's prohibition on coupling the metrics is the right rule regardless.
+
+## What I did not count against the design
+
+E7 production parity, the isolated Pixi setup, the pre-change snapshot and cross-platform execution are unexecuted prerequisites that the draft gates explicitly and repeatedly, including refusing to treat accepted reference controls or a Windows run as a parity pass. Per the review contract those are not evidence that the design fails. Likewise, the settled items — Option A, `gf15-accuracy-8x-v1` thresholds, ratio 1 / floor 10 screening, unestablished actual-bundle adequacy, and fitting a GEV to annual minima without sign reversal at p=.5 — I did not reopen; `criteria.json`'s own `low_level_meaning` records the same boundary the design records, and D4's `application_scope`, `relative_error_near_zero` and `actual_bundle_applicability` fields disclose the limits truthfully.
+
+`ext1-1` is what moves this to `revise`: it is an omission the proposed mechanism introduces rather than an inherited gap, and the fix does not require touching export numerics.
+```

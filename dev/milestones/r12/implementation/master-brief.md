@@ -224,6 +224,21 @@ the candidate dependency is absent. Next is concrete adapter/dependency and
 validation-report/identity review, followed by measured implementation acceptance.
 No production change, new fit or baseline execution occurred in this assessment.
 
+**Production-adapter design at G1 — 2026-09-13:** [v1 and run state](../../../working/design-runs/gf15-production-adapter/status.md)
+are ready for the owner's framing choice after scientific approval (zero
+blocking/major, two minor). Recommended provisional-use C integration includes
+the metadata/report gap, immutable identities and old-set compatibility.
+Production parity remains unexecuted; only 71 existing tests were collected.
+G1 chose Option A; v2 now addresses all three domain/risk minor findings.
+After concrete payload authorization, external round1 returned revise on v2
+(one major, two minor), prompting full architecture/repo-fit review. V3 resolves
+all10 original findings, including the live-environment freshness gap. Round2
+is explicitly waived; independent scoped verification approves exact v3 with
+zero findings. Owner approved G2 on2026-09-14. The [accepted adapter design](../gf15-production-adapter-design.md),
+verbatim review archive and [four-stage implementation handoff](gf15-production-integration-brief.md)
+are finalized. Stage1 snapshot/setup discovery is in progress; implementation
+and production/platform parity remain unexecuted.
+
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.
 - Once before merge because `shared/`, rule signatures, runner/config, and numeric outputs change: `pixi run test-full *> dev/milestones/r12/implementation/evidence/final/test-full.log`. This non-integration suite does not replace model acceptance.

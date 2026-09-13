@@ -13,6 +13,15 @@ recommends reviewing a provisional-use adapter; the [readiness report](evidence/
 identifies incomplete validation metadata and missing candidate dependency.
 Production integration and milestone sealing remain open.
 
+The [production-adapter review](../../../working/design-runs/gf15-production-adapter/status.md)
+has G1 Option A approval on 2026-09-13. V3 resolves all10 domain/risk,
+external and promoted-panel findings. Independent scoped verification approves
+v3 with zero findings after an explicit round2 waiver; owner G2 approval was
+given on2026-09-14. The [accepted design](../gf15-production-adapter-design.md)
+and [implementation handoff](gf15-production-integration-brief.md) are finalized.
+Stage1 snapshot/setup discovery is in progress. No production parity or
+integration acceptance is inferred from design review.
+
 | Gates | Current evidence |
 |---|---|
 | GF1–8, GF10–14, GF16–24, GF26 | Accepted P1/P2 logical and durable-handoff contracts; their maintained tests pass in the final successor software suite. |

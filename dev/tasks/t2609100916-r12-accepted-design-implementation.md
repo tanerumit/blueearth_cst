@@ -8,12 +8,12 @@ area: wf3
 origin: R12
 queue:
 created: 2026-09-10
-updated: 2026-09-13
+updated: 2026-09-14
 ---
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — The eightfold policy passes all retained candidate cells. Applicability assessment recommends a reviewed production adapter for provisional operational estimates; implementation must also repair incomplete validation metadata and bind the benchmark report to metric identity. Production integration and standing baseline/tree gates remain open.
+> **Why** — Owner approved production-adapter v3 at G2 on2026-09-14. Accepted design and four-stage implementation handoff are finalized; Stage1 snapshot/setup discovery is in progress. Production parity and standing baseline/tree gates remain open.
 > **Effort** — large
 
 ## Progress
@@ -56,7 +56,11 @@ updated: 2026-09-13
 - [x] Obtain owner selection of eightfold scale/relative error limits on 2026-09-13 ("8x").
 - [x] Complete the eightfold-policy reassessment: all 144 candidate cells and all 120,000 translation pairs pass under the revised policy.
 - [x] Complete production applicability/readiness assessment: recommend reviewed provisional-use adapter with complete evidence metadata; document production gaps.
-- [ ] Review the concrete production adapter, dependency and validation-report identity contract.
+- [x] Draft concrete production-adapter design v1 and complete pre-G1 scientific review: approve, two minor findings.
+- [x] Obtain G1 framing choice for the proposed provisional-use integration: Option A approved 2026-09-13.
+- [x] Review the concrete production adapter, dependency and validation-report identity contract: v3 scoped verification approves, all10 findings resolved; external round2 explicitly waived.
+- [x] Obtain G2 approval of exact production-adapter design v3 on2026-09-14; finalize accepted design and four-stage implementation handoff.
+- [ ] Complete production-integration Stage1 snapshot/setup and independent integrity review.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
@@ -520,3 +524,41 @@ provisional screening, exact refusal-versus-fault semantics, and old ready sets;
 prove candidate parity and metrics-only reuse before production acceptance.
 No new fits, production changes, dependency changes or baseline runs occurred.
 Scratch: `.tmp/scratchpad/2026-09-11_0010/gf15-production-applicability/`.
+
+## Production adapter design — G1 pending, 2026-09-13
+
+Owner requested continuation until the next gate. The [design-review run](../working/design-runs/gf15-production-adapter/status.md)
+completed intake, [v1](../working/design-runs/gf15-production-adapter/design-v1.md)
+and [scientific review](../working/design-runs/gf15-production-adapter/internal-review-domain.md).
+Reviewer approves framing with zero blocking/major and two minor findings:
+clarify raw/back-mapped linear-moment unbiasedness and retain production parity
+as an unexecuted prerequisite. E1–E6 are supported; E7 awaits implementation.
+
+G1 recommends option A: fixed C for provisional operational point estimates,
+with complete report/metadata identity, source-qualified faults/refusals,
+legacy reads, isolated dependencies and snapshot-led migration. Alternatives
+are retaining the predecessor or requiring actual-bundle validation first.
+G1 approval releases remaining design review, not production execution.
+The reviewed version is unchanged; 71 owning tests collected, none executed.
+Run artifacts stay uncommitted until the design workflow's commit gate.
+
+G1 resumed: owner "yes I approve option A" releases remaining design review and
+accepts the two domain actions. The risk lens approves v1 with one additional
+minor reporting clarification, risk-1. No scope change or full-panel promotion
+is triggered. A fresh author prepares v2 and individual ledger dispositions.
+
+V2 is complete and frozen (`c83245ba06a412d5a38a00c138f7268e04da9a342d37e49c7f231440a32c5ef6`),
+with all three findings accepted and addressed. Claude read-only preflight passed,
+but automatic approval review rejected the actual launch before execution because
+the concrete private payload needs destination-specific authorization. The
+[resume record](../working/design-runs/gf15-production-adapter/status.md) names
+the exact draft, brief and cited-evidence scope. No external round has run; no
+workaround, production change, staging or commit occurred. Next is that explicit
+content-sharing decision, then the preserved external review.
+
+Owner explicitly authorized the concrete payload; round1 then completed through
+read-only Claude Opus. The verbatim review returns revise on v2: ext1-1 major
+(detached-export provenance), ext1-2 minor (constant-sample refusal path), ext1-3
+minor (requested-probability/evidence binding). Mechanical convergence failed;
+the required full-panel promotion is underway before author revision. Prior
+export blocker is cleared; no implementation or empirical parity is claimed.

@@ -91,13 +91,25 @@ the difference is exactly the ten freshness and reader tests added in `3cb71076`
 ## Deliberate divergence, recorded
 
 `export_wflow_results._return_level_from_blocks` **still uses the predecessor
-xclim/SciPy fit.** It sits on the legacy `analyze_wflow_results` path; the
-production rule is `analyze_response_runs` → `reduce_bundle`, and D2 scopes the
-estimator change to `reduce_bundle` while naming the export module a
-preservation surface. The repository therefore now carries two GEV estimators on
-two paths. `test_legacy_export_helper_keeps_the_predecessor_estimator` asserts
-they disagree, so the divergence is a pinned fact rather than a later surprise.
+xclim/SciPy fit.** D2 scopes the estimator change to `reduce_bundle` and D8 names
+the export module a preservation surface, so it was left alone. The repository
+therefore now carries two GEV estimators.
+`test_legacy_export_helper_keeps_the_predecessor_estimator` asserts they
+disagree, so the divergence is a pinned fact rather than a later surprise.
 Whether the legacy helper should follow is a Stage 4 question, not a Stage 2 one.
+
+> **Corrected 2026-09-14 after independent review (finding F2).** A first draft
+> of this paragraph justified the decision by saying the helper "sits on the
+> legacy `analyze_wflow_results` path" while "the production rule is
+> `analyze_response_runs`". That named a live path that does not exist in this
+> tree, and the reviewer was right to reject the reasoning. Verified: **no
+> Snakefile references `export_wflow_results`**, `metric_plan.py` imports only
+> `_format_value` from it, and `_return_level_from_blocks` is reachable solely
+> from line 443 inside its own module and from `tests/test_metric_registry.py`.
+> The correction cuts in the change's favour — the mixed-vintage risk is *lower*
+> than the original wording implied, because the predecessor helper is not
+> reachable from any current run — but an acceptance record must not rest on a
+> rule that has been removed. The scoping decision itself stands on D2 and D8.
 
 ## What this record does not establish
 

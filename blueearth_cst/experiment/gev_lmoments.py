@@ -165,16 +165,29 @@ def _number(value: float | None) -> float | str | None:
 
 @contextmanager
 def _record_warnings(collected: list[dict[str, str]]):
-    """Retain captured warnings on success, refusal and fault paths alike."""
-    with warnings.catch_warnings(record=True) as captured:
+    """Retain captured warnings on success, refusal and fault paths alike.
+
+    Recording is EAGER, on each warning as it is raised, rather than swept up on
+    exit. A refusal is constructed inside this block, so collecting only in a
+    `finally` hands that refusal an empty list and records it as "no warnings"
+    -- affirmatively false, and exactly where an overflow explaining the refusal
+    would have been. `catch_warnings` restores the previous hook on exit.
+    """
+    with warnings.catch_warnings():
         warnings.simplefilter("always")
-        try:
-            yield
-        finally:
-            collected.extend(
-                {"type": type(item.message).__name__, "message": str(item.message)}
-                for item in captured
+
+        def record(message, category, filename, lineno, file=None, line=None):
+            collected.append(
+                {
+                    "type": type(message).__name__
+                    if isinstance(message, Warning)
+                    else category.__name__,
+                    "message": str(message),
+                }
             )
+
+        warnings.showwarning = record
+        yield
 
 
 def _verify_source() -> dict[str, Any]:

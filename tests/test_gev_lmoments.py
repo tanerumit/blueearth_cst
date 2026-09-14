@@ -356,6 +356,27 @@ def test_allowlisted_exception_becomes_a_structured_refusal(monkeypatch):
     json.dumps(result.record(), allow_nan=False)
 
 
+def test_allowlisted_refusal_also_retains_its_warnings(monkeypatch):
+    """This path shares the in-block construction that dropped warnings.
+
+    Asserted by execution rather than by inspection, because it was inspection
+    alone that originally left it uncovered.
+    """
+    from lmoments3 import distr
+
+    def pinned(**kwargs):
+        warnings.warn("probe before the pinned statement", RuntimeWarning, stacklevel=1)
+        distr.gev._lmom_fit([0, 0, 0])
+
+    monkeypatch.setattr(distr.gev, "lmom_fit", pinned)
+    result = gev.fit_case(SAMPLE, PROBABILITIES)
+    assert result.refusal_reasons == ("allowlisted_library_exception",)
+    assert any(
+        "probe before the pinned statement" in item["message"]
+        for item in result.warnings
+    )
+
+
 @pytest.mark.parametrize(
     "error",
     [
@@ -439,6 +460,63 @@ def test_warnings_are_retained_on_an_accepted_fit(monkeypatch):
     result = gev.fit_case(SAMPLE, PROBABILITIES)
     assert result.status == "accepted", "a warning alone must never refuse"
     assert any("overflow" in item["message"] for item in result.warnings)
+
+
+def test_overflow_warnings_survive_an_early_refusal(frozen):
+    """Ported from the retained control this suite originally failed to carry.
+
+    `test_readiness.py::test_overflow_warning_retention_discriminates` exists for
+    exactly this regression, and its absence here let a real one ship: a refusal
+    constructed inside the warning context recorded `warnings: []`, which is not
+    a missing record but a false one -- D3 reserves emptiness for "none occurred"
+    and null for "unavailable". The overflow that EXPLAINS the refusal is what
+    was being erased, in the attempt logs a failed comparison is diagnosed from.
+    """
+    sample = [-1e308, -1e307, 1e307, 1e308]
+    result = gev.fit_case(sample, [0.5])
+    assert result.refusal_reasons == ("invalid_range",)
+    assert result.warnings, "warnings were discarded on the early-refusal path"
+    assert any("overflow" in item["message"] for item in result.warnings)
+    assert [dict(item) for item in result.warnings] == frozen.fit_case(sample, [0.5])[
+        "warnings"
+    ]
+    assert result.record()["warnings"] == [dict(item) for item in result.warnings]
+
+
+@pytest.mark.parametrize(
+    "sample, reason",
+    [
+        ([1.0, 2.0, 3.0, 4.0], None),
+        ([5.0, 5.0, 5.0, 5.0], "invalid_range"),
+    ],
+    ids=["accepted", "invalid_range"],
+)
+def test_warning_retention_is_symmetric_across_outcomes(monkeypatch, sample, reason):
+    """A warning must be retained whichever branch constructs the record.
+
+    The original defect was asymmetric -- retained on the accepted and
+    conjunction paths, dropped on every early refusal -- so a consumer could not
+    tell "no warnings occurred" from "warnings were discarded".
+    """
+    import lmoments3
+
+    real = lmoments3.lmom_ratios
+
+    def warning_ratios(*args, **kwargs):
+        warnings.warn("synthetic retention probe", RuntimeWarning, stacklevel=1)
+        return real(*args, **kwargs)
+
+    monkeypatch.setattr(lmoments3, "lmom_ratios", warning_ratios)
+    result = gev.fit_case(sample, PROBABILITIES)
+    assert tuple(result.refusal_reasons) == ((reason,) if reason else ())
+    if reason == "invalid_range":
+        # Refused before the moment stage, so the probe never fires; the point
+        # is that the field is genuinely empty, not emptied.
+        assert result.warnings == ()
+    else:
+        assert any(
+            "synthetic retention probe" in item["message"] for item in result.warnings
+        )
 
 
 def test_diagnostics_never_veto_an_otherwise_valid_fit():

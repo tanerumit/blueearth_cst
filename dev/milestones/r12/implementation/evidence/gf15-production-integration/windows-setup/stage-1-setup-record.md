@@ -7,6 +7,10 @@ under the owner's 2026-09-14 Windows-only sequencing override.
 
 This record completes the **setup** half of Stage 1. The snapshot half was
 accepted separately by the [integrity review](../snapshot-integrity-review.md).
+An independent reviewer re-executed every load-bearing claim below and accepted
+it with findings; the [verdict](setup-review.md) records what was reproduced,
+the one prose error it caught, and what the evidence does not establish. The
+corrections it required are applied in place here.
 No fit, workflow run, Wflow/Julia invocation, adapter edit or repository
 dependency change was performed. Measured facts only; nothing below is a
 scientific adequacy claim.
@@ -14,7 +18,10 @@ scientific adequacy claim.
 Machine-readable evidence beside this file: `setup-result.json` (identities and
 both stage projections), `artifact-provenance.json` (PyPI versus conda-forge
 comparison), `manifest.diff` (the one-line manifest delta),
-`import-qualification.json` (actual imports), and
+`import-qualification.json` (actual imports),
+`stage-environment-shared.json` (the shared production environment's projection,
+the other side of the equivalence claim), `lock-solve.txt` and `install-output.txt` (the
+solver run, including the both-platform timings), and
 [`../materialized/retained-config-comparison.json`](../materialized/retained-config-comparison.json)
 (materialized-versus-retained config deltas).
 
@@ -134,7 +141,7 @@ produces **identical output**, including both `locks` digests
 (`installed-conda-dependency-records`
 `9a9414c9d7a9561e50a63b96e212367293d4e82b0b2a1aee895b3705d1a74d02`,
 `installed-python-distribution-metadata`
-`edf9df1c4a5680660ef22763448b0025cb48eb9f59388b25c1494d5e273a8b8c`). The
+`9ba17384828e2d703cd2f5eaa1e64e9d7160410b51b79f598ef238ea5f4e37cb`). The
 isolated environment is therefore a production-equivalent closure, not a
 version-matched approximation. Both record 220 projected packages, with build
 strings: `conda:numpy 2.4.6+py312ha3f287d_0`, `conda:scipy
@@ -142,10 +149,20 @@ strings: `conda:numpy 2.4.6+py312ha3f287d_0`, `conda:scipy
 `Windows-11-10.0.26200-SP0`.
 
 Adding `lmoments3` to the root list changes the projection by exactly one entry,
-`python:lmoments3: 1.0.8`, and changes the `locks` digest — so a candidate metric
-request gets a distinct identity, while merely *installing* the package without
-adding the root does not perturb any other stage. That is the D5 property, and it
-is now measured rather than assumed.
+`python:lmoments3: 1.0.8`, and moves `installed-python-distribution-metadata` to
+`edf9df1c4a5680660ef22763448b0025cb48eb9f59388b25c1494d5e273a8b8c` while
+`installed-conda-dependency-records` is unchanged — so a candidate metric request
+gets a distinct identity, while merely *installing* the package without adding
+the root does not perturb any other stage. That is the D5 property, and it is now
+measured rather than assumed.
+
+A mechanism worth recording, because it reinforces the placement finding above:
+the PyPI install writes **no** `conda-meta/lmoments3*.json`, which is why only the
+python-metadata digest moves. The superseded conda repack root **does** carry
+`conda-meta/lmoments3-1.0.8-pyhd8ed1ab_1.json`, so under that placement lmoments3
+would also enter the conda closure and move the conda digest. Placement therefore
+changes the identity projection independently of the wheel pin. Both states were
+observed directly.
 
 The equivalence claim is precise: identical **as projected over the metric-stage
 roots**. The projection follows those eight roots and their reachable
@@ -187,13 +204,19 @@ unexecuted.
 ### Finding for Stage 2 — the projection carries no source hashes
 
 `stage_environment` projects versions, build strings and two metadata digests.
-It carries **no module source hashes**. D5 says the resolver "binds installed
-source hashes as well as versions/artifacts at planning and execution", and D7's
-pre-fit guard is adapter-level. Stage 2 must therefore decide explicitly whether
-the source-hash binding lives only in the adapter guard or also in the identity
-projection; the latter is the `content_identity.py` conditional the master brief
-flags, and it takes the broader validation gates. Nothing here presumes that
-choice.
+It carries **no module source hashes**; per-distribution METADATA digests and two
+aggregate digests are as far as it goes.
+
+This is an observation about `stage_environment`, not an open Stage 2 decision —
+a first draft of this record overstated it as one. D5 already prescribes the
+remedy: a proposed `resolve_metric_environment()` in `metric_plan.py` "freshly
+calls existing `stage_environment` … then adds D7's observed and verified
+lmoments3 version/source hashes". The source-hash binding is therefore additive
+at the resolver. The measured candidate projection shows the existing projection
+*can* represent D7's version (`python:lmoments3: 1.0.8`), so the master brief's
+`content_identity.py` conditional — and the broader validation gate that comes
+with it — is **not** triggered by this finding. Independent review confirmed this
+reading.
 
 ### Hazard for Stage 2 — `pixi.lock` line endings
 
@@ -202,6 +225,13 @@ The repository's tracked `pixi.lock` is checked out **CRLF** (17,812 CRLF, 0 LF)
 rewrite every line of the file, and a later CRLF checkout re-keys it back; this
 is the same mechanism already tracked as `t2608301524`. Stage 2 must expect a
 whole-file lock diff and must not read it as a dependency change.
+
+Solve drift is the other half of the same obligation. This qualification binds
+lock `43d11fc5…`, not the lock Stage 2 will generate in the repository. A fresh
+solve there may move packages outside the eight-root closure, and the equality
+measured above is scoped to those roots and their reachable dependencies. Stage 2
+must **re-run the projection comparison against the regenerated repository lock**
+rather than inheriting this pass.
 
 ## Materialized metrics operation, config and command — unexecuted
 
@@ -286,7 +316,7 @@ same absolute location; the immutable simulation record must not be rewritten.
 | Materialized configs checked against the retained originals | **passed**, two intended deltas |
 | Metrics operation, config and exact CLI materialized unexecuted | **passed** |
 | Isolated linux-64 setup, install and parity | **deferred by owner, outstanding** |
-| Independent review of this setup record | **outstanding — gates Stage 2** |
+| Independent review of this setup record | **ACCEPTED WITH FINDINGS** ([verdict](setup-review.md)); F1/F2/F4/F5 discharged here, F3 carried to Stage 2 |
 
 Verification budget: no pytest, lint, baseline or suite gate was warranted or run
 for a setup-qualification task that changes no repository code. Full command

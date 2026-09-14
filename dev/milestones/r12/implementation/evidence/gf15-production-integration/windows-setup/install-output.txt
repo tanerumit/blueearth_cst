@@ -1,0 +1,2 @@
+ WARN Could not find activation scripts: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-14_1600\gf15-stage1-setup\full-solve\dev/scripts/pixi_activate.bat
+✔ The default environment has been installed.

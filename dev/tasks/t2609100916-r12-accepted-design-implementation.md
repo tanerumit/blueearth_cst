@@ -61,7 +61,7 @@ updated: 2026-09-14
 - [x] Review the concrete production adapter, dependency and validation-report identity contract: v3 scoped verification approves, all10 findings resolved; external round2 explicitly waived.
 - [x] Obtain G2 approval of exact production-adapter design v3 on2026-09-14; finalize accepted design and four-stage implementation handoff.
 - [x] Capture the production-integration pre-change snapshot and pass independent integrity review on2026-09-14; preserve original collection anchor.
-- [x] Complete the production-integration Stage1 isolated Windows Pixi setup; independent review of that setup record is outstanding and gates Stage2.
+- [x] Complete the production-integration Stage1 isolated Windows Pixi setup and pass independent review on2026-09-14: accepted with findings, all discharged except a Stage2 re-check obligation.
 - [ ] DEFERRED by owner2026-09-14: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
@@ -87,7 +87,15 @@ writes LF, so a regenerated lock diffs whole-file (`t2608301524`). The metrics
 operation, config set and exact CLI are materialized and unexecuted. Stage 3's
 collection anchor still resolves through disposable `.tmp` scratch. Record:
 `../milestones/r12/implementation/evidence/gf15-production-integration/windows-setup/stage-1-setup-record.md`.
-Independent review of this setup record is outstanding and gates Stage 2.
+Independent review ACCEPTED WITH FINDINGS on 2026-09-14. It caught one real prose
+error -- the cross-environment python-metadata digest quoted the candidate value
+`edf9df1c...` instead of the measured `9ba17384...` -- and narrowed the D5
+source-hash item to an implementation instruction that does NOT trigger the
+`content_identity.py` conditional. F1, F2, F4 and F5 are discharged; F3, re-running
+the projection comparison against the regenerated repository lock, is a Stage 2
+obligation. The anchor risk is boarded as watch-item `t2609140745`. Verdict:
+`../milestones/r12/implementation/evidence/gf15-production-integration/windows-setup/setup-review.md`.
+Stage 2 is released for Windows; Linux stays deferred and unclaimed.
 
 
 The [accepted alternative-estimator design](../milestones/r12/gf15-alternative-estimator-design.md)

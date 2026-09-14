@@ -6,10 +6,13 @@ accepted [adapter design](../../../gf15-production-adapter-design.md) D1–D7, t
 [Stage 2 brief](../../gf15-production-stage-2.md) and the owner's 2026-09-14
 Windows-only sequencing override.
 
-Implementation is complete and gated. **E7 — source-qualified production versus
-frozen-control parity — is NOT established by this record.** It requires the
-independent model-validator verdict the brief reserves, and the executor does
-not self-approve scientific parity. Linux is deferred and unexecuted.
+Implementation is complete and gated. **E7 parity was subsequently ACCEPTED for
+Windows** by the independent model-validator at `5cd2d8ce`, after a first-round
+REJECTION at `ebd85b88` that found a real warnings-retention defect; the verdict
+and both rounds are recorded in [e7-parity-verdict.md](e7-parity-verdict.md).
+Linux is deferred and unexecuted, so cross-platform acceptance under D8 handoff
+2/4 remains open. The body below was written before that review and is left as
+it stood, with the two findings corrected in place where they touched it.
 
 ## What landed
 
@@ -63,7 +66,8 @@ $Iso = "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-int
 | Loader / declaration tests | 29 passed |
 | Registry, plan, identity, export owning set | 93 passed |
 | Repository lint | `ruff check .` clean; `ruff format --check .` 367 files already formatted |
-| Full non-integration suite | **3804 passed, 15 skipped, 1 xfailed** in 977.15 s; log retained as `stage-2-test-full.txt` |
+| Independent E7 parity verdict | **ACCEPTED (Windows)** at `5cd2d8ce` after a first-round rejection; see [e7-parity-verdict.md](e7-parity-verdict.md) |
+| Full non-integration suite | **3808 passed, 15 skipped, 1 xfailed** in 1744.67 s at the accepted HEAD `5cd2d8ce`; log retained as `stage-2-test-full.txt` |
 | Asset reproducibility | `--check` confirms the committed asset rebuilds byte for byte |
 
 The 15 skips and the single xfail are pre-existing and self-describing: eleven
@@ -71,8 +75,20 @@ The 15 skips and the single xfail are pre-existing and self-describing: eleven
 successor run has not replaced it", three need `--run-integration`, one predates
 R14, and the xfail is the known hydromt 1.3 `to_yml` upstream defect.
 
-An intermediate full run at commit `eaedeaea` reported 3804 − 10 = 3794 passed;
-the difference is exactly the ten freshness and reader tests added in `3cb71076`.
+Intermediate full runs reported 3794 passed at `eaedeaea` and 3804 at `ebd85b88`;
+each difference is exactly the tests added between them — ten freshness and
+reader tests in `3cb71076`, four warning-retention tests in `5cd2d8ce`.
+
+**One run stalled and was discarded, not counted.** A full-suite attempt froze at
+`tests/test_climate_store_freshness.py` — 0.09 CPU-seconds across 45 wall-seconds,
+log byte-frozen, ~60 minutes against a 17-minute norm. Killing it exposed a
+four-deep nested python chain and a `.snakemake/` workdir whose `locks/`,
+`incomplete/` and `metadata/` were stamped at the stall; the lock cleared with the
+tree. The file then passed in isolation (2 passed, 157 s) and the full suite passed
+on a verified-lock-free workdir, so this was contention from concurrent test runs
+in one worktree — that test shells out to Snakemake, which locks its workdir — and
+not a defect. **Carried to Stage 3:** its metrics run takes a Snakemake workdir
+lock of its own and must not overlap with a suite in the same worktree.
 
 ## Design rows discharged, and by what
 

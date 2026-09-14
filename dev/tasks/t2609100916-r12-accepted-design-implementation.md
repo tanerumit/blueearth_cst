@@ -65,12 +65,33 @@ updated: 2026-09-14
 - [ ] DEFERRED by owner2026-09-14: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
 - [x] Implement production-integration Stage2 on Windows: adapter, report, identity, freshness,
       reader dispatch and docs in six commits; full suite 3804 passed. E7 parity verdict outstanding.
-- [ ] Obtain the independent model-validator parity verdict for Stage2 before integration.
+- [x] Obtain the independent model-validator E7 parity verdict: REJECTED at `ebd85b88` on a real
+      warnings-retention defect, ACCEPTED at `5cd2d8ce` after the fix. Windows only.
 - [ ] Execute production-integration Stage3 metrics comparison and Stage4 bounded Windows acceptance.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+E7 parity ACCEPTED for Windows on 2026-09-14 at `5cd2d8ce`, after a first-round
+REJECTION that was correct. The reviewer found that warnings were dropped on every
+early-refusal path -- `refuse()` built the record inside the warning context, which
+only collected in its `finally` -- producing an affirmatively false `"warnings": []`
+in exactly the attempt logs Stage 3 reads to diagnose an aborted comparison, and
+asymmetrically across refusal codes. It was also a dropped control: the retained
+`test_overflow_warning_retention_discriminates` had no counterpart in the shipped
+suite. Fixed by eager recording; three tests added, including execution coverage of
+the path the reviewer could only inspect. Round 2: 196/196 bit-compared pairs
+identical including warnings, all 66 oracle references exact, 27/27 behaviour,
+18/18 hook containment, and a pre/post execution showing the fix is numerically
+inert (0 numerical differences, 6 warnings-only). Verdict:
+`../milestones/r12/implementation/evidence/gf15-production-integration/e7-parity-verdict.md`.
+Carried forward: the retained controls are blind to three adapter-assembly mutants
+that only bit-parity catches (M6 changes a published value while still returning
+accepted); and a Stage 4 note on documenting the SciPy sign convention for
+published physical parameters. Linux parity remains the open D8 handoff 2/4
+prerequisite.
+
 
 Stage 2 implementation landed on 2026-09-14 in six runnable groupings,
 `ce4d3bfa` through `eba69df2`. Return levels are now fitted by `gf15-lmoments-c/1`;

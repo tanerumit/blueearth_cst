@@ -19,8 +19,16 @@ and temporal evidence remain available for later reduction.
 Metric sets contain `<token>_indicators.csv`, `unit_index.csv`, definitions,
 execution environment and complete result-key expectations. Class-C wet/dry
 month metrics use one shared reference selection and retain one value per run.
-Return-level estimator evidence is provisional operational evidence; its
-benchmark status remains **not assessed**.
+
+Return levels are fitted by `gf15-lmoments-c/1` and each set retains the
+closed `return-level-validation/1` declaration plus the
+`return_level_benchmark.json` its digest binds. The benchmark status is
+**`reviewed_bounded`**: a bounded assessment on synthetic fixtures at the two
+production probabilities, not independent or application validation. The
+screening policy itself stays **`provisional_operational`** and unvalidated.
+Sets published before this estimator retain the earlier
+`{provisional_operational, not assessed}` record and stay readable unchanged;
+they are never rewritten or relabelled.
 
 ## Selection and invalidation
 

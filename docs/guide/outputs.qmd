@@ -31,6 +31,8 @@ use a directory outside the toolbox checkout.
     results/metric_sets/<id>/
       metrics.json              readiness marker and provenance
       unit_index.csv            run and bundle membership
+      metric_environment.json   resolved stage dependencies
+      return_level_benchmark.json  the return-level estimator's evidence
       <token>_indicators.csv     metric,location,unit_id,value
   logs/
   benchmarks/
@@ -65,6 +67,45 @@ Class-C wet/dry-month values have one value per run at a shared reference month;
 the manifest records the reference gauge and members. Values retain the existing
 four-significant-digit format. Return-level qualification and limitations are
 recorded alongside the results.
+
+## Return levels and their evidence
+
+Class-B return levels are fitted with a range-normalized sample L-moment GEV
+estimator (`gf15-lmoments-c/1`). Each set records what backs that fit:
+
+- `return_level_validation` in `metrics.json` — the closed declaration: the
+  policy, the screening settings, the exact tested domain, and the criteria.
+- `return_level_benchmark.json` — the benchmark report those criteria come
+  from, copied into the set so it stays readable without the installed
+  toolbox. The declaration carries its digest; a set whose report is missing or
+  altered is refused rather than read as unassessed.
+- `return_level_evidence` — per location, the usable-block counts and coverage,
+  the fitted parameters, and the retained fit record with its reached stages.
+
+Read the declaration before the numbers. It is deliberately narrow: the
+benchmark is a bounded assessment on synthetic fixtures at the two production
+probabilities, re-scored against owner-selected relaxed limits on data that had
+already been observed. It states `application_scope: operational_screen_only`,
+`actual_bundle_applicability: unestablished` and `screening_policy_validated:
+false`. Return levels are first-order screening values with no uncertainty
+interval, not validated design estimates, and a bounded declaration is never
+widened to cover a return period it did not test — asking for one aborts the
+run instead.
+
+::: {.callout-warning}
+## A detached indicators CSV cannot tell you which estimator produced it
+
+The four-column `<token>_indicators.csv` carries metric names and values and
+nothing about provenance. Metric names did **not** change when the estimator
+did, so a CSV copied out of its metric set is indistinguishable from one
+produced by the previous estimator, and two vintages will merge silently and
+wrongly.
+
+When you compare or archive results, keep the whole metric set: the table, its
+`metrics.json`, the `return_level_benchmark.json` beside it, and the retained
+responses they were reduced from. Never infer the estimator from a file name, a
+metric name or the CSV schema.
+:::
 
 ## Are these outputs current?
 

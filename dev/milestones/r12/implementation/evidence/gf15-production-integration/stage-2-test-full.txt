@@ -1,0 +1,292 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+cachedir: .tmp\pytest_cache
+rootdir: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3
+configfile: pyproject.toml
+plugins: anyio-4.13.0, hydra-core-1.3.2, xdist-3.8.0, zarr-3.2.1
+collected 3820 items
+
+tests\test_a1_acceptance.py ..................                           [  0%]
+tests\test_activation_links.py ......                                    [  0%]
+tests\test_add_climate_forcing.py ...........................            [  1%]
+tests\test_advanced_settings.py ........................................ [  2%]
+................                                                         [  2%]
+tests\test_basin_cell_mask.py .........                                  [  3%]
+tests\test_batch_sizing.py .....................................         [  4%]
+tests\test_build_model.py .                                              [  4%]
+tests\test_build_wflow_model.py ................                         [  4%]
+tests\test_cache_dir_hygiene.py ...                                      [  4%]
+tests\test_calendar_weights.py ................                          [  4%]
+tests\test_change_factor_table.py .................................      [  5%]
+tests\test_check_baseline_discharge.py ..............                    [  6%]
+tests\test_check_baseline_indicator.py .......................           [  6%]
+tests\test_check_baseline_provenance.py ..........                       [  7%]
+tests\test_check_baseline_scope.py ..............                        [  7%]
+tests\test_check_project_consistency.py .............                    [  7%]
+tests\test_cli.py ....................                                   [  8%]
+tests\test_climate_figures.py ...................                        [  8%]
+tests\test_climate_levels.py ........                                    [  8%]
+tests\test_climate_parity.py ....                                        [  9%]
+tests\test_climate_store_contract.py .........................           [  9%]
+tests\test_climate_store_freshness.py ..                                 [  9%]
+tests\test_climate_store_wg1_conformance.py .............                [ 10%]
+tests\test_climate_window.py .......................                     [ 10%]
+tests\test_collection_preparation.py ......                              [ 10%]
+tests\test_collection_resolution.py .........                            [ 11%]
+tests\test_collection_utils.py .......                                   [ 11%]
+tests\test_compare_climate_sources.py ................................   [ 12%]
+tests\test_config_composition.py ....................................... [ 13%]
+........................................................................ [ 15%]
+.............                                                            [ 15%]
+tests\test_content_identity.py ......................................... [ 16%]
+.........                                                                [ 16%]
+tests\test_copy_config_files.py ........................                 [ 17%]
+tests\test_cross_workflow_inputs.py .......                              [ 17%]
+tests\test_derive_change_factors.py .......                              [ 17%]
+tests\test_downscale_climate_forcing.py .................                [ 18%]
+tests\test_dry_month.py ................                                 [ 18%]
+tests\test_estimate_batch_makespan.py ............................       [ 19%]
+tests\test_experiment_allocation.py ......................               [ 19%]
+tests\test_experiment_config.py ...................                      [ 20%]
+tests\test_export_wflow_results.py .......................               [ 20%]
+tests\test_extract_historical_climate.py .......................         [ 21%]
+tests\test_fetch_gcm_raw.py ............................................ [ 22%]
+................................................                         [ 23%]
+tests\test_figure_naming.py ...................                          [ 24%]
+tests\test_forcing_descriptor.py ........                                [ 24%]
+tests\test_func_plot_signature.py ...................                    [ 25%]
+tests\test_gauges.py .................                                   [ 25%]
+tests\test_generate_cmip6_catalog.py ................                    [ 26%]
+tests\test_generation_seed_projection.py .......................         [ 26%]
+tests\test_get_change_climate_proj.py ..............                     [ 27%]
+tests\test_get_change_climate_proj_summary.py .....                      [ 27%]
+tests\test_get_stats_climate_proj.py ....                                [ 27%]
+tests\test_gev_lmoments.py ............................................. [ 28%]
+........                                                                 [ 28%]
+tests\test_grid_weights.py ...................                           [ 29%]
+tests\test_gridded_outputs_removed.py .......                            [ 29%]
+tests\test_hydrological_year_bounds.py .............                     [ 29%]
+tests\test_identity_rename_sweep.py .................                    [ 30%]
+tests\test_indicator_glossary.py ......................                  [ 30%]
+tests\test_indicator_tables.py ......................................... [ 31%]
+                                                                         [ 31%]
+tests\test_interchange_contracts.py .................................... [ 32%]
+...........................................sssss...ss.sssss              [ 34%]
+tests\test_julia_runtime.py ................                             [ 34%]
+tests\test_log_rules_contract.py .....................                   [ 35%]
+tests\test_member_catalog_rule.py ....                                   [ 35%]
+tests\test_merge_benchmarks.py ....                                      [ 35%]
+tests\test_merge_logs.py ...........                                     [ 35%]
+tests\test_metric_plan.py ....................                           [ 36%]
+tests\test_metric_registry.py ................                           [ 36%]
+tests\test_metrics_definition.py ..................                      [ 37%]
+tests\test_migrate_project_config.py ................................... [ 38%]
+..............................                                           [ 38%]
+tests\test_migration_mapping.py ..............                           [ 39%]
+tests\test_model_digest.py ...............                               [ 39%]
+tests\test_model_rebuild_cascade.py ....                                 [ 39%]
+tests\test_model_reference.py .................                          [ 40%]
+tests\test_model_root_ordering.py .............                          [ 40%]
+tests\test_module_import_direction.py .........                          [ 40%]
+tests\test_monthly_change.py ......                                      [ 40%]
+tests\test_neutral_simulator_seams.py .                                  [ 40%]
+tests\test_notebook_outputs.py ...........                               [ 41%]
+tests\test_observation_validation.py ...                                 [ 41%]
+tests\test_p2_current_carrier.py .................                       [ 41%]
+tests\test_plan_block.py ....................                            [ 42%]
+tests\test_plot_climate_source.py .....                                  [ 42%]
+tests\test_plot_evaluation.py .....................                      [ 42%]
+tests\test_plot_map.py ................................................. [ 44%]
+........................................................................ [ 46%]
+................................................                         [ 47%]
+tests\test_plot_proj_timeseries.py ..................                    [ 47%]
+tests\test_plot_results_station_merge.py ...                             [ 47%]
+tests\test_plot_spatial_maps.py ....................................     [ 48%]
+tests\test_plot_workflow_dag.py .........................                [ 49%]
+tests\test_prepare_build_config.py ........                              [ 49%]
+tests\test_prepare_climate_data_catalog.py ...........x.                 [ 50%]
+tests\test_prepare_cst_parameters.py .....................               [ 50%]
+tests\test_prepare_spatial_maps_rule.py ......                           [ 50%]
+tests\test_prepare_weathergen_config.py ...........................      [ 51%]
+tests\test_progress.py ................................................. [ 52%]
+.....                                                                    [ 52%]
+tests\test_project_tree_inventory.py ................................... [ 53%]
+........................................................................ [ 55%]
+................                                                         [ 56%]
+tests\test_projection_figures.py ....................                    [ 56%]
+tests\test_projection_plots.py ...............                           [ 56%]
+tests\test_provenance.py ....................                            [ 57%]
+tests\test_prune_climate_store.py .........                              [ 57%]
+tests\test_prune_config_snapshots.py .........                           [ 57%]
+tests\test_r01_config_readers.py ....                                    [ 58%]
+tests\test_r12_wf3_feasibility.py .............................          [ 58%]
+tests\test_r_log_row.py .......                                          [ 59%]
+tests\test_r_scripts.py .....                                            [ 59%]
+tests\test_read_member_grid.py ......                                    [ 59%]
+tests\test_reference_window.py ................                          [ 59%]
+tests\test_region_rule.py ..........                                     [ 60%]
+tests\test_report.py .....................                               [ 60%]
+tests\test_resolution.py ................................                [ 61%]
+tests\test_resolve_simulation_window.py ...................              [ 61%]
+tests\test_response_inventory.py ..........                              [ 62%]
+tests\test_response_series.py ...............                            [ 62%]
+tests\test_return_level_validation.py .............................      [ 63%]
+tests\test_rule_dag_levels.py .............                              [ 63%]
+tests\test_run_logged.py ............................                    [ 64%]
+tests\test_run_wflow_batch.py ........                                   [ 64%]
+tests\test_run_workflows.py ............................................ [ 65%]
+....                                                                     [ 65%]
+tests\test_scenario_collection.py ...................................... [ 66%]
+.............                                                            [ 67%]
+tests\test_scenario_provider.py ...                                      [ 67%]
+tests\test_scenario_rows.py .............                                [ 67%]
+tests\test_script_module_importability.py .............................. [ 68%]
+........................................................................ [ 70%]
+...............................                                          [ 71%]
+tests\test_sealed_records.py ..........................                  [ 71%]
+tests\test_semantic_tree_diff.py ....................................... [ 72%]
+.......                                                                  [ 72%]
+tests\test_series_identity.py .......................................... [ 74%]
+............................                                             [ 74%]
+tests\test_setup_gauges_and_outputs.py ..........                        [ 75%]
+tests\test_setup_reservoirs_lakes_glaciers.py ...                        [ 75%]
+tests\test_setup_time_horizon.py .............                           [ 75%]
+tests\test_shared_provenance.py ...............................          [ 76%]
+tests\test_simulation_record.py ..........                               [ 76%]
+tests\test_simulator_adapter.py ................                         [ 76%]
+tests\test_slugify_window.py ..........                                  [ 77%]
+tests\test_snake_utils.py .............................................. [ 78%]
+........................................................................ [ 80%]
+........................................................................ [ 82%]
+........................................................................ [ 84%]
+........................................................                 [ 85%]
+tests\test_snapshot_config_rules.py ................                     [ 85%]
+tests\test_snapshot_project_tree.py .................                    [ 86%]
+tests\test_spatial_config.py .................                           [ 86%]
+tests\test_spatial_delineation.py ........                               [ 87%]
+tests\test_spatial_geoms_parity.py ...................                   [ 87%]
+tests\test_spatial_hydrography.py .....                                  [ 87%]
+tests\test_spatial_identity.py .........                                 [ 87%]
+tests\test_spatial_products.py ..............                            [ 88%]
+tests\test_spatial_units_rule.py ...............                         [ 88%]
+tests\test_stage_cmip6.py ..................................             [ 89%]
+tests\test_stage_data.py ........................                        [ 90%]
+tests\test_stage_data_incremental.py .                                   [ 90%]
+tests\test_stale_spelling_sweep.py ........                              [ 90%]
+tests\test_statistic_set.py ............                                 [ 90%]
+tests\test_statistics_heatmap.py ......................                  [ 91%]
+tests\test_store_calendar.py .........                                   [ 91%]
+tests\test_store_region_bbox.py .                                        [ 91%]
+tests\test_stress_test_grid.py .....................................     [ 92%]
+tests\test_suggest_experiment_name.py .........................          [ 93%]
+tests\test_surface_axes.py ............................................. [ 94%]
+...                                                                      [ 94%]
+tests\test_sweep_common.py ...................                           [ 94%]
+tests\test_tidy_wflow_table.py .........................                 [ 95%]
+tests\test_unread_config_key_sweep.py ...................                [ 96%]
+tests\test_v1_v2_equivalence.py ........................                 [ 96%]
+tests\test_v2_config_shape.py ........                                   [ 96%]
+tests\test_validate_experiment_name.py ................................. [ 97%]
+..                                                                       [ 97%]
+tests\test_validate_historical_window.py ..............                  [ 98%]
+tests\test_variable_registry.py ......................                   [ 98%]
+tests\test_variable_spec.py ..............                               [ 99%]
+tests\test_wf1_plot_outputs.py ......                                    [ 99%]
+tests\test_wflow_log_attribution.py ...                                  [ 99%]
+tests\test_wflow_response_reader.py .....                                [ 99%]
+tests\test_wflow_write.py ........                                       [ 99%]
+tests\test_workflow_analyze_projections.py s                             [ 99%]
+tests\test_workflow_build_model.py s                                     [ 99%]
+tests\test_workflow_performance.py ....                                  [ 99%]
+tests\test_workflow_run_stress_test.py s                                 [ 99%]
+tests\test_write_outlet_index.py ..                                      [100%]
+
+============================== warnings summary ===============================
+tests/test_climate_figures.py: 3600 warnings
+tests/test_climate_levels.py: 600 warnings
+tests/test_plot_map.py: 4394 warnings
+  C:\Users\taner\workspace\blueearth_cst-artifacts\r12\gf15-production-integration\windows-environment-pypi\.pixi\envs\default\Lib\site-packages\cartopy\mpl\ticker.py:151: MatplotlibDeprecationWarning: The locs attribute was deprecated in Matplotlib 3.11 and will be removed in 3.13.
+    self.locs, degs, mins, secs = self._get_dms(self.locs)
+
+tests/test_fetch_gcm_raw.py::test_a_store_running_to_2300_is_read_instead_of_overflowing
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_fetch_gcm_raw.py:695: FutureWarning: In a future version of xarray to_datetimeindex will default to returning a 'us'-resolution DatetimeIndex instead of a 'ns'-resolution DatetimeIndex. This warning can be silenced by explicitly passing the `time_unit` keyword argument.
+    ds.indexes["time"].to_datetimeindex()  # what harmonise_dims does
+
+tests/test_fetch_gcm_raw.py::test_a_store_running_to_2300_is_read_instead_of_overflowing
+tests/test_fetch_gcm_raw.py::test_hydromts_own_harmonisation_still_happens
+tests/test_fetch_gcm_raw.py::test_the_window_slice_brings_the_axis_back_inside_nanoseconds
+tests/test_fetch_gcm_raw.py::test_two_variables_whose_spans_differ_can_still_be_merged
+tests/test_fetch_gcm_raw.py::test_the_merge_overflows_when_only_the_cftime_side_is_widened
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\fetch_gcm_raw.py:281: RuntimeWarning: Converting a CFTimeIndex with dates from a non-standard calendar, 'noleap', to a pandas.DatetimeIndex, which uses dates from the standard calendar.  This may lead to subtle errors in operations that depend on the length of time between dates.
+    ds = ds.assign_coords(time=index.to_datetimeindex(time_unit="s"))
+
+tests/test_fetch_gcm_raw.py::test_two_variables_whose_spans_differ_can_still_be_merged
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_fetch_gcm_raw.py:929: FutureWarning: In a future version of xarray the default value for compat will change from compat='no_conflicts' to compat='override'. This is likely to lead to different results when combining overlapping variables with the same name. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set compat explicitly.
+    merged = xr.merge([pr, tas], join="outer")
+
+tests/test_get_change_climate_proj.py::test_row_C1_cftime_360day_change_invariant
+tests/test_get_change_climate_proj.py::test_row_C2_cftime_noleap_change_invariant
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:46: FutureWarning: In a future version of xarray to_datetimeindex will default to returning a 'us'-resolution DatetimeIndex instead of a 'ns'-resolution DatetimeIndex. This warning can be silenced by explicitly passing the `time_unit` keyword argument.
+    ds["time"] = ds.indexes["time"].to_datetimeindex()
+
+tests/test_get_change_climate_proj.py::test_row_C1_cftime_360day_change_invariant
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:46: RuntimeWarning: Converting a CFTimeIndex with dates from a non-standard calendar, '360_day', to a pandas.DatetimeIndex, which uses dates from the standard calendar.  This may lead to subtle errors in operations that depend on the length of time between dates.
+    ds["time"] = ds.indexes["time"].to_datetimeindex()
+
+tests/test_get_change_climate_proj.py::test_row_C2_cftime_noleap_change_invariant
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:46: RuntimeWarning: Converting a CFTimeIndex with dates from a non-standard calendar, 'noleap', to a pandas.DatetimeIndex, which uses dates from the standard calendar.  This may lead to subtle errors in operations that depend on the length of time between dates.
+    ds["time"] = ds.indexes["time"].to_datetimeindex()
+
+tests/test_workflow_performance.py: 24 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:502: FutureWarning: dropping variables using `drop` is deprecated; use drop_vars.
+    change = change.drop("quantile")
+
+tests/test_workflow_performance.py: 12 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:549: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'stats' ('stats',) The recommendation is to set join explicitly for this case.
+    stats_annual_change = xr.merge(ds)
+
+tests/test_workflow_performance.py: 72 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:549: FutureWarning: In a future version of xarray the default value for compat will change from compat='no_conflicts' to compat='override'. This is likely to lead to different results when combining overlapping variables with the same name. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set compat explicitly.
+    stats_annual_change = xr.merge(ds)
+
+tests/test_workflow_performance.py: 12 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:269: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'stats' ('stats',) The recommendation is to set join explicitly for this case.
+    return xr.merge(ds)
+
+tests/test_workflow_performance.py: 108 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:269: FutureWarning: In a future version of xarray the default value for compat will change from compat='no_conflicts' to compat='override'. This is likely to lead to different results when combining overlapping variables with the same name. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set compat explicitly.
+    return xr.merge(ds)
+
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_workflow_performance.py:155: FutureWarning: In a future version of xarray the default value for compat will change from compat='no_conflicts' to compat='override'. This is likely to lead to different results when combining overlapping variables with the same name. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set compat explicitly.
+    with xr.open_mfdataset(monthly_files, coords="minimal") as old:
+
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_workflow_performance.py:155: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'horizon' ('horizon',) The recommendation is to set join explicitly for this case.
+    with xr.open_mfdataset(monthly_files, coords="minimal") as old:
+
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_workflow_performance.py:155: FutureWarning: In a future version of xarray the default value for data_vars will change from data_vars='all' to data_vars=None. This is likely to lead to different results when multiple datasets have matching variables with overlapping values. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set data_vars explicitly.
+    with xr.open_mfdataset(monthly_files, coords="minimal") as old:
+
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_workflow_performance.py:156: FutureWarning: In a future version of xarray the default value for data_vars will change from data_vars='all' to data_vars=None. This is likely to lead to different results when multiple datasets have matching variables with overlapping values. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set data_vars explicitly.
+    merged = xr.combine_by_coords(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_interchange_contracts.py:899: test_case/test_local predates R14: no config/runs/project_config_build_model.yml, so its v1 snapshot cannot answer a v2 key (the WG-1 store-key case is skipped; the rest of the layer still runs)
+SKIPPED [11] tests\test_interchange_contracts.py:79: standing fixture predates R12; GF9 successor run has not replaced it
+SKIPPED [1] tests\test_workflow_analyze_projections.py: needs --run-integration
+SKIPPED [1] tests\test_workflow_build_model.py: needs --run-integration
+SKIPPED [1] tests\test_workflow_run_stress_test.py: needs --run-integration
+XFAIL tests/test_prepare_climate_data_catalog.py::test_hydromt_to_yml_round_trip_preserves_preprocess - hydromt 1.3 silently strips driver.options.preprocess on DataCatalog().from_dict(...).to_yml(...). blueearth_cst/climate_analysis/prepare_climate_data_catalog.py works around this with yaml.safe_dump. When upstream fixes to_yml, this test will pass, strict=True will fail CI, and the workaround can be removed. See dev/milestones/phase-1/m02b/handoff.md for the upstream reproducer.
+=== 3804 passed, 15 skipped, 1 xfailed, 8845 warnings in 977.15s (0:16:17) ====

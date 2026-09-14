@@ -63,10 +63,31 @@ updated: 2026-09-14
 - [x] Capture the production-integration pre-change snapshot and pass independent integrity review on2026-09-14; preserve original collection anchor.
 - [x] Complete the production-integration Stage1 isolated Windows Pixi setup and pass independent review on2026-09-14: accepted with findings, all discharged except a Stage2 re-check obligation.
 - [ ] DEFERRED by owner2026-09-14: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
+- [x] Implement production-integration Stage2 on Windows: adapter, report, identity, freshness,
+      reader dispatch and docs in six commits; full suite 3804 passed. E7 parity verdict outstanding.
+- [ ] Obtain the independent model-validator parity verdict for Stage2 before integration.
+- [ ] Execute production-integration Stage3 metrics comparison and Stage4 bounded Windows acceptance.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+Stage 2 implementation landed on 2026-09-14 in six runnable groupings,
+`ce4d3bfa` through `eba69df2`. Return levels are now fitted by `gf15-lmoments-c/1`;
+the shipped report `89905f18...` backs a closed `return-level-validation/1`
+declaration, the metric-stage environment binds D7's verified source hashes, the
+live environment is re-observed before reduction, before publication and again
+before the ready marker, and the reader dispatches on the retained record so
+pre-C sets stay readable without lmoments3. Gates on the isolated interpreter:
+3804 passed / 15 skipped / 1 xfailed, repository lint and format clean, and the
+asset rebuilds byte for byte. Record:
+`../milestones/r12/implementation/evidence/gf15-production-integration/stage-2-record.md`.
+**E7 parity is NOT established** -- it needs the independent model-validator
+verdict, which gates Stage 3. Two carried facts: the legacy
+`analyze_wflow_results` export path deliberately keeps the predecessor estimator
+(pinned by a test), and the validation map still carries stale P3-era rows for
+Stage 4 to reconcile.
+
 
 Stage 1 setup completed on 2026-09-14: Pixi resolved at
 `AppData/Local/pixi/bin/pixi.exe` (0.70.2), which discovery had reported

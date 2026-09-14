@@ -1,5 +1,7 @@
 """Neutral metric semantics, explicit references and operational refusals."""
 
+import json
+import pathlib
 from dataclasses import replace
 from datetime import timedelta
 
@@ -12,6 +14,7 @@ from blueearth_cst.experiment.metric_registry import (
     DeclaredBundle,
     InsufficientReturnLevelBlocks,
     InvalidReturnLevelFit,
+    ReturnLevelProbabilityNotCovered,
     declarations,
     metric_unit_index,
     reduce_bundle,
@@ -21,6 +24,33 @@ from blueearth_cst.experiment.metric_registry import (
 from blueearth_cst.experiment.response_series import ResponseSeries
 from blueearth_cst.experiment.scenario_provider import metric_groups
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
+
+
+def frozen_candidate():
+    """Import the frozen GF15 candidate as an independent value oracle.
+
+    The production adapter must never be its own oracle, and the frozen module
+    is the implementation the accepted 8x qualification was actually run
+    against. A missing control fails rather than skips.
+    """
+    import importlib.util
+    import sys
+
+    path = (
+        pathlib.Path(__file__).resolve().parents[1]
+        / "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness"
+        / "candidate_adapter.py"
+    )
+    if not path.is_file():
+        raise AssertionError(f"frozen parity control is missing: {path}")
+    name = "gf15_frozen_candidate"
+    if name in sys.modules:
+        return sys.modules[name]
+    spec = importlib.util.spec_from_file_location(name, path)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
+    spec.loader.exec_module(module)
+    return module
 
 
 def responses():
@@ -157,18 +187,90 @@ def test_bundle_preserves_estimator_and_records_per_member_blocks(
         ],
         ignore_index=True,
     )
-    expected = _return_level_from_blocks(blocks, period, mode)
-    pd.testing.assert_series_equal(actual.sort_index(), expected.sort_index())
+    # The block extraction is unchanged (D1); the ESTIMATOR is not. The oracle is
+    # the frozen candidate the 8x qualification was run against, applied to the
+    # same pooled per-member blocks -- never the production adapter itself.
+    probability = 1.0 - 1.0 / period if mode == "max" else 1.0 / period
+    for location in actual.index:
+        sample = blocks[location].to_numpy(dtype="float64")
+        sample = sample[np.isfinite(sample)]
+        reference = frozen_candidate().fit_case(sample, (probability,))
+        assert reference["accepted"], location
+        assert actual[location] == reference["quantiles"][0]["estimate"], location
+
     assert {item.total for item in evidence} == {18}
     assert {item.required for item in evidence} == {10}
     assert all(
         [entry[1] for entry in item.member_counts] == [9, 9] for item in evidence
     )
+    # Retained fit evidence travels with each location (D3).
+    for item in evidence:
+        assert item.member_count == 2
+        assert item.extraction_policy == (
+            "member_local_annual_max/1"
+            if mode == "max"
+            else "member_local_rolling7_annual_min/1"
+        )
+        assert item.missingness_policy == "drop_nonfinite_blocks/1"
+        assert item.partial_block_policy == "retain_partial_period_blocks/1"
+        assert item.fit["estimator_id"] == "gf15-lmoments-c/1"
+        assert item.fit["status"] == "accepted"
+        assert item.fit["input"]["count"] == item.total
+        assert len(item.parameters) == 3
+        json.dumps(item.fit, allow_nan=False)
+
     with pytest.raises(InsufficientReturnLevelBlocks, match="actual=9"):
         reduce_bundle(metric, series[:2], expected_run_ids=("01",), anchor="YE-DEC")
+
+
+def test_constant_sample_reaches_the_adapter_as_a_structured_refusal():
+    """D1 removed the np.ptp guard, so the refusal now carries a FitResult."""
+    series = responses()
+    metric = next(
+        item for item in declarations(("q",)) if item.statistic == "return_level_max"
+    )
     constant = tuple(replace(item, values=np.ones(len(item.time))) for item in series)
-    with pytest.raises(InvalidReturnLevelFit, match="constant sample"):
+    with pytest.raises(InvalidReturnLevelFit, match="invalid_range") as caught:
         reduce_bundle(metric, constant, expected_run_ids=("01", "08"), anchor="YE-DEC")
+    result = caught.value.fit_result
+    assert result is not None, "the refusal must carry its structured record"
+    assert result.status == "refused"
+    assert result.refusal_reasons == ("invalid_range",)
+    assert "estimator refused" in str(caught.value)
+    # The predecessor's unstructured constant guard must not survive.
+    assert "constant sample" not in str(caught.value)
+
+
+def test_legacy_export_helper_keeps_the_predecessor_estimator():
+    """The legacy analyze_wflow_results path is a preservation surface.
+
+    It is not the production rule -- that is analyze_response_runs, which goes
+    through reduce_bundle -- and D2 scopes the estimator change to reduce_bundle.
+    The two paths therefore now disagree by construction, deliberately, and this
+    pins that so the divergence is a recorded fact rather than a later surprise.
+    """
+    series = responses()
+    metric = next(
+        item for item in declarations(("q",)) if item.statistic == "return_level_max"
+    )
+    frames = [
+        pd.DataFrame(
+            {item.location_id: item.values for item in series if item.run_id == run},
+            index=series[0].time,
+        )
+        for run in ("01", "08")
+    ]
+    blocks = pd.concat(
+        [frame.resample("YE-DEC").max() for frame in frames], ignore_index=True
+    )
+    legacy = _return_level_from_blocks(blocks, 10, "max")
+    current, _ = reduce_bundle(
+        metric, series, expected_run_ids=("01", "08"), anchor="YE-DEC"
+    )
+    assert set(legacy.index) == set(current.index)
+    assert any(legacy[key] != current[key] for key in legacy.index), (
+        "the two estimators produced identical values; one of them did not change"
+    )
 
 
 @pytest.mark.parametrize("field,value", [("units", "mm"), ("time_label", "instant")])
@@ -192,29 +294,85 @@ def test_reference_refuses_unevaluated_members_and_preserves_month_tie():
     assert reference.month == 1
 
 
-@pytest.mark.parametrize("failure", ["exception", "nan_shape", "negative_scale"])
-def test_invalid_estimator_result_refuses_without_fallback(monkeypatch, failure):
-    import xarray as xr
-    import xclim.indices.stats as stats
+@pytest.mark.parametrize(
+    "parameters, reason",
+    [
+        ({"c": float("nan"), "loc": 0.0, "scale": 1.0}, "invalid_parameters"),
+        ({"c": 0.0, "loc": 0.0, "scale": -1.0}, "invalid_parameters"),
+        ({"c": -1.5, "loc": 0.0, "scale": 1.0}, "invalid_parameters"),
+    ],
+    ids=["nan_shape", "negative_scale", "shape_at_or_below_minus_one"],
+)
+def test_invalid_estimator_result_refuses_without_fallback(
+    monkeypatch, parameters, reason
+):
+    """A refused fit must abort the location; there is no fallback value."""
+    from lmoments3 import distr
 
-    def invalid_fit(*args, **kwargs):
-        if failure == "exception":
-            raise RuntimeError("estimator failed")
-        return xr.DataArray(
-            [
-                np.nan if failure == "nan_shape" else 0.0,
-                1.0,
-                -1.0 if failure == "negative_scale" else 1.0,
-            ],
-            dims="dparams",
-            coords={"dparams": ["c", "loc", "scale"]},
-        )
-
-    monkeypatch.setattr(stats, "fit", invalid_fit)
+    monkeypatch.setattr(distr.gev, "lmom_fit", lambda **kwargs: dict(parameters))
     metric = next(
         item for item in declarations(("q",)) if item.statistic == "return_level_max"
     )
-    with pytest.raises(InvalidReturnLevelFit, match="xclim/SciPy GEV failure"):
+    with pytest.raises(InvalidReturnLevelFit, match=reason) as caught:
         reduce_bundle(
             metric, responses(), expected_run_ids=("01", "08"), anchor="YE-DEC"
         )
+    assert caught.value.fit_result.refusal_reasons == (reason,)
+
+
+def test_unexpected_estimator_fault_is_not_converted_to_a_refusal(monkeypatch):
+    """D3 removed the adapter-wide except Exception; faults keep their identity."""
+    from lmoments3 import distr
+
+    def faulty(**kwargs):
+        raise RuntimeError("unexpected estimator failure")
+
+    monkeypatch.setattr(distr.gev, "lmom_fit", faulty)
+    metric = next(
+        item for item in declarations(("q",)) if item.statistic == "return_level_max"
+    )
+    with pytest.raises(RuntimeError, match="unexpected estimator failure"):
+        reduce_bundle(
+            metric, responses(), expected_run_ids=("01", "08"), anchor="YE-DEC"
+        )
+
+
+def test_uncovered_probability_is_a_fault_before_any_fit(monkeypatch):
+    """D4: an off-domain probability aborts before the library is invoked."""
+    from lmoments3 import distr
+
+    calls = []
+    real = distr.gev.lmom_fit
+
+    def counting(**kwargs):
+        calls.append(kwargs)
+        return real(**kwargs)
+
+    monkeypatch.setattr(distr.gev, "lmom_fit", counting)
+    metric = next(
+        item for item in declarations(("q",)) if item.statistic == "return_level_max"
+    )
+    # T=4 asks for p=0.75, which the bounded declaration does not cover.
+    uncovered = replace(metric, return_period=4)
+    with pytest.raises(ReturnLevelProbabilityNotCovered, match="0.75"):
+        reduce_bundle(
+            uncovered, responses(), expected_run_ids=("01", "08"), anchor="YE-DEC"
+        )
+    assert calls == [], "the estimator was invoked despite an uncovered probability"
+
+
+def test_covered_probabilities_are_the_declared_ones():
+    """The two production probabilities must remain inside the declaration."""
+    from blueearth_cst.experiment import return_level_validation as rlv
+
+    declared = rlv.build_declaration()["tested_domain"]["probabilities"]
+    assert declared == [0.9, 0.5]
+    for metric in declarations(("q",)):
+        if metric.grain != "bundle":
+            continue
+        probability = (
+            1.0 - 1.0 / metric.return_period
+            if metric.statistic == "return_level_max"
+            else 1.0 / metric.return_period
+        )
+        assert probability in declared, metric.name

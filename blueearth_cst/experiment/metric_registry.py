@@ -4,12 +4,12 @@ import hashlib
 import math
 from collections.abc import Sequence
 from dataclasses import dataclass
-from importlib.metadata import version
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+from blueearth_cst.experiment import gev_lmoments
 from blueearth_cst.experiment.response_series import (
     ResponseSeries,
     compatible_bundle,
@@ -346,18 +346,85 @@ def project_legacy_month(
 
 
 class InvalidReturnLevelFit(ValueError):
-    """The unchanged estimator did not return a valid finite GEV quantile."""
+    """The estimator refused this location; its structured record is attached.
+
+    Only a refusal reaches this exception. An unexpected fault keeps its own
+    traceback and propagates, because a fault silently converted into a refusal
+    row would be indistinguishable from a location the estimator genuinely
+    declined (D3).
+    """
+
+    def __init__(self, message: str, *, fit_result=None):
+        super().__init__(message)
+        self.fit_result = fit_result
+
+
+class ReturnLevelProbabilityNotCovered(ValueError):
+    """A requested probability lies outside the verified benchmark domain (D4).
+
+    This is a configuration and evidence-contract fault, not an estimator
+    refusal: it fires before the library is invoked and aborts publication.
+    Changing a return period must not silently inherit a bounded declaration,
+    so the domain is never clamped, substituted or expanded to accommodate it.
+    """
+
+
+#: Identifiers for the extraction rules D1 preserves, recorded per location so a
+#: retained fit says which sampling produced it rather than leaving it implied.
+EXTRACTION_POLICY = {
+    "return_level_max": "member_local_annual_max/1",
+    "return_level_7day_min": "member_local_rolling7_annual_min/1",
+}
+MISSINGNESS_POLICY = "drop_nonfinite_blocks/1"
+PARTIAL_BLOCK_POLICY = "retain_partial_period_blocks/1"
 
 
 @dataclass(frozen=True)
 class ReturnLevelEvidence:
-    """Actual usable-block counts and coverage for one location fit."""
+    """Usable-block counts, coverage and the retained fit for one location."""
 
     location_id: str
     member_counts: tuple[tuple[str, int, str, str], ...]
     total: int
     required: int
     parameters: tuple[float, ...]
+    member_count: int = 0
+    extraction_policy: str = ""
+    missingness_policy: str = MISSINGNESS_POLICY
+    partial_block_policy: str = PARTIAL_BLOCK_POLICY
+    fit: dict | None = None
+
+
+def _declared_probabilities(validation) -> list:
+    """Read the verified declaration's tested probabilities once per reduction.
+
+    Resolved outside the per-location loop because building the declaration
+    reads and re-verifies the whole shipped report; the membership check itself
+    still runs before every individual fit.
+    """
+    from blueearth_cst.experiment import return_level_validation as rlv
+
+    declaration = rlv.build_declaration() if validation is None else validation
+    declared = declaration.get("tested_domain", {}).get("probabilities")
+    if not isinstance(declared, list):
+        raise ReturnLevelProbabilityNotCovered(
+            "the retained return-level validation declares no tested probabilities"
+        )
+    return declared
+
+
+def _covered_probability(probability: float, declared: list) -> None:
+    """Refuse a probability the verified benchmark domain does not cover (D4).
+
+    Exact numeric membership, for the fixed .9 and .5 values the declaration
+    names. No clamping, substitution or widening.
+    """
+    if not any(probability == value for value in declared):
+        raise ReturnLevelProbabilityNotCovered(
+            f"requested probability {probability!r} is outside the verified "
+            f"benchmark domain {declared!r}; the declaration is bounded and is "
+            "not expanded to cover a changed return period"
+        )
 
 
 def reduce_bundle(
@@ -366,11 +433,14 @@ def reduce_bundle(
     *,
     expected_run_ids: Sequence[str],
     anchor: str,
+    validation=None,
 ) -> tuple[pd.Series, tuple[ReturnLevelEvidence, ...]]:
-    """Extract blocks within each member, screen and fit without splicing runs."""
-    import xarray as xr
-    from xclim.indices.stats import fit, parametric_quantile
+    """Extract blocks within each member, screen and fit without splicing runs.
 
+    `validation` is the verified return-level declaration whose tested domain
+    bounds the probabilities that may be requested. The publication path passes
+    the declaration retained in its plan; omitting it resolves the shipped one.
+    """
     if (
         metric.grain != "bundle"
         or metric.return_period is None
@@ -401,6 +471,7 @@ def reduce_bundle(
     )
     maximum = metric.statistic == "return_level_max"
     quantile = 1 - 1 / metric.return_period if maximum else 1 / metric.return_period
+    declared = _declared_probabilities(validation)
     values, evidence = {}, []
     for location in sorted(location_sets[0]):
         members = sorted(
@@ -431,31 +502,32 @@ def reduce_bundle(
             raise InsufficientReturnLevelBlocks(context)
         context += (
             f", sample_range={(float(sample.min()), float(sample.max()))}, "
-            f"estimator=xclim-{version('xclim')}/scipy-{version('scipy')}, "
+            f"estimator={gev_lmoments.ESTIMATOR_ID}/"
+            f"lmoments3-{gev_lmoments.DEPENDENCY_VERSION}, "
             f"implementation_revision={metric.implementation_revision}"
         )
-        if np.ptp(sample) == 0:
+        # A constant sample is no longer screened out here: it reaches the
+        # adapter and comes back as a structured invalid_range refusal (D1).
+        _covered_probability(quantile, declared)
+        result = gev_lmoments.fit_case(sample, (quantile,))
+        if not result.accepted:
             raise InvalidReturnLevelFit(
-                f"{context}: constant sample; range={sample.min(), sample.max()}"
+                f"{context}: estimator refused: {', '.join(result.refusal_reasons)}",
+                fit_result=result,
             )
-        try:
-            params = fit(
-                xr.DataArray(sample, dims=("time",), name=location), dist="genextreme"
-            )
-            raw = np.asarray(params.values).ravel()
-            if not np.isfinite(raw).all() or float(params.sel(dparams="scale")) <= 0:
-                raise ValueError(f"invalid fitted parameters {raw.tolist()}")
-            value = float(parametric_quantile(params, q=quantile).values.ravel()[0])
-            if not np.isfinite(value):
-                raise ValueError(f"non-finite quantile {value}")
-        except Exception as error:
-            raise InvalidReturnLevelFit(
-                f"{context}: xclim/SciPy GEV failure: {error}"
-            ) from error
+        value = result.value(quantile)
+        parameters = result.physical_parameters
         values[location] = value
         evidence.append(
             ReturnLevelEvidence(
-                location, tuple(counts), len(sample), required, tuple(raw.tolist())
+                location,
+                tuple(counts),
+                len(sample),
+                required,
+                tuple(parameters[name] for name in ("c", "loc", "scale")),
+                member_count=len(members),
+                extraction_policy=EXTRACTION_POLICY[metric.statistic],
+                fit=result.record(),
             )
         )
     return pd.Series(values), tuple(evidence)

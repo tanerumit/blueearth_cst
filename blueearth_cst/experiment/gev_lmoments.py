@@ -199,6 +199,15 @@ def _verify_source() -> dict[str, Any]:
     }
 
 
+def observed_source() -> dict[str, str]:
+    """Return the installed estimator's verified source digests.
+
+    Verification is not optional here either: callers binding this into an
+    identity must be recording what D7 accepts, not merely what is installed.
+    """
+    return dict(_verify_source()["sha256"])
+
+
 def exception_refusal(error: Exception) -> dict[str, Any] | None:
     """Classify only the two exact pinned raising statements; otherwise decline.
 

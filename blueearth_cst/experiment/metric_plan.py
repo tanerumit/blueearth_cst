@@ -9,6 +9,7 @@ from pathlib import Path
 
 import numpy as np
 
+from blueearth_cst.experiment import gev_lmoments, return_level_validation
 from blueearth_cst.experiment.content_identity import (
     canonical_json_bytes,
     confined_path,
@@ -136,38 +137,68 @@ def metrics_only_configuration(config_path):
     return root, list(tokens), anchor
 
 
-def current_metric_request(experiment_root, tokens, anchor):
-    """Resolve stage-three identity without any live source/model or Julia access."""
+#: Metric-stage dependency roots. lmoments3 joins them because the return-level
+#: estimator is now part of what this stage's identity must describe (D5).
+METRIC_ENVIRONMENT_ROOTS = (
+    "numpy",
+    "pandas",
+    "scipy",
+    "xarray",
+    "xclim",
+    "netCDF4",
+    "pyproj",
+    "PyYAML",
+    "lmoments3",
+)
+
+
+def resolve_metric_environment():
+    """Observe the LIVE metric-stage environment, including D7 source hashes.
+
+    Always a fresh observation. It is never derived from a retained request, a
+    cached planning descriptor or lock-file intent, because the whole point is
+    to notice that the executing environment has drifted from the planned one.
+    """
     from blueearth_cst.experiment.content_identity import stage_environment
 
+    environment = stage_environment(list(METRIC_ENVIRONMENT_ROOTS))
+    return {
+        **environment,
+        "return_level_estimator": {
+            "estimator_id": gev_lmoments.ESTIMATOR_ID,
+            "package": "lmoments3",
+            "version": gev_lmoments.DEPENDENCY_VERSION,
+            "source_sha256": dict(sorted(gev_lmoments.observed_source().items())),
+        },
+    }
+
+
+def current_metric_request(experiment_root, tokens, anchor):
+    """Resolve stage-three identity without any live source/model or Julia access."""
     record = read_simulation(experiment_root)
     return metric_request(
         record["simulation_id"],
         tokens,
         anchor,
-        stage_environment(
-            [
-                "numpy",
-                "pandas",
-                "scipy",
-                "xarray",
-                "xclim",
-                "netCDF4",
-                "pyproj",
-                "PyYAML",
-            ]
-        ),
-        {"status": "provisional_operational", "benchmark": "not assessed"},
+        resolve_metric_environment(),
+        return_level_validation.build_declaration(),
     )
 
 
 def metric_request(simulation_id, tokens, anchor, environment, validation):
     """Compute a scheduling request before response values or reference months exist."""
     registry = declarations(tokens)
-    if validation != {"status": "provisional_operational", "benchmark": "not assessed"}:
+    # A NEW request must carry the D4 declaration. Legacy acceptance is a read
+    # compatibility guarantee (D6), never a write escape hatch, so the retained
+    # pre-C record is refused here rather than silently re-emitted.
+    if return_level_validation.is_legacy(validation):
         raise ValueError(
-            "return-level validation must retain the accepted provisional, unassessed status"
+            "the legacy unassessed return-level record cannot be written into a "
+            "new metric request; it is readable, not writable"
         )
+    return_level_validation.verify_declaration(
+        validation, return_level_validation.load_report_bytes()
+    )
     directory = Path(__file__).parent
     repo = directory.parents[1]
     code = repository_code_inventory(repo, ["blueearth_cst/experiment/metric_plan.py"])
@@ -400,6 +431,24 @@ def _csv_bytes(fields, rows):
     return stream.getvalue().encode("utf-8")
 
 
+def check_live_metric_environment(plan):
+    """Compare the live metric-stage environment with the retained one (D5).
+
+    Rebuilding a plan from its own retained descriptor cannot detect drift --
+    it would compare the descriptor with itself -- so the environment is
+    observed afresh here and both the canonical bytes and their digest must
+    agree. A mismatch aborts before any fitting and leaves no ready marker.
+    """
+    retained = plan["request"]["metric_environment"]
+    observed = resolve_metric_environment()
+    if canonical_json_bytes(observed) != canonical_json_bytes(retained):
+        raise MetricPlanStale(
+            "the live metric-stage environment differs from the retained "
+            f"descriptor: observed {content_sha256(observed)}, "
+            f"retained {content_sha256(retained)}"
+        )
+
+
 def reduce_metric_plan(experiment_root, plan):
     """Reduce the selected complete contract, keeping Class-C values at run grain."""
     from blueearth_cst.experiment.export_wflow_results import _format_value
@@ -408,6 +457,7 @@ def reduce_metric_plan(experiment_root, plan):
     root = Path(experiment_root).resolve()
     if build_metric_plan(root, plan["request"]) != plan:
         raise MetricPlanStale("metric plan changed before reduction")
+    check_live_metric_environment(plan)
     inventory = read_response_inventory(root)
     native = _native_runs(root, inventory)
     registry = declarations(plan["request"]["tokens"])
@@ -435,7 +485,11 @@ def reduce_metric_plan(experiment_root, plan):
             variable = [item for item in series if item.variable == token]
             if metric.grain == "bundle":
                 values, report = reduce_bundle(
-                    metric, variable, expected_run_ids=members, anchor=anchor
+                    metric,
+                    variable,
+                    expected_run_ids=members,
+                    anchor=anchor,
+                    validation=plan["request"]["return_level_validation"],
                 )
                 batches = [(plan["bundle_unit_ids"][group], values)]
                 evidence.append(
@@ -537,6 +591,7 @@ def publish_metric_set(experiment_root, plan):
         raise MetricPlanStale("metric inputs changed before publication")
     if marker.exists():
         return read_metric_set(root, marker)
+    check_live_metric_environment(plan)
     if destination.exists() and any(destination.iterdir()):
         raise ImmutableMetricSetError(
             f"partial metric set cannot be overwritten: {destination}"
@@ -564,6 +619,13 @@ def publish_metric_set(experiment_root, plan):
     payloads["metric_environment.json"] = canonical_json_bytes(
         plan["request"]["metric_environment"]
     )
+    # The exact checked report bytes travel with the set, so a reader never
+    # needs the installed asset -- or the estimator dependency -- to validate it.
+    report_bytes = return_level_validation.load_report_bytes()
+    return_level_validation.verify_declaration(
+        plan["request"]["return_level_validation"], report_bytes
+    )
+    payloads[return_level_validation.REPORT_FILENAME] = report_bytes
     import hashlib
 
     def reference(name):
@@ -595,6 +657,7 @@ def publish_metric_set(experiment_root, plan):
         "groups": plan["groups"],
         "resolved_references": plan["resolved_references"],
         "return_level_validation": plan["request"]["return_level_validation"],
+        "return_level_benchmark": reference(return_level_validation.REPORT_FILENAME),
         "return_level_evidence": evidence,
         "indicator_tables": [
             {
@@ -612,8 +675,53 @@ def publish_metric_set(experiment_root, plan):
             handle.write(payload)
             handle.flush()
             os.fsync(handle.fileno())
+    # Re-observe immediately before the sole ready marker: a late drift must
+    # leave an unready partial destination, never a silently relabelled result.
+    check_live_metric_environment(plan)
     atomic_record(marker, manifest)
     return read_metric_set(root, marker)
+
+
+def _validated_benchmark(destination, manifest, validation):
+    """Dispatch on the retained validation record; never rewrite an old one.
+
+    An exact legacy record uses the existing checks and carries no report. A
+    `return-level-validation/1` record requires its copied report and is checked
+    against THOSE bytes, so a historical set stays readable when the installed
+    asset is a different version or absent. Any other shape is refused rather
+    than defaulted.
+    """
+    if return_level_validation.is_legacy(validation):
+        if "return_level_benchmark" in manifest:
+            raise ImmutableMetricSetError(
+                "a legacy unassessed metric set must not carry a benchmark report"
+            )
+        return None
+    if (
+        not isinstance(validation, dict)
+        or validation.get("schema_version") != return_level_validation.SCHEMA_VERSION
+    ):
+        raise ImmutableMetricSetError(
+            f"unknown return-level validation record "
+            f"{validation.get('schema_version') if isinstance(validation, dict) else validation!r}"
+        )
+    reference = manifest.get("return_level_benchmark")
+    if not isinstance(reference, dict) or set(reference) != {"path", "sha256"}:
+        raise ImmutableMetricSetError("metric set is missing its benchmark reference")
+    if reference["path"] != return_level_validation.REPORT_FILENAME:
+        raise ImmutableMetricSetError(
+            f"unexpected benchmark report path {reference['path']!r}"
+        )
+    path = confined_path(destination, reference["path"])
+    if not path.is_file():
+        raise ImmutableMetricSetError("retained benchmark report is missing")
+    try:
+        return_level_validation.verify_declaration(validation, path.read_bytes())
+    except return_level_validation.ReturnLevelValidationError as error:
+        raise ImmutableMetricSetError(
+            f"retained return-level validation is not supported by its report: {error}"
+        ) from error
+    return reference
 
 
 def _read_metric_set(experiment_root, manifest_path):
@@ -665,9 +773,12 @@ def _read_metric_set(experiment_root, manifest_path):
         or manifest["metric_environment"]["path"] != "metric_environment.json"
     ):
         raise ImmutableMetricSetError("unexpected metric input paths")
+    retained_validation = manifest["return_level_validation"]
+    benchmark = _validated_benchmark(destination, manifest, retained_validation)
     for item in [
         manifest["unit_index"],
         manifest["metric_environment"],
+        *([benchmark] if benchmark else []),
         *manifest["indicator_tables"],
     ]:
         if file_sha256(confined_path(destination, item["path"])) != item["sha256"]:

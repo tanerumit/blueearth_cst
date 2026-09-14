@@ -1,5 +1,6 @@
 """Independent key planning and immutable metric sets over retained responses."""
 
+import json
 from copy import deepcopy
 from shutil import copyfile
 
@@ -11,6 +12,7 @@ from blueearth_cst.experiment.content_identity import (
 )
 from blueearth_cst.experiment.metric_plan import (
     ImmutableMetricSetError,
+    MetricPlanStale,
     build_metric_plan,
     metric_request,
     publish_metric_set,
@@ -30,6 +32,30 @@ from tests.test_response_inventory import frozen  # noqa: F401
 from tests.test_scenario_collection import planned  # noqa: F401
 from tests.test_simulation_record import inputs  # noqa: F401
 from tests.test_wflow_response_reader import native  # noqa: F401
+
+# The fixtures below plan against a synthetic stage environment. Publication and
+# reduction now RE-OBSERVE the live environment and refuse a mismatch (D5), so a
+# test that plans synthetically must also present that same descriptor as the
+# live one -- otherwise every publish would fail as stale for the wrong reason.
+FIXTURE_ENVIRONMENT = {"packages": {"numpy": "fixture"}}
+
+
+def fixture_declaration():
+    """The real shipped D4 declaration; new requests may carry nothing else."""
+    from blueearth_cst.experiment import return_level_validation
+
+    return return_level_validation.build_declaration()
+
+
+@pytest.fixture
+def live_fixture_environment(monkeypatch):
+    """Present FIXTURE_ENVIRONMENT as the live metric-stage observation."""
+    from blueearth_cst.experiment import metric_plan as plan_module
+
+    monkeypatch.setattr(
+        plan_module, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
+    )
+    return FIXTURE_ENVIRONMENT
 
 
 @pytest.fixture
@@ -104,13 +130,13 @@ def metric_inputs(retained, frozen, tmp_path):  # noqa: F811 - imported fixtures
         record["simulation_id"],
         ["gwr"],
         "YS-JAN",
-        {"packages": {"numpy": "fixture"}},
-        {"status": "provisional_operational", "benchmark": "not assessed"},
+        FIXTURE_ENVIRONMENT,
+        fixture_declaration(),
     )
     return root, request
 
 
-def test_exact_result_keys_and_ready_reuse(metric_inputs):
+def test_exact_result_keys_and_ready_reuse(metric_inputs, live_fixture_environment):
     root, request = metric_inputs
     plan = build_metric_plan(root, request)
     assert len(plan["expected_result_keys"]) == 2
@@ -140,7 +166,9 @@ def test_stage3_environment_changes_only_metric_identity(metric_inputs):
     assert after["request"]["simulation_id"] == before["request"]["simulation_id"]
 
 
-def test_missing_result_key_refuses_even_after_table_digest_is_updated(metric_inputs):
+def test_missing_result_key_refuses_even_after_table_digest_is_updated(
+    metric_inputs, live_fixture_environment
+):
     root, request = metric_inputs
     plan = build_metric_plan(root, request)
     manifest = publish_metric_set(root, plan)
@@ -161,7 +189,7 @@ def test_missing_result_key_refuses_even_after_table_digest_is_updated(metric_in
 
 
 def test_q_bundles_and_class_c_use_exact_units_and_shared_reference(
-    metric_inputs, tmp_path
+    metric_inputs, tmp_path, live_fixture_environment
 ):
     """Thirty full years exercise actual GEV fits and independent month means."""
     import csv
@@ -250,8 +278,8 @@ def test_q_bundles_and_class_c_use_exact_units_and_shared_reference(
         record["simulation_id"],
         ["q"],
         "YS-JAN",
-        {"packages": {"numpy": "fixture"}},
-        {"status": "provisional_operational", "benchmark": "not assessed"},
+        FIXTURE_ENVIRONMENT,
+        fixture_declaration(),
     )
     plan = build_metric_plan(root, request)
     assert plan["bundle_unit_ids"] == {"": "03", "1": "04"}
@@ -326,7 +354,9 @@ def test_xclim_revision_changes_only_metric_identity(metric_inputs, monkeypatch)
 @pytest.mark.parametrize(
     "defect", ["renamed-marker", "extra-empty-table", "renamed-table"]
 )
-def test_metric_marker_and_table_inventory_are_exact(metric_inputs, defect):
+def test_metric_marker_and_table_inventory_are_exact(
+    metric_inputs, defect, live_fixture_environment
+):
     from blueearth_cst.shared.provenance import file_sha256
 
     root, request = metric_inputs
@@ -425,3 +455,204 @@ def test_metrics_only_project_anchor_and_collection_assertion(
         output = capsys.readouterr().out
         assert "seed" in output and "simulation_window" in output
         assert "model.name" in output and "config/simulation.json" in output
+
+
+def test_stale_live_environment_refuses_reduction_before_any_fit(
+    metric_inputs, monkeypatch
+):
+    """D5: drift between planning and execution aborts before fitting."""
+    from blueearth_cst.experiment import metric_plan as plan_module
+
+    root, request = metric_inputs
+    monkeypatch.setattr(
+        plan_module, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
+    )
+    plan = build_metric_plan(root, request)
+
+    calls = []
+    monkeypatch.setattr(
+        plan_module,
+        "resolve_metric_environment",
+        lambda: {"packages": {"numpy": "moved"}},
+    )
+    from blueearth_cst.experiment import gev_lmoments
+
+    real = gev_lmoments.fit_case
+    monkeypatch.setattr(
+        gev_lmoments,
+        "fit_case",
+        lambda *a, **k: (calls.append(a), real(*a, **k))[1],
+    )
+    with pytest.raises(MetricPlanStale, match="live metric-stage environment"):
+        plan_module.reduce_metric_plan(root, plan)
+    assert calls == [], "the estimator ran despite a stale environment"
+
+
+def test_stale_live_environment_leaves_no_ready_marker(metric_inputs, monkeypatch):
+    """A drifted environment must not produce a published set."""
+    from blueearth_cst.experiment import metric_plan as plan_module
+
+    root, request = metric_inputs
+    monkeypatch.setattr(
+        plan_module, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
+    )
+    plan = build_metric_plan(root, request)
+    monkeypatch.setattr(
+        plan_module,
+        "resolve_metric_environment",
+        lambda: {"packages": {"numpy": "moved"}},
+    )
+    with pytest.raises(MetricPlanStale):
+        publish_metric_set(root, plan)
+    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    assert not (destination / "metrics.json").exists()
+
+
+def test_late_environment_drift_leaves_an_unready_destination(
+    metric_inputs, monkeypatch
+):
+    """Switching the observation only at the final pre-marker check (D5)."""
+    from blueearth_cst.experiment import metric_plan as plan_module
+
+    root, request = metric_inputs
+    observations = []
+
+    def drifting():
+        observations.append(len(observations))
+        # Stale only on the LAST check, after payloads are already flushed.
+        return (
+            FIXTURE_ENVIRONMENT
+            if len(observations) < 3
+            else {"packages": {"numpy": "moved"}}
+        )
+
+    monkeypatch.setattr(
+        plan_module, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
+    )
+    plan = build_metric_plan(root, request)
+    monkeypatch.setattr(plan_module, "resolve_metric_environment", drifting)
+    with pytest.raises(MetricPlanStale):
+        publish_metric_set(root, plan)
+    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    assert not (destination / "metrics.json").exists()
+    assert destination.exists() and any(destination.iterdir()), (
+        "payloads were flushed, so the destination should be partial, not absent"
+    )
+
+
+def test_new_requests_refuse_the_legacy_validation_record(metric_inputs):
+    """D6: legacy acceptance is read compatibility, not a write escape hatch."""
+    root, request = metric_inputs
+    with pytest.raises(ValueError, match="readable, not writable"):
+        metric_request(
+            request["simulation_id"],
+            ["gwr"],
+            "YS-JAN",
+            FIXTURE_ENVIRONMENT,
+            {"status": "provisional_operational", "benchmark": "not assessed"},
+        )
+
+
+def test_new_requests_refuse_an_unsupported_declaration(metric_inputs):
+    from blueearth_cst.experiment import return_level_validation
+
+    root, request = metric_inputs
+    altered = dict(fixture_declaration(), screening_policy_validated=True)
+    with pytest.raises(return_level_validation.ReturnLevelValidationError):
+        metric_request(
+            request["simulation_id"], ["gwr"], "YS-JAN", FIXTURE_ENVIRONMENT, altered
+        )
+
+
+def test_published_set_carries_and_verifies_its_benchmark_report(
+    metric_inputs, live_fixture_environment
+):
+    """D5: the checked report bytes travel with the set and gate the reader."""
+    from blueearth_cst.experiment import return_level_validation
+
+    root, request = metric_inputs
+    plan = build_metric_plan(root, request)
+    manifest = publish_metric_set(root, plan)
+    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    report = destination / return_level_validation.REPORT_FILENAME
+    assert report.is_file()
+    assert report.read_bytes() == return_level_validation.load_report_bytes()
+    assert manifest["return_level_benchmark"]["path"] == report.name
+    assert (
+        manifest["return_level_validation"]["benchmark_record"]["sha256"]
+        == manifest["return_level_benchmark"]["sha256"]
+    )
+    marker = destination / "metrics.json"
+    assert read_metric_set(root, marker) == manifest
+
+    # A tampered copy must fail the reader rather than downgrade silently.
+    report.write_bytes(b"{}\n")
+    with pytest.raises(ImmutableMetricSetError):
+        read_metric_set(root, marker)
+
+
+def test_reader_accepts_a_legacy_set_without_the_report(
+    metric_inputs, live_fixture_environment, monkeypatch
+):
+    """D6: a retained pre-C set stays readable, and needs no benchmark."""
+    from blueearth_cst.experiment import metric_plan as plan_module
+    from blueearth_cst.experiment import return_level_validation
+
+    root, request = metric_inputs
+    plan = build_metric_plan(root, request)
+    publish_metric_set(root, plan)
+    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    marker = destination / "metrics.json"
+
+    # Rewrite the published set as a legacy one: legacy validation, no report.
+    manifest = json.loads(marker.read_text(encoding="utf-8"))
+    manifest["return_level_validation"] = dict(
+        return_level_validation.LEGACY_VALIDATION
+    )
+    manifest["metric_definition"]["return_level_validation"] = dict(
+        return_level_validation.LEGACY_VALIDATION
+    )
+    del manifest["return_level_benchmark"]
+    (destination / return_level_validation.REPORT_FILENAME).unlink()
+    legacy = plan_module._validated_benchmark(
+        destination.resolve(), manifest, manifest["return_level_validation"]
+    )
+    assert legacy is None, "a legacy set must resolve to no benchmark reference"
+
+
+def test_reader_refuses_an_unknown_validation_shape(metric_inputs):
+    from blueearth_cst.experiment import metric_plan as plan_module
+
+    root, _ = metric_inputs
+    with pytest.raises(ImmutableMetricSetError, match="unknown return-level"):
+        plan_module._validated_benchmark(root, {}, {"schema_version": "other/9"})
+    with pytest.raises(ImmutableMetricSetError, match="unknown return-level"):
+        plan_module._validated_benchmark(root, {}, {"status": "something"})
+
+
+def test_legacy_set_must_not_carry_a_benchmark_report(metric_inputs):
+    from blueearth_cst.experiment import metric_plan as plan_module
+    from blueearth_cst.experiment import return_level_validation
+
+    root, _ = metric_inputs
+    with pytest.raises(ImmutableMetricSetError, match="must not carry"):
+        plan_module._validated_benchmark(
+            root,
+            {"return_level_benchmark": {"path": "x", "sha256": "y"}},
+            dict(return_level_validation.LEGACY_VALIDATION),
+        )
+
+
+def test_metric_environment_records_the_estimator_source():
+    """D5: the resolver binds D7's verified source hashes, not just versions."""
+    from blueearth_cst.experiment import gev_lmoments
+    from blueearth_cst.experiment.metric_plan import resolve_metric_environment
+
+    observed = resolve_metric_environment()
+    estimator = observed["return_level_estimator"]
+    assert estimator["estimator_id"] == "gf15-lmoments-c/1"
+    assert estimator["version"] == gev_lmoments.DEPENDENCY_VERSION
+    assert estimator["source_sha256"] == gev_lmoments.SOURCE_SHA256
+    assert "lmoments3" in observed["packages"] or any(
+        "lmoments3" in key for key in observed["packages"]
+    )

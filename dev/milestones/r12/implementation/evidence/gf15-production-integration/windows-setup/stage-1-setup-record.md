@@ -220,18 +220,35 @@ reading.
 
 ### Hazard for Stage 2 — `pixi.lock` line endings
 
-The repository's tracked `pixi.lock` is checked out **CRLF** (17,812 CRLF, 0 LF).
-`pixi lock` writes **LF**. Regenerating the lock in the repository will therefore
-rewrite every line of the file, and a later CRLF checkout re-keys it back; this
-is the same mechanism already tracked as `t2608301524`. Stage 2 must expect a
-whole-file lock diff and must not read it as a dependency change.
+The repository's tracked `pixi.lock` is checked out **CRLF** (17,812 CRLF, 0 LF)
+while `pixi lock` writes **LF**, so a raw byte comparison of the working-copy file
+before and after a regeneration differs on every line.
 
-Solve drift is the other half of the same obligation. This qualification binds
-lock `43d11fc5…`, not the lock Stage 2 will generate in the repository. A fresh
-solve there may move packages outside the eight-root closure, and the equality
-measured above is scoped to those roots and their reachable dependencies. Stage 2
-must **re-run the projection comparison against the regenerated repository lock**
-rather than inheriting this pass.
+> **Corrected 2026-09-14, during Stage 2 commit 1.** This paragraph originally
+> predicted that Stage 2 would therefore see a whole-file **`git diff`**. That was
+> wrong. `.gitattributes` puts `pixi.lock` under `* text=auto`, so the committed
+> **blob is LF** (verified: 0 CRLF, 17,812 LF) and only the working copy is CRLF.
+> Git compares against the normalized blob, so the regeneration produced an
+> 18-line diff — the two per-platform environment entries and the package record —
+> and nothing else. The byte-level asymmetry behind `t2608301524` is real and is
+> why the shipped report asset is pinned `-text`; the `git diff` consequence
+> asserted here was not. Raw-byte comparisons of working-copy files remain
+> platform-sensitive; `git diff` does not.
+
+Solve drift is the other half of the same obligation, and it is the reviewer's
+F3. This qualification binds lock `43d11fc5…`, not the lock Stage 2 generates in
+the repository; a fresh solve there may move packages outside the eight-root
+closure, and the equality measured above is scoped to those roots and their
+reachable dependencies.
+
+> **Discharged 2026-09-14, during Stage 2 commit 1.** The regenerated repository
+> lock is **byte-identical** to the qualified lock — the same SHA-256
+> `43d11fc5297160152d0c728f9c9e4d4816c816b2876fc75cb3c3d210f437ffc6`, with the
+> two manifests differing only by the three explanatory comment lines added above
+> the dependency. The qualified environment is therefore the environment this
+> lock produces, and the projection equality transfers by identity rather than by
+> re-measurement. Had the digests differed, a fresh install and a re-run
+> comparison would have been required instead.
 
 ## Materialized metrics operation, config and command — unexecuted
 

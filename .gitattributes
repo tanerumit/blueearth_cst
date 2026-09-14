@@ -76,6 +76,14 @@ dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/**/*.log -whitespace
 dev/milestones/r12/implementation/evidence/gf15-production-applicability/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
 dev/milestones/r12/implementation/evidence/gf15-production-applicability/**/*.log -whitespace
 
+# The shipped GF15 benchmark report is loaded as a package resource and its
+# on-disk bytes are hashed twice: D4 binds the digest into the metric identity,
+# and D5's reader verifies the copied report against it. Under `* text=auto`
+# these bytes would be LF in the repository and CRLF in a Windows checkout, so
+# the same commit would present two different digests on the two CI legs.
+# Freeze them like the evidence archives they are packaged from.
+blueearth_cst/experiment/data/** -text -whitespace
+
 # Accepted GF15 method and verbatim review records carry byte-level digests.
 dev/milestones/r12/gf15-alternative-estimator-review/** -text -whitespace
 dev/milestones/r12/gf15-alternative-estimator-design.md -text -whitespace

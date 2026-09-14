@@ -76,6 +76,10 @@ r-yaml = "*"
 hydroengine = "*"
 gwwapi = "*"
 snakemake = "*"
+# GF15 return-level estimator (accepted adapter design D7). Pinned to the exact
+# wheel the qualification was run against: conda-forge ships a same-version
+# repack, which D7 does not qualify, so this must resolve from PyPI.
+lmoments3 = "==1.0.8"
 
 # Env activation. Applied on every `pixi shell` / `pixi run`, so these no longer
 # have to be re-created by hand after each env rebuild (see docs/env_setup_notes.md).

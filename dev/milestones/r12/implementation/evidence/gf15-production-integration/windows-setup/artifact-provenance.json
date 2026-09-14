@@ -1,0 +1,29 @@
+{
+  "purpose": "D7 artifact-provenance check: PyPI wheel placement versus the conda-forge repack used by the superseded windows-environment attempt.",
+  "pypi_install": {
+    "root": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/windows-environment-pypi/.pixi/envs/default/Lib/site-packages/lmoments3",
+    "files": {
+      "__init__.py": "1d2c066a2ec4925bb838b7680d63ae8ae87c5234aa3c986d6ebe81500d75d6e2",
+      "distr.py": "f8859d11f10c3206e3e5009c1b238a328c6c9215b1cc7436800160fa929bb2ee",
+      "stats.py": "03d008bffdc5a22d2373e87fd280682bc816572cf99e0b9e8810cc3b1ae3d2d0",
+      "tests/__init__.py": "49d166f06204960feed9b1784b14258b59e1719d96fb009014c0748319089c0c",
+      "tests/test_lmoments.py": "08b4cf75065fadce21350eea4c711cecaaa62d12640ca7786aea4ba4330910ec",
+      "tests/test_samlmu_speed.py": "fc72e8ae6478578925abdfcd1937ca1591701c6d6a461355451a77f34717cc61"
+    }
+  },
+  "conda_repack_install": {
+    "root": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/windows-environment/.pixi/envs/default/Lib/site-packages/lmoments3",
+    "files": {
+      "__init__.py": "1d2c066a2ec4925bb838b7680d63ae8ae87c5234aa3c986d6ebe81500d75d6e2",
+      "distr.py": "f8859d11f10c3206e3e5009c1b238a328c6c9215b1cc7436800160fa929bb2ee",
+      "stats.py": "03d008bffdc5a22d2373e87fd280682bc816572cf99e0b9e8810cc3b1ae3d2d0",
+      "tests/__init__.py": "49d166f06204960feed9b1784b14258b59e1719d96fb009014c0748319089c0c",
+      "tests/test_lmoments.py": "08b4cf75065fadce21350eea4c711cecaaa62d12640ca7786aea4ba4330910ec",
+      "tests/test_samlmu_speed.py": "fc72e8ae6478578925abdfcd1937ca1591701c6d6a461355451a77f34717cc61"
+    },
+    "conda_artifact": "https://conda.anaconda.org/conda-forge/noarch/lmoments3-1.0.8-pyhd8ed1ab_1.conda",
+    "conda_artifact_sha256": "9a803860ac00390b94b26491129c67f3ed3f041cbc81b798e5e62dfd5088d08e"
+  },
+  "module_sources_identical": true,
+  "d7_wheel_sha256_satisfied_by_conda": false
+}

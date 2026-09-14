@@ -1,0 +1,48 @@
+# Stage 1 materialized metrics-only project config (UNEXECUTED).
+#
+# Copied in meaning from the retained P3 `metrics-reuse` configs recorded in
+# `../../p3/operations-dedicated-reuse.json`. Only two things differ from the
+# driver's 2026-09-14_0010 draft: `project.project_dir` names a durable
+# working-copy home instead of disposable session scratch, and this file is
+# retained as tracked evidence.
+#
+# The working copy is NOT created by Stage 1. Stage 3 copies it from the frozen
+# snapshot at
+#   C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/prechange/p3-final-direct
+# and writes only there. The snapshot itself is never a write target.
+basin:
+  delineation:
+    max_subbasins: 11
+  output_locations: test_case/test_data/output_locations.csv
+  region: '{''subbasin'': [9.666, 0.4476], ''uparea'': 100}'
+  resolution: 0.00833
+climate:
+  selected: era5
+  sources:
+  - era5
+  window:
+    end: 2016
+    start: 2000
+model:
+  outvars:
+  - river discharge
+  - groundwater recharge
+project:
+  catalog: config/catalogs/deltares_data.yml
+  project_dir: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project
+schema_version: 2
+workflows:
+  analyze_climate:
+    enabled: false
+  analyze_projections:
+    config_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\p3-final-direct\project_config_analyze_projections.yml
+    enabled: false
+  build_model:
+    config_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\p3-final-direct\project_config_build_model.yml
+    enabled: false
+  generate_scenarios:
+    config_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\p3-operations-dedicated-reuse\absent-generation.yml
+    enabled: false
+  simulate_system:
+    config_path: project_config_simulate_system.yml
+    enabled: true

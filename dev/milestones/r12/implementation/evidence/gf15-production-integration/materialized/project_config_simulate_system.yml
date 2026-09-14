@@ -1,0 +1,14 @@
+# Stage 1 materialized simulate_system workflow config (UNEXECUTED).
+#
+# `operation: metrics-only` is one of the two values `simulation_runner.py`
+# accepts (`simulate-and-metrics`, `metrics-only`); there is no metrics-only CLI
+# flag and none is introduced. `scenario_collection.manifest_path` is the
+# ORIGINAL absolute collection anchor embedded in the retained simulation record
+# and must not be rewritten; see the Stage 1 setup record on its scratch home.
+experiment_name: p3_final
+metrics:
+- q
+- gwr
+operation: metrics-only
+scenario_collection:
+  manifest_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\p3-final-direct\project\scenario_collections\71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88\collection.json

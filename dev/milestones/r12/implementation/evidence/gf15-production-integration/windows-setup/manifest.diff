@@ -1,0 +1,10 @@
+--- /dev/fd/63	2026-09-14 07:33:31.000000000 +0300
++++ /dev/fd/62	2026-09-14 07:33:31.000000000 +0300
+@@ -76,6 +76,7 @@
+ hydroengine = "*"
+ gwwapi = "*"
+ snakemake = "*"
++lmoments3 = "==1.0.8"
+ 
+ # Env activation. Applied on every `pixi shell` / `pixi run`, so these no longer
+ # have to be re-created by hand after each env rebuild (see docs/env_setup_notes.md).

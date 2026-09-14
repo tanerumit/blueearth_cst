@@ -61,12 +61,34 @@ updated: 2026-09-14
 - [x] Review the concrete production adapter, dependency and validation-report identity contract: v3 scoped verification approves, all10 findings resolved; external round2 explicitly waived.
 - [x] Obtain G2 approval of exact production-adapter design v3 on2026-09-14; finalize accepted design and four-stage implementation handoff.
 - [x] Capture the production-integration pre-change snapshot and pass independent integrity review on2026-09-14; preserve original collection anchor.
-- [ ] Complete production-integration Stage1 isolated Windows Pixi setup and Windows qualification.
+- [x] Complete the production-integration Stage1 isolated Windows Pixi setup; independent review of that setup record is outstanding and gates Stage2.
 - [ ] DEFERRED by owner2026-09-14: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
 ## Refs
+
+Stage 1 setup completed on 2026-09-14: Pixi resolved at
+`AppData/Local/pixi/bin/pixi.exe` (0.70.2), which discovery had reported
+unresolved. An isolated root outside the repository and outside scratch,
+`blueearth_cst-artifacts/r12/gf15-production-integration/windows-environment-pypi`,
+adds one `[pypi-dependencies]` line, solves win-64 AND linux-64, and installs
+win-64. The lock records D7's pinned wheel `984d1f1b...` exactly and the installed
+sources match both D7 digests. The metric-stage projection in that environment is
+IDENTICAL to the shared production environment's, both `locks` digests included,
+so the closure is production-equivalent rather than version-matched; adding the
+lmoments3 root changes exactly one entry and the identity digest. The earlier
+`windows-environment/` attempt put lmoments3 in `[dependencies]` and resolved the
+conda-forge repack, which D7 does not qualify; it is superseded, though all six
+module sources are byte-identical between the two. Two findings carry to Stage 2:
+`stage_environment` binds no source hashes, so D5's binding needs an explicit
+adapter-versus-identity decision; and the tracked `pixi.lock` is CRLF while pixi
+writes LF, so a regenerated lock diffs whole-file (`t2608301524`). The metrics
+operation, config set and exact CLI are materialized and unexecuted. Stage 3's
+collection anchor still resolves through disposable `.tmp` scratch. Record:
+`../milestones/r12/implementation/evidence/gf15-production-integration/windows-setup/stage-1-setup-record.md`.
+Independent review of this setup record is outstanding and gates Stage 2.
+
 
 The [accepted alternative-estimator design](../milestones/r12/gf15-alternative-estimator-design.md)
 was approved at G2 on 2026-09-12, including recorded finding dispositions. The

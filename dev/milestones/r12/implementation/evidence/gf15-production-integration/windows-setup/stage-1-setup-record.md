@@ -13,7 +13,10 @@ scientific adequacy claim.
 
 Machine-readable evidence beside this file: `setup-result.json` (identities and
 both stage projections), `artifact-provenance.json` (PyPI versus conda-forge
-comparison), `manifest.diff` (the one-line manifest delta).
+comparison), `manifest.diff` (the one-line manifest delta),
+`import-qualification.json` (actual imports), and
+[`../materialized/retained-config-comparison.json`](../materialized/retained-config-comparison.json)
+(materialized-versus-retained config deltas).
 
 ## Pixi executable — resolved
 
@@ -144,6 +147,37 @@ request gets a distinct identity, while merely *installing* the package without
 adding the root does not perturb any other stage. That is the D5 property, and it
 is now measured rather than assumed.
 
+The equivalence claim is precise: identical **as projected over the metric-stage
+roots**. The projection follows those eight roots and their reachable
+dependencies; packages outside that closure are not covered by it.
+
+### Imports actually execute
+
+`stage_environment` reads `importlib.metadata` and imports nothing, so the
+projection alone is metadata evidence. It was therefore backed by a real import
+check in the durable environment, invoked exactly as the recorded old argv
+invokes it — bare env `python.exe`, no `pixi run`, no activation scripts.
+
+All eight metric-stage roots plus `lmoments3` and `snakemake` import
+successfully, each resolving inside the qualified root's `site-packages`, and
+`scipy.optimize`, `scipy.stats` and `numpy.linalg` load — the native paths that
+Windows conda DLL loading would break first. `import-qualification.json` records
+each module's resolved file and version. Importing is not fitting; no estimator
+was called.
+
+**Invocation form and ambient environment.** The discovery record sketched a
+`pixi run --manifest-path …` command. The form used here and written above is the
+bare environment `python.exe`, because that is what the recorded old argv used
+(`operations-dedicated-reuse.json`, `commands[label=metrics-reuse]`), and Stage 3
+compares against that run. A bare invocation runs no `[activation.env]`, so
+`HDF5_USE_FILE_LOCKING` and the gcsfs variables come from the invoking shell
+rather than from this root. `HDF5_USE_FILE_LOCKING=FALSE` was present ambiently
+during this check. **The old run captured no environment block** — the retained
+record holds argv, exit code, log and hashes, and no environment — so the old
+run's ambient variables are *unknown*, not matched. Stage 3 must set them
+deliberately and record what it set, or invoke through `pixi run` and record that
+instead; it must not assume parity with the old run here.
+
 This is a Windows result. The PyPI-versus-conda-forge numeric closure that the
 study venv left open is **not** settled by it: this environment takes NumPy and
 SciPy from conda-forge, as production does, and takes only lmoments3 from PyPI.
@@ -176,6 +210,23 @@ Retained under
 `project_config_simulate_system.yml`, copied in meaning from the retained P3
 `metrics-reuse` configs and differing from the driver's 2026-09-14_0010 drafts
 only in naming a durable working-copy home.
+
+"Copied in meaning" is checked, not asserted. The retained originals are
+`.../p3-operations-dedicated-reuse/project_config_metrics.yml` and
+`metrics-simulation.yml`; both re-hash today to the values the P3 record
+registered, `27b5463a3b601f5f6c5fe481e23373d5aa84217973382ebdcff50e3ba242c218`
+and `474bc8444fb04b943ef43f67466e94e3dbfbde1bbb5034f6eee834d6c41f9433`. A parsed
+key-by-key comparison against the materialized pair
+(`retained-config-comparison.json`) finds:
+
+- workflow settings: **zero** differing keys — `operation`, `metrics`,
+  `experiment_name` and the collection anchor are unchanged;
+- project config: **exactly two** differing keys — `project.project_dir`, moved
+  to the durable working-copy home, and `workflows.simulate_system.config_path`,
+  written as a sibling relative path (which resolves against the project file's
+  own directory to the same settings content). `max_subbasins`, region,
+  resolution, climate window, outvars, catalog and every disabled-workflow
+  stanza are unchanged.
 
 `simulate_system.operation` accepts exactly `simulate-and-metrics` and
 `metrics-only` (`blueearth_cst/experiment/simulation_runner.py`). Read from
@@ -231,6 +282,8 @@ same absolute location; the immutable simulation record must not be rewritten.
 | Isolated win-64 setup with `lmoments3==1.0.8`, D7 wheel and source checks | **passed** |
 | Both-platform lock solved | **passed (solver only)** |
 | Actual numerical/native closure recorded | **passed**, production-equivalent |
+| Metric-stage roots, lmoments3 and native submodules actually import | **passed** |
+| Materialized configs checked against the retained originals | **passed**, two intended deltas |
 | Metrics operation, config and exact CLI materialized unexecuted | **passed** |
 | Isolated linux-64 setup, install and parity | **deferred by owner, outstanding** |
 | Independent review of this setup record | **outstanding — gates Stage 2** |

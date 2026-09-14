@@ -6,6 +6,10 @@ Follow AGENTS.md, the [master brief](gf15-production-integration-brief.md) and a
 ### Goal
 Secure an immutable, complete pre-change comparison and qualify isolated dependency setup before numerical implementation.
 
+Owner sequencing override, 2026-09-14: qualify Windows now; Linux provisioning
+and execution are deferred to the R12 TODO checklist. A Windows-only handoff
+may release Windows implementation, with Linux explicitly outstanding.
+
 ### Non-goals
 No adapter edits, fits, model/generation reruns, standing baseline repair or scientific requalification.
 

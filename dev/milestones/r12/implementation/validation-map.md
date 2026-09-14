@@ -24,6 +24,9 @@ independent integrity review passed with the original collection anchor preserve
 Pixi setup and a Linux execution route
 remain unresolved; see [readiness](evidence/gf15-production-integration/stage-1-readiness.md).
 No production parity or integration acceptance is inferred from design review.
+Owner deferred Linux on2026-09-14 and authorized Windows-only setup and
+verification. Linux provisioning/parity remains an explicit R12 TODO item;
+Windows evidence cannot satisfy the outstanding Linux gate.
 
 | Gates | Current evidence |
 |---|---|

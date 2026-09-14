@@ -1,7 +1,7 @@
 ---
 title: Implement the accepted R12 workflow design
 type: todo-item
-status: blocked
+status: active
 branch: feat/wp3-improvements
 effort: 2
 area: wf3
@@ -13,7 +13,7 @@ updated: 2026-09-14
 
 > [!note] Overview
 > **What** — Implement the accepted design through the prepared feasibility/baseline, contract, durable-handoff and workflow-extraction phases.
-> **Why** — G2 design/handoff committed33c89350. Stage1 snapshot passed independent integrity review, conditional on preserving its original collection anchor. Setup needs Pixi and a Linux execution route (local WSL or an identified runner); implementation/parity and seal gates remain open.
+> **Why** — Owner deferred Linux on2026-09-14 and authorized Windows-only continuation. Snapshot integrity passed; isolated Windows Pixi setup is in progress. Linux provisioning/parity remains explicitly on the checklist; full integration and seal gates remain open.
 > **Effort** — large
 
 ## Progress
@@ -61,7 +61,8 @@ updated: 2026-09-14
 - [x] Review the concrete production adapter, dependency and validation-report identity contract: v3 scoped verification approves, all10 findings resolved; external round2 explicitly waived.
 - [x] Obtain G2 approval of exact production-adapter design v3 on2026-09-14; finalize accepted design and four-stage implementation handoff.
 - [x] Capture the production-integration pre-change snapshot and pass independent integrity review on2026-09-14; preserve original collection anchor.
-- [ ] Complete production-integration Stage1 isolated Pixi setup and Linux execution qualification.
+- [ ] Complete production-integration Stage1 isolated Windows Pixi setup and Windows qualification.
+- [ ] DEFERRED by owner2026-09-14: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 
@@ -573,3 +574,11 @@ collection anchor must remain available. [Independent integrity review](../miles
 passes all892 source/copy checks and both readers; Pixi setup and Linux execution remain unresolved. Next owner decision
 is local Linux provisioning versus an identified existing Linux runner, with
 exact D7 targets preserved. No production implementation has started.
+
+2026-09-14 owner ruling: "Lets skip the Linux installation part for now. Add it
+to the TODO list and continue with windows-only steps". Linux setup and parity
+are deferred above. Windows setup, implementation and Windows verification may
+continue without waiting for Linux. The WSL elevation request was canceled by
+the user; no administrator installer started and no WSL/consent process remained
+at recheck. Do not resume Linux installation without a new instruction. This
+sequencing override does not relax numerical targets or establish Linux parity.

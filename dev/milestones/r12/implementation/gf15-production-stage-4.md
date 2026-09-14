@@ -6,6 +6,10 @@ Follow AGENTS.md, the [master brief](gf15-production-integration-brief.md), acce
 ### Goal
 Reconcile software, provenance and scientific evidence into an explicit integration verdict.
 
+Owner sequencing override, 2026-09-14: Windows-only evidence may receive a
+bounded Windows verdict. Linux setup/parity stays deferred on the TODO checklist;
+do not issue complete cross-platform acceptance until it is qualified.
+
 ### Non-goals
 No milestone seal, successor baseline, new adequacy claim, merge or push.
 

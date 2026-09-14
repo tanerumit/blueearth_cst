@@ -241,6 +241,9 @@ of the complete P3 comparison; independent integrity review passed with its
 original collection anchor retained as a condition. Pixi
 setup and a Linux execution route remain unresolved prerequisites; implementation
 and production/platform parity remain unexecuted. See [Stage1 readiness](evidence/gf15-production-integration/stage-1-readiness.md).
+Subsequent owner ruling2026-09-14 defers Linux installation/parity to the R12
+TODO checklist and authorizes Windows-only continuation. Isolated Windows
+setup is in progress; full cross-platform acceptance remains open.
 
 - Per edit: owning narrow tests; per Python change: `pixi run lint` and `pixi run format-check`; after every Snakefile/config-shape edit: `pixi run pytest tests/test_cli.py`.
 - Once per landing: all phase-specific behavioral gates in [validation-map](validation-map.md). Capture durable evidence under `dev/milestones/r12/implementation/evidence/<phase>/`.

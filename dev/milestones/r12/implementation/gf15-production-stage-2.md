@@ -6,6 +6,10 @@ Follow AGENTS.md, the [master brief](gf15-production-integration-brief.md) and a
 ### Goal
 Implement the exact assessed estimator with truthful portable evidence, immutable identities and legacy reads.
 
+Owner sequencing override, 2026-09-14: execute Windows implementation and parity
+after Windows Stage1 readiness; carry Linux parity as deferred. Windows parity
+can release the Windows comparison, but cannot establish cross-platform acceptance.
+
 ### Non-goals
 No new estimator, fallback, threshold change, packaging backend, export product or actual-bundle validation claim.
 

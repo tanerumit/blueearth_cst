@@ -7,9 +7,13 @@ its execution, without adding scientific claims or relaxing its gates.
 
 Current execution boundary, 2026-09-14: [snapshot integrity](evidence/gf15-production-integration/snapshot-integrity-review.md)
 passed, conditional on preserving the original absolute collection anchor.
-[Setup discovery](evidence/gf15-production-integration/stage-1-readiness.md)
-could not establish Pixi or a Linux execution route. Stage1 remains incomplete;
-owner chooses local Linux provisioning or an identified existing Linux runner.
+Owner explicitly deferred Linux installation and requested Windows-only steps.
+Windows setup, implementation, parity and retained-metrics comparison can proceed
+without Linux; apply the phase gates to Windows evidence. Linux provisioning and
+parity remain on the R12 TODO checklist and block cross-platform integration
+acceptance. No numerical pins, criteria or scientific claims change. The accepted
+design remains frozen; this explicit owner ruling overrides its execution order.
+Do not resume WSL installation until requested.
 
 ## Subsystems and sequence
 

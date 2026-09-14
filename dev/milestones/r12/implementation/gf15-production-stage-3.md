@@ -6,6 +6,9 @@ Follow AGENTS.md, the [master brief](gf15-production-integration-brief.md), acce
 ### Goal
 Demonstrate complete, explainable predecessor-to-C differences using retained native responses and unchanged upstream identities.
 
+Owner sequencing override, 2026-09-14: Windows-only Stage2 parity may release
+this Windows comparison; Linux qualification remains deferred and unclaimed.
+
 ### Non-goals
 No Wflow/generation run, snapshot write, old-set relabeling, arbitrary old/new equality tolerance or baseline refresh.
 

@@ -55,13 +55,39 @@ currently unenforceable on the ubuntu leg.
 So this item now blocks two things, not one: Linux qualification of the
 estimator, AND the usefulness of CI's ubuntu leg for every other change.
 
-Whoever takes it should decide, as part of it, what the gate does in the
-meantime. The options are not equivalent and the choice is the owner's: skip
-the bit-pattern controls on non-win32 with a marker naming this item (CI goes
-green and the exposure is explicit), compare with a documented ULP tolerance on
-non-win32 (weaker but still an assertion), or leave it red and accept that the
-ubuntu leg carries no signal until parity lands. Nothing here has been changed:
-the test asserts today exactly what it asserted at the seal.
+### Interim gate: SKIP off win32 (landed 2026-09-15)
+
+Owner ruled to fix the ubuntu failure. Two tests in `tests/test_gev_lmoments.py`
+now carry `_UNQUALIFIED_PLATFORM`, a `skipif(sys.platform != "win32")` whose
+reason names this item:
+
+- `test_quantile_controls_reproduce_the_retained_bit_patterns` -- the failing one.
+- `test_quantile_controls_discriminate_against_mutants` -- which was passing off
+  win32 FOR THE WRONG REASON. It counts controls whose bits do not match, so the
+  platform's own libm noise satisfied `failures > 0` and it discriminated
+  nothing while reporting green.
+
+**A ULP tolerance was considered and rejected**, though it looks like the more
+sophisticated option. Two reasons. It needs a bound that cannot be determined
+from Windows -- the assertion sits inside the loop, so the observed evidence is
+one control of 44 and the worst-case deviation is unknown; any number picked
+here is extrapolation, and too tight a bound costs a CI round-trip to learn one
+more data point. More importantly, a tolerance variant under the same test name
+is a DIFFERENT assertion wearing the bit-exact one's name, reporting green on
+the very platform where this item records the estimator as unqualified. The
+skip states the true thing and prints it in the CI summary.
+
+Deliberately NOT touched: `test_branch_controls_reproduce_the_pinned_inversion`
+passes bit-exactly on ubuntu today. That is evidence the inversion IS
+bit-reproducible there, not luck to be corrected, and replacing a working exact
+assertion with anything weaker is strictly less coverage.
+
+No control, no estimator code and no retained evidence was modified. On win32
+the module asserts exactly what it asserted at the seal -- verified as 57 passed
+before and after, with no skips appearing.
+
+**When this item lands, delete both skips.** `_UNQUALIFIED_PLATFORM` exists only
+to be removed; nothing else about those tests needs to change.
 
 ## Why it is not just "run the tests on Linux"
 

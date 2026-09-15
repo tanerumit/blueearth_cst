@@ -1,0 +1,19 @@
+{
+  "ambient_environment_note": "REDACTED 2026-09-15. An earlier version of this file dumped every ambient environment variable, which included live API credentials. The dump was removed and the commit rewritten before any push. What the run's claims actually rest on is retained above: `path` is the complete PATH the run and every child process saw, `toolchain_resolution` is the resolution of each model-toolchain executable under it, and `command` is the exact invocation. The variables deliberately cleared before the run were JULIA_PROJECT, JULIA_DEPOT_PATH, JULIAUP_HOME, R_HOME, PIXI_IN_SHELL and CONDA_PREFIX; PYTHONNOUSERSITE, PYTHONHASHSEED and PYTHONUTF8 were set to 1, 0 and 1.",
+  "command": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\python.exe C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\scripts\\simulate_system.py --config C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-production-integration\\materialized\\project_config_gf15_metrics.yml --cores 3 --target metrics",
+  "config": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-production-integration\\materialized\\project_config_gf15_metrics.yml",
+  "interpreter": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\python.exe",
+  "note": "PATH carries Windows system directories only. A null entry in toolchain_resolution means the executable is unreachable from this process and every child it spawns.",
+  "path": "C:\\Windows\\system32;C:\\Windows;C:\\Windows\\System32\\Wbem;C:\\Windows\\System32\\WindowsPowerShell\\v1.0",
+  "recorded_at_utc": "2026-09-15T06:34:10.0823540Z",
+  "toolchain_resolution": {
+    "R": null,
+    "Rscript": null,
+    "julia": null,
+    "juliaup": null,
+    "pixi": null,
+    "python": null,
+    "snakemake": null,
+    "wflow_cli": null
+  }
+}

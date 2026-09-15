@@ -1,0 +1,32 @@
+{
+  "note": "No native response, collection, simulation record or response inventory appears under added/modified, so no model, generation or response step wrote anything. The only new paths are the new metric plan, the new metric set and the runner's own invocation record, which is an operational log rather than an experiment result.",
+  "snapshot_untouched": true,
+  "snapshot_vs_retained_source": {
+    "changed": [],
+    "files": 446,
+    "only_in_snapshot": [],
+    "only_in_source": []
+  },
+  "working_copy_vs_snapshot": {
+    "added": [
+      "project/config/runs/invocations/simulation-50e3da6fb6f24fe4a849ade677affd84.json",
+      "project/experiments/p3_final/results/metric_plans/6ed13c055a6fa12e2199e97551a7c7f7304a8645e432875bba375d061c2aaf42/plan.json",
+      "project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/gwr_indicators.csv",
+      "project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metric_environment.json",
+      "project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metrics.json",
+      "project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/q_indicators.csv",
+      "project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/return_level_benchmark.json",
+      "project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/unit_index.csv"
+    ],
+    "added_count": 8,
+    "modified": [],
+    "permitted_prefixes": [
+      "project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/",
+      "project/experiments/p3_final/results/metric_plans/6ed13c055a6fa12e2199e97551a7c7f7304a8645e432875bba375d061c2aaf42/",
+      "project/config/runs/invocations/"
+    ],
+    "removed": [],
+    "stray_writes": [],
+    "writes_confined_to_permitted_namespaces": true
+  }
+}

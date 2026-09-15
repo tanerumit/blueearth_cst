@@ -100,25 +100,51 @@ string joined onto the project root. `_initialization_path` does the same for
 not cosmetic string building.** Change the literal and the assertion in lockstep, in
 one edit each, or the guard silently stops guarding.
 
-## Compatibility
+## Compatibility — RULED 2026-09-15: hard break, no compat read path
 
 Every project tree written under the old paths becomes unreadable to the new code.
-Decide and record which of these applies before starting:
+The surviving state was inventoried rather than assumed, and it is small enough that a
+compat read path costs more than it saves.
 
-- hard break plus regeneration, or
-- a compat read path that accepts the old locations for one release.
+**Populated trees, 2026-09-15.** Four, each holding exactly one collection and exactly
+one plan:
 
-Two complications for the hard-break option. `test_case/test_local` is **untracked and
-shared across worktrees**, so the tree flips for every worktree at once and any branch
-without this change starts failing against it. And `dev/baseline/manifest.json` plus
-`dev/scripts/check_baseline.py` read into these trees, so a re-record may be owed —
-AGENTS.md prices that at a full run.
+| tree | collections | size |
+|---|---|---|
+| `session-3/test_case/test_local` | 1 | 65 MB |
+| `session-3/test_case/test_successor` | 1 | 65 MB |
+| `session-1/test_case/test_rapid` | 1 | 46 MB |
+| `blueearth_cst/.tmp/test_run` | 1 | 46 MB |
+
+Every other worktree's `test_local` holds `experiments/` only, with no scenario trees
+at all. The one unknown is a production `project_dir` outside the repository tree; if
+one exists and is worth keeping, it needs a WF3 re-run or a one-off move.
+
+**Two AGENTS.md claims did not survive checking, and the ruling depends on both.**
+
+1. **`test_case/test_local` is NOT shared across worktrees.** AGENTS.md says it is
+   "untracked and SHARED", which would mean the tree flips for every worktree at once.
+   All six copies are independent real directories with no reparse point, and they
+   already disagree: session-3's carries scenario trees and session-2's does not. So a
+   worktree without this change keeps working against its own copy. The residual
+   hazard is seeding — a new worktree copied from an old-layout primary inherits the
+   old layout, per the standing seed practice.
+2. **`check_baseline.py` and `dev/baseline/manifest.json` do not reach into these
+   trees at all.** The manifest contains no `scenario_` path, and the `plan_sha256`
+   that `check_baseline.py` reads belongs to the **metric** plan under
+   `experiments/<id>/results/metric_plans/`, a different object with schema
+   `metric-plan/1`. No baseline re-record is owed by this change.
+
+**Ruling.** Hard break plus regeneration. The state is four small trees, nothing
+tracked points into them, and each is reproducible by a WF3 run. A compat read path
+would have to be threaded through the two path-containment guards, which is precisely
+where a second accepted spelling is most dangerous.
 
 `naming.md` distinguishes two artifacts here. An **internal rename record** at
 `dev/<milestone>/migration_<topic>.md` is *required* for every rename, carrying the
 old-to-new table, the machinery to update and the gate evidence. A **user-facing
 guide** at `docs/migration-<milestone>.md` is optional and owed only if users must
-act — which they must, if the hard-break option is taken and anyone holds an existing
+act — and the hard-break ruling above means they must, if anyone holds an existing
 project folder. `docs/migration-workflow-names.md` is the precedent for that guide.
 
 ## Reference sweep
@@ -131,11 +157,9 @@ excluding `dev/milestones/` and `dev/working/`:
 - [ ] `blueearth_cst/experiment/collection_resolution.py`
 - [ ] `blueearth_cst/experiment/generation_plan.py`
 - [ ] `dev/scripts/semantic_tree_diff.py`
-- [ ] `dev/scripts/check_baseline.py`
 - [ ] `tests/test_project_tree_inventory.py` — the canonical tree fixture
 - [ ] `tests/test_collection_resolution.py`
 - [ ] `tests/test_interchange_contracts.py`
-- [ ] `tests/test_check_baseline_scope.py`
 - [ ] `README.md`
 - [ ] `docs/wf3-retained-handoffs.md`
 - [ ] `docs/migration-workflow-names.md`
@@ -144,8 +168,7 @@ excluding `dev/milestones/` and `dev/working/`:
 
 ## Progress
 
-- [ ] Rule the two open questions below
-- [ ] Rule the compatibility question above
+- [ ] Rule the two open questions below (compatibility is ruled)
 - [ ] Move the trees and sweep the references
 - [ ] Update the canonical tree fixture and re-run `pixi run test-full`
 - [ ] Write the required internal rename record under `dev/<milestone>/`
@@ -160,8 +183,9 @@ excluding `dev/milestones/` and `dev/working/`:
 > 2. **`scenario-plan/1` → `scenario-request/1`** and **`plan_sha256` →
 >    `request_sha256`.** `plan_sha256` is a self-referential digest over the plan
 >    minus itself, and it is copied into the initialization receipts compared by
->    `_job_collection_claim`, so renaming it invalidates in-flight receipts. It is
->    also read by `check_baseline.py`.
+>    `_job_collection_claim`, so renaming it invalidates in-flight receipts. Note it is
+>    NOT the `plan_sha256` that `check_baseline.py` reads — that one belongs to the
+>    metric plan.
 >
 > Doing the move without these is still a net improvement, just an inconsistent one.
 
@@ -173,5 +197,5 @@ excluding `dev/milestones/` and `dev/working/`:
 - `blueearth_cst/experiment/collection_resolution.py` — `scenario_plan`,
   `write_scenario_plan`, `verify_scenario_plan`. The request-to-collection binding.
 - `dev/reference/naming.md` — lowercase `snake_case` for locally minted directory
-  names; migration-guide bar at §110.
+  names; the rename-record and migration-guide table.
 - `docs/migration-workflow-names.md` — precedent for a user-facing rename guide.

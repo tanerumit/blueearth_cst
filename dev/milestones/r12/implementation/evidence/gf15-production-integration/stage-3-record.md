@@ -282,7 +282,9 @@ the benchmark assessed. This is a qualification gap **distinct from** the
 near-zero relative-error caveat, and it was absent from the first version of this
 record. Whether the declaration should gain a shape-coverage field, or the
 reducer a shape guard, is an open question for Stage 4 and the owner — not one
-this record settles.
+this record settles. The options and their consequences are set out in
+[shape-coverage-options.md](shape-coverage-options.md), which awaits an owner
+ruling.
 
 ### What a consumer should take from this
 

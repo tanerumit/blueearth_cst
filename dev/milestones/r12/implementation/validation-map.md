@@ -81,7 +81,7 @@ three reviews; the round-2 corrections are executor-verified only.
 
 Outstanding and explicitly not discharged: **Linux setup and parity** (D8 handoff
 2/4, owner-deferred and ruled out of scope for now — Windows evidence cannot
-satisfy it), the **§7.5 owner method ruling**, **actual-bundle applicability**,
+satisfy it; boarded as `t2609151346`), the **§7.5 owner method ruling**, **actual-bundle applicability**,
 and the accuracy of low-flow return levels in both the near-zero and
 outside-shape regimes. No milestone seal is inferred.
 

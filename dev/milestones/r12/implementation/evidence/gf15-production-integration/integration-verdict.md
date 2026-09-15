@@ -172,7 +172,8 @@ boundary now appear where a reader of the published parameters will meet them.
    executor-verified only. Reopening is a standing option, not a pending task.
 2. **Linux setup and parity** — D8 handoff 2/4. Owner-deferred 2026-09-14 and
    ruled out of scope on 2026-09-15. **Windows evidence cannot satisfy it**, and
-   nothing in this verdict should be read as cross-platform acceptance.
+   nothing in this verdict should be read as cross-platform acceptance. Boarded
+   as `t2609151346` so the obligation outlives `t2609100916`.
 3. **§7.5 owner method ruling** on the estimator.
 4. **Actual-bundle applicability** — still `unestablished`; the 8x evidence
    remains a post-results development rescore under a relaxed retained-data

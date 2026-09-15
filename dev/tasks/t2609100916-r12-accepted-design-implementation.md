@@ -9,6 +9,7 @@ origin: R12
 queue:
 created: 2026-09-10
 updated: 2026-09-15
+status: done
 ---
 
 > [!note] Overview
@@ -62,7 +63,8 @@ updated: 2026-09-15
 - [x] Obtain G2 approval of exact production-adapter design v3 on2026-09-14; finalize accepted design and four-stage implementation handoff.
 - [x] Capture the production-integration pre-change snapshot and pass independent integrity review on2026-09-14; preserve original collection anchor.
 - [x] Complete the production-integration Stage1 isolated Windows Pixi setup and pass independent review on2026-09-14: accepted with findings, all discharged except a Stage2 re-check obligation.
-- [ ] DEFERRED by owner 2026-09-14 and ruled OUT OF SCOPE 2026-09-15: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
+- [ ] CARRIED to `t2609151346` on 2026-09-15 so it outlives this task. Deferred by owner
+      2026-09-14 and ruled out of scope 2026-09-15: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
 - [x] Implement production-integration Stage2 on Windows: adapter, report, identity, freshness,
       reader dispatch and docs in six commits; full suite 3804 passed. E7 parity verdict outstanding.
 - [x] Obtain the independent model-validator E7 parity verdict: REJECTED at `ebd85b88` on a real
@@ -74,8 +76,15 @@ updated: 2026-09-15
 - [x] Complete Stage4 reconciliation and software gates, and issue bounded Windows acceptance on the
       owner's 2026-09-15 ruling closing the review loop. Two independent reviews plus an owner
       ruling; the round-2 corrections are executor-verified only.
-- [ ] Obtain any required method or production-integration ruling after full qualification.
-- [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
+- [x] Obtain the production-integration rulings: owner closed the independent review loop and
+      ruled Linux out of scope on 2026-09-15, and ruled B+A on the shape-coverage question.
+      The section 7.5 METHOD ruling on the estimator remains outstanding and is named as such
+      in the integration verdict and the roadmap seal scope.
+- [x] Complete the standing baseline/tree and milestone-seal gates. All three standing checks
+      pass: check_baseline check 7 targets, the selected-workflow check 5 targets, and
+      snapshot_project_tree MAP CLEAN at 326 paths with 0 unmapped against the previous 75.
+      The fixture was replaced rather than repaired and the predecessor tree preserved.
+      Seal gate: test-full 3826 passed, 4 skipped, 1 xfailed.
 
 ## Refs
 

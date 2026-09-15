@@ -41,7 +41,7 @@ contract surface, not part of the artifact tree, and no durable artifact path
 carries one. One milestone, R10; dev artifacts under `dev/milestones/r10/`. See
 § Phase 7 below.
 
-**Phase 8 — WF3 rework (R11 SEALED 2026-08-08; R12 next).** Rebuilds workflow 3,
+**Phase 8 — WF3 rework (R11 SEALED 2026-08-08; R12 SEALED 2026-09-15).** Rebuilds workflow 3,
 the stress test, in the two layers it turns out to have: **R11** changed what it
 emits and what its members are called; **R12** changes how it executes. Mirrors
 Phase 5, which did the same for workflow 2. Dev artifacts under
@@ -1371,7 +1371,7 @@ R10 finished, not a history of how it got there.
 
 ---
 
-## Phase 8 — WF3 rework (R11 SEALED, R12 next)
+## Phase 8 — WF3 rework (R11 SEALED, R12 SEALED)
 
 Registered 2026-08-07. Workflow 3 is the last of the three not to have been
 reworked: Phase 5 did WF2, and WF1 was settled across R3, R7 and R9. This phase
@@ -1469,7 +1469,36 @@ it does not — scope §8).
 
 **Tag.** `r11-wf3-artifacts` — cut 2026-08-08 on `milestone/r11-wf3-artifacts`.
 
-### R12 — Scenario generation and system simulation (DESIGN ACCEPTED 2026-09-10)
+### R12 — Scenario generation and system simulation (SEALED 2026-09-15)
+
+**Status.** Implemented and sealed on `feat/wp3-improvements`. Phases P0-P3
+landed the feasibility baseline, logical contracts, durable handoffs and the
+entry-point extraction, each with signed independent acceptance; the GF15
+estimator replacement followed as a four-stage production integration. The
+implementation record is `t2609100916`; the gate-by-gate position is
+[validation-map.md](milestones/r12/implementation/validation-map.md).
+
+**What the seal covers.** Two runnable entry points with metrics-only
+recomputation, the successor project layout, and the L-moment GEV return-level
+estimator `gf15-lmoments-c/1` under **bounded Windows acceptance for operational
+screening only**. The standing baseline was re-established from the tracked seed
+and all three standing checks pass — `check_baseline check` 7 targets,
+`snapshot_project_tree` MAP CLEAN at 326 paths with 0 unmapped against the
+previous 75. Evidence:
+[successor-baseline-record.md](milestones/r12/implementation/evidence/successor-baseline-record.md),
+[standing-seal-status.md](milestones/r12/implementation/evidence/standing-seal-status.md).
+
+**What the seal does NOT cover, and is not implied by it.** Linux setup and
+parity (D8 handoff 2/4) are outstanding: owner-deferred 2026-09-14 and ruled out
+of scope 2026-09-15, and Windows evidence cannot satisfy them. Tracked as
+`t2609151346`. The §7.5 owner
+method ruling on the estimator is outstanding. Actual-bundle applicability
+remains `unestablished` — the 8x benchmark is a post-results development rescore,
+not independent validation — and low-flow return levels are unvalidated in both
+the near-zero and outside-tested-shape regimes. GF15's own verdict
+([integration-verdict.md](milestones/r12/implementation/evidence/gf15-production-integration/integration-verdict.md))
+rests on two independent reviews plus an owner ruling closing the loop, not on
+three reviews; the corrections that closed round two are executor-verified only.
 
 The owner accepted the reviewed v6
 [workflow design](milestones/r12/wf3-simulation-identity-design.md) on

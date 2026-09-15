@@ -33,6 +33,7 @@
 | [t2609100916](tasks/t2609100916-r12-accepted-design-implementation.md)                                                                      | Implement the accepted R12 workflow design                                                               | wf3                                         | R12                                            |     | active  |
 | [t2609151037](tasks/t2609151037-export-wflow-results-carries-a-second-unreachable-return-level-estimator.md)                                | export_wflow_results carries a second, unreachable return-level estimator                                | wf3                                         |                                                |     | backlog |
 | [t2609151118](tasks/t2609151118-locations-101-and-1010-are-the-same-series-in-the-p3-basin-configuration.md)                                | Locations 101 and 1010 are the same series in the P3 basin configuration                                 | wf3                                         |                                                |     | backlog |
+| [t2609151346](tasks/t2609151346-qualify-the-isolated-linux-environment-and-execute-source-qualified-gf15-parity.md)                         | Qualify the isolated Linux environment and execute source-qualified GF15 parity                          | wf3 / platform                              |                                                |     | backlog |
 
 ## Watching
 

@@ -148,8 +148,9 @@ invent a new spelling.
 `experiment/rules/simulate_and_metrics.smk`: the model-reference sentinel, the per-run
 forcing, and the per-run catalog. Everything else in the experiment tree persists,
 including per-run warm states. AGENTS.md is explicit that omitting `temp()` on
-per-realization netCDFs explodes disk on large grids, so the retention questions below
-are the highest-value part of this screen.
+per-realization netCDFs explodes disk on large grids, so the retention questions below were
+the highest-value part of this screen. They are now ruled, and the answer is that
+retention is deliberate throughout.
 
 ### Already correctly marked — no action
 
@@ -173,22 +174,62 @@ are the highest-value part of this screen.
 | `scenario_collections/<id>/preparation_catalog.yml`, `ancillary/` | preparation inputs |
 | `logs/dag/*.png`, `benchmarks/wf*_*.md` | diagnostics, dev-facing |
 
-### Retention questions — worth more than any rename
+### Retention questions — RULED 2026-09-15 by tracing consumers
 
-Each of these persists today and may not need to. **These need an owner call, and a
-wrong answer costs disk on large grids rather than only clarity.**
+**Result: none of the five becomes `temp()`.** Every one is either re-read
+downstream or was deliberately made persistent by a recorded decision. The
+disk-blowup concern that motivated this section was unfounded, and the screen's
+suspicion that the experiment tree retains carelessly is wrong. Retention here is
+deliberate. What the trace did turn up is one stale inventory row.
 
-- [ ] `experiments/<E>/hydrology/wflow/output/outstates_run_<id>.nc` — one warm state
-      **per run**. It is interchange contract HM-6b, so it may be deliberately
-      retained; if not, it is the single biggest `temp()` candidate in the tree.
-- [ ] `experiments/<E>/hydrology/wflow/config/run_<id>.toml` and
-      `run_<id>.temporal.json` — per-run generated config. The sibling
-      `run_<id>.yml` is already `temp()`, which makes the asymmetry look unintended.
-- [ ] `data/climate/projections/<CP>/raw/*.nc` and `scalar/*.nc` — per model-scenario
-      intermediates behind the summary tables.
-- [ ] `data/spatial/hydrography.nc` — ADR 0003 §8a's seam intermediate.
-- [ ] `experiments/<E>/hydrology/wflow/output/run_<id>.csv` — raw simulator output.
-      Probably keep: it is the debugging surface when a metric looks wrong.
+| artifact | ruling | evidence |
+|---|---|---|
+| `outstates_run_<id>.nc` | **not produced at all** | see below |
+| `run_<id>.toml`, `run_<id>.temporal.json` | **must persist** | re-opened on every metric run |
+| `raw/*.nc`, `scalar/*.nc` | **keep, by prior decision** | promoted out of `temp()` on purpose |
+| `data/spatial/hydrography.nc` | **keep** | cross-workflow input, not a seam scratch file |
+| `run_<id>.csv` | **keep** | recorded artifact, digest re-verified |
+
+**`outstates_run_<id>.nc` is never written by the current pipeline.**
+`downscale_climate_forcing.py:376` pops `state.path_output` out of each per-run
+TOML, and `write_states=False` is hardcoded at the only `measure_member_footprint`
+call site. Contract HM-6b says so itself: "an unconsumed named sink — nothing
+in-repo reads it", and "absent on the completed fixture". Confirmed absent on disk
+in `session-3/test_case/test_local`, whose experiment output directory holds only
+`run_NN.csv` and `run_NN.log`.
+
+> [!bug] A stale row in the canonical inventory
+> `tests/test_project_tree_inventory.py` carries
+> `experiments/<E>/hydrology/wflow/output/outstates_run_001.nc` in its covered
+> shapes. That fixture was taken from a clean run on 2026-08-06; the state output
+> has since been suppressed. The row is now a shape no run produces. It makes the
+> gate marginally permissive rather than wrong — undeclared-artifact detection is
+> unaffected — but it should be dropped or annotated.
+
+**`run_<id>.toml` and `.temporal.json` are re-verified evidence, not publication
+scratch.** `read_response_inventory` rebuilds each run's native selector — the CSV,
+the TOML *and* the temporal JSON — out of the stored series entries, then re-runs
+`build_response_inventory`, which opens the TOML with `tomllib` and re-reads the
+temporal record, and refuses on any drift from what was stored. Every metric run
+does this, `metrics_only.smk` included, since that entry point declares no producers
+and recomputes from what is on disk.
+
+**Correction to the screen above.** It called the asymmetry with the `temp()`
+`run_<id>.yml` "unintended". That was wrong. The `.yml` is the hydromt data catalog
+used only while downscaling, so it is correctly disposable; the other two are read
+again on every later metric run. The asymmetry is the design working.
+
+**`raw/` and `scalar/` were promoted out of `temp()` deliberately.**
+`analyze_projections.smk:420` records it: the series files "stop being `temp()` and
+become a persistent product, so they need an identity", and identity machinery was
+built for exactly that. `raw/<key>.nc` is the basin slice on the source grid, which
+is why a proposed extra gridded tier was rejected as a near-copy. They also cache
+network fetches, so discarding them makes a re-run far more expensive.
+
+**`hydrography.nc` is a cross-workflow input.** `shared/plot_map.py` reads the
+elevation grid from it for the basin figure, and historical climate extraction uses
+it as the downscaling DEM. "Seam intermediate" describes where it sits in the spatial
+stage, not that it is disposable.
 
 ### Leave alone — reader-facing
 
@@ -210,8 +251,8 @@ purpose rather than distinguish anything within it. The whole tree relocates und
 
 ## Progress
 
-- [ ] Rule the five retention questions in the screen — highest value, and
-      independent of every rename here
+- [x] Rule the five retention questions — done 2026-09-15; none becomes `temp()`
+- [ ] Drop or annotate the stale `outstates_run_001.nc` row in the tree fixture
 - [ ] Rule change 1's shape, and whether `config/` moves
 - [ ] Rule changes 2 and 3 jointly with [[t2609152040]]'s open questions
 - [ ] Implement, sweep references, update the canonical tree fixture

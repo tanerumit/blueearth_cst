@@ -157,17 +157,19 @@ Every other worktree's `test_local` holds `experiments/` only, with no scenario 
 at all. The one unknown is a production `project_dir` outside the repository tree; if
 one exists and is worth keeping, it needs a WF3 re-run or a one-off move.
 
-**Two AGENTS.md claims did not survive checking, and the ruling depends on both.**
+**Two claims did not survive checking, and the ruling depends on both.** The first
+was an AGENTS.md defect, **corrected there on 2026-09-15**. The second was an error in
+this note's own first draft, not in AGENTS.md.
 
-1. **`test_case/test_local` is NOT shared across worktrees.** AGENTS.md says it is
+1. **`test_case/test_local` is NOT shared across worktrees.** AGENTS.md said it was
    "untracked and SHARED", which would mean the tree flips for every worktree at once.
    All six copies are independent real directories with no reparse point, and they
    already disagree: session-3's carries scenario trees and session-2's does not. So a
    worktree without this change keeps working against its own copy. The residual
    hazard is seeding — a new worktree copied from an old-layout primary inherits the
-   old layout, per the standing seed practice.
+   old layout, per the standing seed practice. AGENTS.md now says this.
 2. **`check_baseline.py` and `dev/baseline/manifest.json` do not reach into these
-   trees at all.** The manifest contains no `scenario_` path, and the `plan_sha256`
+   trees at all.** This note's first draft claimed they did; AGENTS.md never did. The manifest contains no `scenario_` path, and the `plan_sha256`
    that `check_baseline.py` reads belongs to the **metric** plan under
    `experiments/<id>/results/metric_plans/`, a different object with schema
    `metric-plan/1`. No baseline re-record is owed by this change.

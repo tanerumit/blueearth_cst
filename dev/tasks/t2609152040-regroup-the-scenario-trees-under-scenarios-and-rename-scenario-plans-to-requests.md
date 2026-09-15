@@ -226,7 +226,8 @@ excluding `dev/milestones/` and `dev/working/`:
 >
 > 3. **`results/metric_plans/` → `results/metric_requests/`.** See the metric-pair
 >    section above. Renaming one side of the toolbox and not the other is arguably
->    worse than renaming neither.
+>    worse than renaming neither. Carried as change 2 of [[t2609152104]], together
+>    with flattening it to a single file per identity.
 >
 > Doing the move without these is still a net improvement, just an inconsistent one.
 
@@ -237,6 +238,9 @@ excluding `dev/milestones/` and `dev/working/`:
   derived from it.
 - `blueearth_cst/experiment/collection_resolution.py` — `scenario_plan`,
   `write_scenario_plan`, `verify_scenario_plan`. The request-to-collection binding.
+- [[t2609152104]] — the audience separation: an engine bin for content-addressed
+  bookkeeping, plus the metric-side rename and flattening. Separable from this item;
+  either can land first.
 - `dev/reference/naming.md` — lowercase `snake_case` for locally minted directory
   names; the rename-record and migration-guide table.
 - `docs/migration-workflow-names.md` — precedent for a user-facing rename guide.

@@ -1,0 +1,2719 @@
+{
+  "scope": "P1 neutral responses from14P0 native runs; existing five-column table projection",
+  "source_sha256": {
+    "blueearth_cst/experiment/wflow_response_reader.py": "25c39a9547a897db54fdde4fa68f2d051b461e3f175ddbe39173b38a4d423edb",
+    "blueearth_cst/experiment/response_series.py": "148f4f51059adbaa902f0b53b7e4cbed65e9758384fa3c9f2bab67faab2788e9",
+    "blueearth_cst/experiment/metric_registry.py": "9a4c197c30aa42f3ab4a26d7c2fe81781436d6a056259dcb71f0aa891b370abb",
+    "blueearth_cst/experiment/export_wflow_results.py": "87a176fbcbfb57c1538ddff7064bee373968e999c5c01373d35c237de6451464",
+    "blueearth_cst/experiment/scenario_provider.py": "6c401f897041c8888861fc3079fe7303888e79c8e8965cfccec816b1c34212c2"
+  },
+  "native_response_checks": [
+    {
+      "run_id": "01",
+      "native": "rlz_1_st_0",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "02",
+      "native": "rlz_1_st_1",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "03",
+      "native": "rlz_1_st_2",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "04",
+      "native": "rlz_1_st_3",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "05",
+      "native": "rlz_1_st_4",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "06",
+      "native": "rlz_1_st_5",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "07",
+      "native": "rlz_1_st_6",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "08",
+      "native": "rlz_2_st_0",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "09",
+      "native": "rlz_2_st_1",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "10",
+      "native": "rlz_2_st_2",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "11",
+      "native": "rlz_2_st_3",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "12",
+      "native": "rlz_2_st_4",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "13",
+      "native": "rlz_2_st_5",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    },
+    {
+      "run_id": "14",
+      "native": "rlz_2_st_6",
+      "series": 9,
+      "times": 3286,
+      "first": "2046-01-02 00:00:00",
+      "last": "2054-12-31 00:00:00",
+      "calendar": "standard",
+      "first_q_location": "101",
+      "units": {
+        "q": "m3 s-1",
+        "gwr": "mm dt-1"
+      },
+      "missing": 0
+    }
+  ],
+  "indicator_comparison": {
+    "q_rows": 630,
+    "gwr_rows": 56,
+    "exact_after_key_alignment": true
+  },
+  "metric_evidence": {
+    "declarations": [
+      {
+        "name": "q_annual_mean",
+        "statistic": "mean",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": null,
+        "reference_location": null,
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "q_mean_annual_max",
+        "statistic": "max",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": null,
+        "reference_location": null,
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "q_mean_annual_min",
+        "statistic": "min",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": null,
+        "reference_location": null,
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "q_mean_annual_p95",
+        "statistic": "q95",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": null,
+        "reference_location": null,
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "q_mean_annual_7day_max",
+        "statistic": "Q7day_max",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": null,
+        "reference_location": null,
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "q_mean_annual_7day_min",
+        "statistic": "Q7day_min",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": null,
+        "reference_location": null,
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "q_baseflow_index",
+        "statistic": "BaseFlowIndex",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": null,
+        "reference_location": null,
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "q_return_level_10yr_max",
+        "statistic": "return_level_max",
+        "grain": "bundle",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": "same_design_point",
+        "reference": null,
+        "reference_location": null,
+        "return_period": 10,
+        "blocks_per_return_period": 1.0,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite required; reject invalid GEV fit; no clipping"
+      },
+      {
+        "name": "q_return_level_2yr_7day_min",
+        "statistic": "return_level_7day_min",
+        "grain": "bundle",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": "same_design_point",
+        "reference": null,
+        "reference_location": null,
+        "return_period": 2,
+        "blocks_per_return_period": 1.0,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite required; reject invalid GEV fit; no clipping"
+      },
+      {
+        "name": "q_wettest_month_mean",
+        "statistic": "wetmonth_mean",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": "unperturbed_runs",
+        "reference_location": "class_c_first_gauge",
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "q_driest_month_mean",
+        "statistic": "drymonth_mean",
+        "grain": "run",
+        "required_responses": {
+          "variable": "q",
+          "units": "m3 s-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": "unperturbed_runs",
+        "reference_location": "class_c_first_gauge",
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "name": "gwr_annual_total",
+        "statistic": "sum",
+        "grain": "run",
+        "required_responses": {
+          "variable": "gwr",
+          "units": "mm dt-1",
+          "timestep_seconds": 86400,
+          "time_label": "interval_end",
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ]
+        },
+        "bundle_by": null,
+        "reference": null,
+        "reference_location": null,
+        "return_period": null,
+        "blocks_per_return_period": null,
+        "implementation_revision": "aefac43839013f253f380767e36ecfaeb32da1c33af0114d4f83b7ede901aa09",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      }
+    ],
+    "references": {
+      "wet": {
+        "run_ids": [
+          "01",
+          "08"
+        ],
+        "reference_location_id": "101",
+        "month": 11,
+        "which": "wet",
+        "counts": [
+          [
+            "01",
+            "2046-01-02 00:00:00",
+            "2054-12-31 00:00:00",
+            9,
+            108
+          ],
+          [
+            "08",
+            "2046-01-02 00:00:00",
+            "2054-12-31 00:00:00",
+            9,
+            108
+          ]
+        ],
+        "selection_statistic": "monthly sum followed by argmax/argmin",
+        "tie_rule": "first label in ascending calendar-month order"
+      },
+      "dry": {
+        "run_ids": [
+          "01",
+          "08"
+        ],
+        "reference_location_id": "101",
+        "month": 8,
+        "which": "dry",
+        "counts": [
+          [
+            "01",
+            "2046-01-02 00:00:00",
+            "2054-12-31 00:00:00",
+            9,
+            108
+          ],
+          [
+            "08",
+            "2046-01-02 00:00:00",
+            "2054-12-31 00:00:00",
+            9,
+            108
+          ]
+        ],
+        "selection_statistic": "monthly sum followed by argmax/argmin",
+        "tie_rule": "first label in ascending calendar-month order"
+      }
+    },
+    "return_levels": [
+      {
+        "metric": "q_return_level_10yr_max",
+        "members": [
+          "01",
+          "08"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.03222295936470486,
+              51.27621570915224,
+              18.152996999880457
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.03222295936470486,
+              51.27621570915224,
+              18.152996999880457
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.020498989094107647,
+              41.78986698645249,
+              15.088859417617421
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.19193074873400984,
+              9.118221273397983,
+              3.812762794967539
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.11800413271098054,
+              12.887614549164358,
+              5.010124255427996
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_2yr_7day_min",
+        "members": [
+          "01",
+          "08"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -2.3195196692188054,
+              0.00027840251685398764,
+              0.00031996882351577045
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -2.3195196692188054,
+              0.00027840251685398764,
+              0.00031996882351577045
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -2.2953044024533478,
+              0.00012047199489149992,
+              0.00010757528085479293
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.43741940798168855,
+              0.0005103348157369796,
+              0.0002058782950949203
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "01",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "08",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -1.497825496186798,
+              3.4680152763853e-05,
+              3.8675777249660986e-05
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_10yr_max",
+        "members": [
+          "02",
+          "09"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.17320967053732783,
+              6.363845933916111,
+              2.769774576568241
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.17320967053732783,
+              6.363845933916111,
+              2.769774576568241
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.16670522368594365,
+              5.3853706467097515,
+              2.295466242506812
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.14887801816388357,
+              1.1010769099559607,
+              0.4523145828689107
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.14827718830370606,
+              1.6147977256166621,
+              0.6671416475587917
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_2yr_7day_min",
+        "members": [
+          "02",
+          "09"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.3323790659512258,
+              0.00014720101055573022,
+              1.31856543078779e-05
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.3323790659512258,
+              0.00014720101055573022,
+              1.31856543078779e-05
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.20972781251560743,
+              5.132189352524036e-05,
+              1.2397587039646779e-05
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.3278782543835932,
+              0.0002454621105432849,
+              0.00016290509603726882
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "02",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "09",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              1.0727682764835018,
+              2.4671180539340163e-05,
+              2.0664859061634637e-05
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_10yr_max",
+        "members": [
+          "03",
+          "10"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.05905245432052937,
+              42.06556331504783,
+              10.34190495756117
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.05905245432052937,
+              42.06556331504783,
+              10.34190495756117
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.027288243330779487,
+              34.83965967560641,
+              8.659720842457835
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.16512540014976557,
+              6.75360572292853,
+              1.968240637260131
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.10366617271188538,
+              9.976276105257678,
+              2.803713704605231
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_2yr_7day_min",
+        "members": [
+          "03",
+          "10"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.381387336951074,
+              0.0013049887906747427,
+              0.001050054064563294
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.381387336951074,
+              0.0013049887906747427,
+              0.001050054064563294
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -1.2772630926735449,
+              0.00022912293497134482,
+              0.0001771217841633377
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.47117694147410005,
+              0.0007195787249767952,
+              0.00024056054270349354
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "03",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "10",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.017963079595747708,
+              7.786209430924381e-05,
+              2.603091990649346e-05
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_10yr_max",
+        "members": [
+          "04",
+          "11"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.2454929363744443,
+              72.30171552728197,
+              14.397837881112167
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.2454929363744443,
+              72.30171552728197,
+              14.397837881112167
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.20215154469194935,
+              60.687731494540614,
+              13.329102229965748
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.1503696928853252,
+              12.189437268852137,
+              3.1132341699766757
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.2055440549792309,
+              17.680899257228774,
+              4.1591395416035555
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_2yr_7day_min",
+        "members": [
+          "04",
+          "11"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.4626123741299879,
+              0.015537849977604663,
+              0.007207698586016099
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.4626123741299879,
+              0.015537849977604663,
+              0.007207698586016099
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.3806644967437408,
+              0.006648123940233386,
+              0.0037464916190636157
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.303028046549738,
+              0.001610507827136678,
+              0.00041199407337655293
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "04",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "11",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.6661914171251349,
+              0.00035479988746425013,
+              0.00017264624518700214
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_10yr_max",
+        "members": [
+          "05",
+          "12"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.13739361348210377,
+              5.145962298289722,
+              2.8491741399539903
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.13739361348210377,
+              5.145962298289722,
+              2.8491741399539903
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.15183912437254776,
+              4.398221944637585,
+              2.4113906777287992
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.13196024060406947,
+              0.8885266544296844,
+              0.4879741429856693
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.1543904772674995,
+              1.3274580992464382,
+              0.7308696532698078
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_2yr_7day_min",
+        "members": [
+          "05",
+          "12"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.7275903354565572,
+              0.00013844349695478695,
+              2.238746886597779e-05
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.7275903354565572,
+              0.00013844349695478695,
+              2.238746886597779e-05
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.28447646144545957,
+              4.433998870621278e-05,
+              1.2732132061010876e-05
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.2575199429442685,
+              0.00019938833941545087,
+              0.0001639103929444121
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "05",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "12",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.523121201185379,
+              1.0414034500187689e-05,
+              8.590293242758134e-06
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_10yr_max",
+        "members": [
+          "06",
+          "13"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.039616573642548544,
+              41.605072108185325,
+              10.322477848871092
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.039616573642548544,
+              41.605072108185325,
+              10.322477848871092
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.015500684710504347,
+              34.424952923194404,
+              8.613645263098668
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.08050117484650691,
+              6.724961372793754,
+              2.0965860807278984
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.09211983901709084,
+              9.858412248802097,
+              2.80939190935986
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_2yr_7day_min",
+        "members": [
+          "06",
+          "13"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.9799229184597502,
+              0.0004665770402595538,
+              0.0003005713057526382
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.9799229184597502,
+              0.0004665770402595538,
+              0.0003005713057526382
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.9473064241976787,
+              0.0001540623016025703,
+              7.19665755413196e-05
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.3691534465619838,
+              0.0006093015961933235,
+              0.0002333938735482231
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "06",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "13",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              0.07503100265110703,
+              5.9841535066217094e-05,
+              2.2246734363934297e-05
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_10yr_max",
+        "members": [
+          "07",
+          "14"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.2446825313480173,
+              71.7753569693757,
+              14.417018822257642
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.2446825313480173,
+              71.7753569693757,
+              14.417018822257642
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.20528486961265857,
+              60.24022576884617,
+              13.29900786319908
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.15036345557930092,
+              12.1160777149561,
+              3.1113617323393297
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.20880246812443576,
+              17.553466968799203,
+              4.149020384227693
+            ]
+          }
+        ]
+      },
+      {
+        "metric": "q_return_level_2yr_7day_min",
+        "members": [
+          "07",
+          "14"
+        ],
+        "locations": [
+          {
+            "location_id": "101",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.6617362634097517,
+              0.011180887998984628,
+              0.005391389854189817
+            ]
+          },
+          {
+            "location_id": "1010",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.6617362634097517,
+              0.011180887998984628,
+              0.005391389854189817
+            ]
+          },
+          {
+            "location_id": "1020",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.7601114257375169,
+              0.003985936796174042,
+              0.002511891393693671
+            ]
+          },
+          {
+            "location_id": "1030",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.3770533581492952,
+              0.001364293854680865,
+              0.0003626470523827349
+            ]
+          },
+          {
+            "location_id": "1040",
+            "member_counts": [
+              [
+                "07",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ],
+              [
+                "14",
+                9,
+                "2046-01-02 00:00:00",
+                "2054-12-31 00:00:00"
+              ]
+            ],
+            "total": 18,
+            "required": 10,
+            "parameters": [
+              -0.5756185322950524,
+              0.0002985954809919326,
+              0.00013541064264352792
+            ]
+          }
+        ]
+      }
+    ],
+    "class_c_run_values": [
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "01",
+        "values": {
+          "101": 23.452117728863616,
+          "1040": 4.960557436692942,
+          "1020": 18.848177145719138,
+          "1010": 23.452117728863616,
+          "1030": 3.152253668014495
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "01",
+        "values": {
+          "101": 0.02692863486060642,
+          "1040": 0.0028909250776672393,
+          "1020": 0.015348138480347483,
+          "1010": 0.02692863486060642,
+          "1030": 0.002151607247790196
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "08",
+        "values": {
+          "101": 22.725385454333683,
+          "1040": 4.77369057096271,
+          "1020": 18.220037992869006,
+          "1010": 22.725385454333683,
+          "1030": 3.013387251381241
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "08",
+        "values": {
+          "101": 0.27297909605573384,
+          "1040": 0.04261595642271336,
+          "1020": 0.1975065216918317,
+          "1010": 0.27297909605573384,
+          "1030": 0.030487349176213922
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "02",
+        "values": {
+          "101": 1.880840729572998,
+          "1040": 0.5053830237757416,
+          "1020": 1.7357861466050362,
+          "1010": 1.880840729572998,
+          "1030": 0.36886724875990423
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "02",
+        "values": {
+          "101": 0.0002911043022717932,
+          "1040": 5.766253182971682e-05,
+          "1020": 0.0001077938420998323,
+          "1010": 0.0002911043022717932,
+          "1030": 0.0004850554193528866
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "09",
+        "values": {
+          "101": 3.0839646933474625,
+          "1040": 0.7829770379391873,
+          "1020": 2.7360230522530036,
+          "1010": 3.0839646933474625,
+          "1030": 0.5578831804402015
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "09",
+        "values": {
+          "101": 0.0002171813445514982,
+          "1040": 4.096194101620988e-05,
+          "1020": 8.847230788275694e-05,
+          "1010": 0.0002171813445514982,
+          "1030": 0.0004781573755027584
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "03",
+        "values": {
+          "101": 23.899917704883837,
+          "1040": 5.065271515513865,
+          "1020": 19.22489465817084,
+          "1010": 23.899917704883837,
+          "1030": 3.2174893019706357
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "03",
+        "values": {
+          "101": 0.015218465529871399,
+          "1040": 0.0009799287878071855,
+          "1020": 0.007444236268515618,
+          "1010": 0.015218465529871399,
+          "1030": 0.00186851138755135
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "10",
+        "values": {
+          "101": 24.445785162562135,
+          "1040": 5.15289511933704,
+          "1020": 19.617897563774,
+          "1010": 24.445785162562135,
+          "1030": 3.262510789415449
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "10",
+        "values": {
+          "101": 0.015104409388697846,
+          "1040": 0.0005606022875382929,
+          "1020": 0.007372450035386294,
+          "1010": 0.015104409388697846,
+          "1030": 0.0020045712497080634
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "04",
+        "values": {
+          "101": 41.31105161811889,
+          "1040": 8.74988096222343,
+          "1020": 33.20559735743855,
+          "1010": 41.31105161811889,
+          "1030": 5.564751357577009
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "04",
+        "values": {
+          "101": 0.0599874158381377,
+          "1040": 0.004747544285086736,
+          "1020": 0.03242597178777927,
+          "1010": 0.0599874158381377,
+          "1030": 0.004041248021405631
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "11",
+        "values": {
+          "101": 42.0953982358333,
+          "1040": 8.891578708303006,
+          "1020": 33.79714749961429,
+          "1010": 42.0953982358333,
+          "1030": 5.637944412451055
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "11",
+        "values": {
+          "101": 0.0800630864573643,
+          "1040": 0.005202751685930631,
+          "1020": 0.04407356751665959,
+          "1010": 0.0800630864573643,
+          "1030": 0.005753610058840213
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "05",
+        "values": {
+          "101": 1.3024934683628822,
+          "1040": 0.3585359771309867,
+          "1020": 1.226860943425718,
+          "1010": 1.3024934683628822,
+          "1030": 0.25950641793063456
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "05",
+        "values": {
+          "101": 0.00021767152821652665,
+          "1040": 5.042275232399573e-05,
+          "1020": 7.210792715107894e-05,
+          "1010": 0.00021767152821652665,
+          "1030": 0.0003617767465795289
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "12",
+        "values": {
+          "101": 2.3505429224586885,
+          "1040": 0.6060618221668563,
+          "1020": 2.110081045733244,
+          "1010": 2.3505429224586885,
+          "1030": 0.4303385186708522
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "12",
+        "values": {
+          "101": 0.0001994343750358061,
+          "1040": 3.369405198328028e-05,
+          "1020": 6.839751765254655e-05,
+          "1010": 0.0001994343750358061,
+          "1030": 0.00038041896875085687
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "06",
+        "values": {
+          "101": 23.438131411223708,
+          "1040": 4.967005957328576,
+          "1020": 18.853831877475855,
+          "1010": 23.438131411223708,
+          "1030": 3.153794125065085
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "06",
+        "values": {
+          "101": 0.010622349460072754,
+          "1040": 0.0008530382238502401,
+          "1020": 0.00526499000468765,
+          "1010": 0.010622349460072754,
+          "1030": 0.001544239440833104
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "13",
+        "values": {
+          "101": 23.978244428339167,
+          "1040": 5.052600351045066,
+          "1020": 19.24111887572914,
+          "1010": 23.978244428339167,
+          "1030": 3.1974234599306106
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "13",
+        "values": {
+          "101": 0.009683545956046305,
+          "1040": 0.0004561869623051991,
+          "1020": 0.004605388639644648,
+          "1010": 0.009683545956046305,
+          "1030": 0.0015707007584242554
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "07",
+        "values": {
+          "101": 40.850404948914374,
+          "1040": 8.651577479649474,
+          "1020": 32.835247717267784,
+          "1010": 40.850404948914374,
+          "1030": 5.501127899403144
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "07",
+        "values": {
+          "101": 0.05255611387277919,
+          "1040": 0.004127842802206954,
+          "1020": 0.027845839799398548,
+          "1010": 0.05255611387277919,
+          "1030": 0.003656420460564287
+        }
+      },
+      {
+        "metric": "q_wettest_month_mean",
+        "run_id": "14",
+        "values": {
+          "101": 41.627064829582714,
+          "1040": 8.791037333261995,
+          "1020": 33.41978144271935,
+          "1010": 41.627064829582714,
+          "1030": 5.572832673318932
+        }
+      },
+      {
+        "metric": "q_driest_month_mean",
+        "run_id": "14",
+        "values": {
+          "101": 0.06667013217232495,
+          "1040": 0.003810916937894339,
+          "1020": 0.03599470145151055,
+          "1010": 0.06667013217232495,
+          "1030": 0.0049056563789996906
+        }
+      }
+    ]
+  },
+  "benchmark_status": "not_run",
+  "screening_policy_status": "provisional_operational"
+}

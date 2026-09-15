@@ -1,0 +1,146 @@
+{
+  "collides_with_an_existing_set": false,
+  "destination": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2",
+  "destination_exists_already": false,
+  "destination_under_working_copy": true,
+  "expected_result_keys": 756,
+  "experiment_root": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final",
+  "metric_definition_sha256": "4cfec9d1b94b3c3c3f6aa1bbae38baea3300c6bacfccffd56a85f7d7c5f1ef45",
+  "metric_environment_sha256": "482d3ccd8836f1f50b143a348e19927542d06bec764dd4432c68332b630e51e5",
+  "metric_request_id": "6ed13c055a6fa12e2199e97551a7c7f7304a8645e432875bba375d061c2aaf42",
+  "metric_set_id": "7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2",
+  "response_inventory_sha256": "3238e59a15148e94b64c3c3d7f8639a3da9a5623cd329ec4ec9cc4afe5300eb1",
+  "return_level_estimator": {
+    "estimator_id": "gf15-lmoments-c/1",
+    "package": "lmoments3",
+    "source_sha256": {
+      "__init__.py": "1d2c066a2ec4925bb838b7680d63ae8ae87c5234aa3c986d6ebe81500d75d6e2",
+      "distr.py": "f8859d11f10c3206e3e5009c1b238a328c6c9215b1cc7436800160fa929bb2ee"
+    },
+    "version": "1.0.8"
+  },
+  "return_level_validation": {
+    "actual_bundle_applicability": "unestablished",
+    "application_scope": "operational_screen_only",
+    "benchmark_record": {
+      "path": "return_level_benchmark.json",
+      "sha256": "89905f1889a08177ff9225535a7a590b0081c76b2e6765e31e83390bee412b2c"
+    },
+    "benchmark_status": "reviewed_bounded",
+    "criteria": {
+      "accuracy_multiplier": 8,
+      "approval": "Owner authorized eightfold policy reassessment on 2026-09-13: 8x",
+      "base_cells": 12,
+      "draws_per_base_cell": 1000,
+      "estimator": "Frozen Stage 1 range-normalized L-moment candidate C; A/B rescored as diagnostics only",
+      "extreme_value_shape_xi": "xi=-c",
+      "generating_scale": 1.0,
+      "low_level_meaning": "p=.5: median of annual seven-day minima; IID block fixtures do not simulate block extraction, dependence or real discharge",
+      "master_seed": 20260912,
+      "median_relative_abs_max": 0.8,
+      "median_scale_abs_max": 0.8,
+      "original_criteria_sha256": "988611b6d239b95f7542f8d67470395e4997ac61dd97198fd075fdcba552d643",
+      "p90_abs_relative_max": {
+        "0.5": 2.0,
+        "0.9": 4.0
+      },
+      "p90_abs_scale_max": {
+        "0.5": 2.0,
+        "0.9": 4.0
+      },
+      "policy_id": "gf15-accuracy-8x-v1",
+      "probabilities": [
+        0.9,
+        0.5
+      ],
+      "quantile_formula": "z_p=-expm1(c*log(-log(p)))/c; c=0: -log(-log(p))",
+      "quantile_summary_method": "numpy quantile method=linear; summaries conditional on valid fits; refusals/full 1000 denominator",
+      "ratios_true_quantile_over_generating_scale": [
+        0.0,
+        0.05,
+        0.5,
+        2.0,
+        10.0
+      ],
+      "relative_qualified_ratios": [
+        0.5,
+        2.0,
+        10.0
+      ],
+      "rng": "numpy.Generator(PCG64(SeedSequence([20260912, shape_index, count])))",
+      "sample_generation": "inverse CDF of (0,1) PCG64 uniforms; no clipping/truncation/redrawing",
+      "scientific_claim_boundary": "Owner-selected relaxed targets assessed on already observed development data; original failures remain unchanged; no fresh validation, screening or production applicability claim",
+      "shapes_scipy_c": [
+        -0.2,
+        0.0,
+        0.2
+      ],
+      "standardized_location": 0.0,
+      "total_fits": 132000,
+      "total_quantile_rows": 144000,
+      "translated_location": "rho-z_p",
+      "translation_paired_abs_max": 1e-06,
+      "translation_validity_unchanged": true,
+      "usable_counts": [
+        10,
+        18,
+        30,
+        60
+      ],
+      "valid_rate_min": 0.95,
+      "zero_relative": "undefined; null, never epsilon-divided"
+    },
+    "estimator_id": "gf15-lmoments-c/1",
+    "evidence_use": "post_results_development_rescore",
+    "fit_uncertainty": "point_estimates_only",
+    "policy_id": "gf15-accuracy-8x-v1",
+    "relative_error_near_zero": "unvalidated",
+    "schema_version": "return-level-validation/1",
+    "screening_floor": 10,
+    "screening_policy_status": "provisional_operational",
+    "screening_policy_validated": false,
+    "screening_ratio": 1.0,
+    "tested_domain": {
+      "counts": [
+        10,
+        18,
+        30,
+        60
+      ],
+      "draws_per_base_cell": 1000,
+      "probabilities": [
+        0.9,
+        0.5
+      ],
+      "ratios": [
+        0.0,
+        0.05,
+        0.5,
+        2.0,
+        10.0
+      ],
+      "relative_qualified_ratios": [
+        0.5,
+        2.0,
+        10.0
+      ],
+      "shapes_c": [
+        -0.2,
+        0.0,
+        0.2
+      ]
+    }
+  },
+  "targets": {
+    "environment": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metric_environment.json",
+    "gwr": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/gwr_indicators.csv",
+    "manifest": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metrics.json",
+    "q": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/q_indicators.csv",
+    "unit_index": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/unit_index.csv"
+  },
+  "tokens": [
+    "q",
+    "gwr"
+  ],
+  "water_year_anchor": "YS-JAN"
+}

@@ -49,3 +49,46 @@ LICENSE      text
 *.xls   binary
 *.RData binary
 *.rds   binary
+
+# R12 acceptance records bind exact bytes, including reviewed probe sources.
+# Preserve their recorded hashes across Windows and Linux checkouts.
+dev/milestones/r12/implementation/evidence/p3/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/p3/*.txt -whitespace
+dev/milestones/r12/implementation/evidence/final/test-full.log -text -whitespace
+dev/milestones/r12/implementation/evidence/gf15/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-investigation/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-investigation/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-candidates/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-candidates/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-normalized-qualification/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-normalized-qualification/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/**/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-lmoments-qualification/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-lmoments-qualification/**/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-lmoments-assessment/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-lmoments-assessment/**/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-accuracy-3x/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-accuracy-3x/**/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/**/*.log -whitespace
+dev/milestones/r12/implementation/evidence/gf15-production-applicability/** -text whitespace=blank-at-eol,blank-at-eof,space-before-tab,cr-at-eol
+dev/milestones/r12/implementation/evidence/gf15-production-applicability/**/*.log -whitespace
+
+# The shipped GF15 benchmark report is loaded as a package resource and its
+# on-disk bytes are hashed twice: D4 binds the digest into the metric identity,
+# and D5's reader verifies the copied report against it. Under `* text=auto`
+# these bytes would be LF in the repository and CRLF in a Windows checkout, so
+# the same commit would present two different digests on the two CI legs.
+# Freeze them like the evidence archives they are packaged from.
+blueearth_cst/experiment/data/** -text -whitespace
+
+# Accepted GF15 method and verbatim review records carry byte-level digests.
+dev/milestones/r12/gf15-alternative-estimator-review/** -text -whitespace
+dev/milestones/r12/gf15-alternative-estimator-design.md -text -whitespace
+dev/milestones/r12/implementation/gf15-lmoments-readiness-brief.md -text -whitespace
+dev/milestones/r12/gf15-production-adapter-review/** -text -whitespace
+dev/milestones/r12/gf15-production-adapter-design.md -text -whitespace
+dev/working/design-runs/gf15-production-adapter/** -text -whitespace
+dev/milestones/r12/implementation/evidence/gf15-production-integration/** -text -whitespace

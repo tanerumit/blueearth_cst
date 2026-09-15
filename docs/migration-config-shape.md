@@ -1,5 +1,13 @@
 # Migrating a project config to `schema_version: 2`
 
+R12 also splits the former stress-test workflow into generation and simulation.
+The same migration command accepts an old version-2 project, writes both workflow
+files and pins its old resolved seed. Current projects carry five workflow
+stanzas. See [workflow migration](migration-workflow-names.md) for ownership,
+commands and retained output paths. The legacy v1 map below describes its source
+spellings; the tool then applies this successor split.
+
+
 R14 reshaped the project config. Two things changed at once, and both are
 contract surfaces: **every key spelling**, and **the filename prefix**.
 

@@ -1,14 +1,13 @@
 # -*- coding: utf-8 -*-
-"""Which indicator tables a WF3 experiment emits, derived from ``wflow_outvars``.
+"""Which indicator tables a WF4 metric set emits, derived from ``wflow_outvars``.
 
 CR-2 splits the response-surface results into **one table per output variable**
 instead of the two fixed tables (``q_indicators.csv`` + ``basin_indicators.csv``)
 that preceded it. The set is therefore config-dependent, and four places need to
 agree on it before any of them can run:
 
-- ``run_stress_test.smk`` — ``WF3_TARGETS`` and rule 3.16's ``output:``,
-  at DAG-construction time;
-- ``blueearth_cst/experiment/export_wflow_results.py`` — what it writes, and the
+- ``simulate_system.smk`` — selected metric-set targets at DAG construction;
+- ``blueearth_cst/experiment/metric_plan.py`` — what it writes, and the
   ``variable`` half of each composite ``metric``;
 - ``blueearth_cst/shared/interchange_contracts.py`` — HM-7's per-table checks;
 - ``dev/scripts/check_baseline.py`` and ``semantic_tree_diff.py`` — the target
@@ -173,7 +172,7 @@ BASIN_LOCATION = "basin"
 #: Return periods, in years, that the two GEV return-level indicators are
 #: evaluated at. **Toolbox constants since 2026-08-12, not config values.**
 #:
-#: They were the ``Tpeak`` / ``Tlow`` keys of ``workflows.run_stress_test``
+#: They were the ``Tpeak`` / ``Tlow`` keys of ``workflows.generate_scenarios``
 #: until then, and the owner retired them from the project config: a return
 #: period is a property of the indicator set this toolbox defines, and indicator
 #: definitions live here rather than in a per-project scaffold. Both keys shipped
@@ -296,7 +295,7 @@ def metric_grain(token: str, metric: str) -> str | None:
     return None
 
 
-#: Config keys ``workflows.run_stress_test`` no longer has, and what to tell
+#: Config keys ``workflows.generate_scenarios`` no longer has, and what to tell
 #: someone whose config still declares one. Keyed by config key; each entry is
 #: ``{"why": <what to do about it>, "note": <where the migration is written>}``.
 #:
@@ -414,7 +413,7 @@ class RetiredConfigKeyError(ValueError):
 
 
 def refuse_retired_experiment_keys(experiment_cfg) -> None:
-    """Raise if ``workflows.run_stress_test`` still declares a retired key.
+    """Raise if ``workflows.generate_scenarios`` still declares a retired key.
 
     Called at DAG-construction time so the run stops before producing anything,
     rather than after a sweep whose grain silently ignored the setting.
@@ -425,7 +424,7 @@ def refuse_retired_experiment_keys(experiment_cfg) -> None:
     if not found:
         return
     lines = [
-        f"workflows.run_stress_test declares {len(found)} retired key(s): "
+        f"workflows.generate_scenarios declares {len(found)} retired key(s): "
         f"{', '.join(found)}."
     ]
     for key in found:

@@ -1,19 +1,25 @@
 ---
 title: "Running the workflows"
-subtitle: "The four entry points, the wrapper, and the flags that matter"
+subtitle: "The five workflows, their runners, and the flags that matter"
 ---
 
-The four `*.smk` files at the repository root are the only entry points. There
-is no package CLI: you invoke Snakemake against a workflow and a config.
+The five root Snakefiles define the workflows. Invoke simulation through
+`scripts/simulate_system.py` or the all-workflow runner, which validate the
+operation and targets before launching Snakemake once. Direct Snakemake
+commands remain supported for the other workflows.
 
 | Entry point | id | What it does |
 |---|---|---|
 | `analyze_climate.smk` | wf0 | The basin's historical climate — **model-free** |
 | `build_model.smk` | wf1 | Builds the Wflow-SBM model, runs it on historical forcing |
 | `analyze_projections.smk` | wf2 | CMIP6 change factors — a plausibility overlay |
-| `run_stress_test.smk` | wf3 | The stress test |
+| `generate_scenarios.smk` | wf3 | Publish a reusable scenario collection |
+| `simulate_system.smk` via `scripts/simulate_system.py` | wf4 | Simulate a collection or reduce retained responses |
 
-Run them in order; `run_stress_test` needs what `build_model` produced.
+The convenience order is analyze_climate → generate_scenarios → build_model
+→ simulate_system → analyze_projections. Generation and model construction are
+independent prerequisites of simulation. WF0 is optional; run it first or alone
+for forcing selection. Projections provide a terminal plausibility overlay.
 
 ## Invoking one workflow
 
@@ -60,22 +66,22 @@ inputs — it is the difference between finding a broken path now and finding it
 forty minutes into a model build.
 :::
 
-## CPU and memory budgets for WF2 and WF3
+## CPU and memory budgets
 
-WF3's Julia jobs reserve `runtime.julia_threads` (default 4) within Snakemake's
+WF4's Julia jobs reserve `runtime.julia_threads` (default 4) within Snakemake's
 total `--cores` budget. The actual allocation is passed to Julia. With `-c 3`,
 one Julia batch runs with three threads; `-c 12` permits up to three four-thread
 batches. This replaces the previous behavior where `-c 3` could launch three
 four-thread Julia processes. Choose a budget that fits the machine and other work.
 
-The main WF2 analysis jobs and WF3 indicator reduction reserve 1024 MB each;
+The main WF2 analysis jobs and WF4 indicator reduction reserve 1024 MB each;
 weather generation, perturbation, downscaling and Wflow reserve 2048 MB each.
 These are initial scheduling reservations, **not measured peak-memory guarantees**
 or process limits. Set the total budget and override reservations using observed
 peak RSS from the workflow benchmarks, especially for larger basins:
 
 ```bash
-snakemake all -c 12 -s run_stress_test.smk --configfile test_case/project_config_rapid.yml --resources mem_mb=8192 --set-resources downscale_climate_realization:mem_mb=4096
+python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 12 -- --resources mem_mb=8192 --set-resources downscale_climate_realization:mem_mb=4096
 ```
 
 Without `--resources mem_mb=...`, the declarations do not impose a total RAM
@@ -85,7 +91,7 @@ not belong in the scientific project configuration. Batched Wflow rule names are
 conservatively when estimating batch concurrency and temporary disk use.
 
 WF2 computes change-factor summaries in memory and reuses historical statistics
-within the job. WF3 computes PET in HydroMT during downscaling, reads each
+within the job. WF4 computes PET in HydroMT during downscaling, reads each
 simulation CSV once for all indicators, and writes no unused per-member final
 state. Input-state settings are preserved; WF1 still retains its final state.
 
@@ -102,7 +108,7 @@ pixi run run-workflows --config <config> --cores 4 -- --dry-run
 What it guarantees:
 
 - It accepts **full-orchestration configs only** — a `workflows:` section with
-  all four subsections, each with an `enabled:` key.
+  all five subsections, each with an `enabled:` key.
 - A missing section or key is a **hard error naming the absent key**, never a
   silent default.
 - It **stops at the first nonzero Snakemake exit and returns that code**, so a
@@ -127,29 +133,24 @@ disagreeing sets of bookkeeping and two independent locks over the same output
 files. Pick one checkout for runs and stay in it.
 :::
 
-## Re-running an experiment after a model rebuild
+## Retained metrics and model rebuilds
 
-An experiment records the Wflow model it was run against, and the workflow
-**refuses to re-run it if that model has changed** — otherwise new model state
-would be mixed into old results.
+An experiment freezes its collection, model and simulator settings. Changed
+simulation inputs require a new `experiment_name`; deleting a model-reference
+file does not authorize replacing the frozen simulation identity.
 
-Expect this refusal after *any* rebuild, including one that changed nothing
-numeric: the forcing file is not byte-reproducible, because HydroMT varies the
-internal chunk layout between writes while the values stay identical.
+For new metrics from existing responses, set `operation: metrics-only` and keep
+the experiment name in the simulation settings file:
 
-Read what the error names before deciding:
+```bash
+python scripts/simulate_system.py --config <config> --target metrics --cores 3
+```
 
-- **Only `forcing/inmaps_historical.nc` changed** — the known layout-only case.
-  Delete the experiment's `config/model_reference.yml` and let the next run
-  regenerate it.
-- **Anything else is named** — `staticmaps.nc`, `wflow_sbm.toml`, or the forcing
-  alongside them — the guard has found something real. Do not re-record. Create a
-  new experiment: the recorded one is not re-runnable against different physics
-  or state.
-
-Re-recording the reference is an operator decision, not a chore. It means *"this
-experiment now accepts the rebuilt model."* A re-record that becomes routine is
-how genuine drift eventually gets waved through.
+This operation uses retained response and simulation records; it needs no live
+model, generation inputs or Julia. The all-workflow runner accepts
+`--simulation-target metrics`; disable other stages for a retained-only run.
+The default `all` target does not infer an operation from existing files.
+See [retained handoffs](../wf3-retained-handoffs.md).
 
 ## Next
 

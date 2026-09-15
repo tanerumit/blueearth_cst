@@ -1,0 +1,74 @@
+{
+  "verdict": "accept_stage_1_readiness",
+  "signed_by": "model-validator /root/model_validator_gf15_readiness",
+  "signed_utc": "2026-09-12T19:35:39.399709+00:00",
+  "scope": "GF15 L-moment Stage 1 fixed implementation readiness only",
+  "accepted_attempt": "results/attempt-2",
+  "attempt_sha256": "f9ec75b802552aa4005f8545a24e10d6a98004d0d408408f55e20e3aebc44038",
+  "completion_sha256": "7cba09d4bf7af14a93b08e9deedff7b48dd5fe019cd1baf9e992a11bf651338c",
+  "design_sha256": "e88d4a75b4d0198cf5255d9fedcd83ce86c887d1038c0346fdd2ee228a00f6fe",
+  "brief_sha256": "ab6b7ed0443be116decfb0dff6d8e768f93f4be1c47aa4401a55e2bb6cc90321",
+  "source": {
+    "candidate_adapter.py": "616b5ee21fb3b66599dfdde5846eb422489b539535a74b46fbf79216e7d1826c",
+    "check-readiness.py": "486afffacc12046ec1cc34c945c38b7a915f6b56f623c3cd1663d3f6330e1935",
+    "independent-review.py": "9403872eb5c9298679c0b7308c8c27f4e44d655dd86046a6878c474f25748060",
+    "README.md": "8ced5c0ff4872c518cb5a2714da7d47d480dbe6965b27c790f12dc80c271f78c",
+    "reference_oracle.py": "5bf7458b1b158c36548f6c3dd5ee55861c582129093248951b7473d0eb62b251",
+    "test_readiness.py": "e32eac58be55fb856463e3145d543bb87d392cfcf54e8dfe69c59adf732c0476"
+  },
+  "environment_inventory_sha256": "fb3262d800004311cc25f2fe4a12c9a3f37928e096472a1a76e61e2acb16e48d",
+  "input_anchors": {
+    "gf15/artifact-inventory.json": "3f13145d29c377a1c92042b3845695ce293edd58e565e17a67851767026719e1",
+    "gf15-normalized-qualification/artifact-inventory.json": "07148bb3b165ef2d1785fb49fc57908d260009cd7885c7b39712e1148aefdf4a",
+    "gf15/results/criteria.json": "988611b6d239b95f7542f8d67470395e4997ac61dd97198fd075fdcba552d643",
+    "gf15/results/provenance.json": "0d85d2a63c6be70683e2a1485de7bfc6266a265fd383cf96b124b6facdc67db2",
+    "gf15-normalized-qualification/results/provenance.json": "a1ea18808890a1c270e75a35441b1bb4eecdb901551c6fafce0565be822686ae"
+  },
+  "control_files": {
+    "attempt.json": "f9ec75b802552aa4005f8545a24e10d6a98004d0d408408f55e20e3aebc44038",
+    "criteria.json": "988611b6d239b95f7542f8d67470395e4997ac61dd97198fd075fdcba552d643",
+    "input-audit.json": "df207fa4e990d10394f1b694fb8453ca9d6e700b9fa22e5075bde7be814c050b",
+    "numerical-controls.json": "e5dfd229d486e8ac9c97de5ad07c6ab0eedaa5b28466750a1a937235ae2b90eb",
+    "replay.json": "e3df6c5153aac948dc1466c2d77c1e7001ec2932b35c29adb7572820aa9ffdff",
+    "test-controls.log": "bae3a268eb9b1acd736b19dca581de4f5a816bda310bc649990f19f57865874a"
+  },
+  "independent_evidence": {
+    "mechanical-review.json": "ca21168f8ba5cbe8d51710afc447c16bec891a8ae1d1ee0eb67b7de6e4875b4a",
+    "scientific-probes.json": "fe6fbf1c820b998cf1ddb942c93e516dbad41ada21809dbed9593f0870868b63",
+    "independent-probes.py": "b93ba4c7306aa60b072dbda451243a25e4b2545f4fa8e223adba7e6e16a45f43",
+    "endpoint-finding.json": "d1c2bc5efb23581fd779483d263d744cc1bbaeabc3ce247d6efc2ecf1fd11750",
+    "wheel-check.json": "33109eea3510fec07d9267e7e3be503366cf188c34adb45e51b88dec5dda2919"
+  },
+  "protected_files_rehashed_at_signature": 177,
+  "resolved_findings": [
+    {
+      "id": "MV-1",
+      "severity_before_repair": "blocking",
+      "contract": "D6 optional CDF residual must not veto supported rounded endpoint",
+      "status": "resolved in attempt-2; original failure preserved",
+      "reproducer": "quantile_gate({'c':60.0,'loc':0.0,'scale':60.0}, .9, 1.0, 1.0, 1.0)",
+      "disposition": "unchanged numerical gates; conservative unresolved diagnostic recorded after their passage"
+    }
+  ],
+  "open_blockers": [],
+  "qualification_executed": false,
+  "stage_2_authorized_by_this_verdict": false,
+  "candidate_matrix_fits_executed_by_validator": 0,
+  "verification_scope": "rapid / numerical affected; fixed D1-D6 contract overrides default small check budget",
+  "uncertainty": {
+    "numerical_reference": "80/120-digit outward CDF enclosures; <=1e-30*M width each and <=2e-30*M hull; identical recorded binary64 tuples; independent 150-digit scalar forward-CDF endpoint diagnostic recheck",
+    "parameter_reference": "Gamma log-series first omitted term <=1e-60; roots bracketed to1e-40 and agree1e-35; parameters agree1e-30 across precision passes",
+    "monte_carlo": "unquantified;1000 retained IID draws per generating shape/count cell; probabilities/translations share draws",
+    "selection": "adaptive reuse of development matrix; fresh-seed replication unknown",
+    "observational_structural_scenario": "not assessed; synthetic IID GEV controls provide no basin or nonstationarity applicability verdict"
+  },
+  "skipped": [
+    "full132000fit/144000quantile candidate matrix",
+    "full repository tests",
+    "baseline/production workflows",
+    "holdout/resampling",
+    "Stage3 qualification",
+    "managed-root run-control conformance",
+    "no-network assertion"
+  ]
+}

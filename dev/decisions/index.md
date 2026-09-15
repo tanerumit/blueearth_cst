@@ -15,6 +15,7 @@ skill's decision-record reference).
 | [0006](0006-retire-subcatchment-climate-plots.md) | Retire the subcatchment climate plots; the canonical climate figure set answers this | accepted | 2026-08-09 |
 | [0007](0007-draw-basin-area-from-the-spatial-foundation.md) | Draw basin_area from the spatial foundation, not the model | accepted | 2026-08-09 |
 | [0008](0008-ship-blueearth-cst-unpackaged.md) | Ship `blueearth_cst` unpackaged; `pyproject.toml` stays tool-config-only | accepted | 2026-08-17 |
+| [0009](0009-split-scenario-generation-and-system-simulation.md) | Split scenario generation and system simulation; supersede R12's C24/C25/C28 predecessor ownership | accepted design; P3 validation in progress | 2026-09-11 |
 
 ## Retired numbers
 

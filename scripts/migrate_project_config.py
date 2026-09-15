@@ -1,4 +1,9 @@
-"""Rewrite a v1 project config SET to v2, preserving comments.
+"""Migrate legacy project sets to the five-workflow configuration.
+
+Old v2 sets split generation from simulation and persist their old resolved
+integer seed. V1 sets first apply the historical v1-to-v2 mapping. Ordinary
+paths retain their run-directory anchor; workflow config paths stay relative
+to the project file. Successor files and backups are never overwritten.
 
 The command every R14 refusal message names
 (``config_composition.MIGRATION_COMMAND``). Point it at a project's T1 file and
@@ -825,6 +830,11 @@ def classify(t1) -> str:
     """
     declared = t1.get("schema_version")
     if declared == SCHEMA_VERSION:
+        workflows = t1.get("workflows") or {}
+        if "run_stress_test" in workflows:
+            if {"generate_scenarios", "simulate_system"} & set(workflows):
+                return "partial"
+            return "v2-legacy"
         return "v2"
     if declared is None:
         return "v1"
@@ -878,6 +888,57 @@ def migrate_experiment_record(doc, mapping, *, outvars=None):
     return [line for line in report if not line.startswith(("C-05", "C-19"))]
 
 
+def split_stress_test(t1, t2):
+    """Split the old workflow, preserving its resolved stochastic seed."""
+    from copy import deepcopy
+
+    from blueearth_cst.shared.config_composition import GENERATION_KEYS, WORKFLOW_NAMES
+    from blueearth_cst.shared.snake_utils import resolve_seed
+
+    workflows = t1.setdefault("workflows", {})
+    if {"generate_scenarios", "simulate_system"} & set(workflows):
+        raise MigrationError(
+            "partial workflow split: inspect both successor stanzas before migrating"
+        )
+    old_stanza = workflows.pop("run_stress_test", {"enabled": False})
+    old = t2.pop("run_stress_test", {})
+    generation = deepcopy(old)
+    simulation = deepcopy(old)
+    for key in list(old):
+        del (simulation if key in GENERATION_KEYS else generation)[key]
+    simulation.setdefault("operation", "simulate-and-metrics")
+    if old_stanza.get("config_path"):
+        try:
+            generation["seed"] = resolve_seed(
+                old.get("seed"), old.get("experiment_name")
+            )
+        except ValueError as exc:
+            raise MigrationError(
+                f"cannot preserve the old generation seed: {exc}"
+            ) from exc
+        declared = Path(old_stanza["config_path"])
+        for name, body in (
+            ("generate_scenarios", generation),
+            ("simulate_system", simulation),
+        ):
+            filename = declared.name.replace("run_stress_test", name)
+            if filename == declared.name:
+                filename = f"{declared.stem}_{name}{declared.suffix}"
+            if filename.startswith("snake_config_"):
+                filename = filename.replace("snake_config_", "project_config_", 1)
+            workflows[name] = deepcopy(old_stanza)
+            workflows[name]["config_path"] = (declared.parent / filename).as_posix()
+            t2[name] = body
+    else:
+        for name in ("generate_scenarios", "simulate_system"):
+            workflows[name] = deepcopy(old_stanza)
+    for name in WORKFLOW_NAMES:
+        workflows.setdefault(name, {"enabled": False})
+    return [
+        "R12: split run_stress_test into generate_scenarios and simulate_system; preserved resolved seed"
+    ]
+
+
 def migrate_project(t1_path: Path, *, write: bool = False):
     """Migrate one complete set. Returns the report; raises on any refusal.
 
@@ -907,7 +968,7 @@ def migrate_project(t1_path: Path, *, write: bool = False):
 
     # The experiment records travel WITH the set: they are compared against it
     # by the freeze, so migrating one without the other guarantees a mismatch.
-    record_paths = find_experiment_records(t1)
+    record_paths = find_experiment_records(t1) if state == "v1" else []
     records = {}
     for record_path in record_paths:
         with record_path.open(encoding="utf-8") as handle:
@@ -917,11 +978,25 @@ def migrate_project(t1_path: Path, *, write: bool = False):
     outvars = ((t1.get("shared") or {}).get("wflow_outvars")) or (
         (t1.get("model") or {}).get("outvars")
     )
-    mapping = load_mapping()
-    t1, t2, report = migrate_set(t1, t2, mapping, outvars=outvars)
-    for record_path, doc in records.items():
-        lines = migrate_experiment_record(doc, mapping, outvars=outvars)
-        report.extend(f"{record_path.parent.parent.name}: {line}" for line in lines)
+    report = []
+    if state == "v1":
+        mapping = load_mapping()
+        t1, t2, report = migrate_set(t1, t2, mapping, outvars=outvars)
+        for record_path, doc in records.items():
+            lines = migrate_experiment_record(doc, mapping, outvars=outvars)
+            report.extend(f"{record_path.parent.parent.name}: {line}" for line in lines)
+    report.extend(split_stress_test(t1, t2))
+    old_files = dict(workflow_files)
+    workflow_files = {
+        name: t1_path.parent / stanza["config_path"]
+        for name, stanza in t1["workflows"].items()
+        if stanza.get("config_path")
+    }
+    for name, path in workflow_files.items():
+        if name not in old_files and path.exists():
+            raise MigrationError(
+                f"refusing to overwrite existing successor file: {path}"
+            )
 
     if not write:
         return report
@@ -929,13 +1004,15 @@ def migrate_project(t1_path: Path, *, write: bool = False):
     # 2. STAGE beside the project, so the rename in step 4 stays on one volume.
     staged = {}
     stage_dir = t1_path.parent / ".migrate_staging"
-    stage_dir.mkdir(exist_ok=True)
+    if stage_dir.exists():
+        raise MigrationError(f"migration staging directory already exists: {stage_dir}")
+    stage_dir.mkdir()
     try:
         staged[t1_path] = stage_dir / t1_path.name
         with staged[t1_path].open("w", encoding="utf-8") as handle:
             handler.dump(t1, handle)
-        for name, path in workflow_files.items():
-            staged[path] = stage_dir / path.name
+        for index, (name, path) in enumerate(workflow_files.items()):
+            staged[path] = stage_dir / f"workflow_{index}_{path.name}"
             with staged[path].open("w", encoding="utf-8") as handle:
                 handler.dump(t2[name], handle)
         for index, (record_path, doc) in enumerate(records.items()):
@@ -947,15 +1024,34 @@ def migrate_project(t1_path: Path, *, write: bool = False):
 
         # 3. VALIDATE the staged set through the loader itself, not a second
         #    reader — the only check that means anything is the one a run does.
+        from copy import deepcopy
+
+        validation_t1 = deepcopy(t1)
+        for name, path in workflow_files.items():
+            validation_t1["workflows"][name]["config_path"] = str(
+                staged[path].resolve()
+            )
+        with staged[t1_path].open("w", encoding="utf-8") as handle:
+            handler.dump(validation_t1, handle)
         _validate_staged(staged[t1_path])
+        with staged[t1_path].open("w", encoding="utf-8") as handle:
+            handler.dump(t1, handle)
 
         # 4. COMMIT. Originals move to `*.v1.bak` rather than being deleted:
         #    a migration a user wants to undo is a migration they can undo.
-        for original, temp in staged.items():
-            backup = original.with_suffix(original.suffix + ".v1.bak")
+        backup_suffix = ".v1.bak" if state == "v1" else ".v2.bak"
+        originals = {t1_path, *old_files.values(), *records}
+        for original in originals:
+            backup = original.with_suffix(original.suffix + backup_suffix)
+            if backup.exists():
+                raise MigrationError(f"refusing to overwrite existing backup: {backup}")
+        for original in originals:
+            backup = original.with_suffix(original.suffix + backup_suffix)
             original.replace(backup)
+            report.append(f"kept {backup.name}")
+        for original, temp in staged.items():
             temp.replace(original)
-            report.append(f"wrote {original.name}, kept {backup.name}")
+            report.append(f"wrote {original.name}")
     finally:
         for leftover in stage_dir.glob("*"):
             leftover.unlink()
@@ -983,7 +1079,7 @@ def _validate_staged(staged_t1: Path) -> None:
 
 def main(argv=None) -> int:
     parser = argparse.ArgumentParser(
-        description="Rewrite a v1 project config set to v2, preserving comments.",
+        description="Migrate a v1 or old v2 project to five workflows, preserving comments and seeds.",
     )
     parser.add_argument("config", help="the project's T1 config file")
     parser.add_argument(

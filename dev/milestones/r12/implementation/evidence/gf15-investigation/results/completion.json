@@ -1,0 +1,9 @@
+{
+  "status": "complete",
+  "original_evidence_unchanged": true,
+  "diagnostic_sources_unchanged": true,
+  "retained_fits_diagnosed": 132000,
+  "traced_fits": 186,
+  "all_traces_exact": true,
+  "new_qualification_or_method": false
+}

@@ -1,0 +1,4 @@
+  File "<string>", line 1
+    import sys;sys.path.insert(0,'dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness');from reference_oracle import *;from decimal import localcontext;from lmoments3.distr import gev;ctx=localcontext();c=ctx.__enter__();c.prec=80;[(print(x,gev.lmom_fit(lmom_ratios=list(map(float,population_moments(Decimal(x))[0])))))) for x in ('-.2','.2','0')]
+                                                                                                                                                                                                                                                                                                                                              ^
+SyntaxError: closing parenthesis ')' does not match opening parenthesis '['

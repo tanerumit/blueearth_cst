@@ -1,0 +1,30 @@
+{
+  "audit_passed": true,
+  "qualification_passed": false,
+  "fits": 132000,
+  "quantiles": 144000,
+  "pairs": 120000,
+  "cells": 144,
+  "accepted_fits": 131922,
+  "optimizer_status_counts": {
+    "0": 131922,
+    "1": 78
+  },
+  "pair_outcomes": {
+    "passed": 119899,
+    "failed_numeric": 30,
+    "both_refused_no_numerical_proof": 70,
+    "validity_changed": 1
+  },
+  "cell_passes": {
+    "baseline_scale_passed": 3,
+    "translation_cells_passed": 106,
+    "eligible_scale_and_relative_passed": 6
+  },
+  "maximum_accepted_pair_delta": 4.526265831472642e-06,
+  "maximum_accepted_affine_quantile_residual": 0.0,
+  "maximum_accepted_estimate_change_from_original": 977866.4599458908,
+  "prior_inventories_exact": true,
+  "criteria_exact": true,
+  "method": "Independent standard-library arithmetic and linear order statistics; no fitting/helper imports or additional fits"
+}

@@ -1,0 +1,121 @@
+{
+  "verdict": "candidate_failed_fixed_matrix_qualification",
+  "mechanical_integrity": "complete_independent_audit_passed",
+  "signed_by": "model-validator /root/model_validator_gf15_stage3",
+  "signed_utc": "2026-09-13T04:48:33.026518+00:00",
+  "authorization": "Owner approved independent Stage 3 assessment on 2026-09-13",
+  "scope": "GF15 frozen L-moment candidate, complete retained development matrix only",
+  "scientific_gate_conjunction": false,
+  "gf15_status": "unresolved",
+  "production_integration_authorized": false,
+  "screening_change_authorized": false,
+  "r12_seal_authorized": false,
+  "new_estimator_search_authorized": false,
+  "new_fits": 0,
+  "verification_scope": "rapid / numerical affected; complete bounded retained-data audit",
+  "comparison_policy": "Exact decoded equality including all floats and booleans; no tolerance or gate waiver",
+  "bindings": {
+    "audit-retained.py": "0d415f8a66d44f6bdaa66c24be83921fa5180e944e2d5d5b9669034cc8413252",
+    "source-freeze.json": "a30e8b84b019947a0da76e891ffee79b8b299fcac4caf7cefdb5f29e9e7a2b02",
+    "README.md": "2ce8a5085557d454c1afed8c1234025f6cebc46cac81edbcb4f15f5c613b6090",
+    "scientific-handoff.md": "54ef5be4cba932093d06f165b4409b7e4807bf5bd552269587bd7ea04f0e5211",
+    "results/audit-freeze.json": "3c45a2f3c110cb0f73c8d35e39c4faf8dae6e558f721926b345d86e365a64c02",
+    "results/audit-results.json": "7f6e69719f15dc522b10b8a8f36e3ef303cccd372927a4ca7891504258567261",
+    "results/artifact-inventory.json": "cc4a2e2545955eb400bcc7f52392791ae436ecd7aa13e35d261f49e83bc4b2ca",
+    "assessment-logs/artifact-inventory.json": "ece7a71c67ba2e85a9e24ae85935c44d7d5455b22c62f0859187828e1627015d"
+  },
+  "stage2_bindings": {
+    "artifact-inventory.json": "404ed2d38185b81692cab8dc144acda4e854ae106a5768f7075d0b31f0556781",
+    "results/provenance.json": "3ef0f96b4b8865350d7e657a7303189d5c1b96ed8c1830b5ca4438ebfceaec3c",
+    "results/completion.json": "e0586b299381114a9ff20e22bdf1dd9c1a8d670ed90fe210a4e4ae004ee34845",
+    "results/mechanical-audit.json": "25bfff7aee0ee4026265ca728d751349d188967e5c1a3b4773aa08168322d600",
+    "results/qualification-summary.json": "1f5084379d16e7f17aa732795c8ad81bed62437823d2d8d9efe525d8c3842b00"
+  },
+  "stage1_inventory_sha256": "e5c45124f30949cec124ebb41c12ef9b6b609ffe63fc8d3e42128a370254b2ca",
+  "stage1_signed_readiness_sha256": "837968aff560f67d67a21bd292476c2f75fa051987da025ddc2065c703195d39",
+  "counts": {
+    "fits": 132000,
+    "quantiles": 144000,
+    "individual_cells_per_estimator": 144,
+    "translation_pairs": 120000,
+    "pairwise_rows": 432000
+  },
+  "individual_outcomes": {
+    "A": {
+      "accepted_quantiles": 144000,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    },
+    "B": {
+      "accepted_quantiles": 143915,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    },
+    "C": {
+      "accepted_quantiles": 144000,
+      "baseline_scale_passed": 3,
+      "baseline_cells": 24,
+      "all_scale_passed": 18,
+      "eligible_scale_and_relative_passed": 6,
+      "eligible_cells": 72,
+      "all_individual_gates_passed": false
+    }
+  },
+  "translation": {
+    "categories": {
+      "both_accepted": 120000,
+      "first_only": 0,
+      "second_only": 0,
+      "both_refused": 0
+    },
+    "numeric_failures": 0,
+    "max_absolute_delta_scale_error": 5.88373794130348e-12,
+    "passed_cells": 120,
+    "cells": 120
+  },
+  "branches": {
+    "preinversion_refusal": 0,
+    "positive_snap": 11,
+    "positive_rational": 113256,
+    "nonpositive_rational": 18733,
+    "newton_rational": 0,
+    "newton_alternate": 0
+  },
+  "diagnostic_fit_counts": {
+    "sample_support_exclusion_per_coordinate": 880,
+    "nonfinite_log_density_per_coordinate": 880,
+    "warnings": 0,
+    "explicit_refusals": 0,
+    "exception_refusals": 0
+  },
+  "all_reached_branches_covered_by_signed_stage1": true,
+  "all_cells_and_pair_records_exact": true,
+  "audit_seconds": 40.89244660001714,
+  "execution_debug_history": "Two pre-freeze auditor schema assumptions corrected: retained diagnostic errors for refused B fits; exact rho truth versus rounded offset+z. No Stage 2 finding or repair.",
+  "open_evidence_blockers": [],
+  "scientific_failures": "21/24 C baseline scale cells,126/144 scale cells,66/72 eligible combined cells fail; all six n=18 baseline cells fail. Full failure records in results/individual-cells.json.",
+  "uncertainty": {
+    "monte_carlo": "1000 retained IID draws per shape/count cell; empirical uncertainty unquantified; derived probabilities/translations and methods share draws",
+    "selection": "Adaptive development-matrix reuse; fresh-seed stability and optimism unknown; no holdout",
+    "parameter": "Fixed-draw quantile-error summaries, no parameter confidence or posterior interval",
+    "numerical": "Signed Stage 1 fixed controls only; no uniform branch or population bound",
+    "structural_observational_scenario": "Not assessed by synthetic IID GEV fixtures"
+  },
+  "skipped": [
+    "new fits or predecessor refits",
+    "holdout,bootstrap,resampling,new data",
+    "full repository suite",
+    "baseline and production workflows",
+    "screening validation",
+    "population accuracy verdict",
+    "managed-root run-control conformance"
+  ]
+}

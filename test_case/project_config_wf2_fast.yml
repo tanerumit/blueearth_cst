@@ -70,6 +70,9 @@ workflows:
   analyze_projections:
     enabled: true
     config_path: project_config_wf2_fast_analyze_projections.yml
-  run_stress_test:
+  generate_scenarios:
     enabled: true
-    config_path: project_config_wf2_fast_run_stress_test.yml
+    config_path: project_config_wf2_fast_generate_scenarios.yml
+  simulate_system:
+    enabled: true
+    config_path: project_config_wf2_fast_simulate_system.yml

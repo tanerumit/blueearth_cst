@@ -1,0 +1,20 @@
+{
+  "status": "passed",
+  "additional_GEV_fits": 0,
+  "optimizer_toy_controls": {
+    "status": "passed",
+    "toy_quadratic_exact": true,
+    "toy_success_status": 0,
+    "toy_monotone_status": 1,
+    "toy_monotone_nfev": 200,
+    "scalar_penalized_objective_equals_finite_vectorized_nll": true,
+    "unsupported_sample_detected": true,
+    "toy_cases_not_GEV_performance_evidence": true
+  },
+  "finite_failed_status_refused_without_losing_raw_values": true,
+  "normalization_quantile_delta": -4.440892098500626e-16,
+  "normalization_likelihood_delta": -3.552713678800501e-15,
+  "numeric_2e_minus6_perturbation_detected": true,
+  "both_refused_not_counted_as_numerical_proof": true,
+  "validity_change_detected": true
+}

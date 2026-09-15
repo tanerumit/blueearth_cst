@@ -483,6 +483,144 @@ def analyze_wflow_results(
         log_row(f"Wrote {table_paths[token]} ({len(table)} rows)", module="export")
 
 
+def analyze_response_runs(
+    run_artifacts,
+    groups,
+    reference_run_ids,
+    realization_labels,
+    *,
+    indicator_tokens,
+    table_paths,
+    st_num,
+    anchor,
+):
+    """Current table carrier over explicit artifacts and neutral metric inputs.
+
+    Provider grouping is already resolved by the caller. Native columns terminate
+    in open_responses; metric functions never inspect filenames or scenario rows.
+    Class-C declarations and computations are run-grain; this P1 carrier still
+    writes the existing pooled projection until the P2 result-contract migration.
+    """
+    from dataclasses import asdict
+
+    from blueearth_cst.experiment.metric_registry import (
+        declarations,
+        project_legacy_month,
+        reduce_bundle,
+        reduce_run,
+        resolve_month_reference,
+    )
+    from blueearth_cst.experiment.wflow_response_reader import (
+        ResponseRequest,
+        open_responses,
+    )
+
+    if set(run_artifacts) != {run for members in groups.values() for run in members}:
+        raise ValueError("response artifacts differ from declared grouping membership")
+    registry = declarations(indicator_tokens)
+    references = {}
+    if "q" in indicator_tokens:
+        reference_series = tuple(
+            item
+            for run in reference_run_ids
+            for item in open_responses(run, run_artifacts[run], ResponseRequest(("q",)))
+        )
+        for which in ("wet", "dry"):
+            references[which] = resolve_month_reference(
+                reference_series, expected_run_ids=reference_run_ids, which=which
+            )
+    rows = {token: [] for token in indicator_tokens}
+    evidence = {
+        "declarations": [asdict(item) for item in registry],
+        "references": {key: asdict(value) for key, value in references.items()},
+        "return_levels": [],
+        "class_c_run_values": [],
+    }
+    width = index_width(st_num)
+    for group, members in sorted(groups.items(), key=lambda pair: int(pair[0] or 0)):
+        st_id = f"{int(group or 0):0{width}d}"
+        series = tuple(
+            item
+            for run in members
+            for item in open_responses(
+                run, run_artifacts[run], ResponseRequest(tuple(indicator_tokens))
+            )
+        )
+        for run in sorted(members, key=int):
+            for metric in registry:
+                if metric.grain != "run":
+                    continue
+                token = metric.required_responses.variable
+                selected = [
+                    item
+                    for item in series
+                    if item.run_id == run and item.variable == token
+                ]
+                reference = (
+                    references["wet" if metric.statistic == "wetmonth_mean" else "dry"]
+                    if metric.reference
+                    else None
+                )
+                values = reduce_run(
+                    metric, selected, anchor=anchor, reference=reference
+                )
+                if metric.reference:
+                    evidence["class_c_run_values"].append(
+                        {
+                            "metric": metric.name,
+                            "run_id": run,
+                            "values": values.to_dict(),
+                        }
+                    )
+                else:
+                    rows[token] += _rows(
+                        metric.name,
+                        st_id,
+                        realization_labels[run],
+                        values,
+                        {key: key for key in values.index},
+                    )
+        for metric in registry:
+            token = metric.required_responses.variable
+            selected = [item for item in series if item.variable == token]
+            if metric.grain == "bundle":
+                values, counts = reduce_bundle(
+                    metric, selected, expected_run_ids=members, anchor=anchor
+                )
+                evidence["return_levels"].append(
+                    {
+                        "metric": metric.name,
+                        "members": list(members),
+                        "locations": [asdict(item) for item in counts],
+                    }
+                )
+            elif metric.reference:
+                reference = references[
+                    "wet" if metric.statistic == "wetmonth_mean" else "dry"
+                ]
+                values = project_legacy_month(
+                    metric, selected, reference=reference, anchor=anchor
+                )
+            else:
+                continue
+            rows[token] += _rows(
+                metric.name,
+                st_id,
+                POOLED_REALIZATION,
+                values,
+                {key: key for key in values.index},
+            )
+    # Refusals above occur before the first table is written.
+    for token in indicator_tokens:
+        table = pd.DataFrame(rows[token], columns=list(INDICATOR_COLUMNS))
+        table["value"] = table["value"].astype("float32").map(_format_value)
+        table["rlz_id"] = table["rlz_id"].astype("int64")
+        Path(table_paths[token]).parent.mkdir(parents=True, exist_ok=True)
+        table.to_csv(table_paths[token], index=False)
+        log_row(f"Wrote {table_paths[token]} ({len(table)} rows)", module="export")
+    return evidence
+
+
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
@@ -493,11 +631,21 @@ if __name__ == "__main__":
 
         with tee_to_log(sm.log[0]):
             tokens = list(sm.params.indicator_tokens)
-            analyze_wflow_results(
-                csv_fns=sm.input.rlz_csv_fns,
-                results_dir=sm.params.results_dir,
+            from blueearth_cst.experiment.wflow_response_reader import (
+                NativeRunArtifacts,
+            )
+
+            analyze_response_runs(
+                run_artifacts={
+                    item["run_id"]: NativeRunArtifacts(
+                        Path(item["csv_path"]), Path(item["toml_path"])
+                    )
+                    for item in sm.params.run_artifacts
+                },
+                groups=dict(sm.params.metric_groups),
+                reference_run_ids=tuple(sm.params.reference_run_ids),
+                realization_labels=dict(sm.params.realization_labels),
                 st_num=sm.params.st_num,
-                st_start=sm.params.st_start,
                 indicator_tokens=tokens,
                 table_paths={t: getattr(sm.output, f"{t}_indicators") for t in tokens},
                 anchor=water_year_end_anchor(sm.params.water_year_start),

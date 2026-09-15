@@ -1,0 +1,51 @@
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+Provided cores: 1 (use --cores to define parallelism)
+Rules claiming more threads will be scaled down.
+Job stats:
+job             count
+------------  -------
+all                 1
+produce_root        2
+total               3
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 20:51:35 2026]
+localrule produce_root:
+    output: forcing/root-b.txt
+    jobid: 2
+    reason: Missing output files: forcing/root-b.txt
+    wildcards: run_id=root-b
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 20:51:35 2026]
+Finished jobid: 2 (Rule: produce_root)
+1 of 3 steps (33%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 20:51:35 2026]
+localrule produce_root:
+    output: forcing/root-a.txt
+    jobid: 1
+    reason: Missing output files: forcing/root-a.txt
+    wildcards: run_id=root-a
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 20:51:35 2026]
+Finished jobid: 1 (Rule: produce_root)
+2 of 3 steps (67%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Thu Sep 10 20:51:35 2026]
+localrule all:
+    input: forcing/root-a.txt, forcing/root-b.txt
+    jobid: 0
+    reason: Input files updated by another job: forcing/root-b.txt, forcing/root-a.txt
+    resources: tmpdir=<HOST_TEMP>
+[Thu Sep 10 20:51:35 2026]
+Finished jobid: 0 (Rule: all)
+3 of 3 steps (100%) done
+Complete log(s): <WORKTREE>\.tmp\scratchpad\2026-09-10_2046\p2b-host-fixed\test_p2b_alternation_and_ances2\.snakemake\log\2026-09-10T205135.118297.snakemake.log

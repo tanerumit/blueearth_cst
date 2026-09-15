@@ -186,12 +186,14 @@ def test_every_allowance_states_a_reason():
 
 
 def test_the_window_bounds_are_classified_not_silently_dropped():
-    """`start` and `end` are read by `for key in ('start', 'end')`, which no
-    per-name matcher can see. They are ALLOWED with a reason, not excused by a
-    matcher widened until nothing is ever reported."""
+    """R12's frozen simulation planner reads both bounds explicitly.
+
+    They previously needed the tuple-iteration allowance; now the matcher must
+    classify their actual readers rather than silently omit the declarations.
+    """
     _defects, allowed, _observed = sweep()
-    assert {a[2].split(":")[0] for a in allowed} == {"start", "end"}
-    assert all(a[3] == "a key pair read by iterating a literal tuple" for a in allowed)
+    assert {"start", "end"} <= set(reader_keys())
+    assert not ({a[2].split(":")[0] for a in allowed} & {"start", "end"})
 
 
 def test_the_templates_it_reads_are_the_ones_a_user_copies():

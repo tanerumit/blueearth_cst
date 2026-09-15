@@ -159,8 +159,7 @@ Use `config/deltares_data_local.yml` (a copy of `deltares_data.yml` with
 ### Limits
 
 The script only stages spatial datasets the **build_model** workflow
-touches. CMIP6 data used by `analyze_projections.smk` /
-`run_stress_test.smk` lives in `cmip6_data.yml` and is not yet
+touches. CMIP6 data used only by `analyze_projections.smk` lives in `cmip6_data.yml` and is not yet
 mirrored — extend the script when you need those flows.
 
 ## Recovering from a fresh env build

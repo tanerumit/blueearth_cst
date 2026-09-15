@@ -1,0 +1,142 @@
+{
+  "status": "accepted_bounded_runner_GF9_GF28_pending_GF27_software",
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "runner_comparison_sha256": "74d39a89db9dcc6431aa8ea53daceabeb7fd8f2e544dff8d2b13e058f25e0d56",
+  "direct_independent_review_sha256": "5df3ff3fe0927aa0bd4f879e086de596f9869ec898e1c15dd814c7d035c9927e",
+  "runner_simulation_id": "b295b21b107163db4966bd1630f7e9437d757214d0f558261ed5863fbf5e9f78",
+  "runner_collection_id": "382ea628574513c6d1d31c75d6f9904b943e553c51fb8f8061b0476b85b6cd6d",
+  "runner_collection_revision": "4f49e542fd40f546cd92fcc9f697e29592b33d70475e51c3ed7f9dfeb5969991",
+  "runner_metric_set_id": "c1f94aa4045882507887735472aec069fa39ec4985fd524e00fe400019d0c5f2",
+  "runs": [
+    {
+      "run_id": "01",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "1f9748f99e0cdbf06c2f84285ccf94027fbb6a4326767f9c9704a84987f4ffc7",
+        "native": "c72955959eaa7490a32593f4624507a899c3eab08ad007364fe21d94838b47c7",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "02",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "3d3b9648a5ed059c6bd352196ca888d949143667893f6c6fe876a5abdd84f390",
+        "native": "e4b6d427871dfa4bf94562b71c07295b0b79e54799a4495c6cd9b711e23ce6fc",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "03",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "8cc84c222fbec69c399b63ca2c06b46ff228084c3ee425b5031fe3cb769f8d1c",
+        "native": "e56d487b5361870369a89de53729eb9c7b8bd3312f7b98a4aa4898e4a5f2253c",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "04",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "361f1ce1ac49b9718881b39bdea7244d78b0e15ec321e334e147693e50b3ecc4",
+        "native": "a39ad63286963a07aca4492c1db0493ecf2c824261de84838dc63eefe8e296d0",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "05",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "7533f5b7557015e2bd15ccbd5853ac91751fdb1e1792cb09041809d233038be9",
+        "native": "65ab5a460cb0c95bd8da3a87fc543b134447b9b6505fe733bb0212e69dd10c1f",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "06",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "452ad67bdf1c7e936fb203ab2792123037372aac57547d9ccef2323422b6f85f",
+        "native": "793043daf9427101f891e5157bb01a05e0390e5bec85a7393ac7faa7a7eee088",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "07",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "dd858f6acd64ebd2ba74e5bf2a1a8ad3337e018de1305c05a6e8440bfc2c4b25",
+        "native": "6b11dea065f261a66275bf2b47ccbe24f3973e46732826e6ffbaa8c1f5247b60",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "08",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "3eabfa0cf9250854ba94ef95343b375db78ef35209070577033e6389a4e56211",
+        "native": "41c66cd16599e9c7c05adb0fface89f0caf5a582db2c65933a42404653228ce7",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "09",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "692ecbd67155d05baaf2a45a81ca86b1faf127380f044b3856ce036832a1cde5",
+        "native": "1a3c70e88f98f10e93226473156dd6bb9fce784060375867f0f37bdf627dc3eb",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "10",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "6152369a9b02c1ff639dc6b7fad53e26f38675d82e962d87fd0761c9c848df34",
+        "native": "f2f3948c6147aabdb070ef8a095b8a4c8d4d86913b72ea4440846ed9d56830a8",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "11",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "17d4527a8344df772f143dd3818d203fcc0182ccb2b76ecdeba4d71855a4b7f4",
+        "native": "72a4f3b8771d3849db4167e108d61426ef55c436f54df7c3bbba1d0455ae708b",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "12",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "f42274681f72b27c835b156f59dee04e9436e34ef4ee8a6d03fd422ffe0db1f8",
+        "native": "0c329ebbd2ea84a7b2e288278196baeb68c90c6b7aa5aec899d1539471d45d49",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "13",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "5e642afb10441997f322488da47ec893f5f488bdf4590816ff5025d074444044",
+        "native": "dcebd59f6fa9c494161b4149a761e236a72055a6f363baeaf039d161180cdbbb",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    },
+    {
+      "run_id": "14",
+      "direct_runner_bytes_exact": true,
+      "hashes": {
+        "forcing": "a895864302447aff6c44545d4401aa2bed94e78bf05591158ce803b7f691add2",
+        "native": "ecfebe000c650c93b7368f25b21d0537307c63b501cfcb77bbf7f1eb99c863a6",
+        "temporal": "3654143741fac61b4cf1ddef0b6a588b4368baf8d736bb1872d7b17c2485f9b7"
+      }
+    }
+  ],
+  "metric_tables_and_unit_index_byte_exact_to_direct": true,
+  "reference_and_discrimination_match_direct": true,
+  "limits": "Transitive validation against independently verified direct data; no new method or benchmark; full runner scheduling and final software gate remain coordinator evidence"
+}

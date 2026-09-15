@@ -1,0 +1,10 @@
+{
+  "status": "nontrailing_newline_bytes_identical",
+  "path": "generate_scenarios.smk",
+  "before_sha256": "bf88fe7a765d30f4f0127ca8b689986b27c39f5fa1f8207e467afdf66005f279",
+  "after_sha256": "b7b52a54b919372065152907e9085069b4f1466b60697d4a94aab24f8806690a",
+  "removed_bytes": 2,
+  "full_software_inventory_sha256": "376ae0edeed8283b4cfd0cec9667ef07f97e4966e019d300af5df5b9f7d6c04b",
+  "commit_inventory_sha256": "7a7c6510854031a69e76ed3bf3c0a420200069d41098c3e552bf5310f0c9e1d0",
+  "scope": "Remove one terminal blank line caught by staged whitespace check. All other 192 full-tested runtime sources remain byte-identical; required final Snakefile CLI check follows."
+}

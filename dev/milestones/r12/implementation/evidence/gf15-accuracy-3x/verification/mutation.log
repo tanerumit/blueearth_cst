@@ -1,0 +1,9 @@
+Traceback (most recent call last):
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\gf15-accuracy-3x\mutation-final\check-rescore.py", line 65, in <module>
+    main()
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\gf15-accuracy-3x\mutation-final\check-rescore.py", line 31, in main
+    assert not score(upper, policy)["individual_gate_pass"]
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError
+
+PASS: actual half-P90 reducer mutation rejected (exit 1)

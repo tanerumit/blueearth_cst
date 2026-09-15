@@ -1,0 +1,145 @@
+## p3-final-direct-generation-dry.log
+2 retained lines; 66 verbose lines omitted.
+checkpoint prepare_collection_sources:
+The run involves checkpoint jobs, which will result in alteration of the DAG of jobs (e.g. adding more jobs) after their completion.
+
+## p3-final-direct-generation.log
+7 retained lines; 633 verbose lines omitted.
+localcheckpoint prepare_collection_sources:
+Updating checkpoint dependencies.
+00:09:59 - filter - Filter           Passed     Rate  Criteria                                
+localcheckpoint publish_scenario_collection:
+Updating checkpoint dependencies.
+localrule all:
+37 of 37 steps (100%) done
+
+## p3-final-direct-simulation-dry.log
+3 retained lines; 65 verbose lines omitted.
+simulate_system: all
+checkpoint freeze_wflow_simulation:
+The run involves checkpoint jobs, which will result in alteration of the DAG of jobs (e.g. adding more jobs) after their completion.
+
+## p3-final-direct-simulation.log
+8 retained lines; 389 verbose lines omitted.
+simulate_system: all
+localcheckpoint freeze_wflow_simulation:
+Updating checkpoint dependencies.
+localcheckpoint prepare_metric_plan:
+Updating checkpoint dependencies.
+localrule publish_metric_set:
+localrule all:
+25 of 25 steps (100%) done
+
+## p3-final-runner-generation-dry.log
+3 retained lines; 118 verbose lines omitted.
+checkpoint prepare_collection_sources:
+The run involves checkpoint jobs, which will result in alteration of the DAG of jobs (e.g. adding more jobs) after their completion.
+    invocation              C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-runner/project/config/runs/invocations/20260911T212821.919Z-4bc89c055792.json
+
+## p3-final-runner-generation.log
+8 retained lines; 681 verbose lines omitted.
+localcheckpoint prepare_collection_sources:
+Updating checkpoint dependencies.
+00:29:58 - filter - Filter           Passed     Rate  Criteria                                
+localcheckpoint publish_scenario_collection:
+Updating checkpoint dependencies.
+localrule all:
+37 of 37 steps (100%) done
+    invocation              C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-runner/project/config/runs/invocations/20260911T212833.541Z-a850a551b1ff.json
+
+## p3-final-runner-simulation-dry.log
+3 retained lines; 118 verbose lines omitted.
+checkpoint freeze_wflow_simulation:
+The run involves checkpoint jobs, which will result in alteration of the DAG of jobs (e.g. adding more jobs) after their completion.
+    invocation           C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-runner/project/config/runs/invocations/20260912T043235.627Z-04e59d57750b.json
+
+## p3-final-runner-simulation.log
+8 retained lines; 438 verbose lines omitted.
+localcheckpoint freeze_wflow_simulation:
+Updating checkpoint dependencies.
+localcheckpoint prepare_metric_plan:
+Updating checkpoint dependencies.
+localrule publish_metric_set:
+localrule all:
+25 of 25 steps (100%) done
+    invocation           C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-runner/project/config/runs/invocations/20260912T043315.283Z-4309594b5bdf.json
+
+## p3-final-offline.log
+6 retained lines; 50 verbose lines omitted.
+simulate_system: metrics
+localcheckpoint prepare_metric_plan:
+Updating checkpoint dependencies.
+localrule publish_metric_set:
+localrule metrics:
+3 of 3 steps (100%) done
+
+## p3-gf9-direct.log
+1 retained lines; 44 verbose lines omitted.
+  "status": "COMPARISON_PASSED_PENDING_SIGNED_REVIEW",
+
+## p3-gf9-runner.log
+1 retained lines; 44 verbose lines omitted.
+  "status": "COMPARISON_PASSED_PENDING_SIGNED_REVIEW",
+
+## p3-notebook-final-fixed.log
+13 retained lines; 44 verbose lines omitted.
+PASS cell 4
+PASS cell 5
+PASS cell 6
+PASS cell 8
+PASS cell 9
+PASS cell 23
+PASS cell 26
+PASS cell 28
+PASS cell 29
+PASS cell 31
+PASS cell 33
+PASS cell 34
+All code cells compile; retained-data reader and response-surface cells passed.
+
+## p3-direct-tree-final.log
+1 retained lines; 433 verbose lines omitted.
+MAP CLEAN: 424 paths, 0 moved, 424 identity (by rule), 0 deleted-by-design, 0 unmapped
+
+## p3-runner-tree-final.log
+1 retained lines; 237 verbose lines omitted.
+MAP CLEAN: 228 paths, 0 moved, 228 identity (by rule), 0 deleted-by-design, 0 unmapped
+
+## p3-final-inventory-tests.log
+1 retained lines; 3 verbose lines omitted.
+123 passed in 2.48s
+
+## gf27-final-configs/capacity-21.log
+7 retained lines; 601 verbose lines omitted.
+localcheckpoint prepare_collection_sources:
+Updating checkpoint dependencies.
+07:42:51 - filter - Filter           Passed     Rate  Criteria                                
+localcheckpoint publish_scenario_collection:
+Updating checkpoint dependencies.
+localrule all:
+35 of 35 steps (100%) done
+
+## gf27-final-configs/capacity-22.log
+7 retained lines; 604 verbose lines omitted.
+localcheckpoint prepare_collection_sources:
+Updating checkpoint dependencies.
+07:45:06 - filter - Filter           Passed     Rate  Criteria                                
+localcheckpoint publish_scenario_collection:
+Updating checkpoint dependencies.
+localrule all:
+35 of 35 steps (100%) done
+
+## gf27-final-configs/capacity-100.log
+7 retained lines; 607 verbose lines omitted.
+localcheckpoint prepare_collection_sources:
+Updating checkpoint dependencies.
+07:47:10 - filter - Filter           Passed     Rate  Criteria                                
+localcheckpoint publish_scenario_collection:
+Updating checkpoint dependencies.
+localrule all:
+35 of 35 steps (100%) done
+
+## gf27-final-configs/comparison.log
+1 retained lines; 4 verbose lines omitted.
+  "status": "passed_pending_named_review",
+

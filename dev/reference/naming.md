@@ -181,7 +181,7 @@ Two distinctions are the ones a new rule gets wrong:
 
 ## 9. Rule numbering (`W.NN` reference scheme)
 
-Each rule in the four `*.smk` entry points carries a `W.NN` reference number. `W` is the **workflow id** — `0` analyze_climate, `1` build_model, `2` analyze_projections, `3` run_stress_test — not a position, so ids need not start at 1. `NN` is the zero-padded **position in that workflow's logical order**: data first, then model build, then run, then records.
+Each rule in the five `*.smk` workflow definitions carries a `W.NN` reference number. `W` is the **workflow id** — `0` analyze_climate, `1` build_model, `2` analyze_projections, `3` generate_scenarios, `4` simulate_system — not a position, so ids need not start at 1. `NN` is the zero-padded **position in that workflow's logical order**: data first, then model build, then run, then records.
 
 It exists in exactly two places:
 

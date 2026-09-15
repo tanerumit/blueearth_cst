@@ -1,0 +1,11 @@
+{
+  "wheel_sha256": "984d1f1b0c3feefd57afc7a270931c1d28e4face2df1c2293559faf47681ef5e",
+  "source_matches": {
+    "__init__.py": true,
+    "distr.py": true,
+    "stats.py": true,
+    "tests/__init__.py": true,
+    "tests/test_lmoments.py": true,
+    "tests/test_samlmu_speed.py": true
+  }
+}

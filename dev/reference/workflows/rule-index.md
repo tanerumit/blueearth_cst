@@ -1,9 +1,10 @@
 # Rule index — every Snakemake rule
 
-Every rule in `analyze_climate.smk`, `build_model.smk`, `analyze_projections.smk`
-and `run_stress_test.smk`: what each one does, what it writes, and how they connect.
+Every rule in `analyze_climate.smk`, `build_model.smk`, `analyze_projections.smk`,
+`generate_scenarios.smk` and `simulate_system.smk`: what each one does, what it writes, and how they connect.
 
-Each workflow gets a diagram, a one-line summary table, then one section per rule.
+Each workflow has a flow description and rule summary; WF0–2 also have detailed
+per-rule sections.
 **Does** is the rule's job; **Writes** transcribes its `output:` block, so the claim can be
 checked against the Snakefile rather than believed.
 
@@ -12,6 +13,13 @@ rule — translate through [What changed](#what-changed) before reading one in
 `dev/milestones/`, `dev/decisions/`, `dev/LOG.md` or a dated migration record.
 
 ## On the numbers
+
+### R12 generation/simulation split
+
+WF3 publishes a ready collection; WF4 consumes it through the mandatory
+simulation runner and publishes retained responses and metric sets. The final
+rule tables below replace the combined workflow's numbering. Historical tables
+in “What changed” retain the numbers in force at their stated dates.
 
 `W.NN` is the rule's position in its workflow's **logical order**: data first,
 then model build, then run, then records. Numbering is contiguous within each
@@ -29,9 +37,9 @@ edit.
 
 ## What changed
 
-The only place this page names old numbers and names. Everything after it is the current state.
+Dated translations for historical citations. Current WF3/WF4 numbering is in their tables below.
 
-### Renumbering
+### Renumbering — 2026-08-06 historical map
 
 Read this table before interpreting any `W.NN` in a document written before
 2026-08-06. 47 declarations: 18 in WF1, 10 in WF2, 19 in WF3. The `was`
@@ -163,7 +171,7 @@ Paths are relative to `project_dir`, with these shorthands:
 | `<store>/` | `data/climate/historical/<clim_source>_<window>/` |
 | `<proj>/` | `data/climate/projections/<ensemble>/` |
 | `<exp>/` | `experiments/<experiment_name>/` |
-| `<wg>/` | `<exp>/climate/weathergenr/` |
+| `<wg>/` | `<project>/scenario_plans/<generation_request_id>/generation/` (P2 staging; predecessor captures use `<exp>/climate/weathergenr/`) |
 | `<runs>/` | `<exp>/hydrology/wflow/` |
 
 ---
@@ -344,7 +352,7 @@ STAGE 1 — DATA   (no model exists yet)
               ┌───────────────┴───────────────┐
               ▼                               ▼
     1.04 extract_historical_climate   1.03 delineate_spatial_units
-      (SHARED store, = WF3 3.08)       (SHARED vectors, = 2.03/3.04:
+      (SHARED store, = WF3 3.02)       (SHARED vectors, = 2.03:
               │                         basins, subbasins, rivers,
               ▼                         locations, the registry)
     1.05 plot_climate_source                  │
@@ -420,7 +428,7 @@ The store reaches WF1's *figures* (1.05, 1.15), never its forcing.
 | 1.01 | `snapshot_config` | Snapshots the config and everything it references. |
 | 1.02 | `delineate_region` | Delineates the one project extent. |
 | 1.03 | `delineate_spatial_units` | The shared vector foundation, and where gauges enter the workflow. |
-| 1.04 | `extract_historical_climate` | The shared historical-climate store (= WF3 3.08). |
+| 1.04 | `extract_historical_climate` | The shared historical-climate store (= WF3 3.02). |
 | 1.05 | `plot_climate_source` | Climate figures on the source grid. |
 | 1.06 | `prepare_spatial_maps` | The thematic raster stack and the model-build interface. |
 | 1.07 | `build_wflow_model` | Parameterises Wflow-SBM, and where gauges enter the model. |
@@ -473,7 +481,7 @@ never from a built model.
 #### 1.03 · `delineate_spatial_units`
 
 **Does.** The **shared** vector foundation — the same rule WF2 declares as 2.03
-and WF3 as 3.04, splatted from one `spatial_units_rule` helper so the three
+and is consumed by WF4; splatted from one `spatial_units_rule` helper so the three
 declarations cannot drift. Partitions the region into the vector layers every
 later join is keyed on, and is where **gauge points enter the workflow**: it
 snaps `shared.basin.output_locations` to the river network and partitions each
@@ -975,384 +983,87 @@ their order.
 
 ---
 
-# WF3 — climate experiment (`run_stress_test.smk`)
+# WF3 — scenario generation (`generate_scenarios.smk`)
 
-The stress test itself. Generates stochastic weather realizations, perturbs each
-across a temperature × precipitation grid, runs every member through Wflow, and
-reduces the runs to the indicator tables that form the response surface.
+![Generation and retained simulation handoffs](wf3-stage-flow.svg)
 
-Every climate artifact is generated **before** the model is used: 3.14 is the
-first rule to put the model to work, and the whole stress-test ensemble already
-exists by then.
+Generation reads basin/climate inputs and its own settings, with no model edge.
+The source checkpoint resolves content identity after historical inputs exist.
+The publication checkpoint validates the full collection before exposing its
+readiness marker; downstream consumers never create or delete collection data.
 
-```
-STAGE 1 — GUARD + PROVENANCE   (config and hashes only)
-──────────────────────────────────────────────────────────────────
-   config ──► 3.01 check_project_consistency   (drift guard, fails loud)
-                 │         .project_consistency_ok
-                 │
-                 │   ┌─────────────┬─────────────┬─────────────┐
-                 └──►│             │             │             │
-                     ▼             ▼             ▼             ▼
-              3.02 snapshot   3.07 write_    3.09 prepare  3.10 prepare_
-                 _config      experiment_    _stress_test  weathergen_
-                              config             _grid        config
-
-   config ──► 3.03 delineate_region      (guard-independent: its only
-                     │  region.geojson    input is the data catalog, and
-                     │                    the byte-identity contract with
-       ┌─────────────┴───────────┐        WF1/WF2 forbids adding one)
-       ▼                         ▼
-  3.04 delineate_        3.08 extract_historical_climate
-       _spatial_units         (SHARED with WF1 1.04)
-   (SHARED, = 1.03/2.03;
-    a LEAF here too)
-
-   model  ──► 3.05 write_model_reference  (inputs: WF1's .outputs_configured
-                     │                     + wflow_sbm.toml, both ancient)
-                     ▼
-              3.06 check_model_reference   (verdict consumed by 3.14)
-
-STAGE 2 — CLIMATE DATA   (the model is fingerprinted, never used)
-──────────────────────────────────────────────────────────────────
-   3.08 extract_historical_climate      3.10 prepare_weathergen_config
-              │  extract_historical.nc          │  weathergen_config.yml
-              └────────────────┬────────────────┘
-                               ▼
-              3.11 generate_weather_realizations
-                               │  rlz_1..R_st_0.nc   (unperturbed)
-   3.09 prepare_stress_test_grid        │
-              │  stress_test_lookup.csv │
-              └────────────────┬────────┘
-                               ▼
-                  3.12 perturb_climate_realization
-                         │  rlz_<n>_st_<m>.nc   (perturbed)
-                         ▼
-                  3.13 write_climate_data_catalog
-                         │
-STAGE 3 — MODEL RUN   (first use of the built model)
-──────────────────────────────────────────────────────────────────
-                         ▼
-       3.14 downscale_climate_realization ◄── model + 3.06's verdict
-                         │  inmaps + per-member TOML
-                         ▼
-                  3.15 run_wflow_batch_<b>   (B members per Julia session)
-                         │  per-member run CSVs
-                         ▼
-STAGE 4 — PRODUCT + RECORDS
-──────────────────────────────────────────────────────────────────
-                  3.16 derive_wflow_indicators
-                         │  q_indicators.csv · basin_indicators.csv
-                         ▼
-                  3.17 gather_benchmarks · 3.18 gather_logs
+```mermaid
+flowchart LR
+  region --> climate --> sources
+  lookup --> sources
+  sources --> claim --> config --> roots --> perturbed
+  roots --> retain
+  perturbed --> retain --> publish
 ```
 
-**The store feeds 3.11, not 3.09.** 3.09 enumerates the stress-test grid from
-the config alone — it needs no climate data at all, and runs concurrently with
-the extraction. The historical climate is what the *generator* resamples.
-
-**The guard's fan-out is 3.01 → {3.02, 3.07, 3.09, 3.10}** — the four rules that
-declare `consistency_ok`. An earlier version of this diagram drew it reaching
-`delineate_region` and `write_model_reference` as well; neither declares it, and
-`delineate_region` structurally *cannot* — its input set is splatted from the
-shared rule helper and adding a WF3-only input would break the byte-identity
-contract `test_region_rule.py` enforces. The same is true of 3.04, for the same
-reason. `write_model_reference` hangs off the built model instead
-(`.outputs_configured` + `wflow_sbm.toml`, both `ancient()`).
-
-**3.04 is a leaf here as it is in WF2**, and both gather rules declare it for
-the same reason. Note the scope mismatch, ruled 2026-08-06: everything else in
-`WF3_TARGETS` is experiment-scoped and this one is **project**-scoped, because
-the vectors depend on `shared.basin` alone — which 3.01 guarantees agrees across
-workflows. Two experiments on one project share one copy, and that is what makes
-the shared declaration safe.
-
-| # | rule | in one line |
+| Number | Rule/checkpoint | Output or role |
 |---|---|---|
-| 3.00 | `all` | Target aggregator. |
-| 3.01 | `check_project_consistency` | Startup drift guard against the wf1/wf2 snapshots. |
-| 3.02 | `snapshot_config` | As WF1 1.01, kept inside the experiment. |
-| 3.03 | `delineate_region` | As WF1 1.02 — the same artifact. |
-| 3.04 | `delineate_spatial_units` | As WF1 1.03 — the same artifacts. A leaf here. |
-| 3.05 | `write_model_reference` | Records which model state this experiment used. |
-| 3.06 | `check_model_reference` | Refuses to simulate if that model has changed. |
-| 3.07 | `write_experiment_config` | Records the experiment's own parameters. |
-| 3.08 | `extract_historical_climate` | The shared climate store (= WF1 1.04). |
-| 3.09 | `prepare_stress_test_grid` | **Creates** the stress test: one lookup table, twelve rows per grid point. |
-| 3.10 | `prepare_weathergen_config` | The one weather-generator config. |
-| 3.11 | `generate_weather_realizations` | All `RLZ_NUM` unperturbed realizations, in one call. |
-| 3.12 | `perturb_climate_realization` | **Applies** one grid point to one realization. |
-| 3.13 | `write_climate_data_catalog` | Catalogs every generated climate file. |
-| 3.14 | `downscale_climate_realization` | One member onto the Wflow grid: forcing + TOML. |
-| 3.15 | `run_wflow_batch_<b>` | Runs Wflow.jl, `B` members per Julia session. |
-| 3.16 | `derive_wflow_indicators` | The indicator tables, one per output variable. WF3's terminal product. |
-| 3.17 | `gather_benchmarks` | Merges the timing parts. |
-| 3.18 | `gather_logs` | Merges the log parts. |
-
-## WF3 rule detail
-
-#### 3.00 · `all`
-
-**Does.** Target aggregator — the two indicator tables, the three config
-records, the merged log and the benchmark table.
-
-**Writes.** Nothing of its own.
-
-#### 3.01 · `check_project_consistency`
-
-**Does.** Startup drift guard. A WF3 config is a *full* config, so its
-project-level sections must describe the same project the built model came from;
-this fails loud on divergence, **naming the diverging key**, rather than letting
-the experiment silently reuse a model built under other settings. Runs at rule
-time, not parse time, so `--dry-run` and `--unlock` stay usable.
-
-**Writes.** `<exp>/.project_consistency_ok` (per-experiment sentinel, a fresh
-input of the per-experiment roots) · `<store>/.guard_ok` (store-level receipt,
-consumed `ancient()` and keyed identically for every experiment sharing dataset +
-window, so the shared rule's input set never varies across experiments).
-
-#### 3.02 · `snapshot_config`
-
-**Does.** As WF1 1.01, but the snapshot stays **inside the experiment** rather
-than joining `config/runs/`.
-
-**Writes.** `<exp>/config/project_config_run_stress_test.yml` ·
-`<exp>/config/runs/run_stress_test/<digest>/` (bundle dir).
-
-**Writes (undeclared).** Catalog copies into `<exp>/config/catalogs/`.
-
-#### 3.03 · `delineate_region`
-
-**Does.** As WF1 1.02 — the same one project region artifact.
-
-**Writes.** `<spatial>/geoms/region.geojson`.
-
-#### 3.04 · `delineate_spatial_units`
-
-**Does.** As WF1 1.03 — the same shared vector foundation, from the same helper,
-and byte-identical to the other two declarations but for
-`message`/`log`/`benchmark` (`tests/test_spatial_units_rule.py` fails on any
-other difference).
-
-What it buys WF3: the subbasin partition and the location registry as
-**project**-scoped artifacts — the option of subbasin-resolved indicators and a
-station-labelled indicator table — without a built model and without the
-thematic raster stack. It does not yet **consume** them (ADR 0003 §10).
-
-**Writes.** As 1.03.
-
-#### 3.05 · `write_model_reference`
-
-**Does.** Records **which model state** this experiment used: the model's
-relative path, a pointer-derived digest, and the per-input hashes behind it. Not
-a copy — a hash answers the question a duplicated staticmaps would, and the
-per-input hashes are kept so a later mismatch can *name* what changed. Its model
-inputs are `ancient()` on purpose: if the reference were rewritten whenever the
-model changed it would always match, and 3.06's comparison would be decorative.
-
-**Writes.** `<exp>/config/model_reference.yml`.
-
-#### 3.06 · `check_model_reference`
-
-**Does.** The other half: recomputes the fingerprint and refuses to simulate if
-the live model has changed since the experiment was recorded. Its sentinel is a
-declared input of 3.14 — the first rule to touch the model — because a check
-after the work is a post-mortem, not a guard.
-
-**Writes.** `<exp>/.model_reference_ok` — `temp()`, and that is the trigger, not
-an optimisation. A persisted sentinel would satisfy 3.14's edge with a **stale
-verdict**: the check passed once, the file remains, and 3.14 is free to
-re-simulate against a model that changed afterwards. Deleting it on consumption
-forces the next invocation to re-evaluate. A guard evaluates; it does not cache
-an answer.
-
-**Do not merge 3.05 and 3.06.** They read as an obvious pair and merging them
-destroys the guard — the `ancient()` / `temp()` asymmetry above *is* the
-mechanism, not an accident.
-
-#### 3.07 · `write_experiment_config`
-
-**Does.** Records the experiment's own parameters, separately from the project
-ones. Generated, never authored — a hand-written file here would be a second
-source of truth competing with the `--configfile`. Immutable from the first
-*successful* run, keyed off the merged workflow log's existence, since editing an
-experiment's parameters before it has produced anything is ordinary work and
-afterwards would silently redefine what the existing results mean.
-
-**Writes.** `<exp>/config/experiment.yml`.
-
-#### 3.08 · `extract_historical_climate`
-
-**Does.** The shared historical-climate store producer — the same rule as WF1
-1.04, byte-identical but for `message`/`log`/`benchmark`, with
-`tests/test_climate_store_contract.py` failing on any other difference. Usually
-already current when run in pipeline order.
-
-**Writes.** `<store>/extract_historical.nc`, plus `<store>/orography.nc` on the
-chirps branches.
-
-#### 3.09 · `prepare_stress_test_grid`
-
-**Does.** Enumerates the configured temperature × precipitation grid and writes
-ONE lookup table at monthly grain: twelve rows per stress-test point, carrying
-the temperature change and the precipitation mean and variance changes.
-**This is what creates the stress test.**
-
-**Writes.** `<exp>/config/stress_test_lookup.csv` — `12 × ST_NUM` rows keyed
-`(st_id, month)`, `st_id` zero-padded to a width derived from `ST_NUM` (so
-`01 … 12` on a twelve-point grid) and textually identical to the member token.
-**No `st_0` row**: the table is the parameter grid, and the reserved unperturbed
-baseline has no parameters. Values are PERCENT for both precipitation columns
-and additive °C for temperature. Still one loop, so the enumeration that names
-the members and the one that describes them cannot disagree (C26).
-
-Replaced `<wg>/_work/st_<m>.csv` plus `<exp>/config/stress_test_design.csv` on
-2026-08-16; `_work/` is gone. Migration record:
-`dev/milestones/r12/migration_stress-test-lookup.md`.
-
-#### 3.10 · `prepare_weathergen_config`
-
-**Does.** Assembles the one weather-generator config from the shipped template
-plus the project settings — the year arithmetic (middle year, simulation length)
-and the two transient-change flags. The template is a **declared input**: until
-2026-08-05 it was a params-only read, so editing it changed nothing until
-something else forced a rerun, and 3.11 kept generating from superseded settings.
-
-**Writes.** `<wg>/config/weathergen_config.yml`.
-
-#### 3.11 · `generate_weather_realizations`
-
-**Does.** Runs weathergenr **once** to produce all `RLZ_NUM` stochastic
-realizations of the historical climate — the unperturbed `st_0` baselines. The
-plural is load-bearing: number carries meaning here, with 3.11 plural (all in one
-job) against 3.14 singular (wildcarded, one job per member).
-
-**Writes.** `<wg>/output/rlz_1_st_0.nc` … `rlz_<RLZ_NUM>_st_0.nc`, all
-`temp()`.
-
-**Writes (undeclared).** Four generator diagnostic figures moved into
-`<wg>/plots/` (`obs_power_spectra.png`, `warm_annual_precip.png`,
-`warm_annual_stats.png`, `warm_annual_wavelet.png`) and weathergenr's date CSVs
-left in `<wg>/output/`.
-
-#### 3.12 · `perturb_climate_realization`
-
-**Does.** Takes one unperturbed realization and one stress-test point and
-applies that perturbation — precipitation mean and variance factors, temperature
-delta, transient flags, PET recompute. **It applies the stress test; 3.09 creates
-it.** Its `st_num` wildcard is constrained to ≥ 1 so it can never become a second
-producer of the reserved `st_0` baseline, which would surface as a cyclic-graph
-error.
-
-Its parameter input is the **constant** lookup, not a per-member file: the member
-id arrives as a positional argument and `read_member_grid.R` filters on it,
-stopping unless the slice is twelve rows in month order. That guard exists
-because the migration turned a structural `MissingInputException` into a quiet
-data condition — a join matching nothing yields a zero-length vector, and R's
-recycling makes a silent wrong answer at least as likely as an error. It also
-converts both percent columns back to the generator's multiplier form.
-
-**Writes.** `<wg>/output/rlz_<n>_st_<m>.nc`, `temp()`.
-
-#### 3.13 · *(removed 2026-08-18)*
-
-Was `write_climate_data_catalog`: it enumerated every generated climate file —
-perturbed and unperturbed — into ONE hydromt catalog the downscaling step read a
-single entry out of. The fan-in was the cost: no member could be downscaled
-until every member had been perturbed, and the perturbed NCs are `temp()`, so
-all of them had to coexist on disk until this rule had read them. 3.14 now
-writes its own one-entry catalog per member. The number is not reused — `W.NN`
-is an id, not a position (`dev/reference/naming.md` §9).
-
-#### 3.14 · `downscale_climate_realization`
-
-**Does.** Downscales one perturbed realization onto the Wflow grid via hydromt,
-producing that member's forcing and its run TOML. The first rule to touch the
-model, which is why 3.06's guard sentinel is a declared input here. Writes the
-member's own one-entry hydromt catalog first: a bare path cannot carry
-`preprocess=harmonise_dims` or `crs=4326`, because hydromt_wflow's setup methods
-pass no `source_kwargs`.
-
-**Writes.** `<runs>/forcing/inmaps_rlz_<n>_st_<m>.nc` (`temp()`) ·
-`<runs>/config/rlz_<n>_st_<m>.toml` · `<runs>/config/rlz_<n>_st_<m>.yml`
-(`temp()`).
-
-#### 3.15 · `run_wflow_batch_<b>`
-
-**Does.** Runs Wflow.jl for every member, `B` per Julia session to amortise
-startup, through a parse-time loop of one anonymous rule per batch with static
-per-member input/output lists. `B` defaults from `-c N` and is clamped by
-`batch_size_max`; `batch_size: 1` restores one job per member. Rule identifiers
-are per batch while the log label stays the singular `3.15_run_wflow` —
-deliberately, so **this rule is exempt from the rename call-site rule**. P3-3
-keys logs by batch id, not by rule identifier; applying the six-call-site rule
-mechanically here would rename a `LOG_RULES` entry that has no rule to match and
-break the merge.
-
-**Writes.** `<runs>/output/rlz_<n>_st_<m>.csv` per member.
-No final-state NetCDF is emitted: WF3 has no consumer for it. Input states
-remain configured. Julia threads are reserved within Snakemake's core budget.
-
-#### 3.16 · `derive_wflow_indicators`
-
-**Does.** Reduces every member's run to the indicator tables that form the
-response surface — one per configured output variable. WF3's terminal product.
-Reads **no parameter artifact at all**: it needed the per-member grid for the
-axis values, which are now derived at reporting time from the lookup (HM-7), and
-the design table for the id width, which comes from `index_width(st_num)`.
-Verifies before any reduction work that the members which actually RAN cover
-`ST_START..ST_NUM` — what ran, rather than what was declared.
-
-**Writes.** `<exp>/results/<token>_indicators.csv`, five columns
-(`metric, location, st_id, rlz_id, value`). The axis columns were removed on
-2026-08-16: they held an annual collapse of twelve monthly perturbations, which
-misreports any seasonal design.
-
-#### 3.17 · `gather_benchmarks`
-
-**Does.** As WF1 1.16, for WF3.
-
-**Writes.** `benchmarks/wf3_benchmarks_<experiment>.md`, merging
-`benchmarks/_parts/<experiment>/3.*`.
-
-#### 3.18 · `gather_logs`
-
-**Does.** As WF1 1.17, for WF3 — where the merge earns most: 3.12 and 3.14 write
-one part per (rlz, cst) and 3.15 one per batch, so the part dir held hundreds of
-files across several subdirectories. A clean full run leaves one.
-
-**Writes.** `logs/wf3_run_stress_test_<experiment>.log`, merging
-`logs/_parts/<experiment>/3.*`.
-
-> Both are **project-scoped**, keyed by experiment in the filename, so every
-> workflow's run records sit in one `logs/` and one `benchmarks/`. The
-> scratch `_parts/` stay experiment-scoped one level down — WF3 part names are
-> rule numbers, identical across experiments, so a shared part dir would let one
-> experiment's stranded part be merged into another's log.
-
----
-
-## Do not merge these rules
-
-Each pairing looks mergeable and is not. Stated so the case is not re-raised.
-
-| Pairing | Why it stays split |
+| 3.00 | `all` | Ready collection, merged log and benchmarks |
+| 3.01 | `delineate_region` | Shared basin region |
+| 3.02 | `extract_historical_climate` | Shared historical climate store |
+| 3.03 | `prepare_stress_test_grid` | Staged monthly perturbation lookup |
+| 3.04 | `prepare_collection_sources` | Source/preparation inventory and exact generation plan |
+| 3.05 | `initialize_scenario_collection` | Exclusive collection claim and worker receipt |
+| 3.06 | `prepare_weathergen_config` | Generator configuration |
+| 3.07 | `generate_weather_realizations` | Temporary unperturbed generator members |
+| 3.08 | `perturb_climate_realization` | Temporary derived members |
+| 3.09 | `retain_scenario_forcing` | Durable `forcing/run_<run_id>.nc` |
+| 3.10 | `publish_scenario_collection` | Complete `collection.json` marker |
+| 3.11 | `gather_logs` | Generation-request-scoped merged log |
+| 3.12 | `gather_benchmarks` | Generation-request-scoped benchmark table |
+
+Staging lives under `scenario_plans/<generation_request_id>/generation/`.
+Published collections live under `scenario_collections/<collection_id>/` and
+include the scenario table, lookup, forcing descriptors, environment/code/source
+inventories and portable preparation context. The exact plan identifies the
+collection; consumers never scan for the latest match.
+
+# WF4 — system simulation (`simulate_system.smk`)
+
+Use `scripts/simulate_system.py --config <project> --target all`, or the
+all-workflow runner. Target/operation validation happens before one Snakemake
+invocation. The fixed `simulate_and_metrics.smk` module owns model preparation
+and Wflow execution; `metrics_only.smk` omits those producers. A completed normal
+simulation also reduces retained responses without recreating model forcing.
+
+| Number | Rule/checkpoint | Output or role |
+|---|---|---|
+| 4.00 | `all` | Complete selected metric set and execution records |
+| 4.01 | `write_model_reference` | Model reference |
+| 4.02 | `check_model_reference` | Live model-reference verification |
+| 4.03 | `freeze_wflow_simulation` | Frozen collection/model/settings/environment identity |
+| 4.04 | `downscale_climate_realization` | Temporary per-run catalog and model forcing; retained TOML |
+| 4.05 | `run_wflow_batch_<batch>` | Native run CSVs |
+| 4.06 | `publish_native_responses` | Complete simulation and response inventory |
+| 4.07 | `responses` | Native-response aggregate |
+| 4.08 | `prepare_metric_plan` | Response-dependent metric-set identity and exact targets |
+| 4.09 | `publish_metric_set` | Tables, unit index, declarations and `metrics.json` marker |
+| 4.10 | `metrics` | Selected metric-set aggregate |
+| 4.11 | `gather_logs` | Experiment-scoped merged log |
+| 4.12 | `gather_benchmarks` | Experiment-scoped benchmark table |
+
+Metrics-only requires `operation: metrics-only` with `--target metrics` and
+retained simulation/response records. It cannot schedule generation, preparation
+or Julia. Mixed or inconsistent targets are refused by the runner.
+
+## R12 numbering crosswalk
+
+| Former combined-WF3 rule | Successor |
 |---|---|
-| `write_outlet_index` into `declare_wflow_outputs` | Paired thematically, not structurally. `write_outlet_index` reads only `outlets.geojson` and `location_registry.csv`, so it runs in parallel with the waterbody and output-declaration rules. Merging serialises a cheap pandas join behind a hydromt `r+` mutation — it *adds* an edge |
-| `gather_benchmarks` with `gather_logs` | Both merge functions call `_remove_parts`, deleting the parts they consumed. In one rule, a failure in the second half strands the first half's already-deleted parts, and the re-run degrades that artifact to "no part from this run". Split, either one succeeding means its output survives the other's failure |
-| `write_model_reference` with `check_model_reference` | The `ancient()` / `temp()` asymmetry *is* the guard. See 3.06 |
-| `plot_wflow_evaluation` into a metrics rule and a figure rule | The seam is not there: the metrics are one call inside the figure loop, downstream of the model open, the merge, the alignment and the parity transform. Splitting costs either a duplicated parity transform or a new declared artifact. See 1.15 |
+| 3.03 region | 3.01 |
+| 3.08 climate extraction | 3.02 |
+| 3.09 perturbation lookup | 3.03 |
+| 3.11 generation | 3.07 |
+| 3.12 perturbation | 3.08 |
+| 3.14 downscaling | 4.04 |
+| 3.15 Wflow batches | 4.05 |
+| 3.16 legacy table reduction | 4.08–4.10 retained metric planning/publication |
 
-**Two rules for judging any such candidate:**
-
-1. Two rules being small, adjacent and thematically similar is not an argument for merging them. Check what each actually **depends on**, and whether either **destroys its own inputs**.
-2. **A function boundary is not a data boundary.** Before splitting a rule, list what the second half would have to **reload or recompute** — not which functions it would call. A split is affordable only when that list is short or the intermediate is worth declaring.
-
-## Where the rules meet the artifacts
-
-For what each rule reads and writes, rather than what it does:
-
-- `dev/reference/workflows/model_creation.md`, `climate_experiment.md` — per-workflow detail.
-- `dev/reference/contracts/weather-generator-seam.md`, `hydrological-model-seam.md` — the pinned interchange surfaces.
-- `dev/milestones/r09/wf3-changes-proposal.md` appendix — the WF3 chain step by step, with the declared inputs of each stage.
-- `dev/milestones/r10/rule-naming-design.md` — the verb vocabulary and the rename rationale.
+See [workflow migration](../../../docs/migration-workflow-names.md),
+[weather-generator seam](../contracts/weather-generator-seam.md), and
+[hydrological-model seam](../contracts/hydrological-model-seam.md).

@@ -1,0 +1,8 @@
+{
+  "status": "complete",
+  "workers": 4,
+  "fits": 132000,
+  "rows": 144000,
+  "elapsed_seconds": 1134.3702784999987,
+  "source_hashes_unchanged": true
+}

@@ -1,0 +1,28 @@
+"""Disposable wrong-answer discrimination; never writes the frozen source."""
+import importlib.util
+import inspect
+import json
+import sys
+from pathlib import Path
+
+root = Path("dev/milestones/r12/implementation/evidence/gf15-lmoments-qualification")
+spec = importlib.util.spec_from_file_location("controls", root / "test_qualification.py")
+controls = importlib.util.module_from_spec(spec)
+sys.modules[spec.name] = controls
+spec.loader.exec_module(controls)
+module = controls.qualification
+original = module.cell_summary
+source = inspect.getsource(original)
+mutated = source.replace('len(selected) / 1000', 'len(selected) / 949')
+assert mutated != source
+exec(compile(mutated, "<wrong-all-draw-denominator>", "exec"), module.__dict__)
+try:
+    controls.test_errors_denominators_margins_and_zero()
+except AssertionError:
+    print(json.dumps({"mutation": "accepted/full denominator changed from 1000 to 949", "detected": True}))
+else:
+    raise AssertionError("wrong denominator escaped focused test")
+finally:
+    module.cell_summary = original
+controls.test_errors_denominators_margins_and_zero()
+print(json.dumps({"unmodified_reducer_passed": True}))

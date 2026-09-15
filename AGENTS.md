@@ -4,16 +4,17 @@
 
 ## Overview
 
-BlueEarth Climate Stress Test — a multi-language (Python + R + Julia) scientific workflow toolbox stitched together by Snakemake. The four `*.smk` files at the repo root are the only entry points; there is no package CLI. Narrative: `README.md`.
+BlueEarth Climate Stress Test — a multi-language (Python + R + Julia) scientific workflow toolbox stitched together by Snakemake. Five root `*.smk` files define the workflows. Simulation requires `scripts/simulate_system.py` or the all-workflow runner to validate its operation and targets. Narrative: `README.md`.
 
 | entry point | id | does |
 |---|---|---|
 | `analyze_climate.smk` | wf0 | the basin's historical climate — model-free, optional for the pipeline |
 | `build_model.smk` | wf1 | builds the Wflow-SBM model, runs it on historical forcing |
 | `analyze_projections.smk` | wf2 | CMIP6 change factors — a plausibility overlay |
-| `run_stress_test.smk` | wf3 | the stress test |
+| `generate_scenarios.smk` | wf3 | model-independent scenario collection generation |
+| `simulate_system.smk` via `scripts/simulate_system.py` | wf4 | simulation and retained-response metrics |
 
-wf1 -> wf2/wf3 is ordered; wf3 needs wf1 artifacts. wf0 is outside that chain -- it only pre-builds region and climate artifacts wf1 also declares, so run it first or not at all, and run it ALONE when the question is which forcing dataset to use. The `workflows.<name>` config keys do not match the file names (`docs/migration-workflow-names.md`).
+Convenience order: wf0 → wf3 → wf1 → wf4 → wf2. Generation and model construction are independent prerequisites of simulation; projections are a terminal plausibility overlay. WF0 is optional and shares region/climate producers: run it first or not at all, and run it ALONE when choosing forcing.
 
 ## Background
 
@@ -21,7 +22,7 @@ Method context that changes how code here should be edited (rationale: `docs/cst
 
 - CST is bottom-up stress testing (decision-scaling / DMDU): it perturbs local climate over a temperature × precipitation grid rather than running selected GCM scenarios. Stress-test scenarios come from the stochastic weather generator — never couple the experiment workflow to CMIP scenarios.
 - CMIP6 output (wf2) is a plausibility overlay only. Its change factors situate the perturbation grid in projection space; they never drive a stress-test run.
-- wf0 characterises historical climate without a model — the forcing-selection question, which matters because CST does no local calibration, so forcing choice is the dominant lever on the historical run. wf1 builds Wflow-SBM from global data via hydromt and runs it once. wf2 computes monthly change factors per (model, scenario, horizon). wf3 generates `RLZ_NUM` realizations, perturbs each across `ST_NUM` temp/precip combinations (`st_0` = unperturbed baseline), runs Wflow, and reduces to the indicators forming the response surface.
+- wf0 characterises historical climate without a model — the forcing-selection question, which matters because CST does no local calibration, so forcing choice is the dominant lever on the historical run. wf1 builds Wflow-SBM from global data via hydromt and runs it once. wf2 computes monthly change factors per (model, scenario, horizon). wf3 generates realizations and perturbed scenarios into a durable collection. wf4 consumes its explicit run ids, runs Wflow, and reduces retained native responses into immutable metric sets.
 - This repo is the workflow engine of a three-part platform (workflows + CST-API + CST-frontend). No web/API code belongs here.
 - CST targets rapid, first-order basin assessments on global data. Prefer robustness and automation over site-specific sophistication.
 
@@ -47,11 +48,12 @@ Run everything inside `pixi shell`, or prefix each command with `pixi run`.
 pixi install          # conda-forge + PyPI deps
 pixi run install      # + weathergenr (R, via remotes) and the Julia env
 
-# The four workflows, IN ORDER. project_config_rapid.yml is the DEFAULT config.
+# The five workflows, in convenience order. project_config_rapid.yml is the DEFAULT config.
 snakemake all -c 3 -s analyze_climate.smk     --configfile test_case/project_config_rapid.yml
+snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
 snakemake all -c 3 -s build_model.smk         --configfile test_case/project_config_rapid.yml
 snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
-snakemake all -c 3 -s run_stress_test.smk     --configfile test_case/project_config_rapid.yml
+python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
 
 # Or drive all enabled workflows in fixed order. Contract: the module docstring,
 # pinned clause-by-clause by tests/test_run_workflows.py.
@@ -60,7 +62,7 @@ pixi run python scripts/run_workflows.py --config test_case/project_config_rapid
 snakemake ... --dry-run     # validate the DAG before running and after editing a rule
 snakemake --unlock -s <smk> --configfile <cfg>   # Snakemake locks the workdir on crash
 
-pytest tests/test_cli.py    # cheapest sanity check: dry-runs all four entry points
+pytest tests/test_cli.py    # cheapest sanity check: checks all five entry points
 pytest tests/               # full suite (test_build_model.py is slow)
 ```
 
@@ -98,11 +100,11 @@ A task branch is isolated from `main` and cheap to revert, so spend validation t
 
 **Reading CI:** `gh` resolves to the `upstream` (Deltares) remote in this clone and exits 0 printing nothing, which reads as "CI has never run". Fix it once per clone with `gh repo set-default tanerumit/blueearth_cst`, and install the ruff pre-push hook the same way: `git config core.hooksPath .githooks`.
 
-**Which config to run:** default to `project_config_rapid.yml` (`test_case/test_rapid`) for anything you want to watch EXECUTE — a rule you edited, a DAG check, a WF3 smoke run, a figure render. Use `project_config_baseline.yml` (`test_case/test_local`) when the run's NUMBERS are the point; the baseline is recorded from it and nothing else, so never point `check_baseline.py` at the rapid tree. `project_config_wf2_fast.yml` is WF2 code iteration only. Rapid is CHEAP, not NARROW — a config that gives up coverage must say which.
+**Which config to run:** default to `project_config_rapid.yml` (`test_case/test_rapid`) for anything you want to watch EXECUTE — a rule you edited, a DAG check, a generation/simulation smoke run, a figure render. Use `project_config_baseline.yml` (`test_case/test_local`) when the run's NUMBERS are the point; the baseline is recorded from it and nothing else, so never point `check_baseline.py` at the rapid tree. `project_config_wf2_fast.yml` is WF2 code iteration only. Rapid is CHEAP, not NARROW — a config that gives up coverage must say which.
 
-**The baseline manifest is BEHIND the baseline config, on purpose (`t2608222155`).** On 2026-09-07 the baseline set moved to a nine-year `simulation_window` (2046-2054) and the matching `mid` horizon; `dev/baseline/manifest.json` was deliberately NOT re-recorded, because the saving is 4-8% and a re-record costs a full run that repays after 10 to 25 gates.
+**The baseline manifest is CURRENT as of 2026-09-15.** It was deliberately left behind the baseline config from 2026-09-07 (`t2608222155`, nine-year `simulation_window` 2046-2054 and the matching `mid` horizon) because a re-record costs a full run. R12's seal paid that cost: `test_case/test_local` was regenerated from `project_config_baseline.yml` in the successor layout and `dev/baseline/manifest.json` re-recorded from it, so a green `check_baseline check` again describes the configuration you are running.
 
-**A `check` right now PASSES, and that pass means nothing about the current config.** The fixture tree still holds the pre-2026-09-07 run and the manifest was recorded from it, so the two agree with each other and with a config neither reflects. The divergence appears the moment the pipeline is RE-RUN: every wf2 and wf3 numeric target moves — nine simulated years against seventeen, a 44-year generated series against 76, and change factors over `mid: 2046-2054` instead of `far: 2070-2090`. Target PATHS are unchanged, so it reports changed VALUES rather than missing targets. That diff IS the re-record; read it as expected, not as a defect.
+**The standing tree is now the R12 SUCCESSOR tree (2026-09-15).** It was wholly predecessor until then -- all 75 paths `snapshot_project_tree.py` could not map were pre-R12 output -- so it was replaced rather than repaired, and the predecessor copy is preserved at `blueearth_cst-artifacts/r12/predecessor-test_local-2026-09-15`. **It is still not an R12 migration reference**, and never can be: the old and new trees differ by both the R12 path/key/ownership change and the 2026-09-07 config change, so any comparison between them conflates two variables. R12 acceptance rests on the separately captured fresh P0 reference and the signed GF-9 crosswalk, which compare under matched settings. Note for other worktrees: `test_case/test_local` is untracked and SHARED, so a branch whose manifest still describes the predecessor layout will fail `check_baseline` against this tree until it merges R12.
 
 **Run WF1 with `--notemp` when the run feeds `check_baseline.py`.** Rule 1.14 declares wflow's `run_default/output.csv` as `temp()`, and that file is the manifest's wf1 discharge target, so without the flag the gate fails "target missing" and reads as a defect. The rounded `output_q.csv` is not a substitute.
 
@@ -117,7 +119,7 @@ A task branch is isolated from `main` and cheap to revert, so spend validation t
 
 ## References
 
-- `README.md` — the pipeline and how the four workflows fit together; start here.
+- `README.md` — the pipeline and how the five workflows fit together; start here.
 - `docs/cst-toolbox-technical-note-2025.md` — the original 2025 note; read for method background and design rationale before changing *what* a workflow computes. Its only edit since is a two-line path sweep, so the method framing still holds, but pipeline details, paths and artifact names in it are often superseded — trust the code and `dev/reference/` where they disagree.
 - `dev/reference/validation-ladder.md` — read when deciding whether a gate is affordable, or when a gate behaves unexpectedly.
 - `dev/reference/repo-layout.md` — read when adding a file and unsure where it goes.

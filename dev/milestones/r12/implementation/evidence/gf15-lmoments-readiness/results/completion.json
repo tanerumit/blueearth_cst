@@ -1,0 +1,30 @@
+{
+  "status": "implementation_controls_passed_pending_independent_review",
+  "seconds": 50.312000000005355,
+  "attempt_sha256": "4743f9bdd15328d270aac3598356d0f81e8f6d1d57a54f3ceca240973b853a44",
+  "files": {
+    "attempt.json": "4743f9bdd15328d270aac3598356d0f81e8f6d1d57a54f3ceca240973b853a44",
+    "criteria.json": "988611b6d239b95f7542f8d67470395e4997ac61dd97198fd075fdcba552d643",
+    "input-audit.json": "df207fa4e990d10394f1b694fb8453ca9d6e700b9fa22e5075bde7be814c050b",
+    "numerical-controls.json": "9ca079d325f2fce865343e9f60583f0ca55153d7876dc3bb73040edb32720748",
+    "replay.json": "9ab6e91b99bb864ecd556426d84c676dab4b9b401f26626967ddbb8e2c1467a2",
+    "test-controls.log": "4a544ee80390e727b8ea608bb1f178c98f70c59b866a93510b8ade62caf5ca51"
+  },
+  "qualification": "not executed",
+  "verified_after": {
+    "protected_files": 177,
+    "installed_lmoments3_sources": 6,
+    "runtime_versions": {
+      "Pygments": "2.21.0",
+      "colorama": "0.4.6",
+      "iniconfig": "2.3.0",
+      "lmoments3": "1.0.8",
+      "numpy": "2.4.6",
+      "packaging": "26.3",
+      "pip": "25.0.1",
+      "pluggy": "1.6.0",
+      "pytest": "9.0.3",
+      "scipy": "1.18.0"
+    }
+  }
+}

@@ -1,0 +1,9 @@
+Assuming unrestricted shared filesystem usage.
+host: <HOST>
+Building DAG of jobs...
+MissingInputException in rule transform_forcing in file "<WORKTREE>\dev\milestones\r12\implementation\feasibility\p2b.smk", line 49:
+Missing input files for rule transform_forcing:
+    output: forcing/child-a.txt
+    wildcards: run_id=child-a
+    affected files:
+        forcing/root-a.txt

@@ -1,0 +1,20 @@
+{
+  "mechanical_verification": "passed",
+  "scientific_verdict": "requires independent model-validator",
+  "completion_sha256": "7cba09d4bf7af14a93b08e9deedff7b48dd5fe019cd1baf9e992a11bf651338c",
+  "source": {
+    "candidate_adapter.py": "616b5ee21fb3b66599dfdde5846eb422489b539535a74b46fbf79216e7d1826c",
+    "check-readiness.py": "486afffacc12046ec1cc34c945c38b7a915f6b56f623c3cd1663d3f6330e1935",
+    "independent-review.py": "9403872eb5c9298679c0b7308c8c27f4e44d655dd86046a6878c474f25748060",
+    "README.md": "8ced5c0ff4872c518cb5a2714da7d47d480dbe6965b27c790f12dc80c271f78c",
+    "reference_oracle.py": "5bf7458b1b158c36548f6c3dd5ee55861c582129093248951b7473d0eb62b251",
+    "test_readiness.py": "e32eac58be55fb856463e3145d543bb87d392cfcf54e8dfe69c59adf732c0476"
+  },
+  "A_keys": 144000,
+  "B_keys": 144000,
+  "selected_files": 732,
+  "population_controls": 3,
+  "branch_controls": 19,
+  "dual_precision_quantile_comparisons": 88,
+  "matrix_fits_executed": 0
+}

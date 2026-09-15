@@ -50,7 +50,7 @@ ALWAYS_ARCHIVED_ROLES = frozenset({"output_locations", "observations_timeseries"
 #: file into `config/templates/`, a bin that means shipped-toolbox snapshots.
 #:
 #: A prefix rather than an exact role because the role carries the workflow
-#: name: `workflow_config_build_model`, `workflow_config_run_stress_test`.
+#: name: `workflow_config_build_model`, `workflow_config_generate_scenarios`.
 RECORD_ONLY_ROLE_PREFIXES = ("workflow_config",)
 
 #: Dropped beside the run record, because this bin has two genuine traps.

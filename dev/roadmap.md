@@ -41,7 +41,7 @@ contract surface, not part of the artifact tree, and no durable artifact path
 carries one. One milestone, R10; dev artifacts under `dev/milestones/r10/`. See
 § Phase 7 below.
 
-**Phase 8 — WF3 rework (R11 SEALED 2026-08-08; R12 next).** Rebuilds workflow 3,
+**Phase 8 — WF3 rework (R11 SEALED 2026-08-08; R12 SEALED 2026-09-15).** Rebuilds workflow 3,
 the stress test, in the two layers it turns out to have: **R11** changed what it
 emits and what its members are called; **R12** changes how it executes. Mirrors
 Phase 5, which did the same for workflow 2. Dev artifacts under
@@ -1371,7 +1371,7 @@ R10 finished, not a history of how it got there.
 
 ---
 
-## Phase 8 — WF3 rework (R11 SEALED, R12 next)
+## Phase 8 — WF3 rework (R11 SEALED, R12 SEALED)
 
 Registered 2026-08-07. Workflow 3 is the last of the three not to have been
 reworked: Phase 5 did WF2, and WF1 was settled across R3, R7 and R9. This phase
@@ -1469,89 +1469,87 @@ it does not — scope §8).
 
 **Tag.** `r11-wf3-artifacts` — cut 2026-08-08 on `milestone/r11-wf3-artifacts`.
 
-### R12 — WF3 execution model (OPEN — G2 ratified 2026-08-08, not yet scoped)
+### R12 — Scenario generation and system simulation (SEALED 2026-09-15)
 
-Takes `docs/wf3-redesign` as an **input, not a starting point**.
+**Status.** Implemented and sealed on `feat/wp3-improvements`. Phases P0-P3
+landed the feasibility baseline, logical contracts, durable handoffs and the
+entry-point extraction, each with signed independent acceptance; the GF15
+estimator replacement followed as a four-stage production integration. The
+implementation record is `t2609100916`; the gate-by-gate position is
+[validation-map.md](milestones/r12/implementation/validation-map.md).
 
-**The G2 prerequisite is discharged.** Ratified 2026-08-08 as an *architectural
-input, not an implementable spec*, with the risk-7 part-3 rejection ratified and
-`ext1-2`'s standing objection carried rather than resolved. Full record:
-`dev/milestones/r12/wf3-experiment-v2-design-review-record.md`; the
-assessment behind it: `dev/milestones/r12/g2-assessment.md`.
+**What the seal covers.** Two runnable entry points with metrics-only
+recomputation, the successor project layout, and the L-moment GEV return-level
+estimator `gf15-lmoments-c/1` under **bounded Windows acceptance for operational
+screening only**. The standing baseline was re-established from the tracked seed
+and all three standing checks pass — `check_baseline check` 7 targets,
+`snapshot_project_tree` MAP CLEAN at 326 paths with 0 unmapped against the
+previous 75. Evidence:
+[successor-baseline-record.md](milestones/r12/implementation/evidence/successor-baseline-record.md),
+[standing-seal-status.md](milestones/r12/implementation/evidence/standing-seal-status.md).
 
-Why nothing was promoted: the run's process was sound and its output is
-unimplementable, which are not in tension — the tree it was designed against no
-longer exists. Two structural facts, not the ~178 stale identifiers, decide it.
-`aggregate_rlz` is **load-bearing** (it defines `member_id` and the
-cell-completeness predicate) and R11 retired it as a hard error, dissolving the
-distinction rather than renaming it. And `GF-21`, a named gate falsifier, asserts
-the reduce emits **no `cst_0` row** — which R11 inverted on `[R9-5]`, so it now
-passes only if the implementation reproduces behaviour R11 deliberately removed.
+**What the seal does NOT cover, and is not implied by it.** Linux setup and
+parity (D8 handoff 2/4) are outstanding: owner-deferred 2026-09-14 and ruled out
+of scope 2026-09-15, and Windows evidence cannot satisfy them. Tracked as
+`t2609151346`. The §7.5 owner
+method ruling on the estimator is outstanding. Actual-bundle applicability
+remains `unestablished` — the 8x benchmark is a post-results development rescore,
+not independent validation — and low-flow return levels are unvalidated in both
+the near-zero and outside-tested-shape regimes. GF15's own verdict
+([integration-verdict.md](milestones/r12/implementation/evidence/gf15-production-integration/integration-verdict.md))
+rests on two independent reviews plus an owner ruling closing the loop, not on
+three reviews; the corrections that closed round two are executor-verified only.
 
-**R12's first task is the re-derivation**, whose deliverable is a written mapping
-from each surviving finding to its post-R11 expression. That mapping is what
-makes two external review rounds portable instead of merely archived. Surviving:
-the manifest + ledger architecture, `member_hash`, resumable sweeps, epochs,
-quarantine, checked atomic publication, and the counterbalanced AB/BA timing gate.
+The owner accepted the reviewed v6
+[workflow design](milestones/r12/wf3-simulation-identity-design.md) on
+2026-09-10. Astra approved its final scoped delta with no findings. R12 is
+registered for implementation; no runtime or scientific validation is claimed.
+The [frozen intake](milestones/r12/simulation-identity-intake.md) and
+[verbatim review archive](milestones/r12/wf3-simulation-identity-review/)
+preserve the scope rulings, original findings and their dispositions.
 
-**The re-derivation is gated on the lookup-table redesign — ruled 2026-08-15.**
-`t2608152230` collapses WF3's two parameter artifacts into one monthly
-`stress_test_lookup.csv` and moves the response-surface axis from a baked
-reduction-time collapse to a declared post-processing parameter. `design-v4.md`
-§5.1 defines `member_hash` over, among other terms, `tavg` / `prcp` /
-`precip_variance` — which its own field note calls *"the annual scalars the
-response surface is indexed by, derived exactly as the reduction derives them
-today"*. **That is precisely the derivation `t2608152230` abolishes**, so R12's
-member-level freshness boundary is currently defined over an artifact that is
-about to be deleted. The lookup lands first; `member_hash` then keys on the
-member's twelve monthly rows, which is strictly more faithful than the collapse
-it replaces. Board order follows: `t2608152230` is queue 1, `t2608082036` queue 2.
+**Accepted destination.** Two independently runnable entry points:
+`generate_scenarios.smk` produces durable forcing; `simulate_system.smk`
+consumes it and exposes metrics-only recomputation from retained responses.
+The three logical stages are generation, simulation and metrics. Stochastic
+weather generation and Wflow remain the production bindings; CMIP projections
+remain a terminal plausibility overlay. Routine users work with experiment names,
+scientific/model settings, `run_id` and `unit_id`; collection and simulation
+fingerprints are computed internally. Explicit collection-manifest reuse is advanced.
 
-**That gating design is now ACCEPTED (2026-08-15):**
-`dev/milestones/r12/stress-test-lookup-design.md`, through a full
-`design-review-loop` run — an internal three-lens panel, two external
-cross-vendor rounds to the cap, and owner arbitration. 35 findings, all
-dispositioned, none rejected or deferred. The consolidated audit trail is
-`dev/milestones/r12/stress-test-lookup-review-record.md`; the run's stage-0 scope
-authority is `stress-test-lookup-intake.md` beside it.
+**Implementation order.** Extract logical contracts/adapters in current WF3,
+materialize durable handoffs there, then extract entry points and migrate config,
+runner and references atomically. The accepted design §§4.2, 9 and 12 govern
+sequencing, file ownership and the GF-1..32 claim-to-falsifier gates. The
+[preparation handoff](milestones/r12/wf3-simulation-identity-task-brief.md) and
+`t2609100916` track the next work. Baseline preparation, framework feasibility,
+source/response checkpoint behavior, portability, numerical equivalence and
+scientific validation remain prerequisites, not completed checks.
 
-Three of its outcomes bear directly on R12 and are worth reading before scoping:
-the lookup's schema is normatively defined on the **weather-generator** seam
-(WG-2) rather than HM-7; the lookup carries **no `st_0` row**; and a **pre-change
-baseline re-record is a prerequisite of the first implementation commit**, since
-a comparison gate cannot be applied retrospectively.
+**Accepted limitation.** Class-B fit intervals remain deferred (`domain-7`),
+accepted with the final design. The absence of intervals limits assessment of
+estimator noise relative to surface gradients. GEV screening values remain
+provisional; estimator benchmarking does not validate the screening policy.
 
-**The gate is discharged — the lookup LANDED 2026-08-16** (`t2608152230` closed
-at `1717c24`; migration record `dev/milestones/r12/migration_stress-test-lookup.md`).
-So the paragraph above is history: `t2608082036` is now front of the queue with
-nothing in front of it, and this section's remaining "not yet scoped" is the
-live state.
+**Earlier R12 direction.** The 2026-08-08 architectural input from
+`docs/wf3-redesign` and dropped item `t2608082036` are historical, not the
+implementation specification. References to that item in the lookup design,
+lookup intake and `t2608151154` do not transfer its broader epochs, quarantine
+or resumable-sweep program into this scope. Those obligations are explicitly
+abandoned as R12 requirements unless selected in the accepted v6 contract;
+no old branch is to be merged. The lookup redesign landed on 2026-08-16
+(`t2608152230`, `1717c24`) and remains the baseline for this design.
 
-**Efficiency and resource use are design criteria, not a post-hoc measurement —
-owner directive 2026-08-16.** R12 is the mechanics milestone, so computational
-cost and resource footprint are weighed while the improvements are being chosen.
-The apparatus for it already exists: `ext2-7`'s counterbalanced AB/BA timing
-protocol survives and is reusable, so a claim can be tested rather than
-asserted. Two P3-3 board items are the concrete form of the axis and scoping
-decides whether R12 absorbs them — `t2608071216` (the batch-size default
-implements the parallelism ceiling only, so peak temp disk grows *with* the
-sweep, backwards from §6.1's binding disk ceiling) and `t2608071217` (one failing
-member re-runs its whole batch of `B`). It does **not** reopen risk-7 part 3 —
-that rejection was ratified at G2 and would have to be re-argued. Full detail on
-the item note; the caution that goes with it is that no shipped config reaches
-the scales these ceilings exist for, so a green fixture run is not evidence here.
-
-The `cst-run-control` skill governs — its scope is exactly this territory (run
-manifests, resume, checkpoints, quarantine, conformance vectors) and may already
-answer questions the design run spent rounds on.
-
-Do not merge `docs/wf3-redesign`. It is cited by path; its scratch stays in git
-history, per the WF2 precedent.
+`st_0` comparability stays separately tracked by `t2608151154`; this design does
+not fix it. Existing batching/resource follow-ups also retain their own scope.
+Scientific/runtime contracts, rule indexes and generated baselines are migrated
+with implementation, so current operational references continue to describe the
+shipped workflow until that migration occurs. Sealed decisions are superseded
+through new records at the corresponding implementation boundary.
 
 **Tag.** `r12-wf3-execution` *(on seal)*.
 
 ---
-
 ## Phase 9 — Configuration modularization (R13 SEALED 2026-08-22)
 
 Registered 2026-08-20. The configuration surface is the first seam the toolbox
@@ -1730,4 +1728,3 @@ Scope one before it becomes board items.
   climate-subworkflow item above (plotting may move out of WF1 entirely). Same
   lens applies to WF3 (also 11 rules). To be discussed at R6 scoping; not to be
   designed or implemented yet.
-

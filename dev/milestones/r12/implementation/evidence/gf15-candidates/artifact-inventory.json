@@ -1,0 +1,76 @@
+{
+  "schema": "r12-gf15-candidate-evidence/1",
+  "scope": "approved two-candidate diagnostic evidence; exact raw bytes; inventory excludes itself",
+  "files": [
+    {
+      "path": "candidate-study.log",
+      "bytes": 406,
+      "sha256": "6f83770ca2323fbc86c81c3dae2403c158f78f18aac266c6e45272c8a40bf232"
+    },
+    {
+      "path": "compare-candidates.py",
+      "bytes": 25757,
+      "sha256": "340d4922d8cce58a0a9b100816d852695ad3113d7ca2fc37dc71e2be562f5d3b"
+    },
+    {
+      "path": "format-check.log",
+      "bytes": 235,
+      "sha256": "0bfc900f62a8a1ad10d978771f4c68c93e82e0ad372e89e6705476c07010bd4d"
+    },
+    {
+      "path": "lint.log",
+      "bytes": 229,
+      "sha256": "ec61205af4e37ff003ae8d84fddc9b8539713eb64c7760dd8ab439cafc3f3fe6"
+    },
+    {
+      "path": "results/candidate-results.json",
+      "bytes": 1202977,
+      "sha256": "9c5d72bd593f4316ebccf048370964ed9a1c967e43042be707408436b844628d"
+    },
+    {
+      "path": "results/candidate-summary.json",
+      "bytes": 186792,
+      "sha256": "899f5fa984c82501af2c1c3c4dabc30b7d9097b82a56c1f5b4f7ad589c15b56d"
+    },
+    {
+      "path": "results/completion.json",
+      "bytes": 245,
+      "sha256": "4c1275fc3880a0845554b1f5875ba36420ceee6ba4fac690d00be2c9ddd7ec7b"
+    },
+    {
+      "path": "results/controls.json",
+      "bytes": 741,
+      "sha256": "af5908c2fd973d2c040f4b54cb8ddd96f7de60e9f4701d0ab962ac9357f90280"
+    },
+    {
+      "path": "results/optimizer-evaluations.jsonl.gz",
+      "bytes": 1526600,
+      "sha256": "3afc1acd04755eac90fc94f17f34013e09aab1a274ecbd3f0e1d9dcfcb6f820a"
+    },
+    {
+      "path": "results/paired-translations.json",
+      "bytes": 130534,
+      "sha256": "197d83808ac159e0fdc5a1787165d818050e332cfe62bf4e4f319cd473cedf2e"
+    },
+    {
+      "path": "results/protocol.json",
+      "bytes": 3451,
+      "sha256": "aea1758476b4b911473e317de4acff8dae04e5fb217e07ae8be1fa708cde8c55"
+    },
+    {
+      "path": "results/provenance.json",
+      "bytes": 3956,
+      "sha256": "29f80937b8d9e17758c0cfe0ff71afc28648cd9b3e5978b5b12f1b33bd255219"
+    },
+    {
+      "path": "scientific-handoff.md",
+      "bytes": 8398,
+      "sha256": "da7006cce3fdf7c39a65b4a3e2655eb31e8986af6a88f6abce7a7a94b0290b8e"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 2717,
+      "sha256": "f2008b7ecf16ba156942deb245869df962db8b348e8ed1a78e3de76c89f11fb3"
+    }
+  ]
+}

@@ -1,0 +1,279 @@
+{
+  "scope": "14 baseline-config generated forcing files; production provider wrappers through scratch Snakemake graph",
+  "source_sha256": {
+    "blueearth_cst/experiment/scenario_provider.py": "b607d96c43af978ee6ca0ea61bba60a555aa8dba6b09d25e78711815a42891a9",
+    "blueearth_cst/experiment/scenario_rows.py": "61055a90ec35dd15eeee700b23b41f20653a539f917c679632e42897f7b4eaed",
+    "blueearth_cst/experiment/forcing_descriptor.py": "c781fff8e44857f57d3a92fe6ca1029331178af94a757ce8506700f702f2e37b",
+    "blueearth_cst/weathergen/generate_weather.R": "5b0e62cf2dd9ccd8bf95a49e9b2428d14b510294814d81b660738b87948f671b",
+    "blueearth_cst/weathergen/impose_climate_change.R": "c51e51d20bec583b24ee57508bc013af7eca3a36115592f6411039e8ea7f32d7",
+    "blueearth_cst/weathergen/read_member_grid.R": "77068c1ad2eac13cec99bf4e327ef8e5c95aaab9c3fa69cbfd6ce8e36955f88d"
+  },
+  "comparisons": [
+    {
+      "file": "rlz_1_st_0.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "1f9748f99e0cdbf06c2f84285ccf94027fbb6a4326767f9c9704a84987f4ffc7"
+    },
+    {
+      "file": "rlz_1_st_1.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "3d3b9648a5ed059c6bd352196ca888d949143667893f6c6fe876a5abdd84f390"
+    },
+    {
+      "file": "rlz_1_st_2.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "8cc84c222fbec69c399b63ca2c06b46ff228084c3ee425b5031fe3cb769f8d1c"
+    },
+    {
+      "file": "rlz_1_st_3.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "361f1ce1ac49b9718881b39bdea7244d78b0e15ec321e334e147693e50b3ecc4"
+    },
+    {
+      "file": "rlz_1_st_4.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "7533f5b7557015e2bd15ccbd5853ac91751fdb1e1792cb09041809d233038be9"
+    },
+    {
+      "file": "rlz_1_st_5.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "452ad67bdf1c7e936fb203ab2792123037372aac57547d9ccef2323422b6f85f"
+    },
+    {
+      "file": "rlz_1_st_6.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "dd858f6acd64ebd2ba74e5bf2a1a8ad3337e018de1305c05a6e8440bfc2c4b25"
+    },
+    {
+      "file": "rlz_2_st_0.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "3eabfa0cf9250854ba94ef95343b375db78ef35209070577033e6389a4e56211"
+    },
+    {
+      "file": "rlz_2_st_1.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "692ecbd67155d05baaf2a45a81ca86b1faf127380f044b3856ce036832a1cde5"
+    },
+    {
+      "file": "rlz_2_st_2.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "6152369a9b02c1ff639dc6b7fad53e26f38675d82e962d87fd0761c9c848df34"
+    },
+    {
+      "file": "rlz_2_st_3.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "17d4527a8344df772f143dd3818d203fcc0182ccb2b76ecdeba4d71855a4b7f4"
+    },
+    {
+      "file": "rlz_2_st_4.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "f42274681f72b27c835b156f59dee04e9436e34ef4ee8a6d03fd422ffe0db1f8"
+    },
+    {
+      "file": "rlz_2_st_5.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "5e642afb10441997f322488da47ec893f5f488bdf4590816ff5025d074444044"
+    },
+    {
+      "file": "rlz_2_st_6.nc",
+      "identical_arrays_coordinates_attributes": true,
+      "identical_file_bytes": true,
+      "calendar": "noleap",
+      "timestep_seconds": 86400.0,
+      "first": "2010-01-01 00:00:00",
+      "last": "2055-12-31 00:00:00",
+      "missing": {
+        "kin": 0,
+        "kout": 0,
+        "precip": 0,
+        "press_msl": 0,
+        "temp": 0,
+        "temp_max": 0,
+        "temp_min": 0
+      },
+      "sha256": "a895864302447aff6c44545d4401aa2bed94e78bf05591158ce803b7f691add2"
+    }
+  ]
+}

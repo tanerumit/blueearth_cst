@@ -1,0 +1,5 @@
+== C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3
+   pixi env         present
+   console scripts  ok
+   weathergenr      2.0.0
+   julia env        Wflow present

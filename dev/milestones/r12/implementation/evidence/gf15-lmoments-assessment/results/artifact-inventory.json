@@ -1,0 +1,32 @@
+[
+  {
+    "path": "audit-freeze.json",
+    "bytes": 1075,
+    "sha256": "3c45a2f3c110cb0f73c8d35e39c4faf8dae6e558f721926b345d86e365a64c02"
+  },
+  {
+    "path": "audit-results.json",
+    "bytes": 3482,
+    "sha256": "7f6e69719f15dc522b10b8a8f36e3ef303cccd372927a4ca7891504258567261"
+  },
+  {
+    "path": "diagnostic-cases.json",
+    "bytes": 264671,
+    "sha256": "15cce6e6356207e9e1d70589f384f94652300730f86c3d58c17ac0de24577499"
+  },
+  {
+    "path": "individual-cells.json",
+    "bytes": 347982,
+    "sha256": "274c49700c1c2c2ecb153713e2199dddc9b9168775a14f6a67ef8c2af0695bbd"
+  },
+  {
+    "path": "paired-cells.json",
+    "bytes": 6007620,
+    "sha256": "e43d94c0549b10c345aae433729e7f22b3713c12c3ac86539e4dd1c48fe0781b"
+  },
+  {
+    "path": "translation-cells.json",
+    "bytes": 36348,
+    "sha256": "33dc29b8d3e6bf7d8e6f284bb4e9670fda3861a2e811061ca49c54fe25c89617"
+  }
+]

@@ -82,7 +82,7 @@ def map_parameters(config: dict) -> dict:
     project = config["project"]
     climate = config["climate"]
     workflows = config.get("workflows", {})
-    experiment = workflows.get("run_stress_test", {})
+    experiment = workflows.get("simulate_system", {})
     projections = workflows.get("analyze_projections", {})
 
     # `C-70` retyped `climate.window` to INCLUSIVE YEARS, and the store key is

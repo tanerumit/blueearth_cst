@@ -1,0 +1,33 @@
+{
+  "note": "No native response, collection, simulation record or response inventory appears under added/modified, so no model, generation or response step wrote anything. The only new paths are the new metric plan, the new metric set and the runner's own invocation record, which is an operational log rather than an experiment result.",
+  "snapshot_untouched": true,
+  "snapshot_vs_retained_source": {
+    "changed": [],
+    "files": 446,
+    "only_in_snapshot": [],
+    "only_in_source": []
+  },
+  "working_copy_vs_snapshot": {
+    "added": [
+      "project/config/runs/invocations/simulation-50e3da6fb6f24fe4a849ade677affd84.json",
+      "project/config/runs/invocations/simulation-59603e1a04ad400bb9e51cc99e9a83af.json",
+      "project/experiments/p3_final/results/metric_plans/d83e8ef230f09a9b65176c36d93e4268411240d4526a30102603bb758261fccc/plan.json",
+      "project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/gwr_indicators.csv",
+      "project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metric_environment.json",
+      "project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metrics.json",
+      "project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/q_indicators.csv",
+      "project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/return_level_benchmark.json",
+      "project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/unit_index.csv"
+    ],
+    "added_count": 9,
+    "modified": [],
+    "permitted_prefixes": [
+      "project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/",
+      "project/experiments/p3_final/results/metric_plans/d83e8ef230f09a9b65176c36d93e4268411240d4526a30102603bb758261fccc/",
+      "project/config/runs/invocations/"
+    ],
+    "removed": [],
+    "stray_writes": [],
+    "writes_confined_to_permitted_namespaces": true
+  }
+}

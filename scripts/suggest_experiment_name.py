@@ -6,7 +6,7 @@ R07 B8. Run once, deliberately, before the first climate-experiment run::
 
 Reads ``project.project_dir``, slugifies its basename, appends today's date,
 validates the result through the same grammar the workflow enforces, and writes
-it to ``workflows.run_stress_test.experiment_name``.
+it to ``workflows.simulate_system.experiment_name``.
 
 **An existing value is never overwritten** — the command exits nonzero naming
 the value already present. The experiment name is the directory every wf3
@@ -63,21 +63,21 @@ def _indent_of(line: str) -> int:
 
 
 def _target_config(cfg_path: Path, doc: dict) -> Path:
-    """Return the run_stress_test settings file the project config points at.
+    """Return the simulate_system settings file the project config points at.
 
     The command still TAKES the project config on the command line -- that is
     the file a user knows the name of, and the one they pass to Snakemake --
-    but the key it writes belongs to the run_stress_test workflow, so it lands
+    but the key it writes belongs to the simulate_system workflow, so it lands
     in that workflow's own file.
 
     A missing or unresolvable pointer fails with the same nothing-has-been-
     reserved posture the command already takes for an unwritable config.
     """
-    stanza = (doc.get("workflows") or {}).get("run_stress_test") or {}
+    stanza = (doc.get("workflows") or {}).get("simulate_system") or {}
     declared = stanza.get("config_path")
     if not declared:
         raise ValueError(
-            f"{cfg_path} declares no workflows.run_stress_test.config_path, so "
+            f"{cfg_path} declares no workflows.simulate_system.config_path, so "
             "there is no settings file to write the name into. Create one and "
             "point the stanza at it; nothing has been reserved"
         )
@@ -86,7 +86,7 @@ def _target_config(cfg_path: Path, doc: dict) -> Path:
         resolved = cfg_path.resolve().parent / resolved
     if not resolved.is_file():
         raise ValueError(
-            f"workflows.run_stress_test.config_path names a file that does not "
+            f"workflows.simulate_system.config_path names a file that does not "
             f"exist: {resolved} (resolved against {cfg_path.resolve().parent}). "
             "Nothing has been reserved"
         )
@@ -102,7 +102,7 @@ def _plan_edit(text: str) -> tuple[int, int, Callable[[str], list[str]]]:
     this cannot edit leaves no orphaned ``experiments/<id>/`` behind.
 
     **Top-level since R13.** The key used to be spliced at
-    ``workflows.run_stress_test.experiment_name`` inside the one project config.
+    ``workflows.simulate_system.experiment_name`` inside the one project config.
     The command now edits that workflow's OWN settings file, where the key sits
     at column zero -- so the whole nested machinery is gone: finding the parent
     blocks, creating them when absent, matching the block's existing indent, and
@@ -173,7 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument(
         "config",
         help="path to the PROJECT config YAML (the --configfile target). The "
-        "name is written into the run_stress_test settings file this one "
+        "name is written into the simulate_system settings file this one "
         "points at, which is where that workflow's keys live",
     )
     ap.add_argument(
@@ -230,7 +230,7 @@ def main(argv: list[str] | None = None) -> int:
         print(name)
         return 0
 
-    # The file this command actually edits: the run_stress_test settings file
+    # The file this command actually edits: the simulate_system settings file
     # the project config points at. Resolved the same way the loader resolves
     # it -- relative to the project file's own directory (R13 D-8.4).
     try:

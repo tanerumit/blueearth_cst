@@ -22,15 +22,15 @@ class FakeResult:
 
 
 def _write_r01_cfg(path, project_dir, experiment=None):
-    """A project config; `experiment` adds the key WF3's DAG scope reads.
+    """A project config; `experiment` adds the key WF4's DAG scope reads.
 
-    Optional on purpose -- both WF3 branches are exercised below: the
+    Optional on purpose -- both WF4 branches are exercised below: the
     experiment scope, and the fallback when the key is absent.
 
     When `experiment` is given the config is written SPLIT, because that is
     where the key lives since R13 and the tool has to compose to see it. This
     fixture is the one that would go quiet if it did not: a raw read finds a
-    two-key stanza, the name comes back None, and every WF3 render loses the
+    two-key stanza, the name comes back None, and every WF4 render loses the
     experiment id from its filename with nothing reporting it.
     """
     # `C-05` stamps the version and `C-07` deleted `static_dir`. The three
@@ -46,11 +46,14 @@ def _write_r01_cfg(path, project_dir, experiment=None):
         "model:\n  outvars: [river discharge]\n"
     )
     if experiment is not None:
-        settings = path.parent / f"{path.stem}_run_stress_test.yml"
-        settings.write_text(f"experiment_name: {experiment}\n", encoding="utf-8")
+        settings = path.parent / f"{path.stem}_simulate_system.yml"
+        settings.write_text(
+            f"experiment_name: {experiment}\noperation: simulate-and-metrics\n",
+            encoding="utf-8",
+        )
         text += (
             "workflows:\n"
-            "  run_stress_test:\n"
+            "  simulate_system:\n"
             "    enabled: true\n"
             f"    config_path: {settings.name}\n"
         )
@@ -65,7 +68,8 @@ def _write_r01_cfg(path, project_dir, experiment=None):
     [
         ("build_model.smk", 1),
         ("analyze_projections.smk", 2),
-        ("run_stress_test.smk", 3),
+        ("generate_scenarios.smk", 3),
+        ("simulate_system.smk", 4),
     ],
 )
 def test_workflow_number_covers_all_three(snakefile, number):
@@ -214,7 +218,7 @@ def test_rulegraph_mode_and_format_reach_the_filename(tmp_path, monkeypatch):
         [
             "plot_workflow_dag.py",
             "-s",
-            "run_stress_test.smk",
+            "simulate_system.smk",
             "--configfile",
             str(cfg),
             "--mode",
@@ -227,7 +231,7 @@ def test_rulegraph_mode_and_format_reach_the_filename(tmp_path, monkeypatch):
     assert pwd.main() == 0
     assert "--rulegraph" in seen["snakemake"]
     assert seen["out"] == str(
-        project_dir / "logs" / "dag" / "gabon_0108_wf3_experiment_rulegraph.svg"
+        project_dir / "logs" / "dag" / "gabon_0108_wf4_experiment_rulegraph.svg"
     )
 
 
@@ -258,32 +262,32 @@ def _rel(number, cfg, name="test"):
 
 def test_every_render_lands_in_the_projects_own_logs_dag():
     """One directory for all three workflows since 2026-08-11."""
-    cfg = {"workflows": {"run_stress_test": {"experiment_name": "e"}}}
-    for number in (1, 2, 3):
+    cfg = {"workflows": {"simulate_system": {"experiment_name": "e"}}}
+    for number in (0, 1, 2, 3, 4):
         assert _rel(number, cfg).parent == pwd.Path("logs") / "dag"
 
 
 def test_wf1_and_wf2_renders_are_named_for_the_project_alone():
-    cfg = {"workflows": {"run_stress_test": {"experiment_name": "e"}}}
+    cfg = {"workflows": {"simulate_system": {"experiment_name": "e"}}}
     assert _rel(1, cfg).name == "test_wf1_dag.png"
     assert _rel(2, cfg).name == "test_wf2_dag.png"
 
 
-def test_wf3_render_carries_its_experiment_in_the_name():
-    """WF3's DAG describes ONE experiment's run, and its records are now keyed
+def test_wf4_render_carries_its_experiment_in_the_name():
+    """WF4's DAG describes ONE experiment's run, and its records are now keyed
     by name rather than by directory -- as the merged log and benchmark table
     are. Without the id, two experiments in one project overwrite one file."""
-    cfg = {"workflows": {"run_stress_test": {"experiment_name": "gabon_dry"}}}
-    assert _rel(3, cfg).name == "test_wf3_gabon_dry_dag.png"
-    other = {"workflows": {"run_stress_test": {"experiment_name": "gabon_wet"}}}
-    assert _rel(3, cfg) != _rel(3, other)
+    cfg = {"workflows": {"simulate_system": {"experiment_name": "gabon_dry"}}}
+    assert _rel(4, cfg).name == "test_wf4_gabon_dry_dag.png"
+    other = {"workflows": {"simulate_system": {"experiment_name": "gabon_wet"}}}
+    assert _rel(4, cfg) != _rel(4, other)
 
 
 def test_the_mode_and_format_reach_the_filename():
-    cfg = {"workflows": {"run_stress_test": {"experiment_name": "gabon_dry"}}}
+    cfg = {"workflows": {"simulate_system": {"experiment_name": "gabon_dry"}}}
     assert (
-        pwd.plot_relpath(3, "test", cfg, "rulegraph", "svg").name
-        == "test_wf3_gabon_dry_rulegraph.svg"
+        pwd.plot_relpath(4, "test", cfg, "rulegraph", "svg").name
+        == "test_wf4_gabon_dry_rulegraph.svg"
     )
     assert pwd.plot_relpath(1, "test", cfg, "rulegraph", "svg").name == (
         "test_wf1_rulegraph.svg"
@@ -295,18 +299,18 @@ def test_the_mode_and_format_reach_the_filename():
     [
         {},
         {"workflows": None},
-        {"workflows": {"run_stress_test": None}},
-        {"workflows": {"run_stress_test": {}}},
+        {"workflows": {"simulate_system": None}},
+        {"workflows": {"simulate_system": {}}},
     ],
 )
-def test_wf3_falls_back_to_the_bare_name_without_an_experiment_name(cfg):
+def test_wf4_falls_back_to_the_bare_name_without_an_experiment_name(cfg):
     """A convenience render must not fail a user's command over a missing
     optional key -- including the several ways YAML spells "absent"."""
-    assert _rel(3, cfg) == pwd.Path("logs") / "dag" / "test_wf3_dag.png"
+    assert _rel(4, cfg) == pwd.Path("logs") / "dag" / "test_wf4_dag.png"
 
 
 def test_the_render_never_lands_under_the_editable_config_root():
     """The P4 property the move exists for, asserted directly."""
-    cfg = {"workflows": {"run_stress_test": {"experiment_name": "e"}}}
-    for number in (1, 2, 3):
+    cfg = {"workflows": {"simulate_system": {"experiment_name": "e"}}}
+    for number in (0, 1, 2, 3, 4):
         assert "config" not in _rel(number, cfg).parts

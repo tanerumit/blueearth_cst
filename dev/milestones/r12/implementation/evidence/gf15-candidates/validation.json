@@ -1,0 +1,49 @@
+{
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "status": "bounded_study_complete_B_merits_full_qualification_attempt_not_qualified",
+  "pixi_binary": "C:/Users/taner/AppData/Local/pixi/bin/pixi.exe",
+  "commands": [
+    {
+      "log_sha256": "6f83770ca2323fbc86c81c3dae2403c158f78f18aac266c6e45272c8a40bf232",
+      "log": "candidate-study.log",
+      "exit_code": 0,
+      "meaning": "approved bounded candidate study complete; no qualification claim",
+      "command": "pixi run --as-is python dev/milestones/r12/implementation/evidence/gf15-candidates/compare-candidates.py --output dev/milestones/r12/implementation/evidence/gf15-candidates/results"
+    },
+    {
+      "log_sha256": "ec61205af4e37ff003ae8d84fddc9b8539713eb64c7760dd8ab439cafc3f3fe6",
+      "log": "lint.log",
+      "exit_code": 0,
+      "meaning": "passed",
+      "command": "pixi run --as-is ruff check dev/milestones/r12/implementation/evidence/gf15-candidates/compare-candidates.py"
+    },
+    {
+      "log_sha256": "0bfc900f62a8a1ad10d978771f4c68c93e82e0ad372e89e6705476c07010bd4d",
+      "log": "format-check.log",
+      "exit_code": 0,
+      "meaning": "passed",
+      "command": "pixi run --as-is ruff format --check dev/milestones/r12/implementation/evidence/gf15-candidates/compare-candidates.py"
+    }
+  ],
+  "immutable_input_checks": "Original GF15 276 files and investigation 16 files, their inventory hashes and absence of extras verified before and after; all source hashes unchanged",
+  "candidate_fits": 372,
+  "primary_scalar_quantiles": 450,
+  "attempted_pairs": 294,
+  "additional_GEV_control_fits": 0,
+  "A_exact_raw_original_parity": true,
+  "A_accepted_fits": 180,
+  "A_refused_fits": 6,
+  "B_accepted_fits": 180,
+  "B_refused_fits": 6,
+  "A_comparable_pairs_within_original_atol": 2,
+  "B_comparable_pairs_within_original_atol": 144,
+  "comparable_pairs_per_candidate": 144,
+  "both_refused_pairs_per_candidate": 3,
+  "both_refused_counted_as_numerical_proof": false,
+  "qualification_or_production_changes": false,
+  "optimizer_or_criterion_changes": false,
+  "full_matrix_or_broad_tests_run": false,
+  "coordinator_independent_reconciliation": "Coordinator standard-library audit verified both old inventories, all 372 statuses and evaluation counts, all 450 primary quantiles, A exact original parameters/status/quantiles, B parameter and quantile backtransforms, and all 294 pair outcomes; no candidate helper imported. One-shot audit source was not retained as a separate script.",
+  "next_scope": "Owner decision on B-only full qualification attempt using all original retained samples and approved criteria; no threshold reapproval, fallback or production integration"
+}

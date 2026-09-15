@@ -3,12 +3,12 @@
 Every logging rule writes its log under ``<logs>/_parts/<W.NN>_<rule>[/<member>].log``.
 This gather step -- one job per workflow, scheduled after every logging rule --
 concatenates those parts, in rule order, into a single ``<logs>/<workflow>.log``,
-then deletes the parts it merged. All three workflows use it:
+then deletes the parts it merged. All five workflows use it; examples:
 
 =========================== ==================================================
 ``build_model.smk``         ``logs/wf1_build_model.log`` (1.17)
 ``analyze_projections.smk`` ``logs/wf2_analyze_projections.log`` (2.09)
-``run_stress_test.smk``     ``logs/wf3_run_stress_test_<experiment>.log`` (3.18)
+``simulate_system.smk``    ``logs/wf4_simulate_system_<experiment>.log`` (4.11)
 =========================== ==================================================
 
 Shape of the merged file (the same pattern ``merge_benchmarks.py`` applies to the

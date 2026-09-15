@@ -1,140 +1,16 @@
-"""Enabled-aware wrapper over the four CST Snakefiles (design §7).
+"""Run enabled CST workflows in the accepted five-stage order.
 
-Reads a full-orchestration `--configfile` YAML, checks each
-`workflows.<name>.enabled` flag, and invokes `snakemake -s <name>.smk
---configfile <cfg> ...` for exactly the enabled workflows, in the fixed order
-analyze_climate -> build_model -> analyze_projections -> run_stress_test.
+The closed workflow set is analyze_climate, generate_scenarios, build_model,
+simulate_system, analyze_projections. Every enabled flag must be a boolean.
+Disabled workflows are reported and skipped; the first failure stops the run.
+Preflights occur immediately before their consumer, after preceding producers.
+Simulation uses the dedicated runner's operation/target validation and starts
+one Snakemake invocation. Its execution-option allowlist also applies here.
 
-This is the evolution of the run_snake_test.cmd / run_snake_docker.sh runners --
-a *runner over* the four Snakefiles, NOT a fifth Snakemake entry point. The
-Snakefiles do not read `enabled:`; the flag governs this wrapper only.
-
-Contract (pinned, design §7 (a)-(g), plus (h) for the console):
-
- (a) Full-orchestration configs only: a `workflows:` section with all FOUR
-     subsections each carrying an `enabled:` key. The single-workflow
-     projections configs (no `workflows:` section) are direct `snakemake -s`
-     inputs, not wrapper inputs.
-
-     The set widened from three to four on 2026-08-14 with `analyze_climate`,
-     and it stayed a CLOSED, all-required set deliberately. Treating an absent
-     subsection as "disabled" would have let existing three-workflow configs
-     keep working untouched, and was rejected: the hazard clause (b) exists to
-     prevent is SILENCE, not polarity. Under that rule a section misspelled
-     `analyse_climate`, or dropped during an edit, skips a workflow while the
-     wrapper exits 0 -- which is the same class of failure as the silent
-     default-to-true, arriving from the other direction.
- (b) A missing `workflows:` section or a missing `<name>.enabled` subkey is a
-     HARD ERROR (nonzero exit, message naming the absent key) -- never a silent
-     default to true, and never a silent default to false.
- (c) Each `enabled:` value must PARSE to a real boolean (isinstance(v, bool) on
-     the post-yaml.safe_load value). YAML 1.1 resolves unquoted
-     true/false/yes/no/on/off to booleans, so all those spellings are accepted;
-     quoted strings ("true"), integers (1/0), or any non-bool are REJECTED.
- (d) Enabled workflows run in fixed order; on the first nonzero snakemake exit
-     the wrapper STOPS and returns that exit code (does not continue).
- (e) --cores N (default 3) is forwarded to every invocation; args after a `--`
-     sentinel are appended verbatim to every invocation. --configfile is
-     supplied by the wrapper.
- (f) Per-workflow flags are preserved from a hardcoded map matching the runners:
-     --keep-going on analyze_projections only.
- (g) Every valid wrapper invocation creates and atomically finalizes a unique
-     `<project_dir>/config/runs/invocations/*.json` lifecycle manifest -- a
-     SIBLING of the per-workflow `config/runs/<workflow>/<digest>/` bundles,
-     because an invocation spans workflows. Its runner-side config digest
-     covers the source YAML plus resolved advanced settings;
-     passthrough `--config` overrides are recorded but intentionally excluded,
-     because the Snakefile snapshot owns Snakemake's authoritative merged config.
- (h) The wrapper narrates its own run on stdout, and every utterance is
-     bounded by a full-width `=` rule (see the Console section for the grammar
-     and why it is the one it is). Nothing else in this console draws one, so a
-     rule means the RUNNER is speaking rather than the workflow it launched:
-
-     * an OPENING block -- rule, `run_workflows`, rule, then ONE `settings`
-       group (project, region, resolution, folder, config, plus `mode` on a dry
-       run) and a `sequence` diagram numbering the enabled workflows in
-       invocation order and marking the disabled ones in place. The diagram is
-       a chain of ASCII boxes joined by `|` / `v`, solid for a workflow that
-       will be invoked and dashed for one that will not;
-
-       `settings` answers "which run is this" in one group. It was two --
-       `run` for what the command line said, `settings` for what the config
-       said -- and where a value came FROM is the writer's distinction rather
-       than the reader's. Every row is optional: the wrapper's contract
-       validates `workflows:` and nothing else, so a key that is absent is
-       simply not printed. Under `region`, a continuation line aligned into the
-       value column states the box that specification DELINEATED, read from
-       `data/spatial/geoms/region.geojson`, with its approximate extent in km.
-       It reads as absent until some workflow has written that file, and is
-       never computed from the specification, which names an outlet and an
-       upstream-area threshold and so could only yield an invented box
-       (`_settings_rows`);
-     * one HAND-OFF band per invoked workflow, at its LEADING edge only --
-       `<rule>` then `[1/4]  wf0 analyze_climate  --  starting HH:MM:SS` flush
-       left, with the sanitized command on the line directly under it. A
-       workflow that FAILS gets a closing band too, carrying `FAILED (exit N)
-       after <h:mm:ss>` and the fact that later workflows were not invoked;
-     * a CLOSING block, framed like the opening one and terminated by a final
-       rule: the verdict and total elapsed, each invoked workflow's duration,
-       and the paths written.
-
-     There is deliberately NO closing band on SUCCESS. Every workflow already
-     signs off with its own `wfN <name> done in <h:mm:ss>`, so a runner band
-     saying the same thing one line later was a second copy of the same fact --
-     differing only in that the runner's clock also counts process startup.
-     (That sign-off is one line as of 2026-09-06: the paths it used to list are
-     rule `all`'s targets, printed just above it.) The per-workflow durations survive in the closing
-     block, which is where a reader compares them anyway. A FAILURE is not
-     duplicated: a workflow that dies prints no sign-off, so that band is the
-     only place the exit code and the stop decision are stated.
-
-     Deliberately NOT `log_row`'s `HH:MM:SS - <module> - ...`: that grammar is
-     worn by every line reported from inside a workflow, so a runner wearing it
-     reads as one more rule in the run it supervises. The wrapper therefore also
-     ignores `CST_LOG_LEVEL`, which quietens rule logs -- the frame around them
-     is not part of what that floor governs.
-
-     Disabled workflows get NO hand-off band: the opening block's sequence
-     diagram states every one of them, once, before anything runs. Every line
-     that can carry `extra` goes through `sanitize_argv` first.
-
-     stdout is FLUSHED before each `subprocess.run`. Python block-buffers a
-     redirected stdout while the child inherits the fd directly, so without the
-     flush a `run_workflows.py ... *> log.txt` interleaves each banner AFTER the
-     output of the workflow it announces. No test can catch this -- the suite
-     fakes `subprocess.run` and the child writes nothing.
-
- (i) The wf1 PREFLIGHT. When `run_stress_test` is enabled and `build_model` is
-     not, the wrapper checks
-     `blueearth_cst.shared.cross_workflow_leaves.LEAVES` against `project_dir`
-     BEFORE invoking anything, and raises `PrerequisiteError` (exit 2) naming
-     every absent leaf and `build_model` as their producer.
-
-     This is an EXISTENCE test, never a comparison -- see the freshness
-     paragraph below, which it deliberately does not contradict. A stale leaf
-     still resolves the DAG and yields an answer the user owns; an ABSENT one
-     makes the DAG unresolvable, so there is no run whose staleness could be
-     owned. The check therefore cannot disagree with Snakemake about whether a
-     rule should re-run, which is what kept freshness out of the wrapper.
-
-     Added 2026-08-17 (t2608172138). Without it a fresh project with
-     `build_model` disabled spends its whole run on wf0 and wf2 and only then
-     discovers wf3 was never runnable -- measured at 4:14, of which wf3 was
-     0:07. Snakemake's own message names only the FIRST missing leaf, because
-     rule 3.01 is merely the earliest to declare one; this names all of them,
-     which is why it reads the shared list rather than restating paths.
-
-Disabling a workflow neither deletes its prior outputs nor guarantees downstream
-freshness: the wrapper invokes each Snakefile independently with no
-prerequisite-freshness check -- identical to invoking a single Snakefile
-directly today. A user who disables a prerequisite owns the staleness of what
-downstream consumes. Clause (i) is the one bounded exception, and it is about
-ABSENCE rather than freshness.
-
-Usage::
-
-    python scripts/run_workflows.py --config test_case/project_config_baseline.yml
-    python scripts/run_workflows.py --config <cfg> --cores 4 -- --dry-run
+Each invocation records resolved configuration provenance, checked commands,
+selected simulation operation/targets, stage timing and final status in a
+unique config/runs/invocations JSON record. Console handoffs are flushed before
+the child starts; sensitive argument values are redacted in records and output.
 """
 
 from __future__ import annotations
@@ -179,34 +55,34 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
     region_geojson_path,
 )
 
-# Fixed run order (climate -> model -> projections -> experiment). Each maps to
-# its Snakefile and the per-workflow flags preserved verbatim from the runners
-# (design §7(f)): --keep-going on analyze_projections only.
-#
-# `analyze_climate` leads because it is model-free and the other three are not:
-# it produces the shared region, vector foundation and climate store that
-# build_model reads, so running it first means those exist before the model
-# build asks for them. The order is fixed, not derived -- the wrapper does no
-# freshness checking (see the module docstring).
+# Fixed order: climate -> generation -> model -> simulation -> projections.
+# WF0 is optional and supplies shared region and climate inputs. Generation and
+# model construction are independent prerequisites of simulation; projections
+# are terminal. Consumer preflights run after the preceding enabled producers.
+# Each workflow maps to its Snakefile and preserved execution flags below;
+# only analyze_projections uses --keep-going.
 WORKFLOW_ORDER = (
     "analyze_climate",
+    "generate_scenarios",
     "build_model",
+    "simulate_system",
     "analyze_projections",
-    "run_stress_test",
 )
 
 SNAKEFILE = {
     "analyze_climate": "analyze_climate.smk",
     "build_model": "build_model.smk",
     "analyze_projections": "analyze_projections.smk",
-    "run_stress_test": "run_stress_test.smk",
+    "generate_scenarios": "generate_scenarios.smk",
+    "simulate_system": "simulate_system.smk",
 }
 
 PER_WORKFLOW_FLAGS = {
     "analyze_climate": [],
     "build_model": [],
     "analyze_projections": ["--keep-going"],
-    "run_stress_test": [],
+    "generate_scenarios": [],
+    "simulate_system": [],
 }
 
 # Workflow -> its `wf<N>` id, for the console only. This is the THIRD copy of
@@ -222,7 +98,8 @@ WORKFLOW_ID = {
     "analyze_climate": "wf0",
     "build_model": "wf1",
     "analyze_projections": "wf2",
-    "run_stress_test": "wf3",
+    "generate_scenarios": "wf3",
+    "simulate_system": "wf4",
 }
 
 # Repo root = parent of scripts/. Snakefiles and config paths are repo-root
@@ -292,6 +169,13 @@ def _enabled_flags(cfg: Mapping[str, Any], config_path: str) -> dict[str, bool]:
     workflows = cfg["workflows"]
     if not isinstance(workflows, dict):
         raise ConfigError(f"{config_path}: 'workflows:' is not a mapping")
+    if "run_stress_test" in workflows:
+        raise ConfigError(
+            "run_stress_test is retired; migrate to generate_scenarios and simulate_system with scripts/migrate_project_config.py"
+        )
+    unknown = set(workflows) - set(WORKFLOW_ORDER)
+    if unknown:
+        raise ConfigError(f"{config_path}: unknown workflows {sorted(unknown)}")
 
     flags: dict[str, bool] = {}
     for name in WORKFLOW_ORDER:
@@ -335,17 +219,8 @@ def _project_dir(cfg: Mapping[str, Any], config_path: str) -> Path:
 
 
 def missing_wf1_leaves(flags: Mapping[str, bool], project_dir: Path) -> list[str]:
-    """Cross-workflow leaves wf3 needs that this run will neither find nor build.
-
-    Empty unless `run_stress_test` is enabled while `build_model` is not: with
-    `build_model` enabled the leaves are produced during the run, and with
-    `run_stress_test` disabled nothing consumes them. All three leaves are
-    wf3-only -- wf2 declares none of them -- so no other pair needs checking.
-
-    Returns them in `LEAVES` order, which is DAG order, so the first entry is
-    the one Snakemake would have reported.
-    """
-    if not flags["run_stress_test"] or flags["build_model"]:
+    """Check WF4 model leaves after any enabled WF1 producer has completed."""
+    if not flags["simulate_system"]:
         return []
     return [leaf for leaf in LEAVES if not (project_dir / leaf).exists()]
 
@@ -359,13 +234,12 @@ def _check_wf1_leaves(
         return
     listed = "\n".join(f"    {leaf}" for leaf in missing)
     raise PrerequisiteError(
-        f"{config_path}: 'workflows.run_stress_test.enabled' is true but "
-        f"'workflows.{LEAF_PRODUCER}.enabled' is false, and {len(missing)} of "
-        f"{len(LEAVES)} files wf3 declares as inputs are absent from "
+        f"{config_path}: simulate_system requires {LEAF_PRODUCER} artifacts; {len(missing)} of "
+        f"{len(LEAVES)} required model files are absent from "
         f"{project_dir}:\n{listed}\n"
         f"Only a {LEAF_PRODUCER} run produces them. Set "
         f"'workflows.{LEAF_PRODUCER}.enabled: true', or disable "
-        f"'run_stress_test'. Nothing has been invoked."
+        f"'simulate_system'. Simulation has not been invoked."
     )
 
 
@@ -373,6 +247,17 @@ def build_command(
     name: str, config_path: str, cores: int, extra: list[str]
 ) -> list[str]:
     """Assemble the snakemake argv for one workflow (contract (e)/(f))."""
+    if name == "simulate_system":
+        return [
+            sys.executable,
+            str(_REPO_ROOT_PATH / "scripts/simulate_system.py"),
+            "--config",
+            config_path,
+            "--cores",
+            str(cores),
+            "--",
+            *extra,
+        ]
     return [
         "snakemake",
         "all",
@@ -809,7 +694,7 @@ def _closing_block(
     did not is worse than not printing them.
 
     `logs` names the DIRECTORY rather than the per-workflow log files. Those
-    names are Snakefile constants (`wf3_run_stress_test_<experiment>.log` is
+    names are Snakefile constants (`wf4_simulate_system_<experiment>.log` is
     built from a resolved experiment id), so reconstructing them here would put
     a second definition of each in the one place that cannot notice when it
     drifts -- and rule `all`'s own target list has already named each exact log
@@ -872,7 +757,9 @@ def _project_name(cfg: Mapping[str, Any], project_dir: Path) -> str:
     return str(name) if name else project_dir.name
 
 
-def run(config_path: str, cores: int, extra: list[str]) -> int:
+def run(
+    config_path: str, cores: int, extra: list[str], *, simulation_targets=("all",)
+) -> int:
     """Invoke each enabled workflow in fixed order; stop on first nonzero exit
     and return that code (contract (d)). Returns 0 if all enabled workflows
     succeed (or all are disabled)."""
@@ -881,7 +768,6 @@ def run(config_path: str, cores: int, extra: list[str]) -> int:
     project_dir = _project_dir(cfg, config_path)
     # Contract (i), BEFORE the manifest: a run that cannot start should not
     # mint an invocation record, which exists to describe runs that did.
-    _check_wf1_leaves(flags, project_dir, config_path)
     manifest_path, manifest = _initialize_manifest(
         cfg=cfg,
         config_path=config_path,
@@ -945,7 +831,23 @@ def run(config_path: str, cores: int, extra: list[str]) -> int:
             sys.stdout.flush()
             workflow_started = time.monotonic()
             try:
-                result = subprocess.run(cmd, cwd=REPO_ROOT)
+                if name == "simulate_system":
+                    from blueearth_cst.experiment.simulation_runner import (
+                        simulation_command,
+                        simulation_settings,
+                    )
+
+                    _, settings = simulation_settings(config_path)
+                    workflow["operation"] = settings["operation"]
+                    if settings["operation"] == "simulate-and-metrics":
+                        _check_wf1_leaves(flags, project_dir, config_path)
+                    cmd, environment = simulation_command(
+                        config_path, list(simulation_targets), cores, extra
+                    )
+                    workflow["command"] = sanitize_argv(cmd)
+                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=environment)
+                else:
+                    result = subprocess.run(cmd, cwd=REPO_ROOT)
             except BaseException as exc:
                 elapsed = format_elapsed(time.monotonic() - workflow_started)
                 ran.append((name, f"FAILED ({type(exc).__name__}) after {elapsed}"))
@@ -1228,6 +1130,12 @@ def main(argv: list[str] | None = None) -> int:
         help="cores forwarded to every snakemake invocation (default: 3)",
     )
     ap.add_argument(
+        "--simulation-target",
+        nargs="+",
+        default=["all"],
+        help="explicit WF4 targets; metrics-only requires metrics or one selected metric-set file",
+    )
+    ap.add_argument(
         "extra",
         nargs=argparse.REMAINDER,
         help="args after `--` are appended verbatim to every invocation",
@@ -1240,8 +1148,10 @@ def main(argv: list[str] | None = None) -> int:
         extra = extra[1:]
 
     try:
-        return run(args.config, args.cores, extra)
-    except (ConfigError, PrerequisiteError) as exc:
+        return run(
+            args.config, args.cores, extra, simulation_targets=args.simulation_target
+        )
+    except (ConfigError, PrerequisiteError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 2
 

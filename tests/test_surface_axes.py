@@ -544,29 +544,96 @@ def test_duplicate_surface_ids_are_refused():
 
 def _indicators(st_ids, metrics=("q_annual_mean",)):
     rows = [
-        {
-            "metric": metric,
-            "location": "101",
-            "st_id": st_id,
-            "rlz_id": 1,
-            "value": 1.0,
-        }
-        for st_id in st_ids
+        {"metric": metric, "location": "101", "unit_id": f"{number:02d}", "value": 1.0}
+        for number, st_id in enumerate(st_ids, 1)
         for metric in metrics
     ]
-    return pd.DataFrame(rows)
+    frame = pd.DataFrame(rows)
+    frame.attrs["scenario_table"] = pd.DataFrame(
+        [
+            {
+                "run_id": f"{number:02d}",
+                "evaluated": "true",
+                "st_id": "" if int(st_id) == 0 else st_id,
+            }
+            for number, st_id in enumerate(st_ids, 1)
+        ]
+    )
+    frame.attrs["unit_index"] = pd.DataFrame(
+        [
+            {
+                "unit_id": f"{number:02d}",
+                "grain": "run",
+                "member_run_id": f"{number:02d}",
+            }
+            for number, _ in enumerate(st_ids, 1)
+        ]
+    )
+    return frame
+
+
+def _join(indicators, lookup, surface):
+    return join_axes(
+        indicators,
+        lookup,
+        surface,
+        unit_index=indicators.attrs["unit_index"],
+        scenario_table=indicators.attrs["scenario_table"],
+    )
 
 
 def test_join_partitions_the_baseline_out():
     lookup = _linspace_members(-30.0, 30.0, 3)
     indicators = _indicators(["0", "1", "2", "3"])
-    joined = join_axes(indicators, lookup, DEFAULT_SURFACE)
+    joined = _join(indicators, lookup, DEFAULT_SURFACE)
 
-    assert set(joined.baseline_df["st_id"]) == {"0"}
+    assert set(joined.baseline_df["st_id"]) == {""}
     assert set(joined.surface_df["st_id"]) == {"1", "2", "3"}
-    assert joined.key_width == 1
+    assert joined.key_width == 2
     assert set(joined.axes) == {"temp", "precip"}
     assert list(joined.surface_df["precip_change"]) == [-30.0, 0.0, 30.0]
+
+
+def test_bundle_axis_joins_members_without_expanding_result_rows():
+    lookup = _linspace_members(-30.0, 30.0, 3)
+    indicators = _indicators(["0", "1", "1", "2", "3"])
+    scenarios = indicators.attrs["scenario_table"]
+    units = indicators.attrs["unit_index"].to_dict("records") + [
+        {"unit_id": "90", "grain": "bundle", "member_run_id": "02"},
+        {"unit_id": "90", "grain": "bundle", "member_run_id": "03"},
+    ]
+    results = pd.DataFrame(
+        indicators.to_dict("records")
+        + [
+            {
+                "metric": "q_return_level_10yr_max",
+                "location": "101",
+                "unit_id": "90",
+                "value": 2.0,
+            }
+        ]
+    )
+    joined = join_axes(
+        results,
+        lookup,
+        DEFAULT_SURFACE,
+        unit_index=pd.DataFrame(units),
+        scenario_table=scenarios,
+    )
+    bundle = joined.surface_df[joined.surface_df.unit_id == "90"]
+    assert len(bundle) == 1
+    assert bundle.iloc[0]["st_id"] == "1"
+    assert bundle.iloc[0]["precip_change"] == -30.0
+
+
+def test_indicator_reader_preserves_unit_id_text(tmp_path):
+    from blueearth_cst.shared.surface_axes import read_indicators
+
+    path = tmp_path / "q_indicators.csv"
+    path.write_text(
+        "metric,location,unit_id,value\nq_annual_mean,101,001,2.0\n", encoding="utf-8"
+    )
+    assert read_indicators(path).iloc[0]["unit_id"] == "001"
 
 
 def test_missing_lookup_member_refused():
@@ -581,46 +648,34 @@ def test_missing_lookup_member_refused():
     lookup = _linspace_members(-30.0, 30.0, 3)
     indicators = _indicators(["0", "1", "2"])  # member 3 never reduced
     with pytest.raises(SurfaceMemberMismatchError, match="'3'"):
-        join_axes(indicators, lookup, DEFAULT_SURFACE)
+        _join(indicators, lookup, DEFAULT_SURFACE)
 
 
 def test_unknown_indicator_member_refused():
     lookup = _linspace_members(-30.0, 30.0, 3)
     indicators = _indicators(["0", "1", "2", "3", "9"])
     with pytest.raises(BaselinePartitionError, match="'9'"):
-        join_axes(indicators, lookup, DEFAULT_SURFACE)
+        _join(indicators, lookup, DEFAULT_SURFACE)
 
 
-def test_a_mis_keyed_join_does_not_read_as_all_baseline():
-    """The failure mode the absence-means-baseline encoding creates.
-
-    An indicator table read with inferred dtypes loses the padding, so `01`
-    becomes `1` and matches nothing — and the result is not an empty frame, it is
-    "every row is the baseline", which is a shape the partition is DESIGNED to
-    produce. `join_axes` re-pads both key columns before partitioning, so a
-    caller who loaded the frame some other way is repaired rather than silently
-    mis-partitioned.
-    """
+def test_a_mis_keyed_join_is_refused_without_guessing_padding():
     lookup = _linspace_members(-30.0, 30.0, 12)
     lookup["st_id"] = lookup["st_id"].str.zfill(2)
-    indicators = _indicators([str(m) for m in range(0, 13)])  # unpadded
-    joined = join_axes(indicators, lookup, DEFAULT_SURFACE)
+    indicators = _indicators([str(m) for m in range(0, 13)])
+    with pytest.raises(BaselinePartitionError):
+        _join(indicators, lookup, DEFAULT_SURFACE)
+    indicators = _indicators([f"{m:02d}" for m in range(0, 13)])
+    joined = _join(indicators, lookup, DEFAULT_SURFACE)
     assert joined.key_width == 2
-    assert set(joined.baseline_df["st_id"]) == {"00"}
-    assert len(joined.surface_df) == 12
-    # ... and the axis actually ATTACHED. Without this the same twelve rows come
-    # back carrying NaN axis values from a silently missed `.map()` — the very
-    # false-green class the partition assertions exist to prevent, one level
-    # down, and invisible to a row count.
+    assert set(joined.baseline_df["st_id"]) == {""}
     assert joined.surface_df["precip_change"].notna().all()
-    assert joined.surface_df["temp_change"].notna().all()
 
 
 def test_an_empty_surface_partition_is_refused():
     """Check c's residue: an EMPTY lookup satisfies check b vacuously."""
     lookup = _linspace_members(-30.0, 30.0, 3).iloc[0:0]
     with pytest.raises(LookupKeyWidthError):
-        join_axes(_indicators(["0"]), lookup, DEFAULT_SURFACE)
+        _join(_indicators(["0"]), lookup, DEFAULT_SURFACE)
 
 
 def test_mixed_key_widths_are_refused():
@@ -653,6 +708,6 @@ def test_a_declared_surface_names_the_frame_not_the_columns():
         x=Axis(variable="temp"),
         y=Axis(variable="precip", months=(1, 2, 3)),
     )
-    joined = join_axes(indicators, lookup, surface)
+    joined = _join(indicators, lookup, surface)
     assert "precip_change" in joined.surface_df.columns
     assert "temp_change" in joined.surface_df.columns

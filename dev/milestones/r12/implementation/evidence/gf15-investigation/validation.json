@@ -1,0 +1,40 @@
+{
+  "reviewer": "Astra model-validator /root/model_validator_p3",
+  "date": "2026-09-12",
+  "status": "investigation_complete_original_GF15_failure_unchanged",
+  "pixi_binary": "C:/Users/taner/AppData/Local/pixi/bin/pixi.exe",
+  "commands": [
+    {
+      "command": "pixi run --as-is python dev/milestones/r12/implementation/evidence/gf15-investigation/investigate-estimator.py --output dev/milestones/r12/implementation/evidence/gf15-investigation/results",
+      "exit_code": 0,
+      "meaning": "bounded investigation complete; original benchmark remains failed",
+      "log_sha256": "e91b239d0b22a2fc9485ed2f6fbb879d2d9861f842d74521d0fce46d0b278874",
+      "log": "investigation.log"
+    },
+    {
+      "command": "pixi run --as-is ruff check dev/milestones/r12/implementation/evidence/gf15-investigation/investigate-estimator.py",
+      "exit_code": 0,
+      "meaning": "passed",
+      "log_sha256": "ec61205af4e37ff003ae8d84fddc9b8539713eb64c7760dd8ab439cafc3f3fe6",
+      "log": "lint.log"
+    },
+    {
+      "command": "pixi run --as-is ruff format --check dev/milestones/r12/implementation/evidence/gf15-investigation/investigate-estimator.py",
+      "exit_code": 0,
+      "meaning": "passed",
+      "log_sha256": "0bfc900f62a8a1ad10d978771f4c68c93e82e0ad372e89e6705476c07010bd4d",
+      "log": "format-check.log"
+    }
+  ],
+  "original_GF15_files_verified_before_and_after": 276,
+  "original_source_files_reconciled": 13,
+  "traced_fits": 186,
+  "unchanged_exact_scalar_quantiles": 225,
+  "predetermined_successful_traces": 180,
+  "selected_witness_evaluation_limit_failures": 6,
+  "production_or_method_setting_changes": false,
+  "benchmark_criteria_changes": false,
+  "full_new_matrix_or_broad_tests_run": false,
+  "coordinator_independent_reconciliation": "Coordinator independently verified all 276 original evidence hashes, all 186 objective-evaluation counts and statuses, all 24 original and diagnostic-trim P90 summaries from original draws, and all 132000 raw likelihood diagnostics; no investigation helper imported. One-shot commands were not retained as a separate script.",
+  "next_scope": "Owner decision on status-only and normalization candidates over the same 186 diagnostic cases; original GF15 criteria remain authorized and unchanged; no production integration or full qualification yet"
+}

@@ -238,7 +238,6 @@ _SNAKEFILES = (
     ("wf0", "analyze_climate.smk"),
     ("wf1", "build_model.smk"),
     ("wf2", "analyze_projections.smk"),
-    ("wf3", "run_stress_test.smk"),
 )
 
 

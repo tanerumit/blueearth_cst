@@ -1,0 +1,922 @@
+"""Response-dependent metric identities, complete keys and immutable result sets."""
+
+import csv
+import io
+import json
+import os
+from dataclasses import asdict
+from pathlib import Path
+
+import numpy as np
+
+from blueearth_cst.experiment import gev_lmoments, return_level_validation
+from blueearth_cst.experiment.content_identity import (
+    canonical_json_bytes,
+    confined_path,
+    content_sha256,
+    read_canonical_json,
+    repository_code_inventory,
+)
+from blueearth_cst.experiment.metric_registry import (
+    DeclaredBundle,
+    declarations,
+    metric_unit_index,
+    reduce_bundle,
+    reduce_run,
+    resolve_month_reference,
+)
+from blueearth_cst.experiment.response_inventory import read_response_inventory
+from blueearth_cst.experiment.scenario_collection import read_collection
+from blueearth_cst.experiment.scenario_provider import metric_groups
+from blueearth_cst.experiment.scenario_rows import ScenarioRow
+from blueearth_cst.experiment.simulation_record import atomic_record, read_simulation
+from blueearth_cst.experiment.wflow_response_reader import (
+    NativeRunArtifacts,
+    ResponseRequest,
+    open_responses,
+)
+from blueearth_cst.shared.provenance import file_sha256
+
+
+class MetricPlanStale(ValueError):
+    """A scheduling plan cannot certify the requested live inputs or responses."""
+
+
+class MetricsOnlyIdentityMismatch(ValueError):
+    """An explicit collection assertion differs from the retained simulation."""
+
+
+class ImmutableMetricSetError(ValueError):
+    """A result set is partial, changed or fails its declared complete key set."""
+
+
+def _plain(value):
+    """Convert known dataclass tuple fields to the persisted JSON array dialect."""
+    return json.loads(json.dumps(value, allow_nan=False))
+
+
+def metrics_only_configuration(config_path):
+    """Read only the selected experiment and metric settings.
+
+    This projection never opens generation or model workflow files.
+    """
+    import yaml
+
+    from blueearth_cst.shared.indicator_tables import indicator_tables
+    from blueearth_cst.shared.snake_utils import (
+        resolve_water_year_start,
+        validate_experiment_name,
+    )
+
+    path = Path(config_path).resolve()
+    project = yaml.safe_load(path.read_text(encoding="utf-8"))
+    descriptor = project["workflows"]["simulate_system"]
+    if set(descriptor) != {"enabled", "config_path"} or not isinstance(
+        descriptor["enabled"], bool
+    ):
+        raise ValueError("metrics-only requires an enabled simulate_system config_path")
+    workflow = yaml.safe_load(
+        (path.parent / descriptor["config_path"]).read_text(encoding="utf-8")
+    )
+    project_root = Path(project["project"]["project_dir"]).resolve()
+    name = validate_experiment_name(workflow["experiment_name"], project_root)
+    root = project_root / "experiments" / name
+    simulation = read_simulation(root, require_complete=True)
+    if "scenario_collection" in workflow:
+        from blueearth_cst.experiment.collection_resolution import (
+            resolve_explicit_collection,
+        )
+        from blueearth_cst.experiment.forcing_descriptor import (
+            collection_forcing_descriptor,
+            describe_ancillary,
+        )
+
+        selection, _ = resolve_explicit_collection(
+            workflow["scenario_collection"],
+            describe_forcing=collection_forcing_descriptor,
+            describe_ancillary=describe_ancillary,
+        )
+        retained = simulation["collection"]
+        for field in ("collection_id", "collection_revision"):
+            expected = retained[field]
+            if selection[field] != expected:
+                raise MetricsOnlyIdentityMismatch(
+                    f"{field}: retained={expected!r}; asserted={selection[field]!r}"
+                )
+    tokens = workflow.get("metrics")
+    if tokens is None:
+        outvars = (project.get("model") or {}).get("outvars")
+        if outvars is not None:
+            tokens = list(indicator_tables(outvars))
+        else:
+            request = read_canonical_json(root / "config/response_request.json")
+            tokens = [item["variable"] for item in request["variables"]]
+    climate = project.get("climate") or {}
+    anchor = f"YS-{resolve_water_year_start(climate.get('water_year_start')).upper()}"
+    ignored = [
+        f"simulate_system.{key}"
+        for key in sorted(workflow)
+        if key not in {"experiment_name", "metrics", "scenario_collection"}
+    ]
+    ignored += [
+        f"climate.{key}" for key in sorted(climate) if key != "water_year_start"
+    ]
+    ignored += [
+        f"model.{key}"
+        for key in sorted(project.get("model") or {})
+        if key != "outvars" or workflow.get("metrics") is not None
+    ]
+    if ignored:
+        print(
+            "metrics-only: ignored current settings "
+            + ", ".join(ignored)
+            + f"; retained simulation/model inputs come from {(root / 'config/simulation.json').as_posix()}"
+            + f" and generation inputs from {simulation['collection']['manifest_path']}",
+            flush=True,
+        )
+    return root, list(tokens), anchor
+
+
+#: Metric-stage dependency roots. lmoments3 joins them because the return-level
+#: estimator is now part of what this stage's identity must describe (D5).
+METRIC_ENVIRONMENT_ROOTS = (
+    "numpy",
+    "pandas",
+    "scipy",
+    "xarray",
+    "xclim",
+    "netCDF4",
+    "pyproj",
+    "PyYAML",
+    "lmoments3",
+)
+
+
+def resolve_metric_environment():
+    """Observe the LIVE metric-stage environment, including D7 source hashes.
+
+    Always a fresh observation. It is never derived from a retained request, a
+    cached planning descriptor or lock-file intent, because the whole point is
+    to notice that the executing environment has drifted from the planned one.
+    """
+    from blueearth_cst.experiment.content_identity import stage_environment
+
+    environment = stage_environment(list(METRIC_ENVIRONMENT_ROOTS))
+    return {
+        **environment,
+        "return_level_estimator": {
+            "estimator_id": gev_lmoments.ESTIMATOR_ID,
+            "package": "lmoments3",
+            "version": gev_lmoments.DEPENDENCY_VERSION,
+            "source_sha256": dict(sorted(gev_lmoments.observed_source().items())),
+        },
+    }
+
+
+def current_metric_request(experiment_root, tokens, anchor):
+    """Resolve stage-three identity without any live source/model or Julia access."""
+    record = read_simulation(experiment_root)
+    return metric_request(
+        record["simulation_id"],
+        tokens,
+        anchor,
+        resolve_metric_environment(),
+        return_level_validation.build_declaration(),
+    )
+
+
+def metric_request(simulation_id, tokens, anchor, environment, validation):
+    """Compute a scheduling request before response values or reference months exist."""
+    registry = declarations(tokens)
+    # A NEW request must carry the D4 declaration. Legacy acceptance is a read
+    # compatibility guarantee (D6), never a write escape hatch, so the retained
+    # pre-C record is refused here rather than silently re-emitted.
+    if return_level_validation.is_legacy(validation):
+        raise ValueError(
+            "the legacy unassessed return-level record cannot be written into a "
+            "new metric request; it is readable, not writable"
+        )
+    return_level_validation.verify_declaration(
+        validation, return_level_validation.load_report_bytes()
+    )
+    directory = Path(__file__).parent
+    repo = directory.parents[1]
+    code = repository_code_inventory(repo, ["blueearth_cst/experiment/metric_plan.py"])
+    return {
+        "schema_version": "metric-request/1",
+        "simulation_id": simulation_id,
+        "tokens": list(tokens),
+        "declarations": [_plain(asdict(item)) for item in registry],
+        "grouping": "stochastic/st_id including empty unperturbed key",
+        "reference": "unperturbed evaluated runs; first native q location; monthly sum; first month on ties",
+        "water_year_anchor": anchor,
+        "code_inventory": code,
+        "metric_environment": environment,
+        "return_level_validation": validation,
+    }
+
+
+def _collection(simulation):
+    from blueearth_cst.experiment.forcing_descriptor import (
+        collection_forcing_descriptor,
+        describe_ancillary,
+    )
+
+    path = Path(simulation["collection"]["manifest_path"])
+    collection = read_collection(
+        path,
+        describe_forcing=collection_forcing_descriptor,
+        describe_ancillary=describe_ancillary,
+    )
+    if any(
+        collection[key] != simulation["collection"][key]
+        for key in ("collection_id", "collection_revision")
+    ):
+        raise MetricPlanStale("retained collection differs from frozen simulation")
+    root = path.parent.resolve()
+    with confined_path(root, collection["scenario_table"]["path"]).open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        rows = tuple(ScenarioRow.from_record(row) for row in csv.DictReader(handle))
+    intent = read_canonical_json(root / collection["intent_path"])
+    return collection, intent, rows
+
+
+def _native_runs(root, inventory):
+    from blueearth_cst.experiment.response_inventory import _artifact_path
+
+    result = {}
+    for index, artifact in enumerate(inventory["artifacts"]):
+        item = next(item for item in inventory["series"] if item["artifact"] == index)
+        selector = item["native_selector"]
+        result[artifact["run_id"]] = NativeRunArtifacts(
+            _artifact_path(root, root / "responses", artifact["path"]),
+            _artifact_path(root, root / "responses", selector["toml_path"]),
+            _artifact_path(root, root / "responses", selector["temporal_path"]),
+        )
+    return result
+
+
+def build_metric_plan(experiment_root, request):
+    """Resolve units, references and final identity from complete retained responses."""
+    root = Path(experiment_root).resolve()
+    simulation = read_simulation(root, require_complete=True)
+    if request["simulation_id"] != simulation["simulation_id"]:
+        raise MetricPlanStale("metric request selects a different simulation")
+    live = metric_request(
+        simulation["simulation_id"],
+        request["tokens"],
+        request["water_year_anchor"],
+        request["metric_environment"],
+        request["return_level_validation"],
+    )
+    if live != request:
+        raise MetricPlanStale("metric declarations or invoked code changed")
+    inventory = read_response_inventory(root)
+    collection, intent, rows = _collection(simulation)
+    if any(
+        item["descriptor"]["source_calendar"]
+        != inventory["temporal_preparation"]["source_calendar"]
+        for item in collection["forcing"]
+    ):
+        raise MetricPlanStale(
+            "response source calendar differs from retained collection"
+        )
+    specification = intent["scenario_spec"]
+    groups, reference_runs, _ = metric_groups(
+        rows,
+        n_realizations=specification["n_realizations"],
+        st_num=specification["n_design_points"],
+        unit_id_capacity=intent["unit_id_capacity"],
+    )
+    registry = declarations(request["tokens"])
+    bundles = (
+        tuple(DeclaredBundle("st_id", key, members) for key, members in groups.items())
+        if any(item.grain == "bundle" for item in registry)
+        else ()
+    )
+    unit_rows = metric_unit_index(
+        [row.run_id for row in rows],
+        [row.run_id for row in rows if row.evaluated],
+        bundles,
+        unit_id_capacity=intent["unit_id_capacity"],
+    )
+    units = [asdict(item) for item in unit_rows]
+    bundle_ids = {
+        bundle.canonical_key: f"{len(rows) + number:0{intent['unit_id_width']}d}"
+        for number, bundle in enumerate(
+            sorted(bundles, key=lambda item: (item.bundle_by, item.canonical_key)), 1
+        )
+    }
+    frozen_request = read_canonical_json(root / "config/response_request.json")
+    locations = {
+        item["variable"]: item["locations"] for item in frozen_request["variables"]
+    }
+    required = {item.required_responses.variable for item in registry}
+    if not required <= set(locations):
+        raise MetricPlanStale(
+            f"missing retained response requirements: {sorted(required - set(locations))}; a new simulation is required"
+        )
+    references = {}
+    if any(item.reference for item in registry):
+        native = _native_runs(root, inventory)
+        series = tuple(
+            item
+            for run in reference_runs
+            for item in open_responses(run, native[run], ResponseRequest(("q",)))
+        )
+        references = {
+            which: _plain(
+                asdict(
+                    resolve_month_reference(
+                        series, expected_run_ids=reference_runs, which=which
+                    )
+                )
+            )
+            for which in ("wet", "dry")
+        }
+    expected_keys = []
+    for metric in registry:
+        ids = (
+            [row.run_id for row in rows if row.evaluated]
+            if metric.grain == "run"
+            else list(bundle_ids.values())
+        )
+        expected_keys.extend(
+            [metric.name, location, unit]
+            for unit in ids
+            for location in locations[metric.required_responses.variable]
+        )
+    expected_keys.sort()
+    definition = {
+        "declarations": request["declarations"],
+        "grouping": request["grouping"],
+        "reference": request["reference"],
+        "resolved_references": references,
+        "water_year_anchor": request["water_year_anchor"],
+        "code_inventory": request["code_inventory"],
+        "return_level_validation": request["return_level_validation"],
+    }
+    definition_digest, environment_digest = (
+        content_sha256(definition),
+        content_sha256(request["metric_environment"]),
+    )
+    identity = content_sha256(
+        {
+            "simulation_id": simulation["simulation_id"],
+            "response_inventory_sha256": inventory["response_inventory_sha256"],
+            "metric_definition_sha256": definition_digest,
+            "metric_environment_sha256": environment_digest,
+        }
+    )
+    destination = root / "results/metric_sets" / identity
+    plan = {
+        "schema_version": "metric-plan/1",
+        "metric_request_id": content_sha256(request),
+        "request": request,
+        "response_inventory_sha256": inventory["response_inventory_sha256"],
+        "resolved_references": references,
+        "units": units,
+        "expected_result_keys": expected_keys,
+        "groups": {key: list(value) for key, value in groups.items()},
+        "bundle_unit_ids": bundle_ids,
+        "metric_definition": definition,
+        "metric_definition_sha256": definition_digest,
+        "metric_environment_sha256": environment_digest,
+        "metric_set_id": identity,
+        "targets": {
+            "manifest": (destination / "metrics.json").as_posix(),
+            "unit_index": (destination / "unit_index.csv").as_posix(),
+            "environment": (destination / "metric_environment.json").as_posix(),
+            **{
+                token: (destination / f"{token}_indicators.csv").as_posix()
+                for token in request["tokens"]
+            },
+        },
+    }
+    plan["plan_sha256"] = content_sha256(plan)
+    return plan
+
+
+def write_metric_plan(experiment_root, request):
+    """Publish rebuildable checkpoint state after complete native validation."""
+    root = Path(experiment_root).resolve()
+    plan = build_metric_plan(root, request)
+    path = root / "results/metric_plans" / plan["metric_request_id"] / "plan.json"
+    if path.resolve() != path:
+        raise MetricPlanStale("metric planning path is aliased")
+    path.parent.mkdir(parents=True, exist_ok=True)
+    atomic_record(path, plan, replace=True)
+    return plan
+
+
+def verify_metric_plan(experiment_root, request):
+    """Validate existing plans even when timestamps would schedule no job."""
+    root = Path(experiment_root).resolve()
+    path = root / "results/metric_plans" / content_sha256(request) / "plan.json"
+    stored = read_canonical_json(path)
+    expected = build_metric_plan(root, request)
+    if stored != expected:
+        raise MetricPlanStale(
+            f"metric plan expected={expected['plan_sha256']} observed={stored.get('plan_sha256')}"
+        )
+    return stored
+
+
+def _csv_bytes(fields, rows):
+    stream = io.StringIO(newline="")
+    writer = csv.DictWriter(stream, fieldnames=fields, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(rows)
+    return stream.getvalue().encode("utf-8")
+
+
+def check_live_metric_environment(plan):
+    """Compare the live metric-stage environment with the retained one (D5).
+
+    Rebuilding a plan from its own retained descriptor cannot detect drift --
+    it would compare the descriptor with itself -- so the environment is
+    observed afresh here and both the canonical bytes and their digest must
+    agree. A mismatch aborts before any fitting and leaves no ready marker.
+    """
+    retained = plan["request"]["metric_environment"]
+    observed = resolve_metric_environment()
+    if canonical_json_bytes(observed) != canonical_json_bytes(retained):
+        raise MetricPlanStale(
+            "the live metric-stage environment differs from the retained "
+            f"descriptor: observed {content_sha256(observed)}, "
+            f"retained {content_sha256(retained)}"
+        )
+
+
+def reduce_metric_plan(experiment_root, plan):
+    """Reduce the selected complete contract, keeping Class-C values at run grain."""
+    from blueearth_cst.experiment.export_wflow_results import _format_value
+    from blueearth_cst.experiment.metric_registry import MonthReference
+
+    root = Path(experiment_root).resolve()
+    if build_metric_plan(root, plan["request"]) != plan:
+        raise MetricPlanStale("metric plan changed before reduction")
+    check_live_metric_environment(plan)
+    inventory = read_response_inventory(root)
+    native = _native_runs(root, inventory)
+    registry = declarations(plan["request"]["tokens"])
+    references = {
+        key: MonthReference(
+            **{
+                **value,
+                "run_ids": tuple(value["run_ids"]),
+                "counts": tuple(tuple(row) for row in value["counts"]),
+            }
+        )
+        for key, value in plan["resolved_references"].items()
+    }
+    output = {token: [] for token in plan["request"]["tokens"]}
+    evidence = []
+    anchor = plan["request"]["water_year_anchor"]
+    for group, members in plan["groups"].items():
+        series = tuple(
+            item
+            for run in members
+            for item in open_responses(run, native[run], ResponseRequest(tuple(output)))
+        )
+        for metric in registry:
+            token = metric.required_responses.variable
+            variable = [item for item in series if item.variable == token]
+            if metric.grain == "bundle":
+                values, report = reduce_bundle(
+                    metric,
+                    variable,
+                    expected_run_ids=members,
+                    anchor=anchor,
+                    validation=plan["request"]["return_level_validation"],
+                )
+                batches = [(plan["bundle_unit_ids"][group], values)]
+                evidence.append(
+                    {
+                        "metric": metric.name,
+                        "unit_id": batches[0][0],
+                        "locations": [_plain(asdict(item)) for item in report],
+                    }
+                )
+            else:
+                reference = (
+                    references["wet" if metric.statistic == "wetmonth_mean" else "dry"]
+                    if metric.reference
+                    else None
+                )
+                batches = [
+                    (
+                        run,
+                        reduce_run(
+                            metric,
+                            [item for item in variable if item.run_id == run],
+                            anchor=anchor,
+                            reference=reference,
+                        ),
+                    )
+                    for run in members
+                ]
+            for unit, values in batches:
+                for location, value in values.items():
+                    output[token].append(
+                        {
+                            "metric": metric.name,
+                            "location": str(location),
+                            "unit_id": unit,
+                            "value": _format_value(np.float32(value)),
+                        }
+                    )
+    actual = [
+        (row["metric"], row["location"], row["unit_id"])
+        for rows in output.values()
+        for row in rows
+    ]
+    if len(actual) != len(set(actual)) or sorted(actual) != [
+        tuple(key) for key in plan["expected_result_keys"]
+    ]:
+        raise ImmutableMetricSetError(
+            "reduced result keys differ from independent expected set"
+        )
+    return output, evidence
+
+
+def _validate_tables(tables, expected_keys, declarations_by_name, units):
+    grains = {}
+    for row in units:
+        previous = grains.setdefault(row["unit_id"], row["grain"])
+        if previous != row["grain"]:
+            raise ImmutableMetricSetError("metric unit has more than one grain")
+    actual = []
+    for token, rows in tables.items():
+        for row in rows:
+            if set(row) != {"metric", "location", "unit_id", "value"}:
+                raise ImmutableMetricSetError(
+                    "indicator table fields must be metric,location,unit_id,value"
+                )
+            declaration = declarations_by_name.get(row["metric"])
+            if (
+                declaration is None
+                or declaration["required_responses"]["variable"] != token
+            ):
+                raise ImmutableMetricSetError(
+                    "indicator row has undeclared metric or wrong table token"
+                )
+            if grains.get(row["unit_id"]) != declaration["grain"]:
+                raise ImmutableMetricSetError("indicator metric and unit grain differ")
+            value = float(row["value"]) if row["value"] != "" else float("nan")
+            if np.isinf(value) or (
+                declaration["grain"] == "bundle" and not np.isfinite(value)
+            ):
+                raise ImmutableMetricSetError(
+                    "indicator value violates declared validity"
+                )
+            actual.append((row["metric"], row["location"], row["unit_id"]))
+    if len(actual) != len(set(actual)) or sorted(actual) != [
+        tuple(key) for key in expected_keys
+    ]:
+        raise ImmutableMetricSetError(
+            "indicator keys differ from exact expected result keys"
+        )
+
+
+def publish_metric_set(experiment_root, plan):
+    """Publish a whole declared set, preserving all bytes on exact ready reuse."""
+    root = Path(experiment_root).resolve()
+    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    marker = destination / "metrics.json"
+    if destination.resolve() != destination:
+        raise ImmutableMetricSetError("metric-set directory is aliased")
+    if build_metric_plan(root, plan["request"]) != plan:
+        raise MetricPlanStale("metric inputs changed before publication")
+    if marker.exists():
+        return read_metric_set(root, marker)
+    check_live_metric_environment(plan)
+    if destination.exists() and any(destination.iterdir()):
+        raise ImmutableMetricSetError(
+            f"partial metric set cannot be overwritten: {destination}"
+        )
+    tables, evidence = reduce_metric_plan(root, plan)
+    declarations_by_name = {
+        item["name"]: item for item in plan["request"]["declarations"]
+    }
+    _validate_tables(
+        tables, plan["expected_result_keys"], declarations_by_name, plan["units"]
+    )
+    payloads = {
+        f"{token}_indicators.csv": _csv_bytes(
+            ["metric", "location", "unit_id", "value"],
+            sorted(
+                rows,
+                key=lambda row: (row["metric"], row["location"], int(row["unit_id"])),
+            ),
+        )
+        for token, rows in tables.items()
+    }
+    payloads["unit_index.csv"] = _csv_bytes(
+        ["unit_id", "grain", "member_run_id"], plan["units"]
+    )
+    payloads["metric_environment.json"] = canonical_json_bytes(
+        plan["request"]["metric_environment"]
+    )
+    # The exact checked report bytes travel with the set, so a reader never
+    # needs the installed asset -- or the estimator dependency -- to validate it.
+    report_bytes = return_level_validation.load_report_bytes()
+    return_level_validation.verify_declaration(
+        plan["request"]["return_level_validation"], report_bytes
+    )
+    payloads[return_level_validation.REPORT_FILENAME] = report_bytes
+    import hashlib
+
+    def reference(name):
+        return {"path": name, "sha256": hashlib.sha256(payloads[name]).hexdigest()}
+
+    simulation = read_simulation(root, require_complete=True)
+    manifest = {
+        "schema_version": "metric-set/1",
+        "status": "ready",
+        "metric_set_id": plan["metric_set_id"],
+        "simulation_id": simulation["simulation_id"],
+        "collection_id": simulation["collection"]["collection_id"],
+        "collection_revision": simulation["collection"]["collection_revision"],
+        "response_inventory": {
+            "path": "../../../responses/response_inventory.json",
+            "sha256": plan["response_inventory_sha256"],
+        },
+        "response_request": {
+            "path": "../../../config/response_request.json",
+            "sha256": file_sha256(root / "config/response_request.json"),
+        },
+        "bundle_membership_sha256": content_sha256(plan["groups"]),
+        "declarations": plan["request"]["declarations"],
+        "metric_definition": plan["metric_definition"],
+        "metric_definition_sha256": plan["metric_definition_sha256"],
+        "metric_environment": reference("metric_environment.json"),
+        "unit_index": reference("unit_index.csv"),
+        "expected_result_keys": plan["expected_result_keys"],
+        "groups": plan["groups"],
+        "resolved_references": plan["resolved_references"],
+        "return_level_validation": plan["request"]["return_level_validation"],
+        "return_level_benchmark": reference(return_level_validation.REPORT_FILENAME),
+        "return_level_evidence": evidence,
+        "indicator_tables": [
+            {
+                "token": token,
+                **reference(f"{token}_indicators.csv"),
+                "row_count": len(tables[token]),
+            }
+            for token in sorted(tables)
+        ],
+    }
+    manifest["metrics_manifest_sha256"] = content_sha256(manifest)
+    destination.mkdir(parents=True, exist_ok=True)
+    for name, payload in payloads.items():
+        with (destination / name).open("xb") as handle:
+            handle.write(payload)
+            handle.flush()
+            os.fsync(handle.fileno())
+    # Re-observe immediately before the sole ready marker: a late drift must
+    # leave an unready partial destination, never a silently relabelled result.
+    check_live_metric_environment(plan)
+    atomic_record(marker, manifest)
+    return read_metric_set(root, marker)
+
+
+def _validated_benchmark(destination, manifest, validation):
+    """Dispatch on the retained validation record; never rewrite an old one.
+
+    An exact legacy record uses the existing checks and carries no report. A
+    `return-level-validation/1` record requires its copied report and is checked
+    against THOSE bytes, so a historical set stays readable when the installed
+    asset is a different version or absent. Any other shape is refused rather
+    than defaulted.
+    """
+    if return_level_validation.is_legacy(validation):
+        if "return_level_benchmark" in manifest:
+            raise ImmutableMetricSetError(
+                "a legacy unassessed metric set must not carry a benchmark report"
+            )
+        return None
+    if (
+        not isinstance(validation, dict)
+        or validation.get("schema_version") != return_level_validation.SCHEMA_VERSION
+    ):
+        raise ImmutableMetricSetError(
+            f"unknown return-level validation record "
+            f"{validation.get('schema_version') if isinstance(validation, dict) else validation!r}"
+        )
+    reference = manifest.get("return_level_benchmark")
+    if not isinstance(reference, dict) or set(reference) != {"path", "sha256"}:
+        raise ImmutableMetricSetError("metric set is missing its benchmark reference")
+    if reference["path"] != return_level_validation.REPORT_FILENAME:
+        raise ImmutableMetricSetError(
+            f"unexpected benchmark report path {reference['path']!r}"
+        )
+    path = confined_path(destination, reference["path"])
+    if not path.is_file():
+        raise ImmutableMetricSetError("retained benchmark report is missing")
+    try:
+        return_level_validation.verify_declaration(validation, path.read_bytes())
+    except return_level_validation.ReturnLevelValidationError as error:
+        raise ImmutableMetricSetError(
+            f"retained return-level validation is not supported by its report: {error}"
+        ) from error
+    return reference
+
+
+def _read_metric_set(experiment_root, manifest_path):
+    """Validate retained results and identity without consulting the live metric registry."""
+    root, marker = Path(experiment_root).resolve(), Path(manifest_path)
+    if marker.name != "metrics.json":
+        raise ImmutableMetricSetError("expected metrics.json as the sole ready marker")
+    destination = marker.parent.resolve()
+    if not destination.is_relative_to(root / "results/metric_sets"):
+        raise ImmutableMetricSetError("metric set is outside the selected experiment")
+    marker = confined_path(destination, marker.name)
+    manifest = read_canonical_json(marker)
+    if manifest["schema_version"] != "metric-set/1" or manifest["status"] != "ready":
+        raise ImmutableMetricSetError("metric set is not ready")
+    digest = content_sha256(
+        {
+            key: value
+            for key, value in manifest.items()
+            if key != "metrics_manifest_sha256"
+        }
+    )
+    if digest != manifest["metrics_manifest_sha256"]:
+        raise ImmutableMetricSetError("metric manifest digest differs")
+    definition = manifest["metric_definition"]
+    if manifest["response_request"] != {
+        "path": "../../../config/response_request.json",
+        "sha256": file_sha256(root / "config/response_request.json"),
+    }:
+        raise ImmutableMetricSetError("retained response request differs")
+    if manifest["bundle_membership_sha256"] != content_sha256(manifest["groups"]):
+        raise ImmutableMetricSetError("bundle membership digest differs")
+    if (
+        content_sha256(definition) != manifest["metric_definition_sha256"]
+        or definition["declarations"] != manifest["declarations"]
+    ):
+        raise ImmutableMetricSetError("metric definition digest or declarations differ")
+    if (
+        definition["resolved_references"] != manifest["resolved_references"]
+        or definition["return_level_validation"] != manifest["return_level_validation"]
+    ):
+        raise ImmutableMetricSetError("metric provenance differs from its definition")
+    if (
+        manifest["response_inventory"]["path"]
+        != "../../../responses/response_inventory.json"
+    ):
+        raise ImmutableMetricSetError("unexpected retained response inventory path")
+    if (
+        manifest["unit_index"]["path"] != "unit_index.csv"
+        or manifest["metric_environment"]["path"] != "metric_environment.json"
+    ):
+        raise ImmutableMetricSetError("unexpected metric input paths")
+    retained_validation = manifest["return_level_validation"]
+    benchmark = _validated_benchmark(destination, manifest, retained_validation)
+    for item in [
+        manifest["unit_index"],
+        manifest["metric_environment"],
+        *([benchmark] if benchmark else []),
+        *manifest["indicator_tables"],
+    ]:
+        if file_sha256(confined_path(destination, item["path"])) != item["sha256"]:
+            raise ImmutableMetricSetError(f"metric artifact differs: {item['path']}")
+    environment = read_canonical_json(
+        confined_path(destination, manifest["metric_environment"]["path"])
+    )
+    identity = content_sha256(
+        {
+            "simulation_id": manifest["simulation_id"],
+            "response_inventory_sha256": manifest["response_inventory"]["sha256"],
+            "metric_definition_sha256": manifest["metric_definition_sha256"],
+            "metric_environment_sha256": content_sha256(environment),
+        }
+    )
+    if identity != manifest["metric_set_id"] or destination.name != identity:
+        raise ImmutableMetricSetError(
+            "metric-set identity differs from retained inputs"
+        )
+    simulation = read_simulation(root, require_complete=True)
+    inventory = read_response_inventory(root)
+    if (
+        manifest["simulation_id"] != simulation["simulation_id"]
+        or manifest["response_inventory"]["sha256"]
+        != inventory["response_inventory_sha256"]
+    ):
+        raise ImmutableMetricSetError(
+            "metric set differs from retained simulation responses"
+        )
+    if any(
+        manifest[key] != simulation["collection"][key]
+        for key in ("collection_id", "collection_revision")
+    ):
+        raise ImmutableMetricSetError(
+            "metric collection differs from retained simulation"
+        )
+    collection, intent, rows = _collection(simulation)
+    if any(
+        item["descriptor"]["source_calendar"]
+        != inventory["temporal_preparation"]["source_calendar"]
+        for item in collection["forcing"]
+    ):
+        raise ImmutableMetricSetError(
+            "response source calendar differs from retained collection"
+        )
+    specification = intent["scenario_spec"]
+    groups, _, _ = metric_groups(
+        rows,
+        n_realizations=specification["n_realizations"],
+        st_num=specification["n_design_points"],
+        unit_id_capacity=intent["unit_id_capacity"],
+    )
+    has_bundles = any(item["grain"] == "bundle" for item in manifest["declarations"])
+    bundles = (
+        [DeclaredBundle("st_id", key, members) for key, members in groups.items()]
+        if has_bundles
+        else []
+    )
+    expected_units = [
+        asdict(item)
+        for item in metric_unit_index(
+            [row.run_id for row in rows],
+            [row.run_id for row in rows if row.evaluated],
+            bundles,
+            unit_id_capacity=intent["unit_id_capacity"],
+        )
+    ]
+    with confined_path(destination, manifest["unit_index"]["path"]).open(
+        encoding="utf-8", newline=""
+    ) as handle:
+        reader = csv.DictReader(handle)
+        if reader.fieldnames != ["unit_id", "grain", "member_run_id"]:
+            raise ImmutableMetricSetError("unit index schema differs")
+        units = list(reader)
+    if units != expected_units:
+        raise ImmutableMetricSetError("unit index differs from collection membership")
+    if manifest["groups"] != {key: list(value) for key, value in groups.items()}:
+        raise ImmutableMetricSetError(
+            "metric grouping differs from collection membership"
+        )
+    frozen_request = read_canonical_json(root / "config/response_request.json")
+    locations = {
+        item["variable"]: item["locations"] for item in frozen_request["variables"]
+    }
+    expected_keys = sorted(
+        [metric["name"], location, unit]
+        for metric in manifest["declarations"]
+        for unit in sorted(
+            {item["unit_id"] for item in units if item["grain"] == metric["grain"]}
+        )
+        for location in locations[metric["required_responses"]["variable"]]
+    )
+    if expected_keys != manifest["expected_result_keys"]:
+        raise ImmutableMetricSetError(
+            "stored expected keys differ from independent request and unit contract"
+        )
+    expected_tokens = {
+        item["required_responses"]["variable"] for item in manifest["declarations"]
+    }
+    recorded_tokens = [item["token"] for item in manifest["indicator_tables"]]
+    if (
+        len(recorded_tokens) != len(expected_tokens)
+        or set(recorded_tokens) != expected_tokens
+        or any(
+            item["path"] != f"{item['token']}_indicators.csv"
+            for item in manifest["indicator_tables"]
+        )
+    ):
+        raise ImmutableMetricSetError(
+            "indicator table inventory differs from declared tokens and paths"
+        )
+    tables = {}
+    for item in manifest["indicator_tables"]:
+        if item["token"] in tables:
+            raise ImmutableMetricSetError("duplicate indicator table token")
+        with confined_path(destination, item["path"]).open(
+            encoding="utf-8", newline=""
+        ) as handle:
+            reader = csv.DictReader(handle)
+            if reader.fieldnames != ["metric", "location", "unit_id", "value"]:
+                raise ImmutableMetricSetError("indicator table schema differs")
+            tables[item["token"]] = list(reader)
+        if len(tables[item["token"]]) != item["row_count"]:
+            raise ImmutableMetricSetError("indicator table row count differs")
+    _validate_tables(
+        tables,
+        expected_keys,
+        {item["name"]: item for item in manifest["declarations"]},
+        units,
+    )
+    return manifest
+
+
+def read_metric_set(experiment_root, manifest_path):
+    """Read only the selected immutable set, with named malformed-state refusals."""
+    try:
+        return _read_metric_set(experiment_root, manifest_path)
+    except ImmutableMetricSetError:
+        raise
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        raise ImmutableMetricSetError(f"metric set {manifest_path}: {exc}") from exc

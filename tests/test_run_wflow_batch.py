@@ -17,7 +17,11 @@ them drifting out of the house format.
 from __future__ import annotations
 
 import re
+import shutil
+import subprocess
 from pathlib import Path
+
+import pytest
 
 from blueearth_cst.shared.snake_utils import _ANSI_FAIL, _severity_code
 
@@ -96,15 +100,36 @@ def test_every_status_row_carries_its_position_in_the_batch():
 def test_the_total_is_this_batch_and_not_the_experiment():
     """Rule 3.15 runs several batches concurrently, each its own process, so a
     run-wide denominator is not knowable here and would be a lie if printed."""
-    assert re.search(r"^total\s*=\s*length\(ARGS\)\s*$", SOURCE, re.MULTILINE)
+    assert re.search(r"^\s*total\s*=\s*length\(members\)\s*$", SOURCE, re.MULTILINE)
 
 
-def test_the_member_tag_is_the_toml_stem():
-    """`<exp>/hydrology/wflow/config/rlz_<i>_st_<j>.toml` -> `rlz_<i>_st_<j>`.
+def test_the_member_tag_is_explicit_and_failure_names_every_affected_run():
+    """Run identity is supplied by the batch, never parsed from a filename."""
+    assert "tag = member.run_id" in SOURCE
+    assert "basename(" not in SOURCE and "splitext(" not in SOURCE
+    assert "batch=$(batch_id) runs=[$(affected)]" in SOURCE
 
-    The tag used to prepend the toml's grandparent directory, which that layout
-    made meaningful and the current one resolves to the constant ``wflow`` on
-    every row of every batch.
-    """
-    assert "tag = first(splitext(basename(t)))" in SOURCE
-    assert "dirname(dirname(t))" not in SOURCE
+
+def test_explicit_batch_parser_in_julia():
+    """The real stdlib-only parser preserves records and rejects bad ordering."""
+    julia = shutil.which("julia")
+    if julia is None:
+        pytest.skip("Julia is not available for the standalone batch parser check")
+    code = """
+include(ARGS[1])
+using Test
+batch, members = parse_batch(["b4", "007", "z.toml", "a.csv", "012", "q.toml", "b.csv"])
+@test batch == "b4"
+@test members[1] == (run_id="007", toml_path="z.toml", native_output_path="a.csv")
+@test members[2].run_id == "012"
+@test_throws ErrorException parse_batch(["b4", "012", "z.toml", "a.csv", "007", "q.toml", "b.csv"])
+@test_throws ErrorException parse_batch(["b4", "007", "z.toml"])
+@test_throws ErrorException parse_batch(["b4", "007", "z.toml", "a.csv", "007", "q.toml", "b.csv"])
+"""
+    result = subprocess.run(
+        [julia, "--startup-file=no", "-e", code, str(DRIVER)],
+        capture_output=True,
+        text=True,
+        timeout=60,
+    )
+    assert result.returncode == 0, result.stdout + result.stderr

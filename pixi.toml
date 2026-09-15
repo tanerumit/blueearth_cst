@@ -76,6 +76,10 @@ r-yaml = "*"
 hydroengine = "*"
 gwwapi = "*"
 snakemake = "*"
+# GF15 return-level estimator (accepted adapter design D7). Pinned to the exact
+# wheel the qualification was run against: conda-forge ships a same-version
+# repack, which D7 does not qualify, so this must resolve from PyPI.
+lmoments3 = "==1.0.8"
 
 # Env activation. Applied on every `pixi shell` / `pixi run`, so these no longer
 # have to be re-created by hand after each env rebuild (see docs/env_setup_notes.md).
@@ -166,7 +170,7 @@ test-full = { cmd = "pytest tests/", description = "Run the authoritative full n
 # env's interpreter directly instead would drop [activation.env] above
 # (HDF5_USE_FILE_LOCKING, GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT) and, on win-64, the
 # graphviz alias script.
-test-cli = { cmd = "pytest tests/test_cli.py", description = "Dry-run all four workflow entry points -- the cheapest sanity check after editing a rule or script signature" }
+test-cli = { cmd = "pytest tests/test_cli.py", description = "Dry-run all five workflow entry points -- the cheapest sanity check after editing a rule or script signature" }
 lint = { cmd = "ruff check .", description = "Lint the repo with the [tool.ruff] config in pyproject.toml" }
 format = { cmd = "ruff format .", description = "Format the repo -- scope and exclusions in [tool.ruff.format]" }
 format-check = { cmd = "ruff format --check .", description = "Fail if anything in the formatter's scope is unformatted; the CI gate" }
@@ -177,7 +181,8 @@ format-check = { cmd = "ruff format --check .", description = "Fail if anything 
 dag-wf0 = { cmd = "snakemake all -c 3 -s analyze_climate.smk --configfile test_case/project_config_baseline.yml --dry-run", description = "Dry-run wf0 (historical climate analysis) to validate the DAG" }
 dag-wf1 = { cmd = "snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_baseline.yml --dry-run", description = "Dry-run wf1 (model creation) to validate the DAG" }
 dag-wf2 = { cmd = "snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_baseline.yml --dry-run", description = "Dry-run wf2 (climate projections) to validate the DAG" }
-dag-wf3 = { cmd = "snakemake all -c 3 -s run_stress_test.smk --configfile test_case/project_config_baseline.yml --dry-run", description = "Dry-run wf3 (climate experiment) to validate the DAG" }
+dag-wf3 = { cmd = "snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml --dry-run", description = "Dry-run scenario generation" }
+dag-wf4 = { cmd = "python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --dry-run", description = "Dry-run system simulation against a ready collection" }
 
 # Project-tree inspection (R09). Same shape as the dag-* tasks: `--config` is
 # pinned to the tracked test config so the task runs from a fresh clone, and a
@@ -200,7 +205,7 @@ tree-check = { cmd = "python dev/scripts/snapshot_project_tree.py --config test_
 # non-zero when incomplete.
 env-check = { cmd = "python dev/scripts/check_env.py", description = "Report whether this checkout's env can run the workflows (--all: every worktree)" }
 
-# The runner over the four workflow entry points, reachable without spelling out its path:
+# The runner over the five workflow entry points, reachable without spelling out its path:
 #     pixi run run-workflows --config test_case/project_config_rapid.yml
 #     pixi run run-workflows --config <cfg> --cores 4 -- --dry-run
 #

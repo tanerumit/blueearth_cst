@@ -1,0 +1,17 @@
+{
+  "utc": "2026-09-12T08:27:23.879338+00:00",
+  "git_head": "2c9a0a30b2a861e664886d1c66b329a19d53faca",
+  "sources": {
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15-investigation\\investigate-estimator.py": "6c771b2efbc57addc1f39d6b2e114c323b105354ee8bf6cef60447a069933d82",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default\\Lib\\site-packages\\scipy\\optimize\\_optimize.py": "f5ad5bc0ec01d9f0adafad622631a59ab8efc90019f41efbbef19c8b2feaf430",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default\\Lib\\site-packages\\xclim\\indices\\stats.py": "6b4485e9716d7b8eadafd0e6eb7f08f2e9f6e334023a7275ad47c1e9ab8bff17",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.pixi\\envs\\default\\Lib\\site-packages\\scipy\\stats\\_continuous_distns.py": "d401e2c8b627ce88c8d627b15fc6103bcea58784d4ce9150588f54d491cb1a89",
+    "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\blueearth_cst\\experiment\\metric_registry.py": "9a4c197c30aa42f3ab4a26d7c2fe81781436d6a056259dcb71f0aa891b370abb"
+  },
+  "original_evidence": {
+    "inventory_sha256": "3f13145d29c377a1c92042b3845695ce293edd58e565e17a67851767026719e1",
+    "files_verified": 276
+  },
+  "environment_source": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\dev\\milestones\\r12\\implementation\\evidence\\gf15\\results\\provenance.json",
+  "environment_source_sha256": "0d85d2a63c6be70683e2a1485de7bfc6266a265fd383cf96b124b6facdc67db2"
+}

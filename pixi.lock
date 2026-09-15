@@ -741,6 +741,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/0f/a4/25df835a9b9b372a4a869a8a1ac30a32199f2b3f581ad0e249f7e3d19eed/immutables-0.21-cp312-cp312-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl
       - pypi: https://files.pythonhosted.org/packages/15/8d/a6a9d58c929a869f7f1b99b3d37b3f14ef63e2826eef581416338d686c3f/pulp-3.2.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1a/c7/e6e9ff155558b473f9eec20f7e35faa15dd6f3d03c4100f7609e44a8428f/snakemake_interface_common-1.19.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/28/a8/88ba989f510c5e0d8889fbc8141ff0ae307dcf743baa2385ebaa6169b43c/lmoments3-1.0.8-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/32/91/30151a39f7570f448ed84529390628a651d7f27c87d73c9b887f8189695e/docutils-0.23-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/40/c1/5af0e20e8284c890968af059868290e8c070f3676751abc524b3c4cd42a8/snakemake_interface_logger_plugins-1.2.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4d/63/6a44729fdc60eb255a7b156a84e7552290174a9bf151e3b6c18e83d6fbfa/yte-1.9.4-py3-none-any.whl
@@ -1437,6 +1438,7 @@ environments:
       - pypi: https://files.pythonhosted.org/packages/05/a2/6ac3b03c2b806593c23564b98c14f496a1c7e00d1acf78d91979a1d40de3/gwwapi-0.0.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/15/8d/a6a9d58c929a869f7f1b99b3d37b3f14ef63e2826eef581416338d686c3f/pulp-3.2.2-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/1a/c7/e6e9ff155558b473f9eec20f7e35faa15dd6f3d03c4100f7609e44a8428f/snakemake_interface_common-1.19.2-py3-none-any.whl
+      - pypi: https://files.pythonhosted.org/packages/28/a8/88ba989f510c5e0d8889fbc8141ff0ae307dcf743baa2385ebaa6169b43c/lmoments3-1.0.8-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/32/91/30151a39f7570f448ed84529390628a651d7f27c87d73c9b887f8189695e/docutils-0.23-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/40/c1/5af0e20e8284c890968af059868290e8c070f3676751abc524b3c4cd42a8/snakemake_interface_logger_plugins-1.2.4-py3-none-any.whl
       - pypi: https://files.pythonhosted.org/packages/4d/63/6a44729fdc60eb255a7b156a84e7552290174a9bf151e3b6c18e83d6fbfa/yte-1.9.4-py3-none-any.whl
@@ -17595,6 +17597,22 @@ packages:
   - configargparse>=1.7
   - semver>=3.0,<4.0
   requires_python: '>=3.8'
+- pypi: https://files.pythonhosted.org/packages/28/a8/88ba989f510c5e0d8889fbc8141ff0ae307dcf743baa2385ebaa6169b43c/lmoments3-1.0.8-py3-none-any.whl
+  name: lmoments3
+  version: 1.0.8
+  sha256: 984d1f1b0c3feefd57afc7a270931c1d28e4face2df1c2293559faf47681ef5e
+  requires_dist:
+  - numpy
+  - scipy
+  - black>=24.8.0 ; extra == 'dev'
+  - blackdoc>=0.3.9 ; extra == 'dev'
+  - build>=1.0 ; extra == 'dev'
+  - flake8>=7.0.0 ; extra == 'dev'
+  - pydocstyle>=6.3.0 ; extra == 'dev'
+  - sphinx>=6.0.0 ; extra == 'dev'
+  - sphinx-rtd-theme>=1.0 ; extra == 'dev'
+  - wheel>=0.42.0 ; extra == 'dev'
+  requires_python: '>=3.8.0'
 - pypi: https://files.pythonhosted.org/packages/32/91/30151a39f7570f448ed84529390628a651d7f27c87d73c9b887f8189695e/docutils-0.23-py3-none-any.whl
   name: docutils
   version: '0.23'

@@ -1,0 +1,82 @@
+{
+  "status": "passed",
+  "scope": "release",
+  "numerical": "affected",
+  "reason": "Public workflow/config/runner contracts and scientific publication grain migrate atomically.",
+  "command": "pixi run --as-is test-full (pytest tests/)",
+  "platform": "Windows win32",
+  "counts": {
+    "passed": 3705,
+    "skipped": 15,
+    "xfailed": 1,
+    "warnings": 8845
+  },
+  "collected": 3721,
+  "summary": "3705 passed, 15 skipped, 1 xfailed, 8845 warnings in 803.06s (0:13:23)",
+  "runtime_inventory_sha256": "376ae0edeed8283b4cfd0cec9667ef07f97e4966e019d300af5df5b9f7d6c04b",
+  "checks": {
+    "lint": "passed",
+    "format": "passed; 333 files already formatted",
+    "diff_check": "passed",
+    "runner_repair": "37 passed; regression observed red before fix",
+    "inventory_repair": "123 passed; both omitted paths observed red before fix",
+    "notebook": "All code cells compile; 12 reader/analysis cells executed successfully"
+  },
+  "logs": [
+    {
+      "path": "dev\\milestones\\r12\\implementation\\evidence\\final\\test-full.log",
+      "sha256": "746ecca925a2d7d90c877009e4b3874f68552c15c563a8cdba386d5fff28efe9",
+      "size_bytes": 27695
+    },
+    {
+      "path": ".tmp\\scratchpad\\2026-09-11_0010\\p3-final-lint.log",
+      "sha256": "390d1091c26d8060c158086af5d0f2093a8f7270b6b04a43a6472e3ad8888e3d",
+      "size_bytes": 328
+    },
+    {
+      "path": ".tmp\\scratchpad\\2026-09-11_0010\\p3-final-format.log",
+      "sha256": "319c6a76800fa5d0d44ab87fd79f13e295b2ab14365c3209dc73f75d605c67d0",
+      "size_bytes": 364
+    },
+    {
+      "path": ".tmp\\scratchpad\\2026-09-11_0010\\p3-final-diff-check.log",
+      "sha256": "e5cee1ba720ae654e7af9826754b474d19a16752aab59d0ab8e941ea6ce3ca36",
+      "size_bytes": 2686
+    },
+    {
+      "path": ".tmp\\scratchpad\\2026-09-11_0010\\p3-final-full.log",
+      "sha256": "68024f98a71f2ea36213c0557dde46e397b040303a4fbf2bedbd518bae43aaa9",
+      "size_bytes": 59391
+    },
+    {
+      "path": ".tmp\\scratchpad\\2026-09-11_0010\\p3-final-repairs-tests.log",
+      "sha256": "c830bc3d1fc626fcb9fc0b6f9f88eaba638ce8c956c300bda1f0f674fdd9ee5f",
+      "size_bytes": 322
+    },
+    {
+      "path": ".tmp\\scratchpad\\2026-09-11_0010\\p3-invocation-regression-red.log",
+      "sha256": "0f46a65e71cb2f3957d2faca0eae6103ecc838571cd762e1e08fc55c98f4ad3a",
+      "size_bytes": 5262
+    },
+    {
+      "path": ".tmp\\scratchpad\\2026-09-11_0010\\p3-final-inventory-tests.log",
+      "sha256": "b34ffcf2f30805764230fb1dc2dd51f3e9829127f41ed2ac39fe8245bad2b853",
+      "size_bytes": 392
+    },
+    {
+      "path": ".tmp\\scratchpad\\2026-09-11_0010\\p3-notebook-final-fixed.log",
+      "sha256": "3bc7a1e8d3bc9e3169d21f5ee50823f28f9093fc53558a883745caf8be609ce4",
+      "size_bytes": 3449
+    }
+  ],
+  "not_run": [
+    "GF15 owner-gated benchmark",
+    "standing baseline re-record and milestone-seal gates",
+    "Linux/remote CI; no push requested"
+  ],
+  "scientific_acceptance": [
+    "direct-scientific-handoff.md",
+    "gf27-acceptance.md",
+    "gf31-acceptance.md"
+  ]
+}

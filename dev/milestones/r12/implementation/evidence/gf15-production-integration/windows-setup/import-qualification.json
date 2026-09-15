@@ -1,0 +1,68 @@
+{
+  "invocation": "bare env python.exe, matching the recorded old argv form (no pixi run, no activation scripts)",
+  "executable": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\python.exe",
+  "modules": {
+    "numpy": {
+      "ok": true,
+      "version": "2.4.6",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\numpy\\__init__.py"
+    },
+    "pandas": {
+      "ok": true,
+      "version": "3.0.3",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\pandas\\__init__.py"
+    },
+    "scipy": {
+      "ok": true,
+      "version": "1.18.0",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\scipy\\__init__.py"
+    },
+    "xarray": {
+      "ok": true,
+      "version": "2026.4.0",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\xarray\\__init__.py"
+    },
+    "xclim": {
+      "ok": true,
+      "version": "0.60.0",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\xclim\\__init__.py"
+    },
+    "netCDF4": {
+      "ok": true,
+      "version": "1.7.4",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\netCDF4\\__init__.py"
+    },
+    "pyproj": {
+      "ok": true,
+      "version": "3.7.2",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\pyproj\\__init__.py"
+    },
+    "yaml": {
+      "ok": true,
+      "version": "6.0.3",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\yaml\\__init__.py"
+    },
+    "lmoments3": {
+      "ok": true,
+      "version": "1.0.8",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\lmoments3\\__init__.py"
+    },
+    "snakemake": {
+      "ok": true,
+      "version": "9.6.2",
+      "file": "C:\\Users\\taner\\workspace\\blueearth_cst-artifacts\\r12\\gf15-production-integration\\windows-environment-pypi\\.pixi\\envs\\default\\Lib\\site-packages\\snakemake\\__init__.py"
+    }
+  },
+  "native_submodules": {
+    "scipy.optimize": true,
+    "scipy.stats": true,
+    "numpy.linalg": true
+  },
+  "all_ok": true,
+  "ambient_activation_vars": {
+    "HDF5_USE_FILE_LOCKING": "FALSE",
+    "GCSFS_EXTENDED": null,
+    "PIXI_PROJECT_MANIFEST": "C:\\Users\\taner\\workspace\\blueearth_cst\\pixi.toml"
+  },
+  "ambient_note": "These come from the INVOKING shell, not from this root activation; a bare python.exe invocation runs no [activation.env]. Stage 3 must set them deliberately or record their absence."
+}

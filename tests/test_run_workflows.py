@@ -37,7 +37,16 @@ def _write_cfg(path, flags, project_dir=None):
     for name in rw.WORKFLOW_ORDER:
         lines.append(f"  {name}:")
         lines.append(f"    enabled: {flags[name]}")
-    path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    # Each stanza is closed; only simulation needs settings for the shared validator.
+    text = "\n".join(lines) + "\n"
+    text = text.replace(
+        "  simulate_system:\n",
+        f"  simulate_system:\n    config_path: {path.stem}-simulation.yml\n",
+    )
+    path.write_text(text, encoding="utf-8")
+    (path.parent / f"{path.stem}-simulation.yml").write_text(
+        "operation: simulate-and-metrics\nexperiment_name: test\n", encoding="utf-8"
+    )
 
 
 @pytest.fixture()
@@ -52,6 +61,18 @@ def capture_runs(monkeypatch):
             return FakeResult(0, stdout=stdout)
         idx = len(calls)
         calls.append(cmd)
+        if (
+            "-s" in cmd
+            and Path(cmd[cmd.index("-s") + 1]).name == "build_model.smk"
+            and exits.get(idx, 0) == 0
+        ):
+            import yaml
+
+            cfg = yaml.safe_load(Path(cmd[cmd.index("--configfile") + 1]).read_text())
+            for leaf in rw.LEAVES:
+                artifact = Path(cfg["project"]["project_dir"]) / leaf
+                artifact.parent.mkdir(parents=True, exist_ok=True)
+                artifact.touch()
         return FakeResult(exits.get(idx, 0))
 
     monkeypatch.setattr(rw.subprocess, "run", fake_run)
@@ -63,7 +84,7 @@ def _snakefiles_invoked(calls):
     out = []
     for cmd in calls:
         i = cmd.index("-s")
-        out.append(cmd[i + 1])
+        out.append(Path(cmd[i + 1]).name)
     return out
 
 
@@ -90,9 +111,10 @@ def test_all_true_invokes_four_in_fixed_order(tmp_path, capture_runs):
     assert rc == 0
     assert _snakefiles_invoked(calls) == [
         "analyze_climate.smk",
+        "generate_scenarios.smk",
         "build_model.smk",
+        "simulate_system.smk",
         "analyze_projections.smk",
-        "run_stress_test.smk",
     ]
 
 
@@ -104,10 +126,10 @@ def test_keep_going_on_projections_only(tmp_path, capture_runs):
     cfg = tmp_path / "c.yml"
     _write_cfg(cfg, {n: "true" for n in rw.WORKFLOW_ORDER})
     rw.run(str(cfg), cores=3, extra=[])
-    by_sf = {cmd[cmd.index("-s") + 1]: cmd for cmd in calls}
+    by_sf = {Path(cmd[cmd.index("-s") + 1]).name: cmd for cmd in calls}
     assert "--keep-going" in by_sf["analyze_projections.smk"]
     assert "--keep-going" not in by_sf["build_model.smk"]
-    assert "--keep-going" not in by_sf["run_stress_test.smk"]
+    assert "--keep-going" not in by_sf["simulate_system.smk"]
     assert "--keep-going" not in by_sf["analyze_climate.smk"]
 
 
@@ -122,14 +144,15 @@ def test_missing_enabled_key_errors(tmp_path):
         # error, so an incomplete config would otherwise fail on whichever
         # section came first rather than on the one this test is about.
         "  analyze_climate:\n    enabled: true\n"
+        "  generate_scenarios:\n    enabled: true\n"
         "  build_model:\n    enabled: true\n"
         "  analyze_projections:\n    enabled: true\n"
-        "  run_stress_test:\n    other: 1\n",  # no enabled:
+        "  simulate_system:\n    other: 1\n",  # no enabled:
         encoding="utf-8",
     )
     with pytest.raises(rw.ConfigError) as exc:
         rw.read_enabled_flags(str(cfg))
-    assert "run_stress_test.enabled" in str(exc.value)
+    assert "simulate_system.enabled" in str(exc.value)
     # And the CLI surfaces it as a nonzero exit.
     rc = rw.main(["--config", str(cfg)])
     assert rc != 0
@@ -192,7 +215,7 @@ def test_cores_and_extra_forwarded_to_every_invocation(tmp_path, capture_runs):
     cfg = tmp_path / "c.yml"
     _write_cfg(cfg, {n: "true" for n in rw.WORKFLOW_ORDER})
     rw.run(str(cfg), cores=8, extra=["--dry-run", "--unlock"])
-    assert len(calls) == 4
+    assert len(calls) == 5
     for cmd in calls:
         assert cmd[cmd.index("-c") + 1] == "8"
         assert "--dry-run" in cmd
@@ -232,8 +255,9 @@ def test_enabled_false_skips_at_subprocess_boundary(tmp_path, capture_runs):
     assert "analyze_projections.smk" not in invoked
     assert invoked == [
         "analyze_climate.smk",
+        "generate_scenarios.smk",
         "build_model.smk",
-        "run_stress_test.smk",
+        "simulate_system.smk",
     ]
 
 
@@ -243,7 +267,7 @@ def test_all_enabled_inverse_all_invoked(tmp_path, capture_runs):
     cfg = tmp_path / "c.yml"
     _write_cfg(cfg, {n: "true" for n in rw.WORKFLOW_ORDER})
     rw.run(str(cfg), cores=3, extra=[])
-    assert len(_snakefiles_invoked(calls)) == 4
+    assert len(_snakefiles_invoked(calls)) == 5
 
 
 def test_success_manifest_is_initialized_before_first_workflow_and_finalized(
@@ -262,6 +286,8 @@ def test_success_manifest_is_initialized_before_first_workflow_and_finalized(
         running = _read_only_manifest(project_dir)
         assert running["status"] == "running"
         assert running["ended_at_utc"] is None
+        if "build_model.smk" in cmd:
+            _staged(project_dir, rw.LEAVES)
         return FakeResult(0)
 
     monkeypatch.setattr(rw.subprocess, "run", fake_run)
@@ -331,7 +357,7 @@ def test_failure_manifest_records_stop_boundary(tmp_path, capture_runs):
     assert workflows["analyze_climate"]["exit_code"] == 9
     assert workflows["build_model"]["status"] == "not_run"
     assert workflows["analyze_projections"]["status"] == "not_run"
-    assert workflows["run_stress_test"]["status"] == "not_run"
+    assert workflows["simulate_system"]["status"] == "not_run"
 
 
 def test_subprocess_exception_finalizes_failure_manifest(tmp_path, monkeypatch):
@@ -480,13 +506,13 @@ def test_opening_block_diagrams_the_sequence_and_marks_the_disabled(
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
-    assert "sequence -- 3 of 4 workflows enabled, invoked in this order" in out
-    assert "[1/3]  wf0 analyze_climate" in out
-    assert "[2/3]  wf1 build_model" in out
-    assert "[3/3]  wf3 run_stress_test" in out
+    assert "sequence -- 4 of 5 workflows enabled, invoked in this order" in out
+    assert "[1/4]  wf0 analyze_climate" in out
+    assert "[3/4]  wf1 build_model" in out
+    assert "[4/4]  wf4 simulate_system" in out
     # Present, marked, and NOT given a position.
     assert "wf2 analyze_projections  (disabled, not invoked)" in out
-    assert "[3/3]  wf2" not in out
+    assert "[4/4]  wf2" not in out
 
 
 def test_the_sequence_is_drawn_as_a_chain_of_boxes(tmp_path, capture_runs, capsys):
@@ -503,7 +529,7 @@ def test_the_sequence_is_drawn_as_a_chain_of_boxes(tmp_path, capture_runs, capsy
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
     lines = [line.strip() for line in out.splitlines()]
 
-    enabled = lines.index(next(ln for ln in lines if "[1/3]  wf0" in ln))
+    enabled = lines.index(next(ln for ln in lines if "[1/4]  wf0" in ln))
     assert lines[enabled].startswith("|") and lines[enabled].endswith("|")
     assert set(lines[enabled - 1]) == {"+", "-"}  # a solid edge above it
 
@@ -676,8 +702,8 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
-    assert re.search(r"\[1/3]  wf0 analyze_climate  --  starting \d\d:\d\d:\d\d", out)
-    assert re.search(r"\[3/3]  wf3 run_stress_test  --  starting \d\d:\d\d:\d\d", out)
+    assert re.search(r"\[1/4]  wf0 analyze_climate  --  starting \d\d:\d\d:\d\d", out)
+    assert re.search(r"\[4/4]  wf4 simulate_system  --  starting \d\d:\d\d:\d\d", out)
     assert "  --  done in " not in out
     # Flush left, title and command both. A band has no group label and no rows,
     # so an indent would only make the line a reader scans for start one column
@@ -686,7 +712,7 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     title_at = next(
         i for i, line in enumerate(lines) if "wf0 analyze_climate  --" in line
     )
-    assert lines[title_at].startswith("[1/3]")
+    assert lines[title_at].startswith("[1/4]")
     assert lines[title_at - 1] == rw._RULE  # the rule it hangs from
     assert lines[title_at + 1].startswith("snakemake ")
     # A disabled workflow gets NO band -- the sequence diagram above already
@@ -736,8 +762,8 @@ def test_the_console_is_not_muted_by_the_rule_log_level(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert "  run_workflows" in out.splitlines()
-    assert "  sequence -- 4 of 4 workflows enabled, invoked in this order" in out
-    assert re.search(r"\[1/4]  wf0 analyze_climate  --  starting \d\d:\d\d:\d\d", out)
+    assert "  sequence -- 5 of 5 workflows enabled, invoked in this order" in out
+    assert re.search(r"\[1/5]  wf0 analyze_climate  --  starting \d\d:\d\d:\d\d", out)
     assert "run_workflows done in" in out
 
 
@@ -757,7 +783,7 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
     # "ran" naming a workflow that did not is worse than not printing it.
     ran = out.split("\n  ran\n")[1].split("\n\n")[0].splitlines()
-    assert [line.split()[0] for line in ran] == ["wf0", "wf1", "wf3"]
+    assert [line.split()[0] for line in ran] == ["wf0", "wf3", "wf1", "wf4"]
 
 
 def test_failure_console_carries_the_verdict_and_what_did_not_run(
@@ -770,10 +796,12 @@ def test_failure_console_carries_the_verdict_and_what_did_not_run(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert code == 4
-    assert "[2/4]  wf1 build_model  --  FAILED (exit 4) after 0:00:0" in out
+    assert "[2/5]  wf3 generate_scenarios  --  FAILED (exit 4) after 0:00:0" in out
     assert "stopping; later workflows not invoked" in out
     assert "run_workflows FAILED in 0:00:0" in out
-    assert "not run: wf2 analyze_projections, wf3 run_stress_test" in out
+    assert (
+        "not run: wf1 build_model, wf4 simulate_system, wf2 analyze_projections" in out
+    )
     assert "the failing workflow's own output is printed above" in out
 
 
@@ -799,7 +827,7 @@ def test_a_launch_error_still_closes_with_a_report(tmp_path, monkeypatch, capsys
     out = capsys.readouterr().out
     assert "run_workflows FAILED in" in out
     assert "wf0 analyze_climate  FAILED (OSError)" in out
-    assert "not run: wf1 build_model" in out
+    assert "not run: wf3 generate_scenarios, wf1 build_model" in out
     # Two claims that are FALSE when no child ever launched.
     assert "/logs/" not in out
     assert "printed above" not in out
@@ -812,7 +840,7 @@ def test_a_no_op_invocation_says_so_rather_than_printing_empty_groups(
     _, out, _ = _run_and_capture(
         tmp_path, capsys, {n: "false" for n in rw.WORKFLOW_ORDER}
     )
-    assert "nothing to invoke -- 0 of 4 workflows are enabled here" in out
+    assert "nothing to invoke -- 0 of 5 workflows are enabled here" in out
     assert "nothing ran -- every workflow was disabled" in out
     assert "  ran" not in out.splitlines()
     assert "  sequence" not in out
@@ -828,7 +856,7 @@ def test_the_whole_console_is_cp1252_encodable(tmp_path, capture_runs, capsys):
     # One disabled workflow, so the sequence diagram renders a disabled row --
     # which is where the box-drawing characters would appear. WHICH one is
     # disabled is immaterial here; it is `analyze_projections` rather than
-    # `build_model` only because disabling the latter while `run_stress_test`
+    # `build_model` only because disabling the latter while `simulate_system`
     # is enabled now trips the contract (i) preflight, on a scratch project
     # that has no wf1 leaves.
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
@@ -841,7 +869,7 @@ def test_the_whole_console_is_cp1252_encodable(tmp_path, capture_runs, capsys):
 def test_the_console_narration_never_leaks_a_secret(tmp_path, capture_runs, capsys):
     """Every new line that can carry `extra` goes through `sanitize_argv`."""
     # Exactly one enabled workflow, so `extra` reaches exactly one invocation.
-    # `build_model` rather than `run_stress_test`, for the contract (i) reason
+    # `build_model` rather than `simulate_system`, for the contract (i) reason
     # given on the cp1252 test above -- the choice is immaterial to redaction.
     flags = {n: "false" for n in rw.WORKFLOW_ORDER}
     flags["build_model"] = "true"
@@ -884,10 +912,11 @@ def test_wf3_without_wf1_is_refused_before_anything_is_invoked(tmp_path, capture
     with pytest.raises(rw.PrerequisiteError) as excinfo:
         rw.run(str(cfg), cores=3, extra=[])
 
-    assert calls == [], "the preflight must run BEFORE the first invocation"
-    assert not _manifests(project_dir), (
-        "a run that cannot start must not mint an invocation record"
-    )
+    assert _snakefiles_invoked(calls) == [
+        "analyze_climate.smk",
+        "generate_scenarios.smk",
+    ]
+    assert _read_only_manifest(project_dir)["status"] == "failed"
     message = str(excinfo.value)
     for leaf in rw.LEAVES:
         assert leaf in message, f"the message hides the missing leaf {leaf}"
@@ -915,7 +944,7 @@ def test_the_preflight_names_only_what_is_actually_absent(tmp_path, capture_runs
     assert rw.LEAVES[0] not in message, "a present leaf is reported as missing"
     for leaf in rw.LEAVES[1:]:
         assert leaf in message
-    assert "2 of 3" in message
+    assert "1 of 2" in message
 
 
 def test_a_complete_wf1_tree_lets_wf3_run_with_build_model_disabled(
@@ -936,15 +965,15 @@ def test_a_complete_wf1_tree_lets_wf3_run_with_build_model_disabled(
     _staged(project_dir, rw.LEAVES)
 
     assert rw.run(str(cfg), cores=3, extra=[]) == 0
-    assert "run_stress_test.smk" in _snakefiles_invoked(calls)
+    assert "simulate_system.smk" in _snakefiles_invoked(calls)
 
 
 @pytest.mark.parametrize(
-    ("build_model", "run_stress_test"),
+    ("build_model", "simulate_system"),
     [("true", "true"), ("true", "false"), ("false", "false")],
 )
 def test_the_preflight_is_silent_on_every_other_flag_pair(
-    tmp_path, capture_runs, build_model, run_stress_test
+    tmp_path, capture_runs, build_model, simulate_system
 ):
     """Only wf3-enabled-without-wf1 is checked; the run produces or ignores.
 
@@ -955,7 +984,7 @@ def test_the_preflight_is_silent_on_every_other_flag_pair(
     cfg = tmp_path / "c.yml"
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["build_model"] = build_model
-    flags["run_stress_test"] = run_stress_test
+    flags["simulate_system"] = simulate_system
     _write_cfg(cfg, flags, project_dir=str(project_dir))
 
     assert rw.run(str(cfg), cores=3, extra=[]) == 0

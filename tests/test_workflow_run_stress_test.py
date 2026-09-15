@@ -1,38 +1,10 @@
-"""End-to-end smoke test for the climate-experiment workflow (workflow 3).
+"""Opt-in real generation and simulation smoke through the R12 entry points."""
 
-Like the workflow 1 and 2 smoke tests, this actually runs ``snakemake all`` to
-completion — here on ``run_stress_test.smk``: it extracts historical
-climate for the basin, generates stochastic weather realizations (weathergenr,
-R), perturbs them across the stress-test grid, runs Wflow.jl for every
-realization x stress-test combination, and reduces the runs to the Qstats/basin
-indicator tables. On the test config that is 2 realizations x 6 stress-test
-cells = 12 Wflow runs, so expect a long wall-clock time (tens of minutes).
-
-It needs:
-  * the local Deltares data mirror referenced by ``config/deltares_data.yml``
-  * workflow 1 artifacts under ``test_case/test/hydrology_model`` (run the
-    model-creation workflow or its smoke test first)
-  * juliaup-managed Julia 1.11.7 with the project instantiated
-  * the weathergenr R package in the pixi R library (``pixi run install``)
-
-Run it with::
-
-    pixi run pytest tests/test_workflow_run_stress_test.py --run-integration
-
-Skipped by default, and self-skips if any prerequisite is absent. Config is
-read lazily inside the test (never at import time) so a config-schema change
-cannot break suite collection.
-
-Note: the known ``CyclicGraphException`` xfail in ``test_cli.py`` does not
-apply here — it only triggers on the ``tests/`` config whose project_dir has
-no workflow 1 outputs. On this config the DAG resolves (verified: 56 jobs
-under ``--forceall``). Tracked in ``dev/tasks/`` under R3.
-"""
-
-import os
 import shutil
 import subprocess
+import sys
 from os.path import dirname, exists, getsize, join, realpath
+from pathlib import Path
 
 import pytest
 import yaml
@@ -40,14 +12,15 @@ import yaml
 TESTDIR = dirname(realpath(__file__))
 SNAKEDIR = join(TESTDIR, "..")
 
-CONFIG = "test_case/project_config_baseline.yml"
+CONFIG = "test_case/project_config_rapid.yml"
 
 pytestmark = pytest.mark.integration
 
 
 def _load_cfg():
-    with open(join(SNAKEDIR, CONFIG)) as f:
-        return yaml.safe_load(f)
+    from blueearth_cst.shared.config_composition import load_composed_config
+
+    return load_composed_config(join(SNAKEDIR, CONFIG))
 
 
 def _catalog_root(cfg):
@@ -74,20 +47,26 @@ def _weathergenr_available():
     return result.returncode == 0
 
 
-def test_run_stress_test_end_to_end():
+def test_generation_and_simulation_end_to_end():
     """Force a full rebuild of workflow 3 and assert the indicator tables are produced."""
     cfg = _load_cfg()
     # R01 sectioned schema: project_dir under project, experiment_name under
-    # workflows.run_stress_test.
+    # workflows.simulate_system.
     project_dir = cfg["project"]["project_dir"]
-    experiment = cfg["workflows"]["run_stress_test"]["experiment_name"]
+    experiment = cfg["workflows"]["simulate_system"]["experiment_name"]
 
     root = _catalog_root(cfg)
     if root is None or not exists(root):
         pytest.skip(f"data mirror not found (catalog root: {root})")
 
     region = join(
-        SNAKEDIR, project_dir, "hydrology_model", "staticgeoms", "region.geojson"
+        SNAKEDIR,
+        project_dir,
+        "models",
+        "hydrology",
+        "wflow",
+        "staticgeoms",
+        "region.geojson",
     )
     if not exists(region):
         pytest.skip(f"missing {region}; run the model-creation workflow first")
@@ -98,14 +77,33 @@ def test_run_stress_test_end_to_end():
     if shutil.which("Rscript") is None or not _weathergenr_available():
         pytest.skip("weathergenr not loadable via Rscript (run `pixi run install`)")
 
-    os.chdir(SNAKEDIR)
-    cmd = f"snakemake all -c 1 -s run_stress_test.smk --configfile {CONFIG} --forceall"
-    result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-
-    assert result.returncode == 0, (
-        f"snakemake exited {result.returncode}\n"
-        f"--- stderr (tail) ---\n{(result.stderr or '')[-4000:]}"
-    )
+    commands = [
+        [
+            sys.executable,
+            "-m",
+            "snakemake",
+            "all",
+            "-c",
+            "1",
+            "-s",
+            "generate_scenarios.smk",
+            "--configfile",
+            CONFIG,
+        ],
+        [
+            sys.executable,
+            "scripts/simulate_system.py",
+            "--config",
+            CONFIG,
+            "--target",
+            "all",
+            "--cores",
+            "1",
+        ],
+    ]
+    for command in commands:
+        result = subprocess.run(command, cwd=SNAKEDIR, capture_output=True, text=True)
+        assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
     # One LONG table per output variable since R11 CR-2, and the seed config
     # declares `wflow_outvars: ["river discharge"]` -- so q_indicators.csv is
     # the whole expected set. `basin_indicators.csv` was asserted here until
@@ -114,7 +112,9 @@ def test_run_stress_test_end_to_end():
     # case is --run-integration-gated and has not been run since. A stale
     # expectation behind an opt-in gate is invisible in exactly the way a stale
     # path behind an exists() guard is.
-    for name in ("q_indicators.csv",):
-        out = join(SNAKEDIR, project_dir, "experiments", experiment, "results", name)
-        assert exists(out), f"expected output not created: {out}"
-        assert getsize(out) > 0, f"output is empty: {out}"
+    sets = Path(
+        SNAKEDIR, project_dir, "experiments", experiment, "results", "metric_sets"
+    )
+    tables = list(sets.glob("*/q_indicators.csv"))
+    assert tables, f"no published metric table under {sets}"
+    assert all(getsize(table) > 0 for table in tables)

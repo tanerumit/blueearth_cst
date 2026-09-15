@@ -1,0 +1,56 @@
+[
+  {
+    "filename": "colorama-0.4.6-py2.py3-none-any.whl",
+    "bytes": 25335,
+    "sha256": "4f1d9991f5acc0ca119f9d443620b77f9d6b33703e51011c16baf57afb285fc6",
+    "index": "https://pypi.org/simple"
+  },
+  {
+    "filename": "iniconfig-2.3.0-py3-none-any.whl",
+    "bytes": 7484,
+    "sha256": "f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12",
+    "index": "https://pypi.org/simple"
+  },
+  {
+    "filename": "lmoments3-1.0.8-py3-none-any.whl",
+    "bytes": 48163,
+    "sha256": "984d1f1b0c3feefd57afc7a270931c1d28e4face2df1c2293559faf47681ef5e",
+    "index": "https://pypi.org/simple"
+  },
+  {
+    "filename": "numpy-2.4.6-cp312-cp312-win_amd64.whl",
+    "bytes": 12321687,
+    "sha256": "d8e8286dd7cea7895157318d1b91cdacac64c479f3cbc8dce548331728484751",
+    "index": "https://pypi.org/simple"
+  },
+  {
+    "filename": "packaging-26.3-py3-none-any.whl",
+    "bytes": 129956,
+    "sha256": "d7193f7c8e4e93f444fde0262bf90af30e16fa0ad0ad44cb553c87339b23cd1c",
+    "index": "https://pypi.org/simple"
+  },
+  {
+    "filename": "pluggy-1.6.0-py3-none-any.whl",
+    "bytes": 20538,
+    "sha256": "e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746",
+    "index": "https://pypi.org/simple"
+  },
+  {
+    "filename": "pygments-2.21.0-py3-none-any.whl",
+    "bytes": 1250147,
+    "sha256": "2363c69b61c4a97c838da3b130dcd6468f4848992b21a82f2a63ec34377137d9",
+    "index": "https://pypi.org/simple"
+  },
+  {
+    "filename": "pytest-9.0.3-py3-none-any.whl",
+    "bytes": 375249,
+    "sha256": "2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9",
+    "index": "https://pypi.org/simple"
+  },
+  {
+    "filename": "scipy-1.18.0-cp312-cp312-win_amd64.whl",
+    "bytes": 36597428,
+    "sha256": "71ccc8faa2dd16ac310233203474a8b5cb67f10dedd54a3116d34943f4b19132",
+    "index": "https://pypi.org/simple"
+  }
+]

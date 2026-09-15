@@ -1,25 +1,9 @@
-"""The shared cross-workflow leaf set is COMPLETE and MINIMAL (R9 P5 F3).
+"""Consumer-local leaf contract after the R12 workflow extraction.
 
-`dev/scripts/cross_workflow_inputs.LEAVES` replaced three hand-kept copies of
-the same staging logic. That alone does not stop it going stale — it makes it go
-stale in one place instead of three. This module is what stops it, by checking
-the list against the real DAG rather than against another list:
-
-* **complete** — staging exactly `LEAVES` lets both downstream workflows build
-  their DAG. A rule that starts declaring a new cross-workflow input turns this
-  red on the next run. That is precisely the escape R9 P4 shipped: rule 3.01c
-  `write_model_reference` added two model leaves, one of the three stagers was
-  not updated, and the failure surfaced later as a red assertion that read like
-  a defect in the guard it was testing.
-* **minimal** — dropping any single leaf breaks WF3's DAG, and the error names
-  the file that was dropped. This is what keeps vestigial entries out. Both test
-  fixtures still stage a region that nothing has read since ADR 0003; had it
-  been folded into `LEAVES` rather than passed as an explicit extra, this test
-  would fail and say so.
-
-Deliberately NOT parametrized over a second list of expected paths: a test that
-compared `LEAVES` to a copy of `LEAVES` would pass forever and prove nothing.
-Snakemake is the authority here, which is why every assertion below runs it.
+WF2 and WF3 build real DAGs without WF1 artifacts. WF4's parsed model-reference
+rule declares precisely the shared model leaf set, and no WF4 producer can
+rebuild those inputs. The collection boundary is substituted by the shared
+fixture; retained collection content is covered by its typed-reader tests.
 """
 
 from __future__ import annotations
@@ -46,7 +30,7 @@ from tests.conftest import write_config  # noqa: E402
 #: The workflows that consume wf1 artifacts. WF1 produces them, so it is not here.
 DOWNSTREAM = {
     "wf2": "analyze_projections.smk",
-    "wf3": "run_stress_test.smk",
+    "wf3": "generate_scenarios.smk",
 }
 
 #: Every leaf currently belongs to WF3 (rules 3.00b and 3.01c); WF2 has consumed
@@ -160,23 +144,18 @@ def test_wf2_needs_no_wf1_artifact(tmp_path):
 
 
 @pytest.mark.parametrize("dropped", cwi.LEAVES)
-def test_each_leaf_is_required(tmp_path, dropped):
-    """Drop one leaf and WF3's DAG fails, naming the file that went.
+def test_each_leaf_is_required(tmp_path, monkeypatch, dropped):
+    """Every static model leaf is required by WF4 and has no local producer."""
+    from tests.simulation_workflow_fixture import parse_simulation_workflow
 
-    Minimality is the half that keeps the list honest. A leaf nothing needs
-    would pass the completeness test above forever.
-    """
-    kept = tuple(leaf for leaf in cwi.LEAVES if leaf != dropped)
-    config_path = _staged_config(tmp_path, kept)
-    proc = _dry_run(DOWNSTREAM[MINIMALITY_WORKFLOW], config_path)
-
-    assert proc.returncode != 0, (
-        f"{dropped} is in LEAVES but the DAG builds without it. Either a rule "
-        f"stopped declaring it — drop it from LEAVES — or it is a deliberate "
-        f"non-leaf and belongs beside EXTRA_REGION instead."
-    )
-    combined = proc.stdout + proc.stderr
-    assert Path(dropped).name in combined, (
-        f"{MINIMALITY_WORKFLOW} failed without {dropped}, but its error does not "
-        f"name that file, so the failure may be unrelated.\n{combined[-2000:]}"
-    )
+    workflow = parse_simulation_workflow(tmp_path, monkeypatch)
+    project = tmp_path / "project"
+    declared = {
+        Path(str(path)).relative_to(project).as_posix()
+        for path in workflow.get_rule("write_model_reference").input
+    }
+    assert dropped in declared
+    assert declared == set(cwi.LEAVES)
+    # They are external leaves: no successor rule may rebuild the model.
+    produced = {str(path) for rule in workflow.rules for path in rule.output}
+    assert not {str(project / leaf) for leaf in cwi.LEAVES} & produced

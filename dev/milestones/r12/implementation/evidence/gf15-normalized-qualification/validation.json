@@ -1,0 +1,65 @@
+{
+  "status": "completed_scientific_qualification_failed",
+  "signed_role": "model-validator",
+  "date": "2026-09-12",
+  "scope": "Diagnostic candidate qualification only; production and all original criteria unchanged",
+  "preflight_exit_code": 0,
+  "full_execution_exit_code": 0,
+  "independent_audit_exit_code": 0,
+  "scoped_lint_passed": true,
+  "scoped_format_passed": true,
+  "repository_lint_passed": true,
+  "repository_format_passed": true,
+  "repository_format_files": 340,
+  "fits": 132000,
+  "quantiles": 144000,
+  "pairs": 120000,
+  "matrix_cells": 144,
+  "exact_embedded_B_replays": 186,
+  "scientific_qualification_passed": false,
+  "prior_evidence_and_frozen_sources_unchanged": true,
+  "source_binding": "2f2108abc8346765be66d88e0ea6cb45e6b4d61ab0101e9116c11dc9d97ba55a",
+  "logs": [
+    {
+      "path": "preflight.log",
+      "bytes": 263,
+      "sha256": "e286c82c306701dcadf630ccd7fa37e2b859dddc4b500f2dd56e0c9140698358"
+    },
+    {
+      "path": "execution.log",
+      "bytes": 91546,
+      "sha256": "5f1ca216beee39c419e49c280ef031837a6438b22460d8dfb49dc09a57625671"
+    },
+    {
+      "path": "independent-review.log",
+      "bytes": 1116,
+      "sha256": "7d8c07724e822c4d8d4ae2e186d6fc6ad3155591fed9e02cfc5c4f1291ad1790"
+    },
+    {
+      "path": "lint.log",
+      "bytes": 229,
+      "sha256": "ec61205af4e37ff003ae8d84fddc9b8539713eb64c7760dd8ab439cafc3f3fe6"
+    },
+    {
+      "path": "format.log",
+      "bytes": 235,
+      "sha256": "0bfc900f62a8a1ad10d978771f4c68c93e82e0ad372e89e6705476c07010bd4d"
+    }
+  ],
+  "coordinator_repository_logs": [
+    {
+      "path": ".tmp/scratchpad/2026-09-11_0010/gf15-normalized-final-lint.log",
+      "sha256": "390d1091c26d8060c158086af5d0f2093a8f7270b6b04a43a6472e3ad8888e3d"
+    },
+    {
+      "path": ".tmp/scratchpad/2026-09-11_0010/gf15-normalized-final-format.log",
+      "sha256": "ac5691b63cf384feb88e01b2bba6c6baf6c0d8540193d5b0f359d263a8288416"
+    }
+  ],
+  "scientific_review": "scientific-handoff.md",
+  "independent_review": "independent-review.json",
+  "readonly_diagnostics": "scientific-diagnostics.json",
+  "diagnostic_derivation": "Read-only scan of every retained fit and pair: status-stratified nonfinite log-density counts, extrema and all failed numeric/changed-validity pairs; no additional fits or refusal criteria",
+  "excluded_checks": "No workflow, production full-suite or baseline rerun: production unchanged; evidence arithmetic independently audited",
+  "remaining_gate": "Owner method ruling under accepted design section7.5; GF15 adequacy and milestone seal pending"
+}

@@ -1,0 +1,33 @@
+{
+  "status": "stage_2_packaging_verified_pending_stage_3",
+  "completion_sha256": "e0586b299381114a9ff20e22bdf1dd9c1a8d670ed90fe210a4e4ae004ee34845",
+  "core_artifacts_rehashed": 731,
+  "protected_files_rehashed": 177,
+  "readiness_artifacts_unchanged": 52,
+  "counts": {
+    "fits": 132000,
+    "quantiles": 144000,
+    "individual_cells_per_estimator": 144,
+    "translation_pairs": 120000,
+    "pairwise_rows": 432000
+  },
+  "checks": [
+    {
+      "command": ".pixi/envs/default/python.exe -B -m ruff check .",
+      "result": "passed",
+      "log": "integration-logs/parent-lint.log"
+    },
+    {
+      "command": ".pixi/envs/default/python.exe -B -m ruff format --check .",
+      "result": "passed",
+      "log": "integration-logs/parent-format.log"
+    }
+  ],
+  "task_command_substitution": "Pixi CLI unavailable; existing Ruff task commands run with shared environment Python",
+  "skipped": [
+    "Stage 3 independent scientific assessment",
+    "full repository suite",
+    "baseline",
+    "production workflows"
+  ]
+}

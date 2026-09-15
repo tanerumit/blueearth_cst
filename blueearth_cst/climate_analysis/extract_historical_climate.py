@@ -2,7 +2,7 @@
 
 The SINGLE producer of the shared ``data/climate/historical/<key>/`` store.
 Declared identically as ``extract_historical_climate`` in ``build_model.smk``
-(1.04) and ``run_stress_test.smk`` (3.08), and generated per candidate source
+(1.04) and ``generate_scenarios.smk`` (3.08), and generated per candidate source
 as ``extract_historical_climate_<source>`` by ``analyze_climate.smk`` (0.04) —
 all from ``snake_utils.climate_store_rule`` (R07 B1). The extraction extent stays
 **model-free**: it comes from ``data/spatial/geoms/region.geojson``, the one

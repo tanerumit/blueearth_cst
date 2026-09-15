@@ -86,9 +86,12 @@ def _check(manifest, tmp_path):
     return args
 
 
-def test_check_warns_when_another_branch_recorded_the_manifest(tmp_path, capsys):
+def test_check_warns_when_another_branch_recorded_the_manifest(
+    tmp_path, capsys, monkeypatch
+):
     """THE R7-3 SCENARIO, simulated: the manifest was written from a branch
     that is not the one being checked from."""
+    monkeypatch.setattr(cb, "TARGETS", [])
     m = _manifest(
         tmp_path,
         {
@@ -105,7 +108,8 @@ def test_check_warns_when_another_branch_recorded_the_manifest(tmp_path, capsys)
     assert rc == 0, "provenance is advisory -- it must not change the verdict"
 
 
-def test_same_branch_different_commit_is_a_softer_note(tmp_path, capsys):
+def test_same_branch_different_commit_is_a_softer_note(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(cb, "TARGETS", [])
     cur = cb.git_provenance()
     m = _manifest(
         tmp_path,
@@ -121,7 +125,10 @@ def test_same_branch_different_commit_is_a_softer_note(tmp_path, capsys):
     assert "SHARED BY EVERY BRANCH" not in out
 
 
-def test_a_pre_stamp_manifest_says_so_rather_than_pretending(tmp_path, capsys):
+def test_a_pre_stamp_manifest_says_so_rather_than_pretending(
+    tmp_path, capsys, monkeypatch
+):
+    monkeypatch.setattr(cb, "TARGETS", [])
     m = _manifest(tmp_path, None)
     rc = cb.cmd_check(_check(m, tmp_path))
     out = capsys.readouterr().out
@@ -129,7 +136,8 @@ def test_a_pre_stamp_manifest_says_so_rather_than_pretending(tmp_path, capsys):
     assert rc == 0
 
 
-def test_matching_provenance_is_quiet(tmp_path, capsys):
+def test_matching_provenance_is_quiet(tmp_path, capsys, monkeypatch):
+    monkeypatch.setattr(cb, "TARGETS", [])
     m = _manifest(tmp_path, cb.git_provenance())
     cb.cmd_check(_check(m, tmp_path))
     out = capsys.readouterr().out

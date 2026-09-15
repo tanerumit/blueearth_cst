@@ -42,7 +42,7 @@ SNAKEDIR = TESTDIR.parent
 CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 CATALOG_FN = TESTDIR / "data" / "tests_data_catalog.yml"
 
-SNAKEFILES = ("build_model.smk", "run_stress_test.smk")
+SNAKEFILES = ("build_model.smk", "generate_scenarios.smk")
 
 _JOB_COUNT_RE = re.compile(r"^extract_historical_climate\s+(\d+)\s*$", re.MULTILINE)
 

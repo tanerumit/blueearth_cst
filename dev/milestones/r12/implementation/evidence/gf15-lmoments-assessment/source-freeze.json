@@ -1,0 +1,6 @@
+{
+  "utc": "2026-09-13T04:44:16.104007+00:00",
+  "source": "audit-retained.py",
+  "sha256": "0d415f8a66d44f6bdaa66c24be83921fa5180e944e2d5d5b9669034cc8413252",
+  "scope": "complete retained-data audit; no estimator calls; rapid/numerical affected"
+}

@@ -1,0 +1,5465 @@
+{
+  "bundle_unit_ids": {
+    "": "15",
+    "1": "16",
+    "2": "17",
+    "3": "18",
+    "4": "19",
+    "5": "20",
+    "6": "21"
+  },
+  "expected_result_keys": [
+    [
+      "gwr_annual_total",
+      "101",
+      "01"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "02"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "03"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "04"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "05"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "06"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "07"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "08"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "09"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "10"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "11"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "12"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "13"
+    ],
+    [
+      "gwr_annual_total",
+      "101",
+      "14"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "01"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "02"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "03"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "04"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "05"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "06"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "07"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "08"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "09"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "10"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "11"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "12"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "13"
+    ],
+    [
+      "gwr_annual_total",
+      "102",
+      "14"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "01"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "02"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "03"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "04"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "05"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "06"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "07"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "08"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "09"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "10"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "11"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "12"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "13"
+    ],
+    [
+      "gwr_annual_total",
+      "103",
+      "14"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "01"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "02"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "03"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "04"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "05"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "06"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "07"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "08"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "09"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "10"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "11"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "12"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "13"
+    ],
+    [
+      "gwr_annual_total",
+      "104",
+      "14"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "01"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "02"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "03"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "04"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "05"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "06"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "07"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "08"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "09"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "10"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "11"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "12"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "13"
+    ],
+    [
+      "q_annual_mean",
+      "101",
+      "14"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "01"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "02"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "03"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "04"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "05"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "06"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "07"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "08"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "09"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "10"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "11"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "12"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "13"
+    ],
+    [
+      "q_annual_mean",
+      "1010",
+      "14"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "01"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "02"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "03"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "04"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "05"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "06"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "07"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "08"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "09"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "10"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "11"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "12"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "13"
+    ],
+    [
+      "q_annual_mean",
+      "1020",
+      "14"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "01"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "02"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "03"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "04"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "05"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "06"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "07"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "08"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "09"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "10"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "11"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "12"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "13"
+    ],
+    [
+      "q_annual_mean",
+      "1030",
+      "14"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "01"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "02"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "03"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "04"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "05"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "06"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "07"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "08"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "09"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "10"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "11"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "12"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "13"
+    ],
+    [
+      "q_annual_mean",
+      "1040",
+      "14"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "01"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "02"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "03"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "04"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "05"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "06"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "07"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "08"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "09"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "10"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "11"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "12"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "13"
+    ],
+    [
+      "q_baseflow_index",
+      "101",
+      "14"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "01"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "02"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "03"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "04"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "05"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "06"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "07"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "08"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "09"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "10"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "11"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "12"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "13"
+    ],
+    [
+      "q_baseflow_index",
+      "1010",
+      "14"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "01"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "02"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "03"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "04"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "05"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "06"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "07"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "08"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "09"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "10"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "11"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "12"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "13"
+    ],
+    [
+      "q_baseflow_index",
+      "1020",
+      "14"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "01"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "02"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "03"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "04"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "05"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "06"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "07"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "08"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "09"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "10"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "11"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "12"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "13"
+    ],
+    [
+      "q_baseflow_index",
+      "1030",
+      "14"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "01"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "02"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "03"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "04"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "05"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "06"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "07"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "08"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "09"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "10"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "11"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "12"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "13"
+    ],
+    [
+      "q_baseflow_index",
+      "1040",
+      "14"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "01"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "02"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "03"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "04"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "05"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "06"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "07"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "08"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "09"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "10"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "11"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "12"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "13"
+    ],
+    [
+      "q_driest_month_mean",
+      "101",
+      "14"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "01"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "02"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "03"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "04"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "05"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "06"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "07"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "08"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "09"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "10"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "11"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "12"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "13"
+    ],
+    [
+      "q_driest_month_mean",
+      "1010",
+      "14"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "01"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "02"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "03"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "04"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "05"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "06"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "07"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "08"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "09"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "10"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "11"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "12"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "13"
+    ],
+    [
+      "q_driest_month_mean",
+      "1020",
+      "14"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "01"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "02"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "03"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "04"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "05"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "06"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "07"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "08"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "09"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "10"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "11"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "12"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "13"
+    ],
+    [
+      "q_driest_month_mean",
+      "1030",
+      "14"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "01"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "02"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "03"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "04"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "05"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "06"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "07"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "08"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "09"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "10"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "11"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "12"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "13"
+    ],
+    [
+      "q_driest_month_mean",
+      "1040",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "101",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1010",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1020",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1030",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_max",
+      "1040",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "101",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1010",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1020",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1030",
+      "14"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "01"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "02"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "03"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "04"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "05"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "06"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "07"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "08"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "09"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "10"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "11"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "12"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "13"
+    ],
+    [
+      "q_mean_annual_7day_min",
+      "1040",
+      "14"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "01"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "02"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "03"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "04"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "05"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "06"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "07"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "08"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "09"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "10"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "11"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "12"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "13"
+    ],
+    [
+      "q_mean_annual_max",
+      "101",
+      "14"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "01"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "02"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "03"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "04"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "05"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "06"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "07"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "08"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "09"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "10"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "11"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "12"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "13"
+    ],
+    [
+      "q_mean_annual_max",
+      "1010",
+      "14"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "01"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "02"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "03"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "04"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "05"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "06"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "07"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "08"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "09"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "10"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "11"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "12"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "13"
+    ],
+    [
+      "q_mean_annual_max",
+      "1020",
+      "14"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "01"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "02"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "03"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "04"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "05"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "06"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "07"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "08"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "09"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "10"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "11"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "12"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "13"
+    ],
+    [
+      "q_mean_annual_max",
+      "1030",
+      "14"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "01"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "02"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "03"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "04"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "05"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "06"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "07"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "08"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "09"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "10"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "11"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "12"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "13"
+    ],
+    [
+      "q_mean_annual_max",
+      "1040",
+      "14"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "01"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "02"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "03"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "04"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "05"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "06"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "07"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "08"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "09"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "10"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "11"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "12"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "13"
+    ],
+    [
+      "q_mean_annual_min",
+      "101",
+      "14"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "01"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "02"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "03"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "04"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "05"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "06"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "07"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "08"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "09"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "10"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "11"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "12"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "13"
+    ],
+    [
+      "q_mean_annual_min",
+      "1010",
+      "14"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "01"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "02"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "03"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "04"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "05"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "06"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "07"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "08"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "09"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "10"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "11"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "12"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "13"
+    ],
+    [
+      "q_mean_annual_min",
+      "1020",
+      "14"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "01"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "02"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "03"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "04"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "05"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "06"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "07"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "08"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "09"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "10"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "11"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "12"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "13"
+    ],
+    [
+      "q_mean_annual_min",
+      "1030",
+      "14"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "01"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "02"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "03"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "04"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "05"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "06"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "07"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "08"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "09"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "10"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "11"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "12"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "13"
+    ],
+    [
+      "q_mean_annual_min",
+      "1040",
+      "14"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "01"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "02"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "03"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "04"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "05"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "06"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "07"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "08"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "09"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "10"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "11"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "12"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "13"
+    ],
+    [
+      "q_mean_annual_p95",
+      "101",
+      "14"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "01"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "02"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "03"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "04"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "05"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "06"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "07"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "08"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "09"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "10"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "11"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "12"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "13"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1010",
+      "14"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "01"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "02"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "03"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "04"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "05"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "06"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "07"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "08"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "09"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "10"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "11"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "12"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "13"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1020",
+      "14"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "01"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "02"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "03"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "04"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "05"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "06"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "07"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "08"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "09"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "10"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "11"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "12"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "13"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1030",
+      "14"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "01"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "02"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "03"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "04"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "05"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "06"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "07"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "08"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "09"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "10"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "11"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "12"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "13"
+    ],
+    [
+      "q_mean_annual_p95",
+      "1040",
+      "14"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "101",
+      "15"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "101",
+      "16"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "101",
+      "17"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "101",
+      "18"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "101",
+      "19"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "101",
+      "20"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "101",
+      "21"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1010",
+      "15"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1010",
+      "16"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1010",
+      "17"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1010",
+      "18"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1010",
+      "19"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1010",
+      "20"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1010",
+      "21"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1020",
+      "15"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1020",
+      "16"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1020",
+      "17"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1020",
+      "18"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1020",
+      "19"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1020",
+      "20"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1020",
+      "21"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1030",
+      "15"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1030",
+      "16"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1030",
+      "17"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1030",
+      "18"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1030",
+      "19"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1030",
+      "20"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1030",
+      "21"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1040",
+      "15"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1040",
+      "16"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1040",
+      "17"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1040",
+      "18"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1040",
+      "19"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1040",
+      "20"
+    ],
+    [
+      "q_return_level_10yr_max",
+      "1040",
+      "21"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "101",
+      "15"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "101",
+      "16"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "101",
+      "17"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "101",
+      "18"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "101",
+      "19"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "101",
+      "20"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "101",
+      "21"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1010",
+      "15"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1010",
+      "16"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1010",
+      "17"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1010",
+      "18"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1010",
+      "19"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1010",
+      "20"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1010",
+      "21"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1020",
+      "15"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1020",
+      "16"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1020",
+      "17"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1020",
+      "18"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1020",
+      "19"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1020",
+      "20"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1020",
+      "21"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1030",
+      "15"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1030",
+      "16"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1030",
+      "17"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1030",
+      "18"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1030",
+      "19"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1030",
+      "20"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1030",
+      "21"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1040",
+      "15"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1040",
+      "16"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1040",
+      "17"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1040",
+      "18"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1040",
+      "19"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1040",
+      "20"
+    ],
+    [
+      "q_return_level_2yr_7day_min",
+      "1040",
+      "21"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "01"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "02"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "03"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "04"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "05"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "06"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "07"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "08"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "09"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "10"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "11"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "12"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "13"
+    ],
+    [
+      "q_wettest_month_mean",
+      "101",
+      "14"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "01"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "02"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "03"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "04"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "05"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "06"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "07"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "08"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "09"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "10"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "11"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "12"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "13"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1010",
+      "14"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "01"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "02"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "03"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "04"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "05"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "06"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "07"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "08"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "09"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "10"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "11"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "12"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "13"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1020",
+      "14"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "01"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "02"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "03"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "04"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "05"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "06"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "07"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "08"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "09"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "10"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "11"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "12"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "13"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1030",
+      "14"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "01"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "02"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "03"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "04"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "05"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "06"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "07"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "08"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "09"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "10"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "11"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "12"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "13"
+    ],
+    [
+      "q_wettest_month_mean",
+      "1040",
+      "14"
+    ]
+  ],
+  "groups": {
+    "": [
+      "01",
+      "08"
+    ],
+    "1": [
+      "02",
+      "09"
+    ],
+    "2": [
+      "03",
+      "10"
+    ],
+    "3": [
+      "04",
+      "11"
+    ],
+    "4": [
+      "05",
+      "12"
+    ],
+    "5": [
+      "06",
+      "13"
+    ],
+    "6": [
+      "07",
+      "14"
+    ]
+  },
+  "metric_definition": {
+    "code_inventory": [
+      {
+        "path": "blueearth_cst/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "blueearth_cst/climate_analysis/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "blueearth_cst/climate_analysis/prepare_climate_data_catalog.py",
+        "sha256": "36f0d86e99acf1b465b6061d9acedf6920727478174fd5a5197b63221f3f00f0"
+      },
+      {
+        "path": "blueearth_cst/experiment/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "blueearth_cst/experiment/collection_resolution.py",
+        "sha256": "4152fbdefdce84c3aea628128c661e1355050055f7a6ba88602947338b3d0a35"
+      },
+      {
+        "path": "blueearth_cst/experiment/content_identity.py",
+        "sha256": "92b7b2c641f4df20ab104347eb791bf426d8b38e857bff1156a286789842bd3f"
+      },
+      {
+        "path": "blueearth_cst/experiment/downscale_climate_forcing.py",
+        "sha256": "1aee7b9295f3e50ef10f3a289e8838c40f9e7ade3266e292cecbf3668f35f448"
+      },
+      {
+        "path": "blueearth_cst/experiment/export_wflow_results.py",
+        "sha256": "87a176fbcbfb57c1538ddff7064bee373968e999c5c01373d35c237de6451464"
+      },
+      {
+        "path": "blueearth_cst/experiment/forcing_descriptor.py",
+        "sha256": "8ca145d1c31a0647fccca4b614b5e76fffeb11205105d433d10593a12f72963f"
+      },
+      {
+        "path": "blueearth_cst/experiment/forcing_window.py",
+        "sha256": "d27bb76e80b40ede422506739b2c892cf7aa714b13aaa09242dad7eecdd1975a"
+      },
+      {
+        "path": "blueearth_cst/experiment/gev_lmoments.py",
+        "sha256": "254a9b1d69850d7304ba6ccb04f050b2cea7d930c2b7ad89ed0462579c276847"
+      },
+      {
+        "path": "blueearth_cst/experiment/metric_plan.py",
+        "sha256": "099945be37db9151ff878909113b8113a883e0fff7d35da8cd0a7bdc7cff78ed"
+      },
+      {
+        "path": "blueearth_cst/experiment/metric_registry.py",
+        "sha256": "3c1ea7b297181213e9664d128486b44c3b833bcd7285b79b196ce65122b96128"
+      },
+      {
+        "path": "blueearth_cst/experiment/response_inventory.py",
+        "sha256": "f14befaf2e6868b69195ea332d9ced3adefb777b090eeb22a7844123b8d96b28"
+      },
+      {
+        "path": "blueearth_cst/experiment/response_series.py",
+        "sha256": "148f4f51059adbaa902f0b53b7e4cbed65e9758384fa3c9f2bab67faab2788e9"
+      },
+      {
+        "path": "blueearth_cst/experiment/return_level_validation.py",
+        "sha256": "25d954b16e0c7c7b4383e6328b533ea04090fa5d56251cd9779db00256b3bc66"
+      },
+      {
+        "path": "blueearth_cst/experiment/scenario_collection.py",
+        "sha256": "7efda46ae21f37b7d3264494ab4ce6f03dd979463abb34abb51c3e06b60712fd"
+      },
+      {
+        "path": "blueearth_cst/experiment/scenario_provider.py",
+        "sha256": "a255b199dd954e89f3e8fd9cc3fc89ffda2aeee47d302a1f976cd588cccba09a"
+      },
+      {
+        "path": "blueearth_cst/experiment/scenario_rows.py",
+        "sha256": "61055a90ec35dd15eeee700b23b41f20653a539f917c679632e42897f7b4eaed"
+      },
+      {
+        "path": "blueearth_cst/experiment/simulation_record.py",
+        "sha256": "43ae204c63339918a7564416c77555ec944b6b37960cbc6fff162a2d2185b3e9"
+      },
+      {
+        "path": "blueearth_cst/experiment/simulator_adapter.py",
+        "sha256": "2da0dada34be475d62093175a23c51f7547fc31c983a37e174418fe507c3f3ae"
+      },
+      {
+        "path": "blueearth_cst/experiment/wflow_response_reader.py",
+        "sha256": "5d30363de7a958493b7959a4ba8404f76994b36244364968985fe1be26db7531"
+      },
+      {
+        "path": "blueearth_cst/experiment/write_model_reference.py",
+        "sha256": "43782c01ebbbd6a999652c88a5bf762b5ef791853b58ae924c4846196b611ef0"
+      },
+      {
+        "path": "blueearth_cst/shared/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "blueearth_cst/shared/indicator_tables.py",
+        "sha256": "26f7be28f0f19bf658cf82c42d4f6b499db1eabba1cc5f3533e56f313b9234b5"
+      },
+      {
+        "path": "blueearth_cst/shared/interchange_contracts.py",
+        "sha256": "7ced40a33825e0eeaed0343ff4da24c72ae2a89dac596fe3f1822229e2875579"
+      },
+      {
+        "path": "blueearth_cst/shared/metrics_definition.py",
+        "sha256": "db1cef42cf4badceb9eee6928125b8b12ee585b49ad35f21eb4e73712f6108f9"
+      },
+      {
+        "path": "blueearth_cst/shared/model_digest.py",
+        "sha256": "bad440708b2575774f5a04b48df0e5f0e6e964b134b5af6204c435af31b07456"
+      },
+      {
+        "path": "blueearth_cst/shared/progress.py",
+        "sha256": "386a911055752e554e751223d6c95e51e3e193535c42291b6f4598ca71448d21"
+      },
+      {
+        "path": "blueearth_cst/shared/provenance.py",
+        "sha256": "54c020a85b744555f36002ad560c93c58356838af1185e09d28f004b9d559314"
+      },
+      {
+        "path": "blueearth_cst/shared/snake_utils.py",
+        "sha256": "ba62d238001fbd93cc4edaee60cc8d088acaeb0090b1a8afc5ca5a54027d533c"
+      },
+      {
+        "path": "blueearth_cst/shared/surface_axes.py",
+        "sha256": "149ff7442aff7ac13f975cd181a4939ad84567e3b7e6b60cf3151656c3b4ccef"
+      },
+      {
+        "path": "blueearth_cst/shared/wflow_outputs.py",
+        "sha256": "1d7420a99ef187b82908b763f88f4fedd175c4a3506bf458f562318652903bff"
+      }
+    ],
+    "declarations": [
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_annual_mean",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "mean",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_max",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "max",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_min",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "min",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_p95",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "q95",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_7day_max",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "Q7day_max",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_7day_min",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "Q7day_min",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_baseflow_index",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "BaseFlowIndex",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": 1.0,
+        "bundle_by": "same_design_point",
+        "grain": "bundle",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_return_level_10yr_max",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": 10,
+        "statistic": "return_level_max",
+        "value_validity": "finite required; reject invalid GEV fit; no clipping"
+      },
+      {
+        "blocks_per_return_period": 1.0,
+        "bundle_by": "same_design_point",
+        "grain": "bundle",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_return_level_2yr_7day_min",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": 2,
+        "statistic": "return_level_7day_min",
+        "value_validity": "finite required; reject invalid GEV fit; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_wettest_month_mean",
+        "reference": "unperturbed_runs",
+        "reference_location": "class_c_first_gauge",
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "wetmonth_mean",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_driest_month_mean",
+        "reference": "unperturbed_runs",
+        "reference_location": "class_c_first_gauge",
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "drymonth_mean",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "gwr_annual_total",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "mm dt-1",
+          "variable": "gwr"
+        },
+        "return_period": null,
+        "statistic": "sum",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      }
+    ],
+    "grouping": "stochastic/st_id including empty unperturbed key",
+    "reference": "unperturbed evaluated runs; first native q location; monthly sum; first month on ties",
+    "resolved_references": {
+      "dry": {
+        "counts": [
+          [
+            "01",
+            "2046-01-02 00:00:00",
+            "2054-12-31 00:00:00",
+            9,
+            108
+          ],
+          [
+            "08",
+            "2046-01-02 00:00:00",
+            "2054-12-31 00:00:00",
+            9,
+            108
+          ]
+        ],
+        "month": 8,
+        "reference_location_id": "101",
+        "run_ids": [
+          "01",
+          "08"
+        ],
+        "selection_statistic": "monthly sum followed by argmax/argmin",
+        "tie_rule": "first label in ascending calendar-month order",
+        "which": "dry"
+      },
+      "wet": {
+        "counts": [
+          [
+            "01",
+            "2046-01-02 00:00:00",
+            "2054-12-31 00:00:00",
+            9,
+            108
+          ],
+          [
+            "08",
+            "2046-01-02 00:00:00",
+            "2054-12-31 00:00:00",
+            9,
+            108
+          ]
+        ],
+        "month": 11,
+        "reference_location_id": "101",
+        "run_ids": [
+          "01",
+          "08"
+        ],
+        "selection_statistic": "monthly sum followed by argmax/argmin",
+        "tie_rule": "first label in ascending calendar-month order",
+        "which": "wet"
+      }
+    },
+    "return_level_validation": {
+      "actual_bundle_applicability": "unestablished",
+      "application_scope": "operational_screen_only",
+      "benchmark_record": {
+        "path": "return_level_benchmark.json",
+        "sha256": "89905f1889a08177ff9225535a7a590b0081c76b2e6765e31e83390bee412b2c"
+      },
+      "benchmark_status": "reviewed_bounded",
+      "criteria": {
+        "accuracy_multiplier": 8,
+        "approval": "Owner authorized eightfold policy reassessment on 2026-09-13: 8x",
+        "base_cells": 12,
+        "draws_per_base_cell": 1000,
+        "estimator": "Frozen Stage 1 range-normalized L-moment candidate C; A/B rescored as diagnostics only",
+        "extreme_value_shape_xi": "xi=-c",
+        "generating_scale": 1.0,
+        "low_level_meaning": "p=.5: median of annual seven-day minima; IID block fixtures do not simulate block extraction, dependence or real discharge",
+        "master_seed": 20260912,
+        "median_relative_abs_max": 0.8,
+        "median_scale_abs_max": 0.8,
+        "original_criteria_sha256": "988611b6d239b95f7542f8d67470395e4997ac61dd97198fd075fdcba552d643",
+        "p90_abs_relative_max": {
+          "0.5": 2.0,
+          "0.9": 4.0
+        },
+        "p90_abs_scale_max": {
+          "0.5": 2.0,
+          "0.9": 4.0
+        },
+        "policy_id": "gf15-accuracy-8x-v1",
+        "probabilities": [
+          0.9,
+          0.5
+        ],
+        "quantile_formula": "z_p=-expm1(c*log(-log(p)))/c; c=0: -log(-log(p))",
+        "quantile_summary_method": "numpy quantile method=linear; summaries conditional on valid fits; refusals/full 1000 denominator",
+        "ratios_true_quantile_over_generating_scale": [
+          0.0,
+          0.05,
+          0.5,
+          2.0,
+          10.0
+        ],
+        "relative_qualified_ratios": [
+          0.5,
+          2.0,
+          10.0
+        ],
+        "rng": "numpy.Generator(PCG64(SeedSequence([20260912, shape_index, count])))",
+        "sample_generation": "inverse CDF of (0,1) PCG64 uniforms; no clipping/truncation/redrawing",
+        "scientific_claim_boundary": "Owner-selected relaxed targets assessed on already observed development data; original failures remain unchanged; no fresh validation, screening or production applicability claim",
+        "shapes_scipy_c": [
+          -0.2,
+          0.0,
+          0.2
+        ],
+        "standardized_location": 0.0,
+        "total_fits": 132000,
+        "total_quantile_rows": 144000,
+        "translated_location": "rho-z_p",
+        "translation_paired_abs_max": 1e-06,
+        "translation_validity_unchanged": true,
+        "usable_counts": [
+          10,
+          18,
+          30,
+          60
+        ],
+        "valid_rate_min": 0.95,
+        "zero_relative": "undefined; null, never epsilon-divided"
+      },
+      "estimator_id": "gf15-lmoments-c/1",
+      "evidence_use": "post_results_development_rescore",
+      "fit_uncertainty": "point_estimates_only",
+      "policy_id": "gf15-accuracy-8x-v1",
+      "relative_error_near_zero": "unvalidated",
+      "schema_version": "return-level-validation/1",
+      "screening_floor": 10,
+      "screening_policy_status": "provisional_operational",
+      "screening_policy_validated": false,
+      "screening_ratio": 1.0,
+      "tested_domain": {
+        "counts": [
+          10,
+          18,
+          30,
+          60
+        ],
+        "draws_per_base_cell": 1000,
+        "probabilities": [
+          0.9,
+          0.5
+        ],
+        "ratios": [
+          0.0,
+          0.05,
+          0.5,
+          2.0,
+          10.0
+        ],
+        "relative_qualified_ratios": [
+          0.5,
+          2.0,
+          10.0
+        ],
+        "shapes_c": [
+          -0.2,
+          0.0,
+          0.2
+        ]
+      }
+    },
+    "water_year_anchor": "YS-JAN"
+  },
+  "metric_definition_sha256": "4cfec9d1b94b3c3c3f6aa1bbae38baea3300c6bacfccffd56a85f7d7c5f1ef45",
+  "metric_environment_sha256": "482d3ccd8836f1f50b143a348e19927542d06bec764dd4432c68332b630e51e5",
+  "metric_request_id": "6ed13c055a6fa12e2199e97551a7c7f7304a8645e432875bba375d061c2aaf42",
+  "metric_set_id": "7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2",
+  "plan_sha256": "c84f1ed2b48696ba01b527ef393ade824d9612d54b159fbe559aa33e0a9479bd",
+  "request": {
+    "code_inventory": [
+      {
+        "path": "blueearth_cst/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "blueearth_cst/climate_analysis/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "blueearth_cst/climate_analysis/prepare_climate_data_catalog.py",
+        "sha256": "36f0d86e99acf1b465b6061d9acedf6920727478174fd5a5197b63221f3f00f0"
+      },
+      {
+        "path": "blueearth_cst/experiment/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "blueearth_cst/experiment/collection_resolution.py",
+        "sha256": "4152fbdefdce84c3aea628128c661e1355050055f7a6ba88602947338b3d0a35"
+      },
+      {
+        "path": "blueearth_cst/experiment/content_identity.py",
+        "sha256": "92b7b2c641f4df20ab104347eb791bf426d8b38e857bff1156a286789842bd3f"
+      },
+      {
+        "path": "blueearth_cst/experiment/downscale_climate_forcing.py",
+        "sha256": "1aee7b9295f3e50ef10f3a289e8838c40f9e7ade3266e292cecbf3668f35f448"
+      },
+      {
+        "path": "blueearth_cst/experiment/export_wflow_results.py",
+        "sha256": "87a176fbcbfb57c1538ddff7064bee373968e999c5c01373d35c237de6451464"
+      },
+      {
+        "path": "blueearth_cst/experiment/forcing_descriptor.py",
+        "sha256": "8ca145d1c31a0647fccca4b614b5e76fffeb11205105d433d10593a12f72963f"
+      },
+      {
+        "path": "blueearth_cst/experiment/forcing_window.py",
+        "sha256": "d27bb76e80b40ede422506739b2c892cf7aa714b13aaa09242dad7eecdd1975a"
+      },
+      {
+        "path": "blueearth_cst/experiment/gev_lmoments.py",
+        "sha256": "254a9b1d69850d7304ba6ccb04f050b2cea7d930c2b7ad89ed0462579c276847"
+      },
+      {
+        "path": "blueearth_cst/experiment/metric_plan.py",
+        "sha256": "099945be37db9151ff878909113b8113a883e0fff7d35da8cd0a7bdc7cff78ed"
+      },
+      {
+        "path": "blueearth_cst/experiment/metric_registry.py",
+        "sha256": "3c1ea7b297181213e9664d128486b44c3b833bcd7285b79b196ce65122b96128"
+      },
+      {
+        "path": "blueearth_cst/experiment/response_inventory.py",
+        "sha256": "f14befaf2e6868b69195ea332d9ced3adefb777b090eeb22a7844123b8d96b28"
+      },
+      {
+        "path": "blueearth_cst/experiment/response_series.py",
+        "sha256": "148f4f51059adbaa902f0b53b7e4cbed65e9758384fa3c9f2bab67faab2788e9"
+      },
+      {
+        "path": "blueearth_cst/experiment/return_level_validation.py",
+        "sha256": "25d954b16e0c7c7b4383e6328b533ea04090fa5d56251cd9779db00256b3bc66"
+      },
+      {
+        "path": "blueearth_cst/experiment/scenario_collection.py",
+        "sha256": "7efda46ae21f37b7d3264494ab4ce6f03dd979463abb34abb51c3e06b60712fd"
+      },
+      {
+        "path": "blueearth_cst/experiment/scenario_provider.py",
+        "sha256": "a255b199dd954e89f3e8fd9cc3fc89ffda2aeee47d302a1f976cd588cccba09a"
+      },
+      {
+        "path": "blueearth_cst/experiment/scenario_rows.py",
+        "sha256": "61055a90ec35dd15eeee700b23b41f20653a539f917c679632e42897f7b4eaed"
+      },
+      {
+        "path": "blueearth_cst/experiment/simulation_record.py",
+        "sha256": "43ae204c63339918a7564416c77555ec944b6b37960cbc6fff162a2d2185b3e9"
+      },
+      {
+        "path": "blueearth_cst/experiment/simulator_adapter.py",
+        "sha256": "2da0dada34be475d62093175a23c51f7547fc31c983a37e174418fe507c3f3ae"
+      },
+      {
+        "path": "blueearth_cst/experiment/wflow_response_reader.py",
+        "sha256": "5d30363de7a958493b7959a4ba8404f76994b36244364968985fe1be26db7531"
+      },
+      {
+        "path": "blueearth_cst/experiment/write_model_reference.py",
+        "sha256": "43782c01ebbbd6a999652c88a5bf762b5ef791853b58ae924c4846196b611ef0"
+      },
+      {
+        "path": "blueearth_cst/shared/__init__.py",
+        "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "path": "blueearth_cst/shared/indicator_tables.py",
+        "sha256": "26f7be28f0f19bf658cf82c42d4f6b499db1eabba1cc5f3533e56f313b9234b5"
+      },
+      {
+        "path": "blueearth_cst/shared/interchange_contracts.py",
+        "sha256": "7ced40a33825e0eeaed0343ff4da24c72ae2a89dac596fe3f1822229e2875579"
+      },
+      {
+        "path": "blueearth_cst/shared/metrics_definition.py",
+        "sha256": "db1cef42cf4badceb9eee6928125b8b12ee585b49ad35f21eb4e73712f6108f9"
+      },
+      {
+        "path": "blueearth_cst/shared/model_digest.py",
+        "sha256": "bad440708b2575774f5a04b48df0e5f0e6e964b134b5af6204c435af31b07456"
+      },
+      {
+        "path": "blueearth_cst/shared/progress.py",
+        "sha256": "386a911055752e554e751223d6c95e51e3e193535c42291b6f4598ca71448d21"
+      },
+      {
+        "path": "blueearth_cst/shared/provenance.py",
+        "sha256": "54c020a85b744555f36002ad560c93c58356838af1185e09d28f004b9d559314"
+      },
+      {
+        "path": "blueearth_cst/shared/snake_utils.py",
+        "sha256": "ba62d238001fbd93cc4edaee60cc8d088acaeb0090b1a8afc5ca5a54027d533c"
+      },
+      {
+        "path": "blueearth_cst/shared/surface_axes.py",
+        "sha256": "149ff7442aff7ac13f975cd181a4939ad84567e3b7e6b60cf3151656c3b4ccef"
+      },
+      {
+        "path": "blueearth_cst/shared/wflow_outputs.py",
+        "sha256": "1d7420a99ef187b82908b763f88f4fedd175c4a3506bf458f562318652903bff"
+      }
+    ],
+    "declarations": [
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_annual_mean",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "mean",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_max",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "max",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_min",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "min",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_p95",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "q95",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_7day_max",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "Q7day_max",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_mean_annual_7day_min",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "Q7day_min",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_baseflow_index",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "BaseFlowIndex",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": 1.0,
+        "bundle_by": "same_design_point",
+        "grain": "bundle",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_return_level_10yr_max",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": 10,
+        "statistic": "return_level_max",
+        "value_validity": "finite required; reject invalid GEV fit; no clipping"
+      },
+      {
+        "blocks_per_return_period": 1.0,
+        "bundle_by": "same_design_point",
+        "grain": "bundle",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_return_level_2yr_7day_min",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": 2,
+        "statistic": "return_level_7day_min",
+        "value_validity": "finite required; reject invalid GEV fit; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_wettest_month_mean",
+        "reference": "unperturbed_runs",
+        "reference_location": "class_c_first_gauge",
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "wetmonth_mean",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "q_driest_month_mean",
+        "reference": "unperturbed_runs",
+        "reference_location": "class_c_first_gauge",
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "m3 s-1",
+          "variable": "q"
+        },
+        "return_period": null,
+        "statistic": "drymonth_mean",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      },
+      {
+        "blocks_per_return_period": null,
+        "bundle_by": null,
+        "grain": "run",
+        "implementation_revision": "9ad9cbaff35543e0c3e7d79d85ed79d3805304c28cd7eff4c823298c3f966d63",
+        "name": "gwr_annual_total",
+        "reference": null,
+        "reference_location": null,
+        "required_responses": {
+          "calendars": [
+            "standard",
+            "gregorian",
+            "proleptic_gregorian"
+          ],
+          "coverage": "entire retained response; preserve partial water years",
+          "location_grain": "location",
+          "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+          "time_label": "interval_end",
+          "timestep_seconds": 86400,
+          "units": "mm dt-1",
+          "variable": "gwr"
+        },
+        "return_period": null,
+        "statistic": "sum",
+        "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+      }
+    ],
+    "grouping": "stochastic/st_id including empty unperturbed key",
+    "metric_environment": {
+      "locks": {
+        "installed-conda-dependency-records": "9a9414c9d7a9561e50a63b96e212367293d4e82b0b2a1aee895b3705d1a74d02",
+        "installed-python-distribution-metadata": "edf9df1c4a5680660ef22763448b0025cb48eb9f59388b25c1494d5e273a8b8c"
+      },
+      "packages": {
+        "conda:-openmp-mutex": "4.5+20_gnu",
+        "conda:-python-abi3-support": "1.0+hd8ed1ab_2",
+        "conda:aws-c-auth": "0.10.1+h5d51246_2",
+        "conda:aws-c-cal": "0.9.13+h46f3b43_1",
+        "conda:aws-c-common": "0.12.6+hfd05255_0",
+        "conda:aws-c-compression": "0.3.2+hcb3a2da_0",
+        "conda:aws-c-event-stream": "0.6.0+h87b2689_1",
+        "conda:aws-c-http": "0.10.12+h612f3e8_2",
+        "conda:aws-c-io": "0.26.3+h0d5b9f9_1",
+        "conda:aws-c-mqtt": "0.15.2+h904b250_1",
+        "conda:aws-c-s3": "0.11.5+h87bd87b_5",
+        "conda:aws-c-sdkutils": "0.2.4+hcb3a2da_4",
+        "conda:aws-checksums": "0.2.10+hcb3a2da_0",
+        "conda:aws-crt-cpp": "0.37.4+h4f72eff_3",
+        "conda:aws-sdk-cpp": "1.11.747+hd55a107_3",
+        "conda:azure-core-cpp": "1.16.2+h49e36cd_0",
+        "conda:azure-identity-cpp": "1.13.3+h5ffce34_1",
+        "conda:azure-storage-blobs-cpp": "12.16.0+hcd625b1_1",
+        "conda:azure-storage-common-cpp": "12.12.0+h5ffce34_1",
+        "conda:azure-storage-files-datalake-cpp": "12.14.0+h1678c0b_1",
+        "conda:backports-zstd": "1.6.0+py312h06d0912_0",
+        "conda:blosc": "1.21.6+hfd34d9b_1",
+        "conda:bokeh": "3.9.0+pyhd8ed1ab_0",
+        "conda:boltons": "25.0.0+pyhd8ed1ab_0",
+        "conda:bottleneck": "1.6.0+np2py312h226b611_3",
+        "conda:brotli-python": "1.2.0+py312hc6d9e41_1",
+        "conda:bzip2": "1.0.8+h0ad9c76_9",
+        "conda:c-ares": "1.34.6+hfd05255_0",
+        "conda:ca-certificates": "2026.4.22+h4c7d964_0",
+        "conda:certifi": "2026.4.22+pyhd8ed1ab_0",
+        "conda:cf-xarray": "0.10.11+pyhd8ed1ab_0",
+        "conda:cftime": "1.6.5+py312h196c9fc_1",
+        "conda:click": "8.3.3+pyh6dadd2b_0",
+        "conda:cloudpickle": "3.1.2+pyhcf101f3_1",
+        "conda:colorama": "0.4.6+pyhd8ed1ab_1",
+        "conda:contourpy": "1.3.3+py312h78d62e6_4",
+        "conda:cpython": "3.12.13+py312hd8ed1ab_0",
+        "conda:cytoolz": "1.1.0+py312he06e257_2",
+        "conda:dask": "2026.3.0+pyhc364b38_0",
+        "conda:dask-core": "2026.3.0+pyhc364b38_0",
+        "conda:distributed": "2026.3.0+pyhc364b38_0",
+        "conda:filelock": "3.29.0+pyhd8ed1ab_0",
+        "conda:flexcache": "0.3+pyhd8ed1ab_1",
+        "conda:flexparser": "0.4+pyhd8ed1ab_1",
+        "conda:fsspec": "2026.4.0+pyhd8ed1ab_0",
+        "conda:h2": "4.3.0+pyhcf101f3_0",
+        "conda:hdf4": "4.2.15+h5557f11_7",
+        "conda:hdf5": "2.1.0+nompi_hd96b29f_104",
+        "conda:hpack": "4.1.0+pyhd8ed1ab_0",
+        "conda:hyperframe": "6.1.0+pyhd8ed1ab_0",
+        "conda:icu": "78.3+h637d24d_0",
+        "conda:importlib-metadata": "8.8.0+pyhcf101f3_0",
+        "conda:jinja2": "3.1.6+pyhcf101f3_1",
+        "conda:joblib": "1.5.3+pyhd8ed1ab_0",
+        "conda:krb5": "1.22.2+h0ea6238_0",
+        "conda:lcms2": "2.19.1+hf2c6c5f_0",
+        "conda:lerc": "4.1.0+hd936e49_0",
+        "conda:libabseil": "20260107.1+cxx17_h0eb2380_0",
+        "conda:libaec": "1.1.5+haf901d7_0",
+        "conda:libarrow": "24.0.0+hc74aee5_0_cpu",
+        "conda:libarrow-acero": "24.0.0+h7d8d6a5_0_cpu",
+        "conda:libarrow-compute": "24.0.0+h081cd8e_0_cpu",
+        "conda:libarrow-dataset": "24.0.0+h7d8d6a5_0_cpu",
+        "conda:libarrow-substrait": "24.0.0+h524e9bd_0_cpu",
+        "conda:libblas": "3.11.0+6_hf2e6a31_mkl",
+        "conda:libbrotlicommon": "1.2.0+hfd05255_1",
+        "conda:libbrotlidec": "1.2.0+hfd05255_1",
+        "conda:libbrotlienc": "1.2.0+hfd05255_1",
+        "conda:libcblas": "3.11.0+6_h2a3cdd5_mkl",
+        "conda:libcrc32c": "1.1.2+h0e60522_0",
+        "conda:libcurl": "8.21.0+h51a1c48_2",
+        "conda:libdeflate": "1.25+h51727cc_0",
+        "conda:libevent": "2.1.12+h3671451_1",
+        "conda:libexpat": "2.8.1+hac47afa_1",
+        "conda:libffi": "3.5.2+h3d046cb_0",
+        "conda:libfreetype": "2.14.3+h57928b3_0",
+        "conda:libfreetype6": "2.14.3+hdbac1cb_0",
+        "conda:libgcc": "15.2.0+h8ee18e1_18",
+        "conda:libgomp": "15.2.0+h8ee18e1_18",
+        "conda:libgoogle-cloud": "3.3.0+h2b231ac_1",
+        "conda:libgoogle-cloud-storage": "3.3.0+he04ea4c_1",
+        "conda:libgrpc": "1.78.1+h9ff2b3e_0",
+        "conda:libhwloc": "2.12.2+default_h4379cf1_1000",
+        "conda:libiconv": "1.18+hc1393d2_2",
+        "conda:libjpeg-turbo": "3.1.4.1+hfd05255_0",
+        "conda:liblapack": "3.11.0+6_hf9ab0e9_mkl",
+        "conda:liblzma": "5.8.3+hfd05255_0",
+        "conda:libnetcdf": "4.10.1+nompi_h7e03e6e_201",
+        "conda:libopentelemetry-cpp": "1.26.0+hc88f397_0",
+        "conda:libopentelemetry-cpp-headers": "1.26.0+h57928b3_0",
+        "conda:libparquet": "24.0.0+h7051d1f_0_cpu",
+        "conda:libpng": "1.6.58+h7351971_0",
+        "conda:libprotobuf": "6.33.5+h61fc761_0",
+        "conda:libpsl": "0.22.0+h25e0afd_1",
+        "conda:libre2-11": "2025.11.05+h04e5de1_1",
+        "conda:libsqlite": "3.53.1+hf5d6505_0",
+        "conda:libssh2": "1.11.1+h9aa295b_0",
+        "conda:libthrift": "0.22.0+h2e43b2f_2",
+        "conda:libtiff": "4.7.1+h8f73337_1",
+        "conda:libutf8proc": "2.11.3+hb980946_0",
+        "conda:libwebp-base": "1.6.0+h4d5522a_0",
+        "conda:libwinpthread": "12.0.0.r4.gg4f2fc60ca+h57928b3_10",
+        "conda:libxcb": "1.17.0+h0e4246c_0",
+        "conda:libxml2": "2.15.3+h8ef44ab_0",
+        "conda:libxml2-16": "2.15.3+h3cfd58e_0",
+        "conda:libzip": "1.11.2+h3135430_0",
+        "conda:libzlib": "1.3.2+hfd05255_2",
+        "conda:llvm-openmp": "22.1.4+h4fa8253_0",
+        "conda:llvmlite": "0.48.0+py312h1534abe_1",
+        "conda:locket": "1.0.0+pyhd8ed1ab_0",
+        "conda:lz4": "4.4.5+py312hc3c93f3_1",
+        "conda:lz4-c": "1.10.0+h2466b09_1",
+        "conda:markupsafe": "3.0.3+py312h05f76fc_1",
+        "conda:mkl": "2025.3.1+hac47afa_13",
+        "conda:msgpack-python": "1.2.1+py312h78d62e6_1",
+        "conda:narwhals": "2.20.0+pyhcf101f3_0",
+        "conda:netcdf4": "1.7.4+nompi_py311h3e479a2_109",
+        "conda:nlohmann-json": "3.12.0+h5112557_1",
+        "conda:numba": "0.66.0+py312hb70d996_0",
+        "conda:numpy": "2.4.6+py312ha3f287d_0",
+        "conda:onemkl-license": "2025.3.1+h57928b3_13",
+        "conda:openjpeg": "2.5.4+h0e57b4f_0",
+        "conda:openssl": "3.6.2+hf411b9b_0",
+        "conda:orc": "2.3.0+h8fc0eb6_0",
+        "conda:packaging": "26.2+pyhc364b38_0",
+        "conda:pandas": "3.0.3+py312h95189c4_0",
+        "conda:partd": "1.4.2+pyhd8ed1ab_0",
+        "conda:pillow": "12.3.0+py312h31f0997_0",
+        "conda:pint": "0.25.3+pyhc364b38_0",
+        "conda:platformdirs": "4.9.6+pyhcf101f3_0",
+        "conda:proj": "9.7.1+hd30e2cd_3",
+        "conda:prometheus-cpp": "1.3.0+hcea2f5d_0",
+        "conda:psutil": "7.2.2+py312he5662c2_0",
+        "conda:pthread-stubs": "0.4+h0e40799_1002",
+        "conda:pyarrow": "24.0.0+py312h2e8e312_0",
+        "conda:pyarrow-core": "24.0.0+py312h12c7521_0_cpu",
+        "conda:pyproj": "3.7.2+py312h8b773d8_3",
+        "conda:pysocks": "1.7.1+pyh09c184e_7",
+        "conda:python": "3.12.13+h0159041_0_cpython",
+        "conda:python-abi": "3.12+8_cp312",
+        "conda:python-dateutil": "2.9.0.post0+pyhe01879c_2",
+        "conda:python-gil": "3.12.13+hd8ed1ab_0",
+        "conda:python-tzdata": "2026.2+pyhd8ed1ab_0",
+        "conda:pyyaml": "6.0.3+py312h05f76fc_1",
+        "conda:re2": "2025.11.05+ha104f34_1",
+        "conda:scikit-learn": "1.9.0+np2py312hea30aaf_0",
+        "conda:scipy": "1.18.0+py312h9b3c559_0",
+        "conda:setuptools": "82.0.1+pyh332efcf_0",
+        "conda:six": "1.17.0+pyhe01879c_1",
+        "conda:snappy": "1.2.2+h7fa0ca8_1",
+        "conda:sortedcontainers": "2.4.0+pyhd8ed1ab_1",
+        "conda:sqlite": "3.53.1+hdb435a2_0",
+        "conda:tbb": "2023.0.0+ha3553a1_1",
+        "conda:tblib": "3.2.2+pyhcf101f3_0",
+        "conda:threadpoolctl": "3.6.0+pyhecae5ae_0",
+        "conda:tk": "8.6.13+h6ed50ae_3",
+        "conda:toolz": "1.1.0+pyhd8ed1ab_1",
+        "conda:tornado": "6.5.7+py312he06e257_0",
+        "conda:typing-extensions": "4.15.0+pyhcf101f3_0",
+        "conda:tzdata": "2025c+hc9c84f9_1",
+        "conda:ucrt": "10.0.26100.0+h57928b3_0",
+        "conda:urllib3": "2.6.3+pyhd8ed1ab_0",
+        "conda:vc": "14.3+h41ae7f8_34",
+        "conda:vc14-runtime": "14.44.35208+h818238b_34",
+        "conda:vcomp14": "14.44.35208+h818238b_34",
+        "conda:vs2015-runtime": "14.44.35208+h38c0c73_34",
+        "conda:win-inet-pton": "1.1.0+pyh7428d3b_8",
+        "conda:xarray": "2026.4.0+pyhc364b38_0",
+        "conda:xclim": "0.60.0+pyhd8ed1ab_0",
+        "conda:xorg-libxau": "1.0.12+hba3369d_1",
+        "conda:xorg-libxdmcp": "1.1.5+hba3369d_1",
+        "conda:xyzservices": "2026.3.0+pyhd8ed1ab_0",
+        "conda:yamale": "6.1.0+pyhd8ed1ab_0",
+        "conda:yaml": "0.2.5+h6a83c73_3",
+        "conda:zict": "3.0.0+pyhd8ed1ab_1",
+        "conda:zipp": "3.23.1+pyhcf101f3_0",
+        "conda:zlib": "1.3.2+hfd05255_2",
+        "conda:zlib-ng": "2.3.3+h0261ad2_1",
+        "conda:zstd": "1.5.7+h534d264_6",
+        "platform": "Windows-11-10.0.26200-SP0",
+        "python": "3.12.13",
+        "python:boltons": "25.0.0",
+        "python:bottleneck": "1.6.0",
+        "python:certifi": "2026.4.22",
+        "python:cf-xarray": "0.10.11",
+        "python:cftime": "1.6.5",
+        "python:click": "8.3.3",
+        "python:cloudpickle": "3.1.2",
+        "python:colorama": "0.4.6",
+        "python:dask": "2026.3.0",
+        "python:filelock": "3.29.0",
+        "python:flexcache": "0.3",
+        "python:flexparser": "0.4",
+        "python:fsspec": "2026.4.0",
+        "python:joblib": "1.5.3",
+        "python:llvmlite": "0.48.0",
+        "python:lmoments3": "1.0.8",
+        "python:locket": "1.0.0",
+        "python:narwhals": "2.20.0",
+        "python:netcdf4": "1.7.4",
+        "python:numba": "0.66.0",
+        "python:numpy": "2.4.6",
+        "python:packaging": "26.2",
+        "python:pandas": "3.0.3",
+        "python:partd": "1.4.2",
+        "python:pint": "0.25.3",
+        "python:platformdirs": "4.9.6",
+        "python:pyarrow": "24.0.0",
+        "python:pyproj": "3.7.2",
+        "python:python-dateutil": "2.9.0.post0",
+        "python:pyyaml": "6.0.3",
+        "python:scikit-learn": "1.9.0",
+        "python:scipy": "1.18.0",
+        "python:six": "1.17.0",
+        "python:threadpoolctl": "3.6.0",
+        "python:toolz": "1.1.0",
+        "python:typing-extensions": "4.15.0",
+        "python:tzdata": "2026.2",
+        "python:xarray": "2026.4.0",
+        "python:xclim": "0.60.0",
+        "python:yamale": "6.1.0"
+      },
+      "return_level_estimator": {
+        "estimator_id": "gf15-lmoments-c/1",
+        "package": "lmoments3",
+        "source_sha256": {
+          "__init__.py": "1d2c066a2ec4925bb838b7680d63ae8ae87c5234aa3c986d6ebe81500d75d6e2",
+          "distr.py": "f8859d11f10c3206e3e5009c1b238a328c6c9215b1cc7436800160fa929bb2ee"
+        },
+        "version": "1.0.8"
+      }
+    },
+    "reference": "unperturbed evaluated runs; first native q location; monthly sum; first month on ties",
+    "return_level_validation": {
+      "actual_bundle_applicability": "unestablished",
+      "application_scope": "operational_screen_only",
+      "benchmark_record": {
+        "path": "return_level_benchmark.json",
+        "sha256": "89905f1889a08177ff9225535a7a590b0081c76b2e6765e31e83390bee412b2c"
+      },
+      "benchmark_status": "reviewed_bounded",
+      "criteria": {
+        "accuracy_multiplier": 8,
+        "approval": "Owner authorized eightfold policy reassessment on 2026-09-13: 8x",
+        "base_cells": 12,
+        "draws_per_base_cell": 1000,
+        "estimator": "Frozen Stage 1 range-normalized L-moment candidate C; A/B rescored as diagnostics only",
+        "extreme_value_shape_xi": "xi=-c",
+        "generating_scale": 1.0,
+        "low_level_meaning": "p=.5: median of annual seven-day minima; IID block fixtures do not simulate block extraction, dependence or real discharge",
+        "master_seed": 20260912,
+        "median_relative_abs_max": 0.8,
+        "median_scale_abs_max": 0.8,
+        "original_criteria_sha256": "988611b6d239b95f7542f8d67470395e4997ac61dd97198fd075fdcba552d643",
+        "p90_abs_relative_max": {
+          "0.5": 2.0,
+          "0.9": 4.0
+        },
+        "p90_abs_scale_max": {
+          "0.5": 2.0,
+          "0.9": 4.0
+        },
+        "policy_id": "gf15-accuracy-8x-v1",
+        "probabilities": [
+          0.9,
+          0.5
+        ],
+        "quantile_formula": "z_p=-expm1(c*log(-log(p)))/c; c=0: -log(-log(p))",
+        "quantile_summary_method": "numpy quantile method=linear; summaries conditional on valid fits; refusals/full 1000 denominator",
+        "ratios_true_quantile_over_generating_scale": [
+          0.0,
+          0.05,
+          0.5,
+          2.0,
+          10.0
+        ],
+        "relative_qualified_ratios": [
+          0.5,
+          2.0,
+          10.0
+        ],
+        "rng": "numpy.Generator(PCG64(SeedSequence([20260912, shape_index, count])))",
+        "sample_generation": "inverse CDF of (0,1) PCG64 uniforms; no clipping/truncation/redrawing",
+        "scientific_claim_boundary": "Owner-selected relaxed targets assessed on already observed development data; original failures remain unchanged; no fresh validation, screening or production applicability claim",
+        "shapes_scipy_c": [
+          -0.2,
+          0.0,
+          0.2
+        ],
+        "standardized_location": 0.0,
+        "total_fits": 132000,
+        "total_quantile_rows": 144000,
+        "translated_location": "rho-z_p",
+        "translation_paired_abs_max": 1e-06,
+        "translation_validity_unchanged": true,
+        "usable_counts": [
+          10,
+          18,
+          30,
+          60
+        ],
+        "valid_rate_min": 0.95,
+        "zero_relative": "undefined; null, never epsilon-divided"
+      },
+      "estimator_id": "gf15-lmoments-c/1",
+      "evidence_use": "post_results_development_rescore",
+      "fit_uncertainty": "point_estimates_only",
+      "policy_id": "gf15-accuracy-8x-v1",
+      "relative_error_near_zero": "unvalidated",
+      "schema_version": "return-level-validation/1",
+      "screening_floor": 10,
+      "screening_policy_status": "provisional_operational",
+      "screening_policy_validated": false,
+      "screening_ratio": 1.0,
+      "tested_domain": {
+        "counts": [
+          10,
+          18,
+          30,
+          60
+        ],
+        "draws_per_base_cell": 1000,
+        "probabilities": [
+          0.9,
+          0.5
+        ],
+        "ratios": [
+          0.0,
+          0.05,
+          0.5,
+          2.0,
+          10.0
+        ],
+        "relative_qualified_ratios": [
+          0.5,
+          2.0,
+          10.0
+        ],
+        "shapes_c": [
+          -0.2,
+          0.0,
+          0.2
+        ]
+      }
+    },
+    "schema_version": "metric-request/1",
+    "simulation_id": "3a8c1fc6c633687bb95736f3c5f76cf8ac323927db32af7f767f8bde03a41a10",
+    "tokens": [
+      "q",
+      "gwr"
+    ],
+    "water_year_anchor": "YS-JAN"
+  },
+  "resolved_references": {
+    "dry": {
+      "counts": [
+        [
+          "01",
+          "2046-01-02 00:00:00",
+          "2054-12-31 00:00:00",
+          9,
+          108
+        ],
+        [
+          "08",
+          "2046-01-02 00:00:00",
+          "2054-12-31 00:00:00",
+          9,
+          108
+        ]
+      ],
+      "month": 8,
+      "reference_location_id": "101",
+      "run_ids": [
+        "01",
+        "08"
+      ],
+      "selection_statistic": "monthly sum followed by argmax/argmin",
+      "tie_rule": "first label in ascending calendar-month order",
+      "which": "dry"
+    },
+    "wet": {
+      "counts": [
+        [
+          "01",
+          "2046-01-02 00:00:00",
+          "2054-12-31 00:00:00",
+          9,
+          108
+        ],
+        [
+          "08",
+          "2046-01-02 00:00:00",
+          "2054-12-31 00:00:00",
+          9,
+          108
+        ]
+      ],
+      "month": 11,
+      "reference_location_id": "101",
+      "run_ids": [
+        "01",
+        "08"
+      ],
+      "selection_statistic": "monthly sum followed by argmax/argmin",
+      "tie_rule": "first label in ascending calendar-month order",
+      "which": "wet"
+    }
+  },
+  "response_inventory_sha256": "3238e59a15148e94b64c3c3d7f8639a3da9a5623cd329ec4ec9cc4afe5300eb1",
+  "schema_version": "metric-plan/1",
+  "targets": {
+    "environment": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metric_environment.json",
+    "gwr": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/gwr_indicators.csv",
+    "manifest": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metrics.json",
+    "q": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/q_indicators.csv",
+    "unit_index": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/unit_index.csv"
+  },
+  "units": [
+    {
+      "grain": "run",
+      "member_run_id": "01",
+      "unit_id": "01"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "02",
+      "unit_id": "02"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "03",
+      "unit_id": "03"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "04",
+      "unit_id": "04"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "05",
+      "unit_id": "05"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "06",
+      "unit_id": "06"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "07",
+      "unit_id": "07"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "08",
+      "unit_id": "08"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "09",
+      "unit_id": "09"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "10",
+      "unit_id": "10"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "11",
+      "unit_id": "11"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "12",
+      "unit_id": "12"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "13",
+      "unit_id": "13"
+    },
+    {
+      "grain": "run",
+      "member_run_id": "14",
+      "unit_id": "14"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "01",
+      "unit_id": "15"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "08",
+      "unit_id": "15"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "02",
+      "unit_id": "16"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "09",
+      "unit_id": "16"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "03",
+      "unit_id": "17"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "10",
+      "unit_id": "17"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "04",
+      "unit_id": "18"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "11",
+      "unit_id": "18"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "05",
+      "unit_id": "19"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "12",
+      "unit_id": "19"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "06",
+      "unit_id": "20"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "13",
+      "unit_id": "20"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "07",
+      "unit_id": "21"
+    },
+    {
+      "grain": "bundle",
+      "member_run_id": "14",
+      "unit_id": "21"
+    }
+  ]
+}

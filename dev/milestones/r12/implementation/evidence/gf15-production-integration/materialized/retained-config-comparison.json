@@ -1,0 +1,21 @@
+{
+  "project": {
+    "retained_file": ".tmp/scratchpad/2026-09-11_0010/p3-operations-dedicated-reuse/project_config_metrics.yml",
+    "materialized_file": "dev/milestones/r12/implementation/evidence/gf15-production-integration/materialized/project_config_gf15_metrics.yml",
+    "differing_keys": {
+      "project.project_dir": {
+        "retained": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project",
+        "materialized": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project"
+      },
+      "workflows.simulate_system.config_path": {
+        "retained": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-3\\.tmp\\scratchpad\\2026-09-11_0010\\p3-operations-dedicated-reuse\\metrics-simulation.yml",
+        "materialized": "project_config_simulate_system.yml"
+      }
+    }
+  },
+  "workflow": {
+    "retained_file": ".tmp/scratchpad/2026-09-11_0010/p3-operations-dedicated-reuse/metrics-simulation.yml",
+    "materialized_file": "dev/milestones/r12/implementation/evidence/gf15-production-integration/materialized/project_config_simulate_system.yml",
+    "differing_keys": {}
+  }
+}

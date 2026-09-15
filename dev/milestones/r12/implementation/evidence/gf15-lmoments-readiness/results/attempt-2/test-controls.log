@@ -1,0 +1,55 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0 -- C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\gf15-lmoments-readiness\venv\Scripts\python.exe
+cachedir: .tmp\scratchpad\2026-09-11_0010\gf15-lmoments-readiness\worker\final-controls-2\test-cache
+rootdir: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3
+configfile: pyproject.toml
+collecting ... collected 45 items
+
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_independent_population_reference PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_truth_blind_no_rng_fallback_and_replay PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_invalid_samples_are_explicit_refusals[sample0] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_invalid_samples_are_explicit_refusals[sample1] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_invalid_samples_are_explicit_refusals[sample2] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_invalid_samples_are_explicit_refusals[sample3] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_invalid_samples_are_explicit_refusals[sample4] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_invalid_samples_are_explicit_refusals[sample5] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_conjunction_ties_and_translation PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_actual_source_allowlist_and_synthetic_nonconvergence PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error0-moments] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error0-inversion] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error0-adapter] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error1-moments] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error1-inversion] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error1-adapter] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error2-moments] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error2-inversion] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error2-adapter] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error3-moments] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error3-inversion] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error3-adapter] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error4-moments] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error4-inversion] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error4-adapter] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error5-moments] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error5-inversion] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_unknown_fault_stops_without_completion[error5-adapter] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_inventory_key_and_receipt_mutations PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_d3_synthetic_denominators_and_empty_cohorts PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_namespace_replay_and_interruption {"namespace_control": "passed", "binding": "9319c3e4e2057e733d24bec1dc46512551c4ad122d70182d32bc69839a2a3a57", "computed_chunks": 2, "reused_chunks": 1, "rejected_conflicts": 5, "partial_receipt_refused": true}
+PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_quantile_controls_discriminate[sign] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_quantile_controls_discriminate[tuple] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_quantile_controls_discriminate[probability] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_quantile_controls_discriminate[output] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_overflow_warning_retention_discriminates PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_population_gate_precedes_characterization PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_quantile_enclosure_mutations_stop[bad_enclosure0] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_quantile_enclosure_mutations_stop[bad_enclosure1] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_forward_cdf_support_direction PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_explicit_parameter_refusals[parameters0] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_explicit_parameter_refusals[parameters1] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_explicit_parameter_refusals[parameters2] PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_actual_conversion_error_and_subclass_are_faults PASSED
+dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/test_readiness.py::test_endpoint_rounding_is_not_vetoed_by_probability_diagnostic PASSED
+
+============================= 45 passed in 4.17s ==============================

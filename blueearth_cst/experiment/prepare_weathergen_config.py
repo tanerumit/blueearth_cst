@@ -70,7 +70,7 @@ def _transient_flag(stress_test_cfg, variable):
         value = stress_test_cfg[variable]["trajectory"]
     except (KeyError, TypeError):
         raise ValueError(
-            f"workflows.run_stress_test.climate_perturbations.{variable}"
+            f"workflows.generate_scenarios.climate_perturbations.{variable}"
             ".trajectory is required (`C-32`; it was `transient_change: true`). "
             "It decides whether the perturbation ramps over the run "
             "(`transient`) or is held flat across it (`constant`), and the "
@@ -78,7 +78,7 @@ def _transient_flag(stress_test_cfg, variable):
         ) from None
     if value not in TRAJECTORY_KINDS:
         raise ValueError(
-            f"workflows.run_stress_test.climate_perturbations.{variable}"
+            f"workflows.generate_scenarios.climate_perturbations.{variable}"
             f".trajectory must be one of {sorted(TRAJECTORY_KINDS)}, got "
             f"{value!r}. `C-32` replaced the boolean `transient_change` with "
             "this enum; `true` becomes `transient` and `false` becomes "
@@ -186,8 +186,7 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import log_row, tee_to_log
 
         with tee_to_log(sm.log[0]):
-            # The store the generator reads, checked HERE because rule 3.11 is a
-            # `shell:` running R and cannot check it, and because weathergenr's
+            # Check the store before rule 3.11's provider invokes R; weathergenr's
             # own failure on a short record arrives twenty rules from anything
             # that could explain it (the R3 defect). See the rule's comment for
             # why the params rerun-trigger alone is not enough.

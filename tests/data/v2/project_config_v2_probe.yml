@@ -19,7 +19,7 @@ project:
 basin:
   region: "{'subbasin': [9.738, 0.4212], 'uparea': 70}"
   resolution: 0.0062475
-  output_locations: null
+  output_locations:
   delineation:
     max_subbasins: 11
 
@@ -36,12 +36,12 @@ climate:
 
 model:
   outvars:
-    - river discharge
-    - precipitation
-    - overland flow
-    - actual evapotranspiration
-    - groundwater recharge
-    - snow
+  - river discharge
+  - precipitation
+  - overland flow
+  - actual evapotranspiration
+  - groundwater recharge
+  - snow
 
 workflows:
   analyze_climate:
@@ -53,6 +53,9 @@ workflows:
   analyze_projections:
     enabled: true
     config_path: project_config_v2_probe_analyze_projections.yml
-  run_stress_test:
+  generate_scenarios:
     enabled: true
-    config_path: project_config_v2_probe_run_stress_test.yml
+    config_path: project_config_v2_probe_generate_scenarios.yml
+  simulate_system:
+    enabled: true
+    config_path: project_config_v2_probe_simulate_system.yml

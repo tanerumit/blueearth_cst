@@ -1,0 +1,9 @@
+{
+  "status": "complete",
+  "candidate_fits": 372,
+  "primary_scalar_quantiles": 450,
+  "seconds": 70.78901860000042,
+  "original_evidence_and_sources_unchanged": true,
+  "A_all_raw_parity_exact": true,
+  "qualification_claim": false
+}

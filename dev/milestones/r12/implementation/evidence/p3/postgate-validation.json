@@ -1,0 +1,12 @@
+{
+  "status": "passed",
+  "command": "pixi run --as-is pytest tests/test_cli.py",
+  "result": "20 passed in 38.08s",
+  "exit_code": 0,
+  "log": ".tmp\\scratchpad\\2026-09-11_0010\\p3-postgate-cli.log",
+  "log_sha256": "9bfc7f9eb178e5bc41013527e57db1f57603378a269e11fb5987a6fd13dcf937",
+  "provenance": "eof-provenance.json",
+  "runtime_inventory": "commit-source-inventory.json",
+  "runtime_inventory_sha256": "7a7c6510854031a69e76ed3bf3c0a420200069d41098c3e552bf5310f0c9e1d0",
+  "scope": "Only an extra terminal CRLF was removed from generate_scenarios.smk after the full suite; all nontrailing-newline bytes are identical. No new functional or numerical change; full-suite and scientific results remain bound to their preserved inventories."
+}

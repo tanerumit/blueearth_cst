@@ -16,7 +16,7 @@ from blueearth_cst.experiment.prepare_weathergen_config import (
 )
 
 REPO_ROOT = os.path.join(os.path.dirname(__file__), "..")
-# The path rule 3.04 (run_stress_test.smk:131) hands to
+# The path rule 3.04 (generate_scenarios.smk:131) hands to
 # prepare_weathergen_config as ``default_config``. It lives under config/defaults/:
 # the 2026-08-11 split moved the three rule-read configs out of
 # config/templates/, which now holds only files you copy. This literal must
@@ -53,13 +53,13 @@ def test_seed_year_math_value():
 
 def test_default_weathergen_config_resolves_at_defaults_path():
     """Config-split smoke (--dry-run-blind): weathergen_config.yml must resolve
-    at config/defaults/. run_stress_test.smk:131 passes this path as
+    at config/defaults/. generate_scenarios.smk:131 passes this path as
     the ``default_config`` param; rule 3.04 reads it via read_yml. A green
     --dry-run / test_cli would NOT catch a broken move here because the param is
     not a declared input:."""
     assert os.path.isfile(DEFAULT_WEAGEN_CONFIG), (
         "config/defaults/weathergen_config.yml missing — the 2026-08-11 split "
-        "or the run_stress_test.smk:131 default_config param is broken"
+        "or the generate_scenarios.smk:131 default_config param is broken"
     )
     cfg = read_yml(DEFAULT_WEAGEN_CONFIG)
     assert "generate_weather" in cfg
@@ -205,15 +205,15 @@ def test_f7_the_template_is_a_declared_input_of_rule_3_10():
     import re
     from pathlib import Path
 
-    snakefile = (Path(__file__).resolve().parents[1] / "run_stress_test.smk").read_text(
-        encoding="utf-8"
-    )
+    snakefile = (
+        Path(__file__).resolve().parents[1] / "generate_scenarios.smk"
+    ).read_text(encoding="utf-8")
     rule = re.search(
-        r"rule prepare_weathergen_config:.*?\n    output:", snakefile, re.S
+        r"checkpoint prepare_collection_sources:.*?\n[ \t]+output:", snakefile, re.S
     )
-    assert rule, "rule prepare_weathergen_config not found"
-    inputs = re.search(r"\n    input:(.*)", rule.group(0), re.S).group(1)
-    assert "config/defaults/weathergen_config.yml" in inputs, (
+    assert rule, "checkpoint prepare_collection_sources not found"
+    inputs = re.search(r"\n[ \t]+input:(.*)", rule.group(0), re.S).group(1)
+    assert 'GENERATION["template"]' in inputs, (
         "F7 regression: the weathergen template is not declared as an input of "
         "rule 3.10, so editing it will not re-trigger the rule"
     )

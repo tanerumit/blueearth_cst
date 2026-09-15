@@ -1,0 +1,56 @@
+metrics-only: ignored current settings simulate_system.operation, climate.selected, climate.sources, climate.window, model.outvars; retained simulation/model inputs come from C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/config/simulation.json and generation inputs from C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project/scenario_collections/71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88/collection.json
+simulate_system: metrics
+Using workflow specific profile profiles\default for setting default command line arguments.
+metrics-only: ignored current settings simulate_system.operation, climate.selected, climate.sources, climate.window, model.outvars; retained simulation/model inputs come from C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/config/simulation.json and generation inputs from C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project/scenario_collections/71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88/collection.json
+Assuming unrestricted shared filesystem usage.
+host: WSU-5CG4013KNZ
+Building DAG of jobs...
+Provided cores: 3
+Rules claiming more threads will be scaled down.
+Job stats:
+job                    count
+-------------------  -------
+metrics                    1
+prepare_metric_plan        1
+total                      2
+
+Select jobs to execute...
+Execute 1 jobs...
+
+[Tue Sep 15 10:30:23 2026]
+localcheckpoint prepare_metric_plan:
+    input: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/config/simulation.json, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/responses/response_inventory.json
+    output: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_plans/d83e8ef230f09a9b65176c36d93e4268411240d4526a30102603bb758261fccc/plan.json
+    jobid: 1
+    wildcards: metric_request_id=d83e8ef230f09a9b65176c36d93e4268411240d4526a30102603bb758261fccc
+    resources: tmpdir=C:\Users\taner\AppData\Local\Temp
+DAG of jobs will be updated after completion.
+[Tue Sep 15 10:30:29 2026]
+Finished jobid: 1 (Rule: prepare_metric_plan)
+1 of 2 steps (50%) done
+Updating checkpoint dependencies.
+Select jobs to execute...
+Execute 1 jobs...
+
+[Tue Sep 15 10:30:39 2026]
+localrule publish_metric_set:
+    input: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_plans/d83e8ef230f09a9b65176c36d93e4268411240d4526a30102603bb758261fccc/plan.json
+    output: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metrics.json (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/unit_index.csv (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metric_environment.json (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/q_indicators.csv (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/gwr_indicators.csv (update)
+    jobid: 4
+    wildcards: metric_set_id=7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274
+    resources: tmpdir=C:\Users\taner\AppData\Local\Temp
+[Tue Sep 15 10:30:54 2026]
+Finished jobid: 4 (Rule: publish_metric_set)
+2 of 3 steps (67%) done
+Select jobs to execute...
+Execute 1 jobs...
+
+[Tue Sep 15 10:30:54 2026]
+localrule metrics:
+    input: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metric_environment.json, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/gwr_indicators.csv, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metrics.json, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/q_indicators.csv, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/unit_index.csv
+    jobid: 0
+    resources: tmpdir=C:\Users\taner\AppData\Local\Temp
+[Tue Sep 15 10:30:54 2026]
+Finished jobid: 0 (Rule: metrics)
+3 of 3 steps (100%) done
+Complete log(s): C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.snakemake\log\2026-09-15T103017.580001.snakemake.log

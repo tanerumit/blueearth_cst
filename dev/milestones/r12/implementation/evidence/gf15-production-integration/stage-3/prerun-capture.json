@@ -1,0 +1,63 @@
+{
+  "anchor": {
+    "bytes": 67547392,
+    "collection_id": "71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88",
+    "files": 25,
+    "live_path": "C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p3-final-direct/project/scenario_collections/71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88",
+    "note": "The retained simulation record embeds the LIVE absolute path, which sits under disposable .tmp. It is never rewritten. This check establishes whether the frozen snapshot could restore that exact subtree if the scratch tree were swept.",
+    "snapshot_path": "C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/prechange/p3-final-direct/project/scenario_collections/71bf34ef8db1122bb91f097ac63ff01e450cf0a16ad9a9d3cca64128fd23ba88",
+    "snapshot_restores_live_byte_for_byte": true
+  },
+  "baseline_selection": {
+    "correction_2026_09_15": "An earlier draft of selected_reason said this was 'the only set the retained metrics-reuse invocation produced'. That is false and is corrected here: p3-operations-dedicated-reuse/metrics-reuse.log records 'Nothing to be done (all requested files are present and up to date)', so that invocation produced NO set. Both retained sets predate it. The selection rests on set content, which is checkable, not on provenance from that log.",
+    "out_of_scope": "d354a347e50cb03dbc5c538e929cf7411be8758c38f3cdcc15aec36f323790ff",
+    "out_of_scope_expected_keys": 56,
+    "out_of_scope_reason": "A gwr-only set for the same simulation: 56 declared keys, the single metric gwr_annual_total, no q table and NO return-level evidence. It cannot be a baseline for a {q, gwr} comparison, and naming it here fixes the denominator so a coverage count has one candidate old set, not two.",
+    "out_of_scope_tokens": [
+      "gwr"
+    ],
+    "selected": "49ca015882e8396f4fd46930b9a95be3ccbd4dfcaf2d5c7840bf1b3df95aa665",
+    "selected_expected_keys": 756,
+    "selected_reason": "The complete {q, gwr} set for the frozen simulation 3a8c1fc6...: 756 declared keys over eleven q metrics and one gwr metric, both indicator tables present, status ready, and the set Stage 1 inventoried and whose manifest and table digests the Stage 1 record pins. It is the only retained set that carries return levels at all.",
+    "selected_validation": {
+      "benchmark": "not assessed",
+      "status": "provisional_operational"
+    },
+    "sets_present": [
+      "49ca015882e8396f4fd46930b9a95be3ccbd4dfcaf2d5c7840bf1b3df95aa665",
+      "d354a347e50cb03dbc5c538e929cf7411be8758c38f3cdcc15aec36f323790ff"
+    ]
+  },
+  "old_tables": {
+    "gwr_indicators.csv": {
+      "bytes": 1697,
+      "sha256": "cea695df0af5af01f962e02582786547879baa6777d360a29ec5b4c9c5947472"
+    },
+    "q_indicators.csv": {
+      "bytes": 24665,
+      "sha256": "2d9dd339ed0c0de93e9140ba0a1061fbce00925a0cbca993772c5133cd8250b7"
+    }
+  },
+  "upstream_before": {
+    "baseline_metric_set": {
+      "bytes": 104494,
+      "files": 5
+    },
+    "collection": {
+      "bytes": 67547392,
+      "files": 25
+    },
+    "experiment_config": {
+      "bytes": 31362,
+      "files": 6
+    },
+    "native_responses": {
+      "bytes": 9108937,
+      "files": 28
+    },
+    "response_inventory": {
+      "bytes": 75575,
+      "files": 1
+    }
+  }
+}

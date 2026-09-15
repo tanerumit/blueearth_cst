@@ -1,0 +1,86 @@
+{
+  "schema": "r12-gf15-investigation-evidence/1",
+  "scope": "bounded diagnostic evidence; exact raw bytes; inventory excludes itself",
+  "files": [
+    {
+      "path": "format-check.log",
+      "bytes": 235,
+      "sha256": "0bfc900f62a8a1ad10d978771f4c68c93e82e0ad372e89e6705476c07010bd4d"
+    },
+    {
+      "path": "investigate-estimator.py",
+      "bytes": 24476,
+      "sha256": "6c771b2efbc57addc1f39d6b2e114c323b105354ee8bf6cef60447a069933d82"
+    },
+    {
+      "path": "investigation.log",
+      "bytes": 700,
+      "sha256": "e91b239d0b22a2fc9485ed2f6fbb879d2d9861f842d74521d0fce46d0b278874"
+    },
+    {
+      "path": "lint.log",
+      "bytes": 229,
+      "sha256": "ec61205af4e37ff003ae8d84fddc9b8539713eb64c7760dd8ab439cafc3f3fe6"
+    },
+    {
+      "path": "results/completion.json",
+      "bytes": 242,
+      "sha256": "3b98dc401d32ebc3797134da02863650fb068f02a6b82529c386df8ee4856af1"
+    },
+    {
+      "path": "results/controls.json",
+      "bytes": 305,
+      "sha256": "56985dbd754d4adfef12ecf62d4a6e0a94031718c5c79da119c49c36988137cd"
+    },
+    {
+      "path": "results/optimizer-evaluations.jsonl.gz",
+      "bytes": 1015847,
+      "sha256": "e1ba314f9ea457099a48f8410d80cccf2f3b947c926aa8d13150ec76256f5180"
+    },
+    {
+      "path": "results/optimizer-traces.json",
+      "bytes": 536142,
+      "sha256": "4bead5547ecbf83ccae150475f2114f1f71081a13869caa6637e44f9ed4c7d96"
+    },
+    {
+      "path": "results/parameter-likelihood-summary.json",
+      "bytes": 287521,
+      "sha256": "28ac5813df90560d585d4f341fcf114a1d94fd1fd8926d2365a09c5568b60812"
+    },
+    {
+      "path": "results/protocol.json",
+      "bytes": 1847,
+      "sha256": "a6f5511b3e70b94e33b5f5a59f1a55795bddadf41704f34459ac4f1cd888a999"
+    },
+    {
+      "path": "results/provenance.json",
+      "bytes": 1628,
+      "sha256": "7b4379ce3f07d844b1c9a391b51616243ec72286ffd9b91684eff0179f145954"
+    },
+    {
+      "path": "results/retained-fit-diagnostics.jsonl.gz",
+      "bytes": 14246200,
+      "sha256": "24807f764254f7f1ba88e311d4dc73817cf1d4ec86f0430b8b78ed6ecfc6565e"
+    },
+    {
+      "path": "results/sample-size-accuracy.json",
+      "bytes": 44308,
+      "sha256": "c708cbe75bae46c7478c0ab7249dd9317be0461a46eb41648fb482278bc81d6c"
+    },
+    {
+      "path": "scientific-handoff.md",
+      "bytes": 16688,
+      "sha256": "2eedf62145dc909e2e109c816267f4246c71807504b65e305dd2fb176abce8ff"
+    },
+    {
+      "path": "source-reconciliation.json",
+      "bytes": 4830,
+      "sha256": "5724b2ab259a196abdf362addc094424ae37d8435505cba82d5d3dddbdcaa3de"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 2320,
+      "sha256": "e1a7f427fcd6f9380ec7adc36a31a1e3491da2dd2d44dea02364f25479f1d56b"
+    }
+  ]
+}

@@ -2183,19 +2183,21 @@ def test_every_member_gets_a_distinct_log_and_output_pointer():
 
 
 def test_the_log_pointer_is_keyed_the_same_way_as_the_other_two():
-    """A guard on the guard: `path_log` must be derived, not hardcoded.
+    """The preparation uses the explicitly declared native log path."""
+    import ast
 
-    If `downscale_climate_forcing.py` ever spells the log path literally
-    instead of building it from `member_pointer_base`, this stays green while
-    the race returns -- so the source is asserted too.
-    """
     src = (
         Path(__file__).resolve().parents[1]
         / "blueearth_cst"
         / "experiment"
         / "downscale_climate_forcing.py"
     ).read_text(encoding="utf-8")
-    assert '"logging.path_log": f"{out_prefix}{run_name}.log"' in src
+    assert any(
+        isinstance(node, ast.Call)
+        and ast.unparse(node)
+        == "os.path.relpath(settings.native_log_path, config_out_root)"
+        for node in ast.walk(ast.parse(src))
+    )
     # Comments legitimately NAME the wflow default while explaining why it is
     # overridden, so strip them first: what must not reappear is `log.txt` as a
     # VALUE. A blunter substring check fails on the rationale for the fix.

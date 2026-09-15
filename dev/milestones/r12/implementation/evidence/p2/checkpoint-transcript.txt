@@ -1,0 +1,259 @@
+P2 current-carrier checkpoint and completion excerpts.
+Verbose driver output and repeated absolute input/output lists omitted; source log hashes and sizes are recorded in execution-evidence.json.
+
+=== p2-carrier-generation-4.log ===
+Building DAG of jobs...
+07:18:52 - RUN  Rule 3.10: prepare_weathergen_config
+07:18:59 - DONE Rule 3.10: prepare_weathergen_config  0:00:06  [1/3]
+localcheckpoint prepare_collection_sources:
+DAG of jobs will be updated after completion.
+07:19:05 - DONE prepare_collection_sources  0:00:05  [2/3]
+Updating checkpoint dependencies.
+localrule initialize_scenario_collection:
+07:19:07 - DONE initialize_scenario_collection  0:00:02  [3/32]
+07:19:07 - RUN  Rule 3.11: generate_weather_realizations - generate stochastic weather with weathergenr  [3/32]
+07:19:33 - DONE Rule 3.11: generate_weather_realizations  0:00:25  [4/32]
+07:19:33 - RUN  Rule 3.12: perturb_climate_realization - apply one stress-test member to one realization  [rlz 2 | st 6]  [4/32]
+07:19:33 - RUN  Rule 3.12: perturb_climate_realization  [rlz 2 | st 1]  [4/32]
+07:19:42 - DONE Rule 3.12: perturb_climate_realization  [rlz 2 | st 1]  0:00:09  [5/32]
+localrule retain_scenario_forcing:
+07:19:42 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 09]  [6/32]
+07:19:42 - RUN  Rule 3.12: perturb_climate_realization  [rlz 2 | st 3]  [6/32]
+07:19:42 - DONE Rule 3.12: perturb_climate_realization  [rlz 2 | st 6]  0:00:09  [7/32]
+localrule retain_scenario_forcing:
+07:19:42 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 14]  [8/32]
+07:19:42 - RUN  Rule 3.12: perturb_climate_realization  [rlz 2 | st 4]  [8/32]
+07:19:51 - DONE Rule 3.12: perturb_climate_realization  [rlz 2 | st 3]  0:00:08  [9/32]
+localrule retain_scenario_forcing:
+07:19:51 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 11]  [10/32]
+07:19:51 - RUN  Rule 3.12: perturb_climate_realization  [rlz 2 | st 5]  [10/32]
+07:19:51 - DONE Rule 3.12: perturb_climate_realization  [rlz 2 | st 4]  0:00:08  [11/32]
+localrule retain_scenario_forcing:
+07:19:51 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 12]  [12/32]
+07:19:51 - RUN  Rule 3.12: perturb_climate_realization  [rlz 2 | st 2]  [12/32]
+07:19:59 - DONE Rule 3.12: perturb_climate_realization  [rlz 2 | st 2]  0:00:08  [13/32]
+localrule retain_scenario_forcing:
+07:19:59 - DONE Rule 3.12: perturb_climate_realization  [rlz 2 | st 5]  0:00:08  [14/32]
+localrule retain_scenario_forcing:
+07:19:59 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 10]  [15/32]
+localrule retain_scenario_forcing:
+07:19:59 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 13]  [16/32]
+07:19:59 - RUN  Rule 3.12: perturb_climate_realization  [rlz 1 | st 2]  [16/32]
+07:19:59 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 08]  [17/32]
+07:19:59 - RUN  Rule 3.12: perturb_climate_realization  [rlz 1 | st 3]  [17/32]
+07:20:07 - DONE Rule 3.12: perturb_climate_realization  [rlz 1 | st 2]  0:00:08  [18/32]
+localrule retain_scenario_forcing:
+07:20:07 - DONE Rule 3.12: perturb_climate_realization  [rlz 1 | st 3]  0:00:08  [19/32]
+localrule retain_scenario_forcing:
+07:20:07 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 03]  [20/32]
+07:20:07 - RUN  Rule 3.12: perturb_climate_realization  [rlz 1 | st 5]  [20/32]
+07:20:07 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 04]  [21/32]
+07:20:07 - RUN  Rule 3.12: perturb_climate_realization  [rlz 1 | st 6]  [21/32]
+07:20:15 - DONE Rule 3.12: perturb_climate_realization  [rlz 1 | st 6]  0:00:08  [22/32]
+localrule retain_scenario_forcing:
+07:20:15 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 07]  [23/32]
+07:20:15 - RUN  Rule 3.12: perturb_climate_realization  [rlz 1 | st 4]  [23/32]
+07:20:16 - DONE Rule 3.12: perturb_climate_realization  [rlz 1 | st 5]  0:00:08  [24/32]
+localrule retain_scenario_forcing:
+07:20:16 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 06]  [25/32]
+07:20:16 - RUN  Rule 3.12: perturb_climate_realization  [rlz 1 | st 1]  [25/32]
+07:20:24 - DONE Rule 3.12: perturb_climate_realization  [rlz 1 | st 1]  0:00:08  [26/32]
+localrule retain_scenario_forcing:
+07:20:24 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 02]  [27/32]
+localrule retain_scenario_forcing:
+07:20:24 - DONE Rule 3.12: perturb_climate_realization  [rlz 1 | st 4]  0:00:08  [28/32]
+localrule retain_scenario_forcing:
+07:20:24 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 01]  [29/32]
+07:20:24 - DONE retain_scenario_forcing  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8 | run_id 05]  [30/32]
+localcheckpoint publish_scenario_collection:
+DAG of jobs will be updated after completion.
+07:20:27 - DONE publish_scenario_collection  [collection_id da182e806b6b4ca224497fecfefd93f6517a98a6cb4ce5915af66bf61dbc77b8]  0:00:03  [31/32]
+Updating checkpoint dependencies.
+wf3 run_stress_test done in 0:01:34
+
+=== p2-carrier-force.log ===
+Building DAG of jobs...
+localcheckpoint prepare_collection_sources:
+DAG of jobs will be updated after completion.
+07:27:57 - DONE prepare_collection_sources  0:00:02  [1/2]
+Updating checkpoint dependencies.
+localcheckpoint publish_scenario_collection:
+DAG of jobs will be updated after completion.
+07:27:57 - DONE publish_scenario_collection  [collection_id 2f7d2f6c97bd90af43f272b7d7ba4ed166d68e76eb895ce65a9776208a28169b]  [2/3]
+Updating checkpoint dependencies.
+localrule scenarios:
+07:27:57 - DONE scenarios  [3/3]
+wf3 run_stress_test done in 0:00:02
+
+=== p2-explicit-all.log ===
+P2_LAUNCH_SNAKEMAKE
+Building DAG of jobs...
+08:01:15 - RUN  Rule 3.05: write_model_reference
+08:01:19 - DONE Rule 3.05: write_model_reference  0:00:04  [1/6]
+08:01:19 - RUN  Rule 3.06: check_model_reference  [1/6]
+08:01:19 - DONE Rule 3.06: check_model_reference  [2/6]
+localcheckpoint freeze_wflow_simulation:
+DAG of jobs will be updated after completion.
+08:01:31 - DONE freeze_wflow_simulation  0:00:11  [3/6]
+Updating checkpoint dependencies.
+08:01:39 - RUN  Rule 3.14: downscale_climate_realization - downscale the perturbed climate onto the model grid  [rlz 2 | st 4]  [3/6]
+08:01:39 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 6]  [3/6]
+08:01:54 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 4]  0:00:15  [4/24]
+08:01:54 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 5]  [4/24]
+08:01:54 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 6]  0:00:15  [5/24]
+08:01:54 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 6]  [5/24]
+08:02:09 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 6]  0:00:15  [6/24]
+08:02:09 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 4]  [6/24]
+08:02:10 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 5]  0:00:15  [7/24]
+08:02:10 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 5]  [7/24]
+08:02:25 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 4]  0:00:15  [8/24]
+08:02:25 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 3]  [8/24]
+08:02:25 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 5]  0:00:15  [9/24]
+08:02:25 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 1]  [9/24]
+08:02:39 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 1]  0:00:13  [10/24]
+08:02:39 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 2]  [10/24]
+08:02:39 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 3]  0:00:14  [11/24]
+08:02:39 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 3]  [11/24]
+08:02:55 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 3]  0:00:15  [12/24]
+08:02:55 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 1]  [12/24]
+08:02:55 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 2]  0:00:15  [13/24]
+08:02:55 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 2]  [13/24]
+08:03:10 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 1]  0:00:14  [14/24]
+08:03:10 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 0]  [14/24]
+08:03:10 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 2]  0:00:14  [15/24]
+08:03:10 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 0]  [15/24]
+08:03:29 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 0]  0:00:18  [16/24]
+08:03:29 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 0]  0:00:18  [17/24]
+08:03:29 - RUN  Rule 3.15: run_wflow_batch_0 - run Wflow for one batch  [8 members | rlz 1-2 | st 0-6 (partial)]  [17/24]
+08:05:57 - DONE Rule 3.15: run_wflow_batch_0  0:02:28  [18/24]
+08:05:57 - RUN  Rule 3.15: run_wflow_batch_1 - run Wflow for one batch  [6 members | rlz 2 | st 1-6]  [18/24]
+08:07:56 - DONE Rule 3.15: run_wflow_batch_1  0:01:59  [19/24]
+localrule publish_native_responses:
+08:07:57 - DONE publish_native_responses  0:00:01  [20/24]
+localcheckpoint prepare_metric_plan:
+DAG of jobs will be updated after completion.
+08:08:04 - DONE prepare_metric_plan  [metric_request_id eea6ffd53e805a784cb6fcb08b42e48176af8d7927089e35fc4ee7433ac4449d]  0:00:06  [21/24]
+Updating checkpoint dependencies.
+localrule publish_metric_set:
+08:08:45 - DONE publish_metric_set  [metric_set_id 2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade]  0:00:20  [22/25]
+08:08:45 - RUN  Rule 3.18: gather_logs  [22/25]
+08:08:45 - RUN  Rule 3.17: gather_benchmarks  [22/25]
+08:08:45 - DONE Rule 3.18: gather_logs  [23/25]
+08:08:47 - DONE Rule 3.17: gather_benchmarks  0:00:02  [24/25]
+08:08:47 - RUN  Rule 3.00: all  [C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p2-carrier/project]  [24/25]
+08:08:47 - DONE Rule 3.00: all  [25/25]
+wf3 run_stress_test done in 0:07:32
+
+=== p2-project-all.log ===
+P2_LAUNCH_SNAKEMAKE
+Building DAG of jobs...
+08:08:29 - RUN  Rule 3.01: check_project_consistency
+08:08:29 - RUN  Rule 3.05: write_model_reference
+08:08:33 - DONE Rule 3.01: check_project_consistency  0:00:04  [1/11]
+08:08:33 - RUN  Rule 3.02: snapshot_config  [1/11]
+08:08:33 - DONE Rule 3.05: write_model_reference  0:00:04  [2/11]
+08:08:33 - RUN  Rule 3.06: check_model_reference  [2/11]
+08:08:34 - DONE Rule 3.06: check_model_reference  [3/11]
+08:08:34 - RUN  Rule 3.09: prepare_stress_test_grid  [3/11]
+08:08:35 - DONE Rule 3.02: snapshot_config  0:00:01  [4/11]
+08:08:35 - RUN  Rule 3.07: write_experiment_config  [4/11]
+08:08:36 - DONE Rule 3.07: write_experiment_config  [5/11]
+localcheckpoint prepare_collection_sources:
+DAG of jobs will be updated after completion.
+08:08:38 - DONE Rule 3.09: prepare_stress_test_grid  0:00:03  [6/11]
+08:08:40 - DONE prepare_collection_sources  0:00:03  [7/11]
+Updating checkpoint dependencies.
+localcheckpoint freeze_wflow_simulation:
+DAG of jobs will be updated after completion.
+08:08:52 - DONE freeze_wflow_simulation  0:00:12  [8/11]
+Updating checkpoint dependencies.
+08:08:59 - RUN  Rule 3.14: downscale_climate_realization - downscale the perturbed climate onto the model grid  [rlz 2 | st 4]  [8/11]
+08:08:59 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 6]  [8/11]
+08:09:12 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 6]  0:00:12  [9/29]
+08:09:12 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 5]  [9/29]
+08:09:12 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 4]  0:00:12  [10/29]
+08:09:12 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 6]  [10/29]
+08:09:24 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 5]  0:00:12  [11/29]
+08:09:24 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 4]  [11/29]
+08:09:24 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 6]  0:00:12  [12/29]
+08:09:24 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 5]  [12/29]
+08:09:37 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 5]  0:00:13  [13/29]
+08:09:37 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 3]  [13/29]
+08:09:37 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 4]  0:00:13  [14/29]
+08:09:37 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 1]  [14/29]
+08:09:49 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 1]  0:00:12  [15/29]
+08:09:49 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 2]  [15/29]
+08:09:49 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 3]  0:00:12  [16/29]
+08:09:49 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 3]  [16/29]
+08:10:04 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 2]  0:00:14  [17/29]
+08:10:04 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 1]  [17/29]
+08:10:06 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 3]  0:00:16  [18/29]
+08:10:06 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 2]  [18/29]
+08:10:18 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 1]  0:00:14  [19/29]
+08:10:18 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 0]  [19/29]
+08:10:19 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 2]  0:00:13  [20/29]
+08:10:19 - RUN  Rule 3.14: downscale_climate_realization  [rlz 1 | st 0]  [20/29]
+08:10:33 - DONE Rule 3.14: downscale_climate_realization  [rlz 2 | st 0]  0:00:14  [21/29]
+08:10:34 - DONE Rule 3.14: downscale_climate_realization  [rlz 1 | st 0]  0:00:14  [22/29]
+08:10:34 - RUN  Rule 3.15: run_wflow_batch_0 - run Wflow for one batch  [8 members | rlz 1-2 | st 0-6 (partial)]  [22/29]
+08:13:04 - DONE Rule 3.15: run_wflow_batch_0  0:02:30  [23/29]
+08:13:04 - RUN  Rule 3.15: run_wflow_batch_1 - run Wflow for one batch  [6 members | rlz 2 | st 1-6]  [23/29]
+08:15:08 - DONE Rule 3.15: run_wflow_batch_1  0:02:04  [24/29]
+localrule publish_native_responses:
+08:15:09 - DONE publish_native_responses  0:00:01  [25/29]
+localcheckpoint prepare_metric_plan:
+DAG of jobs will be updated after completion.
+08:15:15 - DONE prepare_metric_plan  [metric_request_id eea6ffd53e805a784cb6fcb08b42e48176af8d7927089e35fc4ee7433ac4449d]  0:00:05  [26/29]
+Updating checkpoint dependencies.
+localrule publish_metric_set:
+08:15:48 - DONE publish_metric_set  [metric_set_id 2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade]  0:00:16  [27/30]
+08:15:48 - RUN  Rule 3.17: gather_benchmarks  [27/30]
+08:15:48 - RUN  Rule 3.18: gather_logs  [27/30]
+08:15:48 - DONE Rule 3.18: gather_logs  [28/30]
+08:15:51 - DONE Rule 3.17: gather_benchmarks  0:00:02  [29/30]
+08:15:51 - RUN  Rule 3.00: all  [C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p2-carrier/project]  [29/30]
+08:15:51 - DONE Rule 3.00: all  [30/30]
+wf3 run_stress_test done in 0:07:21
+
+=== p2-forced-simulation.log ===
+P2_LAUNCH_SNAKEMAKE
+Building DAG of jobs...
+localcheckpoint prepare_metric_plan:
+DAG of jobs will be updated after completion.
+08:11:38 - RUN  Rule 3.05: write_model_reference
+08:11:41 - DONE Rule 3.05: write_model_reference  0:00:03  [1/5]
+08:11:44 - DONE prepare_metric_plan  [metric_request_id eea6ffd53e805a784cb6fcb08b42e48176af8d7927089e35fc4ee7433ac4449d]  0:00:07  [2/5]
+Updating checkpoint dependencies.
+localrule publish_metric_set:
+08:12:24 - DONE publish_metric_set  [metric_set_id 2ce17970c2b2f5406987acb356858cf1b62ad64cdbbbc255154819e61ec00ade]  0:00:07  [3/6]
+08:12:24 - RUN  Rule 3.17: gather_benchmarks  [3/6]
+08:12:24 - RUN  Rule 3.18: gather_logs  [3/6]
+08:12:25 - DONE Rule 3.18: gather_logs  [4/6]
+08:12:28 - DONE Rule 3.17: gather_benchmarks  0:00:03  [5/6]
+08:12:28 - RUN  Rule 3.00: all  [C:/Users/taner/workspace/.worktrees/blueearth_cst/session-3/.tmp/scratchpad/2026-09-11_0010/p2-carrier/project]  [5/6]
+08:12:28 - DONE Rule 3.00: all  [6/6]
+wf3 run_stress_test done in 0:00:57
+
+=== p2-offline.log ===
+P2_LAUNCH_SNAKEMAKE
+Building DAG of jobs...
+localcheckpoint prepare_metric_plan:
+DAG of jobs will be updated after completion.
+1 of 2 steps (50%) done
+Updating checkpoint dependencies.
+localrule publish_metric_set:
+2 of 3 steps (67%) done
+localrule metrics:
+3 of 3 steps (100%) done
+
+=== p2-stale-refusal.log ===
+
+=== p2-stale-repair.log ===
+Building DAG of jobs...
+08:25:51 - RUN  Rule 3.10: prepare_weathergen_config
+08:25:57 - DONE Rule 3.10: prepare_weathergen_config  0:00:06  [1/3]
+localcheckpoint prepare_collection_sources:
+DAG of jobs will be updated after completion.
+08:26:00 - DONE prepare_collection_sources  0:00:02  [2/3]
+Updating checkpoint dependencies.
+wf3 run_stress_test done in 0:00:11

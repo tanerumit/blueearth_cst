@@ -1,0 +1,24 @@
+[
+  {
+    "method": "A",
+    "shape_c": -0.2,
+    "n": 10,
+    "p": 0.9,
+    "ratio": 0.5,
+    "criterion": "relative_p90",
+    "passing_margin": -0.9688967212042865,
+    "excess_over_limit": 0.9688967212042865,
+    "failure_class": "relative_only"
+  },
+  {
+    "method": "B",
+    "shape_c": -0.2,
+    "n": 10,
+    "p": 0.9,
+    "ratio": 0.5,
+    "criterion": "relative_p90",
+    "passing_margin": -0.8640463666512321,
+    "excess_over_limit": 0.8640463666512321,
+    "failure_class": "relative_only"
+  }
+]

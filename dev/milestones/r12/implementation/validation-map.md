@@ -38,6 +38,43 @@ Windows evidence cannot satisfy the outstanding Linux gate.
 | GF29, GF30, GF32 | Fresh generation/simulation through both interfaces, physical offline metrics, and 32 reuse/refusal/selection checks pass. |
 | GF31 | Four-branch portable-preparation comparison has signed bounded acceptance, retaining the documented synthetic CHIRPS and dormant E-OBS limits. |
 
+## GF15 production integration — 2026-09-15
+
+Stages 1-3 of the [production integration](evidence/gf15-production-integration/)
+are executed on **Windows only**, under the owner's 2026-09-14 sequencing
+override. Nothing below releases cross-platform acceptance or a seal.
+
+**Stage 2** landed the adapter across six commits `ce4d3bfa`…`eba69df2`, and
+independent E7 parity was **ACCEPTED at `5cd2d8ce`** after a first-round
+rejection that found a real warnings-retention defect
+([verdict](evidence/gf15-production-integration/e7-parity-verdict.md)). The full
+non-integration suite passed 3,808 at that HEAD.
+
+**Stage 3** compared the successor against the retained P3 baseline on real
+responses: 756 of 756 declared keys, none unevaluated, 686 non-return-level
+values equal, all 70 return levels changed with preserved member extraction, and
+the frozen snapshot byte-identical across 446 files
+([record](evidence/gf15-production-integration/stage-3-record.md)). The
+independent reviewer **REJECTED** it
+([verdict](evidence/gf15-production-integration/stage-3-verdict.md)) — narrowly,
+and against the record rather than the run, which it re-derived independently
+and confirmed. Three defects were corrected: a credential written into tracked
+evidence (removed and the commit rewritten before any push), a causal account of
+the large low-flow changes that the data contradicted, and an undisclosed
+shape-domain gap.
+
+The owner ruled **B + A** on
+[shape-coverage-options.md](evidence/gf15-production-integration/shape-coverage-options.md)
+on 2026-09-15: every return-level fit now records its shape-domain coverage,
+non-gating, and the documentation states the boundary. 49 of 70 production fits
+fall inside the assessed shapes; the 21 outside are all
+`q_return_level_2yr_7day_min`.
+
+Outstanding and explicitly not discharged: **Linux setup and parity** (D8 handoff
+2/4), the **§7.5 owner method ruling**, **actual-bundle applicability**, and the
+accuracy of low-flow return levels in both the near-zero and outside-shape
+regimes. Stage 3 re-review at the corrected tree is pending.
+
 ## Earlier checkpoints and preparation allocation
 
 The owner-approved [full B qualification](evidence/gf15-normalized-qualification/scientific-handoff.md)
@@ -113,7 +150,7 @@ Existing reusable checks:
 
 | GF | Owner / phase | Claim falsifier | Command status / proposed test |
 |---|---|---|---|
-| 1 | Python engineer / P0 composition; P1 integrated DAG; P3 final generation | P2b or fresh generation DAG has ambiguity/cycle, or missing ancestor does not refuse | **P0/P1 PASSED; P3 pending** — P2b fixture, current-carrier `tests/test_cli.py` on fresh staged WF1 leaves, and real provider graph; final entry points do not yet exist |
+| 1 | Python engineer / P0 composition; P1 integrated DAG; P3 final generation | P2b or fresh generation DAG has ambiguity/cycle, or missing ancestor does not refuse | **P0/P1/P3 PASSED** — P2b fixture, current-carrier `tests/test_cli.py` on fresh staged WF1 leaves, and the real provider graph. Corrected 2026-09-15: the previous entry said "P3 pending … final entry points do not yet exist", which this map's own P3 boundary section already contradicted. `generate_scenarios.smk`, `simulate_system.smk` and `scripts/simulate_system.py` exist and are exercised — GF15 Stage 3 ran a metrics-only operation through the runner on 2026-09-15. P3 coverage: [scientific/orchestration handoff](evidence/p3/scientific-orchestration-handoff.md) |
 | 2 | Python engineer / P1 | Empty edge schedules a transform | **P1 PASSED** — `tests/test_scenario_rows.py`, `tests/test_scenario_provider.py`; actual graph has two roots and twelve transforms |
 | 3 | Python engineer / P1 | Rows require generated-table read, row checkpoint, or second invocation | **P1 PASSED** — `tests/test_scenario_rows.py::test_rows_are_parse_time_pure`; current-carrier CLI and one-invocation provider rehearsal |
 | 4 | Python engineer / P1 | Any stochastic unperturbed row is unevaluated/uninventoried or retired toggle is accepted | **P1 logical contract PASSED** — row enumeration/refusal tests; durable inventory belongs to P2 |
@@ -129,13 +166,13 @@ Existing reusable checks:
 | 14 | Python engineer + model validator / P1 | Unevaluated reference is accepted or old toggle returns | **P1 PASSED** — explicit unevaluated-reference refusal in `tests/test_metric_registry.py` and retired-toggle row test |
 | 15 | Python engineer + Astra model validator / P1 + seal gate | Screening/fit/benchmark/policy collapse, refusals fail, or benchmark hides cells/limitations | **Operational P1 checks PASSED; benchmark NOT RUN** — count/constant/invalid-parameter/exception fixtures and estimator parity; criteria review/owner gate still precedes benchmark |
 | 16 | Python engineer / P2 | Provider-body change does not move collection id or metric code moves it | **NOT IMPLEMENTED** — `pixi run pytest tests/test_scenario_collection.py -k stage_identity_separation` |
-| 17 | Python engineer / P2 | Partial same-intent mutates/reuses, changed intent shares dir, metric growth within fixed capacity changes the collection, or overflow is silent | **PARTIAL — infrastructure**: `tests/test_scenario_collection.py` proves partial refusal and distinct-intent directories; P1 rows guard capacity. Production source-plan/metric-growth separation remains pending |
+| 17 | Python engineer / P2 | Partial same-intent mutates/reuses, changed intent shares dir, metric growth within fixed capacity changes the collection, or overflow is silent | **PARTIAL — narrowed 2026-09-15**: `tests/test_scenario_collection.py` proves partial refusal and distinct-intent directories; P1 rows guard capacity. Production source-plan resolution and refusal are **discharged** by P3's [handoff](evidence/p3/scientific-orchestration-handoff.md) across both interfaces — a missing source plan names the generation repair command, canonically encoded wrong plan digests give the named refusals, and exact collection selection holds with several collections retained. **Metric growth within fixed capacity remains unexecuted in production**: GF27's [capacity evidence](evidence/p3/gf27-capacity-comparison.json) scopes itself to "actual auto-seed capacity/width generation only; no simulation or GF15" |
 | 18 | Python engineer + model validator / P1 | Invalid ancestry passes or transform consumes a different ancestor | **P1 PASSED** — row pairing/completeness tests, distinct ancestor-byte provider test, reviewed real 14-file generation comparison |
 | 19 | Python engineer + model validator / P3 | Generation needs/model rule appears in fresh DAG | **NOT IMPLEMENTED** — successor CLI test plus real rapid generation without WF1 leaves |
 | 20 | Python engineer / P3 | Simulation DAG can produce collection or missing/not-ready collection proceeds | **NOT IMPLEMENTED** — successor CLI test in `tests/test_cli.py` |
 | 21 | Python engineer + model validator / P1 | Dummy/Wflow readers need different metric code or Wflow name reaches metric | **P1 PASSED** — NPZ dummy and Wflow reader both feed `reduce_run`; neutral metadata tests and named response/metric review |
 | 22 | Python engineer / P2 | Metrics-only schedules Wflow, switches identity, or incomplete state reaches execution | **P0 mandatory-runner precursor PASSED; production NOT IMPLEMENTED** — `tests/test_r12_wf3_feasibility.py`; owner-approved runner enforces the synthetic matrix |
-| 23 | Python engineer / P2 | Mutation succeeds, shared reuse fails, or referenced delete lacks force | **PARTIAL — infrastructure**: `tests/test_scenario_collection.py` proves byte/mtime-preserving reuse and named drift refusal. Production reuse and reference-aware deletion remain pending |
+| 23 | Python engineer / P2 | Mutation succeeds, shared reuse fails, or referenced delete lacks force | **PARTIAL — narrowed 2026-09-15**: `tests/test_scenario_collection.py` proves byte/mtime-preserving reuse and named drift refusal. Production reuse is **discharged** by P3's [handoff](evidence/p3/scientific-orchestration-handoff.md): simulation and metric reuse/force through both interfaces with all retained bytes preserved. **Reference-aware deletion remains unexecuted** — no production or synthetic deletion case exists in the P3 evidence |
 | 24 | Python engineer + model validator / P2 | Unmounted sources/absent model prevent persisted coverage validation or missing row/series passes | **NOT IMPLEMENTED** — `pixi run pytest tests/test_response_inventory.py -k self_contained_coverage` |
 | 25 | Python engineer / P3 | Five stanzas/direct/runner disagree or old surfaces do not refuse with migration text | **NOT IMPLEMENTED** — extend `tests/test_config_composition.py`, `test_run_workflows.py`, `test_cli.py` |
 | 26 | Python engineer + CST architect / P3 | WF2 edge/digest enters successor identities or runner does not place WF2 last | **NOT IMPLEMENTED** — successor DAG/runner tests |

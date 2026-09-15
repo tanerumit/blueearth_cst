@@ -1,0 +1,28 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+cachedir: .tmp\pytest_cache
+rootdir: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3
+configfile: pyproject.toml
+plugins: anyio-4.13.0, hydra-core-1.3.2, xdist-3.8.0, zarr-3.2.1
+collected 3829 items / 3728 deselected / 101 selected
+
+tests\test_cli.py ............                                           [ 11%]
+tests\test_climate_store_contract.py ........................            [ 35%]
+tests\test_climate_store_freshness.py ..                                 [ 37%]
+tests\test_collection_utils.py .                                         [ 38%]
+tests\test_config_composition.py .                                       [ 39%]
+tests\test_cross_workflow_inputs.py .......                              [ 46%]
+tests\test_gridded_outputs_removed.py .                                  [ 47%]
+tests\test_member_catalog_rule.py ....                                   [ 51%]
+tests\test_model_rebuild_cascade.py .                                    [ 52%]
+tests\test_plot_climate_source.py .                                      [ 53%]
+tests\test_prepare_spatial_maps_rule.py .                                [ 54%]
+tests\test_r12_wf3_feasibility.py .............................          [ 83%]
+tests\test_region_rule.py ....                                           [ 87%]
+tests\test_spatial_units_rule.py .....                                   [ 92%]
+tests\test_stage_cmip6.py .                                              [ 93%]
+tests\test_stage_data_incremental.py .                                   [ 94%]
+tests\test_v2_config_shape.py ....                                       [ 98%]
+tests\test_wf1_plot_outputs.py ..                                        [100%]
+
+============== 101 passed, 3728 deselected in 335.56s (0:05:35) ===============

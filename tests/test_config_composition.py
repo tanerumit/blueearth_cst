@@ -51,10 +51,22 @@ def test_unknown_workflow_stanza_is_refused(tmp_path, workflow):
         cc.load_composed_config(path)
 
 
+# `sorted` is load-bearing, not tidiness. Both key collections are frozensets,
+# whose iteration order depends on PYTHONHASHSEED and therefore differs between
+# processes. Under `test-fast` (`-n auto`) each xdist worker collects these cases
+# in its own order, and pytest aborts the whole run with "Different tests were
+# collected between gw7 and gw8". Single-process runs -- which is what CI does --
+# never expose it, so the documented pre-push gate was the only thing it broke.
 @pytest.mark.parametrize(
     "owner,key,other",
-    [("simulate_system", key, "generate_scenarios") for key in cc.GENERATION_KEYS]
-    + [("generate_scenarios", key, "simulate_system") for key in cc.SIMULATION_KEYS],
+    [
+        ("simulate_system", key, "generate_scenarios")
+        for key in sorted(cc.GENERATION_KEYS)
+    ]
+    + [
+        ("generate_scenarios", key, "simulate_system")
+        for key in sorted(cc.SIMULATION_KEYS)
+    ],
 )
 def test_split_workflow_settings_cannot_cross_ownership(tmp_path, owner, key, other):
     path = write_split(tmp_path, bodies={owner: {key: {}}})

@@ -1,0 +1,150 @@
+============================= test session starts =============================
+platform win32 -- Python 3.12.13, pytest-9.0.3, pluggy-1.6.0
+cachedir: .tmp\pytest_cache
+rootdir: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3
+configfile: pyproject.toml
+plugins: anyio-4.13.0, hydra-core-1.3.2, xdist-3.8.0, zarr-3.2.1
+created: 10/10 workers
+10 workers [3728 items]
+
+........................................................................ [  1%]
+........................................................................ [  3%]
+........................................................................ [  5%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 15%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+................sssss....................s..s......s.s.s.s.s............ [ 27%]
+........................................................................ [ 28%]
+........................................................................ [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 38%]
+........................................................................ [ 40%]
+........................................................................ [ 42%]
+........................................................................ [ 44%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 52%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+........................................................................ [ 73%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 81%]
+........................................................................ [ 83%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+........................................................................ [ 92%]
+...................................x.................................... [ 94%]
+........................................................................ [ 96%]
+......................................................sss............... [ 98%]
+........................................................                 [100%]
+============================== warnings summary ===============================
+tests/test_fetch_gcm_raw.py::test_a_store_running_to_2300_is_read_instead_of_overflowing
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_fetch_gcm_raw.py:695: FutureWarning: In a future version of xarray to_datetimeindex will default to returning a 'us'-resolution DatetimeIndex instead of a 'ns'-resolution DatetimeIndex. This warning can be silenced by explicitly passing the `time_unit` keyword argument.
+    ds.indexes["time"].to_datetimeindex()  # what harmonise_dims does
+
+tests/test_fetch_gcm_raw.py::test_a_store_running_to_2300_is_read_instead_of_overflowing
+tests/test_fetch_gcm_raw.py::test_hydromts_own_harmonisation_still_happens
+tests/test_fetch_gcm_raw.py::test_the_window_slice_brings_the_axis_back_inside_nanoseconds
+tests/test_fetch_gcm_raw.py::test_two_variables_whose_spans_differ_can_still_be_merged
+tests/test_fetch_gcm_raw.py::test_the_merge_overflows_when_only_the_cftime_side_is_widened
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\fetch_gcm_raw.py:281: RuntimeWarning: Converting a CFTimeIndex with dates from a non-standard calendar, 'noleap', to a pandas.DatetimeIndex, which uses dates from the standard calendar.  This may lead to subtle errors in operations that depend on the length of time between dates.
+    ds = ds.assign_coords(time=index.to_datetimeindex(time_unit="s"))
+
+tests/test_plot_map.py: 4394 warnings
+tests/test_climate_figures.py: 3600 warnings
+tests/test_climate_levels.py: 600 warnings
+  C:\Users\taner\workspace\blueearth_cst-artifacts\r12\gf15-production-integration\windows-environment-pypi\.pixi\envs\default\Lib\site-packages\cartopy\mpl\ticker.py:151: MatplotlibDeprecationWarning: The locs attribute was deprecated in Matplotlib 3.11 and will be removed in 3.13.
+    self.locs, degs, mins, secs = self._get_dms(self.locs)
+
+tests/test_fetch_gcm_raw.py::test_two_variables_whose_spans_differ_can_still_be_merged
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_fetch_gcm_raw.py:929: FutureWarning: In a future version of xarray the default value for compat will change from compat='no_conflicts' to compat='override'. This is likely to lead to different results when combining overlapping variables with the same name. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set compat explicitly.
+    merged = xr.merge([pr, tas], join="outer")
+
+tests/test_get_change_climate_proj.py::test_row_C1_cftime_360day_change_invariant
+tests/test_get_change_climate_proj.py::test_row_C2_cftime_noleap_change_invariant
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:46: FutureWarning: In a future version of xarray to_datetimeindex will default to returning a 'us'-resolution DatetimeIndex instead of a 'ns'-resolution DatetimeIndex. This warning can be silenced by explicitly passing the `time_unit` keyword argument.
+    ds["time"] = ds.indexes["time"].to_datetimeindex()
+
+tests/test_get_change_climate_proj.py::test_row_C1_cftime_360day_change_invariant
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:46: RuntimeWarning: Converting a CFTimeIndex with dates from a non-standard calendar, '360_day', to a pandas.DatetimeIndex, which uses dates from the standard calendar.  This may lead to subtle errors in operations that depend on the length of time between dates.
+    ds["time"] = ds.indexes["time"].to_datetimeindex()
+
+tests/test_get_change_climate_proj.py::test_row_C2_cftime_noleap_change_invariant
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:46: RuntimeWarning: Converting a CFTimeIndex with dates from a non-standard calendar, 'noleap', to a pandas.DatetimeIndex, which uses dates from the standard calendar.  This may lead to subtle errors in operations that depend on the length of time between dates.
+    ds["time"] = ds.indexes["time"].to_datetimeindex()
+
+tests/test_workflow_performance.py: 24 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:502: FutureWarning: dropping variables using `drop` is deprecated; use drop_vars.
+    change = change.drop("quantile")
+
+tests/test_workflow_performance.py: 12 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:549: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'stats' ('stats',) The recommendation is to set join explicitly for this case.
+    stats_annual_change = xr.merge(ds)
+
+tests/test_workflow_performance.py: 72 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:549: FutureWarning: In a future version of xarray the default value for compat will change from compat='no_conflicts' to compat='override'. This is likely to lead to different results when combining overlapping variables with the same name. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set compat explicitly.
+    stats_annual_change = xr.merge(ds)
+
+tests/test_workflow_performance.py: 12 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:269: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'stats' ('stats',) The recommendation is to set join explicitly for this case.
+    return xr.merge(ds)
+
+tests/test_workflow_performance.py: 108 warnings
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\blueearth_cst\projections\get_change_climate_proj.py:269: FutureWarning: In a future version of xarray the default value for compat will change from compat='no_conflicts' to compat='override'. This is likely to lead to different results when combining overlapping variables with the same name. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set compat explicitly.
+    return xr.merge(ds)
+
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_workflow_performance.py:155: FutureWarning: In a future version of xarray the default value for compat will change from compat='no_conflicts' to compat='override'. This is likely to lead to different results when combining overlapping variables with the same name. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set compat explicitly.
+    with xr.open_mfdataset(monthly_files, coords="minimal") as old:
+
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_workflow_performance.py:155: FutureWarning: In a future version of xarray the default value for join will change from join='outer' to join='exact'. This change will result in the following ValueError: cannot be aligned with join='exact' because index/labels/sizes are not equal along these coordinates (dimensions): 'horizon' ('horizon',) The recommendation is to set join explicitly for this case.
+    with xr.open_mfdataset(monthly_files, coords="minimal") as old:
+
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_workflow_performance.py:155: FutureWarning: In a future version of xarray the default value for data_vars will change from data_vars='all' to data_vars=None. This is likely to lead to different results when multiple datasets have matching variables with overlapping values. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set data_vars explicitly.
+    with xr.open_mfdataset(monthly_files, coords="minimal") as old:
+
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[noleap]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+tests/test_workflow_performance.py::test_stage_b_reuses_series_and_reference_without_changing_merge[360_day]
+  C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\tests\test_workflow_performance.py:156: FutureWarning: In a future version of xarray the default value for data_vars will change from data_vars='all' to data_vars=None. This is likely to lead to different results when multiple datasets have matching variables with overlapping values. To opt in to new defaults and get rid of these warnings now use `set_options(use_new_combine_kwarg_defaults=True) or set data_vars explicitly.
+    merged = xr.combine_by_coords(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [1] tests\test_interchange_contracts.py:899: test_case/test_local predates R14: no config/runs/project_config_build_model.yml, so its v1 snapshot cannot answer a v2 key (the WG-1 store-key case is skipped; the rest of the layer still runs)
+SKIPPED [11] tests\test_interchange_contracts.py:79: standing fixture predates R12; GF9 successor run has not replaced it
+SKIPPED [1] tests\test_workflow_analyze_projections.py: needs --run-integration
+SKIPPED [1] tests\test_workflow_build_model.py: needs --run-integration
+SKIPPED [1] tests\test_workflow_run_stress_test.py: needs --run-integration
+XFAIL tests/test_prepare_climate_data_catalog.py::test_hydromt_to_yml_round_trip_preserves_preprocess - hydromt 1.3 silently strips driver.options.preprocess on DataCatalog().from_dict(...).to_yml(...). blueearth_cst/climate_analysis/prepare_climate_data_catalog.py works around this with yaml.safe_dump. When upstream fixes to_yml, this test will pass, strict=True will fail CI, and the workaround can be removed. See dev/milestones/phase-1/m02b/handoff.md for the upstream reproducer.
+=== 3712 passed, 15 skipped, 1 xfailed, 8845 warnings in 207.90s (0:03:27) ====

@@ -46,11 +46,17 @@ The empty stochastic `st_id` is the unperturbed scenario, outside the surface.
 ## Logs and benchmarks
 
 WF0, WF1 and WF2 retain their project-level merged logs. Generation uses
-`logs/wf3_generate_scenarios_<request_id>.log`; simulation uses
+`logs/wf3_generate_scenarios_<plan_key>.log`; simulation uses
 `logs/wf4_simulate_system_<experiment>.log`. Parts are separated under
-`logs/_parts/generate_scenarios/<request_id>/` and
+`logs/_parts/generate_scenarios/<plan_key>/` and
 `logs/_parts/simulate_system/<experiment>/`. Benchmark parts use the same
 scoping beneath `benchmarks/_parts/`.
+
+`<plan_key>` is the first 12 characters of the scenario plan's
+`generation_request_id` — enough to tell one plan's records from another at a
+glance. The plan's own directory, `scenario_plans/<generation_request_id>/`,
+keeps the full 64-character fingerprint, so match a log to its plan by prefix
+rather than by an exact name comparison.
 
 The runners record invocations under `config/runs/invocations/`, including
 failure and dry-run outcomes. An invocation record describes execution; it does
@@ -67,6 +73,44 @@ Class-C wet/dry-month values have one value per run at a shared reference month;
 the manifest records the reference gauge and members. Values retain the existing
 four-significant-digit format. Return-level qualification and limitations are
 recorded alongside the results.
+
+### Opening a metric table in Excel
+
+`unit_id` in `<token>_indicators.csv`, and `unit_id` and `member_run_id` in
+`unit_index.csv`, are **fixed-width zero-padded text**, not numbers. With a
+collection of 10 or more runs they read `01`, `02`, ...; with 100 or more,
+`001`. The width is a property of the collection's capacity, and the padding is
+what makes the id joinable.
+
+Excel converts them to numbers on a plain double-click, dropping the padding and
+turning `01` into `1`. Microsoft 365 announces this in a "Data conversion"
+notification; **older Excel does it silently.** Either way, a file re-saved
+afterwards has lost the join key: `unit_id` no longer matches `unit_index.csv`,
+and the toolbox's own readers refuse the mismatch rather than guess which unit a
+row means.
+
+There is no way to write a CSV that prevents this. Excel's CSV parser ignores
+quoting for type inference, so a file that Excel opens correctly on a
+double-click is one that is no longer a plain CSV. Use one of these instead:
+
+- **Import rather than open** (works everywhere, changes no settings). Excel →
+  *Data* → *From Text/CSV* → *Transform Data*, set the `unit_id` and
+  `member_run_id` columns to *Text*, then *Close & Load*. This is the only route
+  that is correct on every Excel version.
+- **Turn the conversion off** (Microsoft 365 and Excel 2021+, per machine).
+  *File* → *Options* → *Data* → *Automatic Data Conversion* → clear **"Remove
+  leading zeros from numeric text and convert to a number"**. Double-click then
+  works, but the setting does not travel with the file, so a collaborator opening
+  the same table still needs it.
+- **Read it in code**, where the toolbox already handles this: use
+  `blueearth_cst.shared.surface_axes.read_indicators` and `read_lookup`, which
+  force the id columns to text. In bare pandas, pass the dtype yourself ---
+  `pd.read_csv(path, dtype={"unit_id": str})`. `read_csv` with no dtype has
+  exactly the same failure mode as Excel.
+
+If a table's ids have already been flattened, do not repair them by re-padding to
+the width of the longest value --- that is a guess. Re-export the metric set, or
+recover the file from the set, which is immutable.
 
 ## Return levels and their evidence
 

@@ -104,6 +104,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 from blueearth_cst.projections.series_identity import (  # noqa: E402
     INHERITED_SINGLE_SOURCE_ATTRS,
 )
+from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS  # noqa: E402
 
 VOLATILE_NC_ATTRS = cb.VOLATILE_NC_ATTRS
 
@@ -321,18 +322,39 @@ def build_project_tree_rules(
         rules.append((re.compile(f"({pattern})"), r"\1"))
 
     # -- project root ---------------------------------------------------------
-    # All three workflows' run records live here since 2026-08-11. WF3's are
-    # experiment-keyed in the FILENAME, so they get their own rows rather than
-    # widening the wf1/wf2 ones to `wf[123]` — the experiment fragment is what
+    # All three workflows' run records live here since 2026-08-11. WF3 and WF4
+    # KEY THEIRS IN THE FILENAME, so they get their own rows rather than
+    # widening the wf1/wf2 ones to `wf[123]`: the key fragment is what
     # distinguishes them, and a row that does not say so would accept
-    # `wf3_anything.log`. `[a-z0-9_]+` is validate_experiment_name's grammar.
-    # The two `_parts/` prefixes already cover WF3's `<experiment>/` level.
+    # `wf3_anything.log`.
+    #
+    # The two key on DIFFERENT THINGS, and therefore take SEPARATE rows. WF4
+    # keys on its experiment name, whose grammar is validate_experiment_name's
+    # `[a-z0-9_]+`. WF3 has no user-facing name, so since R12 it keys on its
+    # scenario-plan fingerprint, shortened to SHORT_DIGEST_CHARS hex
+    # (t2609151643) -- imported, not restated, so the row cannot drift from the
+    # `generate_scenarios.smk` constant that builds the name.
+    #
+    # A single `wf[34]_..._[a-z0-9_]+` row covering both would be WIDE ENOUGH TO
+    # MISS REAL ORPHANS: short hex is a subset of the experiment grammar, so
+    # that row accepted every pre-R12 experiment-keyed WF3 benchmark table as
+    # though it were a current plan-keyed one, and the rapid tree read clean
+    # while holding two of them (t2609151800). Splitting the row is what makes
+    # a stale WF3 record resolve as UNMAPPED.
+    #
+    # Residual ambiguity, accepted: an experiment named as 12 hex characters
+    # would satisfy WF3's row too. It is a legal experiment name, so this cannot
+    # be closed by grammar -- only by the fact that nobody names an experiment
+    # `a3f9c2b10d4e`.
+    _hex = f"[0-9a-f]{{{SHORT_DIGEST_CHARS}}}"
     same_rx(r"logs/wf[012]_[^/]+\.log")
-    same_rx(r"logs/wf[34]_(generate_scenarios|simulate_system)_[a-z0-9_]+\.log")
+    same_rx(rf"logs/wf3_generate_scenarios_{_hex}\.log")
+    same_rx(r"logs/wf4_simulate_system_[a-z0-9_]+\.log")
     same("logs/_parts/")
     same("logs/dag/")
     same_rx(r"benchmarks/wf[012]_benchmarks\.md")
-    same_rx(r"benchmarks/wf[34]_benchmarks_[a-z0-9_]+\.md")
+    same_rx(rf"benchmarks/wf3_benchmarks_{_hex}\.md")
+    same_rx(r"benchmarks/wf4_benchmarks_[a-z0-9_]+\.md")
     same("benchmarks/_parts/")
 
     # -- config/ --------------------------------------------------------------

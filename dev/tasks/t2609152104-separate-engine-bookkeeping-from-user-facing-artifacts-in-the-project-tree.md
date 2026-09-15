@@ -198,13 +198,13 @@ in-repo reads it", and "absent on the completed fixture". Confirmed absent on di
 in `session-3/test_case/test_local`, whose experiment output directory holds only
 `run_NN.csv` and `run_NN.log`.
 
-> [!bug] A stale row in the canonical inventory
+> [!bug] A stale row in the canonical inventory — FIXED 2026-09-15
 > `tests/test_project_tree_inventory.py` carries
 > `experiments/<E>/hydrology/wflow/output/outstates_run_001.nc` in its covered
 > shapes. That fixture was taken from a clean run on 2026-08-06; the state output
 > has since been suppressed. The row is now a shape no run produces. It makes the
 > gate marginally permissive rather than wrong — undeclared-artifact detection is
-> unaffected — but it should be dropped or annotated.
+> unaffected — but it has been dropped, with the reasoning left as a comment in its place.
 
 **`run_<id>.toml` and `.temporal.json` are re-verified evidence, not publication
 scratch.** `read_response_inventory` rebuilds each run's native selector — the CSV,
@@ -252,7 +252,8 @@ purpose rather than distinguish anything within it. The whole tree relocates und
 ## Progress
 
 - [x] Rule the five retention questions — done 2026-09-15; none becomes `temp()`
-- [ ] Drop or annotate the stale `outstates_run_001.nc` row in the tree fixture
+- [x] Drop the stale `outstates_run_001.nc` row from the tree fixture — done
+      2026-09-15; `semantic_tree_diff`'s rule for it deliberately kept
 - [ ] Rule change 1's shape, and whether `config/` moves
 - [ ] Rule changes 2 and 3 jointly with [[t2609152040]]'s open questions
 - [ ] Implement, sweep references, update the canonical tree fixture

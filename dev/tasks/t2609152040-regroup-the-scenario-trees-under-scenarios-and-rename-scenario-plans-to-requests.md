@@ -238,6 +238,9 @@ excluding `dev/milestones/` and `dev/working/`:
   derived from it.
 - `blueearth_cst/experiment/collection_resolution.py` — `scenario_plan`,
   `write_scenario_plan`, `verify_scenario_plan`. The request-to-collection binding.
+- [[t2609152107]] — shortening the 64-hex path segments. It breaks existing trees
+  the same way this item's hard-break ruling does, so if both are done they should
+  share ONE migration.
 - [[t2609152104]] — the audience separation: an engine bin for content-addressed
   bookkeeping, plus the metric-side rename and flattening. Separable from this item;
   either can land first.

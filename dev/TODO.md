@@ -35,6 +35,7 @@
 | [t2609151346](tasks/t2609151346-qualify-the-isolated-linux-environment-and-execute-source-qualified-gf15-parity.md)                         | Qualify the isolated Linux environment and execute source-qualified GF15 parity                          | wf3 / platform                              |                                                |     | backlog |
 | [t2609152040](tasks/t2609152040-regroup-the-scenario-trees-under-scenarios-and-rename-scenario-plans-to-requests.md)                        | Regroup the scenario trees under scenarios/ and rename scenario_plans to requests                        | project-tree                                |                                                |     | backlog |
 | [t2609152104](tasks/t2609152104-separate-engine-bookkeeping-from-user-facing-artifacts-in-the-project-tree.md)                              | Separate engine bookkeeping from user-facing artifacts in the project tree                               | project-tree                                |                                                |     | backlog |
+| [t2609152107](tasks/t2609152107-shorten-content-digest-path-segments-to-a-fixed-prefix-keeping-full-digests-as-identities.md)               | Shorten content-digest path segments to a fixed prefix, keeping full digests as identities               | project-tree                                |                                                |     | backlog |
 
 ## Watching
 

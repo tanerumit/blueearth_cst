@@ -141,6 +141,10 @@ against the possibility.
   before touching either plan surface: the plan-then-product split cannot be merged
   away, and `prepare_metric_plan` is a Snakemake **checkpoint** for exactly that
   reason.
+- [[t2609152107]] — shortening the digest path segments. Independent of this item:
+  that one decides how long the names are, this one decides where they live. It is
+  also the only one of the three that addresses the 64-hex names directly, which the
+  curated-index idea above was reaching for.
 - `tests/test_project_tree_inventory.py` — the canonical tree. The reader-versus-engine
   split above is derived from it.
 - `dev/reference/naming.md` — an internal rename record is required for every rename.

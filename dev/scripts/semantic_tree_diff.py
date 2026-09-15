@@ -407,6 +407,13 @@ def build_project_tree_rules(
     # KEY, so the rule is keyed by a variable exactly as the R9 map's is.
     same(f"data/climate/historical/{dataset_key}/")
     same_rx(r"data/climate/historical/[^/]+/.*")
+    # Rule 0.04b pools its colour scale ACROSS sources, so `climate_levels.json`
+    # lands at the historical root rather than inside a store key -- one level
+    # above what the pattern on the line before can match. The per-source sidecar
+    # that used to live under `<key>/plots/` was retired 2026-08-16
+    # (`climate_analysis/climate_figures.py`), so a tree carrying the old
+    # spelling is a predecessor tree, not a second copy of this file.
+    same("data/climate/historical/climate_levels.json")
     for tier in ("raw", "scalar", "summary", "plots"):
         same(f"data/climate/projections/{clim_project}/{tier}/")
     same(f"data/climate/projections/{clim_project}/report.md")
@@ -502,7 +509,15 @@ def build_project_tree_rules(
     same(f"experiments/{e}/responses/response_inventory.json")
     same_rx(rf"experiments/{exp}/results/metric_plans/{digest}/plan\.json")
     metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
-    for leaf in ("metrics.json", "metric_environment.json", "unit_index.csv"):
+    # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is
+    # copied into every set so a reader can validate it without the installed
+    # asset or the estimator dependency. It is a leaf of the set like the rest.
+    for leaf in (
+        "metrics.json",
+        "metric_environment.json",
+        "unit_index.csv",
+        "return_level_benchmark.json",
+    ):
         same_rx(rf"{metric_set}/{re.escape(leaf)}")
     same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_indicators\.csv")
     native = rf"experiments/{exp}/hydrology/wflow"

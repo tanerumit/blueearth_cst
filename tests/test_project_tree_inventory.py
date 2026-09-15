@@ -274,6 +274,21 @@ UNDECLARED = [
     # ...and the new root rows must not be so wide they swallow a stray file.
     "logs/wf3_anything.log",
     "benchmarks/wf3_benchmarks.md",  # unkeyed: no experiment can produce it
+    # WF3's rows are HEX-keyed and WF4's are NAME-keyed, and each must refuse
+    # the other's shape. A single `wf[34]_..._[a-z0-9_]+` row covered both, and
+    # since short hex is a subset of the experiment grammar it silently accepted
+    # every pre-R12 experiment-keyed WF3 record -- two stale benchmark tables
+    # sat in the rapid tree while it reported clean (t2609151800). These four
+    # are the guard on the split.
+    f"logs/wf3_generate_scenarios_{E}.log",
+    f"benchmarks/wf3_benchmarks_{E}.md",
+    "benchmarks/wf3_benchmarks_DEADBEEF1234.md",  # hex, but not lower-case
+    f"benchmarks/wf3_benchmarks_{PK[:8]}.md",  # hex, but not the key LENGTH
+    f"logs/wf3_generate_scenarios_{PK}extra.log",  # 12 hex then trailing text
+    # NOT listed as undeclared, deliberately: a WF4 record whose experiment name
+    # happens to be 12 hex characters. That is a legal experiment name, so WF4's
+    # row must keep accepting it -- the residual ambiguity the split leaves open
+    # and cannot close by grammar.
     "climate_historical/era5_20000101_20201231/extract_historical.nc",  # pre-R9
     "hydrology_model/staticmaps.nc",  # pre-R9
     "spatial/geoms/basins.geojson",  # pre-R9

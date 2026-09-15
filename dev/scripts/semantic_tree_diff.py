@@ -321,12 +321,15 @@ def build_project_tree_rules(
         rules.append((re.compile(f"({pattern})"), r"\1"))
 
     # -- project root ---------------------------------------------------------
-    # All three workflows' run records live here since 2026-08-11. WF3's are
-    # experiment-keyed in the FILENAME, so they get their own rows rather than
-    # widening the wf1/wf2 ones to `wf[123]` — the experiment fragment is what
+    # All three workflows' run records live here since 2026-08-11. WF3 and WF4
+    # KEY THEIRS IN THE FILENAME, so they get their own rows rather than
+    # widening the wf1/wf2 ones to `wf[123]`: the key fragment is what
     # distinguishes them, and a row that does not say so would accept
-    # `wf3_anything.log`. `[a-z0-9_]+` is validate_experiment_name's grammar.
-    # The two `_parts/` prefixes already cover WF3's `<experiment>/` level.
+    # `wf3_anything.log`. The two key it on different things -- WF4 on its
+    # experiment name, WF3 (which has none) on the first 12 characters of its
+    # scenario-plan fingerprint, since R12. `[a-z0-9_]+` is wide enough for
+    # both: it is validate_experiment_name's grammar, and short hex is a
+    # subset of it. The two `_parts/` prefixes already cover the key level.
     same_rx(r"logs/wf[012]_[^/]+\.log")
     same_rx(r"logs/wf[34]_(generate_scenarios|simulate_system)_[a-z0-9_]+\.log")
     same("logs/_parts/")

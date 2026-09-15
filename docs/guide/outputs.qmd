@@ -46,11 +46,17 @@ The empty stochastic `st_id` is the unperturbed scenario, outside the surface.
 ## Logs and benchmarks
 
 WF0, WF1 and WF2 retain their project-level merged logs. Generation uses
-`logs/wf3_generate_scenarios_<request_id>.log`; simulation uses
+`logs/wf3_generate_scenarios_<plan_key>.log`; simulation uses
 `logs/wf4_simulate_system_<experiment>.log`. Parts are separated under
-`logs/_parts/generate_scenarios/<request_id>/` and
+`logs/_parts/generate_scenarios/<plan_key>/` and
 `logs/_parts/simulate_system/<experiment>/`. Benchmark parts use the same
 scoping beneath `benchmarks/_parts/`.
+
+`<plan_key>` is the first 12 characters of the scenario plan's
+`generation_request_id` — enough to tell one plan's records from another at a
+glance. The plan's own directory, `scenario_plans/<generation_request_id>/`,
+keeps the full 64-character fingerprint, so match a log to its plan by prefix
+rather than by an exact name comparison.
 
 The runners record invocations under `config/runs/invocations/`, including
 failure and dry-run outcomes. An invocation record describes execution; it does

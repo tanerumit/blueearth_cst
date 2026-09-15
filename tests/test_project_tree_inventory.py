@@ -33,6 +33,11 @@ import semantic_tree_diff as std  # noqa: E402
 E = "experiment"
 KEY = "era5_20000101_20201231"
 CP = "cmip6"
+#: A WF3 scenario-plan key as it now appears in a run-record FILENAME: the first
+#: 12 characters of the plan fingerprint, not all 64 (t2609151643). The
+#: `scenario_plans/` rows below still use the full 64, because the DIRECTORY
+#: keeps its full name -- the two lengths in this file are the contract.
+PK = "c78c42d77345"
 INVENTORY = std.build_project_tree_rules(E, KEY, CP)
 
 
@@ -50,11 +55,15 @@ COVERED: dict[str, list[str]] = {
     "root": [
         "logs/wf1_build_model.log",
         "logs/wf2_analyze_projections.log",
-        # WF3's run records joined the project's own logs/ + benchmarks/ on
-        # 2026-08-11, keyed by experiment in the FILENAME; its scratch parts
-        # stay experiment-scoped one level down, so two experiments cannot
-        # merge each other's.
+        # WF3's and WF4's run records joined the project's own logs/ +
+        # benchmarks/ on 2026-08-11, KEYED IN THE FILENAME; their scratch parts
+        # stay scoped by the same key one level down, so two runs cannot merge
+        # each other's. WF4 keys on its experiment name. WF3 has none, so since
+        # R12 it keys on its scenario-plan fingerprint -- shortened to the
+        # repo's 12-character digest handle (t2609151643), which is why `PK`
+        # below is 12 hex and not 64.
         f"logs/wf4_simulate_system_{E}.log",
+        f"logs/wf3_generate_scenarios_{PK}.log",
         "logs/_parts/1.01b_delineate_region.log",
         f"logs/_parts/{E}/3.11_generate_weather_realizations.log",
         "logs/dag/test_wf1_dag.png",
@@ -62,8 +71,11 @@ COVERED: dict[str, list[str]] = {
         "benchmarks/wf1_benchmarks.md",
         "benchmarks/wf2_benchmarks.md",
         f"benchmarks/wf4_benchmarks_{E}.md",
+        f"benchmarks/wf3_benchmarks_{PK}.md",
         "benchmarks/_parts/1.02_prepare_spatial_maps.tsv",
         f"benchmarks/_parts/{E}/3.16_derive_wflow_indicators.tsv",
+        f"logs/_parts/generate_scenarios/{PK}/3.07_generate_weather_realizations.log",
+        f"benchmarks/_parts/generate_scenarios/{PK}/3.08_perturb_climate_realization.tsv",
     ],
     "config": [
         "config/runs/project_config_build_model.yml",

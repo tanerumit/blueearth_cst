@@ -7,6 +7,7 @@ import yaml
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.snake_utils import index_width, member_index_regex, rule_banner, patch_psutil_windows_benchmark
+from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.generation_plan import generation_configuration, resolve_generation_plan
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
@@ -24,10 +25,27 @@ store_dir = CLIMATE_STORE.store_dir
 _scenario_plan_path = GENERATION["plan_path"]
 wg_dir = (Path(_scenario_plan_path).parent / "generation").as_posix()
 lookup_path = f"{wg_dir}/config/stress_test_lookup.csv"
-LOG_PARTS_DIR = f"{project_dir}/logs/_parts/generate_scenarios/{Path(_scenario_plan_path).parent.name}"
-BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/generate_scenarios/{Path(_scenario_plan_path).parent.name}"
-WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{Path(_scenario_plan_path).parent.name}.log"
-BENCHMARKS_NAME = f"wf3_benchmarks_{Path(_scenario_plan_path).parent.name}.md"
+# WF3's run records are keyed by the SCENARIO-PLAN fingerprint, because a
+# project can hold several plans at once and WF3 has no user-facing plan name to
+# key on the way WF4 keys on its experiment. The key is the first
+# SHORT_DIGEST_CHARS of that fingerprint, the same handle length
+# `provenance.short_digest` gives every other digest a human reads: the full
+# 64-hex name was three times the length of the rest of the filename and pushed
+# the already-nested `_parts/` paths towards the Windows limit. Derived ONCE so
+# the log, the benchmark table and both `_parts/` trees cannot drift apart.
+#
+# Sliced rather than passed through `short_digest`, which RAISES on a value that
+# is not a digest: this runs at parse time, so a plan directory that is not
+# 64-hex would fail every WF3 invocation over a cosmetic name.
+#
+# `scenario_plans/<fingerprint>/` keeps its FULL name -- that directory is the
+# record, and only the handle is shortened.
+_plan_fingerprint = Path(_scenario_plan_path).parent.name
+_plan_key = _plan_fingerprint[:SHORT_DIGEST_CHARS]
+LOG_PARTS_DIR = f"{project_dir}/logs/_parts/generate_scenarios/{_plan_key}"
+BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/generate_scenarios/{_plan_key}"
+WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
+BENCHMARKS_NAME = f"wf3_benchmarks_{_plan_key}.md"
 LOG_RULES = ["3.01_delineate_region", "3.02_extract_historical_climate", "3.03_prepare_stress_test_grid",
              "3.07_generate_weather_realizations", "3.08_perturb_climate_realization"]
 INVOCATION_ID = os.environ.setdefault("CST_GENERATION_INVOCATION_ID", uuid.uuid4().hex)

@@ -56,8 +56,17 @@ in all four, so the log, the benchmark table and both `_parts/` trees stay
 consistent with each other.
 
 Then sweep the references: `docs/guide/outputs.qmd:49-53` documents the scheme
-as `<request_id>`, and `dev/reference/workflows/climate_experiment.md` carries
-the older spelling. Grep before assuming that is the whole list.
+as `<request_id>`. Grep before assuming that is the whole list.
+
+**Correction (2026-09-15, during implementation).** This paragraph also named
+`dev/reference/workflows/climate_experiment.md`. That file is a SEALED RECORD
+(`dev/reference/sealed-records.yml`, sealed 2026-08-05), so editing it fails
+`tests/test_sealed_records.py` and destroys the record it exists to be. The
+sweep would not have applied to it in any case: its line 146 spells the
+benchmark table `wf3_benchmarks.md`, UNKEYED -- the pre-R12 name, not a
+64-versus-12 question. `README.md:219` was checked and left alone: it says the
+parts are "scoped by generation request" without spelling a length, which stays
+true.
 
 The tree inventory needs no change: `dev/scripts/semantic_tree_diff.py:331,335`
 matches `[a-z0-9_]+`, which already accepts both a 64- and a 12-character hex
@@ -75,7 +84,34 @@ commit, since this task edits the behaviour the comment describes.
 
 ## Progress
 
-- [ ] Derive the short fingerprint once in `generate_scenarios.smk` and use it for all four names
-- [ ] Correct the stale experiment-keyed comment in `semantic_tree_diff.py`
-- [ ] Sweep `docs/guide/outputs.qmd` and `dev/reference/workflows/climate_experiment.md`
-- [ ] Run WF3 on the rapid config and confirm `snapshot_project_tree.py` still reports MAP CLEAN
+- [x] Derive the short fingerprint once in `generate_scenarios.smk` and use it for all four names
+- [x] Correct the stale experiment-keyed comment in `semantic_tree_diff.py`
+- [x] Sweep `docs/guide/outputs.qmd`; `climate_experiment.md` is sealed and out of scope (see Scope correction)
+- [x] Run WF3 on the rapid config and confirm `snapshot_project_tree.py` still reports MAP CLEAN
+
+## Evidence
+
+Full WF3 run on `project_config_rapid.yml`, 28/28 steps, 2026-09-15. Plan
+fingerprint `6c7c4a60fb07aad9...1837e60`; the run wrote
+`logs/wf3_generate_scenarios_6c7c4a60fb07.log` and
+`benchmarks/wf3_benchmarks_6c7c4a60fb07.md`, both resolving IDENTITY against
+the inventory, while `scenario_plans/6c7c4a60fb07aad9.../` kept its full
+64-character name -- the two lengths coexisting is the point of the change.
+
+`snapshot_project_tree.py` exits 1 with 63 unmapped paths, and that is NOT this
+change: every one of them is mtime 2026-09-07 or earlier -- 62 pre-R12 orphans
+under `experiments/experiment_rapid/` (the old `climate/weathergenr/` staging
+and a pre-R9 wflow output layout) plus the two pre-R12
+`logs/wf3_run_stress_test_*.log` records. Nothing this run produced is
+unmapped. Pruning those orphans is a separate decision and is deliberately not
+taken here.
+
+## Also fixed
+
+`tests/test_project_tree_inventory.py:51-54` carried the SAME false
+"keyed by experiment in the FILENAME" claim as `semantic_tree_diff.py`, and its
+COVERED table had no WF3 run-record row at all -- neither the log, the benchmark
+table, nor either `_parts/` tree. Four rows added, keyed on a 12-hex `PK`
+constant, so the new naming is pinned by the inventory rather than merely
+tolerated by its `[a-z0-9_]+` regex. Note the regex accepts both lengths, so
+those rows are coverage, NOT evidence for this change; the WF3 run is.

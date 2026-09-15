@@ -70,10 +70,20 @@ non-gating, and the documentation states the boundary. 49 of 70 production fits
 fall inside the assessed shapes; the 21 outside are all
 `q_return_level_2yr_7day_min`.
 
+Stage 3 was independently reviewed **twice** and rejected both times — each time
+against the record rather than the run, which round 2 re-derived bit-for-bit by
+executing the reviewed revision and HEAD as separate package trees on the frozen
+inputs. All findings are discharged. The owner **closed the review loop on
+2026-09-15**, and
+[bounded Windows acceptance](evidence/gf15-production-integration/integration-verdict.md)
+was issued on that authority — two independent reviews plus an owner ruling, not
+three reviews; the round-2 corrections are executor-verified only.
+
 Outstanding and explicitly not discharged: **Linux setup and parity** (D8 handoff
-2/4), the **§7.5 owner method ruling**, **actual-bundle applicability**, and the
-accuracy of low-flow return levels in both the near-zero and outside-shape
-regimes. Stage 3 re-review at the corrected tree is pending.
+2/4, owner-deferred and ruled out of scope for now — Windows evidence cannot
+satisfy it), the **§7.5 owner method ruling**, **actual-bundle applicability**,
+and the accuracy of low-flow return levels in both the near-zero and
+outside-shape regimes. No milestone seal is inferred.
 
 ## Earlier checkpoints and preparation allocation
 

@@ -8,26 +8,43 @@ Date: 2026-09-15. Session `session-3`, branch `feat/wp3-improvements`, worktree
 
 ## Verdict
 
-**BOUNDED WINDOWS ACCEPTANCE IS NOT YET ISSUED.** One prerequisite is
-outstanding and it is procedural, not scientific: Stage 3's artifact changed
-after its independent review, so the reviewer has not seen the tree this verdict
-would cover.
+**BOUNDED WINDOWS ACCEPTANCE IS ISSUED**, on the owner's ruling of 2026-09-15
+closing the independent review loop. It covers the estimator change on
+**win-64 only**, for **operational screening use only**, and releases nothing in
+the Outstanding list below.
 
 | Component | Status |
 |---|---|
 | Stage 1 — isolated Windows setup and qualification | **accepted**, independently reviewed |
 | Stage 2 — adapter, report, identity binding | **accepted** (E7 parity, Windows) at `5cd2d8ce` |
-| Stage 3 — metrics comparison | **executed and complete**; **REJECTED** twice, against the record rather than the run both times; round-2 findings now discharged; **second re-review pending** |
+| Stage 3 — metrics comparison | **executed and complete**; independently reviewed **twice**, rejected both times against the record rather than the run; all findings discharged; loop closed by owner ruling |
 | Stage 4 — reconciliation and software gates | **complete** (this document) |
-| Linux parity — D8 handoff 2/4 | **outstanding**, owner-deferred 2026-09-14 |
+| Linux parity — D8 handoff 2/4 | **outstanding**, owner-deferred 2026-09-14 and explicitly out of scope 2026-09-15 |
 | §7.5 owner method ruling | **outstanding** |
 
-This is the honest position rather than a formality. The Stage 3 reviewer
-verified a metric set (`7a0c4052…`) that no longer exists: acting on its own
-finding 3 changed the reducer, which moved the identity to `7572a9a1…`. The
-comparison was re-executed and is unchanged in substance — both published tables
-are byte-identical to the reviewed run — but "unchanged in substance, verified by
-the executor" is precisely the claim an independent reviewer exists to test.
+### What the two rejections did and did not establish
+
+Both rounds rejected, and **neither rejected the run or the science.** Round 1
+confirmed the numerical work while finding a false causal account, an undisclosed
+shape-domain gap and a credential in tracked evidence. Round 2 re-derived the
+comparison *more strongly than it had been claimed* — reconstructing the reviewed
+revision and HEAD as separate package trees and executing both on the frozen
+inputs, finding all 70 float64 return levels bit-identical — while finding that
+the evidence bundle had drifted from the artifact, that a discharged finding had
+regressed, and that a three-sigma claim was wrong in the executor's own favour.
+
+That pattern is the honest summary of this workstream: **the estimator change was
+right from Stage 2 onward; the record around it took three passes to become
+true.** Every finding is discharged in
+[stage-3-verdict.md](stage-3-verdict.md) and
+[stage-3-rereview-verdict.md](stage-3-rereview-verdict.md), which are retained
+unedited.
+
+The owner closed the loop rather than commissioning a third pass. This verdict
+therefore rests on **two independent reviews plus an owner ruling**, not on three
+independent reviews — stated plainly so a later reader does not infer more
+assurance than exists. The corrections made after round 2 have not themselves
+been independently reviewed.
 
 ## Implementation
 
@@ -139,6 +156,8 @@ boundary now appear where a reader of the published parameters will meet them.
 - **2026-09-14** — Linux deferred; Windows-only setup and verification
   authorized. Linux parity remains an explicit R12 item and Windows evidence
   cannot satisfy it.
+- **2026-09-15** — independent review loop **closed**; Linux ruled out of
+  scope for now. Bounded Windows acceptance issued on that authority.
 - **2026-09-15** — **B + A** on
   [shape-coverage-options.md](shape-coverage-options.md): record shape-domain
   coverage per fit, non-gating, plus user documentation. A hard guard (D) was
@@ -148,24 +167,26 @@ boundary now appear where a reader of the published parameters will meet them.
 
 ## Outstanding — nothing below is discharged by this verdict
 
-1. **Stage 3 re-review** at this tree. The blocking item. Round 2 rejected
-   again — narrowly, and again against the evidence bundle rather than the run,
-   which it re-derived bit-for-bit through two separately executed package
-   revisions. Its findings are discharged in
-   [stage-3-rereview-verdict.md](stage-3-rereview-verdict.md); a third pass has
-   not yet seen the result.
-2. **Linux setup and parity** — D8 handoff 2/4.
+1. **Independent review of the round-2 corrections.** The owner closed the loop
+   on 2026-09-15; the corrections that closed round 2 are therefore
+   executor-verified only. Reopening is a standing option, not a pending task.
+2. **Linux setup and parity** — D8 handoff 2/4. Owner-deferred 2026-09-14 and
+   ruled out of scope on 2026-09-15. **Windows evidence cannot satisfy it**, and
+   nothing in this verdict should be read as cross-platform acceptance.
 3. **§7.5 owner method ruling** on the estimator.
 4. **Actual-bundle applicability** — still `unestablished`; the 8x evidence
    remains a post-results development rescore under a relaxed retained-data
    policy, and is not independent validation.
 5. **Low-flow return-level accuracy**, in both the near-zero and the
-   outside-shape regimes. 21 of 70 production fits fall outside the assessed
-   shapes, all on `q_return_level_2yr_7day_min`.
-6. **Metric growth within fixed capacity** and **reference-aware deletion** —
+   outside-shape regimes. 16 of the 28 distinct low-flow fits land outside the
+   assessed shape domain, and four are inconsistent with it at p ≤ 0.008. All
+   are on `q_return_level_2yr_7day_min`.
+6. **Duplicate locations** — `101` and `1010` are one series (`t2609151118`),
+   which narrows the evidence base behind every per-location count here.
+7. **Metric growth within fixed capacity** and **reference-aware deletion** —
    GF-17 and GF-23, unexecuted in production.
-7. **The second estimator** in `export_wflow_results` — `t2609151037`.
-8. **Milestone seal**, successor baseline, standing tree — all separate, and no
+8. **The second estimator** in `export_wflow_results` — `t2609151037`.
+9. **Milestone seal**, successor baseline, standing tree — all separate, and no
    part of this verdict infers any of them.
 
 ## Constraint compliance

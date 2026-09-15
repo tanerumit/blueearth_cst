@@ -41,9 +41,18 @@ as sampling noise around a tested shape:
 | 101 | 19 | +0.575 | −0.575 | 1.441e-04 |
 | 1010 | 19 | +0.575 | −0.575 | 1.441e-04 |
 
-At n = 18 the sampling spread of an L-moment shape estimate is roughly 0.15–0.2,
-so a fitted 0.28 is consistent with a true 0.2 and the raw "21 of 35" count is
-rebuttable. These seven, at three or more standard deviations, are not.
+> **Corrected 2026-09-15 after re-review.** Monte Carlo against the shipped
+> estimator at n = 18 gives a sampling SD of ≈ **0.20** (0.19–0.23), not
+> 0.15–0.2, and a **30–49 %** probability that a true shape inside the tested
+> domain produces a fitted shape outside it. Of the seven keys above |0.5|, only
+> **four distinct fits** — all negative-`c`, worst-case p ≤ 0.0083 — are
+> inconsistent with the tested domain; the `+0.575` pair sits at p ≈ 0.036,
+> which is ordinary noise and the expected count over ~28 distinct fits. The
+> seven keys are also only five distinct fits: locations `101` and `1010` are
+> the same series (`t2609151118`).
+
+The raw "21 of 35" count is rebuttable for the same reason and is not the
+finding; the four implausible fits are.
 
 ## Three structural facts that constrain the options
 

@@ -429,14 +429,41 @@ def test_declared_shapes_never_raises_on_a_domainless_declaration():
     assert _declared_shapes({}) is None
 
 
-def test_shape_coverage_never_refuses_a_fit():
-    """An out-of-domain shape still publishes; only the evidence records it.
+def test_reduce_bundle_publishes_an_out_of_domain_shape(monkeypatch):
+    """An out-of-domain fitted shape reduces and publishes; nothing refuses.
 
-    This pins option B against a later well-meaning change to option D. A
-    refusal here is not local: `InvalidReturnLevelFit` is caught nowhere in the
-    package, so one refused fit would abort the entire metric set -- including
-    every statistic whose shapes are fully inside the assessed domain.
+    This is the real pin for option B against a later change to option D, and it
+    goes through `reduce_bundle` on purpose. A unit test of `_shape_coverage`
+    alone cannot catch the regression that matters -- someone adding
+    `if not coverage["within_tested_range"]: raise InvalidReturnLevelFit(...)`
+    at the call site would leave such a test green while aborting every metric
+    set, since `InvalidReturnLevelFit` is caught nowhere in this package.
+
+    The declaration is narrowed rather than the data widened: shrinking the
+    tested range to a point puts every real fit outside it, which exercises the
+    same branch without inventing a pathological sample.
     """
+    from blueearth_cst.experiment import metric_registry as mr
+
+    monkeypatch.setattr(mr, "_declared_shapes", lambda validation: [0.0])
+    metric = next(
+        item for item in declarations(("q",)) if item.statistic == "return_level_max"
+    )
+    values, evidence = reduce_bundle(
+        metric, responses(), expected_run_ids=("01", "08"), anchor="YE-DEC"
+    )
+
+    assert len(values) == 2, "the bundle still published every location"
+    assert evidence, "evidence was recorded rather than the reduction aborting"
+    for item in evidence:
+        coverage = item.shape_coverage
+        assert coverage["tested_range_c"] == [0.0, 0.0]
+        assert coverage["within_tested_range"] is False
+        assert coverage["excess_beyond_tested_range"] > 0.0
+
+
+def test_shape_coverage_never_refuses_a_fit():
+    """The helper itself has no refusal path, at the most extreme observed shape."""
     from blueearth_cst.experiment import return_level_validation as rlv
     from blueearth_cst.experiment.metric_registry import (
         _declared_shapes,

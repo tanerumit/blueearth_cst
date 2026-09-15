@@ -17,40 +17,40 @@ total                      2
 Select jobs to execute...
 Execute 1 jobs...
 
-[Tue Sep 15 08:34:57 2026]
+[Tue Sep 15 10:30:23 2026]
 localcheckpoint prepare_metric_plan:
     input: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/config/simulation.json, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/responses/response_inventory.json
-    output: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_plans/6ed13c055a6fa12e2199e97551a7c7f7304a8645e432875bba375d061c2aaf42/plan.json
+    output: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_plans/d83e8ef230f09a9b65176c36d93e4268411240d4526a30102603bb758261fccc/plan.json
     jobid: 1
-    wildcards: metric_request_id=6ed13c055a6fa12e2199e97551a7c7f7304a8645e432875bba375d061c2aaf42
+    wildcards: metric_request_id=d83e8ef230f09a9b65176c36d93e4268411240d4526a30102603bb758261fccc
     resources: tmpdir=C:\Users\taner\AppData\Local\Temp
 DAG of jobs will be updated after completion.
-[Tue Sep 15 08:35:07 2026]
+[Tue Sep 15 10:30:29 2026]
 Finished jobid: 1 (Rule: prepare_metric_plan)
 1 of 2 steps (50%) done
 Updating checkpoint dependencies.
 Select jobs to execute...
 Execute 1 jobs...
 
-[Tue Sep 15 08:35:21 2026]
+[Tue Sep 15 10:30:39 2026]
 localrule publish_metric_set:
-    input: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_plans/6ed13c055a6fa12e2199e97551a7c7f7304a8645e432875bba375d061c2aaf42/plan.json
-    output: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metrics.json (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/unit_index.csv (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metric_environment.json (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/q_indicators.csv (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/gwr_indicators.csv (update)
+    input: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_plans/d83e8ef230f09a9b65176c36d93e4268411240d4526a30102603bb758261fccc/plan.json
+    output: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metrics.json (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/unit_index.csv (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metric_environment.json (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/q_indicators.csv (update), C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/gwr_indicators.csv (update)
     jobid: 4
-    wildcards: metric_set_id=7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2
+    wildcards: metric_set_id=7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274
     resources: tmpdir=C:\Users\taner\AppData\Local\Temp
-[Tue Sep 15 08:35:53 2026]
+[Tue Sep 15 10:30:54 2026]
 Finished jobid: 4 (Rule: publish_metric_set)
 2 of 3 steps (67%) done
 Select jobs to execute...
 Execute 1 jobs...
 
-[Tue Sep 15 08:35:53 2026]
+[Tue Sep 15 10:30:54 2026]
 localrule metrics:
-    input: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metric_environment.json, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/gwr_indicators.csv, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/metrics.json, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/q_indicators.csv, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2/unit_index.csv
+    input: C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metric_environment.json, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/gwr_indicators.csv, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/metrics.json, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/q_indicators.csv, C:/Users/taner/workspace/blueearth_cst-artifacts/r12/gf15-production-integration/working/p3-final-direct/project/experiments/p3_final/results/metric_sets/7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274/unit_index.csv
     jobid: 0
     resources: tmpdir=C:\Users\taner\AppData\Local\Temp
-[Tue Sep 15 08:35:53 2026]
+[Tue Sep 15 10:30:54 2026]
 Finished jobid: 0 (Rule: metrics)
 3 of 3 steps (100%) done
-Complete log(s): C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.snakemake\log\2026-09-15T083448.675243.snakemake.log
+Complete log(s): C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.snakemake\log\2026-09-15T103017.580001.snakemake.log

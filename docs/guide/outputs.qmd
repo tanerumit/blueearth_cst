@@ -109,9 +109,19 @@ and in practice low-flow fits often do not.
 Every fit therefore records `shape_coverage` beside its parameters: the tested
 shapes, the fitted `c`, whether it falls inside the tested range, and — the part
 that matters — **how far outside it falls**. Use the distance, not the flag.
-These fits come from few values, so the shape estimate is itself uncertain by
-roughly 0.15–0.2: a fitted `0.21` against a tested `0.2` is not a finding, while
-a fitted `0.9` is.
+
+The flag alone will mislead you. These fits come from few values, so the shape
+estimate is itself uncertain by about **0.2**, which is as wide as the tested
+range. A true shape sitting comfortably inside that range still produces a
+fitted shape outside it roughly **30–50 % of the time**, so `within_tested_range:
+false` is common and, on its own, weak evidence. The distance only becomes
+informative at around **0.6**, three times the estimate's own noise: a fitted
+`0.21` against a tested `0.2` is not a finding, while a fitted `0.9` is.
+
+Note also that `within_tested_range` tests the *hull* of the tested shapes, so a
+fitted `-0.1` reports `true` although `-0.1` itself was never generated. The
+tested values are published alongside as `tested_shapes_c`; read them when the
+distinction matters.
 
 A fit well outside the tested shapes is **not wrong** — it is unassessed. The
 benchmark says nothing about its accuracy in either direction. Treat that return

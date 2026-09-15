@@ -128,7 +128,7 @@ have failed loudly rather than succeeding quietly.
   --cores 3 --target metrics
 ```
 
-Exit 0, three of three steps, 08:34:48 → 08:35:53. `.snakemake/locks` was
+Exit 0, three of three steps. The run recorded here is the **10:30:23 → 10:31:32** re-execution that produced the published set; an earlier 08:34:48 run produced `7a0c4052…`, which the owner's B+A ruling superseded and which was deleted from the working copy by hand. `.snakemake/locks` was
 verified empty immediately before launch and no test suite ran in this worktree
 during the run — the scheduling constraint carried out of the Stage 2 stall.
 
@@ -138,9 +138,17 @@ during the run — the scheduling constraint carried out of the Stage 2 stall.
 
 - The frozen snapshot is **byte-identical** to the retained `.tmp` project
   across all 446 files — nothing changed, nothing added, nothing removed.
-- The working copy differs from the snapshot by exactly **8 added files and
+- The working copy differs from the snapshot by exactly **9 added files and
   nothing modified or removed**: the new metric plan, the six files of the new
-  metric set, and the runner's own invocation record.
+  metric set, and **two** runner invocation records — one per metrics run, the
+  superseded one included.
+
+The superseded metric set `7a0c4052…` and its plan `6ed13c05…` were **deleted
+from the working copy by hand** before the re-run, so that the published
+namespace holds one set rather than two. That deletion cannot show up in
+`immutability-check.json`, which computes `removed` against the *snapshot* and
+so is structurally blind to a post-snapshot file; it is therefore recorded here
+instead. Nothing under the snapshot was touched.
 
 That last file is an **operational log, recorded separately from the experiment
 results** as the brief requires: `config/runs/invocations/the run's own invocation record`
@@ -261,9 +269,10 @@ far outside it falls. The distance is recorded beside the flag deliberately: a
 fitted 0.21 against a tested 0.2 is not a finding at this block count, while a
 fitted 0.9 is, and a bare boolean would conflate them.
 
-What it reports on this basin: **49 of 70 inside, 21 outside — every one of the
-21 on `q_return_level_2yr_7day_min`**, worst excess 0.709 at fitted `c` = −0.909.
-`q_return_level_10yr_max` is entirely inside, confirming from the published
+What it reports on this basin: **49 of 70 keys inside, 21 outside — every one
+of the 21 on `q_return_level_2yr_7day_min`**, worst excess 0.709 at fitted
+`c` = −0.909. In *distinct fits* (see the duplication note below) that is 16 of
+28. `q_return_level_10yr_max` is entirely inside, confirming from the published
 artifact what the analysis above inferred.
 
 Nothing refuses. `_shape_coverage` reports and never raises, and
@@ -292,15 +301,48 @@ The two statistics part company on shape:
   claim that the 10-year maximum sits in the qualified regime, on an axis the
   original version never used.
 - **`q_return_level_2yr_7day_min`** — fitted `c` reaches **−0.909 and +0.575**,
-  with 7 of 35 above |0.5| in magnitude. At n = 18 the sampling spread of an
-  L-moment shape estimate is roughly 0.15–0.2, so those sit three or more
-  standard deviations from |ξ| ≤ 0.2 and are not plausibly draws from the
-  generating domain the benchmark tested.
+  with 5 of its 28 distinct fits above |0.5| in magnitude.
 
-This is stated as an inference about the *generating* domain, not a headcount:
-21 of 35 fitted `c` fall outside [−0.2, 0.2], but a fitted 0.28 at n = 18 is
-consistent with a true 0.2, so the raw count alone would be rebuttable. The
-three-sigma cases are not.
+> **Corrected 2026-09-15 after re-review.** The first version of this section
+> said all seven keys above |0.5| sit "three or more standard deviations" from
+> the tested domain. **That was wrong, and it overstated the disclosure in the
+> executor's own favour** — which is why it survived a first reading. Two
+> errors compounded: the sampling spread was quoted too low, and duplicated
+> keys were counted as independent evidence.
+
+Both are settled by Monte Carlo against the **shipped estimator** at n = 18,
+1200 draws per cell:
+
+| True `c` (inside the tested domain) | SD of fitted `c` | P(fitted `c` lands outside [−0.2, +0.2]) |
+|---|---|---|
+| −0.2 | 0.214 | **0.494** |
+| 0.0 | 0.194 | **0.302** |
+| +0.2 | 0.192 | **0.492** |
+
+So the sampling spread is ≈ **0.20**, not 0.15–0.2, and `within_tested_range`
+carries a **30–49 % false-outside rate by construction**. A fitted shape must be
+roughly 3 × SD ≈ 0.6 outside before the flag means much.
+
+Testing each observed outlier against the most favourable true shape inside the
+tested domain:
+
+| Location / unit | Fitted `c` | Worst-case P | |
+|---|---|---|---|
+| 1040 / 15 | −0.909 | 0.0000 | not plausible |
+| 101 ≡ 1010 / 15 | −0.607 | 0.0083 | not plausible |
+| 1020 / 20 | −0.602 | 0.0083 | not plausible |
+| 1020 / 15 | −0.620 | 0.0075 | not plausible |
+| 101 ≡ 1010 / 19 | **+0.575** | **0.0358** | **ordinary sampling noise** |
+
+The defensible claim is therefore **four distinct fits**, all on the negative-`c`
+side, inconsistent with the tested generating domain — not seven keys. With
+about 28 distinct fits, one case at p ≈ 0.036 is the expected count, not a
+finding.
+
+The headcount is likewise an inference about the *generating* domain rather than
+a tally: **16 of the 28 distinct low-flow fits** land outside [−0.2, 0.2], but
+given a 30–49 % false-outside rate that number alone is entirely rebuttable. The
+four implausible fits are not.
 
 **Nothing in the code flags this.** The declaration carries no shape-coverage
 field, and `metric_registry._covered_probability` bounds only the requested
@@ -313,6 +355,32 @@ reducer a shape guard, is an open question for Stage 4 and the owner — not one
 this record settles. The options and their consequences are set out in
 [shape-coverage-options.md](shape-coverage-options.md), which awaits an owner
 ruling.
+
+### Two of the five locations are the same series — disclosed 2026-09-15
+
+Found in re-review, and it revises every headcount in this record. Locations
+`101` and `1010` publish **identical `fit.input.sample_sha256` in all 14
+bundle/unit groups**, and **all 140 of their `(metric, unit)` combinations
+publish identical values** — 140 of the 700 q rows are exact copies. There are
+**56 distinct samples behind 70 return-level keys**, and 28 distinct fits per
+statistic rather than 35.
+
+Consequences, stated rather than buried:
+
+- The effective location count is **4, not 5**. Within a bundle unit the spread
+  of fitted `c` across locations is small for the maximum, so the location axis
+  contributes little independent evidence either way.
+- The prior verdict's "all 35 fitted `c` inside the tested domain" for
+  `q_return_level_10yr_max` rests on 28 distinct fits over roughly seven bundle
+  units. **The fit-for-purpose conclusion stands; its evidence base is narrower
+  than the count implied.**
+- The Spearman figures below reproduce exactly as *descriptions* of the
+  published keys, but their p-values treat duplicated rows as independent and
+  should not be read as significance tests.
+
+This is a property of the basin configuration rather than of GF15, so it is not
+fixed here; it is boarded as `t2609151118`. It is recorded in this record
+because it silently inflated GF15's own evidence.
 
 ### What a consumer should take from this
 

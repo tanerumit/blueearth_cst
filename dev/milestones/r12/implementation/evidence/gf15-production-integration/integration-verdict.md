@@ -17,7 +17,7 @@ would cover.
 |---|---|
 | Stage 1 — isolated Windows setup and qualification | **accepted**, independently reviewed |
 | Stage 2 — adapter, report, identity binding | **accepted** (E7 parity, Windows) at `5cd2d8ce` |
-| Stage 3 — metrics comparison | **executed and complete**; independently **REJECTED**, all findings now discharged; **re-review pending** |
+| Stage 3 — metrics comparison | **executed and complete**; **REJECTED** twice, against the record rather than the run both times; round-2 findings now discharged; **second re-review pending** |
 | Stage 4 — reconciliation and software gates | **complete** (this document) |
 | Linux parity — D8 handoff 2/4 | **outstanding**, owner-deferred 2026-09-14 |
 | §7.5 owner method ruling | **outstanding** |
@@ -74,15 +74,18 @@ translated verbatim onto that interpreter.
 
 | Gate | Command | Result |
 |---|---|---|
-| `test-fast` (`pixi.toml:161`) | `-m "not workflow_contract and not process_isolation" -n auto --dist loadfile` | **3712 passed, 15 skipped, 1 xfailed**, 207.90 s — `stage-4-test-fast.txt` |
+| `test-fast` (`pixi.toml:161`) | `-m "not workflow_contract and not process_isolation" -n auto --dist loadfile` | **3713 passed, 15 skipped, 1 xfailed**, 184.81 s — `stage-4-test-fast.txt`, re-run at the corrected tree |
 | `test-contract` (`pixi.toml:162`) | `-m "workflow_contract or process_isolation"` | **101 passed**, 335.56 s — `stage-4-test-contract.txt` |
-| Entry points | `pytest tests/test_cli.py` | 20 passed |
+| Owning set + entry points | `pytest tests/test_metric_registry.py tests/test_metric_plan.py tests/test_config_composition.py tests/test_cli.py` | 186 passed |
 | Lint / format | `ruff check` / `ruff format --check` | clean |
 
 The contract tier was run because this stage changed a **rule's declared
 outputs**, which `test-fast` excludes by construction. Together the two tiers
-cover the same 3,813 tests as `test-full`. The 15 skips and the xfail are the
-known pre-existing set.
+cover the suite's **3,829** collected tests — the contract log reports 101
+selected against 3,728 deselected. (An earlier draft said 3,813, which added
+`test-fast`'s *passes* to the contract tier's selections and so conflated tests
+passed with tests covered.) The 15 skips and the xfail are the known
+pre-existing set.
 
 **Translation caveat, recorded rather than omitted.** Invoking the interpreter
 directly drops pixi's `[activation.env]` — `HDF5_USE_FILE_LOCKING=FALSE` and
@@ -96,9 +99,12 @@ on one platform and not a guarantee.
 aborted with nine collection errors: "Different tests were collected between gw7
 and gw8". `test_config_composition.py` parametrized from `cc.GENERATION_KEYS` and
 `cc.SIMULATION_KEYS`, both **frozensets**, whose iteration order depends on
-`PYTHONHASHSEED` and so differs between xdist worker processes. Pre-existing —
-the frozensets date from `868c4b7c` — and invisible to CI, which runs
-`pixi run pytest tests/ -q -rs` in a single process. `test-fast` with `-n auto`
+`PYTHONHASHSEED` and so differs between xdist worker processes. It predates the
+GF15 work but is **not** pre-existing relative to `main`: `868c4b7c` is
+branch-local, 31 commits back, so **this branch introduced it** and the accurate
+statement is that the documented pre-push rung went unexercised here for 31
+commits. It is invisible to CI, which runs `pixi run pytest tests/ -q -rs` in a
+single process. `test-fast` with `-n auto`
 is the only invocation that exposes it, and `test-fast` is exactly what the
 validation ladder names as the gate before pushing. Fixed by sorting both
 parametrizations, with the reason in a comment so it is not "tidied" back.
@@ -142,7 +148,12 @@ boundary now appear where a reader of the published parameters will meet them.
 
 ## Outstanding — nothing below is discharged by this verdict
 
-1. **Stage 3 re-review** at this tree. The blocking item.
+1. **Stage 3 re-review** at this tree. The blocking item. Round 2 rejected
+   again — narrowly, and again against the evidence bundle rather than the run,
+   which it re-derived bit-for-bit through two separately executed package
+   revisions. Its findings are discharged in
+   [stage-3-rereview-verdict.md](stage-3-rereview-verdict.md); a third pass has
+   not yet seen the result.
 2. **Linux setup and parity** — D8 handoff 2/4.
 3. **§7.5 owner method ruling** on the estimator.
 4. **Actual-bundle applicability** — still `unestablished`; the 8x evidence

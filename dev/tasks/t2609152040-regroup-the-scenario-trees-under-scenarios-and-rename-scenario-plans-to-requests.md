@@ -67,6 +67,43 @@ Note that the plan-then-product shape is not a one-off: experiments already pair
 split preserves a symmetry the repo already repeats — which is the other half of why
 `plan` is the wrong word here and `request` is the right one.
 
+## The metric pair — assessed 2026-09-15, same answer
+
+`experiments/<id>/results/metric_plans/` and `results/metric_sets/` are the same shape
+as the scenario pair, and they cannot merge for the same reasons plus a stronger
+fourth one.
+
+`metric_plan()` computes both identities in one function, so it *looks* mergeable.
+It is not. `metric_set_id` is a digest over `simulation_id`, the response-inventory
+digest, the metric-definition digest and the metric-environment digest. The first two
+are run products, so the set identity does not exist until the simulation has run and
+the responses have been inventoried. `metric_request_id` is `content_sha256(request)`
+and is available from config.
+
+**Snakemake already encodes exactly this.** `prepare_metric_plan` is a **checkpoint**,
+not a plain rule, for precisely this reason: the plan output is keyed by
+`{metric_request_id}`, and `_metric_set_plan` and `_selected_metric_outputs` then
+re-enter after it runs to read `metric_set_id` out of the written plan and use it as
+the wildcard for the metric-set outputs. Merging the directories would mean naming the
+metric-set path before the checkpoint that discovers it.
+
+Cardinality and mutability match too. Requests differing only in fields outside the
+definition projection, `tokens` being the clear case, produce different request digests
+and the same set identity, so nesting a set under a request duplicates. And a metric
+set is immutable once ready, raising `ImmutableMetricSetError`, while a plan is
+rewritten on every invocation.
+
+**But the motivating complaint does not apply here.** The metric pair is already
+grouped under a `results/` parent, which is the role `scenarios/` is being introduced
+to play. So nothing needs regrouping on this side.
+
+**One consistency question falls out.** If `scenario_plans/` becomes
+`scenarios/requests/`, leaving `results/metric_plans/` as-is makes the toolbox use two
+words for one concept, in opposite directions — which is a worse state than today's
+uniform-but-ambiguous `plan`. Either rename both, to `results/metric_requests/`, or
+rename neither. This belongs with the open questions below rather than in approved
+scope.
+
 ## Target layout
 
 ```
@@ -186,6 +223,10 @@ excluding `dev/milestones/` and `dev/working/`:
 >    `_job_collection_claim`, so renaming it invalidates in-flight receipts. Note it is
 >    NOT the `plan_sha256` that `check_baseline.py` reads — that one belongs to the
 >    metric plan.
+>
+> 3. **`results/metric_plans/` → `results/metric_requests/`.** See the metric-pair
+>    section above. Renaming one side of the toolbox and not the other is arguably
+>    worse than renaming neither.
 >
 > Doing the move without these is still a net improvement, just an inconsistent one.
 

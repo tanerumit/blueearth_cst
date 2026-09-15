@@ -266,7 +266,13 @@ def get_change_monthly_clim_proj(
                 change = absolute
             ds.append(_labelled(change, stat_name, n_ref_years).to_dataset())
 
-    return xr.merge(ds)
+    # Each element of `ds` carries ONE `stats` label, so the merge is a union along
+    # `stats` (`join="outer"`) that stitches the per-label slices of a variable back
+    # into one array (`compat="no_conflicts"`). Both were xarray's defaults and are
+    # being deprecated, so they are pinned: under the incoming `compat="override"`
+    # the first label's values would win and every other label would be silently
+    # dropped, and under `join="exact"` the merge would raise outright.
+    return xr.merge(ds, join="outer", compat="no_conflicts")
 
 
 def get_change_annual_clim_proj(
@@ -546,7 +552,9 @@ def get_change_annual_clim_proj(
                     companion = companion.drop_vars("quantile")
                 ds.append(companion.to_dataset())
 
-    stats_annual_change = xr.merge(ds)
+    # Same union-along-`stats` contract as the monthly path above; the same
+    # two kwargs are pinned for the same reason.
+    stats_annual_change = xr.merge(ds, join="outer", compat="no_conflicts")
     return stats_annual_change
 
 

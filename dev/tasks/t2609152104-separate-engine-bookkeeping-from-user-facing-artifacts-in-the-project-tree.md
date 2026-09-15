@@ -128,8 +128,90 @@ against the possibility.
 > The atomic write is unaffected: `atomic_record` creates its temporary via
 > `NamedTemporaryFile` with no extension, so a `*.json` glob will not see it.
 
+## Full-tree screen — 2026-09-15
+
+Screened every family in the canonical fixture. **Three findings shape the result.**
+
+**1. There are three dispositions, not one, and the dot prefix is the weakest.**
+A file that is never written cannot clutter anything, so `temp()` beats a bin, and a
+bin beats a rename — especially here, where a leading dot hides nothing on Windows.
+Ordered by strength: *don't write it* (`temp()`), *collect it* (engine bin), *mark it*
+(prefix).
+
+**2. The repo already has two marker conventions and should not gain a third.**
+A leading dot marks sentinel files (`.model_built`, `.guard_ok`,
+`.model_reference_ok`). A leading underscore marks scratch bins (`logs/_parts/`,
+`benchmarks/_parts/`). Both work. Any screen outcome should land in one of these, not
+invent a new spelling.
+
+**3. `simulate_system` declares only three `temp()` outputs**, all in
+`experiment/rules/simulate_and_metrics.smk`: the model-reference sentinel, the per-run
+forcing, and the per-run catalog. Everything else in the experiment tree persists,
+including per-run warm states. AGENTS.md is explicit that omitting `temp()` on
+per-realization netCDFs explodes disk on large grids, so the retention questions below
+are the highest-value part of this screen.
+
+### Already correctly marked — no action
+
+`models/.../.model_built`, `.outputs_configured`, `.model_final`,
+`data/climate/historical/<KEY>/.guard_ok`, `experiments/<E>/.model_reference_ok`,
+`logs/_parts/`, `benchmarks/_parts/`.
+
+### Move to an engine bin
+
+| family | what it is |
+|---|---|
+| `config/runs/journal.jsonl` | lifecycle journal, written outside any rule |
+| `config/runs/invocations/<ts>.json` | per-invocation manifest |
+| `data/climate/historical/<KEY>/basin_cells.csv` | the cell mask |
+| `data/climate/projections/<CP>/summary/provenance.json` | provenance sidecar |
+| `models/.../hydromt.log`, `hydromt_data.yml`, `hydromt_build_config.yml`, `hydromt_update_waterbodies.yml` | build machinery and its provenance |
+| `models/.../run_default/outstate/outstates.nc` | warm state |
+| `models/.../evaluation/run_metadata.json` | staleness sidecar |
+| `experiments/<E>/responses/response_inventory.json` | already named in change 1 |
+| `experiments/<E>/hydrology/wflow/output/run_<id>.log` | per-run simulator log |
+| `scenario_collections/<id>/preparation_catalog.yml`, `ancillary/` | preparation inputs |
+| `logs/dag/*.png`, `benchmarks/wf*_*.md` | diagnostics, dev-facing |
+
+### Retention questions — worth more than any rename
+
+Each of these persists today and may not need to. **These need an owner call, and a
+wrong answer costs disk on large grids rather than only clarity.**
+
+- [ ] `experiments/<E>/hydrology/wflow/output/outstates_run_<id>.nc` — one warm state
+      **per run**. It is interchange contract HM-6b, so it may be deliberately
+      retained; if not, it is the single biggest `temp()` candidate in the tree.
+- [ ] `experiments/<E>/hydrology/wflow/config/run_<id>.toml` and
+      `run_<id>.temporal.json` — per-run generated config. The sibling
+      `run_<id>.yml` is already `temp()`, which makes the asymmetry look unintended.
+- [ ] `data/climate/projections/<CP>/raw/*.nc` and `scalar/*.nc` — per model-scenario
+      intermediates behind the summary tables.
+- [ ] `data/spatial/hydrography.nc` — ADR 0003 §8a's seam intermediate.
+- [ ] `experiments/<E>/hydrology/wflow/output/run_<id>.csv` — raw simulator output.
+      Probably keep: it is the debugging surface when a metric looks wrong.
+
+### Leave alone — reader-facing
+
+`logs/wf*.log`, the materialized `config/runs/project_config_*.yml` and
+`run_record.yml`, `config/runs/README.md`, `config/catalogs/`, `config/templates/`,
+`config/basin_data/`, everything under `data/spatial/geoms/` and `plots/`,
+`spatial_report.yml`, `location_registry.csv`, `extract_historical.nc`, the projection
+`summary/` tables, `plots/` and `report.md`, `staticmaps.nc`, `wflow_sbm.toml`,
+`staticgeoms/`, `inmaps_historical.nc`, `evaluation/performance_metrics.csv` and its
+plots, `run_default/output_q.csv`, `results/metric_sets/<id>/*`, and the collection's
+`scenario_table.csv`, `stress_test_lookup.csv` and `forcing/`.
+
+### Deliberately not proposed
+
+`collection.json` and `collection_intent.json` stay unmarked. They are a collection's
+own manifest sitting inside its own directory, so a prefix would mark the directory's
+purpose rather than distinguish anything within it. The whole tree relocates under
+`scenarios/` in [[t2609152040]] regardless.
+
 ## Progress
 
+- [ ] Rule the five retention questions in the screen — highest value, and
+      independent of every rename here
 - [ ] Rule change 1's shape, and whether `config/` moves
 - [ ] Rule changes 2 and 3 jointly with [[t2609152040]]'s open questions
 - [ ] Implement, sweep references, update the canonical tree fixture

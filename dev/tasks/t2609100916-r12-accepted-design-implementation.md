@@ -8,7 +8,7 @@ area: wf3
 origin: R12
 queue:
 created: 2026-09-10
-updated: 2026-09-14
+updated: 2026-09-15
 ---
 
 > [!note] Overview
@@ -62,12 +62,18 @@ updated: 2026-09-14
 - [x] Obtain G2 approval of exact production-adapter design v3 on2026-09-14; finalize accepted design and four-stage implementation handoff.
 - [x] Capture the production-integration pre-change snapshot and pass independent integrity review on2026-09-14; preserve original collection anchor.
 - [x] Complete the production-integration Stage1 isolated Windows Pixi setup and pass independent review on2026-09-14: accepted with findings, all discharged except a Stage2 re-check obligation.
-- [ ] DEFERRED by owner2026-09-14: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
+- [ ] DEFERRED by owner 2026-09-14 and ruled OUT OF SCOPE 2026-09-15: provision local WSL2/Linux, qualify the isolated Linux environment and execute source-qualified Linux parity before cross-platform integration acceptance.
 - [x] Implement production-integration Stage2 on Windows: adapter, report, identity, freshness,
       reader dispatch and docs in six commits; full suite 3804 passed. E7 parity verdict outstanding.
 - [x] Obtain the independent model-validator E7 parity verdict: REJECTED at `ebd85b88` on a real
       warnings-retention defect, ACCEPTED at `5cd2d8ce` after the fix. Windows only.
-- [ ] Execute production-integration Stage3 metrics comparison and Stage4 bounded Windows acceptance.
+- [x] Execute production-integration Stage3 metrics comparison: 756/756 keys, 686 non-return-level
+      values equal, all 70 return levels changed with preserved extraction, upstream fixed and the
+      frozen snapshot byte-identical. Independently reviewed TWICE and rejected both times against
+      the record rather than the run; all findings discharged.
+- [x] Complete Stage4 reconciliation and software gates, and issue bounded Windows acceptance on the
+      owner's 2026-09-15 ruling closing the review loop. Two independent reviews plus an owner
+      ruling; the round-2 corrections are executor-verified only.
 - [ ] Obtain any required method or production-integration ruling after full qualification.
 - [ ] Complete the separately documented standing baseline/tree and milestone-seal gates.
 

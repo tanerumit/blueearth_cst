@@ -80,7 +80,15 @@ estimator (`gf15-lmoments-c/1`). Each set records what backs that fit:
   toolbox. The declaration carries its digest; a set whose report is missing or
   altered is refused rather than read as unassessed.
 - `return_level_evidence` — per location, the usable-block counts and coverage,
-  the fitted parameters, and the retained fit record with its reached stages.
+  the fitted parameters, the retained fit record with its reached stages, and
+  `shape_coverage`.
+
+The fitted parameters are recorded in the order `(c, loc, scale)`, where `c` is
+**SciPy's shape convention**: the shape parameter usually written ξ in the
+extreme-value literature is `-c`, not `c`. A positive `c` is a bounded upper
+tail (ξ < 0, Weibull-type); a negative `c` a heavy one (ξ > 0, Fréchet-type).
+Reading the sign the other way inverts the tail behaviour, so check the
+convention before comparing these parameters with values from another tool.
 
 Read the declaration before the numbers. It is deliberately narrow: the
 benchmark is a bounded assessment on synthetic fixtures at the two production
@@ -91,6 +99,32 @@ false`. Return levels are first-order screening values with no uncertainty
 interval, not validated design estimates, and a bounded declaration is never
 widened to cover a return period it did not test — asking for one aborts the
 run instead.
+
+### Was this fit inside what the benchmark tested?
+
+The benchmark assessed accuracy only for data generated from a **narrow set of
+shapes**, `c ∈ {-0.2, 0.0, 0.2}`. Real basin data is not obliged to stay there,
+and in practice low-flow fits often do not.
+
+Every fit therefore records `shape_coverage` beside its parameters: the tested
+shapes, the fitted `c`, whether it falls inside the tested range, and — the part
+that matters — **how far outside it falls**. Use the distance, not the flag.
+These fits come from few values, so the shape estimate is itself uncertain by
+roughly 0.15–0.2: a fitted `0.21` against a tested `0.2` is not a finding, while
+a fitted `0.9` is.
+
+A fit well outside the tested shapes is **not wrong** — it is unassessed. The
+benchmark says nothing about its accuracy in either direction. Treat that return
+level as a screening flag rather than a magnitude, which is what
+`application_scope: operational_screen_only` already asks of every value here,
+and be correspondingly more reluctant to read it as a design estimate.
+
+Nothing refuses on this basis, deliberately. A shape is a property of the
+*result*, not of the request, and it is estimated from the same few values it
+describes; refusing on it would discard fits whose true shape is inside the
+tested range while admitting others whose true shape is outside. The declared
+probabilities *are* enforced, because a return period is known before any fit
+happens — asking for an untested one aborts the run.
 
 ::: {.callout-warning}
 ## A detached indicators CSV cannot tell you which estimator produced it

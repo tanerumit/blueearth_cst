@@ -67,20 +67,38 @@ therefore a judgement on a **result**, and one computed from a noisy statistic.
 They are not the same kind of guard and should not be given the same mechanism
 by analogy.
 
-**3. Evidence is identity-free; the declaration is not.** `metric_set_id` hashes
-`metric_definition_sha256`, which covers `return_level_validation` — the
-declaration. It does **not** cover `return_level_evidence`, which is computed at
-reduce time. So:
+**3. Any of these changes `metric_set_id`; they differ in how much else they
+touch.**
 
-- adding a field to the **evidence** changes manifest bytes only;
-- adding a field to the **declaration** changes `metric_set_id` for every metric
-  set ever produced, and the declaration is a closed 16-field set
-  (`DECLARATION_FIELDS`) verified against the shipped report, so it also touches
-  `build_declaration`, the closure check, and the asset's verification path.
+> **Corrected 2026-09-15, after implementing option B.** The first version of
+> this fact claimed that adding a field to the **evidence** "changes manifest
+> bytes only" and used that as the argument for B over C. **That was wrong**,
+> and executing B falsified it: the prospective `metric_set_id` moved from
+> `7a0c4052…` to `7572a9a1…`.
+>
+> The claim was right about the data structure and wrong about the change.
+> `metric_set_id` hashes `metric_definition_sha256`, which does **not** cover
+> `return_level_evidence` — so the *field* is indeed identity-free. But the
+> definition also carries each declaration's `implementation_revision` and a
+> `code_inventory`, both of which digest the reducer source. Editing
+> `metric_registry.py` to *produce* the field therefore moves the identity, by
+> design: the mechanism exists precisely so a changed implementation cannot
+> publish under an unchanged id. I reasoned about the payload and forgot the
+> code that writes it.
 
-A declaration change also means the Stage 3 comparison no longer describes the
-shipped configuration. That is recoverable — the metrics run takes 65 seconds —
-but it reopens independent acceptance.
+What survives, and what the comparison between the options actually rests on:
+
+- **B** changes `metric_set_id` via the reducer's `implementation_revision`, and
+  nothing else. One 65-second re-run produces a clean artifact.
+- **C** changes `metric_set_id` *as well*, for the same reason plus the
+  declaration itself, **and** touches the closed 16-field set
+  (`DECLARATION_FIELDS`), `build_declaration`, the closure check and the shipped
+  asset's verification path.
+
+So B remains strictly cheaper than C — the conclusion holds, and holds more
+firmly than the original argument for it, since the original argument gave B an
+advantage it does not have. Any option here reopens Stage 3's artifact and its
+independent acceptance; none of them avoids that.
 
 ## Options
 
@@ -103,12 +121,12 @@ Add a boolean (or the tested range plus the fitted value) to
 `ReturnLevelEvidence` / the fit record, so every published fit says whether its
 shape falls inside the assessed domain. Nothing refuses.
 
-*For:* **does not change `metric_set_id`** (fact 3), so it is the cheapest real
-improvement; makes the disclosure machine-readable at the exact granularity the
-problem has — per location, per unit; a reader can filter. *Against:* changes
-manifest bytes, so Stage 3's manifest digest moves and the run should be
-repeated (65 s) for a clean artifact; asserts a boundary in data without
-asserting what to do about it.
+*For:* the cheapest real improvement — it moves `metric_set_id` only through
+the reducer's own revision digest, touching no schema or asset machinery (fact
+3, as corrected); makes the disclosure machine-readable at the exact granularity the
+problem has — per location, per unit; a reader can filter. *Against:* Stage 3 must be
+re-run (65 s) and re-reviewed; asserts a boundary in data without asserting what
+to do about it.
 
 ### C — Add a shape-coverage statement to the declaration.
 

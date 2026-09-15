@@ -393,6 +393,7 @@ class ReturnLevelEvidence:
     missingness_policy: str = MISSINGNESS_POLICY
     partial_block_policy: str = PARTIAL_BLOCK_POLICY
     fit: dict | None = None
+    shape_coverage: dict | None = None
 
 
 def _declared_probabilities(validation) -> list:
@@ -411,6 +412,59 @@ def _declared_probabilities(validation) -> list:
             "the retained return-level validation declares no tested probabilities"
         )
     return declared
+
+
+def _declared_shapes(validation) -> list | None:
+    """Read the declaration's tested shape values, or None if it states none.
+
+    Unlike :func:`_declared_probabilities` this never raises. Shape coverage is
+    reported, never enforced -- see :func:`_shape_coverage` for why.
+    """
+    from blueearth_cst.experiment import return_level_validation as rlv
+
+    declaration = rlv.build_declaration() if validation is None else validation
+    declared = declaration.get("tested_domain", {}).get("shapes_c")
+    return declared if isinstance(declared, list) and declared else None
+
+
+def _shape_coverage(shape: float, declared: list | None) -> dict | None:
+    """Report whether a FITTED shape falls inside the assessed domain (D4).
+
+    This is deliberately **not** a guard, and it is not the shape-shaped twin of
+    :func:`_covered_probability`. Two reasons, both structural:
+
+    A probability is a property of the REQUEST, known before any fit, so
+    refusing an untested one costs nothing and is unambiguous. A shape is a
+    property of the RESULT: it does not exist until the fit does, and at the
+    block counts this reduction produces its sampling spread is comparable to
+    the width of the tested domain itself. Gating on it would refuse fits whose
+    true shape is inside the domain and admit fits whose true shape is outside.
+
+    And a refusal here is not local. ``InvalidReturnLevelFit`` is caught nowhere
+    in this package, so one refused fit aborts the whole metric set -- every
+    other location, every other metric, including statistics that are fully
+    inside the assessed domain. A reporting field costs a consumer nothing and
+    keeps that blast radius at zero.
+
+    ``excess`` is recorded alongside the boolean on purpose: a fitted shape just
+    outside the tested range is consistent with a true shape inside it, so a
+    consumer needs the distance to apply its own threshold rather than trusting
+    a bare flag. ``None`` means the declaration states no tested shapes --
+    unavailable, not "covered".
+    """
+    if declared is None:
+        return None
+    low, high = min(declared), max(declared)
+    inside = low <= shape <= high
+    return {
+        "tested_shapes_c": list(declared),
+        "tested_range_c": [low, high],
+        "fitted_c": shape,
+        "within_tested_range": inside,
+        "excess_beyond_tested_range": 0.0
+        if inside
+        else min(abs(shape - low), abs(shape - high)),
+    }
 
 
 def _covered_probability(probability: float, declared: list) -> None:
@@ -472,6 +526,7 @@ def reduce_bundle(
     maximum = metric.statistic == "return_level_max"
     quantile = 1 - 1 / metric.return_period if maximum else 1 / metric.return_period
     declared = _declared_probabilities(validation)
+    declared_shapes = _declared_shapes(validation)
     values, evidence = {}, []
     for location in sorted(location_sets[0]):
         members = sorted(
@@ -528,6 +583,7 @@ def reduce_bundle(
                 member_count=len(members),
                 extraction_policy=EXTRACTION_POLICY[metric.statistic],
                 fit=result.record(),
+                shape_coverage=_shape_coverage(parameters["c"], declared_shapes),
             )
         )
     return pd.Series(values), tuple(evidence)

@@ -376,3 +376,76 @@ def test_covered_probabilities_are_the_declared_ones():
             else 1.0 / metric.return_period
         )
         assert probability in declared, metric.name
+
+
+def test_shape_coverage_reports_an_in_domain_fit():
+    """A fitted shape inside the assessed range is recorded as covered."""
+    from blueearth_cst.experiment.metric_registry import _shape_coverage
+
+    block = _shape_coverage(0.05, [-0.2, 0.0, 0.2])
+    assert block == {
+        "tested_shapes_c": [-0.2, 0.0, 0.2],
+        "tested_range_c": [-0.2, 0.2],
+        "fitted_c": 0.05,
+        "within_tested_range": True,
+        "excess_beyond_tested_range": 0.0,
+    }
+
+
+def test_shape_coverage_measures_the_distance_outside():
+    """Outside the range, the distance is recorded, not just the flag.
+
+    A bare boolean invites treating a fitted 0.21 and a fitted 0.91 as the same
+    finding. At the block counts this reduction produces they are not: the first
+    is consistent with a true shape inside the domain, the second is not.
+    """
+    from blueearth_cst.experiment.metric_registry import _shape_coverage
+
+    near = _shape_coverage(0.21, [-0.2, 0.0, 0.2])
+    far = _shape_coverage(-0.909, [-0.2, 0.0, 0.2])
+    assert near["within_tested_range"] is False
+    assert near["excess_beyond_tested_range"] == pytest.approx(0.01)
+    assert far["within_tested_range"] is False
+    assert far["excess_beyond_tested_range"] == pytest.approx(0.709)
+
+
+def test_shape_coverage_is_unavailable_rather_than_covered_without_a_domain():
+    """No declared shapes means null -- 'unavailable', never a silent pass."""
+    from blueearth_cst.experiment.metric_registry import _shape_coverage
+
+    assert _shape_coverage(0.05, None) is None
+
+
+def test_declared_shapes_never_raises_on_a_domainless_declaration():
+    """Shape coverage is reported, never enforced, so it cannot abort a run.
+
+    Contrast `_declared_probabilities`, which raises: a probability gates the
+    request before any fit, while a shape is a property of the result.
+    """
+    from blueearth_cst.experiment.metric_registry import _declared_shapes
+
+    assert _declared_shapes({"tested_domain": {}}) is None
+    assert _declared_shapes({"tested_domain": {"shapes_c": []}}) is None
+    assert _declared_shapes({}) is None
+
+
+def test_shape_coverage_never_refuses_a_fit():
+    """An out-of-domain shape still publishes; only the evidence records it.
+
+    This pins option B against a later well-meaning change to option D. A
+    refusal here is not local: `InvalidReturnLevelFit` is caught nowhere in the
+    package, so one refused fit would abort the entire metric set -- including
+    every statistic whose shapes are fully inside the assessed domain.
+    """
+    from blueearth_cst.experiment import return_level_validation as rlv
+    from blueearth_cst.experiment.metric_registry import (
+        _declared_shapes,
+        _shape_coverage,
+    )
+
+    declared = _declared_shapes(rlv.build_declaration())
+    assert declared == [-0.2, 0.0, 0.2]
+    # The most extreme shape seen in the retained production comparison.
+    block = _shape_coverage(-0.909, declared)
+    assert block["within_tested_range"] is False
+    assert block["fitted_c"] == -0.909

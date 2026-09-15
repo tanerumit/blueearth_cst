@@ -75,7 +75,7 @@ anything**, to answer where the new set would land:
 
 | | |
 |---|---|
-| Predicted `metric_set_id` | `7a0c4052601bb68d6fe45cc9c404942ea34f1e7acb2709b14a1efea9c6a800c2` |
+| Predicted `metric_set_id` | `7572a9a10825fee5d4b4cbcd4e8a322000d266144bb223f493c52d9ec03dc274` |
 | Written `metric_set_id` | the same, confirmed from `plan.json` after the run |
 | Destination under the working copy | yes |
 | Collides with either existing set | no |
@@ -143,7 +143,7 @@ during the run — the scheduling constraint carried out of the Stage 2 stall.
   metric set, and the runner's own invocation record.
 
 That last file is an **operational log, recorded separately from the experiment
-results** as the brief requires: `config/runs/invocations/simulation-50e3da6f….json`
+results** as the brief requires: `config/runs/invocations/the run's own invocation record`
 is the runner's lifecycle record, not a metric artifact.
 
 No native response, collection, simulation record or response inventory appears
@@ -248,6 +248,34 @@ So the honest statement is the opposite of the original one: at the
 largest-moving keys the **old published values came from degenerate fits**, and
 the change is an improvement there rather than an excursion into an untested
 corner.
+
+### The gap is now recorded per fit — owner ruling of 2026-09-15
+
+The owner ruled **B + A** on [shape-coverage-options.md](shape-coverage-options.md):
+record shape-domain coverage per fit, non-gating, plus user documentation. Both
+landed before this run, so the artifact described here already carries them.
+
+Every one of the 70 evidence blocks now has a `shape_coverage` object giving the
+tested shapes, the fitted `c`, whether it falls inside the tested range, and how
+far outside it falls. The distance is recorded beside the flag deliberately: a
+fitted 0.21 against a tested 0.2 is not a finding at this block count, while a
+fitted 0.9 is, and a bare boolean would conflate them.
+
+What it reports on this basin: **49 of 70 inside, 21 outside — every one of the
+21 on `q_return_level_2yr_7day_min`**, worst excess 0.709 at fitted `c` = −0.909.
+`q_return_level_10yr_max` is entirely inside, confirming from the published
+artifact what the analysis above inferred.
+
+Nothing refuses. `_shape_coverage` reports and never raises, and
+`test_shape_coverage_never_refuses_a_fit` pins that against a later change to a
+hard guard — which would abort the entire metric set, since
+`InvalidReturnLevelFit` is caught nowhere in the package.
+
+**The change is numerically inert, established by execution rather than by
+reading the diff.** Both published tables are byte-identical to the pre-change
+run: `q_indicators.csv` at `0e654797…` and `gwr_indicators.csv` at `cea695df…`.
+Only `metric_set_id` moved — from `7a0c4052…` to `7572a9a1…` — through the
+reducer's `implementation_revision`, which is the mechanism working as designed.
 
 ### A second, separate qualification gap — newly disclosed
 

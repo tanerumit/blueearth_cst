@@ -1,11 +1,13 @@
-# Migration — the scenario tree, and short digest path segments
+# Migration — the scenario tree, short digest path segments, and the WF0 plot scales
 
 `dev/reference/naming.md` §7 record for the post-R12 project-tree work.
-Landed 2026-09-16 on `chore/post-r12`. Four §7 events, boarded as
+Landed 2026-09-16 on `chore/post-r12`. Five §7 events, boarded as
 [`t2609152040`](../../tasks/t2609152040-regroup-the-scenario-trees-under-scenarios-and-rename-scenario-plans-to-requests.md)
 and [`t2609152107`](../../tasks/t2609152107-shorten-content-digest-path-segments-to-a-fixed-prefix-keeping-full-digests-as-identities.md),
 plus change 2 of
 [`t2609152104`](../../tasks/t2609152104-separate-engine-bookkeeping-from-user-facing-artifacts-in-the-project-tree.md).
+Event 5 is unboarded — a direct owner request on 2026-09-16, recorded here
+because §7 obliges a note for a rule-identifier rename.
 
 Filed under `post-r12/` rather than a milestone folder because this branch is
 follow-up work, not a milestone: `dev/milestones/README.md`'s index has no row
@@ -125,6 +127,57 @@ Collision probability at a realistic few hundred collections per store is on the
 order of 1e-11. **That is not why 12 was chosen** — it was chosen for how much
 of a digest a person can hold in their eye — and the uniqueness check is there
 regardless.
+
+## Event 5 — `climate_levels` becomes `shared_plot_scales`
+
+Landed 2026-09-16 on owner request, separately from events 1-4: it touches WF0's
+figure plumbing and nothing in the scenario trees. Recorded here because §7
+requires a note for a **rule identifier** rename and this branch already owns
+the reader.
+
+| kind | old | new |
+|---|---|---|
+| rule | `derive_climate_levels` | `derive_plot_scales` |
+| artifact | `data/climate/historical/climate_levels.json` | `.../shared_plot_scales.json` |
+| module | `climate_analysis/climate_levels.py` | `climate_analysis/shared_plot_scales.py` |
+| functions | `compute_` / `write_` / `read_climate_levels` | `*_plot_scales` |
+| smk constant | `CLIMATE_LEVELS` | `PLOT_SCALES` |
+| rule input key | `levels_json` | `scales_json` |
+| test | `tests/test_climate_levels.py` | `tests/test_shared_plot_scales.py` |
+| log / benchmark part | `0.04b_derive_climate_levels.{log,tsv}` | `0.04b_derive_plot_scales.{log,tsv}` |
+
+**Why, precisely.** Not vagueness -- a COLLISION. In climate-risk work "levels"
+means magnitudes: global warming levels, the vocabulary beside WF2's plausibility
+overlay. The file holds matplotlib class boundaries and axis limits.
+
+**Why `scales`.** The file holds two kinds of thing -- axis limits (`[min, max]`)
+for the annual and monthly series, class breaks (seven values) for the map. A
+name fitting one misdescribes the other. `shared` carries the reason it exists at
+all: one scale across candidate sources, so separate figures can be read against
+each other.
+
+**Why not `config`.** Raised by the owner and rejected: `config` has a hard
+meaning in this repo (a `--configfile` target, or `config/defaults/` read by
+rules). This artifact is derived from data and rewritten every run, and calling
+it config invites someone to hand-edit what a rule overwrites.
+
+**`RasterStyle.levels` is NOT renamed.** That is matplotlib's own `BoundaryNorm`
+vocabulary at the mechanism layer -- a §6 tier-1 identifier, adapted at a seam
+rather than relocalised.
+
+**Only the rule identifier obliged this note.** The artifact is not a `rule all`
+output and appears zero times in `dev/baseline/manifest.json`, so no baseline
+re-record is owed; verified by grep, not assumed.
+
+**One consequence for existing project folders**, and it is smaller than events
+1-4: a tree carrying `climate_levels.json` keeps an orphan under the old name
+until WF0 re-runs. Nothing reads it, so it is stale output rather than a break.
+`semantic_tree_diff.py` maps the new name, so `tree-check` reports the old one as
+UNMAPPED -- which is the intended signal to prune it.
+
+Gates: `pytest tests/test_cli.py tests/test_snake_utils.py
+tests/test_climate_figures.py tests/test_compare_climate_sources.py` 389 passed;
+`tests/test_shared_plot_scales.py` 8 passed; lint and format-check clean.
 
 ## Machinery updated in the same landing
 

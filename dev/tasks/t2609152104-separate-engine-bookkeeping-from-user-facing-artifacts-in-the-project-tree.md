@@ -15,6 +15,12 @@ updated: 2026-09-15
 > **Why** — Owner request 2026-09-15, framed as user-friendliness. The project tree serves two audiences through one namespace: the engine, whose artifacts are content-addressed, immutable and named by 64-hex digests, and the reader, who wants a handful of tables and figures. Machinery currently sits beside results with no marker saying which is which.
 > **Effort** — large, since it moves declared rule outputs and the canonical tree fixture.
 
+> [!done] Change 2 has LANDED; changes 1 and 3 remain
+> Shipped 2026-09-16 with [[t2609152040]] and [[t2609152107]]. Note that
+> [[t2609152107]] shortened every content-digest path segment to twelve
+> characters, so the engine-bin paths sketched below are now
+> `<12-hex>` rather than `<64-hex>`. That does not change this item's scope.
+
 > [!info] Relationship to [[t2609152040]]
 > That item regroups `scenario_plans/` and `scenario_collections/` into `scenarios/`
 > and renames the first to `requests/`. It is a **naming and grouping** change with an
@@ -77,19 +83,26 @@ audiences.
 `model_reference.yml`, `response_request.json` and `simulator_settings.json`, which a
 reader may legitimately open to answer "what did I run". Leaning: it stays.
 
-## Change 2 — rename `metric_plans`
+## Change 2 — rename `metric_plans` — DONE, landed with [[t2609152040]]
 
-`results/metric_plans/` → `metric_requests/`, matching `scenario_plans/` →
-`scenarios/requests/` in [[t2609152040]]. The identity inside is already
-`metric_request_id` and the schema is `metric-plan/1`.
+`results/metric_plans/` → `results/metric_requests/`. **Shipped on 2026-09-16 in
+[[t2609152040]]'s migration**, on the owner's ruling, because it was never an
+independent choice: renaming one side of the toolbox and not the other leaves two
+words for one concept in opposite directions, which is worse than the
+uniform-but-ambiguous `plan` it replaced. Rename both or neither, so both.
 
-**This is a coupling, not an independent choice.** Renaming one side of the toolbox
-and not the other leaves two words for one concept, in opposite directions, which is
-worse than today's uniform-but-ambiguous `plan`. Rename both or neither.
+The DIRECTORY only. `plan.json`, the `metric-plan/1` schema and the metric-side
+`plan_sha256` are untouched, because change 3 below renames that file anyway and
+renaming it twice is churn.
+
+Record: `dev/milestones/post-r12/migration_scenario-tree.md`, event 3.
 
 ## Change 3 — flatten it
 
-`results/metric_plans/<id>/plan.json` holds **exactly one file**, verified 2026-09-15
+Still open. Now reads `results/metric_requests/<id>/plan.json` after change 2
+landed; the target `metric_requests/<metric_request_id>.json` is unchanged.
+
+`results/metric_requests/<id>/plan.json` holds **exactly one file**, verified 2026-09-15
 in the code and on disk in `session-3/test_case/test_local`. Only two call sites build
 the path. The directory is pure overhead.
 

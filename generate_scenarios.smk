@@ -161,6 +161,7 @@ rule prepare_stress_test_grid:
 
 # 3.06  prepare_weathergen_config
 rule prepare_weathergen_config:
+    message: rule_banner("3.06", "prepare_weathergen_config")
     input:
         plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
     output:
@@ -210,6 +211,7 @@ if Path(_scenario_request_path).exists():
 
 # 3.04  prepare_collection_sources
 checkpoint prepare_collection_sources:
+    message: rule_banner("3.04", "prepare_collection_sources", summary="fingerprint the generation inputs into a scenario request")
     input:
         lambda wc: [] if _source_reuse_ready else [
             f"{store_dir}/extract_historical.nc", f"{store_dir}/basin_cells.csv",
@@ -230,6 +232,7 @@ checkpoint prepare_collection_sources:
 
 # 3.05  initialize_scenario_collection
 rule initialize_scenario_collection:
+    message: rule_banner("3.05", "initialize_scenario_collection")
     input:
         plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
         lookup=lookup_path,
@@ -255,6 +258,10 @@ def _collection_row_inputs(wc):
 
 # 3.09  retain_scenario_forcing
 rule retain_scenario_forcing:
+    # Fanned out over RLZ_NUM x ST_NUM, so the context is what separates one
+    # member's line from the next 399. `collection_id` is in the banner too --
+    # the same run can hold more than one collection over its lifetime.
+    message: rule_banner("3.09", "retain_scenario_forcing", "collection {wildcards.collection_id} | run {wildcards.run_id}")
     input:
         _collection_row_inputs,
     output:
@@ -280,6 +287,7 @@ def _collection_publication_inputs(wc):
 
 # 3.10  publish_scenario_collection
 checkpoint publish_scenario_collection:
+    message: rule_banner("3.10", "publish_scenario_collection", "collection {wildcards.collection_id}", summary="seal the collection and make it immutable")
     input:
         _collection_publication_inputs,
     output:
@@ -331,6 +339,7 @@ rule generate_weather_realizations:
 
 # 3.11  gather_logs
 rule gather_logs:
+    message: rule_banner("3.11", "gather_logs")
     input:
         _selected_collection,
     output:
@@ -342,6 +351,7 @@ rule gather_logs:
 
 # 3.12  gather_benchmarks
 rule gather_benchmarks:
+    message: rule_banner("3.12", "gather_benchmarks")
     input:
         _selected_collection,
     output:

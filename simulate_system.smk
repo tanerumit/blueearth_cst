@@ -7,7 +7,7 @@ REPOSITORY = Path(workflow.basedir)
 sys.path.insert(0, str(REPOSITORY))
 from blueearth_cst.experiment.content_identity import content_sha256, read_canonical_json
 from blueearth_cst.experiment.simulation_runner import simulation_settings
-from blueearth_cst.shared.snake_utils import install_console_style, open_run_header, patch_psutil_windows_benchmark, run_summary
+from blueearth_cst.shared.snake_utils import install_console_style, open_run_header, patch_psutil_windows_benchmark, rule_banner, run_summary
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]
@@ -29,6 +29,7 @@ def _current_metric_request(wc=None):
 
 # 4.08  prepare_metric_plan
 checkpoint prepare_metric_plan:
+    message: rule_banner("4.08", "prepare_metric_plan", "request {wildcards.metric_request_id}")
     input:
         simulation=_frozen_simulation,
         responses=f"{engine_dir}/response_inventory.json",
@@ -66,6 +67,7 @@ def _metric_set_plan(wc):
 
 # 4.09  publish_metric_set
 rule publish_metric_set:
+    message: rule_banner("4.09", "publish_metric_set", "set {wildcards.metric_set_id}", summary="reduce the retained responses to the immutable metric set")
     input:
         plan=_metric_set_plan,
     output:
@@ -88,6 +90,7 @@ rule publish_metric_set:
 
 # 4.10  metrics
 rule metrics:
+    message: rule_banner("4.10", "metrics")
     input:
         _selected_metric_outputs,
 

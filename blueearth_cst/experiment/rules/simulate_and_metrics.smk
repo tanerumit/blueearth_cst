@@ -116,6 +116,7 @@ if not _simulation_complete:
 
     # 4.03  freeze_wflow_simulation
     checkpoint freeze_wflow_simulation:
+        message: rule_banner("4.03", "freeze_wflow_simulation", summary="pin the simulation's inputs so the experiment cannot drift")
         input:
             collection=_selected_collection,
             model_reference=f"{exp_dir}/.model_reference_ok",
@@ -147,7 +148,7 @@ if not _simulation_complete:
 
     # 4.04  downscale_climate_realization
     rule downscale_climate_realization:
-        message: rule_banner("4.04", "downscale_climate_realization", "run {wildcards.run_id}")
+        message: rule_banner("4.04", "downscale_climate_realization", "run {wildcards.run_id}", summary="downscale the perturbed climate onto the model grid")
         wildcard_constraints:
             run_id="(?:" + "|".join(RUN_IDS) + ")",
         input:
@@ -193,7 +194,11 @@ if not _simulation_complete:
         # 4.05  run_wflow_batch — one bounded batch of retained runs
         rule:
             name: f"run_wflow_batch_{batch}"
-            message: rule_banner("4.05", f"run_wflow_batch_{batch}")
+            # Member COUNT rather than the span `run_stress_test.smk` printed:
+            # the post-R12 batch is keyed by opaque run ids, so a span would read
+            # as two digests rather than as a range. The count is the part that
+            # says how long this line will sit there.
+            message: rule_banner("4.05", f"run_wflow_batch_{batch}", f"{len(members)} members", summary="run Wflow for one batch")
             input:
                 simulation=_frozen_simulation,
                 forcing=[f"{runs_dir}/forcing/inmaps_run_{run}.nc" for run in members],
@@ -221,6 +226,7 @@ if not _simulation_complete:
 
     # 4.06  publish_native_responses
     rule publish_native_responses:
+        message: rule_banner("4.06", "publish_native_responses", summary="inventory the retained native runs")
         input:
             simulation=_frozen_simulation,
             csvs=[f"{runs_dir}/output/run_{run}.csv" for run in RUN_IDS],
@@ -240,11 +246,13 @@ if not _simulation_complete:
 
 # 4.07  responses
 rule responses:
+    message: rule_banner("4.07", "responses")
     input:
         f"{engine_dir}/response_inventory.json",
 
 # 4.11  gather_logs
 rule gather_logs:
+    message: rule_banner("4.11", "gather_logs")
     input:
         lambda wc: _selected_metric_outputs(wc),
     output:
@@ -256,6 +264,7 @@ rule gather_logs:
 
 # 4.12  gather_benchmarks
 rule gather_benchmarks:
+    message: rule_banner("4.12", "gather_benchmarks")
     input:
         lambda wc: _selected_metric_outputs(wc),
     output:

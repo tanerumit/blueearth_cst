@@ -474,10 +474,18 @@ def build_project_tree_rules(
         # Enumerated leaves for the same reason as the store catalog above --
         # the model root holds a fixed set, so a genuinely new file here
         # should still report.
+    ):
+        same(f"{wflow}/{leaf}")
+    # Engine bookkeeping, collected into one bin per scope (t2609152104). The
+    # two hydromt files above it are NOT here: hydromt writes `hydromt.log` and
+    # `hydromt_data.yml` at the model root by its own convention, and AGENTS.md
+    # forbids re-engineering that.
+    for leaf in (
+        "run_metadata.json",
         "hydromt_build_config.yml",
         "hydromt_update_waterbodies.yml",
     ):
-        same(f"{wflow}/{leaf}")
+        same(f"{wflow}/_engine/{leaf}")
     for directory in (
         "staticgeoms/",
         "forcing/plots/",

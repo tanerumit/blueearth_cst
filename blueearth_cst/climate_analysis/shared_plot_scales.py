@@ -235,5 +235,5 @@ if __name__ == "__main__":
                     # draws.
                     basin_cells=dict(zip(sm.params.sources, sm.input.basin_cells)),
                 ),
-                sm.output.levels,
+                sm.output.scales,
             )

@@ -4778,6 +4778,42 @@ def run_summary(
     return "\n".join(lines)
 
 
+def display_root(project_dir):
+    """The run's project root as the console STATES it: absolute, then marked.
+
+    Two readers print this root -- :func:`run_meta_rows`' ``project`` row and
+    :func:`target_banner`'s bracket -- and until 2026-09-16 they printed
+    whatever form the Snakefile happened to hold. WF0 to WF3 read a relative
+    ``project_dir`` straight from the config; WF4 writes
+    ``Path(...).resolve().as_posix()``. One ``run_workflows.py`` run therefore
+    stated one fact two ways, a few lines apart:
+
+        wf3   project      test_case/test_rapid
+        wf4   project      C:/Users/.../test_case/test_rapid
+
+    Absolutized HERE rather than at each Snakefile's definition, because the
+    held value is not only printed: it is the root `_relativize_paths` and
+    `target_banner` strip against, and a workflow whose targets are built from
+    a relative ``project_dir`` needs a relative root to strip with. Display and
+    stripping want different forms of the same directory, so they are computed
+    separately -- see the two variables in `target_banner`.
+
+    Then passed through :func:`_relativize_paths` with NO project root, which is
+    exactly what the ``config`` row beside it already does: it applies the
+    ``<repo>`` and ``<site-packages>`` rewrites without stripping a project
+    prefix. That is what keeps the absolute form readable. A dev tree inside the
+    checkout reads ``<repo>/test_case/test_rapid`` -- shorter than the relative
+    spelling it replaces AND unambiguous about which checkout, which matters on
+    a machine with six worktrees. A production ``project_dir``, which lives
+    outside the repository tree, matches nothing and prints in full, which is
+    correct: there is no shared root to imply.
+    """
+    if project_dir is None or not str(project_dir).strip():
+        return ""
+    absolute = os.path.abspath(os.fspath(project_dir)).replace(os.sep, "/")
+    return _relativize_paths(absolute, "")
+
+
 def target_banner(number, name, targets, project_dir=None):
     """Return a `rule all` ``message:``: the banner, then one target per line.
 
@@ -4813,10 +4849,23 @@ def target_banner(number, name, targets, project_dir=None):
     banner = rule_banner(number, name)
     listed = [os.fspath(target) for target in targets]
     if project_dir:
-        root = os.path.normpath(os.fspath(project_dir))
+        # TWO forms of one directory, deliberately not one variable.
+        #
+        # `strip_root` keeps the form the CALLER passed, because that is the
+        # form its targets were built from: WF3 writes
+        # `f"{project_dir}/logs/..."` against a relative config value, so an
+        # absolutized root would match nothing, the strip would fail, and every
+        # target would print LONGER than before the bracket existed.
+        # (`_relativize_paths` tries both spellings, but only of the root it is
+        # handed.)
+        #
+        # `shown` is what the reader sees, and it is absolute and `<repo>`-marked
+        # so that the same fact reads the same way in every workflow -- see
+        # `display_root`.
+        strip_root = os.path.normpath(os.fspath(project_dir))
         tokens = _path_tokens()
-        listed = [_relativize_paths(target, root, tokens) for target in listed]
-        banner = f"{banner}  [{root.replace(os.sep, '/')}]"
+        listed = [_relativize_paths(target, strip_root, tokens) for target in listed]
+        banner = f"{banner}  [{display_root(project_dir)}]"
     body = "\n".join(f"    {target}" for target in listed)
     return f"{banner}\n{body}" if body else banner
 
@@ -5685,7 +5734,10 @@ def run_meta_rows(project_dir, config_path=None, details=None):
     rows sit directly above the lines that use them rather than eleven lines
     away. Four lines of the old block named rows instead of being rows.
     """
-    rows = [("project", os.fspath(project_dir).replace(os.sep, "/"))]
+    # Through `display_root`, like `target_banner`'s bracket: the two print the
+    # same directory a few lines apart and disagreed about its spelling until
+    # 2026-09-16 (t2609162114).
+    rows = [("project", display_root(project_dir))]
     if config_path:
         # No project root passed: the config is not a project artifact, and
         # stripping one would render a config that happens to live INSIDE the

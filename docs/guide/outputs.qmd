@@ -14,8 +14,8 @@ use a directory outside the toolbox checkout.
   data/spatial/                  basin geometry, locations and maps
   data/climate/                  historical forcing and projection products
   models/hydrology/wflow/         model, historical run and evaluation
-  scenario_plans/<request_id>/    exact generation selection and staging
-  scenario_collections/<id>/      immutable collection
+  scenarios/requests/<request_id>/  exact generation selection and staging
+  scenarios/collections/<id>/     immutable collection
     collection.json              readiness marker and inventory
     scenario_table.csv           explicit run membership and ancestry
     stress_test_lookup.csv       monthly perturbation parameters
@@ -27,7 +27,7 @@ use a directory outside the toolbox checkout.
     config/simulation.json       frozen simulation identity
     hydrology/wflow/output/      retained native responses
     responses/response_inventory.json
-    results/metric_plans/        response-dependent metric selection
+    results/metric_requests/     response-dependent metric selection
     results/metric_sets/<id>/
       metrics.json              readiness marker and provenance
       unit_index.csv            run and bundle membership
@@ -52,11 +52,14 @@ WF0, WF1 and WF2 retain their project-level merged logs. Generation uses
 `logs/_parts/simulate_system/<experiment>/`. Benchmark parts use the same
 scoping beneath `benchmarks/_parts/`.
 
-`<plan_key>` is the first 12 characters of the scenario plan's
-`generation_request_id` — enough to tell one plan's records from another at a
-glance. The plan's own directory, `scenario_plans/<generation_request_id>/`,
-keeps the full 64-character fingerprint, so match a log to its plan by prefix
-rather than by an exact name comparison.
+`<plan_key>` is the first 12 characters of the scenario request's
+`generation_request_id` — enough to tell one request's records from another at a
+glance. Since the post-R12 tree change the request's own directory,
+`scenarios/requests/<request_id>/`, carries that **same** 12-character form, so a
+log and its request now share a name outright. Every identity recorded inside a
+document is still the complete 64-character digest; only the directory is
+short, and it is a prefix of the full value. See
+[the post-R12 migration](../migration-post-r12.md).
 
 The runners record invocations under `config/runs/invocations/`, including
 failure and dry-run outcomes. An invocation record describes execution; it does
@@ -197,8 +200,8 @@ metric name or the CSV schema.
 
 ## Are these outputs current?
 
-Routine simulation validates its exact generation plan against current inputs.
-A missing or stale plan names the generation command needed to repair it;
+Routine simulation validates its exact generation request against current inputs.
+A missing or stale request names the generation command needed to repair it;
 simulation never generates a collection or chooses the latest directory.
 An explicit collection manifest permits independent reuse with its packaged
 preparation inputs.

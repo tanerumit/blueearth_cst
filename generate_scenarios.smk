@@ -144,7 +144,11 @@ rule prepare_weathergen_config:
 def _collection_plan(wildcards=None):
     path = checkpoints.prepare_collection_sources.get().output[0]
     plan = read_canonical_json(Path(path))
-    if wildcards is not None and hasattr(wildcards, "collection_id") and wildcards.collection_id != plan["collection_id"]:
+    # The wildcard is the DIRECTORY name, which is the identity's first
+    # SHORT_DIGEST_CHARS since t2609152107 -- so this compares segment against
+    # segment. The full identity is not weakened by that: `_ready_collection`
+    # reads the manifest below and `read_collection` recomputes it from content.
+    if wildcards is not None and hasattr(wildcards, "collection_id") and wildcards.collection_id != short_digest(plan["collection_id"]):
         raise ValueError("requested collection differs from the exact source plan")
     return plan
 
@@ -185,7 +189,7 @@ checkpoint prepare_collection_sources:
         _scenario_request_path,
     params:
         request=_generation_request,
-        live_plan_sha256=_live_plan["plan_sha256"] if _live_plan is not None else None,
+        live_request_sha256=_live_plan["request_sha256"] if _live_plan is not None else None,
     run:
         from blueearth_cst.experiment.collection_resolution import write_scenario_request
         plan, _, _ = _resolved_collection_plan()

@@ -193,7 +193,19 @@ COVERED: dict[str, list[str]] = {
         f"experiments/{E}/hydrology/wflow/forcing/inmaps_run_001.nc",
         f"experiments/{E}/hydrology/wflow/output/run_001.csv",
         f"experiments/{E}/hydrology/wflow/output/run_001.log",
-        f"experiments/{E}/hydrology/wflow/output/outstates_run_001.nc",
+        # outstates_run_<id>.nc is gone from this list (2026-09-15): the
+        # experiment runs no longer emit a warm state at all, so it is not a
+        # shape a clean run produces. `downscale_climate_forcing.py` pops
+        # `state.path_output` out of every per-run TOML, and the only
+        # `measure_member_footprint` call site passes `write_states=False`.
+        # Contract HM-6b already says as much -- "an unconsumed named sink;
+        # nothing in-repo reads it", "absent on the completed fixture". The row
+        # dated from the 2026-08-06 capture, before the suppression.
+        #
+        # `semantic_tree_diff`'s rule for it deliberately STAYS: if a future
+        # config re-enables state output the file maps as declared instead of
+        # reporting UNMAPPED. Same reasoning as run_default/log.txt above --
+        # coverage rows describe what a run produces, not what is forbidden.
     ],
     "collections": [
         f"scenario_collections/{'c' * 64}/collection.json",

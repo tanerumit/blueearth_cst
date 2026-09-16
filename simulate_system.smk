@@ -29,7 +29,7 @@ def _current_metric_request(wc=None):
 
 # 4.08  prepare_metric_plan
 checkpoint prepare_metric_plan:
-    message: rule_banner("4.08", "prepare_metric_plan", "request {wildcards.metric_request_id}")
+    message: rule_banner("4.08", "prepare_metric_plan", "metric_request {wildcards.metric_request_id}")
     input:
         simulation=_frozen_simulation,
         responses=f"{engine_dir}/response_inventory.json",
@@ -67,7 +67,7 @@ def _metric_set_plan(wc):
 
 # 4.09  publish_metric_set
 rule publish_metric_set:
-    message: rule_banner("4.09", "publish_metric_set", "set {wildcards.metric_set_id}", summary="reduce the retained responses to the immutable metric set")
+    message: rule_banner("4.09", "publish_metric_set", "metric_set {wildcards.metric_set_id}", summary="reduce the retained responses to the immutable metric set")
     input:
         plan=_metric_set_plan,
     output:

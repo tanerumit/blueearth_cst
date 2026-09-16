@@ -37,6 +37,7 @@ from blueearth_cst.experiment.wflow_response_reader import (
     open_responses,
 )
 from blueearth_cst.shared.provenance import file_sha256
+from blueearth_cst.shared.snake_utils import log_row
 
 
 class MetricPlanStale(ValueError):
@@ -426,6 +427,12 @@ def write_metric_plan(experiment_root, request):
         raise MetricPlanStale("metric planning path is aliased")
     path.parent.mkdir(parents=True, exist_ok=True)
     atomic_record(path, plan, replace=True)
+    log_row(
+        f"Metric plan {identity_segment(plan['metric_set_id'], 'metric_set_id')}: "
+        f"{len(plan['request']['declarations'])} declaration(s) over "
+        f"{len(plan['expected_result_keys'])} result key(s)",
+        module="metrics",
+    )
     return plan
 
 
@@ -614,6 +621,10 @@ def publish_metric_set(experiment_root, plan):
     if build_metric_plan(root, plan["request"]) != plan:
         raise MetricPlanStale("metric inputs changed before publication")
     if marker.exists():
+        log_row(
+            f"Reusing the published metric set {destination.name}",
+            module="metrics",
+        )
         return read_metric_set(root, marker)
     check_live_metric_environment(plan)
     if destination.exists() and any(destination.iterdir()):
@@ -703,6 +714,14 @@ def publish_metric_set(experiment_root, plan):
     # leave an unready partial destination, never a silently relabelled result.
     check_live_metric_environment(plan)
     atomic_record(marker, manifest)
+    log_row(
+        f"Published metric set {destination.name}: "
+        + ", ".join(
+            f"{item['token']} ({item['row_count']} rows)"
+            for item in manifest["indicator_tables"]
+        ),
+        module="metrics",
+    )
     return read_metric_set(root, marker)
 
 

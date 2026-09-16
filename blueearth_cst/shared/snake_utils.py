@@ -4900,11 +4900,18 @@ def _console_wildcard_key(key):
     and its banners write ``series {wildcards.series_key}``, so without this
     the START line said ``[series cmip6_...]`` and the FINISH line under it
     ``[series_key cmip6_...]`` -- the one-fact-two-spellings defect again, one
-    suffix along. Both suffixes are `dev/reference/naming.md` conventions for
-    what KIND of field a wildcard is, which is why they belong off a console
-    that shows the value beside the name.
+    suffix along. All three suffixes are `dev/reference/naming.md` conventions
+    for what KIND of field a wildcard is, which is why they belong off a
+    console that shows the value beside the name.
+
+    ``_id`` joined them in 2026-09-16's WF3/WF4 console restoration, and it is
+    the suffix with the most wildcards behind it: ``collection_id``, ``run_id``,
+    ``metric_request_id`` and ``metric_set_id`` are every fan-out wildcard the
+    two R12 workflows have. WF4's 4.04 banner already wrote
+    ``run {wildcards.run_id}`` against a finish line reading ``[run_id 07]``, so
+    this was a live defect before those workflows had banners to mismatch.
     """
-    for suffix in ("_num", "_key"):
+    for suffix in ("_num", "_key", "_id"):
         if key.endswith(suffix) and len(key) > len(suffix):
             return key[: -len(suffix)]
     return key

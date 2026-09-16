@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-16 | t2609161645 | WF3/WF4 now carry the console every other workflow has. The note counted missing banners and missing `log_row` calls; the cause was prior to both — the R12 split (`868c4b7c`) carried the rule bodies out of `run_stress_test.smk` but not its scaffolding, so neither successor installed a console style at all and the banners WF3 did have printed unstyled into un-suppressed chatter. Restored plus bannered plus instrumented in `bd574db2`, `3f439854`, `d608e3c8`; the live WF3 run then exposed a `_console_wildcard_key` defect predating the banners, fixed with a test in `762e81f2`. Durable finding: the scenario-request fingerprint hashes `blueearth_cst/`, so ANY edit under that package invalidates a generated collection — finish code edits before a verification run, or WF3 regenerates and strands orphan request/collection pairs in the rapid tree. | console / observability |
 | 2026-09-16 | t2609152107 | Shorten content-digest path segments to a fixed prefix, keeping full digests as identities | project-tree |
 | 2026-09-16 | t2609152040 | Regroup the scenario trees under scenarios/ and rename scenario_plans to requests | project-tree |
 | 2026-09-15 | t2609151800 | Prune the pre-R12 orphans from the rapid tree so tree-check regains its signal | dev tree hygiene |

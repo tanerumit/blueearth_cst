@@ -8,7 +8,7 @@ from blueearth_cst.experiment.simulation_record import live_simulation_inputs, r
 from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
 from blueearth_cst.shared.indicator_tables import indicator_tables
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_WFLOW_OUTVARS, DEFAULT_JULIA_THREADS, julia_prefix, project_slug, resolve_water_year_start, validate_experiment_name, rule_banner
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_WFLOW_OUTVARS, DEFAULT_JULIA_THREADS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, target_banner, validate_experiment_name, rule_banner
 
 project, my_cfg = simulation_settings(config_path)
 project_dir = Path(project["project"]["project_dir"]).resolve().as_posix()
@@ -37,6 +37,22 @@ LOG_RULES = ["4.01_write_model_reference", "4.02_check_model_reference",
 METRIC_TOKENS = list(my_cfg.get("metrics", indicator_tables((project.get("model") or {}).get("outvars", DEFAULT_WFLOW_OUTVARS))))
 METRIC_ANCHOR = f"YS-{resolve_water_year_start((project.get('climate') or {}).get('water_year_start')).upper()}"
 
+# The run's key folders, stated ONCE -- the same block WF0/WF1/WF2 carry, and
+# the one `run_stress_test.smk` had before the R12 split (868c4b7c) dropped it.
+# `run_header` prints them at the top of the console, every rule log repeats
+# them in its own header, and `log_row` plus the console tee rewrite every path
+# below to these names. Declared longest-root-last so `experiment` -- under
+# which a WF4 run writes almost everything -- wins over `project`.
+#
+# No `data` row unless the collection's catalog declares a local root: WF4 reads
+# no global data catalog of its own, it reads the collection WF3 retained.
+declare_path_tokens(
+    model=basin_dir,
+    scenarios=f"{project_dir}/scenarios",
+    experiment=exp_dir,
+)
+declare_project_root(project_dir)
+
 def _selected_collection(wc):
     return SELECTION["manifest_path"]
 
@@ -64,8 +80,19 @@ def _frozen_simulation(wc):
         return f"{exp_dir}/config/simulation.json"
     return checkpoints.freeze_wflow_simulation.get().output.simulation
 
+# The targets `rule all` lists, built HERE rather than inline in its `message:`:
+# Snakemake's f-string preprocessor cannot parse an f-string inside a multi-line
+# directive expression. See the same note in `generate_scenarios.smk`.
+#
+# The metric outputs are a CHECKPOINT-dependent lambda with no parse-time path,
+# so they are named in prose -- as `run_stress_test.smk` named the same target.
+WF4_TARGETS = ["selected immutable metric set",
+               f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+               f"{project_dir}/benchmarks/{BENCHMARKS_NAME}"]
+
 # 4.00  all
 rule all:
+    message: target_banner("4.00", "all", WF4_TARGETS, project_dir)
     input:
         lambda wc: _selected_metric_outputs(wc),
         f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
@@ -89,6 +116,7 @@ if not _simulation_complete:
 
     # 4.03  freeze_wflow_simulation
     checkpoint freeze_wflow_simulation:
+        message: rule_banner("4.03", "freeze_wflow_simulation", summary="pin the simulation's inputs so the experiment cannot drift")
         input:
             collection=_selected_collection,
             model_reference=f"{exp_dir}/.model_reference_ok",
@@ -120,7 +148,7 @@ if not _simulation_complete:
 
     # 4.04  downscale_climate_realization
     rule downscale_climate_realization:
-        message: rule_banner("4.04", "downscale_climate_realization", "run {wildcards.run_id}")
+        message: rule_banner("4.04", "downscale_climate_realization", "run {wildcards.run_id}", summary="downscale the perturbed climate onto the model grid")
         wildcard_constraints:
             run_id="(?:" + "|".join(RUN_IDS) + ")",
         input:
@@ -166,7 +194,11 @@ if not _simulation_complete:
         # 4.05  run_wflow_batch — one bounded batch of retained runs
         rule:
             name: f"run_wflow_batch_{batch}"
-            message: rule_banner("4.05", f"run_wflow_batch_{batch}")
+            # Member COUNT rather than the span `run_stress_test.smk` printed:
+            # the post-R12 batch is keyed by opaque run ids, so a span would read
+            # as two digests rather than as a range. The count is the part that
+            # says how long this line will sit there.
+            message: rule_banner("4.05", f"run_wflow_batch_{batch}", f"{len(members)} members", summary="run Wflow for one batch")
             input:
                 simulation=_frozen_simulation,
                 forcing=[f"{runs_dir}/forcing/inmaps_run_{run}.nc" for run in members],
@@ -194,6 +226,7 @@ if not _simulation_complete:
 
     # 4.06  publish_native_responses
     rule publish_native_responses:
+        message: rule_banner("4.06", "publish_native_responses", summary="inventory the retained native runs")
         input:
             simulation=_frozen_simulation,
             csvs=[f"{runs_dir}/output/run_{run}.csv" for run in RUN_IDS],
@@ -213,11 +246,13 @@ if not _simulation_complete:
 
 # 4.07  responses
 rule responses:
+    message: rule_banner("4.07", "responses")
     input:
         f"{engine_dir}/response_inventory.json",
 
 # 4.11  gather_logs
 rule gather_logs:
+    message: rule_banner("4.11", "gather_logs")
     input:
         lambda wc: _selected_metric_outputs(wc),
     output:
@@ -229,6 +264,7 @@ rule gather_logs:
 
 # 4.12  gather_benchmarks
 rule gather_benchmarks:
+    message: rule_banner("4.12", "gather_benchmarks")
     input:
         lambda wc: _selected_metric_outputs(wc),
     output:

@@ -17,6 +17,7 @@ from blueearth_cst.experiment.scenario_collection import (
     reuse_collection,
 )
 from blueearth_cst.shared.provenance import file_sha256
+from blueearth_cst.shared.snake_utils import log_row
 
 
 class GeneratedCollectionUnavailable(ValueError):
@@ -96,6 +97,13 @@ def write_scenario_request(project_dir, plan):
     finally:
         if temporary is not None:
             temporary.unlink(missing_ok=True)
+    spec = plan["intent"]["scenario_spec"]
+    log_row(
+        f"Request {target.parent.name}: "
+        f"{spec['n_realizations']} realization(s) x {spec['n_design_points']} design point(s) "
+        f"from {len(plan['source_inventory'])} source file(s)",
+        module="request",
+    )
     return target
 
 

@@ -406,6 +406,7 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     """
     from blueearth_cst.experiment.content_identity import (
         content_sha256,
+        identity_segment,
         read_canonical_json,
     )
 
@@ -424,7 +425,8 @@ def resolve_metric_set_dir(project_dir: str) -> str:
         )
         != plan.get("plan_sha256")
         or content_sha256(plan["request"]) != plan.get("metric_request_id")
-        or plans[0].parent.name != plan["metric_request_id"]
+        or plans[0].parent.name
+        != identity_segment(plan["metric_request_id"], "metric_request_id")
     ):
         raise ValueError("baseline metric plan digest or request identity differs")
     identity = plan["metric_set_id"]

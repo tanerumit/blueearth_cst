@@ -7,7 +7,7 @@ import yaml
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.snake_utils import index_width, member_index_regex, rule_banner, patch_psutil_windows_benchmark
-from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS
+from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.generation_plan import generation_configuration, resolve_generation_plan
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
@@ -25,23 +25,20 @@ store_dir = CLIMATE_STORE.store_dir
 _scenario_request_path = GENERATION["request_path"]
 wg_dir = (Path(_scenario_request_path).parent / "generation").as_posix()
 lookup_path = f"{wg_dir}/config/stress_test_lookup.csv"
-# WF3's run records are keyed by the SCENARIO-PLAN fingerprint, because a
-# project can hold several plans at once and WF3 has no user-facing plan name to
-# key on the way WF4 keys on its experiment. The key is the first
-# SHORT_DIGEST_CHARS of that fingerprint, the same handle length
-# `provenance.short_digest` gives every other digest a human reads: the full
-# 64-hex name was three times the length of the rest of the filename and pushed
-# the already-nested `_parts/` paths towards the Windows limit. Derived ONCE so
-# the log, the benchmark table and both `_parts/` trees cannot drift apart.
+# WF3's run records are keyed by the SCENARIO-REQUEST fingerprint, because a
+# project can hold several requests at once and WF3 has no user-facing name to
+# key on the way WF4 keys on its experiment.
 #
-# Sliced rather than passed through `short_digest`, which RAISES on a value that
-# is not a digest: this runs at parse time, so a plan directory that is not
-# 64-hex would fail every WF3 invocation over a cosmetic name.
+# Since t2609152107 the `scenarios/requests/<fingerprint>/` DIRECTORY is itself
+# named by the first SHORT_DIGEST_CHARS of that fingerprint, so this is a read
+# of the directory name rather than a slice of it. The log, the benchmark table
+# and both `_parts/` trees therefore cannot drift from the directory: one
+# constant sets all four.
 #
-# `scenarios/requests/<fingerprint>/` keeps its FULL name -- that directory is
-# the record, and only the handle is shortened.
-_plan_fingerprint = Path(_scenario_request_path).parent.name
-_plan_key = _plan_fingerprint[:SHORT_DIGEST_CHARS]
+# Still not passed through `short_digest`, which RAISES on a value that is not a
+# digest. This runs at parse time, so a request directory with an unexpected
+# name would fail every WF3 invocation over a cosmetic key.
+_plan_key = Path(_scenario_request_path).parent.name
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts/generate_scenarios/{_plan_key}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/generate_scenarios/{_plan_key}"
 WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
@@ -227,7 +224,7 @@ rule retain_scenario_forcing:
     output:
         update((Path(project_dir).resolve() / "scenarios" / "collections" / "{collection_id}" / "forcing" / "run_{run_id}.nc").as_posix()),
     wildcard_constraints:
-        collection_id="[a-f0-9]{64}",
+        collection_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
         run_id=rf"[0-9]{{{len(str(_row_capacity))}}}",
     run:
         from blueearth_cst.experiment.scenario_collection import _job_collection_claim, write_collection_payload
@@ -252,7 +249,7 @@ checkpoint publish_scenario_collection:
     output:
         update((Path(project_dir).resolve() / "scenarios" / "collections" / "{collection_id}" / "collection.json").as_posix()),
     wildcard_constraints:
-        collection_id="[a-f0-9]{64}",
+        collection_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     run:
         from blueearth_cst.experiment.scenario_provider import publish_planned_collection
         plan = _collection_plan(wildcards)
@@ -262,7 +259,7 @@ checkpoint publish_scenario_collection:
 
 def _selected_collection(wc):
     plan = _collection_plan()
-    return checkpoints.publish_scenario_collection.get(collection_id=plan["collection_id"]).output[0]
+    return checkpoints.publish_scenario_collection.get(collection_id=short_digest(plan["collection_id"])).output[0]
 
 
 

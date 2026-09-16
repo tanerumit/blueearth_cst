@@ -184,10 +184,10 @@ COVERED: dict[str, list[str]] = {
         f"experiments/{E}/config/response_request.json",
         f"experiments/{E}/config/simulator_settings.json",
         f"experiments/{E}/responses/response_inventory.json",
-        f"experiments/{E}/results/metric_requests/{'a' * 64}/plan.json",
-        f"experiments/{E}/results/metric_sets/{'b' * 64}/metrics.json",
-        f"experiments/{E}/results/metric_sets/{'b' * 64}/unit_index.csv",
-        f"experiments/{E}/results/metric_sets/{'b' * 64}/q_indicators.csv",
+        f"experiments/{E}/results/metric_requests/{'a' * 12}/plan.json",
+        f"experiments/{E}/results/metric_sets/{'b' * 12}/metrics.json",
+        f"experiments/{E}/results/metric_sets/{'b' * 12}/unit_index.csv",
+        f"experiments/{E}/results/metric_sets/{'b' * 12}/q_indicators.csv",
         f"experiments/{E}/hydrology/wflow/config/run_001.toml",
         f"experiments/{E}/hydrology/wflow/config/run_001.temporal.json",
         f"experiments/{E}/hydrology/wflow/config/run_001.yml",
@@ -209,16 +209,16 @@ COVERED: dict[str, list[str]] = {
         # coverage rows describe what a run produces, not what is forbidden.
     ],
     "collections": [
-        f"scenarios/collections/{'c' * 64}/collection.json",
-        f"scenarios/collections/{'c' * 64}/scenario_table.csv",
-        f"scenarios/collections/{'c' * 64}/forcing/run_001.nc",
-        f"scenarios/collections/{'c' * 64}/stress_test_lookup.csv",
-        f"scenarios/collections/{'c' * 64}/preparation_catalog.yml",
-        f"scenarios/collections/{'c' * 64}/ancillary/dem/static.nc",
-        f"scenarios/requests/{'a' * 64}/request.json",
-        f"scenarios/requests/{'a' * 64}/initializations/invocation.json",
-        f"scenarios/requests/{'a' * 64}/generation/config/weathergen_config.yml",
-        f"scenarios/requests/{'a' * 64}/generation/output/resampled_dates.csv",
+        f"scenarios/collections/{'c' * 12}/collection.json",
+        f"scenarios/collections/{'c' * 12}/scenario_table.csv",
+        f"scenarios/collections/{'c' * 12}/forcing/run_001.nc",
+        f"scenarios/collections/{'c' * 12}/stress_test_lookup.csv",
+        f"scenarios/collections/{'c' * 12}/preparation_catalog.yml",
+        f"scenarios/collections/{'c' * 12}/ancillary/dem/static.nc",
+        f"scenarios/requests/{'a' * 12}/request.json",
+        f"scenarios/requests/{'a' * 12}/initializations/invocation.json",
+        f"scenarios/requests/{'a' * 12}/generation/config/weathergen_config.yml",
+        f"scenarios/requests/{'a' * 12}/generation/output/resampled_dates.csv",
     ],
 }
 
@@ -307,7 +307,7 @@ UNDECLARED = [
     "spatial/geoms/basins.geojson",  # pre-R9
     "unknown_root/anything.txt",
     f"experiments/{E}/.model_reference_unknown",
-    f"scenarios/requests/{'a' * 64}/generation/output/unknown_dates.csv",
+    f"scenarios/requests/{'a' * 12}/generation/output/unknown_dates.csv",
 ]
 
 

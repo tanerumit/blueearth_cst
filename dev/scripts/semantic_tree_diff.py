@@ -331,14 +331,16 @@ def build_project_tree_rules(
     # The two key on DIFFERENT THINGS, and therefore take SEPARATE rows. WF4
     # keys on its experiment name, whose grammar is validate_experiment_name's
     # `[a-z0-9_]+`. WF3 has no user-facing name, so since R12 it keys on its
-    # scenario-plan fingerprint, shortened to SHORT_DIGEST_CHARS hex
-    # (t2609151643) -- imported, not restated, so the row cannot drift from the
-    # `generate_scenarios.smk` constant that builds the name.
+    # scenario-request fingerprint, shortened to SHORT_DIGEST_CHARS hex
+    # (t2609151643) -- imported, not restated. Since t2609152107 that same
+    # constant also names the `scenarios/requests/` directory the key is READ
+    # from, so one import now pins the row, the filename and the directory
+    # together.
     #
     # A single `wf[34]_..._[a-z0-9_]+` row covering both would be WIDE ENOUGH TO
     # MISS REAL ORPHANS: short hex is a subset of the experiment grammar, so
     # that row accepted every pre-R12 experiment-keyed WF3 benchmark table as
-    # though it were a current plan-keyed one, and the rapid tree read clean
+    # though it were a current request-keyed one, and the rapid tree read clean
     # while holding two of them (t2609151800). Splitting the row is what makes
     # a stale WF3 record resolve as UNMAPPED.
     #
@@ -487,8 +489,12 @@ def build_project_tree_rules(
     # basin_area, to `data/spatial/plots/`. A leftover directory there is stale
     # output from a pre-0007 run and SHOULD report as undeclared.
 
-    # R12 durable generation artifacts and rebuildable exact-request plans.
-    digest = r"[0-9a-f]{64}"
+    # R12 durable generation artifacts and rebuildable exact-request state.
+    # Every content-digest PATH SEGMENT is the identity's first
+    # SHORT_DIGEST_CHARS since t2609152107, so this is the same `_hex` the WF3
+    # run-record rows use -- one constant, so a tree written by the engine and a
+    # tree this tool accepts cannot disagree about name length.
+    digest = _hex
     collection = rf"scenarios/collections/{digest}"
     for leaf in (
         "collection.json",

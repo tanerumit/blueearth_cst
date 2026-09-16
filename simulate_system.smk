@@ -7,6 +7,7 @@ sys.path.insert(0, str(REPOSITORY))
 from blueearth_cst.experiment.content_identity import content_sha256, read_canonical_json
 from blueearth_cst.experiment.simulation_runner import simulation_settings
 from blueearth_cst.shared.snake_utils import patch_psutil_windows_benchmark
+from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]
 _, _settings = simulation_settings(config_path)
@@ -33,19 +34,19 @@ checkpoint prepare_metric_plan:
     output:
         f"{results_dir}/metric_requests/{{metric_request_id}}/plan.json",
     wildcard_constraints:
-        metric_request_id="[a-f0-9]{64}",
+        metric_request_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     params:
         request=_current_metric_request,
     run:
         from blueearth_cst.experiment.metric_plan import write_metric_plan
-        if wildcards.metric_request_id != content_sha256(params.request):
+        if wildcards.metric_request_id != short_digest(content_sha256(params.request)):
             raise ValueError("metric request differs from its exact checkpoint")
         write_metric_plan(exp_dir, params.request)
 
 
 def _selected_metric_outputs(wc):
     request = _current_metric_request(wc)
-    path = checkpoints.prepare_metric_plan.get(metric_request_id=content_sha256(request)).output[0]
+    path = checkpoints.prepare_metric_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
     from blueearth_cst.experiment.metric_plan import read_metric_set, verify_metric_plan
     plan = verify_metric_plan(exp_dir, request)
     if Path(plan["targets"]["manifest"]).exists():
@@ -55,9 +56,9 @@ def _selected_metric_outputs(wc):
 
 def _metric_set_plan(wc):
     request = _current_metric_request(wc)
-    path = checkpoints.prepare_metric_plan.get(metric_request_id=content_sha256(request)).output[0]
+    path = checkpoints.prepare_metric_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
     plan = read_canonical_json(Path(path))
-    if wc.metric_set_id != plan["metric_set_id"]:
+    if wc.metric_set_id != short_digest(plan["metric_set_id"]):
         raise ValueError("metric set differs from its exact selected plan")
     return path
 
@@ -78,7 +79,7 @@ rule publish_metric_set:
         benchmark=update(f"{results_dir}/metric_sets/{{metric_set_id}}/return_level_benchmark.json"),
         tables=[update(f"{results_dir}/metric_sets/{{metric_set_id}}/{token}_indicators.csv") for token in METRIC_TOKENS],
     wildcard_constraints:
-        metric_set_id="[a-f0-9]{64}",
+        metric_set_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     run:
         from blueearth_cst.experiment.metric_plan import publish_metric_set
         publish_metric_set(exp_dir, read_canonical_json(Path(input.plan)))

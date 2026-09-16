@@ -14,6 +14,7 @@ from blueearth_cst.experiment.content_identity import (
     canonical_json_bytes,
     confined_path,
     content_sha256,
+    identity_segment,
     read_canonical_json,
     repository_code_inventory,
 )
@@ -369,7 +370,9 @@ def build_metric_plan(experiment_root, request):
             "metric_environment_sha256": environment_digest,
         }
     )
-    destination = root / "results/metric_sets" / identity
+    destination = (
+        root / "results/metric_sets" / identity_segment(identity, "metric_set_id")
+    )
     plan = {
         "schema_version": "metric-plan/1",
         "metric_request_id": content_sha256(request),
@@ -402,7 +405,12 @@ def write_metric_plan(experiment_root, request):
     """Publish rebuildable checkpoint state after complete native validation."""
     root = Path(experiment_root).resolve()
     plan = build_metric_plan(root, request)
-    path = root / "results/metric_requests" / plan["metric_request_id"] / "plan.json"
+    path = (
+        root
+        / "results/metric_requests"
+        / identity_segment(plan["metric_request_id"], "metric_request_id")
+        / "plan.json"
+    )
     if path.resolve() != path:
         raise MetricPlanStale("metric planning path is aliased")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -413,7 +421,12 @@ def write_metric_plan(experiment_root, request):
 def verify_metric_plan(experiment_root, request):
     """Validate existing plans even when timestamps would schedule no job."""
     root = Path(experiment_root).resolve()
-    path = root / "results/metric_requests" / content_sha256(request) / "plan.json"
+    path = (
+        root
+        / "results/metric_requests"
+        / identity_segment(content_sha256(request), "metric_request_id")
+        / "plan.json"
+    )
     stored = read_canonical_json(path)
     expected = build_metric_plan(root, request)
     if stored != expected:
@@ -583,7 +596,11 @@ def _validate_tables(tables, expected_keys, declarations_by_name, units):
 def publish_metric_set(experiment_root, plan):
     """Publish a whole declared set, preserving all bytes on exact ready reuse."""
     root = Path(experiment_root).resolve()
-    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    destination = (
+        root
+        / "results/metric_sets"
+        / identity_segment(plan["metric_set_id"], "metric_set_id")
+    )
     marker = destination / "metrics.json"
     if destination.resolve() != destination:
         raise ImmutableMetricSetError("metric-set directory is aliased")
@@ -794,7 +811,9 @@ def _read_metric_set(experiment_root, manifest_path):
             "metric_environment_sha256": content_sha256(environment),
         }
     )
-    if identity != manifest["metric_set_id"] or destination.name != identity:
+    if identity != manifest["metric_set_id"] or destination.name != identity_segment(
+        identity, "metric_set_id"
+    ):
         raise ImmutableMetricSetError(
             "metric-set identity differs from retained inputs"
         )

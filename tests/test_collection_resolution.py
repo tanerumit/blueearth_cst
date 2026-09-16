@@ -15,6 +15,7 @@ from blueearth_cst.experiment.collection_resolution import (
 )
 from blueearth_cst.experiment.content_identity import (
     content_sha256,
+    identity_segment,
     read_canonical_json,
 )
 from blueearth_cst.experiment.scenario_collection import publish_collection
@@ -90,10 +91,20 @@ def test_explicit_selector_refuses_config_id_or_fallback(extra):
 
 def test_plan_directory_alias_cannot_mutate_collection(ready_plan):
     project, request, plan, kwargs, _, _ = ready_plan
-    target = project / "scenarios" / "requests" / content_sha256(request)
+    target = (
+        project
+        / "scenarios"
+        / "requests"
+        / identity_segment(content_sha256(request), "generation_request_id")
+    )
     (target / "request.json").unlink()
     target.rmdir()
-    collection = project / "scenarios" / "collections" / plan["collection_id"]
+    collection = (
+        project
+        / "scenarios"
+        / "collections"
+        / identity_segment(plan["collection_id"], "collection_id")
+    )
     before = {
         p.relative_to(collection).as_posix(): p.read_bytes()
         for p in collection.rglob("*")

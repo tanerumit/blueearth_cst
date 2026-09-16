@@ -8,6 +8,7 @@ from blueearth_cst.experiment.content_identity import (
     canonical_json_bytes,
     collection_id,
     content_sha256,
+    identity_segment,
     read_canonical_json,
 )
 from blueearth_cst.experiment.scenario_collection import (
@@ -35,7 +36,11 @@ def scenario_request(project_dir, request, intent, source_inventory, documents=N
     request_id = content_sha256(request)
     root = Path(project_dir).resolve()
     manifest_path = (
-        root / "scenarios" / "collections" / intent["collection_id"] / "collection.json"
+        root
+        / "scenarios"
+        / "collections"
+        / identity_segment(intent["collection_id"], "collection_id")
+        / "collection.json"
     )
     plan = {
         "schema_version": "scenario-request/1",
@@ -70,7 +75,13 @@ def write_scenario_request(project_dir, plan):
     )
     if canonical_json_bytes(plan) != canonical_json_bytes(expected):
         raise ValueError("scenario request differs from its canonical inputs")
-    target = root / "scenarios" / "requests" / request_id / "request.json"
+    target = (
+        root
+        / "scenarios"
+        / "requests"
+        / identity_segment(request_id, "generation_request_id")
+        / "request.json"
+    )
     if target.resolve() != target:
         raise ValueError("scenario request uses an aliased path")
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -98,7 +109,13 @@ def verify_scenario_request(
     No missing source is treated as permission to use a different collection.
     """
     root = Path(project_dir).resolve()
-    target = root / "scenarios" / "requests" / content_sha256(request) / "request.json"
+    target = (
+        root
+        / "scenarios"
+        / "requests"
+        / identity_segment(content_sha256(request), "generation_request_id")
+        / "request.json"
+    )
     if not target.exists():
         raise GeneratedCollectionUnavailable(
             f"missing {target}; run {generation_command}"

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from blueearth_cst.experiment.content_identity import (
     content_sha256,
+    identity_segment,
     repository_code_inventory,
     stage_environment,
 )
@@ -155,7 +156,7 @@ def generation_configuration(config, repository):
         Path(project["project_dir"]).resolve()
         / "scenarios"
         / "requests"
-        / content_sha256(request)
+        / identity_segment(content_sha256(request), "generation_request_id")
         / "request.json"
     )
     return dict(

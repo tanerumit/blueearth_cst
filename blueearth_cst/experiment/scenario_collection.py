@@ -22,10 +22,12 @@ import yaml
 
 from blueearth_cst.experiment.content_identity import (
     canonical_json_bytes,
+    claim_identity_segment,
     collection_id,
     collection_revision,
     confined_path,
     content_sha256,
+    identity_segment,
     read_canonical_json,
     scenario_semantics_sha256,
 )
@@ -187,6 +189,21 @@ def _intent(intent: dict[str, Any]) -> None:
         _sha256(intent[field]["sha256"], f"{field}.sha256")
 
 
+def _collection_occupant(root: Path) -> str | None:
+    """Read the COMPLETE collection identity an existing directory stands for.
+
+    Its name is only a prefix since t2609152107, so the full identity has to be
+    read from the intent the claim wrote. ``None`` means the directory cannot
+    say what it is -- a claim interrupted between `mkdir` and the intent write.
+    That is left to `claim_collection`'s own exclusivity rules, which already
+    refuse to resume a partial root, rather than being guessed at here.
+    """
+    try:
+        return read_canonical_json(root / "collection_intent.json")["collection_id"]
+    except (OSError, KeyError, TypeError, ValueError):
+        return None
+
+
 def claim_collection(project_dir: Path, intent: dict[str, Any]) -> CollectionClaim:
     """Exclusively create a new collection, refusing both partial and ready roots.
 
@@ -196,7 +213,9 @@ def claim_collection(project_dir: Path, intent: dict[str, Any]) -> CollectionCla
     _intent(intent)
     parent = (project_dir / "scenarios" / "collections").resolve()
     parent.mkdir(parents=True, exist_ok=True)
-    root = parent / intent["collection_id"]
+    root = claim_identity_segment(
+        parent, intent["collection_id"], _collection_occupant, field="collection_id"
+    )
     try:
         root.mkdir()
     except FileExistsError as exc:
@@ -637,7 +656,14 @@ def _validate(
         intent = read_canonical_json(intent_path)
         _intent(intent)
         _equal("collection_id", intent["collection_id"], manifest["collection_id"])
-        _equal("collection directory", manifest["collection_id"], root.name)
+        # A prefix comparison since t2609152107, and not a weakening: the
+        # complete identity is verified against the intent one line above, and
+        # `collection_id(intent)` recomputes it from content below.
+        _equal(
+            "collection directory",
+            identity_segment(manifest["collection_id"], "collection_id"),
+            root.name,
+        )
         _artifact(
             root,
             {"path": manifest["intent_path"], "sha256": manifest["intent_sha256"]},
@@ -901,9 +927,11 @@ def _initialization_path(project, plan, invocation_id):
         or content_sha256(plan["request"]) != plan["generation_request_id"]
     ):
         raise ImmutableCollectionError("initialization source request digest differs")
+    request_segment = identity_segment(
+        plan["generation_request_id"], "generation_request_id"
+    )
     relative = (
-        f"scenarios/requests/{plan['generation_request_id']}"
-        f"/initializations/{invocation_id}.json"
+        f"scenarios/requests/{request_segment}/initializations/{invocation_id}.json"
     )
     path = confined_path(project, relative)
     if path != project / relative:
@@ -923,9 +951,9 @@ def _job_collection_claim(project_dir, plan, invocation_id):
     }
     try:
         _equal("initialization receipt", expected, read_canonical_json(path))
-        _sha256(plan["collection_id"], "collection_id")
-        root = confined_path(project, f"scenarios/collections/{plan['collection_id']}")
-        if root != project / "scenarios" / "collections" / plan["collection_id"]:
+        segment = identity_segment(plan["collection_id"], "collection_id")
+        root = confined_path(project, f"scenarios/collections/{segment}")
+        if root != project / "scenarios" / "collections" / segment:
             raise ValueError("collection writer path is aliased")
         _equal(
             "initialized intent",
@@ -1011,20 +1039,33 @@ def list_collections(project_dir: Path) -> list[dict[str, Any]]:
         return []
     records = []
     for path in sorted(store.iterdir()):
-        _sha256(path.name, "collection directory")
         if path.is_symlink() or not path.resolve().is_relative_to(project):
             raise ImmutableCollectionError(f"collection directory is an alias: {path}")
         if not path.is_dir():
             raise ImmutableCollectionError(f"unexpected collection store file: {path}")
+        # A directory name is a PREFIX since t2609152107, so it can no longer
+        # establish its own identity. The complete one comes from the intent
+        # inside, and the name is then checked to be that identity's segment --
+        # which is what a bare name check used to buy and no longer can.
+        identity = _collection_occupant(path)
+        if identity is None:
+            raise ImmutableCollectionError(
+                f"collection directory states no identity: {path}"
+            )
+        _sha256(identity, "collection directory")
+        if path.name != identity_segment(identity, "collection_id"):
+            raise ImmutableCollectionError(
+                f"collection directory {path.name} is not the segment of {identity}"
+            )
         count, size = collection_size(path)
         records.append(
             {
-                "collection_id": path.name,
+                "collection_id": identity,
                 "path": path.as_posix(),
                 "marker_present": (path / "collection.json").exists(),
                 "file_count": count,
                 "size_bytes": size,
-                "simulation_references": collection_references(project, path.name),
+                "simulation_references": collection_references(project, identity),
             }
         )
     return records
@@ -1043,13 +1084,21 @@ def delete_collection(
         raise TypeError("force must be an explicit boolean")
     project = Path(project_dir).resolve(strict=True)
     store = project / "scenarios" / "collections"
-    target = store / selected_id
+    target = store / identity_segment(selected_id, "collection_id")
     if store.is_symlink() or target.is_symlink() or target.resolve() != target:
         raise ImmutableCollectionError(
             f"refuse deletion through a collection alias: {target}"
         )
     if not target.resolve().is_relative_to(project) or target.parent != store:
         raise ImmutableCollectionError(f"collection deletion escapes project: {target}")
+    # The prefix alone cannot say whose directory this is, so the occupant is
+    # confirmed before anything is removed. Deleting a same-prefix stranger is
+    # the one failure mode truncation introduces here.
+    occupant = _collection_occupant(target)
+    if occupant is not None and occupant != selected_id:
+        raise ImmutableCollectionError(
+            f"collection {target} holds {occupant}, not {selected_id}"
+        )
     references = collection_references(project, selected_id)
     if references and not force:
         raise ImmutableCollectionError(

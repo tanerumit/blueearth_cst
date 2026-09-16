@@ -7,11 +7,14 @@ from dataclasses import replace
 import pytest
 
 from blueearth_cst.experiment.content_identity import (
+    SegmentCollision,
     canonical_json_bytes,
+    claim_identity_segment,
     collection_id,
     collection_revision,
     confined_path,
     content_sha256,
+    identity_segment,
     read_canonical_json,
     scenario_semantics_sha256,
 )
@@ -295,3 +298,45 @@ def test_code_inventory_follows_package_initializers_and_relative_imports(tmp_pa
     assert inventory != repository_code_inventory(
         tmp_path, ["blueearth_cst/stage/entry.py"]
     )
+
+
+# --- path segments and their collision policy --------------------------------
+
+
+def test_a_path_segment_is_the_leading_prefix_and_the_field_stays_complete():
+    identity = "a1b2c3d4e5f6" + "0" * 52
+    assert identity_segment(identity, "collection_id") == "a1b2c3d4e5f6"
+    # The strict field validator is untouched: a display handle is still refused
+    # wherever an identity is STORED, which is the property truncation must not
+    # cost. Truncation applies to the path segment and nothing else.
+    with pytest.raises(ValueError, match="collection_id"):
+        identity_segment("a1b2c3d4e5f6", "collection_id")
+
+
+def test_a_segment_claim_refuses_a_prefix_held_by_another_identity(tmp_path):
+    """The check that replaces the self-describing-directory property."""
+    held = "a" * 12 + "1" * 52
+    other = "a" * 12 + "2" * 52
+    assert identity_segment(held, "x") == identity_segment(other, "x")
+
+    def occupant(path):
+        return (path / "identity").read_text(encoding="utf-8")
+
+    target = claim_identity_segment(tmp_path, held, occupant, field="collection_id")
+    target.mkdir()
+    (target / "identity").write_text(held, encoding="utf-8")
+
+    # Re-claiming the SAME identity resolves to the same directory.
+    assert claim_identity_segment(tmp_path, held, occupant) == target
+    # A different full identity sharing the prefix is a loud failure, never a
+    # silent merge into the incumbent's directory.
+    with pytest.raises(SegmentCollision, match="collection_id"):
+        claim_identity_segment(tmp_path, other, occupant, field="collection_id")
+
+
+def test_an_unreadable_incumbent_is_left_to_the_callers_exclusivity_rules(tmp_path):
+    """A partial claim reports no identity, and this check does not invent one."""
+    identity = "b" * 64
+    target = tmp_path / identity_segment(identity, "x")
+    target.mkdir()
+    assert claim_identity_segment(tmp_path, identity, lambda path: None) == target

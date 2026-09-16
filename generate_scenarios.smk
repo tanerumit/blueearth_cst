@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
-from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, index_width, install_console_style, member_index_regex, open_run_header, rule_banner, run_summary, patch_psutil_windows_benchmark, target_banner
+from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, index_width, install_console_style, log_row, member_index_regex, open_run_header, rule_banner, run_summary, patch_psutil_windows_benchmark, target_banner
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.generation_plan import generation_configuration, resolve_generation_plan
@@ -299,6 +299,15 @@ checkpoint publish_scenario_collection:
         plan = _collection_plan(wildcards)
         if _ready_collection(plan) is None:
             publish_planned_collection(project_dir, plan, INVOCATION_ID)
+        else:
+            # The REUSE row, and the only place it can be said out loud. The
+            # decision itself is made at PARSE time (`_source_reuse_ready`
+            # above), where no console style is installed yet and a row would
+            # print unstyled and out of order. Rules 3.05, 3.09 and 3.10 all
+            # take the same branch on a reuse, but 3.09 is one job per member --
+            # so the statement is made once, here, rather than 400 times.
+            log_row(f"Reusing the retained collection {wildcards.collection_id}; nothing to generate",
+                    module="collection")
 
 
 def _selected_collection(wc):

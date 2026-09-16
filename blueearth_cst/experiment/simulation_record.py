@@ -11,6 +11,7 @@ from blueearth_cst.experiment.content_identity import (
     read_canonical_json,
 )
 from blueearth_cst.shared.provenance import file_sha256
+from blueearth_cst.shared.snake_utils import log_row
 
 
 class SimulationFrozenError(ValueError):
@@ -292,6 +293,10 @@ def freeze_simulation(experiment_root, record, documents):
             raise SimulationFrozenError(
                 f"simulation_id expected={record['simulation_id']} retained={retained['simulation_id']}; use a new experiment name"
             )
+        log_row(
+            f"Reusing the frozen simulation {retained['simulation_id'][:12]}",
+            module="simulation",
+        )
         return retained
     if any((root / "hydrology" / "wflow" / "output").glob("*.csv")):
         raise SimulationFrozenError(
@@ -312,6 +317,13 @@ def freeze_simulation(experiment_root, record, documents):
         if not target.exists():
             atomic_record(target, documents[key])
     atomic_record(marker, record)
+    log_row(
+        f"Froze simulation {record['simulation_id'][:12]}: "
+        f"collection {record['collection']['collection_id'][:12]} "
+        f"({record['collection']['resolution_mode']}) "
+        f"against model {record['model']['model_digest'][:12]}",
+        module="simulation",
+    )
     return read_simulation(root)
 
 

@@ -20,6 +20,7 @@ from blueearth_cst.experiment.scenario_rows import (
     enumerate_stochastic,
     validate_stochastic,
 )
+from blueearth_cst.shared.snake_utils import log_row
 
 
 @dataclass(frozen=True)
@@ -268,6 +269,7 @@ def initialize_planned_collection(
     from blueearth_cst.experiment.content_identity import (
         canonical_json_bytes,
         content_sha256,
+        identity_segment,
     )
     from blueearth_cst.experiment.scenario_collection import initialize_collection_jobs
     from blueearth_cst.experiment.scenario_rows import stochastic_rows
@@ -321,6 +323,11 @@ def initialize_planned_collection(
     payloads["scenario_table.csv"] = table.getvalue().encode("utf-8")
     payloads["stress_test_lookup.csv"] = Path(lookup_path)
     payloads[context["catalog"]["path"]] = catalog_bytes
+    log_row(
+        f"Collection {identity_segment(intent['collection_id'], 'collection_id')}: "
+        f"claiming {len(rows)} scenario row(s), {len(payloads)} portable input(s)",
+        module="collection",
+    )
     return initialize_collection_jobs(project_dir, plan, invocation_id, payloads)
 
 
@@ -329,6 +336,7 @@ def publish_planned_collection(project_dir, plan, invocation_id):
     from blueearth_cst.experiment.content_identity import (
         collection_revision,
         confined_path,
+        identity_segment,
     )
     from blueearth_cst.experiment.forcing_descriptor import (
         collection_forcing_descriptor,
@@ -383,6 +391,11 @@ def publish_planned_collection(project_dir, plan, invocation_id):
         "forcing": forcing,
     }
     manifest["collection_revision"] = collection_revision(manifest)
+    log_row(
+        f"Collection {identity_segment(intent['collection_id'], 'collection_id')}: "
+        f"sealing {len(forcing)} forcing file(s) as immutable",
+        module="collection",
+    )
     return publish_collection(
         claim,
         manifest,

@@ -534,7 +534,7 @@ def build_project_tree_rules(
         "response_request.json",
     ):
         same(f"experiments/{e}/config/{leaf}")
-    same(f"experiments/{e}/responses/response_inventory.json")
+    same(f"experiments/{e}/_engine/response_inventory.json")
     same_rx(rf"experiments/{exp}/_engine/metric_requests/{digest}\.json")
     metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
     # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is

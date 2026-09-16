@@ -30,7 +30,7 @@ def _current_metric_request(wc=None):
 checkpoint prepare_metric_plan:
     input:
         simulation=_frozen_simulation,
-        responses=f"{exp_dir}/responses/response_inventory.json",
+        responses=f"{engine_dir}/response_inventory.json",
     output:
         f"{engine_dir}/metric_requests/{{metric_request_id}}.json",
     wildcard_constraints:

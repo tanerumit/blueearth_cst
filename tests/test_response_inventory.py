@@ -102,7 +102,7 @@ def test_missing_or_extra_expected_series_refuses_publication(frozen, replace_he
         )
     with pytest.raises(MissingResponseRequirement, match="response keys"):
         publish_response_inventory(root, native_runs, temporal)
-    assert not (root / "responses/response_inventory.json").exists()
+    assert not (root / "_engine/response_inventory.json").exists()
 
 
 @pytest.mark.parametrize("artifact", ["csv_path", "toml_path", "temporal_path"])
@@ -144,7 +144,7 @@ def test_corrupt_inventory_digest_refuses_before_native_open(frozen, monkeypatch
     root, native_runs, temporal = frozen
     inventory = publish_response_inventory(root, native_runs, temporal)
     inventory["series"][0]["units"] = "wrong"
-    (root / "responses/response_inventory.json").write_bytes(
+    (root / "_engine/response_inventory.json").write_bytes(
         canonical_json_bytes(inventory)
     )
 

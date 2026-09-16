@@ -219,7 +219,7 @@ def build_response_inventory(experiment_root, native_runs, temporal_preparation)
     ordering and metadata must match the prior immutable response request.
     """
     root = Path(experiment_root).resolve()
-    directory = root / "responses"
+    directory = root / "_engine"
     simulation = read_simulation(root)
     request = read_canonical_json(root / "config/response_request.json")
     validate_response_request(request)
@@ -347,7 +347,7 @@ def build_response_inventory(experiment_root, native_runs, temporal_preparation)
 def read_response_inventory(experiment_root):
     """Recompute retained native bytes, selectors and coverage before any reuse."""
     root = Path(experiment_root).resolve()
-    directory = root / "responses"
+    directory = root / "_engine"
     path = directory / "response_inventory.json"
     try:
         stored = read_canonical_json(
@@ -411,7 +411,7 @@ def read_response_inventory(experiment_root):
 def publish_response_inventory(experiment_root, native_runs, temporal_preparation):
     """Publish complete native coverage last, then fill simulation completion."""
     root = Path(experiment_root).resolve()
-    path = root / "responses/response_inventory.json"
+    path = root / "_engine/response_inventory.json"
     if path.resolve() != path:
         raise MissingResponseRequirement("response publication path is aliased")
     inventory = build_response_inventory(root, native_runs, temporal_preparation)

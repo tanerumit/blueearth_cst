@@ -664,7 +664,7 @@ def publish_metric_set(experiment_root, plan):
         "collection_id": simulation["collection"]["collection_id"],
         "collection_revision": simulation["collection"]["collection_revision"],
         "response_inventory": {
-            "path": "../../../responses/response_inventory.json",
+            "path": "../../../_engine/response_inventory.json",
             "sha256": plan["response_inventory_sha256"],
         },
         "response_request": {
@@ -789,7 +789,7 @@ def _read_metric_set(experiment_root, manifest_path):
         raise ImmutableMetricSetError("metric provenance differs from its definition")
     if (
         manifest["response_inventory"]["path"]
-        != "../../../responses/response_inventory.json"
+        != "../../../_engine/response_inventory.json"
     ):
         raise ImmutableMetricSetError("unexpected retained response inventory path")
     if (

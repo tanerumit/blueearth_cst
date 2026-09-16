@@ -200,7 +200,7 @@ if not _simulation_complete:
             tomls=[f"{runs_dir}/config/run_{run}.toml" for run in RUN_IDS],
             temporal=[f"{runs_dir}/config/run_{run}.temporal.json" for run in RUN_IDS],
         output:
-            update(f"{exp_dir}/responses/response_inventory.json"),
+            update(f"{engine_dir}/response_inventory.json"),
         run:
             from blueearth_cst.experiment.response_inventory import publish_response_inventory
             from blueearth_cst.experiment.wflow_response_reader import NativeRunArtifacts
@@ -214,7 +214,7 @@ if not _simulation_complete:
 # 4.07  responses
 rule responses:
     input:
-        f"{exp_dir}/responses/response_inventory.json",
+        f"{engine_dir}/response_inventory.json",
 
 # 4.11  gather_logs
 rule gather_logs:

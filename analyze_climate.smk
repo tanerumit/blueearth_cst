@@ -694,7 +694,7 @@ rule gather_logs:
 # scope the P0 probe established -- these fire only when at least one job
 # executed, so a gap in the dates means no work was done rather than that nobody
 # looked.
-JOURNAL_PATH = f"{project_dir}/config/runs/journal.jsonl"
+JOURNAL_PATH = f"{project_dir}/config/runs/_engine/journal.jsonl"
 INVOCATION_ID = uuid.uuid4().hex
 
 # One toolbox read per invocation, shared by both handlers, so a line pair

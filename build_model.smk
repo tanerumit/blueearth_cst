@@ -1369,7 +1369,7 @@ rule gather_logs:
 # _onstart, guarded by no flag -- so the journal counts executed runs, and a gap
 # in the dates means no work was done rather than that nobody looked. Do not add
 # a parse-time or atexit emitter to reach past this; the owner ruled against it.
-JOURNAL_PATH = f"{project_dir}/config/runs/journal.jsonl"
+JOURNAL_PATH = f"{project_dir}/config/runs/_engine/journal.jsonl"
 INVOCATION_ID = uuid.uuid4().hex
 
 # One toolbox read per invocation, shared by both handlers, so a line pair

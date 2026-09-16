@@ -124,7 +124,7 @@ def test_current_carrier_operation_target_matrix(
         operation == "simulate-and-metrics" and target in {"default", "all"}
     ) or (operation == "metrics-only" and target in {"metrics", "selected"})
     if allowed:
-        invocation_dir = root.parents[1] / "config/runs/invocations"
+        invocation_dir = root.parents[1] / "config/runs/_engine/invocations"
         assert not invocation_dir.exists()
         assert harness.main(argv) == 0
         assert len(calls) == 1

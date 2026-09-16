@@ -85,7 +85,7 @@ COVERED: dict[str, list[str]] = {
         # `config/runs/<workflow>/<digest>/` regex below -- it sits DIRECTLY
         # under `invocations/`, with no digest level -- so it carries its own
         # row (2026-08-11).
-        "config/runs/invocations/20260811T142556.501Z-83c05db9c855.json",
+        "config/runs/_engine/invocations/20260811T142556.501Z-83c05db9c855.json",
         # The content-addressed bundles these replaced are GONE (2026-08-13):
         # one record per workflow at an enumerated path, so there is no digest
         # level left for a regex to match. A surviving bundle in an existing
@@ -96,7 +96,7 @@ COVERED: dict[str, list[str]] = {
         # Written by the workflow's lifecycle handlers rather than by a rule,
         # so the declared tier structurally cannot see it and the inventory
         # whitelists it by hand.
-        "config/runs/journal.jsonl",
+        "config/runs/_engine/journal.jsonl",
         "config/runs/README.md",
         "config/catalogs/deltares_data.yml",
         "config/templates/wflow_build_model.yml",

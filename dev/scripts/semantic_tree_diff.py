@@ -384,7 +384,7 @@ def build_project_tree_rules(
     # first time a fixture (`test_rapid`) was rebuilt THROUGH the wrapper. The
     # R9 map has carried the equivalent row since 2026-08-05; this is the
     # mirror that was never made.
-    same("config/runs/invocations/")
+    same("config/runs/_engine/invocations/")
     # The content-addressed bundles are GONE (config-snapshot redesign,
     # 2026-08-13); the regex that matched
     # `config/runs/<workflow>/<digest>/...` went with them, so a surviving
@@ -402,7 +402,7 @@ def build_project_tree_rules(
     # declared tier cannot see it and it has to be whitelisted here by hand. It
     # is deliberately not a rule output -- Snakemake deletes those before a job
     # runs, which would truncate the ledger to one line every time.
-    same("config/runs/journal.jsonl")
+    same("config/runs/_engine/journal.jsonl")
     # The bin's own README, rewritten by rule X.01 on every run.
     same("config/runs/README.md")
     # Both still receive copies, but only of files the toolbox repository

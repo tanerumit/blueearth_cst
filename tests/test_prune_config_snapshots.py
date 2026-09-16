@@ -47,7 +47,7 @@ def project(tmp_path):
         root / "config/basin_data/output_locations.csv",
         # The wrapper's per-invocation manifests: a sibling of the bundles, not
         # one of them.
-        root / "config/runs/invocations/20260811T142556.501Z-83c05db9c855.json",
+        root / "config/runs/_engine/invocations/20260811T142556.501Z-83c05db9c855.json",
         # A site-specific catalog that lives nowhere in the toolbox -- exactly
         # the file the copy policy exists to protect.
         root / "config/catalogs/my_site_catalog.yml",

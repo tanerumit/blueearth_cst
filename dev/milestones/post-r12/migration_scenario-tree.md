@@ -245,6 +245,16 @@ retention questions were ruled 2026-09-15 and none became `temp()`, and most of
 what looked like clutter turned out to be either reader-facing or upstream-owned.
 The tidying is real but smaller than the eleven-row table implied.
 
+### What a hard break leaves behind, beyond the tree
+
+`.snakemake/incomplete/` keeps base64-encoded entries keyed on the OLD paths
+(`scenario_plans/6c7c4a60fb07.../generation/output/rlz_2_st_4.nc`) after the
+rename. Harmless -- it is Snakemake's own metadata for files that no longer
+exist, and nothing reads it for a path that cannot resolve -- but it means a
+migrated tree is not the only stale state a hard break creates, and
+`tree-check` does not see inside `.snakemake/`. Delete the directory if a
+re-run behaves oddly; it is regenerated.
+
 ## Machinery updated in the same landing
 
 `blueearth_cst/experiment/`: `content_identity.py` (new `identity_segment`,

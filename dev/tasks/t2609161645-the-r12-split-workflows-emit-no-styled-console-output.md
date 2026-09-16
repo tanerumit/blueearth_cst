@@ -42,6 +42,14 @@ localrule prepare_weathergen_config:
     input: .../scenarios/requests/9c7e7d244734/request.json
 ```
 
+> [!warning] Scope correction, 2026-09-16
+> "WF3/WF4 emit nothing" is too strong. WF4's downscaling stage DOES print styled
+> lines -- `16:58:38 - data_source - Reading scenarios/collections/.../run_09.nc`
+> -- because that path logs through hydromt, and `simulate_and_metrics.smk` is
+> fully bannered. The gap is narrower and precise: the two ENTRY-POINT Snakefiles
+> R12 created, plus the eight R12 experiment modules. Fixing it is not "add
+> logging to WF3/WF4".
+
 ## Two independent gaps, both measurable
 
 **1. Missing rule banners.** `message: rule_banner(...)` is what replaces

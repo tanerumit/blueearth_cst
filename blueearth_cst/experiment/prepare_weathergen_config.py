@@ -141,7 +141,8 @@ def build_weathergen_config(
             "start_year": 2010,
             "n_years": compute_nr_years(sim_end),
             "n_realizations": realizations_num,
-            # Resolved by the Snakefile from `shared.seed` (integer or `auto`)
+            # Resolved by the Snakefile from the generate_scenarios file's
+            # top-level `seed` (integer or `auto`)
             # against `defaults.seed`. Injected rather than templated so there
             # is ONE default: a `seed:` left in the weathergen template would be a
             # second one, and the two would drift the first time either moved.

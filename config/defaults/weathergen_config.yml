@@ -70,8 +70,9 @@ generate_weather:
                              # injected list at the end of this section. Its
                              # default lives in `config/advanced_settings.yml`
                              # under `defaults.seed`, and a project overrides it
-                             # with `shared.seed` (an integer, or `auto` to
-                             # derive it from the experiment name). One key, so
+                             # with `seed:` at the top of its generate_scenarios
+                             # file (an integer, or `auto` to derive it from the
+                             # experiment name). One key, so
                              # a second stochastic step anywhere in the toolbox
                              # cannot end up with a seed of its own that drifts
                              # from this one. It is also handed to

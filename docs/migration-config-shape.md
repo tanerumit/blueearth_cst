@@ -148,7 +148,7 @@ per-workflow files. A destination in a different file names it in brackets.
 | project file | `basin.gauge_snap_tolerance_m` | `basin.delineation.snap_tolerance_m` | `C-42` |  |
 | analyze_climate | `candidate_sources` | `climate.sources` (project file) | `C-43` | unioned with the selected source |
 | project file | `shared.clim_historical` | `climate.selected` | `C-44` |  |
-| project file | `shared.seed` | `seed` (run_stress_test) | `C-51` |  |
+| project file | `shared.seed` | `seed` (generate_scenarios) | `C-51` |  |
 | project file | `method` | **deleted** | `C-52` |  |
 | project file | `shared.water_year_start` | `climate.water_year_start` | `C-53` |  |
 | project file | `shared.julia_threads` | **deleted** | `C-54` |  |

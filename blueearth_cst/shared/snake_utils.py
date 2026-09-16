@@ -1213,7 +1213,8 @@ def validate_julia_threads(value) -> int:
 
 #: Default randomization seed for every stochastic step. The VALUE lives in
 #: ``config/advanced_settings.yml`` under ``defaults:``; a project overrides it
-#: with ``shared.seed``, which also accepts the literal ``auto``.
+#: with ``seed:`` at the top of the generate_scenarios file (`C-51`), which
+#: also accepts the literal ``auto``.
 #:
 #: One key, deliberately, rather than a seed per stochastic component. Today the
 #: only consumer is weathergenr (generation AND perturbation, C34/F15), but a
@@ -1228,7 +1229,7 @@ _SEED_MODULUS = 2**31
 
 
 def derive_seed(experiment_name: str) -> int:
-    """The seed ``shared.seed: auto`` resolves to, from the experiment name.
+    """The seed ``seed: auto`` resolves to, from the experiment name.
 
     Deterministic on the name alone: the same experiment re-runs with the same
     seed (so nothing downstream re-runs), a different experiment gets a
@@ -1244,14 +1245,14 @@ def derive_seed(experiment_name: str) -> int:
     if not isinstance(experiment_name, str) or not experiment_name:
         raise ValueError(
             f"cannot derive a seed from experiment_name={experiment_name!r}: "
-            "`shared.seed: auto` needs the experiment's name, which WF3 always "
+            "`seed: auto` needs the experiment's name, which WF3 always "
             "resolves before rule 3.10 runs"
         )
     return zlib.crc32(experiment_name.encode("utf-8")) % _SEED_MODULUS
 
 
 def resolve_seed(value, experiment_name: str) -> int:
-    """Resolve ``shared.seed`` to the integer the generator is handed.
+    """Resolve the generate_scenarios ``seed:`` to the integer the generator is handed.
 
     ``None`` (key absent) takes ``defaults.seed``; ``auto`` derives from the
     experiment name; anything else must be a non-negative integer. A string
@@ -1264,10 +1265,10 @@ def resolve_seed(value, experiment_name: str) -> int:
     if isinstance(value, str):
         if value.strip().lower() != "auto":
             raise ValueError(
-                f"shared.seed must be an integer or the literal 'auto', got {value!r}"
+                f"`seed:` in the generate_scenarios config must be an integer or the literal 'auto', got {value!r}"
             )
         return derive_seed(experiment_name)
-    return _nonnegative_int(value, "shared.seed")
+    return _nonnegative_int(value, "`seed:` in the generate_scenarios config")
 
 
 #: First month of the water (hydrological) year, for EVERY workflow that

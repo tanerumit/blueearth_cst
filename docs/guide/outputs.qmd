@@ -210,7 +210,7 @@ Changing only metrics creates a new immutable metric set from retained responses
 `operation: metrics-only` needs no live model, generation data or Julia.
 
 WF1 and WF2 retain configuration digests in their run records and result
-sidecars. For WF1, `models/hydrology/wflow/_engine/hydromt_build_config.yml` records the
+sidecars. For WF1, `models/hydrology/wflow/hydromt_build_config.yml` records the
 settings actually passed to HydroMT. Configuration provenance alone does not
 establish scientific data identity; collection and response manifests carry the
 corresponding content records.

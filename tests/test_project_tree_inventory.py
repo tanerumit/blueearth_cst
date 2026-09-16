@@ -173,9 +173,9 @@ COVERED: dict[str, list[str]] = {
         "models/hydrology/wflow/evaluation/plots/stations/performance_1010.png",
         # The staleness sidecar (rule 1.15b) and the two values-used records
         # (rules 1.07 and 1.08) -- see design §5.6 and §5.8.
-        "models/hydrology/wflow/_engine/run_metadata.json",
-        "models/hydrology/wflow/_engine/hydromt_build_config.yml",
-        "models/hydrology/wflow/_engine/hydromt_update_waterbodies.yml",
+        "models/hydrology/wflow/run_metadata.json",
+        "models/hydrology/wflow/hydromt_build_config.yml",
+        "models/hydrology/wflow/hydromt_update_waterbodies.yml",
     ],
     "experiments": [
         f"experiments/{E}/.model_reference_ok",

@@ -513,7 +513,7 @@ WF1_TERMINALS = [
     # the metrics table and nothing consumes it, and listing it here is what
     # schedules it at all -- no rule reads a sidecar, so without this it would
     # never build.
-    f"{basin_dir}/_engine/run_metadata.json",
+    f"{basin_dir}/run_metadata.json",
 ]
 
 # 1.00  all — target aggregator: full historical build + performance plots
@@ -662,7 +662,7 @@ rule build_wflow_model:
         # a copy of the parameter template: arguments are popped, P1 objects
         # replace them, and `lulc_mapping_fn` is derived at call time from the
         # grid's own source attribute, so it exists in no file on disk.
-        values_used = f"{basin_dir}/_engine/hydromt_build_config.yml",
+        values_used = f"{basin_dir}/hydromt_build_config.yml",
         # Completion sentinel (R7-1). `wflow_sbm.toml` is CREATED here and then
         # updated IN PLACE by rules 1.08-1.10, but only this rule declares it,
         # so a re-fire of the build rule alone used to leave the toml stripped of
@@ -698,7 +698,7 @@ rule add_reservoirs_lakes_glaciers:
         # The values each method was handed, plus whether it ran (R3). The
         # status is half the provenance: a skipped method leaves no trace in
         # the model, so values alone would describe water bodies never added.
-        values_used = f"{basin_dir}/_engine/hydromt_update_waterbodies.yml",
+        values_used = f"{basin_dir}/hydromt_update_waterbodies.yml",
     params:
         data_catalog = DATA_SOURCES,
         config = waterbodies_config,
@@ -1141,7 +1141,7 @@ rule write_run_metadata:
         effective_config_sha256 = EFFECTIVE_CONFIG_DIGEST,
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        run_metadata = f"{basin_dir}/_engine/run_metadata.json",
+        run_metadata = f"{basin_dir}/run_metadata.json",
     script:
         "blueearth_cst/shared/write_run_metadata.py"
 

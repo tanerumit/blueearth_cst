@@ -186,8 +186,18 @@ t2609152104 changes 1 and 3, landed 2026-09-16. Change 2 was event 3 above.
 | scope | moved into `_engine/` |
 |---|---|
 | `experiments/<E>/` | `responses/response_inventory.json`, `results/metric_requests/<id>/plan.json` → `metric_requests/<id>.json` |
-| `models/hydrology/wflow/` | `hydromt_build_config.yml`, `hydromt_update_waterbodies.yml`, `evaluation/run_metadata.json` |
 | `config/runs/` | `journal.jsonl`, `invocations/` |
+
+**`models/hydrology/wflow/` gets NO bin** — owner ruling 2026-09-16, reversing an
+earlier landing in this same branch. `hydromt_build_config.yml` and
+`hydromt_update_waterbodies.yml` record what the model build was actually handed,
+which is what someone tuning a build opens; they are fundamental setup
+configuration, not bookkeeping. With `hydromt.log` and `hydromt_data.yml` already
+immovable, a bin there would have collected one file.
+
+One path did change in that scope: `evaluation/run_metadata.json` →
+`run_metadata.json` at the model root. The staleness sidecar describes when the
+MODEL was last run, which is not a property of the evaluation it sat inside.
 
 The metric request also changed contract: `metric-plan/1` → `metric-request/1`
 and `plan_sha256` → `request_sha256`. Event 3 renamed only the directory
@@ -216,7 +226,7 @@ re-keyed every metric set.** Any future bin must preserve depth or accept that.
 
 ### Declined rows, and why
 
-The full-tree screen listed eleven families. Three moved; eight did not.
+The full-tree screen listed eleven families. Two scopes took a bin; nine rows did not move.
 
 | row | verdict |
 |---|---|
@@ -226,6 +236,7 @@ The full-tree screen listed eleven families. Three moved; eight did not.
 | `benchmarks/wf*.md` | **keep** — that directory is already dev-facing and already has `_parts/` |
 | `logs/dag/` | **keep** — produced only by the explicit DAG helper; absent from the tree |
 | `hydromt.log`, `hydromt_data.yml` | **blocked** — hydromt writes both at the model root by its own convention and no rule declares them; AGENTS.md forbids re-engineering that |
+| `hydromt_build_config.yml`, `hydromt_update_waterbodies.yml` | **keep** — fundamental wflow setup configuration, opened by anyone tuning a build (owner ruling 2026-09-16) |
 | `preparation_catalog.yml`, `ancillary/` | **blocked** — `scenario_collection.py` pins the filename inside the preparation context, which feeds `collection_id`; moving it changes identity |
 | `outstates_run_<id>.nc` | **n/a** — never written (`write_states=False` hardcoded) |
 

@@ -26,9 +26,8 @@ workflows and they write the new layout.
   config/runs/journal.jsonl, config/runs/invocations/
 → config/runs/_engine/...
 
-  models/hydrology/wflow/hydromt_build_config.yml (+ _update_waterbodies.yml)
   models/hydrology/wflow/evaluation/run_metadata.json
-→ models/hydrology/wflow/_engine/...
+→ models/hydrology/wflow/run_metadata.json
 
   experiments/<name>/results/metric_sets/<64-hex>/
 → experiments/<name>/results/metric_sets/<12-hex>/

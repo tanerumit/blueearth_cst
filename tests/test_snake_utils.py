@@ -468,19 +468,28 @@ def test_target_banner_with_no_targets_is_just_the_banner(monkeypatch):
 
 
 def test_target_banner_relativizes_against_project_dir(monkeypatch):
-    """The root moves to the banner; the paths below it lose the prefix."""
+    """The root moves to the banner; the paths below it lose the prefix.
+
+    Through `_abs`, not a `C:/...` literal: since t2609162114 the bracket prints
+    `display_root(project_dir)`, which absolutizes -- and a `C:/...` literal is
+    NOT absolute on POSIX, so abspath prepended the runner's CWD and the bracket
+    read `<repo>/C:/TESTS/CST/gabonx`. Caught by CI on ubuntu, green on windows:
+    the same class `_abs` was introduced for on 2026-08-14.
+    """
     import io
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
+    root = _abs("TESTS/CST/gabonx")
+    shown = root.replace(os.sep, "/")
     out = target_banner(
         "2.00",
         "all",
-        ["C:/TESTS/CST/gabonx/analyze_projections/cmip6/summary/x.csv"],
-        "C:/TESTS/CST/gabonx",
+        [f"{shown}/analyze_projections/cmip6/summary/x.csv"],
+        root,
     )
     assert out == (
-        "Rule 2.00: all  [C:/TESTS/CST/gabonx]\n    analyze_projections/cmip6/summary/x.csv"
+        f"Rule 2.00: all  [{shown}]\n    analyze_projections/cmip6/summary/x.csv"
     )
 
 
@@ -495,13 +504,21 @@ def test_target_banner_relativizes_a_native_separator_root(monkeypatch):
 
 
 def test_target_banner_leaves_a_path_outside_the_project_absolute(monkeypatch):
-    """Only the project prefix is stripped -- a catalog elsewhere stays whole."""
+    """Only the project prefix is stripped -- a catalog elsewhere stays whole.
+
+    Converted to `_abs` alongside the test above even though this one stayed
+    GREEN on ubuntu, for the reason `_abs`'s own docstring gives: it asserts
+    something is left UNCHANGED, which is exactly what a root that never matches
+    produces. With a `C:/...` root on POSIX it asserted the absence of an effect
+    that could not have occurred.
+    """
     import io
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
-    out = target_banner("2.00", "all", ["D:/data/catalog.yml"], "C:/TESTS/CST/gabonx")
-    assert "    D:/data/catalog.yml" in out
+    outside = _abs("elsewhere/data/catalog.yml").replace(os.sep, "/")
+    out = target_banner("2.00", "all", [outside], _abs("TESTS/CST/gabonx"))
+    assert f"    {outside}" in out
 
 
 def test_target_banner_without_project_dir_keeps_paths_verbatim(monkeypatch):

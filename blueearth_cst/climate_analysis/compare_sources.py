@@ -26,7 +26,7 @@ Three boundaries, all deliberate:
   anyway: era5 is the only supported source that is not precipitation-only, so
   ``pet`` can never have two carriers. Extending to it is wiring the orography
   inputs, not a redesign — see :data:`COMPARABLE_VARS`.
-* **No shared-scale input.** ``climate_levels.json`` (rule 0.04b) exists so
+* **No shared-scale input.** ``shared_plot_scales.json`` (rule 0.04b) exists so
   SEPARATE per-source figures are comparable. Every figure here already carries
   every source on one axis, so the edge would buy nothing and re-fire this rule
   whenever the scale moved.
@@ -37,7 +37,7 @@ the same water-year anchor, so "annual precipitation" means here exactly what it
 means in each source's own ``era5_precip_annual_ts_basin_avg.png``, over the
 same basin cells and the same period. Deriving it
 independently is the defect that indirection exists to prevent — the same reason
-``climate_levels`` reaches for it.
+``shared_plot_scales`` reaches for it.
 """
 
 # NO `from __future__ import annotations`: this module is imported by a

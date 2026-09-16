@@ -431,13 +431,13 @@ def build_project_tree_rules(
     # KEY, so the rule is keyed by a variable exactly as the R9 map's is.
     same(f"data/climate/historical/{dataset_key}/")
     same_rx(r"data/climate/historical/[^/]+/.*")
-    # Rule 0.04b pools its colour scale ACROSS sources, so `climate_levels.json`
+    # Rule 0.04b pools its colour scale ACROSS sources, so `shared_plot_scales.json`
     # lands at the historical root rather than inside a store key -- one level
     # above what the pattern on the line before can match. The per-source sidecar
     # that used to live under `<key>/plots/` was retired 2026-08-16
     # (`climate_analysis/climate_figures.py`), so a tree carrying the old
     # spelling is a predecessor tree, not a second copy of this file.
-    same("data/climate/historical/climate_levels.json")
+    same("data/climate/historical/shared_plot_scales.json")
     for tier in ("raw", "scalar", "summary", "plots"):
         same(f"data/climate/projections/{clim_project}/{tier}/")
     same(f"data/climate/projections/{clim_project}/report.md")

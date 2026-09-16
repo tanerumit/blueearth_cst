@@ -1,6 +1,6 @@
 """One plotting scale per variable per figure kind, shared across sources.
 
-Rule ``derive_climate_levels``'s script (``analyze_climate.smk`` 0.04b). WF0 draws
+Rule ``derive_plot_scales``'s script (``analyze_climate.smk`` 0.04b). WF0 draws
 one figure set per candidate source, each in its own job, so without this no two
 of those figures share an axis: a reader comparing ERA5's precipitation map with
 CHIRPS's would be comparing two different colour ramps and could not see a
@@ -107,7 +107,7 @@ def _map_levels(var: str, lower: float, upper: float) -> list[float]:
     return [float(v) for v in levels]
 
 
-def compute_climate_levels(
+def compute_plot_scales(
     stores: Mapping[str, Union[str, Path]],
     variables: Sequence[str],
     anchor: str = DEFAULT_WATER_YEAR_ANCHOR,
@@ -192,7 +192,7 @@ def compute_climate_levels(
     return levels
 
 
-def write_climate_levels(levels: Mapping, out_path: Union[str, Path]) -> Path:
+def write_plot_scales(levels: Mapping, out_path: Union[str, Path]) -> Path:
     """Write the scales as JSON, sorted so the file is diffable."""
     out_path = Path(out_path)
     out_path.parent.mkdir(parents=True, exist_ok=True)
@@ -203,7 +203,7 @@ def write_climate_levels(levels: Mapping, out_path: Union[str, Path]) -> Path:
     return out_path
 
 
-def read_climate_levels(path: Optional[Union[str, Path]]) -> dict:
+def read_plot_scales(path: Optional[Union[str, Path]]) -> dict:
     """Read the scales, or an empty mapping when there are none.
 
     ``None`` is the ordinary case for WF1, which draws ONE source and therefore
@@ -225,8 +225,8 @@ if __name__ == "__main__":
         from blueearth_cst.shared.snake_utils import tee_to_log, water_year_end_anchor
 
         with tee_to_log(sm.log[0]):
-            write_climate_levels(
-                compute_climate_levels(
+            write_plot_scales(
+                compute_plot_scales(
                     dict(zip(sm.params.sources, sm.input.climate_ncs)),
                     sm.params.variables,
                     anchor=water_year_end_anchor(sm.params.water_year_start),

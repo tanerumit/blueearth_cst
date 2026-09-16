@@ -513,7 +513,7 @@ WF1_TERMINALS = [
     # the metrics table and nothing consumes it, and listing it here is what
     # schedules it at all -- no rule reads a sidecar, so without this it would
     # never build.
-    f"{basin_dir}/evaluation/run_metadata.json",
+    f"{basin_dir}/run_metadata.json",
 ]
 
 # 1.00  all — target aggregator: full historical build + performance plots
@@ -1141,7 +1141,7 @@ rule write_run_metadata:
         effective_config_sha256 = EFFECTIVE_CONFIG_DIGEST,
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        run_metadata = f"{basin_dir}/evaluation/run_metadata.json",
+        run_metadata = f"{basin_dir}/run_metadata.json",
     script:
         "blueearth_cst/shared/write_run_metadata.py"
 
@@ -1369,7 +1369,7 @@ rule gather_logs:
 # _onstart, guarded by no flag -- so the journal counts executed runs, and a gap
 # in the dates means no work was done rather than that nobody looked. Do not add
 # a parse-time or atexit emitter to reach past this; the owner ruled against it.
-JOURNAL_PATH = f"{project_dir}/config/runs/journal.jsonl"
+JOURNAL_PATH = f"{project_dir}/config/runs/_engine/journal.jsonl"
 INVOCATION_ID = uuid.uuid4().hex
 
 # One toolbox read per invocation, shared by both handlers, so a line pair

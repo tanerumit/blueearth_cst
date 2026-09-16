@@ -1,4 +1,4 @@
-"""Shared plotting scales across candidate sources (climate_analysis/climate_levels).
+"""Shared plotting scales across candidate sources (climate_analysis/shared_plot_scales).
 
 Unit-level: the module takes stores on disk and returns a mapping, so nothing
 here needs snakemake or a model.
@@ -12,7 +12,7 @@ import pytest
 import xarray as xr
 
 from blueearth_cst.climate_analysis import climate_figures as cf
-from blueearth_cst.climate_analysis import climate_levels as cl
+from blueearth_cst.climate_analysis import shared_plot_scales as cl
 
 
 def _store(tmp_path, name, *, precip_base=4.0, variables=("precip", "temp", "pet")):
@@ -46,7 +46,7 @@ def _store(tmp_path, name, *, precip_base=4.0, variables=("precip", "temp", "pet
 
 
 def test_a_scale_is_produced_for_every_kind(tmp_path):
-    levels = cl.compute_climate_levels({"era5": _store(tmp_path, "era5")}, ["precip"])
+    levels = cl.compute_plot_scales({"era5": _store(tmp_path, "era5")}, ["precip"])
     assert set(levels["precip"]) == set(cf.FIGURE_KINDS)
     # The map scale is a boundary LADDER; the series scales are a pair.
     assert len(levels["precip"]["map"]) > 2
@@ -59,8 +59,8 @@ def test_the_scale_spans_both_sources_not_just_one(tmp_path):
     dry = _store(tmp_path, "dry", precip_base=2.0)
     wet = _store(tmp_path, "wet", precip_base=9.0)
 
-    alone = cl.compute_climate_levels({"dry": dry}, ["precip"])
-    shared = cl.compute_climate_levels({"dry": dry, "wet": wet}, ["precip"])
+    alone = cl.compute_plot_scales({"dry": dry}, ["precip"])
+    shared = cl.compute_plot_scales({"dry": dry, "wet": wet}, ["precip"])
 
     assert shared["precip"]["annual"][1] > alone["precip"]["annual"][1]
     assert max(shared["precip"]["map"]) > max(alone["precip"]["map"])
@@ -75,18 +75,18 @@ def test_a_variable_is_pooled_only_over_the_stores_that_carry_it(tmp_path):
     full = _store(tmp_path, "era5")
     precip_only = _store(tmp_path, "chirps", variables=("precip",))
 
-    levels = cl.compute_climate_levels(
+    levels = cl.compute_plot_scales(
         {"era5": full, "chirps": precip_only}, ["precip", "temp"]
     )
 
     assert "temp" in levels  # era5 still supplies it
-    only_full = cl.compute_climate_levels({"era5": full}, ["temp"])
+    only_full = cl.compute_plot_scales({"era5": full}, ["temp"])
     assert levels["temp"] == only_full["temp"]
 
 
 def test_a_variable_no_store_carries_is_omitted(tmp_path):
     """Omitted, not defaulted: the consumer must fall back to its own data."""
-    levels = cl.compute_climate_levels(
+    levels = cl.compute_plot_scales(
         {"chirps": _store(tmp_path, "chirps", variables=("precip",))},
         ["precip", "temp"],
     )
@@ -94,17 +94,17 @@ def test_a_variable_no_store_carries_is_omitted(tmp_path):
 
 
 def test_round_trip_through_json(tmp_path):
-    levels = cl.compute_climate_levels({"era5": _store(tmp_path, "era5")}, ["precip"])
-    path = cl.write_climate_levels(levels, tmp_path / "climate_levels.json")
+    levels = cl.compute_plot_scales({"era5": _store(tmp_path, "era5")}, ["precip"])
+    path = cl.write_plot_scales(levels, tmp_path / "shared_plot_scales.json")
 
-    assert cl.read_climate_levels(path) == levels
+    assert cl.read_plot_scales(path) == levels
 
 
 @pytest.mark.parametrize("missing", [None, "absent.json"])
 def test_an_absent_levels_file_degrades_to_no_shared_scale(tmp_path, missing):
     """WF1 draws ONE source and has nothing to share with — it must not raise."""
     path = None if missing is None else tmp_path / missing
-    assert cl.read_climate_levels(path) == {}
+    assert cl.read_plot_scales(path) == {}
 
 
 @pytest.mark.slow
@@ -118,7 +118,7 @@ def test_two_sources_render_against_the_same_scale(tmp_path):
         _store(tmp_path, "dry", precip_base=2.0),
         _store(tmp_path, "wet", precip_base=9.0),
     )
-    levels = cl.compute_climate_levels({"dry": dry, "wet": wet}, ["precip"])
+    levels = cl.compute_plot_scales({"dry": dry, "wet": wet}, ["precip"])
 
     ylims = []
     for name, path in (("dry", dry), ("wet", wet)):

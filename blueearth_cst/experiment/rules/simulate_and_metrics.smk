@@ -19,6 +19,9 @@ experiment = validate_experiment_name(experiment, project_dir)
 exp_dir = f"{project_dir}/experiments/{experiment}"
 runs_dir = f"{exp_dir}/hydrology/wflow"
 results_dir = f"{exp_dir}/results"
+# Engine bookkeeping, collected per scope so a reader learns to ignore one
+# directory rather than meeting machinery at three depths (t2609152104).
+engine_dir = f"{exp_dir}/_engine"
 basin_dir = f"{project_dir}/models/hydrology/wflow"
 SELECTION, COLLECTION = resolve_selected_collection(config_path, REPOSITORY)
 _intent = read_canonical_json(Path(SELECTION["manifest_path"]).parent / "collection_intent.json")
@@ -197,7 +200,7 @@ if not _simulation_complete:
             tomls=[f"{runs_dir}/config/run_{run}.toml" for run in RUN_IDS],
             temporal=[f"{runs_dir}/config/run_{run}.temporal.json" for run in RUN_IDS],
         output:
-            update(f"{exp_dir}/responses/response_inventory.json"),
+            update(f"{engine_dir}/response_inventory.json"),
         run:
             from blueearth_cst.experiment.response_inventory import publish_response_inventory
             from blueearth_cst.experiment.wflow_response_reader import NativeRunArtifacts
@@ -211,7 +214,7 @@ if not _simulation_complete:
 # 4.07  responses
 rule responses:
     input:
-        f"{exp_dir}/responses/response_inventory.json",
+        f"{engine_dir}/response_inventory.json",
 
 # 4.11  gather_logs
 rule gather_logs:

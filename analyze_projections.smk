@@ -1333,7 +1333,7 @@ rule gather_benchmarks:
 # job ran, truncating the ledger to one line every run. See the same block in
 # build_model.smk for the scope the P0 probe established -- these fire
 # only when at least one job executed, which is what R5 was narrowed to.
-JOURNAL_PATH = f"{project_dir}/config/runs/journal.jsonl"
+JOURNAL_PATH = f"{project_dir}/config/runs/_engine/journal.jsonl"
 INVOCATION_ID = uuid.uuid4().hex
 _JOURNAL_TOOLBOX = toolbox_identity()
 

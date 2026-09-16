@@ -14,6 +14,7 @@ from blueearth_cst.experiment.content_identity import (
     canonical_json_bytes,
     confined_path,
     content_sha256,
+    identity_segment,
     read_canonical_json,
     repository_code_inventory,
 )
@@ -369,9 +370,11 @@ def build_metric_plan(experiment_root, request):
             "metric_environment_sha256": environment_digest,
         }
     )
-    destination = root / "results/metric_sets" / identity
+    destination = (
+        root / "results/metric_sets" / identity_segment(identity, "metric_set_id")
+    )
     plan = {
-        "schema_version": "metric-plan/1",
+        "schema_version": "metric-request/1",
         "metric_request_id": content_sha256(request),
         "request": request,
         "response_inventory_sha256": inventory["response_inventory_sha256"],
@@ -394,15 +397,31 @@ def build_metric_plan(experiment_root, request):
             },
         },
     }
-    plan["plan_sha256"] = content_sha256(plan)
+    plan["request_sha256"] = content_sha256(plan)
     return plan
+
+
+def _metric_request_path(root: Path, identity: str) -> Path:
+    """The engine's file for one metric request.
+
+    A lone file per identity, so it gets a FILENAME rather than a directory
+    holding one entry (t2609152104 change 3). It lives in the scope's `_engine/`
+    bin because nothing here is for a reader: it exists so a run can be refused
+    when its inputs moved.
+    """
+    return (
+        root
+        / "_engine"
+        / "metric_requests"
+        / f"{identity_segment(identity, 'metric_request_id')}.json"
+    )
 
 
 def write_metric_plan(experiment_root, request):
     """Publish rebuildable checkpoint state after complete native validation."""
     root = Path(experiment_root).resolve()
     plan = build_metric_plan(root, request)
-    path = root / "results/metric_plans" / plan["metric_request_id"] / "plan.json"
+    path = _metric_request_path(root, plan["metric_request_id"])
     if path.resolve() != path:
         raise MetricPlanStale("metric planning path is aliased")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -413,12 +432,13 @@ def write_metric_plan(experiment_root, request):
 def verify_metric_plan(experiment_root, request):
     """Validate existing plans even when timestamps would schedule no job."""
     root = Path(experiment_root).resolve()
-    path = root / "results/metric_plans" / content_sha256(request) / "plan.json"
+    path = _metric_request_path(root, content_sha256(request))
     stored = read_canonical_json(path)
     expected = build_metric_plan(root, request)
     if stored != expected:
         raise MetricPlanStale(
-            f"metric plan expected={expected['plan_sha256']} observed={stored.get('plan_sha256')}"
+            f"metric request expected={expected['request_sha256']} "
+            f"observed={stored.get('request_sha256')}"
         )
     return stored
 
@@ -583,7 +603,11 @@ def _validate_tables(tables, expected_keys, declarations_by_name, units):
 def publish_metric_set(experiment_root, plan):
     """Publish a whole declared set, preserving all bytes on exact ready reuse."""
     root = Path(experiment_root).resolve()
-    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    destination = (
+        root
+        / "results/metric_sets"
+        / identity_segment(plan["metric_set_id"], "metric_set_id")
+    )
     marker = destination / "metrics.json"
     if destination.resolve() != destination:
         raise ImmutableMetricSetError("metric-set directory is aliased")
@@ -640,7 +664,7 @@ def publish_metric_set(experiment_root, plan):
         "collection_id": simulation["collection"]["collection_id"],
         "collection_revision": simulation["collection"]["collection_revision"],
         "response_inventory": {
-            "path": "../../../responses/response_inventory.json",
+            "path": "../../../_engine/response_inventory.json",
             "sha256": plan["response_inventory_sha256"],
         },
         "response_request": {
@@ -765,7 +789,7 @@ def _read_metric_set(experiment_root, manifest_path):
         raise ImmutableMetricSetError("metric provenance differs from its definition")
     if (
         manifest["response_inventory"]["path"]
-        != "../../../responses/response_inventory.json"
+        != "../../../_engine/response_inventory.json"
     ):
         raise ImmutableMetricSetError("unexpected retained response inventory path")
     if (
@@ -794,7 +818,9 @@ def _read_metric_set(experiment_root, manifest_path):
             "metric_environment_sha256": content_sha256(environment),
         }
     )
-    if identity != manifest["metric_set_id"] or destination.name != identity:
+    if identity != manifest["metric_set_id"] or destination.name != identity_segment(
+        identity, "metric_set_id"
+    ):
         raise ImmutableMetricSetError(
             "metric-set identity differs from retained inputs"
         )

@@ -17,6 +17,8 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-16 | t2609152107 | Shorten content-digest path segments to a fixed prefix, keeping full digests as identities | project-tree |
+| 2026-09-16 | t2609152040 | Regroup the scenario trees under scenarios/ and rename scenario_plans to requests | project-tree |
 | 2026-09-15 | t2609151800 | Prune the pre-R12 orphans from the rapid tree so tree-check regains its signal | dev tree hygiene |
 | 2026-09-15 | t2609151643 | Shorten the WF3 fingerprint suffix in run-scoped filenames to 12 characters | wf3 / outputs |
 | 2026-09-15 | t2609100916 | Implement the accepted R12 workflow design — SEALED. Two runnable entry points, the successor project layout, and the L-moment GEV return-level estimator replacing xclim/SciPy MLE, under **bounded Windows acceptance for operational screening only**. The standing fixture was wholly predecessor, so it was replaced rather than repaired and the old tree preserved at `blueearth_cst-artifacts/r12/predecessor-test_local-2026-09-15`; scope, exclusions and evidence live in `dev/roadmap.md` § R12 and `dev/milestones/r12/implementation/evidence/`. Linux parity carried to `t2609151346`; the §7.5 method ruling, actual-bundle applicability and low-flow accuracy stay open. | wf3  |

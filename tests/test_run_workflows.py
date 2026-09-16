@@ -90,7 +90,9 @@ def _snakefiles_invoked(calls):
 
 def _manifests(project_dir: Path) -> list[Path]:
     """Return wrapper manifests in deterministic filename order."""
-    return sorted((project_dir / "config" / "runs" / "invocations").glob("*.json"))
+    return sorted(
+        (project_dir / "config" / "runs" / "_engine" / "invocations").glob("*.json")
+    )
 
 
 def _read_only_manifest(project_dir: Path) -> dict:
@@ -779,7 +781,7 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     wrote = _group_rows(out, "wrote")
     assert wrote["project"] == root
     assert wrote["logs"] == f"{root}/logs/"
-    assert wrote["invocation"].startswith(f"{root}/config/runs/invocations/")
+    assert wrote["invocation"].startswith(f"{root}/config/runs/_engine/invocations/")
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
     # "ran" naming a workflow that did not is worse than not printing it.
     ran = out.split("\n  ran\n")[1].split("\n\n")[0].splitlines()

@@ -5,6 +5,7 @@ from pathlib import Path
 
 from blueearth_cst.experiment.content_identity import (
     content_sha256,
+    identity_segment,
     repository_code_inventory,
     stage_environment,
 )
@@ -151,11 +152,12 @@ def generation_configuration(config, repository):
         "water_year_start": resolve_water_year_start(climate.get("water_year_start")),
         "template": Path(template).resolve().as_posix(),
     }
-    plan_path = (
+    request_path = (
         Path(project["project_dir"]).resolve()
-        / "scenario_plans"
-        / content_sha256(request)
-        / "plan.json"
+        / "scenarios"
+        / "requests"
+        / identity_segment(content_sha256(request), "generation_request_id")
+        / "request.json"
     )
     return dict(
         config=cfg,
@@ -171,7 +173,7 @@ def generation_configuration(config, repository):
         catalogs=catalogs,
         code=code,
         request=request,
-        plan_path=plan_path.as_posix(),
+        request_path=request_path.as_posix(),
         source=climate["selected"],
     )
 

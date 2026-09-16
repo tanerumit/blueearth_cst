@@ -101,8 +101,8 @@ test_case/test_rapid/
   data/spatial/         basin, subbasins, rivers, gauge locations, and their plots
   data/climate/         the historical climate store, and the CMIP6 slices
   models/hydrology/     the Wflow-SBM model, its forcing, its run, its evaluation
-  scenario_plans/       exact generation requests
-  scenario_collections/ durable forcing and portable preparation inputs
+  scenarios/requests/   exact generation requests
+  scenarios/collections/ durable forcing and portable preparation inputs
   experiments/<name>/   one simulation identity, native responses and metric sets
   logs/                 one log per workflow
   benchmarks/           per-rule timings

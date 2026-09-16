@@ -171,7 +171,7 @@ Paths are relative to `project_dir`, with these shorthands:
 | `<store>/` | `data/climate/historical/<clim_source>_<window>/` |
 | `<proj>/` | `data/climate/projections/<ensemble>/` |
 | `<exp>/` | `experiments/<experiment_name>/` |
-| `<wg>/` | `<project>/scenario_plans/<generation_request_id>/generation/` (P2 staging; predecessor captures use `<exp>/climate/weathergenr/`) |
+| `<wg>/` | `<project>/scenarios/requests/<generation_request_id>/generation/` (P2 staging; predecessor captures use `<exp>/climate/weathergenr/`) |
 | `<runs>/` | `<exp>/hydrology/wflow/` |
 
 ---
@@ -205,7 +205,7 @@ gap.
        = WF1 1.04)                              │
               │                                 │
               ▼                                 │
-    0.04b derive_climate_levels                 │
+    0.04b derive_plot_scales                    │
       (one shared scale, pooled                 │
        across every source)                     │
               │                                 │
@@ -229,7 +229,7 @@ gap.
 | 0.02 | `delineate_region` | — (shared) |
 | 0.03 | `delineate_spatial_units` | — (shared) |
 | 0.04 | `extract_historical_climate_<source>` | per candidate source |
-| 0.04b | `derive_climate_levels` | — |
+| 0.04b | `derive_plot_scales` | — |
 | 0.05 | `plot_climate_source_<source>` | per candidate source |
 | 0.06 | `compare_climate_sources` | — (only when >1 source) |
 | 0.10 | `gather_benchmarks` | — (gather) |
@@ -281,13 +281,13 @@ which is the domain later averages reduce over.
 **Log.** A directory part, `logs/_parts/0.04_extract_historical_climate/<source>.log`,
 because the fan-out width belongs to the rule that owns it.
 
-#### 0.04b · `derive_climate_levels`
+#### 0.04b · `derive_plot_scales`
 
 **Does.** Pools what every per-source figure would plot and derives one shared
 scale, so separate figures can be read against each other. Numbered `0.04b`
 rather than renumbering: a letter suffix is the insert convention.
 
-**Writes.** `data/climate/historical/climate_levels.json` — one file for the
+**Writes.** `data/climate/historical/shared_plot_scales.json` — one file for the
 whole workflow, not one per source.
 
 #### 0.05 · `plot_climate_source_<source>` — per candidate source
@@ -309,7 +309,7 @@ asking the reader to do the comparing.
 **Writes.** The comparison figures and table, plus the per-subbasin comparison
 set as a `directory(...)`.
 
-**Not an input: `climate_levels.json`.** The shared scale exists so *separate*
+**Not an input: `shared_plot_scales.json`.** The shared scale exists so *separate*
 figures can be read against each other; every figure here already carries every
 source on one axis, so the edge would buy nothing and would re-fire this rule
 whenever the scale moved.
@@ -1017,8 +1017,8 @@ flowchart LR
 | 3.11 | `gather_logs` | Generation-request-scoped merged log |
 | 3.12 | `gather_benchmarks` | Generation-request-scoped benchmark table |
 
-Staging lives under `scenario_plans/<generation_request_id>/generation/`.
-Published collections live under `scenario_collections/<collection_id>/` and
+Staging lives under `scenarios/requests/<generation_request_id>/generation/`.
+Published collections live under `scenarios/collections/<collection_id>/` and
 include the scenario table, lookup, forcing descriptors, environment/code/source
 inventories and portable preparation context. The exact plan identifies the
 collection; consumers never scan for the latest match.
@@ -1065,5 +1065,6 @@ or Julia. Mixed or inconsistent targets are refused by the runner.
 | 3.16 legacy table reduction | 4.08–4.10 retained metric planning/publication |
 
 See [workflow migration](../../../docs/migration-workflow-names.md),
+[post-R12 project-tree migration](../../../docs/migration-post-r12.md),
 [weather-generator seam](../contracts/weather-generator-seam.md), and
 [hydrological-model seam](../contracts/hydrological-model-seam.md).

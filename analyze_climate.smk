@@ -293,7 +293,7 @@ LOG_RULES = [
     "0.02_delineate_region",
     "0.03_delineate_spatial_units",
     "0.04_extract_historical_climate",
-    "0.04b_derive_climate_levels",
+    "0.04b_derive_plot_scales",
     "0.05_plot_climate_source",
 ]
 
@@ -464,7 +464,7 @@ rule delineate_spatial_units:
 # tests/test_climate_store_contract.py pins that equivalence rather than
 # byte-identity of the declaration, which is the honest form of the claim.
 # --- one plotting scale per variable, shared by every source ------------------
-# 0.04b derive_climate_levels — pool what each figure would plot, across every
+# 0.04b derive_plot_scales — pool what each figure would plot, across every
 # candidate, and write the boundaries all of them then draw against.
 #
 # WITHOUT this, each 0.05 job classifies its own figure from its own data, so
@@ -480,16 +480,16 @@ rule delineate_spatial_units:
 # NOT the sidecar retired earlier the same day. That one shared a scale between
 # the SOURCE and FORCING families and was retired because they frame different
 # footprints; these are two source extractions over the same bbox. See
-# climate_levels.py's module docstring.
-CLIMATE_LEVELS = f"{project_dir}/data/climate/historical/climate_levels.json"
+# shared_plot_scales.py's module docstring.
+PLOT_SCALES = f"{project_dir}/data/climate/historical/shared_plot_scales.json"
 
 # Only variables at least two sources carry can be pooled meaningfully, but the
 # module handles that itself — it pools each variable over the stores that carry
 # it, and omits what nothing supplies.
 LEVEL_VARS = sorted({var for s in CANDIDATE_SOURCES for var in source_climate_vars(s)})
 
-rule derive_climate_levels:
-    message: rule_banner("0.04b", "derive_climate_levels", summary="one plotting scale per variable, across sources")
+rule derive_plot_scales:
+    message: rule_banner("0.04b", "derive_plot_scales", summary="one plotting scale per variable, across sources")
     input:
         climate_ncs = [CLIMATE_STORES[s].outputs["climate_nc"] for s in CANDIDATE_SOURCES],
         # The SERIES scales are pooled over the basin's cells, because that is
@@ -503,13 +503,13 @@ rule derive_climate_levels:
         variables = LEVEL_VARS,
         water_year_start = WATER_YEAR_START,
     output:
-        levels = CLIMATE_LEVELS,
+        scales = PLOT_SCALES,
     log:
-        f"{LOG_PARTS_DIR}/0.04b_derive_climate_levels.log",
+        f"{LOG_PARTS_DIR}/0.04b_derive_plot_scales.log",
     benchmark:
-        f"{project_dir}/benchmarks/_parts/0.04b_derive_climate_levels.tsv",
+        f"{project_dir}/benchmarks/_parts/0.04b_derive_plot_scales.tsv",
     script:
-        "blueearth_cst/climate_analysis/climate_levels.py"
+        "blueearth_cst/climate_analysis/shared_plot_scales.py"
 
 
 for _source in CANDIDATE_SOURCES:
@@ -555,7 +555,7 @@ for _source in CANDIDATE_SOURCES:
         _plot_inputs["oro_nc"] = _spec.outputs["oro_nc"]
     # The shared scale (rule 0.04b). A real input, so the DAG carries the barrier
     # rather than the script reading a file behind Snakemake's back.
-    _plot_inputs["levels_json"] = CLIMATE_LEVELS
+    _plot_inputs["scales_json"] = PLOT_SCALES
     # The cells the basin touches, on THIS source's grid. It is what the
     # `basin_avg` figures reduce over, and it is rule 0.04's own output -- the
     # same file weathergenr averages over, so the figures, the generator and the
@@ -603,7 +603,7 @@ for _source in CANDIDATE_SOURCES:
 # with every source drawn on it, and a summary table saying what each source is
 # (resolution, extracted window, reference) and what it delivers.
 #
-# NOT an input: `climate_levels.json`. The shared scale exists so SEPARATE
+# NOT an input: `shared_plot_scales.json`. The shared scale exists so SEPARATE
 # figures can be read against each other; every figure here already carries
 # every source on one axis, so the edge would buy nothing and would re-fire this
 # rule whenever the scale moved. The stores are the only data this needs.
@@ -694,7 +694,7 @@ rule gather_logs:
 # scope the P0 probe established -- these fire only when at least one job
 # executed, so a gap in the dates means no work was done rather than that nobody
 # looked.
-JOURNAL_PATH = f"{project_dir}/config/runs/journal.jsonl"
+JOURNAL_PATH = f"{project_dir}/config/runs/_engine/journal.jsonl"
 INVOCATION_ID = uuid.uuid4().hex
 
 # One toolbox read per invocation, shared by both handlers, so a line pair

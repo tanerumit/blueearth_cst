@@ -9,6 +9,7 @@ import pytest
 from blueearth_cst.experiment.content_identity import (
     canonical_json_bytes,
     content_sha256,
+    identity_segment,
 )
 from blueearth_cst.experiment.metric_plan import (
     ImmutableMetricSetError,
@@ -38,6 +39,17 @@ from tests.test_wflow_response_reader import native  # noqa: F401
 # test that plans synthetically must also present that same descriptor as the
 # live one -- otherwise every publish would fail as stale for the wrong reason.
 FIXTURE_ENVIRONMENT = {"packages": {"numpy": "fixture"}}
+
+
+def _set_dir(root, plan):
+    """The metric set's directory.
+
+    Named by the identity's first SHORT_DIGEST_CHARS since t2609152107, not
+    by the whole digest. Derived HERE rather than spelled out at seven call
+    sites, so this file cannot drift from `metric_plan.py` one site at a time.
+    """
+    segment = identity_segment(plan["metric_set_id"], "metric_set_id")
+    return root / "results/metric_sets" / segment
 
 
 def fixture_declaration():
@@ -144,7 +156,7 @@ def test_exact_result_keys_and_ready_reuse(metric_inputs, live_fixture_environme
         {"unit_id": run, "grain": "run", "member_run_id": run} for run in ("01", "02")
     ]
     manifest = publish_metric_set(root, plan)
-    marker = root / "results/metric_sets" / plan["metric_set_id"] / "metrics.json"
+    marker = _set_dir(root, plan) / "metrics.json"
     before = {
         p: (p.read_bytes(), p.stat().st_mtime_ns) for p in marker.parent.iterdir()
     }
@@ -172,7 +184,7 @@ def test_missing_result_key_refuses_even_after_table_digest_is_updated(
     root, request = metric_inputs
     plan = build_metric_plan(root, request)
     manifest = publish_metric_set(root, plan)
-    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    destination = _set_dir(root, plan)
     table = destination / "gwr_indicators.csv"
     lines = table.read_text().splitlines()
     table.write_text("\n".join(lines[:-1]) + "\n", encoding="utf-8")
@@ -362,7 +374,7 @@ def test_metric_marker_and_table_inventory_are_exact(
     root, request = metric_inputs
     plan = build_metric_plan(root, request)
     manifest = publish_metric_set(root, plan)
-    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    destination = _set_dir(root, plan)
     marker = destination / "metrics.json"
     if defect == "renamed-marker":
         marker = destination / "alternate.json"
@@ -504,7 +516,7 @@ def test_stale_live_environment_leaves_no_ready_marker(metric_inputs, monkeypatc
     )
     with pytest.raises(MetricPlanStale):
         publish_metric_set(root, plan)
-    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    destination = _set_dir(root, plan)
     assert not (destination / "metrics.json").exists()
 
 
@@ -533,7 +545,7 @@ def test_late_environment_drift_leaves_an_unready_destination(
     monkeypatch.setattr(plan_module, "resolve_metric_environment", drifting)
     with pytest.raises(MetricPlanStale):
         publish_metric_set(root, plan)
-    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    destination = _set_dir(root, plan)
     assert not (destination / "metrics.json").exists()
     assert destination.exists() and any(destination.iterdir()), (
         "payloads were flushed, so the destination should be partial, not absent"
@@ -573,7 +585,7 @@ def test_published_set_carries_and_verifies_its_benchmark_report(
     root, request = metric_inputs
     plan = build_metric_plan(root, request)
     manifest = publish_metric_set(root, plan)
-    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    destination = _set_dir(root, plan)
     report = destination / return_level_validation.REPORT_FILENAME
     assert report.is_file()
     assert report.read_bytes() == return_level_validation.load_report_bytes()
@@ -601,7 +613,7 @@ def test_reader_accepts_a_legacy_set_without_the_report(
     root, request = metric_inputs
     plan = build_metric_plan(root, request)
     publish_metric_set(root, plan)
-    destination = root / "results/metric_sets" / plan["metric_set_id"]
+    destination = _set_dir(root, plan)
     marker = destination / "metrics.json"
 
     # Rewrite the published set as a legacy one: legacy validation, no report.

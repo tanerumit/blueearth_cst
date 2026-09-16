@@ -12,11 +12,12 @@ import json
 import os
 import re
 import tempfile
-from collections.abc import Mapping, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from pathlib import Path, PureWindowsPath
 from typing import Any
 
 from blueearth_cst.experiment.scenario_rows import ScenarioRow
+from blueearth_cst.shared.provenance import short_digest
 
 
 def _check_json(value: Any) -> None:
@@ -328,6 +329,64 @@ def _digest(value: Any, field: str) -> str:
     if not isinstance(value, str) or re.fullmatch(r"[0-9a-f]{64}", value) is None:
         raise ValueError(f"{field}: expected lowercase SHA-256, got {value!r}")
     return value
+
+
+class SegmentCollision(ValueError):
+    """A directory segment is already held by a DIFFERENT full identity."""
+
+
+def identity_segment(value: Any, field: str) -> str:
+    """Name a directory after the leading characters of a complete identity.
+
+    A stored identity field is always the whole digest -- :func:`_digest` keeps
+    refusing anything shorter. This is the *path* form, and only the path form:
+    sixty-four hex characters per directory is what makes a project tree read as
+    machine output. ``SHORT_DIGEST_CHARS`` is imported rather than restated so
+    that the scenario trees, the metric trees and the config-snapshot bundles
+    that already use it cannot drift to different lengths.
+
+    Truncation costs one property, and it is worth naming: a discovered
+    directory is no longer self-describing, because a prefix cannot be checked
+    against anything on its own. :func:`claim_identity_segment` is what replaces
+    that property, and the two are meant to be used together.
+    """
+    return short_digest(_digest(value, field))
+
+
+def claim_identity_segment(
+    parent: Path,
+    value: Any,
+    occupant: Callable[[Path], str | None],
+    *,
+    field: str = "identity",
+) -> Path:
+    """Resolve an identity's directory, refusing to share it with another.
+
+    Because the segment is a deterministic prefix, exactly one sibling can ever
+    collide -- the one at that path -- so this is a single lookup rather than a
+    scan of the parent.
+
+    Args:
+        parent: Directory the segment is minted in.
+        value: The complete identity the directory stands for.
+        occupant: Reads the complete identity an EXISTING directory stands for,
+            returning ``None`` when it cannot be established. A partially
+            written claim returns ``None`` and is left to the caller's own
+            exclusivity rules, which already refuse to resume one.
+        field: Identity name, for the error message.
+
+    Raises:
+        SegmentCollision: The path is held by a different complete identity.
+            Loud, never a silent merge into another identity's directory.
+    """
+    target = Path(parent) / identity_segment(value, field)
+    if target.exists():
+        held = occupant(target)
+        if held is not None and held != value:
+            raise SegmentCollision(
+                f"{field}: {target} already holds {held}, not {value}"
+            )
+    return target
 
 
 def scenario_semantics_sha256(rows: Sequence[ScenarioRow]) -> str:

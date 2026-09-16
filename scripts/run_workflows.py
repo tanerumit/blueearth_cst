@@ -999,7 +999,7 @@ def _initialize_manifest(
     # same reasons, so the same reasoning places it here. `invocations/` is a
     # SIBLING of the `<workflow>/<digest>/` bundles rather than a fourth
     # workflow entry: an invocation spans workflows.
-    runs_dir = project_dir / "config" / "runs" / "invocations"
+    runs_dir = project_dir / "config" / "runs" / "_engine" / "invocations"
     runs_dir.mkdir(parents=True, exist_ok=True)
     filename_stamp = started_at.replace("-", "").replace(":", "")
     filename = f"{filename_stamp}-{uuid.uuid4().hex[:12]}.json"

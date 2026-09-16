@@ -117,7 +117,7 @@ consumer reads while keeping the divergence honestly on the record.
 
 - **path pattern:** `<collection>/stress_test_lookup.csv`, retained with the
   collection. Producer staging is under
-  `scenario_plans/<generation_request_id>/generation/config/`.
+  `scenarios/requests/<generation_request_id>/generation/config/`.
 - **producer:** WF3 `prepare_stress_test_grid` and collection publication.
 - **consumer:** the stochastic provider reads the scenario row's explicit
   `st_id`; reporting derives axes from the retained lookup. Simulation and
@@ -187,7 +187,7 @@ consumer reads while keeping the divergence honestly on the record.
 
 ## WG-3 — weathergenr config surface
 
-- **path pattern:** `scenario_plans/<generation_request_id>/generation/config/weathergen_config.yml` —
+- **path pattern:** `scenarios/requests/<generation_request_id>/generation/config/weathergen_config.yml` —
   **one file** since C29.
 - **producer:** rule 3.06 `prepare_weathergen_config`
   (`blueearth_cst/experiment/prepare_weathergen_config.py`).

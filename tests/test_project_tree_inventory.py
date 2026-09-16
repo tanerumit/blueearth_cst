@@ -33,10 +33,11 @@ import semantic_tree_diff as std  # noqa: E402
 E = "experiment"
 KEY = "era5_20000101_20201231"
 CP = "cmip6"
-#: A WF3 scenario-plan key as it now appears in a run-record FILENAME: the first
-#: 12 characters of the plan fingerprint, not all 64 (t2609151643). The
-#: `scenario_plans/` rows below still use the full 64, because the DIRECTORY
-#: keeps its full name -- the two lengths in this file are the contract.
+#: A WF3 scenario-request key as it appears in a run-record FILENAME: the first
+#: 12 characters of the request fingerprint (t2609151643). The
+#: `scenarios/requests/` rows below still use the full 64, because the
+#: DIRECTORY keeps its full name -- the two lengths in this file are the
+#: contract.
 PK = "c78c42d77345"
 INVENTORY = std.build_project_tree_rules(E, KEY, CP)
 
@@ -84,7 +85,7 @@ COVERED: dict[str, list[str]] = {
         # `config/runs/<workflow>/<digest>/` regex below -- it sits DIRECTLY
         # under `invocations/`, with no digest level -- so it carries its own
         # row (2026-08-11).
-        "config/runs/invocations/20260811T142556.501Z-83c05db9c855.json",
+        "config/runs/_engine/invocations/20260811T142556.501Z-83c05db9c855.json",
         # The content-addressed bundles these replaced are GONE (2026-08-13):
         # one record per workflow at an enumerated path, so there is no digest
         # level left for a regex to match. A surviving bundle in an existing
@@ -95,7 +96,7 @@ COVERED: dict[str, list[str]] = {
         # Written by the workflow's lifecycle handlers rather than by a rule,
         # so the declared tier structurally cannot see it and the inventory
         # whitelists it by hand.
-        "config/runs/journal.jsonl",
+        "config/runs/_engine/journal.jsonl",
         "config/runs/README.md",
         "config/catalogs/deltares_data.yml",
         "config/templates/wflow_build_model.yml",
@@ -172,7 +173,7 @@ COVERED: dict[str, list[str]] = {
         "models/hydrology/wflow/evaluation/plots/stations/performance_1010.png",
         # The staleness sidecar (rule 1.15b) and the two values-used records
         # (rules 1.07 and 1.08) -- see design §5.6 and §5.8.
-        "models/hydrology/wflow/evaluation/run_metadata.json",
+        "models/hydrology/wflow/run_metadata.json",
         "models/hydrology/wflow/hydromt_build_config.yml",
         "models/hydrology/wflow/hydromt_update_waterbodies.yml",
     ],
@@ -182,30 +183,42 @@ COVERED: dict[str, list[str]] = {
         f"experiments/{E}/config/model_reference.yml",
         f"experiments/{E}/config/response_request.json",
         f"experiments/{E}/config/simulator_settings.json",
-        f"experiments/{E}/responses/response_inventory.json",
-        f"experiments/{E}/results/metric_plans/{'a' * 64}/plan.json",
-        f"experiments/{E}/results/metric_sets/{'b' * 64}/metrics.json",
-        f"experiments/{E}/results/metric_sets/{'b' * 64}/unit_index.csv",
-        f"experiments/{E}/results/metric_sets/{'b' * 64}/q_indicators.csv",
+        f"experiments/{E}/_engine/response_inventory.json",
+        f"experiments/{E}/_engine/metric_requests/{'a' * 12}.json",
+        f"experiments/{E}/results/metric_sets/{'b' * 12}/metrics.json",
+        f"experiments/{E}/results/metric_sets/{'b' * 12}/unit_index.csv",
+        f"experiments/{E}/results/metric_sets/{'b' * 12}/q_indicators.csv",
         f"experiments/{E}/hydrology/wflow/config/run_001.toml",
         f"experiments/{E}/hydrology/wflow/config/run_001.temporal.json",
         f"experiments/{E}/hydrology/wflow/config/run_001.yml",
         f"experiments/{E}/hydrology/wflow/forcing/inmaps_run_001.nc",
         f"experiments/{E}/hydrology/wflow/output/run_001.csv",
         f"experiments/{E}/hydrology/wflow/output/run_001.log",
-        f"experiments/{E}/hydrology/wflow/output/outstates_run_001.nc",
+        # outstates_run_<id>.nc is gone from this list (2026-09-15): the
+        # experiment runs no longer emit a warm state at all, so it is not a
+        # shape a clean run produces. `downscale_climate_forcing.py` pops
+        # `state.path_output` out of every per-run TOML, and the only
+        # `measure_member_footprint` call site passes `write_states=False`.
+        # Contract HM-6b already says as much -- "an unconsumed named sink;
+        # nothing in-repo reads it", "absent on the completed fixture". The row
+        # dated from the 2026-08-06 capture, before the suppression.
+        #
+        # `semantic_tree_diff`'s rule for it deliberately STAYS: if a future
+        # config re-enables state output the file maps as declared instead of
+        # reporting UNMAPPED. Same reasoning as run_default/log.txt above --
+        # coverage rows describe what a run produces, not what is forbidden.
     ],
     "collections": [
-        f"scenario_collections/{'c' * 64}/collection.json",
-        f"scenario_collections/{'c' * 64}/scenario_table.csv",
-        f"scenario_collections/{'c' * 64}/forcing/run_001.nc",
-        f"scenario_collections/{'c' * 64}/stress_test_lookup.csv",
-        f"scenario_collections/{'c' * 64}/preparation_catalog.yml",
-        f"scenario_collections/{'c' * 64}/ancillary/dem/static.nc",
-        f"scenario_plans/{'a' * 64}/plan.json",
-        f"scenario_plans/{'a' * 64}/initializations/invocation.json",
-        f"scenario_plans/{'a' * 64}/generation/config/weathergen_config.yml",
-        f"scenario_plans/{'a' * 64}/generation/output/resampled_dates.csv",
+        f"scenarios/collections/{'c' * 12}/collection.json",
+        f"scenarios/collections/{'c' * 12}/scenario_table.csv",
+        f"scenarios/collections/{'c' * 12}/forcing/run_001.nc",
+        f"scenarios/collections/{'c' * 12}/stress_test_lookup.csv",
+        f"scenarios/collections/{'c' * 12}/preparation_catalog.yml",
+        f"scenarios/collections/{'c' * 12}/ancillary/dem/static.nc",
+        f"scenarios/requests/{'a' * 12}/request.json",
+        f"scenarios/requests/{'a' * 12}/initializations/invocation.json",
+        f"scenarios/requests/{'a' * 12}/generation/config/weathergen_config.yml",
+        f"scenarios/requests/{'a' * 12}/generation/output/resampled_dates.csv",
     ],
 }
 
@@ -294,7 +307,7 @@ UNDECLARED = [
     "spatial/geoms/basins.geojson",  # pre-R9
     "unknown_root/anything.txt",
     f"experiments/{E}/.model_reference_unknown",
-    f"scenario_plans/{'a' * 64}/generation/output/unknown_dates.csv",
+    f"scenarios/requests/{'a' * 12}/generation/output/unknown_dates.csv",
 ]
 
 

@@ -130,6 +130,20 @@ batch, members = parse_batch(["b4", "007", "z.toml", "a.csv", "012", "q.toml", "
         [julia, "--startup-file=no", "-e", code, str(DRIVER)],
         capture_output=True,
         text=True,
-        timeout=60,
+        # Budget for PRECOMPILATION, not for the parser. `using Test` costs
+        # under a second against a warm depot -- which is every developer
+        # machine, and why 60s looked ample -- but a CI runner starts with an
+        # empty one and precompiles the stdlib from scratch. CI installs Julia
+        # per run and caches no depot (Julia is juliaup-managed and absent from
+        # pixi by design), so every run pays the cold cost, and 60s flaked on
+        # BOTH platforms in run 35009891318 after passing minutes earlier on the
+        # same tree.
+        #
+        # This is a hang guard, not a performance assertion: the test checks
+        # what the parser returns, and nothing here is measuring how fast Julia
+        # starts. The generous ceiling is the point -- a timeout tight enough to
+        # be occasionally wrong reports a red suite for a reason that has
+        # nothing to do with the code under test.
+        timeout=300,
     )
     assert result.returncode == 0, result.stdout + result.stderr

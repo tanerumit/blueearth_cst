@@ -51,9 +51,9 @@ scenario table; portable readers use `run_id`, not filename parsing.
 
 | Artifact | Current path under project_dir |
 |---|---|
-| Exact generation selection | `scenario_plans/<generation_request_id>/plan.json` |
-| Ready collection | `scenario_collections/<collection_id>/collection.json` |
-| Durable generated forcing | `scenario_collections/<collection_id>/forcing/run_<run_id>.nc` |
+| Exact generation selection | `scenarios/requests/<generation_request_id>/request.json` |
+| Ready collection | `scenarios/collections/<collection_id>/collection.json` |
+| Durable generated forcing | `scenarios/collections/<collection_id>/forcing/run_<run_id>.nc` |
 | Prepared model forcing | `experiments/<name>/hydrology/wflow/forcing/inmaps_run_<run_id>.nc` (temporary) |
 | Native response | `experiments/<name>/hydrology/wflow/output/run_<run_id>.csv` |
 | Native response inventory | `experiments/<name>/responses/response_inventory.json` |

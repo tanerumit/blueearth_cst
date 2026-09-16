@@ -78,8 +78,8 @@ To change what a run does, edit the **source config** you pass to
 |---|---|
 | `project_config_<workflow>.yml` | that workflow's composed configuration -- see below |
 | `<workflow>/run_record.yml` | what the run resolved to: toolbox commit, environment hashes, the settings actually consumed, and the external inputs referenced |
-| `journal.jsonl` | append-only ledger, two lines per run (start and outcome) |
-| `invocations/` | one manifest per `scripts/run_workflows.py` invocation |
+| `_engine/journal.jsonl` | append-only ledger, two lines per run (start and outcome) |
+| `_engine/invocations/` | one manifest per `scripts/run_workflows.py` invocation |
 
 ## What the four `project_config_<workflow>.yml` files hold
 

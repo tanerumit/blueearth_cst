@@ -213,8 +213,8 @@ def test_self_hashed_incomplete_inventory_cannot_mark_completion(inputs):
     }
     digest = content_sha256(inventory)
     inventory["response_inventory_sha256"] = digest
-    (root / "responses").mkdir()
-    (root / "responses/response_inventory.json").write_bytes(
+    (root / "_engine").mkdir()
+    (root / "_engine/response_inventory.json").write_bytes(
         canonical_json_bytes(inventory)
     )
     from blueearth_cst.experiment.response_inventory import MissingResponseRequirement

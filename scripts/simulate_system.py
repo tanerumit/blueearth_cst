@@ -43,7 +43,7 @@ def main(argv=None):
     invocation = environment["CST_SIMULATION_INVOCATION_ID"]
     record_path = (
         Path(project["project"]["project_dir"]).resolve()
-        / "config/runs/invocations"
+        / "config/runs/_engine/invocations"
         / f"simulation-{invocation}.json"
     )
     record = {

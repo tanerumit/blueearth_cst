@@ -135,7 +135,7 @@ DATASETS = {
 #: * ``_raster_within`` crops the field to the frame before the colourbar
 #:   classifies it, so the bar describes what is shown. That already existed for
 #:   the caller-supplied-extent path and is what makes this switch safe.
-#: * wf0's shared scale (rule 0.04b, ``climate_levels.json``) is pooled from the
+#: * wf0's shared scale (rule 0.04b, ``shared_plot_scales.json``) is pooled from the
 #:   FULL stores, so it now describes a wider footprint than any source panel
 #:   draws. The scale stays comparable ACROSS sources, which is its job, but it
 #:   is no longer the range of the drawn cells.
@@ -378,7 +378,7 @@ def monthly_spread(da: xr.DataArray, spec: dict) -> list:
 
 #: The three derivations above, by figure kind. The SINGLE definition of what
 #: each figure plots -- the renderers draw from these and
-#: ``climate_levels`` pools them across datasets to derive a shared scale, so a
+#: ``shared_plot_scales`` pools them across datasets to derive a shared scale, so a
 #: scale cannot be computed over one quantity and applied to another.
 VALUE_DERIVATIONS = {
     "map": map_field,
@@ -816,7 +816,7 @@ _RENDERERS = {
 }
 
 
-# A `climate_levels.json` sidecar lived here until 2026-08-16: the SOURCE
+# A shared-scale sidecar lived here until 2026-08-16: the SOURCE
 # figures recorded their class boundaries and the FORCING figures adopted them,
 # so a variable's two maps carried one colourbar and could be read against each
 # other. It went with the extent ruling above (see MAP_EXTENT). Once the two

@@ -331,14 +331,16 @@ def build_project_tree_rules(
     # The two key on DIFFERENT THINGS, and therefore take SEPARATE rows. WF4
     # keys on its experiment name, whose grammar is validate_experiment_name's
     # `[a-z0-9_]+`. WF3 has no user-facing name, so since R12 it keys on its
-    # scenario-plan fingerprint, shortened to SHORT_DIGEST_CHARS hex
-    # (t2609151643) -- imported, not restated, so the row cannot drift from the
-    # `generate_scenarios.smk` constant that builds the name.
+    # scenario-request fingerprint, shortened to SHORT_DIGEST_CHARS hex
+    # (t2609151643) -- imported, not restated. Since t2609152107 that same
+    # constant also names the `scenarios/requests/` directory the key is READ
+    # from, so one import now pins the row, the filename and the directory
+    # together.
     #
     # A single `wf[34]_..._[a-z0-9_]+` row covering both would be WIDE ENOUGH TO
     # MISS REAL ORPHANS: short hex is a subset of the experiment grammar, so
     # that row accepted every pre-R12 experiment-keyed WF3 benchmark table as
-    # though it were a current plan-keyed one, and the rapid tree read clean
+    # though it were a current request-keyed one, and the rapid tree read clean
     # while holding two of them (t2609151800). Splitting the row is what makes
     # a stale WF3 record resolve as UNMAPPED.
     #
@@ -382,7 +384,7 @@ def build_project_tree_rules(
     # first time a fixture (`test_rapid`) was rebuilt THROUGH the wrapper. The
     # R9 map has carried the equivalent row since 2026-08-05; this is the
     # mirror that was never made.
-    same("config/runs/invocations/")
+    same("config/runs/_engine/invocations/")
     # The content-addressed bundles are GONE (config-snapshot redesign,
     # 2026-08-13); the regex that matched
     # `config/runs/<workflow>/<digest>/...` went with them, so a surviving
@@ -400,7 +402,7 @@ def build_project_tree_rules(
     # declared tier cannot see it and it has to be whitelisted here by hand. It
     # is deliberately not a rule output -- Snakemake deletes those before a job
     # runs, which would truncate the ledger to one line every time.
-    same("config/runs/journal.jsonl")
+    same("config/runs/_engine/journal.jsonl")
     # The bin's own README, rewritten by rule X.01 on every run.
     same("config/runs/README.md")
     # Both still receive copies, but only of files the toolbox repository
@@ -429,13 +431,13 @@ def build_project_tree_rules(
     # KEY, so the rule is keyed by a variable exactly as the R9 map's is.
     same(f"data/climate/historical/{dataset_key}/")
     same_rx(r"data/climate/historical/[^/]+/.*")
-    # Rule 0.04b pools its colour scale ACROSS sources, so `climate_levels.json`
+    # Rule 0.04b pools its colour scale ACROSS sources, so `shared_plot_scales.json`
     # lands at the historical root rather than inside a store key -- one level
     # above what the pattern on the line before can match. The per-source sidecar
     # that used to live under `<key>/plots/` was retired 2026-08-16
     # (`climate_analysis/climate_figures.py`), so a tree carrying the old
     # spelling is a predecessor tree, not a second copy of this file.
-    same("data/climate/historical/climate_levels.json")
+    same("data/climate/historical/shared_plot_scales.json")
     for tier in ("raw", "scalar", "summary", "plots"):
         same(f"data/climate/projections/{clim_project}/{tier}/")
     same(f"data/climate/projections/{clim_project}/report.md")
@@ -474,6 +476,10 @@ def build_project_tree_rules(
         # should still report.
         "hydromt_build_config.yml",
         "hydromt_update_waterbodies.yml",
+        # The staleness sidecar, at the model root since t2609152104 rather than
+        # inside `evaluation/`: it describes when the MODEL was last run, which
+        # is not a property of the evaluation beside it.
+        "run_metadata.json",
     ):
         same(f"{wflow}/{leaf}")
     for directory in (
@@ -487,9 +493,13 @@ def build_project_tree_rules(
     # basin_area, to `data/spatial/plots/`. A leftover directory there is stale
     # output from a pre-0007 run and SHOULD report as undeclared.
 
-    # R12 durable generation artifacts and rebuildable exact-request plans.
-    digest = r"[0-9a-f]{64}"
-    collection = rf"scenario_collections/{digest}"
+    # R12 durable generation artifacts and rebuildable exact-request state.
+    # Every content-digest PATH SEGMENT is the identity's first
+    # SHORT_DIGEST_CHARS since t2609152107, so this is the same `_hex` the WF3
+    # run-record rows use -- one constant, so a tree written by the engine and a
+    # tree this tool accepts cannot disagree about name length.
+    digest = _hex
+    collection = rf"scenarios/collections/{digest}"
     for leaf in (
         "collection.json",
         "collection_intent.json",
@@ -505,16 +515,16 @@ def build_project_tree_rules(
         same_rx(rf"{collection}/{re.escape(leaf)}")
     same_rx(rf"{collection}/forcing/run_[0-9]+\.nc")
     same_rx(rf"{collection}/ancillary/[^/]+/[^/]+")
-    same_rx(rf"scenario_plans/{digest}/plan\.json")
-    same_rx(rf"scenario_plans/{digest}/initializations/[^/]+\.json")
+    same_rx(rf"scenarios/requests/{digest}/request\.json")
+    same_rx(rf"scenarios/requests/{digest}/initializations/[^/]+\.json")
     same_rx(
-        rf"scenario_plans/{digest}/generation/config/(weathergen_config\.yml|stress_test_lookup\.csv)"
+        rf"scenarios/requests/{digest}/generation/config/(weathergen_config\.yml|stress_test_lookup\.csv)"
     )
     same_rx(
-        rf"scenario_plans/{digest}/generation/output/(rlz_[0-9]+_st_[0-9]+\.nc|sim_dates\.csv)"
+        rf"scenarios/requests/{digest}/generation/output/(rlz_[0-9]+_st_[0-9]+\.nc|sim_dates\.csv)"
     )
-    same_rx(rf"scenario_plans/{digest}/generation/output/resampled_dates\.csv")
-    same_rx(rf"scenario_plans/{digest}/generation/plots/[^/]+\.(png|pdf)")
+    same_rx(rf"scenarios/requests/{digest}/generation/output/resampled_dates\.csv")
+    same_rx(rf"scenarios/requests/{digest}/generation/plots/[^/]+\.(png|pdf)")
 
     # Simulation identities are frozen separately from metric-set identities.
     same(f"experiments/{e}/.model_reference_ok")
@@ -528,8 +538,8 @@ def build_project_tree_rules(
         "response_request.json",
     ):
         same(f"experiments/{e}/config/{leaf}")
-    same(f"experiments/{e}/responses/response_inventory.json")
-    same_rx(rf"experiments/{exp}/results/metric_plans/{digest}/plan\.json")
+    same(f"experiments/{e}/_engine/response_inventory.json")
+    same_rx(rf"experiments/{exp}/_engine/metric_requests/{digest}\.json")
     metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
     # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is
     # copied into every set so a reader can validate it without the installed

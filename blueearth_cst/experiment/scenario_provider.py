@@ -198,7 +198,7 @@ def plan_collection(
     execution paths belong to scheduling state, never this source inventory.
     This planner performs no collection writes and does not resolve random seeds.
     """
-    from blueearth_cst.experiment.collection_resolution import scenario_plan
+    from blueearth_cst.experiment.collection_resolution import scenario_request
     from blueearth_cst.experiment.content_identity import (
         collection_id,
         content_sha256,
@@ -255,7 +255,7 @@ def plan_collection(
         },
     }
     intent["collection_id"] = collection_id(intent)
-    return scenario_plan(project_dir, request, intent, inventory, documents)
+    return scenario_request(project_dir, request, intent, inventory, documents)
 
 
 def initialize_planned_collection(

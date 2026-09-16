@@ -406,11 +406,12 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     """
     from blueearth_cst.experiment.content_identity import (
         content_sha256,
+        identity_segment,
         read_canonical_json,
     )
 
     experiment = Path(project_dir) / "experiments" / EXPERIMENT_NAME
-    plans = list((experiment / "results/metric_plans").glob("*/plan.json"))
+    plans = list((experiment / "_engine/metric_requests").glob("*.json"))
     if len(plans) != 1:
         raise ValueError(
             f"baseline requires exactly one retained metric plan, found {len(plans)}; "
@@ -418,13 +419,14 @@ def resolve_metric_set_dir(project_dir: str) -> str:
         )
     plan = read_canonical_json(plans[0])
     if (
-        plan.get("schema_version") != "metric-plan/1"
+        plan.get("schema_version") != "metric-request/1"
         or content_sha256(
-            {key: value for key, value in plan.items() if key != "plan_sha256"}
+            {key: value for key, value in plan.items() if key != "request_sha256"}
         )
-        != plan.get("plan_sha256")
+        != plan.get("request_sha256")
         or content_sha256(plan["request"]) != plan.get("metric_request_id")
-        or plans[0].parent.name != plan["metric_request_id"]
+        or plans[0].stem
+        != identity_segment(plan["metric_request_id"], "metric_request_id")
     ):
         raise ValueError("baseline metric plan digest or request identity differs")
     identity = plan["metric_set_id"]
@@ -434,7 +436,9 @@ def resolve_metric_set_dir(project_dir: str) -> str:
         or any(c not in "0123456789abcdef" for c in identity)
     ):
         raise ValueError("baseline metric set id is not canonical SHA-256")
-    destination = experiment / "results/metric_sets" / identity
+    destination = (
+        experiment / "results/metric_sets" / identity_segment(identity, "metric_set_id")
+    )
     marker = read_canonical_json(destination / "metrics.json")
     if (
         marker.get("schema_version") != "metric-set/1"

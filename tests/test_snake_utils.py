@@ -3777,9 +3777,9 @@ def test_the_banner_carries_the_rules_summary_and_the_fanned_name():
     reg = _registry()
     plain = reg.logged("0.02", "delineate_region")
     assert plain.banner() == su.rule_banner("0.02", "delineate_region")
-    described = reg.logged("0.04b", "derive_climate_levels", summary="one scale")
+    described = reg.logged("0.04b", "derive_plot_scales", summary="one scale")
     assert described.banner() == su.rule_banner(
-        "0.04b", "derive_climate_levels", summary="one scale"
+        "0.04b", "derive_plot_scales", summary="one scale"
     )
     fanned = reg.logged("0.05", "plot_climate_source")
     assert fanned.banner("chirps") == su.rule_banner(

@@ -184,15 +184,15 @@ resolved its content identity. Each workflow executes once per invocation.
 
 ### Retained results and metrics-only
 
-Collections live under `scenario_collections/<collection_id>/`, selected by the
-exact `scenario_plans/<generation_request_id>/plan.json` or an explicit manifest.
+Collections live under `scenarios/collections/<collection_id>/`, selected by the
+exact `scenarios/requests/<generation_request_id>/request.json` or an explicit manifest.
 Simulation never creates missing collections. A missing or stale plan names the
 generation command required to resolve it; no directory scan or latest fallback
 is used.
 
 Each `experiments/<experiment_name>/` retains `config/simulation.json`, its native
 `hydrology/wflow/output/run_<run_id>.csv` responses and
-`responses/response_inventory.json`. Metric sets live in
+`_engine/response_inventory.json`. Metric sets live in
 `results/metric_sets/<metric_set_id>/`; their tables contain
 `metric,location,unit_id,value`, joined through `unit_index.csv` to scenario rows.
 Model-grid forcing and per-run catalogs are temporary. Collection forcing and
@@ -210,8 +210,9 @@ disable other workflows when only retained reduction is wanted. Default target
 `all` never infers an operation from files. Metrics-only requires no live model,
 generation inputs or Julia. Changed simulation inputs require a new experiment;
 changed metrics select a new immutable metric set. See
-[retained handoffs](docs/wf3-retained-handoffs.md) and
-[workflow migration](docs/migration-workflow-names.md).
+[retained handoffs](docs/wf3-retained-handoffs.md),
+[workflow migration](docs/migration-workflow-names.md) and
+[the post-R12 project-tree migration](docs/migration-post-r12.md).
 
 ### Logs and DAGs
 
@@ -219,7 +220,7 @@ WF0/WF1/WF2 retain their project-level logs and provenance records. Generation
 parts are scoped by generation request under `logs/_parts/generate_scenarios/`;
 simulation parts are scoped by experiment under `logs/_parts/simulate_system/`.
 Benchmark parts use the same scope beneath `benchmarks/_parts/`. The all-workflow
-runner retains an invocation record under `config/runs/invocations/`.
+runner retains an invocation record under `config/runs/_engine/invocations/`.
 
 ```console
 pixi run python scripts/plot_workflow_dag.py -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml

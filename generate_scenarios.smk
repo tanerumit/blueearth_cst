@@ -7,7 +7,7 @@ import yaml
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.snake_utils import index_width, member_index_regex, rule_banner, patch_psutil_windows_benchmark
-from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS
+from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.generation_plan import generation_configuration, resolve_generation_plan
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
@@ -22,26 +22,23 @@ project_dir = GENERATION["project_dir"]
 REGION = GENERATION["region"]
 CLIMATE_STORE = GENERATION["store"]
 store_dir = CLIMATE_STORE.store_dir
-_scenario_plan_path = GENERATION["plan_path"]
-wg_dir = (Path(_scenario_plan_path).parent / "generation").as_posix()
+_scenario_request_path = GENERATION["request_path"]
+wg_dir = (Path(_scenario_request_path).parent / "generation").as_posix()
 lookup_path = f"{wg_dir}/config/stress_test_lookup.csv"
-# WF3's run records are keyed by the SCENARIO-PLAN fingerprint, because a
-# project can hold several plans at once and WF3 has no user-facing plan name to
-# key on the way WF4 keys on its experiment. The key is the first
-# SHORT_DIGEST_CHARS of that fingerprint, the same handle length
-# `provenance.short_digest` gives every other digest a human reads: the full
-# 64-hex name was three times the length of the rest of the filename and pushed
-# the already-nested `_parts/` paths towards the Windows limit. Derived ONCE so
-# the log, the benchmark table and both `_parts/` trees cannot drift apart.
+# WF3's run records are keyed by the SCENARIO-REQUEST fingerprint, because a
+# project can hold several requests at once and WF3 has no user-facing name to
+# key on the way WF4 keys on its experiment.
 #
-# Sliced rather than passed through `short_digest`, which RAISES on a value that
-# is not a digest: this runs at parse time, so a plan directory that is not
-# 64-hex would fail every WF3 invocation over a cosmetic name.
+# Since t2609152107 the `scenarios/requests/<fingerprint>/` DIRECTORY is itself
+# named by the first SHORT_DIGEST_CHARS of that fingerprint, so this is a read
+# of the directory name rather than a slice of it. The log, the benchmark table
+# and both `_parts/` trees therefore cannot drift from the directory: one
+# constant sets all four.
 #
-# `scenario_plans/<fingerprint>/` keeps its FULL name -- that directory is the
-# record, and only the handle is shortened.
-_plan_fingerprint = Path(_scenario_plan_path).parent.name
-_plan_key = _plan_fingerprint[:SHORT_DIGEST_CHARS]
+# Still not passed through `short_digest`, which RAISES on a value that is not a
+# digest. This runs at parse time, so a request directory with an unexpected
+# name would fail every WF3 invocation over a cosmetic key.
+_plan_key = Path(_scenario_request_path).parent.name
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts/generate_scenarios/{_plan_key}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/generate_scenarios/{_plan_key}"
 WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
@@ -147,7 +144,11 @@ rule prepare_weathergen_config:
 def _collection_plan(wildcards=None):
     path = checkpoints.prepare_collection_sources.get().output[0]
     plan = read_canonical_json(Path(path))
-    if wildcards is not None and hasattr(wildcards, "collection_id") and wildcards.collection_id != plan["collection_id"]:
+    # The wildcard is the DIRECTORY name, which is the identity's first
+    # SHORT_DIGEST_CHARS since t2609152107 -- so this compares segment against
+    # segment. The full identity is not weakened by that: `_ready_collection`
+    # reads the manifest below and `read_collection` recomputes it from content.
+    if wildcards is not None and hasattr(wildcards, "collection_id") and wildcards.collection_id != short_digest(plan["collection_id"]):
         raise ValueError("requested collection differs from the exact source plan")
     return plan
 
@@ -168,8 +169,8 @@ def _ready_collection(plan):
 
 _source_reuse_ready = False
 _live_plan = None
-if Path(_scenario_plan_path).exists():
-    _retained_plan = read_canonical_json(Path(_scenario_plan_path))
+if Path(_scenario_request_path).exists():
+    _retained_plan = read_canonical_json(Path(_scenario_request_path))
     if all(Path(entry["path"]).is_file() for entry in _retained_plan["source_inventory"]):
         _live_plan, _, _ = _resolved_collection_plan()
         if _live_plan == _retained_plan:
@@ -185,14 +186,14 @@ checkpoint prepare_collection_sources:
             *([f"{store_dir}/orography.nc"] if clim_source in {"chirps", "chirps_global"} else []),
         ],
     output:
-        _scenario_plan_path,
+        _scenario_request_path,
     params:
         request=_generation_request,
-        live_plan_sha256=_live_plan["plan_sha256"] if _live_plan is not None else None,
+        live_request_sha256=_live_plan["request_sha256"] if _live_plan is not None else None,
     run:
-        from blueearth_cst.experiment.collection_resolution import write_scenario_plan
+        from blueearth_cst.experiment.collection_resolution import write_scenario_request
         plan, _, _ = _resolved_collection_plan()
-        write_scenario_plan(project_dir, plan)
+        write_scenario_request(project_dir, plan)
 
 
 # 3.05  initialize_scenario_collection
@@ -201,7 +202,7 @@ rule initialize_scenario_collection:
         plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
         lookup=lookup_path,
     output:
-        update((Path(_scenario_plan_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix()),
+        update((Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix()),
     run:
         from blueearth_cst.experiment.scenario_provider import initialize_planned_collection
         plan, catalog, ancillary = _resolved_collection_plan()
@@ -214,9 +215,9 @@ rule initialize_scenario_collection:
 def _collection_row_inputs(wc):
     plan = _collection_plan(wc)
     if _ready_collection(plan) is not None:
-        return [_scenario_plan_path]
+        return [_scenario_request_path]
     row = _rows_by_id[wc.run_id]
-    return [(Path(_scenario_plan_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
+    return [(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
             f"{wg_dir}/output/{legacy_member_name(row, st_width=ST_WIDTH)}.nc"]
 
 
@@ -225,9 +226,9 @@ rule retain_scenario_forcing:
     input:
         _collection_row_inputs,
     output:
-        update((Path(project_dir).resolve() / "scenario_collections" / "{collection_id}" / "forcing" / "run_{run_id}.nc").as_posix()),
+        update((Path(project_dir).resolve() / "scenarios" / "collections" / "{collection_id}" / "forcing" / "run_{run_id}.nc").as_posix()),
     wildcard_constraints:
-        collection_id="[a-f0-9]{64}",
+        collection_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
         run_id=rf"[0-9]{{{len(str(_row_capacity))}}}",
     run:
         from blueearth_cst.experiment.scenario_collection import _job_collection_claim, write_collection_payload
@@ -240,7 +241,7 @@ rule retain_scenario_forcing:
 def _collection_publication_inputs(wc):
     plan = _collection_plan(wc)
     if _ready_collection(plan) is not None:
-        return [_scenario_plan_path]
+        return [_scenario_request_path]
     root = Path(plan["manifest_path"]).parent
     return [(root / "forcing" / f"run_{row.run_id}.nc").as_posix() for row in SCENARIO_ROWS]
 
@@ -250,9 +251,9 @@ checkpoint publish_scenario_collection:
     input:
         _collection_publication_inputs,
     output:
-        update((Path(project_dir).resolve() / "scenario_collections" / "{collection_id}" / "collection.json").as_posix()),
+        update((Path(project_dir).resolve() / "scenarios" / "collections" / "{collection_id}" / "collection.json").as_posix()),
     wildcard_constraints:
-        collection_id="[a-f0-9]{64}",
+        collection_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     run:
         from blueearth_cst.experiment.scenario_provider import publish_planned_collection
         plan = _collection_plan(wildcards)
@@ -262,7 +263,7 @@ checkpoint publish_scenario_collection:
 
 def _selected_collection(wc):
     plan = _collection_plan()
-    return checkpoints.publish_scenario_collection.get(collection_id=plan["collection_id"]).output[0]
+    return checkpoints.publish_scenario_collection.get(collection_id=short_digest(plan["collection_id"])).output[0]
 
 
 
@@ -270,7 +271,7 @@ def _selected_collection(wc):
 rule generate_weather_realizations:
     message: rule_banner("3.07", "generate_weather_realizations", summary="generate stochastic weather with weathergenr")
     input:
-        initialization=(Path(_scenario_plan_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
+        initialization=(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
         source_plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
         climate_nc = ancient(f"{store_dir}/extract_historical.nc"),
         basin_cells = ancient(f"{store_dir}/basin_cells.csv"),
@@ -324,7 +325,7 @@ rule perturb_climate_realization:
     wildcard_constraints:
         st_num=member_index_regex(ST_WIDTH),
     input:
-        initialization=(Path(_scenario_plan_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
+        initialization=(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
         source_plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
         rlz_nc = _provider_ancestor,
         lookup_csv = lookup_path,

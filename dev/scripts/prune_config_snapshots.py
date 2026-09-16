@@ -131,7 +131,7 @@ def find_bundles(project_dir: Path) -> list[Path]:
     found: list[Path] = []
     for runs_dir in project_dir.glob("**/config/runs"):
         for workflow_dir in sorted(p for p in runs_dir.iterdir() if p.is_dir()):
-            if workflow_dir.name == "invocations":
+            if workflow_dir.name == "_engine":
                 continue
             found.extend(
                 sorted(

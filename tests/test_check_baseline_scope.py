@@ -36,6 +36,7 @@ def _write_metric_plan_fixture(project_dir):
     from blueearth_cst.experiment.content_identity import (
         canonical_json_bytes,
         content_sha256,
+        identity_segment,
     )
 
     root = Path(project_dir) / "experiments" / cb.EXPERIMENT_NAME / "results"
@@ -50,7 +51,12 @@ def _write_metric_plan_fixture(project_dir):
         "response_inventory_sha256": "b" * 64,
     }
     plan["plan_sha256"] = content_sha256(plan)
-    path = root / "metric_requests" / request_id / "plan.json"
+    path = (
+        root
+        / "metric_requests"
+        / identity_segment(request_id, "metric_request_id")
+        / "plan.json"
+    )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_json_bytes(plan))
     marker = {
@@ -60,7 +66,12 @@ def _write_metric_plan_fixture(project_dir):
         "response_inventory": {"sha256": "b" * 64},
     }
     marker["metrics_manifest_sha256"] = content_sha256(marker)
-    target = root / "metric_sets" / set_id / "metrics.json"
+    target = (
+        root
+        / "metric_sets"
+        / identity_segment(set_id, "metric_set_id")
+        / "metrics.json"
+    )
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(canonical_json_bytes(marker))
     return path, target

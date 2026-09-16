@@ -436,7 +436,9 @@ def resolve_metric_set_dir(project_dir: str) -> str:
         or any(c not in "0123456789abcdef" for c in identity)
     ):
         raise ValueError("baseline metric set id is not canonical SHA-256")
-    destination = experiment / "results/metric_sets" / identity
+    destination = (
+        experiment / "results/metric_sets" / identity_segment(identity, "metric_set_id")
+    )
     marker = read_canonical_json(destination / "metrics.json")
     if (
         marker.get("schema_version") != "metric-set/1"

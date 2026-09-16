@@ -22,8 +22,8 @@ project_dir = GENERATION["project_dir"]
 REGION = GENERATION["region"]
 CLIMATE_STORE = GENERATION["store"]
 store_dir = CLIMATE_STORE.store_dir
-_scenario_plan_path = GENERATION["plan_path"]
-wg_dir = (Path(_scenario_plan_path).parent / "generation").as_posix()
+_scenario_request_path = GENERATION["request_path"]
+wg_dir = (Path(_scenario_request_path).parent / "generation").as_posix()
 lookup_path = f"{wg_dir}/config/stress_test_lookup.csv"
 # WF3's run records are keyed by the SCENARIO-PLAN fingerprint, because a
 # project can hold several plans at once and WF3 has no user-facing plan name to
@@ -38,9 +38,9 @@ lookup_path = f"{wg_dir}/config/stress_test_lookup.csv"
 # is not a digest: this runs at parse time, so a plan directory that is not
 # 64-hex would fail every WF3 invocation over a cosmetic name.
 #
-# `scenario_plans/<fingerprint>/` keeps its FULL name -- that directory is the
-# record, and only the handle is shortened.
-_plan_fingerprint = Path(_scenario_plan_path).parent.name
+# `scenarios/requests/<fingerprint>/` keeps its FULL name -- that directory is
+# the record, and only the handle is shortened.
+_plan_fingerprint = Path(_scenario_request_path).parent.name
 _plan_key = _plan_fingerprint[:SHORT_DIGEST_CHARS]
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts/generate_scenarios/{_plan_key}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/generate_scenarios/{_plan_key}"
@@ -168,8 +168,8 @@ def _ready_collection(plan):
 
 _source_reuse_ready = False
 _live_plan = None
-if Path(_scenario_plan_path).exists():
-    _retained_plan = read_canonical_json(Path(_scenario_plan_path))
+if Path(_scenario_request_path).exists():
+    _retained_plan = read_canonical_json(Path(_scenario_request_path))
     if all(Path(entry["path"]).is_file() for entry in _retained_plan["source_inventory"]):
         _live_plan, _, _ = _resolved_collection_plan()
         if _live_plan == _retained_plan:
@@ -185,14 +185,14 @@ checkpoint prepare_collection_sources:
             *([f"{store_dir}/orography.nc"] if clim_source in {"chirps", "chirps_global"} else []),
         ],
     output:
-        _scenario_plan_path,
+        _scenario_request_path,
     params:
         request=_generation_request,
         live_plan_sha256=_live_plan["plan_sha256"] if _live_plan is not None else None,
     run:
-        from blueearth_cst.experiment.collection_resolution import write_scenario_plan
+        from blueearth_cst.experiment.collection_resolution import write_scenario_request
         plan, _, _ = _resolved_collection_plan()
-        write_scenario_plan(project_dir, plan)
+        write_scenario_request(project_dir, plan)
 
 
 # 3.05  initialize_scenario_collection
@@ -201,7 +201,7 @@ rule initialize_scenario_collection:
         plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
         lookup=lookup_path,
     output:
-        update((Path(_scenario_plan_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix()),
+        update((Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix()),
     run:
         from blueearth_cst.experiment.scenario_provider import initialize_planned_collection
         plan, catalog, ancillary = _resolved_collection_plan()
@@ -214,9 +214,9 @@ rule initialize_scenario_collection:
 def _collection_row_inputs(wc):
     plan = _collection_plan(wc)
     if _ready_collection(plan) is not None:
-        return [_scenario_plan_path]
+        return [_scenario_request_path]
     row = _rows_by_id[wc.run_id]
-    return [(Path(_scenario_plan_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
+    return [(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
             f"{wg_dir}/output/{legacy_member_name(row, st_width=ST_WIDTH)}.nc"]
 
 
@@ -225,7 +225,7 @@ rule retain_scenario_forcing:
     input:
         _collection_row_inputs,
     output:
-        update((Path(project_dir).resolve() / "scenario_collections" / "{collection_id}" / "forcing" / "run_{run_id}.nc").as_posix()),
+        update((Path(project_dir).resolve() / "scenarios" / "collections" / "{collection_id}" / "forcing" / "run_{run_id}.nc").as_posix()),
     wildcard_constraints:
         collection_id="[a-f0-9]{64}",
         run_id=rf"[0-9]{{{len(str(_row_capacity))}}}",
@@ -240,7 +240,7 @@ rule retain_scenario_forcing:
 def _collection_publication_inputs(wc):
     plan = _collection_plan(wc)
     if _ready_collection(plan) is not None:
-        return [_scenario_plan_path]
+        return [_scenario_request_path]
     root = Path(plan["manifest_path"]).parent
     return [(root / "forcing" / f"run_{row.run_id}.nc").as_posix() for row in SCENARIO_ROWS]
 
@@ -250,7 +250,7 @@ checkpoint publish_scenario_collection:
     input:
         _collection_publication_inputs,
     output:
-        update((Path(project_dir).resolve() / "scenario_collections" / "{collection_id}" / "collection.json").as_posix()),
+        update((Path(project_dir).resolve() / "scenarios" / "collections" / "{collection_id}" / "collection.json").as_posix()),
     wildcard_constraints:
         collection_id="[a-f0-9]{64}",
     run:
@@ -270,7 +270,7 @@ def _selected_collection(wc):
 rule generate_weather_realizations:
     message: rule_banner("3.07", "generate_weather_realizations", summary="generate stochastic weather with weathergenr")
     input:
-        initialization=(Path(_scenario_plan_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
+        initialization=(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
         source_plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
         climate_nc = ancient(f"{store_dir}/extract_historical.nc"),
         basin_cells = ancient(f"{store_dir}/basin_cells.csv"),
@@ -324,7 +324,7 @@ rule perturb_climate_realization:
     wildcard_constraints:
         st_num=member_index_regex(ST_WIDTH),
     input:
-        initialization=(Path(_scenario_plan_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
+        initialization=(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
         source_plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
         rlz_nc = _provider_ancestor,
         lookup_csv = lookup_path,

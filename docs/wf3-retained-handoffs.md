@@ -6,7 +6,7 @@ ready collection and publishes native responses and metric sets:
 
 | Handoff | Location beneath `project_dir` | Readiness marker |
 |---|---|---|
-| Generated forcing and portable preparation inputs | `scenario_collections/<collection_id>/` | `collection.json` |
+| Generated forcing and portable preparation inputs | `scenarios/collections/<collection_id>/` | `collection.json` |
 | Frozen simulation and native Wflow responses | `experiments/<experiment_name>/` | completed `config/simulation.json` and `responses/response_inventory.json` |
 | Selected metrics and their unit membership | `experiments/<experiment_name>/results/metric_sets/<metric_set_id>/` | `metrics.json` |
 
@@ -33,7 +33,7 @@ they are never rewritten or relabelled.
 ## Selection and invalidation
 
 Without a selector, simulation validates the exact project request at
-`scenario_plans/<generation_request_id>/plan.json`, including current source
+`scenarios/requests/<generation_request_id>/request.json`, including current source
 bytes, preparation, provider code and environment. Other collections do not
 affect selection. Missing or stale state refuses simulation and names the direct
 `generate_scenarios.smk` command required to produce a current collection.
@@ -42,7 +42,7 @@ For independent reuse, add only this mapping to the simulation workflow file:
 
 ```yaml
 scenario_collection:
-  manifest_path: /path/to/scenario_collections/<collection_id>/collection.json
+  manifest_path: /path/to/scenarios/collections/<collection_id>/collection.json
 ```
 
 This mode validates the complete retained collection without opening its

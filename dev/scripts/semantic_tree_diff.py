@@ -489,7 +489,7 @@ def build_project_tree_rules(
 
     # R12 durable generation artifacts and rebuildable exact-request plans.
     digest = r"[0-9a-f]{64}"
-    collection = rf"scenario_collections/{digest}"
+    collection = rf"scenarios/collections/{digest}"
     for leaf in (
         "collection.json",
         "collection_intent.json",
@@ -505,16 +505,16 @@ def build_project_tree_rules(
         same_rx(rf"{collection}/{re.escape(leaf)}")
     same_rx(rf"{collection}/forcing/run_[0-9]+\.nc")
     same_rx(rf"{collection}/ancillary/[^/]+/[^/]+")
-    same_rx(rf"scenario_plans/{digest}/plan\.json")
-    same_rx(rf"scenario_plans/{digest}/initializations/[^/]+\.json")
+    same_rx(rf"scenarios/requests/{digest}/request\.json")
+    same_rx(rf"scenarios/requests/{digest}/initializations/[^/]+\.json")
     same_rx(
-        rf"scenario_plans/{digest}/generation/config/(weathergen_config\.yml|stress_test_lookup\.csv)"
+        rf"scenarios/requests/{digest}/generation/config/(weathergen_config\.yml|stress_test_lookup\.csv)"
     )
     same_rx(
-        rf"scenario_plans/{digest}/generation/output/(rlz_[0-9]+_st_[0-9]+\.nc|sim_dates\.csv)"
+        rf"scenarios/requests/{digest}/generation/output/(rlz_[0-9]+_st_[0-9]+\.nc|sim_dates\.csv)"
     )
-    same_rx(rf"scenario_plans/{digest}/generation/output/resampled_dates\.csv")
-    same_rx(rf"scenario_plans/{digest}/generation/plots/[^/]+\.(png|pdf)")
+    same_rx(rf"scenarios/requests/{digest}/generation/output/resampled_dates\.csv")
+    same_rx(rf"scenarios/requests/{digest}/generation/plots/[^/]+\.(png|pdf)")
 
     # Simulation identities are frozen separately from metric-set identities.
     same(f"experiments/{e}/.model_reference_ok")

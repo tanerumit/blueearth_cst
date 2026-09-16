@@ -41,7 +41,7 @@ def test_planned_publication_across_separate_workers(retained, tmp_path):
     import sys
     from pathlib import Path
 
-    from blueearth_cst.experiment.collection_resolution import write_scenario_plan
+    from blueearth_cst.experiment.collection_resolution import write_scenario_request
     from blueearth_cst.experiment.scenario_collection import read_collection
     from blueearth_cst.experiment.scenario_provider import plan_collection
 
@@ -64,7 +64,7 @@ def test_planned_publication_across_separate_workers(retained, tmp_path):
         source_inputs={"historical_climate": original / "forcing/run_01.nc"},
         **documents,
     )
-    plan_path = write_scenario_plan(project, plan)
+    plan_path = write_scenario_request(project, plan)
     invocation = "1" * 32
     program = tmp_path / "worker.py"
     program.write_text(

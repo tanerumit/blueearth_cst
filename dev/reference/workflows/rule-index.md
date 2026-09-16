@@ -171,7 +171,7 @@ Paths are relative to `project_dir`, with these shorthands:
 | `<store>/` | `data/climate/historical/<clim_source>_<window>/` |
 | `<proj>/` | `data/climate/projections/<ensemble>/` |
 | `<exp>/` | `experiments/<experiment_name>/` |
-| `<wg>/` | `<project>/scenario_plans/<generation_request_id>/generation/` (P2 staging; predecessor captures use `<exp>/climate/weathergenr/`) |
+| `<wg>/` | `<project>/scenarios/requests/<generation_request_id>/generation/` (P2 staging; predecessor captures use `<exp>/climate/weathergenr/`) |
 | `<runs>/` | `<exp>/hydrology/wflow/` |
 
 ---
@@ -1017,8 +1017,8 @@ flowchart LR
 | 3.11 | `gather_logs` | Generation-request-scoped merged log |
 | 3.12 | `gather_benchmarks` | Generation-request-scoped benchmark table |
 
-Staging lives under `scenario_plans/<generation_request_id>/generation/`.
-Published collections live under `scenario_collections/<collection_id>/` and
+Staging lives under `scenarios/requests/<generation_request_id>/generation/`.
+Published collections live under `scenarios/collections/<collection_id>/` and
 include the scenario table, lookup, forcing descriptors, environment/code/source
 inventories and portable preparation context. The exact plan identifies the
 collection; consumers never scan for the latest match.

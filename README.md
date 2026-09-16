@@ -184,8 +184,8 @@ resolved its content identity. Each workflow executes once per invocation.
 
 ### Retained results and metrics-only
 
-Collections live under `scenario_collections/<collection_id>/`, selected by the
-exact `scenario_plans/<generation_request_id>/plan.json` or an explicit manifest.
+Collections live under `scenarios/collections/<collection_id>/`, selected by the
+exact `scenarios/requests/<generation_request_id>/request.json` or an explicit manifest.
 Simulation never creates missing collections. A missing or stale plan names the
 generation command required to resolve it; no directory scan or latest fallback
 is used.

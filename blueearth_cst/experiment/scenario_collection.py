@@ -194,7 +194,7 @@ def claim_collection(project_dir: Path, intent: dict[str, Any]) -> CollectionCla
     claimed directory in place so a later producer cannot resume it implicitly.
     """
     _intent(intent)
-    parent = (project_dir / "scenario_collections").resolve()
+    parent = (project_dir / "scenarios" / "collections").resolve()
     parent.mkdir(parents=True, exist_ok=True)
     root = parent / intent["collection_id"]
     try:
@@ -894,14 +894,17 @@ def _initialization_path(project, plan, invocation_id):
         )
     _sha256(plan["generation_request_id"], "generation_request_id")
     expected = content_sha256(
-        {key: value for key, value in plan.items() if key != "plan_sha256"}
+        {key: value for key, value in plan.items() if key != "request_sha256"}
     )
     if (
-        expected != plan["plan_sha256"]
+        expected != plan["request_sha256"]
         or content_sha256(plan["request"]) != plan["generation_request_id"]
     ):
-        raise ImmutableCollectionError("initialization source plan digest differs")
-    relative = f"scenario_plans/{plan['generation_request_id']}/initializations/{invocation_id}.json"
+        raise ImmutableCollectionError("initialization source request digest differs")
+    relative = (
+        f"scenarios/requests/{plan['generation_request_id']}"
+        f"/initializations/{invocation_id}.json"
+    )
     path = confined_path(project, relative)
     if path != project / relative:
         raise ImmutableCollectionError("initialization receipt path is aliased")
@@ -916,13 +919,13 @@ def _job_collection_claim(project_dir, plan, invocation_id):
         "invocation_id": invocation_id,
         "collection_id": plan["collection_id"],
         "intent_sha256": plan["intent_sha256"],
-        "plan_sha256": plan["plan_sha256"],
+        "request_sha256": plan["request_sha256"],
     }
     try:
         _equal("initialization receipt", expected, read_canonical_json(path))
         _sha256(plan["collection_id"], "collection_id")
-        root = confined_path(project, f"scenario_collections/{plan['collection_id']}")
-        if root != project / "scenario_collections" / plan["collection_id"]:
+        root = confined_path(project, f"scenarios/collections/{plan['collection_id']}")
+        if root != project / "scenarios" / "collections" / plan["collection_id"]:
             raise ValueError("collection writer path is aliased")
         _equal(
             "initialized intent",
@@ -969,7 +972,7 @@ def initialize_collection_jobs(project_dir, plan, invocation_id, payloads):
             "invocation_id": invocation_id,
             "collection_id": plan["collection_id"],
             "intent_sha256": plan["intent_sha256"],
-            "plan_sha256": plan["plan_sha256"],
+            "request_sha256": plan["request_sha256"],
         },
     )
     return claim
@@ -1003,7 +1006,7 @@ def list_collections(project_dir: Path) -> list[dict[str, Any]]:
     the explicit inspection path; automatic collection selection never scans it.
     """
     project = Path(project_dir).resolve()
-    store = project / "scenario_collections"
+    store = project / "scenarios" / "collections"
     if not store.exists():
         return []
     records = []
@@ -1039,7 +1042,7 @@ def delete_collection(
     if type(force) is not bool:
         raise TypeError("force must be an explicit boolean")
     project = Path(project_dir).resolve(strict=True)
-    store = project / "scenario_collections"
+    store = project / "scenarios" / "collections"
     target = store / selected_id
     if store.is_symlink() or target.is_symlink() or target.resolve() != target:
         raise ImmutableCollectionError(

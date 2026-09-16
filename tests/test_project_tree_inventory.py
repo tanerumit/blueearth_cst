@@ -33,10 +33,11 @@ import semantic_tree_diff as std  # noqa: E402
 E = "experiment"
 KEY = "era5_20000101_20201231"
 CP = "cmip6"
-#: A WF3 scenario-plan key as it now appears in a run-record FILENAME: the first
-#: 12 characters of the plan fingerprint, not all 64 (t2609151643). The
-#: `scenario_plans/` rows below still use the full 64, because the DIRECTORY
-#: keeps its full name -- the two lengths in this file are the contract.
+#: A WF3 scenario-request key as it appears in a run-record FILENAME: the first
+#: 12 characters of the request fingerprint (t2609151643). The
+#: `scenarios/requests/` rows below still use the full 64, because the
+#: DIRECTORY keeps its full name -- the two lengths in this file are the
+#: contract.
 PK = "c78c42d77345"
 INVENTORY = std.build_project_tree_rules(E, KEY, CP)
 
@@ -208,16 +209,16 @@ COVERED: dict[str, list[str]] = {
         # coverage rows describe what a run produces, not what is forbidden.
     ],
     "collections": [
-        f"scenario_collections/{'c' * 64}/collection.json",
-        f"scenario_collections/{'c' * 64}/scenario_table.csv",
-        f"scenario_collections/{'c' * 64}/forcing/run_001.nc",
-        f"scenario_collections/{'c' * 64}/stress_test_lookup.csv",
-        f"scenario_collections/{'c' * 64}/preparation_catalog.yml",
-        f"scenario_collections/{'c' * 64}/ancillary/dem/static.nc",
-        f"scenario_plans/{'a' * 64}/plan.json",
-        f"scenario_plans/{'a' * 64}/initializations/invocation.json",
-        f"scenario_plans/{'a' * 64}/generation/config/weathergen_config.yml",
-        f"scenario_plans/{'a' * 64}/generation/output/resampled_dates.csv",
+        f"scenarios/collections/{'c' * 64}/collection.json",
+        f"scenarios/collections/{'c' * 64}/scenario_table.csv",
+        f"scenarios/collections/{'c' * 64}/forcing/run_001.nc",
+        f"scenarios/collections/{'c' * 64}/stress_test_lookup.csv",
+        f"scenarios/collections/{'c' * 64}/preparation_catalog.yml",
+        f"scenarios/collections/{'c' * 64}/ancillary/dem/static.nc",
+        f"scenarios/requests/{'a' * 64}/request.json",
+        f"scenarios/requests/{'a' * 64}/initializations/invocation.json",
+        f"scenarios/requests/{'a' * 64}/generation/config/weathergen_config.yml",
+        f"scenarios/requests/{'a' * 64}/generation/output/resampled_dates.csv",
     ],
 }
 
@@ -306,7 +307,7 @@ UNDECLARED = [
     "spatial/geoms/basins.geojson",  # pre-R9
     "unknown_root/anything.txt",
     f"experiments/{E}/.model_reference_unknown",
-    f"scenario_plans/{'a' * 64}/generation/output/unknown_dates.csv",
+    f"scenarios/requests/{'a' * 64}/generation/output/unknown_dates.csv",
 ]
 
 

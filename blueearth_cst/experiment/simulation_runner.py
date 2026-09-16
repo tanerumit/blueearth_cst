@@ -167,9 +167,9 @@ def resolve_selected_collection(config_path, repository):
     command = (
         f'snakemake all -s generate_scenarios.smk --configfile "{config_path}" -c 3'
     )
-    if not Path(generation["plan_path"]).is_file():
+    if not Path(generation["request_path"]).is_file():
         raise GeneratedCollectionUnavailable(
-            f"missing {generation['plan_path']}; run {command}"
+            f"missing {generation['request_path']}; run {command}"
         )
     try:
         plan, _, _ = resolve_generation_plan(generation)
@@ -179,7 +179,7 @@ def resolve_selected_collection(config_path, repository):
         )
 
         raise GeneratedCollectionStale(
-            f"{generation['plan_path']}: {exc}; run {command}"
+            f"{generation['request_path']}: {exc}; run {command}"
         ) from exc
     return resolve_project_collection(
         generation["project_dir"],

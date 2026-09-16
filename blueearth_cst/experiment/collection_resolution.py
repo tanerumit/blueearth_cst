@@ -1,4 +1,4 @@
-"""Exact scenario-plan selection and source freshness without collection discovery."""
+"""Exact scenario-request selection and source freshness without collection discovery."""
 
 import os
 import tempfile
@@ -26,7 +26,7 @@ class GeneratedCollectionStale(ValueError):
     """The project request, live inputs, or selected immutable state changed."""
 
 
-def scenario_plan(project_dir, request, intent, source_inventory, documents=None):
+def scenario_request(project_dir, request, intent, source_inventory, documents=None):
     """Build rebuildable scheduling state after source preparation has completed."""
     if collection_id(intent) != intent["collection_id"]:
         raise ValueError("collection intent identity mismatch")
@@ -35,10 +35,10 @@ def scenario_plan(project_dir, request, intent, source_inventory, documents=None
     request_id = content_sha256(request)
     root = Path(project_dir).resolve()
     manifest_path = (
-        root / "scenario_collections" / intent["collection_id"] / "collection.json"
+        root / "scenarios" / "collections" / intent["collection_id"] / "collection.json"
     )
     plan = {
-        "schema_version": "scenario-plan/1",
+        "schema_version": "scenario-request/1",
         "generation_request_id": request_id,
         "request": request,
         "source_inventory": source_inventory,
@@ -53,15 +53,15 @@ def scenario_plan(project_dir, request, intent, source_inventory, documents=None
             if content_sha256(document) != intent[name]["sha256"]:
                 raise ValueError(f"{name} document identity mismatch")
         plan["documents"] = documents
-    plan["plan_sha256"] = content_sha256(plan)
+    plan["request_sha256"] = content_sha256(plan)
     return plan
 
 
-def write_scenario_plan(project_dir, plan):
+def write_scenario_request(project_dir, plan):
     """Atomically replace planning state; never claim or write a collection."""
     root = Path(project_dir).resolve()
     request_id = content_sha256(plan["request"])
-    expected = scenario_plan(
+    expected = scenario_request(
         root,
         plan["request"],
         plan["intent"],
@@ -69,10 +69,10 @@ def write_scenario_plan(project_dir, plan):
         plan.get("documents"),
     )
     if canonical_json_bytes(plan) != canonical_json_bytes(expected):
-        raise ValueError("scenario plan differs from its canonical inputs")
-    target = root / "scenario_plans" / request_id / "plan.json"
+        raise ValueError("scenario request differs from its canonical inputs")
+    target = root / "scenarios" / "requests" / request_id / "request.json"
     if target.resolve() != target:
-        raise ValueError("scenario plan uses an aliased path")
+        raise ValueError("scenario request uses an aliased path")
     target.parent.mkdir(parents=True, exist_ok=True)
     temporary = None
     try:
@@ -88,26 +88,26 @@ def write_scenario_plan(project_dir, plan):
     return target
 
 
-def verify_scenario_plan(
+def verify_scenario_request(
     project_dir, request, *, live_sources, expected_intent, generation_command
 ):
-    """Preflight the exact plan on every invocation, including no-job reuse.
+    """Preflight the exact request on every invocation, including no-job reuse.
 
     The producer supplies the newly recomputed intent and complete resolved
     source mapping. A changed source refuses even if timestamps stayed unchanged.
     No missing source is treated as permission to use a different collection.
     """
     root = Path(project_dir).resolve()
-    target = root / "scenario_plans" / content_sha256(request) / "plan.json"
+    target = root / "scenarios" / "requests" / content_sha256(request) / "request.json"
     if not target.exists():
         raise GeneratedCollectionUnavailable(
             f"missing {target}; run {generation_command}"
         )
     try:
         if target.resolve() != target:
-            raise ValueError("scenario plan uses an aliased path")
+            raise ValueError("scenario request uses an aliased path")
         plan = read_canonical_json(target)
-        expected = scenario_plan(
+        expected = scenario_request(
             root,
             request,
             expected_intent,
@@ -116,7 +116,8 @@ def verify_scenario_plan(
         )
         if canonical_json_bytes(plan) != canonical_json_bytes(expected):
             raise ValueError(
-                f"plan digest expected={expected['plan_sha256']} observed={plan.get('plan_sha256')}"
+                f"request digest expected={expected['request_sha256']} "
+                f"observed={plan.get('request_sha256')}"
             )
         inventory = plan["source_inventory"]
         if set(live_sources) != {entry["path"] for entry in inventory}:
@@ -151,7 +152,7 @@ def resolve_project_collection(
     describe_ancillary,
 ):
     """Resolve only a verified project's exact plan, with no scan or fallback."""
-    plan = verify_scenario_plan(
+    plan = verify_scenario_request(
         project_dir,
         request,
         live_sources=live_sources,

@@ -926,7 +926,7 @@ def test_wg3_integration():
     _, collection, _ = _successor_artifacts()
     plans = [
         p
-        for p in (Path(_FIXTURE) / "scenario_plans").glob("*/plan.json")
+        for p in (Path(_FIXTURE) / "scenarios" / "requests").glob("*/request.json")
         if json.loads(p.read_text())["collection_id"] == collection.name
     ]
     assert plans, "no generation plan for the consumed collection"

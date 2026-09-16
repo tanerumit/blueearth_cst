@@ -274,7 +274,7 @@ def test_partial_claim_and_duplicate_payload_refuse_without_mutation(planned):
     claim, intent, *_ = planned
     before = _snapshot(claim.root)
     with pytest.raises(ImmutableCollectionError, match="partial"):
-        claim_collection(claim.root.parent.parent, intent)
+        claim_collection(claim.root.parent.parent.parent, intent)
     with pytest.raises(ImmutableCollectionError):
         write_collection_payload(claim, "scenario_table.csv", b"overwrite")
     with pytest.raises(ScenarioCollectionNotReady):
@@ -488,7 +488,7 @@ def _changed_preparation(planned, defect):
     )
     intent["collection_id"] = collection_id(intent)
     # Missing-byte defects leave the intent unchanged but need a distinct project.
-    claim = claim_collection(old_claim.root.parent.parent / "changed", intent)
+    claim = claim_collection(old_claim.root.parent.parent.parent / "changed", intent)
     for name, payload in payloads.items():
         if name != "collection_intent.json":
             write_collection_payload(claim, name, payload)
@@ -582,7 +582,7 @@ def test_distinct_intent_gets_distinct_directory(planned):
     changed = deepcopy(intent)
     changed["provider"]["revision"] = "d" * 64
     changed["collection_id"] = collection_id(changed)
-    other = claim_collection(claim.root.parent.parent, changed)
+    other = claim_collection(claim.root.parent.parent.parent, changed)
     assert other.root != claim.root
     assert other.root.name == changed["collection_id"]
 
@@ -590,7 +590,7 @@ def test_distinct_intent_gets_distinct_directory(planned):
 def test_referenced_collection_requires_explicit_force_for_deletion(planned):
     claim, intent, manifest, *_ = planned
     publish_collection(claim, manifest, **CHECKS)
-    project = claim.root.parent.parent
+    project = claim.root.parent.parent.parent
     simulation = project / "experiments" / "retained" / "config" / "simulation.json"
     simulation.parent.mkdir(parents=True)
     simulation.write_bytes(
@@ -612,7 +612,7 @@ def test_referenced_collection_requires_explicit_force_for_deletion(planned):
 
 def test_unreadable_simulation_blocks_reference_aware_delete(planned):
     claim, intent, *_ = planned
-    project = claim.root.parent.parent
+    project = claim.root.parent.parent.parent
     simulation = project / "experiments" / "broken" / "config" / "simulation.json"
     simulation.parent.mkdir(parents=True)
     simulation.write_bytes(b"broken record")
@@ -622,7 +622,7 @@ def test_unreadable_simulation_blocks_reference_aware_delete(planned):
 
 
 def test_same_invocation_workers_and_later_partial_refusal(planned, tmp_path):
-    from blueearth_cst.experiment.collection_resolution import scenario_plan
+    from blueearth_cst.experiment.collection_resolution import scenario_request
     from blueearth_cst.experiment.content_identity import read_canonical_json
     from blueearth_cst.experiment.scenario_collection import (
         _job_collection_claim,
@@ -631,7 +631,7 @@ def test_same_invocation_workers_and_later_partial_refusal(planned, tmp_path):
 
     original, intent, manifest, *_ = planned
     project = tmp_path / "multi-job-project"
-    plan = scenario_plan(
+    plan = scenario_request(
         project,
         {"fixture": "same-invocation"},
         intent,
@@ -660,13 +660,13 @@ def test_same_invocation_workers_and_later_partial_refusal(planned, tmp_path):
 
 
 def test_initializer_crash_before_receipt_cannot_resume(planned, tmp_path):
-    from blueearth_cst.experiment.collection_resolution import scenario_plan
+    from blueearth_cst.experiment.collection_resolution import scenario_request
     from blueearth_cst.experiment.content_identity import read_canonical_json
     from blueearth_cst.experiment.scenario_collection import initialize_collection_jobs
 
     original, intent, *_ = planned
     project = tmp_path / "crashed-initializer"
-    plan = scenario_plan(
+    plan = scenario_request(
         project,
         {"fixture": "crash"},
         intent,

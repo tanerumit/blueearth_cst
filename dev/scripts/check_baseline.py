@@ -410,7 +410,7 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     )
 
     experiment = Path(project_dir) / "experiments" / EXPERIMENT_NAME
-    plans = list((experiment / "results/metric_plans").glob("*/plan.json"))
+    plans = list((experiment / "results/metric_requests").glob("*/plan.json"))
     if len(plans) != 1:
         raise ValueError(
             f"baseline requires exactly one retained metric plan, found {len(plans)}; "

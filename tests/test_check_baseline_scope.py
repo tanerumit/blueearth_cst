@@ -50,7 +50,7 @@ def _write_metric_plan_fixture(project_dir):
         "response_inventory_sha256": "b" * 64,
     }
     plan["plan_sha256"] = content_sha256(plan)
-    path = root / "metric_plans" / request_id / "plan.json"
+    path = root / "metric_requests" / request_id / "plan.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_json_bytes(plan))
     marker = {

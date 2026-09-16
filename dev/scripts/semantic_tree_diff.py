@@ -529,7 +529,7 @@ def build_project_tree_rules(
     ):
         same(f"experiments/{e}/config/{leaf}")
     same(f"experiments/{e}/responses/response_inventory.json")
-    same_rx(rf"experiments/{exp}/results/metric_plans/{digest}/plan\.json")
+    same_rx(rf"experiments/{exp}/results/metric_requests/{digest}/plan\.json")
     metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
     # `return_level_benchmark.json` is GF15 D5: the checked benchmark report is
     # copied into every set so a reader can validate it without the installed

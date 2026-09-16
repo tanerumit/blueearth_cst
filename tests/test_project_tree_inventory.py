@@ -184,7 +184,7 @@ COVERED: dict[str, list[str]] = {
         f"experiments/{E}/config/response_request.json",
         f"experiments/{E}/config/simulator_settings.json",
         f"experiments/{E}/responses/response_inventory.json",
-        f"experiments/{E}/results/metric_plans/{'a' * 64}/plan.json",
+        f"experiments/{E}/results/metric_requests/{'a' * 64}/plan.json",
         f"experiments/{E}/results/metric_sets/{'b' * 64}/metrics.json",
         f"experiments/{E}/results/metric_sets/{'b' * 64}/unit_index.csv",
         f"experiments/{E}/results/metric_sets/{'b' * 64}/q_indicators.csv",

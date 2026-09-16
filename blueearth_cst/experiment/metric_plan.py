@@ -402,7 +402,7 @@ def write_metric_plan(experiment_root, request):
     """Publish rebuildable checkpoint state after complete native validation."""
     root = Path(experiment_root).resolve()
     plan = build_metric_plan(root, request)
-    path = root / "results/metric_plans" / plan["metric_request_id"] / "plan.json"
+    path = root / "results/metric_requests" / plan["metric_request_id"] / "plan.json"
     if path.resolve() != path:
         raise MetricPlanStale("metric planning path is aliased")
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -413,7 +413,7 @@ def write_metric_plan(experiment_root, request):
 def verify_metric_plan(experiment_root, request):
     """Validate existing plans even when timestamps would schedule no job."""
     root = Path(experiment_root).resolve()
-    path = root / "results/metric_plans" / content_sha256(request) / "plan.json"
+    path = root / "results/metric_requests" / content_sha256(request) / "plan.json"
     stored = read_canonical_json(path)
     expected = build_metric_plan(root, request)
     if stored != expected:

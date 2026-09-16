@@ -2442,13 +2442,13 @@ def test_seed_auto_fits_r_integer_range():
 def test_seed_refuses_a_string_that_is_not_auto(bad):
     """Refused rather than coerced: `"123"` would work by accident and
     `random` would reach weathergenr as NULL."""
-    with pytest.raises(ValueError, match="generate_scenarios"):
+    with pytest.raises(ValueError, match=r"`seed:`"):
         su.resolve_seed(bad, "exp")
 
 
 @pytest.mark.parametrize("bad", [-1, 1.5, True])
 def test_seed_refuses_non_integers_and_negatives(bad):
-    with pytest.raises(ValueError, match="generate_scenarios"):
+    with pytest.raises(ValueError, match=r"`seed:`"):
         su.resolve_seed(bad, "exp")
 
 

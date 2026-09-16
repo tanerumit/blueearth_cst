@@ -101,12 +101,33 @@ Twenty-nine matches for the 64-hex constraint or length check, across eight file
 - [ ] `tests/` — the canonical tree fixture, `test_sealed_records.py`, and the
       identity tests
 
-## Progress
+## Progress — LANDED 2026-09-16 on `chore/post-r12`
 
-- [ ] Rule N, and rule whether this ships in [[t2609152040]]'s migration
-- [ ] Implement, with the sibling-uniqueness check landing **before or with** the
+- [x] Rule N, and rule whether this ships in [[t2609152040]]'s migration
+- [x] Implement, with the sibling-uniqueness check landing **before or with** the
       truncation, never after
-- [ ] `pixi run test-full`, plus `check_baseline.py check` — this touches identity
+- [x] `pixi run test-full`, plus `check_baseline.py check` — this touches identity
+
+**N = 12, and it needed no ruling.** `SHORT_DIGEST_CHARS` already stood at 12 in
+`blueearth_cst/shared/provenance.py`, set by [[t2609151643]] for the WF3
+run-record filenames, and its docstring already argues against a second length
+constant. Reused rather than restated, so the directory name, the log filename,
+the benchmark filename and `semantic_tree_diff`'s rows cannot drift apart.
+
+**Bundled with [[t2609152040]]** on the owner's ruling of 2026-09-16 — one
+migration, one regeneration of the four populated trees.
+
+The sibling-uniqueness check landed FIRST, in its own commit (`9b6733a5`), ahead
+of the truncation (`009ecc50`). `claim_identity_segment` raises `SegmentCollision`
+on a prefix held by a different complete identity; `list_collections` now reads
+the full identity out of `collection_intent.json` and checks the name is its
+segment; `delete_collection` confirms the occupant before removing anything.
+
+Two sites in this note's list turned out NOT to be path segments and are
+unchanged: `simulation_record.py`'s `simulation_id` lives inside
+`config/simulation.json`, and `invocation_id` was already out of scope.
+
+Rename record: `dev/milestones/post-r12/migration_scenario-tree.md`.
 
 ## Refs
 

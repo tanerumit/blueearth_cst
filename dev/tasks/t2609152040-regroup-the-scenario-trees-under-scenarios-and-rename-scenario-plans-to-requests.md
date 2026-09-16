@@ -205,12 +205,29 @@ excluding `dev/milestones/` and `dev/working/`:
 - [ ] `dev/reference/workflows/rule-index.md`
 - [ ] `dev/reference/contracts/weather-generator-seam.md`
 
-## Progress
+## Progress — LANDED 2026-09-16 on `chore/post-r12`
 
-- [ ] Rule the two open questions below (compatibility is ruled)
-- [ ] Move the trees and sweep the references
-- [ ] Update the canonical tree fixture and re-run `pixi run test-full`
-- [ ] Write the required internal rename record under `dev/<milestone>/`
+- [x] Rule the two open questions below (compatibility is ruled)
+- [x] Move the trees and sweep the references
+- [x] Update the canonical tree fixture and re-run `pixi run test-full`
+- [x] Write the required internal rename record under `dev/<milestone>/`
+
+**Both open questions were ruled YES by the owner on 2026-09-16**, widening
+approved scope past the directory rename.
+
+1. `plan.json` → `request.json`, `scenario-plan/1` → `scenario-request/1` and
+   `plan_sha256` → `request_sha256` all landed. The receipt-invalidation
+   objection does not bite under a ruling that already regenerates every tree,
+   and the cost of deferring is a second break.
+3. `results/metric_plans/` → `results/metric_requests/` landed here rather than
+   in [[t2609152104]], so the toolbox does not carry two words for one concept.
+   The FLATTENING half of that change stays on [[t2609152104]].
+
+[[t2609152107]] was bundled into the same migration on the same ruling.
+
+Rename record: `dev/milestones/post-r12/migration_scenario-tree.md`.
+User-facing guide: `docs/migration-post-r12.md` (owed, because the hard break
+means anyone holding a project folder must act).
 
 > [!question] Open — NOT in approved scope
 > The owner approved the **directory** rename on 2026-09-15. These were raised in

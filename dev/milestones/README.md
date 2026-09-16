@@ -39,6 +39,7 @@ milestone's record stays as it was written.
 | `r11/` | R11 — WF3 artifacts and identification | 2026-08-08 | `r11-wf3-artifacts` |
 | `r12/` | R12 — Scenario generation and system simulation | — *(design accepted 2026-09-10)* | `r12-wf3-execution` |
 | `r13/` | R13 — Config tiers | — *(registered)* | `r13-config-tiers` |
+| `post-r12/` | *(not a milestone)* — post-R12 follow-up bundle on `chore/post-r12` | — | — |
 
 Phase grouping: `phase-1/` is Phase 1 (Foundation); `r01`–`r06` are Phase 2
 (Refactor, complete 2026-07-23); `p31`–`p33` are Phase 3 (Usability &

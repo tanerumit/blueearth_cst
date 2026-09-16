@@ -210,8 +210,9 @@ disable other workflows when only retained reduction is wanted. Default target
 `all` never infers an operation from files. Metrics-only requires no live model,
 generation inputs or Julia. Changed simulation inputs require a new experiment;
 changed metrics select a new immutable metric set. See
-[retained handoffs](docs/wf3-retained-handoffs.md) and
-[workflow migration](docs/migration-workflow-names.md).
+[retained handoffs](docs/wf3-retained-handoffs.md),
+[workflow migration](docs/migration-workflow-names.md) and
+[the post-R12 project-tree migration](docs/migration-post-r12.md).
 
 ### Logs and DAGs
 

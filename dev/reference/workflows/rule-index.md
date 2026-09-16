@@ -1065,5 +1065,6 @@ or Julia. Mixed or inconsistent targets are refused by the runner.
 | 3.16 legacy table reduction | 4.08–4.10 retained metric planning/publication |
 
 See [workflow migration](../../../docs/migration-workflow-names.md),
+[post-R12 project-tree migration](../../../docs/migration-post-r12.md),
 [weather-generator seam](../contracts/weather-generator-seam.md), and
 [hydrological-model seam](../contracts/hydrological-model-seam.md).

@@ -26,8 +26,6 @@ use a directory outside the toolbox checkout.
   experiments/<name>/
     config/simulation.json       frozen simulation identity
     hydrology/wflow/output/      retained native responses
-    responses/response_inventory.json
-    results/metric_requests/     response-dependent metric selection
     results/metric_sets/<id>/
       metrics.json              readiness marker and provenance
       unit_index.csv            run and bundle membership
@@ -61,7 +59,7 @@ document is still the complete 64-character digest; only the directory is
 short, and it is a prefix of the full value. See
 [the post-R12 migration](../migration-post-r12.md).
 
-The runners record invocations under `config/runs/invocations/`, including
+The runners record invocations under `config/runs/_engine/invocations/`, including
 failure and dry-run outcomes. An invocation record describes execution; it does
 not make an incomplete collection or metric set ready.
 
@@ -212,7 +210,7 @@ Changing only metrics creates a new immutable metric set from retained responses
 `operation: metrics-only` needs no live model, generation data or Julia.
 
 WF1 and WF2 retain configuration digests in their run records and result
-sidecars. For WF1, `models/hydrology/wflow/hydromt_build_config.yml` records the
+sidecars. For WF1, `models/hydrology/wflow/_engine/hydromt_build_config.yml` records the
 settings actually passed to HydroMT. Configuration provenance alone does not
 establish scientific data identity; collection and response manifests carry the
 corresponding content records.

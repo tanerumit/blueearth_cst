@@ -18,13 +18,30 @@ workflows and they write the new layout.
 → scenarios/collections/<12-hex>/
 
   experiments/<name>/results/metric_plans/<64-hex>/plan.json
-→ experiments/<name>/results/metric_requests/<12-hex>/plan.json
+→ experiments/<name>/_engine/metric_requests/<12-hex>.json
+
+  experiments/<name>/responses/response_inventory.json
+→ experiments/<name>/_engine/response_inventory.json
+
+  config/runs/journal.jsonl, config/runs/invocations/
+→ config/runs/_engine/...
+
+  models/hydrology/wflow/hydromt_build_config.yml (+ _update_waterbodies.yml)
+  models/hydrology/wflow/evaluation/run_metadata.json
+→ models/hydrology/wflow/_engine/...
 
   experiments/<name>/results/metric_sets/<64-hex>/
 → experiments/<name>/results/metric_sets/<12-hex>/
 ```
 
-Two separate things happened. The scenario trees were **grouped and renamed**:
+Three separate things happened. Engine bookkeeping was **collected into an
+`_engine/` bin per scope** — the files a workflow writes so it can refuse a stale
+run, rather than anything you open. They were scattered at three depths beside
+results; now each scope has one directory you learn to ignore once. Anything a
+reader might legitimately open stayed put, including `basin_cells.csv`, the
+projections `provenance.json`, and each run's `.log` beside its `.csv`.
+
+The scenario trees were **grouped and renamed**:
 they were two unlabelled siblings at the top of the project, and nothing in
 either path said which held the ask and which held the product. And every
 content-digest **directory name shortened to its first 12 characters**, because

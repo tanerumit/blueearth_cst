@@ -192,7 +192,7 @@ is used.
 
 Each `experiments/<experiment_name>/` retains `config/simulation.json`, its native
 `hydrology/wflow/output/run_<run_id>.csv` responses and
-`responses/response_inventory.json`. Metric sets live in
+`_engine/response_inventory.json`. Metric sets live in
 `results/metric_sets/<metric_set_id>/`; their tables contain
 `metric,location,unit_id,value`, joined through `unit_index.csv` to scenario rows.
 Model-grid forcing and per-run catalogs are temporary. Collection forcing and
@@ -220,7 +220,7 @@ WF0/WF1/WF2 retain their project-level logs and provenance records. Generation
 parts are scoped by generation request under `logs/_parts/generate_scenarios/`;
 simulation parts are scoped by experiment under `logs/_parts/simulate_system/`.
 Benchmark parts use the same scope beneath `benchmarks/_parts/`. The all-workflow
-runner retains an invocation record under `config/runs/invocations/`.
+runner retains an invocation record under `config/runs/_engine/invocations/`.
 
 ```console
 pixi run python scripts/plot_workflow_dag.py -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml

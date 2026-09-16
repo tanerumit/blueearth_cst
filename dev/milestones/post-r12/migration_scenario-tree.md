@@ -1,7 +1,7 @@
 # Migration — the scenario tree, short digest path segments, and the WF0 plot scales
 
 `dev/reference/naming.md` §7 record for the post-R12 project-tree work.
-Landed 2026-09-16 on `chore/post-r12`. Five §7 events, boarded as
+Landed 2026-09-16 on `chore/post-r12`. Six §7 events, boarded as
 [`t2609152040`](../../tasks/t2609152040-regroup-the-scenario-trees-under-scenarios-and-rename-scenario-plans-to-requests.md)
 and [`t2609152107`](../../tasks/t2609152107-shorten-content-digest-path-segments-to-a-fixed-prefix-keeping-full-digests-as-identities.md),
 plus change 2 of
@@ -178,6 +178,61 @@ UNMAPPED -- which is the intended signal to prune it.
 Gates: `pytest tests/test_cli.py tests/test_snake_utils.py
 tests/test_climate_figures.py tests/test_compare_climate_sources.py` 389 passed;
 `tests/test_shared_plot_scales.py` 8 passed; lint and format-check clean.
+
+## Event 6 — engine bookkeeping collects into an `_engine/` bin per scope
+
+t2609152104 changes 1 and 3, landed 2026-09-16. Change 2 was event 3 above.
+
+| scope | moved into `_engine/` |
+|---|---|
+| `experiments/<E>/` | `responses/response_inventory.json`, `results/metric_requests/<id>/plan.json` → `metric_requests/<id>.json` |
+| `models/hydrology/wflow/` | `hydromt_build_config.yml`, `hydromt_update_waterbodies.yml`, `evaluation/run_metadata.json` |
+| `config/runs/` | `journal.jsonl`, `invocations/` |
+
+The metric request also changed contract: `metric-plan/1` → `metric-request/1`
+and `plan_sha256` → `request_sha256`. Event 3 renamed only the directory
+*because* this change renames the file anyway; doing the filename alone would
+have left `metric_requests/<id>.json` still saying `plan` inside.
+
+`experiments/<E>/responses/` disappears — it held exactly one file.
+
+### `_engine`, not `.engine`
+
+The note sketched `.engine/`, contradicting its own finding that a leading dot
+marks sentinel FILES here (`.model_built`, `.guard_ok`) while a leading
+underscore marks BINS (`logs/_parts/`). This is a bin. The deciding argument is
+not convention but tooling: `rg` skips dot-directories without `--hidden`,
+measured in this repo as 0 matches versus 1. Durable state a workflow reads back
+must not sit where the tool you would grep with skips it by default.
+
+### The depth invariant — read before proposing a deeper bin
+
+`response_inventory.json` stores `../`-relative paths to every native artifact
+(`_relative()` against its own directory). `responses/` and `_engine/` are both
+direct children of the experiment root, so those strings are byte-identical after
+the move, `response_inventory_sha256` does not change, and neither does
+`metric_set_id`, which digests it. **A bin one level deeper would have silently
+re-keyed every metric set.** Any future bin must preserve depth or accept that.
+
+### Declined rows, and why
+
+The full-tree screen listed eleven families. Three moved; eight did not.
+
+| row | verdict |
+|---|---|
+| `output/run_<id>.log` | **held** — it is the evidence for the `run_<id>.csv` beside it; splitting the pair means debugging one run in two places (owner ruling 2026-09-16: user functionality before rigid rules) |
+| `basin_cells.csv` | **keep** — answers "which cells did you average over?", asked of the data it sits beside |
+| `summary/provenance.json` | **keep** — sits with the change-factor tables it describes |
+| `benchmarks/wf*.md` | **keep** — that directory is already dev-facing and already has `_parts/` |
+| `logs/dag/` | **keep** — produced only by the explicit DAG helper; absent from the tree |
+| `hydromt.log`, `hydromt_data.yml` | **blocked** — hydromt writes both at the model root by its own convention and no rule declares them; AGENTS.md forbids re-engineering that |
+| `preparation_catalog.yml`, `ancillary/` | **blocked** — `scenario_collection.py` pins the filename inside the preparation context, which feeds `collection_id`; moving it changes identity |
+| `outstates_run_<id>.nc` | **n/a** — never written (`write_states=False` hardcoded) |
+
+The screen's premise was that the tree retains carelessly. It does not: the
+retention questions were ruled 2026-09-15 and none became `temp()`, and most of
+what looked like clutter turned out to be either reader-facing or upstream-owned.
+The tidying is real but smaller than the eleven-row table implied.
 
 ## Machinery updated in the same landing
 

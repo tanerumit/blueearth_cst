@@ -19,6 +19,9 @@ experiment = validate_experiment_name(experiment, project_dir)
 exp_dir = f"{project_dir}/experiments/{experiment}"
 runs_dir = f"{exp_dir}/hydrology/wflow"
 results_dir = f"{exp_dir}/results"
+# Engine bookkeeping, collected per scope so a reader learns to ignore one
+# directory rather than meeting machinery at three depths (t2609152104).
+engine_dir = f"{exp_dir}/_engine"
 basin_dir = f"{project_dir}/models/hydrology/wflow"
 SELECTION, COLLECTION = resolve_selected_collection(config_path, REPOSITORY)
 _intent = read_canonical_json(Path(SELECTION["manifest_path"]).parent / "collection_intent.json")

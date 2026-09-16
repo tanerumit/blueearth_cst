@@ -32,7 +32,7 @@ checkpoint prepare_metric_plan:
         simulation=_frozen_simulation,
         responses=f"{exp_dir}/responses/response_inventory.json",
     output:
-        f"{results_dir}/metric_requests/{{metric_request_id}}/plan.json",
+        f"{engine_dir}/metric_requests/{{metric_request_id}}.json",
     wildcard_constraints:
         metric_request_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     params:

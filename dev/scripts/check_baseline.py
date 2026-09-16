@@ -411,7 +411,7 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     )
 
     experiment = Path(project_dir) / "experiments" / EXPERIMENT_NAME
-    plans = list((experiment / "results/metric_requests").glob("*/plan.json"))
+    plans = list((experiment / "_engine/metric_requests").glob("*.json"))
     if len(plans) != 1:
         raise ValueError(
             f"baseline requires exactly one retained metric plan, found {len(plans)}; "
@@ -419,13 +419,13 @@ def resolve_metric_set_dir(project_dir: str) -> str:
         )
     plan = read_canonical_json(plans[0])
     if (
-        plan.get("schema_version") != "metric-plan/1"
+        plan.get("schema_version") != "metric-request/1"
         or content_sha256(
-            {key: value for key, value in plan.items() if key != "plan_sha256"}
+            {key: value for key, value in plan.items() if key != "request_sha256"}
         )
-        != plan.get("plan_sha256")
+        != plan.get("request_sha256")
         or content_sha256(plan["request"]) != plan.get("metric_request_id")
-        or plans[0].parent.name
+        or plans[0].stem
         != identity_segment(plan["metric_request_id"], "metric_request_id")
     ):
         raise ValueError("baseline metric plan digest or request identity differs")

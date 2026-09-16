@@ -44,18 +44,18 @@ def _write_metric_plan_fixture(project_dir):
     request_id = content_sha256(request)
     set_id = "a" * 64
     plan = {
-        "schema_version": "metric-plan/1",
+        "schema_version": "metric-request/1",
         "request": request,
         "metric_request_id": request_id,
         "metric_set_id": set_id,
         "response_inventory_sha256": "b" * 64,
     }
-    plan["plan_sha256"] = content_sha256(plan)
+    plan["request_sha256"] = content_sha256(plan)
     path = (
-        root
+        root.parent
+        / "_engine"
         / "metric_requests"
-        / identity_segment(request_id, "metric_request_id")
-        / "plan.json"
+        / f"{identity_segment(request_id, 'metric_request_id')}.json"
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_json_bytes(plan))
@@ -117,10 +117,23 @@ def test_baseline_metric_plan_refuses_legacy_fallback_and_ambiguity(tmp_path):
         cb.resolve_metric_set_dir(str(tmp_path))
     plan, marker = _write_metric_plan_fixture(str(tmp_path))
     assert cb.resolve_metric_set_dir(str(tmp_path)) == marker.parent.as_posix()
-    another = plan.parent.parent / ("c" * 64) / "plan.json"
-    another.parent.mkdir()
+    another = plan.parent / ("c" * 12 + ".json")
     another.write_bytes(plan.read_bytes())
     with pytest.raises(ValueError, match="found 2"):
+        cb.resolve_metric_set_dir(str(tmp_path))
+
+
+def test_baseline_metric_plan_refuses_a_filename_that_is_not_its_identity(tmp_path):
+    """The identity assertion survived flattening as a STEM check, not a path one.
+
+    Before t2609152104 the directory name carried the identity and was compared
+    against the `metric_request_id` inside the file. Flattened, the stem carries
+    it. Dropping that comparison rather than rewriting it would have left a
+    discovered file with nothing tying it to the identity it claims.
+    """
+    plan, _ = _write_metric_plan_fixture(str(tmp_path))
+    plan.rename(plan.with_name("0" * 12 + ".json"))
+    with pytest.raises(ValueError, match="digest or request identity differs"):
         cb.resolve_metric_set_dir(str(tmp_path))
 
 

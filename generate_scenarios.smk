@@ -1,12 +1,13 @@
 # WF3: model-independent generation and immutable collection publication.
 import os
 import sys
+import time
 import uuid
 from pathlib import Path
 import yaml
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
-from blueearth_cst.shared.snake_utils import index_width, member_index_regex, rule_banner, patch_psutil_windows_benchmark
+from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, index_width, install_console_style, member_index_regex, open_run_header, rule_banner, run_summary, patch_psutil_windows_benchmark, target_banner
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.generation_plan import generation_configuration, resolve_generation_plan
@@ -58,6 +59,24 @@ stress_test_cfg = GENERATION["config"]["climate_perturbations"]
 _generation_catalogs = GENERATION["catalogs"]
 _generation_request = GENERATION["request"]
 clim_source = GENERATION["source"]
+
+# The run's key folders, stated ONCE. `run_header` prints them at the top of the
+# console and every rule log repeats them in its own header; `log_row` and the
+# console tee rewrite every path below to these names. No `model` row -- WF3
+# builds none, and that is the point of the R12 split: generation is
+# model-independent. `scenarios` is the WF3 output ROOT rather than one request,
+# because a project holds several requests at once and the digest-named
+# directory under it is the part a reader is telling apart.
+#
+# Dropped by the R12 split (868c4b7c) along with the rest of the apparatus and
+# restored 2026-09-16; `run_stress_test.smk` carried the same block.
+declare_path_tokens(
+    data=catalog_root(_generation_catalogs),
+    climate=store_dir,
+    scenarios=f"{project_dir}/scenarios",
+)
+declare_project_root(project_dir)
+
 _explicit_selection = None
 _validated_collections = {}
 
@@ -71,8 +90,21 @@ def _provider_ancestor(wc):
 def _resolved_collection_plan():
     return resolve_generation_plan(GENERATION)
 
+# The targets `rule all` lists, built HERE rather than inline in its `message:`.
+# Snakemake's own f-string preprocessor cannot parse an f-string inside a
+# multi-line directive expression -- it raises `UnboundLocalError: t1` out of
+# `parser.parse_fstring` before the Snakefile is ever executed. `run_stress_test.smk`
+# had the same constraint and answered it the same way, with a pre-built dict.
+#
+# The selected collection is a CHECKPOINT-dependent lambda with no parse-time
+# path, so it is named in prose; the other two are plain strings.
+WF3_TARGETS = ["selected scenario collection",
+               f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+               f"{project_dir}/benchmarks/{BENCHMARKS_NAME}"]
+
 # 3.00  all
 rule all:
+    message: target_banner("3.00", "all", WF3_TARGETS, project_dir)
     input:
         lambda wc: _selected_collection(wc),
         f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
@@ -347,3 +379,91 @@ rule perturb_climate_realization:
         f"{BENCH_PARTS_DIR}/3.08_perturb_climate_realization/rlz_{{rlz_num}}_st_{{st_num}}.tsv",
     script:
         "blueearth_cst/experiment/scenario_provider.py"
+
+
+# --------------------------------------------------------------------------
+# Console: the run's own opening and closing block, and the Snakemake restyle.
+#
+# Restored 2026-09-16. The R12 split (868c4b7c) carried the rule bodies out of
+# `run_stress_test.smk` but not the file scaffolding, so WF3 ran with no
+# `_ConsoleHandler` at all: the banners it did keep printed unstyled among
+# Snakemake's un-suppressed scheduler chatter, which is what the owner saw.
+# --------------------------------------------------------------------------
+
+# Wall clock for the end-of-run summary. Taken at PARSE, not in `onstart`:
+# Snakemake exposes no run duration to these handlers, and parse-to-finish is
+# the interval a person actually waited. It therefore includes DAG construction
+# -- and on WF3 that is not free, since the parse-time collection validation
+# above reads the retained plan.
+_RUN_STARTED = time.monotonic()
+
+
+def _summary(failed):
+    """Print the end-of-run block to STDERR, beside Snakemake's own output.
+
+    stderr because that is where Snakemake writes its console, so a redirect
+    that captures one captures both. Never raises: a summary that broke a
+    successful run would be the worst possible trade for a convenience.
+    """
+    try:
+        # One write, blank line before it -- see the note on `_header`.
+        sys.stderr.write(
+            "\n"
+            + run_summary(
+                "wf3 generate_scenarios",
+                project_dir,
+                WORKFLOW_LOG_NAME,
+                BENCHMARKS_NAME,
+                elapsed_seconds=time.monotonic() - _RUN_STARTED,
+                failed=failed,
+                log_parts_dir=LOG_PARTS_DIR,
+            )
+            + "\n"
+        )
+    except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
+        # Nested, because sys.stderr may be exactly what failed above. An
+        # OSError escaping here surfaces as an error in this Snakefile and
+        # masks the rule that actually failed (observed 2026-08-17, wf0).
+        try:
+            print(f"(run summary unavailable: {exc})", file=sys.stderr)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+def _header():
+    """Print the start-of-run block to STDERR, mirroring `_summary`.
+
+    Takes no arguments on purpose. Every name it reports is read INSIDE the
+    guard, so a value that turns out not to resolve in the `onstart` namespace
+    costs a line of console rather than the run.
+    """
+    try:
+        # One write, carrying its own blank line on both sides: the block is the
+        # first thing this toolbox puts on the console and it must not open
+        # flush against Snakemake's preamble nor close flush against its
+        # `Job stats:`. `open_run_header` owns that; the spacing is its business.
+        open_run_header("wf3 generate_scenarios", project_dir, config_path)
+    except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
+        # Nested, for the reason given on `_summary` -- and it matters more
+        # here: this runs from `onstart`, so a raise aborts the run before any
+        # rule executes at all.
+        try:
+            print(f"(run header unavailable: {exc})", file=sys.stderr)
+        except Exception:  # noqa: BLE001
+            pass
+
+
+onstart:
+    # Restyle Snakemake's own console output into this toolbox's grammar (one
+    # line per job start and end). Here and not at parse time: the logging
+    # stack does not exist yet then. Fail-open; see install_console_style.
+    install_console_style()
+    _header()
+
+
+onsuccess:
+    _summary(failed=False)
+
+
+onerror:
+    _summary(failed=True)

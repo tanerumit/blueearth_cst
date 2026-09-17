@@ -502,11 +502,14 @@ total                        6
                 # snake_utils.py:2655 -- `format_elapsed`, i.e. h:mm:ss, the same
                 # spelling as the DONE lines, the run summary, the benchmark
                 # tables and the progress bar.
+                # INFO, not WARNING, and the difference is visible: the
+                # watchdog paints this row yellow but emits it at INFO, so
+                # `_log_row_text` prints no level token. Spelling it WARNING
+                # here put a word on the transcript that no run prints.
                 (
                     "heartbeat",
                     "Rule 1.14: run_wflow still running, 0:04:00 elapsed",
                     240,
-                    "WARNING",
                 ),
             ),
         ),
@@ -546,7 +549,6 @@ total                        6
                 "heartbeat",
                 "Rule 1.14: run_wflow still running, 0:04:00 elapsed",
                 240,
-                "WARNING",
             ),
         ),
         error="""Error in rule run_wflow:

@@ -75,6 +75,25 @@ and assuming the other target passed — the same mistake shape as
 [[t2609171320]], where an always-empty comprehension read as a passing
 assertion. Corrected in `dev/LOG.md` the same day.
 
+> [!done] Option 2 LANDED 2026-09-17 (`8170a020`); options 1 and 3 remain
+> An orphaned row is now a named failure carrying the reason and the remedy,
+> pinned by four tests in `tests/test_check_baseline_scope.py` — including one
+> that the OLD segment length must still match (the case the check exists for)
+> and one that another scope's staleness must not fail a scoped run.
+>
+> `simulate_system` now reports **FAIL - 2** rather than FAIL - 1: the orphan is
+> visible instead of discarded. Nothing was re-recorded, and no comparison was
+> restored — **the response surface is still unchecked**, which is what option 1
+> is for.
+>
+> Found while implementing: `resolve()` is not self-consistent about path
+> separators on Windows. `resolve_metric_set_dir` returns `Path.as_posix()`
+> while every other template interpolates `project_dir` verbatim, so one
+> manifest can carry both conventions. The matcher normalises both sides; a raw
+> comparison passed on the repo's relative posix `project_dir` and did nothing
+> on an absolute Windows one — the very shape of silent no-op this item is
+> about. Worth a wider look at `resolve()` some day.
+
 ## Options
 
 1. **Make the manifest's target keys RESOLVED-TEMPLATE-relative rather than

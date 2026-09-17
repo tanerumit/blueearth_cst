@@ -104,7 +104,7 @@ def test_the_shipped_values_are_the_documented_ones():
     assert su.JULIA_VERSION == "1.11.7"
     # 123 is what dev/baseline/manifest.json was recorded with, so changing it
     # here invalidates every baseline comparison — override per project with
-    # `shared.seed` instead, exactly as for julia_threads.
+    # `seed:` in the generate_scenarios file instead.
     assert su.DEFAULT_SEED == 123
     # Jan is the calendar year, which is what every recorded result used; a
     # non-Jan default would move annual extremes for every existing project.

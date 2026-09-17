@@ -2385,7 +2385,7 @@ def test_a_reference_cycle_from_the_body_is_collected_on_the_way_out(tmp_path):
         gc.enable()
 
 
-# --- shared.seed resolution ------------------------------------------------
+# --- seed resolution (generate_scenarios `seed:`) ------------------------------------------------
 #
 # One seed for every stochastic step, defaulted in advanced_settings.yml and
 # overridable per project. `auto` derives from the experiment name so that a
@@ -2442,13 +2442,13 @@ def test_seed_auto_fits_r_integer_range():
 def test_seed_refuses_a_string_that_is_not_auto(bad):
     """Refused rather than coerced: `"123"` would work by accident and
     `random` would reach weathergenr as NULL."""
-    with pytest.raises(ValueError, match="shared.seed"):
+    with pytest.raises(ValueError, match=r"`seed:`"):
         su.resolve_seed(bad, "exp")
 
 
 @pytest.mark.parametrize("bad", [-1, 1.5, True])
 def test_seed_refuses_non_integers_and_negatives(bad):
-    with pytest.raises(ValueError, match="shared.seed"):
+    with pytest.raises(ValueError, match=r"`seed:`"):
         su.resolve_seed(bad, "exp")
 
 

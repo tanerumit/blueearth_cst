@@ -504,6 +504,44 @@ def orphaned_rows(
     )
 
 
+def rekey_by_template(rec_targets: dict, project_dir: str) -> dict:
+    """Re-point each recorded row at where its own template resolves TODAY.
+
+    A manifest row is keyed by the path it was recorded at, which makes the key
+    hostage to every identity in it. `t2609152107` shortened content-digest path
+    segments to twelve characters and the `q_indicators.csv` row stopped
+    matching anything -- not because the artifact moved or changed, but because
+    its NAME was rebuilt from a shorter digest (`t2609171743`).
+
+    Rows recorded from 2026-09-17 carry the `template` they came from, which is
+    the stable thing: `{metric_set_dir}/q_indicators.csv` means the same artifact
+    whatever the segment length. Resolving it here re-keys the row to today's
+    path, and everything downstream keeps working on resolved paths exactly as
+    before -- this is deliberately a remap at ONE point rather than a new lookup
+    convention threaded through eighteen call sites.
+
+    PRECEDENCE, pinned rather than emergent: a row carrying `template` is keyed
+    by what that template resolves to, and the literal key is ignored. A row
+    without one keeps its literal key, so a manifest recorded before this change
+    behaves exactly as it did -- degraded to path matching, which is now a loud
+    failure rather than a silent drop, never a wrong comparison.
+    """
+    out: dict = {}
+    for path, rec in rec_targets.items():
+        template = rec.get("template") if isinstance(rec, dict) else None
+        key = path
+        if template:
+            try:
+                key = resolve(template, project_dir)
+            except (BaselineFixtureError, ValueError):
+                # The fixture cannot answer where this template points. Keep the
+                # recorded key so the existing diagnosis reports it, rather than
+                # turning an unreadable fixture into a traceback out of a remap.
+                key = path
+        out[key] = rec
+    return out
+
+
 def resolve_metric_set_dir(project_dir: str) -> str:
     """Resolve the baseline's sole metric plan; never select by mtime or glob rank.
 
@@ -675,7 +713,12 @@ def compute_manifest(
         if not Path(path).exists():
             missing.append(path)
             continue
-        out[path] = FINGERPRINTERS[kind](path)
+        # `template` travels with the row so a recorded manifest can be re-keyed
+        # when an identity in the path changes (`rekey_by_template`). It is
+        # metadata about WHERE the row came from, never part of the comparison:
+        # `diff_records` walks the recorded and current dicts together, and both
+        # sides carry the same value for a given target.
+        out[path] = {**FINGERPRINTERS[kind](path), "template": template}
     return out, missing
 
 
@@ -863,8 +906,17 @@ def _write_reference_series(
     path.write_text("\n".join(out) + "\n")
 
 
-def _discharge_slug(resolved_path: str) -> str:
-    return hashlib.sha1(resolved_path.encode("utf-8")).hexdigest()[:16] + ".csv"
+def _discharge_slug(key: str) -> str:
+    """Name the sidecar after the TEMPLATE, so an identity rename reuses it.
+
+    Keyed by the resolved path until 2026-09-17, which made the reference file's
+    NAME hostage to every digest in the target path: shortening a segment wrote
+    a second sidecar and stranded the first, even though the table was identical
+    (`t2609171743`). The stored `ref_series`/`ref_table` value stays
+    authoritative for reading, so rows recorded under the old scheme keep
+    resolving to the files they named.
+    """
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16] + ".csv"
 
 
 def record_discharge(
@@ -884,12 +936,13 @@ def record_discharge(
             missing.append(path)
             continue
         times, q, col = read_discharge_series(path)
-        rel = f"{DISCHARGE_REF_SUBDIR}/{_discharge_slug(path)}"
+        rel = f"{DISCHARGE_REF_SUBDIR}/{_discharge_slug(template)}"
         sidecar = ref_dir / rel
         sidecar.parent.mkdir(parents=True, exist_ok=True)
         _write_reference_series(sidecar, times, q, col)
         rows[path] = {
             "type": "discharge",
+            "template": template,
             "column": col,
             "n_rows": len(times),
             "mean_ref": round_sig(float(np.mean(q))),
@@ -1125,8 +1178,9 @@ def _indicator_report_lines(report: dict) -> list[str]:
     return lines
 
 
-def _indicator_slug(resolved_path: str) -> str:
-    return hashlib.sha1(resolved_path.encode("utf-8")).hexdigest()[:16] + ".csv"
+def _indicator_slug(key: str) -> str:
+    """Name the sidecar after the TEMPLATE. See `_discharge_slug`."""
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16] + ".csv"
 
 
 def record_indicator(
@@ -1151,7 +1205,7 @@ def record_indicator(
             missing.append(path)
             continue
         df = read_indicator_table(path)
-        rel = f"{INDICATOR_REF_SUBDIR}/{_indicator_slug(path)}"
+        rel = f"{INDICATOR_REF_SUBDIR}/{_indicator_slug(template)}"
         sidecar = ref_dir / rel
         sidecar.parent.mkdir(parents=True, exist_ok=True)
         sidecar.write_bytes(Path(path).read_bytes())
@@ -1161,6 +1215,7 @@ def record_indicator(
         )
         rows[path] = {
             "type": "indicator",
+            "template": template,
             "columns": list(df.columns),
             "n_rows": int(len(df)),
             "n_groups": n_groups,
@@ -1319,7 +1374,10 @@ def cmd_record(args: argparse.Namespace) -> int:
     if selected is not None and args.manifest.exists():
         # Merge: keep every recorded row NOT owned by a selected workflow, then
         # overlay the freshly-recorded selected rows. Never clobber wf2/wf3.
-        existing = json.loads(args.manifest.read_text()).get("targets", {})
+        existing = rekey_by_template(
+            json.loads(args.manifest.read_text()).get("targets", {}),
+            args.project_dir,
+        )
         # Prune exactly what was re-recorded — same filter, so an excluded
         # figure row is left alone rather than deleted by a merge that never
         # intended to touch it.
@@ -1361,7 +1419,10 @@ def cmd_check(args: argparse.Namespace) -> int:
         sys.stderr.write("Run `check_baseline.py record` first.\n")
         return 2
     recorded = json.loads(args.manifest.read_text())
-    rec_targets = recorded["targets"]
+    # Re-key BEFORE anything reads a path, so scope filtering, diffing and the
+    # orphan report all see where each row points today rather than where it
+    # was recorded. A row with no `template` is untouched.
+    rec_targets = rekey_by_template(recorded["targets"], args.project_dir)
     ref_dir = args.manifest.parent
 
     # R7-21: provenance is advisory and printed BEFORE the verdict, so a

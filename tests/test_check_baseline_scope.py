@@ -500,20 +500,63 @@ def test_the_three_exit_codes_are_distinct():
 # which is a silent cap, not a filter.
 
 
-def _orphan_the_metric_row(manifest_path):
+def _orphan_the_metric_row(manifest_path, keep_template=False):
     """Re-key the recorded indicator row under a longer digest segment.
 
     Mirrors the real defect exactly: same template, same directory, a segment of
-    a different length. Returns the orphaned path.
+    a different length. Returns the re-keyed path.
+
+    `keep_template=False` also STRIPS the row's `template`, which is what makes
+    it a genuine orphan -- it models a manifest recorded before 2026-09-17, the
+    only kind that can still be orphaned. With the template kept, the row is
+    re-keyed at check time and found; that is the fix, and it has its own test.
     """
     manifest = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
     key = next(k for k in manifest["targets"] if k.endswith("q_indicators.csv"))
     parts = key.split("/")
     parts[-2] = "a" * 64
     orphan = "/".join(parts)
-    manifest["targets"][orphan] = manifest["targets"].pop(key)
+    row = manifest["targets"].pop(key)
+    if not keep_template:
+        row.pop("template", None)
+    manifest["targets"][orphan] = row
     pathlib.Path(manifest_path).write_text(json.dumps(manifest), encoding="utf-8")
     return orphan
+
+
+def test_a_renamed_identity_is_followed_not_orphaned(project, capsys):
+    """THE FIX (t2609171743): a row carrying `template` survives a rename.
+
+    The row is re-keyed to a path that does not exist, exactly as the 12-hex
+    move did to the real manifest -- but it still carries the template it was
+    recorded from, so `rekey_by_template` resolves it back to today's path and
+    the comparison happens. No orphan, no re-record, no manual repointing.
+    """
+    project_dir, manifest_path = project
+    orphan = _orphan_the_metric_row(manifest_path, keep_template=True)
+
+    rc = cb.cmd_check(
+        _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
+    )
+
+    out = capsys.readouterr().out
+    assert rc == 0, out
+    assert "OK -" in out
+    assert "orphaned" not in out
+    assert orphan not in out
+
+
+def test_the_template_key_wins_over_the_literal_key(project):
+    """Precedence is pinned, not emergent: `template` decides, the key is ignored."""
+    project_dir, manifest_path = project
+    _orphan_the_metric_row(manifest_path, keep_template=True)
+
+    recorded = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
+    rekeyed = cb.rekey_by_template(recorded["targets"], project_dir)
+
+    resolved = cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
+    assert resolved in rekeyed
+    assert not [k for k in rekeyed if "a" * 64 in k]
 
 
 def test_an_orphaned_row_fails_instead_of_vanishing(project, capsys):

@@ -41,10 +41,16 @@ see: a value read reaching *across* the section boundary at runtime.
 2. **Composition moves keys between files; it never creates or drops one.**
    ``effective_config_document`` digests the config *mapping*, so a key that is
    present rather than absent moves ``effective_config_digest`` even when the
-   resolved value is identical. Adding one during composition would refuse every
-   already-run experiment in the project through ``_frozen_differences``'
-   key-union diff. Hence D-8.7: an omitted ``config_path`` composes to ``{}``
-   and adds nothing.
+   resolved value is identical. Adding one during composition would therefore
+   re-key every already-generated collection in the project: the digest moves,
+   so nothing matches what is on disk and the work is regenerated under a new
+   identity. Hence D-8.7: an omitted ``config_path`` composes to ``{}`` and adds
+   nothing.
+
+   Stated as a refusal through ``_frozen_differences`` until 2026-09-17, when
+   that comparator was deleted as unreachable (``t2608290250``). The conclusion
+   is unchanged and the cost is, if anything, larger: R12 regenerates rather
+   than refusing, so the damage is silent recomputation, not an error.
 3. **``enabled`` is merged back in; ``config_path`` is not** (D-10.1). Dropping
    ``enabled`` would refuse every already-run experiment; adding ``config_path``
    would make run identity depend on where a project stores its files.

@@ -64,12 +64,17 @@ def test_records_both_source_files_by_path_and_digest(configs):
     """
     source, workflow = configs
     document = snapshot_document("simulate_system", source, workflow, PROJECT)
-    assert document["source_config"]["path"] == str(source)
+    assert document["source_config"]["path"] == str(source.resolve())
     assert re.fullmatch(r"[0-9a-f]{64}", document["source_config"]["sha256"])
-    assert document["workflow_config"]["path"] == str(workflow)
+    assert document["workflow_config"]["path"] == str(workflow.resolve())
     assert re.fullmatch(r"[0-9a-f]{64}", document["workflow_config"]["sha256"])
     assert document["schema_version"] == SCHEMA_VERSION
     assert document["workflow"] == "simulate_system"
+    # Both resolved the same way: the project file arrives absolute and the
+    # workflow file relative, and a record holding one of each leaves a reader
+    # unable to tell which anchor the relative one used.
+    assert Path(document["source_config"]["path"]).is_absolute()
+    assert Path(document["workflow_config"]["path"]).is_absolute()
 
 
 def test_digests_track_an_edit_to_either_file(configs):

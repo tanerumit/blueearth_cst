@@ -52,7 +52,7 @@ def config_with_staged_region(tmp_path):
 
     Since P3-1 commit 1, run_stress_test's drift guard (rule
     check_project_consistency) additionally declares the wf1 config snapshot
-    `{project_dir}/config/runs/project_config_build_model.yml` as a mandatory
+    `{project_dir}/config/runs/build_model/composed_config.yml` as a mandatory
     `ancient(...)` input — the same class of cross-workflow contract, staged
     the same way. The staged snapshot is serialized from the SAME parsed
     config the dry-run consumes, so the guard's comparands match by

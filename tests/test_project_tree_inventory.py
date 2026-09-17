@@ -79,8 +79,8 @@ COVERED: dict[str, list[str]] = {
         f"benchmarks/_parts/generate_scenarios/{PK}/3.08_perturb_climate_realization.tsv",
     ],
     "config": [
-        "config/runs/project_config_build_model.yml",
-        "config/runs/project_config_analyze_projections.yml",
+        "config/runs/build_model/composed_config.yml",
+        "config/runs/analyze_projections/composed_config.yml",
         # The wrapper's per-invocation manifest. Not reachable through the
         # `config/runs/<workflow>/<digest>/` regex below -- it sits DIRECTLY
         # under `invocations/`, with no digest level -- so it carries its own

@@ -34,13 +34,13 @@ def test_each_kind_lands_in_its_own_bin(tmp_path, sources):
     cfg = tmp_path / "project" / "config"
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "project_config_build_model.yml"),
+        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
         other_config_files={
             str(catalog): str(cfg / "catalogs"),
             str(template): str(cfg / "templates"),
         },
     )
-    assert (cfg / "runs" / "project_config_build_model.yml").is_file()
+    assert (cfg / "runs" / "build_model" / "composed_config.yml").is_file()
     assert (cfg / "catalogs" / "deltares_data.yml").is_file()
     assert (cfg / "templates" / "wflow_build_model.yml").is_file()
     # nothing leaks into the parent bin
@@ -77,11 +77,11 @@ def test_the_snapshot_round_trips_to_the_composed_config(tmp_path, sources):
     }
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "project_config_build_model.yml"),
+        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
         composed_config=composed,
         other_config_files={str(catalog): str(cfg / "catalogs")},
     )
-    snapshot = (cfg / "runs" / "project_config_build_model.yml").read_text(
+    snapshot = (cfg / "runs" / "build_model" / "composed_config.yml").read_text(
         encoding="utf-8"
     )
     assert yaml.safe_load(snapshot) == composed
@@ -102,9 +102,9 @@ def test_without_a_composed_config_the_source_is_still_copied(tmp_path, sources)
     cfg = tmp_path / "project" / "config"
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "project_config_build_model.yml"),
+        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
     )
-    assert (cfg / "runs" / "project_config_build_model.yml").read_text(
+    assert (cfg / "runs" / "build_model" / "composed_config.yml").read_text(
         encoding="utf-8"
     ) == snake.read_text(encoding="utf-8")
 
@@ -116,7 +116,7 @@ def test_missing_source_is_skipped_not_fatal(tmp_path, sources):
     cfg = tmp_path / "project" / "config"
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "project_config_build_model.yml"),
+        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
         other_config_files={
             str(catalog): str(cfg / "catalogs"),
             "artifact_data": str(cfg / "catalogs"),  # predefined, no file
@@ -134,7 +134,7 @@ def test_destination_dirs_are_created(tmp_path, sources):
     assert not cfg.exists()
     copy_config_files(
         config=str(snake),
-        config_out_path=str(cfg / "runs" / "project_config_build_model.yml"),
+        config_out_path=str(cfg / "runs" / "build_model" / "composed_config.yml"),
         other_config_files={str(catalog): str(cfg / "catalogs")},
     )
     assert (cfg / "runs").is_dir() and (cfg / "catalogs").is_dir()
@@ -161,7 +161,7 @@ def test_observations_land_in_their_own_bin(tmp_path, sources):
 
     copy_config_files(
         config=snake,
-        config_out_path=cfg / "runs" / "project_config_build_model.yml",
+        config_out_path=cfg / "runs" / "build_model" / "composed_config.yml",
         other_config_files={
             str(locations): str(cfg / "basin_data"),
             str(series): str(cfg / "basin_data"),
@@ -212,7 +212,7 @@ def _record(tmp_path, sources, **overrides):
     record_path = cfg / "runs" / "build_model" / "run_record.yml"
     kwargs = {
         "config": snake,
-        "config_out_path": cfg / "runs" / "project_config_build_model.yml",
+        "config_out_path": cfg / "runs" / "build_model" / "composed_config.yml",
         "other_config_files": {str(catalog): str(cfg / "catalogs")},
         "run_record_path": record_path,
         "effective_config": {"project": {"project_dir": "somewhere"}},
@@ -250,11 +250,18 @@ def test_run_record_carries_the_design_schema(tmp_path, sources):
 
 
 def test_run_record_leaves_no_temporary_behind(tmp_path, sources):
-    """It is written temp-then-replace, so a reader never sees a partial file."""
+    """It is written temp-then-replace, so a reader never sees a partial file.
+
+    The workflow's bin holds exactly its two files -- the snapshot and the
+    record, which now sit together -- and no scratch file from either write.
+    """
     _record(tmp_path, sources)
     record_dir = tmp_path / "project" / "config" / "runs" / "build_model"
 
-    assert [p.name for p in record_dir.iterdir()] == ["run_record.yml"]
+    assert sorted(p.name for p in record_dir.iterdir()) == [
+        "composed_config.yml",
+        "run_record.yml",
+    ]
 
 
 def test_a_file_outside_the_checkout_is_copied(tmp_path, sources):
@@ -603,7 +610,7 @@ def test_the_runs_bin_carries_its_own_readme(tmp_path, sources):
 
     copy_config_files(
         config=snake,
-        config_out_path=cfg / "runs" / "project_config_build_model.yml",
+        config_out_path=cfg / "runs" / "build_model" / "composed_config.yml",
     )
 
     readme = (cfg / "runs" / "README.md").read_text(encoding="utf-8")
@@ -613,6 +620,14 @@ def test_the_runs_bin_carries_its_own_readme(tmp_path, sources):
     # The two claims a reader would otherwise get wrong.
     assert "lower bound on invocations" in readme
     assert "scientific data identity" in readme
+    # It states which workflows write here. A reader who counts three
+    # directories for five workflows cannot otherwise tell design from omission.
+    assert "Only THREE workflows write here" in readme
+    assert "scenarios/collections/<id>/composed_config.yml" in readme
+
+    # In the BIN, not in the workflow subdirectory beside the snapshot --
+    # otherwise every workflow drops its own copy of the bin's README.
+    assert not (cfg / "runs" / "build_model" / "README.md").exists()
     # The bin's SECOND trap: these files LOOK like mangled copies of the
     # source -- no comments, keys reordered -- because since R13 they are
     # composed documents rather than copies. Asserted here because this text
@@ -635,7 +650,7 @@ def test_the_runs_readme_is_refreshed_not_preserved(tmp_path, sources):
 
     copy_config_files(
         config=snake,
-        config_out_path=cfg / "runs" / "project_config_build_model.yml",
+        config_out_path=cfg / "runs" / "build_model" / "composed_config.yml",
     )
 
     assert "notes I typed here" not in stale.read_text(encoding="utf-8")

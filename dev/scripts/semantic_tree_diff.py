@@ -363,9 +363,9 @@ def build_project_tree_rules(
     # The two snapshot CONTRACT PATHS are enumerated; the digest bundles are a
     # regex because the digest is content-derived. `files/` inside a bundle is a
     # prefix: its members are named `<hash>-<original>` per referenced input.
-    same("config/runs/project_config_analyze_climate.yml")
-    same("config/runs/project_config_build_model.yml")
-    same("config/runs/project_config_analyze_projections.yml")
+    same("config/runs/analyze_climate/composed_config.yml")
+    same("config/runs/build_model/composed_config.yml")
+    same("config/runs/analyze_projections/composed_config.yml")
     # `scripts/run_workflows.py`'s invocation manifest, one immutable file per
     # wrapper run. A PREFIX, because the set is genuinely open — the filename is
     # `<utc stamp>-<uuid12>.json`, so a new one appears every run.

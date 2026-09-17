@@ -36,12 +36,12 @@ def _rule_block(snakefile: Path, name: str) -> str:
     [
         (
             "build_model.smk",
-            "config/runs/project_config_build_model.yml",
+            "config/runs/build_model/composed_config.yml",
             "config/runs/build_model/run_record.yml",
         ),
         (
             "analyze_projections.smk",
-            "config/runs/project_config_analyze_projections.yml",
+            "config/runs/analyze_projections/composed_config.yml",
             "config/runs/analyze_projections/run_record.yml",
         ),
     ],
@@ -51,9 +51,9 @@ def test_snapshot_rule_keeps_current_copy_and_writes_a_run_record(
 ):
     """Every workflow keeps its guard-compatible copy and adds a run record.
 
-    The flat copy's path is load-bearing twice over -- three of them are
-    baseline-fingerprinted, and the WF3 drift guard reads them -- so it is
-    pinned here rather than left to the rule.
+    The snapshot's path is load-bearing: two of them are baseline-fingerprinted
+    targets, so a rule that moves one silently turns the gate red. Pinned here
+    rather than left to the rule.
     """
     snakefile = REPO / snakefile_name
     text = snakefile.read_text(encoding="utf-8")

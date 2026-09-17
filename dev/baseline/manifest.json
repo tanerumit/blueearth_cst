@@ -6,11 +6,11 @@
     "dirty": true
   },
   "targets": {
-    "test_case/test_local/config/runs/project_config_analyze_projections.yml": {
+    "test_case/test_local/config/runs/analyze_projections/composed_config.yml": {
       "sha256": "a0da41e4fd3b2a25a3e67e7f7f4013be9bbcb77a82c736d8346fd079b2da8dae",
       "type": "yaml"
     },
-    "test_case/test_local/config/runs/project_config_build_model.yml": {
+    "test_case/test_local/config/runs/build_model/composed_config.yml": {
       "sha256": "a4c2866cf59bb514089eca8b3bb702540fdad224dd967e61867819f8021815a5",
       "type": "yaml"
     },

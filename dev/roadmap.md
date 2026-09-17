@@ -1184,8 +1184,10 @@ ruling 6 marked superseded.
 
 **Resolved across design v6–v8**, all toward what the code emits: the config
 snapshot **stays under `config/`** (the decider being that
-`config/runs/project_config_build_model.yml` is a declared `input:` of WF3's
-drift guard, so it is a consumed contract artifact rather than an archive); the
+the then-flat `config/runs/project_config_build_model.yml` is a declared
+`input:` of WF3's drift guard, so it is a consumed contract artifact rather than
+an archive -- both halves since superseded: no rule declares it any more, and
+2026-09-17 moved it to `config/runs/build_model/composed_config.yml`); the
 climate store **keeps its source+window cache key**; `cmip6/raw/` and `scalar/`
 are both kept, `scalar/` being R8's ruling S8-03; `change_factors/` stays as two
 files under `summary/`; and the last four unplaced artifact classes are placed.

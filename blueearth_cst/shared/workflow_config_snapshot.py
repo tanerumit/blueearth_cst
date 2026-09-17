@@ -90,7 +90,13 @@ def snapshot_document(
         DIGEST, whose job is to not move when another workflow's section
         changes; this is a record, whose job is to say what ran.
     """
-    source_path = Path(source_config_path)
+    # Both paths RESOLVED, and both the same way. The project file arrives
+    # absolute (Snakemake's `workflow.configfiles[0]`) while the workflow file
+    # arrives relative to the run directory, so recording them as given would
+    # put two different kinds of path in one document and leave a reader unable
+    # to tell which anchor the relative one used. Absolute matches what
+    # `run_record.yml` already records for the same field.
+    source_path = Path(source_config_path).resolve()
     document: dict[str, Any] = {
         "schema_version": SCHEMA_VERSION,
         "workflow": workflow,
@@ -105,7 +111,7 @@ def snapshot_document(
         # the field" must not read the same way.
         document["workflow_config"] = None
     else:
-        workflow_path = Path(workflow_config_path)
+        workflow_path = Path(workflow_config_path).resolve()
         document["workflow_config"] = {
             "path": str(workflow_path),
             "sha256": file_sha256(workflow_path),

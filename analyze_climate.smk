@@ -367,7 +367,7 @@ WF0_TERMINALS = [
 
 WF0_TARGETS = [
     *WF0_TERMINALS,
-    f"{project_dir}/config/runs/project_config_analyze_climate.yml",
+    f"{project_dir}/config/runs/analyze_climate/composed_config.yml",
     f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
     f"{project_dir}/benchmarks/wf0_benchmarks.md",
 ]
@@ -403,7 +403,7 @@ rule snapshot_config:
         # lock files or a referenced catalog's bytes move.
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        config_snake_out = f"{project_dir}/config/runs/project_config_analyze_climate.yml",
+        config_snake_out = f"{project_dir}/config/runs/analyze_climate/composed_config.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"

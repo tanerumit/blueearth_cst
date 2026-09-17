@@ -508,23 +508,23 @@ def test_opening_block_diagrams_the_sequence_and_marks_the_disabled(
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
-    assert "sequence -- 4 of 5 workflows enabled, invoked in this order" in out
+    assert "sequence  (4 of 5 enabled, in order)" in out
     assert "[1/4]  wf0 analyze_climate" in out
     assert "[3/4]  wf1 build_model" in out
     assert "[4/4]  wf4 simulate_system" in out
     # Present, marked, and NOT given a position.
-    assert "wf2 analyze_projections  (disabled, not invoked)" in out
+    assert "wf2 analyze_projections  disabled" in out
     assert "[4/4]  wf2" not in out
 
 
-def test_the_sequence_is_drawn_as_a_chain_of_boxes(tmp_path, capture_runs, capsys):
-    """Framed, and framed DIFFERENTLY for what will not be invoked.
+def test_the_sequence_is_drawn_as_a_rail_of_nodes(tmp_path, capture_runs, capsys):
+    """Keyed by node, and keyed DIFFERENTLY for what will not be invoked.
 
     The rows sat at the same indent as the `run` group's key/value pairs, so
-    the diagram's shape did not say it was a diagram. A solid box for a workflow
-    that will run and a dashed one for a workflow that will not is legible
-    before any of the text is read -- and stays ASCII, which the cp1252 test
-    below is the guard for.
+    the diagram's shape did not say it was a diagram. A filled node for a
+    workflow that will run and a hollow one for a workflow that will not is
+    legible before any of the text is read -- and costs one character where the
+    framed boxes this replaced cost three lines and forty columns each.
     """
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
@@ -532,14 +532,12 @@ def test_the_sequence_is_drawn_as_a_chain_of_boxes(tmp_path, capture_runs, capsy
     lines = [line.strip() for line in out.splitlines()]
 
     enabled = lines.index(next(ln for ln in lines if "[1/4]  wf0" in ln))
-    assert lines[enabled].startswith("|") and lines[enabled].endswith("|")
-    assert set(lines[enabled - 1]) == {"+", "-"}  # a solid edge above it
+    assert lines[enabled].startswith(rw._NODE_ON)
 
     disabled = lines.index(next(ln for ln in lines if "wf2 analyze_projections" in ln))
-    assert lines[disabled].startswith(":") and lines[disabled].endswith(":")
-    assert set(lines[disabled - 1]) == {"+", "-", " "}  # a dashed one
-    # The boxes are joined, not merely stacked.
-    assert "v" in lines[enabled + 2 : disabled]
+    assert lines[disabled].startswith(rw._NODE_OFF)
+    # The nodes are threaded, not merely stacked.
+    assert rw._RAIL in lines[enabled + 1 : disabled]
 
 
 def test_the_opening_block_states_the_basin_settings(tmp_path, capture_runs, capsys):
@@ -581,14 +579,9 @@ def test_the_opening_block_states_the_basin_settings(tmp_path, capture_runs, cap
         cfg, {n: "true" for n in rw.WORKFLOW_ORDER}, project_dir=str(project_dir)
     )
     cfg.write_text(
-        cfg.read_text(encoding="utf-8") + "shared:\n"
-        "  basin:\n"
-        "    region: \"{'subbasin': [9.666, 0.4476], 'uparea': 100}\"\n"
-        "    resolution: 0.00833\n"
-        "  clim_historical: era5\n"
-        "  historical_window:\n"
-        '    starttime: "2000-01-01T00:00:00"\n'
-        '    endtime: "2016-12-31T00:00:00"\n',
+        cfg.read_text(encoding="utf-8") + "basin:\n"
+        "  region: \"{'subbasin': [9.666, 0.4476], 'uparea': 100}\"\n"
+        "  resolution: 0.00833\n",
         encoding="utf-8",
     )
     rw.run(str(cfg), cores=3, extra=[])
@@ -624,9 +617,8 @@ def test_the_bbox_says_it_is_absent_rather_than_deriving_one(
         cfg, {n: "true" for n in rw.WORKFLOW_ORDER}, project_dir=str(project_dir)
     )
     cfg.write_text(
-        cfg.read_text(encoding="utf-8") + "shared:\n"
-        "  basin:\n"
-        "    region: \"{'subbasin': [9.666, 0.4476], 'uparea': 100}\"\n",
+        cfg.read_text(encoding="utf-8") + "basin:\n"
+        "  region: \"{'subbasin': [9.666, 0.4476], 'uparea': 100}\"\n",
         encoding="utf-8",
     )
     rw.run(str(cfg), cores=3, extra=[])
@@ -764,7 +756,7 @@ def test_the_console_is_not_muted_by_the_rule_log_level(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert "  run_workflows" in out.splitlines()
-    assert "  sequence -- 5 of 5 workflows enabled, invoked in this order" in out
+    assert "  sequence  (5 of 5 enabled, in order)" in out
     assert re.search(r"\[1/5]  wf0 analyze_climate  --  starting \d\d:\d\d:\d\d", out)
     assert "run_workflows done in" in out
 
@@ -848,24 +840,84 @@ def test_a_no_op_invocation_says_so_rather_than_printing_empty_groups(
     assert "  sequence" not in out
 
 
-def test_the_whole_console_is_cp1252_encodable(tmp_path, capture_runs, capsys):
-    """ASCII only: a Windows console defaults to cp1252 and RAISES on the rest.
+def test_the_console_is_ascii_but_for_the_three_rail_glyphs(
+    tmp_path, capture_runs, capsys
+):
+    """The non-ASCII budget is exactly `●`, `○` and `│`, and nothing else.
 
-    Box-drawing characters and arrows are the natural spelling for a sequence
-    diagram and are exactly what would crash the wrapper on the platform it is
-    most often run from -- the same constraint `rule_banner` records.
+    A Windows locale is cp1252 and RAISES on the rest, so until 2026-09-17 this
+    console was ASCII throughout. The rail spends three characters of that
+    budget and `_enable_utf8_stdout` is what pays for them; every other line
+    stays inside cp1252, which is what keeps a redirected run legible where the
+    Snakemake children write through the locale codec into the same file.
+
+    Pinned as a SET, not as a `.isascii()` flip: the cost of the reconfiguration
+    is that nothing raises any more, so a stray glyph added later would reach a
+    real console with no test between it and the user.
     """
-    # One disabled workflow, so the sequence diagram renders a disabled row --
-    # which is where the box-drawing characters would appear. WHICH one is
-    # disabled is immaterial here; it is `analyze_projections` rather than
-    # `build_model` only because disabling the latter while `simulate_system`
-    # is enabled now trips the contract (i) preflight, on a scratch project
-    # that has no wf1 leaves.
+    # One disabled workflow, so the sequence renders a hollow node as well as a
+    # filled one. WHICH one is disabled is immaterial here; it is
+    # `analyze_projections` rather than `build_model` only because disabling the
+    # latter while `simulate_system` is enabled now trips the contract (i)
+    # preflight, on a scratch project that has no wf1 leaves.
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
-    out.encode("cp1252")  # raises UnicodeEncodeError on anything outside it
-    assert out.isascii(), [line for line in out.splitlines() if not line.isascii()]
+    out.encode("utf-8")
+    assert set(out) - set(map(chr, range(128))) == {
+        rw._NODE_ON,
+        rw._NODE_OFF,
+        rw._RAIL,
+    }
+    # The rest of the console still clears the bar it cleared before the rail.
+    for line in out.splitlines():
+        if not {rw._NODE_ON, rw._NODE_OFF, rw._RAIL} & set(line):
+            line.encode("cp1252")
+
+
+def test_the_runner_declares_utf8_on_its_own_stdout(monkeypatch):
+    """`main` reconfigures before it prints, or the rail kills a redirected run.
+
+    The glyphs are unreachable under a cp1252 locale without this call, and the
+    failure is not a styling defect: `print` raises before the first workflow
+    starts. Asserted on `main` rather than on a render, because that is the one
+    entry point a user invokes and the only place the call can be forgotten.
+    """
+    seen: list[dict[str, str]] = []
+
+    class _Stdout:
+        def reconfigure(self, **kwargs):
+            seen.append(kwargs)
+
+        def write(self, _text):
+            return 0
+
+        def flush(self):
+            pass
+
+    monkeypatch.setattr(sys, "stdout", _Stdout())
+    with pytest.raises(SystemExit):
+        rw.main(["--help"])
+    assert seen == [{"encoding": "utf-8"}]
+
+
+def test_utf8_declaration_never_breaks_a_run_it_cannot_apply_to(monkeypatch):
+    """A stdout without `reconfigure` costs the glyphs, never the run.
+
+    pytest's own capture object is the common one, so this path is exercised by
+    every other test in this file; it is pinned here because the alternative --
+    letting the AttributeError out -- would trade a whole run for a banner.
+    """
+
+    class _Plain:
+        def write(self, _text):
+            return 0
+
+        def flush(self):
+            pass
+
+    monkeypatch.setattr(sys, "stdout", _Plain())
+    rw._enable_utf8_stdout()  # must not raise
 
 
 def test_the_console_narration_never_leaks_a_secret(tmp_path, capture_runs, capsys):

@@ -7,7 +7,8 @@ REPOSITORY = Path(workflow.basedir)
 sys.path.insert(0, str(REPOSITORY))
 from blueearth_cst.experiment.content_identity import content_sha256, read_canonical_json
 from blueearth_cst.experiment.simulation_runner import simulation_settings
-from blueearth_cst.shared.snake_utils import install_console_style, open_run_header, patch_psutil_windows_benchmark, rule_banner, run_summary
+from blueearth_cst.shared.snake_utils import patch_psutil_windows_benchmark
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]

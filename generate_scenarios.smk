@@ -7,7 +7,8 @@ from pathlib import Path
 import yaml
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
-from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, index_width, install_console_style, log_row, member_index_regex, open_run_header, rule_banner, run_summary, patch_psutil_windows_benchmark, target_banner
+from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary, target_banner
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 from blueearth_cst.experiment.content_identity import read_canonical_json
 from blueearth_cst.experiment.generation_plan import generation_configuration, resolve_generation_plan

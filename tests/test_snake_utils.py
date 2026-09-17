@@ -16,7 +16,12 @@ from pathlib import Path
 
 import pytest
 
+import blueearth_cst.shared.console_style as cs  # noqa: E402
 import blueearth_cst.shared.snake_utils as su  # noqa: E402
+from blueearth_cst.shared.console_style import (  # noqa: E402
+    rule_banner,
+    target_banner,
+)
 from blueearth_cst.shared.snake_utils import (  # noqa: E402
     _compact_log_line,
     _cr_overwrite,
@@ -27,9 +32,7 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
     get_config,
     log_row,
     patch_psutil_windows_benchmark,
-    rule_banner,
     save_figure,
-    target_banner,
     tee_to_log,
 )
 
@@ -757,7 +760,7 @@ def test_the_header_defines_a_token_under_a_relative_project_dir(declare_folders
     of `<model>` -- pointing outside the project it belongs to.
     """
     declare_folders(model="test_case/test_rapid/models/hydrology/wflow")
-    rows = su.run_header("wf1 build_model", "test_case/test_rapid").splitlines()
+    rows = cs.run_header("wf1 build_model", "test_case/test_rapid").splitlines()
     assert rows[-1].split() == ["<model>", "models/hydrology/wflow"]
 
 
@@ -770,8 +773,8 @@ def test_run_header_project_row_is_absolute_and_repo_marked():
     the tree is inside the checkout -- shorter than the relative spelling AND
     unambiguous about which of six worktrees it names.
     """
-    relative = su.run_header("wf3 generate_scenarios", "test_case/test_rapid")
-    absolute = su.run_header(
+    relative = cs.run_header("wf3 generate_scenarios", "test_case/test_rapid")
+    absolute = cs.run_header(
         "wf4 simulate_system", os.path.abspath("test_case/test_rapid")
     )
 
@@ -791,8 +794,8 @@ def test_display_root_leaves_a_project_outside_the_repo_whole():
     the `<repo>` rewrite matches nothing and the full path IS the information.
     """
     outside = _abs("TESTS/CST/gabonx")
-    assert su.display_root(outside) == outside.replace(os.sep, "/")
-    assert "<repo>" not in su.display_root(outside)
+    assert cs.display_root(outside) == outside.replace(os.sep, "/")
+    assert "<repo>" not in cs.display_root(outside)
 
 
 def test_target_banner_bracket_and_header_row_agree(monkeypatch):
@@ -804,7 +807,7 @@ def test_target_banner_bracket_and_header_row_agree(monkeypatch):
     banner = target_banner(
         "3.00", "all", ["test_case/test_rapid/logs/wf3.log"], "test_case/test_rapid"
     )
-    header = su.run_header("wf3 generate_scenarios", "test_case/test_rapid")
+    header = cs.run_header("wf3 generate_scenarios", "test_case/test_rapid")
     root = next(
         row.split()[1] for row in header.splitlines() if row.split()[:1] == ["project"]
     )
@@ -1920,7 +1923,7 @@ def test_tee_to_log_heartbeat_goes_to_console_not_log(tmp_path, capsys):
 def test_warn_in_repo_project_dir_warns(tmp_path, capsys):
     repo = tmp_path / "repo"
     (repo / "scratch_run").mkdir(parents=True)
-    fired = su.warn_if_project_dir_in_repo(repo / "scratch_run", repo)
+    fired = cs.warn_if_project_dir_in_repo(repo / "scratch_run", repo)
     assert fired is True
     err = capsys.readouterr().err
     assert "inside the repo tree" in err and "scratch_run" in err
@@ -1931,7 +1934,7 @@ def test_warn_exempt_test_case_is_silent(tmp_path, capsys):
     tracked config cannot carry a machine-specific absolute path."""
     repo = tmp_path / "repo"
     (repo / "test_case" / "test_local").mkdir(parents=True)
-    fired = su.warn_if_project_dir_in_repo(repo / "test_case" / "test_local", repo)
+    fired = cs.warn_if_project_dir_in_repo(repo / "test_case" / "test_local", repo)
     assert fired is False
     assert capsys.readouterr().err == ""
 
@@ -1941,7 +1944,7 @@ def test_warn_absolute_out_of_tree_is_silent(tmp_path, capsys):
     repo.mkdir()
     outside = tmp_path / "elsewhere" / "my_project"
     outside.mkdir(parents=True)
-    fired = su.warn_if_project_dir_in_repo(outside, repo)
+    fired = cs.warn_if_project_dir_in_repo(outside, repo)
     assert fired is False
     assert capsys.readouterr().err == ""
 
@@ -1952,11 +1955,11 @@ def test_warn_uses_containment_not_string_prefix(tmp_path):
     passes the three cases above and fails both of these."""
     repo = tmp_path / "repo"
     (repo / "test_caseX").mkdir(parents=True)
-    assert su.warn_if_project_dir_in_repo(repo / "test_caseX", repo) is True
+    assert cs.warn_if_project_dir_in_repo(repo / "test_caseX", repo) is True
 
     sibling = tmp_path / "repo_other"
     sibling.mkdir()
-    assert su.warn_if_project_dir_in_repo(sibling, repo) is False
+    assert cs.warn_if_project_dir_in_repo(sibling, repo) is False
 
 
 # --- climate_store_rule (R07 B1) ---------------------------------------------
@@ -2567,7 +2570,7 @@ def _console_handler():
     base = _logging.StreamHandler(io.StringIO())
     base.name = "DefaultStreamHandler"
     base.setFormatter(_logging.Formatter("%(message)s"))
-    return su._ConsoleHandler(base)
+    return cs._ConsoleHandler(base)
 
 
 def _console_record(msg="", level=_logging.INFO, **extra):
@@ -2609,7 +2612,7 @@ def test_console_marker_column_is_the_same_on_a_start_and_a_finish():
     Asserted on rendered lines rather than on the constants, because the padding
     only pays off if nothing between the stamp and the marker differs either.
     """
-    su._RULE_NUMBERS["seed"] = "9.01"
+    cs._RULE_NUMBERS["seed"] = "9.01"
     handler = _console_handler()
     out = _emit(
         handler,
@@ -2623,7 +2626,7 @@ def test_console_marker_column_is_the_same_on_a_start_and_a_finish():
 
 def test_console_finish_line_carries_number_wildcards_elapsed_and_counter():
     """The finish record names only a jobid, so every other field is recovered."""
-    su._RULE_NUMBERS["downscale_climate_realization"] = "3.14"
+    cs._RULE_NUMBERS["downscale_climate_realization"] = "3.14"
     handler = _console_handler()
     _emit(
         handler,
@@ -2905,7 +2908,7 @@ def test_console_job_stats_collapse_to_one_line(monkeypatch):
     state, and any earlier test in this file that calls `rule_banner` fills it,
     which is exactly how this test started exercising the wrong branch.
     """
-    monkeypatch.setattr(su, "_RULE_NUMBERS", {})
+    monkeypatch.setattr(cs, "_RULE_NUMBERS", {})
     handler = _console_handler()
     table = (
         "Job stats:\njob                              count\n"
@@ -2948,7 +2951,7 @@ def test_console_run_info_renders_the_plan_block(monkeypatch):
     exercised.
     """
     monkeypatch.setattr(
-        su,
+        cs,
         "_RULE_NUMBERS",
         {"all": "1.00", "snapshot_config": "1.01", "run_wflow": "1.14"},
     )
@@ -2974,9 +2977,9 @@ def test_console_run_info_renders_the_plan_block(monkeypatch):
 def _declared_header(monkeypatch, **details):
     """Declare a run header the way `open_run_header` does from `onstart:`."""
     monkeypatch.setattr(
-        su, "_RUN_HEADER", ("wf1 build_model", "test_case/test_rapid", None, details)
+        cs, "_RUN_HEADER", ("wf1 build_model", "test_case/test_rapid", None, details)
     )
-    monkeypatch.setattr(su, "_RULE_NUMBERS", {"a": "1.01", "b": "1.02"})
+    monkeypatch.setattr(cs, "_RULE_NUMBERS", {"a": "1.01", "b": "1.02"})
 
 
 def test_console_opening_puts_the_rules_under_the_title(monkeypatch):
@@ -3049,8 +3052,8 @@ def test_console_opening_survives_a_run_without_run_info(monkeypatch):
 
 def test_console_plan_stands_alone_when_no_header_was_declared(monkeypatch):
     """A bare `snakemake -s` without `onstart:`, and every test above."""
-    monkeypatch.setattr(su, "_RUN_HEADER", None)
-    monkeypatch.setattr(su, "_RULE_NUMBERS", {"a": "1.01", "b": "1.02"})
+    monkeypatch.setattr(cs, "_RUN_HEADER", None)
+    monkeypatch.setattr(cs, "_RULE_NUMBERS", {"a": "1.01", "b": "1.02"})
     out = _emit(
         _console_handler(),
         _console_record(
@@ -3062,23 +3065,23 @@ def test_console_plan_stands_alone_when_no_header_was_declared(monkeypatch):
 
 def test_open_run_header_writes_immediately_without_a_console(monkeypatch):
     """A styling failure must never be the reason a run loses its header."""
-    monkeypatch.setattr(su, "_CONSOLE_STYLE_ACTIVE", False)
-    monkeypatch.setattr(su, "_RUN_HEADER", None)
+    monkeypatch.setattr(cs, "_CONSOLE_STYLE_ACTIVE", False)
+    monkeypatch.setattr(cs, "_RUN_HEADER", None)
     stream = io.StringIO()
     monkeypatch.setattr(sys, "stderr", stream)
-    assert su.open_run_header("wf1 build_model", "test_case/test_rapid") is False
+    assert cs.open_run_header("wf1 build_model", "test_case/test_rapid") is False
     assert "wf1 build_model" in stream.getvalue()
-    assert su._RUN_HEADER is None  # nothing held for a handler that is not there
+    assert cs._RUN_HEADER is None  # nothing held for a handler that is not there
 
 
 def test_open_run_header_holds_it_for_the_console(monkeypatch):
-    monkeypatch.setattr(su, "_CONSOLE_STYLE_ACTIVE", True)
-    monkeypatch.setattr(su, "_RUN_HEADER", None)
+    monkeypatch.setattr(cs, "_CONSOLE_STYLE_ACTIVE", True)
+    monkeypatch.setattr(cs, "_RUN_HEADER", None)
     stream = io.StringIO()
     monkeypatch.setattr(sys, "stderr", stream)
-    assert su.open_run_header("wf1 build_model", "test_case/test_rapid") is True
+    assert cs.open_run_header("wf1 build_model", "test_case/test_rapid") is True
     assert stream.getvalue() == ""  # held, not written
-    assert su._RUN_HEADER[0] == "wf1 build_model"
+    assert cs._RUN_HEADER[0] == "wf1 build_model"
 
 
 def test_console_an_unparsed_run_info_passes_through():
@@ -3145,7 +3148,7 @@ def test_console_a_rule_without_a_message_still_gets_a_named_finish_line():
 
 def test_console_a_sub_second_job_shows_no_duration():
     """`0:00:00` reads as a broken clock, and bookkeeping rules are most of them."""
-    su._RULE_NUMBERS["write_experiment_config"] = "3.07"
+    cs._RULE_NUMBERS["write_experiment_config"] = "3.07"
     handler = _console_handler()
     out = _emit(
         handler,
@@ -3179,7 +3182,7 @@ def test_console_clears_the_line_before_a_row_on_a_terminal(monkeypatch):
     base = _logging.StreamHandler(_LiveConsole(tty=True))
     base.name = "DefaultStreamHandler"
     base.setFormatter(_logging.Formatter("%(message)s"))
-    handler = su._ConsoleHandler(base)
+    handler = cs._ConsoleHandler(base)
     _emit(handler, _job_info(1, "r", "Rule 1.01: r"))
 
     assert handler.stream.getvalue().startswith(_LINE_RESET)
@@ -3207,11 +3210,11 @@ def test_console_a_finish_with_no_start_falls_back_to_snakemakes_own_text():
 def test_console_the_start_memo_is_bounded():
     """`--quiet progress` drops every finish, so nothing would ever pop an entry."""
     handler = _console_handler()
-    for jobid in range(su._CONSOLE_MAX_TRACKED_JOBS + 50):
+    for jobid in range(cs._CONSOLE_MAX_TRACKED_JOBS + 50):
         handler.emit(_job_info(jobid, "member", f"Rule 9.02: member  n {jobid}"))
-    assert len(handler._started) == su._CONSOLE_MAX_TRACKED_JOBS
+    assert len(handler._started) == cs._CONSOLE_MAX_TRACKED_JOBS
     # The oldest go first: the most recent job is always still tracked.
-    assert su._CONSOLE_MAX_TRACKED_JOBS + 49 in handler._started
+    assert cs._CONSOLE_MAX_TRACKED_JOBS + 49 in handler._started
     assert 0 not in handler._started
 
 
@@ -3226,13 +3229,13 @@ def _colour_handler():
     base = _logging.StreamHandler(_TTYStringIO())
     base.name = "DefaultStreamHandler"
     base.setFormatter(_logging.Formatter("%(message)s"))
-    return su._ConsoleHandler(base)
+    return cs._ConsoleHandler(base)
 
 
 def test_rule_banner_never_colours_even_on_a_tty():
     """The banner string reaches a log file and an error block, not just a
     console -- so colour belongs to whoever writes the line, not to this."""
-    import blueearth_cst.shared.snake_utils as _su
+    import blueearth_cst.shared.console_style as _su
 
     real = sys.stderr
     sys.stderr = _FakeTTY()
@@ -3255,7 +3258,7 @@ def test_console_paints_a_start_and_a_finish_in_two_different_tiers():
     start distinguishable from a finish.
     """
     handler = _colour_handler()
-    su._RULE_NUMBERS["seed"] = "9.01"
+    cs._RULE_NUMBERS["seed"] = "9.01"
     out = _emit(
         handler,
         _job_info(1, "seed", "Rule 9.01: seed - prepare one realization"),
@@ -3263,8 +3266,8 @@ def test_console_paints_a_start_and_a_finish_in_two_different_tiers():
         _console_record(event="progress", done=1, total=4),
     )
     run_line, done_line = _unreset(out).splitlines()
-    assert su._ANSI_RUN != su._ANSI_DONE != su._ANSI_BODY
-    for line, code in ((run_line, su._ANSI_RUN), (done_line, su._ANSI_DONE)):
+    assert cs._ANSI_RUN != cs._ANSI_DONE != su._ANSI_BODY
+    for line, code in ((run_line, cs._ANSI_RUN), (done_line, cs._ANSI_DONE)):
         opener = f"\033[{code}m"
         assert line.startswith(opener) and line.endswith("\033[0m"), line
         assert "\033" not in line[len(opener) : -4], line
@@ -3311,17 +3314,17 @@ def test_rule_banner_registers_its_number_for_the_finish_line(monkeypatch):
     """The finish record carries a rule NAME only; the number comes from here."""
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     rule_banner("2.07", "a_freshly_named_rule")
-    assert su._RULE_NUMBERS["a_freshly_named_rule"] == "2.07"
+    assert cs._RULE_NUMBERS["a_freshly_named_rule"] == "2.07"
 
 
 def test_rule_banner_registers_its_summary_for_the_once_per_rule_trim(monkeypatch):
     """The console trims by the EXACT clause inserted here, never by parsing."""
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     rule_banner("2.08", "a_summarized_rule", summary="do the slow thing")
-    assert su._RULE_SUMMARIES["a_summarized_rule"] == "do the slow thing"
+    assert cs._RULE_SUMMARIES["a_summarized_rule"] == "do the slow thing"
     # A rule without one stays absent, so the trim has nothing to remove.
     rule_banner("2.09", "a_bare_rule")
-    assert "a_bare_rule" not in su._RULE_SUMMARIES
+    assert "a_bare_rule" not in cs._RULE_SUMMARIES
 
 
 def test_rule_banner_brackets_its_context():
@@ -3370,8 +3373,8 @@ def test_console_prints_a_rule_summary_once_and_trims_it_from_the_fan_out():
 
 def test_console_summary_trim_is_per_rule_not_global():
     """Each rule gets its own first line; one rule's does not consume another's."""
-    su._RULE_SUMMARIES["rule_a"] = "do a"
-    su._RULE_SUMMARIES["rule_b"] = "do b"
+    cs._RULE_SUMMARIES["rule_a"] = "do a"
+    cs._RULE_SUMMARIES["rule_b"] = "do b"
     handler = _console_handler()
     out = _emit(
         handler,
@@ -3392,7 +3395,7 @@ def test_console_summary_seen_set_is_per_handler_not_module_level():
     console on which no summary was ever printed -- so the state that says
     "already shown" belongs to the handler, like `_started`.
     """
-    su._RULE_SUMMARIES["shared_rule"] = "do the thing"
+    cs._RULE_SUMMARIES["shared_rule"] = "do the thing"
     banner = "Rule 9.03: shared_rule - do the thing"
     first_run = _emit(_console_handler(), _job_info(1, "shared_rule", banner))
     second_run = _emit(_console_handler(), _job_info(1, "shared_rule", banner))
@@ -3403,7 +3406,7 @@ def test_console_summary_seen_set_is_per_handler_not_module_level():
 def test_console_leaves_a_summaryless_rule_alone_on_every_line():
     """An unregistered rule is the fail-open case: print exactly what came in."""
     handler = _console_handler()
-    su._RULE_SUMMARIES.pop("unregistered_rule", None)
+    cs._RULE_SUMMARIES.pop("unregistered_rule", None)
     out = _emit(
         handler,
         _job_info(1, "unregistered_rule", "Rule 9.04: unregistered_rule - do it"),
@@ -3430,13 +3433,13 @@ def test_install_console_style_replaces_only_the_stream_handler(monkeypatch):
         snakemake_logging.logger_manager, "queue_listener", listener, raising=False
     )
 
-    assert su.install_console_style() is True
-    assert isinstance(listener.handlers[0], su._ConsoleHandler)
+    assert cs.install_console_style() is True
+    assert isinstance(listener.handlers[0], cs._ConsoleHandler)
     assert listener.handlers[1] is logfile
 
     # Idempotent: a second call (a second Snakefile in one process) is a no-op.
     already = listener.handlers[0]
-    assert su.install_console_style() is True
+    assert cs.install_console_style() is True
     assert listener.handlers[0] is already
 
 
@@ -3450,7 +3453,7 @@ def test_install_console_style_fails_open(monkeypatch):
         monkeypatch.setattr(
             snakemake_logging.logger_manager, "queue_listener", listener, raising=False
         )
-        assert su.install_console_style() is False
+        assert cs.install_console_style() is False
 
 
 def test_run_header_shape_matches_run_summary():
@@ -3460,7 +3463,7 @@ def test_run_header_shape_matches_run_summary():
     console handler owning the block, the token rows sit directly above the
     lines that use them and the angle brackets already say what they are.
     """
-    out = su.run_header(
+    out = cs.run_header(
         "wf3 run_stress_test",
         "test_case/test_rapid2",
         "test_case/project_config_rapid.yml",
@@ -3493,7 +3496,7 @@ def test_run_header_states_the_declared_folders(declare_folders):
         data=_abs("data/wflow_global/hydromt"),
         model=os.path.join(project, "models", "hydrology", "wflow"),
     )
-    lines = su.run_header("wf1 build_model", project).splitlines()
+    lines = cs.run_header("wf1 build_model", project).splitlines()
     rows = [line for line in lines if line.startswith("  ") and line.strip()]
     assert [row.split()[0] for row in rows] == ["project", "<data>", "<model>"]
     assert rows[1].endswith("data/wflow_global/hydromt")
@@ -3505,7 +3508,7 @@ def test_run_header_states_the_declared_folders(declare_folders):
 
 def test_run_header_aligns_both_groups_on_one_value_column():
     """One width across the block; a per-group width restarts the column."""
-    out = su.run_header(
+    out = cs.run_header(
         "wf3 run_stress_test", "test_case/test_rapid", experiment="experiment_rapid"
     )
     rows = [line for line in out.splitlines() if line.startswith("  ") and line.strip()]
@@ -3518,7 +3521,7 @@ def test_run_header_forward_slashes_and_shortens_the_config_path(monkeypatch):
     """The one row that kept OS separators made the block read as two trees."""
     monkeypatch.setattr(su, "_REPO_ROOT", os.path.normpath(_abs("repo")))
     config = os.path.join(_abs("repo"), "test_case", "project_config_rapid.yml")
-    out = su.run_header("wf1 build_model", "test_case/test_rapid", config)
+    out = cs.run_header("wf1 build_model", "test_case/test_rapid", config)
     row = next(line for line in out.splitlines() if line.strip().startswith("config"))
     assert row.split() == ["config", "<repo>/test_case/project_config_rapid.yml"]
     assert "\\" not in out
@@ -3543,7 +3546,7 @@ def test_run_summary_closes_a_success_in_one_line():
     other duration, and `run_workflows.py` prints no success band of its own
     precisely because this line exists.
     """
-    out = su.run_summary(
+    out = cs.run_summary(
         "wf3 run_stress_test",
         "test_case/test_rapid",
         "wf3_run_stress_test.log",
@@ -3560,19 +3563,19 @@ def test_run_summary_paints_only_the_failed_verdict(monkeypatch):
     what must hold is that one verdict is marked and the other is not.
     """
     monkeypatch.setattr(sys, "stderr", _FakeTTY())
-    failed = su.run_summary("wf3", "p", "l.log", "b.md", failed=True)
-    ok = su.run_summary("wf3", "p", "l.log", "b.md")
+    failed = cs.run_summary("wf3", "p", "l.log", "b.md", failed=True)
+    ok = cs.run_summary("wf3", "p", "l.log", "b.md")
     # A failure is WHOLLY red: one loud signal, not red competing with bold.
     assert failed.splitlines()[0] == su._ansi("wf3 FAILED", su._ANSI_FAIL)
     assert su._ANSI_FAIL not in ok
     # A success bolds the NAME only, matching the opening title.
-    assert ok.splitlines()[0] == su._ansi("wf3", su._ANSI_TITLE) + " done"
+    assert ok.splitlines()[0] == su._ansi("wf3", cs._ANSI_TITLE) + " done"
 
 
 def test_run_summary_verdict_is_plain_when_stderr_is_not_a_console(monkeypatch):
     """Piped or redirected, the block must carry no escape codes at all."""
     monkeypatch.setattr(sys, "stderr", io.StringIO())
-    out = su.run_summary("wf3", "p", "l.log", "b.md", failed=True)
+    out = cs.run_summary("wf3", "p", "l.log", "b.md", failed=True)
     assert "\033" not in out, repr(out)
 
 
@@ -3608,7 +3611,7 @@ def test_run_summary_failure_keeps_the_block_a_success_no_longer_needs():
     not run when an upstream job fails -- so the log-parts directory is named
     nowhere else. The note beneath it names no artifact, so it is not a row.
     """
-    out = su.run_summary(
+    out = cs.run_summary(
         "wf3 run_stress_test",
         "test_case/test_rapid",
         "wf3.log",
@@ -3645,7 +3648,7 @@ def test_console_shortens_paths_in_snakemakes_own_lines(declare_folders):
 
 def test_run_header_omits_rows_a_workflow_does_not_have():
     """WF1 and WF2 pass no experiment; the block shrinks rather than showing a blank."""
-    out = su.run_header("wf1 build_model", "test_case/test_rapid")
+    out = cs.run_header("wf1 build_model", "test_case/test_rapid")
     assert out.splitlines() == [
         "wf1 build_model",
         "---------------",
@@ -3797,7 +3800,7 @@ def test_severity_never_reaches_the_log_file(tmp_path):
 
 
 def _registry():
-    return su.RuleRegistry("PROJ/logs/_parts", "PROJ/benchmarks/_parts")
+    return cs.RuleRegistry("PROJ/logs/_parts", "PROJ/benchmarks/_parts")
 
 
 def test_a_logged_rule_registers_its_label_in_declaration_order():
@@ -3869,13 +3872,13 @@ def test_a_fan_out_rule_suffixes_its_NAME_and_nests_its_PARTS():
 def test_the_banner_carries_the_rules_summary_and_the_fanned_name():
     reg = _registry()
     plain = reg.logged("0.02", "delineate_region")
-    assert plain.banner() == su.rule_banner("0.02", "delineate_region")
+    assert plain.banner() == cs.rule_banner("0.02", "delineate_region")
     described = reg.logged("0.04b", "derive_plot_scales", summary="one scale")
-    assert described.banner() == su.rule_banner(
+    assert described.banner() == cs.rule_banner(
         "0.04b", "derive_plot_scales", summary="one scale"
     )
     fanned = reg.logged("0.05", "plot_climate_source")
-    assert fanned.banner("chirps") == su.rule_banner(
+    assert fanned.banner("chirps") == cs.rule_banner(
         "0.05", "plot_climate_source_chirps"
     )
 

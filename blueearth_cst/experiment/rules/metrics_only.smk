@@ -1,6 +1,7 @@
 # This module declares no generation, model, preparation, or simulation producers.
 from blueearth_cst.experiment.metric_plan import metrics_only_configuration
-from blueearth_cst.shared.snake_utils import declare_path_tokens, declare_project_root, target_banner
+from blueearth_cst.shared.snake_utils import declare_path_tokens, declare_project_root
+from blueearth_cst.shared.console_style import target_banner
 
 _metric_root, METRIC_TOKENS, METRIC_ANCHOR = metrics_only_configuration(config_path)
 exp_dir = _metric_root.as_posix()

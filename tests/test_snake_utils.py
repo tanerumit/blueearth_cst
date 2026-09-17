@@ -3563,6 +3563,21 @@ def test_run_header_forward_slashes_and_shortens_the_config_path(monkeypatch):
     assert "\\" not in out
 
 
+def test_run_header_forward_slashes_a_config_outside_the_repo():
+    """The production case: a config in a project tree, under neither rewrite.
+
+    `<repo>` and `<site-packages>` normalise a config that lives under one of
+    them, and `display_root` normalises the `project` row -- so a config
+    outside both kept its OS separators and the block printed
+    `project C:/a/b` above `config C:\a\b`, which reads as two trees.
+    """
+    config = os.path.join(_abs("elsewhere"), "gabon", "project_config.yml")
+    out = cs.run_header("wf2 analyze_projections", "test_case/test_rapid", config)
+    row = next(line for line in out.splitlines() if line.startswith("config"))
+    assert "\\" not in row, row
+    assert row.endswith("elsewhere/gabon/project_config.yml"), row
+
+
 def test_a_rule_log_header_defines_every_token_its_rows_use(declare_folders, tmp_path):
     """The console scrolls away; the log is read months later. A `<model>/x.nc`
     row in a file that never says what `<model>` was is worse than the long

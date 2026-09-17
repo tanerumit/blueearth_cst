@@ -630,9 +630,16 @@ if not any(c.resolved for c in COMBINATIONS):
 
 # Normal skips are reported, never silent -- this is what replaces the run-time
 # `asymmetric hist/clim members` raise D7 supersedes (design D7 table).
+#
+# Through `warn_row`, not `logger.warning`. This runs at Snakefile PARSE time,
+# before `install_console_style` replaces Snakemake's terminal handler -- so a
+# `logger` call prints in Snakemake's own style, with no stamp and no module
+# column, above a header that has not been written yet. `warn_row` is the
+# parse-time counterpart of `log_row` and exists for exactly this moment: the
+# block lands in the same grammar as every row after it.
 _skip_report = _res.format_status_report(COMBINATIONS)
 if _skip_report:
-    logger.warning(_skip_report)
+    warn_row(_skip_report, module="resolution")
 
 # D8/D12: a glob matching more than one {grid}/{version} means the read is not a
 # single identifiable store. Measured at ~6% of pinned stores, so this is live.

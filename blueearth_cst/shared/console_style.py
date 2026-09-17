@@ -1695,7 +1695,18 @@ def run_meta_rows(project_dir, config_path=None, details=None):
         # stripping one would render a config that happens to live INSIDE the
         # project as a bare relative path indistinguishable from an output.
         # This still applies the `<repo>` and `<site-packages>` rewrites.
-        rows.append(("config", _relativize_paths(os.fspath(config_path), "")))
+        #
+        # FORWARD SLASHES, unconditionally. The rewrites above normalise a
+        # config that lives under the repo, and `display_root` normalises the
+        # `project` row beside it -- but a config OUTSIDE both (a real project
+        # tree, which is where production configs live) matched neither and
+        # kept its OS separators, so the block printed
+        # `project C:/a/b` above `config C:\a\b` and read as two trees. That is
+        # the defect this row's own docstring describes and the existing test
+        # could not see, because it passes a config inside the repo.
+        rows.append(
+            ("config", _relativize_paths(os.fspath(config_path), "").replace("\\", "/"))
+        )
     rows.extend((key, str(value)) for key, value in (details or {}).items())
     rows.extend(_folder_rows(project_dir))
     return rows

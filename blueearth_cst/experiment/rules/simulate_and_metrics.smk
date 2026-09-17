@@ -129,8 +129,16 @@ if not _simulation_complete:
             request=update(f"{exp_dir}/config/response_request.json"),
         run:
             from blueearth_cst.experiment.simulation_record import freeze_simulation
+            from blueearth_cst.shared.workflow_config_snapshot import composed_workflow_section, snapshot_bytes
             record, documents = _live_simulation_inputs()
-            freeze_simulation(exp_dir, record, documents)
+            # Written on the freeze, inside the same call that seals the
+            # experiment's inputs. Named by none of the four frozen documents,
+            # so `simulation_id` -- and every metric set identified through it
+            # -- stays where it was.
+            freeze_simulation(exp_dir, record, documents, config_snapshot=snapshot_bytes(
+                "simulate_system", config_path,
+                Path(config_path).parent / project["workflows"]["simulate_system"]["config_path"],
+                composed_workflow_section(project, "simulate_system", my_cfg)))
 
     # 4.02  check_model_reference
     rule check_model_reference:

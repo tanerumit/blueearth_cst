@@ -16,8 +16,9 @@ from blueearth_cst.experiment.scenario_rows import stochastic_rows
 from blueearth_cst.experiment.scenario_provider import legacy_member_name
 patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]
+CONFIG_PROJECTION = ("project", "basin", "climate", "workflows.generate_scenarios")
 config, WORKFLOW_CONFIG_PATHS = compose_config(config, config_path, entry="generate_scenarios",
-    declared_sections=("project", "basin", "climate", "workflows.generate_scenarios"))
+    declared_sections=CONFIG_PROJECTION)
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
 GENERATION = generation_configuration(config, workflow.basedir)
 project_dir = GENERATION["project_dir"]
@@ -241,11 +242,19 @@ rule initialize_scenario_collection:
         update((Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix()),
     run:
         from blueearth_cst.experiment.scenario_provider import initialize_planned_collection
+        from blueearth_cst.shared.workflow_config_snapshot import snapshot_bytes
         plan, catalog, ancillary = _resolved_collection_plan()
         if plan != read_canonical_json(Path(input.plan)):
             raise ValueError("GeneratedCollectionStale: inputs changed before initialization")
+        # Written inside the seal (rule 3.10 makes the collection immutable), so
+        # the snapshot cannot be added to -- or diverge from -- a retained
+        # collection later. Unreferenced by `collection_intent.json`, so it
+        # leaves `collection_id` where it was.
         initialize_planned_collection(project_dir, plan, INVOCATION_ID,
-            lookup_path=input.lookup, catalog_bytes=catalog, ancillary_sources=ancillary)
+            lookup_path=input.lookup, catalog_bytes=catalog, ancillary_sources=ancillary,
+            config_snapshot=snapshot_bytes(
+                "generate_scenarios", config_path,
+                WORKFLOW_CONFIG_PATHS.get("generate_scenarios"), config))
 
 
 def _collection_row_inputs(wc):

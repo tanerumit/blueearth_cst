@@ -511,6 +511,10 @@ def build_project_tree_rules(
         "preparation_context.json",
         "preparation_catalog.yml",
         "stress_test_lookup.csv",
+        # The composed-config snapshot: written into the collection at
+        # initialization, named by `collection_intent.json` nowhere, and so not
+        # part of `collection_id`. It is a leaf of the collection like the rest.
+        "composed_config.yml",
     ):
         same_rx(rf"{collection}/{re.escape(leaf)}")
     same_rx(rf"{collection}/forcing/run_[0-9]+\.nc")
@@ -529,7 +533,7 @@ def build_project_tree_rules(
     # Simulation identities are frozen separately from metric-set identities.
     same(f"experiments/{e}/.model_reference_ok")
     for leaf in (
-        "project_config_simulate_system.yml",
+        "composed_config.yml",
         "model_reference.yml",
         "simulation.json",
         "simulator_settings.json",

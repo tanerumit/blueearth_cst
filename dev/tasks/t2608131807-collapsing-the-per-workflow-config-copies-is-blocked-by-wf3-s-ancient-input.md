@@ -4,8 +4,41 @@ type: watch-item
 area: config snapshot / wf3 guard
 origin: owner question on the runs bin (2026-08-13)
 created: 2026-08-13
-updated: 2026-08-14
+updated: 2026-09-17
 ---
+
+> [!done] RESOLVED 2026-09-17 — shipped, and two of the three costs had expired
+> The snapshots now live at `config/runs/<workflow>/composed_config.yml`, beside
+> the run record. Migration note:
+> [migration_config-snapshots.md](../milestones/post-r12/migration_config-snapshots.md).
+>
+> **Costs 1 and 2 below were dissolved by R12 and are recorded here as
+> superseded, not as reasons.** Cost 1 said WF3 declares the WF1 snapshot as a
+> mandatory `ancient()` input, so a rename breaks every existing tree at DAG
+> build. It does not: `cross_workflow_leaves.py` now marks `LEAF_WF1_SNAPSHOT`
+> *"Legacy snapshot path retained for fixture staging, not a WF4 dependency"*,
+> excludes it from `LEAVES`, and **no `.smk` references
+> `check_project_consistency` at all** — verified 2026-09-17 by grep over every
+> Snakefile. Cost 2 said collapsing loses the cross-workflow drift comparison;
+> the guard that made that comparison is no longer wired, so there was nothing
+> left to lose. (Careful with the stronger claim: the guard MODULE still exists
+> and tests may still exercise it. What was verified is that no rule declares it.)
+>
+> **Cost 3, the baseline, was real and was NOT paid.** The two manifest keys were
+> renamed in place with their recorded values untouched, because this worktree's
+> `test_case/test_local` already diverged from the manifest before the work
+> started. `dev/baseline/provenance.md` carries the evidence and what the next
+> re-record must do.
+>
+> **What this item got right, and what it did not.** It was right that prose
+> mitigation does not work — the question was asked a FOURTH time on 2026-09-17,
+> from the same surface reading, by an owner looking at `test_rapid`. It was also
+> right to keep the `runs/` bin: the chosen shape nests inside it rather than
+> flattening it away, so the boundary between archived inputs and records of the
+> run survives. What it got wrong was leaving the costs unrevisited for a month
+> after R12 removed two of them — a blocked item whose blocker expires silently
+> reads as a live decision. **Re-check a blocked item's costs against the code
+> before quoting them.**
 
 > [!note] Overview
 > **What** — Replace the two whole-config copies under config/runs/ with one honestly-named verbatim copy, moving the per-workflow role into <workflow>/run_record.yml.

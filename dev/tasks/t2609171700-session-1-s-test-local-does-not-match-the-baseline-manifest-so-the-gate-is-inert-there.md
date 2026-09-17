@@ -10,6 +10,28 @@ created: 2026-09-17
 updated: 2026-09-17
 ---
 
+> [!done] Problem 1 is HALF resolved (2026-09-17): WF2 re-run, gate green
+> **The two `cmip6_change_factors_*.csv` differences were a STALE TREE, not a
+> code regression, and not a wrong manifest.** The on-disk files were dated
+> Aug 29 and carried horizon `far` (2070-2090); the baseline config has declared
+> a single `mid` window (2046-2054) since 2026-09-07. This worktree simply never
+> re-ran WF2 after that config change.
+>
+> Re-running WF2 alone -- 26 jobs, **1m44s** -- made the tree match:
+> `check --workflow analyze_projections` now reports `OK - 3 target(s) match
+> manifest`, exit 0. **No re-record was needed**, which retrospectively
+> vindicates the note's warning against option 3: accepting and re-recording
+> would have written a stale file's digest over a correct one.
+>
+> Lesson worth keeping: a baseline difference is a question about WHICH TREE,
+> not only about which code. Check the artifact's date and whether its content
+> reflects the current config before concluding anything moved.
+>
+> **What remains is `simulate_system`**, whose targets are absent rather than
+> different. That needs WF3 + WF4 against `project_config_baseline.yml`, which
+> is the expensive half (WF3 alone was 9m51s at R14; WF4 runs Wflow over the
+> full 2x3-level grid). Until then the UNSCOPED `check` reports NOT CHECKED.
+
 > [!done] The two REPORTING defects are fixed (2026-09-17); the TREE remains
 > Problems 2 and 3 below are done. `check` is now three-valued: `0` the compared
 > targets match, `1` the tree differs, `2` **nothing was compared**. An empty
@@ -115,8 +137,9 @@ orphaned. See `dev/baseline/provenance.md`.
 
 ## Progress
 
-- [ ] Check whether any other worktree's `test_local` passes `check_baseline check`
-- [ ] Decide between re-seed and regenerate
+- [x] ~~Check whether any other worktree passes~~ -- unnecessary: the cause was found and fixed in place
+- [x] Decide between re-seed and regenerate -- regenerated WF2 (1m44s); gate green, no re-record
+- [ ] Regenerate WF3 + WF4 to restore the `simulate_system` targets (the expensive half)
 - [x] Fix the zero-target vacuous OK (report it, do not call it a pass)
 - [x] Make a missing metric-set fixture a FAIL, not a traceback
 - [ ] Re-check whether the recorded-by-another-branch warning still earns its place

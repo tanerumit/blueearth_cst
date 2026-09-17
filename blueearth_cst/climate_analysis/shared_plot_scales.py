@@ -37,7 +37,7 @@ from blueearth_cst.climate_analysis.climate_figures import (
     VALUE_DERIVATIONS,
 )
 from blueearth_cst.shared.grid_cells import cells_csv_mask, masked
-from blueearth_cst.shared.snake_utils import DEFAULT_WATER_YEAR_ANCHOR, log_row
+from blueearth_cst.shared.snake_utils import DEFAULT_WATER_YEAR_ANCHOR, log_row, plural
 
 #: Quantiles the pooled range is clipped to before classing, mirroring
 #: ``RasterStyle.clip_quantiles``' intent: one anomalous cell must not spend the
@@ -182,7 +182,7 @@ def compute_plot_scales(
             if per_kind:
                 levels[var] = per_kind
             log_row(
-                f"Pooled {var} over {len(carriers)} source(s): "
+                f"Pooled {var} over {plural(len(carriers), 'source')}: "
                 f"{', '.join(sorted(carriers))}",
                 module="levels",
             )

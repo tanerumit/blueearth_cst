@@ -29,6 +29,8 @@ from __future__ import annotations
 
 from typing import Iterable, Mapping, NamedTuple, Sequence
 
+from blueearth_cst.shared.snake_utils import listed
+
 #: Resolution outcomes, in the order the ladder tests them (design §5.7).
 #: Every status except ``resolved`` means "no data point", and none of them
 #: stops the run on its own: the two fatal conditions are decided by the caller
@@ -315,17 +317,45 @@ def references(combinations: Iterable[Combination]) -> list[tuple[str, str]]:
 
 
 def format_status_report(combinations: Sequence[Combination]) -> str:
-    """One line per non-resolved combination, for the DAG-build stderr summary."""
+    """The non-resolved combinations, GROUPED, for the DAG-build stderr summary.
+
+    Grouped by ``(dataset, scenario, status, detail)`` rather than one line per
+    combination. A ``members:`` list applies to every model, so a config asking
+    for members that only some models publish produces the SAME skip, with the
+    same reason and the same published set, once per (model, scenario) pair --
+    eighteen lines saying six things on the run that prompted this. The members
+    are what varies between those lines, so the members are what a line lists.
+
+    ASCII only. This reaches a Windows console, which defaults to cp1252 and
+    raises ``UnicodeEncodeError`` on the em dash this carried until 2026-09-17
+    -- the same constraint :func:`rule_banner` documents. ``|`` separates the
+    fields, which is the separator the console's contexts already use.
+
+    The member list is capped by :func:`listed`, which states what it dropped:
+    the length here is the CONFIG's, so a request naming forty members would
+    otherwise print forty.
+
+    Four spaces of indent on the detail lines, matching ``target_banner`` --
+    one spelling of "this belongs to the line above" on this console.
+    """
     skipped = [c for c in combinations if not c.resolved]
     if not skipped:
         return ""
-    lines = [
-        f"WF2 resolution: {len(combinations) - len(skipped)} of "
-        f"{len(combinations)} requested combinations resolved; "
-        f"{len(skipped)} skipped:"
-    ]
+    groups: dict[tuple[str, str, str, str], list[str]] = {}
     for c in skipped:
-        lines.append(f"  {c.dataset} {c.scenario} {c.member}: {c.status} — {c.detail}")
+        groups.setdefault((c.dataset, c.scenario, c.status, c.detail), []).append(
+            c.member
+        )
+    resolved = len(combinations) - len(skipped)
+    lines = [
+        f"WF2 resolution: {resolved} of {len(combinations)} requested "
+        f"combinations resolved, {len(skipped)} skipped"
+    ]
+    for (dataset, scenario, status, detail), members in groups.items():
+        lines.append(
+            f"    {dataset} {scenario}  |  {status}: {listed(sorted(members))}"
+            + (f"  |  {detail}" if detail else "")
+        )
     return "\n".join(lines)
 
 

@@ -1,0 +1,911 @@
+"""One spec per workflow. Every rule row is the module's own literal.
+
+Cited by `file:line` in the comments so a reviewer can check any of them.
+Interpolated values are staged; the strings around them are not.
+"""
+
+from __future__ import annotations
+
+from render_console_sample import Job, Rule, Workflow
+
+PROJECT = "test_case/test_rapid"
+
+
+# ==========================================================================
+# WF0 -- analyze_climate
+#
+# A TWO-SOURCE comparison run (era5 + chirps), everything to build. Chosen
+# because it exercises what WF2 could not:
+#   * rules 0.04 and 0.05 are built in a Python loop, so three rule objects
+#     share one number and collapse to one plan row (`_plan_rule_name`);
+#   * a fresh run has NO up-to-date rules, so the gutter is dropped entirely;
+#   * `0.04b` sorts between `0.04` and `0.05` on the lexicographic rule order;
+#   * two real WARNING rows, which WF2's transcript never reached.
+# ==========================================================================
+
+WF0 = Workflow(
+    name="wf0 analyze_climate",
+    project=PROJECT,
+    config="test_case/project_config_rapid.yml",
+    elapsed=214,
+    tokens={
+        # analyze_climate.smk:280 -- the historical ROOT, not one store.
+        "data": "p:/wflow_global/hydromt",
+        "climate": f"{PROJECT}/data/climate/historical",
+    },
+    rules=[
+        Rule("0.00", "all"),
+        Rule("0.01", "snapshot_config"),
+        Rule("0.02", "delineate_region"),
+        Rule("0.03", "delineate_spatial_units"),
+        Rule(
+            "0.04",
+            "extract_historical_climate_era5",
+            summary="clip global climate to the basin",
+        ),
+        Rule(
+            "0.04",
+            "extract_historical_climate_chirps",
+            summary="clip global climate to the basin",
+        ),
+        Rule(
+            "0.04b",
+            "derive_plot_scales",
+            summary="one plotting scale per variable, across sources",
+        ),
+        Rule("0.05", "plot_climate_source_era5"),
+        Rule("0.05", "plot_climate_source_chirps"),
+        Rule(
+            "0.06",
+            "compare_climate_sources",
+            summary="compare the candidate climate datasets",
+        ),
+        Rule("0.10", "gather_benchmarks"),
+        Rule("0.11", "gather_logs"),
+    ],
+    stats="""Job stats:
+job                                count
+-------------------------------  -------
+all                                    1
+snapshot_config                        1
+delineate_region                       1
+delineate_spatial_units                1
+extract_historical_climate_era5        1
+extract_historical_climate_chirps      1
+derive_plot_scales                     1
+plot_climate_source_era5               1
+plot_climate_source_chirps             1
+compare_climate_sources                1
+gather_benchmarks                      1
+gather_logs                            1
+total                                 12
+""",
+    targets=[
+        f"{PROJECT}/data/climate/historical/era5/plots/era5_precip_map_basin.png",
+        f"{PROJECT}/data/climate/historical/chirps/plots/chirps_precip_map_basin.png",
+        f"{PROJECT}/data/climate/historical/_comparison/climate_source_comparison.csv",
+        f"{PROJECT}/data/climate/historical/_comparison/climate_source_comparison.md",
+        f"{PROJECT}/data/spatial/basins.geojson",
+        f"{PROJECT}/config/runs/project_config_analyze_climate.yml",
+        f"{PROJECT}/logs/wf0_analyze_climate.log",
+        f"{PROJECT}/benchmarks/wf0_benchmarks.md",
+    ],
+    jobs=[
+        Job("snapshot_config", seconds=1),
+        # spatial/products.py: `Delineating region ...`, `Wrote region: ...`
+        Job(
+            "delineate_region",
+            seconds=6,
+            body=(
+                (
+                    "spatial",
+                    "Delineating region {'subbasin': [37.6, 38.1]} on merit_hydro",
+                    1,
+                ),
+                ("spatial", "Wrote region: <project>/data/spatial/region.geojson", 4),
+            ),
+        ),
+        # spatial/products.py:873, :868 (WARNING), plus the basin-cells row
+        Job(
+            "delineate_spatial_units",
+            seconds=7,
+            body=(
+                (
+                    "spatial",
+                    "River network: 48 reach(es) at 25 km2, reaching all 3 location(s)",
+                    2,
+                ),
+                # products.py:863 -- the REAL text, which is an invariant-violation
+                # notice, not a "we fixed it" one.
+                (
+                    "spatial",
+                    "1 location(s) are not on the derived river network: outlet_2. "
+                    "They were snapped onto river_mask, so this should be "
+                    "unreachable -- the network vectorization and the mask "
+                    "have diverged.",
+                    3,
+                    "WARNING",
+                ),
+            ),
+        ),
+        # climate_analysis/extract_historical_climate.py
+        Job(
+            "extract_historical_climate_era5",
+            seconds=22,
+            body=(
+                ("climate", "Extracting historical climate grid", 1),
+                (
+                    "extract",
+                    "Basin touches 84 of 240 store cells -> basin_cells.csv",
+                    3,
+                ),
+                ("climate", "Saving to netcdf", 16),
+            ),
+        ),
+        Job(
+            "extract_historical_climate_chirps",
+            seconds=34,
+            body=(
+                ("climate", "Extracting historical climate grid", 1),
+                (
+                    "climate",
+                    "chirps only contains precipitation data. Combining with "
+                    "climate data from era5",
+                    2,
+                ),
+                (
+                    "climate",
+                    "Downscaling era5 variables to the resolution of chirps",
+                    2,
+                ),
+                ("climate", "Orography for chirps from merit_hydro (downscaling)", 6),
+                (
+                    "extract",
+                    "Basin touches 312 of 900 store cells -> basin_cells.csv",
+                    4,
+                ),
+                ("climate", "Saving to netcdf", 15),
+            ),
+        ),
+        Job(
+            "derive_plot_scales",
+            seconds=4,
+            body=(
+                ("scales", "Wrote shared climate scales -> shared_plot_scales.json", 3),
+            ),
+        ),
+        # climate_analysis/plot_climate_source.py:276, and the figure bundle
+        # row from snake_utils.py:4055
+        Job(
+            "plot_climate_source_era5",
+            seconds=31,
+            body=(
+                (
+                    "plot",
+                    "Reading store (era5): <climate>/era5/extract_historical.nc",
+                    1,
+                ),
+                ("plot", "Aggregating over 4 area(s): basin + 3 subbasin(s)", 3),
+                ("plot", "12 figures -> <climate>/era5/plots", 22),
+                ("plot", "9 figures -> <climate>/era5/plots/subbasins", 3),
+            ),
+        ),
+        Job(
+            "plot_climate_source_chirps",
+            seconds=19,
+            body=(
+                (
+                    "plot",
+                    "Reading store (chirps): <climate>/chirps/extract_historical.nc",
+                    1,
+                ),
+                (
+                    "plot",
+                    "chirps is precipitation-only: precip figures only, "
+                    "no temperature or PET",
+                    2,
+                ),
+                ("plot", "Aggregating over 4 area(s): basin + 3 subbasin(s)", 1),
+                ("plot", "4 figures -> <climate>/chirps/plots", 12),
+            ),
+        ),
+        # climate_analysis/compare_sources.py -- including its WARNING at :713
+        Job(
+            "compare_climate_sources",
+            seconds=12,
+            body=(
+                ("compare", "Comparing 2 sources (chirps, era5) on precip", 1),
+                (
+                    "compare",
+                    "The sources' extracted periods do not overlap; each is drawn "
+                    "over its own record and the figures say so",
+                    2,
+                    "WARNING",
+                ),
+                (
+                    "compare",
+                    "Common ground: 1991-01-01..2020-12-31; 4 area(s); basin cells: chirps 312, era5 84",
+                    2,
+                ),
+                ("compare", "Pooled precip over 2 source(s): chirps, era5", 2),
+                (
+                    "compare",
+                    "Comparison table (2 sources) -> climate_source_comparison.csv, "
+                    "climate_source_comparison.md",
+                    3,
+                ),
+            ),
+        ),
+        Job("gather_benchmarks", seconds=1),
+        Job("gather_logs", seconds=1),
+        Job("all", seconds=0),
+    ],
+)
+
+
+# ==========================================================================
+# WF2 -- analyze_projections
+#
+# A RE-RUN: the region and spatial-unit rules are already satisfied, so the
+# plan block shows the partial case (a `>` gutter and two `-` rows) that WF0's
+# fresh run cannot. Fans out x4 over the CMIP6 series.
+# ==========================================================================
+
+WF2 = Workflow(
+    name="wf2 analyze_projections",
+    project=PROJECT,
+    config="test_case/project_config_rapid.yml",
+    elapsed=94,
+    rules=[
+        Rule("2.00", "all"),
+        Rule("2.01", "snapshot_config"),
+        Rule("2.02", "delineate_region"),
+        Rule("2.03", "delineate_spatial_units"),
+        Rule(
+            "2.04", "fetch_gcm_slice", "series {series_key}", "download one CMIP6 slice"
+        ),
+        Rule(
+            "2.05",
+            "reduce_gcm_series",
+            "series {series_key}",
+            "reduce the slice to a basin-average series",
+        ),
+        Rule(
+            "2.06",
+            "derive_change_factors",
+            summary="compare each horizon against the reference period",
+        ),
+        Rule("2.07", "plot_gcm_timeseries"),
+        Rule("2.08", "gather_benchmarks"),
+        Rule("2.09", "gather_logs"),
+    ],
+    stats="""Job stats:
+job                       count
+----------------------  -------
+all                           1
+snapshot_config               1
+fetch_gcm_slice               4
+reduce_gcm_series             4
+derive_change_factors         1
+plot_gcm_timeseries           1
+gather_benchmarks             1
+gather_logs                   1
+total                        14
+""",
+    targets=[
+        f"{PROJECT}/climate_projections/summary/rapid_change_factors_annual.csv",
+        f"{PROJECT}/climate_projections/summary/rapid_change_factors_monthly.csv",
+        f"{PROJECT}/climate_projections/summary/composition.csv",
+        f"{PROJECT}/climate_projections/figures/windows/mid-2046-2054/monthly-change-factors.png",
+        f"{PROJECT}/climate_projections/figures/gcm-timeseries.png",
+        f"{PROJECT}/logs/wf2_analyze_projections.log",
+        f"{PROJECT}/benchmarks/wf2_analyze_projections.csv",
+    ],
+    jobs=[
+        Job("snapshot_config", seconds=1),
+        # fetch_gcm_raw.py:766, :848, :1001, :1032
+        Job(
+            "fetch_gcm_slice",
+            seconds=3,
+            wildcards={"series_key": "cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp245_r1i1p1f1"},
+            body=(
+                ("fetch", "Fetching cmip6_CSIRO-ARCCSS/ACCESS-CM2_ssp245_r1i1p1f1", 1),
+                ("fetch", "Pinned gn/v20210317, no bucket listing", 2),
+                ("fetch", "store calendar=proleptic_gregorian (no pin)", 1),
+                (
+                    "fetch",
+                    "Wrote raw cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp245_r1i1p1f1.nc "
+                    "(0.07 MB, 1032 steps)",
+                    14,
+                ),
+            ),
+        ),
+        Job(
+            "fetch_gcm_slice",
+            seconds=24,
+            wildcards={"series_key": "cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp585_r1i1p1f1"},
+        ),
+        Job(
+            "fetch_gcm_slice",
+            seconds=19,
+            wildcards={
+                "series_key": "cmip6_EC-Earth-Consortium_EC-Earth3_ssp245_r1i1p1f1"
+            },
+        ),
+        Job(
+            "fetch_gcm_slice",
+            seconds=23,
+            wildcards={
+                "series_key": "cmip6_EC-Earth-Consortium_EC-Earth3_ssp585_r1i1p1f1"
+            },
+        ),
+        # get_stats_climate_proj.py: `{model} {scenario} {member} reducing raw -> series`
+        Job(
+            "reduce_gcm_series",
+            seconds=3,
+            wildcards={"series_key": "cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp245_r1i1p1f1"},
+            body=(("reduce", "ACCESS-CM2 ssp245 r1i1p1f1 reducing raw -> series", 1),),
+        ),
+        Job(
+            "reduce_gcm_series",
+            seconds=3,
+            wildcards={"series_key": "cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp585_r1i1p1f1"},
+            body=(("reduce", "ACCESS-CM2 ssp585 r1i1p1f1 reducing raw -> series", 1),),
+        ),
+        Job(
+            "reduce_gcm_series",
+            seconds=2,
+            wildcards={
+                "series_key": "cmip6_EC-Earth-Consortium_EC-Earth3_ssp245_r1i1p1f1"
+            },
+            body=(("reduce", "EC-Earth3 ssp245 r1i1p1f1 reducing raw -> series", 1),),
+        ),
+        Job(
+            "reduce_gcm_series",
+            seconds=3,
+            wildcards={
+                "series_key": "cmip6_EC-Earth-Consortium_EC-Earth3_ssp585_r1i1p1f1"
+            },
+            body=(("reduce", "EC-Earth3 ssp585 r1i1p1f1 reducing raw -> series", 1),),
+        ),
+        # derive_change_factors.py:409, :429 (keys from reference_window.py:172), :562, :567
+        Job(
+            "derive_change_factors",
+            seconds=1,
+            body=(
+                ("change", "Deriving change factors for 1 point(s) x 2 horizon(s)", 1),
+                (
+                    "change",
+                    "reference_window reference_window_clipped=False "
+                    "reference_window_effective=1985-2014 "
+                    "reference_window_requested=1985-2014 "
+                    "reference_window_years=30",
+                    1,
+                ),
+                (
+                    "change",
+                    "Tidy monthly change-factor table: 96 rows "
+                    "-> rapid_change_factors_monthly.csv",
+                    2,
+                ),
+                (
+                    "change",
+                    "Tidy annual change-factor table: 8 rows "
+                    "-> rapid_change_factors_annual.csv",
+                    1,
+                ),
+            ),
+        ),
+        # plot_proj_timeseries.py:202, :212; bundle row snake_utils.py:4055
+        Job(
+            "plot_gcm_timeseries",
+            seconds=4,
+            body=(
+                ("plot", "Reading the monthly change-factor table", 1),
+                ("plot", "Opening the scalar gcm timeseries", 1),
+                ("plot", "2 figures -> climate_projections/figures", 3),
+            ),
+        ),
+        Job("gather_benchmarks", seconds=1),
+        Job("gather_logs", seconds=1),
+        Job("all", seconds=0),
+    ],
+)
+
+
+# ==========================================================================
+# WF1 -- build_model
+#
+# The RE-RUN the plan block was designed against: `_plan_block`'s own docstring
+# measures it -- "WF1 declares 19 rules and a completed build leaves 5 with
+# work" (rapid fixture, 2026-09-05). Chosen because it is the workflow with the
+# widest plan and the narrowest run, and because 1.14 is the long rule: under
+# `[logging] silent = true` Wflow prints nothing, so the console shows our own
+# progress bar and the heartbeat instead.
+# ==========================================================================
+
+WF1 = Workflow(
+    name="wf1 build_model",
+    project=PROJECT,
+    config="test_case/project_config_rapid.yml",
+    elapsed=436,
+    tokens={
+        "data": "p:/wflow_global/hydromt",
+        "model": f"{PROJECT}/hydrology_model",
+        "climate": f"{PROJECT}/data/climate/historical/era5",
+    },
+    rules=[
+        Rule("1.00", "all"),
+        Rule("1.01", "snapshot_config"),
+        Rule("1.02", "delineate_region"),
+        Rule("1.03", "delineate_spatial_units"),
+        Rule(
+            "1.04",
+            "extract_historical_climate",
+            summary="clip the global climate dataset to the basin",
+        ),
+        Rule("1.05", "plot_climate_source"),
+        Rule("1.06", "prepare_spatial_maps"),
+        Rule(
+            "1.07",
+            "build_wflow_model",
+            summary="parameterize Wflow-SBM from global data",
+        ),
+        Rule(
+            "1.08",
+            "add_reservoirs_lakes_glaciers",
+            summary="add waterbodies to the model",
+        ),
+        Rule("1.09", "declare_wflow_outputs"),
+        Rule(
+            "1.10",
+            "add_climate_forcing",
+            summary="build the forcing netCDF for the run period",
+        ),
+        Rule("1.11", "write_outlet_index"),
+        Rule("1.12", "plot_basin_map"),
+        Rule("1.13", "plot_forcing"),
+        Rule("1.14", "run_wflow", summary="run the model over the simulation window"),
+        Rule("1.14b", "export_wflow_tables"),
+        Rule("1.15", "plot_wflow_evaluation"),
+        Rule("1.15b", "write_run_metadata"),
+        Rule("1.16", "gather_benchmarks"),
+        Rule("1.17", "gather_logs"),
+    ],
+    stats="""Job stats:
+job                      count
+---------------------  -------
+all                          1
+run_wflow                    1
+export_wflow_tables          1
+plot_wflow_evaluation        1
+gather_benchmarks            1
+gather_logs                  1
+total                        6
+""",
+    targets=[
+        f"{PROJECT}/hydrology_model/run_default/output_q.csv",
+        f"{PROJECT}/hydrology_model/plots/evaluation/discharge_timeseries.png",
+        f"{PROJECT}/hydrology_model/run_default/run_metadata.json",
+        f"{PROJECT}/logs/wf1_build_model.log",
+        f"{PROJECT}/benchmarks/wf1_benchmarks.md",
+    ],
+    jobs=[
+        # 1.14 -- the long one. Wflow is silent, so what the console shows is
+        # our own bar (shared/progress.py: `render_bar`) redrawn in place, and
+        # the heartbeat when a redraw gap gets long. Only the LAST bar frame
+        # survives on a captured transcript; one mid-run frame is shown here.
+        Job(
+            "run_wflow",
+            seconds=180,
+            body=(
+                # snake_utils.py:2655 -- `format_elapsed`, i.e. h:mm:ss, the same
+                # spelling as the DONE lines, the run summary, the benchmark
+                # tables and the progress bar.
+                (
+                    "heartbeat",
+                    "Rule 1.14: run_wflow still running, 0:04:00 elapsed",
+                    240,
+                    "WARNING",
+                ),
+            ),
+        ),
+        Job(
+            "export_wflow_tables",
+            seconds=9,
+            body=(("tables", "Wrote 4 table(s) -> <model>/run_default", 6),),
+        ),
+        Job(
+            "plot_wflow_evaluation",
+            seconds=26,
+            body=(
+                (
+                    "plot",
+                    "Spatial overlay absent, skipped: <model>/staticgeoms/gauges.geojson",
+                    2,
+                ),
+                ("plot", "6 figures -> <model>/plots/evaluation", 18),
+            ),
+        ),
+        Job("gather_benchmarks", seconds=2),
+        Job("gather_logs", seconds=2),
+        Job("all", seconds=0),
+    ],
+)
+
+
+# ==========================================================================
+# WF3 -- generate_scenarios
+#
+# The FAN-OUT workflow: where a real run spends hours, and the one the
+# `rule_banner` context and `_trim_summary` were designed for. 2 realizations x
+# 4 stress-test members here; a production grid is 10 x 20. Two rules fan out,
+# and they interleave, so the console alternates between two identities.
+# ==========================================================================
+
+WF3 = Workflow(
+    name="wf3 generate_scenarios",
+    project=PROJECT,
+    config="test_case/project_config_rapid.yml",
+    elapsed=203,
+    details={"experiment": "experiment_rapid"},
+    tokens={
+        "data": "p:/wflow_global/hydromt",
+        "climate": f"{PROJECT}/data/climate/historical/era5",
+    },
+    rules=[
+        Rule("3.00", "all"),
+        Rule("3.01", "delineate_region"),
+        Rule("3.02", "extract_historical_climate"),
+        Rule("3.03", "prepare_stress_test_grid"),
+        Rule(
+            "3.04",
+            "prepare_collection_sources",
+            summary="fingerprint the generation inputs into a scenario request",
+        ),
+        Rule("3.05", "initialize_scenario_collection"),
+        Rule("3.06", "prepare_weathergen_config"),
+        Rule(
+            "3.07",
+            "generate_weather_realizations",
+            summary="generate stochastic weather with weathergenr",
+        ),
+        Rule(
+            "3.08",
+            "perturb_climate_realization",
+            "rlz {rlz_num} | st {st_num}",
+            "apply one stress-test member to one realization",
+        ),
+        Rule(
+            "3.09",
+            "retain_scenario_forcing",
+            "collection {collection_id} | run {run_id}",
+        ),
+        Rule(
+            "3.10",
+            "publish_scenario_collection",
+            "collection {collection_id}",
+            "seal the collection and make it immutable",
+        ),
+        Rule("3.11", "gather_logs"),
+        Rule("3.12", "gather_benchmarks"),
+    ],
+    stats="""Job stats:
+job                              count
+-----------------------------  -------
+all                                  1
+prepare_collection_sources           1
+initialize_scenario_collection       1
+prepare_weathergen_config            1
+generate_weather_realizations        1
+perturb_climate_realization          8
+retain_scenario_forcing              8
+publish_scenario_collection          1
+gather_logs                          1
+gather_benchmarks                    1
+total                               24
+""",
+    targets=[
+        f"{PROJECT}/scenarios/collections/da182e806b6b/collection.json",
+        f"{PROJECT}/logs/wf3_generate_scenarios.log",
+        f"{PROJECT}/benchmarks/wf3_benchmarks.md",
+    ],
+    jobs=[
+        # scenario_collection.py / generation_plan.py
+        Job(
+            "prepare_collection_sources",
+            seconds=5,
+            body=(
+                (
+                    "collection",
+                    "Collection da182e806b6b: claiming 8 scenario row(s), "
+                    "3 portable input(s)",
+                    3,
+                ),
+            ),
+        ),
+        Job("initialize_scenario_collection", seconds=2),
+        Job(
+            "prepare_weathergen_config",
+            seconds=3,
+            body=(
+                (
+                    "weathergen",
+                    "Preparing and writing the weather generator config file "
+                    "<project>/scenarios/weathergen_config.yml",
+                    2,
+                ),
+            ),
+        ),
+        Job(
+            "generate_weather_realizations",
+            seconds=26,
+            body=(
+                (
+                    "request",
+                    "Request scenario_request_9f2c: 2 realization(s) x 4 design "
+                    "point(s) from 3 source file(s)",
+                    2,
+                ),
+            ),
+        ),
+        Job(
+            "perturb_climate_realization",
+            seconds=8,
+            wildcards={"rlz_num": "1", "st_num": "1"},
+        ),
+        Job(
+            "retain_scenario_forcing",
+            seconds=1,
+            wildcards={"collection_id": "da182e806b6b", "run_id": "01"},
+        ),
+        Job(
+            "perturb_climate_realization",
+            seconds=8,
+            wildcards={"rlz_num": "1", "st_num": "2"},
+        ),
+        Job(
+            "retain_scenario_forcing",
+            seconds=1,
+            wildcards={"collection_id": "da182e806b6b", "run_id": "02"},
+        ),
+        Job(
+            "perturb_climate_realization",
+            seconds=8,
+            wildcards={"rlz_num": "1", "st_num": "3"},
+        ),
+        Job(
+            "retain_scenario_forcing",
+            seconds=1,
+            wildcards={"collection_id": "da182e806b6b", "run_id": "03"},
+        ),
+        Job(
+            "perturb_climate_realization",
+            seconds=8,
+            wildcards={"rlz_num": "1", "st_num": "4"},
+        ),
+        Job(
+            "retain_scenario_forcing",
+            seconds=1,
+            wildcards={"collection_id": "da182e806b6b", "run_id": "04"},
+        ),
+        Job(
+            "perturb_climate_realization",
+            seconds=8,
+            wildcards={"rlz_num": "2", "st_num": "1"},
+        ),
+        Job(
+            "retain_scenario_forcing",
+            seconds=1,
+            wildcards={"collection_id": "da182e806b6b", "run_id": "05"},
+        ),
+        Job(
+            "perturb_climate_realization",
+            seconds=8,
+            wildcards={"rlz_num": "2", "st_num": "2"},
+        ),
+        Job(
+            "retain_scenario_forcing",
+            seconds=1,
+            wildcards={"collection_id": "da182e806b6b", "run_id": "06"},
+        ),
+        Job(
+            "perturb_climate_realization",
+            seconds=8,
+            wildcards={"rlz_num": "2", "st_num": "3"},
+        ),
+        Job(
+            "retain_scenario_forcing",
+            seconds=1,
+            wildcards={"collection_id": "da182e806b6b", "run_id": "07"},
+        ),
+        Job(
+            "perturb_climate_realization",
+            seconds=8,
+            wildcards={"rlz_num": "2", "st_num": "4"},
+        ),
+        Job(
+            "retain_scenario_forcing",
+            seconds=1,
+            wildcards={"collection_id": "da182e806b6b", "run_id": "08"},
+        ),
+        Job(
+            "publish_scenario_collection",
+            seconds=4,
+            wildcards={"collection_id": "da182e806b6b"},
+            body=(
+                (
+                    "experiment",
+                    "Experiment config recorded for 'experiment_rapid' (7 setting(s))",
+                    2,
+                ),
+            ),
+        ),
+        Job("gather_logs", seconds=1),
+        Job("gather_benchmarks", seconds=1),
+        Job("all", seconds=0),
+    ],
+)
+
+
+# ==========================================================================
+# WF4 -- simulate_system
+#
+# The simulation half: 8 retained runs downscaled, then run through Wflow in
+# two batches, then reduced. Driven by `scripts/simulate_system.py`, and the
+# only workflow that passes TWO details to the header (`experiment` and
+# `operation`) -- which is what makes the `PATHS` naming question concrete.
+# It also has no `rule all`: `4.07 responses` and `4.10 metrics` are its
+# target aggregators, and they carry ordinary rule banners.
+# ==========================================================================
+
+WF4 = Workflow(
+    name="wf4 simulate_system",
+    project=PROJECT,
+    config="test_case/project_config_rapid.yml",
+    elapsed=487,
+    # `operation` is a config setting -- `simulate-and-metrics` or
+    # `metrics-only` (simulation_runner.py:29) -- not the `--target` value.
+    details={"experiment": "experiment_rapid", "operation": "simulate-and-metrics"},
+    rules=[
+        Rule("4.01", "write_model_reference"),
+        Rule("4.02", "check_model_reference"),
+        Rule(
+            "4.03",
+            "freeze_wflow_simulation",
+            summary="pin the simulation's inputs so the experiment cannot drift",
+        ),
+        Rule(
+            "4.04",
+            "downscale_climate_realization",
+            "run {run_id}",
+            "downscale the perturbed climate onto the model grid",
+        ),
+        Rule("4.05", "run_wflow_batch_0", "4 members", "run Wflow for one batch"),
+        Rule("4.05", "run_wflow_batch_1", "4 members", "run Wflow for one batch"),
+        Rule(
+            "4.06",
+            "publish_native_responses",
+            summary="inventory the retained native runs",
+        ),
+        Rule("4.07", "responses"),
+        Rule("4.08", "prepare_metric_plan", "metric_request {metric_request_id}"),
+        Rule(
+            "4.09",
+            "publish_metric_set",
+            "metric_set {metric_set_id}",
+            "reduce the retained responses to the immutable metric set",
+        ),
+        Rule("4.10", "metrics"),
+        Rule("4.11", "gather_logs"),
+        Rule("4.12", "gather_benchmarks"),
+    ],
+    stats="""Job stats:
+job                             count
+----------------------------  -------
+write_model_reference               1
+check_model_reference               1
+freeze_wflow_simulation             1
+downscale_climate_realization       8
+run_wflow_batch_0                   1
+run_wflow_batch_1                   1
+publish_native_responses            1
+responses                           1
+prepare_metric_plan                 1
+publish_metric_set                  1
+metrics                             1
+gather_logs                         1
+gather_benchmarks                   1
+total                              20
+""",
+    targets=[],
+    jobs=[
+        Job("write_model_reference", seconds=3),
+        # check_model_reference.py:103
+        Job(
+            "check_model_reference",
+            seconds=1,
+            body=(
+                (
+                    "experiment",
+                    "Model reference matches the live model; simulation may proceed",
+                    1,
+                ),
+            ),
+        ),
+        # simulation_record.py:321
+        Job(
+            "freeze_wflow_simulation",
+            seconds=11,
+            body=(
+                (
+                    "simulation",
+                    "Froze simulation 5c1a9e0b77d2: collection da182e806b6b "
+                    "(exact) against model 84fe10c3a9bb",
+                    8,
+                ),
+            ),
+        ),
+        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "01"}),
+        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "02"}),
+        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "03"}),
+        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "04"}),
+        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "05"}),
+        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "06"}),
+        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "07"}),
+        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "08"}),
+        Job("run_wflow_batch_0", seconds=96),
+        Job("run_wflow_batch_1", seconds=93),
+        # response_inventory.py:429
+        Job(
+            "publish_native_responses",
+            seconds=7,
+            body=(
+                (
+                    "responses",
+                    "Inventoried 8 native run(s), 24 series -> 6b2f70a1c934",
+                    5,
+                ),
+            ),
+        ),
+        Job("responses", seconds=1),
+        # metric_plan.py:431
+        Job(
+            "prepare_metric_plan",
+            seconds=3,
+            wildcards={"metric_request_id": "3ad81f5c2e70"},
+            body=(
+                (
+                    "metrics",
+                    "Metric plan 9f41c7d0b6a2: 4 declaration(s) over 12 result key(s)",
+                    2,
+                ),
+            ),
+        ),
+        # metric_plan.py:718, export_wflow_results.py:364
+        Job(
+            "publish_metric_set",
+            seconds=19,
+            wildcards={"metric_set_id": "9f41c7d0b6a2"},
+            body=(
+                (
+                    "export",
+                    "Reducing 8 runs into 3 indicator table(s): q_mean, q_p10, q_p90",
+                    4,
+                ),
+                (
+                    "metrics",
+                    "Published metric set 9f41c7d0b6a2: q_mean (240 rows), "
+                    "q_p10 (240 rows), q_p90 (240 rows)",
+                    12,
+                ),
+            ),
+        ),
+        Job("metrics", seconds=1),
+        Job("gather_logs", seconds=2),
+        Job("gather_benchmarks", seconds=2),
+    ],
+)
+
+
+WORKFLOWS = {"wf2": WF2, "wf0": WF0, "wf1": WF1, "wf3": WF3, "wf4": WF4}

@@ -126,13 +126,13 @@ def test_numbers_sort_lexicographically(rules):
 def test_head_says_all_to_run_when_nothing_is_up_to_date(rules):
     rules({"a": "1.01", "b": "1.02"})
     head, _ = cs._plan_lines({"a": 1, "b": 1})
-    assert head == "2 rules, all to run"
+    assert head == "2 rules  |  all to run"
 
 
 def test_head_names_both_halves_on_a_partial_run(rules):
     rules({"a": "1.01", "b": "1.02", "c": "1.03"})
     head, _ = cs._plan_lines({"a": 1})
-    assert head == "1 of 3 rules to run, 2 up to date"
+    assert head == "1 of 3 rules to run  |  2 up to date"
 
 
 def test_head_carries_the_job_count_only_when_something_fans_out(rules):
@@ -142,37 +142,52 @@ def test_head_carries_the_job_count_only_when_something_fans_out(rules):
     assert "jobs" not in plain
 
     fanned, _ = cs._plan_lines({"a": 1, "b": 8})
-    assert fanned.endswith(", 9 jobs")
+    assert fanned.endswith("  |  9 jobs")
 
 
 def test_a_single_rule_is_not_pluralized(rules):
     rules({"a": "1.01"})
     head, _ = cs._plan_lines({"a": 1})
-    assert head == "1 rule, all to run"
+    assert head == "1 rule  |  all to run"
 
 
 # --- the rows ---------------------------------------------------------------
 
 
 def test_the_gutter_marks_what_will_run(rules):
+    """Flush left: the gutter opens at column 0, not two columns in."""
     rules({"a": "1.01", "b": "1.02"})
     _, rows = cs._plan_lines({"b": 1})
     texts = [text for text, _ in rows]
-    assert texts[0].startswith("     1.01")
-    assert texts[1].startswith("  >  1.02")
+    assert texts[0].startswith("   1.01")
+    assert texts[1].startswith(">  1.02")
 
 
-def test_no_gutter_when_every_rule_runs(rules):
-    """A mark on every line carries no information; the head line says it."""
+def test_the_gutter_column_goes_when_no_rule_is_up_to_date(rules):
+    """Not reserved and blank -- dropped, or it is indent on every row."""
     rules({"a": "1.01", "b": "1.02"})
     _, rows = cs._plan_lines({"a": 1, "b": 1})
     assert not any(">" in text for text, _ in rows)
+    assert all(text.startswith("1.0") for text, _ in rows)
 
 
-def test_fanned_rules_carry_their_count(rules):
+def test_every_running_rule_carries_its_count(rules):
+    """Including the ones that are 1, which is what Snakemake's table shows."""
     rules({"perturb": "3.12", "seed": "3.11"})
     _, rows = cs._plan_lines({"perturb": 8, "seed": 1})
-    assert [text.split()[-1] for text, _ in rows] == ["seed", "x8"]
+    assert [text.split()[-1] for text, _ in rows] == ["1", "8"]
+
+
+def test_an_up_to_date_rule_has_an_empty_count_cell(rules):
+    """Its count is UNKNOWN, not zero: it is absent from Snakemake's table.
+
+    A `-` marked these until 2026-09-17 and was dropped as redundant -- the
+    gutter already says which rows run, and it survives a pipe too.
+    """
+    rules({"a": "1.01", "b": "1.02"})
+    _, rows = cs._plan_lines({"b": 4})
+    assert rows[0][0] == "   1.01  a"
+    assert rows[1][0] == ">  1.02  b  4"
 
 
 def test_rows_report_whether_they_run(rules):
@@ -206,7 +221,7 @@ def test_every_rule_up_to_date_still_renders(rules):
     """Reachable when only the excluded `all` job remains."""
     rules({"all": "1.00", "a": "1.01"})
     head, rows = cs._plan_lines({"all": 1})
-    assert head == "1 rule, all up to date"
+    assert head == "1 rule  |  all up to date"
     assert not any(">" in text for text, _ in rows)
 
 
@@ -219,7 +234,7 @@ def test_a_rule_missing_from_the_ledger_is_declared(rules):
     """
     rules({"a": "1.01"})
     head, rows = cs._plan_lines({"a": 1, "undeclared_rule": 1})
-    assert head.endswith(", 1 unlisted")
+    assert head.endswith("  |  1 unlisted")
     assert len(rows) == 1
 
 

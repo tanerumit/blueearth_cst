@@ -379,13 +379,18 @@ class RuleRegistry:
         return self._make(number, name, summary, False)
 
 
-def rule_banner(number, name, context=None, summary=None):
+#: Rules whose per-job START line is not printed, filled by `rule_banner`'s
+#: `quiet_start`. See that argument for what earns a rule a place here.
+_QUIET_START_RULES = set()
+
+
+def rule_banner(number, name, context=None, summary=None, quiet_start=False):
     """Return a rule's ``message:`` string: a numbered console banner.
 
     Shows ``<W.NN>  <name>`` (the ``W.NN`` matching the rule's log/benchmark
     filenames) so the live Snakemake console is easy to track.
 
-    **Returns PLAIN TEXT — it never colours.** Colour belongs to whoever writes
+    **Returns PLAIN TEXT â€” it never colours.** Colour belongs to whoever writes
     the line, and this string is written to three places with three answers:
     the console (where ``_ConsoleHandler`` paints the whole start line blue),
     ``.snakemake/log/*.snakemake.log`` (a file, which must stay clean), and
@@ -399,18 +404,18 @@ def rule_banner(number, name, context=None, summary=None):
     every member of a fanned-out rule prints an IDENTICAL banner: on a
     multi-hour WF3 run the console says *something is running*, never *which
     member*. The return value becomes ``message:``, which Snakemake formats per
-    job — so a ``context`` holding ``{wildcards.<name>}`` resolves per member
+    job â€” so a ``context`` holding ``{wildcards.<name>}`` resolves per member
     even though the banner itself was built once.
 
     Two constraints on what a caller may pass:
 
     * Only wildcards the rule actually declares. The message is formatted
       against that job's namespace, so a stray field fails at RUN time, not at
-      parse time — `tests/test_snake_utils.py` pins the shape, and
+      parse time â€” `tests/test_snake_utils.py` pins the shape, and
       `tests/test_cli.py`'s dry-run is what exercises the real namespaces.
     * **ASCII only.** A Windows console defaults to cp1252 and raises
       ``UnicodeEncodeError`` on the typographic separators that would read
-      better here. Use ``|``, not ``·``.
+      better here. Use ``|``, not ``Â·``.
 
     A rule with no wildcards may still pass a constant context; only the
     *interpolation* needs a wildcard, not the suffix itself.
@@ -426,7 +431,7 @@ def rule_banner(number, name, context=None, summary=None):
     rules a person waits on: ``1.14  run_wflow`` is an identifier, and someone
     watching a multi-hour run should not have to know the codebase to read the
     console. Applied to the LONG-RUNNING rules only, per the parked note this
-    discharges — a sentence on all 47 would lengthen every line to say what the
+    discharges â€” a sentence on all 47 would lengthen every line to say what the
     fast ones already say by name, and the value is precisely in the rules where
     you are waiting and wondering. It is constant, so unlike ``context`` it must
     not contain a wildcard.
@@ -434,7 +439,7 @@ def rule_banner(number, name, context=None, summary=None):
     Being constant is exactly why the CONSOLE prints it once per rule and not
     once per job: the long-running rules are also the FANNED-OUT ones, so a
     summary reprinted per member is the same sentence on every line of the
-    longest stretch of a WF3 run — 400 identical clauses on a 10 x 20 grid,
+    longest stretch of a WF3 run â€” 400 identical clauses on a 10 x 20 grid,
     since rules 3.12 and 3.14 are one job per member. The string returned here
     is unchanged and always carries it; ``_ConsoleHandler._start_line`` does the
     trimming, because the other two destinations want the whole sentence on
@@ -451,6 +456,25 @@ def rule_banner(number, name, context=None, summary=None):
     an unexplained figure sitting where a version or a count could equally well
     be, and the word costs five characters once per line.
 
+    ``quiet_start`` suppresses this rule's per-job START line; its finish line
+    is unchanged. For BOOKKEEPING rules only -- a rule whose per-member work is
+    a file copy attached to the member another rule just produced. WF3's
+    ``3.09 retain_scenario_forcing`` is the case it was added for: it takes
+    about a second, interleaves with the rule it follows, and spent two console
+    lines per member, so on a 10 x 20 grid it put 800 lines into the longest
+    stretch of a run to report file copies.
+
+    What is given up, and why it is affordable: the finish line still carries
+    the duration and the progress counter, so the rule is still visible and
+    still timed; the heartbeat still reports a stall, since it watches the job
+    wrapper rather than the console line; and a failure still prints
+    Snakemake's own error block. What goes is the ability to see that such a
+    rule has STARTED -- which for a rule that finishes in a second is a line
+    that was already obsolete by the time it was read.
+
+    Do NOT reach for this on a rule anyone waits on. The console's whole job
+    during a long rule is to say that something is running.
+
     Side effect: records ``name -> number`` in ``_RULE_NUMBERS`` so
     :func:`install_console_style` can put the number on a job's FINISH line,
     which Snakemake reports by rule name only, and ``name -> summary`` in
@@ -460,6 +484,8 @@ def rule_banner(number, name, context=None, summary=None):
     _RULE_NUMBERS[name] = str(number)
     if summary:
         _RULE_SUMMARIES[name] = summary
+    if quiet_start:
+        _QUIET_START_RULES.add(name)
     tag = f"{rule_id(number)} {name}"
     if summary:
         tag = f"{tag} - {summary}"
@@ -702,6 +728,85 @@ _CONSOLE_MUTED_PREFIXES = (
 )
 
 
+def opening_block(workflow, project_dir, config_path=None, details=None, plan=None):
+    """``[(text, tier)]`` for a run's opening block -- ONE builder, two callers.
+
+    :meth:`_ConsoleHandler._opening` paints these and writes them to the
+    console; :func:`run_header` joins the text and returns a plain string for
+    the case where the console style did not install. They rendered the block
+    two different ways until 2026-09-17, so a run that lost its styling also
+    lost the layout -- a reader comparing two consoles saw two toolboxes.
+
+    ``tier`` names what each line IS (``title``, ``run``, ``dim``, ``body``);
+    mapping that onto colour is the caller's business, and ``run_header``
+    ignores it entirely.
+
+    Layout, and why each part is where it is::
+
+        ================================================
+        wf2 analyze_projections
+        ================================================
+
+        -- PLAN ----------------------------------------
+        >  2.01  snapshot_config          1
+           2.02  delineate_region
+        ------------------------------------------------
+        7 of 9 rules to run  |  2 up to date  |  13 jobs
+
+        -- RUN -----------------------------------------
+        project  <repo>/test_case/test_rapid
+        config   test_case/project_config_rapid.yml
+
+        -- PROGRESS ------------------------------------
+
+    The title is BANDED and carries the workflow NAME only. The summary moved
+    under the table it describes, where it reads as that table's caption rather
+    than as an appendage to the name. Both bands and every section rule are
+    drawn to ONE width -- the widest of the table, the summary and the title --
+    so the block has a single right edge.
+
+    Why the title needs a full-width band at all: the section rules run the
+    whole width, so a title underlined only to its own length was the SMALLER
+    element carrying the LONGER mark. Colour cannot fix that, because the title
+    is bold-only and bold is exactly what a pipe, a redirect and CI drop.
+
+    ``plan`` is ``(head, [(row, running), ...])`` or ``None``. With no plan
+    there is no table to caption and nothing to size the bars from, so the
+    summary goes back onto the title (``wf2 analyze_projections -- 7 of 9
+    rules to run``) and the ``PLAN`` section is not written at all. That branch
+    is reached when Snakemake's job table cannot be parsed, and when the
+    console style is not active -- :func:`run_header` never has a plan, since
+    it is written before any job count exists.
+
+    The ``PROGRESS`` rule is NOT written here. It has to be the last thing the
+    console handler emits, and the first line under it comes from a different
+    code path (``_start_line``, on the first ``job_info`` record) -- so a
+    caller that is not going to write those lines must not open the section.
+    """
+    meta = meta_row_lines(run_meta_rows(project_dir, config_path, details))
+    head, rows = ("", []) if plan is None else (plan[0], list(plan[1]))
+
+    title = workflow if rows else (f"{workflow} -- {head}" if head else workflow)
+    width = max(
+        [len(title)]
+        + [len(text) for text, _ in rows]
+        + [len(head) if rows else 0]
+        + [len(line) for line in meta]
+    )
+    band = "=" * width
+
+    out = [("", "body"), (band, "body"), (title, "title"), (band, "body"), ("", "body")]
+    if rows:
+        out.append((_section_rule("PLAN", width), "body"))
+        out.extend((text, "run" if running else "dim") for text, running in rows)
+        out.append(("-" * width, "body"))
+        out.append((head, "body"))
+        out.append(("", "body"))
+    out.append((_section_rule("RUN", width), "body"))
+    out.extend((line, "body") for line in meta)
+    return out
+
+
 def _console_wildcards(wildcards):
     """Render a job's wildcards in the banner's own grammar (``[rlz 1 | st 0]``).
 
@@ -873,12 +978,19 @@ def _plan_head(rows, jobs, unlisted=0):
     total = len(rows)
     running = sum(1 for row in rows if row[2])
     plural = "rule" if total == 1 else "rules"
+    # PIPED fields rather than a comma sentence. `|` is the separator this
+    # console already uses inside a rule's fan-out context (`[rlz 2 | st 6]`),
+    # so the summary borrows the house grammar instead of inventing one -- and
+    # under the table it introduces, three scannable fields beat one clause.
     if running == total:
-        head = f"{total} {plural}, all to run"
+        fields = [f"{total} {plural}", "all to run"]
     elif running:
-        head = f"{running} of {total} {plural} to run, {total - running} up to date"
+        fields = [
+            f"{running} of {total} {plural} to run",
+            f"{total - running} up to date",
+        ]
     else:
-        head = f"{total} {plural}, all up to date"
+        fields = [f"{total} {plural}", "all up to date"]
     # The job count only when it says something the rule count does not, i.e.
     # when something fans out. `_run_info_line`, which this replaces, always
     # carried it. Counted over the LISTED rows, not over Snakemake's table, so
@@ -886,14 +998,13 @@ def _plan_head(rows, jobs, unlisted=0):
     # `all`, and a head line off by one from what it introduces is worse than
     # no head line.
     if jobs and jobs != running:
-        head = f"{head}, {jobs} job{'s' if jobs != 1 else ''}"
+        fields.append(f"{jobs} job{'s' if jobs != 1 else ''}")
     if unlisted:
-        head = f"{head}, {unlisted} unlisted"
-    # BARE -- no `plan --` prefix and no indent. The two callers frame it
-    # differently: the opening block joins it to the workflow title, and the
-    # standalone block (no header declared) prefixes it. Returning it decorated
-    # put `wf1 build_model   plan -- 7 of 19 ...` on the title line.
-    return head
+        fields.append(f"{unlisted} unlisted")
+    # BARE -- no `plan --` prefix and no indent. The callers frame it: the
+    # opening block writes it under the table it describes, and puts it back on
+    # the title only when there is no table (see `opening_block`).
+    return "  |  ".join(fields)
 
 
 def _plan_lines(counts):
@@ -905,8 +1016,30 @@ def _plan_lines(counts):
     pipe, a redirect and CI, and the gutter does not, which is the same reason
     :func:`rule_banner` brackets its context rather than relying on colour.
 
-    The gutter is DROPPED when every rule runs: a mark on every line carries no
-    information, and the head line already says ``all to run``.
+    FLUSH LEFT, like every other line the opening block writes. The block was
+    indented two spaces until 2026-09-17, which put the rules one column in from
+    the title that introduces them and from the metadata rows below them.
+
+    The gutter COLUMN is dropped outright when no rule is up to date -- not
+    reserved and left blank. A mark on every line carries no information (the
+    head line already says ``all to run``), and an empty column is three spaces
+    of indent on every row of a first run, which is exactly what going flush
+    left removed everywhere else.
+
+    Every row carries its JOB COUNT, in a right-aligned column, rather than an
+    ``xN`` suffix on the rows that happen to fan out. Snakemake's own
+    ``Job stats:`` table prints a count per rule including the ones that are 1,
+    and dropping those meant a run where nothing fans out -- a WF4 simulation,
+    a WF1 re-run -- printed no numbers at all.
+
+    An up-to-date rule's cell is EMPTY. Its count is not merely omitted, it is
+    unknown: such a rule is absent from Snakemake's table entirely, which is how
+    :func:`_plan_rows` identifies it, so there is no number to print. For a
+    non-fanned rule ``1`` would be a good guess and for
+    ``downscale_climate_realization`` on a full grid it could be 200. A ``-``
+    was used until 2026-09-17 and dropped as redundant: on a partial run the
+    ``>`` gutter already marks what runs and survives a pipe, and on an
+    all-to-run one there are no up-to-date rows to mark.
 
     Returns ``(head, rows)`` with each row as ``(text, running)``, so the
     caller owns the colour -- ``_paint`` colours whole lines and never fields.
@@ -916,16 +1049,16 @@ def _plan_lines(counts):
         return None
     partial = any(row[2] for row in rows) and not all(row[2] for row in rows)
     number_width = max(len(row[0]) for row in rows) + 2
-    # Pad the name column only when something actually fans out, so a workflow
-    # without fan-out has no trailing whitespace to explain.
-    fanned = any(row[2] > 1 for row in rows)
-    name_width = max(len(row[1]) for row in rows) if fanned else 0
+    name_width = max(len(row[1]) for row in rows)
+    count_width = max((len(str(row[2])) for row in rows if row[2]), default=1)
     lines = []
     for number, name, jobs in rows:
-        gutter = "  >  " if (partial and jobs) else "     "
-        text = f"{gutter}{number.ljust(number_width)}{name.ljust(name_width)}"
-        if jobs > 1:
-            text = f"{text} x{jobs}"
+        gutter = "" if not partial else (">  " if jobs else "   ")
+        count = str(jobs) if jobs else ""
+        text = (
+            f"{gutter}{number.ljust(number_width)}"
+            f"{name.ljust(name_width)}  {count.rjust(count_width)}"
+        )
         lines.append((text.rstrip(), bool(jobs)))
     unlisted = sum(1 for name in counts if name not in _RULE_NUMBERS)
     return _plan_head(rows, sum(row[2] for row in rows), unlisted), lines
@@ -1145,27 +1278,24 @@ class _ConsoleHandler(logging.StreamHandler):
             return []
         self._opened = True
         workflow, project_dir, config_path, details = _RUN_HEADER
-        summary = "" if plan is None else f" -- {plan[0]}"
-        title = self._paint(workflow, _ANSI_TITLE)
-        if summary:
-            title += self._paint(summary, _ANSI_BODY)
-        # A leading blank, because Snakemake's own preamble ends flush against
-        # this and the title otherwise reads as its last line. The rule is
-        # sized on the UNPAINTED text: escape codes are not columns.
-        lines = [
-            "",
-            title,
-            self._paint(title_rule(workflow + summary), _ANSI_BODY),
-            "",
-        ]
-        if plan is not None:
-            lines.extend(
-                self._paint(row, _ANSI_RUN if running else _ANSI_DIM)
-                for row, running in plan[1]
-            )
-            lines.append("")
-        rows = run_meta_rows(project_dir, config_path, details)
-        lines.extend(self._paint(row, _ANSI_BODY) for row in meta_row_lines(rows))
+        # ONE builder with `run_header`, so a run that loses its styling does
+        # not also lose its layout. The tiers come back with the text; mapping
+        # them onto colour is this class's business and nobody else's.
+        tiers = {
+            "title": _ANSI_TITLE,
+            "run": _ANSI_RUN,
+            "dim": _ANSI_DIM,
+            "body": _ANSI_BODY,
+        }
+        block = opening_block(workflow, project_dir, config_path, details, plan)
+        lines = [self._paint(text, tiers[tier]) for text, tier in block]
+        # The PROGRESS rule closes the block HERE rather than inside the
+        # builder: the first line under it is written by `_start_line` on the
+        # first `job_info` record, so only the writer of those lines may open
+        # the section. Sized on the block's own width -- measured on the
+        # UNPAINTED text, since escape codes are not columns.
+        width = max(len(text) for text, _ in block)
+        lines.extend(["", self._paint(_section_rule("PROGRESS", width), _ANSI_BODY)])
         return lines
 
     def _plan_block(self, record):
@@ -1198,13 +1328,19 @@ class _ConsoleHandler(logging.StreamHandler):
             return [self._paint(self._run_info_line(record), _ANSI_BODY)]
         else:
             # No header declared -- a bare `snakemake -s` without `onstart:`,
-            # and in the tests. The plan still stands on its own.
+            # and in the tests. The plan stands on its own, in the same shape
+            # it has inside the opening block: a labelled rule, the table, a
+            # rule, then the summary under the table it describes. No title
+            # band, because there is no title to band.
             head, rows = plan
-            painted = [self._paint(f"  plan -- {head}", _ANSI_BODY), ""]
+            width = max([len(head)] + [len(row) for row, _ in rows])
+            painted = [self._paint(_section_rule("PLAN", width), _ANSI_BODY)]
             painted.extend(
                 self._paint(row, _ANSI_RUN if running else _ANSI_DIM)
                 for row, running in rows
             )
+            painted.append(self._paint("-" * width, _ANSI_BODY))
+            painted.append(self._paint(head, _ANSI_BODY))
         # ONE element, newlines and all. `_render` joins its lines through a
         # truthiness filter, so a blank passed as its own element is dropped --
         # the block's internal air has to travel inside a single string. The
@@ -1284,29 +1420,33 @@ class _ConsoleHandler(logging.StreamHandler):
             # input/output/jobid, which is the whole of what a reader gets for
             # that rule -- reshaping it into one line would delete it.
             return self.format(record)
+        if fields.get("rule_name") in _QUIET_START_RULES:
+            # A BOOKKEEPING rule: its finish line is the whole of what it has to
+            # say (see `rule_banner`'s `quiet_start`).
+            return None
         message = self._trim_summary(fields.get("rule_name"), message)
-        # The counter, replayed from the last progress record. The bracket means
-        # the SAME thing on both lines -- jobs complete out of the total -- so a
-        # START line and the FINISH line above it can legitimately show the same
-        # number: nothing has finished in between. That repetition is the honest
-        # rendering; the alternative, numbering starts instead, is the
-        # independent counter :meth:`_render` refuses.
+        # NO progress counter here. It is replayed from the last progress
+        # record, so on a start line it is the tally BEFORE this job: two
+        # consecutive starts repeat a number, and the last start of a run reads
+        # `[13/14]` with nothing finished. It looks like a fact about the job it
+        # sits on and is a fact about the previous one. The finish line keeps
+        # it, where it is true -- and keeps getting it from `_render`'s held
+        # line, which remains the one authority for the number.
+        # THREE tiers on one line, rather than one colour across it. The
+        # stamp is scaffolding and recedes; the marker carries the state and
+        # keeps the blue; the payload takes the terminal's own foreground,
+        # where it is easiest to read.
         #
-        # Absent until Snakemake has reported once, so the first job of a run
-        # starts with no counter. That is the same `is not None` guard the
-        # finish line uses, and it degrades to today's line rather than to a
-        # placeholder that would have to be explained.
-        done, total = self._progress
-        tail = f"  [{done}/{total}]" if done is not None and total else ""
-        # On the FIRST line of the message, never after the last: `rule all`'s
-        # `target_banner` is a banner plus one target per line, and appending
-        # here put the counter on the tail of the final target path
-        # (`benchmarks/wf1_benchmarks.md  [19/20]`), where it read as part of
-        # the path. The counter describes the job, so it sits on the line that
-        # names the job; the targets below are untouched.
-        head, sep, rest = message.partition("\n")
-        return self._paint(
-            f"{self._now()} - {_MARKER_RUN} {head}{tail}{sep}{rest}", _ANSI_RUN
+        # The finish line stays WHOLE-LINE green, and the asymmetry is the
+        # point. The 2026-08-14 revision that made both lines solid argued from
+        # scroll-back -- "what a reader scrolls for is where did this job start
+        # / what finished" -- and that is still true of the finish line, which
+        # is also the one carrying the numbers. A start line does not need
+        # finding: while its job runs it is the last thing on the screen.
+        return (
+            self._paint(f"{self._now()} - ", _ANSI_DIM)
+            + self._paint(f"{_MARKER_RUN} ", _ANSI_RUN)
+            + self._paint(message, _ANSI_BODY)
         )
 
     def _trim_summary(self, rule_name, message):
@@ -1403,8 +1543,19 @@ class _ConsoleHandler(logging.StreamHandler):
         return f"{datetime.now():%H:%M:%S}"
 
     def _paint(self, text, code):
-        """Colour a WHOLE line. Nothing here paints a field."""
-        return _ansi(text, code) if self._color and text else text
+        """Colour ``text``, or return it unchanged.
+
+        ``code`` of ``None`` is the BODY tier: no SGR at all, so the terminal's
+        own foreground applies. That is a colour decision, not an absence of
+        one -- see ``_ANSI_BODY``.
+
+        Whole lines, with ONE exception that arrived with the start line's
+        three tiers (see :meth:`_start_line`): the handler may paint fields of
+        a line it assembles itself, because nothing else can be looking at that
+        string. It still never paints fields of a line that came from
+        elsewhere; that is ``_paint_body``'s territory and its own rules.
+        """
+        return _ansi(text, code) if self._color and code and text else text
 
 
 def _console_style_took():
@@ -1513,10 +1664,15 @@ def run_header(workflow, project_dir, config_path=None, **details):
     """
     # Forward slashes, like every path the folder rows below and the log
     # headers print: one block mixing `C:\a\b` with `a/b` reads as two trees.
-    rows = run_meta_rows(project_dir, config_path, details)
-    lines = [workflow, "-" * len(workflow), ""]
-    lines.extend(meta_row_lines(rows))
-    return "\n".join(lines)
+    #
+    # Through `opening_block`, which the console handler also uses -- the two
+    # rendered this block differently until 2026-09-17, so a run whose styling
+    # failed to install printed a different shape from every other run. No plan
+    # is passed because none exists yet: this is written from `onstart`, before
+    # Snakemake has reported a job count.
+    return "\n".join(
+        text for text, _ in opening_block(workflow, project_dir, config_path, details)
+    )
 
 
 def run_meta_rows(project_dir, config_path=None, details=None):
@@ -1539,18 +1695,63 @@ def run_meta_rows(project_dir, config_path=None, details=None):
         # stripping one would render a config that happens to live INSIDE the
         # project as a bare relative path indistinguishable from an output.
         # This still applies the `<repo>` and `<site-packages>` rewrites.
-        rows.append(("config", _relativize_paths(os.fspath(config_path), "")))
+        #
+        # FORWARD SLASHES, unconditionally. The rewrites above normalise a
+        # config that lives under the repo, and `display_root` normalises the
+        # `project` row beside it -- but a config OUTSIDE both (a real project
+        # tree, which is where production configs live) matched neither and
+        # kept its OS separators, so the block printed
+        # `project C:/a/b` above `config C:\a\b` and read as two trees. That is
+        # the defect this row's own docstring describes and the existing test
+        # could not see, because it passes a config inside the repo.
+        rows.append(
+            ("config", _relativize_paths(os.fspath(config_path), "").replace("\\", "/"))
+        )
     rows.extend((key, str(value)) for key, value in (details or {}).items())
     rows.extend(_folder_rows(project_dir))
     return rows
 
 
 def meta_row_lines(rows):
-    """Render ``[(key, value)]`` as one aligned, single-indent column."""
+    """Render ``[(key, value)]`` as one aligned, FLUSH-LEFT column.
+
+    Indented two spaces until 2026-09-17, which left these rows one column in
+    from the title above them and from the rules table between. Every line the
+    opening block writes now starts at column 0; the block's structure is
+    carried by its section rules rather than by indent.
+    """
     if not rows:
         return []
     width = max(len(key) for key, _ in rows)
-    return [f"  {key.ljust(width)}  {value}" for key, value in rows]
+    return [f"{key.ljust(width)}  {value}" for key, value in rows]
+
+
+#: The opening block's three sections, in the order they are written.
+#:
+#: ``RUN`` rather than ``PATHS``: the rows under it are the project root, the
+#: config, whatever ``details`` the Snakefile passes (WF3's ``experiment``,
+#: WF4's ``experiment`` and ``operation``) and the declared token legend. WF4
+#: passes two details and declares no tokens, so under ``PATHS`` half of its
+#: block was not paths. What the rows share is that they identify THIS RUN.
+#:
+#: Uppercase, and the collision with the per-line ``RUN`` marker is deliberate
+#: rather than overlooked: a marker sits in a fixed column after a timestamp,
+#: a heading owns a whole line and carries a rule to the right margin, so the
+#: two are never read for one another.
+_SECTIONS = ("PLAN", "RUN", "PROGRESS")
+
+
+def _section_rule(label, width):
+    """``-- LABEL ------...`` drawn to ``width``.
+
+    A labelled rule rather than a word on its own line: it costs no extra line
+    over the bare separator the block already carried, and the label sits ON
+    the divider it introduces. All ASCII -- a Windows console defaults to
+    cp1252 and raises ``UnicodeEncodeError`` on box drawing, the constraint
+    :func:`rule_banner` documents.
+    """
+    text = f"-- {label} "
+    return text + "-" * max(3, width - len(text))
 
 
 def title_rule(text):

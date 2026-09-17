@@ -271,7 +271,20 @@ rule retain_scenario_forcing:
     # Fanned out over RLZ_NUM x ST_NUM, so the context is what separates one
     # member's line from the next 399. `collection_id` is in the banner too --
     # the same run can hold more than one collection over its lifetime.
-    message: rule_banner("3.09", "retain_scenario_forcing", "collection {wildcards.collection_id} | run {wildcards.run_id}")
+    # `quiet_start`: this is BOOKKEEPING -- one payload copied into the
+    # collection, about a second, interleaved with 3.08 so the console
+    # alternated identities and spent two lines per member. On a 10 x 20 grid
+    # that is 800 lines to report file copies. The finish line still carries
+    # the duration and the counter.
+    #
+    # The collection id is no longer in the context: it does not change across
+    # the fan-out, and rule 3.04 announces it before any member line prints
+    # (`Collection <id>: claiming N scenario rows`), with 3.10 naming it again
+    # when the collection is sealed. It was 25 constant characters on every
+    # member line. If one invocation ever claims two collections whose members
+    # interleave, two lines can both read `[run 01]` -- the claim rows still
+    # distinguish them, at the cost of reading in order.
+    message: rule_banner("3.09", "retain_scenario_forcing", "run {wildcards.run_id}", quiet_start=True)
     input:
         _collection_row_inputs,
     output:

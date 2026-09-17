@@ -2654,12 +2654,13 @@ def test_console_finish_line_carries_number_wildcards_elapsed_and_counter():
     ), done
 
 
-def test_console_start_line_replays_the_last_reported_counter():
-    """A long fan-out shows its position WHILE it runs, not only as it finishes.
+def test_console_start_line_carries_no_progress_counter():
+    """The counter is a FINISH-line fact, and was a start-line lie.
 
-    The number is Snakemake's own, replayed -- so the bracket means the same
-    thing on both lines, and a START may legitimately repeat the FINISH above
-    it when nothing has completed in between.
+    Replayed from the last progress record, it is the tally BEFORE the job the
+    line names: two consecutive starts repeat a number, and the last start of a
+    run reads `[13/14]` with nothing finished. The finish line keeps it, where
+    it is true.
     """
     handler = _console_handler()
     out = _emit(
@@ -2670,28 +2671,35 @@ def test_console_start_line_replays_the_last_reported_counter():
         _job_info(2, "perturb", "Rule 3.12: perturb  [rlz 1 | st 2]"),
     )
     lines = out.splitlines()
-    # The FIRST start line precedes any progress record, so it carries none.
     assert lines[0].endswith("[rlz 1 | st 1]"), lines[0]
-    assert re.search(r"RUN .*\[rlz 1 \| st 2\]  \[8/37\]$", lines[-1]), lines[-1]
+    assert lines[-1].endswith("[rlz 1 | st 2]"), lines[-1]
+    # Once, on the finish line -- not three times across the pair.
+    assert out.count("[8/37]") == 1, out
 
 
-def test_console_start_counter_is_snakemakes_number_not_a_second_one():
-    """Starts are not counted; an unreported job moves nothing.
+def test_console_quiet_start_prints_only_the_finish_line(monkeypatch):
+    """A bookkeeping rule's start line is the one it can afford to lose.
 
-    An independent counter would drift on a restarted, grouped, or already-up-
-    to-date job, which is why the finish line holds for Snakemake's record
-    rather than incrementing. The start line inherits that discipline: three
-    jobs may start against one reported count.
+    WF3's 3.09 copies one payload per member, interleaved with the rule that
+    produced it -- two lines per member, 800 on a 10 x 20 grid.
     """
-    handler = _console_handler()
+    monkeypatch.setattr(cs, "_QUIET_START_RULES", {"retain"})
+    cs._RULE_NUMBERS["retain"] = "3.09"
     out = _emit(
-        handler,
-        _console_record(event="progress", done=5, total=37),
-        _job_info(1, "perturb", "Rule 3.12: perturb  [rlz 1 | st 1]"),
-        _job_info(2, "perturb", "Rule 3.12: perturb  [rlz 1 | st 2]"),
-        _job_info(3, "perturb", "Rule 3.12: perturb  [rlz 1 | st 3]"),
+        _console_handler(),
+        _job_info(1, "retain", "Rule 3.09: retain  [run 01]"),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=6, total=24),
     )
-    assert out.count("[5/37]") == 3, out
+    assert "RUN " not in out, out
+    assert re.search(r"DONE Rule 3\.09: retain .*\[6/24\]", out), out
+
+
+def test_console_quiet_start_is_opt_in(monkeypatch):
+    """Every other rule keeps its start line."""
+    monkeypatch.setattr(cs, "_QUIET_START_RULES", set())
+    out = _emit(_console_handler(), _job_info(1, "perturb", "Rule 3.12: perturb"))
+    assert "RUN  Rule 3.12: perturb" in out, out
 
 
 def test_console_finish_line_uses_the_banner_wildcard_grammar():
@@ -2760,12 +2768,12 @@ def test_console_finish_line_drops_the_id_suffix_the_banner_drops():
     assert "run_id" not in out and "collection_id" not in out
 
 
-def test_console_start_counter_sits_on_the_banner_line_of_a_multiline_message():
-    """`rule all` is a banner plus one target per line; the counter is the job's.
+def test_console_start_line_leaves_a_multiline_banner_intact():
+    """`rule all` is a banner plus one target per line, and stays that way.
 
-    Appended to the whole message it landed after the LAST target path
-    (`benchmarks/wf1_benchmarks.md  [19/20]`), where it read as part of the
-    path. It belongs on the line that names the job; the targets are untouched.
+    The counter used to be appended here and had to be steered onto the first
+    line, or it landed after the LAST target path where it read as part of the
+    path. With no counter on a start line there is nothing to steer.
     """
     handler = _console_handler()
     out = _emit(
@@ -2774,7 +2782,7 @@ def test_console_start_counter_sits_on_the_banner_line_of_a_multiline_message():
         _job_info(1, "all", "Rule 1.00: all  [proj]\n    a/x.csv\n    logs/wf1.log"),
     )
     lines = out.splitlines()
-    assert lines[0].endswith("Rule 1.00: all  [proj]  [19/20]"), lines[0]
+    assert lines[0].endswith("Rule 1.00: all  [proj]"), lines[0]
     assert lines[1:] == ["    a/x.csv", "    logs/wf1.log"], lines[1:]
 
 
@@ -2872,7 +2880,13 @@ def test_paint_body_demotes_the_two_benign_hydromt_warnings():
     ]
     for row in demoted:
         painted = su._paint_body(row, True)
-        assert painted == su._ansi(row.rstrip("\n"), su._ANSI_BODY) + "\n", painted
+        # Body tier: the scaffolding dims and the message keeps the terminal's
+        # own foreground, so the only escape is the stamp's.
+        assert painted == (
+            su._ansi("14:02:03 - " + row.split(" - ")[1] + " - ", su._ANSI_DIM)
+            + row.split(" - ", 2)[2].rstrip("\n")
+            + "\n"
+        ), painted
     kept = "14:02:03 - states - WARNING - state file not found, using cold start\n"
     assert su._ANSI_ALERT in su._paint_body(kept, True)
     # The match is module AND prefix: the same words under another module keep
@@ -2963,10 +2977,11 @@ def test_console_run_info_renders_the_plan_block(monkeypatch):
         ),
     )
     assert out == (
-        "  plan -- 1 of 2 rules to run, 1 up to date\n"
-        "\n"
-        "  >  1.01  snapshot_config\n"
-        "     1.14  run_wflow\n"
+        "-- PLAN ----------------------------\n"
+        ">  1.01  snapshot_config  1\n"
+        "   1.14  run_wflow\n"
+        "------------------------------------\n"
+        "1 of 2 rules to run  |  1 up to date\n"
         "\n"
     ), out
 
@@ -2997,13 +3012,19 @@ def test_console_opening_puts_the_rules_under_the_title(monkeypatch):
     )
     lines = out.split("\n")
     assert lines[0] == ""  # air above, or Snakemake's preamble runs into it
-    assert lines[1] == "wf1 build_model -- 1 of 2 rules to run, 1 up to date"
-    assert lines[2] == "-" * len(lines[1])  # treatment T2
-    assert lines[3] == ""
-    assert lines[4] == "  >  1.01  a"
-    assert lines[5] == "     1.02  b"
-    assert lines[6] == ""
-    assert lines[7] == "  project  <repo>/test_case/test_rapid"
+    assert lines[1] == lines[3] == "=" * len(lines[1])  # the title's band
+    assert lines[2] == "wf1 build_model"  # the NAME only
+    assert lines[4] == ""
+    assert lines[5].startswith("-- PLAN -")
+    assert lines[6] == ">  1.01  a  1"
+    assert lines[7] == "   1.02  b"
+    assert lines[8] == "-" * len(lines[1])
+    assert lines[9].startswith("1 of 2 rules to run  |  1 up to date")
+    assert lines[10] == ""
+    assert lines[11].startswith("-- RUN -")
+    assert lines[12] == "project  <repo>/test_case/test_rapid"
+    # Last, and the block ends with a newline, so it is not `lines[-1]`.
+    assert any(line.startswith("-- PROGRESS -") for line in lines)
 
 
 def test_console_opening_rule_spans_the_whole_title(monkeypatch):
@@ -3016,9 +3037,12 @@ def test_console_opening_rule_spans_the_whole_title(monkeypatch):
             event="run_info",
         ),
     )
-    title, rule = out.split("\n")[1:3]
-    assert rule == "-" * len(title)
-    assert title.endswith("all to run")
+    lines = out.split("\n")
+    # One width for the bands, the section rules and the table's own footer.
+    widths = {len(line) for line in lines if set(line) in ({"="}, {"-"})}
+    assert len(widths) == 1, lines
+    assert lines[2] == "wf1 build_model"
+    assert "all to run" in out
 
 
 def test_console_opening_prints_once(monkeypatch):
@@ -3045,9 +3069,11 @@ def test_console_opening_survives_a_run_without_run_info(monkeypatch):
     _declared_header(monkeypatch)
     out = _emit(_console_handler(), _job_info(1, "a", "Rule 1.01: a"))
     lines = out.split("\n")
-    assert lines[1] == "wf1 build_model"  # no plan clause, none was reported
-    assert lines[2] == "-" * len("wf1 build_model")
-    assert "  project  <repo>/test_case/test_rapid" in lines
+    # No plan means no table to caption and nothing to size the bars from, so
+    # the summary would go back onto the title -- and none was reported here.
+    assert lines[2] == "wf1 build_model"
+    assert not any(line.startswith("-- PLAN") for line in lines)
+    assert "project  <repo>/test_case/test_rapid" in lines
 
 
 def test_console_plan_stands_alone_when_no_header_was_declared(monkeypatch):
@@ -3060,7 +3086,8 @@ def test_console_plan_stands_alone_when_no_header_was_declared(monkeypatch):
             "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
         ),
     )
-    assert out.startswith("  plan -- 1 of 2 rules to run, 1 up to date")
+    assert out.startswith("-- PLAN -")
+    assert "1 of 2 rules to run  |  1 up to date" in out
 
 
 def test_open_run_header_writes_immediately_without_a_console(monkeypatch):
@@ -3266,11 +3293,19 @@ def test_console_paints_a_start_and_a_finish_in_two_different_tiers():
         _console_record(event="progress", done=1, total=4),
     )
     run_line, done_line = _unreset(out).splitlines()
-    assert cs._ANSI_RUN != cs._ANSI_DONE != su._ANSI_BODY
-    for line, code in ((run_line, cs._ANSI_RUN), (done_line, cs._ANSI_DONE)):
-        opener = f"\033[{code}m"
-        assert line.startswith(opener) and line.endswith("\033[0m"), line
-        assert "\033" not in line[len(opener) : -4], line
+    assert cs._ANSI_RUN != cs._ANSI_DONE
+    # The FINISH line stays whole-line green: it is the one a reader scrolls
+    # back for, and the one carrying the numbers.
+    opener = f"\033[{cs._ANSI_DONE}m"
+    assert done_line.startswith(opener) and done_line.endswith("\033[0m"), done_line
+    assert "\033" not in done_line[len(opener) : -4], done_line
+    # The START line is three tiers: a dim stamp, a blue marker, and a payload
+    # in the terminal's own foreground.
+    assert run_line.startswith(f"\033[{su._ANSI_DIM}m09"[:7]) or run_line.startswith(
+        f"\033[{su._ANSI_DIM}m"
+    ), run_line
+    assert f"\033[{cs._ANSI_RUN}mRUN " in run_line, run_line
+    assert run_line.endswith("prepare one realization"), run_line
 
 
 def test_console_honours_no_color_even_on_a_tty(monkeypatch):
@@ -3294,9 +3329,8 @@ def test_console_honours_no_color_even_on_a_tty(monkeypatch):
 def test_console_paints_an_informational_snakemake_line_in_the_body_tier():
     handler = _colour_handler()
     out = _emit(handler, _console_record("Building DAG of jobs..."))
-    assert _unreset(out) == f"\033[{su._ANSI_BODY}mBuilding DAG of jobs...\033[0m\n", (
-        repr(out)
-    )
+    # The body tier emits NO SGR: this is the terminal's own foreground.
+    assert _unreset(out) == "Building DAG of jobs...\n", repr(out)
 
 
 def test_console_never_recolours_a_warning_or_an_error():
@@ -3469,17 +3503,19 @@ def test_run_header_shape_matches_run_summary():
         "test_case/project_config_rapid.yml",
         experiment="experiment_rapid",
     )
-    assert out.splitlines() == [
-        "wf3 run_stress_test",
-        "-------------------",
-        "",
+    lines = out.splitlines()
+    assert lines[0] == ""
+    assert lines[1] == lines[3] == "=" * len(lines[1])
+    assert lines[2] == "wf3 run_stress_test"
+    assert lines[5].startswith("-- RUN -")
+    assert lines[6:] == [
         # `<repo>`-marked since t2609162114; the `config` row beside it is not,
         # only because this test passes a CWD-relative path. Snakemake hands a
         # Snakefile an ABSOLUTE `configfiles[0]`, so in a real run both rows
         # carry the marking -- which is the point of routing them the same way.
-        "  project     <repo>/test_case/test_rapid2",
-        "  config      test_case/project_config_rapid.yml",
-        "  experiment  experiment_rapid",
+        "project     <repo>/test_case/test_rapid2",
+        "config      test_case/project_config_rapid.yml",
+        "experiment  experiment_rapid",
     ]
 
 
@@ -3497,12 +3533,12 @@ def test_run_header_states_the_declared_folders(declare_folders):
         model=os.path.join(project, "models", "hydrology", "wflow"),
     )
     lines = cs.run_header("wf1 build_model", project).splitlines()
-    rows = [line for line in lines if line.startswith("  ") and line.strip()]
+    rows = [line for line in lines if re.match(r"^\S+ {2,}\S", line)]
     assert [row.split()[0] for row in rows] == ["project", "<data>", "<model>"]
     assert rows[1].endswith("data/wflow_global/hydromt")
     assert rows[2].endswith("models/hydrology/wflow")
     # One column now, no group labels: the `<name>` rows announce themselves.
-    assert lines[1] == "-" * len("wf1 build_model")
+    assert lines[2] == "wf1 build_model"
     assert "" in lines  # blank-line separation, not a wall
 
 
@@ -3511,9 +3547,9 @@ def test_run_header_aligns_both_groups_on_one_value_column():
     out = cs.run_header(
         "wf3 run_stress_test", "test_case/test_rapid", experiment="experiment_rapid"
     )
-    rows = [line for line in out.splitlines() if line.startswith("  ") and line.strip()]
-    # Where the VALUE starts: past the indent, the key, and the gutter.
-    columns = {re.match(r" {2}\S+ +", row).end() for row in rows}
+    rows = [line for line in out.splitlines() if re.match(r"^\S+ {2,}\S", line)]
+    # Where the VALUE starts: past the key and the gutter.
+    columns = {re.match(r"\S+ +", row).end() for row in rows}
     assert len(columns) == 1, rows
 
 
@@ -3525,6 +3561,21 @@ def test_run_header_forward_slashes_and_shortens_the_config_path(monkeypatch):
     row = next(line for line in out.splitlines() if line.strip().startswith("config"))
     assert row.split() == ["config", "<repo>/test_case/project_config_rapid.yml"]
     assert "\\" not in out
+
+
+def test_run_header_forward_slashes_a_config_outside_the_repo():
+    """The production case: a config in a project tree, under neither rewrite.
+
+    `<repo>` and `<site-packages>` normalise a config that lives under one of
+    them, and `display_root` normalises the `project` row -- so a config
+    outside both kept its OS separators and the block printed
+    `project C:/a/b` above `config C:\a\b`, which reads as two trees.
+    """
+    config = os.path.join(_abs("elsewhere"), "gabon", "project_config.yml")
+    out = cs.run_header("wf2 analyze_projections", "test_case/test_rapid", config)
+    row = next(line for line in out.splitlines() if line.startswith("config"))
+    assert "\\" not in row, row
+    assert row.endswith("elsewhere/gabon/project_config.yml"), row
 
 
 def test_a_rule_log_header_defines_every_token_its_rows_use(declare_folders, tmp_path):
@@ -3593,7 +3644,10 @@ def test_heartbeat_paints_the_alarm_and_not_the_all_clear():
     stall = next(line for line in out.splitlines() if "still running" in line)
     done = next(line for line in out.splitlines() if "done in" in line)
     assert stall.startswith(f"\033[{su._ANSI_WARN}m"), stall
-    assert done.startswith(f"\033[{su._ANSI_BODY}m"), done
+    # The all-clear is body tier, so its scaffolding dims and its message is
+    # left in the terminal's own foreground -- no yellow, and no wrapper.
+    assert done.startswith(f"\033[{su._ANSI_DIM}m"), done
+    assert su._ANSI_WARN not in done, done
 
 
 def test_heartbeat_paints_the_failure_verdict(monkeypatch):
@@ -3623,7 +3677,7 @@ def test_run_summary_failure_keeps_the_block_a_success_no_longer_needs():
         "wf3 run_stress_test FAILED",
         "--------------------------",
         "",
-        "  log parts  test_case/test_rapid/logs/_parts/experiment_rapid/",
+        "log parts  test_case/test_rapid/logs/_parts/experiment_rapid/",
         "",
         "  the failing job's own log is printed above",
     ]
@@ -3649,12 +3703,10 @@ def test_console_shortens_paths_in_snakemakes_own_lines(declare_folders):
 def test_run_header_omits_rows_a_workflow_does_not_have():
     """WF1 and WF2 pass no experiment; the block shrinks rather than showing a blank."""
     out = cs.run_header("wf1 build_model", "test_case/test_rapid")
-    assert out.splitlines() == [
-        "wf1 build_model",
-        "---------------",
-        "",
-        "  project  <repo>/test_case/test_rapid",
-    ]
+    lines = out.splitlines()
+    assert lines[2] == "wf1 build_model"
+    assert lines[-1] == "project  <repo>/test_case/test_rapid"
+    assert not any("experiment" in line for line in lines)
 
 
 # --- console body tier for rule output (_Tee / _paint_body) ------------------
@@ -3679,9 +3731,11 @@ def test_paint_body_leaves_whitespace_alone():
 
 def test_paint_body_wraps_each_line_of_a_multi_line_chunk():
     """A chunk can hold several lines; no colour may span a newline."""
-    out = su._paint_body("first\nsecond\n", True)
-    body = su._ANSI_BODY
-    assert out == f"\033[{body}mfirst\033[0m\n\033[{body}msecond\033[0m\n", repr(out)
+    out = su._paint_body("first\nWARNING: second\n", True)
+    # Neither line is in our row grammar, so the body one is left alone
+    # entirely and only the warning is wrapped -- and its reset lands before
+    # the newline, or the colour would carry across a terminal reflow.
+    assert out == f"first\n\033[{su._ANSI_ALERT}mWARNING: second\033[0m\n", repr(out)
 
 
 def test_paint_body_is_a_no_op_without_colour():
@@ -3700,7 +3754,8 @@ def test_tee_paints_the_console_and_never_the_log_file(tmp_path):
     # The reset lands BEFORE the newline: a colour spanning the break would
     # carry across a terminal reflow.
     assert console.getvalue() == (
-        f"\033[{su._ANSI_BODY}m13:42:17 - stats - MPI-ESM1-2-HR ssp585 deriving\033[0m\n"
+        su._ansi("13:42:17 - stats - ", su._ANSI_DIM)
+        + "MPI-ESM1-2-HR ssp585 deriving\n"
     )
     assert "\033" not in log.read_text(encoding="utf-8")
 
@@ -3766,17 +3821,25 @@ def test_failure_outranks_warning_on_one_line():
     ],
 )
 def test_ordinary_lines_keep_the_body_tier(line):
-    """Case-sensitive and word-bounded is what keeps this off ordinary text."""
+    """Case-sensitive and word-bounded is what keeps this off ordinary text.
+
+    The body tier emits no SGR, so an ordinary line that is not in our row
+    grammar comes back untouched, and one that is keeps its message untouched
+    with only the stamp and module column dimmed.
+    """
     out = su._paint_body(line, True)
-    assert out == f"\033[{su._ANSI_BODY}m{line}\033[0m", repr(out)
+    match = su._ROW_PREFIX_RE.match(line)
+    if match:
+        assert out == su._ansi(match.group(1), su._ANSI_DIM) + match.group(2), repr(out)
+    else:
+        assert out == line, repr(out)
 
 
 def test_severity_paints_only_the_offending_line_of_a_chunk():
     out = su._paint_body("routine row\nWARNING: something\n", True)
-    assert out == (
-        f"\033[{su._ANSI_BODY}mroutine row\033[0m\n"
-        f"\033[{su._ANSI_ALERT}mWARNING: something\033[0m\n"
-    ), repr(out)
+    assert out == (f"routine row\n\033[{su._ANSI_ALERT}mWARNING: something\033[0m\n"), (
+        repr(out)
+    )
 
 
 def test_severity_never_reaches_the_log_file(tmp_path):

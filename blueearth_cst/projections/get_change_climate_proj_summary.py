@@ -9,7 +9,7 @@ from typing import Dict, List, Union
 import xarray as xr
 
 from blueearth_cst.projections import projection_figures, projection_plots
-from blueearth_cst.shared.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row, plural
 
 
 def preprocess_coords(ds: xr.Dataset) -> xr.Dataset:
@@ -142,7 +142,7 @@ def plot_change_summary(ds, clim_dir, horizons):
     missing = [c for c in ("model", "scenario", "horizon") if c not in df.columns]
     if missing:
         raise ValueError(
-            f"the stage-B merge carries no {missing} coordinate(s); the "
+            f"the stage-B merge carries no {plural(missing, 'coordinate')}; the "
             "change-factor cloud cannot be keyed by combination"
         )
 

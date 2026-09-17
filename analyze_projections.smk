@@ -16,7 +16,7 @@ from snakemake.exceptions import WorkflowError
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, window_year_pair
+from blueearth_cst.shared.snake_utils import listed, ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, window_year_pair
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -630,9 +630,16 @@ if not any(c.resolved for c in COMBINATIONS):
 
 # Normal skips are reported, never silent -- this is what replaces the run-time
 # `asymmetric hist/clim members` raise D7 supersedes (design D7 table).
+#
+# Through `warn_row`, not `logger.warning`. This runs at Snakefile PARSE time,
+# before `install_console_style` replaces Snakemake's terminal handler -- so a
+# `logger` call prints in Snakemake's own style, with no stamp and no module
+# column, above a header that has not been written yet. `warn_row` is the
+# parse-time counterpart of `log_row` and exists for exactly this moment: the
+# block lands in the same grammar as every row after it.
 _skip_report = _res.format_status_report(COMBINATIONS)
 if _skip_report:
-    logger.warning(_skip_report)
+    warn_row(_skip_report, module="resolution")
 
 # D8/D12: a glob matching more than one {grid}/{version} means the read is not a
 # single identifiable store. Measured at ~6% of pinned stores, so this is live.
@@ -652,12 +659,16 @@ for _key, _entry in _CATALOG.items():
     if isinstance(_entry, dict) and _entry.get("data_adapter"):
         _rename = (_entry["data_adapter"] or {}).get("rename") or {}
         break
-for _var in _res.best_effort_variables(variables, _rename):
-    logger.warning(
-        f"analyze_projections: variable {_var!r} is BEST-EFFORT, not "
-        "catalog-certified. The crawl proved only pr/tas present, so a listed "
-        f"member may not publish {_var!r} -- it will fail at read time rather "
-        "than skip at resolution (design §5.5, ruling A3)."
+_best_effort = _res.best_effort_variables(variables, _rename)
+if _best_effort:
+    # ONE row, not one per variable: the sentence is the same each time and
+    # only the name changes, so the names are what the row lists. Through
+    # `warn_row` for the reason given on the skip report above.
+    warn_row(
+        f"Best-effort, not catalog-certified: {listed(sorted(_best_effort))}. "
+        "The crawl proved only pr/tas present, so a listed member may not "
+        "publish them -- that fails at read time rather than skipping at "
+        "resolution (design 5.5, ruling A3).", module="resolution"
     )
 
 # The series set is DERIVED from resolution, not from the config cross-product.
@@ -683,6 +694,24 @@ SERIES = {
     )
     for model, experiment, member in sorted(_needed)
 }
+
+
+def _series_label(series_key):
+    """What a fanned-out line PRINTS for one series: the part that varies.
+
+    The key itself is `cmip6_<vendor>_<model>_<experiment>_<member>` -- 52
+    characters on the RUN and the DONE of every member, of which the catalog
+    name is constant and the vendor is a function of the model. What is left is
+    unique by CMIP6's own naming (a model name identifies its institution), and
+    it is static, so one grep still finds a series across the console, the log
+    and the benchmark table.
+
+    Carried as a PARAM rather than a wildcard because `message:` is formatted
+    per job against params as well as wildcards, and the key is what names the
+    files -- it cannot be shortened itself.
+    """
+    model, experiment, member = SERIES[series_key]
+    return f"{model.rsplit('/', 1)[-1]} {experiment} {member}"
 
 
 def series_file(model, experiment, member):
@@ -1000,7 +1029,7 @@ rule snapshot_config:
 # formula edit. Passing `digest_components` here instead would silently undo the
 # entire split while every test still passed.
 rule fetch_gcm_slice:
-    message: rule_banner("2.04", "fetch_gcm_slice", "series {wildcards.series_key}", summary="download one CMIP6 slice")
+    message: rule_banner("2.04", "fetch_gcm_slice", "{params.series_label}", summary="download one CMIP6 slice")
     wildcard_constraints:
         series_key = "|".join(re.escape(k) for k in SERIES),
     input:
@@ -1012,6 +1041,9 @@ rule fetch_gcm_slice:
         raw_nc = update(clim_project_dir + "/raw/{series_key}.nc"),
     params:
         catalog_path = DATA_SOURCES,
+        # DISPLAY ONLY -- `message:` reads it, nothing else does. It is
+        # deliberately not a digest component: see `_series_label`.
+        series_label = lambda wildcards: _series_label(wildcards.series_key),
         catalog_entry = lambda wildcards: f"{clim_project}_{SERIES[wildcards.series_key][0]}_{SERIES[wildcards.series_key][1]}_{{member}}",
         member = lambda wildcards: SERIES[wildcards.series_key][2],
         variables = variables,
@@ -1045,7 +1077,7 @@ rule fetch_gcm_slice:
 # series at all: every series is independent, so the stage fans out at full width.
 # Since revision 6 it reads the local raw slice above and makes NO network call.
 rule reduce_gcm_series:
-    message: rule_banner("2.05", "reduce_gcm_series", "series {wildcards.series_key}", summary="reduce the slice to a basin-average series")
+    message: rule_banner("2.05", "reduce_gcm_series", "{params.series_label}", summary="reduce the slice to a basin-average series")
     wildcard_constraints:
         # Anchor to the keys actually built at parse time. Without this the
         # wildcard would also match paths that merely look like keys.
@@ -1064,6 +1096,9 @@ rule reduce_gcm_series:
     params:
         catalog_path = DATA_SOURCES,
         project_dir = f"{project_dir}",
+        # DISPLAY ONLY -- `message:` reads it, nothing else does. It is
+        # deliberately not a digest component: see `_series_label`.
+        series_label = lambda wildcards: _series_label(wildcards.series_key),
         name_scenario = lambda wildcards: SERIES[wildcards.series_key][1],
         # ONE member per job now (step 4b), not the config list.
         name_members = lambda wildcards: [SERIES[wildcards.series_key][2]],

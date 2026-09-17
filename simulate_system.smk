@@ -91,6 +91,12 @@ rule publish_metric_set:
 
 # 4.10  metrics
 rule metrics:
+    # NOT a `target_banner`, unlike 4.07 above and WF0/1/2's `rule all`.
+    # `_selected_metric_outputs` is a checkpoint-dependent input function, so
+    # its targets do not exist at parse time and re-calling it from `params`
+    # to list them would evaluate that resolution twice, at two different
+    # moments, for a cosmetic gain. The metric sets are named by 4.09's own
+    # `Published <id>` row instead.
     message: rule_banner("4.10", "metrics")
     input:
         _selected_metric_outputs,

@@ -3867,6 +3867,52 @@ def log_level_floor():
     return _LOG_LEVEL_RANK.get(os.environ.get("CST_LOG_LEVEL", "").strip().upper(), 10)
 
 
+def listed(values, limit=6):
+    """``a, b, c (+37 more)`` -- a list that cannot outgrow its console line.
+
+    A row interpolating a joined list has a length the DATA decides, not the
+    author: one basin strands two locations off the river network and another
+    strands forty. Rewording cannot bound that, and the rows it affects are
+    exactly the diagnostic ones a reader needs to be able to read.
+
+    **The overflow is always stated.** A list that silently stopped at six
+    would be a tool bounding its own coverage without saying so, which this
+    repo refuses on principle (AGENTS.md, "no silent caps"): the reader would
+    have no way to tell a basin with six stranded locations from one with
+    sixty. The full set stays in the rule's log part either way.
+
+    ``limit`` is generous on purpose. The point is to stop a pathological row,
+    not to make a normal one terse -- a five-element list reads better whole
+    than as three and a count.
+    """
+    items = [str(value) for value in values]
+    if len(items) <= limit:
+        return ", ".join(items)
+    return ", ".join(items[:limit]) + f" (+{len(items) - limit} more)"
+
+
+def plural(count, singular, plural_form=None):
+    """``3 areas`` / ``1 area`` -- a count and its noun, agreeing.
+
+    Replaces ``f"{n} area(s)"``, which was the toolbox's habit in ~50 emitted
+    rows. The parenthetical hedges a question the line has already answered:
+    the count deciding the plural is right there, and on the rows where it is
+    ``1`` -- which is most of them on a small basin -- the row reads as a
+    defect in the code rather than as a fact about the run.
+
+    An irregular plural is passed rather than derived: ``plural(n, "reach",
+    "reaches")``. Deriving it would mean an English rule table for the four
+    nouns in this package that need one.
+
+    ``count`` is not required to be an integer. One caller formats a value
+    read from a report that may be ``"?"``, and a helper that raised on it
+    would turn a cosmetic row into a failure; anything that is not ``1``
+    pluralizes, which is the right answer for ``"?"``.
+    """
+    word = singular if count == 1 else (plural_form or f"{singular}s")
+    return f"{count} {word}"
+
+
 def log_row(message, module="cst", level="INFO"):
     """Print one log row in the standard compact format used across rule logs.
 
@@ -4070,7 +4116,8 @@ def patch_psutil_windows_benchmark():
     psutil.Process.memory_full_info = _with_pss
 
 
-_ANSI_BODY = "38;5;250"  # light grey
+_ANSI_BODY = None  # the terminal's OWN foreground -- no SGR at all
+_ANSI_DIM = "38;5;243"  # dim grey -- the plan block, and a row's scaffolding
 _ANSI_FAIL = "91"  # bright red
 _ANSI_WARN = "93"  # bright yellow
 _ANSI_ALERT = "38;5;208"  # orange
@@ -4259,9 +4306,45 @@ def _paint_body(text, colour, code=_ANSI_BODY):
     if not colour or "\r" in text or not text.strip():
         return text
     return "\n".join(
-        _ansi(line, _severity_code(line) or code) if line.strip() else line
-        for line in text.split("\n")
+        _paint_line(line, code) if line.strip() else line for line in text.split("\n")
     )
+
+
+#: A row in this toolbox's own grammar: ``HH:MM:SS - module - `` and the rest.
+#: Matched so the SCAFFOLDING can recede while the message does not -- see
+#: `_paint_line`. Anchored and deliberately strict: raw R, Julia and wflow
+#: output has no such shape and must fall through untouched.
+_ROW_PREFIX_RE = re.compile(r"^(\d\d:\d\d:\d\d - [a-z_][a-z0-9_]* - )(.*)$")
+
+
+def _paint_line(line, code):
+    """Paint one line: its severity if it has one, else its tier by field.
+
+    **Severity outranks everything, and is painted WHOLE-LINE.** A warning or
+    an error arriving as body text -- from our scripts, or from hydromt, R,
+    Julia or wflow stdout -- is painted for what it says rather than for the
+    tier its emitter assumed, stamp and module column included. Dimming half of
+    such a row would say it is partly routine.
+
+    Otherwise a row in our own grammar has its stamp and module column dimmed
+    and its message left in the body tier, so a run's messages stand clear of
+    the scaffolding that repeats on every line. Anything else takes the tier
+    whole, which is what every non-row line already did.
+    """
+    severity = _severity_code(line)
+    if severity:
+        return _ansi(line, severity)
+    # Splitting a line into fields is a property of the BODY tier and of
+    # nothing else. A caller that passes an explicit tier is saying this whole
+    # line is not routine -- the heartbeat's yellow `still running` is the
+    # case -- and dimming half of it would say it is partly routine.
+    if code:
+        return _ansi(line, code)
+    match = _ROW_PREFIX_RE.match(line)
+    if not match:
+        return line
+    prefix, message = match.groups()
+    return _ansi(prefix, _ANSI_DIM) + message
 
 
 def rule_id(number):

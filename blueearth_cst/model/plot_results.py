@@ -27,7 +27,7 @@ from blueearth_cst.shared.plot_evaluation import (
     Station,
     plot_station_evaluation,
 )
-from blueearth_cst.shared.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row, plural
 from blueearth_cst.shared.wflow_outputs import (
     SUBCATCHMENT_SUFFIX,
     code_for,
@@ -162,9 +162,13 @@ def merge_outlet_and_gauge_series(qsim, qsim_gauges, log=_log):
         ]
         outlet_names = [str(n) for n in qsim["station_name"].sel(index=dropped).values]
         log(
-            f"Gauge(s) {[int(i) for i in dropped]} ({', '.join(gauge_names)}) "
-            f"sit on a model outlet and are already in Q_outlets; plotted "
-            f"under the outlet label(s) {outlet_names}."
+            # Led by the FACT rather than by the count, which also dodges the
+            # verb agreement `Gauge(s) ... sit` quietly got wrong whenever the
+            # count was 1 -- the case this row is most often printed for.
+            f"On a model outlet, already in Q_outlets: "
+            f"{plural(len(dropped), 'gauge')} "
+            f"{[int(i) for i in dropped]} ({', '.join(gauge_names)}); "
+            f"plotted under {outlet_names}"
         )
     if not keep:
         return qsim
@@ -399,7 +403,7 @@ def analyse_wflow_historical(
         if stations.get(int(sid)) is not None
     ]
     _log(
-        f"Evaluation figures for {len(plotted_ids)} station(s): "
+        f"Evaluation figures for {plural(len(plotted_ids), 'station')}: "
         + ", ".join(str(wflow_id) for wflow_id in plotted_ids)
     )
 

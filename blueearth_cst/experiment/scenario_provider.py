@@ -20,7 +20,7 @@ from blueearth_cst.experiment.scenario_rows import (
     enumerate_stochastic,
     validate_stochastic,
 )
-from blueearth_cst.shared.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row, plural
 
 
 @dataclass(frozen=True)
@@ -346,8 +346,8 @@ def initialize_planned_collection(
 
         payloads[SNAPSHOT_NAME] = config_snapshot
     log_row(
-        f"Collection {identity_segment(intent['collection_id'], 'collection_id')}: "
-        f"claiming {len(rows)} scenario row(s), {len(payloads)} portable input(s)",
+        f"{identity_segment(intent['collection_id'], 'collection_id')}: "
+        f"claiming {plural(len(rows), 'scenario row')}, {plural(len(payloads), 'portable input')}",
         module="collection",
     )
     return initialize_collection_jobs(project_dir, plan, invocation_id, payloads)
@@ -414,8 +414,8 @@ def publish_planned_collection(project_dir, plan, invocation_id):
     }
     manifest["collection_revision"] = collection_revision(manifest)
     log_row(
-        f"Collection {identity_segment(intent['collection_id'], 'collection_id')}: "
-        f"sealing {len(forcing)} forcing file(s) as immutable",
+        f"{identity_segment(intent['collection_id'], 'collection_id')}: "
+        f"sealing {plural(len(forcing), 'forcing file')} as immutable",
         module="collection",
     )
     return publish_collection(

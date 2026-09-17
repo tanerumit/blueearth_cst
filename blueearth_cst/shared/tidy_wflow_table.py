@@ -205,7 +205,7 @@ if __name__ == "__main__":
     # Inserted HERE rather than at module level so importing this module for its
     # table functions does not mutate `sys.path`.
     sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-    from blueearth_cst.shared.snake_utils import log_row, tee_to_log
+    from blueearth_cst.shared.snake_utils import log_row, plural, tee_to_log
 
     # Snakemake `script:` entry point: reads snakemake.input/output, never argv.
     sm = snakemake  # noqa: F821 - injected by Snakemake
@@ -224,4 +224,6 @@ if __name__ == "__main__":
         if len(written) == 1:
             log_row(f"Wrote {written[0]}", module="export")
         else:
-            log_row(f"Wrote {len(written)} table(s) -> {out_dir}", module="export")
+            log_row(
+                f"Wrote {plural(len(written), 'table')} -> {out_dir}", module="export"
+            )

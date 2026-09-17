@@ -37,7 +37,7 @@ from hydromt import DataCatalog
 from hydromt.gis import flw
 from pyflwdir import FlwdirRaster
 
-from blueearth_cst.shared.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import listed, log_row, plural
 from blueearth_cst.spatial.config import SpatialConfig
 from blueearth_cst.spatial.delineate_region import read_region
 from blueearth_cst.spatial.delineation import (
@@ -861,18 +861,17 @@ def prepare_spatial_units(
     stranded = locations_off_network(locations, rivers)
     if stranded:
         log_row(
-            f"{len(stranded)} location(s) are not on the derived river network: "
-            f"{', '.join(str(value) for value in stranded)}. They were snapped "
-            "onto river_mask, so this should be unreachable -- the network "
-            "vectorization and the mask have diverged.",
+            "Network vectorization and river_mask disagree: "
+            f"{plural(len(stranded), 'location')} off the derived network "
+            f"({listed(stranded)})",
             module="spatial",
             level="WARNING",
         )
     else:
         log_row(
-            f"River network: {len(rivers)} reach(es) at "
+            f"River network: {plural(len(rivers), 'reach', 'reaches')} at "
             f"{float(maps['river_mask'].attrs.get('upstream_area_threshold_km2', 0)):g}"
-            f" km2, reaching all {len(locations)} location(s)",
+            f" km2, reaching all {plural(len(locations), 'location')}",
             module="spatial",
         )
     for frame in (basins, subbasins, catchments):

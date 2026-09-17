@@ -72,7 +72,7 @@ def write_model_reference(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from blueearth_cst.shared.snake_utils import log_row, tee_to_log
+        from blueearth_cst.shared.snake_utils import log_row, plural, tee_to_log
 
         with tee_to_log(sm.log[0]):
             doc = write_model_reference(
@@ -82,7 +82,7 @@ if __name__ == "__main__":
             )
             log_row(
                 f"Model reference: {doc['model_path']} digest "
-                f"{doc['digest'][:12]}... over {len(doc['inputs'])} input(s)",
+                f"{doc['digest'][:12]}... over {plural(len(doc['inputs']), 'input')}",
                 module="experiment",
             )
     else:

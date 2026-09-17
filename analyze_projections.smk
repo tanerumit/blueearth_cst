@@ -16,7 +16,7 @@ from snakemake.exceptions import WorkflowError
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import listed, ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, window_year_pair
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, listed, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, warning_count, window_year_pair
 from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -853,6 +853,12 @@ def get_horizon(wildcards):
 # standalone or otherwise: it reads the region polygon from `delineate_region`.
 # Both directions are now mechanically checked for all three workflows.
 WORKFLOW_LOG_NAME = "wf2_analyze_projections.log"
+
+# One tally per run, opened at parse time and published to every job process
+# through the environment: a rule prints its warnings from a process of its
+# own, and the verdict below is written by this one. See
+# `snake_utils.declare_warning_tally`.
+declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts"
 
 # The run's key folders, stated once -- see the same block in
@@ -1419,6 +1425,7 @@ def _summary(failed):
                 elapsed_seconds=time.monotonic() - _RUN_STARTED,
                 failed=failed,
                 log_parts_dir=LOG_PARTS_DIR,
+                warnings=warning_count(),
             )
             + "\n"
         )

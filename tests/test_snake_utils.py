@@ -3730,6 +3730,130 @@ def test_run_summary_closes_a_success_in_one_line():
     assert out.splitlines() == ["wf3 run_stress_test done in 0:02:56"]
 
 
+def test_warning_tally_counts_across_processes(tmp_path, monkeypatch):
+    """The tally is a FILE because the producers are separate processes.
+
+    A rule prints its warnings from a process of its own and the verdict is
+    written by the parent, so an in-memory counter can only ever see half the
+    run. Two independent appenders standing in for two jobs here.
+    """
+    monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / ".wf1.log.tally"))
+    su.note_warning("heartbeat")
+    su.note_warning("plot")
+    assert su.warning_count() == 2
+
+
+def test_warning_tally_is_none_when_no_run_declared_one(monkeypatch):
+    """`None` and `0` are different answers: untracked, versus a clean run."""
+    monkeypatch.delenv(su._WARNING_TALLY_ENV, raising=False)
+    assert su.warning_count() is None
+
+
+def test_declare_warning_tally_truncates_so_a_rerun_counts_its_own(
+    tmp_path, monkeypatch
+):
+    # `setenv` FIRST, although `declare_warning_tally` overwrites it: monkeypatch
+    # records a key's original state when it is first touched and undoes only
+    # that. Letting `declare` be the first writer leaks the variable into every
+    # later test in the session -- which is how one suite run ended with
+    # `48 warnings` on the verdict that asserts it closes in one line.
+    monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "unused"))
+    monkeypatch.chdir(tmp_path)
+    su.declare_warning_tally(".", "wf1_build_model.log")
+    su.note_warning("plot")
+    assert su.warning_count() == 1
+    su.declare_warning_tally(".", "wf1_build_model.log")
+    assert su.warning_count() == 0
+    assert not os.path.exists(su.warning_tally_path(".", "wf1_build_model.log")), (
+        "a parse leaves no artifact in the project"
+    )
+
+
+def test_warning_tally_lives_beside_the_merged_log_not_in_the_parts_dir():
+    """`merge_logs` prunes `logs/_parts/`, and the verdict reads the tally after."""
+    path = su.warning_tally_path("p", "wf1_build_model.log").replace(os.sep, "/")
+    assert path == "p/logs/.wf1_build_model.log.tally"
+    assert "_parts" not in path
+
+
+def test_log_row_counts_a_warning_it_prints_and_not_one_it_suppresses(
+    tmp_path, monkeypatch, capsys
+):
+    """The tally must match what the reader was SHOWN.
+
+    A row dropped by `CST_LOG_LEVEL` never reached the console, so counting it
+    would make the verdict report warnings nobody can find.
+    """
+    monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "t"))
+    su.log_row("disk is nearly full", module="stage", level="WARNING")
+    su.log_row("wrote 3 files", module="stage")
+    assert su.warning_count() == 1
+    monkeypatch.setenv("CST_LOG_LEVEL", "ERROR")
+    su.log_row("disk is nearly full", module="stage", level="WARNING")
+    assert su.warning_count() == 1, "a suppressed row is not a shown warning"
+    capsys.readouterr()
+
+
+def test_run_summary_verdict_carries_the_warning_count(tmp_path, monkeypatch):
+    """A run that warned must not end in a line a clean run could have written."""
+    monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "t"))
+    su.note_warning("heartbeat")
+    out = cs.run_summary(
+        "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
+    )
+    assert out.splitlines()[0] == "wf1 done in 0:07:16  |  1 warning"
+    su.note_warning("plot")
+    out = cs.run_summary(
+        "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
+    )
+    assert out.splitlines()[0].endswith("|  2 warnings"), out
+
+
+def test_run_summary_says_nothing_when_a_run_printed_no_warning(tmp_path, monkeypatch):
+    monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "t"))
+    su.declare_warning_tally(str(tmp_path), "l.log")
+    assert su.warning_count() == 0, (
+        "declared and unwritten is a clean run, not an absent one"
+    )
+    out = cs.run_summary(
+        "wf1", "p", "l.log", "b.md", elapsed_seconds=436, warnings=su.warning_count()
+    )
+    assert out.splitlines() == ["wf1 done in 0:07:16"]
+
+
+def test_run_summary_ignores_a_tally_it_was_not_handed(tmp_path, monkeypatch):
+    """Ambient state must not reach the verdict.
+
+    `declare_warning_tally` sets a process-global variable at Snakefile PARSE,
+    so a DAG contract test or a dry run leaves one set. A `run_summary` that
+    read it would report another run's warnings -- which is what a full suite
+    did, closing a one-line verdict with `| 48 warnings`.
+    """
+    monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "t"))
+    su.note_warning("someone else's run")
+    out = cs.run_summary("wf1", "p", "l.log", "b.md", elapsed_seconds=436)
+    assert out.splitlines() == ["wf1 done in 0:07:16"]
+
+
+def test_run_summary_failure_verdict_carries_it_too(tmp_path, monkeypatch):
+    """A failed run's warnings are not less interesting than a clean one's."""
+    monkeypatch.setenv(su._WARNING_TALLY_ENV, str(tmp_path / "t"))
+    su.note_warning("heartbeat")
+    out = cs.run_summary(
+        "wf1",
+        "p",
+        "l.log",
+        "b.md",
+        failed=True,
+        elapsed_seconds=249,
+        warnings=su.warning_count(),
+    )
+    head, rule = out.splitlines()[0], out.splitlines()[1]
+    assert head == "wf1 FAILED in 0:04:09  |  1 warning"
+    # The band under the title is sized on the head it underlines, field and all.
+    assert len(rule) == len(head)
+
+
 def test_run_summary_paints_only_the_failed_verdict(monkeypatch):
     """Red marks the exceptional run; a success verdict stays unpainted.
 

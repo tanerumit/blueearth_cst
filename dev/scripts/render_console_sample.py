@@ -238,6 +238,11 @@ def render(wf: Workflow, failed: bool = False) -> str:
             elapsed_seconds=int(clock.t) if fail is not None else wf.elapsed,
             failed=fail is not None,
             log_parts_dir=fail.log_parts_dir if fail is not None else None,
+            # Counted off the rows this render actually emitted, not declared
+            # in the spec: a fabricated tally that disagreed with the rows
+            # above it would make the dummy lie about the one thing the field
+            # exists to state. A real run counts through the sidecar tally.
+            warnings=_staged_warnings(wf, fail),
         )
         + "\n"
     )
@@ -248,6 +253,27 @@ def render(wf: Workflow, failed: bool = False) -> str:
     import re
 
     return re.sub(r"\x1b\[[0-9;]*m", "", text).replace("\r", "")
+
+
+def _staged_warnings(wf, fail):
+    """WARNING rows in the transcript this render just produced."""
+    bodies = []
+    for job in wf.jobs:
+        if fail is not None and job.rule == fail.rule:
+            bodies.append(fail.body or job.body)
+            break
+        bodies.append(job.body)
+    # A stall notice counts whatever its level says, mirroring the tally
+    # itself: `note_warning("heartbeat")` sits at the stall site rather than
+    # behind a level test, because the watchdog emits at INFO and paints the
+    # row yellow. Counting it by level here would report a clean run.
+    return sum(
+        1
+        for body in bodies
+        for row in body
+        if (len(row) > 3 and str(row[3]).upper() in ("WARNING", "ERROR"))
+        or row[0] == "heartbeat"
+    )
 
 
 def write(name: str, wf: Workflow) -> dict:

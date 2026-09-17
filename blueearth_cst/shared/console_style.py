@@ -67,6 +67,8 @@ from blueearth_cst.shared.snake_utils import (
     _path_tokens,
     _relativize_paths,
     format_elapsed,
+    note_warning,
+    plural,
     rule_id,
 )
 
@@ -152,6 +154,7 @@ def warn_row(message, module="cst"):
     because :func:`log_row` has always spelled it that way and two names for one
     field costs more at every call site than this costs at one.
     """
+    note_warning(module)
     text = _log_row_text(f"{datetime.now():%H:%M:%S}", module, "WARNING", str(message))
     sys.stderr.write(_paint_body(text + "\n", _console_colour(sys.stderr)))
 
@@ -193,6 +196,10 @@ def defer_warning(message, module="cst"):
     ``module`` follows :func:`warn_row`'s rules, including the one about never
     opening a Snakefile line with the ``module=`` token.
     """
+    # Counted on DEFERRAL, not on flush: a row held for a header its run never
+    # reaches is still printed (`_flush_undrained_warnings`), so a tally keyed
+    # to the flush would drop the rows of exactly the runs that went wrong.
+    note_warning(module)
     _DEFERRED_WARNINGS.append((f"{datetime.now():%H:%M:%S}", str(module), str(message)))
 
 
@@ -591,6 +598,7 @@ def run_summary(
     elapsed_seconds=None,
     failed=False,
     log_parts_dir=None,
+    warnings=None,
 ):
     """Return the end-of-run console block for an ``onsuccess``/``onerror``.
 
@@ -647,6 +655,19 @@ def run_summary(
     head = f"{workflow} {verdict}"
     if elapsed_seconds is not None:
         head = f"{head} in {format_elapsed(elapsed_seconds)}"
+    # A run that printed a warning must not end in a line indistinguishable
+    # from a clean one. The rows themselves have scrolled past by now, so the
+    # verdict carries the COUNT and the log carries the text -- this stays one
+    # line and one statement, which is the whole point of a verdict.
+    #
+    # PIPED, the same separator the plan head uses for its fields. Passed IN
+    # rather than read from the environment here: `declare_warning_tally` sets a
+    # process-global variable at Snakefile PARSE, so anything that parses a
+    # Snakefile in-process -- a DAG contract test, a dry run -- leaves this
+    # function reading a tally belonging to a run it is not summarizing. The
+    # Snakefile that declared the tally is the one that reads it back.
+    if warnings:
+        head = f"{head}  |  {plural(warnings, 'warning')}"
     plain_head = head
     if failed:
         # Coloured HERE, unlike `rule_banner`, and the difference is where the

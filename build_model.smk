@@ -8,7 +8,7 @@ from pathlib import Path
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import listed, ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, get_config, historical_window_bounds, julia_prefix, patch_psutil_windows_benchmark, region_rule, resolve_simulation_window, resolve_water_year_start, spatial_units_rule, validate_historical_window
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, historical_window_bounds, julia_prefix, listed, patch_psutil_windows_benchmark, region_rule, resolve_simulation_window, resolve_water_year_start, spatial_units_rule, validate_historical_window, warning_count
 from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -442,6 +442,12 @@ SPATIAL_UNITS = spatial_units_rule(
 # truncated the label set it read. That parser is gone ([R10-10]), and the one
 # that replaced it anchors the closing bracket at column 0.
 WORKFLOW_LOG_NAME = "wf1_build_model.log"
+
+# One tally per run, opened at parse time and published to every job process
+# through the environment: a rule prints its warnings from a process of its
+# own, and the verdict below is written by this one. See
+# `snake_utils.declare_warning_tally`.
+declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts"
 
 # The run's key folders, stated ONCE. `run_header` prints them at the top of the
@@ -1425,6 +1431,7 @@ def _summary(failed):
                 elapsed_seconds=time.monotonic() - _RUN_STARTED,
                 failed=failed,
                 log_parts_dir=LOG_PARTS_DIR,
+                warnings=warning_count(),
             )
             + "\n"
         )

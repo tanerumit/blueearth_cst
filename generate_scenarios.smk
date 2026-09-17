@@ -7,7 +7,7 @@ from pathlib import Path
 import yaml
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
-from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark
+from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, warning_count
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary, target_banner
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 from blueearth_cst.experiment.content_identity import read_canonical_json
@@ -45,6 +45,12 @@ _plan_key = Path(_scenario_request_path).parent.name
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts/generate_scenarios/{_plan_key}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/generate_scenarios/{_plan_key}"
 WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
+
+# One tally per run, opened at parse time and published to every job process
+# through the environment: a rule prints its warnings from a process of its
+# own, and the verdict below is written by this one. See
+# `snake_utils.declare_warning_tally`.
+declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 BENCHMARKS_NAME = f"wf3_benchmarks_{_plan_key}.md"
 LOG_RULES = ["3.01_delineate_region", "3.02_extract_historical_climate", "3.03_prepare_stress_test_grid",
              "3.07_generate_weather_realizations", "3.08_perturb_climate_realization"]
@@ -459,6 +465,7 @@ def _summary(failed):
                 elapsed_seconds=time.monotonic() - _RUN_STARTED,
                 failed=failed,
                 log_parts_dir=LOG_PARTS_DIR,
+                warnings=warning_count(),
             )
             + "\n"
         )

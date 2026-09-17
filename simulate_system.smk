@@ -7,7 +7,7 @@ REPOSITORY = Path(workflow.basedir)
 sys.path.insert(0, str(REPOSITORY))
 from blueearth_cst.experiment.content_identity import content_sha256, read_canonical_json
 from blueearth_cst.experiment.simulation_runner import simulation_settings
-from blueearth_cst.shared.snake_utils import patch_psutil_windows_benchmark
+from blueearth_cst.shared.snake_utils import declare_warning_tally, patch_psutil_windows_benchmark, warning_count
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 patch_psutil_windows_benchmark()
@@ -124,6 +124,12 @@ rule metrics:
 # to Julia for the simulator headers.
 _RUN_STARTED = time.monotonic()
 
+# One tally per run, opened at parse time and published to every job process
+# through the environment: a rule prints its warnings from a process of its
+# own, and the verdict below is written by this one. See
+# `snake_utils.declare_warning_tally`.
+declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
+
 
 def _summary(failed):
     """Print the end-of-run block to STDERR, beside Snakemake's own output.
@@ -144,6 +150,7 @@ def _summary(failed):
                 elapsed_seconds=time.monotonic() - _RUN_STARTED,
                 failed=failed,
                 log_parts_dir=LOG_PARTS_DIR,
+                warnings=warning_count(),
             )
             + "\n"
         )

@@ -2607,6 +2607,17 @@ class _Heartbeat:
                     continue
                 elapsed = format_elapsed(now - self._start)
                 self._noticed = True
+                # Counted here rather than inferred from a log, because this
+                # notice is console-only by design (`quiet_rows` holds the
+                # durable copy) -- it is exactly the warning a tally read back
+                # from the merged log would miss.
+                #
+                # And counted at the SITE rather than behind a level test: the
+                # watchdog emits at INFO and paints the row yellow, so a
+                # level-keyed tally would report a clean run over a stall the
+                # reader watched happen. Do not "simplify" this to a check on
+                # `_LOG_LEVEL_RANK`.
+                note_warning("heartbeat")
                 self._emit(f"still running, {elapsed} elapsed", _ANSI_WARN)
                 next_notice += min(next_notice, _HEARTBEAT_MAX_STEP)
         if quiet_since is not None:
@@ -3913,6 +3924,94 @@ def plural(count, singular, plural_form=None):
     return f"{count} {word}"
 
 
+#: Where a run counts the warning rows it printed. Published to every job
+#: process through the ENVIRONMENT, the way `_PATH_TOKENS_ENV` already is: a
+#: `script:` rule runs in a process of its own, so a counter held in the
+#: parent's memory can never see the rows a rule prints, and the verdict that
+#: reports the tally is written by the parent.
+_WARNING_TALLY_ENV = "CST_WARNING_TALLY"
+
+
+def warning_tally_path(project_dir, log_name):
+    """The file a run counts its warnings in.
+
+    Beside the merged log it describes and named after it, NOT under
+    ``logs/_parts/``: :func:`~blueearth_cst.shared.merge_logs.merge_logs`
+    prunes that directory once it has folded the parts into the merged log,
+    and the verdict reads this tally AFTER that rule has run. A tally living
+    there would either be litter the prune leaves behind or keep the directory
+    alive past the rule meant to remove it.
+    """
+    return os.path.join(os.fspath(project_dir), "logs", f".{log_name}.tally")
+
+
+def declare_warning_tally(project_dir, log_name):
+    """Open a fresh tally for this run and publish it to every job process.
+
+    Called once per Snakefile at parse time, beside
+    :func:`declare_path_tokens`. Truncating HERE rather than at first write is
+    what keeps a rerun honest: the file would otherwise carry every previous
+    run's rows and the verdict would report a number that only grows.
+
+    **Mutates the process environment**, which in a run is the point and in a
+    test is a leak: a test calling this must let ``monkeypatch`` touch
+    ``_WARNING_TALLY_ENV`` FIRST, or the variable outlives it and every later
+    warning in the session lands in one tally.
+    """
+    path = warning_tally_path(project_dir, log_name)
+    os.environ[_WARNING_TALLY_ENV] = path
+    try:
+        # REMOVED, not truncated-in-place: parsing is not running. A `--dry-run`
+        # and a DAG contract test both reach this line, and creating the file
+        # here put an artifact inside every project either one touched. The
+        # first warning creates it (:func:`note_warning`); a run that prints
+        # none leaves nothing behind, which is the honest trace of a clean run.
+        os.remove(path)
+    except OSError:
+        # Absent already, or unreachable. A tally that cannot be managed costs
+        # the verdict its field and nothing else. Never the run.
+        pass
+    return path
+
+
+def note_warning(module="cst"):
+    """Record that one warning row reached the console. Best effort.
+
+    One short append per row. ``a`` seeks to the end on every write, so the
+    parallel jobs this toolbox runs interleave rows rather than overwriting
+    each other's -- a line count is all this file is ever read for.
+    """
+    path = os.environ.get(_WARNING_TALLY_ENV)
+    if not path:
+        return
+    try:
+        os.makedirs(os.path.dirname(path), exist_ok=True)
+        with open(path, "a", encoding="utf-8") as handle:
+            handle.write(f"{module}\n")
+    except OSError:
+        pass
+
+
+def warning_count():
+    """How many warning rows this run printed, or ``None`` when untracked.
+
+    ``None`` and ``0`` are different answers and the verdict spells them
+    differently: no tally was declared, versus a run that printed no warning.
+    """
+    path = os.environ.get(_WARNING_TALLY_ENV)
+    if not path:
+        return None
+    try:
+        with open(path, encoding="utf-8") as handle:
+            return sum(1 for line in handle if line.strip())
+    except FileNotFoundError:
+        # Declared but never written: a run that printed no warning. That is a
+        # count of zero, not an absent tally.
+        return 0
+    except OSError:
+        return None
+
+
 def log_row(message, module="cst", level="INFO"):
     """Print one log row in the standard compact format used across rule logs.
 
@@ -3969,6 +4068,11 @@ def log_row(message, module="cst", level="INFO"):
     meant to appear in a rule log. The row is already compact, so the tee passes
     it through (only any project paths in it are relativized).
 
+    A row at ``WARNING`` or above also increments the run's warning tally
+    (:func:`note_warning`), which is what puts the count on the verdict line.
+    Counted after the ``CST_LOG_LEVEL`` floor, so the tally reports warnings
+    the reader was actually shown.
+
     Rows below ``CST_LOG_LEVEL`` are dropped, which is the toolbox's quiet mode:
     ``CST_LOG_LEVEL=WARNING`` leaves only warnings and errors. Two properties
     make that safe to add to an existing caller population:
@@ -3998,6 +4102,11 @@ def log_row(message, module="cst", level="INFO"):
     rank = _LOG_LEVEL_RANK.get(str(level).strip().upper())
     if rank is not None and rank < log_level_floor():
         return
+    # Counted AFTER the floor and before the write, so the tally matches what
+    # the console actually showed: a row suppressed by `CST_LOG_LEVEL` is not a
+    # warning the reader was given and must not appear in the verdict's count.
+    if rank is not None and rank >= _LOG_LEVEL_RANK["WARNING"]:
+        note_warning(module)
     # Any ordinary row closes an open figure bundle first, so the bundle line
     # appears where the figures were actually written rather than after the
     # message that followed them. See `save_figure`.

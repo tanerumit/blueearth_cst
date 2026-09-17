@@ -801,10 +801,13 @@ def run(
 
     # Every hand-off band below names the workflow it is about to start, so the
     # workflow's own opening block does not print its name a second time three
-    # lines later. Set on THIS process's environment rather than passed per
-    # child: `subprocess.run` inherits it, and `simulation_command` builds its
-    # env from `os.environ`, so one assignment covers both spawn paths.
-    os.environ[console_style.ANNOUNCED_ENV] = "1"
+    # lines later. Handed to each CHILD rather than set on this process's own
+    # environment: `os.environ[...] = "1"` covered both spawn paths in one line
+    # and leaked, because nothing ever unsets it -- inside a test session that
+    # is one `run()` call silencing the title for every later test in the
+    # process, which is how the full suite found it. The variable describes the
+    # child's console, so it belongs on the child's environment.
+    child_env = {**os.environ, console_style.ANNOUNCED_ENV: "1"}
 
     # monotonic, matching each Snakefile's own `_RUN_STARTED`: a wall clock can
     # step backwards mid-run and these are durations, never timestamps.
@@ -873,9 +876,15 @@ def run(
                         config_path, list(simulation_targets), cores, extra
                     )
                     workflow["command"] = sanitize_argv(cmd)
-                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=environment)
+                    # The simulation runner builds its own environment; the
+                    # announcement rides on top of it rather than replacing it.
+                    result = subprocess.run(
+                        cmd,
+                        cwd=REPO_ROOT,
+                        env={**environment, console_style.ANNOUNCED_ENV: "1"},
+                    )
                 else:
-                    result = subprocess.run(cmd, cwd=REPO_ROOT)
+                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=child_env)
             except BaseException as exc:
                 elapsed = format_elapsed(time.monotonic() - workflow_started)
                 ran.append((name, f"FAILED ({type(exc).__name__}) after {elapsed}"))

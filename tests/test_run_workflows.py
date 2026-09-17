@@ -876,17 +876,80 @@ def test_the_console_is_ascii_but_for_the_three_rail_glyphs(
 
 
 def test_the_runner_tells_its_children_the_workflow_is_already_named(
-    tmp_path, capture_runs, capsys, monkeypatch
+    tmp_path, capsys, monkeypatch
 ):
     """Each hand-off band names the workflow, so the child's block need not.
 
-    Set on this process's environment because both spawn paths read it from
-    there: plain `subprocess.run` inherits it, and `simulation_command` builds
-    its env from `os.environ`.
+    On the CHILD's environment, and asserted together with the parent's
+    staying clean. Setting `os.environ` in the runner covered both spawn paths
+    in one line and leaked: nothing unsets it, so inside one process a single
+    `run()` silenced the title for everything afterwards -- nine tests in
+    `test_snake_utils.py`, visible only to the full suite because each file
+    passes on its own.
     """
     monkeypatch.delenv(rw.console_style.ANNOUNCED_ENV, raising=False)
-    _run_and_capture(tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER})
-    assert os.environ[rw.console_style.ANNOUNCED_ENV] == "1"
+    envs = []
+
+    def fake_run(cmd, cwd=None, **kwargs):
+        if cmd[0] == "git":
+            return FakeResult(0, stdout="abc123\n" if "rev-parse" in cmd else "")
+        envs.append(kwargs.get("env"))
+        return FakeResult(0)
+
+    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    project_dir = tmp_path / "gabon_project"
+    cfg = tmp_path / "c.yml"
+    # `build_model` alone: it is the plain `subprocess.run` path, and enabling
+    # `simulate_system` would trip the contract (i) preflight on a scratch
+    # project with no wf1 leaves.
+    flags = {n: "false" for n in rw.WORKFLOW_ORDER}
+    flags["build_model"] = "true"
+    _write_cfg(cfg, flags, project_dir=str(project_dir))
+    rw.run(str(cfg), cores=3, extra=[])
+    capsys.readouterr()
+
+    assert [env[rw.console_style.ANNOUNCED_ENV] for env in envs] == ["1"]
+    assert rw.console_style.ANNOUNCED_ENV not in os.environ  # never leaked
+
+
+def test_the_announcement_rides_on_the_simulation_runners_own_environment(
+    tmp_path, capsys, monkeypatch
+):
+    """The other spawn path builds its own env, so the flag is added to it.
+
+    Covered separately because this is the branch that MERGES: WF4 goes
+    through `simulation_command`, whose environment carries the invocation id
+    and the selected operation. Replacing it rather than adding to it would
+    take those with it.
+    """
+    monkeypatch.delenv(rw.console_style.ANNOUNCED_ENV, raising=False)
+    envs = []
+
+    def fake_run(cmd, cwd=None, **kwargs):
+        if cmd[0] == "git":
+            return FakeResult(0, stdout="abc123\n" if "rev-parse" in cmd else "")
+        envs.append(kwargs.get("env"))
+        return FakeResult(0)
+
+    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    project_dir = tmp_path / "gabon_project"
+    # The wf1 leaves the contract (i) preflight requires, without running wf1.
+    for leaf in rw.LEAVES:
+        artifact = project_dir / leaf
+        artifact.parent.mkdir(parents=True, exist_ok=True)
+        artifact.touch()
+    cfg = tmp_path / "c.yml"
+    flags = {n: "false" for n in rw.WORKFLOW_ORDER}
+    flags["simulate_system"] = "true"
+    _write_cfg(cfg, flags, project_dir=str(project_dir))
+    rw.run(str(cfg), cores=3, extra=[])
+    capsys.readouterr()
+
+    assert len(envs) == 1
+    assert envs[0][rw.console_style.ANNOUNCED_ENV] == "1"
+    # The runner's own keys survived the merge.
+    assert envs[0]["CST_SIMULATION_OPERATION"] == "simulate-and-metrics"
+    assert rw.console_style.ANNOUNCED_ENV not in os.environ
 
 
 def test_the_runner_declares_utf8_on_its_own_stdout(monkeypatch):

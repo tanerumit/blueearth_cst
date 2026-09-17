@@ -3,12 +3,27 @@
 Drives `_ConsoleHandler` with the same synthetic records `tests/test_snake_utils.py`
 uses, so what comes out is what a run prints. Every rule row below is the
 module's own string literal with only its interpolated values staged; the clock
-and the durations are staged too, so a transcript is reproducible.
+and the durations are staged too, so a transcript is byte-reproducible -- two
+renders of an unchanged spec are identical, which is what makes a diff between
+renders readable as the console change and nothing else.
+
+Both modules that read a clock are staged. `snake_utils` owns `log_row`, which
+stamps a rule's own output; `console_style` owns the handler, which stamps the
+RUN/DONE rows and measures each job's elapsed. Staging only the first left a
+transcript carrying two clocks -- body rows at the staged time, job rows at
+whatever the wall clock said -- so job timings could not be read off the page
+and every re-render diffed against the last.
 
 One spec per workflow in `console_sample_specs.py`; a new workflow costs a
-spec rather than a script. Writes `<name>.clean.txt` per workflow plus
+spec rather than a script. Writes `<name>.clean.txt` per workflow, plus
+`<name>.failed.txt` for a workflow whose spec carries a `Failure`, plus
 `transcripts.json`, into this script's own directory unless `--out` says
 otherwise.
+
+A run has two shapes a reviewer has to see, not one. The success shape ends
+with rule `all` listing its targets; the failure shape never reaches `all`, and
+its tail is the only place the log-parts directory is named. A spec without a
+`Failure` renders the clean shape alone, and `main` says which those are.
 
 Run it to see what a console change actually looks like without executing a
 workflow -- which is how the 2026-09-17 styling pass was reviewed:
@@ -32,6 +47,10 @@ from blueearth_cst.shared import console_style as cs
 from blueearth_cst.shared import snake_utils as su
 
 HERE = Path(__file__).parent
+
+#: The real clocks, captured before any render swaps a fake one in.
+_REAL_SU = (su.time, su.datetime)
+_REAL_CS = (cs.time, cs.datetime)
 
 
 # --------------------------------------------------------------------------
@@ -100,6 +119,22 @@ class Job:
 
 
 @dataclass
+class Failure:
+    """How a run dies: which job fails, what it printed, what Snakemake said.
+
+    `error` is Snakemake's own block, which arrives as an ERROR record with no
+    event and therefore keeps its own colouring -- the one thing on this
+    console that stays louder than a start line.
+    """
+
+    rule: str
+    seconds: float = 2
+    body: tuple = ()  # rows the rule printed before it died
+    error: str = ""  # Snakemake's error block, verbatim
+    log_parts_dir: str = "logs/_parts"
+
+
+@dataclass
 class Workflow:
     name: str  # `wf0 analyze_climate`
     project: str
@@ -111,9 +146,10 @@ class Workflow:
     elapsed: int
     details: dict = field(default_factory=dict)
     tokens: dict = field(default_factory=dict)
+    failure: object = None  # Failure | None -- absent means clean-only
 
 
-def render(wf: Workflow) -> str:
+def render(wf: Workflow, failed: bool = False) -> str:
     cs._RULE_NUMBERS.clear()
     cs._RULE_SUMMARIES.clear()
     # Tokens travel through the environment (`_PATH_TOKENS_ENV`), so clear
@@ -129,8 +165,11 @@ def render(wf: Workflow) -> str:
     cs._RUN_HEADER = (wf.name, wf.project, wf.config, dict(wf.details))
 
     clock = Clock()
-    su.time = clock
-    su.datetime = clock
+    # BOTH modules, or the transcript carries two clocks: `snake_utils` stamps
+    # a rule's own `log_row` output, `console_style` stamps the RUN/DONE rows
+    # and measures each job's elapsed from its own `time.monotonic`.
+    su.time = su.datetime = clock
+    cs.time = cs.datetime = clock
 
     h = _handler()
     out = h.stream
@@ -152,6 +191,10 @@ def render(wf: Workflow) -> str:
 
     emit(_record(wf.stats, event="run_info"))
 
+    fail = wf.failure if failed else None
+    if failed and fail is None:
+        raise ValueError(f"{wf.name}: no Failure spec to render")
+
     total = len(wf.jobs)
     done = 0
     for jobid, job in enumerate(wf.jobs, start=1):
@@ -165,6 +208,16 @@ def render(wf: Workflow) -> str:
         if job.wildcards:
             msg = msg.format(**job.wildcards)
         emit(_job_info(jobid, job.rule, msg, job.wildcards))
+        if fail is not None and job.rule == fail.rule:
+            # The run dies HERE: the rule prints what it got to, Snakemake
+            # prints its block, and no finish line or progress record follows.
+            # Every later job is never scheduled, so the loop ends rather than
+            # continuing quietly -- a transcript that kept going would show a
+            # run that cannot happen.
+            rows(fail.body or job.body)
+            clock.advance(fail.seconds)
+            emit(_record(fail.error, level=logging.ERROR))
+            break
         if job.body:
             rows(job.body)
         clock.advance(job.seconds)
@@ -182,20 +235,29 @@ def render(wf: Workflow) -> str:
             wf.project,
             "log",
             "benchmarks",
-            elapsed_seconds=wf.elapsed,
+            elapsed_seconds=int(clock.t) if fail is not None else wf.elapsed,
+            failed=fail is not None,
+            log_parts_dir=fail.log_parts_dir if fail is not None else None,
         )
         + "\n"
     )
-    # Strip the SGR the success verdict adds when stderr looks like a console.
+    su.time, su.datetime = _REAL_SU
+    cs.time, cs.datetime = _REAL_CS
+
+    # Strip the SGR a verdict adds when stderr looks like a console.
     import re
 
     return re.sub(r"\x1b\[[0-9;]*m", "", text).replace("\r", "")
 
 
-def write(name: str, wf: Workflow) -> str:
-    text = render(wf)
-    (HERE / f"{name}.clean.txt").write_text(text, encoding="utf-8", newline="\n")
-    return text
+def write(name: str, wf: Workflow) -> dict:
+    """Render every shape the spec covers. Keyed by shape, `clean` always."""
+    shapes = {"clean": render(wf)}
+    if wf.failure is not None:
+        shapes["failed"] = render(wf, failed=True)
+    for shape, text in shapes.items():
+        (HERE / f"{name}.{shape}.txt").write_text(text, encoding="utf-8", newline="\n")
+    return shapes
 
 
 def main(out_dir=None):
@@ -207,13 +269,29 @@ def main(out_dir=None):
         HERE.mkdir(parents=True, exist_ok=True)
 
     payload = {}
+    clean_only = []
     for name, wf in WORKFLOWS.items():
-        text = write(name, wf)
-        payload[name] = {"label": wf.name, "lines": text.split("\n")}
-        sys.stdout.write(f"{name}: {len(payload[name]['lines'])} lines\n")
+        shapes = write(name, wf)
+        payload[name] = {
+            "label": wf.name,
+            "shapes": {s: t.split("\n") for s, t in shapes.items()},
+        }
+        counts = "  ".join(
+            f"{s} {len(t.split(chr(10)))} lines" for s, t in shapes.items()
+        )
+        sys.stdout.write(f"{name}: {counts}\n")
+        if "failed" not in shapes:
+            clean_only.append(name)
     (HERE / "transcripts.json").write_text(
         json.dumps(payload, indent=1), encoding="utf-8", newline="\n"
     )
+    # A renderer that bounds its own coverage says so: a reviewer who sees only
+    # clean transcripts should know which are clean BY SPEC and which are
+    # clean because nobody wrote the failure down.
+    if clean_only:
+        sys.stdout.write(
+            f"no failure spec, clean shape only: {', '.join(clean_only)}\n"
+        )
 
 
 if __name__ == "__main__":

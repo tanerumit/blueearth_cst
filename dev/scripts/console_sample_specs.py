@@ -6,7 +6,7 @@ Interpolated values are staged; the strings around them are not.
 
 from __future__ import annotations
 
-from render_console_sample import Job, Rule, Workflow
+from render_console_sample import Failure, Job, Rule, Workflow
 
 PROJECT = "test_case/test_rapid"
 
@@ -531,6 +531,37 @@ total                        6
         Job("gather_logs", seconds=2),
         Job("all", seconds=0),
     ],
+    # WF1 carries the failure shape because 1.14 is where a run of this
+    # toolbox actually dies: Wflow is the one step running foreign code over
+    # data the build assembled, and a bad forcing window or an unsolvable
+    # state surfaces as a non-zero exit with nothing above it but our own
+    # heartbeat. The block below is Snakemake's, not ours -- what the console
+    # does to it is relativize its paths onto the run's tokens, which is the
+    # behaviour the failure transcript exists to show.
+    failure=Failure(
+        rule="run_wflow",
+        seconds=9,
+        body=(
+            (
+                "heartbeat",
+                "Rule 1.14: run_wflow still running, 0:04:00 elapsed",
+                240,
+                "WARNING",
+            ),
+        ),
+        error="""Error in rule run_wflow:
+    jobid: 1
+    input: test_case/test_rapid/hydrology_model/wflow_sbm.toml
+    output: test_case/test_rapid/hydrology_model/run_default/output.csv
+    log: test_case/test_rapid/logs/_parts/1.14_run_wflow.log (check log file(s) for error details)
+    shell:
+        julia --project=julia_env -e "using Wflow; Wflow.run()" test_case/test_rapid/hydrology_model/wflow_sbm.toml
+        (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
+
+Shutting down, this might take some time.
+Exiting because a job execution failed. Look above for error message""",
+        log_parts_dir="logs/_parts",
+    ),
 )
 
 

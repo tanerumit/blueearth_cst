@@ -924,10 +924,20 @@ def test_wg3_integration():
     from pathlib import Path
 
     _, collection, _ = _successor_artifacts()
+    # Compare FULL identity to FULL identity. `collection.name` is the 12-hex
+    # `identity_segment(...)`, which `content_identity` documents as "the *path*
+    # form, and only the path form" -- a prefix is never equal to the digest it
+    # was cut from, so the old `== collection.name` matched nothing and this
+    # assertion could only pass by the module skipping. The full id lives in the
+    # collection manifest; read it there rather than reconstructing it from a
+    # directory name that cannot be checked against anything on its own.
+    collection_id = json.loads(
+        (collection / "collection.json").read_text(encoding="utf-8")
+    )["collection_id"]
     plans = [
         p
         for p in (Path(_FIXTURE) / "scenarios" / "requests").glob("*/request.json")
-        if json.loads(p.read_text())["collection_id"] == collection.name
+        if json.loads(p.read_text())["collection_id"] == collection_id
     ]
     assert plans, "no generation plan for the consumed collection"
     for plan in plans:

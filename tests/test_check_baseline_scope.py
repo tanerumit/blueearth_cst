@@ -550,3 +550,46 @@ def test_a_pattern_accepts_any_segment_length(project):
     assert pattern.match(f"{base}/{'a' * 64}/q_indicators.csv")
     assert pattern.match(f"{base}/{'a' * 12}/q_indicators.csv")
     assert not pattern.match(f"{base}/{'a' * 12}/other.csv")
+
+
+def test_a_scoped_record_does_not_clear_an_orphan(project, capsys):
+    """A scoped re-record PRESERVES the orphaned row, so the FAIL persists.
+
+    `cmd_record --workflow` prunes by RESOLVED in-scope path, not by owning
+    workflow, so a row that no longer resolves is not in `selected_paths` and
+    survives the merge -- landing beside the freshly recorded row rather than
+    replacing it. This is the constraint on the obvious remedy: only an
+    UNSCOPED record (which overwrites `targets` wholesale) clears an orphan.
+    """
+    project_dir, manifest_path = project
+    orphan = _orphan_the_metric_row(manifest_path)
+
+    rc = cb.cmd_record(
+        _record_ns(project_dir, manifest_path, workflow=["simulate_system"])
+    )
+    assert rc == 0
+
+    targets = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))[
+        "targets"
+    ]
+    assert orphan in targets, "scoped record unexpectedly pruned the orphan"
+
+    capsys.readouterr()
+    assert (
+        cb.cmd_check(_check_ns(project_dir, manifest_path, workflow=["simulate_system"]))
+        == 1
+    )
+    assert "orphaned" in capsys.readouterr().out
+
+
+def test_an_unscoped_record_clears_an_orphan(project, capsys):
+    """The counterpart: a full record overwrites `targets`, so the row is gone."""
+    project_dir, manifest_path = project
+    orphan = _orphan_the_metric_row(manifest_path)
+
+    assert cb.cmd_record(_record_ns(project_dir, manifest_path)) == 0
+
+    targets = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))[
+        "targets"
+    ]
+    assert orphan not in targets

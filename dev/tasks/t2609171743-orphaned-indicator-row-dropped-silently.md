@@ -110,9 +110,25 @@ assertion. Corrected in `dev/LOG.md` the same day.
    1 or 2, and after a deliberate comparison against the preserved reference
    table under `dev/baseline/`.
 
-Note the manifest DOES still hold the recorded reference table
-(`ref_table` sidecar) for the old row, so a real comparison is still possible
-without a re-run — that is the thing to do before any re-record.
+## Do this FIRST, before any of the options
+
+**Nobody has ever compared this tree's `q_indicators.csv` to the recorded
+reference.** That is not merely pending option 1 — the reference table is on
+disk right now, under `dev/baseline/` as the orphaned row's `ref_table`
+sidecar, and `compare_indicator_table` is the comparator that would read it.
+The comparison costs nothing, needs no re-run and no design decision, and it is
+the only thing that would answer whether R12 moved the numbers. Do it before
+choosing between the options below; the answer changes which one is right.
+
+## A constraint on the remedy, measured 2026-09-17
+
+A **scoped** `record --workflow simulate_system` does NOT clear the orphan.
+`cmd_record` prunes by resolved in-scope path, not by owning workflow, so a row
+that no longer resolves is absent from `selected_paths` and survives the merge —
+landing BESIDE the freshly recorded row. Only an **unscoped** `record`, which
+overwrites `targets` wholesale, removes it. Both behaviours are now pinned by
+tests. So the loud failure option 2 introduces is permanent until a full
+re-record or a manual edit, which is the right trade but should be a known one.
 
 ## Related
 

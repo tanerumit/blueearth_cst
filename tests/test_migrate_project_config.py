@@ -739,19 +739,26 @@ class TestExperimentRecords:
         assert "schema_version" not in doc
 
     def test_an_untouched_experiment_still_matches_its_migrated_config(self):
-        """D-14.8, the falsifier: `_frozen_differences` must come back EMPTY.
+        """D-14.8, the falsifier: the two migrated sections must be IDENTICAL.
 
         The user changed nothing; only the toolbox's spelling moved. If the
-        record and the config are migrated by the same mapping, the freeze sees
-        no difference — and that is the property that keeps every existing
-        experiment runnable across R14.
+        record and the config are migrated by the same mapping they agree — and
+        that is the property that keeps every existing experiment runnable
+        across R14.
+
+        Asserted through `_frozen_differences` until 2026-09-17, when that
+        comparator was deleted as unreachable (`t2608290250`). The subject was
+        never the freeze: it is `migrate_experiment_record` and `migrate_set`
+        applying ONE mapping, and the comparator was only how "they agree" was
+        spelled. Measured before the swap, the two sections are equal key-for-key
+        and value-for-value, so the comparator's tolerances (`_NOT_IDENTITY`, the
+        retired-key registry) were never load-bearing here. Direct equality is
+        therefore the same claim, stated tighter: it would also catch a
+        divergence those tolerances would have forgiven.
         """
         import ruamel.yaml as ry
         import yaml
 
-        from blueearth_cst.experiment.write_experiment_config import (
-            _frozen_differences,
-        )
         from scripts.migrate_project_config import (
             load_mapping,
             migrate_experiment_record,
@@ -796,8 +803,16 @@ class TestExperimentRecords:
         live = dict(t2["run_stress_test"])
         live["enabled"] = True
 
-        differences = _frozen_differences(
-            {"run_stress_test": dict(record["run_stress_test"])},
-            {"run_stress_test": live},
-        )
-        assert differences == [], differences
+        recorded = dict(record["run_stress_test"])
+        assert recorded == live, {
+            "only in record": sorted(set(recorded) - set(live)),
+            "only in config": sorted(set(live) - set(recorded)),
+            "differing": {
+                k: (recorded[k], live[k])
+                for k in set(recorded) & set(live)
+                if recorded[k] != live[k]
+            },
+        }
+        # The record's own name must survive the migration too; the old
+        # comparator folded this into the same call.
+        assert record["experiment_name"] == "experiment_rapid"

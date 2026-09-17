@@ -404,3 +404,125 @@ def test_orography_entry_points_at_the_standardised_sidecar(
     assert Path(entry["uri"]).name == "orography.nc"
     assert Path(entry["uri"]).resolve() == oro_fn.resolve()
     assert Path(entry["uri"]).exists()
+
+
+# --- resolved_unit_interpretation: the reviewed-variable guard (ADR 0010) -----
+#
+# The guard's subject is the arithmetic applied to the seven consumed variables,
+# not the size of the catalog entry that carries it. These tests pin both halves:
+# surplus description of OTHER variables is accepted, and anything that reaches a
+# reviewed variable by a route the review did not cover is refused.
+
+_REVIEWED_ERA5_ADAPTER = {
+    "unit_add": {"temp": -273.15, "temp_min": -273.15, "temp_max": -273.15},
+    "unit_mult": {"kin": 0.000277778, "kout": 0.000277778, "press_msl": 0.01},
+    "rename": {
+        "msl": "press_msl",
+        "ssrd": "kin",
+        "t2m": "temp",
+        "tisr": "kout",
+        "tmax": "temp_max",
+        "tmin": "temp_min",
+        "tp": "precip",
+    },
+}
+
+
+def _era5_catalog_with(adapter, monkeypatch):
+    """Install a fake catalog whose single `era5` entry carries `adapter`."""
+    _FakeDataCatalog._CATALOG = {"era5": {"data_adapter": adapter}}
+    monkeypatch.setattr(pcdc.hydromt, "DataCatalog", _FakeDataCatalog)
+    monkeypatch.setattr(pcdc, "file_sha256", lambda path: "stub")
+
+
+def _adapter_plus(**extra):
+    """The reviewed adapter with per-key additions merged in."""
+    merged = {key: dict(value) for key, value in _REVIEWED_ERA5_ADAPTER.items()}
+    for key, value in extra.items():
+        merged[key].update(value)
+    return merged
+
+
+def test_reviewed_binding_is_accepted(monkeypatch):
+    _era5_catalog_with(_REVIEWED_ERA5_ADAPTER, monkeypatch)
+    interpretation = pcdc.resolved_unit_interpretation(["cat.yml"], "era5")
+    assert interpretation.revision.endswith("/2")
+
+
+def test_surplus_variables_are_accepted(monkeypatch):
+    """hydromt's own `deltares_data` entry, which the pre-ADR-0010 guard refused.
+
+    It states the identical seven conversions and additionally describes
+    dewpoint, the two wind components and net shortwave radiation -- none of
+    which this toolbox reads.
+    """
+    _era5_catalog_with(
+        _adapter_plus(
+            rename={"d2m": "temp_dew", "u10": "wind10_u", "v10": "wind10_v"},
+            unit_add={"temp_dew": -273.15},
+            unit_mult={"ssr": 0.000277778},
+        ),
+        monkeypatch,
+    )
+    assert pcdc.resolved_unit_interpretation(["cat.yml"], "era5") is not None
+
+
+@pytest.mark.parametrize(
+    "adapter, why",
+    [
+        (
+            _adapter_plus(unit_mult={"precip": 1000.0}),
+            "scales a reviewed variable the review left unconverted",
+        ),
+        (
+            _adapter_plus(unit_add={"precip": 1.0}),
+            "offsets a reviewed variable the review left unconverted",
+        ),
+        (
+            _adapter_plus(rename={"mtpr": "precip"}),
+            "renames another native variable onto a reviewed name",
+        ),
+        (
+            _adapter_plus(unit_mult={"press_msl": 1.0}),
+            "changes a reviewed conversion's value",
+        ),
+        (
+            {
+                **{
+                    key: value
+                    for key, value in _REVIEWED_ERA5_ADAPTER.items()
+                    if key != "unit_add"
+                },
+                "unit_add": {"temp": -273.15, "temp_min": -273.15},
+            },
+            "drops a reviewed conversion",
+        ),
+        ({}, "states no arithmetic at all"),
+    ],
+)
+def test_departures_from_the_reviewed_variables_are_refused(adapter, why, monkeypatch):
+    _era5_catalog_with(adapter, monkeypatch)
+    with pytest.raises(ValueError, match="UnverifiedForcingUnits"):
+        pcdc.resolved_unit_interpretation(["cat.yml"], "era5")
+
+
+def test_chirps_precipitation_branch_stays_exact(monkeypatch):
+    """The CHIRPS assertion is that precipitation carries NO scaling.
+
+    `unit_mult` being empty is the substance of that claim, so this branch keeps
+    exact equality where the era5 branch loosened -- ADR 0010 says so explicitly.
+    """
+    _FakeDataCatalog._CATALOG = {
+        "era5": {"data_adapter": _REVIEWED_ERA5_ADAPTER},
+        "chirps": {
+            "data_adapter": {
+                "rename": {"precipitation": "precip"},
+                "unit_add": {"time": 86400},
+                "unit_mult": {"precip": 2.0},
+            }
+        },
+    }
+    monkeypatch.setattr(pcdc.hydromt, "DataCatalog", _FakeDataCatalog)
+    monkeypatch.setattr(pcdc, "file_sha256", lambda path: "stub")
+    with pytest.raises(ValueError, match="precipitation/time adapter"):
+        pcdc.resolved_unit_interpretation(["cat.yml"], "chirps")

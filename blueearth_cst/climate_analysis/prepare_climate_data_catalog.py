@@ -11,6 +11,68 @@ import yaml
 from blueearth_cst.experiment.forcing_descriptor import UnitInterpretation
 from blueearth_cst.shared.provenance import file_sha256
 
+_REVIEWED_DAILY_BINDING = {
+    "unit_add": {"temp": -273.15, "temp_min": -273.15, "temp_max": -273.15},
+    "unit_mult": {"kin": 0.000277778, "kout": 0.000277778, "press_msl": 0.01},
+    "rename": {
+        "msl": "press_msl",
+        "ssrd": "kin",
+        "t2m": "temp",
+        "tisr": "kout",
+        "tmax": "temp_max",
+        "tmin": "temp_min",
+        "tp": "precip",
+    },
+}
+
+# The seven variables the toolbox consumes, named as they are AFTER the rename.
+# The guard below reasons about this set and ignores everything outside it.
+_REVIEWED_VARIABLES = frozenset(_REVIEWED_DAILY_BINDING["rename"].values())
+
+
+def _departs_from_reviewed_binding(adapter):
+    """Report whether an adapter's arithmetic over the reviewed variables differs.
+
+    The reviewed binding (ADR 0010) is a statement about seven variables, not
+    about the size of a catalog entry: what P1 established is the arithmetic
+    `extract_historical_climate.py` applies to `precip`, `temp`, `temp_min`,
+    `temp_max`, `press_msl`, `kin` and `kout`. An upstream catalog that also
+    describes variables this toolbox never reads says nothing about those seven,
+    so it is accepted; an upstream catalog that touches one of them in a way the
+    review did not cover is rejected.
+
+    Concretely, an adapter departs when any of these holds:
+
+    - a reviewed conversion is missing or has a different value;
+    - it converts a reviewed variable the review left unconverted (an extra
+      `unit_add`/`unit_mult` entry keyed on one of the seven) — e.g. a
+      `unit_mult: {precip: 1000}` that would silently rescale precipitation;
+    - it renames some other native variable ONTO a reviewed name, which would
+      shadow the reviewed source of that variable.
+
+    Everything else is surplus description and is ignored. Rejecting it was the
+    behaviour before ADR 0010, and it made the guard a version pin on one
+    catalog file rather than a check on the arithmetic: hydromt's own
+    `deltares_data` catalog states the identical seven conversions and adds
+    `d2m`/`u10`/`v10` renames plus an `ssr` scale, and was refused for it.
+    """
+    for key in ("unit_add", "unit_mult"):
+        reviewed = _REVIEWED_DAILY_BINDING[key]
+        found = adapter.get(key, {})
+        if any(found.get(name) != value for name, value in reviewed.items()):
+            return True
+        if any(name in _REVIEWED_VARIABLES for name in found if name not in reviewed):
+            return True
+    reviewed_rename = _REVIEWED_DAILY_BINDING["rename"]
+    found_rename = adapter.get("rename", {})
+    if any(found_rename.get(src) != dst for src, dst in reviewed_rename.items()):
+        return True
+    return any(
+        dst in _REVIEWED_VARIABLES
+        for src, dst in found_rename.items()
+        if src not in reviewed_rename
+    )
+
 
 def resolved_unit_interpretation(data_libs, precip_source):
     """Verify the reviewed daily source arithmetic before interpreting labels.
@@ -18,6 +80,12 @@ def resolved_unit_interpretation(data_libs, precip_source):
     This checks the consumed adapter, not merely its catalog name. CHIRPS keeps
     its precipitation/time-shift binding and inherits the six ERA5 auxiliaries
     through the existing extraction path. E-OBS remains unsupported by WF1.
+
+    The primary source is checked over the reviewed variables only; see
+    :func:`_departs_from_reviewed_binding`. The CHIRPS branch below is
+    deliberately left as exact equality: its assertion is that precipitation
+    carries the time shift and NO scaling at all, and `unit_mult` being empty is
+    the substance of that, not an incidental shape.
     """
     paths = (
         [os.fspath(data_libs)]
@@ -27,21 +95,8 @@ def resolved_unit_interpretation(data_libs, precip_source):
     entries = hydromt.DataCatalog(data_libs=paths).to_dict()
     hybrid = precip_source in {"chirps", "chirps_global"}
     selected = entries["era5" if hybrid else precip_source]
-    expected = {
-        "unit_add": {"temp": -273.15, "temp_min": -273.15, "temp_max": -273.15},
-        "unit_mult": {"kin": 0.000277778, "kout": 0.000277778, "press_msl": 0.01},
-        "rename": {
-            "msl": "press_msl",
-            "ssrd": "kin",
-            "t2m": "temp",
-            "tisr": "kout",
-            "tmax": "temp_max",
-            "tmin": "temp_min",
-            "tp": "precip",
-        },
-    }
     adapter = selected.get("data_adapter", {})
-    if any(adapter.get(key, {}) != value for key, value in expected.items()):
+    if _departs_from_reviewed_binding(adapter):
         raise ValueError(
             f"UnverifiedForcingUnits: {precip_source} catalog arithmetic differs from reviewed daily binding"
         )
@@ -56,9 +111,10 @@ def resolved_unit_interpretation(data_libs, precip_source):
                 f"UnverifiedForcingUnits: {precip_source} precipitation/time adapter differs from reviewed binding"
             )
     return UnitInterpretation(
-        revision="daily-catalog-hydromt1.3.1-weathergenr2.0.0/1",
+        revision="daily-catalog-hydromt1.3.1-weathergenr2.0.0/2",
         evidence=(
             "dev/milestones/r12/implementation/evidence/p1-forcing-units.md; "
+            "dev/decisions/0010-check-the-reviewed-variables-not-the-catalog-shape.md; "
             f"selected={precip_source}; catalogs={[(path, file_sha256(path)) for path in paths]}; "
             f"extraction_sha256={file_sha256(Path(__file__).parents[1] / 'climate_analysis' / 'extract_historical_climate.py')}"
         ),

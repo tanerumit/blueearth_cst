@@ -16,7 +16,7 @@ from snakemake.exceptions import WorkflowError
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, window_year_pair
+from blueearth_cst.shared.snake_utils import listed, ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, window_year_pair
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -659,12 +659,16 @@ for _key, _entry in _CATALOG.items():
     if isinstance(_entry, dict) and _entry.get("data_adapter"):
         _rename = (_entry["data_adapter"] or {}).get("rename") or {}
         break
-for _var in _res.best_effort_variables(variables, _rename):
-    logger.warning(
-        f"analyze_projections: variable {_var!r} is BEST-EFFORT, not "
-        "catalog-certified. The crawl proved only pr/tas present, so a listed "
-        f"member may not publish {_var!r} -- it will fail at read time rather "
-        "than skip at resolution (design §5.5, ruling A3)."
+_best_effort = _res.best_effort_variables(variables, _rename)
+if _best_effort:
+    # ONE row, not one per variable: the sentence is the same each time and
+    # only the name changes, so the names are what the row lists. Through
+    # `warn_row` for the reason given on the skip report above.
+    warn_row(
+        f"Best-effort, not catalog-certified: {listed(sorted(_best_effort))}. "
+        "The crawl proved only pr/tas present, so a listed member may not "
+        "publish them -- that fails at read time rather than skipping at "
+        "resolution (design 5.5, ruling A3).", module="resolution"
     )
 
 # The series set is DERIVED from resolution, not from the config cross-product.

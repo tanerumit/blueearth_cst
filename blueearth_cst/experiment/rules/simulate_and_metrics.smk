@@ -9,7 +9,7 @@ from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
 from blueearth_cst.shared.indicator_tables import indicator_tables
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, validate_experiment_name
-from blueearth_cst.shared.console_style import rule_banner, target_banner
+from blueearth_cst.shared.console_style import rule_banner, target_banner, warn_row
 
 project, my_cfg = simulation_settings(config_path)
 project_dir = Path(project["project"]["project_dir"]).resolve().as_posix()
@@ -197,7 +197,10 @@ if not _simulation_complete:
         headroom_bytes=disk_headroom_bytes(project_dir,
             fraction=ADVANCED_SETTINGS["defaults"]["batch_disk_headroom_fraction"], headroom_gb=compute.get("disk_headroom_gb")))
     if sizing.warning:
-        print(sizing.warning, flush=True)
+        # A bare `print` carried no stamp and no module column at all,
+        # which put it further outside the grammar than the `logger`
+        # calls the other workflows used.
+        warn_row(sizing.warning, module='batching')
     for batch, offset in enumerate(range(0, len(RUN_IDS), sizing.batch_size)):
         members = RUN_IDS[offset:offset + sizing.batch_size]
         # 4.05  run_wflow_batch — one bounded batch of retained runs

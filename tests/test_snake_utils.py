@@ -1317,9 +1317,14 @@ def test_tee_keeps_the_reset_off_the_log_file(tmp_path):
     assert "\033" not in log.read_text(encoding="utf-8")
 
 
-def test_tee_does_not_reset_a_line_no_frame_is_standing_on(tmp_path, monkeypatch):
-    """An ordinary partial write also leaves the cursor mid-line, and erasing
-    THAT would destroy a library's multi-write row."""
+def test_tee_never_resets_part_way_through_its_own_row(tmp_path, monkeypatch):
+    """The one state the reset must not fire in.
+
+    An ordinary partial write leaves the cursor mid-line too, but there the
+    next write is the REST of that line -- a library writing one row in two
+    calls -- and erasing it would destroy the half already shown. Every other
+    line start is reset unconditionally, including this row's own.
+    """
     monkeypatch.setenv("NO_COLOR", "1")
     log = tmp_path / "rule.log"
     live = _LiveConsole(tty=True)
@@ -1329,11 +1334,18 @@ def test_tee_does_not_reset_a_line_no_frame_is_standing_on(tmp_path, monkeypatch
         tee.write("b\n")
         tee.close()
 
-    assert live.getvalue() == "08:12:03 - a - b\n"
+    assert live.getvalue() == _LINE_RESET + "08:12:03 - a - b\n"
 
 
-def test_tee_does_not_reset_after_the_bar_closed_its_own_line(tmp_path, monkeypatch):
-    """`finish` writes the terminating newline, so nothing is left standing."""
+def test_tee_resets_even_after_the_bar_closed_its_own_line(tmp_path, monkeypatch):
+    """`finish` terminated OUR bar; it says nothing about anyone else's.
+
+    Asserted the other way round until 2026-09-17, on the reasoning that a
+    closed line has nothing standing on it. True of this tee and irrelevant
+    to the defect: under `-c 3` the bar on that line can belong to a sibling
+    job in another process. Erasing an empty line costs nothing, so the reset
+    is unconditional and this test pins that it stayed unconditional.
+    """
     monkeypatch.setenv("NO_COLOR", "1")
     log = tmp_path / "rule.log"
     live = _LiveConsole(tty=True)
@@ -1344,7 +1356,38 @@ def test_tee_does_not_reset_after_the_bar_closed_its_own_line(tmp_path, monkeypa
         tee.write("08:12:03 - a - b\n")
         tee.close()
 
-    assert not live.getvalue().endswith(_LINE_RESET + "08:12:03 - a - b\n")
+    assert live.getvalue().endswith(_LINE_RESET + "08:12:03 - a - b\n")
+
+
+def test_a_row_clears_a_frame_drawn_by_a_sibling_job(tmp_path, monkeypatch):
+    """The reported defect, in the shape it actually occurs in.
+
+    wf0's `extract_historical_climate` fans out per source, so `-c 3` runs
+    era5 and chirps as two jobs -- two PROCESSES, two tees, one console. One
+    holds a bar; the other writes rows, and until 2026-09-17 those rows landed
+    on the tail of a frame their own tee had never drawn and could not know
+    about (`era5 store ... eta 1:55:2922:04:49 - extract - Downscaling ...`).
+    Two tees over one stream is the closest a unit test gets to that, and it
+    fails against a per-tee flag for the same reason the run did.
+    """
+    monkeypatch.setenv("NO_COLOR", "1")
+    live = _LiveConsole(tty=True)
+    with (
+        open(tmp_path / "era5.log", "w", encoding="utf-8") as era5_log,
+        open(tmp_path / "chirps.log", "w", encoding="utf-8") as chirps_log,
+    ):
+        era5 = su._Tee(live, era5_log)
+        chirps = su._Tee(live, chirps_log)
+        era5.write_redraw("\rera5 store  ----------    0.8%  0:00:54 | eta 1:55:29")
+        chirps.write("22:04:49 - extract - Downscaling era5 variables\n")
+        era5.close()
+        chirps.close()
+
+    console = live.getvalue()
+    assert "eta 1:55:2922:04:49" not in console, console
+    assert console.endswith(
+        _LINE_RESET + "22:04:49 - extract - Downscaling era5 variables\n"
+    ), console
 
 
 def test_tee_writes_no_escape_over_a_frame_off_a_terminal(tmp_path):
@@ -4053,7 +4096,8 @@ def test_tee_paints_the_console_and_never_the_log_file(tmp_path):
     # The reset lands BEFORE the newline: a colour spanning the break would
     # carry across a terminal reflow.
     assert console.getvalue() == (
-        su._ansi("13:42:17 - stats - ", su._ANSI_DIM)
+        _LINE_RESET
+        + su._ansi("13:42:17 - stats - ", su._ANSI_DIM)
         + "MPI-ESM1-2-HR ssp585 deriving\n"
     )
     assert "\033" not in log.read_text(encoding="utf-8")

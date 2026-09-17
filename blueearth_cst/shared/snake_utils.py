@@ -3100,13 +3100,12 @@ class _Tee:
         self._on_activity = on_activity  # called on each write (heartbeat reset)
         self._pending = ""  # current, not-yet-newline-terminated log line
         self._in_redraw = False  # console-side state for _drop_redraw_frames
-        #: Whether a streamed progress frame is standing on the console line,
-        #: i.e. the cursor sits at the end of a frame this tee wrote and did not
-        #: terminate. Set by the redraw path ONLY: an ordinary partial write also
-        #: leaves the cursor mid-line, but there the next write is the rest of
-        #: that same line and erasing it would destroy a library's multi-write
-        #: row. See `_line_reset`.
-        self._frame_standing = False
+        #: Whether this tee is part-way through writing ONE logical row, i.e.
+        #: the next console write is the rest of the line this one started.
+        #: That is the only state in which the cursor may not be reset -- see
+        #: `write`, and `_line_reset` for what is being reset and why the
+        #: condition cannot be "is one of MY frames standing".
+        self._mid_row = False
         # Set by ``close``. A tee OUTLIVES its log file: ``tee_to_log`` closes
         # the file when its `with open(...)` exits, and anything still holding a
         # reference to this object then has a live handle onto a dead sink.
@@ -3138,16 +3137,25 @@ class _Tee:
             # ever reaches `logs/` -- which is also why `shared.progress` may
             # not emit this itself: its one string goes to both sinks, while
             # here the two are already separate.
-            reset = ""
-            if self._frame_standing and not _redraw:
-                reset = _line_reset(self._live)
-                self._frame_standing = False
+            # UNCONDITIONAL at the start of a row, like the two other writers on
+            # this console (`console_style._ConsoleHandler.emit` and the
+            # heartbeat). It was gated on "did I leave a frame standing" until
+            # 2026-09-17, and that flag cannot see the case it most needs to:
+            # a FANNED rule runs its members as separate PROCESSES (`-c 3` on
+            # wf0's `extract_historical_climate_{era5,chirps}`), so the tee
+            # holding the bar and the tee writing the row are in different
+            # interpreters and share no state. Only the cursor is common, which
+            # is why `_line_reset` is an escape rather than a flag.
+            #
+            # Resetting a line nothing is standing on erases an empty line and
+            # costs nothing. The one state that must NOT be reset is this tee
+            # part-way through its own row: a library writing one line in two
+            # calls would lose the first half.
+            reset = "" if (self._mid_row or _redraw) else _line_reset(self._live)
             self._live.write(reset + _paint_body(shown, self._colour))
-            if _redraw:
-                # A frame is standing unless this write closed the bar's line
-                # (`DaskProgress.finish` writes the terminating newline through
-                # the same redraw path).
-                self._frame_standing = not shown.endswith("\n")
+            # A redraw frame leaves the cursor on the bar, which the next row is
+            # expected to clear -- so it does not count as a row in progress.
+            self._mid_row = not _redraw and not shown.endswith("\n")
         # After close the console is still open and still the right place for
         # this text; only the log file is gone. Writing to a closed file raises
         # ValueError, and a raise HERE is the expensive kind: these late writes

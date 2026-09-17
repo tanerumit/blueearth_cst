@@ -126,7 +126,7 @@ affect a result.
 - `tests/test_provenance.py` and the interchange-contract tier pin parts of this;
   read them before moving a name.
 
-## What landed — option 1, `f126ad79`
+## What landed — option 1, `6a4caaa9`
 
 `blueearth_cst/shared/console_style.py` now holds the Snakemake console handler,
 the banners, the run header and summary, `warn_row`, `warn_if_project_dir_in_repo`

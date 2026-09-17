@@ -37,7 +37,7 @@ from blueearth_cst.experiment.wflow_response_reader import (
     open_responses,
 )
 from blueearth_cst.shared.provenance import file_sha256
-from blueearth_cst.shared.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row, plural
 
 
 class MetricPlanStale(ValueError):
@@ -428,9 +428,9 @@ def write_metric_plan(experiment_root, request):
     path.parent.mkdir(parents=True, exist_ok=True)
     atomic_record(path, plan, replace=True)
     log_row(
-        f"Metric plan {identity_segment(plan['metric_set_id'], 'metric_set_id')}: "
-        f"{len(plan['request']['declarations'])} declaration(s) over "
-        f"{len(plan['expected_result_keys'])} result key(s)",
+        f"{identity_segment(plan['metric_set_id'], 'metric_set_id')}: "
+        f"{plural(len(plan['request']['declarations']), 'declaration')} over "
+        f"{plural(len(plan['expected_result_keys']), 'result key')}",
         module="metrics",
     )
     return plan
@@ -715,7 +715,7 @@ def publish_metric_set(experiment_root, plan):
     check_live_metric_environment(plan)
     atomic_record(marker, manifest)
     log_row(
-        f"Published metric set {destination.name}: "
+        f"Published {destination.name}: "
         + ", ".join(
             f"{item['token']} ({item['row_count']} rows)"
             for item in manifest["indicator_tables"]

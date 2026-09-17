@@ -53,6 +53,7 @@ from blueearth_cst.shared.grid_cells import cells_csv_mask, subbasin_masks
 from blueearth_cst.shared.snake_utils import (
     DEFAULT_WATER_YEAR_ANCHOR,
     log_row,
+    plural,
     water_year_end_anchor,
 )
 
@@ -305,8 +306,8 @@ def plot_climate_source(
     masks = area_masks_for(ds_src, basin_cells, overlays.get("subbasins"))
     subbasins_drawn = [s for s in masks if s.startswith("subbasin_")]
     log_row(
-        f"Aggregating over {len(masks)} area(s): basin"
-        + (f" + {len(subbasins_drawn)} subbasin(s)" if subbasins_drawn else "")
+        f"Aggregating over {plural(len(masks), 'area')}: basin"
+        + (f" + {plural(len(subbasins_drawn), 'subbasin')}" if subbasins_drawn else "")
         + (
             ""
             if masks.get("basin_avg") is not None

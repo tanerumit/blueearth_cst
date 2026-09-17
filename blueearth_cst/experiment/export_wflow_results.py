@@ -70,6 +70,7 @@ from blueearth_cst.shared.snake_utils import (
     DEFAULT_WATER_YEAR_ANCHOR,
     index_width,
     log_row,
+    plural,
 )
 
 #: ``rlz_<n>_st_<m>`` in a wflow run CSV's stem. Anchored at the start so a
@@ -361,8 +362,9 @@ def analyze_wflow_results(
     wet_month = dry_month = None
     rows: dict = {token: [] for token in indicator_tokens}
     log_row(
-        f"Reducing {len(csv_fns)} runs into {len(indicator_tokens)} indicator "
-        f"table(s): {', '.join(indicator_tokens)}",
+        f"Reducing {len(csv_fns)} runs into "
+        f"{plural(len(indicator_tokens), 'indicator table')}: "
+        f"{', '.join(indicator_tokens)}",
         module="export",
     )
 

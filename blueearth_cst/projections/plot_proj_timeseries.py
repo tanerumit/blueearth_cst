@@ -199,7 +199,7 @@ if __name__ == "__main__":
             # records what was ACTUALLY differenced, including any per-model
             # effective-window override, and a figure captioned with a window
             # the arithmetic did not use is worse than one with no caption.
-            log_row("Reading the monthly change-factor table", module="plot")
+            log_row("Reading monthly change-factor table", module="plot")
             monthly_table = pd.read_csv(sm.input.change_factors_monthly)
             windows = monthly_table["reference_window"].unique()
             if len(windows) != 1:
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                 )
             reference = parse_window(windows[0])
 
-            log_row("Opening the scalar gcm timeseries", module="plot")
+            log_row("Opening scalar gcm timeseries", module="plot")
             series = load_scalar_series(
                 list(sm.input.stats_time_nc_hist) + list(sm.input.stats_time_nc)
             )

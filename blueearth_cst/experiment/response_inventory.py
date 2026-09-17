@@ -21,7 +21,7 @@ from blueearth_cst.experiment.wflow_response_reader import (
     open_responses,
 )
 from blueearth_cst.shared.provenance import file_sha256
-from blueearth_cst.shared.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row, plural
 
 
 class MissingResponseRequirement(ValueError):
@@ -426,7 +426,7 @@ def publish_response_inventory(experiment_root, native_runs, temporal_preparatio
         atomic_record(path, inventory)
     complete_simulation(root, inventory["response_inventory_sha256"])
     log_row(
-        f"Inventoried {len(inventory['artifacts'])} native run(s), {len(inventory['series'])} series -> "
+        f"Inventoried {plural(len(inventory['artifacts']), 'native run')}, {len(inventory['series'])} series -> "
         f"{inventory['response_inventory_sha256'][:12]}",
         module="responses",
     )

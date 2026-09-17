@@ -999,7 +999,7 @@ def fetch_raw_slice(
         else series_identity.CALENDAR_UNKNOWN
     )
     log_row(
-        f"store calendar={store_calendar} ({calendar_var or 'no pin'})",
+        f"Store calendar={store_calendar} ({calendar_var or 'no pin'})",
         module="fetch",
     )
 

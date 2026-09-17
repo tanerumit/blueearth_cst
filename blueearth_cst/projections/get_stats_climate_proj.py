@@ -50,7 +50,7 @@ from blueearth_cst.projections.grid_weights import (
     weighted_spatial_mean,
 )
 from blueearth_cst.shared.progress import DaskProgress
-from blueearth_cst.shared.snake_utils import log_row
+from blueearth_cst.shared.snake_utils import log_row, plural
 
 # %%
 
@@ -279,7 +279,7 @@ if __name__ == "__main__":
             if series_identity.cache_hit(declared_outputs, expected_digest):
                 log_row(
                     f"{name_model} {name_scenario} cache_hit "
-                    f"({len(declared_outputs)} output(s) already current)",
+                    f"({plural(len(declared_outputs), 'output')} already current)",
                     module="stats",
                 )
                 for path in declared_outputs:

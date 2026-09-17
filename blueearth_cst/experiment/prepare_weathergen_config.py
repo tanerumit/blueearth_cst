@@ -201,7 +201,7 @@ if __name__ == "__main__":
             )
             weathergen_config = sm.output.weathergen_config
             log_row(
-                f"Preparing and writing the weather generator config file {weathergen_config}",
+                f"Writing config -> {weathergen_config}",
                 module="weathergen",
             )
             yml_dict = build_weathergen_config(

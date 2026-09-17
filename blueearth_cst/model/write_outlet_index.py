@@ -72,7 +72,7 @@ def write_outlet_index(outlets_path, location_registry_path, out_path):
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from blueearth_cst.shared.snake_utils import log_row, tee_to_log
+        from blueearth_cst.shared.snake_utils import log_row, plural, tee_to_log
 
         with tee_to_log(sm.log[0]):
             n_stations = write_outlet_index(
@@ -81,7 +81,7 @@ if __name__ == "__main__":
                 sm.output.outlet_index_path,
             )
             log_row(
-                f"Wrote outlet index: {n_stations} station(s) -> "
+                f"Wrote outlet index: {plural(n_stations, 'station')} -> "
                 f"{sm.output.outlet_index_path}",
                 module="outlets",
             )

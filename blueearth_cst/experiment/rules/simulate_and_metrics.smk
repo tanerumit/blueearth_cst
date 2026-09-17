@@ -255,7 +255,12 @@ if not _simulation_complete:
 
 # 4.07  responses
 rule responses:
-    message: rule_banner("4.07", "responses")
+    # A TARGET AGGREGATOR, so it says what the run produced -- the grammar
+    # WF0, WF1 and WF2 each close with. It carried a plain `rule_banner` and
+    # printed two bare lines, which is the same job in a second grammar.
+    # ONE LINE: Snakemake's parser takes a keyword's body as a single
+    # expression and rejects a call split across lines here.
+    message: target_banner("4.07", "responses", [f"{engine_dir}/response_inventory.json"], project_dir)
     input:
         f"{engine_dir}/response_inventory.json",
 

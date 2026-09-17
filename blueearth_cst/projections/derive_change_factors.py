@@ -59,7 +59,7 @@ from blueearth_cst.projections.get_change_climate_proj_summary import (
     plot_change_summary,
 )
 from blueearth_cst.projections.variable_spec import VariableSpec
-from blueearth_cst.shared.snake_utils import log_row, tee_to_log
+from blueearth_cst.shared.snake_utils import log_row, plural, tee_to_log
 
 XDIMS = ("x", "longitude", "lon", "long")
 YDIMS = ("y", "latitude", "lat")
@@ -407,8 +407,8 @@ if "snakemake" in globals():
             )
 
         log_row(
-            f"Deriving change factors for {len(points)} point(s) x "
-            f"{len(horizons)} horizon(s)",
+            f"Deriving change factors for {plural(len(points), 'point')} x "
+            f"{plural(len(horizons), 'horizon')}",
             module="change",
         )
         # Step 5e / D1: the durable reference-window record. Its designated homes

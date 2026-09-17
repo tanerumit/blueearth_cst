@@ -685,6 +685,24 @@ SERIES = {
 }
 
 
+def _series_label(series_key):
+    """What a fanned-out line PRINTS for one series: the part that varies.
+
+    The key itself is `cmip6_<vendor>_<model>_<experiment>_<member>` -- 52
+    characters on the RUN and the DONE of every member, of which the catalog
+    name is constant and the vendor is a function of the model. What is left is
+    unique by CMIP6's own naming (a model name identifies its institution), and
+    it is static, so one grep still finds a series across the console, the log
+    and the benchmark table.
+
+    Carried as a PARAM rather than a wildcard because `message:` is formatted
+    per job against params as well as wildcards, and the key is what names the
+    files -- it cannot be shortened itself.
+    """
+    model, experiment, member = SERIES[series_key]
+    return f"{model.rsplit('/', 1)[-1]} {experiment} {member}"
+
+
 def series_file(model, experiment, member):
     """Path of the series for one (model, experiment, member).
 
@@ -1000,7 +1018,7 @@ rule snapshot_config:
 # formula edit. Passing `digest_components` here instead would silently undo the
 # entire split while every test still passed.
 rule fetch_gcm_slice:
-    message: rule_banner("2.04", "fetch_gcm_slice", "series {wildcards.series_key}", summary="download one CMIP6 slice")
+    message: rule_banner("2.04", "fetch_gcm_slice", "{params.series_label}", summary="download one CMIP6 slice")
     wildcard_constraints:
         series_key = "|".join(re.escape(k) for k in SERIES),
     input:
@@ -1012,6 +1030,9 @@ rule fetch_gcm_slice:
         raw_nc = update(clim_project_dir + "/raw/{series_key}.nc"),
     params:
         catalog_path = DATA_SOURCES,
+        # DISPLAY ONLY -- `message:` reads it, nothing else does. It is
+        # deliberately not a digest component: see `_series_label`.
+        series_label = lambda wildcards: _series_label(wildcards.series_key),
         catalog_entry = lambda wildcards: f"{clim_project}_{SERIES[wildcards.series_key][0]}_{SERIES[wildcards.series_key][1]}_{{member}}",
         member = lambda wildcards: SERIES[wildcards.series_key][2],
         variables = variables,
@@ -1045,7 +1066,7 @@ rule fetch_gcm_slice:
 # series at all: every series is independent, so the stage fans out at full width.
 # Since revision 6 it reads the local raw slice above and makes NO network call.
 rule reduce_gcm_series:
-    message: rule_banner("2.05", "reduce_gcm_series", "series {wildcards.series_key}", summary="reduce the slice to a basin-average series")
+    message: rule_banner("2.05", "reduce_gcm_series", "{params.series_label}", summary="reduce the slice to a basin-average series")
     wildcard_constraints:
         # Anchor to the keys actually built at parse time. Without this the
         # wildcard would also match paths that merely look like keys.
@@ -1064,6 +1085,9 @@ rule reduce_gcm_series:
     params:
         catalog_path = DATA_SOURCES,
         project_dir = f"{project_dir}",
+        # DISPLAY ONLY -- `message:` reads it, nothing else does. It is
+        # deliberately not a digest component: see `_series_label`.
+        series_label = lambda wildcards: _series_label(wildcards.series_key),
         name_scenario = lambda wildcards: SERIES[wildcards.series_key][1],
         # ONE member per job now (step 4b), not the config list.
         name_members = lambda wildcards: [SERIES[wildcards.series_key][2]],

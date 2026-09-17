@@ -331,7 +331,7 @@ def freeze_simulation(experiment_root, record, documents, config_snapshot=None):
         _simulation_path(root, f"config/{SNAPSHOT_NAME}").write_bytes(config_snapshot)
     atomic_record(marker, record)
     log_row(
-        f"Froze simulation {record['simulation_id'][:12]}: "
+        f"Froze {record['simulation_id'][:12]}: "
         f"collection {record['collection']['collection_id'][:12]} "
         f"({record['collection']['resolution_mode']}) "
         f"against model {record['model']['model_digest'][:12]}",

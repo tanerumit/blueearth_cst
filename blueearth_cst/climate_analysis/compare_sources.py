@@ -84,6 +84,7 @@ from blueearth_cst.shared.snake_utils import (
     DEFAULT_WATER_YEAR_ANCHOR,
     PRECIP_ONLY_SOURCES,
     log_row,
+    plural,
     save_figure,
 )
 
@@ -485,7 +486,7 @@ def write_comparison_table(table: "pd.DataFrame", out_dir: Union[str, Path]) -> 
         encoding="utf-8",
     )
     log_row(
-        f"Comparison table ({len(table)} sources) -> {csv_path.name}, {md_path.name}",
+        f"Table ({len(table)} sources) -> {csv_path.name}, {md_path.name}",
         module="compare",
     )
     return [csv_path, md_path]
@@ -708,8 +709,7 @@ def plot_comparison_figures(
         window = mutual_window(list(opened.values()))
         if window is None and len(opened) > 1:
             log_row(
-                "The sources' extracted periods do not overlap; each is drawn "
-                "over its own record and the figures say so",
+                "Source periods do not overlap; each drawn over its own record",
                 module="compare",
                 level="WARNING",
             )
@@ -739,7 +739,7 @@ def plot_comparison_figures(
             for name, mask in headline.items()
         )
         log_row(
-            f"Common ground: {period}; {len(areas)} area(s)"
+            f"Common ground: {period}; {plural(len(areas), 'area')}"
             + (f"; basin cells: {cells}" if cells else ""),
             module="compare",
         )
@@ -773,8 +773,8 @@ def plot_comparison_figures(
                     plt.close(fig)
                     written.append(out_path)
             log_row(
-                f"Compared {var} over {len(areas)} area(s) across "
-                f"{len(stores)} source(s)",
+                f"Compared {var} over {plural(len(areas), 'area')} across "
+                f"{plural(len(stores), 'source')}",
                 module="compare",
             )
     finally:

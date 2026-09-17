@@ -96,6 +96,6 @@ def test_gauge_on_the_outlet_is_reported_not_dropped_in_silence():
     # scalars stringify as np.int32(101) / np.str_('outlet') if they reach the
     # message unconverted. A substring check passes on that noise.
     assert messages == [
-        "Gauge(s) [101] (outlet) sit on a model outlet and are already in "
-        "Q_outlets; plotted under the outlet label(s) ['wflow_1']."
+        "On a model outlet, already in Q_outlets: 1 gauge [101] (outlet); "
+        "plotted under ['wflow_1']"
     ]

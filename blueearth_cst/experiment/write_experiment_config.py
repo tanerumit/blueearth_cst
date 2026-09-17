@@ -194,7 +194,7 @@ def write_experiment_config(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from blueearth_cst.shared.snake_utils import log_row, tee_to_log
+        from blueearth_cst.shared.snake_utils import log_row, plural, tee_to_log
 
         with tee_to_log(sm.log[0]):
             # Read BEFORE the write, so a record migrated forward says which keys
@@ -216,10 +216,11 @@ if __name__ == "__main__":
             )
             dropped = sorted(set(before) - set(doc["run_stress_test"]))
             log_row(
-                f"Experiment config recorded for {doc['experiment_name']!r} "
-                f"({len(doc['run_stress_test'])} setting(s))"
+                f"Config recorded for {doc['experiment_name']} "
+                f"({plural(len(doc['run_stress_test']), 'setting')})"
                 + (
-                    f"; migrated forward, dropped retired key(s): {', '.join(dropped)}"
+                    f"; migrated forward, dropped {plural(len(dropped), 'retired key')}"
+                    f": {', '.join(dropped)}"
                     if dropped
                     else ""
                 ),

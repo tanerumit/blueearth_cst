@@ -427,6 +427,15 @@ OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
         ("scripts/migrate_project_config.py", "*"),
         ("scripts/suggest_experiment_name.py", "simulate_system"),
         ("scripts/plot_workflow_dag.py", "simulate_system"),
+        # The artifact-scoped config snapshot rebuilds `compose_config`'s shape
+        # for WF4, which reads its project file directly rather than through the
+        # composer. It walks the whole `workflows` mapping to drop `config_path`
+        # from every stanza -- a pointer the composed document has already
+        # followed -- and consumes no workflow's SETTINGS but the one it was
+        # handed. `"*"` because it names no workflow literally: the caller
+        # supplies the name, so which stanza is merged is a property of the call
+        # rather than of this file.
+        ("blueearth_cst/shared/workflow_config_snapshot.py", "*"),
         # R13's `scripts/split_project_config.py` held a fourth entry here for
         # its already-split detector. It retired with the tool (R14 Gate A), and
         # the entry had to go in the same commit: this enumeration is checked

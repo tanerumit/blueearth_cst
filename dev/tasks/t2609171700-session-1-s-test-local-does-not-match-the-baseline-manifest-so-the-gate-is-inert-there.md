@@ -1,8 +1,8 @@
 ---
-title: session-1's test_local does not match the baseline manifest, so the gate is inert there
+title: Regenerate WF3+WF4 in session-1's test_local so the unscoped baseline check can run
 type: todo-item
 status: backlog
-effort: 1
+effort: 2
 area: baseline / dev tree
 origin: found while renaming the config snapshots, 2026-09-17
 queue:
@@ -51,9 +51,10 @@ updated: 2026-09-17
 > open.**
 
 > [!note] Overview
-> **What** — Restore a baseline-checkable `test_case/test_local` in `session-1`, and fix two ways `check_baseline` reports a non-check as something other than a failure.
-> **Why** — `check_baseline` currently proves nothing in this worktree: two WF2 data targets differ, the WF4 targets are absent, and the unscoped check raises a traceback instead of failing.
-> **Effort** — small for the two reporting defects; the tree restore is a long run.
+> **What** — Run WF3 and WF4 against `project_config_baseline.yml` in `session-1`, so `test_case/test_local` holds a retained metric plan again and `check_baseline check` can run unscoped.
+> **Why** — `simulate_system`'s targets are ABSENT, not different, so no single-workflow re-run fixes it. Until then the unscoped check exits 2 (NOT CHECKED) and the gate covers only WF1 and WF2.
+> **Effort** — large: WF3 was 9m51s at R14 and WF4 runs Wflow over the 2 x (2x3) grid. Roughly 30-60 min, which is why it was deferred on 2026-09-17.
+> **State (2026-09-17)** — `build_model` and `analyze_projections` both pass. The two reporting defects this item also carried are FIXED and shipped. Only the WF3+WF4 regeneration is left.
 
 ## Measured 2026-09-17, on `chore/post-r12@3f4334aa`
 

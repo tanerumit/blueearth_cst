@@ -110,15 +110,44 @@ assertion. Corrected in `dev/LOG.md` the same day.
    1 or 2, and after a deliberate comparison against the preserved reference
    table under `dev/baseline/`.
 
+> [!done] The comparison was RUN, 2026-09-17: the numbers did not move
+> `compare_indicator_table(reference, current)` over
+> `dev/baseline/indicator_ref/5ab0f374553a5aff.csv` (recorded 2026-09-15 from
+> the primary's R12-seal tree) against this worktree's freshly generated
+> `metric_sets/b71ca72a2b13/q_indicators.csv`:
+>
+> ```
+> ok: True
+> 0/700 row(s) exceed tolerance across 55 group(s)
+> max relative move = 0
+> ```
+>
+> Not merely within tolerance — **exactly equal**. Identical key sets,
+> 700/700 rows with `max abs difference = 0.0`, across 11 metrics x 5 locations
+> x 21 unit_ids. The two files differ in bytes ONLY by line endings (the tracked
+> sidecar is CRLF on checkout, the fresh output LF); normalise those and they are
+> byte-identical.
+>
+> So the response surface reproduces across two worktrees, two branches and two
+> independently generated collections. **This is the reproducibility result the
+> `t2609171700` closure first claimed without measuring** — it turns out to have
+> been true, but it was an assumption then and it is evidence now, and the
+> difference matters.
+>
+> Note for whoever implements option 1 or 3: the CRLF/LF split means a `sha256`
+> comparison of this target would FAIL spuriously on a Windows checkout. The
+> parsed comparator is what makes it work, and the same hazard class as
+> [[t2608301524]]. Do not "simplify" this target to a byte fingerprint.
+
 ## Do this FIRST, before any of the options
 
-**Nobody has ever compared this tree's `q_indicators.csv` to the recorded
-reference.** That is not merely pending option 1 — the reference table is on
-disk right now, under `dev/baseline/` as the orphaned row's `ref_table`
-sidecar, and `compare_indicator_table` is the comparator that would read it.
-The comparison costs nothing, needs no re-run and no design decision, and it is
-the only thing that would answer whether R12 moved the numbers. Do it before
-choosing between the options below; the answer changes which one is right.
+~~Nobody has ever compared this tree's `q_indicators.csv` to the recorded
+reference.~~ **Done — see the callout above.** It cost nothing, needed no
+re-run and no design decision, and it answered the question the gate could not:
+the numbers did not move. That answer makes option 3 (re-record) safe on the
+merits, where before it would have been recording an unexamined tree. It does
+NOT make option 1 unnecessary: the next identity rename orphans the row again,
+and the next person may not think to run this by hand.
 
 ## A constraint on the remedy, measured 2026-09-17
 

@@ -1,9 +1,9 @@
 {
   "project_dir": "test_case/test_local",
   "recorded_by": {
-    "branch": "feat/wp3-improvements",
-    "commit": "7255368813c078b7e1ed4981736afb9bbf330205",
-    "dirty": true
+    "branch": "chore/post-r12",
+    "commit": "a13336f26d1f1fd5fe9786e26b924e609ad0f913",
+    "dirty": false
   },
   "targets": {
     "test_case/test_local/config/runs/analyze_projections/composed_config.yml": {
@@ -24,11 +24,7 @@
       "size_bytes": 53925,
       "type": "csv"
     },
-    "test_case/test_local/experiments/experiment/config/simulation.json": {
-      "sha256": "2c4f8f48d627c38a9ed2d36b98614b4ca323ab8cab8d5e4ec8bf7387ba1c802b",
-      "type": "yaml"
-    },
-    "test_case/test_local/experiments/experiment/results/metric_sets/a50d1a4f6526a5e4eb2b52cd1952b8313daa291685f6107152d1a3edaf68ab14/q_indicators.csv": {
+    "test_case/test_local/experiments/experiment/results/metric_sets/b71ca72a2b13/q_indicators.csv": {
       "columns": [
         "metric",
         "location",
@@ -37,7 +33,7 @@
       ],
       "n_groups": 55,
       "n_rows": 700,
-      "ref_table": "indicator_ref/5ab0f374553a5aff.csv",
+      "ref_table": "indicator_ref/3cf4f94b4e7bfe09.csv",
       "type": "indicator"
     },
     "test_case/test_local/models/hydrology/wflow/run_default/output.csv": {

@@ -234,3 +234,59 @@ Two things went wrong on the way and neither is an R14 defect:
 - WF3 then refused with `ModelDriftError`, correctly: rebuilding WF1 regenerated
   the forcing, and the existing experiment had recorded the old model. The
   experiment was cleared rather than the check defeated.
+
+## Re-recorded 2026-09-17 — post-R12, session-1 (`a13336f2`)
+
+The first re-record made from a worktree other than the primary, and the first
+whose *target set* changed rather than only its values.
+
+**What moved, exactly.** Seven rows became six:
+
+```
+REMOVED  experiments/experiment/config/simulation.json
+REMOVED  .../metric_sets/a50d1a4f6526a5e4...ab14/q_indicators.csv
+ADDED    .../metric_sets/b71ca72a2b13/q_indicators.csv
+KEPT     5 rows, none CHANGED
+```
+
+The five kept rows — two `build_model`, three `analyze_projections` — carry
+byte-identical values. **No digest moved in this re-record.** The two removals
+and the one addition are the whole diff.
+
+**Why each one is not a blessing of unexamined state.**
+
+- `simulation.json` was retired as a target (`t2609171739`), not accepted: it
+  records an absolute path and a code fingerprint, so it varies by worktree and
+  by branch by construction and the recorded digest matched no tree anywhere.
+- The indicator row was re-keyed, not re-valued. `t2609152107` shortened
+  content-digest path segments to twelve characters, which orphaned the 64-hex
+  key (`t2609171743`). Before re-recording, the stored reference table was
+  compared against the new one through `compare_indicator_table`: **0/700 rows
+  outside tolerance, max relative move 0** — exactly equal, and byte-identical
+  once line endings are normalised. The new sidecar
+  `indicator_ref/3cf4f94b4e7bfe09.csv` is content-identical to the R12-seal
+  reference `5ab0f374553a5aff.csv` it replaces.
+
+So this re-record wrote nothing that had not been compared first, which is the
+bar this file exists to hold re-records to.
+
+**The tree it describes.** `test_case/test_local` in the `session-1` worktree,
+WF3+WF4 regenerated from `project_config_baseline.yml` on 2026-09-17 (WF3 1m50s,
+WF4 8m56s) against a WF1 model and WF2 slices already present and already
+passing. Collection `c3f88ea5c76f`, metric set `b71ca72a2b13`.
+
+**Caveat, stronger here than usual.** The recording worktree is not the primary,
+so the usual "untracked fixture shared by every branch" warning has more force
+than normal: this manifest now describes a tree that only `session-1` holds.
+The values are the same ones the primary's tree produces — that is precisely
+what the zero-movement comparison above establishes — but the *paths* are keyed
+to a collection and metric set generated here. A worktree whose own WF3/WF4
+output carries different identity segments will orphan the indicator row again
+until `t2609171743`'s option 1 (template-relative manifest keys) lands.
+
+**Unreferenced sidecars left in place deliberately.**
+`indicator_ref/5ab0f374553a5aff.csv` (R12 seal) and
+`indicator_ref/74ed83c06b2e7e6c.csv` (pre-R12) are no longer pointed at by any
+manifest row. They are kept as evidence — `5ab0f374553a5aff.csv` is the table
+the zero-movement comparison was made against — and should be pruned only
+deliberately, not as tidying.

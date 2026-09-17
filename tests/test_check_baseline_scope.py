@@ -173,7 +173,7 @@ def _check_ns(
 
 @pytest.fixture
 def project(tmp_path):
-    """A synthetic project dir with all 12 targets present + a recorded manifest.
+    """A synthetic project dir with all 11 targets present + a recorded manifest.
 
     Returns (project_dir, manifest_path). Both point under tmp_path.
     """
@@ -191,7 +191,7 @@ def project(tmp_path):
 
 
 def test_targets_tagged_with_expected_cardinality():
-    """The shipping TARGETS carry the 4/6/2 workflow tags the count math relies on.
+    """The shipping TARGETS carry the 4/6/1 workflow tags the count math relies on.
 
     `build_model` gained the beyond-`rule all` discharge target, then dropped
     one again on 2026-08-10: the evaluation hydrograph is keyed by `wflow_id`
@@ -203,19 +203,41 @@ def test_targets_tagged_with_expected_cardinality():
     no longer exists, and the seed config declares only `river discharge`, so it
     emits one indicator table. A project configuring more output variables gets
     more tables — but this list describes the SEED tree, which is why the number
-    is pinned here rather than derived.
+    is pinned here rather than derived. It dropped to 1 on 2026-09-17 when
+    `simulation.json` was removed (`t2609171739`); see the test below.
     """
     counts = Counter(workflow for workflow, _kind, _template in cb.TARGETS)
     assert counts == {
         "build_model": 4,
         "analyze_projections": 6,
-        "simulate_system": 2,
+        "simulate_system": 1,
     }
+
+
+def test_simulation_json_is_never_a_target():
+    """It records an absolute path and a code fingerprint, so it cannot pass.
+
+    A gate entry that differs by worktree and by branch BY CONSTRUCTION can only
+    ever pass in the checkout that recorded it; everywhere else it is a standing
+    FAIL that says nothing about the tree, which trains the reader to discount
+    real failures. Measured before removal: 7 of 20 leaf keys differed between
+    two successor trees and none was result-bearing, while `q_indicators.csv`
+    over those same two trees was exactly equal.
+
+    This is a negative assertion on purpose. The file is a reasonable-LOOKING
+    target -- it is the experiment's frozen provenance document -- so the reason
+    it is excluded has to live somewhere a re-adder will trip over.
+    """
+    assert not [
+        template
+        for _workflow, _kind, template in cb.TARGETS
+        if "simulation" in template
+    ]
 
 
 def test_scoped_count_is_selected_not_full(project, capsys):
     """`--workflow build_model --workflow analyze_projections` reports 11
-    of the 12 targets, not the full set."""
+    of the 11 targets, not the full set."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(
@@ -276,7 +298,7 @@ def test_unscoped_record_writes_all_targets(project):
     """An unscoped record with --include-figures writes all 12 (overwrite)."""
     project_dir, manifest_path = project
     written = json.loads(Path(manifest_path).read_text())
-    assert len(written["targets"]) == 12
+    assert len(written["targets"]) == 11
     assert written["version"] == cb.MANIFEST_VERSION
 
 
@@ -310,7 +332,7 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
     assert rc == 0
     after = json.loads(Path(manifest_path).read_text())["targets"]
 
-    assert len(after) == 12  # nothing dropped
+    assert len(after) == 11  # nothing dropped
     assert after[cp_path] == cp_before  # wf2 row preserved verbatim
     assert after[exp_path] == exp_before  # wf3 row preserved verbatim
     # wf1 discharge row re-recorded against the mutated series.
@@ -319,14 +341,14 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
 
 
 def test_unscoped_check_spans_all_targets(project, capsys):
-    """`check --include-figures` with no `--workflow` spans all 12 targets."""
+    """`check --include-figures` with no `--workflow` spans all 11 targets."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path, workflow=None, include_figures=True)
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 12 target(s)" in out
+    assert "OK - 11 target(s)" in out
 
 
 # --- figure targets are excluded by default (2026-08-03) ----------------------

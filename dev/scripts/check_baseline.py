@@ -357,11 +357,25 @@ TARGETS: list[tuple[str, str, str]] = [
     # reference table with a per-group tolerance instead -- see the indicator
     # block and INDICATOR_ATOL_FRAC.
     ("simulate_system", "indicator", "{metric_set_dir}/q_indicators.csv"),
-    (
-        "simulate_system",
-        "yaml",
-        "{exp_dir}/config/simulation.json",
-    ),
+    # `{exp_dir}/config/simulation.json` was a target here until 2026-09-17 and
+    # must not come back (`t2609171739`). It records an ABSOLUTE PATH
+    # (`collection.manifest_path`) and a CODE FINGERPRINT
+    # (`simulator_adapter_code.sha256`), so it differs by worktree AND by branch
+    # by construction: a row for it can only ever pass in the exact checkout that
+    # recorded it, and the recorded digest matched no tree anywhere.
+    #
+    # Measured, not argued. Diffing two successor trees gave 7 of 20 leaf keys
+    # differing and NOT ONE of them result-bearing -- collection id and revision,
+    # manifest path, model digest, adapter code, and the two identities derived
+    # from those. Meanwhile `q_indicators.csv` compared EXACTLY EQUAL across the
+    # same two trees (0/700 rows outside tolerance, max relative move 0), which
+    # is the whole argument in one line: this file is designed to vary where the
+    # numbers are designed not to.
+    #
+    # What it would have guarded is guarded at RUN time instead, and better --
+    # rule 4.02 `check_model_reference` plus the collection and metric-set
+    # immutability errors, all of which fire during the run rather than in a gate
+    # someone remembers to run afterwards.
 ]
 
 WORKFLOWS = (

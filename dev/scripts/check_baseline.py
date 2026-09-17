@@ -5,6 +5,13 @@ a JSON manifest under dev/baseline/. Fingerprint format follows the
 roadmap and the pipeline-regression-testing skill: per-variable summary
 stats for netCDF, normalized SHA256 for CSV/YAML, size-only for PNG.
 
+**Exit codes on `check` are three-valued, not two.** `0` the compared targets
+match; `1` the gate ran and the tree differs; `2` **nothing was compared, so the
+run is not evidence** -- an empty scope, or a fixture this gate cannot resolve.
+A caller that only tests `rc != 0` cannot tell a red gate from one that never
+ran, and until 2026-09-17 those two cases reported `OK - 0 target(s)` and a
+traceback respectively.
+
 One target is special: the workflow-1 Wflow **discharge** series
 (`models/hydrology/wflow/run_default/output.csv`).
 
@@ -96,6 +103,25 @@ CLIM_PROJECT = "cmip6"
 EXPERIMENT_NAME = "experiment"
 
 MANIFEST_PATH_DEFAULT = Path("dev/baseline/manifest.json")
+
+
+#: Exit code for "the gate did not run", as distinct from 1, "the gate ran and
+#: the tree differs". Two conditions reach it: a fixture this gate cannot
+#: resolve, and a scope with nothing in it. Both used to be reported as
+#: something other than a failure -- a traceback and an `OK` respectively -- and
+#: both mean the same thing to a caller: **this run is not evidence**.
+EXIT_NOT_CHECKED = 2
+
+
+class BaselineFixtureError(ValueError):
+    """The tree cannot be checked, for a reason that is not a difference.
+
+    A ValueError subclass so that any caller already catching ValueError around
+    target resolution keeps working; typed so `main` can turn it into a
+    diagnosis instead of a traceback.
+    """
+
+
 # v2 adds the workflow-1 discharge target (type "discharge"): a stored reference
 # series under dev/baseline/discharge_ref/ compared with a tolerance comparator
 # rather than a byte hash (ADR 0001 step 6).
@@ -413,7 +439,7 @@ def resolve_metric_set_dir(project_dir: str) -> str:
     experiment = Path(project_dir) / "experiments" / EXPERIMENT_NAME
     plans = list((experiment / "_engine/metric_requests").glob("*.json"))
     if len(plans) != 1:
-        raise ValueError(
+        raise BaselineFixtureError(
             f"baseline requires exactly one retained metric plan, found {len(plans)}; "
             "select a dedicated baseline fixture (legacy tables are not a successor baseline)"
         )
@@ -1325,6 +1351,20 @@ def cmd_check(args: argparse.Namespace) -> int:
         failures.append((path, ["target present but not in manifest"]))
 
     tol_note = f" (tolerance {args.tolerance:g})" if args.tolerance > 0 else ""
+    if not failures and not rec_targets:
+        # `OK - 0 target(s) match manifest` was the old output here, and it is
+        # the shape of pass this repo refuses everywhere else: a tool that
+        # bounds its own coverage must say what it dropped. A scope can be empty
+        # legitimately -- `generate_scenarios` declares no non-figure target --
+        # but "I compared nothing" is never evidence that nothing moved.
+        scope = ", ".join(sorted(selected)) if selected else "the full target set"
+        print(
+            f"NOT CHECKED - no targets in scope ({scope}"
+            + (", figures excluded" if not _want_figures(args) else "")
+            + ")."
+        )
+        print("  Nothing was compared, so this run says nothing about the tree.")
+        return EXIT_NOT_CHECKED
     if not failures:
         print(f"OK - {len(rec_targets)} target(s) match manifest{tol_note}.")
         return 0
@@ -1429,11 +1469,23 @@ def main() -> None:
     compare_p.add_argument("--cur", required=True, help="Candidate output.csv")
 
     args = p.parse_args()
-    if args.cmd == "record":
-        sys.exit(cmd_record(args))
-    if args.cmd == "compare":
-        sys.exit(cmd_compare(args))
-    sys.exit(cmd_check(args))
+    # `resolve_metric_set_dir` raises while RESOLVING targets, before any
+    # comparison runs, so an unusable fixture used to kill the whole invocation
+    # with a traceback -- including the scopes that would have reported cleanly.
+    # A missing fixture is a fact about the tree, and it is reported as one.
+    try:
+        if args.cmd == "record":
+            sys.exit(cmd_record(args))
+        if args.cmd == "compare":
+            sys.exit(cmd_compare(args))
+        sys.exit(cmd_check(args))
+    except BaselineFixtureError as error:
+        print(f"NOT CHECKED - {error}", file=sys.stderr)
+        print(
+            "  No target was compared, so this run says nothing about the tree.",
+            file=sys.stderr,
+        )
+        sys.exit(EXIT_NOT_CHECKED)
 
 
 if __name__ == "__main__":

@@ -50,18 +50,21 @@ one exists; nothing reads it.
 ### Baseline
 
 `dev/baseline/manifest.json`'s two snapshot keys were renamed in place with
-their recorded `sha256` values **left untouched**, and the reasoning is in
-`dev/baseline/provenance.md`: the re-record could not be done from the worktree
-that made the change. Its `test_case/test_local` already diverged from the
-manifest on both `cmip6_change_factors_*.csv` data targets before this work
-started, and its flat snapshot copies still carried the retired
-`run_stress_test` key, so they were pre-R12 artifacts matching neither the
-manifest nor a fresh write. Recording from that tree would have rebased the
-baseline onto an unverified one.
+their recorded `sha256` values **left untouched — and both then verified GREEN
+at the new path against those values.** `check --workflow build_model` reports
+`OK - 2 target(s) match manifest`.
 
-**The next re-record from a matching tree fixes those two values**, with
-`record --workflow build_model --workflow analyze_projections` (merges; does not
-overwrite other workflows' rows).
+That works because the `yaml` fingerprint is SEMANTIC: `fingerprint_yaml` parses
+the document and hashes sorted-key JSON, so the move changed the path and the
+byte layout but not the digest. **Do not read a raw byte diff of these files as
+evidence about the gate** — it answers a different question, and the flat copies
+they replaced differed both byte-wise and semantically (they still carried the
+retired `run_stress_test` key, so they were pre-R12 artifacts).
+
+What is genuinely divergent in `session-1`'s `test_case/test_local` is unrelated
+to this change and predates it: both `cmip6_change_factors_*.csv` targets differ
+from the manifest and the `simulate_system` targets are absent. Boarded as
+[`t2609171700`](../../tasks/t2609171700-session-1-s-test-local-does-not-match-the-baseline-manifest-so-the-gate-is-inert-there.md).
 
 ## Event 2 — WF3 and WF4 gain a snapshot they never had
 

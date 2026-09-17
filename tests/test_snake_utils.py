@@ -2977,10 +2977,8 @@ def test_console_run_info_renders_the_plan_block(monkeypatch):
         ),
     )
     assert out == (
-        "-- PLAN ----------------------------\n"
         ">  1.01  snapshot_config  1\n"
         "   1.14  run_wflow\n"
-        "------------------------------------\n"
         "1 of 2 rules to run  |  1 up to date\n"
         "\n"
     ), out
@@ -3012,23 +3010,24 @@ def test_console_opening_puts_the_rules_under_the_title(monkeypatch):
     )
     lines = out.split("\n")
     assert lines[0] == ""  # air above, or Snakemake's preamble runs into it
-    assert lines[1] == lines[3] == "=" * len(lines[1])  # the title's band
-    assert lines[2] == "wf1 build_model"  # the NAME only
-    assert lines[4] == ""
-    assert lines[5].startswith("-- PLAN -")
-    assert lines[6] == ">  1.01  a  1"
-    assert lines[7] == "   1.02  b"
-    assert lines[8] == "-" * len(lines[1])
-    assert lines[9].startswith("1 of 2 rules to run  |  1 up to date")
-    assert lines[10] == ""
-    assert lines[11].startswith("-- RUN -")
-    assert lines[12] == "project  <repo>/test_case/test_rapid"
-    # Last, and the block ends with a newline, so it is not `lines[-1]`.
-    assert any(line.startswith("-- PROGRESS -") for line in lines)
+    assert lines[1] == "wf1 build_model"  # the NAME only, unbanded
+    assert lines[2] == ""
+    assert lines[3] == ">  1.01  a  1"
+    assert lines[4] == "   1.02  b"
+    assert lines[5].startswith("1 of 2 rules to run  |  1 up to date")
+    assert lines[6] == ""
+    assert lines[7] == "project  <repo>/test_case/test_rapid"
 
 
-def test_console_opening_rule_spans_the_whole_title(monkeypatch):
-    """Including the plan clause -- an underline stopping short reads as a typo."""
+def test_the_opening_block_draws_no_rules_at_all(monkeypatch):
+    """No band, no `-- SECTION --`, no footer under the table.
+
+    Six full-width rules in thirty lines, and under `run_workflows` a seventh
+    three lines above them at a DIFFERENT width -- the runner draws a fixed 80
+    and this block sized itself to its longest value. What the rules were
+    carrying the content carries: numbered rows are a plan, a `key  value`
+    column is metadata, and a blank line separates them.
+    """
     _declared_header(monkeypatch, experiment="experiment_rapid")
     out = _emit(
         _console_handler(),
@@ -3038,10 +3037,9 @@ def test_console_opening_rule_spans_the_whole_title(monkeypatch):
         ),
     )
     lines = out.split("\n")
-    # One width for the bands, the section rules and the table's own footer.
-    widths = {len(line) for line in lines if set(line) in ({"="}, {"-"})}
-    assert len(widths) == 1, lines
-    assert lines[2] == "wf1 build_model"
+    assert not [line for line in lines if set(line) in ({"="}, {"-"})], lines
+    assert not [line for line in lines if line.startswith("-- ")], lines
+    assert lines[1] == "wf1 build_model"
     assert "all to run" in out
 
 
@@ -3069,11 +3067,63 @@ def test_console_opening_survives_a_run_without_run_info(monkeypatch):
     _declared_header(monkeypatch)
     out = _emit(_console_handler(), _job_info(1, "a", "Rule 1.01: a"))
     lines = out.split("\n")
-    # No plan means no table to caption and nothing to size the bars from, so
-    # the summary would go back onto the title -- and none was reported here.
-    assert lines[2] == "wf1 build_model"
-    assert not any(line.startswith("-- PLAN") for line in lines)
+    # No plan means no table to caption, so the summary would go back onto the
+    # title -- and none was reported here.
+    assert lines[1] == "wf1 build_model"
     assert "project  <repo>/test_case/test_rapid" in lines
+
+
+def test_the_title_is_dropped_when_the_runner_already_named_the_workflow(
+    monkeypatch,
+):
+    """Under `run_workflows` the name is already on the console, twice.
+
+    The hand-off band prints `[1/5]  wf0 analyze_climate` and the command line
+    under it names the Snakefile; a third printing three lines later is the
+    block repeating what the reader just read. Standalone there is no band, so
+    the title is the only statement of which workflow this is and it stays --
+    the case the test below covers.
+    """
+    _declared_header(monkeypatch)
+    monkeypatch.setenv(cs.ANNOUNCED_ENV, "1")
+    out = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    assert "wf1 build_model" not in out, out
+    assert out.split("\n")[1] == ">  1.01  a  1"  # straight into the plan
+    assert "project  <repo>/test_case/test_rapid" in out  # nothing else lost
+
+
+def test_the_title_stays_for_a_standalone_snakemake_run(monkeypatch):
+    """`snakemake -s build_model.smk` has no runner above it to do the naming."""
+    _declared_header(monkeypatch)
+    monkeypatch.delenv(cs.ANNOUNCED_ENV, raising=False)
+    out = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    assert out.split("\n")[1] == "wf1 build_model"
+
+
+def test_an_announced_run_keeps_the_title_when_it_carries_the_plan_summary(
+    monkeypatch,
+):
+    """With no table, the summary rides the title -- so the title cannot go.
+
+    Reached when Snakemake's job table cannot be parsed. Suppressing the title
+    there would take the run's size with it, and a repeated name is a smaller
+    loss than an unstated one.
+    """
+    monkeypatch.setenv(cs.ANNOUNCED_ENV, "1")
+    block = cs.opening_block(
+        "wf1 build_model", "test_case/test_rapid", plan=("7 of 9 rules to run", [])
+    )
+    assert ("wf1 build_model -- 7 of 9 rules to run", "title") in block
 
 
 def test_console_plan_stands_alone_when_no_header_was_declared(monkeypatch):
@@ -3086,7 +3136,7 @@ def test_console_plan_stands_alone_when_no_header_was_declared(monkeypatch):
             "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
         ),
     )
-    assert out.startswith("-- PLAN -")
+    assert out.startswith(">  1.01  a  1")
     assert "1 of 2 rules to run  |  1 up to date" in out
 
 
@@ -3129,11 +3179,12 @@ def test_deferred_warning_lands_under_the_run_block(monkeypatch):
     )
     lines = out.split("\n")
     row = next(i for i, line in enumerate(lines) if "did not resolve" in line)
-    run = next(i for i, line in enumerate(lines) if line.startswith("-- RUN -"))
-    progress = next(
-        i for i, line in enumerate(lines) if line.startswith("-- PROGRESS -")
-    )
-    assert run < row < progress, lines
+    meta = next(i for i, line in enumerate(lines) if line.startswith("project  "))
+    # Under the metadata rows, and last in the block: the section rule that
+    # used to close it is gone, so what bounds the warning below is the blank
+    # line before the first `HH:MM:SS - RUN` row.
+    assert meta < row, lines
+    assert [line for line in lines[row + 1 :] if line] == [], lines
     assert lines[row].endswith(
         " - resolution - WARNING - two members did not resolve"
     ), lines[row]
@@ -3630,10 +3681,9 @@ def test_run_header_shape_matches_run_summary():
     )
     lines = out.splitlines()
     assert lines[0] == ""
-    assert lines[1] == lines[3] == "=" * len(lines[1])
-    assert lines[2] == "wf3 run_stress_test"
-    assert lines[5].startswith("-- RUN -")
-    assert lines[6:] == [
+    assert lines[1] == "wf3 run_stress_test"
+    assert lines[2] == ""
+    assert lines[3:] == [
         # `<repo>`-marked since t2609162114; the `config` row beside it is not,
         # only because this test passes a CWD-relative path. Snakemake hands a
         # Snakefile an ABSOLUTE `configfiles[0]`, so in a real run both rows
@@ -3663,7 +3713,7 @@ def test_run_header_states_the_declared_folders(declare_folders):
     assert rows[1].endswith("data/wflow_global/hydromt")
     assert rows[2].endswith("models/hydrology/wflow")
     # One column now, no group labels: the `<name>` rows announce themselves.
-    assert lines[2] == "wf1 build_model"
+    assert lines[1] == "wf1 build_model"
     assert "" in lines  # blank-line separation, not a wall
 
 
@@ -3953,7 +4003,7 @@ def test_run_header_omits_rows_a_workflow_does_not_have():
     """WF1 and WF2 pass no experiment; the block shrinks rather than showing a blank."""
     out = cs.run_header("wf1 build_model", "test_case/test_rapid")
     lines = out.splitlines()
-    assert lines[2] == "wf1 build_model"
+    assert lines[1] == "wf1 build_model"
     assert lines[-1] == "project  <repo>/test_case/test_rapid"
     assert not any("experiment" in line for line in lines)
 

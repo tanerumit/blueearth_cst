@@ -875,6 +875,20 @@ def test_the_console_is_ascii_but_for_the_three_rail_glyphs(
             line.encode("cp1252")
 
 
+def test_the_runner_tells_its_children_the_workflow_is_already_named(
+    tmp_path, capture_runs, capsys, monkeypatch
+):
+    """Each hand-off band names the workflow, so the child's block need not.
+
+    Set on this process's environment because both spawn paths read it from
+    there: plain `subprocess.run` inherits it, and `simulation_command` builds
+    its env from `os.environ`.
+    """
+    monkeypatch.delenv(rw.console_style.ANNOUNCED_ENV, raising=False)
+    _run_and_capture(tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER})
+    assert os.environ[rw.console_style.ANNOUNCED_ENV] == "1"
+
+
 def test_the_runner_declares_utf8_on_its_own_stdout(monkeypatch):
     """`main` reconfigures before it prints, or the rail kills a redirected run.
 

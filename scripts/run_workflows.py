@@ -39,6 +39,7 @@ _REPO_ROOT_PATH = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT_PATH) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT_PATH))
 
+from blueearth_cst.shared import console_style  # noqa: E402
 from blueearth_cst.shared.cross_workflow_leaves import (  # noqa: E402
     LEAF_PRODUCER,
     LEAVES,
@@ -797,6 +798,13 @@ def run(
         extra=extra,
     )
     _write_json_atomic(manifest_path, manifest)
+
+    # Every hand-off band below names the workflow it is about to start, so the
+    # workflow's own opening block does not print its name a second time three
+    # lines later. Set on THIS process's environment rather than passed per
+    # child: `subprocess.run` inherits it, and `simulation_command` builds its
+    # env from `os.environ`, so one assignment covers both spawn paths.
+    os.environ[console_style.ANNOUNCED_ENV] = "1"
 
     # monotonic, matching each Snakefile's own `_RUN_STARTED`: a wall clock can
     # step backwards mid-run and these are durations, never timestamps.

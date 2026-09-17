@@ -3922,40 +3922,40 @@ def log_row(message, module="cst", level="INFO"):
     than in a document nobody opens while writing a row:
 
     1. **A row states its subsystem once.** It must not open with a noun that
-       restates its own ``module`` column: ``collection - Collection <id>: â€¦``
+       restates its own ``module`` column: ``collection - Collection <id>: ...``
        says it twice. This is the rule :func:`_compact_log_line` already
        applies to hydromt's records; we cleaned someone else's output of it
        and exempted our own until this was written down. The boundary is that
-       rule's own: it strips a LABEL, not a verb, so ``fetch - Fetching â€¦``
-       stays â€” without the verb the row is a bare identifier that never says
+       rule's own: it strips a LABEL, not a verb, so ``fetch - Fetching ...``
+       stays -- without the verb the row is a bare identifier that never says
        what is happening to it.
     2. **A value never repeats the key that introduces it.**
-       ``reference_window reference_window_start=â€¦ reference_window_years=â€¦``
-       said one word five times; ``reference_window start=â€¦ years=â€¦`` says it
-       once. Strip the prefix at the ROW, never in the record it came from â€”
+       ``reference_window reference_window_start=... reference_window_years=...``
+       said one word five times; ``reference_window start=... years=...`` says it
+       once. Strip the prefix at the ROW, never in the record it came from --
        a durable record wants self-describing keys.
     3. **A count and its noun agree**, through :func:`plural`. Never
        ``{n} thing(s)``: the count deciding the plural is on the same line, and
        on the rows where it is 1 the hedge reads as a defect in the code.
-       The fix drags agreement with it â€” ``are`` becomes ``is``, ``They were``
-       becomes ``It was`` â€” so it is never a search-and-replace.
+       The fix drags agreement with it -- ``are`` becomes ``is``, ``They were``
+       becomes ``It was`` -- so it is never a search-and-replace.
     4. **A warning states the FAULT first**, then what it means for this run.
        Not what the output artifacts will show ("and the figures say so" is the
        figures' business), and not a count when the count is not the news: a
        row reporting that two subsystems disagree opened with how many
        locations were affected and buried the disagreement in its third clause.
     5. **No definite article on a verb row**, and no clause that cannot be
-       false. ``Reading monthly change-factor table``, not ``Reading the â€¦``;
+       false. ``Reading monthly change-factor table``, not ``Reading the ...``;
        ``Model reference matches the live model``, without ``simulation may
-       proceed`` â€” a mismatch raises.
+       proceed`` -- a mismatch raises.
     6. **A row opens with a capital unless it opens with an identifier.** The
        rows that opened lowercase were written as continuation fragments of a
        multi-part f-string and are one line on the console. A source id
-       (``chirps is precipitation-only: â€¦``) is exempt: it is a literal key
+       (``chirps is precipitation-only: ...``) is exempt: it is a literal key
        from the config and the catalog, and capitalising it prints a name that
        does not exist.
 
-    One more, about LENGTH: a row is one console line and is never wrapped â€”
+    One more, about LENGTH: a row is one console line and is never wrapped --
     wrapping splits what ``grep`` is meant to find on one line in the rule's
     log part, so the answer to a long row is a shorter row. Where the length is
     the data's rather than the author's, cap the list with :func:`listed`,

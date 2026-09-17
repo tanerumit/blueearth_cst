@@ -3148,16 +3148,18 @@ def test_console_a_rule_without_a_message_still_gets_a_named_finish_line():
 
 def test_console_a_sub_second_job_shows_no_duration():
     """`0:00:00` reads as a broken clock, and bookkeeping rules are most of them."""
-    cs._RULE_NUMBERS["write_experiment_config"] = "3.07"
+    cs._RULE_NUMBERS["prepare_collection_sources"] = "3.04"
     handler = _console_handler()
     out = _emit(
         handler,
-        _job_info(1, "write_experiment_config", "Rule 3.07: write_experiment_config"),
+        _job_info(
+            1, "prepare_collection_sources", "Rule 3.04: prepare_collection_sources"
+        ),
         _console_record(event="job_finished", job_id=1),
         _console_record(event="progress", done=3, total=37),
     )
     done = out.splitlines()[1]
-    assert done.endswith("Rule 3.07: write_experiment_config  [3/37]"), done
+    assert done.endswith("Rule 3.04: prepare_collection_sources  [3/37]"), done
 
 
 def test_console_no_escape_codes_when_the_stream_is_not_a_tty():

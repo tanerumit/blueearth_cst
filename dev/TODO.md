@@ -38,6 +38,7 @@
 | [t2609171500](tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md)                                           | Move the experiment's frozen simulation documents into _engine                                           | project-tree                                | owner review of test_rapid, 2026-09-17         |     | backlog |
 | [t2609171637](tasks/t2609171637-two-interchange-contract-tests-are-not-guarded-against-a-pre-r14-fixture.md)                                | Two interchange contract tests are not guarded against a pre-R14 fixture                                 | tests / fixtures                            | console styling pass (2026-09-17)              |     | backlog |
 | [t2609171730](tasks/t2609171730-34-exception-messages-carry-characters-a-cp1252-console-cannot-encode.md)                                   | 34 exception messages carry characters a cp1252 console cannot encode                                    | console / errors                            | console styling pass (2026-09-17)              |     | backlog |
+| [t2609172119](tasks/t2609172119-snakemake-s-error-block-keeps-full-length-paths-that-every-other-console-row-shortens.md)                   | Snakemake's error block keeps full-length paths that every other console row shortens                    | console / path tokens                       | wf1 failure-transcript render, 2026-09-17      |     | backlog |
 
 ## Watching
 

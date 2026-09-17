@@ -2308,11 +2308,18 @@ def index_width(count: int) -> int:
     this one function makes the column and the filename textually identical, so
     a consumer joining a plot to its run needs no integer coercion.
 
-    **The width is stable for an experiment's life.** It is a function of
-    ``ST_NUM`` / ``RLZ_NUM``, and both live in the ``generate_scenarios``
-    section that ``experiment.yml`` freezes at first successful run — so a grid
-    change that would move the width already forces a new experiment via
-    ``check_not_frozen``. No existing tree can be renamed underneath itself.
+    **The width is stable for a collection's life.** It is a function of
+    ``ST_NUM`` / ``RLZ_NUM``, both of which feed the generation request's
+    fingerprint — so a grid change that would move the width yields a different
+    ``collection_id``, and therefore a different collection directory, rather
+    than re-widening an existing one. No existing tree can be renamed underneath
+    itself.
+
+    Argued through ``experiment.yml``'s freeze and ``check_not_frozen`` until
+    2026-09-17. That mechanism was never wired into R12's rule set and its
+    module has been deleted (``t2608290250``); content-addressed identity gives
+    the same guarantee structurally, by making a changed grid a NEW artifact
+    instead of a refused write.
 
     Raises
     ------

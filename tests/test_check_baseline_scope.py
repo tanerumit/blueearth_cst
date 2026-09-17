@@ -173,7 +173,7 @@ def _check_ns(
 
 @pytest.fixture
 def project(tmp_path):
-    """A synthetic project dir with all 12 targets present + a recorded manifest.
+    """A synthetic project dir with all 11 targets present + a recorded manifest.
 
     Returns (project_dir, manifest_path). Both point under tmp_path.
     """
@@ -191,7 +191,7 @@ def project(tmp_path):
 
 
 def test_targets_tagged_with_expected_cardinality():
-    """The shipping TARGETS carry the 4/6/2 workflow tags the count math relies on.
+    """The shipping TARGETS carry the 4/6/1 workflow tags the count math relies on.
 
     `build_model` gained the beyond-`rule all` discharge target, then dropped
     one again on 2026-08-10: the evaluation hydrograph is keyed by `wflow_id`
@@ -203,19 +203,41 @@ def test_targets_tagged_with_expected_cardinality():
     no longer exists, and the seed config declares only `river discharge`, so it
     emits one indicator table. A project configuring more output variables gets
     more tables — but this list describes the SEED tree, which is why the number
-    is pinned here rather than derived.
+    is pinned here rather than derived. It dropped to 1 on 2026-09-17 when
+    `simulation.json` was removed (`t2609171739`); see the test below.
     """
     counts = Counter(workflow for workflow, _kind, _template in cb.TARGETS)
     assert counts == {
         "build_model": 4,
         "analyze_projections": 6,
-        "simulate_system": 2,
+        "simulate_system": 1,
     }
+
+
+def test_simulation_json_is_never_a_target():
+    """It records an absolute path and a code fingerprint, so it cannot pass.
+
+    A gate entry that differs by worktree and by branch BY CONSTRUCTION can only
+    ever pass in the checkout that recorded it; everywhere else it is a standing
+    FAIL that says nothing about the tree, which trains the reader to discount
+    real failures. Measured before removal: 7 of 20 leaf keys differed between
+    two successor trees and none was result-bearing, while `q_indicators.csv`
+    over those same two trees was exactly equal.
+
+    This is a negative assertion on purpose. The file is a reasonable-LOOKING
+    target -- it is the experiment's frozen provenance document -- so the reason
+    it is excluded has to live somewhere a re-adder will trip over.
+    """
+    assert not [
+        template
+        for _workflow, _kind, template in cb.TARGETS
+        if "simulation" in template
+    ]
 
 
 def test_scoped_count_is_selected_not_full(project, capsys):
     """`--workflow build_model --workflow analyze_projections` reports 11
-    of the 12 targets, not the full set."""
+    of the 11 targets, not the full set."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(
@@ -276,7 +298,7 @@ def test_unscoped_record_writes_all_targets(project):
     """An unscoped record with --include-figures writes all 12 (overwrite)."""
     project_dir, manifest_path = project
     written = json.loads(Path(manifest_path).read_text())
-    assert len(written["targets"]) == 12
+    assert len(written["targets"]) == 11
     assert written["version"] == cb.MANIFEST_VERSION
 
 
@@ -310,7 +332,7 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
     assert rc == 0
     after = json.loads(Path(manifest_path).read_text())["targets"]
 
-    assert len(after) == 12  # nothing dropped
+    assert len(after) == 11  # nothing dropped
     assert after[cp_path] == cp_before  # wf2 row preserved verbatim
     assert after[exp_path] == exp_before  # wf3 row preserved verbatim
     # wf1 discharge row re-recorded against the mutated series.
@@ -319,14 +341,14 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
 
 
 def test_unscoped_check_spans_all_targets(project, capsys):
-    """`check --include-figures` with no `--workflow` spans all 12 targets."""
+    """`check --include-figures` with no `--workflow` spans all 11 targets."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path, workflow=None, include_figures=True)
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 12 target(s)" in out
+    assert "OK - 11 target(s)" in out
 
 
 # --- figure targets are excluded by default (2026-08-03) ----------------------
@@ -465,3 +487,176 @@ def test_the_three_exit_codes_are_distinct():
     """
     assert cb.EXIT_NOT_CHECKED == 2
     assert cb.EXIT_NOT_CHECKED not in (0, 1)
+
+
+# --- orphaned manifest rows (t2609171743) ----------------------------------
+#
+# A recorded row whose path no longer resolves used to be dropped by the
+# `p in in_scope_paths` filter with nothing said. That is how the real manifest
+# stopped comparing `q_indicators.csv`: `t2609152107` shortened every
+# content-digest segment to twelve characters, the 64-hex row stopped matching,
+# and `simulate_system` went on reporting a verdict computed from one target.
+# The row is not out of scope -- it BELONGS to the scope and cannot be reached,
+# which is a silent cap, not a filter.
+
+
+def _orphan_the_metric_row(manifest_path, keep_template=False):
+    """Re-key the recorded indicator row under a longer digest segment.
+
+    Mirrors the real defect exactly: same template, same directory, a segment of
+    a different length. Returns the re-keyed path.
+
+    `keep_template=False` also STRIPS the row's `template`, which is what makes
+    it a genuine orphan -- it models a manifest recorded before 2026-09-17, the
+    only kind that can still be orphaned. With the template kept, the row is
+    re-keyed at check time and found; that is the fix, and it has its own test.
+    """
+    manifest = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
+    key = next(k for k in manifest["targets"] if k.endswith("q_indicators.csv"))
+    parts = key.split("/")
+    parts[-2] = "a" * 64
+    orphan = "/".join(parts)
+    row = manifest["targets"].pop(key)
+    if not keep_template:
+        row.pop("template", None)
+    manifest["targets"][orphan] = row
+    pathlib.Path(manifest_path).write_text(json.dumps(manifest), encoding="utf-8")
+    return orphan
+
+
+def test_a_renamed_identity_is_followed_not_orphaned(project, capsys):
+    """THE FIX (t2609171743): a row carrying `template` survives a rename.
+
+    The row is re-keyed to a path that does not exist, exactly as the 12-hex
+    move did to the real manifest -- but it still carries the template it was
+    recorded from, so `rekey_by_template` resolves it back to today's path and
+    the comparison happens. No orphan, no re-record, no manual repointing.
+    """
+    project_dir, manifest_path = project
+    orphan = _orphan_the_metric_row(manifest_path, keep_template=True)
+
+    rc = cb.cmd_check(
+        _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
+    )
+
+    out = capsys.readouterr().out
+    assert rc == 0, out
+    assert "OK -" in out
+    assert "orphaned" not in out
+    assert orphan not in out
+
+
+def test_the_template_key_wins_over_the_literal_key(project):
+    """Precedence is pinned, not emergent: `template` decides, the key is ignored."""
+    project_dir, manifest_path = project
+    _orphan_the_metric_row(manifest_path, keep_template=True)
+
+    recorded = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
+    rekeyed = cb.rekey_by_template(recorded["targets"], project_dir)
+
+    resolved = cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
+    assert resolved in rekeyed
+    assert not [k for k in rekeyed if "a" * 64 in k]
+
+
+def test_an_orphaned_row_fails_instead_of_vanishing(project, capsys):
+    project_dir, manifest_path = project
+    orphan = _orphan_the_metric_row(manifest_path)
+
+    rc = cb.cmd_check(
+        _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
+    )
+
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert orphan in out
+    assert "orphaned" in out
+    assert "NOT compared" in out
+
+
+def test_an_orphaned_row_is_never_reported_as_a_pass(project, capsys):
+    """The whole point: absence must not read as agreement."""
+    project_dir, manifest_path = project
+    _orphan_the_metric_row(manifest_path)
+
+    rc = cb.cmd_check(
+        _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
+    )
+
+    out = capsys.readouterr().out
+    assert rc != 0
+    assert "OK -" not in out
+
+
+def test_other_scopes_are_not_disturbed_by_an_orphan(project, capsys):
+    """The orphan belongs to simulate_system; build_model must still pass.
+
+    Guards the obvious over-correction -- reporting every unmatched manifest row
+    regardless of scope would fail every scoped run on another scope's staleness.
+    """
+    project_dir, manifest_path = project
+    _orphan_the_metric_row(manifest_path)
+
+    rc = cb.cmd_check(_check_ns(project_dir, manifest_path, workflow=["build_model"]))
+
+    assert rc == 0
+    assert "OK -" in capsys.readouterr().out
+
+
+def test_a_pattern_accepts_any_segment_length(project):
+    """The matcher must recognise the OLD length, which is the case it exists for."""
+    project_dir, _ = project
+    pattern = cb.target_pattern("{metric_set_dir}/q_indicators.csv", project_dir)
+    # Posix-normalised, as the matcher normalises both sides -- on Windows the
+    # recorded keys mix separators (see `target_pattern`).
+    root = cb._posix(project_dir)
+    base = f"{root}/experiments/{cb.EXPERIMENT_NAME}/results/metric_sets"
+
+    assert pattern.match(f"{base}/{'a' * 64}/q_indicators.csv")
+    assert pattern.match(f"{base}/{'a' * 12}/q_indicators.csv")
+    assert not pattern.match(f"{base}/{'a' * 12}/other.csv")
+
+
+def test_a_scoped_record_does_not_clear_an_orphan(project, capsys):
+    """A scoped re-record PRESERVES the orphaned row, so the FAIL persists.
+
+    `cmd_record --workflow` prunes by RESOLVED in-scope path, not by owning
+    workflow, so a row that no longer resolves is not in `selected_paths` and
+    survives the merge -- landing beside the freshly recorded row rather than
+    replacing it. This is the constraint on the obvious remedy: only an
+    UNSCOPED record (which overwrites `targets` wholesale) clears an orphan.
+    """
+    project_dir, manifest_path = project
+    orphan = _orphan_the_metric_row(manifest_path)
+
+    rc = cb.cmd_record(
+        _record_ns(project_dir, manifest_path, workflow=["simulate_system"])
+    )
+    assert rc == 0
+
+    targets = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))[
+        "targets"
+    ]
+    assert orphan in targets, "scoped record unexpectedly pruned the orphan"
+
+    capsys.readouterr()
+    assert (
+        cb.cmd_check(
+            _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
+        )
+        == 1
+    )
+    assert "orphaned" in capsys.readouterr().out
+
+
+def test_an_unscoped_record_clears_an_orphan(project, capsys):
+    """The counterpart: a full record overwrites `targets`, so the row is gone."""
+    project_dir, manifest_path = project
+    orphan = _orphan_the_metric_row(manifest_path)
+
+    assert cb.cmd_record(_record_ns(project_dir, manifest_path)) == 0
+
+    targets = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))[
+        "targets"
+    ]
+    assert orphan not in targets

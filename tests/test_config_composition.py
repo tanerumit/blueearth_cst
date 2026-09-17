@@ -209,11 +209,18 @@ def test_composed_document_equals_the_monolith_it_was_split_from(tmp_path):
 def test_enabled_is_merged_and_config_path_is_not(tmp_path):
     """D-10.1, both halves.
 
-    Dropping ``enabled`` would refuse every already-run experiment in every
-    migrating project, because ``_frozen_differences`` is a key-union diff and a
-    key present in a recorded ``experiment.yml`` but absent from the new
-    document reads as *changed*. Adding ``config_path`` would do the mirror-image
+    Dropping ``enabled`` would re-key every already-generated collection in
+    every migrating project: the composed document feeds
+    ``effective_config_digest``, so a key that is present rather than absent
+    moves the identity even when the resolved value is unchanged, and nothing on
+    disk matches any more. Adding ``config_path`` would do the mirror-image
     damage and make run identity depend on where a project stores its files.
+
+    Argued through ``_frozen_differences``' key-union diff over a recorded
+    ``experiment.yml`` until 2026-09-17, when that comparator was deleted as
+    unreachable (``t2608290250``). The conclusion is unchanged; R12 regenerates
+    where the comparator would have refused, so the failure is silent
+    recomputation rather than an error.
     """
     t1_path = write_split(
         tmp_path / "cfg",

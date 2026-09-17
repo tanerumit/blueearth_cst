@@ -83,6 +83,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from math import floor, log10
@@ -356,11 +357,25 @@ TARGETS: list[tuple[str, str, str]] = [
     # reference table with a per-group tolerance instead -- see the indicator
     # block and INDICATOR_ATOL_FRAC.
     ("simulate_system", "indicator", "{metric_set_dir}/q_indicators.csv"),
-    (
-        "simulate_system",
-        "yaml",
-        "{exp_dir}/config/simulation.json",
-    ),
+    # `{exp_dir}/config/simulation.json` was a target here until 2026-09-17 and
+    # must not come back (`t2609171739`). It records an ABSOLUTE PATH
+    # (`collection.manifest_path`) and a CODE FINGERPRINT
+    # (`simulator_adapter_code.sha256`), so it differs by worktree AND by branch
+    # by construction: a row for it can only ever pass in the exact checkout that
+    # recorded it, and the recorded digest matched no tree anywhere.
+    #
+    # Measured, not argued. Diffing two successor trees gave 7 of 20 leaf keys
+    # differing and NOT ONE of them result-bearing -- collection id and revision,
+    # manifest path, model digest, adapter code, and the two identities derived
+    # from those. Meanwhile `q_indicators.csv` compared EXACTLY EQUAL across the
+    # same two trees (0/700 rows outside tolerance, max relative move 0), which
+    # is the whole argument in one line: this file is designed to vary where the
+    # numbers are designed not to.
+    #
+    # What it would have guarded is guarded at RUN time instead, and better --
+    # rule 4.02 `check_model_reference` plus the collection and metric-set
+    # immutability errors, all of which fire during the run rather than in a gate
+    # someone remembers to run afterwards.
 ]
 
 WORKFLOWS = (
@@ -421,6 +436,110 @@ def resolve(template: str, project_dir: str) -> str:
         exp_dir=f"{project_dir}/experiments/{EXPERIMENT_NAME}",
         metric_set_dir=metric_set_dir,
     )
+
+
+#: A content-digest directory segment, whatever length the tree currently uses.
+#: Deliberately not pinned to `SHORT_DIGEST_CHARS`: the point of the orphan check
+#: is to recognise a row written under the OLD length, so a pattern that only
+#: matched today's length would be blind to exactly the case it exists for.
+_SEGMENT_RE = "[0-9a-f]+"
+
+
+def _posix(path: str) -> str:
+    """One separator convention, so a pattern and a recorded key can be compared."""
+    return str(path).replace("\\", "/")
+
+
+def target_pattern(template: str, project_dir: str) -> re.Pattern[str]:
+    """Match any path a template could ever have resolved to, across identities.
+
+    `resolve` answers "what does this template mean right now"; this answers
+    "could this recorded path have come from this template at all". The two
+    differ only in the content-digest segment, and that difference is the whole
+    point -- a manifest row keyed by a digest segment of a different length is
+    orphaned, not out of scope, and the gate has to be able to tell them apart.
+    """
+    sentinel = "<<<SEGMENT>>>"  # cannot occur in a path we resolve
+    # Separators are normalised on BOTH sides before matching. `resolve` is not
+    # self-consistent about them on Windows: `resolve_metric_set_dir` returns
+    # `Path.as_posix()`, while every other template interpolates `project_dir`
+    # verbatim, so one recorded key can carry backslashes and another forward
+    # slashes for the same tree. Matching raw text would make this check pass on
+    # a relative posix `project_dir` and silently do nothing on an absolute
+    # Windows one -- which is the shape of bug it exists to catch.
+    root = _posix(project_dir)
+    filled = template.format(
+        project_dir=root,
+        clim_project_dir=f"{root}/data/climate/projections/{CLIM_PROJECT}",
+        clim_project=CLIM_PROJECT,
+        exp_dir=f"{root}/experiments/{EXPERIMENT_NAME}",
+        metric_set_dir=(
+            f"{root}/experiments/{EXPERIMENT_NAME}/results/metric_sets/{sentinel}"
+        ),
+    )
+    return re.compile(
+        re.escape(filled).replace(re.escape(sentinel), _SEGMENT_RE) + r"\Z"
+    )
+
+
+def orphaned_rows(
+    recorded: dict, in_scope_paths: set[str], templates, project_dir: str
+) -> list[str]:
+    """Recorded paths that BELONG to the scope but no longer resolve within it.
+
+    Without this, such a row is dropped by the `p in in_scope_paths` filter and
+    nothing says so -- the gate silently stops checking an artifact it was asked
+    to check. That is the failure the repo's "no silent caps" rule forbids, and
+    it is not hypothetical: `t2609152107` shortened every digest segment to
+    twelve characters, which orphaned the manifest's `q_indicators.csv` row and
+    left `simulate_system` comparing nothing but a document that cannot pass
+    (`t2609171743`).
+    """
+    patterns = [target_pattern(template, project_dir) for template in templates]
+    return sorted(
+        path
+        for path in recorded
+        if path not in in_scope_paths
+        and any(pattern.match(_posix(path)) for pattern in patterns)
+    )
+
+
+def rekey_by_template(rec_targets: dict, project_dir: str) -> dict:
+    """Re-point each recorded row at where its own template resolves TODAY.
+
+    A manifest row is keyed by the path it was recorded at, which makes the key
+    hostage to every identity in it. `t2609152107` shortened content-digest path
+    segments to twelve characters and the `q_indicators.csv` row stopped
+    matching anything -- not because the artifact moved or changed, but because
+    its NAME was rebuilt from a shorter digest (`t2609171743`).
+
+    Rows recorded from 2026-09-17 carry the `template` they came from, which is
+    the stable thing: `{metric_set_dir}/q_indicators.csv` means the same artifact
+    whatever the segment length. Resolving it here re-keys the row to today's
+    path, and everything downstream keeps working on resolved paths exactly as
+    before -- this is deliberately a remap at ONE point rather than a new lookup
+    convention threaded through eighteen call sites.
+
+    PRECEDENCE, pinned rather than emergent: a row carrying `template` is keyed
+    by what that template resolves to, and the literal key is ignored. A row
+    without one keeps its literal key, so a manifest recorded before this change
+    behaves exactly as it did -- degraded to path matching, which is now a loud
+    failure rather than a silent drop, never a wrong comparison.
+    """
+    out: dict = {}
+    for path, rec in rec_targets.items():
+        template = rec.get("template") if isinstance(rec, dict) else None
+        key = path
+        if template:
+            try:
+                key = resolve(template, project_dir)
+            except (BaselineFixtureError, ValueError):
+                # The fixture cannot answer where this template points. Keep the
+                # recorded key so the existing diagnosis reports it, rather than
+                # turning an unreadable fixture into a traceback out of a remap.
+                key = path
+        out[key] = rec
+    return out
 
 
 def resolve_metric_set_dir(project_dir: str) -> str:
@@ -594,7 +713,12 @@ def compute_manifest(
         if not Path(path).exists():
             missing.append(path)
             continue
-        out[path] = FINGERPRINTERS[kind](path)
+        # `template` travels with the row so a recorded manifest can be re-keyed
+        # when an identity in the path changes (`rekey_by_template`). It is
+        # metadata about WHERE the row came from, never part of the comparison:
+        # `diff_records` walks the recorded and current dicts together, and both
+        # sides carry the same value for a given target.
+        out[path] = {**FINGERPRINTERS[kind](path), "template": template}
     return out, missing
 
 
@@ -782,8 +906,17 @@ def _write_reference_series(
     path.write_text("\n".join(out) + "\n")
 
 
-def _discharge_slug(resolved_path: str) -> str:
-    return hashlib.sha1(resolved_path.encode("utf-8")).hexdigest()[:16] + ".csv"
+def _discharge_slug(key: str) -> str:
+    """Name the sidecar after the TEMPLATE, so an identity rename reuses it.
+
+    Keyed by the resolved path until 2026-09-17, which made the reference file's
+    NAME hostage to every digest in the target path: shortening a segment wrote
+    a second sidecar and stranded the first, even though the table was identical
+    (`t2609171743`). The stored `ref_series`/`ref_table` value stays
+    authoritative for reading, so rows recorded under the old scheme keep
+    resolving to the files they named.
+    """
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16] + ".csv"
 
 
 def record_discharge(
@@ -803,12 +936,13 @@ def record_discharge(
             missing.append(path)
             continue
         times, q, col = read_discharge_series(path)
-        rel = f"{DISCHARGE_REF_SUBDIR}/{_discharge_slug(path)}"
+        rel = f"{DISCHARGE_REF_SUBDIR}/{_discharge_slug(template)}"
         sidecar = ref_dir / rel
         sidecar.parent.mkdir(parents=True, exist_ok=True)
         _write_reference_series(sidecar, times, q, col)
         rows[path] = {
             "type": "discharge",
+            "template": template,
             "column": col,
             "n_rows": len(times),
             "mean_ref": round_sig(float(np.mean(q))),
@@ -1044,8 +1178,9 @@ def _indicator_report_lines(report: dict) -> list[str]:
     return lines
 
 
-def _indicator_slug(resolved_path: str) -> str:
-    return hashlib.sha1(resolved_path.encode("utf-8")).hexdigest()[:16] + ".csv"
+def _indicator_slug(key: str) -> str:
+    """Name the sidecar after the TEMPLATE. See `_discharge_slug`."""
+    return hashlib.sha1(key.encode("utf-8")).hexdigest()[:16] + ".csv"
 
 
 def record_indicator(
@@ -1070,7 +1205,7 @@ def record_indicator(
             missing.append(path)
             continue
         df = read_indicator_table(path)
-        rel = f"{INDICATOR_REF_SUBDIR}/{_indicator_slug(path)}"
+        rel = f"{INDICATOR_REF_SUBDIR}/{_indicator_slug(template)}"
         sidecar = ref_dir / rel
         sidecar.parent.mkdir(parents=True, exist_ok=True)
         sidecar.write_bytes(Path(path).read_bytes())
@@ -1080,6 +1215,7 @@ def record_indicator(
         )
         rows[path] = {
             "type": "indicator",
+            "template": template,
             "columns": list(df.columns),
             "n_rows": int(len(df)),
             "n_groups": n_groups,
@@ -1238,7 +1374,10 @@ def cmd_record(args: argparse.Namespace) -> int:
     if selected is not None and args.manifest.exists():
         # Merge: keep every recorded row NOT owned by a selected workflow, then
         # overlay the freshly-recorded selected rows. Never clobber wf2/wf3.
-        existing = json.loads(args.manifest.read_text()).get("targets", {})
+        existing = rekey_by_template(
+            json.loads(args.manifest.read_text()).get("targets", {}),
+            args.project_dir,
+        )
         # Prune exactly what was re-recorded — same filter, so an excluded
         # figure row is left alone rather than deleted by a merge that never
         # intended to touch it.
@@ -1280,7 +1419,10 @@ def cmd_check(args: argparse.Namespace) -> int:
         sys.stderr.write("Run `check_baseline.py record` first.\n")
         return 2
     recorded = json.loads(args.manifest.read_text())
-    rec_targets = recorded["targets"]
+    # Re-key BEFORE anything reads a path, so scope filtering, diffing and the
+    # orphan report all see where each row points today rather than where it
+    # was recorded. A row with no `template` is untouched.
+    rec_targets = rekey_by_template(recorded["targets"], args.project_dir)
     ref_dir = args.manifest.parent
 
     # R7-21: provenance is advisory and printed BEFORE the verdict, so a
@@ -1332,9 +1474,37 @@ def cmd_check(args: argparse.Namespace) -> int:
             selected, include_figures=_want_figures(args)
         )
     }
+    # Rows that belong to this scope but no longer resolve within it. Computed
+    # BEFORE the filter discards them, because after the filter they are
+    # indistinguishable from rows that were never in scope at all.
+    orphaned = orphaned_rows(
+        rec_targets,
+        in_scope_paths,
+        [
+            template
+            for _workflow, _kind, template in active_targets(
+                selected, include_figures=_want_figures(args)
+            )
+        ],
+        args.project_dir,
+    )
     rec_targets = {p: rec for p, rec in rec_targets.items() if p in in_scope_paths}
 
     failures: list[tuple[str, list[str]]] = []
+    for path in orphaned:
+        failures.append(
+            (
+                path,
+                [
+                    "recorded target no longer resolves; the manifest row is "
+                    "orphaned and was NOT compared",
+                    "  a content-digest segment in the path has changed length "
+                    "or value since the manifest was recorded",
+                    "  re-record this scope, or repoint the row, before reading "
+                    "its absence as a pass",
+                ],
+            )
+        )
     for p in missing:
         if p in rec_targets:
             failures.append((p, ["target missing on disk"]))

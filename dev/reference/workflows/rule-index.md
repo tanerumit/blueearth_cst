@@ -114,7 +114,6 @@ so one lookup answers both.
 | 3.04 | `delineate_spatial_units` | 3.01f |
 | 3.05 | `write_model_reference` | 3.01c |
 | 3.06 | `check_model_reference` | 3.01d |
-| 3.07 | `write_experiment_config` | 3.01e |
 | 3.08 | `extract_historical_climate` | 3.02 `extract_climate_grid` |
 | 3.09 | `prepare_stress_test_grid` | 3.03 `climate_stress_parameters` |
 | 3.10 | `prepare_weathergen_config` | 3.04 `prepare_weagen_config` |

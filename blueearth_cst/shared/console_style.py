@@ -155,6 +155,67 @@ def warn_row(message, module="cst"):
     sys.stderr.write(_paint_body(text + "\n", _console_colour(sys.stderr)))
 
 
+#: Parse-time WARNING rows held for the run header, oldest first. Popped by
+#: :func:`_drain_deferred_warnings` -- see :func:`defer_warning`.
+_DEFERRED_WARNINGS = []
+
+
+def defer_warning(message, module="cst"):
+    """Hold a parse-time WARNING until the run header has been written.
+
+    :func:`warn_row`'s grammar at the right MOMENT. A Snakefile's top-of-file
+    checks run while Snakemake is still PARSING the workflow -- before
+    ``Building DAG of jobs...``, and long before ``onstart:`` fires and
+    :func:`install_console_style` and :func:`open_run_header` run. So a row
+    written from there lands in the middle of Snakemake's preamble, above a
+    title band that does not exist yet. No change to how it prints can move it;
+    only deferral can.
+
+    Queued here, the row is printed under the ``-- RUN ---`` block, where this
+    toolbox's own output begins. The flush is the last thing the opening block
+    does, in both the styled and the unstyled path, so it is not something the
+    next workflow to need it has to remember.
+
+    The stamp is taken NOW rather than at flush. It says when the workflow
+    NOTICED, which is the honest reading and the only one that stays true when
+    the DAG takes a while to build.
+
+    **A deferred row is LOST if the run never reaches its header** -- a DAG that
+    fails to build prints nothing from this queue. That is safe only for an
+    informational notice whose failure path carries its own copy of the report:
+    WF2's resolution report, for instance, is embedded in the ``WorkflowError``
+    raised when no combination resolves, so the failing run still shows it. A
+    row that is the ONLY record of a problem belongs in :func:`warn_row`, which
+    prints where it stands.
+
+    ``module`` follows :func:`warn_row`'s rules, including the one about never
+    opening a Snakefile line with the ``module=`` token.
+    """
+    _DEFERRED_WARNINGS.append((f"{datetime.now():%H:%M:%S}", str(module), str(message)))
+
+
+def _drain_deferred_warnings(colour):
+    """Pop every held row, painted, as lines ready to join with newlines.
+
+    POPS rather than reads: the opening block is assembled on whichever record
+    arrives first and the no-header path runs a second builder, so a queue that
+    survived its own flush would print the same row twice.
+
+    Painted through :func:`_paint_body`, not through the handler's tier map: a
+    WARNING is coloured by what it SAYS, by the same funnel that paints a
+    warning arriving from hydromt. Running these through the block's body tier
+    would make them the one warning on the console that reads as routine.
+    """
+    if not _DEFERRED_WARNINGS:
+        return []
+    held = list(_DEFERRED_WARNINGS)
+    del _DEFERRED_WARNINGS[:]
+    return [
+        _paint_body(_log_row_text(hms, module, "WARNING", message), colour)
+        for hms, module, message in held
+    ]
+
+
 # Colour by WHAT KIND OF LINE it is, not by which field it is -- three tiers,
 # whole lines, so a run scrolling past reads as structure rather than text.
 #
@@ -888,6 +949,13 @@ def open_run_header(workflow, project_dir, config_path=None, **details):
     structure. Falls back to writing it immediately -- in the old order, which
     is the only order available without the job counts -- when the console
     style is not active.
+
+    **The deferred warnings are flushed where the header is PRINTED, not
+    here.** In the styled path this function writes nothing at all, so draining
+    the queue on the way out would put the rows above the title band -- the
+    same fault, moved. The styled flush therefore lives in
+    :meth:`_ConsoleHandler._opening`, which every styled console goes through;
+    this branch, which does print, flushes on the spot.
     """
     global _RUN_HEADER
     if _CONSOLE_STYLE_ACTIVE:
@@ -896,6 +964,9 @@ def open_run_header(workflow, project_dir, config_path=None, **details):
     sys.stderr.write(
         "\n" + run_header(workflow, project_dir, config_path, **details) + "\n\n"
     )
+    held = _drain_deferred_warnings(_console_colour(sys.stderr))
+    if held:
+        sys.stderr.write("\n".join(held) + "\n\n")
     return False
 
 
@@ -1289,6 +1360,14 @@ class _ConsoleHandler(logging.StreamHandler):
         }
         block = opening_block(workflow, project_dir, config_path, details, plan)
         lines = [self._paint(text, tiers[tier]) for text, tier in block]
+        # Parse-time warnings land HERE: under the RUN block, above the
+        # PROGRESS rule. They were emitted before this handler existed, so this
+        # is the first moment they can be printed in the run's own structure --
+        # see `defer_warning`. Painted by severity, not by the tier map above.
+        held = _drain_deferred_warnings(self._color)
+        if held:
+            lines.append("")
+            lines.extend(held)
         # The PROGRESS rule closes the block HERE rather than inside the
         # builder: the first line under it is written by `_start_line` on the
         # first `job_info` record, so only the writer of those lines may open

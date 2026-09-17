@@ -15,7 +15,7 @@ from __future__ import annotations
 import ast
 import pathlib
 
-EMITTERS = {"log_row", "warn_row", "print"}
+EMITTERS = {"log_row", "warn_row", "defer_warning", "print"}
 OUT = pathlib.Path(".tmp/console-encoding.txt")
 
 

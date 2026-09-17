@@ -17,7 +17,7 @@ from snakemake.exceptions import WorkflowError
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import listed, ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, window_year_pair
-from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
+from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError, validate_removed_gridded_options
@@ -631,15 +631,18 @@ if not any(c.resolved for c in COMBINATIONS):
 # Normal skips are reported, never silent -- this is what replaces the run-time
 # `asymmetric hist/clim members` raise D7 supersedes (design D7 table).
 #
-# Through `warn_row`, not `logger.warning`. This runs at Snakefile PARSE time,
-# before `install_console_style` replaces Snakemake's terminal handler -- so a
-# `logger` call prints in Snakemake's own style, with no stamp and no module
-# column, above a header that has not been written yet. `warn_row` is the
-# parse-time counterpart of `log_row` and exists for exactly this moment: the
-# block lands in the same grammar as every row after it.
+# Through `defer_warning`, not `logger.warning` and not `warn_row`. This runs
+# at Snakefile PARSE time, before `install_console_style` replaces Snakemake's
+# terminal handler -- so a `logger` call prints in Snakemake's own style, with
+# no stamp and no module column, and a `warn_row` prints in our grammar but
+# still in the middle of Snakemake's preamble, above a header that does not
+# exist yet. `defer_warning` holds the block until the run header is written
+# and lands it under the RUN section, in the same grammar as every row after
+# it. Safe to defer because the failure path -- no combination resolved --
+# embeds its own copy of this report in the `WorkflowError` above.
 _skip_report = _res.format_status_report(COMBINATIONS)
 if _skip_report:
-    warn_row(_skip_report, module="resolution")
+    defer_warning(_skip_report, module="resolution")
 
 # D8/D12: a glob matching more than one {grid}/{version} means the read is not a
 # single identifiable store. Measured at ~6% of pinned stores, so this is live.
@@ -663,8 +666,8 @@ _best_effort = _res.best_effort_variables(variables, _rename)
 if _best_effort:
     # ONE row, not one per variable: the sentence is the same each time and
     # only the name changes, so the names are what the row lists. Through
-    # `warn_row` for the reason given on the skip report above.
-    warn_row(
+    # `defer_warning` for the reason given on the skip report above.
+    defer_warning(
         f"Best-effort, not catalog-certified: {listed(sorted(_best_effort))}. "
         "The crawl proved only pr/tas present, so a listed member may not "
         "publish them -- that fails at read time rather than skipping at "

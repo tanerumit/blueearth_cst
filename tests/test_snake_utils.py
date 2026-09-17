@@ -3111,6 +3111,107 @@ def test_open_run_header_holds_it_for_the_console(monkeypatch):
     assert cs._RUN_HEADER[0] == "wf1 build_model"
 
 
+def test_deferred_warning_lands_under_the_run_block(monkeypatch):
+    """Parse-time rows belong in the run's structure, not above its title.
+
+    They are emitted while Snakemake is still parsing the workflow -- before
+    the DAG, before `onstart:`, before this handler exists -- so the only place
+    they can appear in the block is where the block is BUILT.
+    """
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    _declared_header(monkeypatch)
+    cs.defer_warning("two members did not resolve", module="resolution")
+    out = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    lines = out.split("\n")
+    row = next(i for i, line in enumerate(lines) if "did not resolve" in line)
+    run = next(i for i, line in enumerate(lines) if line.startswith("-- RUN -"))
+    progress = next(
+        i for i, line in enumerate(lines) if line.startswith("-- PROGRESS -")
+    )
+    assert run < row < progress, lines
+    assert lines[row].endswith(
+        " - resolution - WARNING - two members did not resolve"
+    ), lines[row]
+    assert lines[row - 1] == ""  # air between the path tokens and the warning
+
+
+def test_deferred_warning_keeps_a_multi_line_block_together(monkeypatch):
+    """WF2's resolution report is seven lines, and `_render` filters blanks.
+
+    The block therefore has to travel as ONE element, its internal air inside
+    the string -- the same constraint `_plan_block` states.
+    """
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    _declared_header(monkeypatch)
+    cs.defer_warning("head\n  one\n  two", module="resolution")
+    out = _emit(
+        _console_handler(),
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    lines = out.split("\n")
+    row = next(i for i, line in enumerate(lines) if line.endswith("WARNING - head"))
+    assert lines[row + 1 : row + 3] == ["  one", "  two"], lines
+
+
+def test_deferred_warning_is_painted_as_a_warning(monkeypatch):
+    """By severity, not by the opening block's body tier.
+
+    A warning that reads as routine is the one thing this must not do -- the
+    module's whole colour scheme rests on severity outranking the tier.
+    """
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    _declared_header(monkeypatch)
+    cs.defer_warning("two members did not resolve", module="resolution")
+    handler = _console_handler()
+    handler._color = True
+    out = _emit(
+        handler,
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+    )
+    row = next(line for line in out.split("\n") if "did not resolve" in line)
+    assert row.startswith(f"\x1b[{su._ANSI_ALERT}m"), repr(row)
+
+
+def test_deferred_warnings_drain_once(monkeypatch):
+    """Popped, not read: the opening block is assembled on the first record."""
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    _declared_header(monkeypatch)
+    cs.defer_warning("held once", module="resolution")
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _console_record(
+            "Job stats:\njob  count\n----  ---\na  1\ntotal  1\n", event="run_info"
+        ),
+        _job_info(1, "a", "Rule 1.01: a"),
+    )
+    assert out.count("held once") == 1, out
+    assert cs._DEFERRED_WARNINGS == []
+
+
+def test_deferred_warning_flushes_when_the_console_style_did_not_take(monkeypatch):
+    """The unstyled path prints its own header, so it flushes on the spot."""
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    monkeypatch.setattr(cs, "_CONSOLE_STYLE_ACTIVE", False)
+    monkeypatch.setattr(cs, "_RUN_HEADER", None)
+    stream = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", stream)
+    cs.defer_warning("two members did not resolve", module="resolution")
+    assert cs.open_run_header("wf1 build_model", "test_case/test_rapid") is False
+    out = stream.getvalue()
+    assert out.index("wf1 build_model") < out.index("did not resolve")
+    assert cs._DEFERRED_WARNINGS == []
+
+
 def test_console_an_unparsed_run_info_passes_through():
     handler = _console_handler()
     out = _emit(handler, _console_record("Nothing to be done.", event="run_info"))

@@ -10,6 +10,54 @@ created: 2026-08-29
 updated: 2026-08-29
 ---
 
+> [!warning] R12 OVERTOOK THIS ITEM — re-check before acting (2026-09-17)
+> The note is from 2026-08-29 and every one of its three options assumes a live
+> rule that writes `experiment.yml`. **There is no such rule any more.**
+> Verified 2026-09-17 on `chore/post-r12@518fb4e2`:
+>
+> - **"rule 3.07" now means something else entirely.** It is
+>   `generate_weather_realizations` in `generate_scenarios.smk`. R12 renumbered
+>   the rules, so the note's title names a rule that exists and is unrelated.
+> - **`write_experiment_config.py` has no caller.** No `.smk` references the
+>   module or `experiment.yml`; grep over `blueearth_cst/` finds only the module
+>   itself and one doc comment in `snake_utils`. Its `if "snakemake" in globals()`
+>   harness is unreachable. This is the same finding as watch-item
+>   [[t2609151800a]], reached independently.
+> - So the defect is no longer "the freeze does not fire through its rule". It is
+>   **there is no freeze wired to anything**, and has not been since R12 routed
+>   around the module.
+> - Its 19 tests still pass. They test dead code, which is exactly the shape the
+>   note already warned about: a mechanism verified only where the harness is
+>   staged by the test.
+>
+> **The successor exists and is live.** R12 replaced the comparator with
+> content-addressed identity plus explicit guards: checkpoint 4.03
+> `freeze_wflow_simulation` ("pin the simulation's inputs so the experiment
+> cannot drift"), `SimulationFrozenError` (`simulation_record.py`,
+> `downscale_climate_forcing.py`), `ImmutableCollectionError`,
+> `ImmutableMetricSetError`. 4.02 `check_model_reference` and 4.03 both executed
+> in the 2026-09-17 baseline regeneration and behaved correctly.
+>
+> On the threat model, the successor is arguably STRONGER than what this note
+> asked for. The freeze compared a recorded config and refused a changed one.
+> R12 makes a changed config produce a DIFFERENT artifact — a new
+> `collection_id` / `simulation_id` — so an edit cannot redefine existing results
+> even in principle; it can only make new ones. [[t2609171028]] is that guarantee
+> firing, measured, and the complaint there was that it fires too eagerly rather
+> than too little.
+>
+> **What this item now needs is a ruling, not a repair:**
+> 1. **Close as superseded**, and separately decide whether to delete
+>    `write_experiment_config.py` and its 19 tests ([[t2609151800a]] holds that
+>    question and its trigger). Likely correct.
+> 2. **Keep it open, re-scoped** to a named residual gap — something the
+>    content-addressed identity does NOT cover that the comparator did. Nobody
+>    has yet articulated such a gap; it would need one before the item means
+>    anything.
+>
+> Option 1 unless someone can name the gap. Do not implement any of the three
+> options below: all of them repair a mechanism nothing invokes.
+
 > [!note] Overview
 > **What** — `check_not_frozen` returns early on every real run, so an
 > already-run experiment's configuration is NOT settled and never has been.

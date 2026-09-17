@@ -1,7 +1,7 @@
 ---
 title: A console-only edit invalidates a generated collection, because snake_utils is one module
 type: todo-item
-status: backlog
+status: done
 effort: 3
 area: identity / dev ergonomics
 origin: owner pain, 2026-09-17 — "that is annoying me since we are still developing the package"
@@ -126,8 +126,61 @@ affect a result.
 - `tests/test_provenance.py` and the interchange-contract tier pin parts of this;
   read them before moving a name.
 
+## What landed — option 1, `f126ad79`
+
+`blueearth_cst/shared/console_style.py` now holds the Snakemake console handler,
+the banners, the run header and summary, `warn_row`, `warn_if_project_dir_in_repo`
+and the `RuleIdentity`/`RuleRegistry` pair. `snake_utils` drops 5,768 -> 4,346
+lines. The seven Snakefiles import from the new module directly.
+
+**No re-export shim.** A convenience `from ... console_style import rule_banner`
+in `snake_utils` would pull the tier back into all three closures and silently
+restore the whole cost, with nothing looking wrong in the output and no other
+test failing. Two tests in `test_module_import_direction.py` pin it: one on the
+import edge, one on closure membership itself, so a change to how entry paths
+resolve cannot drag it back by another route.
+
+### The acceptance test, measured
+
+```
+baseline provider_code        d360dd414f41392a
+after the split               985b9e52696d26c5   changes ONCE, by design
+after a console-only edit     985b9e52696d26c5   UNCHANGED
+```
+
+The one-time change is unavoidable: the inventory hashes whole FILES, so
+removing 1,422 lines from `snake_utils` moves its sha256. Reading that as a
+failure would be the easy mistake. The deliverable is the second line.
+
+`console_style` is absent from all three closures (32, 33, 26 files), and each
+still contains `snake_utils` -- checked so the first assertion cannot pass
+because the closure broke.
+
+### The win is real but PARTIAL — the honest number
+
+The tee tier did not move and could not: `script:` modules call `log_row`
+directly and rules write through the tee, so it is genuinely part of what
+produces a rule's log and belongs in the fingerprint.
+
+| | lines |
+|---|---|
+| moved out (handler, banners, header, summary) | ~1,422 |
+| console-ish code that STAYS, reachable | ~1,099 |
+
+So roughly half the console surface is now free to edit and half still costs a
+regeneration. Both of the 2026-09-16 edits that prompted this fall on the free
+side. A future `log_row` or tee change will still invalidate -- that is correct
+behaviour, not a gap, and it is why this note does not claim the problem is
+gone.
+
+`rule_id` and `format_elapsed` also stay: the closure reaches them, and they are
+stable.
+
 ## Progress
 
-- [ ] Owner decision on option 1 vs 3 vs both
-- [ ] If 1: re-derive the zero-import evidence, then move the handler tier
-- [ ] Confirm WF4's two inventories behave the same way
+- [x] Owner decision: option 1
+- [x] Re-derived the zero-import evidence rather than trusting the note
+- [x] Confirmed all three inventories, before and after
+- [x] Moved the tier, repointed seven Snakefiles and the test module
+- [x] Pinned the one-way import with two tests
+- [x] Verified live: WF0 console renders identically after the split

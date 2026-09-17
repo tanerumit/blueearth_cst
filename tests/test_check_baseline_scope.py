@@ -382,3 +382,86 @@ def test_a_changed_figure_does_not_fail_the_default_check(project, capsys):
     rc = cb.cmd_check(_check_ns(project_dir, manifest_path, include_figures=True))
     assert rc == 1
     assert "size" in capsys.readouterr().out
+
+
+# --------------------------------------------------------------------------
+# "The gate did not run" is not "the gate passed" (2026-09-17).
+#
+# Two conditions used to be reported as something other than a failure: an
+# empty scope printed `OK - 0 target(s) match manifest`, and an unusable
+# fixture raised a traceback out of `main`. Both mean the same thing to a
+# caller -- this run is not evidence -- and both now say so and exit 2.
+# --------------------------------------------------------------------------
+
+
+def test_an_empty_scope_is_not_a_pass(project, capsys):
+    """`generate_scenarios` declares no non-figure target, so nothing compares.
+
+    The old output was `OK - 0 target(s) match manifest`, which is the shape of
+    pass this repo refuses everywhere else: a tool that bounds its own coverage
+    has to say what it dropped.
+    """
+    project_dir, manifest_path = project
+
+    rc = cb.cmd_check(
+        _check_ns(project_dir, manifest_path, workflow=["generate_scenarios"])
+    )
+
+    out = capsys.readouterr().out
+    assert rc == cb.EXIT_NOT_CHECKED
+    assert rc != 0
+    assert "NOT CHECKED" in out
+    assert "generate_scenarios" in out
+    assert "says nothing about the tree" in out
+    assert "OK -" not in out
+
+
+def test_an_empty_scope_names_the_figure_exclusion(project, capsys):
+    """Figures are excluded by default, which is WHY the scope came out empty.
+
+    A reader who does not know that reads the message as a broken tool.
+    """
+    project_dir, manifest_path = project
+
+    cb.cmd_check(_check_ns(project_dir, manifest_path, workflow=["generate_scenarios"]))
+
+    assert "figures excluded" in capsys.readouterr().out
+
+
+def test_a_populated_scope_still_passes_at_zero(project, capsys):
+    """The guard keys on an empty TARGET SET, never on a zero failure count."""
+    project_dir, manifest_path = project
+
+    rc = cb.cmd_check(_check_ns(project_dir, manifest_path, workflow=["build_model"]))
+
+    out = capsys.readouterr().out
+    assert rc == 0
+    assert "OK -" in out
+    assert "NOT CHECKED" not in out
+
+
+def test_an_unusable_metric_fixture_raises_a_typed_error(project, tmp_path):
+    """`resolve` fails while RESOLVING, before any comparison runs.
+
+    Typed so `main` can turn it into a diagnosis; a `ValueError` subclass so a
+    caller already catching `ValueError` around resolution keeps working.
+    """
+    project_dir, _manifest_path = project
+    plans = Path(project_dir) / "experiments" / cb.EXPERIMENT_NAME / "_engine"
+    for plan in (plans / "metric_requests").glob("*.json"):
+        plan.unlink()
+
+    with pytest.raises(cb.BaselineFixtureError):
+        cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
+
+    assert issubclass(cb.BaselineFixtureError, ValueError)
+
+
+def test_the_three_exit_codes_are_distinct():
+    """0 passed, 1 the tree differs, 2 nothing was checked.
+
+    A caller that only tests `rc != 0` cannot tell a red gate from one that
+    never ran, which is the confusion this whole block exists to remove.
+    """
+    assert cb.EXIT_NOT_CHECKED == 2
+    assert cb.EXIT_NOT_CHECKED not in (0, 1)

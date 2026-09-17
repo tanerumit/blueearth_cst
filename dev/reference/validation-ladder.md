@@ -43,6 +43,11 @@ Rapid is cheap, not narrow. It gets `st_0`, which is what the two class-C month 
 
 Record the baseline from `project_config_baseline.yml` and nothing else; never point `check_baseline.py` at the rapid tree.
 
+`check` exits **0** (targets match), **1** (the tree differs) or **2** (*nothing
+was compared* -- an empty scope, or a fixture it cannot resolve). Treat 2 as "no
+evidence", never as a pass: `--workflow generate_scenarios` declares no
+non-figure target, so it reaches 2 by construction.
+
 **The baseline manifest is BEHIND the baseline config, on purpose (`t2608222155`).** On 2026-09-07 the baseline set moved to a nine-year `simulation_window` (2046-2054) and the matching `mid` horizon; `dev/baseline/manifest.json` was deliberately NOT re-recorded, because the saving is 4-8% and a re-record costs a full run that repays after 10 to 25 gates.
 
 **The standing tree is not an R12 migration reference.** It still contains the pre-2026-09-07 run and its matching manifest. Re-execution changes the configured years and projection horizon; R12 also changes scenario/metric paths, keys and ownership. Use the separately captured fresh P0 reference and GF-9 crosswalk for R12 acceptance. Do not interpret agreement between the old standing tree and its old manifest as evidence about the current configuration, or re-record it before scientific acceptance.

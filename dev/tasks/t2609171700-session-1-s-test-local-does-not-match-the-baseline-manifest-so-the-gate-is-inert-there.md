@@ -10,6 +10,24 @@ created: 2026-09-17
 updated: 2026-09-17
 ---
 
+> [!done] The two REPORTING defects are fixed (2026-09-17); the TREE remains
+> Problems 2 and 3 below are done. `check` is now three-valued: `0` the compared
+> targets match, `1` the tree differs, `2` **nothing was compared**. An empty
+> scope prints `NOT CHECKED` naming the scope and the figure exclusion, and a
+> fixture the gate cannot resolve is a diagnosis on stderr instead of a
+> traceback out of `main`. Covered by `tests/test_check_baseline_scope.py` and
+> documented in the module docstring and `dev/reference/validation-ladder.md`.
+>
+> Fixing them changed two provenance tests that had asserted `rc == 0` while
+> monkeypatching `TARGETS` to `[]` -- they were pinning "advisory does not
+> change the verdict" against a check that compared nothing. They now assert
+> the NOT-CHECKED code and, crucially, `rc != 1`; a new
+> `test_a_warning_does_not_flip_a_real_pass` carries the original claim against
+> a fixture with one real target, so the guarantee is still witnessed.
+>
+> **Problem 1, the divergent tree, is untouched and is why this item stays
+> open.**
+
 > [!note] Overview
 > **What** — Restore a baseline-checkable `test_case/test_local` in `session-1`, and fix two ways `check_baseline` reports a non-check as something other than a failure.
 > **Why** — `check_baseline` currently proves nothing in this worktree: two WF2 data targets differ, the WF4 targets are absent, and the unscoped check raises a traceback instead of failing.
@@ -99,6 +117,6 @@ orphaned. See `dev/baseline/provenance.md`.
 
 - [ ] Check whether any other worktree's `test_local` passes `check_baseline check`
 - [ ] Decide between re-seed and regenerate
-- [ ] Fix the zero-target vacuous OK (report it, do not call it a pass)
-- [ ] Make a missing metric-set fixture a FAIL, not a traceback
+- [x] Fix the zero-target vacuous OK (report it, do not call it a pass)
+- [x] Make a missing metric-set fixture a FAIL, not a traceback
 - [ ] Re-check whether the recorded-by-another-branch warning still earns its place

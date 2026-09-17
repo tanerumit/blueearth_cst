@@ -105,7 +105,13 @@ def test_check_warns_when_another_branch_recorded_the_manifest(
     assert "WARNING" in out
     assert "feat/outputs-figures" in out
     assert "SHARED BY EVERY BRANCH" in out
-    assert rc == 0, "provenance is advisory -- it must not change the verdict"
+    # These fixtures empty `TARGETS` so only the banner varies, so the verdict
+    # is NOT CHECKED rather than a pass -- correct, and not caused by
+    # provenance. The claim being pinned is that the warning does not turn a
+    # run into a DIFFERENCE; `test_a_warning_does_not_flip_a_real_pass` below
+    # carries the same claim against a fixture that actually compares something.
+    assert rc == cb.EXIT_NOT_CHECKED
+    assert rc != 1, "provenance is advisory -- it must not report a difference"
 
 
 def test_same_branch_different_commit_is_a_softer_note(tmp_path, capsys, monkeypatch):
@@ -133,7 +139,8 @@ def test_a_pre_stamp_manifest_says_so_rather_than_pretending(
     rc = cb.cmd_check(_check(m, tmp_path))
     out = capsys.readouterr().out
     assert "predates provenance stamping" in out
-    assert rc == 0
+    assert rc == cb.EXIT_NOT_CHECKED
+    assert rc != 1, "an unstamped manifest is a note, not a difference"
 
 
 def test_matching_provenance_is_quiet(tmp_path, capsys, monkeypatch):
@@ -209,3 +216,47 @@ def test_the_recorded_flag_is_the_one_that_was_captured(monkeypatch, tmp_path):
     assert cb.cmd_record(args) == 0
     written = json.loads((tmp_path / "manifest.json").read_text())
     assert written["recorded_by"] == stamp
+
+
+def test_a_warning_does_not_flip_a_real_pass(tmp_path, capsys, monkeypatch):
+    """The advisory claim, against a fixture that actually compares a target.
+
+    The sibling tests empty `TARGETS` to isolate the banner, so since
+    2026-09-17 they land on NOT CHECKED and can no longer witness "the warning
+    does not change a PASS". This one can: one real target, recorded and
+    matching, with a foreign branch stamped on the manifest.
+    """
+    proj = tmp_path / "proj"
+    proj.mkdir(exist_ok=True)
+    target = proj / "sample.yml"
+    target.write_text("a: 1" + chr(10), encoding="utf-8")
+    template = "{project_dir}/sample.yml"
+    monkeypatch.setattr(cb, "TARGETS", [("build_model", "yaml", template)])
+    # The manifest key must be byte-identical to what `resolve` produces, not
+    # `str(target)` -- on Windows those differ by separator alone, and the check
+    # would report the same file as both missing and unrecorded.
+    key = cb.resolve(template, str(proj))
+
+    manifest = tmp_path / "manifest.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "version": cb.MANIFEST_VERSION,
+                "project_dir": "test_case/test_local",
+                "recorded_by": {
+                    "branch": "feat/outputs-figures",
+                    "commit": "e917a8e" + "0" * 33,
+                    "dirty": False,
+                },
+                "targets": {key: cb.fingerprint_yaml(key)},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    rc = cb.cmd_check(_check(manifest, tmp_path))
+
+    out = capsys.readouterr().out
+    assert "SHARED BY EVERY BRANCH" in out, "the advisory warning must still fire"
+    assert rc == 0, "provenance is advisory -- it must not change the verdict"
+    assert "OK -" in out

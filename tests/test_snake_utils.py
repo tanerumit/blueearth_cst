@@ -2649,7 +2649,7 @@ def test_console_finish_line_carries_number_wildcards_elapsed_and_counter():
     done = out.splitlines()[1]
     assert re.fullmatch(
         r"\d\d:\d\d:\d\d - DONE Rule 3\.14: downscale_climate_realization  "
-        r"\[rlz 1 \| st 0\]  0:01:11  \[27/37\]",
+        r"\[rlz 1 \| st 0\]  0:01:11  \[job 27/37\]",
         done,
     ), done
 
@@ -2674,7 +2674,7 @@ def test_console_start_line_carries_no_progress_counter():
     assert lines[0].endswith("[rlz 1 | st 1]"), lines[0]
     assert lines[-1].endswith("[rlz 1 | st 2]"), lines[-1]
     # Once, on the finish line -- not three times across the pair.
-    assert out.count("[8/37]") == 1, out
+    assert out.count("[job 8/37]") == 1, out
 
 
 def test_console_quiet_start_prints_only_the_finish_line(monkeypatch):
@@ -2692,7 +2692,7 @@ def test_console_quiet_start_prints_only_the_finish_line(monkeypatch):
         _console_record(event="progress", done=6, total=24),
     )
     assert "RUN " not in out, out
-    assert re.search(r"DONE Rule 3\.09: retain .*\[6/24\]", out), out
+    assert re.search(r"DONE Rule 3\.09: retain .*\[job 6/24\]", out), out
 
 
 def test_console_quiet_start_is_opt_in(monkeypatch):
@@ -2812,9 +2812,9 @@ def test_console_a_wave_of_finishes_counts_up_to_the_progress_total():
     out = _emit(handler, *records)
     finished = [line for line in out.splitlines() if " - DONE " in line]
     assert [line.split("  ")[-1] for line in finished] == [
-        "[13/37]",
-        "[14/37]",
-        "[15/37]",
+        "[job 13/37]",
+        "[job 14/37]",
+        "[job 15/37]",
     ], finished
     assert [line.split(" - DONE ")[1].split("  ")[0] for line in finished] == [
         "rule_10",
@@ -3293,7 +3293,7 @@ def test_console_a_rule_without_a_message_still_gets_a_named_finish_line():
         _console_record(event="job_finished", job_id=2),
         _console_record(event="progress", done=9, total=10),
     )
-    assert out.splitlines()[-1].endswith("- DONE some_rule  [9/10]"), out
+    assert out.splitlines()[-1].endswith("- DONE some_rule  [job 9/10]"), out
 
 
 def test_console_a_sub_second_job_shows_no_duration():
@@ -3307,7 +3307,7 @@ def test_console_a_sub_second_job_shows_no_duration():
         _console_record(event="progress", done=3, total=37),
     )
     done = out.splitlines()[1]
-    assert done.endswith("Rule 3.07: write_experiment_config  [3/37]"), done
+    assert done.endswith("Rule 3.07: write_experiment_config  [job 3/37]"), done
 
 
 def test_console_no_escape_codes_when_the_stream_is_not_a_tty():
@@ -3353,7 +3353,7 @@ def test_console_a_finish_with_no_start_falls_back_to_snakemakes_own_text():
         _console_record(event="progress", done=4, total=10),
     )
     assert re.fullmatch(
-        r"\d\d:\d\d:\d\d - DONE Finished jobid: 5 \(Rule: seed\)  \[4/10\]\n", out
+        r"\d\d:\d\d:\d\d - DONE Finished jobid: 5 \(Rule: seed\)  \[job 4/10\]\n", out
     ), out
 
 

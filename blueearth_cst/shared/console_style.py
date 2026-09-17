@@ -1611,7 +1611,7 @@ class _ConsoleHandler(logging.StreamHandler):
             # a grouped job never emits one. Snakemake's own text still names
             # the rule, which is the whole point of the line; it gets our stamp
             # and the counter and nothing else.
-            tail = f"  [{counter}/{total}]" if counter is not None and total else ""
+            tail = f"  [job {counter}/{total}]" if counter is not None and total else ""
             return self._paint(
                 f"{self._now()} - {_MARKER_DONE} {fallback}{tail}", _ANSI_DONE
             )
@@ -1638,7 +1638,15 @@ class _ConsoleHandler(logging.StreamHandler):
             # finishes instantly, so this is the common case, not an edge one.
             tail.append(format_elapsed(time.monotonic() - started))
         if counter is not None and total:
-            tail.append(f"[{counter}/{total}]")
+            # `job`, because the counter and the plan block above it count
+            # DIFFERENT things and a reader was left to reconcile them: the plan
+            # head says `5 of 19 rules to run` and this counter reaches 6, since
+            # rule `all` is a job the plan deliberately does not list (see
+            # `_plan_head`). Naming the unit fixes the read without forcing
+            # either number to move -- listing `all` would put a non-work row in
+            # a plan of work, and counting jobs off Snakemake's table would
+            # leave the head line off by one from the table it introduces.
+            tail.append(f"[job {counter}/{total}]")
         line = f"{self._now()} - {_MARKER_DONE} " + "  ".join(parts)
         if tail:
             line = f"{line}  " + "  ".join(tail)

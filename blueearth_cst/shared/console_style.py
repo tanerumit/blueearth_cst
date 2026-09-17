@@ -43,6 +43,7 @@ shape of the seam: the two modules are one package and one concern, split on the
 fingerprint boundary rather than on a public API.
 """
 
+import atexit
 import logging
 import os
 import re
@@ -180,13 +181,14 @@ def defer_warning(message, module="cst"):
     NOTICED, which is the honest reading and the only one that stays true when
     the DAG takes a while to build.
 
-    **A deferred row is LOST if the run never reaches its header** -- a DAG that
-    fails to build prints nothing from this queue. That is safe only for an
-    informational notice whose failure path carries its own copy of the report:
-    WF2's resolution report, for instance, is embedded in the ``WorkflowError``
-    raised when no combination resolves, so the failing run still shows it. A
-    row that is the ONLY record of a problem belongs in :func:`warn_row`, which
-    prints where it stands.
+    **A row whose run never reaches a header is printed OUT OF POSITION, never
+    dropped.** Two runs never get there: a DAG that fails to build, and
+    ``--dry-run``, which does not fire ``onstart:`` at all -- and a dry run is
+    exactly where "which combinations did not resolve" is what the reader came
+    for. :func:`_flush_undrained_warnings` catches both at interpreter exit, so
+    the worst case is a row at the bottom of the output rather than a row
+    nobody sees. Position is what this function is for; silence is not a
+    trade it is allowed to make.
 
     ``module`` follows :func:`warn_row`'s rules, including the one about never
     opening a Snakefile line with the ``module=`` token.
@@ -214,6 +216,32 @@ def _drain_deferred_warnings(colour):
         _paint_body(_log_row_text(hms, module, "WARNING", message), colour)
         for hms, module, message in held
     ]
+
+
+@atexit.register
+def _flush_undrained_warnings():
+    """Print anything the run header never reached, at the bottom.
+
+    The two runs that never reach a header: a DAG that fails to build, and
+    ``--dry-run``, which never fires ``onstart:`` -- measured 2026-09-17, a dry
+    run shows Snakemake's own ``Job stats:`` and nothing of this module.
+    ``--dry-run`` is in AGENTS.md's Key Commands as the check to run after
+    editing a rule, and the resolution report is one of the things its reader
+    is looking for, so deferral must not be the reason it vanishes.
+
+    Out of position, and that is the whole point: the ordered flush sites have
+    already popped the queue on any run that reached them, so this fires only
+    when the alternative is silence. It writes nothing on a healthy run.
+
+    Guarded end to end -- at interpreter shutdown ``sys.stderr`` may already be
+    closed, and a warning row is never worth a traceback on the way out.
+    """
+    try:
+        held = _drain_deferred_warnings(_console_colour(sys.stderr))
+        if held:
+            sys.stderr.write("\n".join(held) + "\n")
+    except Exception:  # noqa: BLE001 -- never raise from an exit hook
+        pass
 
 
 # Colour by WHAT KIND OF LINE it is, not by which field it is -- three tiers,

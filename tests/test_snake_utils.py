@@ -3212,6 +3212,28 @@ def test_deferred_warning_flushes_when_the_console_style_did_not_take(monkeypatc
     assert cs._DEFERRED_WARNINGS == []
 
 
+def test_undrained_warning_is_printed_out_of_position_not_dropped(monkeypatch):
+    """`--dry-run` never fires `onstart:`, so no flush site is ever reached.
+
+    Measured 2026-09-17: a dry run shows Snakemake's own `Job stats:` and
+    nothing of this module. A deferred row must not be lost there -- the
+    resolution report is one of the things a dry-run reader came for.
+    """
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    stream = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", stream)
+    cs.defer_warning("two members did not resolve", module="resolution")
+    cs._flush_undrained_warnings()
+    assert "resolution - WARNING - two members did not resolve" in stream.getvalue()
+    # Drained, so a healthy run -- one that reached an ordered flush site --
+    # writes nothing here.
+    quiet = io.StringIO()
+    monkeypatch.setattr(sys, "stderr", quiet)
+    cs._flush_undrained_warnings()
+    assert quiet.getvalue() == ""
+    assert cs._DEFERRED_WARNINGS == []
+
+
 def test_console_an_unparsed_run_info_passes_through():
     handler = _console_handler()
     out = _emit(handler, _console_record("Nothing to be done.", event="run_info"))

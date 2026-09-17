@@ -18,7 +18,7 @@ benchmark tables):
   per-part headers are **stripped**: a near-identical three-line block repeated
   once per rule was the bulk of the old merged file and none of its information.
 - One ``==`` banner per rule, carrying the same ``W.NN  name`` tag the live
-  console announces (``snake_utils.rule_banner``), so a section is greppable by
+  console announces (``console_style.rule_banner``), so a section is greppable by
   the number it ran under.
 - One ``--`` sub-header per member of a fan-out rule (WF2's ``{series_key}``,
   WF3's ``rlz_N_st_M`` / ``batch_N``) -- those are the parts a reader has to tell
@@ -53,7 +53,7 @@ _DIGITS = re.compile(r"(\d+)")
 def _rule_tag(label):
     """Render a part label ``2.04_fetch_gcm_slice`` as the banner tag ``2.04  fetch_gcm_slice``.
 
-    Mirrors ``snake_utils.rule_banner`` so the merged log and the console use one
+    Mirrors ``console_style.rule_banner`` so the merged log and the console use one
     spelling. A label that is not ``<W.NN>_<name>`` is passed through as-is.
     """
     number, sep, name = label.partition("_")

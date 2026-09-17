@@ -315,7 +315,7 @@ def build_command(
 #
 # ASCII only, everywhere in this section. A Windows console defaults to cp1252
 # and raises UnicodeEncodeError on box-drawing characters and arrows -- the same
-# constraint `snake_utils.rule_banner` records. `=`, `|`, `-` and `[1/3]`, never
+# constraint `console_style.rule_banner` records. `=`, `|`, `-` and `[1/3]`, never
 # `═`, `│`, `→` or `✓`.
 
 _RULE_WIDTH = 80

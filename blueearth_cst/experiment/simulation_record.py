@@ -266,11 +266,20 @@ def read_simulation(experiment_root, *, require_complete=False):
         raise error(f"simulation {root}: {exc}") from exc
 
 
-def freeze_simulation(experiment_root, record, documents):
+def freeze_simulation(experiment_root, record, documents, config_snapshot=None):
     """Write immutable inputs before any preparation or native output is scheduled.
 
     Same-identity reuse verifies all retained bytes. It never rewrites completion,
     provenance or inputs. Partial document writes can only be reused byte-exactly.
+
+    ``config_snapshot`` is the rendered ``composed_config.yml`` bytes, written
+    beside the frozen documents and named by none of them. It is deliberately
+    NOT one of :data:`_DOCUMENTS`: those four are hashed into ``simulation_id``,
+    and ``read_simulation`` compares the record's key set against an exact
+    expected set, so promoting the snapshot would both move every existing
+    experiment's identity and make an older record unreadable. It is written on
+    the freeze path only -- a reuse returns the retained simulation untouched,
+    which is what keeps the directory immutable once it holds results.
     """
     root = Path(experiment_root).resolve()
     expected = simulation_document(
@@ -316,6 +325,10 @@ def freeze_simulation(experiment_root, record, documents):
         target = _simulation_path(root, f"config/{name}")
         if not target.exists():
             atomic_record(target, documents[key])
+    if config_snapshot is not None:
+        from blueearth_cst.shared.workflow_config_snapshot import SNAPSHOT_NAME
+
+        _simulation_path(root, f"config/{SNAPSHOT_NAME}").write_bytes(config_snapshot)
     atomic_record(marker, record)
     log_row(
         f"Froze simulation {record['simulation_id'][:12]}: "

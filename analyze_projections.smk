@@ -16,7 +16,8 @@ from snakemake.exceptions import WorkflowError
 # See dev/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, declare_path_tokens, declare_project_root, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, rule_banner, run_summary, spatial_units_rule, target_banner, warn_if_project_dir_in_repo, warn_row, window_year_pair, install_console_style, run_header, open_run_header
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, window_year_pair
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError, validate_removed_gridded_options
@@ -875,7 +876,7 @@ WF2_TARGETS = {
     # log part under `_parts/`, which is the defect the LOG_RULES block above
     # documents three times over.
     "spatial_basins": SPATIAL_UNITS.outputs["basins"],
-    "project_config": f"{project_dir}/config/runs/project_config_analyze_projections.yml",
+    "project_config": f"{project_dir}/config/runs/analyze_projections/composed_config.yml",
     # ONE merged log for the whole workflow (was: one per fan-out stage,
     # alongside four rules writing logs/2.NN_*.log directly -- five files a
     # reader had to open in the right order to follow one run). Every rule
@@ -979,7 +980,7 @@ rule snapshot_config:
         # keeps the record fresh when the CHECKOUT moves; see its definition.
         configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
     output:
-        config_snake_out = f"{project_dir}/config/runs/project_config_analyze_projections.yml",
+        config_snake_out = f"{project_dir}/config/runs/analyze_projections/composed_config.yml",
         run_record = RUN_RECORD,
     script:
         "blueearth_cst/model/copy_config_files.py"

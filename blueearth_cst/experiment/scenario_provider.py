@@ -260,9 +260,27 @@ def plan_collection(
 
 
 def initialize_planned_collection(
-    project_dir, plan, invocation_id, *, lookup_path, catalog_bytes, ancillary_sources
+    project_dir,
+    plan,
+    invocation_id,
+    *,
+    lookup_path,
+    catalog_bytes,
+    ancillary_sources,
+    config_snapshot=None,
 ):
-    """Write reviewed portable inputs before authorizing row-generation jobs."""
+    """Write reviewed portable inputs before authorizing row-generation jobs.
+
+    ``config_snapshot`` is the rendered ``composed_config.yml`` bytes. It is
+    written here rather than at publication because
+    :func:`write_collection_payload` refuses every write once ``collection.json``
+    exists -- the collection is sealed, and the snapshot has to be inside the
+    seal or it could be added to a retained collection afterwards.
+
+    It joins ``payloads`` beside ``scenario_table.csv`` and the lookup, which
+    are likewise written into the collection without being named in
+    ``collection_intent.json``. That is what keeps it out of ``collection_id``.
+    """
     import csv
     import io
 
@@ -323,6 +341,10 @@ def initialize_planned_collection(
     payloads["scenario_table.csv"] = table.getvalue().encode("utf-8")
     payloads["stress_test_lookup.csv"] = Path(lookup_path)
     payloads[context["catalog"]["path"]] = catalog_bytes
+    if config_snapshot is not None:
+        from blueearth_cst.shared.workflow_config_snapshot import SNAPSHOT_NAME
+
+        payloads[SNAPSHOT_NAME] = config_snapshot
     log_row(
         f"Collection {identity_segment(intent['collection_id'], 'collection_id')}: "
         f"claiming {len(rows)} scenario row(s), {len(payloads)} portable input(s)",

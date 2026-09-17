@@ -61,10 +61,15 @@ RECORD_ONLY_ROLE_PREFIXES = ("workflow_config",)
 #:
 #: And a reader needs to know these are composed documents rather than copies
 #: of their source files: comments are gone and keys are sorted, which reads
-#: like corruption if you expect a copy. The per-workflow name now describes
-#: the content -- since R13 each file carries the sections its own workflow
-#: composed -- so the section that used to explain why the copies looked
-#: identical is replaced rather than amended.
+#: like corruption if you expect a copy. The per-workflow DIRECTORY now says
+#: which workflow a snapshot belongs to -- since R13 each file carries the
+#: sections its own workflow composed -- so the section that used to explain
+#: why the copies looked identical is replaced rather than amended.
+#:
+#: It also states which workflows write here and which do not. WF3 and WF4
+#: write their snapshot inside the collection or experiment instead, and a
+#: reader who counts three directories for five workflows has no way to tell
+#: that from an omission -- which is exactly the question this bin drew.
 _RUNS_README = """\
 # What is in this directory
 
@@ -76,31 +81,49 @@ To change what a run does, edit the **source config** you pass to
 
 | File | What it is |
 |---|---|
-| `project_config_<workflow>.yml` | that workflow's composed configuration -- see below |
+| `<workflow>/composed_config.yml` | that workflow's composed configuration -- see below |
 | `<workflow>/run_record.yml` | what the run resolved to: toolbox commit, environment hashes, the settings actually consumed, and the external inputs referenced |
 | `_engine/journal.jsonl` | append-only ledger, two lines per run (start and outcome) |
 | `_engine/invocations/` | one manifest per `scripts/run_workflows.py` invocation |
 
-## What the four `project_config_<workflow>.yml` files hold
+## What the `composed_config.yml` files hold
 
 Each is that workflow's **composed** configuration: the project file you passed
-to `--configfile`, with the per-workflow settings files it loaded merged back
-in. So each one is the workflow-scoped view its name promises, and the four
-differ from each other by construction -- a WF1 snapshot does not carry WF3's
-stress-test grid.
+to `--configfile`, with the per-workflow settings file it loaded merged back in.
+So each one is the workflow-scoped view its directory promises, and they differ
+from each other by construction -- WF1's snapshot does not carry WF2's horizons.
 
 They differ from your source files in two ways, both deliberate. Comments are
 not carried: this is a record, and your files stay the annotated ones. And keys
 are sorted, so two runs of the same configuration produce the same bytes.
 
 They diverge across workflows when one workflow has run since the config changed
-and another has not, and that divergence is exactly what WF3's consistency guard
-reads to refuse an experiment whose model was built under different settings.
+and another has not. Comparing two of them is how that divergence is read.
 
 Your per-workflow config files are **recorded but not archived**: each appears in
 `run_record.yml`'s `referenced_inputs` with its `sha256`, and with
 `archived_path: null`, because its content is already inlined verbatim in the
 composed snapshot beside it.
+
+## Only THREE workflows write here, and that is not an omission
+
+`analyze_climate`, `build_model` and `analyze_projections` each produce one
+result per project, so "the current record" is a directory that can be
+overwritten. `generate_scenarios` and `simulate_system` do not: a project holds
+one directory per scenario collection and one per experiment, and a single slot
+here would be claimed by whichever ran last and would describe the others
+wrongly.
+
+Their snapshot is therefore written **inside the artifact it describes**, under
+the same name:
+
+| workflow | its `composed_config.yml` |
+|---|---|
+| `generate_scenarios` | `scenarios/collections/<id>/composed_config.yml` |
+| `simulate_system` | `experiments/<name>/config/composed_config.yml` |
+
+Two collections mean two snapshots, each true of its own. Both are sealed with
+the artifact, so neither can be edited once results exist.
 
 ## Reading `run_record.yml`
 
@@ -264,10 +287,11 @@ def copy_config_files(
             yaml.safe_dump(dict(composed_config), sort_keys=True),
             encoding="utf-8",
         )
-    # Beside the flat config copy, which is the bin a user actually opens --
-    # not beside the record, which sits one level down under a per-workflow
-    # subdirectory (and, for WF3, in the experiment's own config dir).
-    _write_runs_readme(current_config_path.parent)
+    # At the TOP of the runs bin, which is the directory a user opens -- not in
+    # the per-workflow subdirectory the snapshot and the record now share. Both
+    # of this workflow's files sit one level down, so `.parent` is that
+    # subdirectory and would put a copy of the bin's README in each of them.
+    _write_runs_readme(current_config_path.parent.parent)
 
     references = dict(other_config_files or {})
     roles = {str(key): value for key, value in (reference_roles or {}).items()}

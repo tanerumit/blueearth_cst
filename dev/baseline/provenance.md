@@ -62,12 +62,34 @@ module docstring for why each exists. But it means "7/7 green" is not "no byte
 moved", and for the two tolerance targets this file is the only byte-level
 record anywhere.
 
-The three `project_config_*.yml` snapshot targets are **excluded by design**. A
+The three config snapshot targets are **excluded by design**. A
 config migration renames and rewrites them, so they are re-recorded rather than
 defended — the precedent is R13's, where *"the split moved the two narrow config
 snapshots, the hoist moved all three, and zero data targets moved in either"*
 (`dev/LOG.md`, 2026-08-22). They are hashed in `manifest.json` already and need
 no second home here.
+
+**2026-09-17 — the two `config/runs/` snapshots moved, and their manifest KEYS
+were renamed without re-recording their values.** They are now
+`config/runs/<workflow>/composed_config.yml`, beside the run record, instead of
+flat under `config/runs/`. The keys were renamed in place and the recorded
+`sha256` values left untouched, deliberately: **the re-record could not be done
+from the worktree that made the change**, and recording from a diverged tree
+would have rebased the baseline onto an unverified one.
+
+The evidence, captured before the rename:
+`check --workflow build_model --workflow analyze_projections` already reported
+both `cmip6_change_factors_*.csv` data targets differing from the manifest, and
+this worktree's flat snapshot copies hashed to neither their manifest values nor
+a fresh write — they still carried the retired `run_stress_test` key, so they
+were pre-R12 artifacts. That divergence predates the rename and is unrelated to
+it; `test_case/test_local` is per-worktree and this copy is not the tree the
+manifest describes.
+
+So these two entries assert what they asserted before, at the path the code now
+writes. **The next re-record from a tree that matches the manifest fixes their
+values**, and it should be done with `record --workflow build_model --workflow
+analyze_projections`, which merges rather than overwrites.
 
 ### Producing commits
 
@@ -167,8 +189,8 @@ this file already declares excluded by design:
 
 ```
 FAIL - 3 target(s) differ from manifest:
-  .../config/runs/project_config_analyze_projections.yml
-  .../config/runs/project_config_build_model.yml
+  .../config/runs/project_config_analyze_projections.yml   [pre-2026-09-17 path]
+  .../config/runs/project_config_build_model.yml            [pre-2026-09-17 path]
   .../experiments/experiment/config/project_config_run_stress_test.yml
 ```
 

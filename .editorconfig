@@ -4,18 +4,18 @@
 # every editor applies identically. Behavioural config lives elsewhere and is
 # equally shared -- lint in pyproject.toml [tool.ruff], type checking in
 # [tool.pyright], tests in [tool.pytest.ini_options], commands in pixi.toml
-# [tasks]. Only genuinely per-editor ergonomics (search exclusions, theme,
-# keybindings) remain in .zed/ -- the one editor config this repo tracks. A
-# .vscode/ is gitignored per-user state, so it holds nothing shared.
+# [tasks]. This is the ONLY editor config the repo tracks; .vscode/ and the rest
+# are gitignored per-user state. Genuinely per-editor ergonomics -- search
+# exclusions, theme, keybindings -- are therefore per-user everywhere.
 #
 # DELIBERATELY ABSENT: `end_of_line`. .gitattributes already owns line endings
 # and does it better -- it distinguishes *.sh (must be LF, runs in Docker) from
 # *.cmd/*.bat (must be CRLF, Windows-only) from everything else (LF in the repo,
 # native on checkout). A blanket end_of_line here would fight that per-type
-# policy on save. Zed applies .editorconfig's end_of_line as a hard override, so
-# adding it is not a no-op.
+# policy on save. Editors that apply `end_of_line` as a hard override make that
+# a real conflict, not a theoretical one, so adding it is not a no-op.
 #
-# Native in Zed; VS Code needs the EditorConfig.EditorConfig extension.
+# Native in most editors; VS Code needs the EditorConfig.EditorConfig extension.
 
 root = true
 

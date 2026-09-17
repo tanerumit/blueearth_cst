@@ -8,7 +8,8 @@ from blueearth_cst.experiment.simulation_record import live_simulation_inputs, r
 from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
 from blueearth_cst.shared.indicator_tables import indicator_tables
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_WFLOW_OUTVARS, DEFAULT_JULIA_THREADS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, target_banner, validate_experiment_name, rule_banner
+from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, validate_experiment_name
+from blueearth_cst.shared.console_style import rule_banner, target_banner
 
 project, my_cfg = simulation_settings(config_path)
 project_dir = Path(project["project"]["project_dir"]).resolve().as_posix()
@@ -128,8 +129,16 @@ if not _simulation_complete:
             request=update(f"{exp_dir}/config/response_request.json"),
         run:
             from blueearth_cst.experiment.simulation_record import freeze_simulation
+            from blueearth_cst.shared.workflow_config_snapshot import composed_workflow_section, snapshot_bytes
             record, documents = _live_simulation_inputs()
-            freeze_simulation(exp_dir, record, documents)
+            # Written on the freeze, inside the same call that seals the
+            # experiment's inputs. Named by none of the four frozen documents,
+            # so `simulation_id` -- and every metric set identified through it
+            # -- stays where it was.
+            freeze_simulation(exp_dir, record, documents, config_snapshot=snapshot_bytes(
+                "simulate_system", config_path,
+                Path(config_path).parent / project["workflows"]["simulate_system"]["config_path"],
+                composed_workflow_section(project, "simulate_system", my_cfg)))
 
     # 4.02  check_model_reference
     rule check_model_reference:

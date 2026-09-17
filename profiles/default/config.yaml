@@ -1,6 +1,15 @@
 # Workflow profile — auto-loaded by Snakemake when running from the repo root
 # (`--workflow-profile` defaults to `profiles/default` if present, so no flag
-# is needed). Applies to all three Snakefile_* workflows.
+# is needed). Applies to every `*.smk` entry point.
+#
+# It cannot live under `config/`: discovery looks only at the literal
+# `profiles/default`, relative to the run directory and then to the Snakefile's
+# own directory (`snakemake/cli.py`, `workflow_profile_candidates`), and
+# `$SNAKEMAKE_PROFILE` addresses the *global* profile rather than this one.
+# Anywhere else needs an explicit `--workflow-profile` at every call site.
+#
+# wf4 and the all-workflow runner are covered too: both shell out to the
+# `snakemake` CLI with cwd at the repo root, so the same discovery applies.
 #
 # quiet: reason  — suppress the verbose per-job "Reason:" block (missing/updated
 # input paths). Drop this (or run `--quiet` without `reason`) when you need to

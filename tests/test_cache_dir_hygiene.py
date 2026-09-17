@@ -63,18 +63,33 @@ def test_repo_root_carries_no_cache_directory():
     is caught the first time it drops a directory here, instead of being
     noticed by eye weeks later. `.tmp/` itself is the destination and is not a
     match; nothing else in this repo's root is.
+
+    `__pycache__` is matched too, by literal name: the shape rule above misses
+    it on the leading dot alone, and it is a cache by any reading of the repo's
+    "the root carries no cache directory of any kind" constraint. It got in
+    once -- a root `__pycache__` holding a single orphan `.pyc` from a
+    `_patch_helper.py` that no longer exists, found 2026-09-17. Nothing at the
+    root is importable today, so it can only come back from a throwaway script
+    run from here; the fix is to put that script under `.tmp/`, not to relax
+    this. The check stays ROOT-ONLY on purpose -- `tests/__pycache__` and
+    `blueearth_cst/**/__pycache__` are normal and would make a recursive
+    version fail on every developer machine.
     """
     offenders = sorted(
         entry.name
         for entry in REPO_ROOT.iterdir()
         if entry.is_dir()
-        and entry.name.startswith(".")
-        and "cache" in entry.name.lower()
+        and (
+            (entry.name.startswith(".") and "cache" in entry.name.lower())
+            or entry.name == "__pycache__"
+        )
     )
     assert not offenders, (
         f"cache director{'y' if len(offenders) == 1 else 'ies'} in the repo root: "
         f"{', '.join(offenders)}. Tool caches belong under `.tmp/` "
-        f"(pyproject.toml `cache_dir` / `cache-dir`). These are disposable -- "
+        f"(pyproject.toml `cache_dir` / `cache-dir`); a root `__pycache__` "
+        f"means something at the root was imported -- run that script from "
+        f"`.tmp/` instead. These are disposable -- "
         f"delete them. If one keeps coming back, the writer is running without "
         f"this repo's config: `ruff check --isolated` is the known case, and "
         f"`RUFF_CACHE_DIR=.tmp/ruff_cache` in front of it is the fix."

@@ -163,10 +163,11 @@ test-contract = { cmd = "pytest tests/ -m \"workflow_contract or process_isolati
 test-full = { cmd = "pytest tests/", description = "Run the authoritative full non-integration suite" }
 
 # Editor-facing tasks. These exist so an IDE task file stays a one-line
-# `pixi run <name>` shim instead of duplicating the command: VS Code's
-# tasks.json and Zed's .zed/tasks.json use incompatible schemas and variable
-# syntaxes, but both can invoke pixi, so the command itself is defined once here
-# and every editor -- and the bare CLI -- runs the identical thing. Invoking the
+# `pixi run <name>` shim instead of duplicating the command: every editor's task
+# format uses its own schema and variable syntax, but all of them can invoke
+# pixi, so the command itself is defined once here and every editor -- and the
+# bare CLI -- runs the identical thing. No IDE task file is tracked; this is why
+# a command belongs here rather than in one. Invoking the
 # env's interpreter directly instead would drop [activation.env] above
 # (HDF5_USE_FILE_LOCKING, GCSFS_EXPERIMENTAL_ZB_HNS_SUPPORT) and, on win-64, the
 # graphviz alias script.

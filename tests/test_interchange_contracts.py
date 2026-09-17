@@ -118,11 +118,11 @@ def _fixture_present() -> bool:
 # -- so it will stay that way, and refreshing it would destroy the reference.
 # Guard the one schema-dependent case rather than widening `_fixture_present`,
 # which would skip the sixteen that a pre-R14 tree still answers correctly.
-_WF1_SNAPSHOT = join(_FIXTURE, "config", "runs", "project_config_build_model.yml")
+_WF1_SNAPSHOT = join(_FIXTURE, "config", "runs", "build_model", "composed_config.yml")
 
 _FIXTURE_PRE_R14 = (
     "test_case/test_local predates R14: no config/runs/"
-    "project_config_build_model.yml, so its v1 snapshot cannot answer a v2 key "
+    "build_model/composed_config.yml, so its v1 snapshot cannot answer a v2 key "
     "(the WG-1 store-key case is skipped; the rest of the layer still runs)"
 )
 

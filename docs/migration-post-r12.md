@@ -31,7 +31,35 @@ workflows and they write the new layout.
 
   experiments/<name>/results/metric_sets/<64-hex>/
 → experiments/<name>/results/metric_sets/<12-hex>/
+
+  config/runs/project_config_<workflow>.yml
+→ config/runs/<workflow>/composed_config.yml
 ```
+
+**The last one landed later (2026-09-17) and is the only entry you must act on
+separately.** Each workflow wrote two files describing the same run at two
+different depths — the snapshot flat in the bin, the record one level down. They
+now sit together, and the filename drops the workflow name because the directory
+carries it.
+
+Re-running the workflow writes the new path. If you do not want a full re-run,
+its snapshot rule alone is enough and takes seconds:
+
+```console
+snakemake <project_dir>/config/runs/build_model/composed_config.yml -c 1 \
+  -s build_model.smk --configfile <project-config.yml>
+```
+
+**The old flat file is not removed for you.** Delete it once the new one exists;
+nothing reads it.
+
+The same change gave `generate_scenarios` and `simulate_system` a
+`composed_config.yml` they never had, at
+`scenarios/collections/<id>/composed_config.yml` and
+`experiments/<name>/config/composed_config.yml`. Those are **new files, not
+moves**: no identity changes, no metric set is invalidated, and nothing needs
+re-running. A collection or experiment produced before the change simply has
+none — both are sealed, so one cannot be added after the fact.
 
 Three separate things happened. Engine bookkeeping was **collected into an
 `_engine/` bin per scope** — the files a workflow writes so it can refuse a stale

@@ -230,3 +230,54 @@ def test_experiment_name_and_completion_do_not_enter_identity(inputs):
     changed["experiment_name"] = "another"
     changed["response_inventory_sha256"] = "f" * 64
     assert simulation_id(changed) == simulation_id(record)
+
+
+def test_the_config_snapshot_is_written_without_joining_the_identity(inputs):
+    """WF4's snapshot: an extra file in `config/` that nothing hashes.
+
+    This is the branch the Snakefile takes on a real run, and the three other
+    `freeze_simulation` callers in the suite pass three positional arguments --
+    so without this test the write path ships unexecuted.
+
+    The `read_simulation` assertion is the load-bearing one. It compares the
+    record's key set against an exact expected set, which is why the snapshot is
+    a separate FILE rather than a field: an extra file must leave the record
+    readable, and an extra key would not.
+    """
+    root, record, documents = inputs
+    root.mkdir(exist_ok=True)
+    snapshot = b"# Written by the run.\nworkflow: simulate_system\n"
+
+    frozen = freeze_simulation(root, record, documents, config_snapshot=snapshot)
+
+    assert (root / "config/composed_config.yml").read_bytes() == snapshot
+    assert frozen["simulation_id"] == record["simulation_id"]
+    assert read_simulation(root)["simulation_id"] == record["simulation_id"]
+    assert "composed_config.yml" not in canonical_json_bytes(frozen).decode("utf-8")
+
+
+def test_a_reused_simulation_does_not_rewrite_its_config_snapshot(inputs):
+    """Reuse returns the retained record untouched -- the directory is immutable.
+
+    A second freeze with different snapshot bytes must NOT overwrite the first:
+    the experiment may already hold results, and the snapshot describes the run
+    that produced them.
+    """
+    root, record, documents = inputs
+    root.mkdir(exist_ok=True)
+    freeze_simulation(root, record, documents, config_snapshot=b"first\n")
+
+    freeze_simulation(root, record, documents, config_snapshot=b"second\n")
+
+    assert (root / "config/composed_config.yml").read_bytes() == b"first\n"
+
+
+def test_freezing_without_a_snapshot_writes_no_file(inputs):
+    """The default stays absent rather than empty, so its absence is readable."""
+    root, record, documents = inputs
+    root.mkdir(exist_ok=True)
+
+    freeze_simulation(root, record, documents)
+
+    assert not (root / "config/composed_config.yml").exists()
+    assert read_simulation(root)["simulation_id"] == record["simulation_id"]

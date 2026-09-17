@@ -465,3 +465,88 @@ def test_the_three_exit_codes_are_distinct():
     """
     assert cb.EXIT_NOT_CHECKED == 2
     assert cb.EXIT_NOT_CHECKED not in (0, 1)
+
+
+# --- orphaned manifest rows (t2609171743) ----------------------------------
+#
+# A recorded row whose path no longer resolves used to be dropped by the
+# `p in in_scope_paths` filter with nothing said. That is how the real manifest
+# stopped comparing `q_indicators.csv`: `t2609152107` shortened every
+# content-digest segment to twelve characters, the 64-hex row stopped matching,
+# and `simulate_system` went on reporting a verdict computed from one target.
+# The row is not out of scope -- it BELONGS to the scope and cannot be reached,
+# which is a silent cap, not a filter.
+
+
+def _orphan_the_metric_row(manifest_path):
+    """Re-key the recorded indicator row under a longer digest segment.
+
+    Mirrors the real defect exactly: same template, same directory, a segment of
+    a different length. Returns the orphaned path.
+    """
+    manifest = json.loads(pathlib.Path(manifest_path).read_text(encoding="utf-8"))
+    key = next(k for k in manifest["targets"] if k.endswith("q_indicators.csv"))
+    parts = key.split("/")
+    parts[-2] = "a" * 64
+    orphan = "/".join(parts)
+    manifest["targets"][orphan] = manifest["targets"].pop(key)
+    pathlib.Path(manifest_path).write_text(json.dumps(manifest), encoding="utf-8")
+    return orphan
+
+
+def test_an_orphaned_row_fails_instead_of_vanishing(project, capsys):
+    project_dir, manifest_path = project
+    orphan = _orphan_the_metric_row(manifest_path)
+
+    rc = cb.cmd_check(
+        _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
+    )
+
+    out = capsys.readouterr().out
+    assert rc == 1
+    assert orphan in out
+    assert "orphaned" in out
+    assert "NOT compared" in out
+
+
+def test_an_orphaned_row_is_never_reported_as_a_pass(project, capsys):
+    """The whole point: absence must not read as agreement."""
+    project_dir, manifest_path = project
+    _orphan_the_metric_row(manifest_path)
+
+    rc = cb.cmd_check(
+        _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
+    )
+
+    out = capsys.readouterr().out
+    assert rc != 0
+    assert "OK -" not in out
+
+
+def test_other_scopes_are_not_disturbed_by_an_orphan(project, capsys):
+    """The orphan belongs to simulate_system; build_model must still pass.
+
+    Guards the obvious over-correction -- reporting every unmatched manifest row
+    regardless of scope would fail every scoped run on another scope's staleness.
+    """
+    project_dir, manifest_path = project
+    _orphan_the_metric_row(manifest_path)
+
+    rc = cb.cmd_check(_check_ns(project_dir, manifest_path, workflow=["build_model"]))
+
+    assert rc == 0
+    assert "OK -" in capsys.readouterr().out
+
+
+def test_a_pattern_accepts_any_segment_length(project):
+    """The matcher must recognise the OLD length, which is the case it exists for."""
+    project_dir, _ = project
+    pattern = cb.target_pattern("{metric_set_dir}/q_indicators.csv", project_dir)
+    # Posix-normalised, as the matcher normalises both sides -- on Windows the
+    # recorded keys mix separators (see `target_pattern`).
+    root = cb._posix(project_dir)
+    base = f"{root}/experiments/{cb.EXPERIMENT_NAME}/results/metric_sets"
+
+    assert pattern.match(f"{base}/{'a' * 64}/q_indicators.csv")
+    assert pattern.match(f"{base}/{'a' * 12}/q_indicators.csv")
+    assert not pattern.match(f"{base}/{'a' * 12}/other.csv")

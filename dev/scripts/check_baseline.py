@@ -83,6 +83,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 from math import floor, log10
@@ -420,6 +421,72 @@ def resolve(template: str, project_dir: str) -> str:
         clim_project=CLIM_PROJECT,
         exp_dir=f"{project_dir}/experiments/{EXPERIMENT_NAME}",
         metric_set_dir=metric_set_dir,
+    )
+
+
+#: A content-digest directory segment, whatever length the tree currently uses.
+#: Deliberately not pinned to `SHORT_DIGEST_CHARS`: the point of the orphan check
+#: is to recognise a row written under the OLD length, so a pattern that only
+#: matched today's length would be blind to exactly the case it exists for.
+_SEGMENT_RE = "[0-9a-f]+"
+
+
+def _posix(path: str) -> str:
+    """One separator convention, so a pattern and a recorded key can be compared."""
+    return str(path).replace("\\", "/")
+
+
+def target_pattern(template: str, project_dir: str) -> re.Pattern[str]:
+    """Match any path a template could ever have resolved to, across identities.
+
+    `resolve` answers "what does this template mean right now"; this answers
+    "could this recorded path have come from this template at all". The two
+    differ only in the content-digest segment, and that difference is the whole
+    point -- a manifest row keyed by a digest segment of a different length is
+    orphaned, not out of scope, and the gate has to be able to tell them apart.
+    """
+    sentinel = "<<<SEGMENT>>>"  # cannot occur in a path we resolve
+    # Separators are normalised on BOTH sides before matching. `resolve` is not
+    # self-consistent about them on Windows: `resolve_metric_set_dir` returns
+    # `Path.as_posix()`, while every other template interpolates `project_dir`
+    # verbatim, so one recorded key can carry backslashes and another forward
+    # slashes for the same tree. Matching raw text would make this check pass on
+    # a relative posix `project_dir` and silently do nothing on an absolute
+    # Windows one -- which is the shape of bug it exists to catch.
+    root = _posix(project_dir)
+    filled = template.format(
+        project_dir=root,
+        clim_project_dir=f"{root}/data/climate/projections/{CLIM_PROJECT}",
+        clim_project=CLIM_PROJECT,
+        exp_dir=f"{root}/experiments/{EXPERIMENT_NAME}",
+        metric_set_dir=(
+            f"{root}/experiments/{EXPERIMENT_NAME}/results/metric_sets/{sentinel}"
+        ),
+    )
+    return re.compile(
+        re.escape(filled).replace(re.escape(sentinel), _SEGMENT_RE) + r"\Z"
+    )
+
+
+def orphaned_rows(
+    recorded: dict, in_scope_paths: set[str], templates, project_dir: str
+) -> list[str]:
+    """Recorded paths that BELONG to the scope but no longer resolve within it.
+
+    Without this, such a row is dropped by the `p in in_scope_paths` filter and
+    nothing says so -- the gate silently stops checking an artifact it was asked
+    to check. That is the failure the repo's "no silent caps" rule forbids, and
+    it is not hypothetical: `t2609152107` shortened every digest segment to
+    twelve characters, which orphaned the manifest's `q_indicators.csv` row and
+    left `simulate_system` comparing nothing but a document that cannot pass
+    (`t2609171743`).
+    """
+    patterns = [target_pattern(template, project_dir) for template in templates]
+    return sorted(
+        path
+        for path in recorded
+        if path not in in_scope_paths
+        and any(pattern.match(_posix(path)) for pattern in patterns)
     )
 
 
@@ -1332,9 +1399,37 @@ def cmd_check(args: argparse.Namespace) -> int:
             selected, include_figures=_want_figures(args)
         )
     }
+    # Rows that belong to this scope but no longer resolve within it. Computed
+    # BEFORE the filter discards them, because after the filter they are
+    # indistinguishable from rows that were never in scope at all.
+    orphaned = orphaned_rows(
+        rec_targets,
+        in_scope_paths,
+        [
+            template
+            for _workflow, _kind, template in active_targets(
+                selected, include_figures=_want_figures(args)
+            )
+        ],
+        args.project_dir,
+    )
     rec_targets = {p: rec for p, rec in rec_targets.items() if p in in_scope_paths}
 
     failures: list[tuple[str, list[str]]] = []
+    for path in orphaned:
+        failures.append(
+            (
+                path,
+                [
+                    "recorded target no longer resolves; the manifest row is "
+                    "orphaned and was NOT compared",
+                    "  a content-digest segment in the path has changed length "
+                    "or value since the manifest was recorded",
+                    "  re-record this scope, or repoint the row, before reading "
+                    "its absence as a pass",
+                ],
+            )
+        )
     for p in missing:
         if p in rec_targets:
             failures.append((p, ["target missing on disk"]))

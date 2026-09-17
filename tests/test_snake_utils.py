@@ -468,19 +468,28 @@ def test_target_banner_with_no_targets_is_just_the_banner(monkeypatch):
 
 
 def test_target_banner_relativizes_against_project_dir(monkeypatch):
-    """The root moves to the banner; the paths below it lose the prefix."""
+    """The root moves to the banner; the paths below it lose the prefix.
+
+    Through `_abs`, not a `C:/...` literal: since t2609162114 the bracket prints
+    `display_root(project_dir)`, which absolutizes -- and a `C:/...` literal is
+    NOT absolute on POSIX, so abspath prepended the runner's CWD and the bracket
+    read `<repo>/C:/TESTS/CST/gabonx`. Caught by CI on ubuntu, green on windows:
+    the same class `_abs` was introduced for on 2026-08-14.
+    """
     import io
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
+    root = _abs("TESTS/CST/gabonx")
+    shown = root.replace(os.sep, "/")
     out = target_banner(
         "2.00",
         "all",
-        ["C:/TESTS/CST/gabonx/analyze_projections/cmip6/summary/x.csv"],
-        "C:/TESTS/CST/gabonx",
+        [f"{shown}/analyze_projections/cmip6/summary/x.csv"],
+        root,
     )
     assert out == (
-        "Rule 2.00: all  [C:/TESTS/CST/gabonx]\n    analyze_projections/cmip6/summary/x.csv"
+        f"Rule 2.00: all  [{shown}]\n    analyze_projections/cmip6/summary/x.csv"
     )
 
 
@@ -495,13 +504,21 @@ def test_target_banner_relativizes_a_native_separator_root(monkeypatch):
 
 
 def test_target_banner_leaves_a_path_outside_the_project_absolute(monkeypatch):
-    """Only the project prefix is stripped -- a catalog elsewhere stays whole."""
+    """Only the project prefix is stripped -- a catalog elsewhere stays whole.
+
+    Converted to `_abs` alongside the test above even though this one stayed
+    GREEN on ubuntu, for the reason `_abs`'s own docstring gives: it asserts
+    something is left UNCHANGED, which is exactly what a root that never matches
+    produces. With a `C:/...` root on POSIX it asserted the absence of an effect
+    that could not have occurred.
+    """
     import io
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
-    out = target_banner("2.00", "all", ["D:/data/catalog.yml"], "C:/TESTS/CST/gabonx")
-    assert "    D:/data/catalog.yml" in out
+    outside = _abs("elsewhere/data/catalog.yml").replace(os.sep, "/")
+    out = target_banner("2.00", "all", [outside], _abs("TESTS/CST/gabonx"))
+    assert f"    {outside}" in out
 
 
 def test_target_banner_without_project_dir_keeps_paths_verbatim(monkeypatch):
@@ -742,6 +759,58 @@ def test_the_header_defines_a_token_under_a_relative_project_dir(declare_folders
     declare_folders(model="test_case/test_rapid/models/hydrology/wflow")
     rows = su.run_header("wf1 build_model", "test_case/test_rapid").splitlines()
     assert rows[-1].split() == ["<model>", "models/hydrology/wflow"]
+
+
+def test_run_header_project_row_is_absolute_and_repo_marked():
+    """One spelling of the project root, whatever form the Snakefile holds.
+
+    WF0-WF3 hold the config's relative `project_dir`; WF4 resolves it. Printed
+    as held, one `run_workflows.py` run stated one fact two ways a few lines
+    apart (t2609162114). Both now print the absolute form, `<repo>`-marked when
+    the tree is inside the checkout -- shorter than the relative spelling AND
+    unambiguous about which of six worktrees it names.
+    """
+    relative = su.run_header("wf3 generate_scenarios", "test_case/test_rapid")
+    absolute = su.run_header(
+        "wf4 simulate_system", os.path.abspath("test_case/test_rapid")
+    )
+
+    def project_row(text):
+        return next(
+            row.split() for row in text.splitlines() if row.split()[:1] == ["project"]
+        )
+
+    assert project_row(relative) == project_row(absolute)
+    assert project_row(relative) == ["project", "<repo>/test_case/test_rapid"]
+
+
+def test_display_root_leaves_a_project_outside_the_repo_whole():
+    """No shared root to imply, so nothing is marked and nothing is shortened.
+
+    The production case: `project_dir` lives outside the repository tree, where
+    the `<repo>` rewrite matches nothing and the full path IS the information.
+    """
+    outside = _abs("TESTS/CST/gabonx")
+    assert su.display_root(outside) == outside.replace(os.sep, "/")
+    assert "<repo>" not in su.display_root(outside)
+
+
+def test_target_banner_bracket_and_header_row_agree(monkeypatch):
+    """The bracket and the `project` row are the same fact; they must match."""
+    import io
+
+    monkeypatch.setattr(sys, "stderr", io.StringIO())
+    monkeypatch.delenv("NO_COLOR", raising=False)
+    banner = target_banner(
+        "3.00", "all", ["test_case/test_rapid/logs/wf3.log"], "test_case/test_rapid"
+    )
+    header = su.run_header("wf3 generate_scenarios", "test_case/test_rapid")
+    root = next(
+        row.split()[1] for row in header.splitlines() if row.split()[:1] == ["project"]
+    )
+    assert f"[{root}]" in banner
+    # The STRIP still uses the caller's form, so the target stays short.
+    assert banner.endswith("    logs/wf3.log")
 
 
 def test_relativize_leaves_out_of_project_paths_absolute():
@@ -2931,7 +3000,7 @@ def test_console_opening_puts_the_rules_under_the_title(monkeypatch):
     assert lines[4] == "  >  1.01  a"
     assert lines[5] == "     1.02  b"
     assert lines[6] == ""
-    assert lines[7] == "  project  test_case/test_rapid"
+    assert lines[7] == "  project  <repo>/test_case/test_rapid"
 
 
 def test_console_opening_rule_spans_the_whole_title(monkeypatch):
@@ -2975,7 +3044,7 @@ def test_console_opening_survives_a_run_without_run_info(monkeypatch):
     lines = out.split("\n")
     assert lines[1] == "wf1 build_model"  # no plan clause, none was reported
     assert lines[2] == "-" * len("wf1 build_model")
-    assert "  project  test_case/test_rapid" in lines
+    assert "  project  <repo>/test_case/test_rapid" in lines
 
 
 def test_console_plan_stands_alone_when_no_header_was_declared(monkeypatch):
@@ -3401,7 +3470,11 @@ def test_run_header_shape_matches_run_summary():
         "wf3 run_stress_test",
         "-------------------",
         "",
-        "  project     test_case/test_rapid2",
+        # `<repo>`-marked since t2609162114; the `config` row beside it is not,
+        # only because this test passes a CWD-relative path. Snakemake hands a
+        # Snakefile an ABSOLUTE `configfiles[0]`, so in a real run both rows
+        # carry the marking -- which is the point of routing them the same way.
+        "  project     <repo>/test_case/test_rapid2",
         "  config      test_case/project_config_rapid.yml",
         "  experiment  experiment_rapid",
     ]
@@ -3577,7 +3650,7 @@ def test_run_header_omits_rows_a_workflow_does_not_have():
         "wf1 build_model",
         "---------------",
         "",
-        "  project  test_case/test_rapid",
+        "  project  <repo>/test_case/test_rapid",
     ]
 
 

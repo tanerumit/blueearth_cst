@@ -576,7 +576,9 @@ def test_a_scoped_record_does_not_clear_an_orphan(project, capsys):
 
     capsys.readouterr()
     assert (
-        cb.cmd_check(_check_ns(project_dir, manifest_path, workflow=["simulate_system"]))
+        cb.cmd_check(
+            _check_ns(project_dir, manifest_path, workflow=["simulate_system"])
+        )
         == 1
     )
     assert "orphaned" in capsys.readouterr().out

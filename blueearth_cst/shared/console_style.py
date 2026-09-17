@@ -838,6 +838,28 @@ _CONSOLE_MUTED_PREFIXES = (
 )
 
 
+#: PUBLIC: `scripts/run_workflows.py` sets it. Set on the environment every
+#: workflow the runner
+#: invokes inherits. It means "something upstream has already named this
+#: workflow to this console", and the only thing it suppresses is the title.
+#:
+#: An ENV VAR rather than a config key or a CLI flag: the fact it carries is
+#: about the INVOCATION, not about the project, and the runner already owns
+#: the child's environment (`simulation_command` builds its own from
+#: `os.environ`, so one assignment covers both spawn paths).
+ANNOUNCED_ENV = "CST_RUN_ANNOUNCED"
+
+
+def _run_announced():
+    """True when a caller upstream has already printed this workflow's name.
+
+    Read at BLOCK-BUILD time, not at import: a test that sets the variable
+    around one render, and a runner that sets it after this module is first
+    imported, must both be seen.
+    """
+    return os.environ.get(ANNOUNCED_ENV, "") not in ("", "0")
+
+
 def opening_block(workflow, project_dir, config_path=None, details=None, plan=None):
     """``[(text, tier)]`` for a run's opening block -- ONE builder, two callers.
 
@@ -853,66 +875,55 @@ def opening_block(workflow, project_dir, config_path=None, details=None, plan=No
 
     Layout, and why each part is where it is::
 
-        ================================================
-        wf2 analyze_projections
-        ================================================
-
-        -- PLAN ----------------------------------------
         >  2.01  snapshot_config          1
            2.02  delineate_region
-        ------------------------------------------------
         7 of 9 rules to run  |  2 up to date  |  13 jobs
 
-        -- RUN -----------------------------------------
         project  <repo>/test_case/test_rapid
         config   test_case/project_config_rapid.yml
 
-        -- PROGRESS ------------------------------------
+    NO FURNITURE since 2026-09-17: no title band, no ``-- PLAN --`` /
+    ``-- RUN --`` / ``-- PROGRESS --`` section rules, no rule under the table.
+    The block had carried six full-width rules across its first thirty lines,
+    and under the runner -- which is how the pipeline is actually driven -- a
+    seventh sat three lines above them at a DIFFERENT width, because the runner
+    draws a fixed 80 and this block sized itself to its longest value, usually
+    an absolute config path. Two frames that nearly line up read as
+    misalignment rather than as structure.
 
-    The title is BANDED and carries the workflow NAME only. The summary moved
-    under the table it describes, where it reads as that table's caption rather
-    than as an appendage to the name. Both bands and every section rule are
-    drawn to ONE width -- the widest of the table, the summary and the title --
-    so the block has a single right edge.
+    What the rules were carrying, the content already carries. The table is
+    numbered rows in rule order, the caption under it names what the table is
+    (``9 rules | all to run | 11 jobs``), the metadata is a ``key  value``
+    column, and a blank line separates each from the next. A reader never had
+    to be told that a list of rule numbers was the plan.
 
-    Why the title needs a full-width band at all: the section rules run the
-    whole width, so a title underlined only to its own length was the SMALLER
-    element carrying the LONGER mark. Colour cannot fix that, because the title
-    is bold-only and bold is exactly what a pipe, a redirect and CI drop.
+    The TITLE is written only when nothing upstream has announced this
+    workflow -- see :func:`_run_announced`. Under the runner it is the third
+    printing of ``wf0 analyze_climate`` within ten lines; standalone it is the
+    only one, so it stays, as a bare line rather than a band.
 
     ``plan`` is ``(head, [(row, running), ...])`` or ``None``. With no plan
-    there is no table to caption and nothing to size the bars from, so the
-    summary goes back onto the title (``wf2 analyze_projections -- 7 of 9
-    rules to run``) and the ``PLAN`` section is not written at all. That branch
-    is reached when Snakemake's job table cannot be parsed, and when the
-    console style is not active -- :func:`run_header` never has a plan, since
-    it is written before any job count exists.
-
-    The ``PROGRESS`` rule is NOT written here. It has to be the last thing the
-    console handler emits, and the first line under it comes from a different
-    code path (``_start_line``, on the first ``job_info`` record) -- so a
-    caller that is not going to write those lines must not open the section.
+    there is no table to caption, so the summary goes onto the title
+    (``wf2 analyze_projections -- 7 of 9 rules to run``) and no table is
+    written. That branch is reached when Snakemake's job table cannot be
+    parsed, and when the console style is not active -- :func:`run_header`
+    never has a plan, since it is written before any job count exists. When
+    that branch coincides with an announced run the head would have nowhere to
+    go, so the title is kept there regardless: a caption with nothing to
+    caption is still the only statement of the run's size.
     """
     meta = meta_row_lines(run_meta_rows(project_dir, config_path, details))
     head, rows = ("", []) if plan is None else (plan[0], list(plan[1]))
 
-    title = workflow if rows else (f"{workflow} -- {head}" if head else workflow)
-    width = max(
-        [len(title)]
-        + [len(text) for text, _ in rows]
-        + [len(head) if rows else 0]
-        + [len(line) for line in meta]
-    )
-    band = "=" * width
-
-    out = [("", "body"), (band, "body"), (title, "title"), (band, "body"), ("", "body")]
+    out = [("", "body")]
+    if not rows and head:
+        out.extend([(f"{workflow} -- {head}", "title"), ("", "body")])
+    elif not _run_announced():
+        out.extend([(workflow, "title"), ("", "body")])
     if rows:
-        out.append((_section_rule("PLAN", width), "body"))
         out.extend((text, "run" if running else "dim") for text, running in rows)
-        out.append(("-" * width, "body"))
         out.append((head, "body"))
         out.append(("", "body"))
-    out.append((_section_rule("RUN", width), "body"))
     out.extend((line, "body") for line in meta)
     return out
 
@@ -1417,13 +1428,14 @@ class _ConsoleHandler(logging.StreamHandler):
         if held:
             lines.append("")
             lines.extend(held)
-        # The PROGRESS rule closes the block HERE rather than inside the
-        # builder: the first line under it is written by `_start_line` on the
-        # first `job_info` record, so only the writer of those lines may open
-        # the section. Sized on the block's own width -- measured on the
-        # UNPAINTED text, since escape codes are not columns.
-        width = max(len(text) for text, _ in block)
-        lines.extend(["", self._paint(_section_rule("PROGRESS", width), _ANSI_BODY)])
+        # No PROGRESS rule since 2026-09-17. It opened a section whose first
+        # line is written by a different code path (`_start_line`, on the first
+        # `job_info` record), and what that line looks like --
+        # `22:01:04 - RUN  Rule 0.02: ...` -- announces the section on its own:
+        # it is the first timestamped row on the console and nothing above it
+        # wears that grammar. The blank line below is what separates the block
+        # from it, and is the only separator the boundary needed.
+        lines.append("")
         return lines
 
     def _plan_block(self, record):
@@ -1457,17 +1469,14 @@ class _ConsoleHandler(logging.StreamHandler):
         else:
             # No header declared -- a bare `snakemake -s` without `onstart:`,
             # and in the tests. The plan stands on its own, in the same shape
-            # it has inside the opening block: a labelled rule, the table, a
-            # rule, then the summary under the table it describes. No title
-            # band, because there is no title to band.
+            # it has inside the opening block: the table, then the summary that
+            # captions it. Unruled, like the block, and for the same reason --
+            # a list of numbered rules does not need to be told what it is.
             head, rows = plan
-            width = max([len(head)] + [len(row) for row, _ in rows])
-            painted = [self._paint(_section_rule("PLAN", width), _ANSI_BODY)]
-            painted.extend(
+            painted = [
                 self._paint(row, _ANSI_RUN if running else _ANSI_DIM)
                 for row, running in rows
-            )
-            painted.append(self._paint("-" * width, _ANSI_BODY))
+            ]
             painted.append(self._paint(head, _ANSI_BODY))
         # ONE element, newlines and all. `_render` joins its lines through a
         # truthiness filter, so a blank passed as its own element is dropped --
@@ -1853,41 +1862,14 @@ def meta_row_lines(rows):
 
     Indented two spaces until 2026-09-17, which left these rows one column in
     from the title above them and from the rules table between. Every line the
-    opening block writes now starts at column 0; the block's structure is
-    carried by its section rules rather than by indent.
+    opening block writes starts at column 0; the block's structure is carried
+    by blank lines and by the shape of each part -- numbered rows, a caption,
+    a `key  value` column -- rather than by indent or by a rule.
     """
     if not rows:
         return []
     width = max(len(key) for key, _ in rows)
     return [f"{key.ljust(width)}  {value}" for key, value in rows]
-
-
-#: The opening block's three sections, in the order they are written.
-#:
-#: ``RUN`` rather than ``PATHS``: the rows under it are the project root, the
-#: config, whatever ``details`` the Snakefile passes (WF3's ``experiment``,
-#: WF4's ``experiment`` and ``operation``) and the declared token legend. WF4
-#: passes two details and declares no tokens, so under ``PATHS`` half of its
-#: block was not paths. What the rows share is that they identify THIS RUN.
-#:
-#: Uppercase, and the collision with the per-line ``RUN`` marker is deliberate
-#: rather than overlooked: a marker sits in a fixed column after a timestamp,
-#: a heading owns a whole line and carries a rule to the right margin, so the
-#: two are never read for one another.
-_SECTIONS = ("PLAN", "RUN", "PROGRESS")
-
-
-def _section_rule(label, width):
-    """``-- LABEL ------...`` drawn to ``width``.
-
-    A labelled rule rather than a word on its own line: it costs no extra line
-    over the bare separator the block already carried, and the label sits ON
-    the divider it introduces. All ASCII -- a Windows console defaults to
-    cp1252 and raises ``UnicodeEncodeError`` on box drawing, the constraint
-    :func:`rule_banner` documents.
-    """
-    text = f"-- {label} "
-    return text + "-" * max(3, width - len(text))
 
 
 def title_rule(text):

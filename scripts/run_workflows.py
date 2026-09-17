@@ -39,6 +39,7 @@ _REPO_ROOT_PATH = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT_PATH) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT_PATH))
 
+from blueearth_cst.shared import console_style  # noqa: E402
 from blueearth_cst.shared.cross_workflow_leaves import (  # noqa: E402
     LEAF_PRODUCER,
     LEAVES,
@@ -313,13 +314,54 @@ def build_command(
 # file (`*> log.txt`), and a frame whose width depended on whether stdout was a
 # tty would make the same run look different depending on how it was launched.
 #
-# ASCII only, everywhere in this section. A Windows console defaults to cp1252
-# and raises UnicodeEncodeError on box-drawing characters and arrows -- the same
-# constraint `console_style.rule_banner` records. `=`, `|`, `-` and `[1/3]`, never
-# `═`, `│`, `→` or `✓`.
+# ASCII everywhere in this section EXCEPT the three rail glyphs below, and only
+# because `_enable_utf8_stdout` earns them. A Windows locale is cp1252 and a
+# redirected stream raises UnicodeEncodeError on anything outside it -- the
+# constraint `console_style.rule_banner` still records for the rules, which do
+# not reconfigure anything. This runner declares UTF-8 on its own stdout before
+# it prints, so `●`, `○` and `│` reach both a console and a `*> log.txt`.
+#
+# That declaration does NOT extend to the Snakemake children: they inherit the
+# handle, not the Python text layer, and keep writing their own bytes to the
+# same file. A redirected run is therefore mixed-encoding -- UTF-8 for the
+# runner's dozen lines, the locale's codec for everything the workflows say --
+# which is legible only because the children's output is itself ASCII. Adding a
+# non-ASCII glyph to a RULE's output would break that and belongs behind the
+# same reconfiguration, not behind this comment.
 
 _RULE_WIDTH = 80
 _RULE = "=" * _RULE_WIDTH
+
+#: The sequence rail: a node per workflow threaded on a vertical line. Filled
+#: for a workflow this run will invoke, hollow for one it will not, so the
+#: distinction is legible before any of the text is read. Three characters,
+#: deliberately -- the rail replaced a framed box per workflow, which spent
+#: three lines and forty columns to say what a node says in one.
+_NODE_ON = "●"  # ● -- will be invoked
+_NODE_OFF = "○"  # ○ -- disabled, shown in place
+_RAIL = "│"  # │ -- the thread between them
+
+
+def _enable_utf8_stdout() -> None:
+    """Declare UTF-8 on this process's stdout, so the rail glyphs can be printed.
+
+    Without this a redirected run dies: the locale codec on Windows is cp1252,
+    `print()` on a non-tty encodes through it, and `●` raises
+    UnicodeEncodeError before the first workflow starts. One call covers both
+    destinations -- a console and a `*> log.txt` -- because it replaces the
+    text layer rather than probing what is behind it.
+
+    Fail-open like every other console concern in this file. `reconfigure` is
+    absent on a stdout something else already replaced (pytest's capture object
+    is the common one), and a runner that refused to start because it could not
+    style its own banner would be trading a whole run for a glyph. The banner
+    builders stay ASCII apart from the three rail characters, so the fallback
+    path loses exactly those and prints everything else.
+    """
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")  # type: ignore[union-attr]
+    except (AttributeError, OSError, ValueError):
+        pass
 
 
 def _label(name: str) -> str:
@@ -396,26 +438,8 @@ def _console_block(
     return "\n".join(lines)
 
 
-def _box_lines(content: str, width: int, *, dashed: bool) -> list[str]:
-    """One framed row: a top edge, ``content`` padded to ``width``, a bottom edge.
-
-    Dashed (`+ - -` / `:`) for a workflow this run will NOT invoke, so the frame
-    itself says "not part of what is about to happen" before the row is read;
-    solid (`+---` / `|`) for one that will. Both are ASCII, per this section's
-    rule -- a cp1252 console raises on the box-drawing characters that would be
-    the natural spelling.
-    """
-    edge = "- " * ((width + 3) // 2) if dashed else "-" * (width + 2)
-    side = ":" if dashed else "|"
-    return [
-        f"+{edge[: width + 2]}+",
-        f"{side} {content.ljust(width)} {side}",
-        f"+{edge[: width + 2]}+",
-    ]
-
-
 def _sequence_lines(flags: Mapping[str, bool]) -> list[str]:
-    """The enabled/disabled pipeline as a chain of ASCII boxes, in WORKFLOW_ORDER.
+    """The enabled/disabled pipeline as a rail of nodes, in WORKFLOW_ORDER.
 
     Every workflow appears, enabled or not, because the question this answers is
     "what is about to happen" and a disabled workflow silently absent from the
@@ -423,45 +447,38 @@ def _sequence_lines(flags: Mapping[str, bool]) -> list[str]:
     entries carry their `[position/total]` so the per-workflow timeline rows
     below can be matched to the plan without counting.
 
-    Boxed rather than listed since 2026-08-18. The rows had been an indented
-    list with a bare `|` between them, which reads as a chain only if you
-    already know it is one -- and it sat directly under the `run` group's rows
-    at the same indent, so the diagram's shape did not distinguish it from more
-    key/value pairs. A framed chain with `|` / `v` connectors is a picture of
-    the sequence, which is what this group is for.
+    A rail since 2026-09-17, replacing the chain of framed boxes it had been
+    since 2026-08-18. The boxes were a picture of the sequence, which was the
+    point and which the bare list before them failed at -- but they drew it at
+    three lines and forty columns per workflow, and at five workflows the frame
+    was most of the ink. A node on a line says the same three things in one
+    character each: `●` that this is a step, filled against hollow that this one
+    runs, and the `│` between them that they are ordered. The box width was also
+    set by whichever DISABLED row was longest, so a run that skipped nothing
+    still paid for the widest `(disabled, not invoked)` label the config could
+    produce.
+
+    Non-ASCII, which nothing else in this file's output is: see the section
+    comment above and `_enable_utf8_stdout`, which is what makes it safe.
     """
     total = sum(1 for name in WORKFLOW_ORDER if flags[name])
     # Width from the widest marker this run can print, so a disabled row's `-`
     # stays centred under an enabled row's position past nine workflows.
     mark_width = max(5, len(f"[{total}/{total}]"))
-    label_width = max(len(_label(name)) for name in WORKFLOW_ORDER)
-    rows: list[tuple[str, bool]] = []
+    lines: list[str] = []
     position = 0
     for name in WORKFLOW_ORDER:
+        if lines:
+            # The rail sits under the node's own column, not the text's: what it
+            # threads is the sequence of nodes.
+            lines.append(_RAIL)
         if flags[name]:
             position += 1
-            rows.append(
-                (f"{f'[{position}/{total}]'.ljust(mark_width)}  {_label(name)}", False)
-            )
+            mark = f"[{position}/{total}]".ljust(mark_width)
+            lines.append(f"{_NODE_ON}  {mark}  {_label(name)}")
         else:
-            rows.append(
-                (
-                    f"{'-'.center(mark_width)}  {_label(name).ljust(label_width)}"
-                    f"  (disabled, not invoked)",
-                    True,
-                )
-            )
-    # One width for every box, so the chain is a column rather than a ragged
-    # stack -- the disabled rows are the long ones, and a box that grew and
-    # shrank down the list would read as significant.
-    width = max(len(content) for content, _ in rows)
-    lines: list[str] = []
-    for index, (content, dashed) in enumerate(rows):
-        if index:
-            # Centred on the box, not on the marker: the arrow belongs to the
-            # frame it joins.
-            lines.extend(["|".center(width + 4), "v".center(width + 4)])
-        lines.extend(_box_lines(content, width, dashed=dashed))
+            mark = "-".center(mark_width)
+            lines.append(f"{_NODE_OFF}  {mark}  {_label(name)}  disabled")
     return lines
 
 
@@ -578,7 +595,12 @@ def _settings_rows(cfg: Mapping[str, Any], project_dir: Path) -> list[tuple[str,
     an invention in exactly the line a reader is least able to check. Before the
     first delineation there is no box, and the line says so.
     """
-    basin = _section(cfg, "shared", "basin")
+    # `basin` at TOP level, which is where R14 put it when it dissolved the
+    # `shared:` heading these keys used to sit under (`docs/migration-config-
+    # shape.md`). The old spelling did not fail -- `_section` returns `{}` at
+    # the first gap, by design -- so every row this function exists to print
+    # silently stopped printing instead.
+    basin = _section(cfg, "basin")
     rows: list[tuple[str, str]] = []
 
     region = basin.get("region")
@@ -662,8 +684,7 @@ def _opening_block(
     if enabled:
         groups.append(
             (
-                f"sequence -- {enabled} of {total} workflows enabled, "
-                f"invoked in this order",
+                f"sequence  ({enabled} of {total} enabled, in order)",
                 list(_sequence_lines(flags)),
             )
         )
@@ -778,6 +799,16 @@ def run(
     )
     _write_json_atomic(manifest_path, manifest)
 
+    # Every hand-off band below names the workflow it is about to start, so the
+    # workflow's own opening block does not print its name a second time three
+    # lines later. Handed to each CHILD rather than set on this process's own
+    # environment: `os.environ[...] = "1"` covered both spawn paths in one line
+    # and leaked, because nothing ever unsets it -- inside a test session that
+    # is one `run()` call silencing the title for every later test in the
+    # process, which is how the full suite found it. The variable describes the
+    # child's console, so it belongs on the child's environment.
+    child_env = {**os.environ, console_style.ANNOUNCED_ENV: "1"}
+
     # monotonic, matching each Snakefile's own `_RUN_STARTED`: a wall clock can
     # step backwards mid-run and these are durations, never timestamps.
     started = time.monotonic()
@@ -845,9 +876,15 @@ def run(
                         config_path, list(simulation_targets), cores, extra
                     )
                     workflow["command"] = sanitize_argv(cmd)
-                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=environment)
+                    # The simulation runner builds its own environment; the
+                    # announcement rides on top of it rather than replacing it.
+                    result = subprocess.run(
+                        cmd,
+                        cwd=REPO_ROOT,
+                        env={**environment, console_style.ANNOUNCED_ENV: "1"},
+                    )
                 else:
-                    result = subprocess.run(cmd, cwd=REPO_ROOT)
+                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=child_env)
             except BaseException as exc:
                 elapsed = format_elapsed(time.monotonic() - workflow_started)
                 ran.append((name, f"FAILED ({type(exc).__name__}) after {elapsed}"))
@@ -1115,6 +1152,9 @@ def _runtime_versions() -> dict[str, str | None]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Before argparse, so `--help` and an argument error are printed through
+    # the same text layer the run will use.
+    _enable_utf8_stdout()
     ap = argparse.ArgumentParser(
         description="Run the enabled CST workflows in fixed order.",
     )

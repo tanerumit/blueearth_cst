@@ -18,3 +18,11 @@ updated: 2026-09-17
 ## Progress
 
 - [ ] <first step>
+
+> [!warning] `run_workflows` now reconfigures **stdout** — this item is unaffected
+> The rail glyphs in the runner's opening block needed UTF-8, so `main()` calls
+> `sys.stdout.reconfigure(encoding="utf-8")` (2026-09-17). That covers the
+> RUNNER's own rows and nothing else: `sys.stderr` is untouched, and the
+> children keep writing through the locale codec into the same file. The
+> premise above therefore still holds exactly as written — do not read the
+> reconfigure as a partial fix for this.

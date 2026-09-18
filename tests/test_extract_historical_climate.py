@@ -400,6 +400,154 @@ def test_chirps_global_branch_requests_precip_only_from_chirps(
     assert "temp" in era5_calls[0]["variables"]
 
 
+def _fake_netcdf4(monkeypatch, default=(67108864, 1000, 0.75)):
+    """Record every `set_chunk_cache` the extraction performs.
+
+    The decorator resolves `netCDF4` from the module globals at CALL time, so
+    rebinding `ehc.netCDF4` is enough and no real HDF5 is involved.
+    """
+    state = {"cache": default}
+    seen = []
+
+    def set_chunk_cache(size, nelems, preemption):
+        state["cache"] = (size, nelems, preemption)
+        seen.append(state["cache"])
+
+    monkeypatch.setattr(
+        ehc,
+        "netCDF4",
+        types.SimpleNamespace(
+            get_chunk_cache=lambda: state["cache"],
+            set_chunk_cache=set_chunk_cache,
+        ),
+    )
+    return state, seen
+
+
+def test_chirps_branch_aligns_the_era5_chunks_to_the_store_too(
+    tmp_path, fake_chirps_catalog
+):
+    """The chunk override covers BOTH arms, not just the era5 one.
+
+    It lived inside the `else` arm until 2026-09-18, so the chirps branch read
+    era5 for its other six variables at whatever the catalog declared --
+    `longitude: 240` under `deltares_data_pdrive.yml`, which splits the stored
+    480-wide chunk and costs a second decompression for any basin straddling
+    the split.
+    """
+    region = tmp_path / "region.geojson"
+    region.write_text("{}")
+
+    ehc.prep_historical_climate(
+        region_fn=region,
+        fn_out=tmp_path / "out.nc",
+        data_libs="dummy.yml",
+        clim_source="chirps_global",
+        starttime="2010-01-01T00:00:00",
+        endtime="2010-12-31T00:00:00",
+    )
+
+    for name in ("chirps_global", "era5"):
+        options = _RecordingDataCatalog._CATALOG[name]["driver"]["options"]
+        assert options["chunks"] == {}
+        # `{}` is falsy and has to SURVIVE as one; see the era5 test above.
+        assert "chunks" in options
+
+
+def test_aligning_chunks_skips_a_source_the_catalog_does_not_carry(
+    tmp_path, fake_era5_catalog
+):
+    """A catalog with no era5 is not given one.
+
+    The caller names every source the extraction MIGHT read, and only the
+    chirps arm reads era5 -- so the era5 arm passes a name its own catalog is
+    free to be the only entry for.
+    """
+    region = tmp_path / "region.geojson"
+    region.write_text("{}")
+
+    ehc.prep_historical_climate(
+        region_fn=region,
+        fn_out=tmp_path / "out.nc",
+        data_libs="dummy.yml",
+        clim_source="era5",
+        starttime="2010-01-01T00:00:00",
+        endtime="2010-12-31T00:00:00",
+    )
+
+    assert set(_RecordingDataCatalog._CATALOG) == {"era5"}
+
+
+def test_the_extraction_bounds_the_hdf5_chunk_cache_and_restores_it(
+    tmp_path, fake_era5_catalog, monkeypatch
+):
+    """netcdf-c's 64 MiB per-variable cache is pure cost for a one-touch read.
+
+    Every chunk is read once, sliced to the basin and dropped, so the cache
+    retains bytes nothing asks for again -- once per (file, variable), which
+    against yearly files makes resident memory grow with the WINDOW. Measured
+    2026-09-18: 2.50 GB held over a six-year era5 read, 394 MB bounded.
+    """
+    state, seen = _fake_netcdf4(monkeypatch)
+    region = tmp_path / "region.geojson"
+    region.write_text("{}")
+
+    ehc.prep_historical_climate(
+        region_fn=region,
+        fn_out=tmp_path / "out.nc",
+        data_libs="dummy.yml",
+        clim_source="era5",
+        starttime="2010-01-01T00:00:00",
+        endtime="2010-12-31T00:00:00",
+    )
+
+    assert seen[0] == (ehc._HDF5_CHUNK_CACHE_BYTES, 1000, 0.75)
+    # Restored, so a process that calls this for one extraction does not
+    # inherit the bound for every other netCDF it touches.
+    assert state["cache"] == (67108864, 1000, 0.75)
+
+
+def test_an_already_smaller_chunk_cache_is_left_alone(
+    tmp_path, fake_era5_catalog, monkeypatch
+):
+    """The bound is a ceiling, not a setting -- an operator's smaller choice wins."""
+    smaller = (65536, 1000, 0.75)
+    _state, seen = _fake_netcdf4(monkeypatch, default=smaller)
+    region = tmp_path / "region.geojson"
+    region.write_text("{}")
+
+    ehc.prep_historical_climate(
+        region_fn=region,
+        fn_out=tmp_path / "out.nc",
+        data_libs="dummy.yml",
+        clim_source="era5",
+        starttime="2010-01-01T00:00:00",
+        endtime="2010-12-31T00:00:00",
+    )
+
+    assert seen[0] == smaller
+
+
+def test_the_chunk_cache_is_restored_when_the_extraction_raises(
+    tmp_path, fake_era5_catalog, monkeypatch
+):
+    """A failed extraction must not leave the bound behind on the process."""
+    state, _seen = _fake_netcdf4(monkeypatch)
+
+    with pytest.raises(ValueError):
+        ehc.prep_historical_climate(
+            region_fn=tmp_path / "region.geojson",
+            bbox=(0.0, 0.0, 1.0, 1.0),  # both given: the guard raises immediately
+            fn_out=tmp_path / "out.nc",
+            data_libs="dummy.yml",
+            clim_source="era5",
+            starttime="2010-01-01T00:00:00",
+            endtime="2010-12-31T00:00:00",
+        )
+
+    assert state["cache"] == (67108864, 1000, 0.75)
+
+
 def _grid_ds(y_name, x_name):
     """A minimal 2-D grid dataset spelled with the given coord names."""
     import numpy as np

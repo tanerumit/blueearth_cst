@@ -21,7 +21,7 @@ hydromt = ">=1.3,<2"
 hydromt_wflow = ">=1.0,<2"
 jupyter = "*"       # examples notebooks
 matplotlib = "*"
-netcdf4 = "*"       # direct import in check_baseline + inspect scripts
+netcdf4 = "*"       # direct import in extract_historical_climate (chunk cache) + check_baseline/inspect scripts
 numpy = "*"
 pandas = ">=2.0.0"
 pytest = "*"        # tests/ — was missing from environment.yml

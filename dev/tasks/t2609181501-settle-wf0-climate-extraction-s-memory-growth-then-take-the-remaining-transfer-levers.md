@@ -12,7 +12,7 @@ updated: 2026-09-18
 ---
 
 > [!note] Overview
-> **What** — Three follow-ups left by the 2026-09-18 investigation into a slow era5 extraction over the Deltares P: share. (A) is **settled and fixed**: the memory growth was the HDF5 chunk cache on the READ, not the streaming write, and bounding it cut peak RSS 7x at no cost in bytes or time. (B) is **half taken**: the chunk override now covers both branches, but the duplicate era5 read across two rules collides with the climate-store rule's documented one-input invariant and needs an owner decision. (C) is **ruled, and it inverted**: zarr ALONE takes 2.1x the bytes and 2.5x the time off the read, so the change is one `uri`, not three coupled ones.
+> **What** — Three follow-ups left by the 2026-09-18 investigation into a slow era5 extraction over the Deltares P: share. (A) is **settled and fixed**: the memory growth was the HDF5 chunk cache on the READ, not the streaming write, and bounding it cut peak RSS 7x at no cost in bytes or time. (B) is **half taken**: the chunk override now covers both branches, but the duplicate era5 read across two rules collides with the climate-store rule's documented one-input invariant and needs an owner decision. (C) is **implemented for rapid/dev**: a project-owned catalog loaded after the rapid config's original base replaces only `era5` with the daily Zarr source, while an explicit metadata guard refuses dates after 2023-02-01. The source-geometry follow-up is also settled: keep the live store unchanged and use `(365, 103, 240)` for a future immutable regional mirror.
 > **Why** — Rule 0.04 moved 9.46 GB across the wire to write a 2.3 MB store. The amplification is structural and cannot go to zero, but the memory hazard is gone and the remaining byte lever is cheaper than it looked.
 > **Effort** — large
 
@@ -126,14 +126,67 @@ ones that move FEWER BYTES.
       `tests/test_sealed_records.py`; and a coverage REGRESSION, since the zarr store
       ends 2023-02-01 against the netCDF's advertised 2023-11-30. Neither of them
       depends on (A) any more.
+- [x] **(C) Stage 1 implemented without touching the sealed catalog.**
+      `config/catalogs/deltares_era5_daily_zarr.yml` repeats the complete `era5`
+      source because HydroMT composition replaces a source rather than deep-merging
+      it. `project_config_rapid.yml` keeps its original `deltares_data.yml` base and
+      loads this one-entry override second. HydroMT captures roots per source:
+      composed-catalog inspection proved `era5` resolves to
+      `P:\wflow_global\hydromt`, while `chirps`, `merit_hydro`, and
+      `basin_atlas_level12_v10` retain the base catalog's `C:\data` root and all
+      non-era5 source specs remain equal. The sealed P-drive catalog was not needed
+      or touched. The Zarr driver remains
+      `raster_xarray`, but its options block is replaced by only `chunks: {}`:
+      netCDF-only `combine` and `parallel` never reach `open_zarr`.
+      <br>The override advertises the measured 1950-01-02..2023-02-01 range, and
+      extraction checks that contract before its first raster read. A request
+      outside it now raises with the requested and available dates instead of
+      accepting HydroMT's overlap. `project_config_baseline.yml` is unchanged:
+      stage 1 does not move the numerical reference.
+- [x] **(C3) Source chunk geometry measured and decided.** The exact live Zarr is
+      v2, consolidated, unsharded, and EPSG:4326. Its seven wf0 float32 arrays all
+      have shape `(26694, 721, 1440)`, chunk shape `(365, 103, 480)`, and
+      Blosc/Zstd level-3 byte-shuffle compression. Coordinates are daily
+      proleptic-Gregorian 1950-01-02..2023-02-01, latitude 90..-90 by -0.25,
+      longitude 0..359.75 by 0.25. A deterministic 27-key sample per variable
+      found 19.2..37.4 MiB median compressed full chunks (68.8 MiB raw); `tisr`
+      had 9/27 absent all-fill keys, which the model treats deliberately.
+      <br>Exact current intersection sums for Ntoum plus the production two-cell
+      buffer were **239.2 MiB / 7 requests** for 30 days and
+      **4312.9 MiB / 126 requests** for 2000-2016. A non-redundant short live
+      HydroMT probe measured **244.0 MiB process reads, 18.49 s, 621.8 MiB peak
+      RSS**. This agrees with chunk-file bytes; it is one P-drive observation,
+      not a claim about network performance. The existing full shipped
+      measurement remains **4.53 GB, 3.53 min, 460 MB RSS**, bit-identical to
+      netCDF.
+      <br>Candidate grid: current `(365,103,480)`, longitude-half
+      `(365,103,240)`, latitude-half `(365,52,480)`, time-half
+      `(180,103,480)`, and balanced `(180,103,240)`. Costs were modeled for
+      Ntoum, aligned 10-degree and 40-degree windows, and a 10-degree window
+      straddling a new 60-degree chunk boundary, over 30 days and 2000-2016.
+      Per-variable bytes/cell were calibrated to each access's exact current
+      sum. **Recommend `(365,103,240)` for a future immutable global or
+      multi-region mirror whose expected envelopes mostly fit within its
+      60-degree boundaries**: modeled chunks are 9.6..18.7 MiB compressed, and
+      bytes halve without more requests for the aligned cases. The boundary
+      stress case instead doubles requests and transfers the same modeled bytes
+      as current. For a fixed regional mirror, crop and align longitude chunks
+      to its target envelope. Time-half nearly doubles the normal Ntoum requests
+      (126 -> 245) while saving little for the normal window; latitude-half
+      doubles requests for the aligned 10-degree window; balanced falls mostly
+      below the 8-32 MiB target and also pays the time request cost. Keep annual
+      time chunks for normal CST windows. Only when sub-seasonal reads dominate
+      should `(180,103,240)` be benchmarked against the intended storage
+      protocol. No production rechunk workflow or dependency was added.
 
 ## What is left
 
 1. **(B2)** — owner decision on the symmetric era5-store dependency, with the
    chirps-only regression above as the thing to accept or refuse.
-2. **(C)** — owner decision on the zarr repoint: a project-local catalog override layer
-   plus a documented end-of-coverage at 2023-02-01, in exchange for halving the transfer
-   of every era5 extraction.
+2. **(C) residual constraint** — the rapid/dev ERA5 path cannot serve dates after
+   2023-02-01. Keep the baseline/netCDF path for later 2023 dates, or wait for the
+   Deltares Zarr store to be extended and then update the override metadata only
+   after measuring the actual store coverage.
 
 ## Reproducing
 
@@ -157,3 +210,13 @@ Three traps, all of which cost time on 2026-09-18:
   same way.** The streaming write was suspected for a whole investigation because it was
   the only path anyone had attached an RSS sampler to. Three runs of one script with one
   argument changed cleared it in four minutes.
+
+Exact geometry reproduction (read-only; no scratch store):
+
+```powershell
+pixi run python dev/working/2026-09-18_wf0-climate-transfer/inspect_zarr_geometry.py --probe-current
+```
+
+The script prints the deterministic 189-key sampling bound, all bbox/time
+bounds, exact current compressed intersections, modeled candidates, and the
+short live read caveat. It neither mutates P: nor writes a rechunked probe.

@@ -1,7 +1,7 @@
 """Run enabled CST workflows in the accepted five-stage order.
 
-The closed workflow set is analyze_climate, generate_scenarios, build_model,
-simulate_system, analyze_projections. Every enabled flag must be a boolean.
+The closed workflow set is analyze_climate, build_model, analyze_projections,
+generate_scenarios, simulate_system. Every enabled flag must be a boolean.
 Disabled workflows are reported and skipped; the first failure stops the run.
 Preflights occur immediately before their consumer, after preceding producers.
 Simulation uses the dedicated runner's operation/target validation and starts
@@ -56,18 +56,19 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
     region_geojson_path,
 )
 
-# Fixed order: climate -> generation -> model -> simulation -> projections.
+# Fixed order: climate -> model -> projections -> generation -> simulation.
 # WF0 is optional and supplies shared region and climate inputs. Generation and
 # model construction are independent prerequisites of simulation; projections
-# are terminal. Consumer preflights run after the preceding enabled producers.
+# remain a plausibility overlay and do not drive generation. Consumer preflights
+# run after the preceding enabled producers.
 # Each workflow maps to its Snakefile and preserved execution flags below;
 # only analyze_projections uses --keep-going.
 WORKFLOW_ORDER = (
     "analyze_climate",
-    "generate_scenarios",
     "build_model",
-    "simulate_system",
     "analyze_projections",
+    "generate_scenarios",
+    "simulate_system",
 )
 
 SNAKEFILE = {

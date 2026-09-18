@@ -14,7 +14,7 @@ BlueEarth Climate Stress Test — a multi-language (Python + R + Julia) scientif
 | `generate_scenarios.smk` | wf3 | model-independent scenario collection generation |
 | `simulate_system.smk` via `scripts/simulate_system.py` | wf4 | simulation and retained-response metrics |
 
-Convenience order: wf0 → wf3 → wf1 → wf4 → wf2. Generation and model construction are independent prerequisites of simulation; projections are a terminal plausibility overlay. WF0 is optional and shares region/climate producers: run it first or not at all, and run it ALONE when choosing forcing.
+Convenience order: wf0 → wf1 → wf2 → wf3 → wf4. Generation and model construction are independent prerequisites of simulation; projections are a plausibility overlay and never drive generation. WF0 is optional and shares region/climate producers: run it first or not at all, and run it ALONE when choosing forcing.
 
 ## Background
 
@@ -50,9 +50,9 @@ pixi run install      # + weathergenr (R, via remotes) and the Julia env
 
 # The five workflows, in convenience order. project_config_rapid.yml is the DEFAULT config.
 snakemake all -c 3 -s analyze_climate.smk     --configfile test_case/project_config_rapid.yml
-snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
 snakemake all -c 3 -s build_model.smk         --configfile test_case/project_config_rapid.yml
 snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
+snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
 python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
 
 # Or drive all enabled workflows in fixed order. Contract: the module docstring,

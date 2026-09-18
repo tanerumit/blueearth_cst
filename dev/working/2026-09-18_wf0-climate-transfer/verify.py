@@ -1,3 +1,11 @@
+"""Are two stores written by different paths the same data?
+
+    python dev/working/2026-09-18_wf0-climate-transfer/verify.py [a.nc b.nc]
+
+Defaults to the 2026-09-18 netCDF-vs-zarr pair.
+"""
+
+import sys
 import warnings
 
 import numpy as np
@@ -6,8 +14,12 @@ import xarray as xr
 warnings.filterwarnings("ignore")
 
 
-a = xr.open_dataset(r".tmp\scratchpad\2026-09-18_1316\out_nc_sync.nc")
-b = xr.open_dataset(r".tmp\scratchpad\2026-09-18_1316\out_zarr_thr.nc")
+pair = sys.argv[1:3] or [
+    r".tmp\scratchpad\2026-09-18_1316\out_nc_sync.nc",
+    r".tmp\scratchpad\2026-09-18_1316\out_zarr_thr.nc",
+]
+a = xr.open_dataset(pair[0])
+b = xr.open_dataset(pair[1])
 print("same vars:", sorted(a.data_vars) == sorted(b.data_vars))
 print("same time axis:", bool((a.time.values == b.time.values).all()))
 ok = True

@@ -332,6 +332,18 @@ _RULE_NUMBERS = {}
 _RULE_SUMMARIES = {}
 
 
+# Rule names whose jobs cannot be resolved until a checkpoint finishes. They
+# are neither runnable nor up to date in Snakemake's opening job table.
+_CHECKPOINT_DEPENDENT_RULES = set()
+
+
+# Rule names belonging to a dynamic DAG whose progress denominator can change
+# after checkpoint expansion. A handler activates this mode only after seeing
+# one of these jobs, so registries left by another parsed Snakefile cannot
+# affect the current workflow.
+_DYNAMIC_PROGRESS_RULES = set()
+
+
 @dataclass(frozen=True)
 class RuleIdentity:
     """One rule's identity, so its label is written once instead of four times.
@@ -480,7 +492,15 @@ class RuleRegistry:
 _QUIET_START_RULES = set()
 
 
-def rule_banner(number, name, context=None, summary=None, quiet_start=False):
+def rule_banner(
+    number,
+    name,
+    context=None,
+    summary=None,
+    quiet_start=False,
+    checkpoint_dependent=False,
+    dynamic_progress=False,
+):
     """Return a rule's ``message:`` string: a numbered console banner.
 
     Shows ``<W.NN>  <name>`` (the ``W.NN`` matching the rule's log/benchmark
@@ -571,6 +591,17 @@ def rule_banner(number, name, context=None, summary=None, quiet_start=False):
     Do NOT reach for this on a rule anyone waits on. The console's whole job
     during a long rule is to say that something is running.
 
+    ``checkpoint_dependent`` marks a rule whose jobs are absent from the
+    opening DAG until a checkpoint resolves them. The plan shows such an absent
+    rule as pending rather than dimming it as up to date. It also suppresses
+    progress denominators for the workflow because Snakemake revises its total
+    as checkpoint dependencies are expanded; the completed-job numerator
+    remains stable.
+
+    ``dynamic_progress`` marks a rule in a workflow whose job total can change
+    after checkpoint expansion. Once a handler sees one, finish lines keep the
+    stable completed-job numerator and omit Snakemake's provisional total.
+
     Side effect: records ``name -> number`` in ``_RULE_NUMBERS`` so
     :func:`install_console_style` can put the number on a job's FINISH line,
     which Snakemake reports by rule name only, and ``name -> summary`` in
@@ -582,6 +613,10 @@ def rule_banner(number, name, context=None, summary=None, quiet_start=False):
         _RULE_SUMMARIES[name] = summary
     if quiet_start:
         _QUIET_START_RULES.add(name)
+    if checkpoint_dependent:
+        _CHECKPOINT_DEPENDENT_RULES.add(name)
+    if dynamic_progress:
+        _DYNAMIC_PROGRESS_RULES.add(name)
     tag = f"{rule_id(number)} {name}"
     if summary:
         tag = f"{tag} - {summary}"
@@ -912,8 +947,10 @@ def opening_block(workflow, project_dir, config_path=None, details=None, plan=No
     printing of ``wf0 analyze_climate`` within ten lines; standalone it is the
     only one, so it stays, as a bare line rather than a band.
 
-    ``plan`` is ``(head, [(row, running), ...])`` or ``None``. With no plan
-    there is no table to caption, so the summary goes onto the title
+    ``plan`` is ``(head, [(row, state), ...])`` or ``None``. A state is true
+    for runnable, false for up to date, and ``None`` for checkpoint-dependent
+    work whose jobs are not resolved yet. With no plan there is no table to
+    caption, so the summary goes onto the title
     (``wf2 analyze_projections -- 7 of 9 rules to run``) and no table is
     written. That branch is reached when Snakemake's job table cannot be
     parsed, and when the console style is not active -- :func:`run_header`
@@ -931,7 +968,13 @@ def opening_block(workflow, project_dir, config_path=None, details=None, plan=No
     elif not _run_announced():
         out.extend([(workflow, "title"), ("", "body")])
     if rows:
-        out.extend((text, "run" if running else "dim") for text, running in rows)
+        out.extend(
+            (
+                text,
+                "run" if running is True else "body" if running is None else "dim",
+            )
+            for text, running in rows
+        )
         out.append((head, "body"))
         out.append(("", "body"))
     out.extend((line, "body") for line in meta)
@@ -1086,8 +1129,9 @@ def _plan_rows(counts):
     Joins the two things that each know half the answer: ``_RULE_NUMBERS``
     (every rule the Snakefile DECLARED, filled by :func:`rule_banner` at parse
     time) and Snakemake's job-stats counts (the rules that will actually RUN).
-    A rule absent from ``counts`` is up to date, which is the whole point of
-    the block -- it prints nothing else for the rest of the run.
+    A rule absent from ``counts`` is up to date unless it is registered in
+    ``_CHECKPOINT_DEPENDENT_RULES``; those rules are pending because the
+    opening DAG cannot resolve their jobs yet.
 
     Grouped by NUMBER, not by name, because a number is not unique: see
     :func:`_plan_rule_name`. Sorted lexicographically on the number, which
@@ -1098,10 +1142,12 @@ def _plan_rows(counts):
         if name in _PLAN_EXCLUDED_RULES:
             continue
         by_number.setdefault(number, []).append(name)
-    rows = [
-        (number, _plan_rule_name(names), sum(counts.get(n, 0) for n in names))
-        for number, names in by_number.items()
-    ]
+    rows = []
+    for number, names in by_number.items():
+        jobs = sum(counts.get(name, 0) for name in names)
+        if not jobs and any(name in _CHECKPOINT_DEPENDENT_RULES for name in names):
+            jobs = None
+        rows.append((number, _plan_rule_name(names), jobs))
     rows.sort(key=lambda row: row[0])
     return rows
 
@@ -1109,15 +1155,17 @@ def _plan_rows(counts):
 def _plan_head(rows, jobs, unlisted=0):
     """The run's size and shape, as a bare clause with no prefix or indent.
 
-    ``unlisted`` is rules Snakemake is about to run that the ledger cannot
+    ``unlisted`` is rules Snakemake is about to run that the registry cannot
     name, because they never called :func:`rule_banner` and so registered no
-    number. That should be zero -- every rule in all four Snakefiles declares a
+    number. That should be zero -- every rule in all five Snakefiles declares a
     banner -- but a block that quietly listed 18 of 19 rules would be worse
     than one that admits the gap, which is this repo's standing rule about a
     tool that bounds its own coverage.
     """
     total = len(rows)
-    running = sum(1 for row in rows if row[2])
+    running = sum(1 for row in rows if row[2] is not None and row[2] > 0)
+    pending = sum(1 for row in rows if row[2] is None)
+    up_to_date = total - running - pending
     plural = "rule" if total == 1 else "rules"
     # PIPED fields rather than a comma sentence. `|` is the separator this
     # console already uses inside a rule's fan-out context (`[rlz 2 | st 6]`),
@@ -1125,11 +1173,14 @@ def _plan_head(rows, jobs, unlisted=0):
     # under the table it introduces, three scannable fields beat one clause.
     if running == total:
         fields = [f"{total} {plural}", "all to run"]
-    elif running:
+    elif running or pending:
         fields = [
-            f"{running} of {total} {plural} to run",
-            f"{total - running} up to date",
+            f"{running} of {total} {plural} to run" if running else f"{total} {plural}",
         ]
+        if up_to_date:
+            fields.append(f"{up_to_date} up to date")
+        if pending:
+            fields.append(f"{pending} pending checkpoint")
     else:
         fields = [f"{total} {plural}", "all up to date"]
     # The job count only when it says something the rule count does not, i.e.
@@ -1153,9 +1204,9 @@ def _plan_lines(counts):
 
     One row per DECLARED rule, ordered by rule id so the workflow's shape reads
     as a spine. Rows that will run carry a ``>`` gutter; rows already satisfied
-    are dimmed. Both encode the same fact on purpose -- the dimming dies in a
-    pipe, a redirect and CI, and the gutter does not, which is the same reason
-    :func:`rule_banner` brackets its context rather than relying on colour.
+    are dimmed. Checkpoint-dependent rows absent from the opening DAG carry a
+    ``?`` gutter and normal body colour because their status is pending, not up
+    to date. The gutters survive a pipe, redirect and CI where colour does not.
 
     FLUSH LEFT, like every other line the opening block writes. The block was
     indented two spaces until 2026-09-17, which put the rules one column in from
@@ -1182,27 +1233,38 @@ def _plan_lines(counts):
     ``>`` gutter already marks what runs and survives a pipe, and on an
     all-to-run one there are no up-to-date rows to mark.
 
-    Returns ``(head, rows)`` with each row as ``(text, running)``, so the
-    caller owns the colour -- ``_paint`` colours whole lines and never fields.
+    Returns ``(head, rows)`` with each row as ``(text, state)``, where state is
+    true for runnable, false for up to date, and ``None`` for pending
+    checkpoint resolution. The caller owns the colour -- ``_paint`` colours
+    whole lines and never fields.
     """
     rows = _plan_rows(counts)
     if not rows:
         return None
-    partial = any(row[2] for row in rows) and not all(row[2] for row in rows)
+    has_pending = any(row[2] is None for row in rows)
+    partial = has_pending or (
+        any(row[2] for row in rows) and not all(row[2] for row in rows)
+    )
     number_width = max(len(row[0]) for row in rows) + 2
     name_width = max(len(row[1]) for row in rows)
     count_width = max((len(str(row[2])) for row in rows if row[2]), default=1)
     lines = []
     for number, name, jobs in rows:
-        gutter = "" if not partial else (">  " if jobs else "   ")
+        if not partial:
+            gutter = ""
+        elif jobs is None:
+            gutter = "?  "
+        else:
+            gutter = ">  " if jobs else "   "
         count = str(jobs) if jobs else ""
         text = (
             f"{gutter}{number.ljust(number_width)}"
             f"{name.ljust(name_width)}  {count.rjust(count_width)}"
         )
-        lines.append((text.rstrip(), bool(jobs)))
+        state = None if jobs is None else bool(jobs)
+        lines.append((text.rstrip(), state))
     unlisted = sum(1 for name in counts if name not in _RULE_NUMBERS)
-    return _plan_head(rows, sum(row[2] for row in rows), unlisted), lines
+    return _plan_head(rows, sum(row[2] or 0 for row in rows), unlisted), lines
 
 
 class _ConsoleHandler(logging.StreamHandler):
@@ -1288,9 +1350,10 @@ class _ConsoleHandler(logging.StreamHandler):
         #: each member finishes. Snakemake's number, shown earlier -- NOT a
         #: second counter, for the reason set out in :meth:`_render`.
         self._progress = (None, None)
+        self._dynamic_progress = False
         # Rule names whose summary clause has already been printed once. Held on
         # the INSTANCE, unlike `_RULE_NUMBERS`/`_RULE_SUMMARIES`, which are
-        # module-level and outlive one workflow: `run_workflows.py` drives four
+        # module-level and outlive one workflow: `run_workflows.py` drives five
         # Snakefiles, and a shared set would give the second and later ones a
         # console on which no summary was ever printed at all.
         self._summarized = set()
@@ -1548,8 +1611,11 @@ class _ConsoleHandler(logging.StreamHandler):
         # gets a finish line naming it. Skipping the memo left those jobs
         # finishing as a bare `done  job 9`, which is the one thing the finish
         # line exists to avoid.
+        rule_name = fields.get("rule_name")
+        if rule_name in _DYNAMIC_PROGRESS_RULES:
+            self._dynamic_progress = True
         self._started[fields.get("jobid")] = (
-            fields.get("rule_name"),
+            rule_name,
             _console_wildcards(fields.get("wildcards")),
             time.monotonic(),
         )
@@ -1651,7 +1717,8 @@ class _ConsoleHandler(logging.StreamHandler):
             # a grouped job never emits one. Snakemake's own text still names
             # the rule, which is the whole point of the line; it gets our stamp
             # and the counter and nothing else.
-            tail = f"  [job {counter}/{total}]" if counter is not None and total else ""
+            progress = self._progress_label(counter, total)
+            tail = f"  [{progress}]" if progress else ""
             return self._paint(
                 f"{self._now()} - {_MARKER_DONE} {fallback}{tail}", _ANSI_DONE
             )
@@ -1677,7 +1744,8 @@ class _ConsoleHandler(logging.StreamHandler):
             # reads as a broken clock. Many rules here are bookkeeping that
             # finishes instantly, so this is the common case, not an edge one.
             tail.append(format_elapsed(time.monotonic() - started))
-        if counter is not None and total:
+        progress = self._progress_label(counter, total)
+        if progress:
             # `job`, because the counter and the plan block above it count
             # DIFFERENT things and a reader was left to reconcile them: the plan
             # head says `5 of 19 rules to run` and this counter reaches 6, since
@@ -1686,13 +1754,21 @@ class _ConsoleHandler(logging.StreamHandler):
             # either number to move -- listing `all` would put a non-work row in
             # a plan of work, and counting jobs off Snakemake's table would
             # leave the head line off by one from the table it introduces.
-            tail.append(f"[job {counter}/{total}]")
+            tail.append(f"[{progress}]")
         line = f"{self._now()} - {_MARKER_DONE} " + "  ".join(parts)
         if tail:
             line = f"{line}  " + "  ".join(tail)
         return self._paint(line, _ANSI_DONE)
 
     # -- decoration --------------------------------------------------------
+
+    def _progress_label(self, counter, total):
+        """Render a stable completed-job counter for static or dynamic DAGs."""
+        if counter is None:
+            return ""
+        if self._dynamic_progress:
+            return f"job {counter}"
+        return f"job {counter}/{total}" if total else ""
 
     def _now(self):
         return f"{datetime.now():%H:%M:%S}"

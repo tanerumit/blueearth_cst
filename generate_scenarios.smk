@@ -120,7 +120,7 @@ rule all:
 
 # 3.01  delineate_region
 rule delineate_region:
-    message: rule_banner("3.01", "delineate_region")
+    message: rule_banner("3.01", "delineate_region", dynamic_progress=True)
     input:
         **REGION.inputs,
     params:
@@ -136,7 +136,7 @@ rule delineate_region:
 
 # 3.02  extract_historical_climate
 rule extract_historical_climate:
-    message: rule_banner("3.02", "extract_historical_climate")
+    message: rule_banner("3.02", "extract_historical_climate", dynamic_progress=True)
     input:
         **CLIMATE_STORE.inputs,
     params:
@@ -152,7 +152,7 @@ rule extract_historical_climate:
 
 # 3.03  prepare_stress_test_grid
 rule prepare_stress_test_grid:
-    message: rule_banner("3.03", "prepare_stress_test_grid")
+    message: rule_banner("3.03", "prepare_stress_test_grid", dynamic_progress=True)
     input:
         config = ancient(config_path),
         config_workflows = ancient(WF_CONFIG_PATHS),
@@ -169,7 +169,7 @@ rule prepare_stress_test_grid:
 
 # 3.06  prepare_weathergen_config
 rule prepare_weathergen_config:
-    message: rule_banner("3.06", "prepare_weathergen_config")
+    message: rule_banner("3.06", "prepare_weathergen_config", checkpoint_dependent=True, dynamic_progress=True)
     input:
         plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
     output:
@@ -219,7 +219,7 @@ if Path(_scenario_request_path).exists():
 
 # 3.04  prepare_collection_sources
 checkpoint prepare_collection_sources:
-    message: rule_banner("3.04", "prepare_collection_sources", summary="fingerprint the generation inputs into a scenario request")
+    message: rule_banner("3.04", "prepare_collection_sources", summary="fingerprint the generation inputs into a scenario request", dynamic_progress=True)
     input:
         lambda wc: [] if _source_reuse_ready else [
             f"{store_dir}/extract_historical.nc", f"{store_dir}/basin_cells.csv",
@@ -240,7 +240,7 @@ checkpoint prepare_collection_sources:
 
 # 3.05  initialize_scenario_collection
 rule initialize_scenario_collection:
-    message: rule_banner("3.05", "initialize_scenario_collection")
+    message: rule_banner("3.05", "initialize_scenario_collection", checkpoint_dependent=True, dynamic_progress=True)
     input:
         plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
         lookup=lookup_path,
@@ -290,7 +290,7 @@ rule retain_scenario_forcing:
     # member line. If one invocation ever claims two collections whose members
     # interleave, two lines can both read `[run 01]` -- the claim rows still
     # distinguish them, at the cost of reading in order.
-    message: rule_banner("3.09", "retain_scenario_forcing", "run {wildcards.run_id}", quiet_start=True)
+    message: rule_banner("3.09", "retain_scenario_forcing", "run {wildcards.run_id}", quiet_start=True, checkpoint_dependent=True, dynamic_progress=True)
     input:
         _collection_row_inputs,
     output:
@@ -316,7 +316,7 @@ def _collection_publication_inputs(wc):
 
 # 3.10  publish_scenario_collection
 checkpoint publish_scenario_collection:
-    message: rule_banner("3.10", "publish_scenario_collection", "collection {wildcards.collection_id}", summary="seal the collection and make it immutable")
+    message: rule_banner("3.10", "publish_scenario_collection", "collection {wildcards.collection_id}", summary="seal the collection and make it immutable", checkpoint_dependent=True, dynamic_progress=True)
     input:
         _collection_publication_inputs,
     output:
@@ -347,7 +347,7 @@ def _selected_collection(wc):
 
 # 3.07  generate_weather_realizations
 rule generate_weather_realizations:
-    message: rule_banner("3.07", "generate_weather_realizations", summary="generate stochastic weather with weathergenr")
+    message: rule_banner("3.07", "generate_weather_realizations", summary="generate stochastic weather with weathergenr", checkpoint_dependent=True, dynamic_progress=True)
     input:
         initialization=(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
         source_plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
@@ -377,7 +377,7 @@ rule generate_weather_realizations:
 
 # 3.11  gather_logs
 rule gather_logs:
-    message: rule_banner("3.11", "gather_logs")
+    message: rule_banner("3.11", "gather_logs", dynamic_progress=True)
     input:
         _selected_collection,
     output:
@@ -389,7 +389,7 @@ rule gather_logs:
 
 # 3.12  gather_benchmarks
 rule gather_benchmarks:
-    message: rule_banner("3.12", "gather_benchmarks")
+    message: rule_banner("3.12", "gather_benchmarks", dynamic_progress=True)
     input:
         _selected_collection,
     output:
@@ -401,7 +401,7 @@ rule gather_benchmarks:
 
 # 3.08  perturb_climate_realization
 rule perturb_climate_realization:
-    message: rule_banner("3.08", "perturb_climate_realization", "rlz {wildcards.rlz_num} | st {wildcards.st_num}", summary="apply one stress-test member to one realization")
+    message: rule_banner("3.08", "perturb_climate_realization", "rlz {wildcards.rlz_num} | st {wildcards.st_num}", summary="apply one stress-test member to one realization", checkpoint_dependent=True, dynamic_progress=True)
     wildcard_constraints:
         st_num=member_index_regex(ST_WIDTH),
     input:

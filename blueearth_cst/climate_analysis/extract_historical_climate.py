@@ -17,6 +17,7 @@ which cannot be separated from the data they describe.
 """
 
 import os
+from collections.abc import Mapping
 from functools import wraps
 from os.path import join
 from pathlib import Path
@@ -216,6 +217,48 @@ def _check_window_coverage(ds, starttime, endtime, clim_source, enforce_min_year
         enforce_min_years=enforce_min_years,
         where=_FLOOR_REMEDY if enforce_min_years else _FLOOR_ADVISORY,
     )
+
+
+def _validate_requested_source_coverage(data_catalog, source, starttime, endtime):
+    """Refuse a request outside a source's catalog-advertised time range.
+
+    HydroMT can return the overlap when a raster source covers only part of the
+    requested period. That remains useful for sources without an explicit
+    catalog contract, but an advertised boundary must not be silently crossed.
+    In particular, Deltares' ERA5 daily Zarr ends on 2023-02-01.
+    """
+    source_spec = data_catalog.to_dict().get(source)
+    if not isinstance(source_spec, Mapping):
+        return
+    metadata = source_spec.get("metadata")
+    extent = metadata.get("extent") if isinstance(metadata, Mapping) else None
+    time_range = extent.get("time_range") if isinstance(extent, Mapping) else None
+    if not isinstance(time_range, Mapping):
+        return
+    available_start = time_range.get("start")
+    available_end = time_range.get("end")
+    if available_start is None or available_end is None:
+        return
+
+    try:
+        requested = (pd.Timestamp(starttime).date(), pd.Timestamp(endtime).date())
+        available = (
+            pd.Timestamp(available_start).date(),
+            pd.Timestamp(available_end).date(),
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{source!r} has an invalid catalog metadata.extent.time_range: "
+            f"{available_start!r}..{available_end!r}"
+        ) from exc
+
+    if requested[0] < available[0] or requested[1] > available[1]:
+        raise ValueError(
+            f"{source!r} cannot satisfy requested "
+            f"{requested[0]}..{requested[1]}; the catalog advertises "
+            f"{available[0]}..{available[1]}. Choose a window within that "
+            "coverage or select a catalog source that holds the required dates"
+        )
 
 
 def _read_source(data_catalog, source, *, requested, **kwargs):
@@ -547,6 +590,7 @@ def prep_historical_climate(
     # this buys that basin no bytes -- it removes a basin-dependent cliff, and
     # it stops the two arms from disagreeing about how to read the same source.
     data_catalog = _align_chunks_to_store(data_catalog, [clim_source, "era5"])
+    _validate_requested_source_coverage(data_catalog, "era5", starttime, endtime)
 
     # Extract climate data
     log_row("Extracting historical climate grid", module="extract")

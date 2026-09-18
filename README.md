@@ -151,6 +151,18 @@ beside it; `config_path` resolves from the project file, while ordinary paths
 resolve from the working directory. Shared basin, climate and model keys stay
 in the project file. Production `project_dir` belongs outside the checkout.
 
+`project.catalog` accepts one catalog path or an ordered list. HydroMT loads
+lists in order, so a later project-owned catalog can replace a named source
+without modifying an upstream catalog. The rapid config uses this mechanism to
+load `config/catalogs/deltares_era5_daily_zarr.yml` after its original
+`deltares_data.yml` base. The override gives only `era5` a P-drive root; all
+other sources retain the original base catalog and root. Its `era5` entry uses
+`raster_xarray` with Zarr-compatible options only and covers 1950-01-02 through
+**2023-02-01**. ERA5 extraction refuses requested dates outside advertised
+catalog coverage rather than silently returning the overlap. The baseline
+config remains on its existing catalog so the numerical reference is
+unchanged.
+
 Generation owns realization count, simulation window, perturbations, generator
 settings, seed and unit capacity. Simulation owns `experiment_name`, the required
 `operation`, optional `scenario_collection: {manifest_path: ...}`, compute controls

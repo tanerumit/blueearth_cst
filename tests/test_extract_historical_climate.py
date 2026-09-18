@@ -310,6 +310,45 @@ def test_era5_path_requests_full_seven_variable_stack(tmp_path, fake_era5_catalo
     )
 
 
+def test_era5_request_beyond_catalog_coverage_fails_before_read(tmp_path):
+    """A Zarr request past its advertised end must not return a partial record."""
+    _RecordingDataCatalog._CATALOG = {
+        "era5": {
+            "data_type": "RasterDataset",
+            "uri": "/data/era5.zarr",
+            "driver": {"name": "raster_xarray", "options": {}},
+            "metadata": {
+                "extent": {
+                    "time_range": {
+                        "start": "1950-01-02",
+                        "end": "2023-02-01",
+                    }
+                }
+            },
+        }
+    }
+    region = tmp_path / "region.geojson"
+    region.write_text("{}")
+
+    with pytest.raises(
+        ValueError,
+        match=(
+            r"era5.*requested 2000-01-01\.\.2023-12-31.*"
+            r"catalog advertises 1950-01-02\.\.2023-02-01"
+        ),
+    ):
+        ehc.prep_historical_climate(
+            region_fn=region,
+            fn_out=tmp_path / "out.nc",
+            data_libs="dummy.yml",
+            clim_source="era5",
+            starttime="2000-01-01T00:00:00",
+            endtime="2023-12-31T00:00:00",
+        )
+
+    assert _last_catalog().get_rasterdataset_calls == []
+
+
 def test_era5_path_aligns_driver_options_chunks_to_the_store(
     tmp_path, fake_era5_catalog
 ):

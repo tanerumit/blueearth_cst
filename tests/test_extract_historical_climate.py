@@ -310,7 +310,20 @@ def test_era5_path_requests_full_seven_variable_stack(tmp_path, fake_era5_catalo
     )
 
 
-def test_era5_path_patches_driver_options_chunks_auto(tmp_path, fake_era5_catalog):
+def test_era5_path_aligns_driver_options_chunks_to_the_store(
+    tmp_path, fake_era5_catalog
+):
+    """The read defers to the store's ENCODED chunking, spelled `{}`.
+
+    Not a style preference over `"auto"`: dask's auto sizing targets a byte
+    budget and so merges several on-disk chunks into one, which over a network
+    store drags every merged chunk across the wire to slice one basin out of it.
+    Measured 2026-09-18 on `deltares_data_pdrive.yml`, that was 4x the bytes and
+    46 min for a 76 KB store. `{}` also beats naming sizes here, because the
+    catalog's own spec can be misaligned with the file (era5's `longitude: 240`
+    splits a stored 480-wide chunk) and that catalog is vendored upstream-
+    verbatim and hash-pinned, so it cannot be corrected in place.
+    """
     region = tmp_path / "region.geojson"
     region.write_text("{}")
     out_nc = tmp_path / "out.nc"
@@ -326,7 +339,12 @@ def test_era5_path_patches_driver_options_chunks_auto(tmp_path, fake_era5_catalo
 
     # The function calls from_dict on a patched catalog. Inspect what was set.
     patched = _RecordingDataCatalog._CATALOG["era5"]
-    assert patched["driver"]["options"]["chunks"] == "auto"
+    assert patched["driver"]["options"]["chunks"] == {}
+    # An empty dict is falsy, and the value has to SURVIVE as one: hydromt dumps
+    # driver options with `exclude_unset=True`, so `{}` reaches `open_mfdataset`
+    # only because it was set explicitly. A truthiness test here would pass just
+    # as well against the key having been dropped.
+    assert "chunks" in patched["driver"]["options"]
 
 
 def test_era5_path_normalizes_string_driver_to_dict(
@@ -351,7 +369,7 @@ def test_era5_path_normalizes_string_driver_to_dict(
     patched = _RecordingDataCatalog._CATALOG["era5"]
     assert isinstance(patched["driver"], dict)
     assert patched["driver"]["name"] == "netcdf"
-    assert patched["driver"]["options"]["chunks"] == "auto"
+    assert patched["driver"]["options"]["chunks"] == {}
 
 
 def test_chirps_global_branch_requests_precip_only_from_chirps(

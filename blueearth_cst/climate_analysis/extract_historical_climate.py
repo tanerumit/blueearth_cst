@@ -519,7 +519,44 @@ def prep_historical_climate(
         dem.to_netcdf(fn_dem, mode="w")
 
     else:
-        # Here we can afford larger chunks as we only extract and save.
+        # ALIGN THE DASK CHUNKS TO THE STORE'S OWN CHUNKS -- `{}` asks xarray for
+        # the encoded chunking, whatever the backend, rather than naming sizes
+        # this function cannot know. It reaches `open_mfdataset` / `open_zarr` as
+        # an extra driver kwarg (hydromt's `DriverOptions` dumps with
+        # `exclude_unset=True`, so an empty dict we set explicitly survives).
+        #
+        # This read used to ask for `"auto"`, reasoning that "we can afford
+        # larger chunks as we only extract and save". That holds on local disk,
+        # where over-read is free, and INVERTS over a network store: a dask
+        # chunk that spans several on-disk chunks drags every one of them across
+        # the wire so a basin covering one of them can be sliced out.
+        #
+        # Measured 2026-09-18 against `deltares_data_pdrive.yml` (era5 as yearly
+        # global netCDFs on `p:/`, HDF5 chunks 30x250x480). `"auto"` chunked
+        # 60x500x960 -- 2 latitude bands x 2 longitude bands. One year of the
+        # seven variables over a Gabon bbox, through `get_rasterdataset`:
+        #
+        #     "auto"  2.14 GB  101.8 s        {}  0.55 GB  28.8 s
+        #
+        # 3.85x the bytes for the same 5x5 grid. At 17 years that is the 37.5 GB
+        # and 46 min a real extraction spent writing a 76 KB store.
+        #
+        # MEASURE THIS THROUGH `get_rasterdataset`, NOT `open_mfdataset` + `.sel`
+        # -- a probe written the direct way shows the two specs within 4% of each
+        # other and reads as evidence that the chunking is irrelevant. It is not:
+        # slicing an opened dataset lets dask fuse the slice into the backend
+        # read, so only the touched disk chunks move whatever the dask chunk
+        # says. hydromt applies this source's `rename` and `unit_mult` between
+        # the read and the clip, and that elementwise layer is what blocks the
+        # fusion -- which is precisely why the dask chunk spec governs the
+        # transfer on the real path and not on a naive one.
+        #
+        # The catalog's own `longitude: 240` is no cure either -- it SPLITS the
+        # stored 480-wide chunk, and the 4 MB default netCDF4 chunk cache cannot
+        # hold a 14.4 MB chunk across the two reads, so each is decompressed
+        # twice. Deferring to the encoded chunking sidesteps both, and needs no
+        # edit to a catalog that is vendored upstream-verbatim and hash-pinned.
+        #
         # In hydromt 1.x the source schema changed: chunks lives under
         # driver.options instead of the old top-level driver_kwargs.
         data_catalog_temp = data_catalog.to_dict()
@@ -528,7 +565,7 @@ def prep_historical_climate(
         if isinstance(driver, str):
             driver = {"name": driver}
             source["driver"] = driver
-        driver.setdefault("options", {})["chunks"] = "auto"
+        driver.setdefault("options", {})["chunks"] = {}
         data_catalog = hydromt.DataCatalog().from_dict(data_catalog_temp)
 
         ds = _read_source(
@@ -606,11 +643,28 @@ def prep_historical_climate(
     # `xarray/backends/locks.py:66` with the process burning 0.08 s of CPU per
     # 20 s of wall clock -- a deadlock, not a slow write.
     #
-    # It is SOURCE-SHAPED, which is why it stayed hidden: era5 reads from
-    # `era5_daily.zarr`, zarr takes no such lock, and that store writes in
-    # seconds. chirps reads 17 yearly `CHIRPS_rainfall_{year}.nc` plus
-    # `era5_orography_2018.nc` for the lapse correction -- netCDF on both sides
-    # of one graph, so the deadlock is reachable only there.
+    # It is SOURCE-SHAPED, which is why it stayed hidden: under
+    # `deltares_data.yml` era5 reads from `era5_daily.zarr`, zarr takes no such
+    # lock, and that store writes in seconds. chirps reads 17 yearly
+    # `CHIRPS_rainfall_{year}.nc` plus `era5_orography_2018.nc` for the lapse
+    # correction -- netCDF on both sides of one graph, so under THAT catalog the
+    # deadlock is reachable only there.
+    #
+    # BEING SOURCE-SHAPED IS NOT THE SAME AS BEING CHIRPS-SHAPED, and reading
+    # this as "only chirps needs the synchronous scheduler" is the mistake the
+    # paragraph above invites. `deltares_data_pdrive.yml` -- hydromt's own
+    # catalog against the Deltares network store, which this repo vendors --
+    # points era5 at yearly global netCDFs instead (`meteo/era5_daily/nc_merged/
+    # era5_{year}_daily.nc`, confirmed 2026-09-18). That is netCDF on both sides
+    # again, so under that catalog the era5 path would be deadlock-REACHABLE the
+    # moment anyone reintroduced a threaded scheduler here.
+    #
+    # It has never deadlocked, and nothing below is fixing a live fault: the
+    # deadlock needs read and write tasks contending over `CombinedLock` in one
+    # pool, and `scheduler="synchronous"` leaves no pool to contend in. The
+    # point is only that "era5 is safe because it reads zarr" is a catalog's
+    # property, not this function's to assume -- so the scheduler stays
+    # synchronous for EVERY source.
     #
     # The same failure is diagnosed in bf1f4a5 and worked around at three WF2
     # call sites by materializing the READ eagerly (`.load()`) before writing.

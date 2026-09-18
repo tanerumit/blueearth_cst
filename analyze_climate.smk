@@ -237,6 +237,9 @@ CLIMATE_STORES = {
         hydrography=basin_hydrography,
         basin_index=basin_index,
         enforce_min_years=(source == clim_source),
+        forcing_required=(
+            source == clim_source or source not in {"chirps", "chirps_global"}
+        ),
     )
     for source in CANDIDATE_SOURCES
 }
@@ -456,12 +459,11 @@ rule delineate_spatial_units:
 # 0.05  plot_climate_source        — the canonical figure set for that source.
 #
 # GENERATED IN A LOOP RATHER THAN WILDCARDED, and the reason is the store's
-# output SET, not style: `climate_store_rule` returns an `oro_nc` output for
-# chirps and none for era5, and a Snakemake rule has a fixed output set, so one
-# wildcard rule cannot cover both families. Wildcards would force a source
-# taxonomy into this file that the factory already knows. Generating a concrete
-# rule per source takes the shape from the spec instead, so adding a source is a
-# config edit and nothing here changes.
+# output SET, not style: `climate_store_rule` returns `oro_nc` for a selected
+# CHIRPS forcing store, but not for ERA5 or a comparison-only CHIRPS candidate.
+# A Snakemake rule has a fixed output set, so one wildcard rule cannot cover
+# these roles. Generating a concrete rule per source takes the shape from the
+# spec instead.
 #
 # Not a new mechanism: WF3 declares its batch fan-out the same way
 # (`run_stress_test.smk`, `run_wflow_batch_<b>`).
@@ -548,16 +550,14 @@ for _source in CANDIDATE_SOURCES:
     # catalog edge (ext2-01), and duplicating it here would re-plot on every
     # catalog touch without the extraction having changed.
     # What this source can honestly be drawn for. A precipitation-only source
-    # gets the precip figures and nothing else -- its temperature and PET fields
-    # in the store are era5's, borrowed so the model can be forced, and drawing
-    # them here would answer the comparison this workflow exists for with a
-    # panel that cannot differ.
+    # gets the precip figures and nothing else. Extra candidates now stay
+    # precipitation-only; a selected CHIRPS store borrows ERA5 fields for
+    # forcing, but drawing those here would produce a panel that cannot differ.
     _plot_vars = source_climate_vars(_source)
 
     _plot_inputs = {"climate_nc": _spec.outputs["climate_nc"]}
-    # The orography sidecar feeds the lapse correction behind the TEMPERATURE
-    # and PET figures, so it is an input only where those are drawn. The store
-    # still produces it either way -- rule 3.08 and the forcing catalog read it.
+    # The orography sidecar exists only on a selected CHIRPS forcing store.
+    # A comparison-only candidate neither declares nor reads it.
     if "oro_nc" in _spec.outputs and _plot_vars != ("precip",):
         _plot_inputs["oro_nc"] = _spec.outputs["oro_nc"]
     # The shared scale (rule 0.04b). A real input, so the DAG carries the barrier

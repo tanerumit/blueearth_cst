@@ -138,9 +138,9 @@ def comparison_variables(sources: Sequence[str]) -> tuple:
     :func:`~blueearth_cst.climate_analysis.climate_figures.source_climate_vars`
     — the same function that decides which figures each source gets on its own —
     intersected with :data:`COMPARABLE_VARS`. A precipitation-only source
-    therefore contributes to ``precip`` and to nothing else, which keeps its
-    borrowed era5 temperature out of a comparison figure exactly as it keeps it
-    out of that source's own figure set.
+    therefore contributes to ``precip`` and nothing else. This excludes ERA5
+    companions when present for forcing and accepts their absence from a
+    comparison-only candidate store.
 
     Called at DAG-parse time to DECLARE the figures, so it must not read a file:
     the answer is a pure function of the configured source names.

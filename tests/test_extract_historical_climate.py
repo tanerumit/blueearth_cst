@@ -439,6 +439,32 @@ def test_chirps_global_branch_requests_precip_only_from_chirps(
     assert "temp" in era5_calls[0]["variables"]
 
 
+def test_chirps_comparison_candidate_does_not_read_era5_or_orography(
+    tmp_path, fake_chirps_catalog
+):
+    """A wf0-only candidate reads only the variable the source provides."""
+    region = tmp_path / "region.geojson"
+    region.write_text("{}")
+    oro_out = tmp_path / "orography.nc"
+
+    ehc.prep_historical_climate(
+        region_fn=region,
+        fn_out=tmp_path / "out.nc",
+        data_libs="dummy.yml",
+        clim_source="chirps_global",
+        starttime="2010-01-01T00:00:00",
+        endtime="2010-12-31T00:00:00",
+        oro_out=oro_out,
+        forcing_required=False,
+    )
+
+    calls = _last_catalog().get_rasterdataset_calls
+    assert [(call["source"], call["variables"]) for call in calls] == [
+        ("chirps_global", ["precip"])
+    ]
+    assert not oro_out.exists()
+
+
 def _fake_netcdf4(monkeypatch, default=(67108864, 1000, 0.75)):
     """Record every `set_chunk_cache` the extraction performs.
 

@@ -122,9 +122,9 @@ def compute_plot_scales(
         on a shared scale.
     variables : sequence of str
         The variables to derive scales for. A variable is only pooled across the
-        stores that actually CARRY it -- a precipitation-only source contributes
-        to ``precip`` and to nothing else, which is what keeps its borrowed era5
-        fields out of a scale as surely as it keeps them out of a figure.
+        stores that honestly provide it -- a precipitation-only source
+        contributes to ``precip`` and nothing else, whether ERA5 companions are
+        absent from a candidate store or present for selected-source forcing.
     anchor : str
         Water-year resample anchor, as the figures use.
     basin_cells : mapping, optional

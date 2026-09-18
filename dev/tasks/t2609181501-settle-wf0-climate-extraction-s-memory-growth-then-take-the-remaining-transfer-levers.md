@@ -2,7 +2,7 @@
 title: Settle wf0 climate extraction's memory growth, then take the remaining transfer levers
 type: todo-item
 status: active
-branch: chore/test-cases
+branch: feat/wf0-chirps-candidate
 effort: 2
 area: wf0 climate extraction
 origin: t2609181316 gabon-ntoum-deltares slow era5 download
@@ -12,7 +12,7 @@ updated: 2026-09-18
 ---
 
 > [!note] Overview
-> **What** — Three follow-ups left by the 2026-09-18 investigation into a slow era5 extraction over the Deltares P: share. (A) is **settled and fixed**: the memory growth was the HDF5 chunk cache on the READ, not the streaming write, and bounding it cut peak RSS 7x at no cost in bytes or time. (B) is **half taken**: the chunk override now covers both branches, but the duplicate era5 read across two rules collides with the climate-store rule's documented one-input invariant and needs an owner decision. (C) is **implemented for rapid/dev**: a project-owned catalog loaded after the rapid config's original base replaces only `era5` with the daily Zarr source, while an explicit metadata guard refuses dates after 2023-02-01. The source-geometry follow-up is also settled: keep the live store unchanged and use `(365, 103, 240)` for a future immutable regional mirror.
+> **What** — Three follow-ups left by the 2026-09-18 investigation into a slow era5 extraction over the Deltares P: share. (A) is **settled and fixed**: the memory growth was the HDF5 chunk cache on the READ, not the streaming write, and bounding it cut peak RSS 7x at no cost in bytes or time. (B) is **taken**: both branches align reads to source chunks, and a comparison-only CHIRPS candidate no longer downloads or reprojects ERA5 fields it never plots. Selected CHIRPS stores retain the full hybrid needed by WF1/WF3. (C) is **implemented for rapid/dev**: a project-owned catalog loaded after the rapid config's original base replaces only `era5` with the daily Zarr source, while an explicit metadata guard refuses dates after 2023-02-01. The source-geometry follow-up is also settled: keep the live store unchanged and use `(365, 103, 240)` for a future aligned mirror.
 > **Why** — Rule 0.04 moved 9.46 GB across the wire to write a 2.3 MB store. The amplification is structural and cannot go to zero, but the memory hazard is gone and the remaining byte lever is cheaper than it looked.
 > **Effort** — large
 
@@ -93,23 +93,15 @@ ones that move FEWER BYTES.
       inside one half and reads 0.48 GB either way, so this buys that basin no bytes: it
       removes a basin-dependent cliff and stops the two arms disagreeing about how to
       read the same source.
-- [ ] **(B2) The duplicate era5 read needs an owner decision, and it is the EXPENSIVE
-      lever now, not the cheap one.** A project with both sources configured reads era5
-      twice: once for its own store, once inside the chirps branch (~8.2 GB per 17-year
-      run). Removing it means making an era5 store an INPUT of the chirps store.
-      <br>The blocker is `climate_store_rule`'s own docstring: "**The input set is
-      exactly one entry — the catalog — in both DAGs.** An asymmetric input set
-      re-creates the wf1<->wf3 re-extraction oscillation (design P2(b) / ext1-02)."
-      `tests/test_climate_store_contract.py` pins that equivalence, and wf0's generated
-      0.04 splats `**_spec.inputs` verbatim, so a wf0-only edge is not available.
-      <br>A SYMMETRIC version respects the invariant — every chirps store depends on an
-      era5 store, in all three workflows — and the trade then becomes explicit: a
-      chirps+era5 project saves 8.2 GB; a **chirps-only project pays ~1.4 GB more** (the
-      era5 store carries `precip`, a seventh variable the chirps branch never reads) and
-      gains a store directory for a source it never configured, which
-      `prune_climate_store.py`, the freshness tests and the comparison-figure logic all
-      then see. Not landed: the blast radius is three Snakefiles plus `shared/`, and the
-      chirps-only regression is a real cost to accept on someone else's behalf.
+- [x] **(B2) Comparison-only CHIRPS no longer reads ERA5 at all.** The apparent
+      cross-rule reuse problem came from giving every CHIRPS store the selected-source
+      forcing contract. WF0 already plots and compares CHIRPS precipitation only; its
+      borrowed ERA5 fields, DEM read, lapse correction and `orography.nc` were unused.
+      `forcing_required=False` now marks only wf0's extra precipitation-only candidates,
+      is recorded in rule params, and omits the forcing-only sidecar. Selected CHIRPS
+      keeps the default full seven-variable hybrid for WF1/WF3. Promoting a candidate
+      removes the flag, so Snakemake re-extracts under the full forcing contract instead
+      of reusing the precipitation-only store.
 - [x] **(C) Ruled: take zarr, drop the threading, and it is ONE change.** The 2026-09-18
       figure was zarr + 32 threads and read as three coupled changes, one of which
       depended on (A). Measured through the shipped path, synchronous, no threads:
@@ -181,9 +173,7 @@ ones that move FEWER BYTES.
 
 ## What is left
 
-1. **(B2)** — owner decision on the symmetric era5-store dependency, with the
-   chirps-only regression above as the thing to accept or refuse.
-2. **(C) residual constraint** — the rapid/dev ERA5 path cannot serve dates after
+1. **(C) residual constraint** — the rapid/dev ERA5 path cannot serve dates after
    2023-02-01. Keep the baseline/netCDF path for later 2023 dates, or wait for the
    Deltares Zarr store to be extended and then update the override metadata only
    after measuring the actual store coverage.

@@ -505,12 +505,13 @@ def prep_historical_climate(
     region_sha256: Optional[str] = None,
     region_source: Optional[Union[str, Path]] = None,
     enforce_min_years: bool = True,
+    forcing_required: bool = True,
 ):
     """
     Extract historical climate data for a given region and time period.
 
-    If clim_source is chirps or chirps_global, then only precip is extracted and will be
-    combined with other climate data from era5.
+    If ``clim_source`` is CHIRPS, its precipitation is combined with ERA5
+    forcing variables only when ``forcing_required`` is true.
 
     Parameters
     ----------
@@ -564,6 +565,9 @@ def prep_historical_climate(
         (default) or a logged warning. ``False`` only for wf0's extra
         ``candidate_sources``, which end at a comparison figure; see
         ``_check_window_coverage``.
+    forcing_required : bool, optional
+        Whether a precipitation-only source must be enriched with ERA5 and
+        orography for WF1/WF3. ``False`` for wf0-only comparison candidates.
     """
     if (region_fn is None) == (bbox is None):
         raise ValueError(
@@ -589,14 +593,26 @@ def prep_historical_climate(
     # describes. Ntoum sits inside one half and reads 0.48 GB either way, so
     # this buys that basin no bytes -- it removes a basin-dependent cliff, and
     # it stops the two arms from disagreeing about how to read the same source.
-    data_catalog = _align_chunks_to_store(data_catalog, [clim_source, "era5"])
-    _validate_requested_source_coverage(data_catalog, "era5", starttime, endtime)
+    is_precip_only = clim_source in {"chirps", "chirps_global"}
+    sources = [clim_source]
+    if is_precip_only and forcing_required:
+        sources.append("era5")
+    data_catalog = _align_chunks_to_store(data_catalog, sources)
+    if clim_source == "era5" or (is_precip_only and forcing_required):
+        _validate_requested_source_coverage(data_catalog, "era5", starttime, endtime)
 
     # Extract climate data
     log_row("Extracting historical climate grid", module="extract")
-    if clim_source == "chirps" or clim_source == "chirps_global":  # precip only
+    if is_precip_only:
         log_row(
-            f"{clim_source} only contains precipitation data. Combining with climate data from era5",
+            (
+                f"{clim_source} only contains precipitation data. "
+                + (
+                    "Combining with climate data from era5"
+                    if forcing_required
+                    else "Keeping native precipitation for source comparison"
+                )
+            ),
             module="extract",
         )
         # Get precip first
@@ -613,98 +629,106 @@ def prep_historical_climate(
         # `latitude`/`longitude`. Done HERE so the era5 reprojection below and
         # the DEM's `reproject_like(ds)` both inherit the canonical names.
         ds = _normalize_grid_names(ds)
-        # Get clim
-        ds_clim = _read_source(
-            data_catalog,
-            "era5",
-            requested=(starttime, endtime),
-            bbox=bbox,
-            time_range=(starttime, endtime),
-            buffer=BUFFER_CELLS,
-            variables=["temp", "temp_min", "temp_max", "kin", "kout", "press_msl"],
-        )
-        # THE STORE'S WINDOW IS WHAT BOTH SOURCES COVER, and clipping to it here
-        # is load-bearing rather than tidy. The six era5-derived variables are
-        # assigned into `ds` below, and `ds[var] = da` REINDEXES `da` onto `ds`'s
-        # time axis -- so a chirps record longer than the era5 one would leave
-        # real precipitation beside all-NaN temperature and radiation over the
-        # non-overlap. That store passes WG-1 (all seven variables present, right
-        # dtypes) and hands the NaNs to weathergenr's area average twenty rules
-        # later. Intersecting first turns a silent corruption into a window that
-        # is merely shorter, which is the whole stance of this change.
-        _chirps_bounds = time_axis_bounds(ds)
-        _era5_bounds = time_axis_bounds(ds_clim)
-        _shared_bounds = intersect_bounds(_chirps_bounds, _era5_bounds)
-        if _shared_bounds is None and None not in (_chirps_bounds, _era5_bounds):
-            raise ValueError(
-                f"{clim_source} covers "
-                f"{_chirps_bounds[0].date()}..{_chirps_bounds[1].date()} and era5 "
-                f"covers {_era5_bounds[0].date()}..{_era5_bounds[1].date()} inside "
-                f"the requested window; the two do not overlap, so no store can "
-                f"be assembled -- {clim_source} supplies precipitation only and "
-                f"era5 supplies every other variable"
+        if forcing_required:
+            # Get clim
+            ds_clim = _read_source(
+                data_catalog,
+                "era5",
+                requested=(starttime, endtime),
+                bbox=bbox,
+                time_range=(starttime, endtime),
+                buffer=BUFFER_CELLS,
+                variables=[
+                    "temp",
+                    "temp_min",
+                    "temp_max",
+                    "kin",
+                    "kout",
+                    "press_msl",
+                ],
             )
-        if _shared_bounds is not None:
-            if _chirps_bounds != _shared_bounds or _era5_bounds != _shared_bounds:
-                log_row(
+            # THE STORE'S WINDOW IS WHAT BOTH SOURCES COVER, and clipping to it
+            # here is load-bearing rather than tidy. The six era5-derived
+            # variables are assigned into `ds` below, and `ds[var] = da`
+            # REINDEXES `da` onto `ds`'s time axis -- so a chirps record longer
+            # than the era5 one would leave real precipitation beside all-NaN
+            # temperature and radiation over the non-overlap. That store passes
+            # WG-1 and hands the NaNs to weathergenr's area average twenty rules
+            # later. Intersecting first turns silent corruption into a shorter
+            # window.
+            _chirps_bounds = time_axis_bounds(ds)
+            _era5_bounds = time_axis_bounds(ds_clim)
+            _shared_bounds = intersect_bounds(_chirps_bounds, _era5_bounds)
+            if _shared_bounds is None and None not in (_chirps_bounds, _era5_bounds):
+                raise ValueError(
                     f"{clim_source} covers "
-                    f"{_chirps_bounds[0].date()}..{_chirps_bounds[1].date()}, era5 "
-                    f"covers {_era5_bounds[0].date()}..{_era5_bounds[1].date()}; "
-                    f"the store takes their overlap "
-                    f"{_shared_bounds[0].date()}..{_shared_bounds[1].date()}",
-                    module="extract",
-                    level="WARNING",
+                    f"{_chirps_bounds[0].date()}..{_chirps_bounds[1].date()} and era5 "
+                    f"covers {_era5_bounds[0].date()}..{_era5_bounds[1].date()} inside "
+                    f"the requested window; the two do not overlap, so no store can "
+                    f"be assembled -- {clim_source} supplies precipitation only and "
+                    f"era5 supplies every other variable"
                 )
-            ds = ds.sel(time=slice(*_shared_bounds))
-            ds_clim = ds_clim.sel(time=slice(*_shared_bounds))
-        # Prepare orography data corresponding to chirps from the CONFIGURED
-        # hydrography DEM (needed for downscaling of climate variables) -- the
-        # same catalog entry the delineation and the model build read, not a
-        # second elevation source only this branch names.
-        log_row(
-            f"Orography for {clim_source} from {hydrography} (downscaling)",
-            module="extract",
-        )
-        dem = data_catalog.get_rasterdataset(
-            hydrography,
-            bbox=bbox,
-            time_range=(starttime, endtime),
-            buffer=BUFFER_CELLS,
-            variables=["elevtn"],
-        )
-        dem = dem.raster.reproject_like(ds, method="average")
-        # Resample other variables and add to ds_precip
-        log_row(
-            f"Downscaling era5 variables to the resolution of {clim_source}",
-            module="extract",
-        )
-        for var in ["press_msl", "kin", "kout"]:
-            ds[var] = ds_clim[var].raster.reproject_like(ds, method="nearest_index")
-
-        # Read era5 dem for temp downscaling
-        dem_era5 = data_catalog.get_rasterdataset(
-            "era5_orography",
-            geom=ds.raster.box,  # clip dem with forcing bbox for full coverage
-            buffer=2,
-            variables=["elevtn"],
-        ).squeeze()
-        for var in ["temp", "temp_min", "temp_max"]:
-            ds[var] = temp(
-                ds_clim[var],
-                dem,
-                dem_forcing=dem_era5,
-                lapse_correction=True,
-                freq=None,
-                reproj_method="nearest_index",
-                lapse_rate=-0.0065,
+            if _shared_bounds is not None:
+                if _chirps_bounds != _shared_bounds or _era5_bounds != _shared_bounds:
+                    log_row(
+                        f"{clim_source} covers "
+                        f"{_chirps_bounds[0].date()}..{_chirps_bounds[1].date()}, era5 "
+                        f"covers {_era5_bounds[0].date()}..{_era5_bounds[1].date()}; "
+                        f"the store takes their overlap "
+                        f"{_shared_bounds[0].date()}..{_shared_bounds[1].date()}",
+                        module="extract",
+                        level="WARNING",
+                    )
+                ds = ds.sel(time=slice(*_shared_bounds))
+                ds_clim = ds_clim.sel(time=slice(*_shared_bounds))
+            # Prepare orography from the configured hydrography DEM for
+            # downscaling -- the same entry delineation and model build read.
+            log_row(
+                f"Orography for {clim_source} from {hydrography} (downscaling)",
+                module="extract",
             )
-        # Save dem grid to netcdf, at the caller's declared output when given.
-        fn_dem = (
-            os.fspath(oro_out)
-            if oro_out is not None
-            else os.path.join(os.path.dirname(fn_out), f"{clim_source}_orography.nc")
-        )
-        dem.to_netcdf(fn_dem, mode="w")
+            dem = data_catalog.get_rasterdataset(
+                hydrography,
+                bbox=bbox,
+                time_range=(starttime, endtime),
+                buffer=BUFFER_CELLS,
+                variables=["elevtn"],
+            )
+            dem = dem.raster.reproject_like(ds, method="average")
+            # Resample the remaining variables onto the precipitation grid.
+            log_row(
+                f"Downscaling era5 variables to the resolution of {clim_source}",
+                module="extract",
+            )
+            for var in ["press_msl", "kin", "kout"]:
+                ds[var] = ds_clim[var].raster.reproject_like(ds, method="nearest_index")
+
+            # Read ERA5 orography for temperature downscaling.
+            dem_era5 = data_catalog.get_rasterdataset(
+                "era5_orography",
+                geom=ds.raster.box,  # clip dem with forcing bbox for full coverage
+                buffer=2,
+                variables=["elevtn"],
+            ).squeeze()
+            for var in ["temp", "temp_min", "temp_max"]:
+                ds[var] = temp(
+                    ds_clim[var],
+                    dem,
+                    dem_forcing=dem_era5,
+                    lapse_correction=True,
+                    freq=None,
+                    reproj_method="nearest_index",
+                    lapse_rate=-0.0065,
+                )
+            # Save the DEM at the caller's declared output.
+            fn_dem = (
+                os.fspath(oro_out)
+                if oro_out is not None
+                else os.path.join(
+                    os.path.dirname(fn_out), f"{clim_source}_orography.nc"
+                )
+            )
+            dem.to_netcdf(fn_dem, mode="w")
 
     else:
         ds = _read_source(
@@ -883,6 +907,7 @@ if __name__ == "__main__":
                 # is enforced, so every pre-existing declaration -- and every
                 # store already on disk -- keeps its params byte-identical.
                 enforce_min_years=getattr(sm.params, "enforce_min_years", True),
+                forcing_required=getattr(sm.params, "forcing_required", True),
             )
             # Which of the extracted cells the basin actually touches. Written
             # HERE rather than derived by the consumer because this is the only

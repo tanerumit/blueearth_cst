@@ -68,11 +68,7 @@ def test_unknown_dataset_is_rejected():
 
 @pytest.mark.parametrize("source", ["chirps", "chirps_global"])
 def test_a_precip_only_source_draws_precipitation_only(source):
-    """Its temp/PET fields in the store are era5's, borrowed to force the model.
-
-    Drawing them under this source's name would answer the source comparison
-    with a panel that cannot differ (owner ruling 2026-08-16).
-    """
+    """Candidate stores omit ERA5 fields; forcing stores must not plot them."""
     assert cf.source_climate_vars(source) == ("precip",)
 
     names = cf.figure_names("source", variables=cf.source_climate_vars(source))

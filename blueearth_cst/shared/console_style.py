@@ -817,6 +817,16 @@ def target_banner(number, name, targets, project_dir=None):
 # `host: ...`, `Provided cores: N`) is deliberately absent: it is printed before
 # `onstart`, so no Snakefile hook can be installed early enough to mute it. It
 # is a handful of lines once per run; the volume was never there.
+#
+# Nor can `--quiet` reach it, which is the obvious next idea and was measured
+# route by route on 2026-09-18 (`dev/tasks/t2609181302-*`): the category named
+# `host` has no effect at all, and every category that DOES remove a preamble
+# line starves this handler of the records it draws from -- `progress` takes
+# the plan block and every finish row, `all` leaves nothing but the rule's own
+# output. `--quiet` filters at the record level, upstream of any handler, so
+# the two cannot be separated from here. Installing this handler at PARSE time
+# rather than at `onstart` does not help either: the lines still print and
+# Snakemake's raw `Job stats:` table comes back.
 _CONSOLE_MAX_TRACKED_JOBS = 4096
 
 

@@ -15,6 +15,11 @@
 # input paths). Drop this (or run `--quiet` without `reason`) when you need to
 # debug *why* a job re-ran.
 #
+# No other `quiet:` category is set, and none can be: every one that removes a
+# preamble line also starves the handler that draws our console, because
+# `--quiet` filters at the RECORD level before handlers run. Measured route by
+# route on 2026-09-18 — see `dev/tasks/t2609181302-*`.
+#
 # The rest of the console grammar is NOT set here, and cannot be: the noisiest
 # lines are not separately filterable. `--quiet progress` would take the
 # progress counter and the finish line together, and the bare

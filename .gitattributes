@@ -92,3 +92,9 @@ dev/milestones/r12/gf15-production-adapter-review/** -text -whitespace
 dev/milestones/r12/gf15-production-adapter-design.md -text -whitespace
 dev/working/design-runs/gf15-production-adapter/** -text -whitespace
 dev/milestones/r12/implementation/evidence/gf15-production-integration/** -text -whitespace
+
+# The vendored hydromt `deltares_data` catalog records the upstream body's
+# sha256 in its header, and hydromt's own registry hashes that file byte for
+# byte. Under `*.yml text` the bytes would be LF in the repository and CRLF in
+# a Windows checkout, so the recorded hash would reproduce on one leg only.
+config/catalogs/deltares_data_pdrive.yml -text

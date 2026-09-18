@@ -134,10 +134,10 @@ construction, simulation and projection analysis:
 | Entry point | Id | Purpose |
 |---|---|---|
 | `analyze_climate.smk` | wf0 | Optional model-free historical climate analysis |
-| `generate_scenarios.smk` | wf3 | Generate and retain a scenario collection |
 | `build_model.smk` | wf1 | Build Wflow-SBM and run historical forcing |
-| `simulate_system.smk` through `scripts/simulate_system.py` | wf4 | Simulate a ready collection or reduce retained responses |
 | `analyze_projections.smk` | wf2 | CMIP6 plausibility overlay |
+| `generate_scenarios.smk` | wf3 | Generate and retain a scenario collection |
+| `simulate_system.smk` through `scripts/simulate_system.py` | wf4 | Simulate a ready collection or reduce retained responses |
 
 Generation and model construction are independent prerequisites of simulation.
 Projections never drive generation. Run WF0 alone when selecting historical
@@ -182,10 +182,10 @@ Activate `pixi shell`, or prefix commands with `pixi run`:
 
 ```console
 snakemake all -c 3 -s analyze_climate.smk --configfile test_case/project_config_rapid.yml
-snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
 snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml
-python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
 snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
+snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
+python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
 ```
 
 Or run all enabled workflows in that fixed convenience order:

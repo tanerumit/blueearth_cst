@@ -102,10 +102,10 @@ def _read_only_manifest(project_dir: Path) -> dict:
     return json.loads(manifests[0].read_text(encoding="utf-8"))
 
 
-# --- §7(g) assertion 1: all-true -> all four in fixed order ------------------
+# --- §7(g) assertion 1: all-true -> all five in fixed order ------------------
 
 
-def test_all_true_invokes_four_in_fixed_order(tmp_path, capture_runs):
+def test_all_true_invokes_five_in_fixed_order(tmp_path, capture_runs):
     calls, _ = capture_runs
     cfg = tmp_path / "c.yml"
     _write_cfg(cfg, {n: "true" for n in rw.WORKFLOW_ORDER})
@@ -113,10 +113,10 @@ def test_all_true_invokes_four_in_fixed_order(tmp_path, capture_runs):
     assert rc == 0
     assert _snakefiles_invoked(calls) == [
         "analyze_climate.smk",
-        "generate_scenarios.smk",
         "build_model.smk",
-        "simulate_system.smk",
         "analyze_projections.smk",
+        "generate_scenarios.smk",
+        "simulate_system.smk",
     ]
 
 
@@ -257,14 +257,14 @@ def test_enabled_false_skips_at_subprocess_boundary(tmp_path, capture_runs):
     assert "analyze_projections.smk" not in invoked
     assert invoked == [
         "analyze_climate.smk",
-        "generate_scenarios.smk",
         "build_model.smk",
+        "generate_scenarios.smk",
         "simulate_system.smk",
     ]
 
 
 def test_all_enabled_inverse_all_invoked(tmp_path, capture_runs):
-    """The inverse of the skip test: all true -> all four invoked."""
+    """The inverse of the skip test: all true -> all five invoked."""
     calls, _ = capture_runs
     cfg = tmp_path / "c.yml"
     _write_cfg(cfg, {n: "true" for n in rw.WORKFLOW_ORDER})
@@ -510,7 +510,8 @@ def test_opening_block_diagrams_the_sequence_and_marks_the_disabled(
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
     assert "sequence  (4 of 5 enabled, in order)" in out
     assert "[1/4]  wf0 analyze_climate" in out
-    assert "[3/4]  wf1 build_model" in out
+    assert "[2/4]  wf1 build_model" in out
+    assert "[3/4]  wf3 generate_scenarios" in out
     assert "[4/4]  wf4 simulate_system" in out
     # Present, marked, and NOT given a position.
     assert "wf2 analyze_projections  disabled" in out
@@ -777,7 +778,7 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
     # "ran" naming a workflow that did not is worse than not printing it.
     ran = out.split("\n  ran\n")[1].split("\n\n")[0].splitlines()
-    assert [line.split()[0] for line in ran] == ["wf0", "wf3", "wf1", "wf4"]
+    assert [line.split()[0] for line in ran] == ["wf0", "wf1", "wf3", "wf4"]
 
 
 def test_failure_console_carries_the_verdict_and_what_did_not_run(
@@ -790,11 +791,12 @@ def test_failure_console_carries_the_verdict_and_what_did_not_run(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert code == 4
-    assert "[2/5]  wf3 generate_scenarios  --  FAILED (exit 4) after 0:00:0" in out
+    assert "[2/5]  wf1 build_model  --  FAILED (exit 4) after 0:00:0" in out
     assert "stopping; later workflows not invoked" in out
     assert "run_workflows FAILED in 0:00:0" in out
     assert (
-        "not run: wf1 build_model, wf4 simulate_system, wf2 analyze_projections" in out
+        "not run: wf2 analyze_projections, wf3 generate_scenarios, "
+        "wf4 simulate_system" in out
     )
     assert "the failing workflow's own output is printed above" in out
 
@@ -821,7 +823,7 @@ def test_a_launch_error_still_closes_with_a_report(tmp_path, monkeypatch, capsys
     out = capsys.readouterr().out
     assert "run_workflows FAILED in" in out
     assert "wf0 analyze_climate  FAILED (OSError)" in out
-    assert "not run: wf3 generate_scenarios, wf1 build_model" in out
+    assert "not run: wf1 build_model, wf2 analyze_projections" in out
     # Two claims that are FALSE when no child ever launched.
     assert "/logs/" not in out
     assert "printed above" not in out
@@ -1026,13 +1028,10 @@ def _staged(project_dir: Path, leaves) -> None:
         target.write_text("", encoding="utf-8")
 
 
-def test_wf3_without_wf1_is_refused_before_anything_is_invoked(tmp_path, capture_runs):
-    """The whole point: fail in one second, not after wf0 and wf2 have run.
-
-    Measured 2026-08-17 before this check existed -- 4:14 of which wf3 was
-    0:07, because Snakemake cannot discover a missing input until the DAG for
-    that workflow is built, and the wrapper builds them in order.
-    """
+def test_wf4_without_wf1_is_refused_before_simulation_is_invoked(
+    tmp_path, capture_runs
+):
+    """Missing model artifacts fail immediately before the WF4 consumer."""
     calls, _ = capture_runs
     project_dir = tmp_path / "project"
     cfg = tmp_path / "c.yml"
@@ -1045,6 +1044,7 @@ def test_wf3_without_wf1_is_refused_before_anything_is_invoked(tmp_path, capture
 
     assert _snakefiles_invoked(calls) == [
         "analyze_climate.smk",
+        "analyze_projections.smk",
         "generate_scenarios.smk",
     ]
     assert _read_only_manifest(project_dir)["status"] == "failed"

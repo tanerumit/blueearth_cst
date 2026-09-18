@@ -154,10 +154,10 @@ def source_climate_vars(clim_source: str) -> tuple[str, ...]:
     """The :data:`CLIMATE_VARS` keys ``clim_source`` can HONESTLY be drawn for.
 
     A precipitation-only source (:data:`PRECIP_ONLY_SOURCES`) gets ``precip``
-    and nothing else. Its store does carry temperature, radiation and pressure
-    -- the extraction borrows them from era5, because the model cannot be forced
-    without them -- but those values are era5's, regridded. Drawing them under
-    this source's name would answer "how do the two sources differ?" with a
+    and nothing else. A selected forcing store borrows ERA5 companions, while a
+    wf0-only candidate omits them; either way they are not observations from
+    this source. Drawing borrowed fields under this source's name would answer
+    "how do the two sources differ?" with a
     panel that cannot differ, in the one workflow whose job is that comparison.
 
     Ruled 2026-08-16 (owner): a dataset missing a variable gets NO output for

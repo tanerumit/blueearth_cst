@@ -1969,6 +1969,7 @@ def climate_store_rule(
     hydrography=DEFAULT_HYDROGRAPHY,
     basin_index=DEFAULT_BASIN_INDEX,
     enforce_min_years=True,
+    forcing_required=True,
 ) -> ClimateStoreRule:
     """Build the one producer contract for ``data/climate/historical/<key>/``
     (R07 B1).
@@ -1985,14 +1986,13 @@ def climate_store_rule(
     no ``models/hydrology/wflow/`` on disk and a region change re-extracts through
     Snakemake's params rerun-trigger (design § B1).
 
-    **The input set is exactly one entry — the catalog — in both DAGs.** An
+    **The input set is exactly the catalog and shared region in both DAGs.** An
     asymmetric input set re-creates the wf1<->wf3 re-extraction oscillation
-    (design P2(b) / ext1-02); the catalog **file** is the store's freshness
-    boundary (ext2-01), so it is declared plain, never ``ancient()``. Data
-    *behind* an unchanged catalog entry is out of scope — edit the entry, or use
-    ``snakemake --forcerun extract_historical_climate`` (in wf0, the generated
-    name for the source you mean, e.g. ``extract_historical_climate_chirps``)
-    (``dev/milestones/r07/migration_project-layout.md`` §2f).
+    (design P2(b) / ext1-02). The catalog **file** is the source freshness
+    boundary (ext2-01), while the region declares the extraction extent; both
+    are plain inputs, never ``ancient()``. Data behind an unchanged catalog
+    entry is out of scope — edit the entry, or use ``snakemake --forcerun
+    extract_historical_climate`` (in wf0, name the generated source rule).
 
     Parameters
     ----------
@@ -2007,9 +2007,8 @@ def climate_store_rule(
     historical_window : Mapping
         The ``shared.historical_window`` section, with ``starttime`` and
         ``endtime``. Keyed at day resolution by ``slugify_window``.
-    data_sources : str
-        ``project.data_sources`` — the hydromt catalog path. The single
-        declared input.
+    data_sources : str | sequence of str
+        ``project.catalog`` — the HydroMT catalog path or ordered paths.
     hydrography, basin_index : str
         ``shared.basin.hydrography`` / ``shared.basin.basin_index`` — catalog
         ENTRY NAMES for the delineation, not paths. Optional config keys; the
@@ -2029,6 +2028,12 @@ def climate_store_rule(
         the four workflows. Only the relaxed candidates carry the key — and
         because they carry it, promoting one to ``shared.clim_historical``
         changes the params WF1/WF3 declare and re-extracts it under the floor.
+    forcing_required : bool, optional
+        Whether a precipitation-only source must be enriched into the full
+        seven-variable forcing store required by WF1/WF3. ``False`` only for
+        wf0's extra comparison candidates. Like ``enforce_min_years``, the
+        default is omitted from params so selected-store declarations remain
+        unchanged; promotion therefore re-extracts the full forcing store.
 
     Returns
     -------
@@ -2085,7 +2090,7 @@ def climate_store_rule(
         # cell the bbox+buffer read happened to include.
         "basin_cells": f"{store_dir}/basin_cells.csv",
     }
-    if clim_source in ("chirps", "chirps_global"):
+    if forcing_required and clim_source in ("chirps", "chirps_global"):
         # Resolved at parse time from clim_historical, so there are no dynamic
         # outputs. The filename is clim_source-INDEPENDENT (R07 standardises the
         # two pre-R07 spellings on `orography.nc`).
@@ -2103,6 +2108,8 @@ def climate_store_rule(
     # default path must emit no key.
     if not enforce_min_years:
         params["enforce_min_years"] = False
+    if not forcing_required:
+        params["forcing_required"] = False
 
     return ClimateStoreRule(
         store_dir=store_dir,

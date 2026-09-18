@@ -1,10 +1,10 @@
 # -*- coding: utf-8 -*-
-"""The climate store's WG-1 conformance at the write path.
+"""The selected forcing store's WG-1 conformance at the write path.
 
 Board item `t2608161450`. A chirps store failed `validate_wg1` on eight counts
-and WF0 drew its figures and exited 0 regardless, so a candidate source could
-WIN a forcing comparison and then fail when it was promoted to
-`shared.clim_historical` and WF3 read it.
+and WF0 drew its figures and exited 0 regardless. Selected CHIRPS stores retain
+this contract; comparison-only candidates now carry precipitation only and are
+re-extracted under the full contract when promoted.
 
 The fix is at the single write path rather than in the branch that failed, and
 that is what these tests pin: a hand-assembled store — precipitation-only,

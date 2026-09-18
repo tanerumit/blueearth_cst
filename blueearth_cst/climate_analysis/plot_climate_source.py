@@ -216,10 +216,10 @@ def plot_climate_source(
     names are that module's to define (``climate_figures.figure_names``).
 
     **A precipitation-only source draws precipitation only** (owner ruling
-    2026-08-16). Its store carries temperature, radiation and pressure, but the
-    extraction borrowed them from era5 -- a model cannot be forced without them
-    -- so drawing them here would put era5's values under this source's name, in
-    the workflow whose whole job is telling sources apart. The set comes from
+    2026-08-16). A selected forcing store carries ERA5 companions, while a
+    wf0-only candidate omits them. Drawing borrowed fields here would put
+    ERA5's values under this source's name in the workflow whose whole job is
+    telling sources apart. The set comes from
     ``climate_figures.source_climate_vars``; on that branch the PET derivation
     and the orography read are skipped entirely rather than computed and
     discarded, since both exist only to serve the temperature and PET figures.
@@ -259,9 +259,8 @@ def plot_climate_source(
     if variables == ("precip",):
         # No PET derivation and no orography read: both exist only to produce
         # the temperature and PET figures, which this source does not get.
-        # Checked against what is DRAWN rather than against PARITY_VARS -- the
-        # store does carry the era5 companions, but needing them here would be
-        # a claim this branch no longer makes.
+        # Checked against what is drawn rather than against PARITY_VARS. A
+        # candidate omits ERA5 companions; selected stores may carry them.
         missing = [v for v in variables if v not in ds_raw]
         if missing:
             raise ValueError(

@@ -39,7 +39,7 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
 
 @pytest.fixture(autouse=True)
 def _no_ambient_no_color(monkeypatch):
-    """Clear ``NO_COLOR`` for every test in this module.
+    """Clear ambient console state for every test in this module.
 
     The painting tests hand the console handler a fake TTY stream, but that is
     only half of what decides colour: ``_ConsoleHandler`` also consults
@@ -50,8 +50,14 @@ def _no_ambient_no_color(monkeypatch):
 
     A test that wants the variable set uses ``monkeypatch.setenv`` and overrides
     this, which runs after the fixture.
+
+    ``test_cli.py`` parses Snakefiles in this same pytest process, while real
+    workflow invocations each use a fresh process. Clear the dynamic-progress
+    registry so a prior WF3 dry-run cannot turn an unrelated synthetic handler
+    into a checkpoint-aware one.
     """
     monkeypatch.delenv("NO_COLOR", raising=False)
+    monkeypatch.setattr(cs, "_DYNAMIC_PROGRESS_RULES", set())
 
 
 def test_missing_required_raises():
@@ -2866,6 +2872,24 @@ def test_console_a_wave_of_finishes_counts_up_to_the_progress_total():
     ]
 
 
+def test_console_checkpoint_workflow_omits_provisional_job_totals(monkeypatch):
+    """A dynamic DAG keeps one stable counter while Snakemake expands its total."""
+    monkeypatch.setattr(cs, "_DYNAMIC_PROGRESS_RULES", {"checkpoint", "downstream"})
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _job_info(1, "checkpoint", "Rule 3.04: checkpoint"),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=2, total=5),
+        _job_info(2, "downstream", "Rule 3.05: downstream"),
+        _console_record(event="job_finished", job_id=2),
+        _console_record(event="progress", done=3, total=35),
+    )
+
+    finished = [line for line in out.splitlines() if " - DONE " in line]
+    assert [line.split("  ")[-1] for line in finished] == ["[job 2]", "[job 3]"]
+
+
 def test_console_a_held_finish_is_flushed_uncounted_if_progress_never_comes():
     """A held line must not be lost when the next record is not a progress one."""
     handler = _console_handler()
@@ -3642,7 +3666,7 @@ def test_console_summary_trim_is_per_rule_not_global():
 
 
 def test_console_summary_seen_set_is_per_handler_not_module_level():
-    """`run_workflows.py` drives four Snakefiles; the registries outlive one run.
+    """`run_workflows.py` drives five Snakefiles; the registries outlive one run.
 
     A module-level seen-set would leave the second and later workflows with a
     console on which no summary was ever printed -- so the state that says

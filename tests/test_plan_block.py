@@ -2,7 +2,7 @@
 
 What this pins, and why each case is here rather than left to a real run:
 `onstart:` does NOT fire on `--dry-run` (probed 2026-09-05), so
-`tests/test_cli.py` -- the cheap check that dry-runs all four entry points --
+`tests/test_cli.py` -- the cheap check that dry-runs all five entry points --
 cannot see this block at all. Everything below is therefore the only automated
 cover it has short of executing a workflow.
 """
@@ -197,6 +197,21 @@ def test_rows_report_whether_they_run(rules):
     assert [running for _, running in rows] == [False, True]
 
 
+def test_checkpoint_dependent_rules_are_pending_not_up_to_date(rules, monkeypatch):
+    """An unresolved checkpoint hides downstream jobs from the opening DAG."""
+    rules({"cached": "3.01", "checkpoint": "3.02", "downstream": "3.03"})
+    monkeypatch.setattr(cs, "_CHECKPOINT_DEPENDENT_RULES", {"downstream"})
+
+    head, rows = cs._plan_lines({"checkpoint": 1})
+
+    assert head == ("1 of 3 rules to run  |  1 up to date  |  1 pending checkpoint")
+    assert rows == [
+        ("   3.01  cached", False),
+        (">  3.02  checkpoint  1", True),
+        ("?  3.03  downstream", None),
+    ]
+
+
 def test_no_row_carries_trailing_whitespace(rules):
     """A workflow without fan-out has no name column to pad."""
     rules({"a": "1.01", "bbbbbbbb": "1.02"})
@@ -228,7 +243,7 @@ def test_every_rule_up_to_date_still_renders(rules):
 def test_a_rule_missing_from_the_ledger_is_declared(rules):
     """No silent caps.
 
-    Every rule in all four Snakefiles calls `rule_banner` today, so this
+    Every rule in all five Snakefiles calls `rule_banner` today, so this
     should never fire -- but a block that listed 18 of 19 rules and said
     nothing would be worse than one that admits the gap.
     """

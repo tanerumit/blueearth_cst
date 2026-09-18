@@ -551,10 +551,13 @@ def prep_historical_climate(
         # fusion -- which is precisely why the dask chunk spec governs the
         # transfer on the real path and not on a naive one.
         #
-        # The catalog's own `longitude: 240` is no cure either -- it SPLITS the
-        # stored 480-wide chunk, and the 4 MB default netCDF4 chunk cache cannot
-        # hold a 14.4 MB chunk across the two reads, so each is decompressed
-        # twice. Deferring to the encoded chunking sidesteps both, and needs no
+        # Naming the catalog's own sizes would not be a cure either. era5's
+        # `longitude: 240` SPLITS the stored 480-wide chunk, and the 4 MB default
+        # netCDF4 chunk cache cannot hold a 14.4 MB chunk across the two halves,
+        # so a basin straddling the split decompresses it twice. Whether that
+        # costs anything is basin-dependent -- measured for Ntoum, which sits
+        # inside one half, `240` and the encoded `480` read the same 0.48 GB --
+        # but it is a trap the encoded spelling cannot fall into, and it needs no
         # edit to a catalog that is vendored upstream-verbatim and hash-pinned.
         #
         # In hydromt 1.x the source schema changed: chunks lives under

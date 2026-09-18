@@ -88,6 +88,15 @@ WORKFLOWS = (
 #: become indistinguishable from an oversight. An entry whose config drifts back
 #: to the v1 value fails here too.
 POST_MIGRATION_CHANGES = {
+    ("rapid", "project.catalog"): (
+        [
+            "config/catalogs/deltares_data.yml",
+            "config/catalogs/deltares_era5_daily_zarr.yml",
+        ],
+        "`t2609181501`, landed 2026-09-18: rapid keeps its original catalog "
+        "and composes a project-owned ERA5 Zarr override after it. The "
+        "baseline set remains on the migrated scalar catalog",
+    ),
     ("baseline", "simulation_window"): (
         {"start": 2046, "end": 2054},
         "`t2608222155`, landed 2026-09-07: the baseline stress test moved from "
@@ -214,6 +223,17 @@ def test_every_moved_value_arrived(stem, mapping):
                 f"{row['id']}: {stem} declared `{old}` but `{new}` is absent "
                 "after migration — the value was dropped, not moved."
             )
+            expected, why = _post_migration(stem, new.removeprefix("T1."))
+            if expected is not None:
+                assert after == expected, f"{stem}: {why}"
+                assert before != after, (
+                    f"{stem}: `{new}` is recorded as a deliberate "
+                    "post-migration change but now matches the v1 capture "
+                    "again. If it was reverted on purpose, delete the "
+                    "POST_MIGRATION_CHANGES entry"
+                )
+                checked += 1
+                continue
             assert before == after, (
                 f"{row['id']}: {stem} `{old}` was {before!r} and `{new}` is "
                 f"{after!r}. An identity move must not change the value."

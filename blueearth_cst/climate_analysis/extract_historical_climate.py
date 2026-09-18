@@ -17,6 +17,8 @@ which cannot be separated from the data they describe.
 """
 
 import os
+from collections.abc import Mapping
+from functools import wraps
 from os.path import join
 from pathlib import Path
 from typing import Optional, Union
@@ -24,6 +26,7 @@ from typing import Optional, Union
 import dask
 import geopandas as gpd
 import hydromt
+import netCDF4
 import pandas as pd
 from hydromt.error import NoDataException
 from hydromt.model.processes.meteo import temp
@@ -216,6 +219,48 @@ def _check_window_coverage(ds, starttime, endtime, clim_source, enforce_min_year
     )
 
 
+def _validate_requested_source_coverage(data_catalog, source, starttime, endtime):
+    """Refuse a request outside a source's catalog-advertised time range.
+
+    HydroMT can return the overlap when a raster source covers only part of the
+    requested period. That remains useful for sources without an explicit
+    catalog contract, but an advertised boundary must not be silently crossed.
+    In particular, Deltares' ERA5 daily Zarr ends on 2023-02-01.
+    """
+    source_spec = data_catalog.to_dict().get(source)
+    if not isinstance(source_spec, Mapping):
+        return
+    metadata = source_spec.get("metadata")
+    extent = metadata.get("extent") if isinstance(metadata, Mapping) else None
+    time_range = extent.get("time_range") if isinstance(extent, Mapping) else None
+    if not isinstance(time_range, Mapping):
+        return
+    available_start = time_range.get("start")
+    available_end = time_range.get("end")
+    if available_start is None or available_end is None:
+        return
+
+    try:
+        requested = (pd.Timestamp(starttime).date(), pd.Timestamp(endtime).date())
+        available = (
+            pd.Timestamp(available_start).date(),
+            pd.Timestamp(available_end).date(),
+        )
+    except (TypeError, ValueError) as exc:
+        raise ValueError(
+            f"{source!r} has an invalid catalog metadata.extent.time_range: "
+            f"{available_start!r}..{available_end!r}"
+        ) from exc
+
+    if requested[0] < available[0] or requested[1] > available[1]:
+        raise ValueError(
+            f"{source!r} cannot satisfy requested "
+            f"{requested[0]}..{requested[1]}; the catalog advertises "
+            f"{available[0]}..{available[1]}. Choose a window within that "
+            "coverage or select a catalog source that holds the required dates"
+        )
+
+
 def _read_source(data_catalog, source, *, requested, **kwargs):
     """``get_rasterdataset`` with a NoDataException that names the window.
 
@@ -237,6 +282,132 @@ def _read_source(data_catalog, source, *, requested, **kwargs):
             f"extract. Check that the source is staged for this basin, and that "
             f"shared.historical_window names years it covers. ({exc})"
         ) from exc
+
+
+def _align_chunks_to_store(data_catalog, sources):
+    """Return a catalog whose ``sources`` read at the store's ENCODED chunking.
+
+    ``{}`` asks xarray for the encoded chunking, whatever the backend, rather
+    than naming sizes this function cannot know. It reaches ``open_mfdataset``
+    / ``open_zarr`` as an extra driver kwarg (hydromt's ``DriverOptions`` dumps
+    with ``exclude_unset=True``, so an empty dict set explicitly survives).
+
+    The era5 read used to ask for ``"auto"``, reasoning that "we can afford
+    larger chunks as we only extract and save". That holds on local disk, where
+    over-read is free, and INVERTS over a network store: a dask chunk spanning
+    several on-disk chunks drags every one of them across the wire so a basin
+    covering one of them can be sliced out.
+
+    Measured 2026-09-18 against ``deltares_data_pdrive.yml`` (era5 as yearly
+    global netCDFs on ``p:/``, HDF5 chunks 30x250x480). ``"auto"`` chunked
+    60x500x960 -- 2 latitude bands x 2 longitude bands. One year of the seven
+    variables over a Gabon bbox, through ``get_rasterdataset``::
+
+        "auto"  2.14 GB  101.8 s        {}  0.55 GB  28.8 s
+
+    3.85x the bytes for the same 5x5 grid. At 17 years that is the 37.5 GB and
+    46 min a real extraction spent writing a 76 KB store.
+
+    MEASURE THIS THROUGH ``get_rasterdataset``, NOT ``open_mfdataset`` +
+    ``.sel`` -- a probe written the direct way shows the two specs within 4% of
+    each other and reads as evidence that the chunking is irrelevant. It is
+    not: slicing an opened dataset lets dask fuse the slice into the backend
+    read, so only the touched disk chunks move whatever the dask chunk says.
+    hydromt applies this source's ``rename`` and ``unit_mult`` between the read
+    and the clip, and that elementwise layer is what blocks the fusion -- which
+    is precisely why the dask chunk spec governs the transfer on the real path
+    and not on a naive one.
+
+    Naming the catalog's own sizes would not be a cure either. era5's
+    ``longitude: 240`` SPLITS the stored 480-wide chunk, so two dask tasks each
+    want half of one compressed chunk and whether the second one costs a second
+    decompression is a question about the HDF5 chunk cache -- which
+    ``_bounded_hdf5_chunk_cache`` below deliberately shrinks to 1 MiB, far
+    under one 14.4 MB chunk. So under this function's own settings a split spec
+    WOULD pay twice, for a basin that straddles the split. Ntoum does not:
+    measured 2026-09-18, ``240`` and the encoded ``480`` read the same 0.48 GB.
+    ``{}`` makes the question unaskable rather than answered -- the dask chunk
+    is the disk chunk by construction -- and it needs no edit to a catalog that
+    is vendored upstream-verbatim and hash-pinned.
+
+    An entry the catalog does not carry is skipped rather than invented: the
+    caller names every source the extraction MIGHT read, and a chirps-only
+    catalog legitimately has no era5.
+
+    In hydromt 1.x the source schema changed: chunks lives under
+    ``driver.options`` instead of the old top-level ``driver_kwargs``.
+    """
+    as_dict = data_catalog.to_dict()
+    for name in dict.fromkeys(sources):
+        source = as_dict.get(name)
+        if source is None:
+            continue
+        driver = source.setdefault("driver", {})
+        if isinstance(driver, str):
+            driver = {"name": driver}
+            source["driver"] = driver
+        driver.setdefault("options", {})["chunks"] = {}
+    return hydromt.DataCatalog().from_dict(as_dict)
+
+
+#: Bytes of HDF5 chunk cache each netCDF variable this extraction opens may keep.
+#:
+#: netcdf-c gives EVERY VARIABLE of EVERY open file a 64 MiB chunk cache
+#: (``netCDF4.get_chunk_cache()`` -> 67108864, libnetcdf 4.10.1). That cache
+#: pays for itself when chunks are revisited. Here none are: ``chunks={}``
+#: makes the dask chunk the disk chunk, so each chunk is read once, sliced to
+#: the basin and dropped. The cache therefore retains bytes nothing will ask
+#: for again, once per (file, variable) -- so against a source stored as yearly
+#: files, resident memory grows with the LENGTH OF THE WINDOW rather than with
+#: the size of the basin or of the store.
+#:
+#: Measured 2026-09-18 through this function, Ntoum, era5 on ``p:/``: 21
+#: (file, variable) pairs over 2000..2002 held 1.26 GB and 42 pairs over
+#: 2000..2005 held 2.50 GB -- 60 MB each, the four 30x250x480 chunks that fit
+#: under 64 MiB. Over the real 17-year window that projects to ~7 GB resident
+#: to write a 2.3 MB store, and the run measuring it was reaped under
+#: system-wide memory pressure before it could finish.
+#:
+#: IT IS THE READ, NOT THE WRITE. The streaming ``to_netcdf(compute=False)``
+#: below was the first suspect and is innocent: an eager read and a read with
+#: no write at all grow identically (1596 / 1570 MB peak against the shipped
+#: path's 1578 over 2000..2002), so the scheduler note further down is right
+#: that synchronous streaming leaves peak memory unchanged -- the growth was
+#: never in that graph.
+#:
+#: 1 MiB is below one chunk, so HDF5 bypasses the cache for these reads
+#: outright. Same 3.34 GB over the wire, peak RSS 2811 -> 394 MB, and the read
+#: came out marginally FASTER (2.90 min against 3.02) -- the cache was pure
+#: cost. A source whose chunks fit under 1 MiB is still cached normally.
+_HDF5_CHUNK_CACHE_BYTES = 1 << 20
+
+
+def _bounded_hdf5_chunk_cache(func):
+    """Run ``func`` with netCDF's default chunk cache bounded, then restore it.
+
+    ``nc_set_chunk_cache`` is process-global and applies to files opened
+    AFTERWARDS, so the bound has to be in force around the reads themselves --
+    setting it once at import would miss a caller that opens a store before
+    importing this module, and would also never be undone. Restoring keeps a
+    process that calls this for one extraction from inheriting the bound for
+    every other netCDF it touches, which is the property that makes bounding
+    the cache safe to apply to the whole function rather than to one branch.
+
+    ``min`` rather than a bare set, so an operator who has already chosen a
+    SMALLER cache keeps it.
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        previous = netCDF4.get_chunk_cache()
+        size, nelems, preemption = previous
+        netCDF4.set_chunk_cache(min(size, _HDF5_CHUNK_CACHE_BYTES), nelems, preemption)
+        try:
+            return func(*args, **kwargs)
+        finally:
+            netCDF4.set_chunk_cache(*previous)
+
+    return wrapper
 
 
 #: Global attributes WG-1 pins, with the values it pins them to. Both are
@@ -319,6 +490,7 @@ def _coerce_store_dtypes(ds):
     return ds
 
 
+@_bounded_hdf5_chunk_cache
 def prep_historical_climate(
     region_fn: Optional[Union[str, Path]],
     fn_out: Union[str, Path],
@@ -403,6 +575,22 @@ def prep_historical_climate(
         bbox = region.geometry.total_bounds
     # Read data catalog
     data_catalog = hydromt.DataCatalog(data_libs=data_libs)
+
+    # ALIGN THE DASK CHUNKS TO THE STORE'S OWN CHUNKS, for EVERY source this
+    # function may read -- see `_align_chunks_to_store` for the measurement that
+    # motivates it.
+    #
+    # Hoisted above the branch on 2026-09-18. The override used to live inside
+    # the `else` arm only, so the chirps branch read era5 for its other six
+    # variables at whatever the catalog happened to declare. That is not a
+    # hypothetical second-class path: `deltares_data_pdrive.yml` declares era5
+    # at `longitude: 240`, which splits the stored 480-wide chunk, so the chirps
+    # branch was the one arm still exposed to the straddle trap the docstring
+    # describes. Ntoum sits inside one half and reads 0.48 GB either way, so
+    # this buys that basin no bytes -- it removes a basin-dependent cliff, and
+    # it stops the two arms from disagreeing about how to read the same source.
+    data_catalog = _align_chunks_to_store(data_catalog, [clim_source, "era5"])
+    _validate_requested_source_coverage(data_catalog, "era5", starttime, endtime)
 
     # Extract climate data
     log_row("Extracting historical climate grid", module="extract")
@@ -519,18 +707,6 @@ def prep_historical_climate(
         dem.to_netcdf(fn_dem, mode="w")
 
     else:
-        # Here we can afford larger chunks as we only extract and save.
-        # In hydromt 1.x the source schema changed: chunks lives under
-        # driver.options instead of the old top-level driver_kwargs.
-        data_catalog_temp = data_catalog.to_dict()
-        source = data_catalog_temp[clim_source]
-        driver = source.setdefault("driver", {})
-        if isinstance(driver, str):
-            driver = {"name": driver}
-            source["driver"] = driver
-        driver.setdefault("options", {})["chunks"] = "auto"
-        data_catalog = hydromt.DataCatalog().from_dict(data_catalog_temp)
-
         ds = _read_source(
             data_catalog,
             clim_source,
@@ -606,11 +782,28 @@ def prep_historical_climate(
     # `xarray/backends/locks.py:66` with the process burning 0.08 s of CPU per
     # 20 s of wall clock -- a deadlock, not a slow write.
     #
-    # It is SOURCE-SHAPED, which is why it stayed hidden: era5 reads from
-    # `era5_daily.zarr`, zarr takes no such lock, and that store writes in
-    # seconds. chirps reads 17 yearly `CHIRPS_rainfall_{year}.nc` plus
-    # `era5_orography_2018.nc` for the lapse correction -- netCDF on both sides
-    # of one graph, so the deadlock is reachable only there.
+    # It is SOURCE-SHAPED, which is why it stayed hidden: under
+    # `deltares_data.yml` era5 reads from `era5_daily.zarr`, zarr takes no such
+    # lock, and that store writes in seconds. chirps reads 17 yearly
+    # `CHIRPS_rainfall_{year}.nc` plus `era5_orography_2018.nc` for the lapse
+    # correction -- netCDF on both sides of one graph, so under THAT catalog the
+    # deadlock is reachable only there.
+    #
+    # BEING SOURCE-SHAPED IS NOT THE SAME AS BEING CHIRPS-SHAPED, and reading
+    # this as "only chirps needs the synchronous scheduler" is the mistake the
+    # paragraph above invites. `deltares_data_pdrive.yml` -- hydromt's own
+    # catalog against the Deltares network store, which this repo vendors --
+    # points era5 at yearly global netCDFs instead (`meteo/era5_daily/nc_merged/
+    # era5_{year}_daily.nc`, confirmed 2026-09-18). That is netCDF on both sides
+    # again, so under that catalog the era5 path would be deadlock-REACHABLE the
+    # moment anyone reintroduced a threaded scheduler here.
+    #
+    # It has never deadlocked, and nothing below is fixing a live fault: the
+    # deadlock needs read and write tasks contending over `CombinedLock` in one
+    # pool, and `scheduler="synchronous"` leaves no pool to contend in. The
+    # point is only that "era5 is safe because it reads zarr" is a catalog's
+    # property, not this function's to assume -- so the scheduler stays
+    # synchronous for EVERY source.
     #
     # The same failure is diagnosed in bf1f4a5 and worked around at three WF2
     # call sites by materializing the READ eagerly (`.load()`) before writing.
@@ -620,6 +813,16 @@ def prep_historical_climate(
     # Eager would trade a deadlock for an OOM on a large basin. Going
     # synchronous removes the concurrency the lock contends over while still
     # streaming chunk by chunk, so peak memory is unchanged.
+    #
+    # THAT LAST CLAUSE WAS CHALLENGED AND HELD, 2026-09-18. A 2026-09-18
+    # extraction showed resident memory tracking bytes read almost 1:1, which
+    # read as evidence that this graph accumulates and that an eager read with
+    # a size guard would be both faster and safer. It is not: over 2000..2002
+    # the shipped path peaked at 1578 MB, an eager read at 1596 and a read with
+    # no write at all at 1570. The growth was never in this graph -- it was the
+    # per-variable HDF5 chunk cache on the READ side, now bounded by
+    # `_bounded_hdf5_chunk_cache` above. Streaming stays, and the size argument
+    # against eager stands untouched.
     #
     # Cost is one core on a zlib-bound write. `DaskProgress` is unaffected:
     # `dask.local.get_sync` drives the same callback machinery, so the bar

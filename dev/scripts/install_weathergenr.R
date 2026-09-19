@@ -1,4 +1,4 @@
-# Install weathergenr v2.0.0 from GitHub via remotes::install_github.
+# Install weathergenr v2.0.1 from GitHub via remotes::install_github.
 #
 # Invoked at env-setup time by:
 #     pixi run install-rdeps
@@ -33,7 +33,7 @@
 # It used to be spelled twice — here and in the `@v<x>` tag — which is one
 # edit away from installing a version the check then rejects on every run.
 
-required_version <- "2.0.0"
+required_version <- "2.0.1"
 
 # Read from the library's DESCRIPTION rather than via packageVersion(), which
 # answers from the namespace loaded at the top of this script and would report

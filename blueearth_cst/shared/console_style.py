@@ -747,7 +747,7 @@ def run_summary(
 def display_root(project_dir):
     """The run's project root as the console STATES it: absolute, then marked.
 
-    Two readers print this root -- :func:`run_meta_rows`' ``project`` row and
+    Two readers print this root -- :func:`run_meta_rows`' ``<project>`` row and
     :func:`target_banner`'s bracket -- and until 2026-09-16 they printed
     whatever form the Snakefile happened to hold. WF0 to WF3 read a relative
     ``project_dir`` straight from the config; WF4 writes
@@ -1921,7 +1921,7 @@ def run_meta_rows(project_dir, config_path=None, details=None):
     # Through `display_root`, like `target_banner`'s bracket: the two print the
     # same directory a few lines apart and disagreed about its spelling until
     # 2026-09-16 (t2609162114).
-    rows = [("project", display_root(project_dir))]
+    rows = [("<project>", display_root(project_dir))]
     if config_path:
         # No project root passed: the config is not a project artifact, and
         # stripping one would render a config that happens to live INSIDE the
@@ -1930,7 +1930,7 @@ def run_meta_rows(project_dir, config_path=None, details=None):
         #
         # FORWARD SLASHES, unconditionally. The rewrites above normalise a
         # config that lives under the repo, and `display_root` normalises the
-        # `project` row beside it -- but a config OUTSIDE both (a real project
+        # `<project>` row beside it -- but a config OUTSIDE both (a real project
         # tree, which is where production configs live) matched neither and
         # kept its OS separators, so the block printed
         # `project C:/a/b` above `config C:\a\b` and read as two trees. That is

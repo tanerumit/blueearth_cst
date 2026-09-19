@@ -14,7 +14,8 @@ mode: slot
 
 # Explicit settings below override the selected mode.
 
-# Commit related tasks separately; land their batch only on explicit approval.
+# The user controls allocation and switching; task-start claims a free lane from main.
+# Keep follow-ups on one branch, commit separately, and gate the batch at landing.
 isolation_landing: approval
 
 # Push only when requested. Set to true to enable the periodic backup trigger.

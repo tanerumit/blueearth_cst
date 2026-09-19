@@ -28,6 +28,14 @@ pixi shell
 snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml
 ```
 
+Angle-bracket labels in the opening path legend are aliases: `<project>` names
+the project root, and `<data>` names the external catalog data root. `config`
+is the configuration file, not an alias. Aliases inside the project include
+their base explicitly: in WF0, `<climate>` is
+`<project>/data/climate/historical`; in WF1 and WF3 it includes the selected
+store key as well. Extraction save rows identify their source, for example
+`era5: saving to netCDF`.
+
 The flags worth knowing:
 
 | Flag | Effect |

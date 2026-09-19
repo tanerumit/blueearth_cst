@@ -72,7 +72,7 @@ pixi run install
 ```
 This adds two more pieces on top of step 5:
 
-- **weathergenr** — the R weather generator (pinned to `v2.0.0`)
+- **weathergenr** — the R weather generator (pinned to `v2.0.1`)
 - **Wflow.jl** — the Julia hydrological model and its dependencies (~130 packages)
 
 The Julia part downloads a lot, so give it time. If it stops partway with a

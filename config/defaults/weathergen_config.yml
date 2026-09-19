@@ -1,4 +1,4 @@
-# Weather generator settings — weathergenr 2.0.0.
+# Weather generator settings — weathergenr 2.0.1.
 #
 # Each section is a weathergenr FUNCTION name and each key is one of that
 # function's ARGUMENT names, so any key here can be checked against `?<section>`

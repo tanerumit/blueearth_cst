@@ -85,7 +85,11 @@ Use `test_case/*_linux.yml` + `config/catalogs/*_linux.yml` on Linux — data-ca
 
 ## Validation ladder — match the check to the blast radius
 
-Batch integration: a session branch holds a coherent, short-lived batch of related tasks, not one conversational request. Complete each task with focused validation and a separate commit; keep the session active for related follow-ups. Task completion does not authorize landing. Only explicit approval to land the batch triggers integration: assess the combined diff against the ladder below, run the required checks, land, and park the session. Unrelated work starts a separate batch. Pushing remains a separate explicit decision.
+Batch integration: the user controls lane allocation and switching. On a free lane, wait for the user to claim it or ask for allocation through `task-start`, which creates the branch and claims the lane together from current local `main`. Keep follow-up tasks on the claimed session branch until the user asks to switch or approves landing. Flag substantially unrelated work; the switching decision remains the user's.
+
+At a new session's entry, rebase a clean, local, unpushed lane branch onto current local `main` before writing; use a merge for a published branch unless history rewriting is explicitly authorized. Dirty state or conflicts require resolution first, without automatic stash or reset. Do not repeat this synchronization for each conversational follow-up.
+
+Complete each task with focused checks and a separate commit. Run the combined batch gates below after synchronizing with `main` at approved landing, rather than repeating them per task. Task completion does not authorize landing or pushing. After a verified merge, prove branch ancestry, detach and free the lane, then delete the merged branch. A failed gate or merge retains the lane and branch for recovery; pushing remains a separate explicit decision.
 
 A task branch is isolated from `main` and cheap to revert, so spend validation time by blast radius. **Re-running the full suite after each incremental edit is the failure mode to avoid.** Measured costs and rationale: `dev/reference/validation-ladder.md`.
 
@@ -96,7 +100,7 @@ A task branch is isolated from `main` and cheap to revert, so spend validation t
 | Before merging the branch | `pixi run test-fast` once. Skip it for a docs-, `dev/`- or config-scaffold-only branch. |
 | **Before pushing to `origin`** | `pixi run test-fast` — the local gate. CI runs the whole suite on both platforms from the push, so running `test-full` here mostly re-proves what CI is about to check anyway, at roughly ten times the wall-clock. |
 | **After a push** | **Read the run it triggered.** This is what makes the line above safe, and a green local suite is no evidence about the ubuntu leg. |
-| When a change touched `shared/` or a `script:` signature, or before a milestone seal | `pixi run test-full` — the `workflow_contract` and `process_isolation` tiers, which are the ones you would rather not first meet on two platforms at once. |
+| Before merging a batch that touched `shared/` or a `script:` signature, or before a milestone seal | `pixi run test-full` — the `workflow_contract` and `process_isolation` tiers, which are the ones you would rather not first meet on two platforms at once. |
 | Before a milestone seal / after touching numeric outputs | `check_baseline.py check`, plus `semantic_tree_diff.py` if the tree shape moved. |
 
 **Redirect a gate to a FILE; never pipe it through `tail`** — a pipe discards the diagnosis of an intermittent failure while still printing the pass/fail line, so the run looks informative and is not. Write `pixi run test-contract > run.log 2>&1` and read the tail of the file.

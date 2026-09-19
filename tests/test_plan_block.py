@@ -197,18 +197,18 @@ def test_rows_report_whether_they_run(rules):
     assert [running for _, running in rows] == [False, True]
 
 
-def test_checkpoint_dependent_rules_are_pending_not_up_to_date(rules, monkeypatch):
-    """An unresolved checkpoint hides downstream jobs from the opening DAG."""
+def test_checkpoint_dependent_rules_are_marked_to_run(rules, monkeypatch):
+    """A checkpoint hides downstream job counts, not the execution path."""
     rules({"cached": "3.01", "checkpoint": "3.02", "downstream": "3.03"})
     monkeypatch.setattr(cs, "_CHECKPOINT_DEPENDENT_RULES", {"downstream"})
 
     head, rows = cs._plan_lines({"checkpoint": 1})
 
-    assert head == ("1 of 3 rules to run  |  1 up to date  |  1 pending checkpoint")
+    assert head == ("2 of 3 rules to run  |  1 up to date  |  1 after checkpoint")
     assert rows == [
         ("   3.01  cached", False),
         (">  3.02  checkpoint  1", True),
-        ("?  3.03  downstream", None),
+        (">  3.03  downstream", True),
     ]
 
 

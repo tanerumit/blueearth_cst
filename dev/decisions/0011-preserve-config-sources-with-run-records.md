@@ -165,6 +165,49 @@ alone cannot recover an older invocation's configuration. Full historical config
 retention remains outside scope. Preserve old journals/manifests as legacy history
 until an explicit compatibility or migration policy is agreed.
 
+#### Shared climate ancillary data ownership
+
+**Agreed by the user on 2026-09-19; not implemented.** Source elevation data
+belongs under the project's `data/`, not under a scenario collection. The inspected
+collection `4dd34c280a88` currently retains
+`ancillary/elevation/era5_orography_2018.nc`. WF4 uses it as forcing-grid elevation
+for temperature/pressure corrections during HydroMT forcing preparation; its
+operational use does not make it a generated scenario artifact.
+
+The proposed destination is:
+
+```text
+<project_dir>/data/climate/
+├── historical/
+└── ancillary/
+    └── era5/
+        └── era5_orography_2018.nc
+```
+
+Collections retain a reference and checksum to the shared data, and simulation
+verifies the referenced bytes before use. Collections using the same source
+version share it. Different versions must remain distinguishable and must not
+silently overwrite a dependency of an existing collection. The exact versioned
+path convention and reference-resolution anchor remain implementation decisions.
+
+The project, including shared data dependencies, is the preservation/transfer
+unit. Collections need not independently bundle these source datasets, consistent
+with historical climate already living under `data/climate/historical/`. A future
+standalone collection export may explicitly bundle dependencies; that is separate
+from normal project storage.
+
+This replaces the assessment's earlier suggestion to retain elevation inside
+the collection's `_engine/ancillary/`. Current collection validation and forcing
+preparation require collection-local paths, so implement this through a versioned
+reference/reader contract with compatibility for existing collections. Do not
+move or delete files from the inspected sealed collection as a documentation task.
+Update the preparation catalog/reference together with its consumers; its final
+placement is not settled by this data-ownership decision.
+
+Acceptance checks must cover two collections sharing one elevation version,
+missing or changed dependency bytes, distinct source versions, project relocation
+under the chosen path contract, and continued reads of old collection-local data.
+
 ### Consequences
 
 - **Positive:** one generated configuration account; preserved annotations;
@@ -226,3 +269,9 @@ until an explicit compatibility or migration policy is agreed.
   parent/child ownership, crash semantics and recording-coverage questions; updated
   the proposed layout. Continue related file assessments here. No implementation
   was requested.
+
+- **2026-09-19 (ancillary-data ownership):** Recorded the user agreement to store
+  source elevation under shared `data/climate/ancillary/`, with verified collection
+  references, and to use the project as the preservation unit. Collection-local
+  elevation retention is no longer proposed; reader migration and versioned path
+  details remain unresolved. No data moved.

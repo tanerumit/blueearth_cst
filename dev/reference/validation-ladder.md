@@ -15,7 +15,7 @@ Run the whole cheap tier rather than hand-picking relevant files: selecting by j
 
 **`test-fast` is the local gate, including before a push.** CI runs the unmarked `pytest tests/` on ubuntu and windows from the push itself, so a local `test-full` re-proves on one platform what CI is about to check on two, for roughly ten times the wall-clock of the cheap tier. What it buys is knowing before the push rather than a quarter of an hour after it — worth paying only when a bad push is expensive to undo.
 
-Reach for `test-full` locally when a change touched `blueearth_cst/shared/` or a `script:` signature, and before a milestone seal. Those are the cases where meeting a failure on two platforms at once costs more than the wait.
+Run `test-full` at batch landing when the combined diff touched `blueearth_cst/shared/` or a `script:` signature, and before a milestone seal. Individual tasks use focused checks and separate commits; do not repeat the full gate per task. Those are the cases where meeting a failure on two platforms at once costs more than the wait.
 
 Between merges and the next push, a `workflow_contract` regression can sit on local `main` across several branches, so bisect across all of them. Reading the CI run after each push is what bounds that window.
 

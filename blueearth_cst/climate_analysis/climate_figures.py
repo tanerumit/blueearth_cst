@@ -130,15 +130,9 @@ DATASETS = {
 #: On a fine source (CHIRPS at 0.05 degrees) the same frame is genuinely
 #: informative.
 #:
-#: Two consequences, both live:
-#:
-#: * ``_raster_within`` crops the field to the frame before the colourbar
-#:   classifies it, so the bar describes what is shown. That already existed for
-#:   the caller-supplied-extent path and is what makes this switch safe.
-#: * wf0's shared scale (rule 0.04b, ``shared_plot_scales.json``) is pooled from the
-#:   FULL stores, so it now describes a wider footprint than any source panel
-#:   draws. The scale stays comparable ACROSS sources, which is its job, but it
-#:   is no longer the range of the drawn cells.
+#: ``_raster_within`` crops before classifying the colourbar, so source-local
+#: scales describe the drawn cells. Explicit pooled scales supplied by direct
+#: callers can cover a wider footprint; canonical WF0/WF1 plots omit them.
 MAP_EXTENT = {
     "source": "basin",
     "forcing": "basin",

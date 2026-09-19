@@ -149,6 +149,13 @@ only. When CHIRPS is the selected pipeline source, the shared store is instead
 enriched with ERA5 temperature, radiation and pressure plus orography because
 WF1 and WF3 require the complete forcing contract.
 
+WF0 and WF1 share one canonical source-plot producer. Figures under each
+historical store's `plots/` use source-local scales and are reused when switching
+workflows with unchanged inputs and settings. WF0's `comparison/` figures put
+sources on common axes. The former `shared_plot_scales.json` is no longer used;
+existing figures may refresh once after this change, then subsequent runs reuse
+them. Existing run files are not automatically deleted.
+
 ### Configuration
 
 Start from `test_case/project_config_rapid.yml` for execution checks. A project

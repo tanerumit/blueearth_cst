@@ -1,11 +1,9 @@
 """One table and one figure per variable, COMPARING the candidate climate sources.
 
 Rule ``compare_climate_sources``'s script (``analyze_climate.smk`` 0.06). WF0
-already draws the canonical figure set once per candidate source, each in its own
-directory, and rule 0.04b pins them to a shared scale so two directories can be
-read against each other. This module is the step that stops asking the reader to
-do that: every source on ONE axis, plus the summary table that says what each of
-them is.
+draws canonical source-local figures in each store's directory. This separate
+product places every source on common axes, plus a summary table describing
+each dataset.
 
 The shape follows the CRIDA Zimbabwe report (``UNESCO_FinalReport_Draft_v4``,
 Table 1 / Figures 2-3) — a gridded-dataset summary table, an annual series per
@@ -26,10 +24,8 @@ Three boundaries, all deliberate:
   anyway: era5 is the only supported source that is not precipitation-only, so
   ``pet`` can never have two carriers. Extending to it is wiring the orography
   inputs, not a redesign — see :data:`COMPARABLE_VARS`.
-* **No shared-scale input.** ``shared_plot_scales.json`` (rule 0.04b) exists so
-  SEPARATE per-source figures are comparable. Every figure here already carries
-  every source on one axis, so the edge would buy nothing and re-fire this rule
-  whenever the scale moved.
+* **No external scale input.** Every figure carries all sources on common axes;
+  its scale is derived from those series within this product.
 
 Values come from ``climate_figures``' own derivations
 (:data:`~blueearth_cst.climate_analysis.climate_figures.VALUE_DERIVATIONS`), on

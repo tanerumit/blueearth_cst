@@ -204,11 +204,6 @@ gap.
        = WF1 1.04)                              │
               │                                 │
               ▼                                 │
-    0.04b derive_plot_scales                    │
-      (one shared scale, pooled                 │
-       across every source)                     │
-              │                                 │
-              ▼                                 ▼
     0.05 plot_climate_source ◄───────── (subbasin polygons)
       (per source)                              │
               │                                 │
@@ -228,7 +223,6 @@ gap.
 | 0.02 | `delineate_region` | — (shared) |
 | 0.03 | `delineate_spatial_units` | — (shared) |
 | 0.04 | `extract_historical_climate_<source>` | per candidate source |
-| 0.04b | `derive_plot_scales` | — |
 | 0.05 | `plot_climate_source_<source>` | per candidate source |
 | 0.06 | `compare_climate_sources` | — (only when >1 source) |
 | 0.10 | `gather_benchmarks` | — (gather) |
@@ -280,19 +274,14 @@ which is the domain later averages reduce over.
 **Log.** A directory part, `logs/_parts/0.04_extract_historical_climate/<source>.log`,
 because the fan-out width belongs to the rule that owns it.
 
-#### 0.04b · `derive_plot_scales`
-
-**Does.** Pools what every per-source figure would plot and derives one shared
-scale, so separate figures can be read against each other. Numbered `0.04b`
-rather than renumbering: a letter suffix is the insert convention.
-
-**Writes.** `data/climate/historical/shared_plot_scales.json` — one file for the
-whole workflow, not one per source.
 
 #### 0.05 · `plot_climate_source_<source>` — per candidate source
 
-**Does.** Renders the canonical figure set for one source, pinned to 0.04b's
-shared scale.
+**Does.** Renders the canonical figure set with source-local scales. WF0 and
+WF1 use `climate_analysis/source_plot_rule.py` for identical inputs, parameters,
+outputs and script. Running either workflow reuses the other's figures when
+those dependencies are unchanged; adding a comparison source does not replot
+existing sources.
 
 **Writes.** The basin-level figures declared file by file, plus the
 per-subbasin set as a `directory(...)` — its members are named for delineation
@@ -308,10 +297,10 @@ asking the reader to do the comparing.
 **Writes.** The comparison figures and table, plus the per-subbasin comparison
 set as a `directory(...)`.
 
-**Not an input: `shared_plot_scales.json`.** The shared scale exists so *separate*
-figures can be read against each other; every figure here already carries every
-source on one axis, so the edge would buy nothing and would re-fire this rule
-whenever the scale moved.
+Comparison figures share axes within each panel. They are WF0-owned products
+under `data/climate/historical/comparison/`, separate from source-local plots.
+Rule 0.04b is retired; existing `shared_plot_scales.json` files are unused and
+can be removed manually. No cleanup of existing run products is automatic.
 
 #### 0.10 · `gather_benchmarks`
 

@@ -13,10 +13,8 @@ from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, cl
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.spatial.config import parse_spatial_config
-# The canonical climate figure set. Imported for figure_names() ONLY, so every
-# figure is declared from the same list the plotter writes from and the two
-# cannot drift -- the same contract rule 1.05 and rule 1.13 rely on.
-from blueearth_cst.climate_analysis.climate_figures import source_climate_vars, source_figure_names
+# One source-plot definition for WF0 and WF1, including the filename registry.
+from blueearth_cst.climate_analysis.source_plot_rule import source_plot_rule
 # The cross-source comparison set (rule 0.06). Imported for the same reason:
 # the module that WRITES the table and the figures is the one that names them.
 from blueearth_cst.climate_analysis.compare_sources import comparison_outputs
@@ -37,7 +35,6 @@ from blueearth_cst.climate_analysis.compare_sources import comparison_outputs
 # otherwise need. Rule 1.15 took the same device on 2026-08-18 for the same
 # reason (t2608071206), so `stations/` there and `subbasins/` here are one
 # pattern rather than two coincidences.
-DECLARED_SPATIAL_SCOPES = ("basin_avg",)
 SUBBASIN_PLOT_DIRNAME = "subbasins"
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
@@ -303,7 +300,6 @@ LOG_RULES = [
     "0.02_delineate_region",
     "0.03_delineate_spatial_units",
     "0.04_extract_historical_climate",
-    "0.04b_derive_plot_scales",
     "0.05_plot_climate_source",
 ]
 
@@ -317,23 +313,12 @@ if len(CANDIDATE_SOURCES) > 1:
     LOG_RULES.append("0.06_compare_climate_sources")
 
 
-def source_plot_dir(source):
-    """Where one source's canonical climate figures land."""
-    return f"{CLIMATE_STORES[source].store_dir}/plots"
-
-
-def source_subbasin_dir(source):
-    """The per-subbasin bin inside that source's plot directory."""
-    return f"{source_plot_dir(source)}/{SUBBASIN_PLOT_DIRNAME}"
-
-
-def source_figures(source):
-    """The DECLARED figure filenames for one source, under the WF0 grammar."""
-    return source_figure_names(
-        source,
-        variables=source_climate_vars(source),
-        spatial_scopes=DECLARED_SPATIAL_SCOPES,
+SOURCE_PLOTS = {
+    source: source_plot_rule(
+        CLIMATE_STORES[source], SPATIAL_UNITS, source, DATA_SOURCES, WATER_YEAR_START,
     )
+    for source in CANDIDATE_SOURCES
+}
 
 
 # --- the cross-source comparison (rule 0.06) ----------------------------------
@@ -364,7 +349,7 @@ COMPARISON_OUTPUTS = (
 # as a single job, so requesting one schedules the rest. The map is the
 # representative because every source draws one, precipitation-only included.
 WF0_TERMINALS = [
-    *[f"{source_plot_dir(s)}/{source_figures(s)[0]}" for s in CANDIDATE_SOURCES],
+    *[SOURCE_PLOTS[s].figures[0] for s in CANDIDATE_SOURCES],
     # Empty on a single-source run, where rule 0.06 is not declared either.
     *COMPARISON_OUTPUTS,
     # The vector foundation is a LEAF here -- nothing in this workflow consumes
@@ -472,53 +457,6 @@ rule delineate_spatial_units:
 # contract with a different rule NAME -- same script, inputs, params, outputs.
 # tests/test_climate_store_contract.py pins that equivalence rather than
 # byte-identity of the declaration, which is the honest form of the claim.
-# --- one plotting scale per variable, shared by every source ------------------
-# 0.04b derive_plot_scales — pool what each figure would plot, across every
-# candidate, and write the boundaries all of them then draw against.
-#
-# WITHOUT this, each 0.05 job classifies its own figure from its own data, so
-# two sources' precipitation maps carry two different colour ramps and a
-# difference between them cannot be read off the figures — which is the one
-# question this workflow exists to answer.
-#
-# The price is a BARRIER: no figure renders until every extraction has finished.
-# Accepted deliberately (owner ruling 2026-08-16); the alternative that avoids
-# it is a single plotting job over all sources, which trades the barrier for
-# losing per-source parallelism and re-rendering every source when one changes.
-#
-# NOT the sidecar retired earlier the same day. That one shared a scale between
-# the SOURCE and FORCING families and was retired because they frame different
-# footprints; these are two source extractions over the same bbox. See
-# shared_plot_scales.py's module docstring.
-PLOT_SCALES = f"{project_dir}/data/climate/historical/shared_plot_scales.json"
-
-# Only variables at least two sources carry can be pooled meaningfully, but the
-# module handles that itself — it pools each variable over the stores that carry
-# it, and omits what nothing supplies.
-LEVEL_VARS = sorted({var for s in CANDIDATE_SOURCES for var in source_climate_vars(s)})
-
-rule derive_plot_scales:
-    message: rule_banner("0.04b", "derive_plot_scales", summary="one plotting scale per variable, across sources")
-    input:
-        climate_ncs = [CLIMATE_STORES[s].outputs["climate_nc"] for s in CANDIDATE_SOURCES],
-        # The SERIES scales are pooled over the basin's cells, because that is
-        # what rule 0.05 draws. Pooling them over the buffered extraction and
-        # applying the result to a basin mean would classify one quantity and
-        # plot another -- the defect this module exists to prevent. The `map`
-        # scale stays pooled over the full field, which is what a map shows.
-        basin_cells = [CLIMATE_STORES[s].outputs["basin_cells"] for s in CANDIDATE_SOURCES],
-    params:
-        sources = CANDIDATE_SOURCES,
-        variables = LEVEL_VARS,
-        water_year_start = WATER_YEAR_START,
-    output:
-        scales = PLOT_SCALES,
-    log:
-        f"{LOG_PARTS_DIR}/0.04b_derive_plot_scales.log",
-    benchmark:
-        f"{project_dir}/benchmarks/_parts/0.04b_derive_plot_scales.tsv",
-    script:
-        "blueearth_cst/climate_analysis/shared_plot_scales.py"
 
 
 for _source in CANDIDATE_SOURCES:
@@ -540,80 +478,29 @@ for _source in CANDIDATE_SOURCES:
         script:
             _spec.script
 
-    # The vector layers the source maps are drawn over come from rule 0.03's
-    # shared foundation, NOT from any model's staticgeoms -- the source grid is
-    # the climate BEFORE a model exists, and making these figures wait on one
-    # would invert that. Declared as real inputs so the edge is in the DAG.
-    #
-    # The data catalog rides in `params`, not `input`: the era5 branch resolves
-    # `era5_orography` through it, but the store's freshness boundary is 0.04's
-    # catalog edge (ext2-01), and duplicating it here would re-plot on every
-    # catalog touch without the extraction having changed.
-    # What this source can honestly be drawn for. A precipitation-only source
-    # gets the precip figures and nothing else. Extra candidates now stay
-    # precipitation-only; a selected CHIRPS store borrows ERA5 fields for
-    # forcing, but drawing those here would produce a panel that cannot differ.
-    _plot_vars = source_climate_vars(_source)
-
-    _plot_inputs = {"climate_nc": _spec.outputs["climate_nc"]}
-    # The orography sidecar exists only on a selected CHIRPS forcing store.
-    # A comparison-only candidate neither declares nor reads it.
-    if "oro_nc" in _spec.outputs and _plot_vars != ("precip",):
-        _plot_inputs["oro_nc"] = _spec.outputs["oro_nc"]
-    # The shared scale (rule 0.04b). A real input, so the DAG carries the barrier
-    # rather than the script reading a file behind Snakemake's back.
-    _plot_inputs["scales_json"] = PLOT_SCALES
-    # The cells the basin touches, on THIS source's grid. It is what the
-    # `basin_avg` figures reduce over, and it is rule 0.04's own output -- the
-    # same file weathergenr averages over, so the figures, the generator and the
-    # stress test share one definition of the basin. Without it the series were
-    # a mean over the store's BUFFERED bbox, which is a different area per grid.
-    _plot_inputs["basin_cells"] = _spec.outputs["basin_cells"]
-    _plot_inputs.update(
-        {name: SPATIAL_UNITS.outputs[name] for name in
-         ("basins", "subbasins", "rivers", "locations")}
-    )
+    _plot = SOURCE_PLOTS[_source]
 
     rule:
         name: f"plot_climate_source_{_source}"
         message: rule_banner("0.05", f"plot_climate_source_{_source}")
         input:
-            **_plot_inputs,
+            **_plot.inputs,
         output:
-            # The basin-level set, declared file by file (O-24) ...
-            [
-                f"{source_plot_dir(_source)}/{name}"
-                for name in source_figures(_source)
-            ],
-            # ... and the per-subbasin set as a DIRECTORY, because its members
-            # are named for delineation ids this file cannot know at parse time.
-            directory(source_subbasin_dir(_source)),
+            _plot.figures,
+            directory(_plot.subbasin_dir),
         params:
-            plot_dir = source_plot_dir(_source),
-            subbasin_plot_dir = source_subbasin_dir(_source),
-            data_sources = DATA_SOURCES,
-            clim_source = _source,
-            geoms_dir = SPATIAL_UNITS.spatial_dir + "/geoms",
-            water_year_start = WATER_YEAR_START,
+            **_plot.params,
         log:
             f"{LOG_PARTS_DIR}/0.05_plot_climate_source/{_source}.log",
         benchmark:
             f"{project_dir}/benchmarks/_parts/0.05_plot_climate_source/{_source}.tsv",
-        script: "blueearth_cst/climate_analysis/plot_climate_source.py"
+        script: _plot.script
 
 
 # 0.06  compare_climate_sources — every candidate on ONE axis, plus the table.
 #
-# Rules 0.04b and 0.05 already make the per-source figure sets comparable, by
-# pinning them to a shared scale. This is the step that stops asking the reader
-# to do the comparing: one annual figure and one monthly figure per variable
-# with every source drawn on it, and a summary table saying what each source is
-# (resolution, extracted window, reference) and what it delivers.
-#
-# NOT an input: `shared_plot_scales.json`. The shared scale exists so SEPARATE
-# figures can be read against each other; every figure here already carries
-# every source on one axis, so the edge would buy nothing and would re-fire this
-# rule whenever the scale moved. The stores are the only data this needs.
+# Canonical source figures use source-local scales in both WF0 and WF1.
+# This separate product places every candidate on common axes for comparison.
 #
 # One job, not a fan-out -- so its log part is a flat file, matching the label
 # appended to LOG_RULES above.

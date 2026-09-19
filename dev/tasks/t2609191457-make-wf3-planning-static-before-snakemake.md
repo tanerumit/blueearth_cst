@@ -1,9 +1,10 @@
 ---
 title: Make WF3 planning static before Snakemake
 type: todo-item
-status: backlog
+status: active
 effort: 2
 area: wf3 scenarios
+branch: refactor/wf3-static-planning
 queue:
 created: 2026-09-19
 updated: 2026-09-19
@@ -27,3 +28,11 @@ updated: 2026-09-19
 ## Decision
 
 Prefer a static preflight manifest over parse-time estimation or a wrapper-only two-phase run. One immutable plan should be authoritative for both console reporting and execution; duplicating checkpoint logic merely to estimate counts would create a second decision path that can drift from Snakemake.
+
+## Planning checkpoint
+
+Initial architecture intake is recorded in the linked planning note: both checkpoints, content-derived identity constraints, entry-point alternatives, and proposed validation gates. Implementation and contract approval remain pending; the seven delivery steps above are not yet complete.
+
+## Refs
+
+- [Planning intake](../working/t2609191457-wf3-static-planning.md).

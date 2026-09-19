@@ -628,21 +628,9 @@ if not any(c.resolved for c in COMBINATIONS):
         f"{DATA_SOURCES}.\n" + _res.format_status_report(COMBINATIONS)
     )
 
-# Normal skips are reported, never silent -- this is what replaces the run-time
-# `asymmetric hist/clim members` raise D7 supersedes (design D7 table).
-#
-# Through `defer_warning`, not `logger.warning` and not `warn_row`. This runs
-# at Snakefile PARSE time, before `install_console_style` replaces Snakemake's
-# terminal handler -- so a `logger` call prints in Snakemake's own style, with
-# no stamp and no module column, and a `warn_row` prints in our grammar but
-# still in the middle of Snakemake's preamble, above a header that does not
-# exist yet. `defer_warning` holds the block until the run header is written
-# and lands it under the RUN section, in the same grammar as every row after
-# it. Safe to defer because the failure path -- no combination resolved --
-# embeds its own copy of this report in the `WorkflowError` above.
-_skip_report = _res.format_status_report(COMBINATIONS)
-if _skip_report:
-    defer_warning(_skip_report, module="resolution")
+# A partially resolved preference list is normal for CMIP6 and does not earn a
+# console warning. Fatal resolution paths above embed the complete status report
+# in their WorkflowError, so configuration failures retain the diagnostics.
 
 # D8/D12: a glob matching more than one {grid}/{version} means the read is not a
 # single identifiable store. Measured at ~6% of pinned stores, so this is live.

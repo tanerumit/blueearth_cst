@@ -125,6 +125,7 @@ ALLOWANCES = (
             "blueearth_cst/spatial/delineate_spatial_units.py",
             "blueearth_cst/spatial/config.py",
             "blueearth_cst/shared/snake_utils.py",
+            "blueearth_cst/climate_analysis/source_plot_rule.py",
             "build_model.smk",
             "tests/test_copy_config_files.py",
             "tests/test_spatial_units_rule.py",

@@ -325,8 +325,8 @@ def plot_climate_source(
         caveat=caveat,
         overlays=overlays,
         variables=variables,
-        # Absent for a single-source run (WF1), where there is nothing to share
-        # a scale WITH -- each figure then classifies from its own data.
+        # Canonical WF0/WF1 plots use source-local scales. Explicit scales remain
+        # available to direct callers producing a separate comparison product.
         levels=read_plot_scales(scales_json),
         # Present ⇒ the WF0 filename grammar, with the source id as the
         # dataset_scope (`era5_precip_annual_ts_basin_avg.png`).
@@ -352,7 +352,7 @@ if __name__ == "__main__":
                 clim_source=sm.params.clim_source,
                 geoms_dir=sm.params.geoms_dir,
                 anchor=water_year_end_anchor(sm.params.water_year_start),
-                # Declared by WF0's multi-source path only; absent in WF1.
+                # Optional for direct callers; canonical workflow rules omit it.
                 scales_json=getattr(sm.input, "scales_json", None),
                 # Rule 0.04's own output: the cells the basin touches, which is
                 # what the basin-average figures reduce over -- and the same

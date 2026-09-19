@@ -1,12 +1,10 @@
 """One plotting scale per variable per figure kind, shared across sources.
 
-Rule ``derive_plot_scales``'s script (``analyze_climate.smk`` 0.04b). WF0 draws
-one figure set per candidate source, each in its own job, so without this no two
-of those figures share an axis: a reader comparing ERA5's precipitation map with
-CHIRPS's would be comparing two different colour ramps and could not see a
-difference that is actually there. This module reads every candidate's store,
-pools the values each figure would plot, and writes the boundaries all of them
-then draw against.
+Optional utilities for explicitly scaled comparison products. The former WF0
+rule 0.04b is retired: canonical source plots now use source-local scales in
+both WF0 and WF1, while WF0's combined comparison figures share their own axes.
+Direct callers can still pool candidate values here and pass the resulting
+boundaries to a separately named plot product.
 
 **Why this is not the sidecar retired on 2026-08-16.** That one shared a scale
 between the SOURCE and FORCING families, and it was retired because the two frame

@@ -487,6 +487,7 @@ if "snakemake" in globals():
         monthly_merged = xr.combine_by_coords(
             monthly_changes,
             coords="minimal",
+            data_vars="all",
             compat="no_conflicts",
             join="outer",
             combine_attrs="override",

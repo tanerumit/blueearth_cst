@@ -332,8 +332,8 @@ _RULE_NUMBERS = {}
 _RULE_SUMMARIES = {}
 
 
-# Rule names whose jobs cannot be resolved until a checkpoint finishes. They
-# are neither runnable nor up to date in Snakemake's opening job table.
+# Rule names whose job counts cannot be resolved until a checkpoint finishes.
+# They remain on the execution path despite being absent from the opening table.
 _CHECKPOINT_DEPENDENT_RULES = set()
 
 
@@ -948,8 +948,9 @@ def opening_block(workflow, project_dir, config_path=None, details=None, plan=No
     only one, so it stays, as a bare line rather than a band.
 
     ``plan`` is ``(head, [(row, state), ...])`` or ``None``. A state is true
-    for runnable, false for up to date, and ``None`` for checkpoint-dependent
-    work whose jobs are not resolved yet. With no plan there is no table to
+    for runnable and false for up to date. Checkpoint-dependent work is shown
+    as runnable with a blank count because its fan-out is not resolved yet.
+    With no plan there is no table to
     caption, so the summary goes onto the title
     (``wf2 analyze_projections -- 7 of 9 rules to run``) and no table is
     written. That branch is reached when Snakemake's job table cannot be
@@ -1130,8 +1131,8 @@ def _plan_rows(counts):
     (every rule the Snakefile DECLARED, filled by :func:`rule_banner` at parse
     time) and Snakemake's job-stats counts (the rules that will actually RUN).
     A rule absent from ``counts`` is up to date unless it is registered in
-    ``_CHECKPOINT_DEPENDENT_RULES``; those rules are pending because the
-    opening DAG cannot resolve their jobs yet.
+    ``_CHECKPOINT_DEPENDENT_RULES``; those rules remain on the execution path,
+    but the opening DAG cannot resolve their job counts yet.
 
     Grouped by NUMBER, not by name, because a number is not unique: see
     :func:`_plan_rule_name`. Sorted lexicographically on the number, which
@@ -1163,9 +1164,9 @@ def _plan_head(rows, jobs, unlisted=0):
     tool that bounds its own coverage.
     """
     total = len(rows)
-    running = sum(1 for row in rows if row[2] is not None and row[2] > 0)
-    pending = sum(1 for row in rows if row[2] is None)
-    up_to_date = total - running - pending
+    running = sum(1 for row in rows if row[2] is None or row[2] > 0)
+    deferred = sum(1 for row in rows if row[2] is None)
+    up_to_date = total - running
     plural = "rule" if total == 1 else "rules"
     # PIPED fields rather than a comma sentence. `|` is the separator this
     # console already uses inside a rule's fan-out context (`[rlz 2 | st 6]`),
@@ -1173,14 +1174,14 @@ def _plan_head(rows, jobs, unlisted=0):
     # under the table it introduces, three scannable fields beat one clause.
     if running == total:
         fields = [f"{total} {plural}", "all to run"]
-    elif running or pending:
+    elif running:
         fields = [
             f"{running} of {total} {plural} to run" if running else f"{total} {plural}",
         ]
         if up_to_date:
             fields.append(f"{up_to_date} up to date")
-        if pending:
-            fields.append(f"{pending} pending checkpoint")
+        if deferred:
+            fields.append(f"{deferred} after checkpoint")
     else:
         fields = [f"{total} {plural}", "all up to date"]
     # The job count only when it says something the rule count does not, i.e.
@@ -1189,7 +1190,7 @@ def _plan_head(rows, jobs, unlisted=0):
     # it agrees with the rows below it -- the table includes the excluded
     # `all`, and a head line off by one from what it introduces is worse than
     # no head line.
-    if jobs and jobs != running:
+    if not deferred and jobs and jobs != running:
         fields.append(f"{jobs} job{'s' if jobs != 1 else ''}")
     if unlisted:
         fields.append(f"{unlisted} unlisted")
@@ -1204,9 +1205,9 @@ def _plan_lines(counts):
 
     One row per DECLARED rule, ordered by rule id so the workflow's shape reads
     as a spine. Rows that will run carry a ``>`` gutter; rows already satisfied
-    are dimmed. Checkpoint-dependent rows absent from the opening DAG carry a
-    ``?`` gutter and normal body colour because their status is pending, not up
-    to date. The gutters survive a pipe, redirect and CI where colour does not.
+    are dimmed. Checkpoint-dependent rows absent from the opening DAG carry the
+    same ``>`` gutter, but no count because their fan-out is unresolved. The
+    gutters survive a pipe, redirect and CI where colour does not.
 
     FLUSH LEFT, like every other line the opening block writes. The block was
     indented two spaces until 2026-09-17, which put the rules one column in from
@@ -1234,15 +1235,15 @@ def _plan_lines(counts):
     all-to-run one there are no up-to-date rows to mark.
 
     Returns ``(head, rows)`` with each row as ``(text, state)``, where state is
-    true for runnable, false for up to date, and ``None`` for pending
-    checkpoint resolution. The caller owns the colour -- ``_paint`` colours
+    true for runnable and false for up to date. The caller owns the colour --
+    ``_paint`` colours
     whole lines and never fields.
     """
     rows = _plan_rows(counts)
     if not rows:
         return None
-    has_pending = any(row[2] is None for row in rows)
-    partial = has_pending or (
+    has_deferred = any(row[2] is None for row in rows)
+    partial = has_deferred or (
         any(row[2] for row in rows) and not all(row[2] for row in rows)
     )
     number_width = max(len(row[0]) for row in rows) + 2
@@ -1253,7 +1254,7 @@ def _plan_lines(counts):
         if not partial:
             gutter = ""
         elif jobs is None:
-            gutter = "?  "
+            gutter = ">  "
         else:
             gutter = ">  " if jobs else "   "
         count = str(jobs) if jobs else ""
@@ -1261,7 +1262,7 @@ def _plan_lines(counts):
             f"{gutter}{number.ljust(number_width)}"
             f"{name.ljust(name_width)}  {count.rjust(count_width)}"
         )
-        state = None if jobs is None else bool(jobs)
+        state = True if jobs is None else bool(jobs)
         lines.append((text.rstrip(), state))
     unlisted = sum(1 for name in counts if name not in _RULE_NUMBERS)
     return _plan_head(rows, sum(row[2] or 0 for row in rows), unlisted), lines

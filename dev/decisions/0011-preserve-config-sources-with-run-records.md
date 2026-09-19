@@ -40,8 +40,8 @@ abbreviated. Nested source layouts retain their relative directory relationships
 │   ├── runs/
 │   │   ├── README.md
 │   │   ├── _engine/
-│   │   │   ├── journal.jsonl
 │   │   │   └── invocations/
+│   │   │       └── <invocation-id>.json
 │   │   ├── analyze_climate/
 │   │   │   ├── run_record.yml
 │   │   │   └── sources/
@@ -126,6 +126,45 @@ loaded), and publication/recovery behavior so interrupted writes cannot pair one
 execution's record with another's sources. A record alone does not certify
 successful completion of calculations.
 
+#### Unified execution history
+
+Replace the separate `journal.jsonl` and differing wrapper/simulation invocation
+formats with one versioned invocation-record format, one JSON file per invocation
+under `config/runs/_engine/invocations/`. Configuration archives remain separate:
+they describe configuration and rerun inputs; invocation records describe attempts
+and outcomes. This is a proposed simplification, not current behavior.
+
+Each record carries its ID, optional parent ID, entry point/workflow, command,
+targets, working directory, start/end timestamps, status and exit code, plus
+configuration hashes and artifact references. Record execution mode and whether
+work occurred: distinguish dry-run, up-to-date/no-op, actual execution and unknown
+work status rather than inferring them from exit code alone.
+
+A direct workflow launch owns one record. An all-workflow launch owns a parent
+record describing the requested sequence and referencing individual workflow
+records. The parent owns the overall outcome; each child record has one writer
+owning its workflow details. Parent and child must not concurrently rewrite the
+same file or duplicate child histories inside the parent.
+
+Persist startup state and atomically update completion. A hard termination leaves
+an unfinished record: its outcome is unknown, not automatically failed. Derive
+chronological history from timestamps; no second authoritative journal is needed.
+Sorting does not establish a causal order between overlapping invocations.
+
+**Coverage must be designed explicitly.** Current WF0–WF2 journal hooks cover
+executions that perform work; wrapper manifests also cover dry-runs and no-op
+launches. Direct Snakemake parse/startup failures can precede hooks. Unifying the
+schema does not repair these gaps. Complete launch coverage would require a
+launcher around direct Snakemake calls; requiring that launcher versus retaining
+documented hook-only coverage remains open. Also define WF3 participation,
+parent-to-child ID propagation, launch failures without a child record, and
+reliable detection of up-to-date results.
+
+References to WF0–WF2's latest archive need a matching digest: a mutable path
+alone cannot recover an older invocation's configuration. Full historical config
+retention remains outside scope. Preserve old journals/manifests as legacy history
+until an explicit compatibility or migration policy is agreed.
+
 ### Consequences
 
 - **Positive:** one generated configuration account; preserved annotations;
@@ -148,6 +187,7 @@ successful completion of calculations.
 | Record plus workflow YAML only | Omits original project YAML and annotations | Project source is independently versioned and available |
 | Keep both generated YAMLs | Overlap remains without exact source retention | A supported reader needs the composed interface during migration |
 | One project-wide record | Latest workflow overwrites another's context | Recording a coordinated invocation, as the engine manifest does |
+| One append-only event journal | Requires reconstructing state and coordinating concurrent writers | Every intermediate transition must be retained |
 
 ### Validation before implementation is accepted
 
@@ -160,7 +200,10 @@ successful completion of calculations.
 4. Check record/source consistency after interrupted writes and repeated runs.
 5. Confirm comment-only changes do not alter scientific identities; existing
    sealed collections/experiments remain readable and unmodified.
-6. Update snapshot/baseline/tree tests and apply the repository validation ladder
+6. Verify direct/orchestrated records, parent-child linkage, dry-runs, no-op
+   results, launch/child failures, hard termination and concurrent invocations.
+   Test the chosen pre-hook failure coverage and legacy-history policy.
+7. Update snapshot/baseline/tree tests and apply the repository validation ladder
    to implementation. This documentation change runs no pipeline.
 
 ### Related
@@ -170,8 +213,16 @@ successful completion of calculations.
 - [Artifact-local snapshot writer](../../blueearth_cst/shared/workflow_config_snapshot.py)
 - [ADR 0009: generation and simulation ownership](0009-split-scenario-generation-and-system-simulation.md)
 
+- [All-workflow invocation writer](../../scripts/run_workflows.py)
+- [Direct simulation invocation writer](../../scripts/simulate_system.py)
+
 ### Revisions
 
 - **2026-09-19:** Captured exact-source and rerun requirements, layout, modularity
   rationale, alternatives and unresolved implementation details. Recording the
   proposal does not authorize or claim implementation.
+
+- **2026-09-19 (execution-history follow-up):** Added unified invocation records,
+  parent/child ownership, crash semantics and recording-coverage questions; updated
+  the proposed layout. Continue related file assessments here. No implementation
+  was requested.

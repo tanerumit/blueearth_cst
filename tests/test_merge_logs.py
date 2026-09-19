@@ -81,7 +81,9 @@ def test_the_merged_log_defines_the_folder_tokens_its_rows_use(tmp_path, monkeyp
     parts_dir = _parts(tmp_path, {"1.07_build_wflow_model": None})
     out = tmp_path / "logs" / "wf1_build_model.log"
     merge_logs(["1.07_build_wflow_model"], str(out), parts_dir)
-    assert "# <model>: models/hydrology/wflow" in out.read_text(encoding="utf-8")
+    assert "# <model>: <project>/models/hydrology/wflow" in out.read_text(
+        encoding="utf-8"
+    )
 
 
 def test_wf3_lettered_rule_number_is_tagged(tmp_path):

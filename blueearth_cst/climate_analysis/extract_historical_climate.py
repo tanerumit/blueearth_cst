@@ -788,7 +788,7 @@ def prep_historical_climate(
     dvars = ds.raster.vars
     encoding = {k: {"zlib": True} for k in dvars}
 
-    log_row("Saving to netcdf", module="extract")
+    log_row(f"{clim_source}: saving to netCDF", module="extract")
     delayed_obj = ds.to_netcdf(fn_out, encoding=encoding, mode="w", compute=False)
     # Labelled with the SOURCE, because a multi-source project runs this rule
     # once per source and the console would otherwise show identical bars.

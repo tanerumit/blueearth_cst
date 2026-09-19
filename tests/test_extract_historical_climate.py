@@ -1034,3 +1034,24 @@ def test_chirps_branch_refuses_a_pair_that_never_overlaps(
             era5_start="2030-01-01",
             span=20,
         )
+
+
+@pytest.mark.parametrize("source", ["era5", "chirps_global"])
+def test_store_save_row_identifies_the_source(
+    tmp_path, fake_chirps_catalog, capsys, source
+):
+    region = tmp_path / "region.geojson"
+    region.write_text("{}")
+    ehc.prep_historical_climate(
+        region_fn=region,
+        fn_out=tmp_path / "out.nc",
+        data_libs="dummy.yml",
+        clim_source=source,
+        starttime="2010-01-01T00:00:00",
+        endtime="2010-12-31T00:00:00",
+        forcing_required=False,
+    )
+    rows = capsys.readouterr().out.splitlines()
+    saves = [row for row in rows if "saving to netcdf" in row.lower()]
+    assert len(saves) == 1
+    assert saves[0].endswith(f" - extract - {source}: saving to netCDF")

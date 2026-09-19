@@ -31,7 +31,7 @@ def test_filters_by_workflow_prefix_and_appends_total(tmp_path):
     # rendered as a fenced metadata box (not stacked H1s) and labelled for a
     # benchmark artifact rather than a log
     assert md.startswith("```text")  # code fence, so no H1 heading collision
-    assert "BlueEarth-CST | project: gabon |" in md and "project dir:" in md
+    assert "BlueEarth-CST | project: gabon |" in md and "<project>:" in md
     assert "benchmark: wf1_benchmarks.md | generated " in md  # relabelled
     assert (
         "# BlueEarth-CST" not in md and "# log:" not in md

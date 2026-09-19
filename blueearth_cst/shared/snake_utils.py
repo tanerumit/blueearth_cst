@@ -561,11 +561,9 @@ def _spelt_tokens(tokens, project_root):
 def _folder_rows(project_root, tokens=None):
     """Return ``(<name>, path)`` rows defining the run's declared key folders.
 
-    A folder under the project is shown PROJECT-RELATIVE, because that is
-    exactly how every path below it prints in the body, and one that is not
-    (an external data root) is shown absolute for the same reason. The header
-    carrying these rows always states the project dir itself, so the two forms
-    cannot be confused.
+    A folder under the project starts with <project>/ so its base is explicit.
+    An external folder stays absolute. The header defines <project> alongside
+    these aliases; config remains a metadata label.
     """
     # ABSOLUTE, because the tokens are: `project_dir` is relative in every
     # shipped config, and stripping a relative root off an absolute token
@@ -576,7 +574,7 @@ def _folder_rows(project_root, tokens=None):
     root = os.path.abspath(os.fspath(project_root)) if project_root else ""
     rows = []
     for token, path in _declared_tokens() if tokens is None else tokens:
-        shown = _strip_prefix(path, root) if root else path
+        shown = _tokenize_prefix(path, root, "project") if root else path
         rows.append((f"<{token}>", shown.replace(os.sep, "/")))
     return rows
 
@@ -607,7 +605,7 @@ def _log_header_lines(path, kind="log", time_label="started", markdown=False):
     project_field = f"project: {project} | " if project else ""
     lines = [f"BlueEarth-CST | {project_field}{now:%Y-%m-%d}"]
     if root:
-        lines.append(f"project dir: {root.replace(os.sep, '/')}")
+        lines.append(f"<project>: {root.replace(os.sep, '/')}")
     lines.append(f"{kind}: {log_id} | {time_label} {now:%H:%M:%S}")
     if kind == "log":
         # The declared key folders, because the rows below refer to them by

@@ -767,7 +767,7 @@ def test_the_header_defines_a_token_under_a_relative_project_dir(declare_folders
     """
     declare_folders(model="test_case/test_rapid/models/hydrology/wflow")
     rows = cs.run_header("wf1 build_model", "test_case/test_rapid").splitlines()
-    assert rows[-1].split() == ["<model>", "models/hydrology/wflow"]
+    assert rows[-1].split() == ["<model>", "<project>/models/hydrology/wflow"]
 
 
 def test_run_header_project_row_is_absolute_and_repo_marked():
@@ -786,11 +786,11 @@ def test_run_header_project_row_is_absolute_and_repo_marked():
 
     def project_row(text):
         return next(
-            row.split() for row in text.splitlines() if row.split()[:1] == ["project"]
+            row.split() for row in text.splitlines() if row.split()[:1] == ["<project>"]
         )
 
     assert project_row(relative) == project_row(absolute)
-    assert project_row(relative) == ["project", "<repo>/test_case/test_rapid"]
+    assert project_row(relative) == ["<project>", "<repo>/test_case/test_rapid"]
 
 
 def test_display_root_leaves_a_project_outside_the_repo_whole():
@@ -815,7 +815,9 @@ def test_target_banner_bracket_and_header_row_agree(monkeypatch):
     )
     header = cs.run_header("wf3 generate_scenarios", "test_case/test_rapid")
     root = next(
-        row.split()[1] for row in header.splitlines() if row.split()[:1] == ["project"]
+        row.split()[1]
+        for row in header.splitlines()
+        if row.split()[:1] == ["<project>"]
     )
     assert f"[{root}]" in banner
     # The STRIP still uses the caller's form, so the target stays short.
@@ -908,7 +910,7 @@ def test_tee_to_log_writes_project_header(tmp_path):
     head = log.read_text(encoding="utf-8").splitlines()
     assert head[0].startswith("# BlueEarth-CST")
     assert "project: gabon" in head[0]
-    assert head[1].startswith("# project dir:") and head[1].rstrip().endswith("gabon")
+    assert head[1].startswith("# <project>:") and head[1].rstrip().endswith("gabon")
     assert "1.07_build_wflow_model.log" in head[2] and "started" in head[2]
     assert head[3].startswith("# rows:")  # the row-grammar legend
     assert head[4] == ""  # blank line separates header from body
@@ -3083,7 +3085,7 @@ def test_console_opening_puts_the_rules_under_the_title(monkeypatch):
     assert lines[4] == "   1.02  b"
     assert lines[5].startswith("1 of 2 rules to run  |  1 up to date")
     assert lines[6] == ""
-    assert lines[7] == "project  <repo>/test_case/test_rapid"
+    assert lines[7] == "<project>  <repo>/test_case/test_rapid"
 
 
 def test_the_opening_block_draws_no_rules_at_all(monkeypatch):
@@ -3137,7 +3139,7 @@ def test_console_opening_survives_a_run_without_run_info(monkeypatch):
     # No plan means no table to caption, so the summary would go back onto the
     # title -- and none was reported here.
     assert lines[1] == "wf1 build_model"
-    assert "project  <repo>/test_case/test_rapid" in lines
+    assert "<project>  <repo>/test_case/test_rapid" in lines
 
 
 def test_the_title_is_dropped_when_the_runner_already_named_the_workflow(
@@ -3161,7 +3163,7 @@ def test_the_title_is_dropped_when_the_runner_already_named_the_workflow(
     )
     assert "wf1 build_model" not in out, out
     assert out.split("\n")[1] == ">  1.01  a  1"  # straight into the plan
-    assert "project  <repo>/test_case/test_rapid" in out  # nothing else lost
+    assert "<project>  <repo>/test_case/test_rapid" in out  # nothing else lost
 
 
 def test_the_title_stays_for_a_standalone_snakemake_run(monkeypatch):
@@ -3246,7 +3248,7 @@ def test_deferred_warning_lands_under_the_run_block(monkeypatch):
     )
     lines = out.split("\n")
     row = next(i for i, line in enumerate(lines) if "did not resolve" in line)
-    meta = next(i for i, line in enumerate(lines) if line.startswith("project  "))
+    meta = next(i for i, line in enumerate(lines) if line.startswith("<project>  "))
     # Under the metadata rows, and last in the block: the section rule that
     # used to close it is gone, so what bounds the warning below is the blank
     # line before the first `HH:MM:SS - RUN` row.
@@ -3755,7 +3757,7 @@ def test_run_header_shape_matches_run_summary():
         # only because this test passes a CWD-relative path. Snakemake hands a
         # Snakefile an ABSOLUTE `configfiles[0]`, so in a real run both rows
         # carry the marking -- which is the point of routing them the same way.
-        "project     <repo>/test_case/test_rapid2",
+        "<project>   <repo>/test_case/test_rapid2",
         "config      test_case/project_config_rapid.yml",
         "experiment  experiment_rapid",
     ]
@@ -3764,9 +3766,8 @@ def test_run_header_shape_matches_run_summary():
 def test_run_header_states_the_declared_folders(declare_folders):
     """Every token that appears in a body line is defined here, in full.
 
-    A folder under the project is shown project-relative because that is how
-    paths below it print; the external data root is shown absolute for the same
-    reason. The rows keep DECLARATION order -- matching wants longest-path
+    A folder under the project names <project> as its base; the external data
+    root stays absolute. The rows keep DECLARATION order -- matching wants longest-path
     first, and that order in a header is arbitrary to a reader.
     """
     project = _abs("TESTS/gabon")
@@ -3776,7 +3777,7 @@ def test_run_header_states_the_declared_folders(declare_folders):
     )
     lines = cs.run_header("wf1 build_model", project).splitlines()
     rows = [line for line in lines if re.match(r"^\S+ {2,}\S", line)]
-    assert [row.split()[0] for row in rows] == ["project", "<data>", "<model>"]
+    assert [row.split()[0] for row in rows] == ["<project>", "<data>", "<model>"]
     assert rows[1].endswith("data/wflow_global/hydromt")
     assert rows[2].endswith("models/hydrology/wflow")
     # One column now, no group labels: the `<name>` rows announce themselves.
@@ -3827,7 +3828,7 @@ def test_a_rule_log_header_defines_every_token_its_rows_use(declare_folders, tmp
     project = tmp_path / "gabon"
     declare_folders(model=project / "models" / "hydrology" / "wflow")
     header = su._log_header_lines(str(project / "logs" / "1.07_build.log"))
-    assert "# <model>: models/hydrology/wflow" in header.splitlines()
+    assert "# <model>: <project>/models/hydrology/wflow" in header.splitlines()
 
 
 def test_run_summary_closes_a_success_in_one_line():
@@ -4071,7 +4072,7 @@ def test_run_header_omits_rows_a_workflow_does_not_have():
     out = cs.run_header("wf1 build_model", "test_case/test_rapid")
     lines = out.splitlines()
     assert lines[1] == "wf1 build_model"
-    assert lines[-1] == "project  <repo>/test_case/test_rapid"
+    assert lines[-1] == "<project>  <repo>/test_case/test_rapid"
     assert not any("experiment" in line for line in lines)
 
 
@@ -4319,3 +4320,20 @@ def test_benchmark_is_available_to_a_banner_only_rule():
     assert _registry().banner_only("0.10", "x").benchmark() == (
         "PROJ/benchmarks/_parts/0.10_x.tsv"
     )
+
+
+def test_path_legend_makes_the_project_base_explicit(declare_folders, tmp_path):
+    project = tmp_path / "project"
+    external = tmp_path / "data"
+    declare_folders(
+        data=external,
+        climate=project / "data" / "climate" / "historical",
+    )
+    rows = dict(cs.run_meta_rows(project, project / "project_config.yml"))
+    assert rows["<project>"] == cs.display_root(project)
+    assert "config" in rows and "<config>" not in rows
+    assert rows["<data>"] == external.as_posix()
+    assert rows["<climate>"] == "<project>/data/climate/historical"
+    header = su._log_header_lines(str(project / "logs" / "extract.log"))
+    assert f"# <project>: {project.as_posix()}" in header
+    assert "# <climate>: <project>/data/climate/historical" in header

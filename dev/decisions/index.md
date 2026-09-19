@@ -17,6 +17,7 @@ skill's decision-record reference).
 | [0008](0008-ship-blueearth-cst-unpackaged.md) | Ship `blueearth_cst` unpackaged; `pyproject.toml` stays tool-config-only | accepted | 2026-08-17 |
 | [0009](0009-split-scenario-generation-and-system-simulation.md) | Split scenario generation and system simulation; supersede R12's C24/C25/C28 predecessor ownership | accepted design; P3 validation in progress | 2026-09-11 |
 | [0010](0010-check-the-reviewed-variables-not-the-catalog-shape.md) | Check the reviewed forcing variables, not the catalog entry's shape | accepted | 2026-09-17 |
+| [0011](0011-preserve-config-sources-with-run-records.md) | Preserve exact config sources alongside one run record | proposed; not implemented | 2026-09-19 |
 
 ## Retired numbers
 

@@ -85,6 +85,8 @@ Use `test_case/*_linux.yml` + `config/catalogs/*_linux.yml` on Linux — data-ca
 
 ## Validation ladder — match the check to the blast radius
 
+Batch integration: a session branch holds a coherent, short-lived batch of related tasks, not one conversational request. Complete each task with focused validation and a separate commit; keep the session active for related follow-ups. Task completion does not authorize landing. Only explicit approval to land the batch triggers integration: assess the combined diff against the ladder below, run the required checks, land, and park the session. Unrelated work starts a separate batch. Pushing remains a separate explicit decision.
+
 A task branch is isolated from `main` and cheap to revert, so spend validation time by blast radius. **Re-running the full suite after each incremental edit is the failure mode to avoid.** Measured costs and rationale: `dev/reference/validation-ladder.md`.
 
 | When | Run |

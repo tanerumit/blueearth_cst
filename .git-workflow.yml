@@ -14,6 +14,9 @@ mode: slot
 
 # Explicit settings below override the selected mode.
 
+# Commit related tasks separately; land their batch only on explicit approval.
+isolation_landing: approval
+
 # Push only when requested. Set to true to enable the periodic backup trigger.
 auto_push: false
 
@@ -32,10 +35,9 @@ slot_registry: advisory
 
 # Inherited from `slot`:
 #   worktree_policy: always
-#   isolation_landing: auto
 #
 # The primary checkout is reserved for integration. Session branches are
-# automatically landed after they are clean, rebased, and verified.
+# landed on explicit batch approval after they are clean, rebased, and verified.
 #
 # `integration_mode` is omitted because it is inactive with an advisory
 # registry.

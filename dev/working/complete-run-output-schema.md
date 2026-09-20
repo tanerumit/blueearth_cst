@@ -220,6 +220,29 @@ The historical scenario naming migration approved a hard break and regeneration 
 
 The closed scenario task was recovered with git show abe49967^:dev/tasks/t2609152040-regroup-the-scenario-trees-under-scenarios-and-rename-scenario-plans-to-requests.md. It explicitly rejected nesting collections under requests/experiments and merging request/product identities. Those ownership arguments still apply when scheduling becomes static.
 
+### 3.2 Why `requests/` and `collections/` remain siblings
+
+The recovered note considered the apparent simplification directly. Its accepted result was the current grouping under `scenarios/`, not a single merged identity or directory:
+
+| Identity | Answers | Lifetime and location |
+|---|---|---|
+| `generation_request_id` | What was asked for from configuration, resolved inputs and provider settings? | Request-owned, replaceable discovery and execution records under `scenarios/requests/<request-id>/`. |
+| `collection_id` | What scientifically meaningful scenario collection is intended? | Collection-owned immutable identity under `scenarios/collections/<collection-id>/`. |
+| `collection_revision` | Which produced bytes make up the published collection? | Final inventory inside `collection.json`, known only after generation. |
+
+The identities are not one-to-one. Two requests may differ in non-semantic details such as an absolute catalog path yet resolve to the same collection identity. Nesting the collection beneath either request would duplicate one immutable product or make another request reach sideways into the first request's directory. Flattening both kinds directly under `scenarios/` would erase whether a digest names an ask or a product and would mix safely replaceable request state with sealed collection state. Nesting scenarios under an experiment remains invalid because WF3 is model-independent and one collection can support multiple WF4 experiments.
+
+The original note also relied on an ordering constraint: the request identity was available when the old checkpoint-shaped DAG was constructed, while the collection identity required staged source inventory and preparation context. Static WF3 preflight changes when the collection identity becomes available: the launcher can prepare sources and freeze an authoritative plan before constructing the generation DAG. That removes the checkpoint constraint, but it does **not** collapse the three identities, their many-to-one mapping or their different publication rules. `scenarios/requests/` therefore remains the home of request, plan, receipt and invocation-scoped generation state; `scenarios/collections/` remains the home of reusable scientific products.
+
+The simplification retained by this proposal is consequently bounded:
+
+- keep one semantic parent, `scenarios/`, with explicit `requests/` and `collections/` branches;
+- consolidate collection provenance sidecars inside `collection_intent.json` as proposed by D8, without merging request and collection ownership;
+- keep `collection.json` separate because publication of produced bytes occurs after the intent is frozen; and
+- permit garbage collection of request-owned working state without making collection deletion appear safe.
+
+This is an inherited architectural constraint, not a new approval of the draft `scenario-request/2` or `generation-plan/1` field contracts in §6.
+
 ## 4. Generated YAML: one run record and exact sources
 
 ### 4.1 Current versus proposed fields
@@ -609,3 +632,4 @@ Draft validation: check Markdown links, parse JSON examples, check the diff for 
 
 - 2026-09-20 (scenario follow-up) — Audited scenario decisions and the TODO history; clarified that retaining scientific information does not settle the physical JSON layout.
 - 2026-09-20 (single-schema consolidation) — Integrated the audit here at the owner’s request. Updated the preferred tree to two collection JSONs with embedded provenance and an experiment _engine/simulation directory; retained approval status, alternatives and migration constraints. Removed the uncommitted separate draft so this is the single current schema proposal.
+- 2026-09-20 (`scenarios/` ownership follow-up) — Recovered and integrated the original request/collection merge analysis. Kept the two branches as siblings, distinguished request, collection and revision identities, and recorded that static preflight removes the old checkpoint timing constraint without removing many-to-one reuse or separate mutability.

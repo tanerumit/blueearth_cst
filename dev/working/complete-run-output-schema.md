@@ -176,9 +176,14 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 │   │   ├── response_inventory.json           [kept]
 │   │   └── metric_requests/<id>.json          [kept]
 │   ├── hydrology/wflow/
-│   │   ├── run_settings/run_<id>.toml        [changed: retained Wflow run settings]
-│   │   ├── forcing/inmaps_run_<id>.nc         [kept role; retention reviewed separately]
-│   │   └── output/run_<id>.csv               [kept: native response]
+│   │   ├── run_settings/
+│   │   │   ├── run_<id>.toml                  [changed: retained Wflow run settings]
+│   │   │   ├── run_<id>.yml                   [temporary: HydroMT data catalog]
+│   │   │   └── run_<id>.temporal.json         [temporary: per-run validation handoff]
+│   │   ├── forcing/inmaps_run_<id>.nc         [temporary: Wflow-ready forcing]
+│   │   └── output/
+│   │       ├── run_<id>.csv                   [kept: retained native response]
+│   │       └── run_<id>.log                   [kept: native run log]
 │   └── results/metric_sets/<id>/             [kept]
 ├── logs/                                     [kept]
 └── benchmarks/                               [kept]
@@ -565,7 +570,7 @@ The local scientific JSON key inventories and current writers, rather than the o
 
 ### 8.5 Generated Wflow run settings and temporal evidence
 
-The current `experiments/<name>/hydrology/wflow/config/` holds `run_<id>.toml`, `run_<id>.yml` and `run_<id>.temporal.json` for each run. These have different roles. Wflow executes the TOML and the response reader verifies it against retained native output, so keep each `run_<id>.toml` unchanged by name and content under `hydrology/wflow/run_settings/`. The `run_<id>.yml` is a per-run HydroMT data catalog already declared `temp()`; it may be written in that directory while preparing a run but is not a required retained product. Do not change its HydroMT schema or filename. The temporal JSON is CST validation evidence, not a Wflow setting.
+The current `experiments/<name>/hydrology/wflow/config/` holds `run_<id>.toml`, `run_<id>.yml` and `run_<id>.temporal.json` for each run. These have different roles. Wflow executes the TOML and the response reader verifies it against retained native output, so keep each `run_<id>.toml` unchanged by name and content under `hydrology/wflow/run_settings/`. The `run_<id>.yml` is a per-run HydroMT data catalog already declared `temp()`; it may be written in that directory while preparing a run but is not a required retained product. Do not change its HydroMT schema or filename. The temporal JSON is CST validation evidence, not a Wflow setting. In the proposed tree, the annotated temporary entries show files that exist during execution, not a promise that they remain in a clean published output. The Wflow-ready `forcing/inmaps_run_<id>.nc` is likewise already declared temporary; the native `output/run_<id>.csv` is retained, and current Wflow runs also leave `output/run_<id>.log` beside it. This overview does not decide any further forcing or log retention change.
 
 Current publication requires every run's temporal evidence to match a single common value and embeds that value as `response_inventory.json`'s `temporal_preparation`. The checked baseline run 01 and run 14 files, and rapid run 01 and run 10 files, were byte-identical; this sampling supports the redundancy observation but is not a proof for all future inputs. The proposed new response-inventory schema retains the common temporal object once, while each run's actual prepared clock and transformation chain is still checked against its TOML and the common object before publication. Per-run temporal files can be temporary handoff artifacts and removed after successful publication; an implementation may instead pass equivalent checked evidence between preparation and publication without materializing them. Do not merely copy run 01's record to the others or omit per-run checks.
 
@@ -678,3 +683,4 @@ Draft validation: check Markdown links, parse JSON examples, check the diff for 
 - 2026-09-21 (flat request plans) — Placed full-hash immutable plan JSONs directly under each request directory, retaining the separate initialization receipts and exact plan pinning without a redundant `plans/` level.
 - 2026-09-21 (simulation consolidation) — Replaced the proposed six-file simulation family with an immutable embedded-input `simulation_intent.json` and a separately published `simulation.json` readiness marker, both flat under the experiment's `_engine/`. Retained response inventory and metric requests independently, with explicit section-digest, legacy-reader and metrics-only migration requirements.
 - 2026-09-21 (Wflow run settings) — Renamed the proposed experiment Wflow `config/` folder to `run_settings/`, kept per-run TOML names and Wflow settings unchanged, and proposed retaining common temporal evidence once in the response inventory after checking every run. Per-run HydroMT catalogs and temporal handoff records remain temporary, with versioned selector and legacy-reader migration required.
+- 2026-09-21 (Wflow subtree overview) — Expanded the proposed experiment Wflow tree to show settings, temporary HydroMT/temporal preparation files, temporary prepared forcing, native response CSVs and run logs together; clarified that temporary entries are execution-time files rather than retained publication requirements.

@@ -1,7 +1,7 @@
 # Complete-run output tree and record schemas — current working proposal
 
 - Status: working proposal — not an implementation brief or an implemented schema
-- Date: 2026-09-20
+- Date: 2026-09-21
 - Inspected code: bb200682 (documentation follow-up; runtime code unchanged)
 - Location: session-1, refactor/wf3-static-planning
 - Lifecycle: temporary working document; revise in place, append revision history. Promote the accepted contract to dev/reference/ before closing the work.
@@ -18,7 +18,7 @@ Read §2–3 for the tree and plain-language decisions; §4–8 for schema compa
 
 Decision authority remains in [ADR 0011](../decisions/0011-preserve-config-sources-with-run-records.md). The static-planning boundary remains in [the WF3 intake](t2609191457-wf3-static-planning.md). This document is the single latest working output-schema proposal: what would a user find in a completed output project, and what would each record contain? Integrate future layout and schema proposals here rather than maintaining competing trees. ADRs, task notes and migration records retain decision history; this document does not silently turn their open proposals into approvals. New field names and version labels below are draft suggestions, not approved APIs.
 
-The latest proposed tree incorporates a **seven-to-two reduction in collection JSON files** (§8), shared elevation (§7), exact source archives (§4), common invocation history (§5), static planning (§6), and relocation of frozen simulation documents into the experiment engine directory (§8.3). The seven-to-two mapping and exact simulation destination are recommendations, not recovered prior approvals. The decision/TODO reconciliation is included in §3.1.
+The latest proposed tree incorporates a **seven-to-two reduction in collection JSON files** (§8), a collection-centred `scenarios/` layout with one scenario-level `_engine/` (§3.2), shared elevation (§7), exact source archives (§4), common invocation history (§5), static planning (§6), and relocation of frozen simulation documents into the experiment engine directory (§8.3). The seven-to-two mapping and exact simulation destination are recommendations, not recovered prior approvals. The decision/TODO reconciliation is included in §3.1.
 
 ## 2. Existing and proposed output trees
 
@@ -140,22 +140,30 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 │           └── era5_orography_2018.nc
 ├── models/hydrology/wflow/                    [kept: engine configs stay here]
 ├── scenarios/
-│   ├── requests/<request-id>/
-│   │   ├── request.json                      [changed: discovery pointer]
-│   │   ├── plans/<plan-sha256>.json           [new: immutable execution plan]
-│   │   ├── initializations/<invocation-id>.json [kept role; binding changes]
-│   │   └── generation/                       [kept role; isolation unresolved]
-│   └── collections/<collection-id>/
-│       ├── run_record.yml                    [new: replaces composed snapshot]
-│       ├── sources/
-│       │   ├── project_config_rapid.yml
-│       │   └── project_config_rapid_generate_scenarios.yml
-│       ├── collection_intent.json            [changed: embeds five JSON sidecars]
-│       ├── collection.json                   [changed binding; final ready marker]
-│       ├── preparation_catalog.yml           [changed URI; retain HydroMT schema]
-│       ├── scenario_table.csv                [kept]
-│       ├── stress_test_lookup.csv            [kept]
-│       └── forcing/run_<id>.nc                [kept]
+│   ├── <collection-id>/                       [changed: user-facing collection]
+│   │   ├── config/                            [new: user-level configuration account]
+│   │   │   ├── run_record.yml                 [new: replaces composed snapshot]
+│   │   │   └── sources/                       [new: exact user-provided YAML bytes]
+│   │   │       ├── project_config_rapid.yml
+│   │   │       └── project_config_rapid_generate_scenarios.yml
+│   │   ├── generation/
+│   │   │   ├── weather_generation_input.yml   [changed: resolved executable input]
+│   │   │   └── output/                        [changed: retained date-selection products]
+│   │   │       ├── sim_dates.csv
+│   │   │       └── resampled_dates.csv
+│   │   ├── evaluation/weathergenr/plots/      [changed: conditional generator diagnostics]
+│   │   ├── preparation_catalog.yml           [changed URI; retain HydroMT schema]
+│   │   ├── scenario_table.csv                 [kept]
+│   │   ├── stress_test_lookup.csv             [kept]
+│   │   └── forcing/run_<id>.nc                 [kept]
+│   └── _engine/                              [new: one scenario-level machine-contract bin]
+│       ├── requests/<request-id>/
+│       │   ├── request.json                   [changed: discovery pointer]
+│       │   ├── plans/<plan-sha256>.json        [new: immutable execution plan]
+│       │   └── initializations/<invocation-id>.json [kept role; binding changes]
+│       └── collections/<collection-id>/
+│           ├── collection_intent.json        [changed: embeds five JSON sidecars]
+│           └── collection.json               [changed binding; final ready marker]
 ├── experiments/<name>/
 │   ├── config/
 │   │   ├── run_record.yml                    [new: replaces composed snapshot]
@@ -180,7 +188,7 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 
 Each sources/ also holds required custom catalogs and engine templates, preserving their original names and relative structure. The two-file examples are not a claim that all archives contain exactly two files. Unmodified toolbox files may instead be recoverable through recorded revision/blob identity.
 
-New collections write two root JSON documents instead of seven; the five sidecar payloads become embedded intent sections, not discarded evidence. Request plans and initialization receipts are outside that count. New experiments keep the human-facing archive under config/ and group their frozen scientific documents under _engine/simulation/.
+New collections have two scientific JSON documents in `scenarios/_engine/collections/<collection-id>/` instead of seven in the old collection root; the five sidecar payloads become embedded intent sections, not discarded evidence. Request plans and initialization receipts are outside that count. The user-facing collection groups exact creator configuration, the resolved weather-generation input, generation date products, generator evaluation plots and retained forcing. The archive belongs to the collection's creator; a later equivalent request records its own attempt without overwriting these sources. The large intermediate realization netCDFs remain temporary under the existing Snakemake contract; their retention is not silently expanded by this layout. New experiments keep the human-facing archive under config/ and group their frozen scientific documents under _engine/simulation/.
 
 New outputs stop writing composed_config.yml, journal.jsonl and the central config/catalogs, config/templates and config/generated archive destinations. Existing copies are legacy data and are not deleted by this proposal. A fresh tree has no collection-local ancillary/elevation directory under the new contract. CHIRPS extraction sidecars are not automatically relocated merely because the ERA5 source dependency moves.
 
@@ -197,7 +205,8 @@ New outputs stop writing composed_config.yml, journal.jsonl and the central conf
 | D7 | Preserve older sealed outputs and read their old schemas. | A layout improvement must not rewrite the evidence of a previous assessment. | Required migration constraint |
 | D8 | Embed the five collection provenance sidecars in collection_intent.json; retain collection.json separately. | Seven collection JSONs become two, while intent and completed outputs retain distinct lifetimes. | Current recommendation; no earlier approval of this mapping located |
 | D9 | Put frozen simulation documents together under _engine/simulation/; keep run_record.yml and sources/ under config/. | A user sees the readable configuration account separately from machine contracts. | Integrates t2609171500; exact destination is a recommendation |
-| D10 | Preserve separate request and collection ownership, 12-character path prefixes and full digest identities. | Multiple requests can select one collection; short paths do not weaken identity checks. | Already landed in the post-R12 migration |
+| D10 | Preserve separate request and collection identities, 12-character path prefixes and full digests, but put their records in one `scenarios/_engine/` bin. | Multiple requests can select one user-facing collection without displaying two sibling user trees. | Identity and prefix rules landed post-R12; placement is this working proposal |
+| D11 | Keep `config/` for the collection's user-level configuration account; name its resolved executable YAML `generation/weather_generation_input.yml`. | Exact `project_config_*` sources, the run record and engine-ready settings remain distinguishable without a generic `generated/` bin. | Owner-directed naming for the working layout; no Wflow filename change |
 
 Three different hashes answer three different questions: did the source file's bytes change; did the declared configuration values change; did the scientific artifact's identity change? A comment edit changes the first. It must not, by itself, change the last. A new preparation contract or provider-code revision may legitimately change a new collection's identity; do not promise identical IDs across that migration.
 
@@ -207,10 +216,10 @@ The user's recollection that fewer scenario JSON files had been decided prompted
 
 | Record | What it establishes | Effect on this schema |
 |---|---|---|
-| [Post-R12 migration](../milestones/post-r12/migration_scenario-tree.md), events 1–4; closed t2609152040/t2609152107 | scenarios/requests and scenarios/collections; request filename/schema rename; 12-character path segments with full digests retained | Already reflected in both trees. Grouping and naming did not remove collection JSONs. |
+| [Post-R12 migration](../milestones/post-r12/migration_scenario-tree.md), events 1–4; closed t2609152040/t2609152107 | The existing `scenarios/requests` and `scenarios/collections` paths, request filename/schema rename, and 12-character path segments with full digests retained | Reflected in the existing tree. The new user-facing layout supersedes the path grouping, not the distinct identities or prefix rule. |
 | [t2609152104](../tasks/t2609152104-separate-engine-bookkeeping-from-user-facing-artifacts-in-the-project-tree.md) versus migration event 6 | The live board says backlog and the note says changes 1/3 remain open; the migration records experiment/config-run engine bins and metric flattening as landed on 2026-09-16 | The checklist is stale. Treat final migration dispositions as evidence; do not reimplement its unchecked rows wholesale. |
-| Same task, Change 3 | Scenario requests retain a directory because they hold request, receipts and generation artifacts; metric requests were flattened because each identity had one file | Keep request directories. Fewer folders is not fewer JSON records. |
-| Same task, “Deliberately not proposed” | collection.json and collection_intent.json remain unmarked in the collection root | Preserve their distinct roles. This placement ruling does not prohibit embedding sidecars in the intent. |
+| Same task, Change 3 | Scenario requests retained a directory because they held request, receipts and generation artifacts; metric requests were flattened because each identity had one file | Keep request directories for plan/receipt history, but move user-valued generation products to the selected collection. Fewer visible folders is not fewer records. |
+| Same task, “Deliberately not proposed” | collection.json and collection_intent.json remained unmarked in the collection root | Preserve their distinct roles; moving both to the single scenario `_engine/` is a new proposal and needs versioned readers. |
 | Migration event 6, declined rows | Collection preparation files were not moved: paths participate in identity; model engine bin was reversed; per-run logs stay beside responses | Do not revive declined moves. Shared elevation is now addressed through the later ADR and a versioned contract. |
 | [t2609171500](../tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md) | Proposed moving the simulation family together; _engine/simulation versus _engine/config remained open | D9 selects _engine/simulation as the working recommendation, while leaving its acceptance and reader migration explicit. |
 | [t2609191457](../tasks/t2609191457-make-wf3-planning-static-before-snakemake.md) | Active static-planning work; one authoritative immutable preflight plan | No approved JSON-file count. Avoid a second authoritative planning path. |
@@ -218,30 +227,31 @@ The user's recollection that fewer scenario JSON files had been decided prompted
 
 The historical scenario naming migration approved a hard break and regeneration for its then-small known set of output trees. That dated ruling does not authorize deleting or rewriting today's sealed collections. The board itself has not been edited by this document; its outstanding dispositions need reconciliation before using it as an implementation checklist.
 
-The closed scenario task was recovered with git show abe49967^:dev/tasks/t2609152040-regroup-the-scenario-trees-under-scenarios-and-rename-scenario-plans-to-requests.md. It explicitly rejected nesting collections under requests/experiments and merging request/product identities. Those ownership arguments still apply when scheduling becomes static.
+The closed scenario task was recovered with git show abe49967^:dev/tasks/t2609152040-regroup-the-scenario-trees-under-scenarios-and-rename-scenario-plans-to-requests.md. It explicitly rejected nesting collections under requests/experiments and merging request/product identities. The new layout keeps those ownership arguments but revisits their user-facing placement.
 
-### 3.2 Why `requests/` and `collections/` remain siblings
+### 3.2 One user-facing collection and one scenario engine bin
 
-The recovered note considered the apparent simplification directly. Its accepted result was the current grouping under `scenarios/`, not a single merged identity or directory:
+The recovered note established why a request cannot *own* a collection. Its existing two-tree placement is not a requirement to show those trees to users. The proposed layout makes `scenarios/<collection-id>/` the scientific object and keeps both identity classes as separate records under one `scenarios/_engine/`:
 
 | Identity | Answers | Lifetime and location |
 |---|---|---|
-| `generation_request_id` | What was asked for from configuration, resolved inputs and provider settings? | Request-owned, replaceable discovery and execution records under `scenarios/requests/<request-id>/`. |
-| `collection_id` | What scientifically meaningful scenario collection is intended? | Collection-owned immutable identity under `scenarios/collections/<collection-id>/`. |
-| `collection_revision` | Which produced bytes make up the published collection? | Final inventory inside `collection.json`, known only after generation. |
+| `generation_request_id` | What was asked for from configuration, resolved inputs and provider settings? | Request-owned discovery, immutable plan and receipts under `scenarios/_engine/requests/<request-id>/`. |
+| `collection_id` | What scientifically meaningful scenario collection is intended? | Immutable scientific data under `scenarios/<collection-id>/`, with its identity record under `scenarios/_engine/collections/<collection-id>/`. |
+| `collection_revision` | Which produced bytes make up the published collection? | Final inventory inside the engine-side `collection.json`, known only after generation. |
 
-The identities are not one-to-one. Two requests may differ in non-semantic details such as an absolute catalog path yet resolve to the same collection identity. Nesting the collection beneath either request would duplicate one immutable product or make another request reach sideways into the first request's directory. Flattening both kinds directly under `scenarios/` would erase whether a digest names an ask or a product and would mix safely replaceable request state with sealed collection state. Nesting scenarios under an experiment remains invalid because WF3 is model-independent and one collection can support multiple WF4 experiments.
+The identities are not one-to-one. Two requests may differ in non-semantic details such as an absolute catalog path yet resolve to the same collection identity. Nesting the collection beneath either request would duplicate one immutable product or make another request reach sideways into the first request's directory. Putting request JSONs and scientific products together in each collection would repeat mutable request state when that collection is reused. Nesting scenarios under an experiment remains invalid because WF3 is model-independent and one collection can support multiple WF4 experiments.
 
-The original note also relied on an ordering constraint: the request identity was available when the old checkpoint-shaped DAG was constructed, while the collection identity required staged source inventory and preparation context. Static WF3 preflight changes when the collection identity becomes available: the launcher can prepare sources and freeze an authoritative plan before constructing the generation DAG. That removes the checkpoint constraint, but it does **not** collapse the three identities, their many-to-one mapping or their different publication rules. `scenarios/requests/` therefore remains the home of request, plan, receipt and invocation-scoped generation state; `scenarios/collections/` remains the home of reusable scientific products.
+The original note also relied on an ordering constraint: the request identity was available when the old checkpoint-shaped DAG was constructed, while the collection identity required staged source inventory and preparation context. Static WF3 preflight changes when the collection identity becomes available: the launcher can prepare sources and freeze an authoritative plan before constructing the generation DAG. That removes the checkpoint constraint, but it does **not** collapse the three identities, their many-to-one mapping or their different publication rules.
 
-The simplification retained by this proposal is consequently bounded:
+The placement changes are bounded:
 
-- keep one semantic parent, `scenarios/`, with explicit `requests/` and `collections/` branches;
-- consolidate collection provenance sidecars inside `collection_intent.json` as proposed by D8, without merging request and collection ownership;
-- keep `collection.json` separate because publication of produced bytes occurs after the intent is frozen; and
-- permit garbage collection of request-owned working state without making collection deletion appear safe.
+- keep one user-facing `scenarios/<collection-id>/` for retained products and one `scenarios/_engine/` with separate request and collection records;
+- keep `config/run_record.yml` and exact `config/sources/` as the collection's user-level configuration account, while `generation/weather_generation_input.yml` retains the resolved YAML consumed by weather generation and perturbation;
+- place `generation/output/` date-selection products with the collection and put the conditional `weathergenr` diagnostic plots under `evaluation/weathergenr/plots/`, rather than treating them as request bookkeeping;
+- consolidate collection provenance sidecars inside the engine-side `collection_intent.json` as proposed by D8, while retaining `collection.json` as the final readiness marker; and
+- let request-owned plans/receipts be cleaned up independently without implying that the collection data or its engine records may be deleted.
 
-This is an inherited architectural constraint, not a new approval of the draft `scenario-request/2` or `generation-plan/1` field contracts in §6.
+The engine-side ready marker must bind and validate the matching user-facing data root; the mere existence of `scenarios/<collection-id>/` is not readiness. A project copy retains both siblings, while a standalone collection export needs both the data directory and its engine-side records. Discovery must ignore reserved `_engine/` and validate the full identity behind each 12-character collection segment. This placement does not approve the draft `scenario-request/2` or `generation-plan/1` fields in §6.
 
 ## 4. Generated YAML: one run record and exact sources
 
@@ -303,12 +313,21 @@ source_files:
     recoverable: <boolean>
     git_blob: <blob ID or null>
 referenced_inputs: <catalog/template/basin dependency entries with role and hashes>
+generated_inputs:
+  - role: weather_generation_input
+    path_base: project_root
+    path: scenarios/<collection-id>/generation/weather_generation_input.yml
+    sha256: <exact generated YAML byte checksum>
 rerun:
   project_source: project
   workflow: generate_scenarios
   path_policy: <agreed archive resolution policy>
   adjustments: []                       # explicit rerun changes, never edits to copies
 ~~~
+
+The `generated_inputs` entry binds the exact engine-ready YAML separately from byte-preserved `source_files` and the loaded-config account. `weather_generation_input.yml` is assembled from user settings, defaults and derived values; its present-day `weathergen_config.yml` predecessor includes an absolute output directory. Archiving those bytes proves what ran but does not make that path portable. Specify path relocation/reconstruction for a rerun without editing the sealed original. This naming convention is scoped to WF3; Wflow settings YAMLs and established model filenames are not being renamed.
+
+Do not hash this path-bearing YAML wholesale into `collection_id`: its output directory contains the collection path, so that would create a self-reference and make relocation alter scientific identity. Preserve the existing semantic projection of generator settings for identity, then checksum the exact emitted YAML as execution evidence in the run record.
 
 Store the full loaded mapping once. A projection identifies which parts feed a configuration digest; it does not require another full copy of the values and does not claim every field was used by a rule. Preserve the existing digest computation until a separately reviewed change replaces it. Changing a record's container schema must not silently redefine its digest.
 
@@ -354,13 +373,13 @@ This valid JSON example uses illustrative IDs/timestamps and placeholder hashes;
     "configuration_inputs_sha256": "<hash of configured dependencies>",
     "run_record": {
       "path_base": "project_root",
-      "path": "scenarios/collections/<id>/run_record.yml",
+      "path": "scenarios/<id>/config/run_record.yml",
       "sha256": "<record file checksum>"
     }
   },
   "plan": {
     "path_base": "project_root",
-    "path": "scenarios/requests/<request-id>/plans/<plan-sha256>.json",
+    "path": "scenarios/_engine/requests/<request-id>/plans/<plan-sha256>.json",
     "sha256": "<plan file checksum>"
   },
   "artifacts": [
@@ -368,7 +387,7 @@ This valid JSON example uses illustrative IDs/timestamps and placeholder hashes;
       "kind": "scenario_collection",
       "id": "<full collection identity>",
       "path_base": "project_root",
-      "path": "scenarios/collections/<id>/collection.json",
+      "path": "scenarios/_engine/collections/<id>/collection.json",
       "sha256": "<sealed manifest checksum>"
     }
   ],
@@ -452,7 +471,7 @@ In the new layout, the preparation context is embedded at collection_intent.json
 
 The size is from the inspected example, not a constraint. A content-hash directory is the recommended version scheme: retain the familiar original filename and keep different bytes at different paths. The full-hash ancillary directory in the sketch is a new proposal, separate from the already-landed 12-character request/collection path convention; select its prefix/collision policy explicitly before implementation. The alternative is a human-readable source version directory, preferable when the provider exposes stable, unambiguous versions; either way checksum verification is required.
 
-Recommend retaining preparation_catalog.yml beside the collection, with a relative URI that reaches the shared file from the catalog's location. The project-relative JSON reference and the catalog URI must resolve to the same checked bytes after project relocation. Verify actual HydroMT path resolution before accepting that choice; do not add CST-specific keys to HydroMT YAML or modify upstream code. Original machine paths can remain provenance, but must not be the only way the retained dependency is resolved.
+Recommend retaining preparation_catalog.yml at the user-facing collection root, with a relative URI that reaches the shared file from the catalog's location. The engine-side preparation-context reference can no longer assume this catalog is a sibling of collection_intent.json: declare its project-root or collection-data-root anchor explicitly and verify that it resolves to the same checked catalog bytes. The project-relative JSON reference and the catalog URI must resolve to the same checked elevation bytes after project relocation. Verify actual HydroMT path resolution before accepting that choice; do not add CST-specific keys to HydroMT YAML or modify upstream code. Original machine paths can remain provenance, but must not be the only way the retained dependency is resolved.
 
 This change affects more than a path in one JSON file. The consolidated intent binds its embedded preparation section by digest; that section binds the catalog and ancillary bytes. collection.json binds the intent and the completed outputs. Source inventory and provider code also contribute to identity. Specify coordinated reader/version and canonicalization changes before writing new collections. Existing scenario-collection/1 collections retain their local sidecars and data bytes. New consolidated/shared-reference collections require an explicit versioned dispatch contract; the exact collection version label remains open in §10.
 
@@ -462,17 +481,17 @@ Never edit the inspected sealed collection to demonstrate the proposed tree. Mis
 
 ### 8.1 Collection JSONs: seven become two
 
-Current count, inspected 2026-09-20: session-1/test_case/test_local/scenarios/collections/c3f88ea5c76f has seven root JSON files. scenario_collection.py's DOCUMENT_FILES mapping independently names the five provenance sidecars. The proposed fresh collection has two root JSON files; request plans, receipts and invocation history are outside this count. Re-measure before implementation.
+Current count, inspected 2026-09-20: session-1/test_case/test_local/scenarios/collections/c3f88ea5c76f has seven root JSON files. scenario_collection.py's DOCUMENT_FILES mapping independently names the five provenance sidecars. The proposed fresh collection has two scientific JSON files under its `scenarios/_engine/collections/<id>/` record directory and none at the user-facing collection root; request plans, receipts and invocation history are outside this count. Re-measure before implementation.
 
 | Existing file | Proposed location | Meaning retained |
 |---|---|---|
-| collection_intent.json | collection_intent.json | Frozen pre-generation identity, scenario semantics and expected rows. |
+| collection_intent.json | _engine/collections/<id>/collection_intent.json | Frozen pre-generation identity, scenario semantics and expected rows. |
 | generation_config.json | documents.generation_config inside the intent | Resolved generation settings and seed. |
 | source_inventory.json | documents.source_inventory inside the intent | Original source inventory and byte identities; review roles/anchors for shared elevation. |
 | provider_code_inventory.json | documents.provider_code inside the intent | Provider implementation inventory. |
 | generation_environment.json | documents.environment inside the intent | Generation environment identity. |
 | preparation_context.json | documents.preparation_context inside the intent | Forcing reader, PET and checked preparation dependencies (§7). |
-| collection.json | collection.json | Final output inventory, revision and readiness, published last. |
+| collection.json | _engine/collections/<id>/collection.json | Final output inventory, revision and readiness, published last. |
 
 Candidate intent structure, not a finalized executable schema:
 
@@ -501,13 +520,13 @@ document_digests:
   preparation_context: <canonical embedded document checksum>
 ~~~
 
-Keep collection.json as a separate final record. It retains collection identity/revision, intent path/checksum, scenario-table reference, scenario-type artifacts, forcing entries with hashes/descriptors and ready status. Its existing preparation-context file reference becomes an explicitly versioned section reference to the checked intent, or is removed as redundant if all readers obtain preparation through the intent. The working recommendation is the latter: one authoritative embedded preparation object reached through the verified intent. Final strict field sets must be agreed before coding.
+Keep collection.json as a separate final record. It retains collection identity/revision, intent path/checksum, scenario-table reference, scenario-type artifacts, forcing entries with hashes/descriptors and ready status. Its existing preparation-context file reference becomes an explicitly versioned section reference to the checked intent, or is removed as redundant if all readers obtain preparation through the intent. The working recommendation is the latter: one authoritative embedded preparation object reached through the verified intent. The new manifest location also requires an explicit project-relative reference to the sibling `scenarios/<collection-id>/` data root; never infer readiness from the data directory alone. Final strict field sets must be agreed before coding.
 
-The five embedded sections retain the full evidence, not summaries. This reduces files, not necessarily bytes. A long environment inventory remains long inside the intent. The run_record.yml remains a readable source/config account and cannot substitute for scientific identity inputs.
+The five embedded sections retain the full evidence, not summaries. This reduces files, not necessarily bytes. A long environment inventory remains long inside the intent. The run_record.yml remains a readable source/config account and cannot substitute for scientific identity inputs. The retained `sim_dates.csv` and `resampled_dates.csv` need explicit byte references in the final collection inventory or a separately checked provenance record; merely moving them under the collection would not make their evidentiary role verifiable. Evaluation plots are terminal diagnostics, not inputs to collection identity.
 
 ### 8.2 Publication, identity and alternatives
 
-An intent can be frozen before generation; the produced-byte inventory cannot. Keeping these two lifetimes separate preserves the existing claim and final-readiness distinction. Do not overwrite an intent to turn it into a success record. Missing collection.json still means the collection has not been published ready.
+An intent can be frozen before generation; the produced-byte inventory cannot. Keeping these two lifetimes separate preserves the existing claim and final-readiness distinction. Do not overwrite an intent to turn it into a success record. Missing engine-side collection.json still means the collection has not been published ready, even if its sibling data directory exists. Publish the marker last, after checking the data-root path, expected files and hashes. Validation must refuse a marker without matching data and ignore orphaned data without a marker.
 
 This is a coordinated schema migration. Current readers open named sidecars, enforce strict fields and hash their bytes. Specify canonicalization for each embedded document and the identity projection excluding self-referential fields. Prove whether pure packaging preserves identity under those functions. Do not assume matching parsed values guarantee matching digests; shared-data and provider-code changes may legitimately create new identities. Old sidecar-based collections remain readable and untouched.
 
@@ -516,7 +535,7 @@ This is a coordinated schema migration. Current readers open named sidecars, enf
 | Keep seven JSONs | Smallest reader migration, components can be inspected independently | File clutter remains; preferable if compatibility risk outweighs ergonomics. |
 | Two JSONs — working recommendation | Fewer files with clear intent versus completed-output boundary | Larger intent; coordinated initialization, publication and downstream-reader changes. |
 | One collection JSON | Smallest visible count | Requires redesigning the pre-publication claim/state contract, or retaining another hidden intent anyway. Not selected here. |
-| Move sidecars into _engine/ | Cleaner collection root | Same total count and path/identity migration. This is grouping, not consolidation. |
+| Keep the two JSONs beside the user-facing products | Easier standalone directory inspection | Exposes machine readiness contracts at the collection root; preferable if detached collection export is the primary use case. The working layout instead uses one scenario-level _engine/. |
 
 Keep preparation_catalog.yml as a separate HydroMT-native input. JSON consolidation does not authorize CST-specific catalog keys or changes in upstream HydroMT code.
 
@@ -546,7 +565,7 @@ The local scientific JSON key inventories and current writers, rather than the o
 
 ## 9. Migration and alternatives
 
-Write the new layouts for new executions/artifacts. Preserve old journals and invocation JSONs as legacy history; dispatch readers by schema and do not reinterpret old no_op values under the new semantics. Existing sealed collections and experiments remain byte-for-byte unchanged. Update snapshot readers, collection sidecar readers, simulation-location readers, declared Snakemake targets, tree inventories, fixtures and user documentation together. Baseline readers currently consume composed snapshots, so simply deleting the writer is not a complete migration.
+Write the new layouts for new executions/artifacts. Preserve old journals and invocation JSONs as legacy history; dispatch readers by schema and do not reinterpret old no_op values under the new semantics. Existing sealed collections and experiments remain byte-for-byte unchanged. Update snapshot readers, collection sidecar readers, collection discovery and path-containment checks, simulation-location readers, declared Snakemake targets, tree inventories, fixtures and user documentation together. Baseline readers currently consume composed snapshots, so simply deleting the writer is not a complete migration. Do not rename existing Wflow YAML/TOML files as part of the scenario layout or generated-input naming change.
 
 For WF0–WF2, replacement of the latest archive must be coordinated with its matching record and any running reader. For WF3/WF4 reuse, no new source archive is inserted into an already sealed artifact. Invocation history records the new attempt and points to the original artifact. Whether metrics-only and failed-before-artifact invocations need separately retained source archives is unresolved; do not imply they already have full rerun coverage.
 
@@ -556,6 +575,7 @@ For WF0–WF2, replacement of the latest archive must be coordinated with its ma
 | One project-wide config archive | Less repeated source storage | Later workflows can overwrite earlier provenance. Suitable only for a separately frozen coordinated run, not independent workflow execution. |
 | Keep one append-only event journal | Rich transition history | Requires event reconstruction and coordination. Prefer it if intermediate transitions, beyond start/final state, are required. |
 | Keep dynamic WF3 checkpoints | Preserves current cold-start invocation behavior | No fully resolved upfront generation DAG. Prefer if preserving that invocation contract is more valuable than static planning. |
+| Keep user-visible `scenarios/requests/` and `scenarios/collections/` | Smallest path migration; request-local working outputs remain co-located | Makes users navigate machine identities to find generation inputs, date products and diagnostics. Prefer if implementation cost outweighs the navigation improvement. |
 | Keep ancillary data collection-local | Each collection carries its source elevation | Duplicates shared source data and conflicts with the agreed project-owned direction; useful for an explicit standalone export. |
 
 ## 10. Decisions still needed before a task brief
@@ -563,7 +583,9 @@ For WF0–WF2, replacement of the latest archive must be coordinated with its ma
 | Open item | Recommended starting point | Why it blocks implementation details |
 |---|---|---|
 | Exact schema versions and digest projections | Version the new record independently; preserve digest meanings | Avoid silently changing identity while renaming metadata fields. |
-| Collection JSON consolidation | Two root JSONs; five complete provenance sections embedded in the intent | Requires accepted strict field sets, section canonicalization and old-sidecar reader dispatch. |
+| Collection JSON consolidation | Two JSONs in the scenario engine's collection-record directory; five complete provenance sections embedded in the intent | Requires accepted strict field sets, section canonicalization and old-sidecar reader dispatch. |
+| Scenario record/data split | One `scenarios/_engine/` with separate request and collection records; one `scenarios/<id>/` scientific root | Stored relative paths, containment, discovery, publication and standalone export must recognize both siblings. |
+| Weather-generation input and intermediates | `generation/weather_generation_input.yml`, retained date CSVs, diagnostics under `evaluation/weathergenr/plots/` | Decide whether any additional generator intermediates are durable; keep currently temporary realization netCDFs temporary unless explicitly changed. |
 | Simulation machine-contract location | _engine/simulation/ for the six-file scientific family | The source task left this destination open; resolve stored paths and old-tree lookup together. |
 | Record-plus-sources publication | Publish one coherent archive generation with explicit crash recovery | Independent atomic file writes can mix two runs. |
 | Archive path mapping | Preserve relative structure; explicitly map absolute/multi-drive sources | Exact copies cannot silently redirect absolute YAML references. |
@@ -600,7 +622,10 @@ Acceptance evidence to carry into those briefs:
 | One matching archive | Interrupted or concurrent publication exposes mixed record/source checksums. Exercise failure points, not just a successful write. |
 | Clear invocation history | Missing child linkage, a dry-run reported as work, or hard termination reported as success. Exercise direct, parent/child, startup failure, no-op and crash cases. |
 | Stable scientific meaning | Comment-only edits alter scientific identity, row ordering/seeds change, or retained forcing differs beyond an agreed scientific comparison. Separate identity migration from numerical parity. |
-| Reduced collection JSON count | A fresh collection still emits the five sidecars, embedded evidence is missing, tampering with an embedded section passes validation, or an old collection stops reading. Assert exactly the two agreed root JSONs and exercise all section readers. |
+| Reduced collection JSON count | A fresh collection still emits the five sidecars, embedded evidence is missing, tampering with an embedded section passes validation, or an old collection stops reading. Assert exactly two JSONs in its scenario engine record directory and exercise all section readers. |
+| Scenario root/engine binding | A bare data directory is listed as ready, an orphaned marker passes, two requests duplicate one collection, or detached export omits its records. Test each and verify full-ID/short-segment correspondence. |
+| Generated-input recovery | The weather-generation YAML is absent, differs from the run record's checksum, or a moved project silently reuses its old absolute output path. Validate exact bytes and relocation behavior. |
+| Generation intermediates and diagnostics | Date-selection CSV bytes are unaccounted for, conditional figures disappear during relocation, or temporary realization netCDFs become silently durable. Check inventory/reference coverage and terminal-render handling. |
 | Simulation grouping | A reference still points only to the old path, a retained old simulation cannot reopen, or response-inventory depth changes. Validate both locations and metrics-only reads. |
 | Shared ancillary safety | Two collections copy the same version unnecessarily, changed bytes pass, old collections stop reading, or relocation breaks catalog resolution. Test all four. |
 | Static generation scheduling | Either checkpoint still expands the generation DAG, live pointer replacement redirects execution, or cold dry-run silently produces scientific outputs. Inspect DAGs and filesystem differences. |
@@ -633,3 +658,4 @@ Draft validation: check Markdown links, parse JSON examples, check the diff for 
 - 2026-09-20 (scenario follow-up) — Audited scenario decisions and the TODO history; clarified that retaining scientific information does not settle the physical JSON layout.
 - 2026-09-20 (single-schema consolidation) — Integrated the audit here at the owner’s request. Updated the preferred tree to two collection JSONs with embedded provenance and an experiment _engine/simulation directory; retained approval status, alternatives and migration constraints. Removed the uncommitted separate draft so this is the single current schema proposal.
 - 2026-09-20 (`scenarios/` ownership follow-up) — Recovered and integrated the original request/collection merge analysis. Kept the two branches as siblings, distinguished request, collection and revision identities, and recorded that static preflight removes the old checkpoint timing constraint without removing many-to-one reuse or separate mutability.
+- 2026-09-21 (collection-centred layout) — Revised the proposed scenario tree to a user-facing collection plus one `scenarios/_engine/` for distinct request and collection records. Grouped exact user configuration, resolved `weather_generation_input.yml`, date-selection products and weather-generator evaluation plots by role; left Wflow filenames unchanged and made cross-sibling readiness/portability checks explicit.

@@ -14,7 +14,7 @@ The proposal brings together exact configuration archives, execution history, sh
 
 Read §2–3 for the tree and plain-language decisions; §4–8 for schema comparisons; §9–11 for migration, unresolved choices and the outline of a future task brief. The detail is retained because the next reader needs to distinguish a renamed record from a changed scientific contract.
 
-**Evidence boundary.** No new full run was executed for this document. The proposed writers do not exist yet. Current examples were inspected in session-1's test_case/test_local and test_case/test_rapid, alongside their writers. These are accumulated output trees, not evidence of one clean run at the inspected code revision. The local collection c3f88ea5c76f has a ready marker and 14 retained forcing entries; its experiment is named experiment. This inspection did not revalidate the forcing bytes or numerical results. Rapid supplies examples of WF0 records and wrapper invocation history. Its older retained collections do not have the artifact-local composed snapshot now written by current code.
+**Evidence boundary.** No new full run was executed for this document. The proposed writers do not exist yet. Current examples were inspected in session-1's test_case/test_local and test_case/test_rapid, alongside their writers. These are accumulated output trees, not evidence of one clean run at the inspected code revision. The local collection c3f88ea5c76f has a ready marker and 14 retained entries currently named forcing; its experiment is named experiment. This inspection did not revalidate the scenario-series bytes or numerical results. Rapid supplies examples of WF0 records and wrapper invocation history. Its older retained collections do not have the artifact-local composed snapshot now written by current code.
 
 Decision authority remains in [ADR 0011](../decisions/0011-preserve-config-sources-with-run-records.md). The static-planning boundary remains in [the WF3 intake](t2609191457-wf3-static-planning.md). This document is the single latest working output-schema proposal: what would a user find in a completed output project, and what would each record contain? Integrate future layout and schema proposals here rather than maintaining competing trees. ADRs, task notes and migration records retain decision history; this document does not silently turn their open proposals into approvals. New field names and version labels below are draft suggestions, not approved APIs.
 
@@ -146,16 +146,16 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 │   │   │   └── sources/                       [new: exact user-provided YAML bytes]
 │   │   │       ├── project_config_rapid.yml
 │   │   │       └── project_config_rapid_generate_scenarios.yml
-│   │   ├── generation/
+│   │   ├── weathergenr/                       [new: provider integration]
 │   │   │   ├── weather_generation_input.yml   [changed: resolved executable input]
-│   │   │   └── output/                        [changed: retained date-selection products]
-│   │   │       ├── sim_dates.csv
-│   │   │       └── resampled_dates.csv
-│   │   ├── evaluation/weathergenr/plots/      [changed: conditional generator diagnostics]
+│   │   │   ├── output/                        [changed: retained date-selection products]
+│   │   │   │   ├── sim_dates.csv
+│   │   │   │   └── resampled_dates.csv
+│   │   │   └── evaluation/plots/              [changed: conditional generator diagnostics]
 │   │   ├── preparation_catalog.yml           [changed URI; retain HydroMT schema]
 │   │   ├── scenario_table.csv                 [kept]
 │   │   ├── stress_test_lookup.csv             [kept]
-│   │   └── forcing/run_<id>.nc                 [kept]
+│   │   └── series/run_<id>.nc                  [changed: scenario time series, not forcing]
 │   └── _engine/                              [new: one scenario-level machine-contract bin]
 │       ├── requests/<request-id>/
 │       │   ├── request.json                   [changed: discovery pointer]
@@ -188,7 +188,7 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 
 Each sources/ also holds required custom catalogs and engine templates, preserving their original names and relative structure. The two-file examples are not a claim that all archives contain exactly two files. Unmodified toolbox files may instead be recoverable through recorded revision/blob identity.
 
-New collections have two scientific JSON documents in `scenarios/_engine/collections/<collection-id>/` instead of seven in the old collection root; the five sidecar payloads become embedded intent sections, not discarded evidence. Request plans and initialization receipts are outside that count. The user-facing collection groups exact creator configuration, the resolved weather-generation input, generation date products, generator evaluation plots and retained forcing. The archive belongs to the collection's creator; a later equivalent request records its own attempt without overwriting these sources. The large intermediate realization netCDFs remain temporary under the existing Snakemake contract; their retention is not silently expanded by this layout. New experiments keep the human-facing archive under config/ and group their frozen scientific documents under _engine/simulation/.
+New collections have two scientific JSON documents in `scenarios/_engine/collections/<collection-id>/` instead of seven in the old collection root; the five sidecar payloads become embedded intent sections, not discarded evidence. Request plans and initialization receipts are outside that count. The user-facing collection groups exact creator configuration, a provider-specific `weathergenr/` integration subtree and provider-independent scenario products under `series/`. The archive belongs to the collection's creator; a later equivalent request records its own attempt without overwriting these sources. The large intermediate realization netCDFs remain temporary under the existing Snakemake contract; their retention is not silently expanded by this layout. `series/run_<id>.nc` denotes the current stochastic collection's retained climate time series, not Wflow-ready forcing or a mandatory folder for every future scenario type. WF4 owns any subsequent conversion or selection for a system model. New experiments keep the human-facing archive under config/ and group their frozen scientific documents under _engine/simulation/.
 
 New outputs stop writing composed_config.yml, journal.jsonl and the central config/catalogs, config/templates and config/generated archive destinations. Existing copies are legacy data and are not deleted by this proposal. A fresh tree has no collection-local ancillary/elevation directory under the new contract. CHIRPS extraction sidecars are not automatically relocated merely because the ERA5 source dependency moves.
 
@@ -206,7 +206,8 @@ New outputs stop writing composed_config.yml, journal.jsonl and the central conf
 | D8 | Embed the five collection provenance sidecars in collection_intent.json; retain collection.json separately. | Seven collection JSONs become two, while intent and completed outputs retain distinct lifetimes. | Current recommendation; no earlier approval of this mapping located |
 | D9 | Put frozen simulation documents together under _engine/simulation/; keep run_record.yml and sources/ under config/. | A user sees the readable configuration account separately from machine contracts. | Integrates t2609171500; exact destination is a recommendation |
 | D10 | Preserve separate request and collection identities, 12-character path prefixes and full digests, but put their records in one `scenarios/_engine/` bin. | Multiple requests can select one user-facing collection without displaying two sibling user trees. | Identity and prefix rules landed post-R12; placement is this working proposal |
-| D11 | Keep `config/` for the collection's user-level configuration account; name its resolved executable YAML `generation/weather_generation_input.yml`. | Exact `project_config_*` sources, the run record and engine-ready settings remain distinguishable without a generic `generated/` bin. | Owner-directed naming for the working layout; no Wflow filename change |
+| D11 | Keep `config/` for the collection's user-level configuration account; put the resolved `weather_generation_input.yml` and generator products under `<provider>/`. | Exact `project_config_*` sources, the run record and provider-specific settings remain distinguishable without a generic `generated/` bin. | Owner-directed naming for the working layout; no Wflow filename change |
+| D12 | Name retained WF3 climate time series `series/run_<id>.nc`, reserving `forcing/` for a system-model-ready input at the WF4 boundary. | Generated scenarios may need post-processing or may never become a model forcing. | Owner-directed semantic correction; path and manifest migration proposed |
 
 Three different hashes answer three different questions: did the source file's bytes change; did the declared configuration values change; did the scientific artifact's identity change? A comment edit changes the first. It must not, by itself, change the last. A new preparation contract or provider-code revision may legitimately change a new collection's identity; do not promise identical IDs across that migration.
 
@@ -246,12 +247,12 @@ The original note also relied on an ordering constraint: the request identity wa
 The placement changes are bounded:
 
 - keep one user-facing `scenarios/<collection-id>/` for retained products and one `scenarios/_engine/` with separate request and collection records;
-- keep `config/run_record.yml` and exact `config/sources/` as the collection's user-level configuration account, while `generation/weather_generation_input.yml` retains the resolved YAML consumed by weather generation and perturbation;
-- place `generation/output/` date-selection products with the collection and put the conditional `weathergenr` diagnostic plots under `evaluation/weathergenr/plots/`, rather than treating them as request bookkeeping;
+- keep `config/run_record.yml` and exact `config/sources/` as the collection's user-level configuration account, while `weathergenr/weather_generation_input.yml`, `weathergenr/output/` date-selection products and `weathergenr/evaluation/plots/` diagnostics form a provider-specific integration subtree rather than request bookkeeping;
+- keep the published scenario time series under `series/` at the collection root, outside the provider subtree, so a WF4 consumer can find them without treating them as already prepared forcings;
 - consolidate collection provenance sidecars inside the engine-side `collection_intent.json` as proposed by D8, while retaining `collection.json` as the final readiness marker; and
 - let request-owned plans/receipts be cleaned up independently without implying that the collection data or its engine records may be deleted.
 
-The engine-side ready marker must bind and validate the matching user-facing data root; the mere existence of `scenarios/<collection-id>/` is not readiness. A project copy retains both siblings, while a standalone collection export needs both the data directory and its engine-side records. Discovery must ignore reserved `_engine/` and validate the full identity behind each 12-character collection segment. This placement does not approve the draft `scenario-request/2` or `generation-plan/1` fields in §6.
+The engine-side ready marker must bind and validate the matching user-facing data root; the mere existence of `scenarios/<collection-id>/` is not readiness. A project copy retains both siblings, while a standalone collection export needs both the data directory and its engine-side records. Discovery must ignore reserved `_engine/` and validate the full identity behind each 12-character collection segment. Provider name and revision already contribute to `collection_id`; putting `<provider>/` before that ID would make collection lookup depend on a second path key. A different provider can own a different subtree inside its collection, while the collection-level scenario-product contract remains independent. This placement does not approve the draft `scenario-request/2` or `generation-plan/1` fields in §6.
 
 ## 4. Generated YAML: one run record and exact sources
 
@@ -316,7 +317,7 @@ referenced_inputs: <catalog/template/basin dependency entries with role and hash
 generated_inputs:
   - role: weather_generation_input
     path_base: project_root
-    path: scenarios/<collection-id>/generation/weather_generation_input.yml
+    path: scenarios/<collection-id>/weathergenr/weather_generation_input.yml
     sha256: <exact generated YAML byte checksum>
 rerun:
   project_source: project
@@ -325,7 +326,7 @@ rerun:
   adjustments: []                       # explicit rerun changes, never edits to copies
 ~~~
 
-The `generated_inputs` entry binds the exact engine-ready YAML separately from byte-preserved `source_files` and the loaded-config account. `weather_generation_input.yml` is assembled from user settings, defaults and derived values; its present-day `weathergen_config.yml` predecessor includes an absolute output directory. Archiving those bytes proves what ran but does not make that path portable. Specify path relocation/reconstruction for a rerun without editing the sealed original. This naming convention is scoped to WF3; Wflow settings YAMLs and established model filenames are not being renamed.
+The `generated_inputs` entry binds the exact execution YAML separately from byte-preserved `source_files` and the loaded-config account. `weather_generation_input.yml` is assembled from user settings, defaults and derived values; its present-day `weathergen_config.yml` predecessor includes an absolute output directory. The `weathergenr/` subtree denotes the provider integration, not exclusive upstream ownership: the CST perturbation script also reads flags from this YAML. Archiving those bytes proves what ran but does not make that path portable. Specify path relocation/reconstruction for a rerun without editing the sealed original. This naming convention is scoped to WF3; Wflow settings YAMLs and established model filenames are not being renamed.
 
 Do not hash this path-bearing YAML wholesale into `collection_id`: its output directory contains the collection path, so that would create a self-reference and make relocation alter scientific identity. Preserve the existing semantic projection of generator settings for identity, then checksum the exact emitted YAML as execution evidence in the run record.
 
@@ -431,9 +432,9 @@ Candidate plan field contract:
 | documents | Existing resolved source/config/code/environment/preparation objects | Pin every dependency needed for initialization; do not require the mutable pointer to recover them. |
 | source_inventory_sha256 | Existing inventory digest | Revalidate live producer inputs before writes. |
 | decision | create or reuse_ready | Freeze which execution branch was selected. |
-| collection_revision | Existing ready revision for reuse; null for create | A new collection's forcing hashes are not yet knowable. |
+| collection_revision | Existing ready revision for reuse; null for create | A new collection's scenario-product hashes are not yet knowable. |
 | rows | Ordered row objects under the existing scenario-row contract | Fix run IDs, ancestors and perturbation mapping without redesigning their science. |
-| outputs | Project-relative expected collection, forcing and preparation paths | Construct the generation DAG statically. |
+| outputs | Project-relative expected collection, scenario-series and preparation paths | Construct the generation DAG statically. |
 | path_base | project_root | Make the output-path anchor explicit. |
 | counts | Retained row count and potential generation work only | Do not confuse these with Snakemake's actual scheduled jobs. |
 
@@ -453,7 +454,7 @@ Initialization receipts retain their invocation/ownership role until a replaceme
 
 ## 7. Shared elevation: versioned preparation references
 
-Current preparation_context.json uses forcing-preparation/1. Its top-level fields are ancillary, catalog, forcing_elevation, generated_forcing_reader, pet_method and schema_version. The inspected elevation item has id, role, path, sha256, size_bytes and descriptor. Its path is collection-relative. preparation_catalog.yml contains the matching HydroMT elevation entry with that same local URI and the existing data adapter.
+Current preparation_context.json uses forcing-preparation/1. Its top-level fields are ancillary, catalog, forcing_elevation, generated_forcing_reader, pet_method and schema_version. These are existing schema spellings, not a claim that the published WF3 series are already WF4 forcings; any replacement terminology needs a versioned contract rather than a cosmetic field rename. The inspected elevation item has id, role, path, sha256, size_bytes and descriptor. Its path is collection-relative. preparation_catalog.yml contains the matching HydroMT elevation entry with that same local URI and the existing data adapter.
 
 In the new layout, the preparation context is embedded at collection_intent.json documents.preparation_context (§8), rather than written as preparation_context.json. Proposed forcing-preparation/2 changes the elevation reference anchor. Keep descriptors, units, data-adapter conversions and elevation selection semantics unchanged. Candidate item:
 
@@ -475,7 +476,7 @@ Recommend retaining preparation_catalog.yml at the user-facing collection root, 
 
 This change affects more than a path in one JSON file. The consolidated intent binds its embedded preparation section by digest; that section binds the catalog and ancillary bytes. collection.json binds the intent and the completed outputs. Source inventory and provider code also contribute to identity. Specify coordinated reader/version and canonicalization changes before writing new collections. Existing scenario-collection/1 collections retain their local sidecars and data bytes. New consolidated/shared-reference collections require an explicit versioned dispatch contract; the exact collection version label remains open in §10.
 
-Never edit the inspected sealed collection to demonstrate the proposed tree. Missing or modified shared data must cause a clear refusal before forcing preparation. Reusing a matching version verifies its checksum instead of replacing it. Standalone collection export would need an explicit bundling operation; the normal preservation unit is the project.
+Never edit the inspected sealed collection to demonstrate the proposed tree. Missing or modified shared data must cause a clear refusal before any dependent scenario preparation. Reusing a matching version verifies its checksum instead of replacing it. Standalone collection export would need an explicit bundling operation; the normal preservation unit is the project.
 
 ## 8. Consolidated scientific manifests and engine records
 
@@ -490,7 +491,7 @@ Current count, inspected 2026-09-20: session-1/test_case/test_local/scenarios/co
 | source_inventory.json | documents.source_inventory inside the intent | Original source inventory and byte identities; review roles/anchors for shared elevation. |
 | provider_code_inventory.json | documents.provider_code inside the intent | Provider implementation inventory. |
 | generation_environment.json | documents.environment inside the intent | Generation environment identity. |
-| preparation_context.json | documents.preparation_context inside the intent | Forcing reader, PET and checked preparation dependencies (§7). |
+| preparation_context.json | documents.preparation_context inside the intent | Existing reader, PET and checked preparation dependencies (§7); legacy forcing-named fields need versioned treatment. |
 | collection.json | _engine/collections/<id>/collection.json | Final output inventory, revision and readiness, published last. |
 
 Candidate intent structure, not a finalized executable schema:
@@ -520,7 +521,7 @@ document_digests:
   preparation_context: <canonical embedded document checksum>
 ~~~
 
-Keep collection.json as a separate final record. It retains collection identity/revision, intent path/checksum, scenario-table reference, scenario-type artifacts, forcing entries with hashes/descriptors and ready status. Its existing preparation-context file reference becomes an explicitly versioned section reference to the checked intent, or is removed as redundant if all readers obtain preparation through the intent. The working recommendation is the latter: one authoritative embedded preparation object reached through the verified intent. The new manifest location also requires an explicit project-relative reference to the sibling `scenarios/<collection-id>/` data root; never infer readiness from the data directory alone. Final strict field sets must be agreed before coding.
+Keep collection.json as a separate final record. It retains collection identity/revision, intent path/checksum, scenario-table reference, scenario-type artifacts, retained-series entries with hashes/descriptors and ready status. The current manifest calls those entries forcing; the new schema must version their paths and terms rather than treating the rename as identity-neutral. Its existing preparation-context file reference becomes an explicitly versioned section reference to the checked intent, or is removed as redundant if all readers obtain preparation through the intent. The working recommendation is the latter: one authoritative embedded preparation object reached through the verified intent. The new manifest location also requires an explicit project-relative reference to the sibling `scenarios/<collection-id>/` data root; never infer readiness from the data directory alone. Final strict field sets must be agreed before coding.
 
 The five embedded sections retain the full evidence, not summaries. This reduces files, not necessarily bytes. A long environment inventory remains long inside the intent. The run_record.yml remains a readable source/config account and cannot substitute for scientific identity inputs. The retained `sim_dates.csv` and `resampled_dates.csv` need explicit byte references in the final collection inventory or a separately checked provenance record; merely moving them under the collection would not make their evidentiary role verifiable. Evaluation plots are terminal diagnostics, not inputs to collection identity.
 
@@ -576,6 +577,7 @@ For WF0–WF2, replacement of the latest archive must be coordinated with its ma
 | Keep one append-only event journal | Rich transition history | Requires event reconstruction and coordination. Prefer it if intermediate transitions, beyond start/final state, are required. |
 | Keep dynamic WF3 checkpoints | Preserves current cold-start invocation behavior | No fully resolved upfront generation DAG. Prefer if preserving that invocation contract is more valuable than static planning. |
 | Keep user-visible `scenarios/requests/` and `scenarios/collections/` | Smallest path migration; request-local working outputs remain co-located | Makes users navigate machine identities to find generation inputs, date products and diagnostics. Prefer if implementation cost outweighs the navigation improvement. |
+| Put provider before collection ID: `scenarios/weathergenr/<id>/` | Browsing all collections from one provider is easy | Makes the primary collection path and lookup depend on provider; prefer only if provider-grouped navigation is the dominant user task. |
 | Keep ancillary data collection-local | Each collection carries its source elevation | Duplicates shared source data and conflicts with the agreed project-owned direction; useful for an explicit standalone export. |
 
 ## 10. Decisions still needed before a task brief
@@ -585,7 +587,7 @@ For WF0–WF2, replacement of the latest archive must be coordinated with its ma
 | Exact schema versions and digest projections | Version the new record independently; preserve digest meanings | Avoid silently changing identity while renaming metadata fields. |
 | Collection JSON consolidation | Two JSONs in the scenario engine's collection-record directory; five complete provenance sections embedded in the intent | Requires accepted strict field sets, section canonicalization and old-sidecar reader dispatch. |
 | Scenario record/data split | One `scenarios/_engine/` with separate request and collection records; one `scenarios/<id>/` scientific root | Stored relative paths, containment, discovery, publication and standalone export must recognize both siblings. |
-| Weather-generation input and intermediates | `generation/weather_generation_input.yml`, retained date CSVs, diagnostics under `evaluation/weathergenr/plots/` | Decide whether any additional generator intermediates are durable; keep currently temporary realization netCDFs temporary unless explicitly changed. |
+| Provider-specific integration | `scenarios/<id>/weathergenr/` holds execution YAML, retained date CSVs and diagnostics; `series/` holds the published climate time series | Define provider-subtree readers and the versioned path/term migration from `forcing/`; keep currently temporary realization netCDFs temporary unless explicitly changed. |
 | Simulation machine-contract location | _engine/simulation/ for the six-file scientific family | The source task left this destination open; resolve stored paths and old-tree lookup together. |
 | Record-plus-sources publication | Publish one coherent archive generation with explicit crash recovery | Independent atomic file writes can mix two runs. |
 | Archive path mapping | Preserve relative structure; explicitly map absolute/multi-drive sources | Exact copies cannot silently redirect absolute YAML references. |
@@ -621,11 +623,12 @@ Acceptance evidence to carry into those briefs:
 | Exact source recovery | Byte mismatch (including CRLF/comments), lost original basename, or missing loaded workflow/custom dependency. Test source copies and rerun with originals unavailable. |
 | One matching archive | Interrupted or concurrent publication exposes mixed record/source checksums. Exercise failure points, not just a successful write. |
 | Clear invocation history | Missing child linkage, a dry-run reported as work, or hard termination reported as success. Exercise direct, parent/child, startup failure, no-op and crash cases. |
-| Stable scientific meaning | Comment-only edits alter scientific identity, row ordering/seeds change, or retained forcing differs beyond an agreed scientific comparison. Separate identity migration from numerical parity. |
+| Stable scientific meaning | Comment-only edits alter scientific identity, row ordering/seeds change, or retained scenario series differ beyond an agreed scientific comparison. Separate identity migration from numerical parity. |
 | Reduced collection JSON count | A fresh collection still emits the five sidecars, embedded evidence is missing, tampering with an embedded section passes validation, or an old collection stops reading. Assert exactly two JSONs in its scenario engine record directory and exercise all section readers. |
 | Scenario root/engine binding | A bare data directory is listed as ready, an orphaned marker passes, two requests duplicate one collection, or detached export omits its records. Test each and verify full-ID/short-segment correspondence. |
 | Generated-input recovery | The weather-generation YAML is absent, differs from the run record's checksum, or a moved project silently reuses its old absolute output path. Validate exact bytes and relocation behavior. |
-| Generation intermediates and diagnostics | Date-selection CSV bytes are unaccounted for, conditional figures disappear during relocation, or temporary realization netCDFs become silently durable. Check inventory/reference coverage and terminal-render handling. |
+| Provider intermediates and diagnostics | Date-selection CSV bytes are unaccounted for, conditional figures disappear during relocation, or temporary realization netCDFs become silently durable. Check inventory/reference coverage and terminal-render handling. |
+| WF3/WF4 product boundary | A WF3 `series/` artifact is called a ready model forcing, or a WF4 transformation silently changes the source series. Check collection byte identity and explicit downstream preparation/reference separately. |
 | Simulation grouping | A reference still points only to the old path, a retained old simulation cannot reopen, or response-inventory depth changes. Validate both locations and metrics-only reads. |
 | Shared ancillary safety | Two collections copy the same version unnecessarily, changed bytes pass, old collections stop reading, or relocation breaks catalog resolution. Test all four. |
 | Static generation scheduling | Either checkpoint still expands the generation DAG, live pointer replacement redirects execution, or cold dry-run silently produces scientific outputs. Inspect DAGs and filesystem differences. |
@@ -659,3 +662,4 @@ Draft validation: check Markdown links, parse JSON examples, check the diff for 
 - 2026-09-20 (single-schema consolidation) — Integrated the audit here at the owner’s request. Updated the preferred tree to two collection JSONs with embedded provenance and an experiment _engine/simulation directory; retained approval status, alternatives and migration constraints. Removed the uncommitted separate draft so this is the single current schema proposal.
 - 2026-09-20 (`scenarios/` ownership follow-up) — Recovered and integrated the original request/collection merge analysis. Kept the two branches as siblings, distinguished request, collection and revision identities, and recorded that static preflight removes the old checkpoint timing constraint without removing many-to-one reuse or separate mutability.
 - 2026-09-21 (collection-centred layout) — Revised the proposed scenario tree to a user-facing collection plus one `scenarios/_engine/` for distinct request and collection records. Grouped exact user configuration, resolved `weather_generation_input.yml`, date-selection products and weather-generator evaluation plots by role; left Wflow filenames unchanged and made cross-sibling readiness/portability checks explicit.
+- 2026-09-21 (provider and scenario-product boundary) — Grouped weathergenr integration files beneath each collection rather than putting provider before collection ID. Renamed the proposed published WF3 `forcing/` branch to `series/`, reserving forcing terminology for model-specific WF4 preparation and recording the versioned legacy-field/path migration this requires.

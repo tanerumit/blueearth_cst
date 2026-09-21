@@ -18,7 +18,7 @@ Permitted: `scripts/run_workflows.py`, `scripts/simulate_system.py`, existing wo
 
 ### Required changes (checklist)
 
-- [ ] Implement `invocation/2` parent/child identity and linkage in schema §§5 and 10.4.
+- [ ] Implement `invocation/1` parent/child identity and linkage in schema §§5 and 10.4.
 - [ ] Record direct calls, dry-runs, no-ops, startup failures and normal completion with truthful state.
 - [ ] Leave existing history files untouched; new history readers need only the common schema.
 - [ ] Implement P0's mandatory launcher coverage for direct and orchestrated calls; raw Snakemake cannot claim new-schema archive or complete invocation history. Preserve an explicit runnable `legacy_wf3_interim` wrapper route through P3/P4, then hand its removal to P5.

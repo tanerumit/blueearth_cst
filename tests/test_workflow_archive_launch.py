@@ -13,7 +13,10 @@ from blueearth_cst.shared.workflow_archive_launch import (
     require_capture,
     split_config_overrides,
 )
-from blueearth_cst.shared.workflow_config_snapshot import read_archive
+from blueearth_cst.shared.workflow_config_snapshot import (
+    read_archive,
+    resolve_file_reference,
+)
 from scripts import run_workflows
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -109,3 +112,17 @@ def test_all_workflow_wrapper_routes_wf0_through_capture(tmp_path, monkeypatch):
     record = read_archive(output, "analyze_climate", "config/runs/analyze_climate")
     assert record["schema_version"] == "run-record/2"
     assert record["invocation"]["entry_point"] == "scripts/run_workflows.py"
+    invocation_paths = (output / "config/runs/_engine/invocations").glob("*.json")
+    invocations = [
+        json.loads(path.read_text(encoding="utf-8")) for path in invocation_paths
+    ]
+    parent = next(item for item in invocations if item["workflow"] is None)
+    child = next(item for item in invocations if item["workflow"] == "analyze_climate")
+    assert child["invocation_id"] == record["invocation_id"]
+    assert child["parent_invocation_id"] == parent["invocation_id"]
+    assert (
+        resolve_file_reference(
+            child["configuration"]["run_record"], {"project_root": output}
+        )
+        == output / "config/runs/analyze_climate/run_record.yml"
+    )

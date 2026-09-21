@@ -18,6 +18,7 @@ from typing import Any
 
 import yaml
 
+from blueearth_cst.shared import invocation_history
 from blueearth_cst.shared.config_composition import (
     capture_configuration_sources,
     compose_captured_config,
@@ -212,6 +213,7 @@ def prepare_workflow(
     targets: Sequence[str],
     overrides: Mapping[str, Any] | None = None,
     entry_point: str = "scripts/run_workflow.py",
+    invocation_id: str | None = None,
 ) -> tuple[Path, Path]:
     """Capture, stage, and publish one exact WF0--WF2 archive.
 
@@ -312,7 +314,7 @@ def prepare_workflow(
         }
         for source in custom
     ]
-    invocation_id = uuid.uuid4().hex
+    invocation_id = invocation_id or uuid.uuid4().hex
     record, payloads = run_record_document(
         workflow=workflow,
         invocation_id=invocation_id,
@@ -418,9 +420,51 @@ def run_workflow(
     keep_going: bool = False,
     extra: Sequence[str] = (),
 ) -> int:
-    """One child execution; P3 owns the later invocation-history envelope."""
+    """One captured WF0--WF2 execution with a common invocation record."""
     if workflow not in WORKFLOWS or cores < 1:
         raise ValueError("invalid workflow or core count")
+    path, record = invocation_history.start(
+        Path(project_root),
+        workflow=workflow,
+        entry_point="scripts/run_workflow.py",
+        command=["snakemake", *targets, "-s", f"{workflow}.smk"],
+        targets=list(targets),
+        mode="dry_run" if dry_run else "execute",
+        contract_mode="new_schema",
+        invocation_id=os.environ.get(invocation_history.INVOCATION_ENV),
+        parent_invocation_id=os.environ.get(invocation_history.PARENT_ENV),
+    )
+    try:
+        return _run_workflow_started(
+            workflow,
+            project_config,
+            project_root,
+            cores=cores,
+            targets=targets,
+            dry_run=dry_run,
+            keep_going=keep_going,
+            extra=extra,
+            path=path,
+            record=record,
+        )
+    except BaseException as error:
+        invocation_history.finish(path, record, exit_code=None, error=error)
+        raise
+
+
+def _run_workflow_started(
+    workflow: str,
+    project_config: Path,
+    project_root: Path,
+    *,
+    cores: int,
+    targets: Sequence[str],
+    dry_run: bool,
+    keep_going: bool,
+    extra: Sequence[str],
+    path: Path,
+    record: dict[str, Any],
+) -> int:
     overrides, forwarded = (
         split_config_overrides(extra) if not dry_run else ({}, list(extra))
     )
@@ -443,7 +487,9 @@ def run_workflow(
         if dry_run:
             # Dry-runs do not publish creator archives. They may parse the raw
             # config for diagnostics, and do not claim exact source capture.
-            return subprocess.call(command)
+            result = subprocess.call(command)
+            invocation_history.finish(path, record, exit_code=result)
+            return result
         execution, context = prepare_workflow(
             workflow,
             project_config,
@@ -451,8 +497,25 @@ def run_workflow(
             command=command,
             targets=targets,
             overrides=overrides,
+            invocation_id=record["invocation_id"],
         )
+        archive = read_archive(Path(project_root), workflow, f"config/runs/{workflow}")
+        projection = archive["configuration_projection"]
+        record["configuration"].update(
+            source_config_sha256=archive["source_files"][0]["sha256"],
+            effective_config_sha256=projection["effective_config_sha256"],
+            configuration_inputs_sha256=projection["configuration_inputs_sha256"],
+            run_record=file_reference(
+                Path(project_root) / "config/runs" / workflow / "run_record.yml",
+                "project_root",
+                Path(project_root),
+            ),
+            archive_state="latest",
+        )
+        invocation_history.update(path, record)
         command[command.index("--configfile") + 1] = str(execution)
         environment = os.environ.copy()
         environment[CONTEXT_ENV] = str(context)
-        return subprocess.call(command, env=environment)
+        result = subprocess.call(command, env=environment)
+        invocation_history.finish(path, record, exit_code=result)
+        return result

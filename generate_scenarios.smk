@@ -503,6 +503,8 @@ def _header():
 
 
 onstart:
+    if not os.environ.get("CST_LEGACY_WF3_INTERIM"):
+        raise ValueError("legacy WF3 execution requires the owned run_workflows.py adapter")
     # Restyle Snakemake's own console output into this toolbox's grammar (one
     # line per job start and end). Here and not at parse time: the logging
     # stack does not exist yet then. Fail-open; see install_console_style.

@@ -52,12 +52,13 @@ pixi run install      # + weathergenr (R, via remotes) and the Julia env
 python scripts/run_workflow.py analyze_climate     --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 python scripts/run_workflow.py build_model         --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 python scripts/run_workflow.py analyze_projections --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 --keep-going
-snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
+# WF3 execution uses the owned wrapper; for WF3 alone, enable only generate_scenarios in the project config.
+python scripts/run_workflows.py --config <wf3-only-project-config.yml> --project-dir <project-dir> --cores 3
 python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
 
 # Or drive all enabled workflows in fixed order. Contract: the module docstring,
 # pinned clause-by-clause by tests/test_run_workflows.py.
-pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml
+pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid
 
 snakemake ... --dry-run     # validate the DAG before running and after editing a rule
 snakemake --unlock -s <smk> --configfile <cfg>   # Snakemake locks the workdir on crash

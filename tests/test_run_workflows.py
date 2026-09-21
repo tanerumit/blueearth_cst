@@ -63,6 +63,8 @@ def capture_runs(monkeypatch):
         "prepare_workflow",
         lambda _name, config, _root, **_kwargs: (Path(config), Path(config)),
     )
+    monkeypatch.setattr(rw, "_bind_workflow_archive", lambda *_args: None)
+    monkeypatch.setattr(rw, "_capture_legacy_wf3_attempt", lambda *_args: "a" * 64)
 
     def fake_run(cmd, cwd=None, **kwargs):
         if cmd[0] == "git":
@@ -98,9 +100,12 @@ def _snakefiles_invoked(calls):
 
 
 def _manifests(project_dir: Path) -> list[Path]:
-    """Return wrapper manifests in deterministic filename order."""
+    """Return only parent invocation records, excluding workflow children."""
+    paths = (project_dir / "config" / "runs" / "_engine" / "invocations").glob("*.json")
     return sorted(
-        (project_dir / "config" / "runs" / "_engine" / "invocations").glob("*.json")
+        path
+        for path in paths
+        if json.loads(path.read_text(encoding="utf-8"))["workflow"] is None
     )
 
 
@@ -306,29 +311,20 @@ def test_success_manifest_is_initialized_before_first_workflow_and_finalized(
     assert rw.run(str(cfg), cores=5, extra=["--dry-run"]) == 0
 
     manifest = _read_only_manifest(project_dir)
-    assert manifest["schema_version"] == 1
+    assert manifest["schema_version"] == "invocation/1"
     assert manifest["status"] == "succeeded"
     assert manifest["exit_code"] == 0
     assert manifest["ended_at_utc"].endswith("Z")
-    assert manifest["cores"] == 5
-    assert manifest["dry_run"] is True
-    assert manifest["source_config"]["sha256"] == rw.file_sha256(cfg)
-    assert manifest["effective_config"]["sha256"]
-    # commit_source arrived with the move to provenance.toolbox_identity(). The
-    # wrapper's own helper could report a commit or a null and nothing else, so
-    # a container run reading a baked sha was indistinguishable from a checkout.
-    assert manifest["git"] == {
-        "commit": "abc123",
-        "commit_source": "git",
-        "dirty": False,
-    }
-    assert manifest["runtime"]["python"]
+    assert manifest["mode"] == "dry_run"
+    assert manifest["work_performed"] == "no"
+    assert manifest["configuration"]["source_config_sha256"] == rw.file_sha256(cfg)
+    assert manifest["configuration"]["effective_config_sha256"]
     # Derived from WORKFLOW_ORDER rather than restated: a literal list is what
     # made this the last of nine tests to fail when the set widened to four,
     # each for the same reason.
-    assert [item["status"] for item in manifest["workflows"].values()] == [
-        "succeeded"
-    ] * len(rw.WORKFLOW_ORDER)
+    assert [item["workflow"] for item in manifest["children"]] == list(
+        rw.WORKFLOW_ORDER
+    )
     assert len(calls) == len(rw.WORKFLOW_ORDER)
 
 
@@ -346,10 +342,9 @@ def test_no_op_invocations_each_get_an_immutable_manifest(tmp_path, capture_runs
     for path in manifests:
         manifest = json.loads(path.read_text(encoding="utf-8"))
         assert manifest["status"] == "succeeded"
-        assert manifest["no_op"] is True
-        assert {item["status"] for item in manifest["workflows"].values()} == {
-            "disabled"
-        }
+        assert manifest["work_performed"] == "no"
+        assert manifest["requested_workflows"] == []
+        assert manifest["children"] == []
 
 
 def test_failure_manifest_records_stop_boundary(tmp_path, capture_runs):
@@ -362,13 +357,18 @@ def test_failure_manifest_records_stop_boundary(tmp_path, capture_runs):
 
     assert rw.run(str(cfg), cores=3, extra=[]) == 9
 
-    workflows = _read_only_manifest(project_dir)["workflows"]
+    manifest = _read_only_manifest(project_dir)
     # analyze_climate leads WORKFLOW_ORDER, so it is the one exits[0] hits.
-    assert workflows["analyze_climate"]["status"] == "failed"
-    assert workflows["analyze_climate"]["exit_code"] == 9
-    assert workflows["build_model"]["status"] == "not_run"
-    assert workflows["analyze_projections"]["status"] == "not_run"
-    assert workflows["simulate_system"]["status"] == "not_run"
+    assert manifest["exit_code"] == 9
+    assert [item["workflow"] for item in manifest["children"]] == ["analyze_climate"]
+    child = json.loads(
+        (
+            _manifests(project_dir)[0].parent
+            / f"{manifest['children'][0]['invocation_id']}.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert child["status"] == "failed"
+    assert child["exit_code"] == 9
 
 
 def test_subprocess_exception_finalizes_failure_manifest(
@@ -392,9 +392,8 @@ def test_subprocess_exception_finalizes_failure_manifest(
     manifest = _read_only_manifest(project_dir)
     assert manifest["status"] == "failed"
     assert manifest["exit_code"] is None
-    assert manifest["error_type"] == "OSError"
-    assert manifest["workflows"]["analyze_climate"]["status"] == "failed"
-    assert manifest["workflows"]["analyze_projections"]["status"] == "not_run"
+    assert manifest["error"]["type"] == "OSError"
+    assert [item["workflow"] for item in manifest["children"]] == ["analyze_climate"]
 
 
 def test_manifest_sanitizes_sensitive_extra_args(tmp_path, capture_runs):
@@ -418,14 +417,8 @@ def test_manifest_sanitizes_sensitive_extra_args(tmp_path, capture_runs):
     assert "token-value" not in manifest_text
     assert "camel-secret-value" not in manifest_text
     assert "password-value" not in manifest_text
-    assert "threshold=4" in manifest["extra_args"]
-    assert "api_token=<redacted>" in manifest["extra_args"]
-    assert manifest["effective_config"]["includes_cli_config_overrides"] is False
-    assert manifest["snakemake_config_overrides"] == [
-        "threshold=4",
-        "api_token=<redacted>",
-        "clientSecret=<redacted>",
-    ]
+    assert "threshold=4" in manifest["command"]
+    assert "api_token=<redacted>" in manifest["command"]
 
 
 def test_sensitive_args_are_redacted_from_console(tmp_path, capture_runs, capsys):
@@ -964,6 +957,11 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
     assert envs[0][rw.console_style.ANNOUNCED_ENV] == "1"
     # The runner's own keys survived the merge.
     assert envs[0]["CST_SIMULATION_OPERATION"] == "simulate-and-metrics"
+    parent = _read_only_manifest(project_dir)
+    assert (
+        envs[0]["CST_SIMULATION_INVOCATION_ID"]
+        == parent["children"][0]["invocation_id"]
+    )
     assert rw.console_style.ANNOUNCED_ENV not in os.environ
 
 

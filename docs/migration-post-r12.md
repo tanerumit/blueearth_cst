@@ -98,10 +98,10 @@ unchanged.
 verified:
 
 ```console
-snakemake all -c 3 -s generate_scenarios.smk --configfile <project-config.yml>
+python scripts/run_workflows.py --config <wf3-only-project-config.yml> --project-dir <project-dir> --cores 3
 ```
 
-Everything under the scenario trees is reproducible from the config and the
+Enable only `generate_scenarios` in this project config. Everything under the scenario trees is reproducible from the config and the
 staged sources, so a re-run rebuilds it. If simulation refuses with a missing or
 stale request, it names the generation command you need.
 

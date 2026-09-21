@@ -6,7 +6,7 @@ Read `AGENTS.md`, [master brief](master-brief.md), [schema](../complete-run-outp
 
 ### Goal
 
-Freeze the WF3 plan before building the generation DAG and write temporary generator members directly as `run_<id>.nc`.
+Freeze the WF3 plan before building the generation DAG, make the coordinated default producer switch to P4's collection contract, and write temporary generator members directly as `run_<id>.nc`.
 
 ### Non-goals
 
@@ -19,6 +19,7 @@ Permitted: `generate_scenarios.smk`, `blueearth_cst/experiment/generation_plan.p
 ### Required changes (checklist)
 
 - [ ] Replace checkpoint-driven generation expansion with the agreed frozen, content-derived plan and explicit plan pinning.
+- [ ] Switch all WF3 declarations, producers, publication paths and WF3 consumers to P4's new contract together. Emit the accepted creator `config/run_record.yml` and byte-preserved `sources/`; bind its exact generated-input checksum. Preserve the creator archive on ready reuse, and test missing originals and interrupted publication. P6 owns WF4 consumption; until then WF4 must refuse the new collection clearly rather than misread it.
 - [ ] Make the R root writer write `run_<id>.nc` directly, not via a legacy-name write followed by rename. Align Snakemake `temp()` outputs, provider ancestor/member paths and perturbation output arguments to the same run IDs.
 - [ ] Keep `weathergenr/output/` date-selection CSVs and `evaluation/plots/` diagnostics accounted for, while generator netCDFs remain temporary.
 - [ ] Keep exact `weather_generation_input.yml` and creator `config/run_record.yml`/`sources/` references consistent.
@@ -28,11 +29,11 @@ Permitted: `generate_scenarios.smk`, `blueearth_cst/experiment/generation_plan.p
 | Subject | Paths | Invariant |
 |---|---|---|
 | Switch generator member naming | R writer, Snakefile, provider, tests/docs | Declared outputs and actual R/perturbation paths agree atomically. |
-| Freeze static generation plan | Plan, rule expansion, readers, tests/docs | A job always executes the plan digest it selected. |
+| Freeze static generation plan and adopt collection producer | Plan, rule expansion, creator archive, publication, WF3 readers, tests/docs | A job always executes the plan digest it selected; all WF3 paths use one schema version and pre-P6 WF4 refuses that version explicitly. |
 
 ### Validation
 
-Per edit: focused provider and rule tests; parse touched R scripts, run `pytest tests/test_cli.py` for rule changes, and Python lint/format. A cold dry-run scheduling science, a live pointer replacing a frozen plan, or any `rlz_*_st_*.nc` member written by new WF3 falsifies the contract. Run an isolated rapid WF3 smoke check once after the phase; compare generated series scientifically against an agreed reference, not by filename alone.
+Per edit: focused provider and rule tests; parse touched R scripts, run `pytest tests/test_cli.py` for rule changes, and Python lint/format. A cold dry-run executing preparation or generation, a live pointer replacing a frozen plan, or any `rlz_*_st_*.nc` member written by new WF3 falsifies the contract. Inspect fresh/prepared/reuse DAGs with explicit targets and force/rerun flags. Exercise stale inputs even with preserved mtimes, competing initialization, failure before/after receipt, and failed-job cleanup without loss of ready bytes. Run an isolated rapid WF3 R/provider smoke once after the phase; compare generated series against P0's matched explicit-seed reference and separately test P0's automatic-seed policy.
 
 ### Acceptance criteria
 

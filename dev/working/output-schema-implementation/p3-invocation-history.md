@@ -2,7 +2,7 @@
 
 ### Context
 
-Read `AGENTS.md`, [master brief](master-brief.md), [schema](../complete-run-output-schema.md) §5. P1 defines references; P3 may proceed independently of P2 after coordinating shared entry points.
+Read `AGENTS.md`, [master brief](master-brief.md), [schema](../complete-run-output-schema.md) §§5 and 10. P0 settles launcher coverage and parent failures; P1 defines references. P3 may proceed independently of P2 after coordinating shared entry points.
 
 ### Goal
 
@@ -20,7 +20,8 @@ Permitted: `scripts/run_workflows.py`, `scripts/simulate_system.py`, existing wo
 
 - [ ] Implement the common parent/child invocation identity and linkage in schema §5.
 - [ ] Record direct calls, dry-runs, no-ops, startup failures and normal completion with truthful state.
-- [ ] Preserve old history interpretation where the schema requires it.
+- [ ] Leave existing history files untouched; new history readers need only the common schema.
+- [ ] Implement P0's stated coverage for direct and orchestrated calls. If raw Snakemake has reduced coverage, document that public entry-point limit and test its expected record absence rather than claiming full launch history.
 
 ### Validation
 

@@ -2,7 +2,7 @@
 
 ### Context
 
-Read `AGENTS.md`, [master brief](master-brief.md), [schema](../complete-run-output-schema.md) §§2, 4–5. P1 supplies the archive/reference writer.
+Read `AGENTS.md`, [master brief](master-brief.md), [schema](../complete-run-output-schema.md) §§2, 4–5 and 10. P0 sets archive/reader versions; P1 supplies the archive/reference writer.
 
 ### Goal
 
@@ -20,7 +20,8 @@ Permitted: `analyze_climate.smk`, `build_model.smk`, `analyze_projections.smk`, 
 
 - [ ] Adopt P1's exact archive writer and artifact-local placement for the affected workflows.
 - [ ] Update declared outputs, live readers, baseline/tree inventories and documentation in the same runnable contract change.
-- [ ] Preserve old archive reading through versioned dispatch.
+- [ ] Update current archive consumers, declared outputs and baseline/test inventory expectations to the new schema in a coordinated runnable change; no old archive dispatch is required.
+- [ ] At each workflow's commit boundary, report the archive version it emits and the readers updated. Flag any standing baseline tree that must be regenerated under the explicit P0 baseline plan.
 
 ### Commit plan
 
@@ -34,7 +35,7 @@ Per workflow edit: matching tests and `pytest tests/test_cli.py`; a missing decl
 
 ### Acceptance criteria
 
-New runs show resolvable local archives; old archives remain readable; dry-runs build and scientific output meaning is unchanged.
+New runs show resolvable local archives; dry-runs build and scientific output meaning is unchanged. Existing output trees remain untouched but are outside the new reader contract.
 
 ### Output requirements
 

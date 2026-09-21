@@ -1,6 +1,6 @@
 # ADR 0011 — Preserve exact config sources alongside one run record
 
-- **Status:** proposed; discussion captured, implementation not started
+- **Status:** proposed; aligned with the current complete-run schema, implementation not started
 - **Date:** 2026-09-19
 - **Lifecycle:** maintained-current proposal; append-only revision log
 - **Scope:** output-project archives, not the repository's `config/`
@@ -58,27 +58,27 @@ abbreviated. Nested source layouts retain their relative directory relationships
 │   │           ├── project_config_rapid.yml
 │   │           └── project_config_rapid_analyze_projections.yml
 │   └── basin_data/
-├── scenarios/collections/<id>/
-│   ├── run_record.yml
-│   ├── sources/
-│   │   ├── project_config_rapid.yml
-│   │   └── project_config_rapid_generate_scenarios.yml
-│   └── ... existing collection artifacts
+├── scenarios/<id>/
+│   ├── config/
+│   │   ├── run_record.yml
+│   │   └── sources/
+│   │       ├── project_config_rapid.yml
+│   │       └── project_config_rapid_generate_scenarios.yml
+│   └── ... collection artifacts
 └── experiments/<name>/
     ├── config/
     │   ├── run_record.yml
-    │   ├── sources/
-    │   │   ├── project_config_rapid.yml
-    │   │   └── project_config_rapid_simulate_system.yml
-    │   └── ... existing simulation contract files
-    └── ... existing experiment artifacts
+    │   └── sources/
+    │       ├── project_config_rapid.yml
+    │       └── project_config_rapid_simulate_system.yml
+    └── ... experiment artifacts
 ```
 
 Each `sources/` also archives required custom catalogs and engine configuration
 files with original names and relative structure. Unmodified toolbox-tracked
 dependencies may remain identified by recorded revision/blob rather than copied.
 
-For new records, retire separate `composed_config.yml` and central output-project
+For the proposed contract, retire separate `composed_config.yml` and central output-project
 `config/catalogs/`, `config/templates/`, and `config/generated/` destinations.
 Custom copies belong to their owning archive. Generated engine configs remain
 beside their model. `basin_data/` retains its existing purpose.
@@ -162,8 +162,7 @@ reliable detection of up-to-date results.
 
 References to WF0–WF2's latest archive need a matching digest: a mutable path
 alone cannot recover an older invocation's configuration. Full historical config
-retention remains outside scope. Preserve old journals/manifests as legacy history
-until an explicit compatibility or migration policy is agreed.
+retention remains outside scope. Previous history files are outside the new reader contract.
 
 #### Shared climate ancillary data ownership
 
@@ -198,15 +197,14 @@ from normal project storage.
 
 This replaces the assessment's earlier suggestion to retain elevation inside
 the collection's `_engine/ancillary/`. Current collection validation and forcing
-preparation require collection-local paths, so implement this through a versioned
-reference/reader contract with compatibility for existing collections. Do not
-move or delete files from the inspected sealed collection as a documentation task.
+preparation require collection-local paths, so update the reference/reader contract
+for fresh outputs.
 Update the preparation catalog/reference together with its consumers; its final
 placement is not settled by this data-ownership decision.
 
 Acceptance checks must cover two collections sharing one elevation version,
-missing or changed dependency bytes, distinct source versions, project relocation
-under the chosen path contract, and continued reads of old collection-local data.
+missing or changed dependency bytes, distinct source versions, and project relocation
+under the chosen path contract.
 
 ### Consequences
 
@@ -215,12 +213,10 @@ under the chosen path contract, and continued reads of old collection-local data
   no new cross-workflow configuration readers.
 - **Negative:** duplicated source/parsed values and repeated project files;
   reruns still require path context, external inputs and a matching environment.
-  Old syntax may need the old toolbox or explicit migration.
+  Previous output schemas are outside this proposal's reader contract.
 - **Migration:** update writers, declared targets, baseline readers, fixtures,
-  tree checks and live documentation in independently runnable commits. Preserve
-  readability of older outputs; do not rewrite sealed artifacts or alter their
-  scientific identities to retrofit archives. Removing old files from existing
-  projects requires an explicit migration policy.
+  tree checks and live documentation in independently runnable commits. Use fresh
+  project outputs for the new schema; plan the baseline transition explicitly.
 
 ### Alternatives considered
 
@@ -241,11 +237,10 @@ under the chosen path contract, and continued reads of old collection-local data
 3. Verify each workflow archives only loaded sources and its dependency versions;
    WF0 must not require downstream workflow files to be available.
 4. Check record/source consistency after interrupted writes and repeated runs.
-5. Confirm comment-only changes do not alter scientific identities; existing
-   sealed collections/experiments remain readable and unmodified.
+5. Confirm comment-only changes do not alter scientific identities.
 6. Verify direct/orchestrated records, parent-child linkage, dry-runs, no-op
    results, launch/child failures, hard termination and concurrent invocations.
-   Test the chosen pre-hook failure coverage and legacy-history policy.
+   Test the chosen pre-hook failure coverage.
 7. Update snapshot/baseline/tree tests and apply the repository validation ladder
    to implementation. This documentation change runs no pipeline.
 
@@ -260,6 +255,8 @@ under the chosen path contract, and continued reads of old collection-local data
 - [Direct simulation invocation writer](../../scripts/simulate_system.py)
 
 ### Revisions
+
+- **2026-09-21 (clean development contract):** Aligned the scenario archive path with the current collection-centred proposal and removed previous-output reader obligations at the owner's request. The new toolbox contract targets fresh outputs; implementation has not begun.
 
 - **2026-09-19:** Captured exact-source and rerun requirements, layout, modularity
   rationale, alternatives and unresolved implementation details. Recording the

@@ -10,7 +10,7 @@ Consolidate experiment machine records under one `_engine/` and publish user-fac
 
 ### Non-goals
 
-No Wflow-owned settings rename, model-physics change, altered metric definitions or old metric-CSV compatibility reader under D21.
+No Wflow-owned settings rename, model-physics change, altered metric definitions or pre-migration output readers.
 
 ### Allowed scope
 
@@ -19,6 +19,7 @@ Permitted: `blueearth_cst/experiment/simulation_record.py`, `response_inventory.
 ### Required changes (checklist)
 
 - [ ] Publish flat `_engine/simulation_intent.json` and `simulation.json`, with embedded frozen inputs and a completion marker after response verification.
+- [ ] Adopt P1's exact creator `config/run_record.yml` and `sources/` for new experiments. Preserve that archive during metrics-only work; record later metric attempts in invocation history. Apply P0's policy to failures before archive creation; require new-contract collections.
 - [ ] Keep Wflow run TOMLs in `run_settings/`, common temporal evidence once in `response_inventory.json`, and each native log under `output/_log/` with per-run attribution.
 - [ ] Move metric machine records under experiment `_engine/metric_sets/<id>/`; keep `metric_run_lookup.csv` and `<token>_indicators.csv` under `results/metric_sets/<id>/`.
 - [ ] Use headers `run_group_id,grain,run_id` and `metric,location,run_group_id,value`; align new config/intent capacity and width and metric-plan bundle fields with `run_group_id`, preserving padded values and allocation order.
@@ -32,7 +33,7 @@ Permitted: `blueearth_cst/experiment/simulation_record.py`, `response_inventory.
 
 ### Validation
 
-Per edit: matching focused tests, CLI test for rule changes, Python lint/format. Falsifiers: intent-only experiment reads ready, missing or shared Wflow log, per-run temporal duplicates, broken `run_group_id` joins, or differing full IDs across metric result/engine siblings. Exercise metrics-only reads after temporary files are gone and old simulation readers outside D21. Run expensive gates at master boundary.
+Per edit: matching focused tests, CLI test for rule changes, Python lint/format. Falsifiers: intent-only experiment reads ready, missing or shared Wflow log, per-run temporal duplicates, broken `run_group_id` joins, or differing full IDs across metric result/engine siblings. Exercise metrics-only reads of new-contract responses after temporary files are gone. Run expensive gates at master boundary.
 
 ### Acceptance criteria
 

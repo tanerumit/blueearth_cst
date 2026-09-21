@@ -2,7 +2,7 @@
 
 - **Status:** proposed; aligned with the current complete-run schema, implementation not started
 - **Date:** 2026-09-19
-- **Lifecycle:** maintained-current proposal; append-only revision log
+- **Lifecycle:** maintained-current proposal; earlier drafts remain in Git history
 - **Scope:** output-project archives, not the repository's `config/`
 
 ### Context
@@ -180,31 +180,36 @@ The proposed destination is:
 ├── historical/
 └── ancillary/
     └── era5/
-        └── era5_orography_2018.nc
+        └── <content-sha256>/
+            └── era5_orography_2018.nc
 ```
 
-Collections retain a reference and checksum to the shared data, and simulation
-verifies the referenced bytes before use. Collections using the same source
-version share it. Different versions must remain distinguishable and must not
-silently overwrite a dependency of an existing collection. The exact versioned
-path convention and reference-resolution anchor remain implementation decisions.
+The WF4 experiment, not the WF3 collection, retains the source reference and
+checksum in its simulation intent and verifies the bytes before forcing
+preparation. Experiments using the same source version share it. Different
+versions must remain distinguishable and must not silently overwrite a dependency
+of an existing experiment. The complete-run schema proposes a content-hash
+directory; P0 must settle the catalog-relative URI and resolution anchor.
 
 The project, including shared data dependencies, is the preservation/transfer
-unit. Collections need not independently bundle these source datasets, consistent
+unit. Experiments need not independently bundle these source datasets, consistent
 with historical climate already living under `data/climate/historical/`. A future
-standalone collection export may explicitly bundle dependencies; that is separate
-from normal project storage.
+standalone experiment export must explicitly bundle its checked elevation dependency.
 
 This replaces the assessment's earlier suggestion to retain elevation inside
 the collection's `_engine/ancillary/`. Current collection validation and forcing
 preparation require collection-local paths, so update the reference/reader contract
-for fresh outputs.
-Update the preparation catalog/reference together with its consumers; its final
-placement is not settled by this data-ownership decision.
+for fresh outputs. The checked HydroMT catalog binding belongs under the
+experiment's `hydrology/wflow/run_settings/forcing_elevation_catalog.yml`.
+Strict WF3 independence also removes elevation and WF4-only preparation code
+from the new automatic-seed projection and collection identity. Retain the
+canonical digest-to-integer method, with a new WF3-only seed-material version;
+numeric automatic seeds may change, as accepted by the owner.
 
-Acceptance checks must cover two collections sharing one elevation version,
-missing or changed dependency bytes, distinct source versions, and project relocation
-under the chosen path contract.
+Acceptance checks must cover two experiments sharing one elevation version,
+missing or changed dependency bytes, distinct source versions, project relocation
+under the chosen path contract, and unchanged WF3 seed/identity when only WF4
+elevation or preparation code changes.
 
 ### Consequences
 
@@ -256,19 +261,4 @@ under the chosen path contract.
 
 ### Revisions
 
-- **2026-09-21 (clean development contract):** Aligned the scenario archive path with the current collection-centred proposal and removed previous-output reader obligations at the owner's request. The new toolbox contract targets fresh outputs; implementation has not begun.
-
-- **2026-09-19:** Captured exact-source and rerun requirements, layout, modularity
-  rationale, alternatives and unresolved implementation details. Recording the
-  proposal does not authorize or claim implementation.
-
-- **2026-09-19 (execution-history follow-up):** Added unified invocation records,
-  parent/child ownership, crash semantics and recording-coverage questions; updated
-  the proposed layout. Continue related file assessments here. No implementation
-  was requested.
-
-- **2026-09-19 (ancillary-data ownership):** Recorded the user agreement to store
-  source elevation under shared `data/climate/ancillary/`, with verified collection
-  references, and to use the project as the preservation unit. Collection-local
-  elevation retention is no longer proposed; reader migration and versioned path
-  details remain unresolved. No data moved.
+- **2026-09-21:** Current proposal preserves exact configuration sources and unified invocation history, assigns shared elevation and its binding to WF4, and defines a strict WF3 boundary. The new automatic-seed material excludes WF4 dependencies while retaining the digest-to-integer method; numeric seeds may change. Previous draft changes are in Git history. Implementation has not begun.

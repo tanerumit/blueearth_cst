@@ -19,7 +19,7 @@ Permitted: `blueearth_cst/experiment/scenario_collection.py`, `collection_resolu
 ### Required changes (checklist)
 
 - [ ] Implement and test readers and validators for the accepted new scenario root/engine split, embedded four WF3 sidecars, full-ID/short-path binding, lookup headers and stochastic lineage. No pre-migration reader is required.
-- [ ] Specify and test the new collection identity projection without WF4 elevation/preparation; implement the P0 automatic-seed policy independently of incidental provider-code/path edits.
+- [ ] Specify and test the new collection identity projection without WF4 elevation/preparation. Introduce P0's WF3-only seed material while retaining the digest-to-integer method; accept numeric seed changes caused by the new material or generator-code inventory. Move WF4 preparation logic out of inventoried WF3 code, or prove an equivalent scoped inventory. Test that changing WF4 elevation, preparation settings or WF4-only code leaves the new seed and collection ID unchanged.
 - [ ] Implement shared orography storage/reference validation and prepare the WF4 elevation handoff specified in P0, without switching the default WF3 producer or requiring unfinished P6 experiment records.
 - [ ] Inventory current producer and consumer paths before the P5 switch; hand P5 a concrete WF3 change list and P6 the WF4 collection-consumption change list.
 
@@ -31,7 +31,7 @@ Permitted: `blueearth_cst/experiment/scenario_collection.py`, `collection_resolu
 
 ### Validation
 
-Per edit: matching focused tests. Falsifiers: an orphan marker reads ready, changed WF4 orography changes a new collection ID, or reconstructed lineage differs from the current stochastic rows. Exercise reuse/refusal with before/after checksums on new-schema fixtures. Run the master brief's broader gates at its named boundary.
+Per edit: matching focused tests. Falsifiers: an orphan marker reads ready, changed WF4 orography or WF4-only code changes a new collection ID or automatic seed, or reconstructed lineage differs from the current stochastic rows. Exercise reuse/refusal with before/after checksums on new-schema fixtures. Run the master brief's broader gates at its named boundary.
 
 ### Acceptance criteria
 

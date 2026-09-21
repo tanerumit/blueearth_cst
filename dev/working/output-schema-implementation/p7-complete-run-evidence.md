@@ -21,7 +21,7 @@ Permitted: focused tests, tree/schema inventory tools, documentation corrections
 - [ ] Run all enabled stages against a fresh isolated rapid project and capture tree plus representative YAML/JSON/CSV schemas.
 - [ ] Evaluate each relevant falsifier in schema §11, including references, temporary-file absence, lineage, metric joins and Wflow logs.
 - [ ] Compare scientific results against the appropriate reference with stated tolerances; distinguish identity/path changes from numerical differences.
-- [ ] Compare against P0's clean pre-change reference under a matched explicit seed and check the separately accepted automatic-seed policy; the rapid seed alone cannot establish auto-seed continuity.
+- [ ] Compare against P0's clean pre-change reference under a matched explicit seed. Verify the new WF3-only automatic-seed formula and demonstrate that WF4-only elevation, settings and code changes leave its seed and collection identity unchanged; numeric parity with v1 is not required.
 - [ ] Update the proposed schema to actual implemented facts, or record every deviation before claiming completion.
 
 ### Validation

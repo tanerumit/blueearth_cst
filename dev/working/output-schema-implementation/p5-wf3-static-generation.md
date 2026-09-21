@@ -33,7 +33,7 @@ Permitted: `generate_scenarios.smk`, `blueearth_cst/experiment/generation_plan.p
 
 ### Validation
 
-Per edit: focused provider and rule tests; parse touched R scripts, run `pytest tests/test_cli.py` for rule changes, and Python lint/format. A cold dry-run executing preparation or generation, a live pointer replacing a frozen plan, or any `rlz_*_st_*.nc` member written by new WF3 falsifies the contract. Inspect fresh/prepared/reuse DAGs with explicit targets and force/rerun flags. Exercise stale inputs even with preserved mtimes, competing initialization, failure before/after receipt, and failed-job cleanup without loss of ready bytes. Run an isolated rapid WF3 R/provider smoke once after the phase; compare generated series against P0's matched explicit-seed reference and separately test P0's automatic-seed policy.
+Per edit: focused provider and rule tests; parse touched R scripts, run `pytest tests/test_cli.py` for rule changes, and Python lint/format. A cold dry-run executing preparation or generation, a live pointer replacing a frozen plan, or any `rlz_*_st_*.nc` member written by new WF3 falsifies the contract. Inspect fresh/prepared/reuse DAGs with explicit targets and force/rerun flags. Exercise stale inputs even with preserved mtimes, competing initialization, failure before/after receipt, and failed-job cleanup without loss of ready bytes. Run an isolated rapid WF3 R/provider smoke once after the phase; compare generated series against P0's matched explicit-seed reference. Check that auto seeds follow the accepted WF3-only formula and recorded inputs; numeric parity with v1 is not an acceptance criterion.
 
 ### Acceptance criteria
 

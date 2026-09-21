@@ -78,7 +78,7 @@ set moves as a unit and a colleague can run it unchanged.
 ### 3. Dry-run
 
 ```bash
-snakemake all -c 1 -s build_model.smk --configfile path/to/your_config.yml --dry-run
+python scripts/run_workflow.py build_model --config path/to/your_config.yml --project-dir path/to/your_project --cores 1 --dry-run
 ```
 
 Any dry-run of an enabled workflow runs every composition and consistency check,

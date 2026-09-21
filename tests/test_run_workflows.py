@@ -54,6 +54,15 @@ def capture_runs(monkeypatch):
     """Patch subprocess.run to record argv lists; default success exit 0."""
     calls = []
     exits = {}  # index -> returncode override
+    # These wrapper-only fixtures deliberately use minimal v1-shaped mappings.
+    # Archive capture is exercised with a valid project set separately.
+    from blueearth_cst.shared import workflow_archive_launch
+
+    monkeypatch.setattr(
+        workflow_archive_launch,
+        "prepare_workflow",
+        lambda _name, config, _root, **_kwargs: (Path(config), Path(config)),
+    )
 
     def fake_run(cmd, cwd=None, **kwargs):
         if cmd[0] == "git":
@@ -362,7 +371,9 @@ def test_failure_manifest_records_stop_boundary(tmp_path, capture_runs):
     assert workflows["simulate_system"]["status"] == "not_run"
 
 
-def test_subprocess_exception_finalizes_failure_manifest(tmp_path, monkeypatch):
+def test_subprocess_exception_finalizes_failure_manifest(
+    tmp_path, monkeypatch, capture_runs
+):
     """Launch errors leave a terminal record rather than a stale running one."""
     project_dir = tmp_path / "project"
     cfg = tmp_path / "c.yml"
@@ -801,7 +812,9 @@ def test_failure_console_carries_the_verdict_and_what_did_not_run(
     assert "the failing workflow's own output is printed above" in out
 
 
-def test_a_launch_error_still_closes_with_a_report(tmp_path, monkeypatch, capsys):
+def test_a_launch_error_still_closes_with_a_report(
+    tmp_path, monkeypatch, capsys, capture_runs
+):
     """An OSError out of subprocess.run must not end in a bare traceback.
 
     The manifest is finalized on this path for the same reason; the console
@@ -878,7 +891,7 @@ def test_the_console_is_ascii_but_for_the_three_rail_glyphs(
 
 
 def test_the_runner_tells_its_children_the_workflow_is_already_named(
-    tmp_path, capsys, monkeypatch
+    tmp_path, capsys, monkeypatch, capture_runs
 ):
     """Each hand-off band names the workflow, so the child's block need not.
 

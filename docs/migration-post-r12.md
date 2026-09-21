@@ -1,5 +1,9 @@
 # Migration — the scenario tree moves, and digest directories get shorter
 
+> Historical R12 migration guide. For a fresh output project, use the current
+> launcher commands in [README.md](../README.md); WF0--WF2 now publish
+> `config/runs/<workflow>/run_record.yml` with exact `sources/` archives.
+
 Post-R12 changes the layout of generated project folders. **There is no
 compatibility read path.** A project folder written before this change is not
 readable by this code, and the workflows will report missing state rather than
@@ -42,16 +46,17 @@ different depths — the snapshot flat in the bin, the record one level down. Th
 now sit together, and the filename drops the workflow name because the directory
 carries it.
 
-Re-running the workflow writes the new path. If you do not want a full re-run,
-its snapshot rule alone is enough and takes seconds:
+This migration command applies only to outputs from its original release.
+Fresh projects use the captured `run-record/2` archive and its source copies;
+run WF1 through the launcher:
 
 ```console
-snakemake <project_dir>/config/runs/build_model/composed_config.yml -c 1 \
-  -s build_model.smk --configfile <project-config.yml>
+python scripts/run_workflow.py build_model --config <project-config.yml> \
+  --project-dir <project_dir> --cores 1
 ```
 
-**The old flat file is not removed for you.** Delete it once the new one exists;
-nothing reads it.
+Keep predecessor output trees under their matching revision. The new reader
+requires a fresh project root and does not rewrite those trees.
 
 The same change gave `generate_scenarios` and `simulate_system` a
 `composed_config.yml` they never had, at

@@ -64,7 +64,7 @@ __all__ = [
 #: and existence-checks it in the script, because the projections overlay is
 #: optional and must not be force-required. `test_guard_invalidation` stages it
 #: because its assertions are about the guard's COMPARISON, not the DAG.
-EXTRA_WF2_SNAPSHOT = "config/runs/analyze_projections/composed_config.yml"
+EXTRA_WF2_SNAPSHOT = "config/runs/analyze_projections/run_record.yml"
 
 #: NOT read by either downstream workflow. R07 B1 retired the extraction's
 #: `ancient(region.geojson)` input and ADR 0003 gave WF2 and WF3 their own

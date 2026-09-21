@@ -19,6 +19,7 @@ from blueearth_cst.shared.provenance import append_journal_line, configuration_i
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, listed, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, warning_count, window_year_pair
 from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
+from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError, validate_removed_gridded_options
 # The figure family's CONTRACT only. `projection_figures` is deliberately
@@ -34,6 +35,7 @@ patch_psutil_windows_benchmark()
 # downstream R scripts can be handed the same path. Forwarding config_path is
 # a repo convention.
 config_path = workflow.configfiles[0]
+CAPTURE_RECORD = require_capture("analyze_projections", config_path, dry_run="--dry-run" in sys.argv or "-n" in sys.argv)
 
 # The consumed-key PROJECTION: the config paths this workflow actually reads.
 # Digesting the projection rather than the whole file is what stops another
@@ -56,6 +58,7 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="analyze_projections", declared_sections=CONFIG_PROJECTION,
 )
+CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input lists below do not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
 
@@ -93,13 +96,13 @@ CONFIG_REFERENCES = [
       (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
 ]
 
-EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
+EFFECTIVE_CONFIG_DIGEST = CAPTURE_DIGESTS[0] if CAPTURE_DIGESTS else effective_config_digest(
     config, ADVANCED_SETTINGS, CONFIG_PROJECTION
 )
 # Threaded through rule 2.01's params: so the record re-fires when the
 # checkout, the lock files, or a referenced catalog's bytes move -- not only
 # when the config is edited.
-CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(
+CONFIGURATION_INPUTS_DIGEST = CAPTURE_DIGESTS[1] if CAPTURE_DIGESTS else configuration_inputs_digest(
     EFFECTIVE_CONFIG_DIGEST,
     toolbox_identity(),
     environment_file_hashes(),
@@ -902,7 +905,7 @@ WF2_TARGETS = {
     # log part under `_parts/`, which is the defect the LOG_RULES block above
     # documents three times over.
     "spatial_basins": SPATIAL_UNITS.outputs["basins"],
-    "project_config": f"{project_dir}/config/runs/analyze_projections/composed_config.yml",
+    **({"project_config": RUN_RECORD} if os.environ.get("BLUEEARTH_WF012_CAPTURE_CONTEXT") else {}),
     # ONE merged log for the whole workflow (was: one per fan-out stage,
     # alongside four rules writing logs/2.NN_*.log directly -- five files a
     # reader had to open in the right order to follow one run). Every rule
@@ -974,42 +977,6 @@ rule delineate_spatial_units:
     benchmark:
         f"{project_dir}/benchmarks/_parts/2.03_delineate_spatial_units.tsv",
     script: SPATIAL_UNITS.script
-
-# 2.01  snapshot_config — current copies + immutable effective-config bundle
-#
-# S8-08(d): this rule and the fetch rule both answered to `2.01` until S8-08(d)
-# separated them -- read as of that date; both have since moved again under
-# [R10-5]. The numbers are a reference aid, so two rules answering to one is
-# exactly the confusion they exist to prevent. No path moves:
-# this rule names its output explicitly and has no banner-derived log or
-# benchmark, so the collision only ever showed in the console message.
-rule snapshot_config:
-    message: rule_banner("2.01", "snapshot_config")
-    input:
-        config_snake = config_path,
-        config_workflows = WF_CONFIG_PATHS,
-    params:
-        data_catalogs = DATA_SOURCES,
-        workflow_name = "analyze_projections",
-        config_dir = f"{project_dir}/config",
-        effective_config = config,
-        advanced_settings = ADVANCED_SETTINGS,
-        config_projection = CONFIG_PROJECTION,
-        # The snapshot is a dump of THIS mapping, not a copy of the project
-        # file (R13 D-11.1): after the split the project file does not hold
-        # the workflow settings, and WF3's drift guard reads them out of the
-        # wf1 snapshot.
-        composed_config = config,
-        # Recorded, never copied -- their content is inlined above (D-11.2).
-        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
-        # A string digest, so the params trigger compares a value. This is what
-        # keeps the record fresh when the CHECKOUT moves; see its definition.
-        configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
-    output:
-        config_snake_out = f"{project_dir}/config/runs/analyze_projections/composed_config.yml",
-        run_record = RUN_RECORD,
-    script:
-        "blueearth_cst/model/copy_config_files.py"
 
 # 2.04  fetch_gcm_slice — acquire ONE raw slice; the only rule that reads the store.
 #

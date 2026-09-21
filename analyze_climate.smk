@@ -12,6 +12,7 @@ from blueearth_cst.shared.provenance import append_journal_line, configuration_i
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, validate_historical_window, warning_count
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
+from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
 # One source-plot definition for WF0 and WF1, including the filename registry.
 from blueearth_cst.climate_analysis.source_plot_rule import source_plot_rule
@@ -44,6 +45,7 @@ patch_psutil_windows_benchmark()
 # downstream scripts can be handed the same path. Forwarding config_path is a
 # repo convention -- keep it even though the Snakefile itself uses `config`.
 config_path = workflow.configfiles[0]
+CAPTURE_RECORD = require_capture("analyze_climate", config_path, dry_run="--dry-run" in sys.argv or "-n" in sys.argv)
 
 # The consumed-key PROJECTION: the config paths this workflow actually reads.
 # Digesting the projection rather than the whole file is what stops another
@@ -66,6 +68,7 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.analyze_
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="analyze_climate", declared_sections=CONFIG_PROJECTION,
 )
+CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input lists below do not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
 
@@ -163,10 +166,10 @@ CONFIG_REFERENCES = [
       (DATA_SOURCES if isinstance(DATA_SOURCES, (list, tuple)) else [DATA_SOURCES])],
 ]
 
-EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
+EFFECTIVE_CONFIG_DIGEST = CAPTURE_DIGESTS[0] if CAPTURE_DIGESTS else effective_config_digest(
     config, ADVANCED_SETTINGS, CONFIG_PROJECTION
 )
-CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(
+CONFIGURATION_INPUTS_DIGEST = CAPTURE_DIGESTS[1] if CAPTURE_DIGESTS else configuration_inputs_digest(
     EFFECTIVE_CONFIG_DIGEST,
     toolbox_identity(),
     environment_file_hashes(),
@@ -361,7 +364,7 @@ WF0_TERMINALS = [
 
 WF0_TARGETS = [
     *WF0_TERMINALS,
-    f"{project_dir}/config/runs/analyze_climate/composed_config.yml",
+    *([RUN_RECORD] if os.environ.get("BLUEEARTH_WF012_CAPTURE_CONTEXT") else []),
     f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
     f"{project_dir}/benchmarks/wf0_benchmarks.md",
 ]
@@ -371,36 +374,6 @@ rule all:
     message: target_banner("0.00", "all", WF0_TARGETS, project_dir)
     input:
         WF0_TARGETS,
-
-# 0.01  snapshot_config — the current config copy + the run record
-rule snapshot_config:
-    message: rule_banner("0.01", "snapshot_config")
-    input:
-        config_snake = config_path,
-        config_workflows = WF_CONFIG_PATHS,
-    params:
-        data_catalogs = DATA_SOURCES,
-        workflow_name = "analyze_climate",
-        config_dir = f"{project_dir}/config",
-        effective_config = config,
-        advanced_settings = ADVANCED_SETTINGS,
-        config_projection = CONFIG_PROJECTION,
-        # The snapshot is a dump of THIS mapping, not a copy of the project
-        # file (R13 D-11.1): after the split the project file does not hold
-        # the workflow settings, and WF3's drift guard reads them out of the
-        # wf1 snapshot.
-        composed_config = config,
-        # Recorded, never copied -- their content is inlined above (D-11.2).
-        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
-        # A string digest, so the params trigger compares a value rather than a
-        # structure. This is what keeps the record FRESH when the checkout, the
-        # lock files or a referenced catalog's bytes move.
-        configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
-    output:
-        config_snake_out = f"{project_dir}/config/runs/analyze_climate/composed_config.yml",
-        run_record = RUN_RECORD,
-    script:
-        "blueearth_cst/model/copy_config_files.py"
 
 # 0.02  delineate_region — the one project region artifact (ADR 0006).
 # Byte-identical to 1.02, 2.02 and 3.03 except message/log/benchmark; everything

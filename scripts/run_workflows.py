@@ -885,7 +885,33 @@ def run(
                         env={**environment, console_style.ANNOUNCED_ENV: "1"},
                     )
                 else:
-                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=child_env)
+                    env_for_child = child_env
+                    if (
+                        name
+                        in {"analyze_climate", "build_model", "analyze_projections"}
+                        and not manifest["dry_run"]
+                    ):
+                        from blueearth_cst.shared.workflow_archive_launch import (
+                            CONTEXT_ENV,
+                            prepare_workflow,
+                            split_config_overrides,
+                        )
+
+                        overrides, forwarded = split_config_overrides(extra)
+                        cmd = build_command(name, config_path, cores, forwarded)
+                        execution_config, capture_context = prepare_workflow(
+                            name,
+                            Path(config_path),
+                            project_dir,
+                            command=cmd,
+                            targets=["all"],
+                            overrides=overrides,
+                            entry_point="scripts/run_workflows.py",
+                        )
+                        cmd[cmd.index("--configfile") + 1] = str(execution_config)
+                        env_for_child = {**child_env, CONTEXT_ENV: str(capture_context)}
+                        workflow["command"] = sanitize_argv(cmd)
+                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=env_for_child)
             except BaseException as exc:
                 elapsed = format_elapsed(time.monotonic() - workflow_started)
                 ran.append((name, f"FAILED ({type(exc).__name__}) after {elapsed}"))

@@ -18,9 +18,9 @@ Permitted: `analyze_climate.smk`, `build_model.smk`, `analyze_projections.smk`, 
 
 ### Required changes (checklist)
 
-- [ ] Adopt P1's exact archive writer and artifact-local placement for the affected workflows.
+- [ ] Introduce the mandatory pre-parse capture launcher and exact archive writer for the affected workflows; raw Snakemake must refuse new-schema emission rather than claim bytes it did not capture.
 - [ ] Update declared outputs, live readers, baseline/tree inventories and documentation in the same runnable contract change.
-- [ ] Update current archive consumers, declared outputs and baseline/test inventory expectations to the new schema in a coordinated runnable change; no old archive dispatch is required.
+- [ ] Update current archive consumers, declared outputs and baseline/test inventory expectations to `run-record/2` in a coordinated runnable change; no old archive dispatch is required.
 - [ ] At each workflow's commit boundary, report the archive version it emits and the readers updated. Flag any standing baseline tree that must be regenerated under the explicit P0 baseline plan.
 
 ### Commit plan

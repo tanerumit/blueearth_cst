@@ -18,14 +18,14 @@ Permitted: `scripts/run_workflows.py`, `scripts/simulate_system.py`, existing wo
 
 ### Required changes (checklist)
 
-- [ ] Implement the common parent/child invocation identity and linkage in schema §5.
+- [ ] Implement `invocation/2` parent/child identity and linkage in schema §§5 and 10.4.
 - [ ] Record direct calls, dry-runs, no-ops, startup failures and normal completion with truthful state.
 - [ ] Leave existing history files untouched; new history readers need only the common schema.
-- [ ] Implement P0's stated coverage for direct and orchestrated calls. If raw Snakemake has reduced coverage, document that public entry-point limit and test its expected record absence rather than claiming full launch history.
+- [ ] Implement P0's mandatory launcher coverage for direct and orchestrated calls; raw Snakemake cannot claim new-schema archive or complete invocation history. Preserve an explicit runnable `legacy_wf3_interim` wrapper route through P3/P4, then hand its removal to P5.
 
 ### Validation
 
-Per edit: focused launcher/history tests. New tests must distinguish a child missing from its parent, a dry-run falsely marked productive, and a hard termination falsely marked success. Run `pytest tests/test_cli.py` if entry-point signatures or declared inputs change; Python lint/format before commit. Full end-to-end history is checked in P7.
+Per edit: focused launcher/history tests. New tests must distinguish a child missing from its parent, a dry-run falsely marked productive, a parent launch failure with no child, and a hard termination falsely marked success. Exercise an enabled-WF3 wrapper smoke on the interim route. Run `pytest tests/test_cli.py` if entry-point signatures or declared inputs change; Python lint/format before commit. Full end-to-end history is checked in P7.
 
 ### Acceptance criteria
 

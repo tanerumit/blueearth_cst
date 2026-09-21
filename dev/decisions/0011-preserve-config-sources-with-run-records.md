@@ -1,6 +1,6 @@
 # ADR 0011 — Preserve exact config sources alongside one run record
 
-- **Status:** proposed; aligned with the current complete-run schema, implementation not started
+- **Status:** accepted P0 decision; implementation pending
 - **Date:** 2026-09-19
 - **Lifecycle:** maintained-current proposal; earlier drafts remain in Git history
 - **Scope:** output-project archives, not the repository's `config/`
@@ -26,8 +26,10 @@ dataset/environment bundle is not required.
 
 Replace the separate composed snapshot with one generated `run_record.yml` and
 a `sources/` archive of exact source files. Keep records owned by their workflow
-or scientific artifact. This captures the proposed direction, not an implemented
-or fully reviewed schema.
+or scientific artifact. The owner accepted the reviewed P0 contract on
+2026-09-21; [the selected schema](../working/complete-run-output-schema.md#10-selected-p0-contract)
+governs versions, digests, path resolution, publication and recovery. The
+implementation has not yet been completed.
 
 #### Proposed layout
 
@@ -107,24 +109,19 @@ beside their model. `basin_data/` retains its existing purpose.
   lifecycle handling. Downstream computation uses scientific artifact contracts,
   not archived YAMLs or the human-facing run record.
 
-#### Rerun contract and unresolved details
+#### Rerun contract and resolved design details
 
 Use the normal workflow entry point with the archived project YAML, recorded
 overrides and working directory, and required environment/external inputs.
 Preserve relative relationships for paths resolved from source files; other
 paths resolve from the run directory, so moving YAMLs does not relocate them.
 
-Exact copies cannot silently rewrite absolute `config_path` references. Before
-implementation, specify archive-root selection for parent-relative paths,
-multiple drives and colliding basenames; how absolute workflow references are
-restored or explicitly redirected for rerun; and how rerun adjustments are
-recorded without modifying archived bytes. The sibling example does not prove
-general relocatability. Portable export is outside this proposal.
-
-Also specify the record schema, capture timing (copies must match bytes actually
-loaded), and publication/recovery behavior so interrupted writes cannot pair one
-execution's record with another's sources. A record alone does not certify
-successful completion of calculations.
+Exact copies cannot silently rewrite absolute `config_path` references. The
+accepted schema §10.3 specifies source-path mapping, explicit rerun adjustments,
+pre-parse byte capture, archive publication and interrupted-write recovery,
+including duplicate basenames and multiple drives. The sibling example does
+not prove general relocatability. Portable export is outside this decision.
+A record alone does not certify successful completion of calculations.
 
 #### Unified execution history
 
@@ -132,7 +129,7 @@ Replace the separate `journal.jsonl` and differing wrapper/simulation invocation
 formats with one versioned invocation-record format, one JSON file per invocation
 under `config/runs/_engine/invocations/`. Configuration archives remain separate:
 they describe configuration and rerun inputs; invocation records describe attempts
-and outcomes. This is a proposed simplification, not current behavior.
+and outcomes. This is accepted design, not current behavior.
 
 Each record carries its ID, optional parent ID, entry point/workflow, command,
 targets, working directory, start/end timestamps, status and exit code, plus
@@ -151,14 +148,14 @@ an unfinished record: its outcome is unknown, not automatically failed. Derive
 chronological history from timestamps; no second authoritative journal is needed.
 Sorting does not establish a causal order between overlapping invocations.
 
-**Coverage must be designed explicitly.** Current WF0–WF2 journal hooks cover
+**Coverage is defined by the accepted schema §10.4.** Current WF0–WF2 journal hooks cover
 executions that perform work; wrapper manifests also cover dry-runs and no-op
 launches. Direct Snakemake parse/startup failures can precede hooks. Unifying the
 schema does not repair these gaps. Complete launch coverage would require a
-launcher around direct Snakemake calls; requiring that launcher versus retaining
-documented hook-only coverage remains open. Also define WF3 participation,
-parent-to-child ID propagation, launch failures without a child record, and
-reliable detection of up-to-date results.
+launcher around direct Snakemake calls. The accepted contract requires that
+launcher for new-schema archive/invocation emission, including WF3. It defines
+parent-to-child ID propagation, launch failures without a child record and
+up-to-date result detection; raw Snakemake cannot claim full launch history.
 
 References to WF0–WF2's latest archive need a matching digest: a mutable path
 alone cannot recover an older invocation's configuration. Full historical config
@@ -189,7 +186,7 @@ checksum in its simulation intent and verifies the bytes before forcing
 preparation. Experiments using the same source version share it. Different
 versions must remain distinguishable and must not silently overwrite a dependency
 of an existing experiment. The complete-run schema proposes a content-hash
-directory; P0 must settle the catalog-relative URI and resolution anchor.
+directory; accepted schema §10.8 fixes the catalog-relative URI and resolution anchor.
 
 The project, including shared data dependencies, is the preservation/transfer
 unit. Experiments need not independently bundle these source datasets, consistent
@@ -262,3 +259,4 @@ elevation or preparation code changes.
 ### Revisions
 
 - **2026-09-21:** Current proposal preserves exact configuration sources and unified invocation history, assigns shared elevation and its binding to WF4, and defines a strict WF3 boundary. The new automatic-seed material excludes WF4 dependencies while retaining the digest-to-integer method; numeric seeds may change. Previous draft changes are in Git history. Implementation has not begun.
+- **2026-09-21, P0 acceptance:** The owner accepted the reviewed contract in the maintained complete-run schema. Archive publication/recovery, pre-parse capture, rerun paths, launcher coverage and WF4 elevation binding are settled at design level. Runtime implementation and verification remain pending.

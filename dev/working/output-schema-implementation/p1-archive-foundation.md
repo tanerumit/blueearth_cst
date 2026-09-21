@@ -2,7 +2,7 @@
 
 ### Context
 
-Read `AGENTS.md`, [master brief](master-brief.md), [schema](../complete-run-output-schema.md) §§4–5 and 10, and ADR 0011. P0 must first settle the archive transaction, rerun-path and version contracts. This phase establishes the archive/reference implementation consumed by later phases.
+Read `AGENTS.md`, [master brief](master-brief.md), [accepted schema](../complete-run-output-schema.md) §§4–5 and 10.2–10.4, and ADR 0011. P0 settled the archive transaction, rerun-path and version contracts. Pin the predecessor WF4 environment and inputs before runtime edits as §10.9 requires. This phase establishes the archive/reference implementation consumed by later phases.
 
 ### Goal
 
@@ -20,12 +20,12 @@ Permitted: `blueearth_cst/shared/workflow_config_snapshot.py`, `blueearth_cst/sh
 
 - [ ] Define one mapping from loaded configuration and custom dependencies to preserved original bytes/names.
 - [ ] Publish `run_record.yml` and `sources/` as a matching archive; do not expose a mixed record/source state on interruption.
-- [ ] Implement P0's source-path and recovery policy for sibling/nested YAMLs, absolute references and colliding names; capture the exact bytes that were loaded, not a later reread of mutable paths.
-- [ ] Define one new provenance/reference version and update current consumers; no pre-migration archive reader is required.
+- [ ] Implement P0's source-path and recovery policy for sibling/nested YAMLs, absolute references and colliding names; capture the exact pre-parse bytes that are loaded, not a later reread of mutable paths. Preserve the accepted A→B rerun→relocated C mapping and retained predecessor evidence.
+- [ ] Implement `run-record/2` and the versioned source/reference projections in §10.2; update current consumers. No pre-migration archive reader is required. Keep terminal rollback/unpublished states and next-writer admission explicit.
 
 ### Validation
 
-Per edit: run matching focused tests. New behavior: test comment/CRLF and basename preservation, missing originals during reuse, and interrupted publication; a byte mismatch or mixed archive falsifies the claim. Before commit: applicable Python lint/format checks. Run broader gates only at the master brief's named boundary.
+Per edit: run matching focused tests. New behavior: test comment/CRLF and basename preservation, missing originals during reuse, pre-parse mutation, duplicate basenames, A→B→C relocation, and interrupted publication at every named boundary with second-reader/recovery/next-writer admission. A byte mismatch or mixed archive falsifies the claim. Before commit: applicable Python lint/format checks. Run broader gates only at the master brief's named boundary.
 
 ### Acceptance criteria
 

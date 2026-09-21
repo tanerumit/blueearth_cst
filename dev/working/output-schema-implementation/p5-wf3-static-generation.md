@@ -18,11 +18,11 @@ Permitted: `generate_scenarios.smk`, `blueearth_cst/experiment/generation_plan.p
 
 ### Required changes (checklist)
 
-- [ ] Replace checkpoint-driven generation expansion with the agreed frozen, content-derived plan and explicit plan pinning.
+- [ ] Replace checkpoint-driven generation expansion with the agreed frozen, content-derived plan and explicit plan pinning. Validate the selected digest at execution time; a mutable discovery pointer cannot redirect a pinned job.
 - [ ] Switch all WF3 declarations, producers, publication paths and WF3 consumers to P4's new contract together. Emit the accepted creator `config/run_record.yml` and byte-preserved `sources/`; bind its exact generated-input checksum. Preserve the creator archive on ready reuse, and test missing originals and interrupted publication. P6 owns WF4 consumption; until then WF4 must refuse the new collection clearly rather than misread it.
 - [ ] Make the R root writer write `run_<id>.nc` directly, not via a legacy-name write followed by rename. Align Snakemake `temp()` outputs, provider ancestor/member paths and perturbation output arguments to the same run IDs.
 - [ ] Keep `weathergenr/output/` date-selection CSVs and `evaluation/plots/` diagnostics accounted for, while generator netCDFs remain temporary.
-- [ ] Keep exact `weather_generation_input.yml` and creator `config/run_record.yml`/`sources/` references consistent.
+- [ ] Keep exact `weather_generation_input.yml` and creator `config/run_record.yml`/`sources/` references consistent. Verify installed YAML semantics and actual provider arguments against the frozen plan, including negative tests where YAML and arguments are mutually consistent but differ from the pin.
 
 ### Commit plan
 
@@ -33,7 +33,7 @@ Permitted: `generate_scenarios.smk`, `blueearth_cst/experiment/generation_plan.p
 
 ### Validation
 
-Per edit: focused provider and rule tests; parse touched R scripts, run `pytest tests/test_cli.py` for rule changes, and Python lint/format. A cold dry-run executing preparation or generation, a live pointer replacing a frozen plan, or any `rlz_*_st_*.nc` member written by new WF3 falsifies the contract. Inspect fresh/prepared/reuse DAGs with explicit targets and force/rerun flags. Exercise stale inputs even with preserved mtimes, competing initialization, failure before/after receipt, and failed-job cleanup without loss of ready bytes. Run an isolated rapid WF3 R/provider smoke once after the phase; compare generated series against P0's matched explicit-seed reference. Check that auto seeds follow the accepted WF3-only formula and recorded inputs; numeric parity with v1 is not an acceptance criterion.
+Per edit: focused provider and rule tests; parse touched R scripts, run `pytest tests/test_cli.py` for rule changes, and Python lint/format. A cold dry-run executing preparation or generation, a live pointer replacing a frozen plan, or any `rlz_*_st_*.nc` member written by new WF3 falsifies the contract. Inspect fresh/prepared/reuse DAGs with explicit targets and force/rerun flags. Exercise stale inputs even with preserved mtimes, competing initialization, failure before/after receipt, and failed-job cleanup without loss of ready bytes. Execute every admitted mutation case in §10.6's exclusion matrix, including repeated parallel/core cases; promote scientifically relevant fields or refuse unsupported modes. Run an isolated rapid WF3 R/provider smoke once after the phase; compare decoded series, dates, member associations and masks exactly against P0's matched explicit-123 reference. Model-validator must return acceptance before P7 integrates the result. Check that auto seeds follow the accepted WF3-only formula and recorded inputs; numeric parity with v1 is not an acceptance criterion.
 
 ### Acceptance criteria
 

@@ -17,6 +17,7 @@ from pathlib import Path
 import pytest
 
 import blueearth_cst.shared.console_style as cs  # noqa: E402
+import blueearth_cst.shared.run_log_core as log_core  # noqa: E402
 import blueearth_cst.shared.snake_utils as su  # noqa: E402
 from blueearth_cst.shared.console_style import (  # noqa: E402
     rule_banner,
@@ -1532,7 +1533,7 @@ def test_heartbeat_backoff_is_what_thins_the_notices(monkeypatch):
     silence, same interval, many times the lines -- so the bound above is
     measuring the backoff and not merely the speed of the machine.
     """
-    monkeypatch.setattr(su, "_HEARTBEAT_MAX_STEP", 0.0)
+    monkeypatch.setattr(log_core, "_HEARTBEAT_MAX_STEP", 0.0)
     stream = io.StringIO()
     hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
     time.sleep(0.9)
@@ -3798,7 +3799,7 @@ def test_run_header_aligns_both_groups_on_one_value_column():
 
 def test_run_header_forward_slashes_and_shortens_the_config_path(monkeypatch):
     """The one row that kept OS separators made the block read as two trees."""
-    monkeypatch.setattr(su, "_REPO_ROOT", os.path.normpath(_abs("repo")))
+    monkeypatch.setattr(log_core, "_REPO_ROOT", os.path.normpath(_abs("repo")))
     config = os.path.join(_abs("repo"), "test_case", "project_config_rapid.yml")
     out = cs.run_header("wf1 build_model", "test_case/test_rapid", config)
     row = next(line for line in out.splitlines() if line.strip().startswith("config"))

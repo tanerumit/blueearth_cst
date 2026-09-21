@@ -262,7 +262,8 @@ Benchmark parts use the same scope beneath `benchmarks/_parts/`. The all-workflo
 runner retains an invocation record under `config/runs/_engine/invocations/`.
 
 ```console
-pixi run python scripts/plot_workflow_dag.py -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
+# WF3's owned dry run shows the source-preparation DAG.
+pixi run python scripts/generate_scenarios.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 -- --dry-run
 pixi run python scripts/plot_workflow_dag.py -s simulate_system.smk --configfile test_case/project_config_rapid.yml
 ```
 

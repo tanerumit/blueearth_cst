@@ -6,31 +6,27 @@ artifacts.
 
 `experiment/content_identity.repository_code_inventory` fingerprints a
 TRANSITIVE STATIC-IMPORT CLOSURE from each stage's declared entry paths, and
-hashes every file in it. `snake_utils` is in all three closures (WF3 generation,
-WF4 metrics, WF4 simulation) and belongs there: the generation path imports
-nineteen names from it, `stress_test_grid` and `resolve_seed` among them, which
-decide numbers.
+hashes every file in it. WF3 generation now imports its scientific helpers
+from `wf3_science` and its neutral tee helpers from `run_log_core`. The mixed
+`snake_utils` module remains a compatibility surface for the other workflows
+and owns Wflow-specific relay injection; it is outside the WF3 closure.
 
 Nothing in this module was ever one of those nineteen. Measured before the
 split: every name here is imported by ZERO closure modules -- they are reached
 only from Snakefiles, which are not entry paths. They were inside the
-fingerprint purely by sharing a 5,768-line file with helpers that earn their
+fingerprint purely by sharing a 5,768-line file with helpers that earned their
 place there. So renaming a banner invalidated a scenario collection, and a
 rapid-fixture run cost ~12 minutes to recover. Twice in one session, for changes
 that decide which characters reach a terminal.
 
 **The dependency runs one way: this module imports from `snake_utils`, never the
-reverse.** A convenience re-export in `snake_utils` would pull this file back
-into all three closures and silently undo the whole thing, with no test failure
-and nothing visibly wrong in the output. `tests/test_module_import_direction.py`
-pins it.
+reverse.** A convenience re-export in `snake_utils` would pull this file into
+its import closures. `tests/test_module_import_direction.py` pins that direction.
 
-What did NOT move, and why it still costs a regeneration to edit: the TEE tier
-(`_Tee`, `tee_to_log`, `run_and_tee`, `log_row`, `_paint_body`,
-`_compact_log_line` and friends, ~1,100 lines) is genuinely reachable --
-`script:` modules call `log_row` directly and rules write through the tee, so it
-is part of what produces a rule's log. This module is the part a Snakefile
-alone ever touches.
+The tee tier (`_Tee`, `tee_to_log`, `run_and_tee`, `log_row`, `_paint_body`,
+`_compact_log_line` and friends) lives in `run_log_core`. It is genuinely
+reachable from WF3's `script:` modules and remains in their code inventory.
+This module holds Snakemake's parse-time console presentation.
 
 `warn_row` lives here rather than beside `log_row`, which is a cohesion cost
 paid deliberately: it is the PARSE-TIME counterpart, called from a Snakefile's
@@ -38,9 +34,8 @@ top-of-file checks before Snakemake's logging stack exists, and it is imported
 by no closure module. Keeping it next to `log_row` would keep it in the
 fingerprint for no benefit.
 
-Several names imported below are private to `snake_utils`. That is the honest
-shape of the seam: the two modules are one package and one concern, split on the
-fingerprint boundary rather than on a public API.
+Several names imported below are private compatibility exports of
+`snake_utils`. The WF3 scientific and tee modules do not import this module.
 """
 
 import atexit

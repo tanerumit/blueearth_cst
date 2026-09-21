@@ -22,7 +22,6 @@ from blueearth_cst.experiment.downscale_climate_forcing import collection_run_fo
 from blueearth_cst.experiment.forcing_descriptor import (
     UnitInterpretation,
     collection_forcing_descriptor,
-    describe_ancillary,
 )
 from blueearth_cst.experiment.scenario_collection import (
     ScenarioCollectionNotReady,
@@ -30,6 +29,7 @@ from blueearth_cst.experiment.scenario_collection import (
     publish_collection,
     write_collection_payload,
 )
+from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
 from blueearth_cst.shared.provenance import file_sha256
 from tests.test_scenario_collection import planned  # noqa: F401
 

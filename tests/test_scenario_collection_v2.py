@@ -230,6 +230,8 @@ def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
         "blueearth_cst/experiment/downscale_climate_forcing.py",
         "blueearth_cst/experiment/simulation_record.py",
         "blueearth_cst/experiment/metric_groups.py",
+        "blueearth_cst/experiment/wf4_ancillary_descriptor.py",
+        "blueearth_cst/shared/snake_utils.py",
     }
     assert not paths & forbidden
     for relative in paths | forbidden:
@@ -241,6 +243,43 @@ def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
         path = tmp_path / relative
         path.write_bytes(path.read_bytes() + b"\n# WF4-only mutation\n")
     assert repository_code_inventory(tmp_path, entries) == original
+
+    def identities(code):
+        intent = _intent()
+        generation = intent["documents"]["generation_config"]
+        material = generation["seed_resolution"]["projection"]
+        revision = content_sha256(code)
+        material["provider_revision"] = revision
+        seed = automatic_seed_v2(material)
+        generation["seed"]["resolved"] = seed
+        generation["weathergen"]["generate_weather"]["seed"] = seed
+        resolution = generation["seed_resolution"]
+        resolution["resolved_seed"] = seed
+        resolution["projection_sha256"] = content_sha256(material)
+        resolution["seed_resolution_id"] = content_sha256(
+            {
+                key: value
+                for key, value in resolution.items()
+                if key != "seed_resolution_id"
+            }
+        )
+        intent["provider"]["revision"] = revision
+        intent["documents"]["provider_code"] = code
+        intent["identity_projections"]["generation_config"]["resolved_seed"] = seed
+        intent["document_digests"] = {
+            key: content_sha256(value) for key, value in intent["documents"].items()
+        }
+        intent["identity_digests"] = {
+            key: content_sha256(intent["identity_projections"].get(key, value))
+            for key, value in intent["documents"].items()
+        }
+        intent["collection_id"] = collection_id_v2(intent)
+        _profile(intent)
+        return revision, seed, intent["collection_id"]
+
+    assert identities(repository_code_inventory(tmp_path, entries)) == identities(
+        original
+    )
     changed = tmp_path / "blueearth_cst/experiment/scenario_provider.py"
     changed.write_bytes(changed.read_bytes() + b"\n# WF3 mutation\n")
     assert repository_code_inventory(tmp_path, entries) != original

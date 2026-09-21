@@ -6,7 +6,8 @@ subtitle: "The five workflows, their runners, and the flags that matter"
 The five root Snakefiles define the workflows. Invoke simulation through
 `scripts/simulate_system.py` or the all-workflow runner, which validate the
 operation and targets before launching Snakemake once. Direct Snakemake
-commands remain supported for the other workflows.
+commands remain supported for WF0–WF2. WF3 requires the owned launcher, which
+freezes its collection plan before generation.
 
 | Entry point | id | What it does |
 |---|---|---|
@@ -26,6 +27,8 @@ for forcing selection. Projections provide a terminal plausibility overlay.
 ```bash
 pixi shell
 snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml
+# For WF3 alone, enable only generate_scenarios in the project config:
+python scripts/run_workflows.py --config <wf3-only-project-config.yml> --project-dir <project-dir> --cores 3
 ```
 
 Angle-bracket labels in the opening path legend are aliases: `<project>` names

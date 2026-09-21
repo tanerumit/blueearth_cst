@@ -2,7 +2,6 @@
 
 import argparse
 import os
-import subprocess
 import sys
 from pathlib import Path
 
@@ -14,6 +13,8 @@ from blueearth_cst.experiment.simulation_runner import (
 )
 from blueearth_cst.shared import invocation_history
 from blueearth_cst.shared.provenance import file_sha256
+from blueearth_cst.shared.windows_job import run_project_child
+from blueearth_cst.shared.workflow_config_snapshot import archive_lock
 
 
 def main(argv=None):
@@ -73,14 +74,15 @@ def main(argv=None):
         environment["CST_SIMULATION_INVOCATION_ID"] = record["invocation_id"]
         invocation_history.update(record_path, record)
         print("simulate_system: " + " ".join(args.target), flush=True)
-        result = subprocess.run(
-            command,
-            env=environment,
-            cwd=Path(__file__).resolve().parents[1],
-            check=False,
-        )
-        invocation_history.finish(record_path, record, exit_code=result.returncode)
-        return result.returncode
+        with archive_lock(root, "project-execution"):
+            result = run_project_child(
+                command,
+                env=environment,
+                cwd=Path(__file__).resolve().parents[1],
+                writing=not args.dry_run,
+            )
+        invocation_history.finish(record_path, record, exit_code=result)
+        return result
     except BaseException as exc:
         invocation_history.finish(record_path, record, exit_code=None, error=exc)
         raise

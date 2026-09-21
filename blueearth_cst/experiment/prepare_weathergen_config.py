@@ -12,8 +12,7 @@ import os
 
 import yaml
 
-from blueearth_cst.shared.climate_window import require_min_years, store_time_bounds
-from blueearth_cst.shared.snake_utils import water_year_start_number
+from blueearth_cst.shared.wf3_science import water_year_start_number
 
 
 def read_yml(yml_path):
@@ -179,44 +178,3 @@ def write_weathergen_config(yml_dict, weathergen_config_path):
         os.makedirs(os.path.dirname(weathergen_config_path))
     with open(weathergen_config_path, "w") as f:
         yaml.dump(yml_dict, f, default_flow_style=False, sort_keys=False)
-
-
-if __name__ == "__main__":
-    if "snakemake" in globals():
-        sm = globals()["snakemake"]
-        from blueearth_cst.shared.snake_utils import log_row, tee_to_log
-
-        with tee_to_log(sm.log[0]):
-            # Check the store before rule 3.11's provider invokes R; weathergenr's
-            # own failure on a short record arrives twenty rules from anything
-            # that could explain it (the R3 defect). See the rule's comment for
-            # why the params rerun-trigger alone is not enough.
-            require_min_years(
-                store_time_bounds(sm.input.climate_nc),
-                sm.params.clim_source,
-                sm.input.climate_nc,
-                where=(
-                    "This is the store WF3's weather generator resamples; "
-                    "weathergenr would reject it at rule 3.11"
-                ),
-            )
-            weathergen_config = sm.output.weathergen_config
-            log_row(
-                f"Writing config -> {weathergen_config}",
-                module="weathergen",
-            )
-            yml_dict = build_weathergen_config(
-                realizations_num=sm.params.realizations_num,
-                stress_test_cfg=sm.params.stress_test_cfg,
-                output_path=sm.params.output_path,
-                nc_file_prefix=sm.params.nc_file_prefix,
-                default_config_path=sm.params.default_config,
-                sim_end=sm.params.sim_window_end,
-                seed=sm.params.seed,
-                water_year_start=sm.params.water_year_start,
-                dry_spell_factor=sm.params.dry_spell_factor,
-                wet_spell_factor=sm.params.wet_spell_factor,
-            )
-            write_weathergen_config(yml_dict, weathergen_config)
-    else:
-        raise ValueError("This script should be run from a snakemake environment")

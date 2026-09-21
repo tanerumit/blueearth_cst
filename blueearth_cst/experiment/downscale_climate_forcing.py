@@ -41,7 +41,6 @@ def collection_run_forcing(
     )
     from blueearth_cst.experiment.forcing_descriptor import (
         collection_forcing_descriptor,
-        describe_ancillary,
         reader_unit_interpretation,
     )
     from blueearth_cst.experiment.scenario_collection import read_collection
@@ -50,6 +49,7 @@ def collection_run_forcing(
         PreparationContext,
         RunForcing,
     )
+    from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
 
     manifest_path = Path(manifest_path)
     root = manifest_path.parent.resolve(strict=True)

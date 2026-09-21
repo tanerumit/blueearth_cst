@@ -1,8 +1,4 @@
-"""Wrap existing weathergenr operations behind the stochastic provider seam.
-
-The transitional carrier keeps native filenames. Only this binding translates
-provider payload into R arguments; it never changes the R numerical operations.
-"""
+"""Wrap weathergenr operations behind the stochastic provider seam."""
 
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
@@ -42,17 +38,11 @@ def enumerate_scenarios(
 
 def _execute(command: list[str], log_path: Path) -> None:
     """Preserve the existing live log and child exit-status behavior."""
-    from blueearth_cst.shared.snake_utils import run_and_tee
+    from blueearth_cst.shared.run_log_core import run_and_tee
 
     result = run_and_tee(command, log_path)
     if result:
         raise CalledProcessError(result, command)
-
-
-def legacy_member_name(row: ScenarioRow, *, st_width: int) -> str:
-    """Address a row in the unchanged P1 output tree; never parse a path."""
-    payload = dict(row.payload)
-    return f"rlz_{payload['rlz']}_st_{payload['st_id'] or f'{0:0{st_width}d}'}"
 
 
 def generate_roots(
@@ -62,7 +52,7 @@ def generate_roots(
     log_path: Path,
     execute: Callable[[list[str], Path], None] = _execute,
 ) -> tuple[ClimateArtifact, ...]:
-    """Generate the declared roots with exactly the predecessor R arguments."""
+    """Generate roots directly under their allocated run IDs."""
     if not root_rows:
         raise ValueError("generate_roots needs nonempty root rows")
     expected_draws = [
@@ -77,6 +67,11 @@ def generate_roots(
         for row in root_rows
     ):
         raise ValueError("generate_roots accepts stochastic roots only")
+    run_ids = [row.run_id for row in root_rows]
+    if len(set(run_ids)) != len(run_ids) or any(
+        not item.isascii() or not item.isdecimal() for item in run_ids
+    ):
+        raise ValueError("root run IDs must be unique ASCII decimal strings")
     command = [
         "Rscript",
         "--vanilla",
@@ -86,13 +81,13 @@ def generate_roots(
         str(source_inputs.rlz_width),
         str(source_inputs.st_width),
         str(source_inputs.basin_cells),
+        ",".join(run_ids),
     ]
     execute(command, log_path)
     artifacts = tuple(
         ClimateArtifact(
             row.run_id,
-            source_inputs.output_dir
-            / f"{legacy_member_name(row, st_width=source_inputs.st_width)}.nc",
+            source_inputs.output_dir / f"run_{row.run_id}.nc",
         )
         for row in root_rows
     )

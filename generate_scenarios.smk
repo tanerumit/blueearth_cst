@@ -4,22 +4,23 @@ import sys
 import time
 import uuid
 from pathlib import Path
-import yaml
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
-from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, index_width, log_row, member_index_regex, patch_psutil_windows_benchmark, warning_count
+from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, patch_psutil_windows_benchmark, warning_count
+from blueearth_cst.shared.wf3_science import index_width
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary, target_banner
-from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
-from blueearth_cst.experiment.content_identity import read_canonical_json
-from blueearth_cst.experiment.legacy_generation_plan import generation_configuration, resolve_generation_plan
+from blueearth_cst.experiment.generation_plan import generation_configuration
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
-from blueearth_cst.experiment.scenario_provider import legacy_member_name
 patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]
 CONFIG_PROJECTION = ("project", "basin", "climate", "workflows.generate_scenarios")
 config, WORKFLOW_CONFIG_PATHS = compose_config(config, config_path, entry="generate_scenarios",
     declared_sections=CONFIG_PROJECTION)
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
+SOURCE_ONLY = os.environ.get("CST_GENERATION_PHASE") == "source"
+V2_MODE = os.environ.get("CST_GENERATION_PHASE") == "generation"
+if not SOURCE_ONLY and not V2_MODE:
+    raise ValueError("WF3 requires the owned source or generation phase")
 GENERATION = generation_configuration(config, workflow.basedir)
 project_dir = GENERATION["project_dir"]
 REGION = GENERATION["region"]
@@ -28,6 +29,16 @@ store_dir = CLIMATE_STORE.store_dir
 _scenario_request_path = GENERATION["request_path"]
 wg_dir = (Path(_scenario_request_path).parent / "generation").as_posix()
 lookup_path = f"{wg_dir}/config/stress_test_lookup.csv"
+V2_PLAN = None
+if V2_MODE:
+    from blueearth_cst.experiment.generation_plan import read_pinned_plan
+    V2_PLAN = read_pinned_plan(
+        Path(os.environ["CST_GENERATION_PLAN_PATH"]),
+        os.environ["CST_GENERATION_PLAN_SHA256"],
+        Path(project_dir),
+    )
+    if V2_PLAN["request"] != GENERATION["request"]:
+        raise ValueError("pinned generation request differs from parsed WF3 settings")
 # WF3's run records are keyed by the SCENARIO-REQUEST fingerprint, because a
 # project can hold several requests at once and WF3 has no user-facing name to
 # key on the way WF4 keys on its experiment.
@@ -61,7 +72,6 @@ ST_WIDTH, RLZ_WIDTH = index_width(ST_NUM), index_width(RLZ_NUM)
 _row_capacity = GENERATION["capacity"]
 SCENARIO_ROWS = stochastic_rows(RLZ_NUM, ST_NUM, unit_id_capacity=_row_capacity)
 _rows_by_id = {row.run_id: row for row in SCENARIO_ROWS}
-_rows_by_member = {legacy_member_name(row, st_width=ST_WIDTH): row for row in SCENARIO_ROWS}
 _root_rows = tuple(row for row in SCENARIO_ROWS if not row.derived_from)
 stress_test_cfg = GENERATION["config"]["climate_perturbations"]
 _generation_catalogs = GENERATION["catalogs"]
@@ -85,38 +95,23 @@ declare_path_tokens(
 )
 declare_project_root(project_dir)
 
-_explicit_selection = None
-_validated_collections = {}
-
-def _provider_row(wc):
-    return _rows_by_member[f"rlz_{wc.rlz_num}_st_{wc.st_num}"]
-
-def _provider_ancestor(wc):
-    ancestor = _rows_by_id[_provider_row(wc).derived_from]
-    return f"{wg_dir}/output/{legacy_member_name(ancestor, st_width=ST_WIDTH)}.nc"
-
-def _resolved_collection_plan():
-    return resolve_generation_plan(GENERATION)
-
-# The targets `rule all` lists, built HERE rather than inline in its `message:`.
-# Snakemake's own f-string preprocessor cannot parse an f-string inside a
-# multi-line directive expression -- it raises `UnboundLocalError: t1` out of
-# `parser.parse_fstring` before the Snakefile is ever executed. `run_stress_test.smk`
-# had the same constraint and answered it the same way, with a pre-built dict.
-#
-# The selected collection is a CHECKPOINT-dependent lambda with no parse-time
-# path, so it is named in prose; the other two are plain strings.
-WF3_TARGETS = ["selected scenario collection",
-               f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-               f"{project_dir}/benchmarks/{BENCHMARKS_NAME}"]
+WF3_TARGETS = (["historical climate and stress-test lookup"] if SOURCE_ONLY else
+               ["selected scenario collection"])
+SOURCE_TARGETS = [f"{store_dir}/extract_historical.nc", f"{store_dir}/basin_cells.csv", lookup_path]
+V2_MARKER = (
+    f"{project_dir}/{V2_PLAN['outputs']['record_root']}/collection.json"
+    if V2_MODE else None
+)
+V2_TARGET = (
+    V2_MARKER if V2_MODE and V2_PLAN["decision"] == "create"
+    else os.environ.get("CST_GENERATION_RECEIPT_PATH")
+)
 
 # 3.00  all
 rule all:
     message: target_banner("3.00", "all", WF3_TARGETS, project_dir)
     input:
-        lambda wc: _selected_collection(wc),
-        f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-        f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+        SOURCE_TARGETS if SOURCE_ONLY else [V2_TARGET],
 
 # 3.01  delineate_region
 rule delineate_region:
@@ -167,266 +162,145 @@ rule prepare_stress_test_grid:
     script:
         "blueearth_cst/experiment/prepare_cst_parameters.py"
 
-# 3.06  prepare_weathergen_config
-rule prepare_weathergen_config:
-    message: rule_banner("3.06", "prepare_weathergen_config", checkpoint_dependent=True, dynamic_progress=True)
-    input:
-        plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
-    output:
-        weathergen_config=f"{wg_dir}/config/weathergen_config.yml",
-    run:
-        import copy
-        plan = read_canonical_json(Path(input.plan))
-        settings = copy.deepcopy(plan["documents"]["generation_config"]["weathergen"])
-        settings["generate_weather"]["out_dir"] = f"{wg_dir}/"
-        Path(output[0]).parent.mkdir(parents=True, exist_ok=True)
-        Path(output[0]).write_text(yaml.safe_dump(settings, sort_keys=False), encoding="utf-8")
+if V2_MODE and V2_PLAN["decision"] == "create":
+    from blueearth_cst.experiment.generation_publication import (
+        publish_generation,
+        validate_provider_inputs,
+    )
+    from blueearth_cst.experiment.scenario_provider import (
+        SourceInputs,
+        generate_roots,
+        transform,
+    )
+    from blueearth_cst.experiment.forcing_descriptor import ClimateArtifact
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
+    import shutil
 
-def _collection_plan(wildcards=None):
-    path = checkpoints.prepare_collection_sources.get().output[0]
-    plan = read_canonical_json(Path(path))
-    # The wildcard is the DIRECTORY name, which is the identity's first
-    # SHORT_DIGEST_CHARS since t2609152107 -- so this compares segment against
-    # segment. The full identity is not weakened by that: `_ready_collection`
-    # reads the manifest below and `read_collection` recomputes it from content.
-    if wildcards is not None and hasattr(wildcards, "collection_id") and wildcards.collection_id != short_digest(plan["collection_id"]):
-        raise ValueError("requested collection differs from the exact source plan")
-    return plan
+    _v2_root = Path(project_dir).resolve()
+    _v2_data = _v2_root / V2_PLAN["outputs"]["data_root"]
+    _v2_receipt = Path(os.environ["CST_GENERATION_RECEIPT_PATH"])
+    _v2_yaml = _v2_root / V2_PLAN["outputs"]["generator_input"]
+    _v2_lookup = _v2_root / V2_PLAN["outputs"]["perturbation_lookup"]
+    _v2_rows = {row["run_id"]: row for row in V2_PLAN["rows"]}
+    _v2_root_ids = [row["run_id"] for row in V2_PLAN["rows"] if not row["st_id"]]
+    _v2_derived_ids = [row["run_id"] for row in V2_PLAN["rows"] if row["st_id"]]
+    _v2_temp = {
+        row["run_id"]: _v2_data / "weathergenr" / "output" / f"run_{row['run_id']}.nc"
+        for row in V2_PLAN["rows"]
+    }
+    _v2_sources = {
+        item["role"]: item["file"]
+        for item in V2_PLAN["intent"]["documents"]["source_inventory"]["sources"]
+    }
 
+    def _v2_input(role):
+        return resolve_file_reference(
+            _v2_sources[role], {"project_root": _v2_root}
+        )
 
-def _ready_collection(plan):
-    from blueearth_cst.experiment.forcing_descriptor import collection_forcing_descriptor, describe_ancillary
-    from blueearth_cst.experiment.scenario_collection import read_collection
+    def _v2_ancestor(wc):
+        row = _v2_rows[wc.run_id]
+        if not row["st_id"]:
+            raise ValueError("root cannot use perturbation rule")
+        root = next(
+            item for item in V2_PLAN["rows"]
+            if item["rlz"] == row["rlz"] and not item["st_id"]
+        )
+        return _v2_temp[root["run_id"]].as_posix()
 
-    marker = Path(plan["manifest_path"])
-    if not marker.exists():
-        return None
-    if plan["collection_id"] not in _validated_collections:
-        _validated_collections[plan["collection_id"]] = read_collection(
-            marker, describe_forcing=collection_forcing_descriptor, describe_ancillary=describe_ancillary)
-    return _validated_collections[plan["collection_id"]]
+    rule generate_roots_v2:
+        input:
+            receipt=_v2_receipt.as_posix(),
+            historical=_v2_input("historical_climate").as_posix(),
+            cells=_v2_input("basin_cells").as_posix(),
+            yaml=_v2_yaml.as_posix(),
+        output:
+            roots=temp([_v2_temp[run_id].as_posix() for run_id in _v2_root_ids]),
+            dates=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["date_products"]],
+        log:
+            f"{LOG_PARTS_DIR}/3.07_generate_roots_v2.log"
+        run:
+            source_inputs = SourceInputs(
+                historical_climate=Path(input.historical),
+                weathergen_config=Path(input.yaml),
+                basin_cells=Path(input.cells),
+                output_dir=_v2_data / "weathergenr" / "output",
+                rlz_width=len(str(RLZ_NUM)),
+                st_width=len(str(ST_NUM)),
+            )
+            validate_provider_inputs(
+                V2_PLAN, _v2_root,
+                historical=source_inputs.historical_climate,
+                cells=source_inputs.basin_cells,
+                generator_yaml=source_inputs.weathergen_config,
+                lookup=_v2_lookup, root_run_ids=_v2_root_ids,
+                output_dir=source_inputs.output_dir,
+            )
+            root_rows = tuple(_rows_by_id[run_id] for run_id in _v2_root_ids)
+            generate_roots(root_rows, source_inputs, log_path=Path(log[0]))
 
+    rule transform_member_v2:
+        input:
+            receipt=_v2_receipt.as_posix(),
+            ancestor=_v2_ancestor,
+            lookup=_v2_lookup.as_posix(),
+            yaml=_v2_yaml.as_posix(),
+        output:
+            temp((_v2_data / "weathergenr" / "output" / "run_{run_id}.nc").as_posix())
+        wildcard_constraints:
+            run_id="|".join(_v2_derived_ids),
+        log:
+            f"{LOG_PARTS_DIR}/3.08_transform_member_v2/run_{{run_id}}.log"
+        run:
+            validate_provider_inputs(
+                V2_PLAN, _v2_root,
+                historical=_v2_input("historical_climate"),
+                cells=_v2_input("basin_cells"),
+                generator_yaml=Path(input.yaml), lookup=Path(input.lookup),
+                ancestor=Path(input.ancestor), row_id=wildcards.run_id,
+                output=Path(output[0]),
+            )
+            row = _rows_by_id[wildcards.run_id]
+            root_id = row.derived_from
+            transform(
+                row,
+                ClimateArtifact(root_id, Path(input.ancestor)),
+                weathergen_config=Path(input.yaml),
+                lookup_csv=Path(input.lookup),
+                output_path=Path(output[0]),
+                log_path=Path(log[0]),
+            )
 
+    rule retain_series_v2:
+        input:
+            receipt=_v2_receipt.as_posix(),
+            member=lambda wc: _v2_temp[wc.run_id].as_posix(),
+        output:
+            (_v2_data / "series" / "run_{run_id}.nc").as_posix()
+        wildcard_constraints:
+            run_id="|".join(_v2_rows),
+        run:
+            target = Path(output[0])
+            target.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(input.member, target)
 
-_source_reuse_ready = False
-_live_plan = None
-if Path(_scenario_request_path).exists():
-    _retained_plan = read_canonical_json(Path(_scenario_request_path))
-    if all(Path(entry["path"]).is_file() for entry in _retained_plan["source_inventory"]):
-        _live_plan, _, _ = _resolved_collection_plan()
-        if _live_plan == _retained_plan:
-            _source_reuse_ready = _ready_collection(_retained_plan) is not None
-
-# 3.04  prepare_collection_sources
-checkpoint prepare_collection_sources:
-    message: rule_banner("3.04", "prepare_collection_sources", summary="fingerprint the generation inputs into a scenario request", dynamic_progress=True)
-    input:
-        lambda wc: [] if _source_reuse_ready else [
-            f"{store_dir}/extract_historical.nc", f"{store_dir}/basin_cells.csv",
-            *_generation_catalogs, GENERATION["template"],
-            lookup_path,
-            *([f"{store_dir}/orography.nc"] if clim_source in {"chirps", "chirps_global"} else []),
-        ],
-    output:
-        _scenario_request_path,
-    params:
-        request=_generation_request,
-        live_request_sha256=_live_plan["request_sha256"] if _live_plan is not None else None,
-    run:
-        from blueearth_cst.experiment.collection_resolution import write_scenario_request
-        plan, _, _ = _resolved_collection_plan()
-        write_scenario_request(project_dir, plan)
-
-
-# 3.05  initialize_scenario_collection
-rule initialize_scenario_collection:
-    message: rule_banner("3.05", "initialize_scenario_collection", checkpoint_dependent=True, dynamic_progress=True)
-    input:
-        plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
-        lookup=lookup_path,
-    output:
-        update((Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix()),
-    run:
-        from blueearth_cst.experiment.legacy_scenario_provider import initialize_planned_collection
-        from blueearth_cst.shared.workflow_config_snapshot import snapshot_bytes
-        plan, catalog, ancillary = _resolved_collection_plan()
-        if plan != read_canonical_json(Path(input.plan)):
-            raise ValueError("GeneratedCollectionStale: inputs changed before initialization")
-        # Written inside the seal (rule 3.10 makes the collection immutable), so
-        # the snapshot cannot be added to -- or diverge from -- a retained
-        # collection later. Unreferenced by `collection_intent.json`, so it
-        # leaves `collection_id` where it was.
-        initialize_planned_collection(project_dir, plan, INVOCATION_ID,
-            lookup_path=input.lookup, catalog_bytes=catalog, ancillary_sources=ancillary,
-            config_snapshot=snapshot_bytes(
-                "generate_scenarios", config_path,
-                WORKFLOW_CONFIG_PATHS.get("generate_scenarios"), config))
-
-
-def _collection_row_inputs(wc):
-    plan = _collection_plan(wc)
-    if _ready_collection(plan) is not None:
-        return [_scenario_request_path]
-    row = _rows_by_id[wc.run_id]
-    return [(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
-            f"{wg_dir}/output/{legacy_member_name(row, st_width=ST_WIDTH)}.nc"]
-
-
-# 3.09  retain_scenario_forcing
-rule retain_scenario_forcing:
-    # Fanned out over RLZ_NUM x ST_NUM, so the context is what separates one
-    # member's line from the next 399. `collection_id` is in the banner too --
-    # the same run can hold more than one collection over its lifetime.
-    # `quiet_start`: this is BOOKKEEPING -- one payload copied into the
-    # collection, about a second, interleaved with 3.08 so the console
-    # alternated identities and spent two lines per member. On a 10 x 20 grid
-    # that is 800 lines to report file copies. The finish line still carries
-    # the duration and the counter.
-    #
-    # The collection id is no longer in the context: it does not change across
-    # the fan-out, and rule 3.04 announces it before any member line prints
-    # (`Collection <id>: claiming N scenario rows`), with 3.10 naming it again
-    # when the collection is sealed. It was 25 constant characters on every
-    # member line. If one invocation ever claims two collections whose members
-    # interleave, two lines can both read `[run 01]` -- the claim rows still
-    # distinguish them, at the cost of reading in order.
-    message: rule_banner("3.09", "retain_scenario_forcing", "run {wildcards.run_id}", quiet_start=True, checkpoint_dependent=True, dynamic_progress=True)
-    input:
-        _collection_row_inputs,
-    output:
-        update((Path(project_dir).resolve() / "scenarios" / "collections" / "{collection_id}" / "forcing" / "run_{run_id}.nc").as_posix()),
-    wildcard_constraints:
-        collection_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
-        run_id=rf"[0-9]{{{len(str(_row_capacity))}}}",
-    run:
-        from blueearth_cst.experiment.scenario_collection import _job_collection_claim, write_collection_payload
-        plan = _collection_plan(wildcards)
-        if _ready_collection(plan) is None:
-            claim = _job_collection_claim(project_dir, plan, INVOCATION_ID)
-            write_collection_payload(claim, f"forcing/run_{wildcards.run_id}.nc", Path(input[1]))
-
-
-def _collection_publication_inputs(wc):
-    plan = _collection_plan(wc)
-    if _ready_collection(plan) is not None:
-        return [_scenario_request_path]
-    root = Path(plan["manifest_path"]).parent
-    return [(root / "forcing" / f"run_{row.run_id}.nc").as_posix() for row in SCENARIO_ROWS]
-
-
-# 3.10  publish_scenario_collection
-checkpoint publish_scenario_collection:
-    message: rule_banner("3.10", "publish_scenario_collection", "collection {wildcards.collection_id}", summary="seal the collection and make it immutable", checkpoint_dependent=True, dynamic_progress=True)
-    input:
-        _collection_publication_inputs,
-    output:
-        update((Path(project_dir).resolve() / "scenarios" / "collections" / "{collection_id}" / "collection.json").as_posix()),
-    wildcard_constraints:
-        collection_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
-    run:
-        from blueearth_cst.experiment.legacy_scenario_provider import publish_planned_collection
-        plan = _collection_plan(wildcards)
-        if _ready_collection(plan) is None:
-            publish_planned_collection(project_dir, plan, INVOCATION_ID)
-        else:
-            # The REUSE row, and the only place it can be said out loud. The
-            # decision itself is made at PARSE time (`_source_reuse_ready`
-            # above), where no console style is installed yet and a row would
-            # print unstyled and out of order. Rules 3.05, 3.09 and 3.10 all
-            # take the same branch on a reuse, but 3.09 is one job per member --
-            # so the statement is made once, here, rather than 400 times.
-            log_row(f"Reusing the retained collection {wildcards.collection_id}; nothing to generate",
-                    module="collection")
-
-
-def _selected_collection(wc):
-    plan = _collection_plan()
-    return checkpoints.publish_scenario_collection.get(collection_id=short_digest(plan["collection_id"])).output[0]
-
-
-
-# 3.07  generate_weather_realizations
-rule generate_weather_realizations:
-    message: rule_banner("3.07", "generate_weather_realizations", summary="generate stochastic weather with weathergenr", checkpoint_dependent=True, dynamic_progress=True)
-    input:
-        initialization=(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
-        source_plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
-        climate_nc = ancient(f"{store_dir}/extract_historical.nc"),
-        basin_cells = ancient(f"{store_dir}/basin_cells.csv"),
-        weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
-    output:
-        temp([f"{wg_dir}/output/{legacy_member_name(row, st_width=ST_WIDTH)}.nc" for row in _root_rows])
-    params:
-        operation = "generate_roots",
-        collection_plan = lambda wc: _collection_plan(),
-        project_dir = project_dir,
-        invocation_id = INVOCATION_ID,
-        rows = [row.as_record() for row in _root_rows],
-        output_dir = f"{wg_dir}/output",
-        rlz_width = RLZ_WIDTH,
-        st_width = ST_WIDTH,
-    threads: 1
-    resources:
-        mem_mb = 2048,
-    log:
-        f"{LOG_PARTS_DIR}/3.07_generate_weather_realizations.log",
-    benchmark:
-        f"{BENCH_PARTS_DIR}/3.07_generate_weather_realizations.tsv",
-    script:
-        "blueearth_cst/experiment/legacy_scenario_provider.py"
-
-# 3.11  gather_logs
-rule gather_logs:
-    message: rule_banner("3.11", "gather_logs", dynamic_progress=True)
-    input:
-        _selected_collection,
-    output:
-        f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-    params:
-        rules=LOG_RULES,
-        parts_dir=LOG_PARTS_DIR,
-    script: "blueearth_cst/shared/merge_logs.py"
-
-# 3.12  gather_benchmarks
-rule gather_benchmarks:
-    message: rule_banner("3.12", "gather_benchmarks", dynamic_progress=True)
-    input:
-        _selected_collection,
-    output:
-        f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
-    params:
-        parts_dir=BENCH_PARTS_DIR,
-        workflow_num=3,
-    script: "blueearth_cst/shared/merge_benchmarks.py"
-
-# 3.08  perturb_climate_realization
-rule perturb_climate_realization:
-    message: rule_banner("3.08", "perturb_climate_realization", "rlz {wildcards.rlz_num} | st {wildcards.st_num}", summary="apply one stress-test member to one realization", checkpoint_dependent=True, dynamic_progress=True)
-    wildcard_constraints:
-        st_num=member_index_regex(ST_WIDTH),
-    input:
-        initialization=(Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix(),
-        source_plan=lambda wc: checkpoints.prepare_collection_sources.get().output[0],
-        rlz_nc = _provider_ancestor,
-        lookup_csv = lookup_path,
-        weathergen_config = f"{wg_dir}/config/weathergen_config.yml",
-    output:
-        rlz_st_nc = temp(f"{wg_dir}/output/rlz_"+"{rlz_num}"+"_st_"+"{st_num}"+".nc")
-    params:
-        operation = "transform",
-        collection_plan = lambda wc: _collection_plan(),
-        project_dir = project_dir,
-        invocation_id = INVOCATION_ID,
-        row = lambda wildcards: _provider_row(wildcards).as_record(),
-    threads: 1
-    resources:
-        mem_mb = 2048,
-    log:
-        f"{LOG_PARTS_DIR}/3.08_perturb_climate_realization/rlz_{{rlz_num}}_st_{{st_num}}.log",
-    benchmark:
-        f"{BENCH_PARTS_DIR}/3.08_perturb_climate_realization/rlz_{{rlz_num}}_st_{{st_num}}.tsv",
-    script:
-        "blueearth_cst/experiment/legacy_scenario_provider.py"
+    rule publish_collection_v2:
+        input:
+            receipt=_v2_receipt.as_posix(),
+            series=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["series"]],
+            dates=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["date_products"]],
+            generator=_v2_yaml.as_posix(),
+            scenario_lookup=(_v2_root / V2_PLAN["outputs"]["scenario_run_lookup"]).as_posix(),
+            perturbation_lookup=_v2_lookup.as_posix(),
+        output:
+            V2_MARKER
+        run:
+            publish_generation(
+                _v2_root,
+                Path(os.environ["CST_GENERATION_PLAN_PATH"]),
+                os.environ["CST_GENERATION_PLAN_SHA256"],
+                INVOCATION_ID,
+            )
 
 
 # --------------------------------------------------------------------------
@@ -503,8 +377,8 @@ def _header():
 
 
 onstart:
-    if not os.environ.get("CST_LEGACY_WF3_INTERIM"):
-        raise ValueError("legacy WF3 execution requires the owned run_workflows.py adapter")
+    if not os.environ.get("CST_GENERATION_OWNED"):
+        raise ValueError("WF3 execution requires an owned generation launcher")
     # Restyle Snakemake's own console output into this toolbox's grammar (one
     # line per job start and end). Here and not at parse time: the logging
     # stack does not exist yet then. Fail-open; see install_console_style.

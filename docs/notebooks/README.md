@@ -8,7 +8,7 @@ graph, runs it, and then *reads* the results rather than only displaying them.
 |---|---|---|---|
 | 1 | [Model building](<Model building.ipynb>) | `build_model.smk` | Delineates the basin, extracts a historical climate store, builds and forces a Wflow-SBM model with hydromt, runs it once, and evaluates it against observed discharge. |
 | 2 | [Climate projections](<Climate projections.ipynb>) | `analyze_projections.smk` | Fetches CMIP6 slices for the basin and derives monthly and annual change factors per model, scenario and horizon — the plausibility overlay, not a driver of the stress test. |
-| 3 | [Climate stress test](<Climate Stress Test.ipynb>) | `generate_scenarios.smk` + `scripts/simulate_system.py` | Generates stochastic weather realizations, perturbs them across a temperature × precipitation grid, runs Wflow for every combination, and reduces the result to a response surface. |
+| 3 | [Climate stress test](<Climate Stress Test.ipynb>) | `scripts/run_workflows.py` + `scripts/simulate_system.py` | Generates stochastic weather realizations, perturbs them across a temperature × precipitation grid, runs Wflow for every combination, and reduces the result to a response surface. |
 
 Run model building before simulation; projection analysis is an independent terminal overlay. Notebook 3 does not rebuild the model — it binds to the one
 notebook 1 left behind, and refuses to run against a stale build.

@@ -330,13 +330,13 @@ def publish_planned_collection(project_dir, plan, invocation_id):
     )
     from blueearth_cst.experiment.forcing_descriptor import (
         collection_forcing_descriptor,
-        describe_ancillary,
     )
     from blueearth_cst.experiment.scenario_collection import (
         _job_collection_claim,
         publish_collection,
     )
     from blueearth_cst.experiment.scenario_rows import stochastic_rows
+    from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
     from blueearth_cst.shared.provenance import file_sha256
 
     claim = _job_collection_claim(project_dir, plan, invocation_id)

@@ -10,7 +10,6 @@ from __future__ import annotations
 import hashlib
 import json
 import os
-import subprocess
 import uuid
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -487,7 +486,11 @@ def _run_workflow_started(
         if dry_run:
             # Dry-runs do not publish creator archives. They may parse the raw
             # config for diagnostics, and do not claim exact source capture.
-            result = subprocess.call(command)
+            from blueearth_cst.shared.windows_job import run_project_child
+
+            result = run_project_child(
+                command, cwd=Path.cwd(), env=os.environ, writing=False
+            )
             invocation_history.finish(path, record, exit_code=result)
             return result
         execution, context = prepare_workflow(
@@ -516,6 +519,8 @@ def _run_workflow_started(
         command[command.index("--configfile") + 1] = str(execution)
         environment = os.environ.copy()
         environment[CONTEXT_ENV] = str(context)
-        result = subprocess.call(command, env=environment)
+        from blueearth_cst.shared.windows_job import run_project_child
+
+        result = run_project_child(command, cwd=Path.cwd(), env=environment)
         invocation_history.finish(path, record, exit_code=result)
         return result

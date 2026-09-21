@@ -90,8 +90,8 @@ def metrics_only_configuration(config_path):
         )
         from blueearth_cst.experiment.forcing_descriptor import (
             collection_forcing_descriptor,
-            describe_ancillary,
         )
+        from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
 
         selection, _ = resolve_explicit_collection(
             workflow["scenario_collection"],
@@ -221,8 +221,8 @@ def metric_request(simulation_id, tokens, anchor, environment, validation):
 def _collection(simulation):
     from blueearth_cst.experiment.forcing_descriptor import (
         collection_forcing_descriptor,
-        describe_ancillary,
     )
+    from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
 
     path = Path(simulation["collection"]["manifest_path"])
     collection = read_collection(

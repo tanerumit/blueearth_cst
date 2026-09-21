@@ -1,20 +1,32 @@
 # WF3/WF4 retained collections, responses and metrics
 
-WF3 `generate_scenarios.smk` publishes durable scenario collections. WF4
-`simulate_system.smk`, invoked through `scripts/simulate_system.py`, consumes a
-ready collection and publishes native responses and metric sets:
+WF3, invoked through `scripts/run_workflows.py` or
+`scripts/generate_scenarios.py`, publishes durable scenario collections. Its
+owned launcher first prepares sources, freezes a content-derived plan, then
+runs generation. Direct `snakemake -s generate_scenarios.smk` is refused.
+
+The v2 collection reader validates the ready marker at
+`scenarios/_engine/collections/<collection_id>/collection.json`; retained
+series and provider products live at `scenarios/<collection_id>/`. WF4's v2
+consumer is introduced in P6; until then it refuses a v2 collection.
+
+WF4 `simulate_system.smk`, invoked through `scripts/simulate_system.py`,
+publishes native responses and metric sets after it can consume a ready
+collection:
 
 | Handoff | Location beneath `project_dir` | Readiness marker |
 |---|---|---|
-| Generated forcing and portable preparation inputs | `scenarios/collections/<collection_id>/` | `collection.json` |
+| Generated forcing and creator archive | `scenarios/<collection_id>/` | `scenarios/_engine/collections/<collection_id>/collection.json` |
 | Frozen simulation and native Wflow responses | `experiments/<experiment_name>/` | completed `config/simulation.json` and `responses/response_inventory.json` |
 | Selected metrics and their unit membership | `experiments/<experiment_name>/results/metric_sets/<metric_set_id>/` | `metrics.json` |
 
-The collection retains the scenario table, perturbation lookup, generated
-forcing, effective-unit interpretation, reduced HydroMT catalog and ancillary
-bytes. Preparation reads that retained closure. Temporary model-grid forcing
-is still removed after Wflow consumes it. Native response CSVs, reader TOMLs
-and temporal evidence remain available for later reduction.
+The v2 collection retains `series/run_<id>.nc`, the scenario and perturbation
+lookups, date-selection CSVs, diagnostic plots, installed generator YAML, and
+the creator `config/run_record.yml` with exact config sources. Root and
+perturbed generator netCDFs under `weathergenr/output/` are temporary.
+Temporary model-grid forcing is removed after Wflow consumes it. Native
+response CSVs, reader TOMLs and temporal evidence remain available for later
+reduction.
 
 Metric sets contain `<token>_indicators.csv`, `unit_index.csv`, definitions,
 execution environment and complete result-key expectations. Class-C wet/dry
@@ -32,24 +44,13 @@ they are never rewritten or relabelled.
 
 ## Selection and invalidation
 
-Without a selector, simulation validates the exact project request at
-`scenarios/requests/<generation_request_id>/request.json`, including current source
-bytes, preparation, provider code and environment. Other collections do not
-affect selection. Missing or stale state refuses simulation and names the direct
-`generate_scenarios.smk` command required to produce a current collection.
-
-For independent reuse, add only this mapping to the simulation workflow file:
-
-```yaml
-scenario_collection:
-  manifest_path: /path/to/scenarios/collections/<collection_id>/collection.json
-```
-
-This mode validates the complete retained collection without opening its
-original generation sources. The generation file and its original inputs are unnecessary. The collection
-provides scenario membership and its declared simulation window; the live model
-remains required for simulation. Never configure a
-collection digest or a `latest` selector.
+WF3 publishes an immutable `scenario-request/2` pointer under
+`scenarios/_engine/requests/<generation_request_id>/request.json`. The pointer
+selects a frozen plan by byte digest; execution reads that pinned plan directly.
+Ready reuse checks the creator's collection and archive without rewriting their
+bytes. A missing or partial collection namespace requires a fresh project or
+explicit repair. P6 adds WF4 selection of v2 collections from the ready marker;
+the current WF4 runner refuses this marker until that consumer is integrated.
 
 A changed collection, model, simulator adapter, environment or simulation
 setting requires a new `experiment_name`. Existing native results are never

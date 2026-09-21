@@ -135,12 +135,12 @@ def resolve_selected_collection(config_path, repository):
     )
     from blueearth_cst.experiment.forcing_descriptor import (
         collection_forcing_descriptor,
-        describe_ancillary,
     )
     from blueearth_cst.experiment.legacy_generation_plan import (
         generation_configuration,
         resolve_generation_plan,
     )
+    from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
     from blueearth_cst.shared.config_composition import compose_config
 
     project, settings = simulation_settings(config_path)

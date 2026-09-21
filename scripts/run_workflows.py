@@ -62,6 +62,7 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
     format_elapsed,
     region_geojson_path,
 )
+from blueearth_cst.shared.windows_job import run_project_child  # noqa: E402
 from blueearth_cst.shared.workflow_config_snapshot import (  # noqa: E402
     archive_lock,
     file_reference,
@@ -987,25 +988,37 @@ def _run_owned(
                     _link_child(history_path, history, child_path, name, child_id)
                     # The simulation runner builds its own environment; the
                     # announcement rides on top of it rather than replacing it.
-                    result = subprocess.run(
+                    result = subprocess.CompletedProcess(
                         cmd,
-                        cwd=REPO_ROOT,
-                        env={
-                            **environment,
-                            "CST_SIMULATION_INVOCATION_ID": child_id,
-                            console_style.ANNOUNCED_ENV: "1",
-                            invocation_history.PARENT_ENV: history["invocation_id"],
-                            invocation_history.INVOCATION_ENV: child_id,
-                        },
+                        run_project_child(
+                            cmd,
+                            cwd=REPO_ROOT,
+                            writing=not manifest["dry_run"],
+                            env={
+                                **environment,
+                                "CST_SIMULATION_INVOCATION_ID": child_id,
+                                console_style.ANNOUNCED_ENV: "1",
+                                invocation_history.PARENT_ENV: history["invocation_id"],
+                                invocation_history.INVOCATION_ENV: child_id,
+                            },
+                        ),
                     )
                 else:
                     env_for_child = child_env
                     if name == "generate_scenarios":
-                        env_for_child = {
-                            **env_for_child,
-                            "CST_LEGACY_WF3_INTERIM": history["invocation_id"],
-                            "CST_GENERATION_INVOCATION_ID": child_id,
-                        }
+                        cmd = [
+                            sys.executable,
+                            "scripts/generate_scenarios.py",
+                            "--config",
+                            str(config_path),
+                            "--project-dir",
+                            str(project_dir),
+                            "--cores",
+                            str(cores),
+                            "--",
+                            *extra,
+                        ]
+                        workflow["command"] = sanitize_argv(cmd)
                     if (
                         name
                         in {"analyze_climate", "build_model", "analyze_projections"}
@@ -1032,10 +1045,6 @@ def _run_owned(
                         cmd[cmd.index("--configfile") + 1] = str(execution_config)
                         env_for_child = {**child_env, CONTEXT_ENV: str(capture_context)}
                         workflow["command"] = sanitize_argv(cmd)
-                    if name == "generate_scenarios" and not manifest["dry_run"]:
-                        wf3_source_hash = _capture_legacy_wf3_attempt(
-                            Path(config_path), project_dir, child_id
-                        )
                     child_path, child_record = invocation_history.start(
                         project_dir,
                         workflow=name,
@@ -1043,9 +1052,7 @@ def _run_owned(
                         command=sanitize_argv(cmd),
                         targets=["all"],
                         mode="dry_run" if manifest["dry_run"] else "execute",
-                        contract_mode="legacy_wf3_interim"
-                        if name == "generate_scenarios"
-                        else "new_schema",
+                        contract_mode="new_schema",
                         invocation_id=child_id,
                         parent_invocation_id=history["invocation_id"],
                     )
@@ -1063,7 +1070,30 @@ def _run_owned(
                             child_path, child_record, project_dir, name
                         )
                     _link_child(history_path, history, child_path, name, child_id)
-                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=env_for_child)
+                    if name == "generate_scenarios":
+                        from scripts.generate_scenarios import run_owned
+
+                        result = subprocess.CompletedProcess(
+                            cmd,
+                            run_owned(
+                                Path(config_path),
+                                project_dir,
+                                cores,
+                                extra,
+                                invocation_id=child_id,
+                                history_pair=(child_path, child_record),
+                            ),
+                        )
+                    else:
+                        result = subprocess.CompletedProcess(
+                            cmd,
+                            run_project_child(
+                                cmd,
+                                cwd=REPO_ROOT,
+                                env=env_for_child,
+                                writing=not manifest["dry_run"],
+                            ),
+                        )
             except BaseException as exc:
                 if child_record is not None:
                     invocation_history.finish(

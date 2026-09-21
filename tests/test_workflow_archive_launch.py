@@ -103,7 +103,11 @@ def test_all_workflow_wrapper_routes_wf0_through_capture(tmp_path, monkeypatch):
         commands.append((command, kwargs))
         return SimpleNamespace(returncode=0, stdout="", stderr="")
 
-    monkeypatch.setattr(run_workflows.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        run_workflows,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
     assert run_workflows.run(str(config), cores=1, extra=[]) == 0
     assert len(commands) == 1
     command, kwargs = commands[0]

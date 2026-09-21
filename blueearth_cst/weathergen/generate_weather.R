@@ -10,9 +10,9 @@ library(yaml)
 # downstream. Placed after source(global.R) so the arity stop() is the first
 # thing to touch args.
 args <- commandArgs(trailingOnly = TRUE)
-if (length(args) != 5L) {
-  stop("generate_weather.R expects 5 args: <climate_nc> <weathergen_config_yaml> ",
-       "<rlz_index_width> <st_index_width> <basin_cells_csv>")
+if (length(args) != 6L) {
+  stop("generate_weather.R expects 6 args: <climate_nc> <weathergen_config_yaml> ",
+       "<rlz_index_width> <st_index_width> <basin_cells_csv> <root_run_ids>")
 }
 climate_nc_path    <- args[[1]]
 weathergen_config_path <- args[[2]]
@@ -33,9 +33,11 @@ if (is.na(rlz_index_width) || is.na(st_index_width) ||
 # this env, and the producer is the only place holding both the grid and the
 # region polygon.
 basin_cells_path   <- args[[5]]
-pad <- function(value, width) sprintf(paste0("%0", width, "d"), as.integer(value))
-# The reserved unperturbed baseline this rule writes, padded like any member.
-st_baseline <- pad(0L, st_index_width)
+root_run_ids <- strsplit(args[[6]], ",", fixed = TRUE)[[1]]
+if (length(root_run_ids) == 0L || any(!grepl("^[0-9]+$", root_run_ids)) ||
+    anyDuplicated(root_run_ids)) {
+  stop("root_run_ids must be a nonempty, comma-separated list of unique numeric run IDs")
+}
 
 yaml <- yaml::read_yaml(weathergen_config_path)
 
@@ -48,6 +50,10 @@ gw <- yaml$generate_weather
 wnc <- yaml$write_netcdf
 rwg <- yaml$run_weather_generator
 historical_realizations_num <- gw$n_realizations
+if (length(root_run_ids) != historical_realizations_num) {
+  stop("root_run_ids count ", length(root_run_ids),
+       " does not match n_realizations ", historical_realizations_num)
+}
 # `out_dir` is the generator subtree ROOT --
 # experiments/<id>/climate/weathergenr/ -- not a write directory (R07 B5 set
 # the split; R9 P2 moved the subtree under climate/ and gave it the engine's
@@ -61,7 +67,7 @@ weathergen_root <- gw$out_dir
 # here landed as `output//rlz_1_st_0.nc` on every path row it printed.
 weathergen_root <- sub("/+$", "", weathergen_root)
 weathergen_output_path <- file.path(weathergen_root, "output")
-weathergen_plots_path <- file.path(weathergen_root, "plots")
+weathergen_plots_path <- file.path(weathergen_root, "evaluation", "plots")
 
 # Step 1) Read weather data from the netcdf file
 log_row("Reading weather netcdf: ", climate_nc_path)
@@ -218,9 +224,8 @@ for (n in 1:historical_realizations_num) {
   # downscaling.
   stochastic_rlz <- lapply(ncdata$data, function(x) x[day_order, ])
 
-  # save to netcdf. Every realization NC lands flat in
-  # climate/weathergenr/output/, its index carried by the file name -- R07 B5
-  # dissolved the realization_<n>/ level, R9 P2 renamed the subtree.
+  # Write directly to the declared temporary member path. Python owns the
+  # row allocation; the ordered IDs here bind its roots to generator draws.
   rlz_out_dir <- weathergen_output_path
   weathergenr::write_netcdf(
         data          = stochastic_rlz,
@@ -233,8 +238,8 @@ for (n in 1:historical_realizations_num) {
         spatial_ref   = wnc$spatial_ref,
         signif_digits = wnc$signif_digits,
         verbose       = wnc$verbose,
-        file_prefix   = wnc$file_prefix,
-        file_suffix   = paste0(pad(n, rlz_index_width), "_st_", st_baseline)
+        file_prefix   = "run",
+        file_suffix   = root_run_ids[[n]]
   )
 
   # A `spatial_ref` re-patching block stood here until the weathergenr 2.0.0

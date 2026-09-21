@@ -22,7 +22,7 @@ config_fn = join(TESTDIR, "project_config_fixture.yml")
 linux_config_fn = join(SNAKEDIR, "test_case", "project_config_baseline_linux.yml")
 
 
-def _dry_run(snakefile, cfg=config_fn):
+def _dry_run(snakefile, cfg=config_fn, env=None):
     """Dry-run a Snakefile on a config; return the completed process.
 
     stdout/stderr are captured as text so callers can match on the DAG-build
@@ -32,7 +32,7 @@ def _dry_run(snakefile, cfg=config_fn):
     """
     os.chdir(SNAKEDIR)
     cmd = f"snakemake all -c 1 -s {snakefile} --configfile {cfg} --dry-run"
-    return subprocess.run(cmd, shell=True, capture_output=True, text=True)
+    return subprocess.run(cmd, shell=True, capture_output=True, text=True, env=env)
 
 
 @pytest.fixture()
@@ -473,19 +473,19 @@ def test_analyze_projections_owns_its_region():
 
 @pytest.mark.workflow_contract
 def test_snakefile_cli_generate_scenarios(config_with_staged_region):
-    """Workflow 3 dry-run builds a clean DAG on the test config (R5 fixed the cycle).
-
-    Pre-R5 this tripped a CyclicGraphException at rule
-    generate_climate_stress_test: its output wildcard rlz_{rlz_num}_st_{st_num}.nc
-    could resolve st_num to 0, making the rule a second eligible producer of
-    st_0.nc (a self-loop). R5 removed it with a rule-local
-    `wildcard_constraints: st_num=[1-9][0-9]*` on that rule. Once the cycle is
-    gone the ancient(region.geojson) input existence is checked, so this reuses
-    the same staged-region fixture as workflow 2 (region.geojson is the sole
-    unbuilt cross-workflow leaf). Was a CyclicGraphException ratchet pre-R5
-    (dev/tasks/ § R3).
-    """
-    result = _dry_run("generate_scenarios.smk", cfg=config_with_staged_region)
+    """WF3 requires ownership, then builds the source-only cold DAG."""
+    refused = _dry_run("generate_scenarios.smk", cfg=config_with_staged_region)
+    assert refused.returncode != 0
+    assert "owned source or generation phase" in refused.stdout + refused.stderr
+    result = _dry_run(
+        "generate_scenarios.smk",
+        cfg=config_with_staged_region,
+        env={
+            **os.environ,
+            "CST_GENERATION_PHASE": "source",
+            "CST_GENERATION_OWNED": "test",
+        },
+    )
     assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
 
 

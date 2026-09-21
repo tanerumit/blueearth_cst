@@ -86,7 +86,20 @@ def capture_runs(monkeypatch):
                 artifact.touch()
         return FakeResult(exits.get(idx, 0))
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
+    from scripts import generate_scenarios
+
+    monkeypatch.setattr(
+        generate_scenarios,
+        "run_owned",
+        lambda config_path, _root, cores, extra, **_kwargs: (
+            fake_run(generate_scenarios._command(config_path, cores, extra)).returncode
+        ),
+    )
     return calls, exits
 
 
@@ -306,7 +319,21 @@ def test_success_manifest_is_initialized_before_first_workflow_and_finalized(
             _staged(project_dir, rw.LEAVES)
         return FakeResult(0)
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
+
+    from scripts import generate_scenarios
+
+    monkeypatch.setattr(
+        generate_scenarios,
+        "run_owned",
+        lambda config_path, _root, cores, extra, **_kwargs: (
+            fake_run(generate_scenarios._command(config_path, cores, extra)).returncode
+        ),
+    )
 
     assert rw.run(str(cfg), cores=5, extra=["--dry-run"]) == 0
 
@@ -384,7 +411,11 @@ def test_subprocess_exception_finalizes_failure_manifest(
             return FakeResult(0, stdout="abc123\n" if "rev-parse" in cmd else "")
         raise OSError("snakemake executable missing")
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
 
     with pytest.raises(OSError, match="snakemake executable missing"):
         rw.run(str(cfg), cores=3, extra=[])
@@ -822,7 +853,11 @@ def test_a_launch_error_still_closes_with_a_report(
             return FakeResult(0, stdout="abc123\n" if "rev-parse" in cmd else "")
         raise OSError("snakemake executable missing")
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
     with pytest.raises(OSError):
         rw.run(str(cfg), cores=3, extra=[])
 
@@ -904,7 +939,11 @@ def test_the_runner_tells_its_children_the_workflow_is_already_named(
         envs.append(kwargs.get("env"))
         return FakeResult(0)
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
     project_dir = tmp_path / "gabon_project"
     cfg = tmp_path / "c.yml"
     # `build_model` alone: it is the plain `subprocess.run` path, and enabling
@@ -939,7 +978,11 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
         envs.append(kwargs.get("env"))
         return FakeResult(0)
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
     project_dir = tmp_path / "gabon_project"
     # The wf1 leaves the contract (i) preflight requires, without running wf1.
     for leaf in rw.LEAVES:

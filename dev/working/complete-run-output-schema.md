@@ -200,6 +200,17 @@ New collections have two scientific JSON documents in `scenarios/_engine/collect
 
 The proposed `scenario_run_lookup.csv` is collection-owned, even when its runs are later selected by an experiment. It replaces the current `scenario_table.csv` and, for stochastic collections, has columns `run_id,evaluate,type,rlz,st_id`: omit the redundant `derived_from`, rename `evaluated` to `evaluate` and shorten `scenario_type` to `type` within this scenario-specific CSV. `evaluate=true` is an intended eligibility/selection flag, not evidence that WF4 simulation has occurred; completed evaluation is recorded by the experiment's responses and readiness records. Within each `rlz`, the unique row with empty `st_id` is the unperturbed root; every nonempty-`st_id` row in that realization derives from it. Thus `rlz` identifies the family, while `st_id` distinguishes its root from its perturbations. New validators must require exactly one root per realization and the configured realization × perturbation cross-product; this lineage rule applies to the stochastic provider, not arbitrarily to future providers. `perturbation_lookup.csv` replaces `stress_test_lookup.csv` as the collection's `st_id` × month lookup of temperature, precipitation and precipitation-variance changes. Version the CSV header, semantic digest and all readers; existing collections retain their original filename, columns and identity.
 
+### 2.3 File-level changes in this proposal
+
+These are proposed files for **new** outputs; current files and sealed collections keep their existing names and schemas.
+
+| Current file | Proposed file | File-level change |
+|---|---|---|
+| `scenarios/collections/<id>/scenario_table.csv` | `scenarios/<id>/scenario_run_lookup.csv` | For stochastic collections, header changes from `run_id,derived_from,evaluated,scenario_type,rlz,st_id` to `run_id,evaluate,type,rlz,st_id`. Infer the root from the unique empty-`st_id` row in each `rlz`; `evaluate` declares intended eligibility, not completed simulation. |
+| `scenarios/collections/<id>/stress_test_lookup.csv` | `scenarios/<id>/perturbation_lookup.csv` | Filename changes; monthly `st_id`–temperature/precipitation change columns and values remain as before. |
+| Collection-local `preparation_catalog.yml` | `experiments/<name>/hydrology/wflow/run_settings/forcing_elevation_catalog.yml` | Move the checked HydroMT elevation binding to WF4; shared orography bytes remain under `data/climate/ancillary/`. Remove the WF4-only preparation dependency from new collection identity and bind it in simulation intent. |
+| `experiments/<name>/results/metric_sets/<id>/unit_index.csv` | `experiments/<name>/results/metric_sets/<id>/metric_run_lookup.csv` | Rename the user-facing run/bundle membership lookup; no CSV-column change is proposed. |
+
 New outputs stop writing composed_config.yml, journal.jsonl and the central config/catalogs, config/templates and config/generated archive destinations. Existing copies are legacy data and are not deleted by this proposal. A fresh tree has no collection-local ancillary/elevation directory under the new contract. CHIRPS extraction sidecars are not automatically relocated merely because the ERA5 source dependency moves.
 
 ## 3. Decisions in plain language
@@ -724,3 +735,4 @@ Draft validation: check Markdown links, parse JSON examples, check the diff for 
 - 2026-09-21 (scenario lineage column) — Removed `derived_from` from the proposed stochastic run lookup; specified the unique empty-`st_id` root per `rlz` as its derivation rule, with versioned validation and unchanged legacy CSVs.
 - 2026-09-21 (evaluation flag tense) — Renamed the proposed stochastic run-lookup column from `evaluated` to `evaluate`; clarified that it declares intent rather than completed simulation, retaining the old column for legacy collections.
 - 2026-09-21 (scenario type column) — Shortened the proposed run-lookup `scenario_type` header to `type` without changing its values or legacy CSVs.
+- 2026-09-21 (file-level summary) — Added a current-to-proposed table near the layout for the scenario run lookup, perturbation lookup, WF4 elevation catalog and metric run lookup, including the proposed CSV header changes.

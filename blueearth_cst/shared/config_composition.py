@@ -70,9 +70,12 @@ import tokenize
 from collections.abc import Iterable, Mapping, Sequence
 from io import StringIO
 from pathlib import Path
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, NamedTuple
 
 import yaml
+
+if TYPE_CHECKING:
+    from blueearth_cst.shared.workflow_config_snapshot import CapturedSource
 
 # ---------------------------------------------------------------------------
 # Contract constants
@@ -849,7 +852,12 @@ class _Probe(NamedTuple):
     detail: str
 
 
-def _probe_t2(name: str, raw: object, t1_dir: str) -> _Probe:
+def _probe_t2(
+    name: str,
+    raw: object,
+    t1_dir: str,
+    source_bytes: Mapping[Path, bytes] | None = None,
+) -> _Probe:
     """Resolve and read one declared T2 file without deciding whether to fail.
 
     Separating the read from the verdict is what lets the D-9.3 tolerance clause
@@ -857,10 +865,17 @@ def _probe_t2(name: str, raw: object, t1_dir: str) -> _Probe:
     outside it, and both need the parse attempt.
     """
     resolved = _resolve_config_path(raw, t1_dir, name)
-    if not os.path.isfile(resolved):
+    if source_bytes is not None and Path(resolved).resolve() not in source_bytes:
+        return _Probe(name, os.fspath(raw), resolved, "not_captured", {}, "")
+    if source_bytes is None and not os.path.isfile(resolved):
         return _Probe(name, os.fspath(raw), resolved, "missing", {}, "")
     try:
-        loaded = yaml.safe_load(Path(resolved).read_text(encoding="utf-8"))
+        data = (
+            source_bytes[Path(resolved).resolve()]
+            if source_bytes is not None
+            else Path(resolved).read_bytes()
+        )
+        loaded = yaml.safe_load(data)
     except yaml.YAMLError as exc:
         return _Probe(name, os.fspath(raw), resolved, "unparseable", {}, str(exc))
     if loaded is None:
@@ -880,6 +895,11 @@ def _probe_t2(name: str, raw: object, t1_dir: str) -> _Probe:
 
 def _raise_for_probe(probe: _Probe, t1_dir: str) -> None:
     """Apply §8.4's failure table to a file this entry point must load."""
+    if probe.status == "not_captured":
+        raise ValueError(
+            f"workflows.{probe.name}.config_path was not in the pre-parse "
+            f"capture: {probe.resolved}"
+        )
     if probe.status == "missing":
         raise ValueError(
             f"workflows.{probe.name}.config_path names a file that does not "
@@ -941,6 +961,7 @@ def compose_config(
     t1_path: str | os.PathLike,
     entry: str | None = None,
     declared_sections: Sequence[str] | None = None,
+    source_bytes: Mapping[Path, bytes] | None = None,
 ) -> tuple[dict[str, Any], dict[str, str]]:
     """Merge T1 and its T2 files into a config of today's shape.
 
@@ -1037,7 +1058,7 @@ def compose_config(
             )
         _check_stanza_closed(name, stanza)
         if "config_path" in stanza:
-            probes.append(_probe_t2(name, stanza["config_path"], t1_dir))
+            probes.append(_probe_t2(name, stanza["config_path"], t1_dir, source_bytes))
     _check_no_duplicate_paths(probes)
     by_name = {probe.name: probe for probe in probes}
 
@@ -1138,6 +1159,76 @@ def load_composed_config(
     t1 = yaml.safe_load(text) or {}
     composed, _ = compose_config(t1, t1_path, entry, declared_sections)
     return composed
+
+
+def compose_captured_config(
+    project_source: CapturedSource,
+    sources: Sequence[CapturedSource],
+    entry: str,
+    declared_sections: Sequence[str] | None = None,
+    overrides: Mapping[str, Any] | None = None,
+) -> tuple[dict[str, Any], dict[str, str]]:
+    """Parse the exact launcher-captured buffers, never the mutable originals.
+
+    The project source path remains the resolution anchor for config_path.
+    A launcher may add overrides to the parsed project mapping before calling
+    ``compose_config``; this direct form covers the no-override case.
+    """
+    captured = {source.original_path: source.data for source in sources}
+    if project_source.original_path not in captured:
+        raise ValueError("project source is absent from capture")
+    project = yaml.safe_load(project_source.data) or {}
+    if overrides:
+        project.update(overrides)
+    return compose_config(
+        project,
+        project_source.original_path,
+        entry,
+        declared_sections,
+        source_bytes=captured,
+    )
+
+
+def capture_configuration_sources(
+    project_path: str | os.PathLike,
+    entry: str,
+    declared_sections: Sequence[str] = (),
+    custom_dependencies: Sequence[tuple[str, str, str | os.PathLike]] = (),
+) -> tuple[CapturedSource, ...]:
+    """Capture precisely the project, in-scope workflow and custom files.
+
+    The project buffer is parsed once to discover config_path identities. Later
+    composition consumes these captured buffers, even if live paths mutate.
+    The caller supplies custom dependency roles and already resolved paths;
+    no catalog name is guessed to be a file.
+    """
+    from blueearth_cst.shared.workflow_config_snapshot import capture_sources
+
+    project_source = capture_sources([("project", "project_config", project_path)])[0]
+    project = yaml.safe_load(project_source.data) or {}
+    workflows = project.get("workflows") or {}
+    if not isinstance(workflows, Mapping):
+        raise ValueError("project workflows must be a mapping")
+    loaded_names = {entry} | {
+        section.split(".", 1)[1]
+        for section in declared_sections
+        if section.startswith("workflows.")
+    }
+    source_specs = []
+    for name in sorted(loaded_names):
+        stanza = workflows.get(name) or {}
+        if not isinstance(stanza, Mapping):
+            raise ValueError(f"workflows.{name} must be a mapping")
+        if "config_path" in stanza:
+            resolved = _resolve_config_path(
+                stanza["config_path"], str(project_source.original_path.parent), name
+            )
+            source_specs.append(
+                (f"workflow_{name}", f"workflow_config_{name}", resolved)
+            )
+    source_specs.extend(custom_dependencies)
+    others = capture_sources(source_specs) if source_specs else ()
+    return (project_source, *others)
 
 
 # ---------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-"""WF3-only generation inputs and closed stochastic seed projection."""
+"""Shared generation request and source-time seed resolution for WF3 and WF4."""
 
 from copy import deepcopy
 from pathlib import Path
@@ -7,14 +7,19 @@ from blueearth_cst.experiment.content_identity import (
     content_sha256,
     identity_segment,
     repository_code_inventory,
+    stage_environment,
 )
+from blueearth_cst.experiment.prepare_weathergen_config import build_weathergen_config
+from blueearth_cst.shared.provenance import file_sha256
 from blueearth_cst.shared.snake_utils import (
     DEFAULT_BASIN_INDEX,
     DEFAULT_HYDROGRAPHY,
     climate_store_rule,
     region_rule,
+    resolve_seed,
     resolve_water_year_start,
     stress_test_grid,
+    validate_spell_factor,
     window_year_pair,
 )
 
@@ -171,3 +176,120 @@ def generation_configuration(config, repository):
         request_path=request_path.as_posix(),
         source=climate["selected"],
     )
+
+
+def resolve_generation_plan(settings):
+    """Hash actual sources, resolve the seed, then construct immutable intent."""
+    from blueearth_cst.climate_analysis.prepare_climate_data_catalog import (
+        resolve_preparation_payloads,
+        resolved_unit_interpretation,
+    )
+    from blueearth_cst.experiment.legacy_scenario_provider import plan_collection
+    from blueearth_cst.shared.climate_window import require_min_years, store_time_bounds
+
+    cfg = settings["config"]
+    store = settings["store"].store_dir
+    historical = f"{store}/extract_historical.nc"
+    require_min_years(
+        store_time_bounds(historical),
+        settings["source"],
+        historical,
+        where="This is the historical store the scenario generator resamples",
+    )
+    units = resolved_unit_interpretation(settings["catalogs"], settings["source"])
+    context, catalog, ancillary = resolve_preparation_payloads(
+        settings["catalogs"],
+        settings["source"],
+        units,
+        oro_path=f"{store}/orography.nc",
+    )
+    sources = {
+        "historical_climate": f"{store}/extract_historical.nc",
+        "basin_cells": f"{store}/basin_cells.csv",
+        "generator_template": settings["template"],
+        **{f"catalog_{i}": p for i, p in enumerate(settings["catalogs"])},
+        **{f"ancillary_{name}": p for name, p in ancillary.items()},
+    }
+    # R consumes the extracted values. Raw catalog/template text remains in the
+    # collection identity, but locators, comments and console options select no draw.
+    source_projection = [
+        {
+            "role": "forcing_elevation" if role.startswith("ancillary_") else role,
+            "sha256": file_sha256(Path(p)),
+            "size_bytes": Path(p).stat().st_size,
+        }
+        for role, p in sorted(sources.items())
+        if role != "generator_template" and not role.startswith("catalog_")
+    ]
+    perturbations = cfg["climate_perturbations"]
+    spells = perturbations.get("spell_factors") or {}
+    generator = build_weathergen_config(
+        settings["n_realizations"],
+        perturbations,
+        "",
+        "rlz",
+        settings["template"],
+        settings["end"],
+        0,
+        settings["request"]["water_year_start"],
+        validate_spell_factor(spells.get("dry"), "spell_factors.dry"),
+        validate_spell_factor(spells.get("wet"), "spell_factors.wet"),
+    )
+    material = {
+        "schema_version": "generation-seed-material/1",
+        "scenario_type": "stochastic",
+        "n_realizations": settings["n_realizations"],
+        "simulation_window": {"start": settings["start"], "end": settings["end"]},
+        "climate_perturbations": cfg["climate_perturbations"],
+        "water_year_start": settings["request"]["water_year_start"],
+        "provider_revision": content_sha256(settings["code"]),
+        "source_inventory_sha256": content_sha256(source_projection),
+        "generator_settings": generator_seed_projection(generator),
+    }
+    digest = content_sha256(material)
+    requested = cfg.get("seed")
+    resolved = (
+        (int(digest, 16) % (2**31 - 1))
+        if requested == "auto"
+        else resolve_seed(requested, "")
+    )
+    resolution = {
+        "seed_request": requested,
+        "resolved_seed": resolved,
+        "projection": material,
+        "projection_sha256": digest,
+    }
+    resolution["seed_resolution_id"] = content_sha256(resolution)
+    generator["generate_weather"]["seed"] = resolved
+    generator["generate_weather"].pop("out_dir")
+    generation = {
+        "seed": {"requested": requested, "resolved": resolved},
+        "seed_resolution": resolution,
+        "unit_id_capacity": settings["capacity"],
+        "weathergen": generator,
+        "climate_perturbations": perturbations,
+    }
+    spec = {
+        "scenario_type": "stochastic",
+        "n_realizations": settings["n_realizations"],
+        "n_design_points": settings["n_design_points"],
+        "unperturbed_per_realization": 1,
+        "expected_run_count": settings["n_realizations"]
+        * (settings["n_design_points"] + 1),
+        "simulation_window": material["simulation_window"],
+        "pairing": "paired_across_design_points",
+        "row_order": "rlz-major/unperturbed-first/st-id-ascending",
+    }
+    plan = plan_collection(
+        settings["project_dir"],
+        settings["request"],
+        generation_config=generation,
+        scenario_spec=spec,
+        source_inputs=sources,
+        provider_code=settings["code"],
+        environment=stage_environment(
+            ["hydromt", "xarray", "netCDF4", "PyYAML"], include_weathergen=True
+        ),
+        preparation_context=context,
+    )
+    return plan, catalog, ancillary

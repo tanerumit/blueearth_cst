@@ -137,7 +137,7 @@ def resolve_selected_collection(config_path, repository):
         collection_forcing_descriptor,
         describe_ancillary,
     )
-    from blueearth_cst.experiment.generation_plan import (
+    from blueearth_cst.experiment.legacy_generation_plan import (
         generation_configuration,
         resolve_generation_plan,
     )

@@ -10,6 +10,7 @@ import pandas as pd
 import pytest
 
 from blueearth_cst.experiment.export_wflow_results import _return_level_from_blocks
+from blueearth_cst.experiment.metric_groups import metric_groups
 from blueearth_cst.experiment.metric_registry import (
     DeclaredBundle,
     InsufficientReturnLevelBlocks,
@@ -22,7 +23,6 @@ from blueearth_cst.experiment.metric_registry import (
     resolve_month_reference,
 )
 from blueearth_cst.experiment.response_series import ResponseSeries
-from blueearth_cst.experiment.scenario_provider import metric_groups
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
 
 

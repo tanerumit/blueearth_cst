@@ -42,8 +42,8 @@ def test_planned_publication_across_separate_workers(retained, tmp_path):
     from pathlib import Path
 
     from blueearth_cst.experiment.collection_resolution import write_scenario_request
+    from blueearth_cst.experiment.legacy_scenario_provider import plan_collection
     from blueearth_cst.experiment.scenario_collection import read_collection
-    from blueearth_cst.experiment.scenario_provider import plan_collection
 
     original, manifest = retained
     intent = read_canonical_json(original / "collection_intent.json")
@@ -71,7 +71,7 @@ def test_planned_publication_across_separate_workers(retained, tmp_path):
         """import sys
 from pathlib import Path
 from blueearth_cst.experiment.content_identity import read_canonical_json
-from blueearth_cst.experiment.scenario_provider import initialize_planned_collection, publish_planned_collection
+from blueearth_cst.experiment.legacy_scenario_provider import initialize_planned_collection, publish_planned_collection
 from blueearth_cst.experiment.scenario_collection import _job_collection_claim, write_collection_payload
 project, plan_path, original = map(Path, sys.argv[1:4])
 invocation, operation = sys.argv[4:6]

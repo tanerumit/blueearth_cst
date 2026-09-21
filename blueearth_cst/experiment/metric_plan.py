@@ -18,6 +18,7 @@ from blueearth_cst.experiment.content_identity import (
     read_canonical_json,
     repository_code_inventory,
 )
+from blueearth_cst.experiment.metric_groups import metric_groups
 from blueearth_cst.experiment.metric_registry import (
     DeclaredBundle,
     declarations,
@@ -28,7 +29,6 @@ from blueearth_cst.experiment.metric_registry import (
 )
 from blueearth_cst.experiment.response_inventory import read_response_inventory
 from blueearth_cst.experiment.scenario_collection import read_collection
-from blueearth_cst.experiment.scenario_provider import metric_groups
 from blueearth_cst.experiment.scenario_rows import ScenarioRow
 from blueearth_cst.experiment.simulation_record import atomic_record, read_simulation
 from blueearth_cst.experiment.wflow_response_reader import (

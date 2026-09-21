@@ -11,7 +11,7 @@ from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, 
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary, target_banner
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 from blueearth_cst.experiment.content_identity import read_canonical_json
-from blueearth_cst.experiment.generation_plan import generation_configuration, resolve_generation_plan
+from blueearth_cst.experiment.legacy_generation_plan import generation_configuration, resolve_generation_plan
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
 from blueearth_cst.experiment.scenario_provider import legacy_member_name
 patch_psutil_windows_benchmark()
@@ -247,7 +247,7 @@ rule initialize_scenario_collection:
     output:
         update((Path(_scenario_request_path).parent / "initializations" / f"{INVOCATION_ID}.json").as_posix()),
     run:
-        from blueearth_cst.experiment.scenario_provider import initialize_planned_collection
+        from blueearth_cst.experiment.legacy_scenario_provider import initialize_planned_collection
         from blueearth_cst.shared.workflow_config_snapshot import snapshot_bytes
         plan, catalog, ancillary = _resolved_collection_plan()
         if plan != read_canonical_json(Path(input.plan)):
@@ -324,7 +324,7 @@ checkpoint publish_scenario_collection:
     wildcard_constraints:
         collection_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",
     run:
-        from blueearth_cst.experiment.scenario_provider import publish_planned_collection
+        from blueearth_cst.experiment.legacy_scenario_provider import publish_planned_collection
         plan = _collection_plan(wildcards)
         if _ready_collection(plan) is None:
             publish_planned_collection(project_dir, plan, INVOCATION_ID)
@@ -373,7 +373,7 @@ rule generate_weather_realizations:
     benchmark:
         f"{BENCH_PARTS_DIR}/3.07_generate_weather_realizations.tsv",
     script:
-        "blueearth_cst/experiment/scenario_provider.py"
+        "blueearth_cst/experiment/legacy_scenario_provider.py"
 
 # 3.11  gather_logs
 rule gather_logs:
@@ -426,7 +426,7 @@ rule perturb_climate_realization:
     benchmark:
         f"{BENCH_PARTS_DIR}/3.08_perturb_climate_realization/rlz_{{rlz_num}}_st_{{st_num}}.tsv",
     script:
-        "blueearth_cst/experiment/scenario_provider.py"
+        "blueearth_cst/experiment/legacy_scenario_provider.py"
 
 
 # --------------------------------------------------------------------------

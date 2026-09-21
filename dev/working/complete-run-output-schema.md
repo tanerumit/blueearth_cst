@@ -153,8 +153,8 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 │   │   │   │   └── resampled_dates.csv
 │   │   │   └── evaluation/plots/              [changed: conditional generator diagnostics]
 │   │   ├── preparation_catalog.yml           [changed URI; retain HydroMT schema]
-│   │   ├── scenario_table.csv                 [kept]
-│   │   ├── stress_test_lookup.csv             [kept]
+│   │   ├── scenario_run_lookup.csv            [changed: one row per collection run]
+│   │   ├── perturbation_lookup.csv            [changed: monthly changes by perturbation ID]
 │   │   └── series/run_<id>.nc                  [changed: scenario time series, not forcing]
 │   └── _engine/                              [new: one scenario-level machine-contract bin]
 │       ├── requests/<request-id>/
@@ -198,6 +198,8 @@ Each sources/ also holds required custom catalogs and engine templates, preservi
 
 New collections have two scientific JSON documents in `scenarios/_engine/collections/<collection-id>/` instead of seven in the old collection root; the five sidecar payloads become embedded intent sections, not discarded evidence. Request plans and initialization receipts are outside that count. The user-facing collection groups exact creator configuration, a provider-specific `weathergenr/` integration subtree and provider-independent scenario products under `series/`. The archive belongs to the collection's creator; a later equivalent request records its own attempt without overwriting these sources. The large intermediate realization netCDFs remain temporary under the existing Snakemake contract; their retention is not silently expanded by this layout. `series/run_<id>.nc` denotes the current stochastic collection's retained climate time series, not Wflow-ready forcing or a mandatory folder for every future scenario type. WF4 owns any subsequent conversion or selection for a system model. New experiments keep the human-facing archive under `config/` and the frozen scientific records directly under `_engine/`.
 
+The proposed `scenario_run_lookup.csv` is collection-owned, even when its runs are later selected by an experiment. It replaces the current `scenario_table.csv` name without changing row meaning. `perturbation_lookup.csv` replaces `stress_test_lookup.csv` as the collection's `st_id` × month lookup of temperature, precipitation and precipitation-variance changes. This is a filename proposal, not a CSV-column or scientific-content change; collection manifests and consumers must use versioned paths while existing collections retain their old names.
+
 New outputs stop writing composed_config.yml, journal.jsonl and the central config/catalogs, config/templates and config/generated archive destinations. Existing copies are legacy data and are not deleted by this proposal. A fresh tree has no collection-local ancillary/elevation directory under the new contract. CHIRPS extraction sidecars are not automatically relocated merely because the ERA5 source dependency moves.
 
 ## 3. Decisions in plain language
@@ -219,6 +221,7 @@ New outputs stop writing composed_config.yml, journal.jsonl and the central conf
 | D13 | Rename the experiment's Wflow `config/` directory to `run_settings/`; retain per-run TOML, but retain common temporal evidence only in `response_inventory.json`. | Distinguishes generated Wflow run settings from user configuration and avoids one duplicate temporal JSON per run. | Owner-confirmed working layout; versioned selector migration required |
 | D14 | Keep Wflow's per-run logs under `hydrology/wflow/output/_log/`, beside but separate from native response CSVs. | `output/` stays easy to scan for response data while preserving each Wflow diagnostic log and its run attribution. | Owner-confirmed working layout; update `logging.path_log` and create the directory before execution |
 | D15 | Keep indicator tables and `metric_run_lookup.csv` under `results/metric_sets/<id>/`; group the marker and benchmark under the experiment's single `_engine/metric_sets/<id>/`, embedding `metric_environment.json` in `metrics.json`. | The lookup lets users see which runs or bundles underpin metrics, while machine provenance stays out of the result directory. | Owner-directed revision; cross-sibling binding and versioned metric readers required |
+| D16 | Name the collection-level CSVs `scenario_run_lookup.csv` and `perturbation_lookup.csv`. | The first identifies each scenario run and its ancestry/perturbation in a reusable WF3 collection; the second identifies monthly climate changes for each perturbation ID. Neither is owned by one WF4 experiment. | Owner-directed naming intent; proposed filenames and versioned reader migration |
 
 Three different hashes answer three different questions: did the source file's bytes change; did the declared configuration values change; did the scientific artifact's identity change? A comment edit changes the first. It must not, by itself, change the last. A new preparation contract or provider-code revision may legitimately change a new collection's identity; do not promise identical IDs across that migration.
 
@@ -711,3 +714,4 @@ Draft validation: check Markdown links, parse JSON examples, check the diff for 
 - 2026-09-21 (single experiment engine) — Moved the proposed metric-set machine contracts to `experiments/<name>/_engine/metric_sets/<id>/`, eliminating nested result-local `_engine/` folders. Added full-ID cross-sibling binding, checked result references and paired-export requirements.
 - 2026-09-21 (metric-set unit index) — Kept `unit_index.csv` with the user-facing indicator tables under `results/metric_sets/<id>/` because it explains run and bundle membership; left only the marker and exact benchmark report under the experiment's `_engine/metric_sets/<id>/`.
 - 2026-09-21 (metric lookup naming) — Renamed the proposed user-facing `unit_index.csv` to `metric_run_lookup.csv` so the filename describes its calculation-to-run lookup role; retained the old filename for legacy sets and left CSV column renaming outside this layout decision.
+- 2026-09-21 (scenario lookup naming) — Renamed the proposed collection CSVs to `scenario_run_lookup.csv` and `perturbation_lookup.csv`, distinguishing collection runs from monthly perturbation changes while retaining legacy filenames and column meanings.

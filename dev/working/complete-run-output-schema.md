@@ -159,7 +159,7 @@ Legend: [new] introduced here; [changed] content, packaging or ownership changes
 │   └── _engine/                              [new: one scenario-level machine-contract bin]
 │       ├── requests/<request-id>/
 │       │   ├── request.json                   [changed: discovery pointer]
-│       │   ├── plans/<plan-sha256>.json        [new: immutable execution plan]
+│       │   ├── <plan-sha256>.json              [new: immutable execution plan]
 │       │   └── initializations/<invocation-id>.json [kept role; binding changes]
 │       └── collections/<collection-id>/
 │           ├── collection_intent.json        [changed: embeds five JSON sidecars]
@@ -250,7 +250,7 @@ The placement changes are bounded:
 - keep `config/run_record.yml` and exact `config/sources/` as the collection's user-level configuration account, while `weathergenr/weather_generation_input.yml`, `weathergenr/output/` date-selection products and `weathergenr/evaluation/plots/` diagnostics form a provider-specific integration subtree rather than request bookkeeping;
 - keep the published scenario time series under `series/` at the collection root, outside the provider subtree, so a WF4 consumer can find them without treating them as already prepared forcings;
 - consolidate collection provenance sidecars inside the engine-side `collection_intent.json` as proposed by D8, while retaining `collection.json` as the final readiness marker; and
-- let request-owned plans/receipts be cleaned up independently without implying that the collection data or its engine records may be deleted.
+- let request-owned plans and receipts be cleaned up independently without implying that the collection data or its engine records may be deleted.
 
 The engine-side ready marker must bind and validate the matching user-facing data root; the mere existence of `scenarios/<collection-id>/` is not readiness. A project copy retains both siblings, while a standalone collection export needs both the data directory and its engine-side records. Discovery must ignore reserved `_engine/` and validate the full identity behind each 12-character collection segment. Provider name and revision already contribute to `collection_id`; putting `<provider>/` before that ID would make collection lookup depend on a second path key. A different provider can own a different subtree inside its collection, while the collection-level scenario-product contract remains independent. This placement does not approve the draft `scenario-request/2` or `generation-plan/1` fields in §6.
 
@@ -380,7 +380,7 @@ This valid JSON example uses illustrative IDs/timestamps and placeholder hashes;
   },
   "plan": {
     "path_base": "project_root",
-    "path": "scenarios/_engine/requests/<request-id>/plans/<plan-sha256>.json",
+    "path": "scenarios/_engine/requests/<request-id>/<plan-sha256>.json",
     "sha256": "<plan file checksum>"
   },
   "artifacts": [
@@ -408,7 +408,7 @@ Atomic start/final updates avoid partial JSON. New invocation UUIDs preserve att
 
 Today request.json is a replaceable scenario-request/1 document containing collection_id, generation_request_id, request, request_sha256, source_inventory, source_inventory_sha256, documents, intent, intent_sha256 and manifest_path. It embeds the resolved configuration/environment/source documents. The current initialization receipt records collection_id, intent_sha256, invocation_id and request_sha256.
 
-Preferred working separation: request.json becomes a discovery pointer; plans/<plan-sha256>.json is the immutable authority consumed by the generation DAG. A launcher resolves and pins one plan path and checksum, so another invocation replacing the pointer cannot redirect that DAG. Existing request readers must migrate together; retaining the filename does not imply schema compatibility.
+Preferred working separation: `request.json` becomes a discovery pointer; `<plan-sha256>.json` sits directly in the request directory as the immutable authority consumed by the generation DAG. Use the full plan checksum in the filename. A request can retain multiple immutable plans, while `request.json` is the only replaceable JSON at that level; consumers must resolve an exact plan path rather than select one by glob. A launcher resolves and pins one plan path and checksum, so another invocation replacing the pointer cannot redirect that DAG. Initialization receipts remain under `initializations/`. Existing request readers must migrate together; retaining the filename does not imply schema compatibility.
 
 Candidate pointer:
 
@@ -416,7 +416,7 @@ Candidate pointer:
 {
   "schema_version": "scenario-request/2",
   "generation_request_id": "<full request identity>",
-  "plan_path": "plans/<plan-sha256>.json",
+  "plan_path": "<plan-sha256>.json",
   "path_base": "request_directory",
   "plan_sha256": "<checksum of immutable plan bytes>"
 }
@@ -663,3 +663,4 @@ Draft validation: check Markdown links, parse JSON examples, check the diff for 
 - 2026-09-20 (`scenarios/` ownership follow-up) — Recovered and integrated the original request/collection merge analysis. Kept the two branches as siblings, distinguished request, collection and revision identities, and recorded that static preflight removes the old checkpoint timing constraint without removing many-to-one reuse or separate mutability.
 - 2026-09-21 (collection-centred layout) — Revised the proposed scenario tree to a user-facing collection plus one `scenarios/_engine/` for distinct request and collection records. Grouped exact user configuration, resolved `weather_generation_input.yml`, date-selection products and weather-generator evaluation plots by role; left Wflow filenames unchanged and made cross-sibling readiness/portability checks explicit.
 - 2026-09-21 (provider and scenario-product boundary) — Grouped weathergenr integration files beneath each collection rather than putting provider before collection ID. Renamed the proposed published WF3 `forcing/` branch to `series/`, reserving forcing terminology for model-specific WF4 preparation and recording the versioned legacy-field/path migration this requires.
+- 2026-09-21 (flat request plans) — Placed full-hash immutable plan JSONs directly under each request directory, retaining the separate initialization receipts and exact plan pinning without a redundant `plans/` level.

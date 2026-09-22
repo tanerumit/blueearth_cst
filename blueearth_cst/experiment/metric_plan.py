@@ -464,7 +464,9 @@ def build_metric_plan(experiment_root, request):
         )
     references = {}
     if any(item.reference for item in registry):
-        native = _native_runs(root, inventory)
+        native = (
+            _native_runs_v2(root, inventory) if v2 else _native_runs(root, inventory)
+        )
         series = tuple(
             item
             for run in reference_runs

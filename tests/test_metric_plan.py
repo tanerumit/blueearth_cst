@@ -832,3 +832,35 @@ def test_v2_scenario_lookup_preserves_member_ancestry():
         ("01", "", {"rlz": "1", "st_id": ""}),
         ("02", "01", {"rlz": "1", "st_id": "1"}),
     ]
+
+
+def test_v2_native_run_references_resolve_from_inventory(tmp_path):
+    from blueearth_cst.experiment.metric_plan import _native_runs_v2
+    from blueearth_cst.shared.workflow_config_snapshot import file_reference
+
+    csv_path = tmp_path / "output.csv"
+    toml_path = tmp_path / "run.toml"
+    csv_path.write_text("time,Q_1\n2046-01-02,1\n", encoding="utf-8")
+    toml_path.write_text("[time]\n", encoding="utf-8")
+    inventory = {
+        "artifacts": [
+            {
+                "run_id": "01",
+                "file": file_reference(csv_path, "experiment_root", tmp_path),
+            }
+        ],
+        "series": [
+            {
+                "run_id": "01",
+                "native_selector": {
+                    "toml": file_reference(toml_path, "experiment_root", tmp_path)
+                },
+            }
+        ],
+    }
+
+    native_runs = _native_runs_v2(tmp_path, inventory)
+
+    assert native_runs["01"].csv_path == csv_path
+    assert native_runs["01"].toml_path == toml_path
+    assert native_runs["01"].temporal_path is None

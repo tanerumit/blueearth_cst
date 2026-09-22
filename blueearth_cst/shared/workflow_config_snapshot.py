@@ -650,6 +650,7 @@ def _validate_run_record_shape(record: Any) -> None:
         "workflow",
         "scenario_collection",
         "simulation",
+        "experiment",
         "invocation",
     }:
         raise ValueError("unknown archive owner kind")

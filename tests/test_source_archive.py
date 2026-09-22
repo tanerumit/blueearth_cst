@@ -66,6 +66,31 @@ def test_captured_bytes_survive_live_mutation_and_publish(tmp_path):
     assert loaded["schema_version"] == "run-record/2"
 
 
+def test_experiment_owner_is_an_archive_owner_kind(tmp_path):
+    project = tmp_path / "project.yml"
+    project.write_text("project: {}\n", encoding="utf-8")
+    record, _ = run_record_document(
+        workflow="simulate_system",
+        invocation_id="simulation",
+        owner_kind="experiment",
+        owner_id="a" * 64,
+        loaded_config={"workflows": {"simulate_system": {"enabled": True}}},
+        advanced_settings={},
+        projection=["workflows.simulate_system"],
+        toolbox={"commit": None},
+        invocation={
+            "entry_point": "simulate_system.py",
+            "command": [],
+            "targets": ["all"],
+            "working_directory": str(tmp_path),
+            "overrides": {},
+        },
+        sources=capture_sources([("project", "project_config", project)]),
+        environment={},
+    )
+    assert record["owner"] == {"kind": "experiment", "id": "a" * 64}
+
+
 @pytest.mark.parametrize(
     "failure_after,expected",
     [

@@ -115,6 +115,7 @@ def test_reader_identity_classifies_extent_and_citations():
     }
     first = reader_identity_v2(entry, elevation=False)
     entry["metadata"]["license"] = "second citation"
+    entry["metadata"]["source_version"] = "ERA5 daily data on pressure levels"
     entry["metadata"]["cst_unit_interpretation"]["evidence"] = "second evidence"
     assert reader_identity_v2(entry, elevation=False) == first
     entry["metadata"]["extent"]["bbox"]["East"] = 5

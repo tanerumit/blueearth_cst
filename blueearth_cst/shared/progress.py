@@ -525,9 +525,9 @@ class WflowFrameRelay:
 
         The one frame this relay produces without the child having sent
         anything. Its caller is the silence watchdog in ``snake_utils``: while a
-        bar is open, ``still running, 1m00s elapsed`` states in a second grammar
-        the one fact the bar's own clock already carries -- and it states it by
-        writing a row onto the line the bar is sitting on. Redrawing instead
+        bar is open, ``1m00s elapsed · no output for 1m00s`` states in a second
+        grammar the one fact the bar's own clock already carries -- and it states
+        it by writing onto the line the bar is sitting on. Redrawing instead
         keeps the elapsed time moving inside the line that is already there.
 
         This is what covers the two windows Wflow leaves silent: the package

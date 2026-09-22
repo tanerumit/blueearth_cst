@@ -775,7 +775,7 @@ def test_a_painted_info_row_is_still_recognised():
 @pytest.mark.parametrize(
     "text",
     [
-        "   ... cmip6_X_ssp585_r1i1p1f1: still running, 4m00s elapsed\n",
+        "16:20:00 - heartbeat - cmip6_X 0:04:00 elapsed · no output for 0:04:00\n",
         "Traceback (most recent call last):\n",
         "some library printing whatever it likes\n",
         "\n",
@@ -817,7 +817,7 @@ def test_the_console_wrapper_is_reused_for_every_slice_in_a_worker():
 def test_the_heartbeat_is_flushed_so_it_lands_while_the_stall_is_happening():
     """A worker is a separate process, block-buffered once the run is captured.
 
-    The heartbeat's `... still running` is the ONLY thing on the console during
+    The heartbeat's `no output for` row is the ONLY thing on the console during
     a twenty-minute open, and a notice that arrives at process exit reports a
     stall the reader has already sat through. Warnings no longer take this path
     -- they are collected and attached to their slice -- so what is left here is
@@ -834,7 +834,9 @@ def test_the_heartbeat_is_flushed_so_it_lands_while_the_stall_is_happening():
 
     sink = _Counting()
     console = sc._SliceConsole(sink)
-    console.write("   ... cmip6_X_ssp585_r1i1p1f1: still running, 4m00s elapsed\n")
+    console.write(
+        "16:20:00 - heartbeat - cmip6_X 0:04:00 elapsed · no output for 0:04:00\n"
+    )
     assert sink.flushes == 1
     console.write("16:25:09 - fetch - fetching x\n")  # dropped, nothing to flush
     console.write("16:25:09 - fetch - WARNING - collected, not printed\n")

@@ -289,6 +289,14 @@ def prepare_workflow(
     else:
         execution_workflow = None
     project_document = _replace_paths(yaml.safe_load(initial[0].data), replacements)
+    captured_workflows = {
+        source.role.removeprefix("workflow_config_")
+        for source in initial
+        if source.role.startswith("workflow_config_")
+    }
+    for name, stanza in project_document["workflows"].items():
+        if name not in captured_workflows:
+            stanza.pop("config_path", None)
     if overrides:
         project_document.update(overrides)
     if execution_workflow is not None:

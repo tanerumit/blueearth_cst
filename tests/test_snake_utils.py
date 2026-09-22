@@ -1474,23 +1474,19 @@ def test_heartbeat_identity_spells_the_job_as_the_run_and_done_lines_do(
     assert su._heartbeat_identity(label) == expected
 
 
-def test_heartbeat_fires_on_silence_and_summarizes():
+def test_noninteractive_heartbeat_reports_sparse_silence_without_summary():
     stream = io.StringIO()
     hb = _Heartbeat("2.05_merge", stream, interval=0.05).start()
-    time.sleep(0.16)  # stay silent well past the interval
+    time.sleep(0.34)  # cross the 2x and 5x sparse-notice thresholds
     hb.stop()
     lines = stream.getvalue().splitlines()
-    # Row grammar: stamp, `heartbeat` module, the job's console spelling, and
-    # the duration in the DONE line's own `h:mm:ss`.
     assert re.fullmatch(
-        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge still running, "
-        r"\d:\d\d:\d\d elapsed",
+        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge "
+        r"\d:\d\d:\d\d elapsed · no output for \d:\d\d:\d\d",
         lines[0],
     ), lines[0]
-    assert re.fullmatch(
-        r"\d\d:\d\d:\d\d - heartbeat - Rule 2\.05: merge done in \d:\d\d:\d\d",
-        lines[-1],
-    ), lines[-1]
+    assert len(lines) == 2
+    assert "done in" not in stream.getvalue()
     assert "2.05_merge" not in stream.getvalue()
 
 
@@ -1501,11 +1497,11 @@ def test_heartbeat_suppressed_while_active():
         hb.touch()
         time.sleep(0.02)
     hb.stop()
-    assert "still running" not in stream.getvalue()  # never beeped
+    assert "no output for" not in stream.getvalue()
 
 
 def _still_running(stream):
-    return [line for line in stream.getvalue().splitlines() if "still running" in line]
+    return [line for line in stream.getvalue().splitlines() if "no output for" in line]
 
 
 def test_heartbeat_notices_back_off():
@@ -1525,15 +1521,10 @@ def test_heartbeat_notices_back_off():
     assert 2 <= len(notices) <= 9, notices
 
 
-def test_heartbeat_backoff_is_what_thins_the_notices(monkeypatch):
-    """Non-vacuity for the test above, using the cap as the switch.
-
-    `next_notice += min(next_notice, _HEARTBEAT_MAX_STEP)` with a cap of zero
-    adds nothing, which IS the fixed-interval behaviour this replaced. Same
-    silence, same interval, many times the lines -- so the bound above is
-    measuring the backoff and not merely the speed of the machine.
-    """
-    monkeypatch.setattr(log_core, "_HEARTBEAT_MAX_STEP", 0.0)
+def test_heartbeat_sparse_schedule_is_what_thins_the_notices(monkeypatch):
+    """Non-vacuity: replacing the sparse schedule restores line-per-tick noise."""
+    monkeypatch.setattr(log_core, "_HEARTBEAT_SPARSE_MULTIPLIERS", (1.0,))
+    monkeypatch.setattr(log_core, "_HEARTBEAT_SPARSE_STEP", 1.0)
     stream = io.StringIO()
     hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
     time.sleep(0.9)
@@ -1542,12 +1533,12 @@ def test_heartbeat_backoff_is_what_thins_the_notices(monkeypatch):
 
 
 def test_heartbeat_keeps_its_first_notice_prompt():
-    """The backoff must not delay the notice someone is actually waiting for."""
+    """A redirected run reports the first sparse notice at two intervals."""
     stream = io.StringIO()
     hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
-    time.sleep(0.16)
+    time.sleep(0.13)
     hb.stop()
-    assert _still_running(stream), "the first notice still lands at the interval"
+    assert _still_running(stream), "the first notice lands at two intervals"
 
 
 def test_heartbeat_backoff_resets_when_output_resumes():
@@ -1568,12 +1559,7 @@ def test_heartbeat_backoff_resets_when_output_resumes():
 
 
 def test_heartbeat_hands_a_stall_to_the_bar_when_one_is_open():
-    """`on_stall` answering the stall replaces the notice, and the summary too.
-
-    The summary exists to CLOSE a `still running` bracket. Where none was
-    opened, printing `done in 4m` is the redundant line `stop()` already
-    declines to print on a rule that never beeped.
-    """
+    """`on_stall` answering the silence replaces the watchdog status."""
     stream = io.StringIO()
     answered = []
     hb = _Heartbeat(
@@ -1597,7 +1583,7 @@ def test_heartbeat_still_beeps_when_the_hook_declines():
     time.sleep(0.16)
     hb.stop()
 
-    assert "still running" in stream.getvalue()
+    assert "no output for" in stream.getvalue()
 
 
 def test_heartbeat_records_the_quiet_period_even_when_the_bar_answered_it():
@@ -1625,22 +1611,18 @@ def test_heartbeat_disabled_when_interval_zero():
     assert stream.getvalue() == ""  # nothing at all, not even a summary
 
 
-def test_heartbeat_reports_systemexit_zero_as_done(tmp_path, capsys):
+def test_heartbeat_reports_no_failure_for_systemexit_zero(tmp_path, capsys):
     # A `script:` module ends its cache-hit path with `raise SystemExit(0)`, which
-    # IS a success -- Snakemake reports the job Finished. The console summary must
-    # agree; it used to print "failed after" on every cached WF2 fetch.
-    #
-    # The sleep is REQUIRED, not padding: the success verdict is printed only
-    # once the watchdog has beeped (`_Heartbeat.stop`), so a job that returns
-    # before the first interval prints nothing at all and this test would assert
-    # on whether the machine happened to be slow.
+    # IS a success -- Snakemake reports the job Finished. The watchdog must not
+    # contradict that with its failure-only terminal verdict.
     log = tmp_path / "rule.log"
     with pytest.raises(SystemExit):
         with tee_to_log(log, heartbeat_interval=0.05):
             time.sleep(0.16)
             raise SystemExit(0)
     err = capsys.readouterr().err
-    assert "done in" in err and "failed after" not in err
+    assert "no output for" in err and "failed after" not in err
+    assert "done in" not in err
 
 
 def test_tee_mutes_the_catalog_line_on_the_console_but_keeps_it_in_the_log(
@@ -1955,8 +1937,8 @@ def test_tee_to_log_heartbeat_goes_to_console_not_log(tmp_path, capsys):
         time.sleep(0.16)  # silence triggers a console heartbeat
     err = capsys.readouterr().err
     logged = log.read_text(encoding="utf-8")
-    assert "still running" in err and "done in" in err  # console got them
-    assert "still running" not in logged and "done in" not in logged  # log stayed clean
+    assert "no output for" in err and "done in" not in err
+    assert "no output for" not in logged and "done in" not in logged
 
 
 # ---------------------------------------------------------------------------
@@ -3998,24 +3980,17 @@ def test_run_summary_verdict_is_plain_when_stderr_is_not_a_console(monkeypatch):
     assert "\033" not in out, repr(out)
 
 
-def test_heartbeat_paints_the_alarm_and_not_the_all_clear():
-    """A stall notice says the console does not KNOW that anything is wrong.
-
-    Yellow is what that means everywhere else. The `done in` that closes it is
-    the resolution, and painting it too would make it as loud as the alarm.
-    """
+def test_heartbeat_redraws_a_routine_status_frame_without_an_all_clear():
+    """Silence is factual status, not a warning, and completion clears it."""
     stream = _TTYStringIO()
     hb = su._Heartbeat("2.05_merge", stream, interval=0.05).start()
-    time.sleep(0.16)
+    time.sleep(0.24)
     hb.stop()
     out = _unreset(stream.getvalue())
-    stall = next(line for line in out.splitlines() if "still running" in line)
-    done = next(line for line in out.splitlines() if "done in" in line)
-    assert stall.startswith(f"\033[{su._ANSI_WARN}m"), stall
-    # The all-clear is body tier, so its scaffolding dims and its message is
-    # left in the terminal's own foreground -- no yellow, and no wrapper.
-    assert done.startswith(f"\033[{su._ANSI_DIM}m"), done
-    assert su._ANSI_WARN not in done, done
+    assert out.count("no output for") >= 2
+    assert "done in" not in out
+    assert f"\033[{su._ANSI_WARN}m" not in out
+    assert "\r" in stream.getvalue()
 
 
 def test_heartbeat_paints_the_failure_verdict(monkeypatch):

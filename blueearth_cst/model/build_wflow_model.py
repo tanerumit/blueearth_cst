@@ -5,6 +5,7 @@ from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
+import dask
 import geopandas as gpd
 import numpy as np
 import pandas as pd
@@ -491,6 +492,13 @@ def write_values_used(
         yaml.safe_dump(document, stream, sort_keys=False, allow_unicode=True)
 
 
+def _write_model(model: Any) -> None:
+    """Write through one thread to avoid NetCDF/HDF5 finalization deadlocks."""
+    with dask.config.set(scheduler="synchronous"):
+        with hydromt_progress("model"):
+            model.write()
+
+
 def build_wflow_model(
     spatial_catalog: str | os.PathLike[str],
     parameter_template: str | os.PathLike[str],
@@ -547,8 +555,7 @@ def build_wflow_model(
         toml_output=None,
     )
     model.setup_outlets(river_only=True, toml_output=None)
-    with hydromt_progress("model"):
-        model.write()
+    _write_model(model)
     model.close()
     _validate_written_model(root, maps, registry)
     maps.close()

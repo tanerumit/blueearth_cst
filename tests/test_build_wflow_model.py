@@ -16,6 +16,7 @@ from blueearth_cst.model.build_wflow_model import (
     _record_kwargs,
     _step_call_kwargs,
     _validate_registry,
+    _write_model,
     arcgis_d8_to_wflow_ldd,
     read_parameter_steps,
 )
@@ -84,6 +85,16 @@ def test_parameter_template_rejects_setup_basemaps(tmp_path):
 
 def test_direct_base_maps_have_required_toml_mapping():
     assert _BASE_CONFIG["input"]["static"]["land_surface__slope"] == "land_slope"
+
+
+def test_model_write_uses_synchronous_dask_scheduler():
+    import dask
+
+    class FakeModel:
+        def write(self):
+            assert dask.config.get("scheduler") == "synchronous"
+
+    _write_model(FakeModel())
 
 
 def test_shipped_template_retains_only_wflow_parameter_steps():

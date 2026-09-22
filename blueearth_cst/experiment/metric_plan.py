@@ -350,7 +350,11 @@ def build_metric_plan(experiment_root, request):
     )
     intent_v2 = read_simulation_intent_v2(root) if v2 else None
     if v2:
-        simulation = {**simulation, "_root": root}
+        simulation = {
+            **simulation,
+            "_root": root,
+            "collection": intent_v2["collection"],
+        }
     if request["simulation_id"] != simulation["simulation_id"]:
         raise MetricPlanStale("metric request selects a different simulation")
     live = metric_request(

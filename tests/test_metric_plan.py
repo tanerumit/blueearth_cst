@@ -758,3 +758,49 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(tmp_path, monkeypatch)
             "value",
         ]
     assert metric_plan.read_metric_set(tmp_path, engine / "metrics.json") == marker
+
+
+def test_v2_metric_plan_reads_collection_from_intent(tmp_path, monkeypatch):
+    from blueearth_cst.experiment import metric_plan
+
+    root = tmp_path / "experiment"
+    (root / "_engine").mkdir(parents=True)
+    (root / "_engine/simulation.json").write_bytes(b"{}\n")
+    request = {
+        "schema_version": "metric-request/2",
+        "simulation_schema_version": "simulation/2",
+        "simulation_id": "a" * 64,
+        "tokens": ["gwr"],
+        "water_year_anchor": "YS-JAN",
+        "metric_environment": {},
+        "return_level_validation": {},
+    }
+    collection = {
+        "collection_id": "b" * 64,
+        "collection_revision": "c" * 64,
+        "manifest": {"path": "scenarios/_engine/collections/b/collection.json"},
+    }
+    monkeypatch.setattr(
+        metric_plan,
+        "read_simulation_v2",
+        lambda path: {"schema_version": "simulation/2", "simulation_id": "a" * 64},
+    )
+    monkeypatch.setattr(
+        metric_plan,
+        "read_simulation_intent_v2",
+        lambda path: {"collection": collection},
+    )
+    monkeypatch.setattr(metric_plan, "metric_request", lambda *args: dict(request))
+    monkeypatch.setattr(metric_plan, "read_response_inventory_v2", lambda path: {})
+    seen = {}
+
+    def stop_after_collection(simulation):
+        seen.update(simulation)
+        raise RuntimeError("stop after collection selection")
+
+    monkeypatch.setattr(metric_plan, "_collection", stop_after_collection)
+
+    with pytest.raises(RuntimeError, match="stop after collection"):
+        metric_plan.build_metric_plan(root, request)
+
+    assert seen["collection"] == collection

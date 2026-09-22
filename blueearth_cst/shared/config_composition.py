@@ -1087,7 +1087,7 @@ def compose_config(
             continue
         if probe.name in loaded_names:
             _raise_for_probe(probe, t1_dir)
-        else:
+        elif probe.status != "not_captured":
             skipped.append(f"{probe.name} ({probe.status}: {probe.resolved})")
 
     # D-9.2/D-9.3: the same rejection set, over every T2 file that resolved —

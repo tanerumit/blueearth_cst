@@ -22,7 +22,7 @@ from scripts import run_workflows
 ROOT = Path(__file__).resolve().parents[1]
 
 
-def test_preparse_capture_survives_source_edit(tmp_path):
+def test_preparse_capture_survives_source_edit(tmp_path, capsys):
     project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
     source_workflow = ROOT / "test_case/project_config_rapid_analyze_climate.yml"
     workflow = tmp_path / source_workflow.name
@@ -58,12 +58,16 @@ def test_preparse_capture_survives_source_edit(tmp_path):
         project_root / "config/runs/analyze_climate" / archived["archived_path"]
     ).read_bytes() == source_bytes
     execution_project = yaml.safe_load(execution.read_bytes())
+    for name, stanza in execution_project["workflows"].items():
+        if name != "analyze_climate":
+            assert "config_path" not in stanza
     assert yaml.safe_load(
         Path(
             execution_project["workflows"]["analyze_climate"]["config_path"]
         ).read_bytes()
     ) == yaml.safe_load(source_bytes)
     assert json.loads(context.read_text())["archive_id"] == record["archive_id"]
+    assert "[config_composition] skipped unreadable" not in capsys.readouterr().out
 
 
 def test_raw_execution_refuses_without_capture(monkeypatch, tmp_path):

@@ -804,3 +804,31 @@ def test_v2_metric_plan_reads_collection_from_intent(tmp_path, monkeypatch):
         metric_plan.build_metric_plan(root, request)
 
     assert seen["collection"] == collection
+
+
+def test_v2_scenario_lookup_preserves_member_ancestry():
+    from blueearth_cst.experiment.metric_plan import _v2_scenario_rows
+
+    rows = _v2_scenario_rows(
+        [
+            {
+                "run_id": "01",
+                "evaluate": "true",
+                "type": "stochastic",
+                "rlz": "1",
+                "st_id": "",
+            },
+            {
+                "run_id": "02",
+                "evaluate": "true",
+                "type": "stochastic",
+                "rlz": "1",
+                "st_id": "1",
+            },
+        ]
+    )
+
+    assert [(row.run_id, row.derived_from, dict(row.payload)) for row in rows] == [
+        ("01", "", {"rlz": "1", "st_id": ""}),
+        ("02", "01", {"rlz": "1", "st_id": "1"}),
+    ]

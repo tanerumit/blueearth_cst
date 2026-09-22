@@ -277,17 +277,15 @@ def _collection(simulation):
         collection = read_collection_v2(path)
         intent = read_canonical_json(
             resolve_file_reference(
-                collection["intent"], {"record_directory": path.parent}
+                collection["intent"],
+                {"project_root": project, "record_directory": path.parent},
             )
         )
         with resolve_file_reference(
             collection["scenario_run_lookup"],
             {"project_root": project, "record_directory": path.parent},
         ).open(encoding="utf-8", newline="") as handle:
-            rows = tuple(
-                ScenarioRow.from_record(row)
-                for row in __import__("csv").DictReader(handle)
-            )
+            rows = _v2_scenario_rows(csv.DictReader(handle))
         return collection, intent, rows
     path = Path(simulation["collection"]["manifest_path"])
     collection = read_collection(
@@ -307,6 +305,42 @@ def _collection(simulation):
         rows = tuple(ScenarioRow.from_record(row) for row in csv.DictReader(handle))
     intent = read_canonical_json(root / collection["intent_path"])
     return collection, intent, rows
+
+
+def _v2_scenario_rows(records):
+    """Adapt v2's compact scenario lookup to the legacy metric grouping rows."""
+    expected = {"run_id", "evaluate", "type", "rlz", "st_id"}
+    values = list(records)
+    if any(set(record) != expected for record in values):
+        raise MetricPlanStale("v2 scenario lookup has unknown fields")
+    roots = {}
+    for record in values:
+        if record["evaluate"] not in {"true", "false"}:
+            raise MetricPlanStale("v2 scenario lookup evaluate flag is invalid")
+        if not record["run_id"] or not record["type"] or not record["rlz"]:
+            raise MetricPlanStale("v2 scenario lookup has incomplete identifiers")
+        if not record["st_id"]:
+            if record["rlz"] in roots:
+                raise MetricPlanStale(
+                    "v2 scenario lookup has duplicate realization roots"
+                )
+            roots[record["rlz"]] = record["run_id"]
+    if not roots:
+        raise MetricPlanStale("v2 scenario lookup has no realization roots")
+    rows = []
+    for record in values:
+        if record["st_id"] and record["rlz"] not in roots:
+            raise MetricPlanStale("v2 scenario lookup member lacks a realization root")
+        rows.append(
+            ScenarioRow(
+                run_id=record["run_id"],
+                derived_from=roots[record["rlz"]] if record["st_id"] else "",
+                evaluated=record["evaluate"] == "true",
+                scenario_type=record["type"],
+                payload=(("rlz", record["rlz"]), ("st_id", record["st_id"])),
+            )
+        )
+    return tuple(rows)
 
 
 def _native_runs(root, inventory):

@@ -848,7 +848,7 @@ def freeze_simulation_v2(experiment_root, intent, *, invocation_id, command):
         environment=environment_file_hashes(),
         invocation={
             "entry_point": "scripts/simulate_system.py",
-            "command": list(command),
+            "command": [str(argument) for argument in command],
             "targets": ["all"],
             "working_directory": str(Path.cwd()),
             "overrides": {},

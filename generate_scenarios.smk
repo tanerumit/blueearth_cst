@@ -63,8 +63,13 @@ WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
 # `snake_utils.declare_warning_tally`.
 declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 BENCHMARKS_NAME = f"wf3_benchmarks_{_plan_key}.md"
-LOG_RULES = ["3.01_delineate_region", "3.02_extract_historical_climate", "3.03_prepare_stress_test_grid",
-             "3.07_generate_weather_realizations", "3.08_perturb_climate_realization"]
+LOG_RULES = [
+    "3.01_delineate_region",
+    "3.02_extract_historical_climate",
+    "3.03_prepare_stress_test_grid",
+]
+if V2_MODE:
+    LOG_RULES.extend(["3.07_generate_roots_v2", "3.08_transform_member_v2"])
 INVOCATION_ID = os.environ.setdefault("CST_GENERATION_INVOCATION_ID", uuid.uuid4().hex)
 RLZ_NUM = GENERATION["n_realizations"]
 ST_NUM = GENERATION["n_design_points"]

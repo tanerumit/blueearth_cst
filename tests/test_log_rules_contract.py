@@ -35,6 +35,7 @@ disagree. Do not re-add a second parser — extend this one.
 from __future__ import annotations
 
 import functools
+import os
 import re
 from pathlib import Path, PurePosixPath
 
@@ -112,20 +113,34 @@ def _parse_workflow(snakefile: str, config_path: Path = CONFIG_FN):
     the pinned Snakemake and there is no public accessor for the parsed
     workflow. Parsing only builds rules — no DAG, so no input file has to exist.
     """
+    import sys
+
     import snakemake.api as api
 
-    with api.SnakemakeApi() as sa:
-        wf_api = sa.workflow(
-            resource_settings=api.ResourceSettings(cores=1),
-            config_settings=api.ConfigSettings(configfiles=[config_path]),
-            storage_settings=api.StorageSettings(),
-            workflow_settings=api.WorkflowSettings(),
-            snakefile=SNAKEDIR / snakefile,
-            workdir=SNAKEDIR,
-        )
-        workflow = wf_api._workflow
-        workflow.include(workflow.main_snakefile, overwrite_default_target=True)
-        return workflow
+    argv = sys.argv[:]
+    phase = os.environ.get("CST_GENERATION_PHASE")
+    try:
+        sys.argv.append("--dry-run")
+        if snakefile == "generate_scenarios.smk":
+            os.environ["CST_GENERATION_PHASE"] = "source"
+        with api.SnakemakeApi() as sa:
+            wf_api = sa.workflow(
+                resource_settings=api.ResourceSettings(cores=1),
+                config_settings=api.ConfigSettings(configfiles=[config_path]),
+                storage_settings=api.StorageSettings(),
+                workflow_settings=api.WorkflowSettings(),
+                snakefile=SNAKEDIR / snakefile,
+                workdir=SNAKEDIR,
+            )
+            workflow = wf_api._workflow
+            workflow.include(workflow.main_snakefile, overwrite_default_target=True)
+            return workflow
+    finally:
+        sys.argv[:] = argv
+        if phase is None:
+            os.environ.pop("CST_GENERATION_PHASE", None)
+        else:
+            os.environ["CST_GENERATION_PHASE"] = phase
 
 
 def _label_from_log_path(log_path: str) -> str:

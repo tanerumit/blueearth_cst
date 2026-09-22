@@ -118,8 +118,8 @@ def _file_specifications(
         values.extend(
             [
                 (
-                    "model_build_config",
-                    "model_build_config",
+                    "build_config",
+                    "build_config",
                     engine.get("build_config", "config/defaults/wflow_build_model.yml"),
                 ),
                 (

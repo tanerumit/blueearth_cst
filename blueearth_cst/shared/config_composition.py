@@ -417,6 +417,8 @@ IDENTITY_COMPARISONS: frozenset[tuple[str, str]] = frozenset(
         # The mandatory runner selects its own closed stanza from raw T1.
         ("blueearth_cst/experiment/simulation_runner.py", "*"),
         ("blueearth_cst/experiment/simulation_runner.py", "generate_scenarios"),
+        ("blueearth_cst/experiment/generation_publication.py", "generate_scenarios"),
+        ("blueearth_cst/experiment/legacy_generation_plan.py", "generate_scenarios"),
     }
 )
 
@@ -428,6 +430,9 @@ IDENTITY_COMPARISONS: frozenset[tuple[str, str]] = frozenset(
 OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
     {
         ("scripts/run_workflows.py", "*"),
+        ("scripts/run_workflows.py", "generate_scenarios"),
+        ("scripts/generate_scenarios.py", "generate_scenarios"),
+        ("blueearth_cst/shared/workflow_archive_launch.py", "*"),
         # The v1->v2 rewriter reads the `workflows` mapping to DISCOVER a
         # set -- it follows each `config_path` to find the files it must
         # migrate. It consumes no workflow SETTING, and it is the one tool

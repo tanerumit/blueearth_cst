@@ -30,7 +30,18 @@ def parse_simulation_workflow(tmp_path, monkeypatch, *, config=None):
         "manifest_path": (collection / "collection.json").as_posix(),
         "resolution_mode": "explicit-manifest",
     }
-    manifest = {"forcing": [{"run_id": run} for run in ("01", "02", "03")]}
+    manifest = {
+        "series": [
+            {
+                "run_id": run,
+                "file": {
+                    "path": f"scenarios/fixture/series/run_{run}.nc",
+                    "sha256": "0" * 64,
+                },
+            }
+            for run in ("01", "02", "03")
+        ]
+    }
     monkeypatch.setattr(
         simulation_runner,
         "resolve_selected_collection",

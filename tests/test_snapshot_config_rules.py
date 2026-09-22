@@ -106,9 +106,9 @@ def test_successors_use_typed_retained_records_instead_of_snapshot_guard():
     simulation = (
         REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
     ).read_text(encoding="utf-8")
-    assert "resolve_generation_plan" in generation
-    assert "freeze_simulation" in simulation
-    assert "response_request.json" in simulation
+    assert "generation_configuration" in generation
+    assert "read_pinned_plan" in generation
+    assert "freeze_simulation_v2" in simulation
     for text in (generation, simulation):
         assert "check_project_consistency" not in text
         assert "snapshot_config" not in text
@@ -117,7 +117,8 @@ def test_successors_use_typed_retained_records_instead_of_snapshot_guard():
 @pytest.mark.parametrize("snakefile_name", SNAKEFILES)
 def test_the_wide_digest_still_describes_consumed_settings(snakefile_name):
     text = (REPO / snakefile_name).read_text(encoding="utf-8")
-    assert "CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(" in text
+    assert "configuration_inputs_digest(" in text
+    assert "CAPTURE_DIGESTS" in text
 
 
 @pytest.mark.parametrize("snakefile_name", SNAKEFILES)

@@ -18,7 +18,9 @@ def _records(root: Path) -> list[dict]:
 
 
 def test_direct_dry_run_is_a_nonproductive_attempt(tmp_path, monkeypatch):
-    monkeypatch.setattr(workflow_archive_launch.subprocess, "call", lambda *_a, **_k: 0)
+    from blueearth_cst.shared import windows_job
+
+    monkeypatch.setattr(windows_job, "run_project_child", lambda *_args, **_kwargs: 0)
     result = workflow_archive_launch.run_workflow(
         "analyze_climate", tmp_path / "missing.yml", tmp_path / "project", dry_run=True
     )

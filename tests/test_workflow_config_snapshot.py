@@ -184,16 +184,16 @@ def test_snapshot_is_named_by_no_identity_document():
     assert projection and SNAPSHOT_NAME not in projection.group(1)
 
 
-def test_both_entry_points_hand_the_snapshot_to_their_writer():
-    """The wiring, pinned statically: a rule that stops passing it writes nothing."""
+def test_both_entry_points_publish_from_their_pinned_plan():
+    """Successor publication reads the launcher-pinned plan, never live config."""
     wf3 = (REPO / "generate_scenarios.smk").read_text(encoding="utf-8")
-    assert "snapshot_bytes(" in wf3
-    assert "config_snapshot=" in wf3
+    assert "read_pinned_plan(" in wf3
+    assert 'os.environ["CST_GENERATION_PLAN_PATH"]' in wf3
     wf4 = (REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk").read_text(
         encoding="utf-8"
     )
-    assert "config_snapshot=snapshot_bytes(" in wf4
-    assert "composed_workflow_section(" in wf4
+    assert "freeze_simulation_v2(" in wf4
+    assert "live_simulation_inputs_v2(" in wf4
 
 
 def test_tree_tooling_knows_the_new_leaf():

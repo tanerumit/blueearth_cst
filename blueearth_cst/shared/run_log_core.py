@@ -470,36 +470,29 @@ def _heartbeat_identity(label):
     return f"{identity}  [{part}]"
 
 
-_HEARTBEAT_MAX_STEP = 1800.0
+_HEARTBEAT_SPARSE_MULTIPLIERS = (2.0, 5.0, 10.0)
+_HEARTBEAT_SPARSE_STEP = 10.0
 
 
 class _Heartbeat:
-    """Console-only watchdog that makes a stalled rule visible while it runs.
+    """Silence watchdog that keeps a long-running rule visibly alive.
 
     Snakemake prints only a start and a finish timestamp, so a hung job looks
-    identical to a slow one until it (never) finishes. This daemon prints an
-    elapsed-time notice when the rule has produced no output for ``interval``
-    seconds, and closes with a one-line ``done in <elapsed>`` summary — but
-    only where that summary is not already on the console under another name
-    (see :meth:`stop`).
+    identical to a slow one until it (never) finishes. On a terminal this daemon
+    maintains one replaceable status frame. On a redirected stream it emits
+    sparse durable rows after 2, 5 and 10 intervals, then every 10 intervals.
+    Both forms report the observable fact — time since output — rather than
+    guessing whether the process is healthy.
 
     Silence-triggered, not periodic: callers stamp ``touch()`` on every real
     write, so a rule that is actively logging or drawing a progress bar keeps
-    resetting the clock and never beeps — the notice appears exactly when the
+    resetting the clock and never reports — the status appears exactly when the
     console would otherwise be frozen, which is the "is it stuck?" case. A lone
     ``time.monotonic()`` float assignment is atomic under the GIL, so ``touch()``
     needs no lock.
 
-    Notices BACK OFF once they start: the first lands at ``interval`` and each
-    one pushes the next further out, up to ``_HEARTBEAT_MAX_STEP``. A long
-    silence is one situation, not one situation per minute, and the durable
-    record already treated it that way — :meth:`quiet_rows` writes one row per
-    contiguous silence however many notices the console showed.
-
-    Writes **only** to ``stream`` (the live console, captured before any tee
-    swap); nothing here ever reaches the rule's log file — the persisted log
-    stays clean. Set ``CST_HEARTBEAT_SECS`` (``0`` disables entirely) to override
-    the interval without touching a Snakefile.
+    Set ``CST_HEARTBEAT_SECS`` (``0`` disables entirely) to override the
+    interval without touching a Snakefile.
     """
 
     def __init__(self, label, stream, interval=60.0, on_stall=None):
@@ -514,6 +507,8 @@ class _Heartbeat:
         except ValueError:
             self._interval = float(interval)
         self._enabled = self._interval > 0
+        isatty = getattr(stream, "isatty", None)
+        self._interactive = bool(isatty and isatty())
         self._start = time.monotonic()
         self._wall_start = datetime.now()
         self._last = self._start
@@ -521,7 +516,7 @@ class _Heartbeat:
         #: only by the watchdog thread and read only after ``stop()`` has joined
         #: it, so the list needs no lock.
         self._quiet = []
-        #: Whether a stall notice was ever printed. Written by the watchdog
+        #: Whether a silence status was ever shown. Written by the watchdog
         #: thread and read in ``stop()`` only after it has been joined, so it
         #: needs no lock -- the same argument ``_quiet`` above makes.
         self._noticed = False
@@ -565,7 +560,7 @@ class _Heartbeat:
     def touch(self):
         self._last = time.monotonic()
 
-    def _emit(self, text, code=None):
+    def _emit(self, text, code=None, *, redraw=False):
         # `None` rather than `_ANSI_BODY` as the default: a default argument is
         # evaluated when this class is DEFINED, and the colour constants are
         # declared further down the module (beside the console handler that owns
@@ -584,17 +579,25 @@ class _Heartbeat:
             f"{_heartbeat_identity(self._label)} {text}",
         )
         try:
-            # Console-only by design (`quiet_rows` is the durable copy), so the
-            # colour -- and the line reset -- here can never reach a file. The
-            # reset covers a progress frame a concurrent job may have left
-            # standing; see `_line_reset`. Unconditional, because this method
-            # only ever writes whole, newline-terminated notices.
+            ending = "" if redraw else "\n"
             self._stream.write(
                 _line_reset(self._stream)
                 + _paint_body(
-                    row + "\n", _console_colour(self._stream), code or _ANSI_BODY
+                    row + ending,
+                    _console_colour(self._stream),
+                    code or _ANSI_BODY,
                 )
             )
+            self._stream.flush()
+        except Exception:
+            pass  # console I/O must never break the job
+
+    def _clear_status(self):
+        """Erase a standing terminal frame without adding a console row."""
+        if not (self._interactive and self._noticed):
+            return
+        try:
+            self._stream.write(_line_reset(self._stream))
             self._stream.flush()
         except Exception:
             pass  # console I/O must never break the job
@@ -605,24 +608,20 @@ class _Heartbeat:
         # iterations so one contiguous silence yields ONE recorded period no
         # matter how many notices it prints.
         quiet_since = None
-        # The silence a notice requires. It starts at the base interval and each
-        # notice pushes it out -- doubling, then by `_HEARTBEAT_MAX_STEP` once
-        # doubling would exceed that. A fixed interval printed one line a minute
-        # for as long as the silence lasted: a machine that hibernated mid-run
-        # woke to 535 notices per job (8h55m, measured 2026-09-06), every one of
-        # them the same sentence with a different number. The same silence now
-        # costs 22. What must NOT change is the first notice, which still lands
-        # at the base interval, because that is the one someone is waiting for.
-        next_notice = self._interval
+        sparse_index = 0
+        next_notice = (
+            self._interval
+            if self._interactive
+            else self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[sparse_index]
+        )
         # The last `touch()` this loop has already accounted for. Resumption is
         # detected by this value CHANGING, not by catching a tick while
         # `now - last < interval`: the thread wakes every `interval` and the
         # gap it is measuring is also `interval`, so whether any tick lands
         # inside a short burst of output is down to alignment. It was a coin
         # flip before 2026-09-06, which mattered little when the only cost was
-        # a quiet period recorded late, and matters now that the backoff resets
-        # with it -- a missed reset leaves the next silence waiting out the
-        # previous one's inflated threshold.
+        # a quiet period recorded late, and matters now that the sparse schedule
+        # resets with it -- a missed reset delays the next silence report.
         seen = self._last
         # The THREAD still wakes every interval. Backing the wake off too would
         # blind the watchdog to output resuming, and `next_notice` could then be
@@ -636,9 +635,12 @@ class _Heartbeat:
                 if quiet_since is not None:
                     self._quiet.append((quiet_since, last))
                     quiet_since = None
-                # A new silence is a new question, answered at the base
-                # interval again -- see the note on `next_notice`.
-                next_notice = self._interval
+                sparse_index = 0
+                next_notice = (
+                    self._interval
+                    if self._interactive
+                    else self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[sparse_index]
+                )
                 seen = last
             silence = now - last
             if silence >= self._interval:
@@ -652,28 +654,28 @@ class _Heartbeat:
                 # row would otherwise land ON the line the bar occupies. The
                 # silence is still REAL and is still recorded in `_quiet` below
                 # -- only its console presentation changed, so `quiet_rows` is
-                # unaffected. `_noticed` stays unset too: no yellow bracket was
-                # opened here, so `stop()` has none to close.
+                # unaffected. `_noticed` stays unset too: no watchdog frame was
+                # opened here, so `stop()` has none to clear.
                 #
-                # The backoff does not advance here: it counts NOTICES, and this
-                # branch prints none.
+                # The schedule does not advance here: it counts watchdog
+                # presentations, and this branch prints none.
                 if self._on_stall is not None and self._on_stall():
                     continue
-                elapsed = format_elapsed(now - self._start)
                 self._noticed = True
-                # Counted here rather than inferred from a log, because this
-                # notice is console-only by design (`quiet_rows` holds the
-                # durable copy) -- it is exactly the warning a tally read back
-                # from the merged log would miss.
-                #
-                # And counted at the SITE rather than behind a level test: the
-                # watchdog emits at INFO and paints the row yellow, so a
-                # level-keyed tally would report a clean run over a stall the
-                # reader watched happen. Do not "simplify" this to a check on
-                # `_LOG_LEVEL_RANK`.
-                note_warning("heartbeat")
-                self._emit(f"still running, {elapsed} elapsed", _ANSI_WARN)
-                next_notice += min(next_notice, _HEARTBEAT_MAX_STEP)
+                self._emit(
+                    f"{format_elapsed(now - self._start)} elapsed · "
+                    f"no output for {format_elapsed(silence)}",
+                    redraw=self._interactive,
+                )
+                if self._interactive:
+                    next_notice += self._interval
+                elif sparse_index + 1 < len(_HEARTBEAT_SPARSE_MULTIPLIERS):
+                    sparse_index += 1
+                    next_notice = (
+                        self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[sparse_index]
+                    )
+                else:
+                    next_notice += self._interval * _HEARTBEAT_SPARSE_STEP
         if quiet_since is not None:
             # Still silent when the rule ended -- close the period at the stop,
             # not at `_last`, or the final and usually most interesting gap is
@@ -686,43 +688,16 @@ class _Heartbeat:
         return self
 
     def stop(self, failed=False):
-        """Close the watchdog, printing a verdict only where one is NEWS.
-
-        The success verdict is emitted only when this watchdog actually beeped
-        (or when the job failed), because Snakemake's own finish line already
-        carries both facts it states: ``DONE Rule 3.12: perturb_climate_
-        realization  [rlz 1 | st 2]  0:00:19`` names the job and its duration,
-        and ``   ... <label>: done in 19s`` follows it saying the same thing in
-        a second duration grammar. On a fanned-out rule that is one redundant
-        line per member, and because the two come from different writers -- the
-        job's own process, versus Snakemake's log handler in the parent -- they
-        interleave out of order under ``-c 3``, so the duplicate does not even
-        land next to what it duplicates.
-
-        The two cases kept are the ones the finish line cannot cover:
-
-        * ``failed`` -- there IS no DONE line for a job that raised, so this is
-          the only place the console says what happened to it.
-        * a watchdog that beeped -- ``still running, 4m00s elapsed`` is an open
-          bracket, and leaving it unclosed is worse than the duplicate. This
-          also keeps the line on exactly the long, silent rules a person is
-          sitting and watching.
-
-        The log file is unaffected in every case: the heartbeat has always been
-        console-only, and ``quiet_rows`` is the durable record of a stall.
-        """
+        """Close the watchdog and report failures that have no DONE row."""
         if not self._enabled:
             return
         self._stop.set()
         self._thread.join(timeout=1.0)
-        if not (failed or self._noticed):
+        self._clear_status()
+        if not failed:
             return
         elapsed = format_elapsed(time.monotonic() - self._start)
-        verb = "failed after" if failed else "done in"
-        # Yellow on the failure verdict only. `done in` is the all-clear that
-        # closes a yellow `still running`, and painting it too would make the
-        # resolution as loud as the alarm.
-        self._emit(f"{verb} {elapsed}", _ANSI_WARN if failed else None)
+        self._emit(f"failed after {elapsed}", _ANSI_WARN)
 
 
 def _cr_overwrite(line):
@@ -1249,7 +1224,7 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
     ``shared/wflow_progress.jl``) are re-rendered here as the house progress bar;
     see :class:`~blueearth_cst.shared.progress.WflowFrameRelay`. While such a bar
     is open the silence watchdog redraws it instead of printing its own
-    ``still running`` notice (``_bar_tick``), and every console write is padded
+    ``no output for`` status (``_bar_tick``), and every console write is padded
     over whatever frame is standing on the line (``_pad_line_over``).
 
     A *pure* trailing run of benign interpreter-shutdown excepthook noise (see
@@ -1399,7 +1374,7 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
         def _bar_tick():
             """Answer a stall by redrawing the open bar; False if there is none.
 
-            The watchdog's `still running, 1m00s elapsed` and a live bar carry
+            The watchdog's `1m00s elapsed · no output for 1m00s` and a live bar carry
             the same fact, and printing the first onto the second's line is what
             leaves a row with a frame's tail hanging off it. So while a bar is
             open the stall is answered IN the bar, and the notice is kept for
@@ -2212,8 +2187,8 @@ def _paint_line(line, code):
         return _ansi(line, severity)
     # Splitting a line into fields is a property of the BODY tier and of
     # nothing else. A caller that passes an explicit tier is saying this whole
-    # line is not routine -- the heartbeat's yellow `still running` is the
-    # case -- and dimming half of it would say it is partly routine.
+    # line is not routine -- an explicitly coded failure is the heartbeat case
+    # now that routine silence frames use the body tier.
     if code:
         return _ansi(line, code)
     match = _ROW_PREFIX_RE.match(line)

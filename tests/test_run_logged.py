@@ -475,7 +475,7 @@ def test_a_bar_summary_covers_the_running_frame_it_replaces(tmp_path, monkeypatc
 
 
 def test_a_stall_under_an_open_bar_redraws_it_instead_of_beeping(tmp_path, monkeypatch):
-    """Item 1+2: WF3's yellow `still running` while a bar was on the console.
+    """An open WF3 progress bar answers the silence watchdog itself.
 
     Wflow leaves two windows uninstrumented -- package load plus JIT, and the
     ~45 s `Wflow.Model(config)` construction -- and WF1 pays them once where a
@@ -510,8 +510,8 @@ def test_a_stall_under_an_open_bar_redraws_it_instead_of_beeping(tmp_path, monke
     rc = run_and_tee([sys.executable, "-c", snippet], tmp_path / "stall.log")
     assert rc == 0
 
-    assert "still running" not in err.getvalue()
-    assert "done in" not in err.getvalue()  # no bracket opened, none to close
+    assert "no output for" not in err.getvalue()
+    assert "done in" not in err.getvalue()
     # The bar was redrawn in place: more 0.0% frames than the child ever sent,
     # and still one console line for all of them.
     assert out.getvalue().count("0.0%") > 1
@@ -521,7 +521,7 @@ def test_a_stall_with_no_bar_open_still_says_so(tmp_path, monkeypatch):
     """Rules 3.06, 3.12 and 3.14 draw no bar, so the notice is all they have.
 
     Suppressing it everywhere would trade one wrong console for another: on a
-    genuinely silent rule the yellow line is the only evidence the job is alive.
+    genuinely silent rule the status row is the only evidence the job is alive.
     """
     monkeypatch.setenv("CST_HEARTBEAT_SECS", "0.1")
     _, err = _console(monkeypatch)
@@ -531,4 +531,4 @@ def test_a_stall_with_no_bar_open_still_says_so(tmp_path, monkeypatch):
     rc = run_and_tee([sys.executable, "-c", snippet], tmp_path / "quiet.log")
 
     assert rc == 0
-    assert "still running" in err.getvalue()
+    assert "no output for" in err.getvalue()

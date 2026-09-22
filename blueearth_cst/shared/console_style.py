@@ -255,7 +255,7 @@ def _flush_undrained_warnings():
 #   means everywhere else a machine reports on work, and the pair then reads
 #   without a legend: blue is in flight, green is behind you.
 # * ``_ANSI_BODY`` (light grey) -- everything in between: a rule's own output,
-#   the heartbeat's status notices, and Snakemake's informational lines. This is
+#   the heartbeat's status frame, and Snakemake's informational lines. This is
 #   the bulk of the output and it recedes.
 #
 # Superseded the earlier per-FIELD scheme (bold cyan identity, grey qualifiers)
@@ -290,11 +290,8 @@ def _flush_undrained_warnings():
 #   The SUCCESS verdict stays uncoloured on purpose. Colouring both would make
 #   the pair a status field to be read, when the whole value here is that a
 #   failed run looks different from every other run without being read.
-# * ``_ANSI_WARN`` (yellow) -- the heartbeat's ``still running`` notice and its
-#   ``failed after`` verdict. A stall notice is the console saying it does not
-#   know whether anything is wrong, which is neither routine nor an error, and
-#   is exactly what yellow means everywhere else. Its ``done in`` all-clear
-#   stays body-tier: the alarm is the news, the resolution is not.
+# * ``_ANSI_WARN`` (yellow) -- the heartbeat's ``failed after`` verdict. Routine
+#   silence is a replaceable body-tier status frame; only a known failure warns.
 _ANSI_RUN = "94"  # bright blue
 
 

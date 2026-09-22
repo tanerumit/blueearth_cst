@@ -358,7 +358,8 @@ _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 #: renders INFO by omitting it), so an absent `level` group MEANS info and no
 #: wording of a message can fake a raised one.
 _LOG_ROW_RE = re.compile(
-    r"^\d{2}:\d{2}:\d{2} - [^\s-]+ - (?:(?P<level>[A-Z]+) - )?(?P<message>.*)$"
+    r"^\d{2}:\d{2}:\d{2} - (?P<module>[^\s-]+) - "
+    r"(?:(?P<level>[A-Z]+) - )?(?P<message>.*)$"
 )
 
 
@@ -412,9 +413,9 @@ class _SliceConsole:
       version on the store` are findings about one source, and a reader should
       not have to match a name across two rows to learn which.
     * **anything else** is PRINTED, live and flushed. A traceback, a library's
-      bare `print`, and above all the heartbeat's `... still running, 4m00s
-      elapsed` -- the only thing on the console during a twenty-minute open, and
-      the one row that must never wait for the slice to finish.
+      bare `print`, and above all the heartbeat's `no output for` status -- the
+      only thing on the console during a twenty-minute open, and the one row
+      that must never wait for the slice to finish.
 
     The trade the middle case makes, stated plainly: a warning no longer appears
     at the moment it is raised, but when its slice lands. That is up to a couple
@@ -444,7 +445,7 @@ class _SliceConsole:
 
     def write(self, text):
         row = _LOG_ROW_RE.match(_ANSI_RE.sub("", text).rstrip("\n"))
-        if row is None:
+        if row is None or row.group("module") == "heartbeat":
             self._stream.write(text)
             # Flushed HERE, not left to the stream. A worker is a separate
             # process whose stdout is block-buffered the moment the run is

@@ -37,12 +37,15 @@ def validate_targets(config_path, targets):
     """Refuse operation bypass before Snakemake can build any DAG."""
     _, settings = simulation_settings(config_path)
     operation = settings["operation"]
-    supported = "simulate-and-metrics + all; metrics-only + metrics or one selected metric-set file"
+    supported = (
+        "simulate-and-metrics + all/responses; "
+        "metrics-only + metrics or one selected metric output"
+    )
     if len(targets) != 1:
         raise ValueError(f"UnsupportedOperationTarget: {supported}")
     target = targets[0]
     if operation == "simulate-and-metrics":
-        allowed = target == "all"
+        allowed = target in {"all", "responses"}
     else:
         from blueearth_cst.experiment.metric_plan import (
             build_metric_plan,
@@ -50,10 +53,6 @@ def validate_targets(config_path, targets):
             metrics_only_configuration,
         )
 
-        if target in {"all", "responses", "scenarios"} or (
-            target != "metrics" and "metric_sets" not in Path(target).parts
-        ):
-            raise ValueError(f"UnsupportedOperationTarget: {supported}")
         root, tokens, anchor = metrics_only_configuration(config_path)
         plan = build_metric_plan(root, current_metric_request(root, tokens, anchor))
         allowed = (
@@ -130,28 +129,26 @@ def resolve_selected_collection(config_path, repository):
     """Consume an exact ready collection; never invoke its producers."""
     from blueearth_cst.experiment.collection_resolution import (
         GeneratedCollectionUnavailable,
-        resolve_explicit_collection,
-        resolve_project_collection,
+        resolve_explicit_collection_v2,
     )
-    from blueearth_cst.experiment.forcing_descriptor import (
-        collection_forcing_descriptor,
+    from blueearth_cst.experiment.content_identity import (
+        content_sha256,
+        read_canonical_json,
     )
-    from blueearth_cst.experiment.legacy_generation_plan import (
+    from blueearth_cst.experiment.generation_plan import (
         generation_configuration,
-        resolve_generation_plan,
+        read_pinned_plan,
     )
-    from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
+    from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
     from blueearth_cst.shared.config_composition import compose_config
 
     project, settings = simulation_settings(config_path)
-    descriptors = dict(
-        describe_forcing=collection_forcing_descriptor,
-        describe_ancillary=describe_ancillary,
-    )
     if "scenario_collection" in settings:
-        return resolve_explicit_collection(
-            settings["scenario_collection"], **descriptors
+        selection, marker = resolve_explicit_collection_v2(
+            settings["scenario_collection"]
         )
+        verify_selected_collection_source(project, selection, marker)
+        return selection, marker
     composed, _ = compose_config(
         project,
         config_path,
@@ -164,34 +161,94 @@ def resolve_selected_collection(config_path, repository):
         ),
     )
     generation = generation_configuration(composed, repository)
-    command = (
-        f'snakemake all -s generate_scenarios.smk --configfile "{config_path}" -c 3'
-    )
-    if not Path(generation["request_path"]).is_file():
+    command = f'python scripts/run_workflows.py --config "{config_path}" --project-dir "{generation["project_dir"]}"'
+    pointer_path = Path(generation["request_path"])
+    if not pointer_path.is_file():
         raise GeneratedCollectionUnavailable(
             f"missing {generation['request_path']}; run {command}"
         )
     try:
-        plan, _, _ = resolve_generation_plan(generation)
-    except OSError as exc:
+        pointer = read_canonical_json(pointer_path)
+        if (
+            set(pointer)
+            != {
+                "schema_version",
+                "generation_request_id",
+                "plan_path",
+                "path_base",
+                "plan_sha256",
+            }
+            or pointer["schema_version"] != "scenario-request/2"
+            or pointer["path_base"] != "request_directory"
+        ):
+            raise ValueError("unsupported scenario request pointer")
+        if Path(pointer["plan_path"]).name != pointer["plan_path"]:
+            raise ValueError("scenario plan escapes request directory")
+        plan = read_pinned_plan(
+            pointer_path.parent / pointer["plan_path"],
+            pointer["plan_sha256"],
+            Path(generation["project_dir"]),
+        )
+        if pointer["generation_request_id"] != plan["generation_request_id"] or pointer[
+            "generation_request_id"
+        ] != content_sha256(generation["request"]):
+            raise ValueError("project request pointer differs from pinned plan")
+        marker_path = (
+            Path(generation["project_dir"])
+            / plan["outputs"]["record_root"]
+            / "collection.json"
+        )
+        marker = read_collection_v2(marker_path)
+        if marker["collection_id"] != plan["collection_id"]:
+            raise ValueError("pinned collection identity differs")
+        if (
+            plan["decision"] == "reuse_ready"
+            and marker["collection_revision"] != plan["collection_revision"]
+        ):
+            raise ValueError("pinned collection revision differs")
+    except (OSError, KeyError, TypeError, ValueError) as exc:
         from blueearth_cst.experiment.collection_resolution import (
             GeneratedCollectionStale,
         )
 
-        raise GeneratedCollectionStale(
-            f"{generation['request_path']}: {exc}; run {command}"
-        ) from exc
-    return resolve_project_collection(
-        generation["project_dir"],
-        generation["request"],
-        live_sources={
-            item["path"]: Path(item["path"]) for item in plan["source_inventory"]
-        },
-        live_code={
-            item["path"]: Path(repository) / item["path"] for item in generation["code"]
-        },
-        live_environment=plan["documents"]["environment"],
-        expected_intent=plan["intent"],
-        generation_command=command,
-        **descriptors,
+        raise GeneratedCollectionStale(f"{pointer_path}: {exc}; run {command}") from exc
+    selection = {
+        "resolution_mode": "project-generation",
+        "manifest_path": marker_path.resolve().as_posix(),
+        "collection_id": marker["collection_id"],
+        "collection_revision": marker["collection_revision"],
+    }
+    verify_selected_collection_source(project, selection, marker)
+    return selection, marker
+
+
+def verify_selected_collection_source(project, selection, marker):
+    """Bind WF4 elevation/PET choice to the collection creator's climate source."""
+    from blueearth_cst.shared.workflow_config_snapshot import (
+        resolve_file_reference,
+        validate_archive,
     )
+
+    path = Path(selection["manifest_path"]).resolve(strict=True)
+    record_dir = path.parent
+    project_root = record_dir.parents[3]
+    configured_root = Path(project["project"]["project_dir"]).resolve()
+    if project_root != configured_root:
+        raise ValueError("selected collection is outside the WF4 project root")
+    archive_path = resolve_file_reference(
+        marker["archive"],
+        {"project_root": project_root, "record_directory": record_dir},
+    )
+    archive = validate_archive(archive_path.parent)
+    if archive["owner"] != {
+        "kind": "scenario_collection",
+        "id": marker["collection_id"],
+    }:
+        raise ValueError("collection creator archive owner differs")
+    selected = archive["loaded_config"]["climate"]["selected"]
+    if selected != project["climate"]["selected"]:
+        raise ValueError(
+            f"WF4 climate source {project['climate']['selected']!r} differs from "
+            f"collection creator source {selected!r}"
+        )
+    return selected

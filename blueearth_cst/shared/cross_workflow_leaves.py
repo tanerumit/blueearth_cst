@@ -47,7 +47,7 @@ def consumer_leaves(
         if not experiment_name:
             raise ValueError("metrics-only leaves require experiment_name")
         return (
-            f"experiments/{experiment_name}/config/simulation.json",
+            f"experiments/{experiment_name}/_engine/simulation.json",
             f"experiments/{experiment_name}/_engine/response_inventory.json",
         )
     raise ValueError(f"unknown simulation operation: {operation}")

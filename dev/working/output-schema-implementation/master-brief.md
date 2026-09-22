@@ -47,10 +47,10 @@ Use the repository validation ladder in `AGENTS.md` and schema §11. Run focused
 ### Phase brief index
 
 - P0 — Contract finalization (this master brief; design only) — accepted 2026-09-21
-- [P1 — Archive foundation](p1-archive-foundation.md) — not started
-- [P2 — Workflow archives](p2-workflow-archives.md) — not started
-- [P3 — Invocation history](p3-invocation-history.md) — not started
-- [P4 — Collection contract](p4-collection-contract.md) — not started
-- [P5 — WF3 static generation](p5-wf3-static-generation.md) — not started
-- [P6 — Simulation and metrics](p6-simulation-metrics.md) — not started
+- [P1 — Archive foundation](p1-archive-foundation.md) — complete (`31d7aa15`)
+- [P2 — Workflow archives](p2-workflow-archives.md) — complete (`3eae8654`)
+- [P3 — Invocation history](p3-invocation-history.md) — complete (`02e568e2`)
+- [P4 — Collection contract](p4-collection-contract.md) — complete (`ceeb9835`)
+- [P5 — WF3 static generation](p5-wf3-static-generation.md) — complete (`c83ead70`)
+- [P6 — Simulation and metrics](p6-simulation-metrics.md) — complete; phase commit pending
 - [P7 — Complete-run evidence](p7-complete-run-evidence.md) — not started

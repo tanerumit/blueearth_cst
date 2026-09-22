@@ -24,7 +24,7 @@ from blueearth_cst.shared.provenance import file_sha256
 
 
 def collection_run_forcing(
-    manifest_path, run_id, catalog_out, *, validated_collection=None
+    manifest_path, run_id, catalog_out, *, validated_collection=None, preparation=None
 ):
     """Bind a validated retained collection to the neutral preparation adapter.
 
@@ -35,85 +35,65 @@ def collection_run_forcing(
     avoid scanning every other run for each job. The marker, context, selected
     forcing and ancillary bytes are still rechecked before writing anything.
     """
-    from blueearth_cst.experiment.content_identity import (
-        confined_path,
-        read_canonical_json,
-    )
-    from blueearth_cst.experiment.forcing_descriptor import (
-        collection_forcing_descriptor,
-        reader_unit_interpretation,
-    )
-    from blueearth_cst.experiment.scenario_collection import read_collection
+    from blueearth_cst.experiment.forcing_descriptor import reader_unit_interpretation
+    from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
     from blueearth_cst.experiment.simulator_adapter import (
         ArtifactReference,
         PreparationContext,
         RunForcing,
     )
-    from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
 
-    manifest_path = Path(manifest_path)
-    root = manifest_path.parent.resolve(strict=True)
-    manifest_path = root / manifest_path.name
+    manifest_path = Path(manifest_path).resolve(strict=True)
+    project = manifest_path.parents[4]
     output = Path(catalog_out).resolve()
-    if output.is_relative_to(root):
+    if output.is_relative_to(manifest_path.parent):
         raise ValueError("transient preparation catalog must be outside the collection")
     if validated_collection is None:
-        manifest = read_collection(
-            manifest_path,
-            describe_forcing=collection_forcing_descriptor,
-            describe_ancillary=describe_ancillary,
-        )
+        manifest = read_collection_v2(manifest_path)
     else:
         if manifest_path.name != "collection.json":
             raise ValueError("expected collection.json ready marker")
-        manifest = read_canonical_json(confined_path(root, manifest_path.name))
+        manifest = read_collection_v2(manifest_path)
         if manifest != validated_collection:
             raise ValueError("collection changed after invocation validation")
-    selected = [item for item in manifest["forcing"] if item["run_id"] == run_id]
+    if preparation is None:
+        raise ValueError("WF4 requires checked simulation preparation")
+    selected = [item for item in manifest["series"] if item["run_id"] == run_id]
     if len(selected) != 1:
         raise ValueError(f"collection has no unique forcing for run_id={run_id}")
     item = selected[0]
-    context = read_canonical_json(
-        confined_path(root, manifest["preparation_context"]["path"])
+    forcing_path = resolve_file_reference(item["file"], {"project_root": project})
+    catalog_path = resolve_file_reference(
+        preparation["catalog"], {"project_root": project}
     )
-    from blueearth_cst.experiment.content_identity import content_sha256
-
-    if content_sha256(context) != manifest["preparation_context"]["sha256"]:
-        raise ValueError("retained preparation context changed")
-    for artifact in [item, context["catalog"], *context["ancillary"]]:
-        path = confined_path(root, artifact["path"])
-        if file_sha256(path) != artifact["sha256"] or (
-            "size_bytes" in artifact and path.stat().st_size != artifact["size_bytes"]
-        ):
-            raise ValueError(
-                f"retained preparation artifact changed: {artifact['path']}"
-            )
-    elevation = context["forcing_elevation"]
-    if elevation is None:
-        raise ValueError("Wflow preparation requires a retained forcing elevation")
-    catalog = yaml.safe_load(
-        confined_path(root, context["catalog"]["path"]).read_text(encoding="utf-8")
+    catalog = yaml.safe_load(catalog_path.read_text(encoding="utf-8"))
+    elevation = preparation["forcing_elevation"]
+    ancillary = [
+        entry
+        for entry in preparation["ancillary"]
+        if entry["id"] == elevation["artifact_id"]
+    ]
+    if len(ancillary) != 1 or elevation["catalog_key"] != "elevation":
+        raise ValueError("Wflow preparation requires a unique retained elevation")
+    elevation_path = resolve_file_reference(
+        ancillary[0]["file"], {"project_root": project}
     )
-    for entry in catalog.values():
-        entry["uri"] = str(confined_path(root, entry["uri"]))
+    catalog["elevation"]["uri"] = str(elevation_path)
     forcing_key = f"run_{run_id}"
     if forcing_key in catalog:
         raise ValueError("ancillary catalog uses reserved generated forcing key")
-    forcing_path = confined_path(root, item["path"])
-    reader = context["generated_forcing_reader"]
+    reader = preparation["generated_forcing_reader"]
     catalog[forcing_key] = deepcopy(reader)
     catalog[forcing_key]["uri"] = str(forcing_path)
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(yaml.safe_dump(catalog, sort_keys=True), encoding="utf-8")
     physical_context = PreparationContext(
         (ArtifactReference(output, file_sha256(output)),),
-        tuple(
-            ArtifactReference(confined_path(root, entry["path"]), entry["sha256"])
-            for entry in context["ancillary"]
-        ),
+        (ArtifactReference(elevation_path, ancillary[0]["file"]["sha256"]),),
         forcing_key,
         elevation["catalog_key"],
-        context["pet_method"],
+        preparation["pet_method"],
         True,
         True,
         ("cftime_to_datetime64", "clip_to_configured_window", "refresh_toml_endpoints"),
@@ -126,7 +106,7 @@ def collection_run_forcing(
     return RunForcing(
         run_id,
         forcing_path,
-        item["sha256"],
+        item["file"]["sha256"],
         descriptor,
         physical_context,
         manifest["collection_id"],
@@ -292,6 +272,7 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
     config_out_root = os.path.dirname(config_out_fn)
     config_out_name = os.path.basename(config_out_fn)
     run_name = run_forcing.run_id
+    settings.native_log_path.parent.mkdir(parents=True, exist_ok=True)
 
     # Read metadata through the same public catalog adapters as preparation;
     # no coordinate/unit repair is introduced by this compatibility check.
@@ -457,6 +438,7 @@ def prepare_collection_run(
     sim_end,
     temporal_out,
     validated_collection=None,
+    preparation=None,
 ):
     """Prepare one retained member with the reviewed physical Wflow binding."""
     from blueearth_cst.experiment.simulator_adapter import (
@@ -468,7 +450,11 @@ def prepare_collection_run(
     )
 
     forcing = collection_run_forcing(
-        manifest_path, run_id, catalog_out, validated_collection=validated_collection
+        manifest_path,
+        run_id,
+        catalog_out,
+        validated_collection=validated_collection,
+        preparation=preparation,
     )
     first, last = forcing_window(sim_start, sim_end)
     variables = (
@@ -514,14 +500,14 @@ if __name__ == "__main__":
         with tee_to_log(sm.log[0]):
             from blueearth_cst.experiment.simulation_record import (
                 SimulationFrozenError,
-                read_simulation,
+                read_simulation_intent_v2,
             )
 
-            record = read_simulation(Path(sm.input.simulation).parent.parent)
-            if (
-                record["response_inventory_sha256"] is not None
-                or Path(sm.params.native_output_path).exists()
-            ):
+            root = Path(sm.input.simulation).parents[1]
+            record = read_simulation_intent_v2(root)
+            if (root / "_engine/simulation.json").exists() or Path(
+                sm.params.native_output_path
+            ).exists():
                 raise SimulationFrozenError(
                     "native responses already exist; use a new experiment name"
                 )
@@ -538,6 +524,7 @@ if __name__ == "__main__":
                 native_log=sm.params.native_log_path,
                 temporal_out=sm.output.temporal,
                 validated_collection=sm.params.validated_collection,
+                preparation=record["documents"]["preparation"],
             )
     else:
         raise ValueError("This script should be run from a snakemake environment")

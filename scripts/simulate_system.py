@@ -7,6 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
+from blueearth_cst.experiment.simulation_record import capture_simulation_sources_v2
 from blueearth_cst.experiment.simulation_runner import (
     simulation_command,
     simulation_settings,
@@ -58,7 +59,7 @@ def main(argv=None):
         ],
         targets=list(args.target),
         mode="dry_run" if args.dry_run else "execute",
-        contract_mode="legacy_wf4_interim",
+        contract_mode="new_schema",
         invocation_id=os.environ.get(invocation_history.INVOCATION_ENV),
         parent_invocation_id=os.environ.get(invocation_history.PARENT_ENV),
     )
@@ -66,11 +67,19 @@ def main(argv=None):
         project, settings = simulation_settings(args.config)
         if Path(project["project"]["project_dir"]).resolve() != root:
             raise ValueError("--project-dir differs from composed project root")
+        record["operation"] = settings["operation"]
         command, environment = simulation_command(
             args.config, args.target, args.cores, extra
         )
         record["configuration"]["source_config_sha256"] = file_sha256(Path(args.config))
-        record["configuration"]["archive_state"] = "historical_unavailable"
+        if not args.dry_run and settings["operation"] == "simulate-and-metrics":
+            capture = capture_simulation_sources_v2(
+                args.config, root, record["invocation_id"]
+            )
+            environment["CST_SIMULATION_CAPTURE"] = str(capture)
+            record["configuration"]["archive_state"] = "pending"
+        else:
+            record["configuration"]["archive_state"] = "not_applicable"
         environment["CST_SIMULATION_INVOCATION_ID"] = record["invocation_id"]
         invocation_history.update(record_path, record)
         print("simulate_system: " + " ".join(args.target), flush=True)
@@ -83,6 +92,9 @@ def main(argv=None):
             )
         invocation_history.finish(record_path, record, exit_code=result)
         return result
+    except ValueError as exc:
+        invocation_history.finish(record_path, record, exit_code=None, error=exc)
+        parser.error(str(exc))
     except BaseException as exc:
         invocation_history.finish(record_path, record, exit_code=None, error=exc)
         raise

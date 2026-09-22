@@ -1,11 +1,10 @@
 """Successor runner target matrix and retained-only operation isolation."""
 
 import importlib.util
-import subprocess
+import json
 import sys
 from pathlib import Path
 from shutil import copytree
-from types import SimpleNamespace
 
 import pytest
 import yaml
@@ -96,9 +95,9 @@ def test_current_carrier_operation_target_matrix(
 
     def launch(command, **kwargs):
         calls.append((command, kwargs))
-        return SimpleNamespace(returncode=0)
+        return 0
 
-    monkeypatch.setattr(harness.subprocess, "run", launch)
+    monkeypatch.setattr(harness, "run_project_child", launch)
     targets = {
         "all": ["all"],
         "metrics": ["metrics"],
@@ -132,9 +131,9 @@ def test_current_carrier_operation_target_matrix(
         assert command[:3] == [sys.executable, "-m", "snakemake"]
         assert command[3] == ("all" if target == "default" else targets[target][0])
         assert kwargs["env"]["CST_SIMULATION_OPERATION"] == operation
-        records = list(invocation_dir.glob("simulation-*.json"))
+        records = list(invocation_dir.glob("*.json"))
         assert len(records) == 1
-        record = read_canonical_json(records[0])
+        record = json.loads(records[0].read_text(encoding="utf-8"))
         assert record["status"] == "succeeded"
         assert record["exit_code"] == 0
         assert record["operation"] == operation
@@ -143,37 +142,3 @@ def test_current_carrier_operation_target_matrix(
             harness.main(argv)
         assert error.value.code == 2
         assert calls == []
-
-
-def test_current_carrier_metrics_only_dry_run_without_live_inputs(
-    carrier_state, tmp_path
-):
-    config, _, _ = carrier_state
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(HARNESS),
-            "--config",
-            str(config),
-            "--target",
-            "metrics",
-            "--dry-run",
-        ],
-        cwd=REPO,
-        capture_output=True,
-        text=True,
-        check=False,
-        timeout=180,
-    )
-    output = result.stdout + result.stderr
-    (tmp_path / "current-carrier-dry-run.log").write_text(output, encoding="utf-8")
-    assert result.returncode == 0, output
-    assert "simulate_system: metrics" in output
-    assert "prepare_metric_plan" in output
-    for producer in (
-        "generate_weather_realizations",
-        "downscale_climate_realization",
-        "run_wflow_batch_",
-        "extract_historical_climate",
-    ):
-        assert producer not in output

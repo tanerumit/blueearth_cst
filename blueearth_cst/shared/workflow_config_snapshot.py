@@ -1176,8 +1176,14 @@ def publish_archive(
                 raise ValueError("completed transaction id collision")
             os.replace(journal, archived_journal)
         if target.exists():
-            validate_archive(target)
-            old_sha = file_sha256(target / "run_record.yml")
+            if not target.is_dir():
+                raise ValueError("archive target is not a directory")
+            if any(target.iterdir()):
+                validate_archive(target)
+                old_sha = file_sha256(target / "run_record.yml")
+            else:
+                target.rmdir()
+                old_sha = None
         else:
             old_sha = None
         txid = uuid.uuid4().hex

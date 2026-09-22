@@ -66,6 +66,19 @@ def test_captured_bytes_survive_live_mutation_and_publish(tmp_path):
     assert loaded["schema_version"] == "run-record/2"
 
 
+def test_first_publication_replaces_empty_target_directory(tmp_path):
+    record, payloads = _archive(tmp_path, "first")
+    root = tmp_path / "output"
+    (root / "config/runs/build_model").mkdir(parents=True)
+
+    publish_archive(root, "build_model", "config/runs/build_model", record, payloads)
+
+    assert (
+        read_archive(root, "build_model", "config/runs/build_model")["invocation_id"]
+        == "first"
+    )
+
+
 def test_experiment_owner_is_an_archive_owner_kind(tmp_path):
     project = tmp_path / "project.yml"
     project.write_text("project: {}\n", encoding="utf-8")

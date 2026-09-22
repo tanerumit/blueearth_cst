@@ -52,5 +52,5 @@ Use the repository validation ladder in `AGENTS.md` and schema §11. Run focused
 - [P3 — Invocation history](p3-invocation-history.md) — complete (`02e568e2`)
 - [P4 — Collection contract](p4-collection-contract.md) — complete (`ceeb9835`)
 - [P5 — WF3 static generation](p5-wf3-static-generation.md) — complete (`c83ead70`)
-- [P6 — Simulation and metrics](p6-simulation-metrics.md) — complete; phase commit pending
-- [P7 — Complete-run evidence](p7-complete-run-evidence.md) — not started
+- [P6 — Simulation and metrics](p6-simulation-metrics.md) — complete
+- [P7 — Complete-run evidence](p7-complete-run-evidence.md) — complete; [acceptance record](../../milestones/r12/implementation/evidence/p7/complete-run-record.md)

@@ -18,11 +18,11 @@ Permitted: focused tests, tree/schema inventory tools, documentation corrections
 
 ### Required changes (checklist)
 
-- [ ] Run all enabled stages against a fresh isolated rapid project and capture tree plus representative YAML/JSON/CSV schemas.
-- [ ] Evaluate each relevant falsifier in schema §11, including references, temporary-file absence, lineage, metric joins and Wflow logs.
-- [ ] Compare scientific results against the appropriate reference with stated tolerances; distinguish identity/path changes from numerical differences.
-- [ ] Compare against [P0's clean pre-change WF3 reference](../design-runs/output-schema-contract/prechange-reference-retry.md) under explicit seed 123 with exact decoded values, coordinates, masks, calendar, dates and member lineage. Compare native responses and every requested metric against the separately captured independent predecessor WF4 comparator. Verify the new WF3-only automatic-seed formula and demonstrate that WF4-only elevation, settings and code changes leave its seed and collection identity unchanged; numeric parity with v1 is not required.
-- [ ] Update the proposed schema to actual implemented facts, or record every deviation before claiming completion.
+- [x] Run all enabled stages against a fresh isolated rapid project and capture tree plus representative YAML/JSON/CSV schemas.
+- [x] Evaluate each relevant falsifier in schema §11, including references, temporary-file absence, lineage, metric joins and Wflow logs.
+- [x] Compare scientific results against the appropriate reference with stated tolerances; distinguish identity/path changes from numerical differences.
+- [x] Compare against [P0's clean pre-change WF3 reference](../design-runs/output-schema-contract/prechange-reference-retry.md) under explicit seed 123 with exact decoded values, coordinates, masks, calendar, dates and member lineage. Compare native responses and every requested metric against the separately captured independent predecessor WF4 comparator. Verify the new WF3-only automatic-seed formula and demonstrate that WF4-only elevation, settings and code changes leave its seed and collection identity unchanged; numeric parity with v1 is not required.
+- [x] Update the proposed schema to actual implemented facts, or record every deviation before claiming completion.
 
 ### Validation
 
@@ -39,3 +39,8 @@ Provide commands, results, captured tree/schema evidence, deviations, numerical 
 ### Task constraints
 
 Honor the master brief's human gate and shared constraints. Do not infer completeness from accumulated `test_local` or `test_rapid` trees.
+
+## Completion record
+
+P7 acceptance is recorded in
+[`dev/milestones/r12/implementation/evidence/p7/complete-run-record.md`](../../milestones/r12/implementation/evidence/p7/complete-run-record.md).

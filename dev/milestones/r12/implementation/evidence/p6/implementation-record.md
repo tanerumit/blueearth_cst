@@ -8,7 +8,7 @@ evidence, not the fresh numerical acceptance record; P7 owns that comparison.
 
 | Record or artifact | Schema/path |
 |---|---|
-| Simulation intent | `experiments/<name>/_engine/simulation_intent.json` (`simulation-intent/2`) |
+| Simulation intent | `experiments/<name>/_engine/simulation_intent.json` (`simulation-intent/1`) |
 | Ready simulation | `experiments/<name>/_engine/simulation.json` (`simulation/2`) |
 | Response inventory | `experiments/<name>/_engine/response_inventory.json` (`response-inventory/2`) |
 | Metric-set marker | `experiments/<name>/_engine/metric_sets/<short-id>/metrics.json` (`metric-set/2`) |

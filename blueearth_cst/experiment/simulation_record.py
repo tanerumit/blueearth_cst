@@ -714,7 +714,7 @@ def live_simulation_inputs_v2(
     project = Path(project_root).resolve()
     model = Path(model_root).resolve()
     reference = build_model_reference(model, project)
-    retained = _simulation_path(root, "config/model_reference.yml")
+    retained = _simulation_path(root, "_engine/model_reference.yml")
     import yaml
 
     if yaml.safe_load(retained.read_bytes()) != reference:
@@ -828,7 +828,7 @@ def freeze_simulation_v2(experiment_root, intent, *, invocation_id, command):
         {
             "role": "model_reference",
             "file": file_reference(
-                root / "config/model_reference.yml", "project_root", project
+                root / "_engine/model_reference.yml", "project_root", project
             ),
         },
         {

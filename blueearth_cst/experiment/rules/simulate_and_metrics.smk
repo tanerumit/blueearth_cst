@@ -117,7 +117,7 @@ if not _simulation_complete:
             model_dir=basin_dir,
             project_dir=project_dir,
         output:
-            model_reference=update(f"{exp_dir}/config/model_reference.yml"),
+            model_reference=update(f"{engine_dir}/model_reference.yml"),
         log:
             f"{LOG_PARTS_DIR}/4.01_write_model_reference.log",
         script: "../write_model_reference.py"
@@ -144,7 +144,7 @@ if not _simulation_complete:
     rule check_model_reference:
         message: rule_banner("4.02", "check_model_reference")
         input:
-            model_reference=f"{exp_dir}/config/model_reference.yml",
+            model_reference=f"{engine_dir}/model_reference.yml",
             model_toml=ancient(f"{basin_dir}/wflow_sbm.toml"),
         params:
             model_dir=basin_dir,

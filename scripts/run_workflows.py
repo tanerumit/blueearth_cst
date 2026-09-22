@@ -961,6 +961,9 @@ def _run_owned(
             wf3_source_hash = None
             try:
                 if name == "simulate_system":
+                    from blueearth_cst.experiment.simulation_record import (
+                        capture_simulation_sources_v2,
+                    )
                     from blueearth_cst.experiment.simulation_runner import (
                         simulation_command,
                         simulation_settings,
@@ -986,6 +989,20 @@ def _run_owned(
                         parent_invocation_id=history["invocation_id"],
                     )
                     _link_child(history_path, history, child_path, name, child_id)
+                    if (
+                        not manifest["dry_run"]
+                        and settings["operation"] == "simulate-and-metrics"
+                    ):
+                        capture = capture_simulation_sources_v2(
+                            config_path, project_dir, child_id
+                        )
+                        child_record["configuration"]["archive_state"] = "pending"
+                        child_record["configuration"]["source_capture"] = str(capture)
+                    else:
+                        child_record["configuration"]["archive_state"] = (
+                            "not_applicable"
+                        )
+                    invocation_history.update(child_path, child_record)
                     # The simulation runner builds its own environment; the
                     # announcement rides on top of it rather than replacing it.
                     result = subprocess.CompletedProcess(

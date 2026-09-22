@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from blueearth_cst.experiment import simulation_record
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import run_workflows as rw  # noqa: E402
 
@@ -983,6 +985,15 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
         "run_project_child",
         lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
     )
+    captures = []
+    monkeypatch.setattr(
+        simulation_record,
+        "capture_simulation_sources_v2",
+        lambda config, root, invocation: (
+            captures.append((Path(config), Path(root), invocation))
+            or tmp_path / "capture.json"
+        ),
+    )
     project_dir = tmp_path / "gabon_project"
     # The wf1 leaves the contract (i) preflight requires, without running wf1.
     for leaf in rw.LEAVES:
@@ -1005,6 +1016,13 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
         envs[0]["CST_SIMULATION_INVOCATION_ID"]
         == parent["children"][0]["invocation_id"]
     )
+    assert captures == [
+        (
+            cfg.resolve(),
+            project_dir.resolve(),
+            parent["children"][0]["invocation_id"],
+        )
+    ]
     assert rw.console_style.ANNOUNCED_ENV not in os.environ
 
 

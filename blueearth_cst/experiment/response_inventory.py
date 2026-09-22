@@ -467,11 +467,29 @@ def _v2_native_semantics(config, variable):
     columns = config["output"]["csv"]["column"]
     if type(columns) is not list:
         raise MissingResponseRequirement("native output declarations are invalid")
-    declarations = [
-        _v2_exact(item, {"header", "parameter"}, "native output declaration")
-        for item in columns
-        if item.get("header") == header
-    ]
+    declarations = []
+    for item in columns:
+        if item.get("header") != header:
+            continue
+        required_declaration_fields = {"header", "parameter"}
+        allowed_declaration_fields = required_declaration_fields | {"map", "reducer"}
+        if (
+            type(item) is not dict
+            or not required_declaration_fields
+            <= set(item)
+            <= allowed_declaration_fields
+        ):
+            raise MissingResponseRequirement(
+                "native output declaration has unclassified fields"
+            )
+        if any(
+            not isinstance(item[field], str) or not item[field]
+            for field in {"map", "reducer"} & set(item)
+        ):
+            raise MissingResponseRequirement(
+                "native output routing metadata is invalid"
+            )
+        declarations.append({"header": item["header"], "parameter": item["parameter"]})
     if not declarations or any(item["parameter"] != parameter for item in declarations):
         raise MissingResponseRequirement("native parameter differs from reader mapping")
     return {

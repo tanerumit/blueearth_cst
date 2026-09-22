@@ -127,6 +127,28 @@ def test_time_units_are_nonsemantic_native_clock_metadata(v2):
     }
 
 
+def test_output_routing_metadata_is_not_response_selector_semantics(v2):
+    root, native_runs, temporal = v2
+    toml = native_runs["01"].toml_path
+    toml.write_text(
+        toml.read_text().replace(
+            'parameter="river_water__volume_flow_rate"\n',
+            'parameter="river_water__volume_flow_rate"\nmap="outlets"\nreducer="mean"\n',
+        )
+    )
+
+    inventory = publish_response_inventory_v2(root, native_runs, temporal)
+
+    assert inventory["identity_projection"]["series"][0]["native_selector"][
+        "output_declarations"
+    ] == [
+        {
+            "header": "Q",
+            "parameter": "river_water__volume_flow_rate",
+        }
+    ]
+
+
 def test_local_temporal_pointer_tamper_refuses_before_native_open(v2, monkeypatch):
     root, native_runs, temporal = v2
     inventory = publish_response_inventory_v2(root, native_runs, temporal)

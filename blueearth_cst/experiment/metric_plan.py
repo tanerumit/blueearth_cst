@@ -1006,13 +1006,13 @@ def _publish_metric_set_v2(experiment_root, plan):
         "groups": plan["groups"],
         "run_groups": plan["units"],
         "metric_run_lookup": ref(
-            f"../../results/metric_sets/{short}/metric_run_lookup.csv", lookup
+            f"results/metric_sets/{short}/metric_run_lookup.csv", lookup
         ),
         "tables": [
             {
                 "token": token,
                 "file": ref(
-                    f"../../results/metric_sets/{short}/{token}_indicators.csv",
+                    f"results/metric_sets/{short}/{token}_indicators.csv",
                     payloads[f"{token}_indicators.csv"],
                 ),
             }
@@ -1305,12 +1305,20 @@ def _read_metric_set_v2(experiment_root, marker):
         if file_sha256(engine / item["path"]) != item["sha256"]:
             raise ImmutableMetricSetError(f"metric artifact differs: {item['path']}")
     lookup = result / "metric_run_lookup.csv"
+    if manifest["metric_run_lookup"]["path"] != (
+        f"results/metric_sets/{short}/metric_run_lookup.csv"
+    ):
+        raise ImmutableMetricSetError("metric lookup reference differs")
     if file_sha256(lookup) != manifest["metric_run_lookup"]["sha256"]:
         raise ImmutableMetricSetError("metric lookup differs")
     with lookup.open(newline="", encoding="utf-8") as handle:
         if csv.DictReader(handle).fieldnames != ["run_group_id", "grain", "run_id"]:
             raise ImmutableMetricSetError("metric lookup schema differs")
     for item in manifest["tables"]:
+        if item["file"]["path"] != (
+            f"results/metric_sets/{short}/{item['token']}_indicators.csv"
+        ):
+            raise ImmutableMetricSetError("metric table reference differs")
         path = result / Path(item["file"]["path"]).name
         if file_sha256(path) != item["file"]["sha256"]:
             raise ImmutableMetricSetError("metric table differs")

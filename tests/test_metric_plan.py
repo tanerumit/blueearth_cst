@@ -744,6 +744,12 @@ def test_metric_set_v2_publishes_paired_paths_and_headers(tmp_path, monkeypatch)
     assert marker["schema_version"] == "metric-set/2"
     assert engine.joinpath("metrics.json").is_file()
     assert result.joinpath("metric_run_lookup.csv").is_file()
+    assert marker["metric_run_lookup"]["path"] == (
+        f"results/metric_sets/{short}/metric_run_lookup.csv"
+    )
+    assert [item["file"]["path"] for item in marker["tables"]] == [
+        f"results/metric_sets/{short}/gwr_indicators.csv"
+    ]
     with result.joinpath("metric_run_lookup.csv").open(
         newline="", encoding="utf-8"
     ) as handle:

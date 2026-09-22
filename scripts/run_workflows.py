@@ -383,6 +383,11 @@ def _label(name: str) -> str:
     return f"{WORKFLOW_ID[name]} {name}"
 
 
+def _handoff_label(name: str) -> str:
+    """An emphasized workflow identity for a run hand-off heading."""
+    return f"{WORKFLOW_ID[name].upper()}  {name.replace('_', ' ').upper()}"
+
+
 def _clock() -> str:
     """Wall-clock ``HH:MM:SS`` for a hand-off line.
 
@@ -939,7 +944,7 @@ def _run_owned(
                 # every disabled workflow, once, before anything started.
                 continue
             position += 1
-            tag = f"[{position}/{total}]  {_label(name)}"
+            tag = f"[{position}/{total}]  {_handoff_label(name)}"
             cmd = build_command(name, config_path, cores, extra)
             workflow["command"] = sanitize_argv(cmd)
             workflow["status"] = "running"
@@ -947,7 +952,7 @@ def _run_owned(
                 "\n"
                 + _handoff(
                     tag,
-                    f"starting {_clock()}",
+                    f"STARTING {_clock()}",
                     note=" ".join(sanitize_argv(cmd)),
                 )
                 + "\n",

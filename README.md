@@ -188,21 +188,23 @@ names and identifier capacity. See [configuration migration](docs/migration-conf
 Activate `pixi shell`, or prefix commands with `pixi run`:
 
 ```console
-snakemake all -c 3 -s analyze_climate.smk --configfile test_case/project_config_rapid.yml
-snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml
-snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
-snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
+python scripts/run_workflow.py analyze_climate --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
+python scripts/run_workflow.py build_model --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
+python scripts/run_workflow.py analyze_projections --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 --keep-going
+# Enable only generate_scenarios in this config to run WF3 alone.
+python scripts/run_workflows.py --config <wf3-only-project-config.yml> --project-dir <project-dir> --cores 3
 python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
 ```
 
 Or run all enabled workflows in that fixed convenience order:
 
 ```console
-pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml --cores 3
+pixi run python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 ```
 
 Preflights run immediately before their consumer, after preceding producers.
-Direct generation is supported. Simulation must use its dedicated runner or
+Generation uses the owned all-workflow runner, which may be configured with only
+WF3 enabled. Simulation must use its dedicated runner or
 the all-workflow runner; bare `simulate_system.smk` invocation is unsupported.
 `--dry-run` shows a partial DAG until a missing source or metric checkpoint has
 resolved its content identity. Each workflow executes once per invocation.
@@ -215,6 +217,7 @@ invoked workflow — this is how you pass `--rerun-incomplete`, `--dry-run`,
 ```console
 $ pixi run python scripts/run_workflows.py \
     --config test_case/project_config_baseline.yml \
+    --project-dir test_case/test_local \
     -- --rerun-incomplete
 ```
 
@@ -259,7 +262,8 @@ Benchmark parts use the same scope beneath `benchmarks/_parts/`. The all-workflo
 runner retains an invocation record under `config/runs/_engine/invocations/`.
 
 ```console
-pixi run python scripts/plot_workflow_dag.py -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
+# WF3's owned dry run shows the source-preparation DAG.
+pixi run python scripts/generate_scenarios.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 -- --dry-run
 pixi run python scripts/plot_workflow_dag.py -s simulate_system.smk --configfile test_case/project_config_rapid.yml
 ```
 

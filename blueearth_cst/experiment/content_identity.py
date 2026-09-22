@@ -462,3 +462,123 @@ def collection_revision(manifest: Mapping[str, Any]) -> str:
             "ordered_forcing_inventory_with_descriptors": manifest["forcing"],
         }
     )
+
+
+def generation_seed_material_v2(
+    *,
+    n_realizations: int,
+    simulation_window: Mapping[str, int],
+    climate_perturbations: Mapping[str, Any],
+    water_year_start: str,
+    provider_revision: str,
+    sources: Sequence[Mapping[str, Any]],
+    generator_settings: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Build the WF3-only automatic seed preimage from pinned source bytes."""
+    if type(n_realizations) is not int or n_realizations < 1:
+        raise ValueError("n_realizations must be a positive integer")
+    _digest(provider_revision, "provider_revision")
+    selected = []
+    for role in ("basin_cells", "historical_climate"):
+        matches = [item for item in sources if item.get("role") == role]
+        if len(matches) != 1:
+            raise ValueError(f"expected one pinned {role} source")
+        item = matches[0]
+        size = item["size_bytes"]
+        if type(size) is not int or size < 0:
+            raise ValueError(f"{role}.size_bytes must be nonnegative")
+        selected.append(
+            {"role": role, "sha256": _digest(item["sha256"], role), "size_bytes": size}
+        )
+    return {
+        "schema_version": "generation-seed-material/2",
+        "scenario_type": "stochastic",
+        "n_realizations": n_realizations,
+        "simulation_window": dict(simulation_window),
+        "climate_perturbations": dict(climate_perturbations),
+        "water_year_start": water_year_start,
+        "provider_revision": provider_revision,
+        "source_inventory_sha256": content_sha256(selected),
+        "generator_settings": dict(generator_settings),
+    }
+
+
+def automatic_seed_v2(material: Mapping[str, Any]) -> int:
+    """Resolve collection-canon/1 digest to the accepted 31-bit seed."""
+    if material.get("schema_version") != "generation-seed-material/2":
+        raise ValueError("expected generation-seed-material/2")
+    return int(content_sha256(dict(material)), 16) % (2**31 - 1)
+
+
+def collection_id_v2(intent: Mapping[str, Any]) -> str:
+    """Hash only the declared scenario-collection/2 scientific dependencies."""
+    if intent.get("schema_version") != "scenario-collection-intent/2":
+        raise ValueError("expected scenario-collection-intent/2")
+    if intent.get("canonicalization_id") != "collection-canon/1":
+        raise ValueError("expected collection-canon/1")
+    capacity = intent["run_group_id_capacity"]
+    if type(capacity) is not int or capacity < 1:
+        raise ValueError("run_group_id_capacity must be positive")
+    digests = intent["identity_digests"]
+    if set(digests) != {
+        "generation_config",
+        "source_inventory",
+        "provider_code",
+        "environment",
+    }:
+        raise ValueError("collection identity_digests has unexpected fields")
+    return content_sha256(
+        {
+            "schema_version": "scenario-collection-identity/2",
+            "scenario_spec": intent["scenario_spec"],
+            "scenario_semantics_sha256": _digest(
+                intent["scenario_semantics_sha256"], "scenario_semantics_sha256"
+            ),
+            "provider_name_and_revision": intent["provider"],
+            "run_group_id_capacity": capacity,
+            **{
+                f"{name}_sha256": _digest(value, name)
+                for name, value in digests.items()
+            },
+        }
+    )
+
+
+def collection_revision_v2(marker: Mapping[str, Any], intent: Mapping[str, Any]) -> str:
+    """Hash checked scientific products in declared scenario order."""
+    dates = [
+        {
+            "role": entry["role"],
+            "sha256": entry["file"]["sha256"],
+            "size_bytes": entry["file"]["size_bytes"],
+        }
+        for entry in marker["provider_products"]
+        if entry["role"] in ("sim_dates", "resampled_dates")
+    ]
+    if [entry["role"] for entry in dates] != ["sim_dates", "resampled_dates"]:
+        raise ValueError("provider date products must have fixed order")
+    return content_sha256(
+        {
+            "schema_version": "collection-revision/2",
+            "collection_id": _digest(marker["collection_id"], "collection_id"),
+            "scenario_semantics_sha256": _digest(
+                intent["scenario_semantics_sha256"], "scenario_semantics_sha256"
+            ),
+            "scenario_run_lookup_sha256": _digest(
+                marker["scenario_run_lookup"]["sha256"], "scenario_run_lookup"
+            ),
+            "perturbation_lookup_sha256": _digest(
+                marker["perturbation_lookup"]["sha256"], "perturbation_lookup"
+            ),
+            "series": [
+                {
+                    "run_id": entry["run_id"],
+                    "sha256": entry["file"]["sha256"],
+                    "size_bytes": entry["file"]["size_bytes"],
+                    "descriptor": entry["descriptor"],
+                }
+                for entry in marker["series"]
+            ],
+            "date_products": dates,
+        }
+    )

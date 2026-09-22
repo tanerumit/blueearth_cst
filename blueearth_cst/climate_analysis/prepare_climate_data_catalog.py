@@ -231,7 +231,7 @@ def plan_preparation_payloads(
     This function neither writes a collection nor changes ancillary values.
     """
     from blueearth_cst.experiment.content_identity import confined_path
-    from blueearth_cst.experiment.forcing_descriptor import describe_ancillary
+    from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
     from blueearth_cst.shared.provenance import file_sha256
 
     path = Path(elevation_path).resolve(strict=True)

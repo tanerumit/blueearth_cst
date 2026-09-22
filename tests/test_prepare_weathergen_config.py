@@ -188,8 +188,8 @@ def test_an_unrecognised_trajectory_refuses_rather_than_meaning_constant(tmp_pat
 # ---------------------------------------------------------------------------
 
 
-def test_f7_the_template_is_a_declared_input_of_rule_3_10():
-    """F7: the weathergen template must be an `input:`, not a params-only read.
+def test_f7_the_pinned_template_is_a_declared_generation_input():
+    """F7: the pinned weathergen template must be an input to generation.
 
     It landed with CR-5 (`9260668`, 2026-08-05); this pins it so it cannot slide
     back. The failure it guards is silent: edit the template and rule 3.10 does
@@ -208,14 +208,12 @@ def test_f7_the_template_is_a_declared_input_of_rule_3_10():
     snakefile = (
         Path(__file__).resolve().parents[1] / "generate_scenarios.smk"
     ).read_text(encoding="utf-8")
-    rule = re.search(
-        r"checkpoint prepare_collection_sources:.*?\n[ \t]+output:", snakefile, re.S
-    )
-    assert rule, "checkpoint prepare_collection_sources not found"
+    rule = re.search(r"rule generate_roots_v2:.*?\n[ \t]+output:", snakefile, re.S)
+    assert rule, "rule generate_roots_v2 not found"
     inputs = re.search(r"\n[ \t]+input:(.*)", rule.group(0), re.S).group(1)
-    assert 'GENERATION["template"]' in inputs, (
+    assert "yaml=_v2_yaml.as_posix()" in inputs, (
         "F7 regression: the weathergen template is not declared as an input of "
-        "rule 3.10, so editing it will not re-trigger the rule"
+        "root generation, so editing it will not mint a new generation plan"
     )
 
 

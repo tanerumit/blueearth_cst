@@ -11,6 +11,7 @@ from blueearth_cst.shared.provenance import append_journal_line, configuration_i
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, historical_window_bounds, julia_prefix, listed, patch_psutil_windows_benchmark, region_rule, resolve_simulation_window, resolve_water_year_start, spatial_units_rule, validate_historical_window, warning_count
 from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo
 from blueearth_cst.shared.config_composition import compose_config
+from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
 # The canonical climate figure set (rules 1.13 and 1.15 both draw it). Imported
 # for figure_names() ONLY, so every figure is declared from the same list the
@@ -35,6 +36,7 @@ patch_psutil_windows_benchmark()
 # downstream R scripts can be handed the same path. Forwarding config_path is
 # a repo convention — keep it even though the Snakefile itself uses `config`.
 config_path = workflow.configfiles[0]
+CAPTURE_RECORD = require_capture("build_model", config_path, dry_run="--dry-run" in sys.argv or "-n" in sys.argv)
 
 # The consumed-key PROJECTION: the config paths this workflow actually reads.
 # Digesting the projection rather than the whole file is what stops a WF3-only
@@ -59,6 +61,7 @@ CONFIG_PROJECTION = ("project", "basin", "climate", "model", "workflows.build_mo
 config, WORKFLOW_CONFIG_PATHS = compose_config(
     config, config_path, entry="build_model", declared_sections=CONFIG_PROJECTION,
 )
+CAPTURE_DIGESTS = captured_projection(CAPTURE_RECORD, config, ADVANCED_SETTINGS)
 # Sorted so the declared input list below does not churn on dict order.
 WF_CONFIG_PATHS = sorted(WORKFLOW_CONFIG_PATHS.values())
 
@@ -262,7 +265,7 @@ CONFIG_REFERENCES = [
     *[("observations_timeseries", source) for source in _observations_input.values()],
 ]
 
-EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
+EFFECTIVE_CONFIG_DIGEST = CAPTURE_DIGESTS[0] if CAPTURE_DIGESTS else effective_config_digest(
     config, ADVANCED_SETTINGS, CONFIG_PROJECTION
 )
 # Threaded through rule 1.01's params: below. Snakemake's params rerun-trigger
@@ -270,7 +273,7 @@ EFFECTIVE_CONFIG_DIGEST = effective_config_digest(
 # flip, a lock-file change, an in-place catalog edit. Without this the record
 # would keep the previous commit after a code-only change, which is the defect
 # both design reviewers found independently.
-CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(
+CONFIGURATION_INPUTS_DIGEST = CAPTURE_DIGESTS[1] if CAPTURE_DIGESTS else configuration_inputs_digest(
     EFFECTIVE_CONFIG_DIGEST,
     toolbox_identity(),
     environment_file_hashes(),
@@ -529,7 +532,7 @@ WF1_TERMINALS = [
 # the config snapshot and the two gathered artifacts.
 WF1_TARGETS = [
     *WF1_TERMINALS,
-    f"{project_dir}/config/runs/build_model/composed_config.yml",
+    *([RUN_RECORD] if os.environ.get("BLUEEARTH_WF012_CAPTURE_CONTEXT") else []),
     f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
     f"{project_dir}/benchmarks/wf1_benchmarks.md",
 ]
@@ -538,43 +541,6 @@ rule all:
     message: target_banner("1.00", "all", WF1_TARGETS, project_dir)
     input:
         WF1_TARGETS,
-
-# 1.01  snapshot_config — current copies + immutable effective-config bundle
-rule snapshot_config:
-    message: rule_banner("1.01", "snapshot_config")
-    input:
-        config_build = model_build_config,
-        config_snake = config_path,
-        config_workflows = WF_CONFIG_PATHS,
-        config_waterbodies = waterbodies_config,
-        # Snapshotted into config/basin_data/ so the finished project can say
-        # what it was evaluated against: both live outside the repo AND outside
-        # project_dir, referenced by absolute path (R07 O-01). Declared inputs
-        # since 2026-08-02, so the snapshot refreshes when the file changes.
-        **_locations_input,
-        **_observations_input,
-    params:
-        data_catalogs = DATA_SOURCES,
-        workflow_name = "build_model",
-        config_dir = f"{project_dir}/config",
-        effective_config = config,
-        advanced_settings = ADVANCED_SETTINGS,
-        config_projection = CONFIG_PROJECTION,
-        # The snapshot is a dump of THIS mapping, not a copy of the project
-        # file (R13 D-11.1): after the split the project file does not hold
-        # the workflow settings, and WF3's drift guard reads them out of the
-        # wf1 snapshot.
-        composed_config = config,
-        # Recorded, never copied -- their content is inlined above (D-11.2).
-        workflow_config_paths = WORKFLOW_CONFIG_PATHS,
-        # A string digest, so the params trigger compares a value rather than
-        # a structure. This is what keeps the record FRESH; see its definition.
-        configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST,
-    output:
-        config_snake_out = f"{project_dir}/config/runs/build_model/composed_config.yml",
-        run_record = RUN_RECORD,
-    script:
-        "blueearth_cst/model/copy_config_files.py"
 
 # 1.02  delineate_region — the one project region artifact (ADR 0006).
 # Byte-identical to 2.02 and 3.03 except message/log/benchmark; everything

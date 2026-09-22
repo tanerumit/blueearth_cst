@@ -20,12 +20,8 @@ from typing import Union
 # root); parent.parent stopped at the package dir, from which
 # `import blueearth_cst.shared...` cannot resolve (O-07).
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
-from blueearth_cst.shared.snake_utils import (
-    index_width,
-    log_row,
-    plural,
-    stress_test_grid,
-)
+from blueearth_cst.shared.run_log_core import log_row, plural
+from blueearth_cst.shared.wf3_science import index_width, stress_test_grid
 
 #: The stress-test axes this module knows how to enumerate. A third axis needs a
 #: new lookup COLUMN, and adding one requires a C28 ruling -- removing the shape
@@ -314,7 +310,7 @@ def prep_cst_parameters(
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
-        from blueearth_cst.shared.snake_utils import tee_to_log
+        from blueearth_cst.shared.run_log_core import tee_to_log
 
         with tee_to_log(sm.log[0]):
             prep_cst_parameters(

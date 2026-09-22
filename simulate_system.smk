@@ -72,15 +72,15 @@ rule publish_metric_set:
     input:
         plan=_metric_set_plan,
     output:
-        manifest=update(f"{results_dir}/metric_sets/{{metric_set_id}}/metrics.json"),
-        units=update(f"{results_dir}/metric_sets/{{metric_set_id}}/unit_index.csv"),
-        environment=update(f"{results_dir}/metric_sets/{{metric_set_id}}/metric_environment.json"),
+        manifest=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metrics.json"),
+        units=update(f"{results_dir}/metric_sets/{{metric_set_id}}/metric_run_lookup.csv"),
+        environment=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metric_environment.json"),
         # publish_metric_set copies the checked benchmark report into the set so
         # a reader never needs the installed asset. Declared here because an
         # undeclared file is one Snakemake neither tracks nor cleans: a
         # --forcerun or partial clean would leave a manifest whose
         # return_level_benchmark.sha256 binds a file that is gone.
-        benchmark=update(f"{results_dir}/metric_sets/{{metric_set_id}}/return_level_benchmark.json"),
+        benchmark=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/return_level_benchmark.json"),
         tables=[update(f"{results_dir}/metric_sets/{{metric_set_id}}/{token}_indicators.csv") for token in METRIC_TOKENS],
     wildcard_constraints:
         metric_set_id=rf"[a-f0-9]{{{SHORT_DIGEST_CHARS}}}",

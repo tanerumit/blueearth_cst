@@ -151,6 +151,37 @@ def file_sha256(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+def collection_canonical_bytes(value: Any) -> bytes:
+    """Serialize a plain JSON value with the accepted collection-canon/1 rules."""
+
+    def check(item: Any) -> None:
+        if item is None or isinstance(item, (str, bool, int)):
+            return
+        if isinstance(item, float):
+            if not math.isfinite(item):
+                raise ValueError("non-finite value in canonical document")
+            return
+        if isinstance(item, list):
+            for child in item:
+                check(child)
+            return
+        if isinstance(item, dict):
+            if not all(isinstance(key, str) for key in item):
+                raise TypeError("canonical document keys must be strings")
+            for child in item.values():
+                check(child)
+            return
+        raise TypeError(f"unsupported canonical value: {type(item).__name__}")
+
+    check(value)
+    return (json.dumps(value, **_CANONICAL_JSON_OPTIONS) + "\n").encode("utf-8")
+
+
+def collection_sha256(value: Any) -> str:
+    """Hash a plain JSON value without changing existing typed config digests."""
+    return hashlib.sha256(collection_canonical_bytes(value)).hexdigest()
+
+
 #: How an exclusion is spelled inside a projection. One character, chosen so a
 #: projection stays a flat list of strings -- the run record's `projection`
 #: field is that list verbatim, and a nested {include, exclude} shape would

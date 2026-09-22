@@ -8,8 +8,8 @@ from pyproj import CRS
 from blueearth_cst.experiment.content_identity import canonical_json_bytes
 from blueearth_cst.experiment.forcing_descriptor import (
     collection_forcing_descriptor,
-    describe_ancillary,
 )
+from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
 
 
 @pytest.fixture

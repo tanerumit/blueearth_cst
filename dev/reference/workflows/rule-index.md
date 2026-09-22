@@ -52,7 +52,7 @@ so one lookup answers both.
 | new | rule | was |
 |---|---|---|
 | 1.00 | `all` | 1.00 |
-| 1.01 | `snapshot_config` | 1.01 |
+| 1.01 | pre-parse archive publication (launcher, no rule) | 1.01 `snapshot_config` |
 | 1.02 | `delineate_region` | 1.01b |
 | 1.03 | `delineate_spatial_units` | 1.01c |
 | 1.04 | `extract_historical_climate` | 1.10 `extract_climate_grid` |
@@ -85,7 +85,7 @@ so one lookup answers both.
 | new | rule | was |
 |---|---|---|
 | 2.00 | `all` | 2.00 |
-| 2.01 | `snapshot_config` | 2.03 |
+| 2.01 | pre-parse archive publication (launcher, no rule) | 2.03 `snapshot_config` |
 | 2.02 | `delineate_region` | 2.03b |
 | 2.03 | `delineate_spatial_units` | 2.03c |
 | 2.04 | `fetch_gcm_slice` | 2.01 `fetch_gcm_raw` |
@@ -193,7 +193,7 @@ gap.
 ```
                     config + data catalogs
                               │
-      0.01 snapshot_config ───┤
+      pre-parse archive ──────┤
                               ▼
                     0.02 delineate_region ──► region.geojson
                               │
@@ -219,7 +219,7 @@ gap.
 | Banner | Rule | Fan-out |
 | --- | --- | --- |
 | 0.00 | `all` | — |
-| 0.01 | `snapshot_config` | — |
+| pre-parse | `scripts/run_workflow.py` archive publication | — |
 | 0.02 | `delineate_region` | — (shared) |
 | 0.03 | `delineate_spatial_units` | — (shared) |
 | 0.04 | `extract_historical_climate_<source>` | per candidate source |
@@ -237,12 +237,9 @@ the config snapshot, the merged log and the benchmark table).
 
 **Writes.** Nothing of its own.
 
-#### 0.01 · `snapshot_config`
-
-**Does.** Copies the config and the files it references into the project, and
-writes the run record.
-
-**Writes.** `config/runs/analyze_climate/composed_config.yml` · the run record.
+**Launcher archive.** `scripts/run_workflow.py` captures the exact source bytes
+before Snakemake parses configuration and publishes
+`config/runs/analyze_climate/{run_record.yml,sources/}`. There is no rule 0.01.
 
 #### 0.02 · `delineate_region`
 
@@ -333,7 +330,7 @@ STAGE 1 — DATA   (no model exists yet)
 ──────────────────────────────────────────────────────────────────
                     config + data catalogs
                               │
-      1.01 snapshot_config ───┤
+       pre-parse archive ──────┤
                               ▼
                     1.02 delineate_region ──► region.geojson
                               │
@@ -413,7 +410,7 @@ The store reaches WF1's *figures* (1.05, 1.15), never its forcing.
 | # | rule | in one line |
 |---|---|---|
 | 1.00 | `all` | Target aggregator. |
-| 1.01 | `snapshot_config` | Snapshots the config and everything it references. |
+| pre-parse | `scripts/run_workflow.py` | Publishes the captured source archive and run record before Snakemake parses. |
 | 1.02 | `delineate_region` | Delineates the one project extent. |
 | 1.03 | `delineate_spatial_units` | The shared vector foundation, and where gauges enter the workflow. |
 | 1.04 | `extract_historical_climate` | The shared historical-climate store (= WF3 3.02). |
@@ -436,25 +433,14 @@ The store reaches WF1's *figures* (1.05, 1.15), never its forcing.
 #### 1.00 · `all`
 
 **Does.** Target aggregator — declares the WF1 target set (the terminals, plus
-the config snapshot, the merged log and the benchmark table) so one
+the launcher archive, the merged log and the benchmark table) so one
 `snakemake all` builds the workflow.
 
 **Writes.** Nothing of its own.
 
-#### 1.01 · `snapshot_config`
-
-**Does.** Copies the config and every file it references into the project,
-routed by kind, and writes an immutable content-addressed bundle of the
-effective settings (merged config + advanced settings + manifest) so a finished
-project can say what it was run with.
-
-**Writes.** `config/runs/build_model/composed_config.yml` ·
-`config/runs/build_model/<digest>/` (bundle dir).
-
-**Writes (undeclared).** Copies into `config/templates/` (build + waterbodies),
-`config/catalogs/` (data catalogs) and `config/basin_data/` (the two optional
-basin data inputs — gauge/output locations and the observed series — which live
-outside the repo *and* outside `project_dir`).
+**Launcher archive.** `scripts/run_workflow.py` captures source bytes before
+Snakemake parses configuration and publishes
+`config/runs/build_model/{run_record.yml,sources/}`. There is no rule 1.01.
 
 #### 1.02 · `delineate_region`
 
@@ -803,7 +789,7 @@ STAGE 1 — DATA
 ──────────────────────────────────────────────────────────────────
                         config + catalogs
                                 │
-        2.01 snapshot_config ───┤
+         pre-parse archive ──────┤
                                 ▼
                       2.02 delineate_region
                                 │  region.geojson
@@ -852,7 +838,7 @@ reachable at all: an undeclared leaf is simply never scheduled.
 | # | rule | in one line |
 |---|---|---|
 | 2.00 | `all` | Target aggregator. |
-| 2.01 | `snapshot_config` | As WF1 1.01. |
+| pre-parse | `scripts/run_workflow.py` | As WF1 pre-parse archive publication. |
 | 2.02 | `delineate_region` | As WF1 1.02 — the same artifact. |
 | 2.03 | `delineate_spatial_units` | As WF1 1.03 — the same artifacts. A leaf here. |
 | 2.04 | `fetch_gcm_slice` | Acquires one raw CMIP6 slice. The only remote read. |
@@ -871,14 +857,9 @@ plots, the merged log and the benchmark table.
 
 **Writes.** Nothing of its own.
 
-#### 2.01 · `snapshot_config`
-
-**Does.** As WF1 1.01, with the WF2 bins.
-
-**Writes.** `config/runs/analyze_projections/composed_config.yml` ·
-`config/runs/analyze_projections/<digest>/` (bundle dir).
-
-**Writes (undeclared).** Catalog copies into `config/catalogs/`.
+**Launcher archive.** `scripts/run_workflow.py` publishes
+`config/runs/analyze_projections/{run_record.yml,sources/}` before WF2 starts.
+There is no rule 2.01.
 
 #### 2.02 · `delineate_region`
 

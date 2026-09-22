@@ -7,8 +7,8 @@ simulation and response records. Typed readers verify content beyond existence.
 
 from __future__ import annotations
 
-# Legacy snapshot path retained for fixture staging, not a WF4 dependency.
-LEAF_WF1_SNAPSHOT = "config/runs/build_model/composed_config.yml"
+# Archive marker retained for fixture staging, not a WF4 dependency.
+LEAF_WF1_SNAPSHOT = "config/runs/build_model/run_record.yml"
 
 # WF4's model reference writer consumes these WF1 artifacts.
 LEAF_MODEL_TOML = "models/hydrology/wflow/wflow_sbm.toml"
@@ -47,7 +47,7 @@ def consumer_leaves(
         if not experiment_name:
             raise ValueError("metrics-only leaves require experiment_name")
         return (
-            f"experiments/{experiment_name}/config/simulation.json",
+            f"experiments/{experiment_name}/_engine/simulation.json",
             f"experiments/{experiment_name}/_engine/response_inventory.json",
         )
     raise ValueError(f"unknown simulation operation: {operation}")

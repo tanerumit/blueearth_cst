@@ -150,7 +150,7 @@ waterbodies, outputs, runtime, and forcing.
 - `{basin_dir}/forcing/plots/forcing_precip_map.png` (model inputs)
 - `{project_dir}/data/climate/historical/<key>/plots/source_{precip,temp,pet}.png`
   (source-grid figures from the shared store; produced with no model)
-- `{project_dir}/config/runs/build_model/composed_config.yml` (composed config snapshot)
+- `{project_dir}/config/runs/build_model/run_record.yml` (launcher archive; published before the DAG)
 - `{project_dir}/data/spatial/spatial_catalog.yml` (representative target for the
   complete rule-1.02 spatial product)
 

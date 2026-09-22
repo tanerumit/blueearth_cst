@@ -177,6 +177,31 @@ def compose(t1_path: Path, entry: str | None = "build_model") -> dict:
     return cc.load_composed_config(t1_path, entry, projection)
 
 
+def test_captured_composition_does_not_reread_mutated_workflow_file(tmp_path):
+    project = write_split(
+        tmp_path / "cfg",
+        bodies={"build_model": {"engine": {"build_config": "old.yml"}}},
+    )
+    workflow = project.with_name("project_config_test_build_model.yml")
+    captured = cc.capture_configuration_sources(project, "build_model")
+    workflow.write_text("engine:\n  build_config: new.yml\n", encoding="utf-8")
+    composed, paths = cc.compose_captured_config(captured[0], captured, "build_model")
+    assert composed["workflows"]["build_model"]["engine"]["build_config"] == "old.yml"
+    assert "build_model" in paths
+
+
+def test_capture_excludes_unrelated_workflow_files(tmp_path):
+    project = write_split(
+        tmp_path / "cfg",
+        bodies={
+            "build_model": {"engine": {}},
+            "analyze_projections": {"ensemble": "cmip6"},
+        },
+    )
+    captured = cc.capture_configuration_sources(project, "build_model")
+    assert [source.id for source in captured] == ["project", "workflow_build_model"]
+
+
 # ---------------------------------------------------------------------------
 # The composition invariant (D-8.1, D-10.1, D-8.7, D-10.4)
 # ---------------------------------------------------------------------------

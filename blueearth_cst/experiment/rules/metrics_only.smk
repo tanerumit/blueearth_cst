@@ -28,7 +28,7 @@ declare_path_tokens(experiment=exp_dir)
 declare_project_root(project_dir)
 
 def _frozen_simulation(wc):
-    return f"{exp_dir}/config/simulation.json"
+    return f"{exp_dir}/_engine/simulation.json"
 
 # 4.00  all
 rule all:

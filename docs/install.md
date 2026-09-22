@@ -107,7 +107,7 @@ pytest tests/test_workflow_analyze_projections.py --run-integration
 
 Or run the small test model directly:
 ```powershell
-snakemake all -c 1 -s build_model.smk --configfile test_case/project_config_baseline.yml
+python scripts/run_workflow.py build_model --config test_case/project_config_baseline.yml --project-dir test_case/test_local --cores 1
 ```
 
 ## Troubleshooting

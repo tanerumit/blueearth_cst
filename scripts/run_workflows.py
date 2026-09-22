@@ -16,6 +16,7 @@ the child starts; sensitive argument values are redacted in records and output.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.metadata
 import json
 import math
@@ -39,7 +40,13 @@ _REPO_ROOT_PATH = Path(__file__).resolve().parents[1]
 if str(_REPO_ROOT_PATH) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT_PATH))
 
-from blueearth_cst.shared import console_style  # noqa: E402
+from blueearth_cst.shared import (  # noqa: E402
+    console_style,
+    invocation_history,
+)
+from blueearth_cst.shared.config_composition import (  # noqa: E402
+    capture_configuration_sources,
+)
 from blueearth_cst.shared.cross_workflow_leaves import (  # noqa: E402
     LEAF_PRODUCER,
     LEAVES,
@@ -54,6 +61,12 @@ from blueearth_cst.shared.snake_utils import (  # noqa: E402
     ADVANCED_SETTINGS,
     format_elapsed,
     region_geojson_path,
+)
+from blueearth_cst.shared.windows_job import run_project_child  # noqa: E402
+from blueearth_cst.shared.workflow_config_snapshot import (  # noqa: E402
+    archive_lock,
+    file_reference,
+    read_archive,
 )
 
 # Fixed order: climate -> model -> projections -> generation -> simulation.
@@ -780,14 +793,74 @@ def _project_name(cfg: Mapping[str, Any], project_dir: Path) -> str:
 
 
 def run(
-    config_path: str, cores: int, extra: list[str], *, simulation_targets=("all",)
+    config_path: str,
+    cores: int,
+    extra: list[str],
+    *,
+    simulation_targets=("all",),
+    project_dir: Path | None = None,
+) -> int:
+    """Hold project ownership and record explicit-root validation failures."""
+    history_pair = None
+    if project_dir is not None:
+        supplied_root = Path(project_dir).resolve()
+        history_pair = invocation_history.start(
+            supplied_root,
+            workflow=None,
+            entry_point="scripts/run_workflows.py",
+            command=sanitize_argv(
+                [
+                    "run_workflows",
+                    "--config",
+                    config_path,
+                    "--cores",
+                    str(cores),
+                    *extra,
+                ]
+            ),
+            targets=["all"],
+            mode="dry_run" if "--dry-run" in extra or "-n" in extra else "execute",
+            contract_mode="new_schema",
+        )
+    try:
+        cfg = _read_config(config_path)
+        flags = _enabled_flags(cfg, config_path)
+        resolved_root = _project_dir(cfg, config_path)
+        if project_dir is not None and resolved_root != supplied_root:
+            raise ConfigError("--project-dir differs from composed project root")
+        with archive_lock(resolved_root, "project-execution"):
+            return _run_owned(
+                config_path,
+                cores,
+                extra,
+                simulation_targets=simulation_targets,
+                cfg=cfg,
+                flags=flags,
+                project_dir=resolved_root,
+                history_pair=history_pair,
+            )
+    except BaseException as error:
+        if history_pair is not None and history_pair[1]["status"] == "running":
+            invocation_history.finish(
+                history_pair[0], history_pair[1], exit_code=None, error=error
+            )
+        raise
+
+
+def _run_owned(
+    config_path: str,
+    cores: int,
+    extra: list[str],
+    *,
+    simulation_targets: tuple[str, ...],
+    cfg: Mapping[str, Any],
+    flags: Mapping[str, bool],
+    project_dir: Path,
+    history_pair: tuple[Path, dict[str, Any]] | None = None,
 ) -> int:
     """Invoke each enabled workflow in fixed order; stop on first nonzero exit
     and return that code (contract (d)). Returns 0 if all enabled workflows
     succeed (or all are disabled)."""
-    cfg = _read_config(config_path)
-    flags = _enabled_flags(cfg, config_path)
-    project_dir = _project_dir(cfg, config_path)
     # Contract (i), BEFORE the manifest: a run that cannot start should not
     # mint an invocation record, which exists to describe runs that did.
     manifest_path, manifest = _initialize_manifest(
@@ -798,7 +871,27 @@ def run(
         cores=cores,
         extra=extra,
     )
-    _write_json_atomic(manifest_path, manifest)
+    history_path, history = history_pair or invocation_history.start(
+        project_dir,
+        workflow=None,
+        entry_point="scripts/run_workflows.py",
+        command=sanitize_argv(
+            ["run_workflows", "--config", config_path, "--cores", str(cores), *extra]
+        ),
+        targets=["all"],
+        mode="dry_run" if manifest["dry_run"] else "execute",
+        contract_mode="new_schema",
+        requested_workflows=[name for name in WORKFLOW_ORDER if flags[name]],
+    )
+    manifest_path = history_path
+    history["requested_workflows"] = [name for name in WORKFLOW_ORDER if flags[name]]
+    history["configuration"].update(
+        source_config_sha256=manifest["source_config"]["sha256"],
+        effective_config_sha256=manifest["effective_config"]["sha256"],
+    )
+    if manifest["no_op"]:
+        history["work_performed"] = "no"
+    invocation_history.update(history_path, history)
 
     # Every hand-off band below names the workflow it is about to start, so the
     # workflow's own opening block does not print its name a second time three
@@ -862,8 +955,15 @@ def run(
             # Before the child, not after: see contract (h) on buffering.
             sys.stdout.flush()
             workflow_started = time.monotonic()
+            child_id = uuid.uuid4().hex
+            child_path = history_path.with_name(f"{child_id}.json")
+            child_record = None
+            wf3_source_hash = None
             try:
                 if name == "simulate_system":
+                    from blueearth_cst.experiment.simulation_record import (
+                        capture_simulation_sources_v2,
+                    )
                     from blueearth_cst.experiment.simulation_runner import (
                         simulation_command,
                         simulation_settings,
@@ -877,20 +977,181 @@ def run(
                         config_path, list(simulation_targets), cores, extra
                     )
                     workflow["command"] = sanitize_argv(cmd)
+                    child_path, child_record = invocation_history.start(
+                        project_dir,
+                        workflow=name,
+                        entry_point="scripts/run_workflows.py",
+                        command=sanitize_argv(cmd),
+                        targets=list(simulation_targets),
+                        mode="dry_run" if manifest["dry_run"] else "execute",
+                        contract_mode="legacy_wf4_interim",
+                        invocation_id=child_id,
+                        parent_invocation_id=history["invocation_id"],
+                    )
+                    _link_child(history_path, history, child_path, name, child_id)
+                    if (
+                        not manifest["dry_run"]
+                        and settings["operation"] == "simulate-and-metrics"
+                    ):
+                        capture = capture_simulation_sources_v2(
+                            config_path, project_dir, child_id
+                        )
+                        child_record["configuration"]["archive_state"] = "pending"
+                        child_record["configuration"]["source_capture"] = str(capture)
+                    else:
+                        child_record["configuration"]["archive_state"] = (
+                            "not_applicable"
+                        )
+                    invocation_history.update(child_path, child_record)
                     # The simulation runner builds its own environment; the
                     # announcement rides on top of it rather than replacing it.
-                    result = subprocess.run(
+                    result = subprocess.CompletedProcess(
                         cmd,
-                        cwd=REPO_ROOT,
-                        env={**environment, console_style.ANNOUNCED_ENV: "1"},
+                        run_project_child(
+                            cmd,
+                            cwd=REPO_ROOT,
+                            writing=not manifest["dry_run"],
+                            env={
+                                **environment,
+                                "CST_SIMULATION_INVOCATION_ID": child_id,
+                                console_style.ANNOUNCED_ENV: "1",
+                                invocation_history.PARENT_ENV: history["invocation_id"],
+                                invocation_history.INVOCATION_ENV: child_id,
+                            },
+                        ),
                     )
                 else:
-                    result = subprocess.run(cmd, cwd=REPO_ROOT, env=child_env)
+                    env_for_child = child_env
+                    if name == "generate_scenarios":
+                        cmd = [
+                            sys.executable,
+                            "scripts/generate_scenarios.py",
+                            "--config",
+                            str(config_path),
+                            "--project-dir",
+                            str(project_dir),
+                            "--cores",
+                            str(cores),
+                            "--",
+                            *extra,
+                        ]
+                        workflow["command"] = sanitize_argv(cmd)
+                    if (
+                        name
+                        in {"analyze_climate", "build_model", "analyze_projections"}
+                        and not manifest["dry_run"]
+                    ):
+                        from blueearth_cst.shared.workflow_archive_launch import (
+                            CONTEXT_ENV,
+                            prepare_workflow,
+                            split_config_overrides,
+                        )
+
+                        overrides, forwarded = split_config_overrides(extra)
+                        cmd = build_command(name, config_path, cores, forwarded)
+                        execution_config, capture_context = prepare_workflow(
+                            name,
+                            Path(config_path),
+                            project_dir,
+                            command=cmd,
+                            targets=["all"],
+                            overrides=overrides,
+                            entry_point="scripts/run_workflows.py",
+                            invocation_id=child_id,
+                        )
+                        cmd[cmd.index("--configfile") + 1] = str(execution_config)
+                        env_for_child = {**child_env, CONTEXT_ENV: str(capture_context)}
+                        workflow["command"] = sanitize_argv(cmd)
+                    child_path, child_record = invocation_history.start(
+                        project_dir,
+                        workflow=name,
+                        entry_point="scripts/run_workflows.py",
+                        command=sanitize_argv(cmd),
+                        targets=["all"],
+                        mode="dry_run" if manifest["dry_run"] else "execute",
+                        contract_mode="new_schema",
+                        invocation_id=child_id,
+                        parent_invocation_id=history["invocation_id"],
+                    )
+                    if wf3_source_hash is not None:
+                        child_record["configuration"]["source_config_sha256"] = (
+                            wf3_source_hash
+                        )
+                        invocation_history.update(child_path, child_record)
+                    if (
+                        name
+                        in {"analyze_climate", "build_model", "analyze_projections"}
+                        and not manifest["dry_run"]
+                    ):
+                        _bind_workflow_archive(
+                            child_path, child_record, project_dir, name
+                        )
+                    _link_child(history_path, history, child_path, name, child_id)
+                    if name == "generate_scenarios":
+                        from scripts.generate_scenarios import run_owned
+
+                        result = subprocess.CompletedProcess(
+                            cmd,
+                            run_owned(
+                                Path(config_path),
+                                project_dir,
+                                cores,
+                                extra,
+                                invocation_id=child_id,
+                                history_pair=(child_path, child_record),
+                            ),
+                        )
+                    else:
+                        result = subprocess.CompletedProcess(
+                            cmd,
+                            run_project_child(
+                                cmd,
+                                cwd=REPO_ROOT,
+                                env=env_for_child,
+                                writing=not manifest["dry_run"],
+                            ),
+                        )
             except BaseException as exc:
+                if child_record is not None:
+                    invocation_history.finish(
+                        child_path, child_record, exit_code=None, error=exc
+                    )
+                    _link_child(history_path, history, child_path, name, child_id)
+                else:
+                    history["launch_failures"].append(
+                        {
+                            "workflow": name,
+                            "attempted_child_id": child_id,
+                            "phase": "launch",
+                            "error": {"type": type(exc).__name__, "message": str(exc)},
+                            "exit_code": None,
+                        }
+                    )
+                    invocation_history.update(history_path, history)
                 elapsed = format_elapsed(time.monotonic() - workflow_started)
                 ran.append((name, f"FAILED ({type(exc).__name__}) after {elapsed}"))
                 raise
             elapsed = format_elapsed(time.monotonic() - workflow_started)
+            if child_record is not None:
+                invocation_history.finish(
+                    child_path, child_record, exit_code=result.returncode
+                )
+            if child_path.exists():
+                _link_child(history_path, history, child_path, name, child_id)
+            else:
+                history["launch_failures"].append(
+                    {
+                        "workflow": name,
+                        "attempted_child_id": child_id,
+                        "phase": "child_start",
+                        "error": {
+                            "type": "MissingChildRecord",
+                            "message": "child returned without invocation record",
+                        },
+                        "exit_code": result.returncode,
+                    }
+                )
+                invocation_history.update(history_path, history)
             workflow["exit_code"] = result.returncode
             if result.returncode != 0:
                 workflow["status"] = "failed"
@@ -915,7 +1176,7 @@ def run(
             if workflow["status"] == "running":
                 workflow["status"] = "failed"
         _mark_pending_not_run(manifest)
-        _finalize_manifest(manifest_path, manifest, exit_code=None)
+        invocation_history.finish(history_path, history, exit_code=None, error=exc)
         # Before the re-raise, so a launch failure closes with a report rather
         # than with a traceback and nothing else -- the same reason the manifest
         # is finalized on this path.
@@ -934,7 +1195,7 @@ def run(
         _mark_pending_not_run(manifest)
     else:
         manifest["status"] = "succeeded"
-    _finalize_manifest(manifest_path, manifest, exit_code=exit_code)
+    invocation_history.finish(history_path, history, exit_code=exit_code)
     _report(
         project_dir=project_dir,
         manifest_path=manifest_path,
@@ -965,6 +1226,76 @@ def _report(**kwargs: Any) -> None:
             print(f"(run summary unavailable: {exc})", file=sys.stderr, flush=True)
         except Exception:  # noqa: BLE001
             pass
+
+
+def _link_child(
+    parent_path: Path,
+    parent: dict[str, Any],
+    child_path: Path,
+    workflow: str,
+    child_id: str,
+) -> None:
+    """Link only an observed child record, refreshing its changing checksum."""
+    if not child_path.is_file():
+        return
+    item = {
+        "invocation_id": child_id,
+        "workflow": workflow,
+        "record": file_reference(child_path, "project_root", parent_path.parents[4]),
+    }
+    children = parent["children"]
+    for index, child in enumerate(children):
+        if child["invocation_id"] == child_id:
+            children[index] = item
+            break
+    else:
+        children.append(item)
+    invocation_history.update(parent_path, parent)
+
+
+def _bind_workflow_archive(
+    child_path: Path, child: dict[str, Any], project_dir: Path, workflow: str
+) -> None:
+    """Bind a WF0--WF2 child to its checked current creator archive."""
+    archive = read_archive(project_dir, workflow, f"config/runs/{workflow}")
+    projection = archive["configuration_projection"]
+    child["configuration"].update(
+        source_config_sha256=archive["source_files"][0]["sha256"],
+        effective_config_sha256=projection["effective_config_sha256"],
+        configuration_inputs_sha256=projection["configuration_inputs_sha256"],
+        run_record=file_reference(
+            project_dir / "config/runs" / workflow / "run_record.yml",
+            "project_root",
+            project_dir,
+        ),
+        archive_state="latest",
+    )
+    invocation_history.update(child_path, child)
+
+
+def _capture_legacy_wf3_attempt(
+    config_path: Path, project_dir: Path, invocation_id: str
+) -> str:
+    """Retain exact WF3 config source bytes before legacy Snakemake parsing."""
+    sources = capture_configuration_sources(
+        config_path,
+        "generate_scenarios",
+        ("project", "basin", "climate", "workflows.generate_scenarios"),
+    )
+    directory = (
+        project_dir
+        / "config/runs/_engine/invocations"
+        / invocation_id
+        / "config/sources"
+    )
+    for source in sources:
+        destination = directory / source.id / source.original_path.name
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        with destination.open("xb") as handle:
+            handle.write(source.data)
+            handle.flush()
+            os.fsync(handle.fileno())
+    return hashlib.sha256(sources[0].data).hexdigest()
 
 
 def sanitize_argv(argv: list[str]) -> list[str]:
@@ -1165,6 +1496,9 @@ def main(argv: list[str] | None = None) -> int:
         help="path to a full-orchestration project config (see test_case/ for examples)",
     )
     ap.add_argument(
+        "--project-dir", type=Path, help="project root for complete startup history"
+    )
+    ap.add_argument(
         "--cores",
         type=int,
         default=3,
@@ -1190,7 +1524,11 @@ def main(argv: list[str] | None = None) -> int:
 
     try:
         return run(
-            args.config, args.cores, extra, simulation_targets=args.simulation_target
+            args.config,
+            args.cores,
+            extra,
+            simulation_targets=args.simulation_target,
+            project_dir=args.project_dir,
         )
     except (ConfigError, PrerequisiteError, ValueError) as exc:
         print(f"error: {exc}", file=sys.stderr)

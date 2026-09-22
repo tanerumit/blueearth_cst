@@ -123,34 +123,6 @@ def collection_forcing_descriptor(path: Path, reader: dict[str, Any]) -> dict[st
         }
 
 
-def describe_ancillary(path: Path) -> dict[str, Any]:
-    """Observe a packaged NetCDF ancillary without a live catalog or expected descriptor."""
-    with xr.open_dataset(path) as ds:
-        # Native elevation files may carry CRS only in the retained catalog.
-        # Report that absence rather than inventing a CRS from coordinate names.
-        spatial = _spatial_description(ds, require_crs=False)
-        variables = []
-        for name in sorted(set(ds.data_vars) - {"spatial_ref"}):
-            variable = ds[name]
-            variables.append(
-                {
-                    "name": name,
-                    "units": variable.attrs.get("units"),
-                    "dimensions": list(variable.dims),
-                    "attributes": _metadata_value(variable.attrs),
-                    "missing_value": _missing_encoding(variable),
-                    "missing_count": int((~np.isfinite(variable)).sum().item()),
-                }
-            )
-        if not variables:
-            raise ValueError("ancillary has no physical variables")
-        return {
-            "crs": spatial["crs"],
-            "spatial_representation_sha256": content_sha256(spatial),
-            "variables": variables,
-        }
-
-
 @dataclass(frozen=True)
 class ClimateArtifact:
     """A forcing artifact addressed by an opaque run id."""

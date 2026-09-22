@@ -27,12 +27,13 @@ file; ordinary paths retain the working-directory anchor.
 ## Replace commands
 
 ```console
-snakemake all -c 3 -s generate_scenarios.smk --configfile <project-config.yml>
+python scripts/run_workflows.py --config <wf3-only-project-config.yml> --project-dir <project-dir> --cores 3
 python scripts/simulate_system.py --config <project-config.yml> --target all --cores 3
 ```
 
-The all-workflow runner uses analyze_climate → generate_scenarios → build_model
-→ simulate_system → analyze_projections. This is a convenience sequence, not a
+For generation alone, disable the other workflow stanzas in that project config.
+The all-workflow runner uses analyze_climate → build_model → analyze_projections
+→ generate_scenarios → simulate_system. This is a convenience sequence, not a
 chain of scientific dependencies. Generation is model-independent; simulation
 requires a ready collection and model. CMIP6 remains a terminal plausibility
 overlay. WF0 is optional and should run first or alone for forcing selection.

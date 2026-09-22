@@ -1,10 +1,4 @@
-"""Static contracts for the three configuration snapshot rules.
-
-The content-addressed bundle these once pinned was removed on 2026-08-13
-(config-snapshot redesign): it had no readers, and its directory name was a
-digest over the WHOLE config, so an edit to any other workflow's section minted
-a fresh one. What each rule writes now is a current-only ``run_record.yml``.
-"""
+"""Static contracts for WF0--WF2 captured run-record/2 archives."""
 
 import re
 from pathlib import Path
@@ -32,38 +26,23 @@ def _rule_block(snakefile: Path, name: str) -> str:
 
 
 @pytest.mark.parametrize(
-    ("snakefile_name", "stable_output", "record_path"),
+    ("snakefile_name", "record_path"),
     [
         (
             "build_model.smk",
-            "config/runs/build_model/composed_config.yml",
             "config/runs/build_model/run_record.yml",
         ),
         (
             "analyze_projections.smk",
-            "config/runs/analyze_projections/composed_config.yml",
             "config/runs/analyze_projections/run_record.yml",
         ),
     ],
 )
-def test_snapshot_rule_keeps_current_copy_and_writes_a_run_record(
-    snakefile_name, stable_output, record_path
-):
-    """Every workflow keeps its guard-compatible copy and adds a run record.
-
-    The snapshot's path is load-bearing: two of them are baseline-fingerprinted
-    targets, so a rule that moves one silently turns the gate red. Pinned here
-    rather than left to the rule.
-    """
+def test_launcher_owns_archive_publication(snakefile_name, record_path):
     snakefile = REPO / snakefile_name
     text = snakefile.read_text(encoding="utf-8")
-    block = _rule_block(snakefile, "snapshot_config")
-
-    assert "rule copy_config:" not in text
-    assert stable_output in block
-    assert "effective_config = config" in block
-    assert "advanced_settings = ADVANCED_SETTINGS" in block
-    assert "run_record = RUN_RECORD" in block
+    assert "rule snapshot_config:" not in text
+    assert "require_capture(" in text
     assert record_path in text
 
 
@@ -127,30 +106,19 @@ def test_successors_use_typed_retained_records_instead_of_snapshot_guard():
     simulation = (
         REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
     ).read_text(encoding="utf-8")
-    assert "resolve_generation_plan" in generation
-    assert "freeze_simulation" in simulation
-    assert "response_request.json" in simulation
+    assert "generation_configuration" in generation
+    assert "read_pinned_plan" in generation
+    assert "freeze_simulation_v2" in simulation
     for text in (generation, simulation):
         assert "check_project_consistency" not in text
         assert "snapshot_config" not in text
 
 
 @pytest.mark.parametrize("snakefile_name", SNAKEFILES)
-def test_the_wide_digest_is_threaded_through_the_snapshot_rule(snakefile_name):
-    """Params threading is what keeps the record fresh when the CHECKOUT moves.
-
-    Without it a code-only commit leaves the record stamped with the previous
-    one and writes no journal line -- the defect both design reviewers found
-    independently. It must be a STRING digest: the params trigger compares
-    values, and a nested structure is not what the repo's probe verified.
-    """
-    snakefile = REPO / snakefile_name
-    block = _rule_block(snakefile, "snapshot_config")
-    text = snakefile.read_text(encoding="utf-8")
-
-    assert "configuration_inputs_sha256 = CONFIGURATION_INPUTS_DIGEST" in block
-    assert "config_projection = CONFIG_PROJECTION" in block
-    assert "CONFIGURATION_INPUTS_DIGEST = configuration_inputs_digest(" in text
+def test_the_wide_digest_still_describes_consumed_settings(snakefile_name):
+    text = (REPO / snakefile_name).read_text(encoding="utf-8")
+    assert "configuration_inputs_digest(" in text
+    assert "CAPTURE_DIGESTS" in text
 
 
 @pytest.mark.parametrize("snakefile_name", SNAKEFILES)

@@ -4,7 +4,9 @@ import subprocess
 import tempfile
 from datetime import datetime
 from blueearth_cst.experiment.simulation_runner import simulation_settings, resolve_selected_collection
-from blueearth_cst.experiment.simulation_record import live_simulation_inputs, read_simulation, SimulationFrozenError
+from blueearth_cst.experiment.simulation_record import live_simulation_inputs_v2, read_simulation_intent_v2, read_simulation_v2, SimulationFrozenError
+from blueearth_cst.experiment.wf4_ancillary_descriptor import resolve_wf4_preparation
+from blueearth_cst.climate_analysis.prepare_climate_data_catalog import resolved_unit_interpretation
 from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
 from blueearth_cst.shared.indicator_tables import indicator_tables
@@ -28,7 +30,8 @@ SELECTION, COLLECTION = resolve_selected_collection(config_path, REPOSITORY)
 _intent = read_canonical_json(Path(SELECTION["manifest_path"]).parent / "collection_intent.json")
 SIM_WINDOW_START = _intent["scenario_spec"]["simulation_window"]["start"]
 SIM_WINDOW_END = _intent["scenario_spec"]["simulation_window"]["end"]
-RUN_IDS = [item["run_id"] for item in COLLECTION["forcing"]]
+RUN_IDS = [item["run_id"] for item in COLLECTION["series"]]
+SERIES = {item["run_id"]: item["file"]["path"] for item in COLLECTION["series"]}
 LOG_PARTS_DIR = f"{project_dir}/logs/_parts/simulate_system/{experiment}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/simulate_system/{experiment}"
 WORKFLOW_LOG_NAME = f"wf4_simulate_system_{experiment}.log"
@@ -58,27 +61,34 @@ def _selected_collection(wc):
     return SELECTION["manifest_path"]
 
 def _live_simulation_inputs():
-    settings = {"simulation_window": {"start": SIM_WINDOW_START, "end": SIM_WINDOW_END},
-                "resolution_mode": SELECTION["resolution_mode"], "manifest_path": SELECTION["manifest_path"]}
+    catalogs = project["project"]["catalog"]
+    catalogs = catalogs if isinstance(catalogs, list) else [catalogs]
+    source = project["climate"]["selected"]
+    preparation = resolve_wf4_preparation(
+        Path(project_dir), Path(exp_dir), climate_source=source,
+        catalogs=catalogs,
+        unit_interpretation=resolved_unit_interpretation(catalogs, source),
+    )
     with tempfile.TemporaryDirectory(dir=project_dir) as directory:
-        return live_simulation_inputs(exp_dir, project_dir=project_dir, model_root=basin_dir,
-            collection=COLLECTION, settings=settings, julia_command=shlex.split(julia_prefix(1)),
+        return live_simulation_inputs_v2(
+            exp_dir, project_root=project_dir, model_root=basin_dir,
+            collection_path=SELECTION["manifest_path"], collection=COLLECTION,
+            resolution_mode=SELECTION["resolution_mode"], preparation=preparation,
+            simulation_window={"start": SIM_WINDOW_START, "end": SIM_WINDOW_END},
+            julia_command=shlex.split(julia_prefix(1)),
             header_path=Path(directory) / "headers.txt")
 
 _simulation_complete = False
-if Path(f"{exp_dir}/config/simulation.json").exists():
-    stored = read_simulation(exp_dir)
-    current, _ = _live_simulation_inputs()
+if Path(f"{exp_dir}/_engine/simulation.json").exists():
+    stored = read_simulation_v2(exp_dir)
+    current = _live_simulation_inputs()
     if current["simulation_id"] != stored["simulation_id"]:
         raise SimulationFrozenError("simulation inputs changed; use a new experiment name")
-    if stored["response_inventory_sha256"] is not None:
-        from blueearth_cst.experiment.response_inventory import read_response_inventory
-        read_response_inventory(exp_dir)
-        _simulation_complete = True
+    _simulation_complete = True
 
 def _frozen_simulation(wc):
     if _simulation_complete:
-        return f"{exp_dir}/config/simulation.json"
+        return f"{exp_dir}/_engine/simulation_intent.json"
     return checkpoints.freeze_wflow_simulation.get().output.simulation
 
 # The targets `rule all` lists, built HERE rather than inline in its `message:`:
@@ -87,17 +97,14 @@ def _frozen_simulation(wc):
 #
 # The metric outputs are a CHECKPOINT-dependent lambda with no parse-time path,
 # so they are named in prose -- as `run_stress_test.smk` named the same target.
-WF4_TARGETS = ["selected immutable metric set",
-               f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-               f"{project_dir}/benchmarks/{BENCHMARKS_NAME}"]
+WF4_TARGETS = [f"{engine_dir}/simulation.json", f"{engine_dir}/response_inventory.json"]
 
 # 4.00  all
 rule all:
     message: target_banner("4.00", "all", WF4_TARGETS, project_dir)
     input:
-        lambda wc: _selected_metric_outputs(wc),
-        f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
-        f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+        f"{engine_dir}/simulation.json",
+        f"{engine_dir}/response_inventory.json",
 
 if not _simulation_complete:
     # 4.01  write_model_reference
@@ -110,7 +117,7 @@ if not _simulation_complete:
             model_dir=basin_dir,
             project_dir=project_dir,
         output:
-            model_reference=update(f"{exp_dir}/config/model_reference.yml"),
+            model_reference=update(f"{engine_dir}/model_reference.yml"),
         log:
             f"{LOG_PARTS_DIR}/4.01_write_model_reference.log",
         script: "../write_model_reference.py"
@@ -122,29 +129,22 @@ if not _simulation_complete:
             collection=_selected_collection,
             model_reference=f"{exp_dir}/.model_reference_ok",
         output:
-            simulation=update(f"{exp_dir}/config/simulation.json"),
-            settings=update(f"{exp_dir}/config/simulator_settings.json"),
-            code=update(f"{exp_dir}/config/simulator_adapter_code_inventory.json"),
-            environment=update(f"{exp_dir}/config/simulation_environment.json"),
-            request=update(f"{exp_dir}/config/response_request.json"),
+            simulation=update(f"{exp_dir}/_engine/simulation_intent.json"),
+            archive=update(f"{exp_dir}/config/run_record.yml"),
         run:
-            from blueearth_cst.experiment.simulation_record import freeze_simulation
-            from blueearth_cst.shared.workflow_config_snapshot import composed_workflow_section, snapshot_bytes
-            record, documents = _live_simulation_inputs()
-            # Written on the freeze, inside the same call that seals the
-            # experiment's inputs. Named by none of the four frozen documents,
-            # so `simulation_id` -- and every metric set identified through it
-            # -- stays where it was.
-            freeze_simulation(exp_dir, record, documents, config_snapshot=snapshot_bytes(
-                "simulate_system", config_path,
-                Path(config_path).parent / project["workflows"]["simulate_system"]["config_path"],
-                composed_workflow_section(project, "simulate_system", my_cfg)))
+            from blueearth_cst.experiment.simulation_record import freeze_simulation_v2
+            intent = _live_simulation_inputs()
+            freeze_simulation_v2(
+                exp_dir, intent,
+                invocation_id=os.environ["CST_SIMULATION_INVOCATION_ID"],
+                command=["simulate_system", "--config", config_path, "--target", "responses"],
+            )
 
     # 4.02  check_model_reference
     rule check_model_reference:
         message: rule_banner("4.02", "check_model_reference")
         input:
-            model_reference=f"{exp_dir}/config/model_reference.yml",
+            model_reference=f"{engine_dir}/model_reference.yml",
             model_toml=ancient(f"{basin_dir}/wflow_sbm.toml"),
         params:
             model_dir=basin_dir,
@@ -161,21 +161,21 @@ if not _simulation_complete:
         wildcard_constraints:
             run_id="(?:" + "|".join(RUN_IDS) + ")",
         input:
-            nc=lambda wc: (Path(SELECTION["manifest_path"]).parent / "forcing" / f"run_{wc.run_id}.nc").as_posix(),
+            nc=lambda wc: (Path(project_dir) / SERIES[wc.run_id]).as_posix(),
             collection=_selected_collection,
             simulation=_frozen_simulation,
             model_reference_ok=f"{exp_dir}/.model_reference_ok",
         output:
             nc=temp(f"{runs_dir}/forcing/inmaps_run_{{run_id}}.nc"),
-            toml=update(f"{runs_dir}/config/run_{{run_id}}.toml"),
-            catalog=temp(f"{runs_dir}/config/run_{{run_id}}.yml"),
-            temporal=update(f"{runs_dir}/config/run_{{run_id}}.temporal.json"),
+            toml=update(f"{runs_dir}/run_settings/run_{{run_id}}.toml"),
+            catalog=temp(f"{runs_dir}/run_settings/run_{{run_id}}.yml"),
+            temporal=temp(f"{runs_dir}/run_settings/run_{{run_id}}.temporal.json"),
         params:
             model_dir=basin_dir,
             run_id=lambda wc: wc.run_id,
             validated_collection=COLLECTION,
             native_output_path=f"{runs_dir}/output/run_{{run_id}}.csv",
-            native_log_path=f"{runs_dir}/output/run_{{run_id}}.log",
+            native_log_path=f"{runs_dir}/output/_log/run_{{run_id}}.log",
             sim_window_start=SIM_WINDOW_START,
             sim_window_end=SIM_WINDOW_END,
         threads: 1
@@ -215,7 +215,7 @@ if not _simulation_complete:
             input:
                 simulation=_frozen_simulation,
                 forcing=[f"{runs_dir}/forcing/inmaps_run_{run}.nc" for run in members],
-                tomls=[f"{runs_dir}/config/run_{run}.toml" for run in members],
+                tomls=[f"{runs_dir}/run_settings/run_{run}.toml" for run in members],
             output:
                 csvs=[update(f"{runs_dir}/output/run_{run}.csv") for run in members],
             threads: DEFAULT_JULIA_THREADS
@@ -223,15 +223,15 @@ if not _simulation_complete:
                 mem_mb=2048,
             params:
                 records=[str(batch), *[value for run in members for value in
-                    (run, f"{runs_dir}/config/run_{run}.toml", f"{runs_dir}/output/run_{run}.csv")]],
+                    (run, f"{runs_dir}/run_settings/run_{run}.toml", f"{runs_dir}/output/run_{run}.csv")]],
                 julia=lambda wc, threads: julia_prefix(threads),
             log:
                 f"{LOG_PARTS_DIR}/4.05_run_wflow/batch_{batch}.log",
             benchmark:
                 f"{BENCH_PARTS_DIR}/4.05_run_wflow/batch_{batch}.tsv",
             run:
-                record = read_simulation(exp_dir)
-                if record["response_inventory_sha256"] is not None or any(Path(p).exists() for p in output.csvs):
+                read_simulation_intent_v2(exp_dir)
+                if Path(f"{engine_dir}/simulation.json").exists() or any(Path(p).exists() for p in output.csvs):
                     raise SimulationFrozenError("native responses already exist; use a new experiment name")
                 subprocess.run([sys.executable, "-u", str(REPOSITORY / "blueearth_cst/shared/run_logged.py"),
                     str(log[0]), "--", *shlex.split(params.julia),
@@ -243,19 +243,22 @@ if not _simulation_complete:
         input:
             simulation=_frozen_simulation,
             csvs=[f"{runs_dir}/output/run_{run}.csv" for run in RUN_IDS],
-            tomls=[f"{runs_dir}/config/run_{run}.toml" for run in RUN_IDS],
-            temporal=[f"{runs_dir}/config/run_{run}.temporal.json" for run in RUN_IDS],
+            tomls=[f"{runs_dir}/run_settings/run_{run}.toml" for run in RUN_IDS],
+            temporal=[f"{runs_dir}/run_settings/run_{run}.temporal.json" for run in RUN_IDS],
         output:
-            update(f"{engine_dir}/response_inventory.json"),
+            inventory=update(f"{engine_dir}/response_inventory.json"),
+            simulation=update(f"{engine_dir}/simulation.json"),
         run:
-            from blueearth_cst.experiment.response_inventory import publish_response_inventory
+            from blueearth_cst.experiment.response_inventory import publish_response_inventory_v2
+            from blueearth_cst.experiment.simulation_record import publish_simulation_v2
             from blueearth_cst.experiment.wflow_response_reader import NativeRunArtifacts
             native = {run: NativeRunArtifacts(Path(csv), Path(toml), Path(temporal))
                 for run, csv, toml, temporal in zip(RUN_IDS, input.csvs, input.tomls, input.temporal)}
             evidence = read_canonical_json(Path(input.temporal[0]))
-            if any(item["descriptor"]["source_calendar"] != evidence["source_calendar"] for item in COLLECTION["forcing"]):
+            if any(item["descriptor"]["source_calendar"] != evidence["source_calendar"] for item in COLLECTION["series"]):
                 raise ValueError("response temporal evidence differs from retained source calendar")
-            publish_response_inventory(exp_dir, native, evidence)
+            inventory = publish_response_inventory_v2(exp_dir, native, evidence)
+            publish_simulation_v2(exp_dir, inventory)
 
 # 4.07  responses
 rule responses:
@@ -267,6 +270,7 @@ rule responses:
     message: target_banner("4.07", "responses", [f"{engine_dir}/response_inventory.json"], project_dir)
     input:
         f"{engine_dir}/response_inventory.json",
+        f"{engine_dir}/simulation.json",
 
 # 4.11  gather_logs
 rule gather_logs:

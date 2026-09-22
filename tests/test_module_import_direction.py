@@ -129,4 +129,4 @@ def test_console_style_is_absent_from_every_fingerprinted_closure():
             f"{src}: console_style is inside the code fingerprint again"
         )
         # Guard against the assertion above passing because the closure broke.
-        assert any("snake_utils" in p for p in closure), f"{src}: closure looks wrong"
+        assert src in closure and len(closure) > 1, f"{src}: closure looks wrong"

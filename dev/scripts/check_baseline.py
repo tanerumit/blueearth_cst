@@ -283,7 +283,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "build_model",
         "yaml",
-        "{project_dir}/config/runs/build_model/composed_config.yml",
+        "{project_dir}/config/runs/build_model/run_record.yml",
     ),
     # Unmoved within the tree (prefix change only) -- and exception 3(d)
     # requires it to stay that way: if discharge moves at all, stop.
@@ -335,7 +335,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "analyze_projections",
         "yaml",
-        "{project_dir}/config/runs/analyze_projections/composed_config.yml",
+        "{project_dir}/config/runs/analyze_projections/run_record.yml",
     ),
     # run_stress_test.smk. R9 P3 renames the two tables and moves them
     # from indicators/ to results/. The wf3 config snapshot does NOT join
@@ -1419,6 +1419,15 @@ def cmd_check(args: argparse.Namespace) -> int:
         sys.stderr.write("Run `check_baseline.py record` first.\n")
         return 2
     recorded = json.loads(args.manifest.read_text())
+    if any(
+        f"config/runs/{workflow}/composed_config.yml" in path
+        for path in recorded.get("targets", {})
+        for workflow in ("analyze_climate", "build_model", "analyze_projections")
+    ):
+        sys.stderr.write(
+            "baseline output schema predates this reader; explicit transition required\n"
+        )
+        return 2
     # Re-key BEFORE anything reads a path, so scope filtering, diffing and the
     # orphan report all see where each row points today rather than where it
     # was recorded. A row with no `template` is untouched.

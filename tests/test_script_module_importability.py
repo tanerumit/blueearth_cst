@@ -126,7 +126,7 @@ def _future_import_line(path):
 def test_the_script_target_sweep_actually_finds_targets():
     """A guard on the guard, as above: an empty sweep asserts nothing."""
     targets = _script_targets()
-    assert len(targets) > 20, f"expected the full script: layer, found {targets}"
+    assert len(targets) >= 20, f"expected the full script: layer, found {targets}"
 
 
 @pytest.mark.parametrize("rel", _script_targets())

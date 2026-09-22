@@ -5,7 +5,6 @@ from copy import deepcopy
 import numpy as np
 import pytest
 import xarray as xr
-import yaml
 from pyproj import CRS
 
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import (
@@ -18,18 +17,16 @@ from blueearth_cst.experiment.content_identity import (
     content_sha256,
     read_canonical_json,
 )
-from blueearth_cst.experiment.downscale_climate_forcing import collection_run_forcing
 from blueearth_cst.experiment.forcing_descriptor import (
     UnitInterpretation,
     collection_forcing_descriptor,
-    describe_ancillary,
 )
 from blueearth_cst.experiment.scenario_collection import (
-    ScenarioCollectionNotReady,
     claim_collection,
     publish_collection,
     write_collection_payload,
 )
+from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
 from blueearth_cst.shared.provenance import file_sha256
 from tests.test_scenario_collection import planned  # noqa: F401
 
@@ -42,8 +39,8 @@ def test_planned_publication_across_separate_workers(retained, tmp_path):
     from pathlib import Path
 
     from blueearth_cst.experiment.collection_resolution import write_scenario_request
+    from blueearth_cst.experiment.legacy_scenario_provider import plan_collection
     from blueearth_cst.experiment.scenario_collection import read_collection
-    from blueearth_cst.experiment.scenario_provider import plan_collection
 
     original, manifest = retained
     intent = read_canonical_json(original / "collection_intent.json")
@@ -71,7 +68,7 @@ def test_planned_publication_across_separate_workers(retained, tmp_path):
         """import sys
 from pathlib import Path
 from blueearth_cst.experiment.content_identity import read_canonical_json
-from blueearth_cst.experiment.scenario_provider import initialize_planned_collection, publish_planned_collection
+from blueearth_cst.experiment.legacy_scenario_provider import initialize_planned_collection, publish_planned_collection
 from blueearth_cst.experiment.scenario_collection import _job_collection_claim, write_collection_payload
 project, plan_path, original = map(Path, sys.argv[1:4])
 invocation, operation = sys.argv[4:6]
@@ -203,80 +200,3 @@ def retained(planned, tmp_path):  # noqa: F811 - explicitly imported pytest fixt
     source.unlink()
     forcing_source.unlink()
     return claim.root, manifest
-
-
-def test_bind_retained_collection_after_original_files_removed(retained, tmp_path):
-    root, manifest = retained
-    before = {
-        str(path): path.read_bytes() for path in root.rglob("*") if path.is_file()
-    }
-    run = collection_run_forcing(
-        root / "collection.json", "01", tmp_path / "run-catalog.yml"
-    )
-    assert run.collection_revision == manifest["collection_revision"]
-    assert run.descriptor.variables[0].units == "degC"
-    catalog = yaml.safe_load((tmp_path / "run-catalog.yml").read_text())
-    assert set(catalog) == {"elevation", "run_01"}
-    assert run.preparation_context.pet_method == "debruin"
-    assert before == {
-        str(path): path.read_bytes() for path in root.rglob("*") if path.is_file()
-    }
-
-
-def test_changed_ancillary_refuses_before_transient_catalog_write(retained, tmp_path):
-    root, _ = retained
-    next((root / "ancillary").rglob("*.nc")).write_bytes(b"damaged")
-    output = tmp_path / "must-not-exist.yml"
-    with pytest.raises(ScenarioCollectionNotReady):
-        collection_run_forcing(root / "collection.json", "01", output)
-    assert not output.exists()
-
-
-def test_consumer_refuses_output_inside_immutable_collection(retained):
-    root, _ = retained
-    with pytest.raises(ValueError, match="outside the collection"):
-        collection_run_forcing(
-            root / "collection.json", "01", root / "preparation_catalog.yml"
-        )
-
-
-def test_invocation_snapshot_avoids_other_run_scans_but_rechecks_selected_bytes(
-    retained, tmp_path, monkeypatch
-):
-    import blueearth_cst.experiment.scenario_collection as collections
-
-    root, manifest = retained
-
-    def must_not_rescan(*args, **kwargs):
-        raise AssertionError("invocation already validated the full collection")
-
-    monkeypatch.setattr(collections, "read_collection", must_not_rescan)
-    selected = collection_run_forcing(
-        root / "collection.json",
-        "01",
-        tmp_path / "catalog.yml",
-        validated_collection=manifest,
-    )
-    assert selected.collection_revision == manifest["collection_revision"]
-    (root / "forcing/run_01.nc").write_bytes(b"changed since invocation validation")
-    output = tmp_path / "must-not-write.yml"
-    with pytest.raises(ValueError, match="artifact changed"):
-        collection_run_forcing(
-            root / "collection.json", "01", output, validated_collection=manifest
-        )
-    assert not output.exists()
-
-
-def test_consumer_preserves_marker_confinement_before_resolution(retained, tmp_path):
-    root, _ = retained
-    other = tmp_path / "other-collection"
-    other.mkdir()
-    marker = other / "collection.json"
-    try:
-        marker.symlink_to(root / "collection.json")
-    except OSError as exc:
-        pytest.skip(f"symlink unavailable: {exc}")
-    output = tmp_path / "must-not-write.yml"
-    with pytest.raises(ScenarioCollectionNotReady, match="outside"):
-        collection_run_forcing(marker, "01", output)
-    assert not output.exists()

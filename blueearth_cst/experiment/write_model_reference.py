@@ -4,7 +4,7 @@ reproducibility contract*).
 There is ONE mutable live Wflow model, and experiments are long-lived. Without a
 record, re-running an old experiment after the model is rebuilt silently mixes
 new physics or state into old results. This writes
-``experiments/<id>/config/model_reference.yml``: the model's relative path, a
+``experiments/<id>/_engine/model_reference.yml``: the model's relative path, a
 pointer-derived digest, and the per-input hashes the digest was built from.
 
 **A path plus a digest — the model is not copied.** Copying would duplicate a

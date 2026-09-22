@@ -431,3 +431,407 @@ def publish_response_inventory(experiment_root, native_runs, temporal_preparatio
         module="responses",
     )
     return inventory
+
+
+def _v2_exact(value, fields, name):
+    if type(value) is not dict or set(value) != set(fields):
+        raise MissingResponseRequirement(f"{name} has unclassified fields")
+    return value
+
+
+def _v2_native_semantics(config, variable):
+    """Project only the TOML fields consumed by the native response reader."""
+    from blueearth_cst.experiment.wflow_response_reader import NATIVE_VARIABLES
+
+    clock = config["time"]
+    required_clock_fields = {"calendar", "starttime", "endtime", "timestepsecs"}
+    allowed_clock_fields = required_clock_fields | {"time_units"}
+    if (
+        type(clock) is not dict
+        or not required_clock_fields <= set(clock) <= allowed_clock_fields
+    ):
+        raise MissingResponseRequirement("native clock has unclassified fields")
+    if type(clock["timestepsecs"]) is not int or clock["timestepsecs"] <= 0:
+        raise MissingResponseRequirement("native timestep must be positive")
+    if "time_units" in clock and (
+        not isinstance(clock["time_units"], str) or not clock["time_units"]
+    ):
+        raise MissingResponseRequirement("native time units must be explicit")
+    normalized_clock = {
+        "calendar": clock["calendar"],
+        "starttime": str(pd.Timestamp(clock["starttime"])),
+        "endtime": str(pd.Timestamp(clock["endtime"])),
+        "timestepsecs": clock["timestepsecs"],
+    }
+    header, parameter, _ = NATIVE_VARIABLES[variable]
+    columns = config["output"]["csv"]["column"]
+    if type(columns) is not list:
+        raise MissingResponseRequirement("native output declarations are invalid")
+    declarations = []
+    for item in columns:
+        if item.get("header") != header:
+            continue
+        required_declaration_fields = {"header", "parameter"}
+        allowed_declaration_fields = required_declaration_fields | {"map", "reducer"}
+        if (
+            type(item) is not dict
+            or not required_declaration_fields
+            <= set(item)
+            <= allowed_declaration_fields
+        ):
+            raise MissingResponseRequirement(
+                "native output declaration has unclassified fields"
+            )
+        if any(
+            not isinstance(item[field], str) or not item[field]
+            for field in {"map", "reducer"} & set(item)
+        ):
+            raise MissingResponseRequirement(
+                "native output routing metadata is invalid"
+            )
+        declarations.append({"header": item["header"], "parameter": item["parameter"]})
+    if not declarations or any(item["parameter"] != parameter for item in declarations):
+        raise MissingResponseRequirement("native parameter differs from reader mapping")
+    return {
+        "parameter": parameter,
+        "output_declarations": declarations,
+        "clock": normalized_clock,
+    }
+
+
+def build_response_inventory_v2(
+    experiment_root, native_runs, temporal_preparation, *, _retained=False
+):
+    """Check every requested native run and build the acyclic v2 inventory."""
+    from blueearth_cst.experiment.simulation_record import read_simulation_intent_v2
+    from blueearth_cst.experiment.wflow_response_reader import NATIVE_VARIABLES
+    from blueearth_cst.shared.workflow_config_snapshot import file_reference
+
+    root = Path(experiment_root).resolve()
+    intent = read_simulation_intent_v2(root)
+    request = intent["documents"]["response_request"]
+    validate_response_request(request)
+    if request["reader"] != {
+        "name": "wflow-csv",
+        "revision": response_reader_revision(),
+    }:
+        raise ResponseReaderUnavailable(f"reader unavailable: {request['reader']}")
+    if set(native_runs) != set(request["run_ids"]):
+        raise MissingResponseRequirement(
+            "native runs differ from frozen response request"
+        )
+    _v2_exact(
+        temporal_preparation,
+        {
+            "source_calendar",
+            "prepared_forcing_calendar",
+            "response_calendar",
+            "operations",
+            "prepared_start",
+            "prepared_end",
+            "response_start",
+            "response_end",
+            "time_label",
+        },
+        "temporal preparation",
+    )
+    temporal_digest = content_sha256(temporal_preparation)
+    temporal_ref = {
+        "schema_version": "local-section-reference/1",
+        "section": "/temporal_preparation",
+        "section_sha256": temporal_digest,
+    }
+    inventory_artifacts = []
+    identity_artifacts = []
+    inventory_series = []
+    identity_series = []
+    metadata = {item["variable"]: item for item in request["variables"]}
+    for run in request["run_ids"]:
+        native = native_runs[run]
+        if native.temporal_path is None and not _retained:
+            raise MissingResponseRequirement(f"run {run}: missing temporal handoff")
+        paths = (native.csv_path, native.toml_path)
+        if native.temporal_path is not None:
+            paths += (native.temporal_path,)
+        for artifact_path in paths:
+            if not Path(artifact_path).resolve(strict=True).is_relative_to(root):
+                raise MissingResponseRequirement(
+                    f"run {run}: native artifact escapes experiment"
+                )
+        if native.temporal_path is not None:
+            temporal = read_canonical_json(Path(native.temporal_path))
+            if temporal != temporal_preparation:
+                raise MissingResponseRequirement(
+                    f"run {run}: inconsistent temporal preparation"
+                )
+        with Path(native.toml_path).open("rb") as handle:
+            config = tomllib.load(handle)
+        _validate_temporal(temporal_preparation, config)
+        csv_ref = file_reference(native.csv_path, "experiment_root", root)
+        toml_ref = file_reference(native.toml_path, "experiment_root", root)
+        index = len(inventory_artifacts)
+        inventory_artifacts.append({"run_id": run, "file": csv_ref})
+        identity_artifacts.append(
+            {
+                "run_id": run,
+                "sha256": csv_ref["sha256"],
+                "size_bytes": csv_ref["size_bytes"],
+            }
+        )
+        values = open_responses(
+            run,
+            native,
+            ResponseRequest(tuple(item["variable"] for item in request["variables"])),
+        )
+        actual_keys = {item.key for item in values}
+        expected_keys = {
+            tuple(key) for key in request["expected_series"] if key[0] == run
+        }
+        if actual_keys != expected_keys:
+            raise MissingResponseRequirement(
+                f"run {run}: response keys missing={sorted(expected_keys - actual_keys)} "
+                f"extra={sorted(actual_keys - expected_keys)}"
+            )
+        for item in values:
+            declared = metadata[item.variable]
+            seconds = item.timestep.total_seconds()
+            observed = {
+                "units": item.units,
+                "calendar": item.calendar,
+                "timestep": "P1D" if seconds == 86400 else f"PT{seconds:g}S",
+                "time_label": item.time_label,
+                "start": str(item.time[0]),
+                "end": str(item.time[-1]),
+                "missing_value": "NaN",
+            }
+            for key, value in observed.items():
+                if declared[key] != value:
+                    raise MissingResponseRequirement(
+                        f"{item.key}: {key} expected={declared[key]} observed={value}"
+                    )
+            if declared["locations"][item.location_ordinal] != item.location_id:
+                raise MissingResponseRequirement(
+                    f"{item.key}: native location order differs"
+                )
+            header = NATIVE_VARIABLES[item.variable][0]
+            column = f"{header}_{item.location_id}"
+            semantic_selector = {
+                "column": column,
+                **_v2_native_semantics(config, item.variable),
+                "temporal_preparation_sha256": temporal_digest,
+            }
+            scientific = {
+                "run_id": run,
+                "variable": item.variable,
+                "location_id": item.location_id,
+                "location_ordinal": item.location_ordinal,
+                "artifact": index,
+                **observed,
+                "native_selector": semantic_selector,
+            }
+            identity_series.append(scientific)
+            inventory_series.append(
+                {
+                    **scientific,
+                    "native_selector": {
+                        "column": column,
+                        "toml": toml_ref,
+                        "temporal": temporal_ref,
+                    },
+                }
+            )
+
+    def order(item):
+        return (
+            int(item["run_id"]),
+            item["variable"],
+            item["location_ordinal"],
+            item["location_id"],
+        )
+
+    inventory_series.sort(key=order)
+    identity_series.sort(key=order)
+    intent_ref = file_reference(
+        root / "_engine/simulation_intent.json", "experiment_root", root
+    )
+    response_ref = {
+        "schema_version": "section-reference/1",
+        "document": intent_ref,
+        "section": "/documents/response_request",
+        "section_sha256": content_sha256(request),
+    }
+    identity = {
+        "schema_version": "response-inventory-identity/1",
+        "simulation_id": intent["simulation_id"],
+        "collection_id": intent["collection"]["collection_id"],
+        "collection_revision": intent["collection"]["collection_revision"],
+        "model_digest": intent["documents"]["model_reference"]["digest"],
+        "simulator": intent["simulator"],
+        "settings_sha256": intent["identity_digests"]["settings"],
+        "response_request_sha256": intent["identity_digests"]["response_request"],
+        "temporal_preparation": temporal_preparation,
+        "artifacts": identity_artifacts,
+        "series": identity_series,
+    }
+    inventory = {
+        "schema_version": "response-inventory/2",
+        "simulation_id": intent["simulation_id"],
+        "collection_id": identity["collection_id"],
+        "collection_revision": identity["collection_revision"],
+        "model_digest": identity["model_digest"],
+        "simulator": intent["simulator"],
+        "settings_sha256": identity["settings_sha256"],
+        "response_request": response_ref,
+        "temporal_preparation": temporal_preparation,
+        "temporal_preparation_sha256": temporal_digest,
+        "artifacts": inventory_artifacts,
+        "series": inventory_series,
+        "identity_projection": identity,
+        "response_identity_sha256": content_sha256(identity),
+    }
+    inventory["response_inventory_sha256"] = content_sha256(inventory)
+    return inventory
+
+
+def read_response_inventory_v2(experiment_root):
+    """Validate the enclosing digest before following any local selector reference."""
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
+
+    root = Path(experiment_root).resolve()
+    path = root / "_engine/response_inventory.json"
+    try:
+        stored = read_canonical_json(path)
+        _v2_exact(
+            stored,
+            {
+                "schema_version",
+                "simulation_id",
+                "collection_id",
+                "collection_revision",
+                "model_digest",
+                "simulator",
+                "settings_sha256",
+                "response_request",
+                "temporal_preparation",
+                "temporal_preparation_sha256",
+                "artifacts",
+                "series",
+                "identity_projection",
+                "response_identity_sha256",
+                "response_inventory_sha256",
+            },
+            "response inventory",
+        )
+        if stored["schema_version"] != "response-inventory/2":
+            raise MissingResponseRequirement("unsupported response inventory version")
+        digest = content_sha256(
+            {
+                key: value
+                for key, value in stored.items()
+                if key != "response_inventory_sha256"
+            }
+        )
+        if stored["response_inventory_sha256"] != digest:
+            raise MissingResponseRequirement(
+                "response inventory digest mismatch before native opening"
+            )
+        temporal_digest = content_sha256(stored["temporal_preparation"])
+        if stored["temporal_preparation_sha256"] != temporal_digest:
+            raise MissingResponseRequirement("common temporal digest differs")
+        response_ref = _v2_exact(
+            stored["response_request"],
+            {"schema_version", "document", "section", "section_sha256"},
+            "response request section",
+        )
+        if (
+            response_ref["schema_version"] != "section-reference/1"
+            or response_ref["section"] != "/documents/response_request"
+            or response_ref["document"]["path_base"] != "experiment_root"
+            or response_ref["document"]["path"] != "_engine/simulation_intent.json"
+        ):
+            raise MissingResponseRequirement("response request section is invalid")
+        intent_path = resolve_file_reference(
+            response_ref["document"], {"experiment_root": root}
+        )
+        intent = read_canonical_json(intent_path)
+        if response_ref["section_sha256"] != content_sha256(
+            intent["documents"]["response_request"]
+        ):
+            raise MissingResponseRequirement("response request section digest differs")
+        native_runs = {}
+        for index, artifact in enumerate(stored["artifacts"]):
+            _v2_exact(artifact, {"run_id", "file"}, "native artifact")
+            matching = [item for item in stored["series"] if item["artifact"] == index]
+            if not matching or artifact["run_id"] in native_runs:
+                raise MissingResponseRequirement(
+                    "ambiguous native artifact association"
+                )
+            tomls = []
+            for item in matching:
+                selector = _v2_exact(
+                    item["native_selector"],
+                    {"column", "toml", "temporal"},
+                    "native selector",
+                )
+                local = _v2_exact(
+                    selector["temporal"],
+                    {"schema_version", "section", "section_sha256"},
+                    "local temporal section",
+                )
+                if local != {
+                    "schema_version": "local-section-reference/1",
+                    "section": "/temporal_preparation",
+                    "section_sha256": temporal_digest,
+                }:
+                    raise MissingResponseRequirement("local temporal section differs")
+                tomls.append(selector["toml"])
+            if any(item != tomls[0] for item in tomls):
+                raise MissingResponseRequirement("ambiguous native TOML association")
+            if (
+                artifact["file"]["path_base"] != "experiment_root"
+                or tomls[0]["path_base"] != "experiment_root"
+            ):
+                raise MissingResponseRequirement("native reference has wrong root")
+            native_runs[artifact["run_id"]] = NativeRunArtifacts(
+                resolve_file_reference(artifact["file"], {"experiment_root": root}),
+                resolve_file_reference(tomls[0], {"experiment_root": root}),
+                None,
+            )
+        # Temporary handoff files are deliberately unnecessary after publication.
+        observed = _build_response_inventory_v2_retained(
+            root, native_runs, stored["temporal_preparation"]
+        )
+        if stored != observed:
+            raise MissingResponseRequirement(
+                "response inventory differs from native evidence"
+            )
+        return observed
+    except (OSError, KeyError, TypeError, ValueError) as exc:
+        if isinstance(exc, ResponseReaderUnavailable):
+            raise
+        raise MissingResponseRequirement(f"retained responses {path}: {exc}") from exc
+
+
+def _build_response_inventory_v2_retained(root, native_runs, temporal_preparation):
+    """Rebuild through checked native files without requiring temporary JSONs."""
+    return build_response_inventory_v2(
+        root, native_runs, temporal_preparation, _retained=True
+    )
+
+
+def publish_response_inventory_v2(experiment_root, native_runs, temporal_preparation):
+    """Publish the immutable v2 inventory; simulation readiness follows separately."""
+    root = Path(experiment_root).resolve()
+    path = root / "_engine/response_inventory.json"
+    if path.resolve() != path:
+        raise MissingResponseRequirement("response publication path is aliased")
+    inventory = build_response_inventory_v2(root, native_runs, temporal_preparation)
+    if path.exists():
+        if read_response_inventory_v2(root) != inventory:
+            raise MissingResponseRequirement(
+                "immutable response inventory already differs"
+            )
+    else:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        atomic_record(path, inventory)
+    return inventory

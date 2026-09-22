@@ -12,6 +12,8 @@ from pathlib import Path
 
 import pytest
 
+from blueearth_cst.experiment import simulation_record
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "scripts"))
 import run_workflows as rw  # noqa: E402
 
@@ -54,6 +56,17 @@ def capture_runs(monkeypatch):
     """Patch subprocess.run to record argv lists; default success exit 0."""
     calls = []
     exits = {}  # index -> returncode override
+    # These wrapper-only fixtures deliberately use minimal v1-shaped mappings.
+    # Archive capture is exercised with a valid project set separately.
+    from blueearth_cst.shared import workflow_archive_launch
+
+    monkeypatch.setattr(
+        workflow_archive_launch,
+        "prepare_workflow",
+        lambda _name, config, _root, **_kwargs: (Path(config), Path(config)),
+    )
+    monkeypatch.setattr(rw, "_bind_workflow_archive", lambda *_args: None)
+    monkeypatch.setattr(rw, "_capture_legacy_wf3_attempt", lambda *_args: "a" * 64)
 
     def fake_run(cmd, cwd=None, **kwargs):
         if cmd[0] == "git":
@@ -75,7 +88,20 @@ def capture_runs(monkeypatch):
                 artifact.touch()
         return FakeResult(exits.get(idx, 0))
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
+    from scripts import generate_scenarios
+
+    monkeypatch.setattr(
+        generate_scenarios,
+        "run_owned",
+        lambda config_path, _root, cores, extra, **_kwargs: (
+            fake_run(generate_scenarios._command(config_path, cores, extra)).returncode
+        ),
+    )
     return calls, exits
 
 
@@ -89,9 +115,12 @@ def _snakefiles_invoked(calls):
 
 
 def _manifests(project_dir: Path) -> list[Path]:
-    """Return wrapper manifests in deterministic filename order."""
+    """Return only parent invocation records, excluding workflow children."""
+    paths = (project_dir / "config" / "runs" / "_engine" / "invocations").glob("*.json")
     return sorted(
-        (project_dir / "config" / "runs" / "_engine" / "invocations").glob("*.json")
+        path
+        for path in paths
+        if json.loads(path.read_text(encoding="utf-8"))["workflow"] is None
     )
 
 
@@ -292,34 +321,39 @@ def test_success_manifest_is_initialized_before_first_workflow_and_finalized(
             _staged(project_dir, rw.LEAVES)
         return FakeResult(0)
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
+
+    from scripts import generate_scenarios
+
+    monkeypatch.setattr(
+        generate_scenarios,
+        "run_owned",
+        lambda config_path, _root, cores, extra, **_kwargs: (
+            fake_run(generate_scenarios._command(config_path, cores, extra)).returncode
+        ),
+    )
 
     assert rw.run(str(cfg), cores=5, extra=["--dry-run"]) == 0
 
     manifest = _read_only_manifest(project_dir)
-    assert manifest["schema_version"] == 1
+    assert manifest["schema_version"] == "invocation/1"
     assert manifest["status"] == "succeeded"
     assert manifest["exit_code"] == 0
     assert manifest["ended_at_utc"].endswith("Z")
-    assert manifest["cores"] == 5
-    assert manifest["dry_run"] is True
-    assert manifest["source_config"]["sha256"] == rw.file_sha256(cfg)
-    assert manifest["effective_config"]["sha256"]
-    # commit_source arrived with the move to provenance.toolbox_identity(). The
-    # wrapper's own helper could report a commit or a null and nothing else, so
-    # a container run reading a baked sha was indistinguishable from a checkout.
-    assert manifest["git"] == {
-        "commit": "abc123",
-        "commit_source": "git",
-        "dirty": False,
-    }
-    assert manifest["runtime"]["python"]
+    assert manifest["mode"] == "dry_run"
+    assert manifest["work_performed"] == "no"
+    assert manifest["configuration"]["source_config_sha256"] == rw.file_sha256(cfg)
+    assert manifest["configuration"]["effective_config_sha256"]
     # Derived from WORKFLOW_ORDER rather than restated: a literal list is what
     # made this the last of nine tests to fail when the set widened to four,
     # each for the same reason.
-    assert [item["status"] for item in manifest["workflows"].values()] == [
-        "succeeded"
-    ] * len(rw.WORKFLOW_ORDER)
+    assert [item["workflow"] for item in manifest["children"]] == list(
+        rw.WORKFLOW_ORDER
+    )
     assert len(calls) == len(rw.WORKFLOW_ORDER)
 
 
@@ -337,10 +371,9 @@ def test_no_op_invocations_each_get_an_immutable_manifest(tmp_path, capture_runs
     for path in manifests:
         manifest = json.loads(path.read_text(encoding="utf-8"))
         assert manifest["status"] == "succeeded"
-        assert manifest["no_op"] is True
-        assert {item["status"] for item in manifest["workflows"].values()} == {
-            "disabled"
-        }
+        assert manifest["work_performed"] == "no"
+        assert manifest["requested_workflows"] == []
+        assert manifest["children"] == []
 
 
 def test_failure_manifest_records_stop_boundary(tmp_path, capture_runs):
@@ -353,16 +386,23 @@ def test_failure_manifest_records_stop_boundary(tmp_path, capture_runs):
 
     assert rw.run(str(cfg), cores=3, extra=[]) == 9
 
-    workflows = _read_only_manifest(project_dir)["workflows"]
+    manifest = _read_only_manifest(project_dir)
     # analyze_climate leads WORKFLOW_ORDER, so it is the one exits[0] hits.
-    assert workflows["analyze_climate"]["status"] == "failed"
-    assert workflows["analyze_climate"]["exit_code"] == 9
-    assert workflows["build_model"]["status"] == "not_run"
-    assert workflows["analyze_projections"]["status"] == "not_run"
-    assert workflows["simulate_system"]["status"] == "not_run"
+    assert manifest["exit_code"] == 9
+    assert [item["workflow"] for item in manifest["children"]] == ["analyze_climate"]
+    child = json.loads(
+        (
+            _manifests(project_dir)[0].parent
+            / f"{manifest['children'][0]['invocation_id']}.json"
+        ).read_text(encoding="utf-8")
+    )
+    assert child["status"] == "failed"
+    assert child["exit_code"] == 9
 
 
-def test_subprocess_exception_finalizes_failure_manifest(tmp_path, monkeypatch):
+def test_subprocess_exception_finalizes_failure_manifest(
+    tmp_path, monkeypatch, capture_runs
+):
     """Launch errors leave a terminal record rather than a stale running one."""
     project_dir = tmp_path / "project"
     cfg = tmp_path / "c.yml"
@@ -373,7 +413,11 @@ def test_subprocess_exception_finalizes_failure_manifest(tmp_path, monkeypatch):
             return FakeResult(0, stdout="abc123\n" if "rev-parse" in cmd else "")
         raise OSError("snakemake executable missing")
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
 
     with pytest.raises(OSError, match="snakemake executable missing"):
         rw.run(str(cfg), cores=3, extra=[])
@@ -381,9 +425,8 @@ def test_subprocess_exception_finalizes_failure_manifest(tmp_path, monkeypatch):
     manifest = _read_only_manifest(project_dir)
     assert manifest["status"] == "failed"
     assert manifest["exit_code"] is None
-    assert manifest["error_type"] == "OSError"
-    assert manifest["workflows"]["analyze_climate"]["status"] == "failed"
-    assert manifest["workflows"]["analyze_projections"]["status"] == "not_run"
+    assert manifest["error"]["type"] == "OSError"
+    assert [item["workflow"] for item in manifest["children"]] == ["analyze_climate"]
 
 
 def test_manifest_sanitizes_sensitive_extra_args(tmp_path, capture_runs):
@@ -407,14 +450,8 @@ def test_manifest_sanitizes_sensitive_extra_args(tmp_path, capture_runs):
     assert "token-value" not in manifest_text
     assert "camel-secret-value" not in manifest_text
     assert "password-value" not in manifest_text
-    assert "threshold=4" in manifest["extra_args"]
-    assert "api_token=<redacted>" in manifest["extra_args"]
-    assert manifest["effective_config"]["includes_cli_config_overrides"] is False
-    assert manifest["snakemake_config_overrides"] == [
-        "threshold=4",
-        "api_token=<redacted>",
-        "clientSecret=<redacted>",
-    ]
+    assert "threshold=4" in manifest["command"]
+    assert "api_token=<redacted>" in manifest["command"]
 
 
 def test_sensitive_args_are_redacted_from_console(tmp_path, capture_runs, capsys):
@@ -801,7 +838,9 @@ def test_failure_console_carries_the_verdict_and_what_did_not_run(
     assert "the failing workflow's own output is printed above" in out
 
 
-def test_a_launch_error_still_closes_with_a_report(tmp_path, monkeypatch, capsys):
+def test_a_launch_error_still_closes_with_a_report(
+    tmp_path, monkeypatch, capsys, capture_runs
+):
     """An OSError out of subprocess.run must not end in a bare traceback.
 
     The manifest is finalized on this path for the same reason; the console
@@ -816,7 +855,11 @@ def test_a_launch_error_still_closes_with_a_report(tmp_path, monkeypatch, capsys
             return FakeResult(0, stdout="abc123\n" if "rev-parse" in cmd else "")
         raise OSError("snakemake executable missing")
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
     with pytest.raises(OSError):
         rw.run(str(cfg), cores=3, extra=[])
 
@@ -878,7 +921,7 @@ def test_the_console_is_ascii_but_for_the_three_rail_glyphs(
 
 
 def test_the_runner_tells_its_children_the_workflow_is_already_named(
-    tmp_path, capsys, monkeypatch
+    tmp_path, capsys, monkeypatch, capture_runs
 ):
     """Each hand-off band names the workflow, so the child's block need not.
 
@@ -898,7 +941,11 @@ def test_the_runner_tells_its_children_the_workflow_is_already_named(
         envs.append(kwargs.get("env"))
         return FakeResult(0)
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
     project_dir = tmp_path / "gabon_project"
     cfg = tmp_path / "c.yml"
     # `build_model` alone: it is the plain `subprocess.run` path, and enabling
@@ -933,7 +980,20 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
         envs.append(kwargs.get("env"))
         return FakeResult(0)
 
-    monkeypatch.setattr(rw.subprocess, "run", fake_run)
+    monkeypatch.setattr(
+        rw,
+        "run_project_child",
+        lambda cmd, **kwargs: fake_run(cmd, **kwargs).returncode,
+    )
+    captures = []
+    monkeypatch.setattr(
+        simulation_record,
+        "capture_simulation_sources_v2",
+        lambda config, root, invocation: (
+            captures.append((Path(config), Path(root), invocation))
+            or tmp_path / "capture.json"
+        ),
+    )
     project_dir = tmp_path / "gabon_project"
     # The wf1 leaves the contract (i) preflight requires, without running wf1.
     for leaf in rw.LEAVES:
@@ -951,6 +1011,18 @@ def test_the_announcement_rides_on_the_simulation_runners_own_environment(
     assert envs[0][rw.console_style.ANNOUNCED_ENV] == "1"
     # The runner's own keys survived the merge.
     assert envs[0]["CST_SIMULATION_OPERATION"] == "simulate-and-metrics"
+    parent = _read_only_manifest(project_dir)
+    assert (
+        envs[0]["CST_SIMULATION_INVOCATION_ID"]
+        == parent["children"][0]["invocation_id"]
+    )
+    assert captures == [
+        (
+            cfg.resolve(),
+            project_dir.resolve(),
+            parent["children"][0]["invocation_id"],
+        )
+    ]
     assert rw.console_style.ANNOUNCED_ENV not in os.environ
 
 

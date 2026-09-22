@@ -37,8 +37,8 @@ def test_provider_preserves_root_and_transform_arguments(tmp_path):
     def execute(command, log):
         seen.append((command, log))
         if command[2].endswith("generate_weather.R"):
-            (tmp_path / "rlz_1_st_0.nc").write_bytes(b"first draw")
-            (tmp_path / "rlz_2_st_0.nc").write_bytes(b"second draw")
+            (tmp_path / "run_01.nc").write_bytes(b"first draw")
+            (tmp_path / "run_03.nc").write_bytes(b"second draw")
         else:
             # Distinct contents catch a correctly labelled but wrongly routed ancestor.
             assert Path(command[3]).read_bytes() == b"second draw"
@@ -58,6 +58,7 @@ def test_provider_preserves_root_and_transform_arguments(tmp_path):
         "1",
         "1",
         str(source.basin_cells),
+        "01,03",
     ]
     output = tmp_path / "arbitrary-name.nc"
     result = transform(

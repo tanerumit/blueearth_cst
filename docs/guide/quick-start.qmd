@@ -66,18 +66,11 @@ From the repository root, inside the pixi environment:
 ```bash
 pixi shell
 
-snakemake all -c 3 -s analyze_climate.smk     --configfile test_case/project_config_rapid.yml
-snakemake all -c 3 -s generate_scenarios.smk --configfile test_case/project_config_rapid.yml
-snakemake all -c 3 -s build_model.smk         --configfile test_case/project_config_rapid.yml
-python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
-snakemake all -c 3 -s analyze_projections.smk --configfile test_case/project_config_rapid.yml --keep-going
+python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 ```
 
-Or let the wrapper run whichever workflows the config enables, in order:
-
-```bash
-pixi run run-workflows --config test_case/project_config_rapid.yml
-```
+The wrapper runs whichever workflows the config enables, in order. Set only
+`generate_scenarios.enabled: true` to run WF3 alone.
 
 ::: {.callout-tip}
 ## Look before you leap

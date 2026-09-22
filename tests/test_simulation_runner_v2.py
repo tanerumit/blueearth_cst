@@ -213,3 +213,47 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
     )
     with pytest.raises(ValueError, match="UnsupportedOperationTarget"):
         simulation_runner.validate_targets("unused", [selected.as_posix()])
+
+
+def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monkeypatch):
+    from blueearth_cst.experiment import metric_plan
+
+    project = tmp_path / "project"
+    root = project / "experiments/experiment_rapid"
+    (root / "_engine").mkdir(parents=True)
+    (root / "_engine/simulation.json").write_bytes(b"{}\n")
+    workflow = tmp_path / "metrics.yml"
+    workflow.write_text(
+        "experiment_name: experiment_rapid\noperation: metrics-only\n",
+        encoding="utf-8",
+    )
+    config = tmp_path / "project.yml"
+    config.write_text(
+        "project:\n"
+        f"  project_dir: {project.as_posix()}\n"
+        "workflows:\n"
+        "  simulate_system:\n"
+        "    enabled: true\n"
+        "    config_path: metrics.yml\n",
+        encoding="utf-8",
+    )
+    intent = {
+        "collection": {
+            "collection_id": "a" * 64,
+            "collection_revision": "b" * 64,
+            "manifest": {"path": "scenarios/_engine/collections/a/collection.json"},
+        },
+        "documents": {"response_request": {"variables": [{"variable": "q"}]}},
+    }
+    monkeypatch.setattr(
+        metric_plan,
+        "read_simulation_v2",
+        lambda path: {"schema_version": "simulation/2"},
+    )
+    monkeypatch.setattr(metric_plan, "read_simulation_intent_v2", lambda path: intent)
+
+    actual_root, tokens, anchor = metric_plan.metrics_only_configuration(config)
+
+    assert actual_root == root
+    assert tokens == ["q"]
+    assert anchor == "YS-JAN"

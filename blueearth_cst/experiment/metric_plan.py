@@ -96,10 +96,11 @@ def metrics_only_configuration(config_path):
         read_simulation_v2(root) if v2 else read_simulation(root, require_complete=True)
     )
     intent_v2 = read_simulation_intent_v2(root) if v2 else None
+    retained_collection = intent_v2["collection"] if v2 else simulation["collection"]
     if "scenario_collection" in workflow:
         if v2:
             asserted = workflow["scenario_collection"]
-            retained = simulation["collection"]
+            retained = retained_collection
             for field in ("collection_id", "collection_revision"):
                 if asserted.get(field) not in (None, retained[field]):
                     raise MetricsOnlyIdentityMismatch(
@@ -160,7 +161,7 @@ def metrics_only_configuration(config_path):
             "metrics-only: ignored current settings "
             + ", ".join(ignored)
             + f"; retained simulation/model inputs come from {(root / ('_engine/simulation.json' if v2 else 'config/simulation.json')).as_posix()}"
-            + f" and generation inputs from {simulation['collection'].get('manifest_path', simulation['collection'].get('manifest', {}).get('path', 'retained collection'))}",
+            + f" and generation inputs from {retained_collection.get('manifest_path', retained_collection.get('manifest', {}).get('path', 'retained collection'))}",
             flush=True,
         )
     return root, list(tokens), anchor

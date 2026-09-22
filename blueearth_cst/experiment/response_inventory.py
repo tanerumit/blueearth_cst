@@ -443,13 +443,20 @@ def _v2_native_semantics(config, variable):
     """Project only the TOML fields consumed by the native response reader."""
     from blueearth_cst.experiment.wflow_response_reader import NATIVE_VARIABLES
 
-    clock = _v2_exact(
-        config["time"],
-        {"calendar", "starttime", "endtime", "timestepsecs"},
-        "native clock",
-    )
+    clock = config["time"]
+    required_clock_fields = {"calendar", "starttime", "endtime", "timestepsecs"}
+    allowed_clock_fields = required_clock_fields | {"time_units"}
+    if (
+        type(clock) is not dict
+        or not required_clock_fields <= set(clock) <= allowed_clock_fields
+    ):
+        raise MissingResponseRequirement("native clock has unclassified fields")
     if type(clock["timestepsecs"]) is not int or clock["timestepsecs"] <= 0:
         raise MissingResponseRequirement("native timestep must be positive")
+    if "time_units" in clock and (
+        not isinstance(clock["time_units"], str) or not clock["time_units"]
+    ):
+        raise MissingResponseRequirement("native time units must be explicit")
     normalized_clock = {
         "calendar": clock["calendar"],
         "starttime": str(pd.Timestamp(clock["starttime"])),

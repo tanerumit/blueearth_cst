@@ -105,6 +105,28 @@ def test_clock_change_refuses_native_reopening(v2):
         read_response_inventory_v2(root)
 
 
+def test_time_units_are_nonsemantic_native_clock_metadata(v2):
+    root, native_runs, temporal = v2
+    toml = native_runs["01"].toml_path
+    toml.write_text(
+        toml.read_text().replace(
+            'calendar="standard"\n',
+            'calendar="standard"\ntime_units="days since 1900-01-01 00:00:00"\n',
+        )
+    )
+
+    inventory = publish_response_inventory_v2(root, native_runs, temporal)
+
+    assert inventory["identity_projection"]["series"][0]["native_selector"][
+        "clock"
+    ] == {
+        "calendar": "standard",
+        "starttime": "2046-01-01 00:00:00",
+        "endtime": "2046-01-03 00:00:00",
+        "timestepsecs": 86400,
+    }
+
+
 def test_local_temporal_pointer_tamper_refuses_before_native_open(v2, monkeypatch):
     root, native_runs, temporal = v2
     inventory = publish_response_inventory_v2(root, native_runs, temporal)

@@ -443,6 +443,8 @@ def build_metric_plan(experiment_root, request):
         ),
     )
     units = [asdict(item) for item in unit_rows]
+    if v2:
+        units = _v2_run_groups(units)
     bundle_ids = {
         bundle.canonical_key: f"{len(rows) + number:0{intent.get('run_group_id_width', intent.get('unit_id_width'))}d}"
         for number, bundle in enumerate(
@@ -535,14 +537,6 @@ def build_metric_plan(experiment_root, request):
         root / "results/metric_sets" / identity_segment(identity, "metric_set_id")
     )
     if v2:
-        units = [
-            {
-                **item,
-                "run_group_id": item.pop("unit_id"),
-                "run_id": item.pop("member_run_id"),
-            }
-            for item in units
-        ]
         expected_keys = [
             [metric, location, group_id] for metric, location, group_id in expected_keys
         ]
@@ -591,6 +585,21 @@ def build_metric_plan(experiment_root, request):
     }
     plan["request_sha256"] = content_sha256(plan)
     return plan
+
+
+def _v2_run_groups(units):
+    """Rename legacy in-memory unit rows for v2 metric-set persistence."""
+    expected = {"unit_id", "grain", "member_run_id"}
+    if any(set(item) != expected for item in units):
+        raise MetricPlanStale("metric unit rows have unknown fields")
+    return [
+        {
+            "run_group_id": item["unit_id"],
+            "grain": item["grain"],
+            "run_id": item["member_run_id"],
+        }
+        for item in units
+    ]
 
 
 def _metric_request_path(root: Path, identity: str) -> Path:

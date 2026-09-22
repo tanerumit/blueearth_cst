@@ -864,3 +864,11 @@ def test_v2_native_run_references_resolve_from_inventory(tmp_path):
     assert native_runs["01"].csv_path == csv_path
     assert native_runs["01"].toml_path == toml_path
     assert native_runs["01"].temporal_path is None
+
+
+def test_v2_run_groups_replace_legacy_unit_keys():
+    from blueearth_cst.experiment.metric_plan import _v2_run_groups
+
+    assert _v2_run_groups(
+        [{"unit_id": "01", "grain": "run", "member_run_id": "01"}]
+    ) == [{"run_group_id": "01", "grain": "run", "run_id": "01"}]

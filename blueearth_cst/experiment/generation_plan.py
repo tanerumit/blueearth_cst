@@ -116,10 +116,26 @@ def generation_configuration(config, repository):
     climate = config["climate"]
     basin = config["basin"]
     sources = basin.get("sources") or {}
+    catalogs = project["catalog"]
+    catalogs = [catalogs] if isinstance(catalogs, str) else list(catalogs)
+    from blueearth_cst.shared.workflow_archive_launch import stage_shared_dependency
+
+    staged_catalogs = [
+        stage_shared_dependency(
+            Path(project["project_dir"]),
+            f"project_catalog_{index}",
+            Path(catalog),
+        )
+        for index, catalog in enumerate(catalogs)
+    ]
     shared = dict(
         project_dir=project["project_dir"],
         model_region=basin["region"],
-        data_sources=project["catalog"],
+        data_sources=(
+            str(staged_catalogs[0])
+            if isinstance(project["catalog"], str)
+            else [str(path) for path in staged_catalogs]
+        ),
         hydrography=sources.get("hydrography", DEFAULT_HYDROGRAPHY),
         basin_index=sources.get("basin_index", DEFAULT_BASIN_INDEX),
     )
@@ -151,8 +167,6 @@ def generation_configuration(config, repository):
             ],
         ],
     )
-    catalogs = project["catalog"]
-    catalogs = [catalogs] if isinstance(catalogs, str) else list(catalogs)
     request = {
         "schema_version": "generation-request/2",
         "settings": {

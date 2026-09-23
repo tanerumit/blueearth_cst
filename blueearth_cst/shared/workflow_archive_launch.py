@@ -106,6 +106,28 @@ def _write_once(path: Path, data: bytes) -> None:
         os.fsync(handle.fileno())
 
 
+def stage_shared_dependency(
+    project_root: Path, dependency_id: str, source: Path
+) -> Path:
+    """Stage one immutable dependency at its cross-workflow canonical path."""
+    source = Path(source).resolve(strict=True)
+    data = source.read_bytes()
+    digest = short_digest(hashlib.sha256(data).hexdigest())
+    destination = (
+        Path(project_root).resolve()
+        / "config"
+        / "runs"
+        / "_engine"
+        / "execution-configs"
+        / "_shared"
+        / dependency_id
+        / digest
+        / source.name
+    )
+    _write_once(destination, data)
+    return destination
+
+
 def _file_specifications(
     workflow: str, composed: Mapping[str, Any]
 ) -> list[tuple[str, str, Path]]:
@@ -329,10 +351,18 @@ def prepare_workflow(
             if source.id in pair_ids and pair_hash is not None
             else short_digest(hashlib.sha256(source.data).hexdigest())
         )
-        destination = (
-            dependency_root / dependency_dir / content_hash / source.original_path.name
-        )
-        _write_once(destination, source.data)
+        if pair_hash is None or source.id not in pair_ids:
+            destination = stage_shared_dependency(
+                project_root, dependency_dir, source.original_path
+            )
+        else:
+            destination = (
+                dependency_root
+                / dependency_dir
+                / content_hash
+                / source.original_path.name
+            )
+            _write_once(destination, source.data)
         generated_paths.append((f"execution_{source.id}", destination))
         replacements[source.original_path] = destination
     workflow_source = next(

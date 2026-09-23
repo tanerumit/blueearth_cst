@@ -70,6 +70,50 @@ def test_preparse_capture_survives_source_edit(tmp_path, capsys):
     assert "[config_composition] skipped unreadable" not in capsys.readouterr().out
 
 
+def test_shared_dependency_stages_once_across_workflows(tmp_path):
+    """A dependency shared by two workflows resolves to one execution path.
+
+    Regression for the bug where each workflow staged its own copy of the same
+    data catalog under its own bundle digest: WF0/WF1/WF2 declare byte-identical
+    shared-foundation rules (delineate_region and friends) over that catalog,
+    so a per-workflow staging path made Snakemake see a changed input set --
+    and rebuild the whole foundation -- every time a different workflow last
+    ran, even with nothing to redo.
+    """
+    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project_root = tmp_path / "output"
+    project["project"]["project_dir"] = str(project_root)
+    project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
+    for name, stanza in project["workflows"].items():
+        if "config_path" in stanza:
+            stanza["config_path"] = str(
+                (ROOT / "test_case" / stanza["config_path"]).resolve()
+            )
+    project_file = tmp_path / "project_config_test.yml"
+    project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
+
+    execution_a, _ = prepare_workflow(
+        "analyze_climate",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    execution_b, _ = prepare_workflow(
+        "build_model",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    catalog_a = yaml.safe_load(execution_a.read_bytes())["project"]["catalog"][0]
+    catalog_b = yaml.safe_load(execution_b.read_bytes())["project"]["catalog"][0]
+    assert catalog_a == catalog_b
+    assert Path(catalog_a).is_relative_to(
+        project_root / "config/runs/_engine/execution-configs/_shared"
+    )
+
+
 def test_raw_execution_refuses_without_capture(monkeypatch, tmp_path):
     monkeypatch.delenv(CONTEXT_ENV, raising=False)
     with pytest.raises(ValueError, match="pre-parse source capture"):

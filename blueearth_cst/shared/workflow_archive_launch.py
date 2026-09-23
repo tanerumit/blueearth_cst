@@ -1,8 +1,14 @@
 """Pre-parse capture and archive admission for WF0--WF2 launches.
 
-The source buffers are captured before Snakemake sees a configfile. The
-execution copies are content addressed, so the paths used by rules and R stay
-stable across an unchanged rerun. The original bytes live in run-record/2.
+The source buffers are captured before Snakemake sees a configfile. External
+dependency files (data catalogs, build/waterbodies configs, observations) are
+staged content-addressed and shared across workflows, so an unchanged
+dependency resolves to the same execution path from WF0, WF1 or WF2 alike --
+this is what lets the shared-foundation rules (delineate_region and friends)
+skip on a rerun instead of rebuilding every time a different workflow last
+touched them. The composed project/workflow config documents remain staged
+per workflow bundle, since their content is workflow-specific by design. The
+original bytes live in run-record/2.
 """
 
 from __future__ import annotations
@@ -260,14 +266,29 @@ def prepare_workflow(
         / workflow
         / digest
     )
+    # Content-addressed by the FILE's own bytes, in a bucket shared across
+    # workflows -- not nested under this workflow's own `stage` (bundle digest).
+    # WF0/WF1/WF2 declare byte-identical shared-foundation rules (delineate_region,
+    # delineate_spatial_units, extract_historical_climate) that consume a
+    # dependency such as the project data catalog. Staging it under `stage` kept
+    # a separate copy per workflow, at a path that changed whenever ANY other
+    # part of that workflow's bundle changed -- so switching between workflows
+    # made Snakemake see a changed input set on every shared rule and rebuild
+    # the whole foundation on every run, even with nothing to redo. Keying on
+    # the dependency's own hash instead means an unchanged file resolves to the
+    # same execution path no matter which workflow staged it first.
+    dependency_root = (
+        project_root / "config" / "runs" / "_engine" / "execution-configs" / "_shared"
+    )
     replacements: dict[Path, Path] = {}
     generated_paths = []
     for source in custom:
         dependency_dir = (
             "projection_catalog" if source.id == "projection_index" else source.id
         )
+        content_hash = hashlib.sha256(source.data).hexdigest()
         destination = (
-            stage / "dependencies" / dependency_dir / source.original_path.name
+            dependency_root / dependency_dir / content_hash / source.original_path.name
         )
         _write_once(destination, source.data)
         generated_paths.append((f"execution_{source.id}", destination))

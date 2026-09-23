@@ -423,6 +423,42 @@ def _handoff(tag: str, detail: str, *, note: str | None = None) -> str:
     return "\n".join(lines)
 
 
+def _unusual_exit_diagnosis(exit_code: int | None) -> str | None:
+    """A note for an exit code neither this wrapper nor Snakemake's own CLI raises.
+
+    Snakemake's ``cli.py`` entry point only ever calls ``sys.exit(0)`` (success)
+    or ``sys.exit(1)`` (a DAG/job failure it reported itself, with its own
+    traceback already printed above by the child). Any OTHER code was raised
+    by something outside Snakemake's own reporting -- process/job-object
+    teardown, an OS-level kill, an interpreter crash after Snakemake had
+    already finished -- so the child's own output above may be silent or
+    incomplete even though the exit code says something went wrong. Pointing
+    at the newest ``.snakemake/log`` file lets a reader tell the two apart: if
+    IT ends cleanly, the failure happened after Snakemake was done.
+    """
+    if exit_code is None or exit_code in (0, 1):
+        return None
+    note = f"exit code {exit_code} is not one Snakemake's own CLI ever raises (only 0 or 1)"
+    log_dir = _REPO_ROOT_PATH / ".snakemake" / "log"
+    newest = None
+    try:
+        newest = max(
+            log_dir.glob("*.snakemake.log"),
+            key=lambda path: path.stat().st_mtime,
+            default=None,
+        )
+    except OSError:
+        newest = None
+    if newest is not None:
+        newest_display = os.fspath(newest).replace(os.sep, "/")
+        note += (
+            f"; check {newest_display} for whether Snakemake's own account "
+            "ended cleanly despite it -- a clean ending there points to a "
+            "process-teardown race rather than a rule failure"
+        )
+    return note
+
+
 def _console_block(
     head: str, groups: list[tuple[str, list[Any]]], *, close: bool = False
 ) -> str:
@@ -777,6 +813,20 @@ def _closing_block(
         # rather than a `run_summary` block. Both are the child's own account
         # of the failure, which is what this points at.
         groups.append(("the failing workflow's own output is printed above", []))
+        failed_name = next(
+            (
+                name
+                for name in WORKFLOW_ORDER
+                if manifest["workflows"][name]["status"] == "failed"
+            ),
+            None,
+        )
+        if failed_name is not None:
+            diagnosis = _unusual_exit_diagnosis(
+                manifest["workflows"][failed_name]["exit_code"]
+            )
+            if diagnosis is not None:
+                groups.append((diagnosis, []))
     return _console_block(head, groups, close=True)
 
 

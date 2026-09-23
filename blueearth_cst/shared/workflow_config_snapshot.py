@@ -39,6 +39,7 @@ import json
 import os
 import re
 import shutil
+import time
 import uuid
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
@@ -486,6 +487,21 @@ def _write_durable(path: Path, data: bytes) -> None:
         os.fsync(handle.fileno())
 
 
+_WINDOWS_REPLACE_RETRY = os.name == "nt"
+
+
+def _replace(source: Path, target: Path) -> None:
+    """Replace a file or directory despite momentary Windows reader handles."""
+    for attempt in range(10):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError as error:
+            if not _WINDOWS_REPLACE_RETRY or error.winerror != 5 or attempt == 9:
+                raise
+            time.sleep(0.02)
+
+
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
     temp = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
     try:
@@ -495,7 +511,7 @@ def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:
                 "utf-8"
             ),
         )
-        os.replace(temp, path)
+        _replace(temp, path)
     finally:
         temp.unlink(missing_ok=True)
 
@@ -1109,7 +1125,7 @@ def _recover_locked(project_root: Path, owner_key: str) -> str | None:
             raise ValueError("staged archive contradicts transaction")
         tx["state"] = "rolled_back"
     elif not target.exists() and _matches_archive(previous, tx["old_record_sha256"]):
-        os.replace(previous, target)
+        _replace(previous, target)
         if not _matches_archive(target, tx["old_record_sha256"]):
             raise ValueError("restored archive differs")
         tx["state"] = "rolled_back"
@@ -1174,7 +1190,7 @@ def publish_archive(
             archived_journal = completed / f"{tx_old['transaction_id']}.json"
             if archived_journal.exists():
                 raise ValueError("completed transaction id collision")
-            os.replace(journal, archived_journal)
+            _replace(journal, archived_journal)
         if target.exists():
             if not target.is_dir():
                 raise ValueError("archive target is not a directory")
@@ -1216,12 +1232,12 @@ def publish_archive(
             if failure_after == "prepared":
                 raise RuntimeError("injected failure after prepared")
             if old_sha is not None:
-                os.replace(target, previous)
+                _replace(target, previous)
                 tx["state"] = "old_detached"
                 _atomic_json(journal, tx)
             if failure_after == "old_detached":
                 raise RuntimeError("injected failure after old_detached")
-            os.replace(staged, target)
+            _replace(staged, target)
             tx["state"] = "new_installed"
             _atomic_json(journal, tx)
             if failure_after == "new_installed":

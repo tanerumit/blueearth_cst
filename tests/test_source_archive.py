@@ -8,6 +8,7 @@ import pytest
 import yaml
 
 from blueearth_cst.shared import config_composition as cc
+from blueearth_cst.shared import workflow_config_snapshot as snapshot
 from blueearth_cst.shared.workflow_config_snapshot import (
     capture_rerun_predecessor,
     capture_sources,
@@ -76,6 +77,40 @@ def test_first_publication_replaces_empty_target_directory(tmp_path):
     assert (
         read_archive(root, "build_model", "config/runs/build_model")["invocation_id"]
         == "first"
+    )
+
+
+def test_publication_retries_transient_windows_access_denied(tmp_path, monkeypatch):
+    root = tmp_path / "output"
+    first, first_payloads = _archive(tmp_path, "first")
+    publish_archive(
+        root, "build_model", "config/runs/build_model", first, first_payloads
+    )
+    second, second_payloads = _archive(tmp_path, "second", b"second: true\n")
+    real_replace = snapshot.os.replace
+    attempts = 0
+
+    def replace_with_contention(source, target):
+        nonlocal attempts
+        if Path(source).name == "build_model" and Path(target).suffix == ".previous":
+            attempts += 1
+            if attempts < 3:
+                error = PermissionError(13, "Access is denied", str(source))
+                error.winerror = 5
+                raise error
+        real_replace(source, target)
+
+    monkeypatch.setattr(snapshot, "_WINDOWS_REPLACE_RETRY", True, raising=False)
+    monkeypatch.setattr(snapshot.os, "replace", replace_with_contention)
+
+    publish_archive(
+        root, "build_model", "config/runs/build_model", second, second_payloads
+    )
+
+    assert attempts == 3
+    assert (
+        read_archive(root, "build_model", "config/runs/build_model")["invocation_id"]
+        == "second"
     )
 
 

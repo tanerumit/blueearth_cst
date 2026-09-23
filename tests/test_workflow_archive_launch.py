@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
+from blueearth_cst.shared import workflow_archive_launch as launch
 from blueearth_cst.shared.workflow_archive_launch import (
     CONTEXT_ENV,
     prepare_workflow,
@@ -112,6 +113,41 @@ def test_shared_dependency_stages_once_across_workflows(tmp_path):
     assert Path(catalog_a).is_relative_to(
         project_root / "config/runs/_engine/execution-configs/_shared"
     )
+
+
+def test_execution_config_schema_moves_immutable_bundle_directory(
+    tmp_path, monkeypatch
+):
+    """A staging-format change gets a new bundle path for unchanged sources."""
+    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project_root = tmp_path / "output"
+    project["project"]["project_dir"] = str(project_root)
+    project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
+    stanza = project["workflows"]["analyze_climate"]
+    stanza["config_path"] = str((ROOT / "test_case" / stanza["config_path"]).resolve())
+    project_file = tmp_path / "project_config_test.yml"
+    project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
+
+    monkeypatch.setattr(launch, "EXECUTION_CONFIG_SCHEMA_VERSION", "legacy")
+    legacy, _ = prepare_workflow(
+        "analyze_climate",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    monkeypatch.setattr(launch, "EXECUTION_CONFIG_SCHEMA_VERSION", "current")
+    current, _ = prepare_workflow(
+        "analyze_climate",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+
+    assert legacy.parent != current.parent
+    assert legacy.is_file()
+    assert current.is_file()
 
 
 def test_projection_catalog_and_store_index_stage_as_siblings(tmp_path):

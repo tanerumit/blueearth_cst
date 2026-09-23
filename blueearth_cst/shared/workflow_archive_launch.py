@@ -49,6 +49,10 @@ from blueearth_cst.shared.workflow_config_snapshot import (
 WORKFLOWS = ("analyze_climate", "build_model", "analyze_projections")
 PROJECTION = ("project", "basin", "climate", "model")
 CONTEXT_ENV = "BLUEEARTH_WF012_CAPTURE_CONTEXT"
+# Bump whenever staging logic changes generated execution YAML while the
+# captured sources can remain byte-identical. Including this in the bundle
+# digest retains older immutable execution views instead of overwriting them.
+EXECUTION_CONFIG_SCHEMA_VERSION = "2"
 
 
 def split_config_overrides(extra: Sequence[str]) -> tuple[dict[str, Any], list[str]]:
@@ -254,10 +258,11 @@ def prepare_workflow(
     for source in custom:
         _check_relocatable_yaml(source)
     sources = (*initial, *custom)
-    material = [
+    material = [("execution_config_schema", EXECUTION_CONFIG_SCHEMA_VERSION)]
+    material.extend(
         (source.id, str(source.original_path), hashlib.sha256(source.data).hexdigest())
         for source in sources
-    ]
+    )
     digest = short_digest(
         hashlib.sha256(
             json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")

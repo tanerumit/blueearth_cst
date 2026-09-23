@@ -946,6 +946,23 @@ def _run_owned(
             position += 1
             tag = f"[{position}/{total}]  {_handoff_label(name)}"
             cmd = build_command(name, config_path, cores, extra)
+            if name == "simulate_system":
+                # `build_command` gives simulate_system's own Python entry
+                # point, which the banner would otherwise show verbatim
+                # instead of the snakemake invocation it launches. Re-derive
+                # the real command for display; a misconfigured project still
+                # surfaces its error from the try block below, where it is
+                # already handled.
+                from blueearth_cst.experiment.simulation_runner import (
+                    simulation_command,
+                )
+
+                try:
+                    cmd, _ = simulation_command(
+                        config_path, list(simulation_targets), cores, extra
+                    )
+                except (OSError, KeyError, TypeError, ValueError):
+                    pass
             workflow["command"] = sanitize_argv(cmd)
             workflow["status"] = "running"
             print(

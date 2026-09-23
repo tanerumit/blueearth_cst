@@ -750,6 +750,15 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     # A disabled workflow gets NO band -- the sequence diagram above already
     # named it, once, before anything ran.
     assert "WF2  ANALYZE PROJECTIONS  --  STARTING" not in out
+    # WF4's band must show the snakemake invocation it actually launches, not
+    # `simulate_system.py`'s own entry-point command -- the wrapper script is
+    # an implementation detail of getting there, never what ran.
+    wf4_title_at = next(
+        i for i, line in enumerate(lines) if "WF4  SIMULATE SYSTEM  --" in line
+    )
+    assert "-m snakemake" in lines[wf4_title_at + 1]
+    assert "simulate_system.smk" in lines[wf4_title_at + 1]
+    assert "simulate_system.py" not in lines[wf4_title_at + 1]
 
 
 def test_every_wrapper_utterance_is_bounded_by_a_rule(tmp_path, capture_runs, capsys):

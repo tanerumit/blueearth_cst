@@ -7,10 +7,12 @@ from blueearth_cst.experiment.content_identity import content_sha256
 from blueearth_cst.experiment.response_inventory import make_response_request
 from blueearth_cst.experiment.simulation_record import (
     SimulationFrozenError,
+    _assert_model_reference_current,
     capture_simulation_sources_v2,
     read_simulation_sources_v2,
     simulation_intent_v2,
 )
+from blueearth_cst.experiment.write_model_reference import build_model_reference
 from blueearth_cst.shared.model_digest import model_digest_from_entries
 
 
@@ -40,6 +42,26 @@ def test_preparse_wf4_sources_refuse_comment_mutation(tmp_path):
     workflow.write_text(workflow.read_text() + "# revised\n", encoding="utf-8")
     with pytest.raises(SimulationFrozenError, match="changed after preparse"):
         read_simulation_sources_v2(project, invocation)
+
+
+def test_live_model_freeze_names_the_changed_runtime_input(tmp_path):
+    """WF4's parse-time guard must identify the model file that drifted."""
+    model = tmp_path / "models" / "hydrology" / "wflow"
+    (model / "forcing").mkdir(parents=True)
+    (model / "forcing" / "inmaps_historical.nc").write_bytes(b"before")
+    (model / "wflow_sbm.toml").write_text(
+        '[input]\npath_forcing = "forcing/inmaps_historical.nc"\n',
+        encoding="utf-8",
+    )
+    retained = build_model_reference(model, tmp_path)
+    (model / "forcing" / "inmaps_historical.nc").write_bytes(b"after")
+    live = build_model_reference(model, tmp_path)
+
+    with pytest.raises(
+        SimulationFrozenError,
+        match=r"forcing/inmaps_historical\.nc.*new experiment",
+    ):
+        _assert_model_reference_current(retained, live, model)
 
 
 def test_simulation_intent_binds_prep_and_selected_runs():

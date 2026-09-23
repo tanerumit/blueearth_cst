@@ -682,6 +682,20 @@ def read_simulation_sources_v2(project_root, invocation_id):
     return tuple(sources)
 
 
+def _assert_model_reference_current(retained, live, model_root):
+    """Refuse model drift while naming the changed runtime input."""
+    if retained == live:
+        return
+    from blueearth_cst.experiment.check_model_reference import compare_reference
+
+    differences = compare_reference(retained, model_root)
+    detail = "; ".join(differences) if differences else "reference metadata changed"
+    raise SimulationFrozenError(
+        f"retained model reference differs from live model: {detail}. "
+        "Use a new experiment name."
+    )
+
+
 def live_simulation_inputs_v2(
     experiment_root,
     *,
@@ -717,8 +731,8 @@ def live_simulation_inputs_v2(
     retained = _simulation_path(root, "_engine/model_reference.yml")
     import yaml
 
-    if yaml.safe_load(retained.read_bytes()) != reference:
-        raise SimulationFrozenError("retained model reference differs from live model")
+    retained_reference = yaml.safe_load(retained.read_bytes())
+    _assert_model_reference_current(retained_reference, reference, model)
     with (model / reference["model_toml"]).open("rb") as handle:
         model_config = tomllib.load(handle)
     first, last = forcing_window(simulation_window["start"], simulation_window["end"])

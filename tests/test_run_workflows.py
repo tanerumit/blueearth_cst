@@ -734,22 +734,22 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
-    assert re.search(r"\[1/4]  wf0 analyze_climate  --  starting \d\d:\d\d:\d\d", out)
-    assert re.search(r"\[4/4]  wf4 simulate_system  --  starting \d\d:\d\d:\d\d", out)
+    assert re.search(r"\[1/4]  WF0  ANALYZE CLIMATE  --  STARTING \d\d:\d\d:\d\d", out)
+    assert re.search(r"\[4/4]  WF4  SIMULATE SYSTEM  --  STARTING \d\d:\d\d:\d\d", out)
     assert "  --  done in " not in out
     # Flush left, title and command both. A band has no group label and no rows,
     # so an indent would only make the line a reader scans for start one column
     # later than the rule announcing it.
     lines = out.splitlines()
     title_at = next(
-        i for i, line in enumerate(lines) if "wf0 analyze_climate  --" in line
+        i for i, line in enumerate(lines) if "WF0  ANALYZE CLIMATE  --" in line
     )
     assert lines[title_at].startswith("[1/4]")
     assert lines[title_at - 1] == rw._RULE  # the rule it hangs from
     assert lines[title_at + 1].startswith("snakemake ")
     # A disabled workflow gets NO band -- the sequence diagram above already
     # named it, once, before anything ran.
-    assert "wf2 analyze_projections  --  starting" not in out
+    assert "WF2  ANALYZE PROJECTIONS  --  STARTING" not in out
 
 
 def test_every_wrapper_utterance_is_bounded_by_a_rule(tmp_path, capture_runs, capsys):
@@ -795,7 +795,7 @@ def test_the_console_is_not_muted_by_the_rule_log_level(
     )
     assert "  run_workflows" in out.splitlines()
     assert "  sequence  (5 of 5 enabled, in order)" in out
-    assert re.search(r"\[1/5]  wf0 analyze_climate  --  starting \d\d:\d\d:\d\d", out)
+    assert re.search(r"\[1/5]  WF0  ANALYZE CLIMATE  --  STARTING \d\d:\d\d:\d\d", out)
     assert "run_workflows done in" in out
 
 
@@ -828,7 +828,7 @@ def test_failure_console_carries_the_verdict_and_what_did_not_run(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert code == 4
-    assert "[2/5]  wf1 build_model  --  FAILED (exit 4) after 0:00:0" in out
+    assert "[2/5]  WF1  BUILD MODEL  --  FAILED (exit 4) after 0:00:0" in out
     assert "stopping; later workflows not invoked" in out
     assert "run_workflows FAILED in 0:00:0" in out
     assert (

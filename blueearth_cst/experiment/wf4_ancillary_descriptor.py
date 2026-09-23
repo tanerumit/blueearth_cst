@@ -36,6 +36,7 @@ _CITATION_KEYS = frozenset(
         "url",
         "source_license",
         "source_url",
+        "source_version",
     }
 )
 _METADATA_KEYS = (

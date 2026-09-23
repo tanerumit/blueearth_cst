@@ -29,7 +29,11 @@ from blueearth_cst.shared.config_composition import (
     compose_captured_config,
     compose_config,
 )
-from blueearth_cst.shared.provenance import environment_file_hashes, toolbox_identity
+from blueearth_cst.shared.provenance import (
+    environment_file_hashes,
+    short_digest,
+    toolbox_identity,
+)
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS
 from blueearth_cst.shared.workflow_config_snapshot import (
     CapturedSource,
@@ -254,9 +258,11 @@ def prepare_workflow(
         (source.id, str(source.original_path), hashlib.sha256(source.data).hexdigest())
         for source in sources
     ]
-    digest = hashlib.sha256(
-        json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    digest = short_digest(
+        hashlib.sha256(
+            json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+    )
     stage = (
         project_root
         / "config"
@@ -286,7 +292,7 @@ def prepare_workflow(
         dependency_dir = (
             "projection_catalog" if source.id == "projection_index" else source.id
         )
-        content_hash = hashlib.sha256(source.data).hexdigest()
+        content_hash = short_digest(hashlib.sha256(source.data).hexdigest())
         destination = (
             dependency_root / dependency_dir / content_hash / source.original_path.name
         )

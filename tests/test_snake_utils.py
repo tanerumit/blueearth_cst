@@ -3789,6 +3789,38 @@ def test_run_header_forward_slashes_and_shortens_the_config_path(monkeypatch):
     assert "\\" not in out
 
 
+def test_run_header_marks_a_staged_execution_config_with_the_project_token():
+    """A generated config under `execution-configs/` reads `<project>/...`.
+
+    Regression: `prepare_workflow` stages the composed config INSIDE the
+    project root (`config/runs/_engine/execution-configs/<workflow>/<digest>/
+    project_config.yml`), so on a production run -- where the project lives
+    outside the repo and matches neither the `<repo>` nor `<site-packages>`
+    rewrite -- this row used to print the same absolute prefix as `<project>`
+    above it, in full, twice. It must read as project-relative, the same
+    convention `<data>`/`<climate>` rows already use, and stay distinguishable
+    from a bare relative output path.
+    """
+    project = os.path.join(_abs("elsewhere"), "gabon-ntoum-v2")
+    config = os.path.join(
+        project,
+        "config",
+        "runs",
+        "_engine",
+        "execution-configs",
+        "analyze_projections",
+        "91d954f93e17",
+        "project_config.yml",
+    )
+    out = cs.run_header("wf2 analyze_projections", project, config)
+    row = next(line for line in out.splitlines() if line.startswith("config"))
+    assert row.split(None, 1)[1] == (
+        "<project>/config/runs/_engine/execution-configs/"
+        "analyze_projections/91d954f93e17/project_config.yml"
+    )
+    assert "\\" not in row
+
+
 def test_run_header_forward_slashes_a_config_outside_the_repo():
     """The production case: a config in a project tree, under neither rewrite.
 

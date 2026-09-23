@@ -61,6 +61,7 @@ from blueearth_cst.shared.snake_utils import (
     _paint_body,
     _path_tokens,
     _relativize_paths,
+    _tokenize_prefix,
     format_elapsed,
     note_warning,
     plural,
@@ -1915,10 +1916,15 @@ def run_meta_rows(project_dir, config_path=None, details=None):
     # 2026-09-16 (t2609162114).
     rows = [("<project>", display_root(project_dir))]
     if config_path:
-        # No project root passed: the config is not a project artifact, and
-        # stripping one would render a config that happens to live INSIDE the
-        # project as a bare relative path indistinguishable from an output.
-        # This still applies the `<repo>` and `<site-packages>` rewrites.
+        # A generated config now lives under `config/runs/_engine/
+        # execution-configs/<workflow>/<digest>/`, which is INSIDE the
+        # project -- so on a production run this row printed the same
+        # absolute prefix as `<project>` above it, repeated in full. Marked
+        # with `_tokenize_prefix`, the same mechanism `<data>`/`<climate>`
+        # rows use, rather than a bare `_strip_prefix`: a silent strip is what
+        # the old docstring here warned against, since it would render a
+        # project-relative config indistinguishable from an output path. The
+        # `<project>/` marker is what keeps the two distinguishable.
         #
         # FORWARD SLASHES, unconditionally. The rewrites above normalise a
         # config that lives under the repo, and `display_root` normalises the
@@ -1928,8 +1934,12 @@ def run_meta_rows(project_dir, config_path=None, details=None):
         # `project C:/a/b` above `config C:\a\b` and read as two trees. That is
         # the defect this row's own docstring describes and the existing test
         # could not see, because it passes a config inside the repo.
+        config_display = os.fspath(config_path)
+        if project_dir:
+            root = os.path.abspath(os.fspath(project_dir))
+            config_display = _tokenize_prefix(config_display, root, "project")
         rows.append(
-            ("config", _relativize_paths(os.fspath(config_path), "").replace("\\", "/"))
+            ("config", _relativize_paths(config_display, "").replace("\\", "/"))
         )
     rows.extend((key, str(value)) for key, value in (details or {}).items())
     rows.extend(_folder_rows(project_dir))

@@ -2,6 +2,9 @@
 import shlex
 import subprocess
 import tempfile
+import os
+import sys
+from contextlib import contextmanager
 from datetime import datetime
 from blueearth_cst.experiment.simulation_runner import simulation_settings, resolve_selected_collection
 from blueearth_cst.experiment.simulation_record import live_simulation_inputs_v2, read_simulation_intent_v2, read_simulation_v2, SimulationFrozenError
@@ -60,23 +63,54 @@ declare_project_root(project_dir)
 def _selected_collection(wc):
     return SELECTION["manifest_path"]
 
+@contextmanager
+def _replay_output_on_error():
+    """Hide successful native-library probes, but preserve their failure diagnostics."""
+    saved_stdout = os.dup(1)
+    saved_stderr = os.dup(2)
+    failed = False
+    capture = tempfile.TemporaryFile()
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(capture.fileno(), 1)
+        os.dup2(capture.fileno(), 2)
+        try:
+            yield
+        except BaseException:
+            failed = True
+            raise
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(saved_stdout, 1)
+        os.dup2(saved_stderr, 2)
+        os.close(saved_stdout)
+        os.close(saved_stderr)
+        if failed:
+            capture.seek(0)
+            sys.stderr.write(capture.read().decode(errors="replace"))
+            sys.stderr.flush()
+        capture.close()
+
 def _live_simulation_inputs():
     catalogs = project["project"]["catalog"]
     catalogs = catalogs if isinstance(catalogs, list) else [catalogs]
     source = project["climate"]["selected"]
-    preparation = resolve_wf4_preparation(
-        Path(project_dir), Path(exp_dir), climate_source=source,
-        catalogs=catalogs,
-        unit_interpretation=resolved_unit_interpretation(catalogs, source),
-    )
-    with tempfile.TemporaryDirectory(dir=project_dir) as directory:
-        return live_simulation_inputs_v2(
-            exp_dir, project_root=project_dir, model_root=basin_dir,
-            collection_path=SELECTION["manifest_path"], collection=COLLECTION,
-            resolution_mode=SELECTION["resolution_mode"], preparation=preparation,
-            simulation_window={"start": SIM_WINDOW_START, "end": SIM_WINDOW_END},
-            julia_command=shlex.split(julia_prefix(1)),
-            header_path=Path(directory) / "headers.txt")
+    with _replay_output_on_error():
+        preparation = resolve_wf4_preparation(
+            Path(project_dir), Path(exp_dir), climate_source=source,
+            catalogs=catalogs,
+            unit_interpretation=resolved_unit_interpretation(catalogs, source),
+        )
+        with tempfile.TemporaryDirectory(dir=project_dir) as directory:
+            return live_simulation_inputs_v2(
+                exp_dir, project_root=project_dir, model_root=basin_dir,
+                collection_path=SELECTION["manifest_path"], collection=COLLECTION,
+                resolution_mode=SELECTION["resolution_mode"], preparation=preparation,
+                simulation_window={"start": SIM_WINDOW_START, "end": SIM_WINDOW_END},
+                julia_command=shlex.split(julia_prefix(1)),
+                header_path=Path(directory) / "headers.txt")
 
 _simulation_complete = False
 if Path(f"{exp_dir}/_engine/simulation.json").exists():

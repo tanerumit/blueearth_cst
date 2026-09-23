@@ -208,6 +208,15 @@ def test_simulate_and_metrics_all_targets_the_selected_metric_set():
     assert "_selected_metric_outputs" in rule_all.group(1)
 
 
+def test_completed_simulation_validation_suppresses_successful_dependency_chatter():
+    """WF4 parse-time validation must not bypass the styled console."""
+    workflow = (
+        REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
+    ).read_text(encoding="utf-8")
+    assert "with _replay_output_on_error():" in workflow
+    assert "if failed:" in workflow
+
+
 def test_tree_tooling_knows_the_new_leaf():
     """An unregistered path reports as unmapped and reads as stray output."""
     text = (REPO / "dev/scripts/semantic_tree_diff.py").read_text(encoding="utf-8")

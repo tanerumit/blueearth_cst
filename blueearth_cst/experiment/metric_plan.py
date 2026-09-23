@@ -218,6 +218,33 @@ def current_metric_request(experiment_root, tokens, anchor):
         request["schema_version"] = "metric-request/2"
         request["simulation_schema_version"] = record["schema_version"]
         return request
+    if (root / "_engine/simulation_intent.json").is_file():
+        # The v2 freeze has committed but responses have not published
+        # _engine/simulation.json yet -- the DAG-build-time evaluation this
+        # feeds (checkpoint prepare_metric_plan, rule all's target lambda)
+        # runs long before that, so the request's identity comes from the
+        # frozen INTENT rather than waiting on a completed simulation. There
+        # is no v1 equivalent of this state: a v1 experiment's freeze writes
+        # config/simulation.json directly, so it never has an intent-only,
+        # pre-completion form to disambiguate here.
+        #
+        # simulation_schema_version is pinned to the "simulation/2" literal
+        # (matching build_metric_plan's own v2 branch), never the intent's
+        # own "simulation-intent/1" tag -- the checkpoint wildcard is fixed
+        # from this request before responses complete, and params.request is
+        # re-resolved (this time via the v2-complete branch above) once the
+        # job actually runs, so the two resolutions must hash identically.
+        intent = read_simulation_intent_v2(root)
+        request = metric_request(
+            intent["simulation_id"],
+            tokens,
+            anchor,
+            resolve_metric_environment(),
+            return_level_validation.build_declaration(),
+        )
+        request["schema_version"] = "metric-request/2"
+        request["simulation_schema_version"] = "simulation/2"
+        return request
     record = read_simulation(root)
     return metric_request(
         record["simulation_id"],

@@ -1,4 +1,5 @@
 # WF4 stage two. Every collection artifact is an external, validated leaf.
+import contextlib
 import shlex
 import subprocess
 import tempfile
@@ -65,16 +66,37 @@ def _selected_collection(wc):
 
 @contextmanager
 def _replay_output_on_error():
-    """Hide successful native-library probes, but preserve their failure diagnostics."""
-    saved_stdout = os.dup(1)
-    saved_stderr = os.dup(2)
-    failed = False
+    """Hide successful native-library probes, but preserve their failure diagnostics.
+
+    Redirection is best-effort: a console-hygiene helper must never crash a
+    scientific rule (the same rule ``toolbox_identity`` follows for provenance
+    capture). On Windows, Snakemake's local executor runs a checkpoint's
+    ``run:`` body in a spawned child process, and that child's inherited fd
+    1/2 do not always support dup2/close the way the calling process's do --
+    saving, restoring, or closing them there can raise ``OSError`` (WinError 6,
+    "the handle is invalid"). Any such failure during setup or teardown is
+    swallowed and output is left unsuppressed rather than propagated.
+    """
+    try:
+        saved_stdout = os.dup(1)
+        saved_stderr = os.dup(2)
+    except OSError:
+        yield
+        return
     capture = tempfile.TemporaryFile()
+    failed = False
     try:
         sys.stdout.flush()
         sys.stderr.flush()
         os.dup2(capture.fileno(), 1)
         os.dup2(capture.fileno(), 2)
+    except OSError:
+        for saved in (saved_stdout, saved_stderr):
+            with contextlib.suppress(OSError):
+                os.close(saved)
+        yield
+        return
+    try:
         try:
             yield
         except BaseException:
@@ -83,14 +105,17 @@ def _replay_output_on_error():
     finally:
         sys.stdout.flush()
         sys.stderr.flush()
-        os.dup2(saved_stdout, 1)
-        os.dup2(saved_stderr, 2)
-        os.close(saved_stdout)
-        os.close(saved_stderr)
+        for saved, fd in ((saved_stdout, 1), (saved_stderr, 2)):
+            with contextlib.suppress(OSError):
+                os.dup2(saved, fd)
+        for saved in (saved_stdout, saved_stderr):
+            with contextlib.suppress(OSError):
+                os.close(saved)
         if failed:
-            capture.seek(0)
-            sys.stderr.write(capture.read().decode(errors="replace"))
-            sys.stderr.flush()
+            with contextlib.suppress(OSError):
+                capture.seek(0)
+                sys.stderr.write(capture.read().decode(errors="replace"))
+                sys.stderr.flush()
         capture.close()
 
 def _live_simulation_inputs():

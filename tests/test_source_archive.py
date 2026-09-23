@@ -115,6 +115,37 @@ def test_publication_retries_transient_windows_access_denied(tmp_path, monkeypat
     )
 
 
+def test_replace_retry_budget_outlasts_the_old_10_attempt_cap(tmp_path, monkeypatch):
+    """Regression for t2609231529: a live run's antivirus/indexer held a
+    directory rename locked past the previous 10-attempt, flat-20ms budget
+    (0.2s total). This asserts the budget now survives an 11th failure --
+    something the prior `_replace` would have raised on instead of retrying.
+    """
+    monkeypatch.setattr(snapshot, "_WINDOWS_REPLACE_RETRY", True, raising=False)
+    monkeypatch.setattr(snapshot.time, "sleep", lambda _seconds: None)
+    real_replace = snapshot.os.replace
+    attempts = 0
+
+    def flaky_replace(source, target):
+        nonlocal attempts
+        attempts += 1
+        if attempts <= 11:
+            error = PermissionError(13, "Access is denied", str(source))
+            error.winerror = 5
+            raise error
+        real_replace(source, target)
+
+    monkeypatch.setattr(snapshot.os, "replace", flaky_replace)
+    source = tmp_path / "source"
+    target = tmp_path / "target"
+    source.write_text("data", encoding="utf-8")
+
+    snapshot._replace(source, target)
+
+    assert attempts == 12
+    assert target.read_text(encoding="utf-8") == "data"
+
+
 def test_experiment_owner_is_an_archive_owner_kind(tmp_path):
     project = tmp_path / "project.yml"
     project.write_text("project: {}\n", encoding="utf-8")

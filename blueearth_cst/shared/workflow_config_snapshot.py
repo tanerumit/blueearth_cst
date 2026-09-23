@@ -545,18 +545,38 @@ def _write_durable(path: Path, data: bytes) -> None:
 
 
 _WINDOWS_REPLACE_RETRY = os.name == "nt"
+#: Bounded retry budget for a Windows-only transient rename failure (WinError 5)
+#: seen when an antivirus/indexer briefly holds a handle open on a just-written
+#: file or directory -- the identical pattern already handled in
+#: dev/scripts/stage_data.py's `_write_zarr` for zarr's own metadata rename.
+#: 10 attempts at a flat 20ms (0.2s total) turned out too short for a live run:
+#: t2609231529 hit WinError 5 renaming a whole directory (`config/runs/<workflow>`,
+#: whose scan window plausibly outlasts a single file's). Exponential backoff,
+#: capped per attempt so it cannot itself become the multi-minute stall it is
+#: meant to absorb, sums to ~5s over 12 attempts -- the same order of magnitude
+#: that already resolved this pattern for zarr writes.
+_REPLACE_RETRY_ATTEMPTS = 12
+_REPLACE_RETRY_BASE_SECONDS = 0.05
+_REPLACE_RETRY_CAP_SECONDS = 0.5
 
 
 def _replace(source: Path, target: Path) -> None:
     """Replace a file or directory despite momentary Windows reader handles."""
-    for attempt in range(10):
+    for attempt in range(_REPLACE_RETRY_ATTEMPTS):
         try:
             os.replace(source, target)
             return
         except PermissionError as error:
-            if not _WINDOWS_REPLACE_RETRY or error.winerror != 5 or attempt == 9:
+            if (
+                not _WINDOWS_REPLACE_RETRY
+                or error.winerror != 5
+                or attempt == _REPLACE_RETRY_ATTEMPTS - 1
+            ):
                 raise
-            time.sleep(0.02)
+            delay = min(
+                _REPLACE_RETRY_BASE_SECONDS * (2**attempt), _REPLACE_RETRY_CAP_SECONDS
+            )
+            time.sleep(delay)
 
 
 def _atomic_json(path: Path, value: Mapping[str, Any]) -> None:

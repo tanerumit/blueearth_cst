@@ -1,10 +1,50 @@
 """Direct owned WF3 invocations are recorded at every launch outcome."""
 
 import json
+import subprocess
+import sys
 
 import pytest
 
 from scripts import generate_scenarios
+
+
+def test_source_phase_hides_console_chatter_only_on_success(capfd, monkeypatch):
+    def noisy_child(_command, **_kwargs):
+        # A genuine child process, not an in-process print: only a real OS-level
+        # fd write proves the redirect (Python's own buffered streams do not
+        # reliably observe a nested os.dup2 the way an inherited child fd does).
+        subprocess.run(
+            [sys.executable, "-c", "print('Using workflow specific profile ...')"],
+            check=False,
+        )
+        return 0
+
+    monkeypatch.setattr(generate_scenarios, "run_project_child", noisy_child)
+    code = generate_scenarios._run_source_phase_quietly(
+        ["snakemake", "--quiet", "all"], cwd=None, env={}
+    )
+    assert code == 0
+    captured = capfd.readouterr()
+    assert captured.out == ""
+    assert captured.err == ""
+
+
+def test_source_phase_replays_console_chatter_on_failure(capfd, monkeypatch):
+    def noisy_failing_child(_command, **_kwargs):
+        subprocess.run(
+            [sys.executable, "-c", "print('Using workflow specific profile ...')"],
+            check=False,
+        )
+        return 7
+
+    monkeypatch.setattr(generate_scenarios, "run_project_child", noisy_failing_child)
+    code = generate_scenarios._run_source_phase_quietly(
+        ["snakemake", "--quiet", "all"], cwd=None, env={}
+    )
+    assert code == 7
+    captured = capfd.readouterr()
+    assert "Using workflow specific profile" in captured.err
 
 
 @pytest.mark.parametrize("exit_code", [0, 9])

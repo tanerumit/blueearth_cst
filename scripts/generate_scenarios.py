@@ -1,10 +1,12 @@
 """Owned two-phase WF3 launcher: prepare sources, freeze a plan, then generate."""
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
 import sys
+import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -26,6 +28,56 @@ from blueearth_cst.shared.workflow_config_snapshot import archive_lock
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECTION = ("project", "basin", "climate", "workflows.generate_scenarios")
+
+
+@contextlib.contextmanager
+def _captured_output():
+    """Redirect stdout/stderr to a temp file, restoring them on exit.
+
+    Yields the capture file so the caller can replay it after deciding --
+    from either the return code or an exception -- whether the call failed.
+    """
+    saved_stdout = os.dup(1)
+    saved_stderr = os.dup(2)
+    capture = tempfile.TemporaryFile()
+    try:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(capture.fileno(), 1)
+        os.dup2(capture.fileno(), 2)
+        yield capture
+    finally:
+        sys.stdout.flush()
+        sys.stderr.flush()
+        os.dup2(saved_stdout, 1)
+        os.dup2(saved_stderr, 2)
+        os.close(saved_stdout)
+        os.close(saved_stderr)
+
+
+def _run_source_phase_quietly(
+    source_command: list[str], *, cwd: Path, env: dict[str, str]
+) -> int:
+    """Run the source-prep phase, replaying its console output only on failure.
+
+    The source phase re-parses data catalogs (HydroMT INFO logging) and its
+    own snakemake preamble -- a duplicate, uninformative leak in front of the
+    generation phase's identical banner when it succeeds. Mirrors
+    ``simulate_and_metrics.smk``'s ``_replay_output_on_error`` helper.
+    """
+    with _captured_output() as capture:
+        try:
+            code = run_project_child(source_command, cwd=cwd, env=env, writing=True)
+        except BaseException:
+            capture.seek(0)
+            sys.stderr.write(capture.read().decode(errors="replace"))
+            sys.stderr.flush()
+            raise
+        if code:
+            capture.seek(0)
+            sys.stderr.write(capture.read().decode(errors="replace"))
+            sys.stderr.flush()
+        return code
 
 
 def _command(config_path: Path, cores: int, extra: list[str]) -> list[str]:
@@ -63,13 +115,15 @@ def run_owned(
         "CST_GENERATION_OWNED": invocation_id,
         "CST_GENERATION_INVOCATION_ID": invocation_id,
     }
-    source_command = command if dry_run else [*command, "--quiet", "all"]
-    source_code = run_project_child(
-        source_command,
-        cwd=REPO_ROOT,
-        env={**base_env, "CST_GENERATION_PHASE": "source"},
-        writing=not dry_run,
-    )
+    source_env = {**base_env, "CST_GENERATION_PHASE": "source"}
+    if dry_run:
+        source_code = run_project_child(
+            command, cwd=REPO_ROOT, env=source_env, writing=False
+        )
+    else:
+        source_code = _run_source_phase_quietly(
+            [*command, "--quiet", "all"], cwd=REPO_ROOT, env=source_env
+        )
     if source_code or dry_run:
         return source_code
     raw = yaml.safe_load(config_path.read_text(encoding="utf-8"))

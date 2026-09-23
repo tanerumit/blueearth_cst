@@ -97,7 +97,11 @@ def _frozen_simulation(wc):
 #
 # The metric outputs are a CHECKPOINT-dependent lambda with no parse-time path,
 # so they are named in prose -- as `run_stress_test.smk` named the same target.
-WF4_TARGETS = [f"{engine_dir}/simulation.json", f"{engine_dir}/response_inventory.json"]
+WF4_TARGETS = [
+    f"{engine_dir}/simulation.json",
+    f"{engine_dir}/response_inventory.json",
+    "selected immutable metric set",
+]
 
 # 4.00  all
 rule all:
@@ -105,6 +109,7 @@ rule all:
     input:
         f"{engine_dir}/simulation.json",
         f"{engine_dir}/response_inventory.json",
+        lambda wc: _selected_metric_outputs(wc),
 
 if not _simulation_complete:
     # 4.01  write_model_reference

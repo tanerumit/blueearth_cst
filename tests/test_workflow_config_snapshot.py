@@ -196,6 +196,16 @@ def test_both_entry_points_publish_from_their_pinned_plan():
     assert "live_simulation_inputs_v2(" in wf4
 
 
+def test_simulate_and_metrics_all_targets_the_selected_metric_set():
+    """The default WF4 target must deliver both halves of its operation name."""
+    text = (
+        REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
+    ).read_text(encoding="utf-8")
+    rule_all = re.search(r"rule all:(.*?)(?:\nif not _simulation_complete:)", text, re.S)
+    assert rule_all
+    assert "_selected_metric_outputs" in rule_all.group(1)
+
+
 def test_tree_tooling_knows_the_new_leaf():
     """An unregistered path reports as unmapped and reads as stray output."""
     text = (REPO / "dev/scripts/semantic_tree_diff.py").read_text(encoding="utf-8")

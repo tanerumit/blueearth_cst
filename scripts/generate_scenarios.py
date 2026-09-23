@@ -63,8 +63,9 @@ def run_owned(
         "CST_GENERATION_OWNED": invocation_id,
         "CST_GENERATION_INVOCATION_ID": invocation_id,
     }
+    source_command = command if dry_run else [*command, "--quiet", "all"]
     source_code = run_project_child(
-        command,
+        source_command,
         cwd=REPO_ROOT,
         env={**base_env, "CST_GENERATION_PHASE": "source"},
         writing=not dry_run,

@@ -198,10 +198,12 @@ def test_both_entry_points_publish_from_their_pinned_plan():
 
 def test_simulate_and_metrics_all_targets_the_selected_metric_set():
     """The default WF4 target must deliver both halves of its operation name."""
-    text = (
-        REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
-    ).read_text(encoding="utf-8")
-    rule_all = re.search(r"rule all:(.*?)(?:\nif not _simulation_complete:)", text, re.S)
+    text = (REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk").read_text(
+        encoding="utf-8"
+    )
+    rule_all = re.search(
+        r"rule all:(.*?)(?:\nif not _simulation_complete:)", text, re.S
+    )
     assert rule_all
     assert "_selected_metric_outputs" in rule_all.group(1)
 

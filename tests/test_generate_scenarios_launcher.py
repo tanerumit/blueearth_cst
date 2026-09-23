@@ -103,4 +103,5 @@ def test_disabled_wf3_cannot_initialize_collection(tmp_path, monkeypatch):
             ]
         )
     assert len(calls) == 1  # source preparation only; no generation child
+    assert calls[0][-2:] == ["--quiet", "all"]
     assert not (project / "scenarios").exists()

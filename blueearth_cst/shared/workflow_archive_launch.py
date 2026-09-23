@@ -52,7 +52,7 @@ CONTEXT_ENV = "BLUEEARTH_WF012_CAPTURE_CONTEXT"
 # Bump whenever staging logic changes generated execution YAML while the
 # captured sources can remain byte-identical. Including this in the bundle
 # digest retains older immutable execution views instead of overwriting them.
-EXECUTION_CONFIG_SCHEMA_VERSION = "2"
+EXECUTION_CONFIG_SCHEMA_VERSION = "3"
 
 
 def split_config_overrides(extra: Sequence[str]) -> tuple[dict[str, Any], list[str]]:
@@ -127,6 +127,14 @@ def _file_specifications(
                 str(Path(settings["catalog"]).parent / "cmip6_store_index.json"),
             )
         )
+    # The vector-foundation rule is byte-identical across WF0-WF2 and consumes
+    # this basin-owned gauge file in every entry point. Staging it only for WF1
+    # makes the same rule alternate between the original absolute path and a
+    # staged path, so Snakemake reports a changed input set on every workflow
+    # switch and rebuilds the shared foundation.
+    locations = composed.get("basin", {}).get("output_locations")
+    if isinstance(locations, str):
+        values.append(("output_locations", "output_locations", locations))
     if workflow == "build_model":
         engine = settings.get("engine") or {}
         values.extend(
@@ -146,9 +154,6 @@ def _file_specifications(
                 ),
             ]
         )
-        locations = composed.get("basin", {}).get("output_locations")
-        if isinstance(locations, str):
-            values.append(("output_locations", "output_locations", locations))
         for variable, locator in sorted((settings.get("observations") or {}).items()):
             if isinstance(locator, str):
                 values.append(

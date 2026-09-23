@@ -85,6 +85,9 @@ def test_shared_dependency_stages_once_across_workflows(tmp_path):
     project_root = tmp_path / "output"
     project["project"]["project_dir"] = str(project_root)
     project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
+    locations = tmp_path / "output_locations.csv"
+    locations.write_text("id,x,y\noutlet,1,2\n", encoding="utf-8")
+    project["basin"]["output_locations"] = str(locations)
     for name, stanza in project["workflows"].items():
         if "config_path" in stanza:
             stanza["config_path"] = str(
@@ -107,10 +110,25 @@ def test_shared_dependency_stages_once_across_workflows(tmp_path):
         command=["snakemake", "all"],
         targets=["all"],
     )
+    execution_c, _ = prepare_workflow(
+        "analyze_projections",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
     catalog_a = yaml.safe_load(execution_a.read_bytes())["project"]["catalog"][0]
     catalog_b = yaml.safe_load(execution_b.read_bytes())["project"]["catalog"][0]
-    assert catalog_a == catalog_b
+    catalog_c = yaml.safe_load(execution_c.read_bytes())["project"]["catalog"][0]
+    assert catalog_a == catalog_b == catalog_c
     assert Path(catalog_a).is_relative_to(
+        project_root / "config/runs/_engine/execution-configs/_shared"
+    )
+    locations_a = yaml.safe_load(execution_a.read_bytes())["basin"]["output_locations"]
+    locations_b = yaml.safe_load(execution_b.read_bytes())["basin"]["output_locations"]
+    locations_c = yaml.safe_load(execution_c.read_bytes())["basin"]["output_locations"]
+    assert locations_a == locations_b == locations_c
+    assert Path(locations_a).is_relative_to(
         project_root / "config/runs/_engine/execution-configs/_shared"
     )
 

@@ -214,6 +214,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
         return _v2_temp[root["run_id"]].as_posix()
 
     rule generate_roots_v2:
+        message: rule_banner("3.07", "generate_roots_v2", summary="generate stochastic weather realizations")
         input:
             receipt=_v2_receipt.as_posix(),
             historical=_v2_input("historical_climate").as_posix(),
@@ -245,6 +246,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             generate_roots(root_rows, source_inputs, log_path=Path(log[0]))
 
     rule transform_member_v2:
+        message: rule_banner("3.08", "transform_member_v2", "run {wildcards.run_id}", summary="apply climate perturbations")
         input:
             receipt=_v2_receipt.as_posix(),
             ancestor=_v2_ancestor,
@@ -277,6 +279,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             )
 
     rule retain_series_v2:
+        message: rule_banner("3.09", "retain_series_v2", "run {wildcards.run_id}", quiet_start=True)
         input:
             receipt=_v2_receipt.as_posix(),
             member=lambda wc: _v2_temp[wc.run_id].as_posix(),
@@ -290,6 +293,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             shutil.copyfile(input.member, target)
 
     rule publish_collection_v2:
+        message: rule_banner("3.10", "publish_collection_v2", summary="publish the immutable scenario collection")
         input:
             receipt=_v2_receipt.as_posix(),
             series=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["series"]],

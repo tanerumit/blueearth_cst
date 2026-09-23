@@ -55,6 +55,7 @@ from blueearth_cst.shared.provenance import (
     effective_config_digest,
     environment_file_hashes,
     file_sha256,
+    short_digest,
 )
 
 SCHEMA_VERSION = 1
@@ -287,35 +288,88 @@ def capture_sources(
     return tuple(result)
 
 
+_CATALOG_ROLES = frozenset({"projection_store_index"})
+
+
+def _is_catalog_role(role: str) -> bool:
+    """A catalog itself, or ``projection_store_index`` (cmip6_store_index.json),
+    which ships beside its ``projection_catalog`` and is kept next to it for
+    convenience even though its own name doesn't say "catalog"."""
+    return "catalog" in role or role in _CATALOG_ROLES
+
+
 def source_archive_paths(sources: Sequence[CapturedSource]) -> dict[str, str]:
-    """Preserve relative structure and basenames, including across drives."""
+    """Return each source's flat archive path: ``sources/<name>``, no nesting.
+
+    Every non-catalog source lands directly under ``sources/``; a catalog
+    (``"catalog"`` anywhere in ``role``, e.g. ``data_catalog``,
+    ``projection_catalog``, plus ``projection_store_index`` which travels
+    with ``projection_catalog``) lands under ``sources/catalogs/`` instead,
+    for convenience only -- there is no third bucket. Neither reflects where
+    the file actually lived: that directory is not spent on path structure here.
+    It is retained plainly, per source, in ``run_record.yml``'s
+    ``original_path`` field, and mirrored for a reader who does not want to
+    open that record by :func:`write_source_index`'s generated
+    ``sources/SOURCES.md``.
+
+    The one thing a flat layout can lose that a mirrored tree could not is two
+    DIFFERENT files sharing a basename (a project catalog and a build config
+    both plausibly named ``config.yml`` from separate directories). Detected by
+    original path, not by content: two sources with the same original path are
+    the same file captured under two ids and legitimately share one archive
+    path. Two DIFFERENT original paths that would collide are disambiguated by
+    suffixing the losing name with :func:`~blueearth_cst.shared.provenance.
+    short_digest` of its own content hash -- deterministic, and the same
+    naming convention already used for a bundle's own directory name.
+    """
     if not sources:
         raise ValueError("an archive needs at least the project source")
-    parents = [source.original_path.parent for source in sources]
-    groups: dict[str, list[CapturedSource]] = {}
-    for source in sources:
-        anchor = source.original_path.anchor.casefold()
-        groups.setdefault(anchor, []).append(source)
-    one_volume = len(groups) == 1
-    common = Path(os.path.commonpath(parents)) if one_volume else None
-    use_groups = not one_volume or common == Path(common.anchor)
     paths: dict[str, str] = {}
     occupied: dict[str, str] = {}
     for source in sorted(sources, key=lambda item: item.id):
-        if use_groups:
-            group = hashlib.sha256(
-                str(source.original_path.parent).encode("utf-8")
-            ).hexdigest()[:12]
-            relative = Path(group) / source.original_path.name
-        else:
-            relative = source.original_path.relative_to(common)
-        archive_path = (Path("sources") / relative).as_posix()
-        key = archive_path.casefold() if os.name == "nt" else archive_path
-        if key in occupied and occupied[key] != str(source.original_path):
-            raise ValueError(f"source archive path collision: {archive_path}")
-        occupied[key] = str(source.original_path)
-        paths[source.id] = archive_path
+        bucket = "sources/catalogs" if _is_catalog_role(source.role) else "sources"
+        name = source.original_path.name
+        candidate = f"{bucket}/{name}"
+        key = candidate.casefold() if os.name == "nt" else candidate
+        original = str(source.original_path)
+        if key in occupied and occupied[key] != original:
+            digest = short_digest(hashlib.sha256(source.data).hexdigest())
+            stem = source.original_path.stem
+            suffix = source.original_path.suffix
+            candidate = f"{bucket}/{stem}-{digest}{suffix}"
+            key = candidate.casefold() if os.name == "nt" else candidate
+            if key in occupied and occupied[key] != original:
+                raise ValueError(f"source archive path collision: {candidate}")
+        occupied[key] = original
+        paths[source.id] = candidate
     return paths
+
+
+def write_source_index(sources: Sequence[CapturedSource]) -> str:
+    """Render ``sources/SOURCES.md``: the flat-name -> original-directory map.
+
+    Generated at publish time from the same data as ``run_record.yml``'s
+    ``original_path`` field -- it is a convenience mirror, not a second source
+    of truth, and carries no bytes of its own for :func:`validate_archive` to
+    check. Read this when the flat name alone does not say where a file came
+    from; read ``run_record.yml`` when you need the fact to be load-bearing.
+    """
+    paths = source_archive_paths(sources)
+    rows = sorted(
+        (paths[source.id], str(source.original_path.parent)) for source in sources
+    )
+    lines = [
+        "# Source directories",
+        "",
+        "Flat names under `sources/` do not carry their original directory --",
+        "this is a generated index, not a source file itself. The same fact is",
+        "recorded per source in `run_record.yml`'s `original_path` field.",
+        "",
+        "| archived as | original directory |",
+        "|---|---|",
+    ]
+    lines.extend(f"| `{archived}` | `{directory}` |" for archived, directory in rows)
+    return "\n".join(lines) + "\n"
 
 
 def _source_entries(
@@ -343,6 +397,9 @@ def _source_entries(
         previous = payloads.setdefault(archive_path, source.data)
         if previous != source.data:
             raise ValueError(f"conflicting source bytes: {archive_path}")
+    if "sources/SOURCES.md" in payloads:
+        raise ValueError("a captured source already occupies sources/SOURCES.md")
+    payloads["sources/SOURCES.md"] = write_source_index(sources).encode("utf-8")
     return entries, payloads
 
 

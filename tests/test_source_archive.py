@@ -1,5 +1,6 @@
 """P1 source archive: exact captured bytes and recoverable publication."""
 
+import hashlib
 import json
 import shutil
 from pathlib import Path
@@ -244,18 +245,103 @@ def test_contradictory_candidate_refuses_recovery_reader_and_next_writer(
     assert path.read_bytes() == b"corrupt"
 
 
-def test_duplicate_basenames_keep_relative_directories(tmp_path):
+def test_duplicate_basenames_are_disambiguated_by_content_digest(tmp_path):
+    """Two DIFFERENT files sharing a basename get a flat, digest-suffixed name.
+
+    Regression for the pre-flat-layout behaviour, which kept the two files
+    apart by mirroring their original directories (`sources/a/settings.yml`,
+    `sources/b/settings.yml`). The flat layout has no directory left to
+    disambiguate with, so the loser (by sorted id, same as everywhere else in
+    this module) gets a short content-hash suffix instead.
+    """
     first = tmp_path / "a" / "settings.yml"
     second = tmp_path / "b" / "settings.yml"
     first.parent.mkdir()
     second.parent.mkdir()
     first.write_bytes(b"one\n")
     second.write_bytes(b"two\n")
-    sources = capture_sources([("a", "catalog_a", first), ("b", "catalog_b", second)])
-    assert source_archive_paths(sources) == {
-        "a": "sources/a/settings.yml",
-        "b": "sources/b/settings.yml",
+    sources = capture_sources(
+        [("a", "catalog_a", first), ("b", "data_catalog", second)]
+    )
+    paths = source_archive_paths(sources)
+    assert paths["a"] == "sources/catalogs/settings.yml"
+    digest = hashlib.sha256(b"two\n").hexdigest()[:12]
+    assert paths["b"] == f"sources/catalogs/settings-{digest}.yml"
+
+
+def test_projection_store_index_travels_with_its_catalog(tmp_path):
+    """`projection_store_index` (cmip6_store_index.json) has no "catalog" in its
+    own role name, but ships beside `projection_catalog` and is bucketed with
+    it for convenience rather than left in flat `sources/`."""
+    catalog = tmp_path / "cmip6_data.yml"
+    index = tmp_path / "cmip6_store_index.json"
+    catalog.write_bytes(b"meta: {}\n")
+    index.write_bytes(b"{}\n")
+    sources = capture_sources(
+        [
+            ("projection_catalog", "projection_catalog", catalog),
+            ("projection_index", "projection_store_index", index),
+        ]
+    )
+    paths = source_archive_paths(sources)
+    assert paths == {
+        "projection_catalog": "sources/catalogs/cmip6_data.yml",
+        "projection_index": "sources/catalogs/cmip6_store_index.json",
     }
+
+
+def test_a_shared_original_path_is_not_a_collision(tmp_path):
+    """The same file captured under two ids shares one archive path, no suffix."""
+    shared = tmp_path / "catalog.yml"
+    shared.write_bytes(b"meta: {}\n")
+    sources = capture_sources(
+        [("a", "data_catalog", shared), ("b", "data_catalog", shared)]
+    )
+    paths = source_archive_paths(sources)
+    assert paths == {
+        "a": "sources/catalogs/catalog.yml",
+        "b": "sources/catalogs/catalog.yml",
+    }
+
+
+def test_non_catalog_sources_are_flat_with_no_directory_structure(tmp_path):
+    """A project config and a build config in different directories both land
+    directly under `sources/`, with no mirrored subdirectory."""
+    project = tmp_path / "outer" / "project_config.yml"
+    build_config = tmp_path / "inner" / "wflow_build_model.yml"
+    project.parent.mkdir()
+    build_config.parent.mkdir()
+    project.write_bytes(b"project: {}\n")
+    build_config.write_bytes(b"setup_config: {}\n")
+    sources = capture_sources(
+        [
+            ("project", "project_config", project),
+            ("build_config", "build_config", build_config),
+        ]
+    )
+    assert source_archive_paths(sources) == {
+        "project": "sources/project_config.yml",
+        "build_config": "sources/wflow_build_model.yml",
+    }
+
+
+def test_source_index_maps_flat_names_to_original_directories(tmp_path):
+    """`sources/SOURCES.md` mirrors what `run_record.yml` already records."""
+    project = tmp_path / "outer" / "project_config.yml"
+    catalog = tmp_path / "inner" / "catalog.yml"
+    project.parent.mkdir()
+    catalog.parent.mkdir()
+    project.write_bytes(b"project: {}\n")
+    catalog.write_bytes(b"meta: {}\n")
+    sources = capture_sources(
+        [
+            ("project", "project_config", project),
+            ("catalog", "data_catalog", catalog),
+        ]
+    )
+    index = snapshot.write_source_index(sources)
+    assert f"| `sources/project_config.yml` | `{project.parent}` |" in index
+    assert f"| `sources/catalogs/catalog.yml` | `{catalog.parent}` |" in index
 
 
 def test_file_reference_refuses_tampered_bytes_and_unbound_paths(tmp_path):

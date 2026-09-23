@@ -114,6 +114,67 @@ def test_shared_dependency_stages_once_across_workflows(tmp_path):
     )
 
 
+def test_projection_catalog_and_store_index_stage_as_siblings(tmp_path):
+    """`cmip6_data.yml` and `cmip6_store_index.json` must land in ONE shared
+    subfolder even though their bytes (and therefore per-file content hashes)
+    differ.
+
+    Regression: staging keyed each dependency by its OWN content hash, so the
+    catalog and its store index -- deliberately bucketed together under
+    "projection_catalog" -- still landed in two DIFFERENT hash subfolders
+    whenever their bytes differed (always, in practice: one is YAML, the
+    other a generated JSON crawl). `analyze_projections.smk` finds the index
+    by guessing "beside the catalog" (`STORE_INDEX = Path(DATA_SOURCES).parent
+    / "cmip6_store_index.json"`, a documented D12 invariant, not a
+    coincidence), so the guess silently missed and every series was staged
+    with empty pins -- degrading not just physical-identity digesting but
+    calendar detection, which refuses outright when it has no pin to read a
+    store from.
+    """
+    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project_root = tmp_path / "output"
+    project["project"]["project_dir"] = str(project_root)
+    project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
+    stanza = project["workflows"]["analyze_projections"]
+    stanza["config_path"] = str((ROOT / "test_case" / stanza["config_path"]).resolve())
+    catalog = tmp_path / "cmip6_data.yml"
+    index = tmp_path / "cmip6_store_index.json"
+    catalog.write_text(
+        (ROOT / "config/catalogs/cmip6_data.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    # Deliberately different bytes from the catalog, as a real crawl output is.
+    index.write_text('{"sources": {}}', encoding="utf-8")
+    workflow_config = yaml.safe_load(
+        (ROOT / "test_case" / stanza["config_path"]).read_text()
+    )
+    workflow_config["catalog"] = str(catalog)
+    workflow_file = tmp_path / "project_config_rapid_analyze_projections.yml"
+    workflow_file.write_text(yaml.safe_dump(workflow_config), encoding="utf-8")
+    stanza["config_path"] = str(workflow_file)
+    project_file = tmp_path / "project_config_test.yml"
+    project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
+
+    execution, _ = prepare_workflow(
+        "analyze_projections",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    execution_workflow = yaml.safe_load(
+        Path(
+            yaml.safe_load(execution.read_bytes())["workflows"]["analyze_projections"][
+                "config_path"
+            ]
+        ).read_bytes()
+    )
+    staged_catalog = Path(execution_workflow["catalog"])
+    staged_index = staged_catalog.parent / "cmip6_store_index.json"
+    assert staged_index.is_file()
+    assert staged_index.read_text(encoding="utf-8") == index.read_text(encoding="utf-8")
+
+
 def test_raw_execution_refuses_without_capture(monkeypatch, tmp_path):
     monkeypatch.delenv(CONTEXT_ENV, raising=False)
     with pytest.raises(ValueError, match="pre-parse source capture"):

@@ -288,11 +288,37 @@ def prepare_workflow(
     )
     replacements: dict[Path, Path] = {}
     generated_paths = []
+    # `projection_catalog` and `projection_index` (cmip6_store_index.json) are a
+    # crawl PAIR the Snakefile finds by guessing "beside the catalog" rather than
+    # reading a resolved path for each: `STORE_INDEX = Path(DATA_SOURCES).parent /
+    # "cmip6_store_index.json"` (analyze_projections.smk), because "the store
+    # index sits beside the catalog that generated it" is a D12 invariant, not a
+    # coincidence. Content-addressing each file by its OWN bytes broke that guess
+    # the moment their bytes differ: two different hashes put them in two
+    # different subfolders under the shared "projection_catalog" bucket, so the
+    # sibling guess never resolves and `load_pins` silently returns `{}` even
+    # though the index file exists and genuinely has pins for the entry -- it is
+    # simply one folder over. Hash the PAIR together instead, so they always
+    # land in the same subfolder; either file changing still moves the shared
+    # hash, so this stays content-addressed.
+    pair_ids = {"projection_catalog", "projection_index"}
+    pair_sources = [source for source in custom if source.id in pair_ids]
+    pair_hash = None
+    if len(pair_sources) == len(pair_ids):
+        combined = b"".join(
+            hashlib.sha256(source.data).digest()
+            for source in sorted(pair_sources, key=lambda item: item.id)
+        )
+        pair_hash = short_digest(hashlib.sha256(combined).hexdigest())
     for source in custom:
         dependency_dir = (
             "projection_catalog" if source.id == "projection_index" else source.id
         )
-        content_hash = short_digest(hashlib.sha256(source.data).hexdigest())
+        content_hash = (
+            pair_hash
+            if source.id in pair_ids and pair_hash is not None
+            else short_digest(hashlib.sha256(source.data).hexdigest())
+        )
         destination = (
             dependency_root / dependency_dir / content_hash / source.original_path.name
         )

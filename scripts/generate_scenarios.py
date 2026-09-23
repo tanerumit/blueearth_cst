@@ -80,6 +80,28 @@ def _run_source_phase_quietly(
         return code
 
 
+def _plan_quietly(config: dict) -> tuple[dict, dict, dict]:
+    """Freeze WF3's settings/candidate/plan, replaying console output only on failure.
+
+    ``build_candidate_intent`` reparses the staged data catalogs through
+    HydroMT to verify unit arithmetic, which prints an unstyled INFO line --
+    the same leak ``_run_source_phase_quietly`` already hides for the
+    subprocess it wraps. This step runs in-process between the two snakemake
+    children, so it needs the same fd-level capture rather than a subprocess one.
+    """
+    with _captured_output() as capture:
+        try:
+            settings = generation_configuration(config, REPO_ROOT)
+            candidate = build_candidate_intent(settings)
+            plan = select_generation_plan(settings, candidate)
+        except BaseException:
+            capture.seek(0)
+            sys.stderr.write(capture.read().decode(errors="replace"))
+            sys.stderr.flush()
+            raise
+    return settings, candidate, plan
+
+
 def _command(config_path: Path, cores: int, extra: list[str]) -> list[str]:
     return [
         "snakemake",
@@ -137,9 +159,7 @@ def run_owned(
         raise ValueError("WF3 is disabled in this project configuration")
     if Path(config["project"]["project_dir"]).resolve() != project_root:
         raise ValueError("WF3 config project root differs from owned root")
-    settings = generation_configuration(config, REPO_ROOT)
-    candidate = build_candidate_intent(settings)
-    plan = select_generation_plan(settings, candidate)
+    settings, candidate, plan = _plan_quietly(config)
     plan_path, plan_sha256 = publish_plan_pointer(settings, plan)
     lookup_path = (
         Path(settings["request_path"]).parent

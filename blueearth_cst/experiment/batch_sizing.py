@@ -283,3 +283,26 @@ def resolve_batch_size(
         footprint=footprint,
         warning=warning,
     )
+
+
+def split_evenly(members, batch_size):
+    """``members`` in ``ceil(K / B)`` consecutive batches whose sizes differ by at most one.
+
+    ``batch_size`` is a CEILING, not a quota. Filling batches of exactly ``B``
+    leaves the remainder in one short batch -- 10 members at B=8 ran as 8 + 2,
+    so the last batch paid a whole Julia start-up for two members, and on
+    several cores left the others idle while it finished. The batch COUNT is
+    unchanged, so start-up cost is too; only the imbalance goes. Order is
+    preserved, which keeps each batch's run ids ascending as the driver requires.
+    """
+    members = list(members)
+    if not members:
+        return []
+    count = -(-len(members) // max(1, int(batch_size)))
+    base, extra = divmod(len(members), count)
+    batches, start = [], 0
+    for index in range(count):
+        size = base + (1 if index < extra else 0)
+        batches.append(members[start : start + size])
+        start += size
+    return batches

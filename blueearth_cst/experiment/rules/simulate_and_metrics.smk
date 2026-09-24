@@ -12,7 +12,7 @@ from blueearth_cst.experiment.simulation_record import live_simulation_inputs_v2
 from blueearth_cst.experiment.wf4_ancillary_descriptor import resolve_wf4_preparation
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import resolved_unit_interpretation
 from blueearth_cst.experiment.allocate import resolve_default_experiment_name
-from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
+from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size, split_evenly
 from blueearth_cst.shared.indicator_tables import indicator_tables
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, validate_experiment_name
 from blueearth_cst.shared.console_style import RuleRegistry, defer_warning, target_banner
@@ -220,8 +220,7 @@ if not _simulation_complete:
         # calls the other workflows used. Deferred rather than printed
         # because this is parse time -- `defer_warning` says why.
         defer_warning(sizing.warning, module='batching')
-    for batch, offset in enumerate(range(0, len(RUN_IDS), sizing.batch_size)):
-        members = RUN_IDS[offset:offset + sizing.batch_size]
+    for batch, members in enumerate(split_evenly(RUN_IDS, sizing.batch_size)):
         # 4.05  run_wflow_simulations_batch_<b> — one bounded batch of retained runs
         rule:
             name: RUN_WFLOW_SIMULATIONS.job_name(f"batch_{batch}")

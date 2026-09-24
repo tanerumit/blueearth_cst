@@ -19,6 +19,7 @@ from blueearth_cst.experiment.batch_sizing import (
     disk_headroom_bytes,
     measure_member_footprint,
     resolve_batch_size,
+    split_evenly,
 )
 from blueearth_cst.experiment.forcing_window import (
     forcing_window,
@@ -345,3 +346,25 @@ class TestAdvancedSetting:
         from blueearth_cst.shared.snake_utils import _unit_fraction
 
         assert _unit_fraction(good, "where") == float(good)
+
+
+@pytest.mark.parametrize(
+    ("members", "cap", "sizes"),
+    [
+        (10, 8, [5, 5]),
+        (10, 4, [4, 3, 3]),
+        (12, 4, [4, 4, 4]),
+        (7, 8, [7]),
+        (3, 1, [1, 1, 1]),
+    ],
+)
+def test_batches_are_split_evenly_under_the_cap(members, cap, sizes):
+    """The cap sets the batch COUNT; the remainder is shared, never left alone."""
+    ids = [f"{i:02d}" for i in range(members)]
+    batches = split_evenly(ids, cap)
+    assert [len(b) for b in batches] == sizes
+    assert [run for batch in batches for run in batch] == ids
+
+
+def test_no_members_means_no_batches():
+    assert split_evenly([], 8) == []

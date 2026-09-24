@@ -39,6 +39,7 @@
 | [t2609172119](tasks/t2609172119-snakemake-s-error-block-keeps-full-length-paths-that-every-other-console-row-shortens.md)                   | Snakemake's error block keeps full-length paths that every other console row shortens                    | console / path tokens                       | wf1 failure-transcript render, 2026-09-17           |     | backlog |
 | [t2609181501](tasks/t2609181501-settle-wf0-climate-extraction-s-memory-growth-then-take-the-remaining-transfer-levers.md)                   | Settle wf0 climate extraction's memory growth, then take the remaining transfer levers                   | wf0 climate extraction                      | t2609181316 gabon-ntoum-deltares slow era5 download |     | active  |
 | [t2609241523](tasks/t2609241523-test-full-18-failures-and-23-errors-from-launch-guards-in-pre-launcher-contract-tests.md)                   | test-full: 18 failures and 23 errors from launch guards in pre-launcher contract tests                   | tests                                       | wf3 generation bundle (2026-09-24)                  |     | backlog |
+| [t2609241822](tasks/t2609241822-interchange-integration-tests-read-the-pre-successor-wf4-layout.md)                                         | Interchange integration tests read the pre-successor WF4 layout                                          | tests                                       | wf3 identity bundle (2026-09-24)                    |     | backlog |
 
 ## Watching
 

@@ -750,6 +750,15 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     # A disabled workflow gets NO band -- the sequence diagram above already
     # named it, once, before anything ran.
     assert "WF2  ANALYZE PROJECTIONS  --  STARTING" not in out
+    # WF4's band must show the snakemake invocation it actually launches, not
+    # `simulate_system.py`'s own entry-point command -- the wrapper script is
+    # an implementation detail of getting there, never what ran.
+    wf4_title_at = next(
+        i for i, line in enumerate(lines) if "WF4  SIMULATE SYSTEM  --" in line
+    )
+    assert "-m snakemake" in lines[wf4_title_at + 1]
+    assert "simulate_system.smk" in lines[wf4_title_at + 1]
+    assert "simulate_system.py" not in lines[wf4_title_at + 1]
 
 
 def test_every_wrapper_utterance_is_bounded_by_a_rule(tmp_path, capture_runs, capsys):
@@ -836,6 +845,48 @@ def test_failure_console_carries_the_verdict_and_what_did_not_run(
         "wf4 simulate_system" in out
     )
     assert "the failing workflow's own output is printed above" in out
+    assert "exit code 4 is not one Snakemake's own CLI ever raises" in out
+
+
+def test_ordinary_dag_failure_carries_no_unusual_exit_note(
+    tmp_path, capture_runs, capsys
+):
+    """Exit 1 is Snakemake's own DAG/job-failure code -- no extra diagnosis fires.
+
+    Snakemake's CLI exits 0 or 1 for everything it reports itself, so a plain
+    ``1`` needs no cross-check against ``.snakemake/log``: the traceback or
+    ``RuleException`` already printed above IS the complete account.
+    """
+    _, exits = capture_runs
+    exits[1] = 1  # build_model, the second invoked workflow
+    code, out, _ = _run_and_capture(
+        tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
+    )
+    assert code == 1
+    assert "[2/5]  WF1  BUILD MODEL  --  FAILED (exit 1) after 0:00:0" in out
+    assert "is not one Snakemake's own CLI ever raises" not in out
+
+
+def test_unusual_exit_code_points_at_the_snakemake_log_for_cross_check(
+    tmp_path, capture_runs, capsys
+):
+    """An exit code outside {0, 1} is a process-teardown clue, not a rule failure.
+
+    A code Snakemake's own CLI never raises means whatever produced it ran
+    AFTER Snakemake had already returned -- so the diagnosis names the newest
+    ``.snakemake/log`` file, letting a reader check whether Snakemake's own
+    account there ended cleanly despite the wrapper seeing a nonzero code.
+    """
+    _, exits = capture_runs
+    exits[4] = 120  # simulate_system, the fifth invoked workflow
+    code, out, _ = _run_and_capture(
+        tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
+    )
+    assert code == 120
+    assert "[5/5]  WF4  SIMULATE SYSTEM  --  FAILED (exit 120) after 0:00:0" in out
+    assert (
+        "exit code 120 is not one Snakemake's own CLI ever raises (only 0 or 1)" in out
+    )
 
 
 def test_a_launch_error_still_closes_with_a_report(

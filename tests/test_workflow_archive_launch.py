@@ -7,6 +7,7 @@ from types import SimpleNamespace
 import pytest
 import yaml
 
+from blueearth_cst.shared import workflow_archive_launch as launch
 from blueearth_cst.shared.workflow_archive_launch import (
     CONTEXT_ENV,
     prepare_workflow,
@@ -68,6 +69,164 @@ def test_preparse_capture_survives_source_edit(tmp_path, capsys):
     ) == yaml.safe_load(source_bytes)
     assert json.loads(context.read_text())["archive_id"] == record["archive_id"]
     assert "[config_composition] skipped unreadable" not in capsys.readouterr().out
+
+
+def test_shared_dependency_stages_once_across_workflows(tmp_path):
+    """A dependency shared by two workflows resolves to one execution path.
+
+    Regression for the bug where each workflow staged its own copy of the same
+    data catalog under its own bundle digest: WF0/WF1/WF2 declare byte-identical
+    shared-foundation rules (delineate_region and friends) over that catalog,
+    so a per-workflow staging path made Snakemake see a changed input set --
+    and rebuild the whole foundation -- every time a different workflow last
+    ran, even with nothing to redo.
+    """
+    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project_root = tmp_path / "output"
+    project["project"]["project_dir"] = str(project_root)
+    project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
+    locations = tmp_path / "output_locations.csv"
+    locations.write_text("id,x,y\noutlet,1,2\n", encoding="utf-8")
+    project["basin"]["output_locations"] = str(locations)
+    for name, stanza in project["workflows"].items():
+        if "config_path" in stanza:
+            stanza["config_path"] = str(
+                (ROOT / "test_case" / stanza["config_path"]).resolve()
+            )
+    project_file = tmp_path / "project_config_test.yml"
+    project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
+
+    execution_a, _ = prepare_workflow(
+        "analyze_climate",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    execution_b, _ = prepare_workflow(
+        "build_model",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    execution_c, _ = prepare_workflow(
+        "analyze_projections",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    catalog_a = yaml.safe_load(execution_a.read_bytes())["project"]["catalog"][0]
+    catalog_b = yaml.safe_load(execution_b.read_bytes())["project"]["catalog"][0]
+    catalog_c = yaml.safe_load(execution_c.read_bytes())["project"]["catalog"][0]
+    assert catalog_a == catalog_b == catalog_c
+    assert Path(catalog_a).is_relative_to(
+        project_root / "config/runs/_engine/execution-configs/_shared"
+    )
+    locations_a = yaml.safe_load(execution_a.read_bytes())["basin"]["output_locations"]
+    locations_b = yaml.safe_load(execution_b.read_bytes())["basin"]["output_locations"]
+    locations_c = yaml.safe_load(execution_c.read_bytes())["basin"]["output_locations"]
+    assert locations_a == locations_b == locations_c
+    assert Path(locations_a).is_relative_to(
+        project_root / "config/runs/_engine/execution-configs/_shared"
+    )
+
+
+def test_execution_config_schema_moves_immutable_bundle_directory(
+    tmp_path, monkeypatch
+):
+    """A staging-format change gets a new bundle path for unchanged sources."""
+    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project_root = tmp_path / "output"
+    project["project"]["project_dir"] = str(project_root)
+    project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
+    stanza = project["workflows"]["analyze_climate"]
+    stanza["config_path"] = str((ROOT / "test_case" / stanza["config_path"]).resolve())
+    project_file = tmp_path / "project_config_test.yml"
+    project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
+
+    monkeypatch.setattr(launch, "EXECUTION_CONFIG_SCHEMA_VERSION", "legacy")
+    legacy, _ = prepare_workflow(
+        "analyze_climate",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    monkeypatch.setattr(launch, "EXECUTION_CONFIG_SCHEMA_VERSION", "current")
+    current, _ = prepare_workflow(
+        "analyze_climate",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+
+    assert legacy.parent != current.parent
+    assert legacy.is_file()
+    assert current.is_file()
+
+
+def test_projection_catalog_and_store_index_stage_as_siblings(tmp_path):
+    """`cmip6_data.yml` and `cmip6_store_index.json` must land in ONE shared
+    subfolder even though their bytes (and therefore per-file content hashes)
+    differ.
+
+    Regression: staging keyed each dependency by its OWN content hash, so the
+    catalog and its store index -- deliberately bucketed together under
+    "projection_catalog" -- still landed in two DIFFERENT hash subfolders
+    whenever their bytes differed (always, in practice: one is YAML, the
+    other a generated JSON crawl). `analyze_projections.smk` finds the index
+    by guessing "beside the catalog" (`STORE_INDEX = Path(DATA_SOURCES).parent
+    / "cmip6_store_index.json"`, a documented D12 invariant, not a
+    coincidence), so the guess silently missed and every series was staged
+    with empty pins -- degrading not just physical-identity digesting but
+    calendar detection, which refuses outright when it has no pin to read a
+    store from.
+    """
+    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project_root = tmp_path / "output"
+    project["project"]["project_dir"] = str(project_root)
+    project["project"]["catalog"] = [str((ROOT / "config/catalogs/deltares_data.yml"))]
+    stanza = project["workflows"]["analyze_projections"]
+    stanza["config_path"] = str((ROOT / "test_case" / stanza["config_path"]).resolve())
+    catalog = tmp_path / "cmip6_data.yml"
+    index = tmp_path / "cmip6_store_index.json"
+    catalog.write_text(
+        (ROOT / "config/catalogs/cmip6_data.yml").read_text(encoding="utf-8"),
+        encoding="utf-8",
+    )
+    # Deliberately different bytes from the catalog, as a real crawl output is.
+    index.write_text('{"sources": {}}', encoding="utf-8")
+    workflow_config = yaml.safe_load(
+        (ROOT / "test_case" / stanza["config_path"]).read_text()
+    )
+    workflow_config["catalog"] = str(catalog)
+    workflow_file = tmp_path / "project_config_rapid_analyze_projections.yml"
+    workflow_file.write_text(yaml.safe_dump(workflow_config), encoding="utf-8")
+    stanza["config_path"] = str(workflow_file)
+    project_file = tmp_path / "project_config_test.yml"
+    project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
+
+    execution, _ = prepare_workflow(
+        "analyze_projections",
+        project_file,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+    )
+    execution_workflow = yaml.safe_load(
+        Path(
+            yaml.safe_load(execution.read_bytes())["workflows"]["analyze_projections"][
+                "config_path"
+            ]
+        ).read_bytes()
+    )
+    staged_catalog = Path(execution_workflow["catalog"])
+    staged_index = staged_catalog.parent / "cmip6_store_index.json"
+    assert staged_index.is_file()
+    assert staged_index.read_text(encoding="utf-8") == index.read_text(encoding="utf-8")
 
 
 def test_raw_execution_refuses_without_capture(monkeypatch, tmp_path):

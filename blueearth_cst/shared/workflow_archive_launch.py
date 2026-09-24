@@ -1,8 +1,14 @@
 """Pre-parse capture and archive admission for WF0--WF2 launches.
 
-The source buffers are captured before Snakemake sees a configfile. The
-execution copies are content addressed, so the paths used by rules and R stay
-stable across an unchanged rerun. The original bytes live in run-record/2.
+The source buffers are captured before Snakemake sees a configfile. External
+dependency files (data catalogs, build/waterbodies configs, observations) are
+staged content-addressed and shared across workflows, so an unchanged
+dependency resolves to the same execution path from WF0, WF1 or WF2 alike --
+this is what lets the shared-foundation rules (delineate_region and friends)
+skip on a rerun instead of rebuilding every time a different workflow last
+touched them. The composed project/workflow config documents remain staged
+per workflow bundle, since their content is workflow-specific by design. The
+original bytes live in run-record/2.
 """
 
 from __future__ import annotations
@@ -23,8 +29,12 @@ from blueearth_cst.shared.config_composition import (
     compose_captured_config,
     compose_config,
 )
-from blueearth_cst.shared.provenance import environment_file_hashes, toolbox_identity
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS
+from blueearth_cst.shared.provenance import (
+    environment_file_hashes,
+    short_digest,
+    toolbox_identity,
+)
+from blueearth_cst.shared.wf3_science import ADVANCED_SETTINGS
 from blueearth_cst.shared.workflow_config_snapshot import (
     CapturedSource,
     archive_lock,
@@ -39,6 +49,10 @@ from blueearth_cst.shared.workflow_config_snapshot import (
 WORKFLOWS = ("analyze_climate", "build_model", "analyze_projections")
 PROJECTION = ("project", "basin", "climate", "model")
 CONTEXT_ENV = "BLUEEARTH_WF012_CAPTURE_CONTEXT"
+# Bump whenever staging logic changes generated execution YAML while the
+# captured sources can remain byte-identical. Including this in the bundle
+# digest retains older immutable execution views instead of overwriting them.
+EXECUTION_CONFIG_SCHEMA_VERSION = "3"
 
 
 def split_config_overrides(extra: Sequence[str]) -> tuple[dict[str, Any], list[str]]:
@@ -92,6 +106,28 @@ def _write_once(path: Path, data: bytes) -> None:
         os.fsync(handle.fileno())
 
 
+def stage_shared_dependency(
+    project_root: Path, dependency_id: str, source: Path
+) -> Path:
+    """Stage one immutable dependency at its cross-workflow canonical path."""
+    source = Path(source).resolve(strict=True)
+    data = source.read_bytes()
+    digest = short_digest(hashlib.sha256(data).hexdigest())
+    destination = (
+        Path(project_root).resolve()
+        / "config"
+        / "runs"
+        / "_engine"
+        / "execution-configs"
+        / "_shared"
+        / dependency_id
+        / digest
+        / source.name
+    )
+    _write_once(destination, data)
+    return destination
+
+
 def _file_specifications(
     workflow: str, composed: Mapping[str, Any]
 ) -> list[tuple[str, str, Path]]:
@@ -113,6 +149,14 @@ def _file_specifications(
                 str(Path(settings["catalog"]).parent / "cmip6_store_index.json"),
             )
         )
+    # The vector-foundation rule is byte-identical across WF0-WF2 and consumes
+    # this basin-owned gauge file in every entry point. Staging it only for WF1
+    # makes the same rule alternate between the original absolute path and a
+    # staged path, so Snakemake reports a changed input set on every workflow
+    # switch and rebuilds the shared foundation.
+    locations = composed.get("basin", {}).get("output_locations")
+    if isinstance(locations, str):
+        values.append(("output_locations", "output_locations", locations))
     if workflow == "build_model":
         engine = settings.get("engine") or {}
         values.extend(
@@ -132,9 +176,6 @@ def _file_specifications(
                 ),
             ]
         )
-        locations = composed.get("basin", {}).get("output_locations")
-        if isinstance(locations, str):
-            values.append(("output_locations", "output_locations", locations))
         for variable, locator in sorted((settings.get("observations") or {}).items()):
             if isinstance(locator, str):
                 values.append(
@@ -244,13 +285,16 @@ def prepare_workflow(
     for source in custom:
         _check_relocatable_yaml(source)
     sources = (*initial, *custom)
-    material = [
+    material = [("execution_config_schema", EXECUTION_CONFIG_SCHEMA_VERSION)]
+    material.extend(
         (source.id, str(source.original_path), hashlib.sha256(source.data).hexdigest())
         for source in sources
-    ]
-    digest = hashlib.sha256(
-        json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
-    ).hexdigest()
+    )
+    digest = short_digest(
+        hashlib.sha256(
+            json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        ).hexdigest()
+    )
     stage = (
         project_root
         / "config"
@@ -260,16 +304,65 @@ def prepare_workflow(
         / workflow
         / digest
     )
+    # Content-addressed by the FILE's own bytes, in a bucket shared across
+    # workflows -- not nested under this workflow's own `stage` (bundle digest).
+    # WF0/WF1/WF2 declare byte-identical shared-foundation rules (delineate_region,
+    # delineate_spatial_units, extract_historical_climate) that consume a
+    # dependency such as the project data catalog. Staging it under `stage` kept
+    # a separate copy per workflow, at a path that changed whenever ANY other
+    # part of that workflow's bundle changed -- so switching between workflows
+    # made Snakemake see a changed input set on every shared rule and rebuild
+    # the whole foundation on every run, even with nothing to redo. Keying on
+    # the dependency's own hash instead means an unchanged file resolves to the
+    # same execution path no matter which workflow staged it first.
+    dependency_root = (
+        project_root / "config" / "runs" / "_engine" / "execution-configs" / "_shared"
+    )
     replacements: dict[Path, Path] = {}
     generated_paths = []
+    # `projection_catalog` and `projection_index` (cmip6_store_index.json) are a
+    # crawl PAIR the Snakefile finds by guessing "beside the catalog" rather than
+    # reading a resolved path for each: `STORE_INDEX = Path(DATA_SOURCES).parent /
+    # "cmip6_store_index.json"` (analyze_projections.smk), because "the store
+    # index sits beside the catalog that generated it" is a D12 invariant, not a
+    # coincidence. Content-addressing each file by its OWN bytes broke that guess
+    # the moment their bytes differ: two different hashes put them in two
+    # different subfolders under the shared "projection_catalog" bucket, so the
+    # sibling guess never resolves and `load_pins` silently returns `{}` even
+    # though the index file exists and genuinely has pins for the entry -- it is
+    # simply one folder over. Hash the PAIR together instead, so they always
+    # land in the same subfolder; either file changing still moves the shared
+    # hash, so this stays content-addressed.
+    pair_ids = {"projection_catalog", "projection_index"}
+    pair_sources = [source for source in custom if source.id in pair_ids]
+    pair_hash = None
+    if len(pair_sources) == len(pair_ids):
+        combined = b"".join(
+            hashlib.sha256(source.data).digest()
+            for source in sorted(pair_sources, key=lambda item: item.id)
+        )
+        pair_hash = short_digest(hashlib.sha256(combined).hexdigest())
     for source in custom:
         dependency_dir = (
             "projection_catalog" if source.id == "projection_index" else source.id
         )
-        destination = (
-            stage / "dependencies" / dependency_dir / source.original_path.name
+        content_hash = (
+            pair_hash
+            if source.id in pair_ids and pair_hash is not None
+            else short_digest(hashlib.sha256(source.data).hexdigest())
         )
-        _write_once(destination, source.data)
+        if pair_hash is None or source.id not in pair_ids:
+            destination = stage_shared_dependency(
+                project_root, dependency_dir, source.original_path
+            )
+        else:
+            destination = (
+                dependency_root
+                / dependency_dir
+                / content_hash
+                / source.original_path.name
+            )
+            _write_once(destination, source.data)
         generated_paths.append((f"execution_{source.id}", destination))
         replacements[source.original_path] = destination
     workflow_source = next(

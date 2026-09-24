@@ -5,7 +5,14 @@ import os
 
 import pytest
 
-from blueearth_cst.experiment.generation_plan import snapshot_generation_input
+from blueearth_cst.experiment.generation_plan import (
+    generation_configuration,
+    snapshot_generation_input,
+)
+from blueearth_cst.shared.config_composition import load_composed_config
+from blueearth_cst.shared.workflow_archive_launch import stage_shared_dependency
+
+ROOT = os.path.dirname(os.path.dirname(__file__))
 
 
 def test_snapshot_is_independent_of_live_source_and_refuses_changed_bytes(tmp_path):
@@ -28,3 +35,21 @@ def test_snapshot_is_independent_of_live_source_and_refuses_changed_bytes(tmp_pa
     os.utime(source, ns=(stat.st_atime_ns, stat.st_mtime_ns))
     with pytest.raises(ValueError, match="snapshot bytes differ"):
         snapshot_generation_input(project, source.parent / source.name)
+
+
+def test_wf3_region_uses_the_cross_workflow_catalog_path(tmp_path):
+    """WF3 must not replace the shared region rule's catalog path with its pin."""
+    config = load_composed_config(
+        os.path.join(ROOT, "test_case", "project_config_rapid.yml")
+    )
+    project = tmp_path / "project"
+    catalog = tmp_path / "deltares_data.yml"
+    catalog.write_text("meta:\n  roots: [C:/data]\n", encoding="utf-8")
+    config["project"]["project_dir"] = str(project)
+    config["project"]["catalog"] = str(catalog)
+
+    settings = generation_configuration(config, ROOT)
+    expected = stage_shared_dependency(project, "project_catalog_0", catalog)
+
+    assert settings["region"].inputs["catalog"] == str(expected)
+    assert settings["catalogs"] == [str(catalog)]

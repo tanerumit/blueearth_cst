@@ -143,5 +143,15 @@ def test_non_positive_or_non_integer_threads_are_rejected(bad):
         validate_julia_threads(bad)
 
 
+def test_the_refusal_names_keys_a_user_can_actually_set():
+    """`shared.julia_threads` was removed by C-54; naming it sent users nowhere."""
+    with pytest.raises(ValueError) as error:
+        validate_julia_threads(0)
+    message = str(error.value)
+    assert "shared.julia_threads" not in message
+    assert "advanced_settings.runtime.julia_threads" in message
+    assert "--set-threads" in message
+
+
 def test_a_valid_override_is_returned_unchanged():
     assert validate_julia_threads(12) == 12

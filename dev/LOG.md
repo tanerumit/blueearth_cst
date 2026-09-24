@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2609161500 | The julia_threads refusal names a key a project cannot set | config / error messages |
 | 2026-09-24 | t2608071217 | One failing member re-runs its whole WF4 Wflow batch | wf4 batching |
 | 2026-09-24 | t2609241942 | Rename WF4 rules to domain names, hide targets, renumber 4.01-4.10 | wf4  |
 | 2026-09-24 | t2609241947 | Rename and renumber WF0-WF3 rules to domain names (screening 2026-09-24) | workflows |

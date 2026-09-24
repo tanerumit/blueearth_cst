@@ -50,3 +50,32 @@ def test_shared_orography_reuses_verified_bytes_and_refuses_tampering(tmp_path):
     assert source.read_bytes() == before
     with pytest.raises(ValueError, match="artifact reference bytes differ"):
         resolve_shared_orography(project, reference, descriptor, **args)
+
+
+def test_shared_orography_uses_the_short_handle_and_still_reads_the_long_form(
+    tmp_path,
+):
+    import shutil
+
+    source = tmp_path / "external.nc"
+    source.write_bytes(b"elevation")
+    project = tmp_path / "project"
+    args = {
+        "source_name": "era5",
+        "basename": "era5_orography_2018.nc",
+        "describe": _describe,
+    }
+    reference, descriptor = publish_shared_orography(source, project, **args)
+    target = resolve_shared_orography(project, reference, descriptor, **args)
+    assert target.parent.name == reference["sha256"][:12]
+    # An experiment recorded before 2026-09-24 points at the 64-character folder.
+    legacy = target.parent.parent / reference["sha256"] / target.name
+    legacy.parent.mkdir()
+    shutil.copyfile(target, legacy)
+    legacy_reference = {
+        **reference,
+        "path": legacy.relative_to(project.resolve()).as_posix(),
+    }
+    assert resolve_shared_orography(project, legacy_reference, descriptor, **args) == (
+        legacy
+    )

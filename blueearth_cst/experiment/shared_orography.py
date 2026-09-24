@@ -7,15 +7,27 @@ from collections.abc import Callable, Mapping
 from pathlib import Path, PureWindowsPath
 from typing import Any
 
-from blueearth_cst.shared.provenance import file_sha256
+from blueearth_cst.shared.provenance import file_sha256, short_digest
 from blueearth_cst.shared.workflow_config_snapshot import (
     file_reference,
     resolve_file_reference,
 )
 
 
-def _target(project_root: Path, source_name: str, digest: str, basename: str) -> Path:
-    """Construct the accepted content-addressed project path."""
+def _target(
+    project_root: Path,
+    source_name: str,
+    digest: str,
+    basename: str,
+    *,
+    full_digest: bool = False,
+) -> Path:
+    """Construct the accepted content-addressed project path.
+
+    The folder is the repo's 12-character digest handle. ``full_digest`` builds
+    the 64-character form written before 2026-09-24, which existing experiments
+    still reference.
+    """
     if not re.fullmatch(r"[a-z][a-z0-9_]*", source_name):
         raise ValueError("orography source name must be a registered simple token")
     if not re.fullmatch(r"[0-9a-f]{64}", digest):
@@ -34,7 +46,7 @@ def _target(project_root: Path, source_name: str, digest: str, basename: str) ->
         / "climate"
         / "ancillary"
         / source_name
-        / digest
+        / (digest if full_digest else short_digest(digest))
         / basename
     )
 
@@ -102,9 +114,18 @@ def resolve_shared_orography(
     """Validate an experiment elevation FileRef and its physical descriptor."""
     if reference["path_base"] != "project_root":
         raise ValueError("shared orography reference must be project-root anchored")
-    expected = _target(project_root, source_name, reference["sha256"], basename)
+    expected = {
+        _target(
+            project_root,
+            source_name,
+            reference["sha256"],
+            basename,
+            full_digest=full,
+        )
+        for full in (False, True)
+    }
     observed = resolve_file_reference(reference, {"project_root": Path(project_root)})
-    if observed != expected or dict(describe(observed)) != dict(descriptor):
+    if observed not in expected or dict(describe(observed)) != dict(descriptor):
         raise ValueError("shared orography path or descriptor differs")
     return observed
 

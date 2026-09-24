@@ -2,10 +2,10 @@
 title: Rule 1.06 consumes river_attributes without declaring it, so nothing schedules 1.03
 type: todo-item
 status: backlog
-branch:
+branch: wf3-improvements
 effort: 1
 area: wf1 / DAG
-origin: R13 baseline pass 1 (2026-08-21)
+origin: wf4 naming bundle (2026-09-24)
 queue:
 created: 2026-08-22
 updated: 2026-08-22

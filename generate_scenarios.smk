@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, patch_psutil_windows_benchmark, warning_count
 from blueearth_cst.shared.wf3_science import index_width
-from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary, target_banner
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, pre_dag_step, rule_banner, run_summary, target_banner
 from blueearth_cst.experiment.generation_plan import generation_configuration
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
 patch_psutil_windows_benchmark()
@@ -120,7 +120,7 @@ rule all:
 
 # 3.01  delineate_region
 rule delineate_region:
-    message: rule_banner("3.01", "delineate_region", dynamic_progress=True)
+    message: rule_banner("3.01", "delineate_region")
     input:
         **REGION.inputs,
     params:
@@ -136,7 +136,7 @@ rule delineate_region:
 
 # 3.02  extract_historical_climate
 rule extract_historical_climate:
-    message: rule_banner("3.02", "extract_historical_climate", dynamic_progress=True)
+    message: rule_banner("3.02", "extract_historical_climate")
     input:
         **CLIMATE_STORE.inputs,
     params:
@@ -152,7 +152,7 @@ rule extract_historical_climate:
 
 # 3.03  prepare_perturbation_grid
 rule prepare_perturbation_grid:
-    message: rule_banner("3.03", "prepare_perturbation_grid", dynamic_progress=True)
+    message: rule_banner("3.03", "prepare_perturbation_grid")
     input:
         config = ancient(config_path),
         config_workflows = ancient(WF_CONFIG_PATHS),
@@ -168,6 +168,11 @@ rule prepare_perturbation_grid:
         "blueearth_cst/experiment/prepare_cst_parameters.py"
 
 if V2_MODE and V2_PLAN["decision"] == "create":
+    # Done by scripts/generate_scenarios.py before this DAG was built: the plan
+    # is frozen, the collection claimed and the generator input written.
+    pre_dag_step("3.04", "prepare_collection_sources")
+    pre_dag_step("3.05", "initialize_scenario_collection")
+    pre_dag_step("3.06", "prepare_weathergen_config")
     from blueearth_cst.experiment.generation_publication import (
         publish_generation,
         validate_provider_inputs,

@@ -325,9 +325,14 @@ _RULE_NUMBERS = {}
 _RULE_SUMMARIES = {}
 
 
-# Rule names whose job counts cannot be resolved until a checkpoint finishes.
-# They remain on the execution path despite being absent from the opening table.
-_CHECKPOINT_DEPENDENT_RULES = set()
+# Steps a workflow completes before Snakemake builds its DAG -- WF3's planning in
+# scripts/generate_scenarios.py. They keep a rule number so the plan table reads
+# as the whole pipeline, but they are not Snakemake jobs. name -> number, filled
+# by `pre_dag_step`.
+_PRE_DAG_STEPS = {}
+
+# The plan table's cell for a pre-DAG step, in place of a job count.
+_PRE_DAG_LABEL = "done in planning"
 
 
 # Rule names belonging to a dynamic DAG whose progress denominator can change
@@ -491,7 +496,6 @@ def rule_banner(
     context=None,
     summary=None,
     quiet_start=False,
-    checkpoint_dependent=False,
     dynamic_progress=False,
 ):
     """Return a rule's ``message:`` string: a numbered console banner.
@@ -584,13 +588,6 @@ def rule_banner(
     Do NOT reach for this on a rule anyone waits on. The console's whole job
     during a long rule is to say that something is running.
 
-    ``checkpoint_dependent`` marks a rule whose jobs are absent from the
-    opening DAG until a checkpoint resolves them. The plan shows such an absent
-    rule as pending rather than dimming it as up to date. It also suppresses
-    progress denominators for the workflow because Snakemake revises its total
-    as checkpoint dependencies are expanded; the completed-job numerator
-    remains stable.
-
     ``dynamic_progress`` marks a rule in a workflow whose job total can change
     after checkpoint expansion. Once a handler sees one, finish lines keep the
     stable completed-job numerator and omit Snakemake's provisional total.
@@ -606,8 +603,6 @@ def rule_banner(
         _RULE_SUMMARIES[name] = summary
     if quiet_start:
         _QUIET_START_RULES.add(name)
-    if checkpoint_dependent:
-        _CHECKPOINT_DEPENDENT_RULES.add(name)
     if dynamic_progress:
         _DYNAMIC_PROGRESS_RULES.add(name)
     tag = f"{rule_id(number)} {name}"
@@ -616,6 +611,17 @@ def rule_banner(
     if not context:
         return tag
     return f"{tag}  [{context}]"
+
+
+def pre_dag_step(number, name):
+    """Register a step completed before Snakemake built the DAG.
+
+    The plan table lists it at its number, dimmed and marked
+    ``done in planning`` in place of a job count, so a workflow whose
+    planning runs outside Snakemake (WF3) still reads as one numbered
+    pipeline. Call it only once the step has actually run.
+    """
+    _PRE_DAG_STEPS[name] = str(number)
 
 
 def run_summary(
@@ -1123,9 +1129,9 @@ def _plan_rows(counts):
     Joins the two things that each know half the answer: ``_RULE_NUMBERS``
     (every rule the Snakefile DECLARED, filled by :func:`rule_banner` at parse
     time) and Snakemake's job-stats counts (the rules that will actually RUN).
-    A rule absent from ``counts`` is up to date unless it is registered in
-    ``_CHECKPOINT_DEPENDENT_RULES``; those rules remain on the execution path,
-    but the opening DAG cannot resolve their job counts yet.
+    A rule absent from ``counts`` is up to date. Steps registered by
+    :func:`pre_dag_step` join as rows whose job count is ``None``: they ran
+    before the DAG existed.
 
     Grouped by NUMBER, not by name, because a number is not unique: see
     :func:`_plan_rule_name`. Sorted lexicographically on the number, which
@@ -1139,9 +1145,13 @@ def _plan_rows(counts):
     rows = []
     for number, names in by_number.items():
         jobs = sum(counts.get(name, 0) for name in names)
-        if not jobs and any(name in _CHECKPOINT_DEPENDENT_RULES for name in names):
-            jobs = None
         rows.append((number, _plan_rule_name(names), jobs))
+    if rows:
+        rows.extend(
+            (number, name, None)
+            for name, number in _PRE_DAG_STEPS.items()
+            if number not in by_number
+        )
     rows.sort(key=lambda row: row[0])
     return rows
 
@@ -1156,9 +1166,10 @@ def _plan_head(rows, jobs, unlisted=0):
     than one that admits the gap, which is this repo's standing rule about a
     tool that bounds its own coverage.
     """
+    planned = sum(1 for row in rows if row[2] is None)
+    rows = [row for row in rows if row[2] is not None]
     total = len(rows)
-    running = sum(1 for row in rows if row[2] is None or row[2] > 0)
-    deferred = sum(1 for row in rows if row[2] is None)
+    running = sum(1 for row in rows if row[2] > 0)
     up_to_date = total - running
     plural = "rule" if total == 1 else "rules"
     # PIPED fields rather than a comma sentence. `|` is the separator this
@@ -1173,17 +1184,17 @@ def _plan_head(rows, jobs, unlisted=0):
         ]
         if up_to_date:
             fields.append(f"{up_to_date} up to date")
-        if deferred:
-            fields.append(f"{deferred} after checkpoint")
     else:
         fields = [f"{total} {plural}", "all up to date"]
+    if planned:
+        fields.append(f"{planned} {_PRE_DAG_LABEL}")
     # The job count only when it says something the rule count does not, i.e.
     # when something fans out. `_run_info_line`, which this replaces, always
     # carried it. Counted over the LISTED rows, not over Snakemake's table, so
     # it agrees with the rows below it -- the table includes the excluded
     # `all`, and a head line off by one from what it introduces is worse than
     # no head line.
-    if not deferred and jobs and jobs != running:
+    if jobs and jobs != running:
         fields.append(f"{jobs} job{'s' if jobs != 1 else ''}")
     if unlisted:
         fields.append(f"{unlisted} unlisted")
@@ -1198,9 +1209,9 @@ def _plan_lines(counts):
 
     One row per DECLARED rule, ordered by rule id so the workflow's shape reads
     as a spine. Rows that will run carry a ``>`` gutter; rows already satisfied
-    are dimmed. Checkpoint-dependent rows absent from the opening DAG carry the
-    same ``>`` gutter, but no count because their fan-out is unresolved. The
-    gutters survive a pipe, redirect and CI where colour does not.
+    are dimmed. Pre-DAG steps (:func:`pre_dag_step`) are dimmed too and read
+    ``done in planning`` where a job count would be. The gutters survive a
+    pipe, redirect and CI where colour does not.
 
     FLUSH LEFT, like every other line the opening block writes. The block was
     indented two spaces until 2026-09-17, which put the rules one column in from
@@ -1235,10 +1246,7 @@ def _plan_lines(counts):
     rows = _plan_rows(counts)
     if not rows:
         return None
-    has_deferred = any(row[2] is None for row in rows)
-    partial = has_deferred or (
-        any(row[2] for row in rows) and not all(row[2] for row in rows)
-    )
+    partial = any(row[2] for row in rows) and not all(row[2] for row in rows)
     number_width = max(len(row[0]) for row in rows) + 2
     name_width = max(len(row[1]) for row in rows)
     count_width = max((len(str(row[2])) for row in rows if row[2]), default=1)
@@ -1246,17 +1254,15 @@ def _plan_lines(counts):
     for number, name, jobs in rows:
         if not partial:
             gutter = ""
-        elif jobs is None:
-            gutter = ">  "
         else:
             gutter = ">  " if jobs else "   "
-        count = str(jobs) if jobs else ""
-        text = (
-            f"{gutter}{number.ljust(number_width)}"
-            f"{name.ljust(name_width)}  {count.rjust(count_width)}"
-        )
-        state = True if jobs is None else bool(jobs)
-        lines.append((text.rstrip(), state))
+        if jobs is None:
+            # Left-aligned: the label is wider than any count column.
+            cell = _PRE_DAG_LABEL
+        else:
+            cell = (str(jobs) if jobs else "").rjust(count_width)
+        text = f"{gutter}{number.ljust(number_width)}{name.ljust(name_width)}  {cell}"
+        lines.append((text.rstrip(), bool(jobs)))
     unlisted = sum(1 for name in counts if name not in _RULE_NUMBERS)
     return _plan_head(rows, sum(row[2] or 0 for row in rows), unlisted), lines
 

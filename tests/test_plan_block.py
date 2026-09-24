@@ -197,19 +197,30 @@ def test_rows_report_whether_they_run(rules):
     assert [running for _, running in rows] == [False, True]
 
 
-def test_checkpoint_dependent_rules_are_marked_to_run(rules, monkeypatch):
-    """A checkpoint hides downstream job counts, not the execution path."""
-    rules({"cached": "3.01", "checkpoint": "3.02", "downstream": "3.03"})
-    monkeypatch.setattr(cs, "_CHECKPOINT_DEPENDENT_RULES", {"downstream"})
+def test_pre_dag_steps_are_listed_in_number_order(rules, monkeypatch):
+    """Planning done outside Snakemake keeps its place in the numbered spine."""
+    rules({"cached": "3.03", "generate": "3.07", "perturb": "3.08"})
+    monkeypatch.setattr(cs, "_PRE_DAG_STEPS", {"plan": "3.04", "claim": "3.05"})
 
-    head, rows = cs._plan_lines({"checkpoint": 1})
+    head, rows = cs._plan_lines({"generate": 1, "perturb": 12})
 
-    assert head == ("2 of 3 rules to run  |  1 up to date  |  1 after checkpoint")
+    assert head == (
+        "2 of 3 rules to run  |  1 up to date  |  2 done in planning  |  13 jobs"
+    )
     assert rows == [
-        ("   3.01  cached", False),
-        (">  3.02  checkpoint  1", True),
-        (">  3.03  downstream", True),
+        ("   3.03  cached", False),
+        ("   3.04  plan      done in planning", False),
+        ("   3.05  claim     done in planning", False),
+        (">  3.07  generate   1", True),
+        (">  3.08  perturb   12", True),
     ]
+
+
+def test_pre_dag_steps_alone_render_no_table(rules, monkeypatch):
+    """Without a Snakemake rule there is no plan to extend."""
+    rules({})
+    monkeypatch.setattr(cs, "_PRE_DAG_STEPS", {"plan": "3.04"})
+    assert cs._plan_lines({"whatever": 1}) is None
 
 
 def test_no_row_carries_trailing_whitespace(rules):

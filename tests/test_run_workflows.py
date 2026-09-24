@@ -528,6 +528,7 @@ def test_opening_block_states_the_project_and_the_config_in_one_group(
     assert "  run" not in out.splitlines()  # the old first group is gone
     rows = _group_rows(out, "settings")
     assert rows["project"] == "gabon_project"  # basename, no project_name key
+    assert rows["repository"] == str(rw._REPO_ROOT_PATH).replace(os.sep, "/")
     assert rows["folder"] == str(project_dir).replace(os.sep, "/")
     assert "c.yml" in rows["config"]
     assert "cores" not in rows
@@ -673,12 +674,12 @@ def test_the_basin_rows_are_omitted_when_the_config_declares_no_basin(
     tmp_path, capture_runs, capsys
 ):
     """The wrapper validates `workflows:` and nothing else, so both basin rows
-    are optional -- but project, folder and config always answer."""
+    are optional -- but project, repository, folder and config always answer."""
     _, out, _ = _run_and_capture(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     rows = _group_rows(out, "settings")
-    assert set(rows) == {"project", "folder", "config"}
+    assert set(rows) == {"project", "repository", "folder", "config"}
     # No orphaned continuation either: with no region asked for, there is
     # nothing whose absence is worth a line.
     assert "not delineated yet" not in out

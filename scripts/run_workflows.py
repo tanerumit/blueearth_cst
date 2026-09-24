@@ -720,12 +720,20 @@ def _opening_block(
     because that one is an answer -- where the outputs land -- rather than an
     echo of the command line.
 
+    `repository` is the resolved checkout this wrapper is actually running
+    from (`_REPO_ROOT_PATH`, the parent of `scripts/`), printed for the same
+    reason `folder` is: a worktree repo, this one included, is invoked
+    identically from the primary checkout or any linked worktree, so the
+    console is the only place that distinguishes which tree's code is
+    executing without inspecting `sys.argv[0]` or `pwd`.
+
     `cores` is gone with the split. It is not a property of the project, and
     every hand-off band below prints the `-c N` it was forwarded to, verbatim,
     in the command it is about to run.
     """
     rows: list[Any] = [("project", project_name)]
     rows.extend(_settings_rows(cfg, project_dir))
+    rows.append(("repository", os.fspath(_REPO_ROOT_PATH).replace(os.sep, "/")))
     rows.append(("folder", os.fspath(project_dir).replace(os.sep, "/")))
     rows.append(("config", os.fspath(config_path).replace(os.sep, "/")))
     if dry_run:

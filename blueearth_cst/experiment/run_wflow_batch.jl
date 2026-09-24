@@ -1,6 +1,8 @@
 # One Julia session amortizes Wflow load/JIT across an explicitly identified batch.
-# Snakemake still owns batch-level output cleanup on failure; every failure row
-# therefore names the batch and ALL affected runs, not just the failing member.
+# With CST_BATCH_STAGING set, each finished member's CSV is moved into that
+# directory at once and its `.expect` marker becomes `.ok`, so Snakemake's
+# failed-job cleanup cannot delete it and a retry re-runs only the failures
+# (blueearth_cst/experiment/batch_staging.py). Unset, outputs stay in place.
 using Dates
 
 function parse_batch(args)
@@ -32,7 +34,7 @@ if abspath(PROGRAM_FILE) == @__FILE__
 
     exitcode = 0
     total = length(members)
-    affected = join([member.run_id for member in members], ",")
+    staging = get(ENV, "CST_BATCH_STAGING", "")
     for (k, member) in enumerate(members)
         global exitcode
         tag = member.run_id
@@ -40,10 +42,15 @@ if abspath(PROGRAM_FILE) == @__FILE__
             dt = @elapsed run_with_progress(Wflow, member.toml_path; label=tag)
             isfile(member.native_output_path) ||
                 error("Missing native output $(member.native_output_path)")
+            if !isempty(staging)
+                # CSV first, marker second: an `.ok` always has its CSV.
+                mv(member.native_output_path, joinpath(staging, "run_$(tag).csv"); force=true)
+                mv(joinpath(staging, "run_$(tag).expect"), joinpath(staging, "run_$(tag).ok"); force=true)
+            end
             row("[$(k)/$(total)] $(tag)  $(format_elapsed(dt))")
             flush(stdout)
         catch e
-            row("FAILED [$(k)/$(total)] $(tag) batch=$(batch_id) runs=[$(affected)]  $(sprint(showerror, e))")
+            row("FAILED [$(k)/$(total)] $(tag) batch=$(batch_id)  $(sprint(showerror, e))")
             flush(stdout)
             exitcode = 1
         end

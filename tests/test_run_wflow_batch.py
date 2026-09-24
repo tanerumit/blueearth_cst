@@ -103,11 +103,26 @@ def test_the_total_is_this_batch_and_not_the_experiment():
     assert re.search(r"^\s*total\s*=\s*length\(members\)\s*$", SOURCE, re.MULTILINE)
 
 
-def test_the_member_tag_is_explicit_and_failure_names_every_affected_run():
-    """Run identity is supplied by the batch, never parsed from a filename."""
+def test_the_member_tag_is_explicit_and_failure_names_member_and_batch():
+    """Run identity is supplied by the batch, never parsed from a filename.
+
+    A failure costs only its own member since staging (batch_staging.py), so
+    the row names that member and its batch, not every batch-mate.
+    """
     assert "tag = member.run_id" in SOURCE
     assert "basename(" not in SOURCE and "splitext(" not in SOURCE
-    assert "batch=$(batch_id) runs=[$(affected)]" in SOURCE
+    assert "FAILED [$(k)/$(total)] $(tag) batch=$(batch_id)" in SOURCE
+
+
+def test_a_finished_member_is_staged_before_its_marker():
+    """The CSV moves first and the marker second, so an `.ok` implies its CSV."""
+    code = chr(10).join(_code_lines())
+    move_csv = code.index(
+        'mv(member.native_output_path, joinpath(staging, "run_$(tag).csv")'
+    )
+    promote = code.index('joinpath(staging, "run_$(tag).ok")')
+    assert move_csv < promote
+    assert 'get(ENV, "CST_BATCH_STAGING", "")' in code
 
 
 def test_explicit_batch_parser_in_julia():

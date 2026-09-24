@@ -36,8 +36,7 @@ Column by column, with the dict that owns it:
   `<code>_<subcatchment-or-gauge-id>` (`gwr_101`). Owned by
   `blueearth_cst/shared/wflow_outputs.py::CODES`. Discharge is deliberately
   **absent from `CODES`**: it does not travel the basin-average path, and its
-  header is the fixed `Q` that `shared/gauges.py` and `export_wflow_results` both
-  key on. Changing a code renames the csv column, the hydromt variable
+  header is the fixed `Q` that `shared/gauges.py` keys on. Changing a code renames the csv column, the hydromt variable
   (`<code>_subcatchment`), rule 1.14's derived tables, and figure filenames.
 - **token** — the short name in the result **filename** and in the composite
   metric. Owned by
@@ -65,8 +64,9 @@ something, it was not taken:
 the *token* as a csv column prefix reads `aet` and `gwr` and silently finds
 nothing for the other three. It must match on `CODES`. This is exactly how
 8bd51de wrote two indicator tables as a header and zero rows with every rule
-green — see `export_wflow_results.py::MissingOutputColumnError`, which now raises
-instead.
+green. The predecessor reducer then raised `MissingOutputColumnError` instead;
+it was removed on 2026-09-25, and WF4 reduces the series its response inventory
+names.
 
 ### Two more spellings, for figures
 

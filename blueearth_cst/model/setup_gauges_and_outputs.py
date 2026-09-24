@@ -107,8 +107,7 @@ def update_wflow_gauges_outputs(
         # 2026-08-10: all four gauges reported an identical value every step,
         # because they share one coarse ERA5 cell, and the four P_ columns were
         # 4 of the 9 in the file. Nothing reads them -- plot_results.py takes
-        # Q_outlets, the Q gauges variable and the `_basavg` extras, and
-        # export_wflow_results keeps only `Q_` columns.
+        # Q_outlets, the Q gauges variable and the `_basavg` extras.
         #
         # Basin-average precipitation is still available, through the designed
         # route: put `precipitation` in `wflow_outvars` and the extras block

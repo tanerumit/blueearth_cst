@@ -919,17 +919,12 @@ total                              20
                 ),
             ),
         ),
-        # metric_plan.py:718, export_wflow_results.py:364
+        # metric_plan.py:718
         Job(
             "derive_system_indicators",
             seconds=19,
             wildcards={"metric_set_id": "9f41c7d0b6a2"},
             body=(
-                (
-                    "export",
-                    "Reducing 8 runs into 3 indicator table(s): q_mean, q_p10, q_p90",
-                    4,
-                ),
                 (
                     "metrics",
                     "Published metric set 9f41c7d0b6a2: q_mean (240 rows), "

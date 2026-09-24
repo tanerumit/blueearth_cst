@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2609151037 | export_wflow_results carries a second, unreachable return-level estimator | wf3  |
 | 2026-09-25 | t2609171637 | Two interchange contract tests are not guarded against a pre-R14 fixture | tests / fixtures |
 | 2026-09-25 | t2609241852 | HM-7 validator has no metric-set/2 version | tests |
 | 2026-09-25 | t2609161500 | The julia_threads refusal names a key a project cannot set | config / error messages |

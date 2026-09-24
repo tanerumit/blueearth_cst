@@ -26,7 +26,7 @@ This is the **stays-true** tier. What happened lives in `../milestones/`, `../de
   | `naming.md` | `AGENTS.md`, all four `*.smk`, `shared/snake_utils.py`, `scripts/run_workflows.py` |
   | `contracts/` | `shared/interchange_contracts.py`, `indicator_tables.py`, `spatial_geoms_parity.py`, `surface_axes.py`, `snake_utils.py`, `tests/test_interchange_contracts.py`, `docs/notebooks/Climate Stress Test.ipynb` |
   | `wf0-figure-filename-rule.md` | `analyze_climate.smk`, `build_model.smk`, `climate_analysis/figure_naming.py`, `climate_analysis/climate_figures.py`, `tests/test_figure_naming.py` |
-  | `indicator-glossary.md` | `experiment/export_wflow_results.py`, `shared/indicator_tables.py`, `tests/test_indicator_glossary.py` |
+  | `indicator-glossary.md` | `experiment/metric_plan.py`, `shared/indicator_tables.py`, `tests/test_indicator_glossary.py` |
   | `workflows/` | the three `*.smk` (rule-index), `model/write_outlet_index.py`, `shared/indicator_tables.py`, `config/templates/README.md`, two `docs/migration-*.md`; `wf2-cmip6-store-readability.md` from `projections/fetch_gcm_raw.py`, `projections/series_identity.py`, `tests/test_series_identity.py`, `dev/scripts/probe_cmip6_grids.py`, `dev/scripts/stage_cmip6.py` |
   | `repo-layout.md` | `AGENTS.md` |
   | `validation-ladder.md` | `AGENTS.md` |

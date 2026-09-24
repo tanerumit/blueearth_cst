@@ -241,9 +241,10 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   consumer treated "no column" as *skip* rather than *raise*; and
   `test_export_wflow_results.py`'s fixture wrote the `_basavg` header itself, so
   the unit suite agreed with the consumer and with nothing else. The matcher is
-  now keyed off `CODES` — the same table the model build writes the TOML from —
-  and a requested variable with no matching column raises `MissingOutputColumnError`
-  rather than emptying its table. See also the `validate_hm7` note below: it has
+  keyed off `CODES` — the same table the model build writes the TOML from — and
+  a requested variable with no matching column raised `MissingOutputColumnError`
+  rather than emptying its table. That reducer was removed on 2026-09-25
+  (t2609151037); WF4 now reduces the series its response inventory names. See also the `validate_hm7` note below: it has
   a "no rows" check that would have caught this, but is never invoked at run time.
 - **temp() lifecycle:** SPLIT between wf1 and wf4. wf1 `output.csv` **is** `temp()`
   (rule 1.13): it is an intermediate feeding rule 1.14's derived per-variable

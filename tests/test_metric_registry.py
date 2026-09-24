@@ -9,7 +9,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from blueearth_cst.experiment.export_wflow_results import _return_level_from_blocks
 from blueearth_cst.experiment.metric_groups import metric_groups
 from blueearth_cst.experiment.metric_registry import (
     DeclaredBundle,
@@ -239,38 +238,6 @@ def test_constant_sample_reaches_the_adapter_as_a_structured_refusal():
     assert "estimator refused" in str(caught.value)
     # The predecessor's unstructured constant guard must not survive.
     assert "constant sample" not in str(caught.value)
-
-
-def test_legacy_export_helper_keeps_the_predecessor_estimator():
-    """The legacy analyze_wflow_results path is a preservation surface.
-
-    It is not the production rule -- that is analyze_response_runs, which goes
-    through reduce_bundle -- and D2 scopes the estimator change to reduce_bundle.
-    The two paths therefore now disagree by construction, deliberately, and this
-    pins that so the divergence is a recorded fact rather than a later surprise.
-    """
-    series = responses()
-    metric = next(
-        item for item in declarations(("q",)) if item.statistic == "return_level_max"
-    )
-    frames = [
-        pd.DataFrame(
-            {item.location_id: item.values for item in series if item.run_id == run},
-            index=series[0].time,
-        )
-        for run in ("01", "08")
-    ]
-    blocks = pd.concat(
-        [frame.resample("YE-DEC").max() for frame in frames], ignore_index=True
-    )
-    legacy = _return_level_from_blocks(blocks, 10, "max")
-    current, _ = reduce_bundle(
-        metric, series, expected_run_ids=("01", "08"), anchor="YE-DEC"
-    )
-    assert set(legacy.index) == set(current.index)
-    assert any(legacy[key] != current[key] for key in legacy.index), (
-        "the two estimators produced identical values; one of them did not change"
-    )
 
 
 @pytest.mark.parametrize("field,value", [("units", "mm"), ("time_label", "instant")])

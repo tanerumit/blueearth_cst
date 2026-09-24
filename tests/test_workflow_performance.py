@@ -8,7 +8,6 @@ import pytest
 import xarray as xr
 
 from blueearth_cst.experiment.batch_sizing import measure_member_footprint
-from blueearth_cst.experiment.export_wflow_results import analyze_wflow_results
 from blueearth_cst.projections import series_identity as si
 from blueearth_cst.projections.derive_change_factors import derive_point_datasets
 from blueearth_cst.projections.get_change_climate_proj_summary import (
@@ -162,37 +161,6 @@ def test_stage_b_reuses_series_and_reference_without_changing_merge(
         )
         xr.testing.assert_equal(merged, old.load())
         pd.testing.assert_frame_equal(merged.to_dataframe(), old.to_dataframe())
-
-
-def test_export_parses_each_run_once_for_all_variables(tmp_path, monkeypatch):
-    paths = []
-    time = pd.date_range("2000-01-01", "2010-12-31")
-    steps = np.arange(len(time))
-    for st in range(2):
-        path = tmp_path / f"rlz_1_st_{st}.csv"
-        values = 3 + np.sin(steps / 53) + st
-        pd.DataFrame(
-            {"Q_1": values, "gwr_1": values / 10, "p_1": values / 3}, index=time
-        ).to_csv(path)
-        paths.append(path)
-    reads = []
-    original_read = pd.read_csv
-
-    def track_read(path, *args, **kwargs):
-        if kwargs.get("nrows") != 0:
-            reads.append(Path(path))
-        return original_read(path, *args, **kwargs)
-
-    monkeypatch.setattr(pd, "read_csv", track_read)
-    tokens = ["q", "gwr", "precip"]
-    analyze_wflow_results(
-        paths,
-        tmp_path,
-        1,
-        tokens,
-        {token: tmp_path / f"{token}.csv" for token in tokens},
-    )
-    assert reads == paths
 
 
 def test_no_output_state_is_required_for_wf3(tmp_path):

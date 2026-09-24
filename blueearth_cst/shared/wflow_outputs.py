@@ -20,8 +20,7 @@ tables from rule 1.14, and in figure filenames. Changing one renames all four.
 
 Discharge is deliberately absent from ``CODES``: it does not travel the
 basin-average path at all. It is emitted per-gauge and per-outlet with the fixed
-header ``Q``, which ``shared/gauges.py`` and ``export_wflow_results`` both key
-on.
+header ``Q``, which ``shared/gauges.py`` keys on.
 """
 
 #: Semantic label (what a config writes) -> short column code.

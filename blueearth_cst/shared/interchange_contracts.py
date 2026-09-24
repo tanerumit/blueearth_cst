@@ -1298,11 +1298,11 @@ def validate_hm_gauge_column_identity(
 
     The gauge-column set is a **single degree of freedom** flowing TOML
     ``[output.csv].column`` -> ``output_rlz`` -> ``q_indicators``. A per-artifact
-    validator cannot see a break *between* artifacts: rule 3.10 derives the gauge
-    set from the FIRST csv via a hard-coded ``Q_`` prefix filter
-    (``export_wflow_results.py:61``) and indexes every other csv with it, so a
-    renamed gauge header silently empties ``Q_vars`` (a gauge-less q_indicators) and a
-    later mismatch KeyErrors deep in the reduction.
+    validator cannot see a break *between* artifacts: the predecessor reduction
+    (removed 2026-09-25) derived the gauge set from the FIRST csv via a
+    hard-coded ``Q_`` prefix filter and indexed every other csv with it, so a
+    renamed gauge header silently emptied ``Q_vars`` (a gauge-less q_indicators)
+    and a later mismatch KeyErrored deep in the reduction.
 
     Checks (design §5.5):
       1. every non-``time`` ``output_rlz_df`` column traces to a declared

@@ -365,12 +365,14 @@ end
     if dropped:
         from blueearth_cst.shared.snake_utils import log_row
 
+        # A WARNING, not an INFO row: a location leaving the metric set is a
+        # fact a reader must see, and planning runs inside `captured_output`,
+        # which replays only warnings and errors on success.
         log_row(
-            "Same model cell, kept once: "
-            + ", ".join(
-                f"{gone} (as {kept})" for gone, kept in sorted(dropped.items())
-            ),
+            "Duplicate discharge columns on one model cell, kept once: "
+            + ", ".join(f"{gone} as {kept}" for gone, kept in sorted(dropped.items())),
             module="responses",
+            level="WARNING",
         )
     declared = []
     covered = set(dropped)

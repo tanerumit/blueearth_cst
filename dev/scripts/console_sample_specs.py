@@ -34,7 +34,6 @@ WF0 = Workflow(
         "climate": f"{PROJECT}/data/climate/historical",
     },
     rules=[
-        Rule("0.00", "all"),
         Rule("0.01", "snapshot_config"),
         Rule("0.02", "delineate_region"),
         Rule("0.03", "delineate_spatial_units"),
@@ -257,7 +256,6 @@ WF2 = Workflow(
     config="test_case/project_config_rapid.yml",
     elapsed=94,
     rules=[
-        Rule("2.00", "all"),
         Rule("2.01", "snapshot_config"),
         Rule("2.02", "delineate_region"),
         Rule("2.03", "delineate_spatial_units"),
@@ -435,7 +433,6 @@ WF1 = Workflow(
         "climate": f"{PROJECT}/data/climate/historical/era5",
     },
     rules=[
-        Rule("1.00", "all"),
         Rule("1.01", "snapshot_config"),
         Rule("1.02", "delineate_region"),
         Rule("1.03", "delineate_spatial_units"),
@@ -587,7 +584,6 @@ WF3 = Workflow(
         "climate": f"{PROJECT}/data/climate/historical/era5",
     },
     rules=[
-        Rule("3.00", "all"),
         Rule("3.01", "delineate_region"),
         Rule("3.02", "extract_historical_climate"),
         Rule("3.03", "prepare_perturbation_grid"),

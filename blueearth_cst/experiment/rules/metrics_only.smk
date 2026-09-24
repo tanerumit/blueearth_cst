@@ -32,11 +32,11 @@ declare_project_root(project_dir)
 def _frozen_simulation(wc):
     return f"{exp_dir}/_engine/simulation.json"
 
-# 4.00  all
+# all
 rule all:
     # Prose rather than a path: the metric outputs are a checkpoint-dependent
     # lambda with nothing to list at parse time, and this branch produces
     # nothing else.
-    message: target_banner("4.00", "all", ["selected immutable metric set"], project_dir)
+    message: target_banner("all", ["selected immutable metric set"], project_dir)
     input:
         lambda wc: _selected_metric_outputs(wc),

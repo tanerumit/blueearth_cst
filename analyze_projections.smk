@@ -872,7 +872,7 @@ PLOT_GCM_TIMESERIES = RULES.logged("2.07", "plot_gcm_timeseries")
 GATHER_BENCHMARKS = RULES.banner_only("2.08", "gather_benchmarks")
 GATHER_LOGS = RULES.banner_only("2.09", "gather_logs")
 
-# 2.00  all — target aggregator: change-factor summaries + projection plots
+# all — target aggregator: change-factor summaries + projection plots
 #
 # Hoisted into a dict so `message:` can print one target per line without
 # restating them. A dict rather than a list because five of these were already
@@ -917,7 +917,7 @@ WF2_TARGETS = {
 }
 
 rule all:
-    message: target_banner("2.00", "all", WF2_TARGETS.values(), project_dir)
+    message: target_banner("all", WF2_TARGETS.values(), project_dir)
     input:
         **WF2_TARGETS,
 

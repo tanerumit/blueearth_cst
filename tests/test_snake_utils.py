@@ -451,8 +451,8 @@ def test_target_banner_puts_one_target_per_line(monkeypatch):
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())  # isatty() -> False
     monkeypatch.delenv("NO_COLOR", raising=False)
-    out = target_banner("2.00", "all", ["a/x.csv", "b/y.png"])
-    assert out == "Rule 2.00: all\n    a/x.csv\n    b/y.png"
+    out = target_banner("all", ["a/x.csv", "b/y.png"])
+    assert out == "Target: all\n    a/x.csv\n    b/y.png"
     assert ", " not in out
 
 
@@ -463,8 +463,8 @@ def test_target_banner_accepts_a_dict_values_view(monkeypatch):
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
     targets = {"a": "one.csv", "b": "two.csv"}
-    assert target_banner("3.00", "all", targets.values()) == (
-        "Rule 3.00: all\n    one.csv\n    two.csv"
+    assert target_banner("all", targets.values()) == (
+        "Target: all\n    one.csv\n    two.csv"
     )
 
 
@@ -474,7 +474,7 @@ def test_target_banner_with_no_targets_is_just_the_banner(monkeypatch):
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
-    assert target_banner("1.00", "all", []) == "Rule 1.00: all"
+    assert target_banner("all", []) == "Target: all"
 
 
 def test_target_banner_relativizes_against_project_dir(monkeypatch):
@@ -493,13 +493,12 @@ def test_target_banner_relativizes_against_project_dir(monkeypatch):
     root = _abs("TESTS/CST/gabonx")
     shown = root.replace(os.sep, "/")
     out = target_banner(
-        "2.00",
         "all",
         [f"{shown}/analyze_projections/cmip6/summary/x.csv"],
         root,
     )
     assert out == (
-        f"Rule 2.00: all  [{shown}]\n    analyze_projections/cmip6/summary/x.csv"
+        f"Target: all  [{shown}]\n    analyze_projections/cmip6/summary/x.csv"
     )
 
 
@@ -509,7 +508,7 @@ def test_target_banner_relativizes_a_native_separator_root(monkeypatch):
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
-    out = target_banner("1.00", "all", ["proj/logs/wf1.log"], os.path.join("proj"))
+    out = target_banner("all", ["proj/logs/wf1.log"], os.path.join("proj"))
     assert out.endswith("    logs/wf1.log")
 
 
@@ -527,7 +526,7 @@ def test_target_banner_leaves_a_path_outside_the_project_absolute(monkeypatch):
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
     outside = _abs("elsewhere/data/catalog.yml").replace(os.sep, "/")
-    out = target_banner("2.00", "all", [outside], _abs("TESTS/CST/gabonx"))
+    out = target_banner("all", [outside], _abs("TESTS/CST/gabonx"))
     assert f"    {outside}" in out
 
 
@@ -537,8 +536,8 @@ def test_target_banner_without_project_dir_keeps_paths_verbatim(monkeypatch):
 
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
-    out = target_banner("3.00", "all", ["C:/p/q.csv"])
-    assert out == "Rule 3.00: all\n    C:/p/q.csv"
+    out = target_banner("all", ["C:/p/q.csv"])
+    assert out == "Target: all\n    C:/p/q.csv"
     assert "[" not in out
 
 
@@ -812,7 +811,7 @@ def test_target_banner_bracket_and_header_row_agree(monkeypatch):
     monkeypatch.setattr(sys, "stderr", io.StringIO())
     monkeypatch.delenv("NO_COLOR", raising=False)
     banner = target_banner(
-        "3.00", "all", ["test_case/test_rapid/logs/wf3.log"], "test_case/test_rapid"
+        "all", ["test_case/test_rapid/logs/wf3.log"], "test_case/test_rapid"
     )
     header = cs.run_header("wf3 generate_scenarios", "test_case/test_rapid")
     root = next(
@@ -2813,10 +2812,10 @@ def test_console_start_line_leaves_a_multiline_banner_intact():
     out = _emit(
         handler,
         _console_record(event="progress", done=19, total=20),
-        _job_info(1, "all", "Rule 1.00: all  [proj]\n    a/x.csv\n    logs/wf1.log"),
+        _job_info(1, "all", "Target: all  [proj]\n    a/x.csv\n    logs/wf1.log"),
     )
     lines = out.splitlines()
-    assert lines[0].endswith("Rule 1.00: all  [proj]"), lines[0]
+    assert lines[0].endswith("Target: all  [proj]"), lines[0]
     assert lines[1:] == ["    a/x.csv", "    logs/wf1.log"], lines[1:]
 
 
@@ -3019,7 +3018,7 @@ def test_console_run_info_renders_the_plan_block(monkeypatch):
     monkeypatch.setattr(
         cs,
         "_RULE_NUMBERS",
-        {"all": "1.00", "snapshot_config": "1.01", "run_wflow": "1.14"},
+        {"snapshot_config": "1.01", "run_wflow": "1.14"},
     )
     out = _emit(
         _console_handler(),

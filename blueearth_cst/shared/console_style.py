@@ -809,8 +809,13 @@ def display_root(project_dir):
     return _relativize_paths(absolute, "")
 
 
-def target_banner(number, name, targets, project_dir=None):
-    """Return a `rule all` ``message:``: the banner, then one target per line.
+def target_banner(name, targets, project_dir=None):
+    """Return a target rule's ``message:``: the banner, then one target per line.
+
+    A target carries NO number: it does no work, so numbering it put a step in
+    the pipeline overview that is not one. The banner reads ``Target: <name>``
+    and registers nothing in ``_RULE_NUMBERS``, so the finish line shows the
+    bare name; the name must also be listed in ``_PLAN_EXCLUDED_RULES``.
 
     Snakemake joins a job's ``input:`` with ``", "``, which collapses a target
     aggregator's whole product list onto one unreadable line — nine absolute
@@ -841,7 +846,7 @@ def target_banner(number, name, targets, project_dir=None):
 
     Evaluated once at Snakefile parse time, like :func:`rule_banner`.
     """
-    banner = rule_banner(number, name)
+    banner = f"Target: {name}"
     listed = [os.fspath(target) for target in targets]
     if project_dir:
         # TWO forms of one directory, deliberately not one variable.
@@ -1113,12 +1118,12 @@ def open_run_header(workflow, project_dir, config_path=None, **details):
     return False
 
 
-#: Rules kept OUT of the plan block. ``rule all`` is a target aggregator: it
-#: declares no output and does no work, but Snakemake counts it as a job -- so
-#: the block's "5 of 19 rules" and Snakemake's own "6 jobs" differ by exactly
-#: this rule, deliberately. Excluded by NAME because that is Snakemake's own
-#: convention for the target rule and what :func:`target_banner` is scoped to.
-_PLAN_EXCLUDED_RULES = ("all",)
+#: Rules kept OUT of the plan block: the TARGET rules, which :func:`target_banner`
+#: labels and which carry no number. A target declares no output and does no
+#: work, but Snakemake counts it as a job -- so the block's "5 of 19 rules" and
+#: Snakemake's own "6 jobs" differ by exactly the target, deliberately. ``all``
+#: is every workflow's; the other two are WF4's partial targets.
+_PLAN_EXCLUDED_RULES = ("all", "simulations_only", "simulations_and_indicators")
 
 
 def _run_info_counts(text):
@@ -1293,7 +1298,11 @@ def _plan_lines(counts):
             cell = (str(jobs) if jobs else "").rjust(count_width)
         text = f"{gutter}{number.ljust(number_width)}{name.ljust(name_width)}  {cell}"
         lines.append((text.rstrip(), bool(jobs)))
-    unlisted = sum(1 for name in counts if name not in _RULE_NUMBERS)
+    unlisted = sum(
+        1
+        for name in counts
+        if name not in _RULE_NUMBERS and name not in _PLAN_EXCLUDED_RULES
+    )
     return _plan_head(rows, sum(row[2] or 0 for row in rows), unlisted), lines
 
 

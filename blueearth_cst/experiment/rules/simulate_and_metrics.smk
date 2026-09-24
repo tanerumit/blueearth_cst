@@ -116,9 +116,9 @@ WF4_TARGETS = [
     "selected immutable metric set",
 ]
 
-# 4.00  all
+# all
 rule all:
-    message: target_banner("4.00", "all", WF4_TARGETS, project_dir)
+    message: target_banner("all", WF4_TARGETS, project_dir)
     input:
         f"{engine_dir}/simulation.json",
         f"{engine_dir}/response_inventory.json",
@@ -285,7 +285,7 @@ rule responses:
     # printed two bare lines, which is the same job in a second grammar.
     # ONE LINE: Snakemake's parser takes a keyword's body as a single
     # expression and rejects a call split across lines here.
-    message: target_banner("4.07", "responses", [f"{engine_dir}/response_inventory.json"], project_dir)
+    message: target_banner("responses", [f"{engine_dir}/response_inventory.json"], project_dir)
     input:
         f"{engine_dir}/response_inventory.json",
         f"{engine_dir}/simulation.json",

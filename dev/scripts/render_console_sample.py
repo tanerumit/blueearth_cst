@@ -198,10 +198,10 @@ def render(wf: Workflow, failed: bool = False) -> str:
     total = len(wf.jobs)
     done = 0
     for jobid, job in enumerate(wf.jobs, start=1):
-        # `rule all` prints a target_banner, not a rule_banner: the banner
+        # `rule all` prints an unnumbered target_banner, not a rule_banner: the banner
         # plus one line per declared target.
         msg = (
-            cs.target_banner(wf.rules[0].number, "all", wf.targets, wf.project)
+            cs.target_banner("all", wf.targets, wf.project)
             if job.rule == "all"
             else banners[job.rule]
         )

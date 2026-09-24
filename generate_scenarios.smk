@@ -125,9 +125,9 @@ V2_TARGET = (
     else os.environ.get("CST_GENERATION_RECEIPT_PATH")
 )
 
-# 3.00  all
+# all
 rule all:
-    message: target_banner("3.00", "all", WF3_TARGETS, project_dir)
+    message: target_banner("all", WF3_TARGETS, project_dir)
     input:
         SOURCE_TARGETS if SOURCE_ONLY else [
             V2_TARGET,

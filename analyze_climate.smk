@@ -368,9 +368,9 @@ WF0_TARGETS = [
     f"{project_dir}/benchmarks/wf0_benchmarks.md",
 ]
 
-# 0.00  all — target aggregator: the canonical climate figure set per source
+# all — target aggregator: the canonical climate figure set per source
 rule all:
-    message: target_banner("0.00", "all", WF0_TARGETS, project_dir)
+    message: target_banner("all", WF0_TARGETS, project_dir)
     input:
         WF0_TARGETS,
 

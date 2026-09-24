@@ -527,7 +527,7 @@ WF1_TERMINALS = [
     f"{basin_dir}/run_metadata.json",
 ]
 
-# 1.00  all — target aggregator: full historical build + performance plots
+# all — target aggregator: full historical build + performance plots
 #
 # Hoisted into a list so `message:` can print one target per line without
 # restating them. Snakemake flattens a list argument, so `input: WF1_TARGETS`
@@ -541,7 +541,7 @@ WF1_TARGETS = [
 ]
 
 rule all:
-    message: target_banner("1.00", "all", WF1_TARGETS, project_dir)
+    message: target_banner("all", WF1_TARGETS, project_dir)
     input:
         WF1_TARGETS,
 

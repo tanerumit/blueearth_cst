@@ -55,14 +55,18 @@ def test_a_table_that_is_not_one_yields_nothing():
 # --- grouping ---------------------------------------------------------------
 
 
-def test_the_target_rule_is_excluded(rules):
-    """`all` does no work, but Snakemake counts it as a job.
+@pytest.mark.parametrize("target", cs._PLAN_EXCLUDED_RULES)
+def test_a_target_rule_is_excluded_and_not_unlisted(rules, target):
+    """A target does no work, but Snakemake counts it as a job.
 
     The block's rule count and Snakemake's job count differ by exactly this
-    rule, on purpose -- so the exclusion has to be deliberate and pinned.
+    rule, on purpose -- so the exclusion has to be deliberate and pinned. A
+    target registers no number, and must not read as an unlisted rule either.
     """
-    rules({"all": "1.00", "snapshot_config": "1.01"})
-    assert [row[0] for row in cs._plan_rows({"all": 1})] == ["1.01"]
+    rules({"a": "1.01"})
+    assert [row[0] for row in cs._plan_rows({target: 1})] == ["1.01"]
+    head, _ = cs._plan_lines({target: 1, "a": 1})
+    assert "unlisted" not in head
 
 
 def test_rules_sharing_a_number_collapse_to_one_row(rules):
@@ -245,7 +249,7 @@ def test_an_empty_registry_falls_back(rules):
 
 def test_every_rule_up_to_date_still_renders(rules):
     """Reachable when only the excluded `all` job remains."""
-    rules({"all": "1.00", "a": "1.01"})
+    rules({"a": "1.01"})
     head, rows = cs._plan_lines({"all": 1})
     assert head == "1 rule  |  all up to date"
     assert not any(">" in text for text, _ in rows)
@@ -265,6 +269,6 @@ def test_a_rule_missing_from_the_ledger_is_declared(rules):
 
 
 def test_nothing_is_declared_when_the_ledger_is_complete(rules):
-    rules({"all": "1.00", "a": "1.01"})
+    rules({"a": "1.01"})
     head, _ = cs._plan_lines({"all": 1, "a": 1})
     assert "unlisted" not in head

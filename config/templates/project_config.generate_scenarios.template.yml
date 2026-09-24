@@ -11,9 +11,10 @@
 #  GENERATION
 # -----------------------------------------------------------------------------
 
-# `auto` derives from climate-draw settings and the source inventory.
-# It does not depend on an experiment name or collection storage path.
-seed: auto                               # integer | auto
+# A fixed integer reproduces the same scenarios anywhere. `auto` derives the
+# seed from the climate-draw settings, source data and generator code, so any
+# change to those draws new weather.
+seed: 123                                # integer | auto
 
 n_realizations: 2                         # weather series per grid point
 

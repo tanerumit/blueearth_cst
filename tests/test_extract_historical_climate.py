@@ -1055,3 +1055,33 @@ def test_store_save_row_identifies_the_source(
     saves = [row for row in rows if "saving to netcdf" in row.lower()]
     assert len(saves) == 1
     assert saves[0].endswith(f" - extract - {source}: saving to netCDF")
+
+
+def test_region_source_is_stamped_relative_to_the_output(
+    tmp_path, fake_era5_catalog, monkeypatch
+):
+    """The same extraction in another project folder must be byte-identical."""
+    region = tmp_path / "data/spatial/geoms/region.geojson"
+    region.parent.mkdir(parents=True)
+    region.write_text("{}")
+    out_nc = tmp_path / "data/climate/historical/era5/out.nc"
+    out_nc.parent.mkdir(parents=True)
+    written = []
+    original = _FakeDataset.to_netcdf
+
+    def recording(self, fn, **kwargs):
+        written.append(dict(self.attrs))
+        return original(self, fn, **kwargs)
+
+    monkeypatch.setattr(_FakeDataset, "to_netcdf", recording)
+    ehc.prep_historical_climate(
+        region_fn=None,
+        fn_out=out_nc,
+        data_libs="dummy.yml",
+        clim_source="era5",
+        starttime="2010-01-01T00:00:00",
+        endtime="2010-12-31T00:00:00",
+        bbox=(0.0, 0.0, 1.0, 1.0),
+        region_source=region,
+    )
+    assert written[-1]["region_source"] == "../../../spatial/geoms/region.geojson"

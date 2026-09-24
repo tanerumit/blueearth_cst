@@ -4,7 +4,7 @@ type: todo-item
 status: backlog
 effort: 1
 area: docs / rule reference
-origin: t2608290250 dead-module deletion, 2026-09-17
+origin: wf3 generation bundle (2026-09-24); was t2608290250 dead-module deletion, 2026-09-17
 queue: 1
 created: 2026-09-17
 updated: 2026-09-17

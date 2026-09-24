@@ -2,8 +2,9 @@
 
 Bundle: origin `wf3 generation bundle (2026-09-24)`, branch `wf3-improvements`.
 Items: `t2609241323` (3.09 copy step), `t2609241251` (rule renames),
-`t2609241329` (overview rows 3.04–3.06 + rule-index), and `t2609171940`
-(rule-index pre-R12; folded into `t2609241329`).
+`t2609241329` (overview rows 3.04–3.06 + rule-index), `t2609171940`
+(rule-index pre-R12; folded into `t2609241329`), and the remainder of
+`t2609191457` (static planning; the plan freeze landed in `c83ead70`).
 
 ## Dependencies and open decisions
 
@@ -30,7 +31,7 @@ Copy step first: whether 3.09 survives decides whether `store_` enters the
 |---|---|---|---|
 | 1 | `refactor(wf3): write scenario series directly` | 3.07/3.08 write `series/run_<id>.nc`; roots stay non-temp (they are 3.08 ancestors); 3.09 removed; receipt `workspace_path` and `validate_provider_inputs(output_dir=…)` adjusted; tests | 3–4 h |
 | 2 | `refactor(wf3): domain rule names` | 3.03 `prepare_perturbation_grid`, 3.07 `generate_weather_realizations`, 3.08 `perturb_climate_realizations`, 3.10 `publish_scenario_collection` (+3.09 `store_scenario_series` only if step 1 is rejected); `LOG_RULES`, banners, `tests/test_prepare_weathergen_config.py`, `dev/scripts/console_sample_specs.py`, `dev/reference/contracts/weather-generator-seam.md`, §8b verb table (`publish_`) and the singular `perturb_climate_realization` mention; migration note | 1–1.5 h |
-| 3 | `feat(console): show WF3 pre-DAG steps` | Overview rows 3.04–3.06 in `shared/console_style.py` / WF3 banner, labelled as run before the DAG; on `--dry-run` they must not claim done | 1.5–2 h |
+| 3 | `feat(console): show WF3 pre-DAG steps` | Overview rows 3.04–3.06 in `shared/console_style.py` / WF3 banner, labelled as run before the DAG; on `--dry-run` they must not claim done. Remove the provisional `after checkpoint` state (check WF0–WF2/WF4 use first), add the migration note, prove exact counts for fresh and reuse runs; closes `t2609191457` | 2.5–3 h |
 | 4 | `docs(rule-index): WF3 table matches code` | `rule-index.md` WF3 section; closes `t2609171940` | 30 min |
 
 Sealed records (`dev/milestones/`, `dev/working/` design runs) are not swept;
@@ -46,4 +47,4 @@ check `dev/reference/sealed-records.yml` before touching any `dev/` file.
 | 4 | none beyond review |
 | Merge | `pixi run test-full` (step 3 touches `shared/`); PR per AGENTS.md for `shared/` changes |
 
-Total: about 7–8 h of work, plus one rapid WF3 run and one `test-full`.
+Total: about 8–9 h of work, plus one rapid WF3 run and one `test-full`.

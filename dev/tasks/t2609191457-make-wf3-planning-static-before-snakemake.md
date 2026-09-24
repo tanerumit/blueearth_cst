@@ -16,6 +16,8 @@ updated: 2026-09-19
 
 ## Progress
 
+- 2026-09-24: plan freeze and checkpoint removal landed on main (`c83ead70`); WF3 overview reports exact counts. Remainder (drop `after checkpoint` console state, migration note, fresh/reuse count proof) folded into the wf3 generation bundle, step 3 of `dev/drafts/wf3-generation-bundle-plan.md`.
+
 - [ ] Specify and version the preflight manifest: collection identity, reuse decision, scenario rows, expected outputs, and every input digest needed to detect staleness.
 - [ ] Separate collection planning into a side-effect-free command that writes the manifest atomically before Snakemake starts.
 - [ ] Replace `prepare_collection_sources` checkpoint expansion with static rule inputs and fan-out derived only from the validated manifest.

@@ -1,7 +1,7 @@
 # This module declares no generation, model, preparation, or simulation producers.
 from blueearth_cst.experiment.metric_plan import metrics_only_configuration
 from blueearth_cst.shared.snake_utils import declare_path_tokens, declare_project_root
-from blueearth_cst.shared.console_style import target_banner
+from blueearth_cst.shared.console_style import RuleRegistry, target_banner
 
 _metric_root, METRIC_TOKENS, METRIC_ANCHOR = metrics_only_configuration(config_path)
 exp_dir = _metric_root.as_posix()
@@ -23,6 +23,8 @@ LOG_PARTS_DIR = f"{project_dir}/logs/_parts/simulate_system/{experiment}"
 # produce would be a lie waiting for the day it starts printing them again.
 WORKFLOW_LOG_NAME = None
 BENCHMARKS_NAME = None
+# Registry for the banner-only 4.08-4.10 rules in simulate_system.smk.
+RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts/simulate_system/{experiment}")
 
 declare_path_tokens(experiment=exp_dir)
 declare_project_root(project_dir)

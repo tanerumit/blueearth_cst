@@ -30,6 +30,7 @@ def test_candidate_intent_uses_wf3_only_seed_projection(tmp_path, monkeypatch):
         lambda *_: UnitInterpretation("fixture/1", "fixture", (("temp", "degC"),)),
     )
     monkeypatch.setattr(generation_plan, "_historical_calendar", lambda _: "standard")
+    monkeypatch.setattr(generation_plan, "netcdf_content_sha256", lambda _: "c" * 64)
     monkeypatch.setattr(
         generation_plan,
         "stage_environment",
@@ -49,6 +50,7 @@ def test_candidate_intent_uses_wf3_only_seed_projection(tmp_path, monkeypatch):
         "n_design_points": 4,
         "start": 2046,
         "end": 2054,
+        "historical_end": 2016,
         "capacity": 15,
         "request": {"water_year_start": "JAN"},
         "code": [{"path": "provider.py", "sha256": "0" * 64}],

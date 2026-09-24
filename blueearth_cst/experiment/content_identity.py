@@ -469,6 +469,105 @@ def collection_revision(manifest: Mapping[str, Any]) -> str:
     )
 
 
+#: Content-digest scheme for netCDF sources; stored beside the digest so a
+#: future change to what is hashed is a new scheme, not a silent redefinition.
+NETCDF_CONTENT_SCHEME = "netcdf-content/1"
+
+#: Source-identity projection versions. /2 hashed every scientific source by
+#: file bytes; /3 hashes the historical-climate netCDF by content, because HDF5
+#: stamps write times into object headers and a re-extraction of identical data
+#: never reproduces the bytes. /2 stays readable for existing collections.
+SOURCE_IDENTITY_V2 = "generation-sources-identity/2"
+SOURCE_IDENTITY_V3 = "generation-sources-identity/3"
+
+_CONTENT_HASHED_ROLES = ("historical_climate",)
+
+
+def _attribute_digest_value(value: Any) -> Any:
+    """A netCDF attribute as a canonical-JSON value, arrays and NaN included."""
+    import numpy as np
+
+    array = np.asarray(value)
+    if array.dtype.kind in "US":
+        return {"text": array.astype(str).tolist()}
+    return {"dtype": array.dtype.newbyteorder("<").str, "bytes": _array_sha256(array)}
+
+
+def _array_sha256(array: Any) -> str:
+    import numpy as np
+
+    array = np.ascontiguousarray(array)
+    if array.dtype.byteorder == ">" or (
+        array.dtype.byteorder == "=" and not np.little_endian
+    ):
+        array = array.astype(array.dtype.newbyteorder("<"))
+    return hashlib.sha256(array.tobytes(order="C")).hexdigest()
+
+
+def netcdf_content_sha256(path: Path) -> str:
+    """Digest a netCDF file's stored content, independent of container bytes.
+
+    Covers dimensions, every variable's name, dimensions, stored dtype, raw
+    (undecoded) values and attributes, and the global attributes -- the
+    ``netcdf-content/1`` scheme. Leaves out what the writer, not the data,
+    decides: HDF5 object timestamps, chunking, compression and object order.
+    Reads one variable at a time.
+    """
+    import netCDF4
+
+    with netCDF4.Dataset(path) as dataset:
+        dataset.set_auto_maskandscale(False)
+        variables = []
+        for name in sorted(dataset.variables):
+            variable = dataset.variables[name]
+            variables.append(
+                {
+                    "name": name,
+                    "dimensions": list(variable.dimensions),
+                    "dtype": str(variable.dtype),
+                    "values_sha256": _array_sha256(variable[...]),
+                    "attributes": {
+                        key: _attribute_digest_value(variable.getncattr(key))
+                        for key in sorted(variable.ncattrs())
+                    },
+                }
+            )
+        return content_sha256(
+            {
+                "scheme": NETCDF_CONTENT_SCHEME,
+                "dimensions": {
+                    name: len(dimension)
+                    for name, dimension in sorted(dataset.dimensions.items())
+                },
+                "variables": variables,
+                "attributes": {
+                    key: _attribute_digest_value(dataset.getncattr(key))
+                    for key in sorted(dataset.ncattrs())
+                },
+            }
+        )
+
+
+def scientific_source_entry(
+    role: str, file: Mapping[str, Any], metadata: Mapping[str, Any], version: str
+) -> dict[str, Any]:
+    """One source's entry in the collection identity and the automatic seed.
+
+    Under /3 a content-hashed role contributes its stored content digest;
+    every other source, and every source under /2, its file bytes.
+    """
+    if version == SOURCE_IDENTITY_V3 and role in _CONTENT_HASHED_ROLES:
+        if metadata.get("content_scheme") != NETCDF_CONTENT_SCHEME:
+            raise ValueError(f"{role} lacks a {NETCDF_CONTENT_SCHEME} digest")
+        return {
+            "role": role,
+            "content_sha256": _digest(metadata["content_sha256"], role),
+        }
+    if version not in (SOURCE_IDENTITY_V2, SOURCE_IDENTITY_V3):
+        raise ValueError(f"unsupported source identity version: {version}")
+    return {"role": role, "sha256": file["sha256"], "size_bytes": file["size_bytes"]}
+
+
 def generation_seed_material_v2(
     *,
     n_realizations: int,
@@ -489,6 +588,14 @@ def generation_seed_material_v2(
         if len(matches) != 1:
             raise ValueError(f"expected one pinned {role} source")
         item = matches[0]
+        if "content_sha256" in item:
+            selected.append(
+                {
+                    "role": role,
+                    "content_sha256": _digest(item["content_sha256"], role),
+                }
+            )
+            continue
         size = item["size_bytes"]
         if type(size) is not int or size < 0:
             raise ValueError(f"{role}.size_bytes must be nonnegative")

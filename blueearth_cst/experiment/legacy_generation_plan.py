@@ -234,6 +234,9 @@ def resolve_generation_plan(settings):
         settings["request"]["water_year_start"],
         validate_spell_factor(spells.get("dry"), "spell_factors.dry"),
         validate_spell_factor(spells.get("wet"), "spell_factors.wet"),
+        # Legacy collections were generated from a fixed 2010 anchor; keep it so
+        # their recorded generator config still reproduces.
+        2010,
     )
     material = {
         "schema_version": "generation-seed-material/1",

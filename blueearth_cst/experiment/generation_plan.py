@@ -9,6 +9,8 @@ from pathlib import Path
 import xarray as xr
 
 from blueearth_cst.experiment.content_identity import (
+    NETCDF_CONTENT_SCHEME,
+    SOURCE_IDENTITY_V3,
     atomic_record,
     automatic_seed_v2,
     canonical_json_bytes,
@@ -16,8 +18,10 @@ from blueearth_cst.experiment.content_identity import (
     content_sha256,
     generation_seed_material_v2,
     identity_segment,
+    netcdf_content_sha256,
     read_canonical_json,
     repository_code_inventory,
+    scientific_source_entry,
     stage_environment,
 )
 from blueearth_cst.experiment.generation_sources import generation_interpretation
@@ -142,10 +146,17 @@ def generation_configuration(config, repository):
     store = climate_store_rule(
         **shared, clim_source=climate["selected"], historical_window=climate["window"]
     )
+    _, historical_end = window_year_pair(climate["window"], "climate.window")
     region = region_rule(**shared)
     start, end = window_year_pair(
         cfg["simulation_window"], "generate_scenarios.simulation_window"
     )
+    if start < historical_end:
+        raise ValueError(
+            f"generate_scenarios.simulation_window starts in {start}, before "
+            f"climate.window ends in {historical_end}; generated weather begins "
+            "where the historical record ends"
+        )
     _, _, count = stress_test_grid(cfg["climate_perturbations"])
     realizations = cfg.get("n_realizations", 1)
     template = cfg.get("weathergen_config", "config/defaults/weathergen_config.yml")
@@ -205,6 +216,7 @@ def generation_configuration(config, repository):
         region=region,
         start=start,
         end=end,
+        historical_end=historical_end,
         n_realizations=realizations,
         n_design_points=count,
         capacity=cfg.get("unit_id_capacity", (realizations + 1) * (count + 1)),
@@ -305,12 +317,18 @@ def build_candidate_intent(settings: dict) -> dict:
     for role, original in sorted(source_paths.items()):
         pinned, _, _ = snapshot_generation_input(project_root, original)
         pinned_paths[role] = pinned
+        metadata = {}
+        if role == "historical_climate":
+            metadata = {
+                "content_scheme": NETCDF_CONTENT_SCHEME,
+                "content_sha256": netcdf_content_sha256(pinned),
+            }
         sources.append(
             {
                 "role": role,
                 "original_path": str(original.resolve()),
                 "file": file_reference(pinned, "project_root", project_root),
-                "metadata": {},
+                "metadata": metadata,
             }
         )
     interpretation = generation_interpretation(
@@ -349,6 +367,7 @@ def build_candidate_intent(settings: dict) -> dict:
         settings["request"]["water_year_start"],
         dry,
         wet,
+        settings["historical_end"],
     )
     generator["generate_weather"]["out_dir"] = None
     for section, keys in (
@@ -364,11 +383,9 @@ def build_candidate_intent(settings: dict) -> dict:
             else:
                 generator[section][key] = {"present": False, "value": None}
     selected = [
-        {
-            "role": item["role"],
-            "sha256": item["file"]["sha256"],
-            "size_bytes": item["file"]["size_bytes"],
-        }
+        scientific_source_entry(
+            item["role"], item["file"], item["metadata"], SOURCE_IDENTITY_V3
+        )
         for item in sources
         if item["role"] in {"basin_cells", "historical_climate"}
     ]
@@ -447,7 +464,7 @@ def build_candidate_intent(settings: dict) -> dict:
             "water_year_start": material["water_year_start"],
         },
         "source_inventory": {
-            "schema_version": "generation-sources-identity/2",
+            "schema_version": SOURCE_IDENTITY_V3,
             "sources": selected,
             "interpretation": source_inventory["interpretation"],
         },
@@ -588,6 +605,11 @@ def build_reuse_plan(settings: dict, candidate: dict, marker_path: Path) -> dict
         intent=creator,
         intent_sha256=content_sha256(creator),
         documents=creator["documents"],
+        # The creator's, like the documents: a content-equal re-extraction pins
+        # different source bytes, which stay this request's candidate evidence.
+        source_inventory_sha256=content_sha256(
+            creator["documents"]["source_inventory"]
+        ),
         creator_archive=marker["archive"],
         collection_revision=marker["collection_revision"],
     )

@@ -10,7 +10,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, validate_historical_window, warning_count
-from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -271,8 +271,9 @@ CLIMATE_STORES = {
 # owns it. Same shape as WF3's `3.15_run_wflow`, whose rule identifiers are
 # `run_wflow_batch_<b>`.
 #
-# tests/test_log_rules_contract.py asserts this list in BOTH directions and in
-# rule-number order, so an added logging rule must be registered here.
+# The list is built by the RuleRegistry below, one registration per rule, and
+# tests/test_log_rules_contract.py asserts it in BOTH directions and in
+# rule-number order.
 WORKFLOW_LOG_NAME = "wf0_analyze_climate.log"
 
 # One tally per run, opened at parse time and published to every job process
@@ -299,21 +300,19 @@ declare_path_tokens(
     climate=os.path.dirname(CLIMATE_STORES[clim_source].store_dir),
 )
 declare_project_root(project_dir)
-LOG_RULES = [
-    "0.02_delineate_region",
-    "0.03_delineate_spatial_units",
-    "0.04_extract_historical_climate",
-    "0.05_plot_climate_source",
-]
+RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
+LOG_RULES = RULES.log_rules
+DELINEATE_REGION = RULES.logged("0.02", "delineate_region")
+DELINEATE_SPATIAL_UNITS = RULES.logged("0.03", "delineate_spatial_units")
+EXTRACT_HISTORICAL_CLIMATE = RULES.logged("0.04", "extract_historical_climate", summary="clip global climate to the basin")
+PLOT_CLIMATE_SOURCE = RULES.logged("0.05", "plot_climate_source")
 
-# Rule 0.06 exists only when there is more than one source to compare, so its
-# label is APPENDED rather than written into the literal above. Both halves are
-# load-bearing: tests/test_log_rules_contract.py reads the literal textually and
-# parses the workflow on the single-source fixture config, so a label sitting in
-# the literal would be an orphan there. tests/test_compare_climate_sources.py
-# covers the other direction, which that module's fixture cannot reach.
+# Rule 0.06 exists only when there is more than one source to compare, so it
+# is registered -- and its label enters LOG_RULES -- only then.
 if len(CANDIDATE_SOURCES) > 1:
-    LOG_RULES.append("0.06_compare_climate_sources")
+    COMPARE_CLIMATE_SOURCES = RULES.logged("0.06", "compare_climate_sources", summary="compare the candidate climate datasets")
+GATHER_BENCHMARKS = RULES.banner_only("0.10", "gather_benchmarks")
+GATHER_LOGS = RULES.banner_only("0.11", "gather_logs")
 
 
 SOURCE_PLOTS = {
@@ -379,7 +378,7 @@ rule all:
 # Byte-identical to 1.02, 2.02 and 3.03 except message/log/benchmark; everything
 # else is splatted from REGION so the four cannot drift.
 rule delineate_region:
-    message: rule_banner("0.02", "delineate_region")
+    message: DELINEATE_REGION.banner()
     input:
         **REGION.inputs,
     params:
@@ -387,9 +386,9 @@ rule delineate_region:
     output:
         **REGION.outputs,
     log:
-        f"{LOG_PARTS_DIR}/0.02_delineate_region.log",
+        DELINEATE_REGION.log(),
     benchmark:
-        f"{project_dir}/benchmarks/_parts/0.02_delineate_region.tsv",
+        DELINEATE_REGION.benchmark(),
     script: REGION.script
 
 # 0.03  delineate_spatial_units — the shared vector foundation (ADR 0006 §8).
@@ -399,7 +398,7 @@ rule delineate_region:
 # so a climate-only run obtains basin and subbasin boundaries without reading
 # `vito`, `modis_lai` or `soilgrids` at all.
 rule delineate_spatial_units:
-    message: rule_banner("0.03", "delineate_spatial_units")
+    message: DELINEATE_SPATIAL_UNITS.banner()
     input:
         **SPATIAL_UNITS.inputs,
     params:
@@ -407,9 +406,9 @@ rule delineate_spatial_units:
     output:
         **SPATIAL_UNITS.outputs,
     log:
-        f"{LOG_PARTS_DIR}/0.03_delineate_spatial_units.log",
+        DELINEATE_SPATIAL_UNITS.log(),
     benchmark:
-        f"{project_dir}/benchmarks/_parts/0.03_delineate_spatial_units.tsv",
+        DELINEATE_SPATIAL_UNITS.benchmark(),
     script: SPATIAL_UNITS.script
 
 
@@ -436,8 +435,8 @@ for _source in CANDIDATE_SOURCES:
     _spec = CLIMATE_STORES[_source]
 
     rule:
-        name: f"extract_historical_climate_{_source}"
-        message: rule_banner("0.04", f"extract_historical_climate_{_source}", summary="clip global climate to the basin")
+        name: EXTRACT_HISTORICAL_CLIMATE.job_name(_source)
+        message: EXTRACT_HISTORICAL_CLIMATE.banner(part=_source)
         input:
             **_spec.inputs,
         params:
@@ -445,17 +444,17 @@ for _source in CANDIDATE_SOURCES:
         output:
             **_spec.outputs,
         log:
-            f"{LOG_PARTS_DIR}/0.04_extract_historical_climate/{_source}.log",
+            EXTRACT_HISTORICAL_CLIMATE.log(_source),
         benchmark:
-            f"{project_dir}/benchmarks/_parts/0.04_extract_historical_climate/{_source}.tsv",
+            EXTRACT_HISTORICAL_CLIMATE.benchmark(_source),
         script:
             _spec.script
 
     _plot = SOURCE_PLOTS[_source]
 
     rule:
-        name: f"plot_climate_source_{_source}"
-        message: rule_banner("0.05", f"plot_climate_source_{_source}")
+        name: PLOT_CLIMATE_SOURCE.job_name(_source)
+        message: PLOT_CLIMATE_SOURCE.banner(part=_source)
         input:
             **_plot.inputs,
         output:
@@ -464,9 +463,9 @@ for _source in CANDIDATE_SOURCES:
         params:
             **_plot.params,
         log:
-            f"{LOG_PARTS_DIR}/0.05_plot_climate_source/{_source}.log",
+            PLOT_CLIMATE_SOURCE.log(_source),
         benchmark:
-            f"{project_dir}/benchmarks/_parts/0.05_plot_climate_source/{_source}.tsv",
+            PLOT_CLIMATE_SOURCE.benchmark(_source),
         script: _plot.script
 
 
@@ -480,7 +479,7 @@ for _source in CANDIDATE_SOURCES:
 if len(CANDIDATE_SOURCES) > 1:
 
     rule compare_climate_sources:
-        message: rule_banner("0.06", "compare_climate_sources", summary="compare the candidate climate datasets")
+        message: COMPARE_CLIMATE_SOURCES.banner()
         input:
             climate_ncs = [CLIMATE_STORES[s].outputs["climate_nc"] for s in CANDIDATE_SOURCES],
             # The DOMAIN the figures average over: the cells each source's own
@@ -512,9 +511,9 @@ if len(CANDIDATE_SOURCES) > 1:
             # delineation ids, so their count is a runtime fact.
             directory(COMPARISON_SUBBASIN_DIR),
         log:
-            f"{LOG_PARTS_DIR}/0.06_compare_climate_sources.log",
+            COMPARE_CLIMATE_SOURCES.log(),
         benchmark:
-            f"{project_dir}/benchmarks/_parts/0.06_compare_climate_sources.tsv",
+            COMPARE_CLIMATE_SOURCES.benchmark(),
         script:
             "blueearth_cst/climate_analysis/compare_sources.py"
 
@@ -522,7 +521,7 @@ if len(CANDIDATE_SOURCES) > 1:
 # --- benchmark gather ---------------------------------------------------------
 # 0.10  gather_benchmarks — merge the WF0 parts into one benchmarks table.
 rule gather_benchmarks:
-    message: rule_banner("0.10", "gather_benchmarks")
+    message: GATHER_BENCHMARKS.banner()
     input:
         WF0_TERMINALS,
     output:
@@ -541,7 +540,7 @@ rule gather_benchmarks:
 # they are `log:` files, which Snakemake does not track in the DAG, so naming
 # them as `input:` would demand them as buildable targets.
 rule gather_logs:
-    message: rule_banner("0.11", "gather_logs")
+    message: GATHER_LOGS.banner()
     input:
         WF0_TERMINALS,
     output:

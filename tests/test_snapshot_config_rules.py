@@ -162,5 +162,5 @@ def test_the_sidecar_rules_take_letter_suffixes():
     """
     wf1 = (REPO / "build_model.smk").read_text(encoding="utf-8")
 
-    assert 'rule_banner("1.15b", "write_run_metadata")' in wf1
-    assert 'rule_banner("1.16", "gather_benchmarks")' in wf1
+    assert 'RULES.banner_only("1.15b", "write_run_metadata")' in wf1
+    assert 'RULES.banner_only("1.16", "gather_benchmarks")' in wf1

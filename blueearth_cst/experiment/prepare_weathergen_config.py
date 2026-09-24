@@ -22,17 +22,17 @@ def read_yml(yml_path):
     return yml
 
 
-def compute_nr_years(sim_end):
+def compute_nr_years(sim_end, historical_end):
     """Number of weathergen years to generate.
 
-    Spans from the end of the historical period (2010) to the wflow run window
-    around the horizon (``middle_year`` ± ``wflow_run_length``/2), plus a 2-year
-    pad. The ``2010`` and ``+2`` literals are the historical-end anchor and pad.
+    Spans from the end of the historical record (``historical_end``, the last
+    year of the configured climate window) to the end of the simulation window,
+    plus a 2-year pad. The ``+2`` literal is the pad.
     """
     # `C-67`: the window END is declared now, so the generated record runs to
     # it directly instead of through a horizon-plus-half-length estimate that
     # rounded differently for an odd run length.
-    return int(sim_end) - 2010 + 2
+    return int(sim_end) - int(historical_end) + 2
 
 
 #: `C-32`'s enum, closed. `transient` ramps the perturbation through the run;
@@ -97,6 +97,7 @@ def build_weathergen_config(
     water_year_start,
     dry_spell_factor,
     wet_spell_factor,
+    historical_end,
 ):
     """Assemble the ONE weathergenr config the experiment uses.
 
@@ -137,8 +138,9 @@ def build_weathergen_config(
     yml_dict["generate_weather"].update(
         {
             "out_dir": output_path,
-            "start_year": 2010,
-            "n_years": compute_nr_years(sim_end),
+            # The generated record starts where the historical one ends.
+            "start_year": int(historical_end),
+            "n_years": compute_nr_years(sim_end, historical_end),
             "n_realizations": realizations_num,
             # Resolved by the Snakefile from the generate_scenarios file's
             # top-level `seed` (integer or `auto`)

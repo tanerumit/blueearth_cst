@@ -8,7 +8,7 @@ sys.path.insert(0, str(REPOSITORY))
 from blueearth_cst.experiment.content_identity import content_sha256, read_canonical_json
 from blueearth_cst.experiment.simulation_runner import simulation_settings
 from blueearth_cst.shared.snake_utils import declare_warning_tally, patch_psutil_windows_benchmark, warning_count
-from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, run_summary
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]
@@ -21,6 +21,12 @@ if OPERATION == "metrics-only":
 else:
     include: "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
 
+# RULES comes from whichever module was included above.
+PREPARE_METRIC_PLAN = RULES.banner_only("4.08", "prepare_metric_plan")
+PUBLISH_METRIC_SET = RULES.banner_only("4.09", "publish_metric_set", summary="reduce the retained responses to the immutable metric set")
+METRICS = RULES.banner_only("4.10", "metrics")
+
+
 def _current_metric_request(wc=None):
     from blueearth_cst.experiment.metric_plan import current_metric_request
 
@@ -30,7 +36,7 @@ def _current_metric_request(wc=None):
 
 # 4.08  prepare_metric_plan
 checkpoint prepare_metric_plan:
-    message: rule_banner("4.08", "prepare_metric_plan", "metric_request {wildcards.metric_request_id}")
+    message: PREPARE_METRIC_PLAN.banner(context="metric_request {wildcards.metric_request_id}")
     input:
         simulation=_frozen_simulation,
         responses=f"{engine_dir}/response_inventory.json",
@@ -68,7 +74,7 @@ def _metric_set_plan(wc):
 
 # 4.09  publish_metric_set
 rule publish_metric_set:
-    message: rule_banner("4.09", "publish_metric_set", "metric_set {wildcards.metric_set_id}", summary="reduce the retained responses to the immutable metric set")
+    message: PUBLISH_METRIC_SET.banner(context="metric_set {wildcards.metric_set_id}")
     input:
         plan=_metric_set_plan,
     output:
@@ -97,7 +103,7 @@ rule metrics:
     # to list them would evaluate that resolution twice, at two different
     # moments, for a cosmetic gain. The metric sets are named by 4.09's own
     # `Published <id>` row instead.
-    message: rule_banner("4.10", "metrics")
+    message: METRICS.banner()
     input:
         _selected_metric_outputs,
 

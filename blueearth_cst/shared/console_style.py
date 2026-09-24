@@ -376,6 +376,9 @@ class RuleIdentity:
     benchmark_parts_dir: str
     summary: str | None = None
     logged: bool = True
+    #: Passed through to :func:`rule_banner` unchanged; see its arguments.
+    quiet_start: bool = False
+    dynamic_progress: bool = False
 
     @property
     def label(self) -> str:
@@ -389,7 +392,12 @@ class RuleIdentity:
     def banner(self, part=None, context=None) -> str:
         """The ``message:`` string, with this rule's summary applied."""
         return rule_banner(
-            self.number, self.job_name(part), context=context, summary=self.summary
+            self.number,
+            self.job_name(part),
+            context=context,
+            summary=self.summary,
+            quiet_start=self.quiet_start,
+            dynamic_progress=self.dynamic_progress,
         )
 
     def log(self, part=None) -> str:
@@ -456,23 +464,38 @@ class RuleRegistry:
         self.benchmark_parts_dir = str(benchmark_parts_dir)
         self.log_rules = []
 
-    def _make(self, number, name, summary, logged):
+    def _make(self, number, name, logged, **banner):
         return RuleIdentity(
             number=number,
             name=name,
             log_parts_dir=self.log_parts_dir,
             benchmark_parts_dir=self.benchmark_parts_dir,
-            summary=summary,
             logged=logged,
+            **banner,
         )
 
-    def logged(self, number, name, *, summary=None) -> RuleIdentity:
-        """Register a rule that writes a log part, and record its label."""
-        identity = self._make(number, name, summary, True)
+    def logged(
+        self, number, name, *, summary=None, quiet_start=False, dynamic_progress=False
+    ) -> RuleIdentity:
+        """Register a rule that writes a log part, and record its label.
+
+        ``summary``, ``quiet_start`` and ``dynamic_progress`` are stored on the
+        identity and forwarded to :func:`rule_banner` by :meth:`RuleIdentity.banner`.
+        """
+        identity = self._make(
+            number,
+            name,
+            True,
+            summary=summary,
+            quiet_start=quiet_start,
+            dynamic_progress=dynamic_progress,
+        )
         self.log_rules.append(identity.label)
         return identity
 
-    def banner_only(self, number, name, *, summary=None) -> RuleIdentity:
+    def banner_only(
+        self, number, name, *, summary=None, quiet_start=False, dynamic_progress=False
+    ) -> RuleIdentity:
         """A rule with a banner and no log part -- bookkeeping and terminal rules.
 
         Not in ``LOG_RULES``, so ``merge_logs`` never looks for its section.
@@ -482,7 +505,14 @@ class RuleRegistry:
         Both directions are covered, which is why this is two methods rather
         than a boolean nobody would read at the call site.
         """
-        return self._make(number, name, summary, False)
+        return self._make(
+            number,
+            name,
+            False,
+            summary=summary,
+            quiet_start=quiet_start,
+            dynamic_progress=dynamic_progress,
+        )
 
 
 #: Rules whose per-job START line is not printed, filled by `rule_banner`'s

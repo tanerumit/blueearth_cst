@@ -116,6 +116,20 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
                 },
                 "source_inventory": {"sources": sources},
             },
+            "documents": {
+                "source_inventory": {
+                    "sources": [
+                        {
+                            "role": item["role"],
+                            "file": {
+                                "sha256": item["sha256"],
+                                "size_bytes": item["size_bytes"],
+                            },
+                        }
+                        for item in sources
+                    ]
+                }
+            },
             "scenario_semantics_sha256": "0" * 64,
         },
         "rows": [

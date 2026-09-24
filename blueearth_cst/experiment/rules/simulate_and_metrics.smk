@@ -15,7 +15,7 @@ from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size
 from blueearth_cst.shared.indicator_tables import indicator_tables
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, validate_experiment_name
-from blueearth_cst.shared.console_style import defer_warning, rule_banner, target_banner
+from blueearth_cst.shared.console_style import RuleRegistry, defer_warning, target_banner
 
 project, my_cfg = simulation_settings(config_path)
 project_dir = Path(project["project"]["project_dir"]).resolve().as_posix()
@@ -40,8 +40,16 @@ LOG_PARTS_DIR = f"{project_dir}/logs/_parts/simulate_system/{experiment}"
 BENCH_PARTS_DIR = f"{project_dir}/benchmarks/_parts/simulate_system/{experiment}"
 WORKFLOW_LOG_NAME = f"wf4_simulate_system_{experiment}.log"
 BENCHMARKS_NAME = f"wf4_benchmarks_{experiment}.md"
-LOG_RULES = ["4.01_write_model_reference", "4.02_check_model_reference",
-             "4.04_downscale_climate_realization", "4.05_run_wflow"]
+RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
+LOG_RULES = RULES.log_rules
+WRITE_MODEL_REFERENCE = RULES.logged("4.01", "write_model_reference")
+CHECK_MODEL_REFERENCE = RULES.logged("4.02", "check_model_reference")
+FREEZE_WFLOW_SIMULATION = RULES.banner_only("4.03", "freeze_wflow_simulation", summary="pin the simulation's inputs so the experiment cannot drift")
+DOWNSCALE_CLIMATE_REALIZATION = RULES.logged("4.04", "downscale_climate_realization", summary="downscale the perturbed climate onto the model grid")
+RUN_WFLOW = RULES.logged("4.05", "run_wflow", summary="run Wflow for one batch")
+PUBLISH_NATIVE_RESPONSES = RULES.banner_only("4.06", "publish_native_responses", summary="inventory the retained native runs")
+GATHER_LOGS = RULES.banner_only("4.11", "gather_logs")
+GATHER_BENCHMARKS = RULES.banner_only("4.12", "gather_benchmarks")
 METRIC_TOKENS = list(my_cfg.get("metrics", indicator_tables((project.get("model") or {}).get("outvars", DEFAULT_WFLOW_OUTVARS))))
 METRIC_ANCHOR = f"YS-{resolve_water_year_start((project.get('climate') or {}).get('water_year_start')).upper()}"
 
@@ -173,7 +181,7 @@ rule all:
 if not _simulation_complete:
     # 4.01  write_model_reference
     rule write_model_reference:
-        message: rule_banner("4.01", "write_model_reference")
+        message: WRITE_MODEL_REFERENCE.banner()
         input:
             model_ready=ancient(f"{basin_dir}/.outputs_configured"),
             model_toml=ancient(f"{basin_dir}/wflow_sbm.toml"),
@@ -183,12 +191,12 @@ if not _simulation_complete:
         output:
             model_reference=update(f"{engine_dir}/model_reference.yml"),
         log:
-            f"{LOG_PARTS_DIR}/4.01_write_model_reference.log",
+            WRITE_MODEL_REFERENCE.log(),
         script: "../write_model_reference.py"
 
     # 4.03  freeze_wflow_simulation
     checkpoint freeze_wflow_simulation:
-        message: rule_banner("4.03", "freeze_wflow_simulation", summary="pin the simulation's inputs so the experiment cannot drift")
+        message: FREEZE_WFLOW_SIMULATION.banner()
         input:
             collection=_selected_collection,
             model_reference=f"{exp_dir}/.model_reference_ok",
@@ -206,7 +214,7 @@ if not _simulation_complete:
 
     # 4.02  check_model_reference
     rule check_model_reference:
-        message: rule_banner("4.02", "check_model_reference")
+        message: CHECK_MODEL_REFERENCE.banner()
         input:
             model_reference=f"{engine_dir}/model_reference.yml",
             model_toml=ancient(f"{basin_dir}/wflow_sbm.toml"),
@@ -216,12 +224,12 @@ if not _simulation_complete:
         output:
             ok=temp(touch(f"{exp_dir}/.model_reference_ok")),
         log:
-            f"{LOG_PARTS_DIR}/4.02_check_model_reference.log",
+            CHECK_MODEL_REFERENCE.log(),
         script: "../check_model_reference.py"
 
     # 4.04  downscale_climate_realization
     rule downscale_climate_realization:
-        message: rule_banner("4.04", "downscale_climate_realization", "run {wildcards.run_id}", summary="downscale the perturbed climate onto the model grid")
+        message: DOWNSCALE_CLIMATE_REALIZATION.banner(context="run {wildcards.run_id}")
         wildcard_constraints:
             run_id="(?:" + "|".join(RUN_IDS) + ")",
         input:
@@ -246,9 +254,9 @@ if not _simulation_complete:
         resources:
             mem_mb=2048,
         log:
-            f"{LOG_PARTS_DIR}/4.04_downscale_climate_realization/run_{{run_id}}.log",
+            DOWNSCALE_CLIMATE_REALIZATION.log("run_{run_id}"),
         benchmark:
-            f"{BENCH_PARTS_DIR}/4.04_downscale_climate_realization/run_{{run_id}}.tsv",
+            DOWNSCALE_CLIMATE_REALIZATION.benchmark("run_{run_id}"),
         script: "../downscale_climate_forcing.py"
 
     compute = my_cfg.get("compute") or {}
@@ -270,12 +278,12 @@ if not _simulation_complete:
         members = RUN_IDS[offset:offset + sizing.batch_size]
         # 4.05  run_wflow_batch — one bounded batch of retained runs
         rule:
-            name: f"run_wflow_batch_{batch}"
+            name: RUN_WFLOW.job_name(f"batch_{batch}")
             # Member COUNT rather than the span `run_stress_test.smk` printed:
             # the post-R12 batch is keyed by opaque run ids, so a span would read
             # as two digests rather than as a range. The count is the part that
             # says how long this line will sit there.
-            message: rule_banner("4.05", f"run_wflow_batch_{batch}", f"{len(members)} members", summary="run Wflow for one batch")
+            message: RUN_WFLOW.banner(part=f"batch_{batch}", context=f"{len(members)} members")
             input:
                 simulation=_frozen_simulation,
                 forcing=[f"{runs_dir}/forcing/inmaps_run_{run}.nc" for run in members],
@@ -290,9 +298,9 @@ if not _simulation_complete:
                     (run, f"{runs_dir}/run_settings/run_{run}.toml", f"{runs_dir}/output/run_{run}.csv")]],
                 julia=lambda wc, threads: julia_prefix(threads),
             log:
-                f"{LOG_PARTS_DIR}/4.05_run_wflow/batch_{batch}.log",
+                RUN_WFLOW.log(f"batch_{batch}"),
             benchmark:
-                f"{BENCH_PARTS_DIR}/4.05_run_wflow/batch_{batch}.tsv",
+                RUN_WFLOW.benchmark(f"batch_{batch}"),
             run:
                 read_simulation_intent_v2(exp_dir)
                 if Path(f"{engine_dir}/simulation.json").exists() or any(Path(p).exists() for p in output.csvs):
@@ -303,7 +311,7 @@ if not _simulation_complete:
 
     # 4.06  publish_native_responses
     rule publish_native_responses:
-        message: rule_banner("4.06", "publish_native_responses", summary="inventory the retained native runs")
+        message: PUBLISH_NATIVE_RESPONSES.banner()
         input:
             simulation=_frozen_simulation,
             csvs=[f"{runs_dir}/output/run_{run}.csv" for run in RUN_IDS],
@@ -338,7 +346,7 @@ rule responses:
 
 # 4.11  gather_logs
 rule gather_logs:
-    message: rule_banner("4.11", "gather_logs")
+    message: GATHER_LOGS.banner()
     input:
         lambda wc: _selected_metric_outputs(wc),
     output:
@@ -350,7 +358,7 @@ rule gather_logs:
 
 # 4.12  gather_benchmarks
 rule gather_benchmarks:
-    message: rule_banner("4.12", "gather_benchmarks")
+    message: GATHER_BENCHMARKS.banner()
     input:
         lambda wc: _selected_metric_outputs(wc),
     output:

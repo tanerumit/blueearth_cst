@@ -68,7 +68,7 @@ partial or byte-changed sets refuse reuse.
 Set `operation: metrics-only` in the simulation workflow file, then run:
 
 ```console
-pixi run python scripts/simulate_system.py --config <project> --target metrics --cores 2
+pixi run python scripts/simulate_system.py --config <project> --target simulations_and_indicators --cores 2
 ```
 
 The simulation file needs `experiment_name`; optional `metrics` selects

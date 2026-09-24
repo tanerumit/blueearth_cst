@@ -109,7 +109,7 @@ Two things to know before you run it:
   makes those rules re-execute without redoing the model build or the CMIP6
   fetches.
 - Deleting `performance_metrics.csv` re-runs Wflow. Rule 1.15's input is
-  `run_default/output.csv`, which rule 1.14 declares as `temp()`, so a completed
+  `run_default/output.csv`, which rule 1.13 declares as `temp()`, so a completed
   run has already removed it. That is expected, not a cascade bug.
 
 Verify by checking the executed notebooks rather than by reading them, on four

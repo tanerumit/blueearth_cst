@@ -51,8 +51,8 @@ Rendered one subsection per artifact.
 ## HM-1 — static grid (staticmaps.nc)
 
 - **path pattern:** `models/hydrology/wflow/staticmaps.nc`.
-- **producer:** rule 1.07 `create_model` (hydromt build).
-- **consumers:** wf1 rules 1.08 / 1.09 / 1.04 / 1.15; wf4 rule 4.04
+- **producer:** rule 1.06 `build_wflow_model` (hydromt build).
+- **consumers:** wf1 rules 1.07 / 1.08 / 1.03 / 1.15; wf4 rule 4.04
   (`WflowSbmModel(root)`).
 - **coords:** `(latitude, longitude)` `float64` + `spatial_ref` EPSG:4326 +
   `GeoTransform`.
@@ -76,7 +76,7 @@ Rendered one subsection per artifact.
   (= WG-6 on the weather-generator seam). R07 B5 files the wf4 twin on the
   HYDROLOGY side because it is model-grid forcing, symmetric with the wf1
   path above.
-- **producer → consumer:** rule 1.10 `add_climate_forcing` (hydromt update) → rule 1.14
+- **producer → consumer:** rule 1.09 `add_climate_forcing` (hydromt update) → rule 1.13
   `run_wflow`; wf4 rule 4.04 → rule 4.05.
 - **dims:** `(time, latitude, longitude)` on the **model grid** (`float64`
   lat/lon matching HM-1).
@@ -109,7 +109,7 @@ Rendered one subsection per artifact.
 
 - **path pattern:** `models/hydrology/wflow/staticgeoms/*` (`region.geojson`,
   `basins.geojson`, `outlets.geojson`, `rivers.geojson`, `outlet_index.csv`, …).
-- **producer:** rule 1.07 side-effect + rules 1.09 / 1.11.
+- **producer:** rule 1.06 side-effect + rules 1.08 / 1.10.
 - **consumers:** wf1 plot rules; wf4 rule 3.08 (`region.geojson` via
   `ancient()`).
 - **pinned surface (OUR-consumed vectors only):** `region.geojson` (basin extent
@@ -174,7 +174,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   (`snake_utils.member_pointer_base`). hydromt re-relativizes the absolute
   pointers on write -- none is hand-maintained.
 - **producer:** tracked template / rule 4.04 rewrite.
-- **consumer:** rule 1.14 / rule 4.05 `run_wflow` (`Wflow.run()`).
+- **consumer:** rule 1.13 `run_historical_simulation` / rule 4.05 `run_wflow_simulations` (`Wflow.run()`).
 - **pinned surface (the TOML fields OUR code reads/rewrites — the wf4 rewrite
   sites, `downscale_climate_forcing.py:55-84` `setup_config`):**
   `[time].{calendar, starttime, endtime, timestepsecs}`, `dir_output`,
@@ -216,7 +216,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   `<exp>/hydrology/wflow/output/run_<run_id>.csv` — the realization index is
   in the file name, so one member is one filename in three flat directories (`config/`, `forcing/`,
   `output/`). This is the inverse of R07 B5.
-- **producer:** rule 1.14 / rule 4.05 `run_wflow`.
+- **producer:** rule 1.13 `run_historical_simulation` / rule 4.05 `run_wflow_simulations`.
 - **consumers:** wf1 rule 1.15 plots; WF4 response inventory, then retained metric reduction.
 - **pinned surface — column identity is config-driven, NOT a literal list:** a
   `time` index (ISO-8601, daily) + **one column per `[output.csv].column`
@@ -246,7 +246,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
   rather than emptying its table. See also the `validate_hm7` note below: it has
   a "no rows" check that would have caught this, but is never invoked at run time.
 - **temp() lifecycle:** SPLIT between wf1 and wf4. wf1 `output.csv` **is** `temp()`
-  (rule 1.14): it is an intermediate feeding rule 1.14b's derived per-variable
+  (rule 1.13): it is an intermediate feeding rule 1.14's derived per-variable
   tables and rule 1.15's metrics, and Snakemake drops it once both have run. A
   swapper must therefore treat the wf1 artifact as existing only *within* the
   run — `--notemp` is what materialises it, and the baseline procedure uses that
@@ -259,7 +259,7 @@ item `t2608071203` (R9-1) records the full measurement and the options weighed.
 ## HM-6a — wf1 warm state (persisted, no validator)
 
 - **path pattern:** `models/hydrology/wflow/run_default/outstate/outstates.nc`.
-- **producer → consumer:** rule 1.14 `run_wflow` → **(nothing in-repo)**.
+- **producer → consumer:** rule 1.13 `run_historical_simulation` → **(nothing in-repo)**.
 - **THIN — "named output sink, unconsumed."** Persisted on the fixture.
 - **contract surface:** name + location only — which **HM-4 already pins** via
   `[state].path_output`. **No validator (design risk-1):** a standalone existence
@@ -287,8 +287,8 @@ synthetic schema checks. `--notemp` does not recreate this retired output.
 
 - **Path:** `<exp>/results/metric_sets/<metric_set_id>/<token>_indicators.csv`.
   `unit_index.csv` and `metrics.json` reside in the same ready set.
-- **Producer:** `prepare_metric_plan` resolves response-dependent declarations,
-  units and references; `publish_metric_set` publishes complete results.
+- **Producer:** `prepare_indicator_plan` resolves response-dependent declarations,
+  units and references; `derive_system_indicators` publishes complete results.
 - **Consumer:** terminal reporting, CST-API and notebooks. Readers validate
   `metrics.json` and its inventory before consuming tables.
 - **Header:** exactly `metric,location,unit_id,value`. IDs are text and retain
@@ -350,6 +350,6 @@ means the on-disk check is unavailable, not successful.
 python scripts/simulate_system.py --config <project-config.yml> --target all --cores 3 -- --notemp
 ```
 
-For retained-only reduction use `operation: metrics-only` and `--target metrics`.
+For retained-only reduction use `operation: metrics-only` and `--target simulations_and_indicators`.
 Scientific preservation evidence and its source-branch limits are recorded in
 [P2 acceptance](../../milestones/r12/implementation/evidence/p2/acceptance.md).

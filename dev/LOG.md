@@ -17,6 +17,8 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-24 | t2609241942 | Rename WF4 rules to domain names, hide targets, renumber 4.01-4.10 | wf4  |
+| 2026-09-24 | t2609241947 | Rename and renumber WF0-WF3 rules to domain names (screening 2026-09-24) | workflows |
 | 2026-09-24 | t2608220915 | Rule 1.06 consumes river_attributes without declaring it, so nothing schedules 1.03 | wf1 / DAG |
 | 2026-09-24 | t2609241822 | Interchange integration tests read the pre-successor WF4 layout | tests |
 | 2026-09-24 | t2609241523 | test-full: 18 failures and 23 errors from launch guards in pre-launcher contract tests | tests |

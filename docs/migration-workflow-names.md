@@ -39,8 +39,8 @@ requires a ready collection and model. CMIP6 remains a terminal plausibility
 overlay. WF0 is optional and should run first or alone for forcing selection.
 
 For retained reduction, set `operation: metrics-only`, keep the existing
-`experiment_name`, and use `--target metrics`. The all-workflow runner accepts
-`--simulation-target metrics`; disable other stages for a retained-only run.
+`experiment_name`, and use `--target simulations_and_indicators`. The all-workflow runner accepts
+`--simulation-target simulations_and_indicators`; disable other stages for a retained-only run.
 Default target `all` does not infer an operation. Mixed targets and simulation
 targets in metrics-only mode are refused before Snakemake launches.
 

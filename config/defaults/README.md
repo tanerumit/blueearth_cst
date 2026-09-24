@@ -6,14 +6,13 @@ your own edited copy elsewhere).
 
 | File | Consumer |
 | --- | --- |
-| `wflow_build_model.yml` | `build_model.smk` — default for `workflows.build_model.engine.build_config`; rule 1.06 `prepare_spatial_maps` and rule 1.07 `build_wflow_model` |
-| `wflow_update_waterbodies.yml` | `build_model.smk` — default for `workflows.build_model.engine.waterbodies_config`; rule 1.08 `add_reservoirs_lakes_glaciers` |
-| `weathergen_config.yml` | `run_stress_test.smk` — `default_config` for rule 3.10 `prepare_weathergen_config`, declared as BOTH an `input:` and a `params:` |
+| `wflow_build_model.yml` | `build_model.smk` — default for `workflows.build_model.engine.build_config`; rule 1.05 `prepare_land_and_soil_maps` and rule 1.06 `build_wflow_model` |
+| `wflow_update_waterbodies.yml` | `build_model.smk` — default for `workflows.build_model.engine.waterbodies_config`; rule 1.07 `add_reservoirs_lakes_glaciers` |
+| `weathergen_config.yml` | `generate_scenarios.smk` — default for `weathergen_config`, read by planning step 3.06 `prepare_weather_generator_settings` and recorded in the generation plan |
 
-`weathergen_config.yml` carries the `input:` declaration for a reason: it was a
-params-only read until 2026-08-05, so editing it changed nothing until something
-else forced a rerun — rule 3.10 stayed satisfied, its generated config stayed
-stale, and 3.11 kept generating realizations from superseded settings.
+The template's path is recorded in the generation plan, so editing it changes
+the plan and schedules a new collection rather than being silently ignored — a
+params-only read before 2026-08-05 kept generating from superseded settings.
 
 ## Why this is a separate directory
 

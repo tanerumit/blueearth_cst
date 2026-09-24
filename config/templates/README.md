@@ -24,7 +24,7 @@ four. A filled-in worked example is `test_case/project_config_rapid.yml` with
 its siblings; `docs/guide/configuration.qmd` walks through the layout.
 
 `wflow_sbm.reference.toml` sits here as a **reference copy only** — no Snakefile,
-script or test reads it. Rule 1.07 has hydromt generate the project's own TOML
+script or test reads it. Rule 1.06 has hydromt generate the project's own TOML
 from hydromt_wflow's defaults. Treat this file as documentation, and expect it to
 lag: measured 2026-08-10, it was 126 lines against the 149 a real build emitted.
 The `.reference.` infix is there because the bare name `wflow_sbm.toml` read as a
@@ -162,7 +162,7 @@ the toolbox keeps `defaults.batch_disk_headroom_fraction` of free disk
 ### `basin.sources.hydrography` / `basin.sources.basin_index`
 
 Catalog **entry names**, not paths. They must match `setup_basemaps` in the
-`engine.build_config` template, or rule 1.02 fails loudly naming both files and
+`engine.build_config` template, or rule 1.01 fails loudly naming both files and
 both values.
 
 ---

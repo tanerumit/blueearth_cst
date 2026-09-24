@@ -8,8 +8,8 @@ per-rule sections.
 **Does** is the rule's job; **Writes** transcribes its `output:` block, so the claim can be
 checked against the Snakefile rather than believed.
 
-Rule numbers are reused, so any `W.NN` written before 2026-08-06 names a different
-rule — translate through [What changed](#what-changed) before reading one in
+Rule numbers are reused, so any `W.NN` written before 2026-09-24 may name a
+different rule — translate through [What changed](#what-changed) before reading one in
 `dev/milestones/`, `dev/decisions/`, `dev/LOG.md` or a dated migration record.
 
 ## On the numbers
@@ -38,6 +38,13 @@ edit.
 ## What changed
 
 Dated translations for historical citations. Current WF3/WF4 numbering is in their tables below.
+
+### Domain names and contiguous numbers — 2026-09-24
+
+Every workflow was renamed and renumbered from `W.01`, and target rules lost
+their numbers. The old → new table for all five workflows is in
+[`migration_domain-rule-names.md`](../../milestones/post-r12/migration_domain-rule-names.md).
+The older tables below use the names and numbers of their date.
 
 ### Renumbering — 2026-08-06 historical map
 
@@ -181,56 +188,55 @@ Characterises the basin's historical climate from one or more candidate gridded
 datasets. **Builds no model** — that is the point: it answers which forcing
 dataset a basin should use, before wf1 commits to one.
 
-Ten numbered rules, but not ten rule blocks. `0.04` and `0.05` are declared
+Seven numbered rules, but not seven rule blocks. `0.03` and `0.04` are declared
 inside `for _source in CANDIDATE_SOURCES:` and carry a per-source `name:`
-(`extract_historical_climate_<source>`), so their count is a runtime fact.
-`0.06` is declared only when more than one candidate source is configured.
+(`extract_climate_datasets_<source>`), so their count is a runtime fact.
+`0.05` is declared only when more than one candidate source is configured.
 
-`0.07`–`0.09` are RESERVED, not missing: the station-sampling, observation
-comparison and Budyko rules land there. Do not renumber the gathers to close the
-gap.
+No numbers are reserved. The station-sampling, observation comparison and
+Budyko rules (t2608181139) take numbers when they are built.
 
 ```
                     config + data catalogs
                               │
       pre-parse archive ──────┤
                               ▼
-                    0.02 delineate_region ──► region.geojson
+                    0.01 delineate_region ──► region.geojson
                               │
               ┌───────────────┴───────────────┐
               ▼                               ▼
-    0.04 extract_historical_climate   0.03 delineate_spatial_units
-      (per source; SHARED store,       (SHARED vectors, = 1.03/2.03/3.04)
-       = WF1 1.04)                              │
+    0.03 extract_climate_datasets   0.02 delineate_subbasins_and_rivers
+      (per source; SHARED store,       (SHARED vectors, = 1.02/2.02)
+       = WF1 1.03)                              │
               │                                 │
               ▼                                 │
-    0.05 plot_climate_source ◄───────── (subbasin polygons)
+    0.04 plot_climate_datasets ◄───────── (subbasin polygons)
       (per source)                              │
               │                                 │
               └───────────────┬─────────────────┘
                               ▼
-                    0.06 compare_climate_sources
+                    0.05 compare_climate_datasets
                      (only when >1 candidate)
                               │
                               ▼
-                0.10 gather_benchmarks · 0.11 gather_logs
+                0.06 gather_benchmarks · 0.07 gather_logs
 ```
 
 | Banner | Rule | Fan-out |
 | --- | --- | --- |
-| 0.00 | `all` | — |
+| — | `all` (target) | — |
 | pre-parse | `scripts/run_workflow.py` archive publication | — |
-| 0.02 | `delineate_region` | — (shared) |
-| 0.03 | `delineate_spatial_units` | — (shared) |
-| 0.04 | `extract_historical_climate_<source>` | per candidate source |
-| 0.05 | `plot_climate_source_<source>` | per candidate source |
-| 0.06 | `compare_climate_sources` | — (only when >1 source) |
-| 0.10 | `gather_benchmarks` | — (gather) |
-| 0.11 | `gather_logs` | — (gather) |
+| 0.01 | `delineate_region` | — (shared) |
+| 0.02 | `delineate_subbasins_and_rivers` | — (shared) |
+| 0.03 | `extract_climate_datasets_<source>` | per candidate source |
+| 0.04 | `plot_climate_datasets_<source>` | per candidate source |
+| 0.05 | `compare_climate_datasets` | — (only when >1 source) |
+| 0.06 | `gather_benchmarks` | — (gather) |
+| 0.07 | `gather_logs` | — (gather) |
 
 ## WF0 rule detail
 
-#### 0.00 · `all`
+#### `all` (target, unnumbered)
 
 **Does.** Target aggregator — declares the WF0 target set (the terminals, plus
 the config snapshot, the merged log and the benchmark table).
@@ -241,7 +247,7 @@ the config snapshot, the merged log and the benchmark table).
 before Snakemake parses configuration and publishes
 `config/runs/analyze_climate/{run_record.yml,sources/}`. There is no rule 0.01.
 
-#### 0.02 · `delineate_region`
+#### 0.01 · `delineate_region`
 
 **Does.** Derives the one project region artifact from hydrography and an
 outlet (ADR 0006). Declared from the shared `region_rule` helper, so WF1, WF2
@@ -249,30 +255,30 @@ and WF3 declare the same artifact rather than each deriving its own.
 
 **Writes.** `<spatial>/geoms/region.geojson` (the helper's declared outputs).
 
-#### 0.03 · `delineate_spatial_units`
+#### 0.02 · `delineate_subbasins_and_rivers`
 
 **Does.** Derives the shared vector foundation — basins, subbasins, rivers,
-locations and the location registry (ADR 0006 §8). Shared with 1.03 / 2.03 /
+locations and the location registry (ADR 0006 §8). Shared with 1.02 / 2.02 /
 3.04 from one helper.
 
 **Writes.** The helper's declared vector outputs under `<spatial>/geoms/`.
 
-#### 0.04 · `extract_historical_climate_<source>` — per candidate source
+#### 0.03 · `extract_climate_datasets_<source>` — per candidate source
 
 **Does.** Clips a global climate dataset to the basin and writes that source's
 store. One rule per candidate source rather than one wildcard rule: the sources
 do not share an output set, so a wildcard rule could not cover both families.
-Rule 1.04 declares the same artifact for the primary source.
+Rule 1.03 declares the same artifact for the primary source.
 
 **Writes.** That source's store outputs, including `climate_nc` and
 `basin_cells` — the cells that source's own grid contributes to the basin,
 which is the domain later averages reduce over.
 
-**Log.** A directory part, `logs/_parts/0.04_extract_historical_climate/<source>.log`,
+**Log.** A directory part, `logs/_parts/0.03_extract_climate_datasets/<source>.log`,
 because the fan-out width belongs to the rule that owns it.
 
 
-#### 0.05 · `plot_climate_source_<source>` — per candidate source
+#### 0.04 · `plot_climate_datasets_<source>` — per candidate source
 
 **Does.** Renders the canonical figure set with source-local scales. WF0 and
 WF1 use `climate_analysis/source_plot_rule.py` for identical inputs, parameters,
@@ -284,7 +290,7 @@ existing sources.
 per-subbasin set as a `directory(...)` — its members are named for delineation
 ids, which are not knowable at parse time.
 
-#### 0.06 · `compare_climate_sources` — only when >1 candidate source
+#### 0.05 · `compare_climate_datasets` — only when >1 candidate source
 
 **Does.** Puts every candidate on one axis — one annual and one monthly figure
 per variable — plus a summary table of what each source is (resolution,
@@ -299,13 +305,13 @@ under `data/climate/historical/comparison/`, separate from source-local plots.
 Rule 0.04b is retired; existing `shared_plot_scales.json` files are unused and
 can be removed manually. No cleanup of existing run products is automatic.
 
-#### 0.10 · `gather_benchmarks`
+#### 0.06 · `gather_benchmarks`
 
 **Does.** Merges the WF0 benchmark parts into one table.
 
 **Writes.** `benchmarks/wf0_benchmarks.md`.
 
-#### 0.11 · `gather_logs`
+#### 0.07 · `gather_logs`
 
 **Does.** Merges every WF0 log part into one workflow log, then deletes the
 parts. `LOG_RULES` is the merge order and is asserted in rule-number order by
@@ -332,105 +338,107 @@ STAGE 1 — DATA   (no model exists yet)
                               │
        pre-parse archive ──────┤
                               ▼
-                    1.02 delineate_region ──► region.geojson
+                    1.01 delineate_region ──► region.geojson
                               │
               ┌───────────────┴───────────────┐
               ▼                               ▼
-    1.04 extract_historical_climate   1.03 delineate_spatial_units
-      (SHARED store, = WF3 3.02)       (SHARED vectors, = 2.03:
+    1.03 extract_climate_datasets   1.02 delineate_subbasins_and_rivers
+      (SHARED store, = WF3 3.02)       (SHARED vectors, = 2.02:
               │                         basins, subbasins, rivers,
               ▼                         locations, the registry)
-    1.05 plot_climate_source                  │
+    1.04 plot_climate_datasets                  │
                                               ▼
-                                    1.06 prepare_spatial_maps
+                                    1.05 prepare_land_and_soil_maps
                                      (thematic rasters, WF1 only)
 STAGE 2 — MODEL BUILD                         │
 ──────────────────────────────────────────────────────────────────
                                               ▼
-                                    1.07 build_wflow_model
+                                    1.06 build_wflow_model
                                               │
                                               ▼
-                                  1.08 add_reservoirs_lakes_glaciers
+                                  1.07 add_reservoirs_lakes_glaciers
                                               │
                                               ▼
-                                   1.09 declare_wflow_outputs
+                                   1.08 declare_gauges_and_outputs
                                               │
                                               ▼
-                                   1.10 add_climate_forcing
+                                   1.09 add_climate_forcing
                                      (LAST writer of the model
                                       root — ADR 0004's sentinel)
                                               │
               ┌───────────────┬───────────────┼───────────────┐
               ▼               ▼               ▼               ▼
-   1.11 write_outlet   1.12 plot_basin   1.13 plot_forcing  (to stage 3)
+   1.10 write_gauge    1.11 plot_basin   1.12 plot_model_forcing  (to stage 3)
         _index              _map
 
 STAGE 3 — RUN + EVALUATE
 ──────────────────────────────────────────────────────────────────
-                         1.14 run_wflow
+                         1.13 run_historical_simulation
                                │
                                ▼
-               1.15 plot_wflow_evaluation ◄── the store (1.04)
+               1.15 plot_model_evaluation ◄── the store (1.03)
 
 STAGE 4 — RUN RECORDS
 ──────────────────────────────────────────────────────────────────
-      1.16 gather_benchmarks · 1.17 gather_logs   (last: every terminal)
+      1.17 gather_benchmarks · 1.18 gather_logs   (last: every terminal)
 ```
 
-**Stages are a reading aid, not a barrier.** Stage 1's climate branch (1.04,
-1.05) runs concurrently with everything below it — a cold store extracts while
+**Stages are a reading aid, not a barrier.** Stage 1's climate branch (1.03,
+1.04) runs concurrently with everything below it — a cold store extracts while
 the model builds. Only the arrows constrain order.
 
-**Three rules hang off 1.10 through `ancient()`, and the diagram draws those
-edges as real** — because they are. 1.11, 1.12 and 1.14 all declare
-`ancient(<model>/.model_final)`, the terminal build sentinel 1.10 writes.
+**Three rules hang off 1.09 through `ancient()`, and the diagram draws those
+edges as real** — because they are. 1.10, 1.11 and 1.13 all declare
+`ancient(<model>/.model_final)`, the terminal build sentinel 1.09 writes.
 `ancient()` suppresses the timestamp rerun-trigger and nothing else; the
-dependency stands, which is exactly why 1.11 and 1.12 are numbered after 1.10
-and not beside 1.07. 1.11 also reads `outlets.geojson` (1.07) and the registry
-(1.03), and 1.12 reads `staticmaps.nc` (1.07) — those are the edges the diagram
+dependency stands, which is exactly why 1.10 and 1.11 are numbered after 1.09
+and not beside 1.06. 1.10 also reads `outlets.geojson` (1.06) and the registry
+(1.02), and 1.11 reads `staticmaps.nc` (1.06) — those are the edges the diagram
 omits to stay legible, and none of them contradicts the numbering.
 
-**The five leaves.** 1.05, 1.11, 1.12, 1.13 and 1.15 have no downstream rule.
+**The five leaves.** 1.04, 1.10, 1.11, 1.12 and 1.15 have no downstream rule.
 All are members of `WF1_TERMINALS`, so all are `rule all` targets and inputs of
 the two gather rules — that is the edge the stage-4 line stands in for. Four are
-figures, which are expected to terminate (no rule consumes a `.png`). **1.11 is
+figures, which are expected to terminate (no rule consumes a `.png`). **1.10 is
 the one data leaf**, and its real consumer sits outside the workflow: see its
 section below.
 
 `WF1_TERMINALS` has a **sixth** member that is not a leaf —
-`<spatial>/spatial_catalog.yml`, listed as one representative of 1.06's
-multi-output set so the gather rules wait for it. Its producer feeds 1.07, so it
+`<spatial>/spatial_catalog.yml`, listed as one representative of 1.05's
+multi-output set so the gather rules wait for it. Its producer feeds 1.06, so it
 is a terminal in the target-set sense without being a graph leaf.
 
-**What is NOT a dependency, despite reading like one.** 1.10 does not consume the
+**What is NOT a dependency, despite reading like one.** 1.09 does not consume the
 climate store: it reads source climate through the data catalog (`-d`), and its
-only declared input is 1.09's sentinel — it assembles the forcing recipe itself.
-The store reaches WF1's *figures* (1.05, 1.15), never its forcing.
+only declared input is 1.08's sentinel — it assembles the forcing recipe itself.
+The store reaches WF1's *figures* (1.04, 1.15), never its forcing.
 
 | # | rule | in one line |
 |---|---|---|
-| 1.00 | `all` | Target aggregator. |
+| — | `all` (target) | Target aggregator. |
 | pre-parse | `scripts/run_workflow.py` | Publishes the captured source archive and run record before Snakemake parses. |
-| 1.02 | `delineate_region` | Delineates the one project extent. |
-| 1.03 | `delineate_spatial_units` | The shared vector foundation, and where gauges enter the workflow. |
-| 1.04 | `extract_historical_climate` | The shared historical-climate store (= WF3 3.02). |
-| 1.05 | `plot_climate_source` | Climate figures on the source grid. |
-| 1.06 | `prepare_spatial_maps` | The thematic raster stack and the model-build interface. |
-| 1.07 | `build_wflow_model` | Parameterises Wflow-SBM, and where gauges enter the model. |
-| 1.08 | `add_reservoirs_lakes_glaciers` | Adds waterbodies. |
-| 1.09 | `declare_wflow_outputs` | Declares the `[output.csv]` block: which timeseries Wflow emits. |
-| 1.10 | `add_climate_forcing` | Assembles the hydromt recipe and applies it: builds the forcing. |
-| 1.11 | `write_outlet_index` | Crosswalk from Wflow outlet IDs to named stations. |
-| 1.12 | `plot_basin_map` | Every figure the spatial foundation supports: the basin/DEM map and the thematic family. |
-| 1.13 | `plot_forcing` | The same figures on the model's own forcing grid. |
-| 1.14 | `run_wflow` | Runs Wflow.jl once. |
-| 1.15 | `plot_wflow_evaluation` | The evaluation figures, and the metrics table. |
-| 1.16 | `gather_benchmarks` | Merges the timing parts. |
-| 1.17 | `gather_logs` | Merges the log parts. |
+| 1.01 | `delineate_region` | Delineates the one project extent. |
+| 1.02 | `delineate_subbasins_and_rivers` | The shared vector foundation, and where gauges enter the workflow. |
+| 1.03 | `extract_climate_datasets` | The shared historical-climate store (= WF3 3.02). |
+| 1.04 | `plot_climate_datasets` | Climate figures on the source grid. |
+| 1.05 | `prepare_land_and_soil_maps` | The thematic raster stack and the model-build interface. |
+| 1.06 | `build_wflow_model` | Parameterises Wflow-SBM, and where gauges enter the model. |
+| 1.07 | `add_reservoirs_lakes_glaciers` | Adds waterbodies. |
+| 1.08 | `declare_gauges_and_outputs` | Declares the `[output.csv]` block: which timeseries Wflow emits. |
+| 1.09 | `add_climate_forcing` | Assembles the hydromt recipe and applies it: builds the forcing. |
+| 1.10 | `write_gauge_index` | Crosswalk from Wflow outlet IDs to named stations. |
+| 1.11 | `plot_basin_map` | Every figure the spatial foundation supports: the basin/DEM map and the thematic family. |
+| 1.12 | `plot_model_forcing` | The same figures on the model's own forcing grid. |
+| 1.13 | `run_historical_simulation` | Runs Wflow.jl once. |
+| 1.14 | `export_simulation_tables` | Excel-ready per-variable tables from the run. |
+| 1.15 | `plot_model_evaluation` | The evaluation figures, and the metrics table. |
+| 1.16 | `write_run_metadata` | The staleness sidecar for the run. |
+| 1.17 | `gather_benchmarks` | Merges the timing parts. |
+| 1.18 | `gather_logs` | Merges the log parts. |
 
 ## WF1 rule detail
 
-#### 1.00 · `all`
+#### `all` (target, unnumbered)
 
 **Does.** Target aggregator — declares the WF1 target set (the terminals, plus
 the launcher archive, the merged log and the benchmark table) so one
@@ -442,7 +450,7 @@ the launcher archive, the merged log and the benchmark table) so one
 Snakemake parses configuration and publishes
 `config/runs/build_model/{run_record.yml,sources/}`. There is no rule 1.01.
 
-#### 1.02 · `delineate_region`
+#### 1.01 · `delineate_region`
 
 **Does.** Delineates the one project **extent** from `shared.basin.region` plus
 the data catalog, via hydromt `parse_region_basin` (ADR 0003). Catalog in,
@@ -452,9 +460,9 @@ never from a built model.
 
 **Writes.** `<spatial>/geoms/region.geojson`.
 
-#### 1.03 · `delineate_spatial_units`
+#### 1.02 · `delineate_subbasins_and_rivers`
 
-**Does.** The **shared** vector foundation — the same rule WF2 declares as 2.03
+**Does.** The **shared** vector foundation — the same rule WF2 declares as 2.02
 and is consumed by WF4; splatted from one `spatial_units_rule` helper so the three
 declarations cannot drift. Partitions the region into the vector layers every
 later join is keyed on, and is where **gauge points enter the workflow**: it
@@ -473,10 +481,10 @@ differ per invoking workflow.
 
 `hydrography.nc` is the **seam intermediate** (§8a), not a product: the whole
 whole hydrography grid stack crosses the vector/raster boundary in memory, and
-re-deriving it in 1.06 would make WF1 read the hydrography twice with two grids
+re-deriving it in 1.05 would make WF1 read the hydrography twice with two grids
 that can drift. It is deliberately absent from `spatial_catalog.yml`.
 
-#### 1.04 · `extract_historical_climate`
+#### 1.03 · `extract_climate_datasets`
 
 **Does.** The **shared** historical-climate store producer — the same rule WF3
 declares as 3.08, splatted from one `climate_store_rule` helper so the two
@@ -489,20 +497,20 @@ chirps branches. The extraction records its own extent in netCDF attributes
 (`region_geojson_sha256`, `region_bbox`, `region_source`) rather than in a
 sidecar file.
 
-#### 1.05 · `plot_climate_source`
+#### 1.04 · `plot_climate_datasets`
 
 **Does.** The canonical climate figure set on the **source** grid, straight from
-the shared store, before any regridding to the model. Its whole subgraph is 1.02
-+ 1.04 + this rule, so the figures build with no `<model>/` on disk at all.
+the shared store, before any regridding to the model. Its whole subgraph is 1.01
++ 1.03 + this rule, so the figures build with no `<model>/` on disk at all.
 
 **Writes.** `<store>/plots/` — the `figure_names("source")` set.
 
-#### 1.06 · `prepare_spatial_maps`
+#### 1.05 · `prepare_land_and_soil_maps`
 
 **Does.** The **raster half** of the spatial foundation, and WF1-only: folds the
-thematic layers (`vito` land cover, `modis_lai`, `soilgrids`) onto the grid 1.03
+thematic layers (`vito` land cover, `modis_lai`, `soilgrids`) onto the grid 1.02
 handed it, and writes the model-build interface. The vector layers and the
-registry come from 1.03 — declaring the unsplit rule instead would have made a
+registry come from 1.02 — declaring the unsplit rule instead would have made a
 projections-only run resample all three thematic sources to draw a subbasin
 outline (measured 2026-08-06: the split avoids ~71% of that).
 
@@ -513,45 +521,45 @@ reserved here for constructing a *model* (`rule-naming-design.md` amendment 2).
 **Writes.** `<spatial>/spatial_maps.nc` · `<spatial>/spatial_catalog.yml` ·
 `<spatial>/spatial_report.yml`.
 
-#### 1.07 · `build_wflow_model`
+#### 1.06 · `build_wflow_model`
 
 **Does.** Parameterises Wflow-SBM on that spatial foundation via hydromt, then
 reopens the written model and verifies its grid and IDs against the spatial
 products. Also where **the gauges enter the model**: `setup_gauges` /
 `setup_outlets` write the `gauges_locations` and `outlets` maps into staticmaps,
 both with `toml_output=None` — maps only, no output declarations. No snapping and
-no subcatchment derivation: 1.03 did both.
+no subcatchment derivation: 1.02 did both.
 
 **Writes.** `<model>/staticmaps.nc` · `<model>/wflow_sbm.toml` ·
 `<model>/staticgeoms/region.geojson` · `<model>/staticgeoms/outlets.geojson` ·
 `<model>/.model_built` (sentinel).
 
-`wflow_sbm.toml` is created here and then mutated in place by 1.08, 1.09 and
-1.10, none of which declare it. That is what the `.model_built` sentinel exists
+`wflow_sbm.toml` is created here and then mutated in place by 1.07, 1.08 and
+1.09, none of which declare it. That is what the `.model_built` sentinel exists
 to handle.
 
-#### 1.08 · `add_reservoirs_lakes_glaciers`
+#### 1.07 · `add_reservoirs_lakes_glaciers`
 
 **Does.** Adds waterbodies to the built model (a hydromt update). A temporary
-hydromt workaround; can fold back into 1.07 when upstream supports it.
+hydromt workaround; can fold back into 1.06 when upstream supports it.
 
 **Writes.** `<model>/staticgeoms/reservoirs_lakes_glaciers.txt`.
 
 **Writes (undeclared).** `<model>/staticmaps.nc` — it commits the waterbody
 layers back into the model. That undeclared write is part of why the model-root
-readers need a sentinel: Snakemake attributes `staticmaps.nc` to 1.07, so
+readers need a sentinel: Snakemake attributes `staticmaps.nc` to 1.06, so
 declaring it there orders nothing after *this* rule.
 
-#### 1.09 · `declare_wflow_outputs`
+#### 1.08 · `declare_gauges_and_outputs`
 
 **Does.** Declares which timeseries Wflow emits — the `[output.csv]` block — for
 `outlets` (Q), `gauges_locations` (Q, P) and basin means of any extra
-`model.outvars`. It adds **no model data**: 1.07 created both gauge maps with
+`model.outvars`. It adds **no model data**: 1.06 created both gauge maps with
 `toml_output=None`, deferring exactly this step. It also re-checks that the
 model's gauge IDs still equal `location_registry.wflow_id`, and fails if either
 map is absent.
 
-`declare_` is the verb table's 18th entry, added for this rule: 1.08 and 1.10
+`declare_` is the verb table's 18th entry, added for this rule: 1.07 and 1.09
 add model *data* (waterbody layers, forcing grids), while this changes only what
 the engine will emit.
 
@@ -562,11 +570,11 @@ itself, via `mod.write()` — and `<model>/staticmaps.nc`, which `mod.close()` m
 commit or hydromt leaves the new variables stranded in a `staticmaps_<hash>.nc`
 temp file.
 
-The gauge-ID re-check is not redundant with 1.07's identical comparison
-(`build_wflow_model.py::_validate_written_model`): 1.08 mutates `staticmaps.nc`
+The gauge-ID re-check is not redundant with 1.06's identical comparison
+(`build_wflow_model.py::_validate_written_model`): 1.07 mutates `staticmaps.nc`
 in between, so this copy is what catches corruption from that step.
 
-#### 1.10 · `add_climate_forcing`
+#### 1.09 · `add_climate_forcing`
 
 **Does.** Two steps in one rule. First assembles the hydromt
 recipe: a `steps:` YAML holding `setup_config` (`time.starttime`,
@@ -585,7 +593,7 @@ period, not the extraction period, and it must sit inside the record.
 **Reads the climate store, not the catalog.** This rule declares
 `extract_historical.nc` as an input and generates a one-entry catalog
 (`config/climate_store_catalog.yml`) pointing hydromt at it, so the forcing is
-built from the extraction rule 1.04 already made rather than from a second full
+built from the extraction rule 1.03 already made rather than from a second full
 pass over the global dataset. `dem_forcing_fn` still resolves from the main
 catalog — the store holds no orography.
 
@@ -599,14 +607,14 @@ the model it built) · `<model>/.model_final` (sentinel).
 **This rule is the LAST WRITER of the model root, and `.model_final` is what
 says so** (ADR 0004). `hydromt update wflow_sbm` calls `mod.write()`, which
 rewrites the whole root — staticmaps, the TOML, every `staticgeoms/` layer. Four
-rules (1.11, 1.12, 1.13, 1.14) declare that sentinel `ancient()` to order
+rules (1.10, 1.11, 1.12, 1.13) declare that sentinel `ancient()` to order
 themselves behind it, and **that is why they are numbered after this rule**: an
 `ancient()` input is a real DAG edge with the timestamp trigger suppressed, not
 an absent one. **Residual risk, stated because no test can catch it:** the
 sentinel is correct only while this rule remains the last writer. A new rule
 that mutates the model after it must take the sentinel with it.
 
-#### 1.11 · `write_outlet_index`
+#### 1.10 · `write_gauge_index`
 
 **Does.** Joins Wflow's outlets to the deterministic basin/subbasin/location
 identities, so a model output can be traced back to a named station. hydromt
@@ -634,12 +642,12 @@ both gather rules. **Do not prune it as stray output** — `check_baseline.py`'s
 own module docstring records that it is fingerprinted beyond `rule all` for this
 reason.
 
-**Not merged into 1.09**: its inputs are
+**Not merged into 1.08**: its inputs are
 `outlets.geojson` and the registry, so it runs in parallel with the waterbody
 and output-declaration rules. Merging would serialise a cheap pandas join behind
 a hydromt `r+` mutation — it *adds* an edge.
 
-#### 1.12 · `plot_basin_map`
+#### 1.11 · `plot_basin_map`
 
 **Does.** Draws every figure the shared spatial foundation supports: `basin_area`
 — basin, rivers, gauges and the DEM on one map — plus the thematic family beside
@@ -653,9 +661,9 @@ maps whose linework nothing explains. Both halves are leaves, so splitting them
 would duplicate the vector inputs and the plots directory for no scheduling gain.
 
 **Reads.** The spatial foundation only — `hydrography.nc` and the vector layers
-from 1.03, and `spatial_maps.nc` from 1.06. The 1.06 edge arrived with the
-thematic family; before it, this rule depended on 1.03 alone. It costs nothing,
-since 1.06 is upstream of the model build and nothing downstream waits on this
+from 1.02, and `spatial_maps.nc` from 1.05. The 1.05 edge arrived with the
+thematic family; before it, this rule depended on 1.02 alone. It costs nothing,
+since 1.05 is upstream of the model build and nothing downstream waits on this
 leaf.
 
 ADR 0007 already retired this rule's `staticmaps.nc` read, and with it the
@@ -668,7 +676,7 @@ toolbox or the platform read it; 600 dpi at 180 mm carries the figure everywhere
 it is used, and not serialising each one twice halves the rule's render time.
 `figure_paths()` still takes a `formats` argument, so a caller preparing a
 manuscript can ask for a PDF. The thematic list is declared from that function,
-the same contract 1.13 has with `climate_figures.figure_names()`.
+the same contract 1.12 has with `climate_figures.figure_names()`.
 
 Not every figure is *declared*. A figure whose source variable is specific to one
 catalog source — `soil_depth_to_bedrock`, which reads soilgrids v1.0's own
@@ -681,27 +689,27 @@ renders are still accounted for.
 **No title, no overlay key**, on the thematic half only. The filename names the
 figure and `basin_area` carries the legend; see `shared/plot_spatial_maps.py`.
 
-#### 1.13 · `plot_forcing`
+#### 1.12 · `plot_model_forcing`
 
 **Does.** Draws the canonical climate figure set for the model's own forcing —
-the same figures 1.05 draws for the source grid, so the two directories answer
+the same figures 1.04 draws for the source grid, so the two directories answer
 "what did the downscaling change?" side by side.
 
 **Writes.** `<model>/forcing/plots/` — the full variable × kind cross-product
 from `climate_figures.figure_names("forcing")`, all declared.
 
-#### 1.14 · `run_wflow`
+#### 1.13 · `run_historical_simulation`
 
 **Does.** Runs Wflow.jl once on that historical forcing, driven by the model's
 own TOML.
 
 **Writes.** `<model>/run_default/output.csv` — `temp()`, so a successful run
-does not leave it: rule 1.14b derives the readable per-variable tables from it
+does not leave it: rule 1.14 derives the readable per-variable tables from it
 and rule 1.15 reads it for the metrics, then Snakemake drops it. Run with
 `--notemp` to keep it (the baseline gate pins it, and iterating on a 1.15 figure
 otherwise re-runs the whole model).
 
-#### 1.15 · `plot_wflow_evaluation`
+#### 1.15 · `plot_model_evaluation`
 
 **Does.** Scores the Wflow run against observations where they exist and draws
 the evaluation figures — four sheets per station plus the basin-average series.
@@ -715,7 +723,7 @@ One rule, both products.
 `performance_<id>`, one PNG each. Their count is a product of the model
 build (outlets and subcatchments), not of config, so they cannot be enumerated
 at parse time — and neither can their NAMES, because a wflow_id
-is assigned by rule 1.03. Only the hydrograph is drawn without observations; the
+is assigned by rule 1.02. Only the hydrograph is drawn without observations; the
 other three need them, and the two extremes sheets additionally need a run
 longer than a year.
 
@@ -737,7 +745,7 @@ fixes is a wasted re-run, not a wrong number. **Consequence to know when reading
 the `AGENTS.md` validation ladder:** a plot-only edit here still re-runs the
 whole rule and rewrites identical metrics, so the gate passes but is not free.
 
-#### 1.16 · `gather_benchmarks`
+#### 1.17 · `gather_benchmarks`
 
 **Does.** Merges the per-rule timing parts into one table with a rule column and
 a TOTAL row, rewritten fresh each run. Takes the terminal set as input, which is
@@ -745,7 +753,7 @@ what schedules it last.
 
 **Writes.** `benchmarks/wf1_benchmarks.md`.
 
-#### 1.17 · `gather_logs`
+#### 1.18 · `gather_logs`
 
 **Does.** Merges every WF1 log part into one workflow log in rule order, then
 deletes the parts it consumed and prunes the emptied directories. After a
@@ -756,23 +764,23 @@ the artifact describes the run that produced it, not an accumulated history.
 
 ## Two meanings of "subbasin"
 
-In `shared.basin.region` (rule 1.02) `subbasin:` is **hydromt's** region
+In `shared.basin.region` (rule 1.01) `subbasin:` is **hydromt's** region
 keyword — "everything upstream of this point, above `uparea`" — and it selects
-the project extent. CST's `subbasins.geojson` (rule 1.03) is a different thing:
+the project extent. CST's `subbasins.geojson` (rule 1.02) is a different thing:
 the incremental partition *within* that extent. A project can be
-`{'basin': ...}` at 1.02 and still have twelve subbasins at 1.03.
+`{'basin': ...}` at 1.01 and still have twelve subbasins at 1.02.
 
 ## Where a gauge point lives, rule by rule
 
 `shared.basin.output_locations` (`station_name, x, y, location_role[, wflow_id]`) is
-consumed once, by 1.03, and everything after that reads its derived identities:
+consumed once, by 1.02, and everything after that reads its derived identities:
 
 | stage | rule | what happens to the point |
 |---|---|---|
-| enters | 1.03 `delineate_spatial_units` | snapped to a river cell, given `location_id`/`wflow_id`; a `control` point also becomes a subbasin outlet |
-| enters the model | 1.07 `build_wflow_model` | written into `staticmaps.nc` as `gauges_locations`, no TOML output |
-| becomes an output | 1.09 `declare_wflow_outputs` | named in `[output.csv]`, so Wflow emits its timeseries |
-| becomes joinable | 1.11 `write_outlet_index` | `outlet_index.csv` maps Wflow's subcatchment IDs back to the named station |
+| enters | 1.02 `delineate_subbasins_and_rivers` | snapped to a river cell, given `location_id`/`wflow_id`; a `control` point also becomes a subbasin outlet |
+| enters the model | 1.06 `build_wflow_model` | written into `staticmaps.nc` as `gauges_locations`, no TOML output |
+| becomes an output | 1.08 `declare_gauges_and_outputs` | named in `[output.csv]`, so Wflow emits its timeseries |
+| becomes joinable | 1.10 `write_gauge_index` | `outlet_index.csv` maps Wflow's subcatchment IDs back to the named station |
 
 ---
 
@@ -791,24 +799,24 @@ STAGE 1 — DATA
                                 │
          pre-parse archive ──────┤
                                 ▼
-                      2.02 delineate_region
+                      2.01 delineate_region
                                 │  region.geojson
               ┌─────────────────┼─────────────────┬──────────────────┐
               │                 │                 │                  │
   CMIP6 store │ (gs://cmip6)    │                 │                  ▼
-              ▼                 │                 │      2.03 delineate_spatial
-    2.04 fetch_gcm_slice        │                 │           _units
-    (one raw slice per member;  │                 │      (SHARED, = 1.03/3.04.
+              ▼                 │                 │      2.02 delineate_spatial
+    2.03 fetch_cmip6_projections        │                 │           _units
+    (one raw slice per member;  │                 │      (SHARED, = 1.02/3.04.
      the ONLY remote read)      │                 │       A LEAF here: nothing
               │                 │                 │       in WF2 consumes it yet)
               ▼                 │                 │                  │
-    2.05 reduce_gcm_series ◄────┘                 │                  │
+    2.04 reduce_to_basin_averages ◄────┘                 │                  │
     (one job per series key, full fan-out)        │                  │
               │                                   │                  │
 STAGE 2 — PRODUCT                                 │                  │
 ──────────────────────────────────────────────────────────────────   │
               ▼                                   │                  │
-    2.06 derive_change_factors ◄──────────────────┘                  │
+    2.05 derive_change_factors ◄──────────────────┘                  │
     (ONE job — the workflow's answer)                                │
               │                                                      │
               ├──► summary/*_change_factors_{annual,monthly}.csv     │
@@ -817,18 +825,18 @@ STAGE 2 — PRODUCT                                 │                  │
               ▼                                                      │
 STAGE 3 — FIGURES + RECORDS                                          │
 ──────────────────────────────────────────────────────────────────   │
-    2.07 plot_gcm_timeseries   (reads 2.05's series, not 2.06)       │
+    2.06 plot_climate_projections   (reads 2.04's series, not 2.05)       │
               │                                                      │
               ▼                                                      ▼
-    2.08 gather_benchmarks · 2.09 gather_logs ◄───────────────────────
+    2.07 gather_benchmarks · 2.08 gather_logs ◄───────────────────────
 ```
 
-The region polygon feeds **four** rules — 2.03, 2.04, 2.05 and 2.06 all declare
+The region polygon feeds **four** rules — 2.02, 2.03, 2.04 and 2.05 all declare
 it — because stage B recomputes every expected digest, including the polygon
-fingerprint. 2.07's edge from 2.06 is an **ordering edge only**; it plots the
-per-member series from 2.05 and never opens the change-factor table.
+fingerprint. 2.06's edge from 2.05 is an **ordering edge only**; it plots the
+per-member series from 2.04 and never opens the change-factor table.
 
-**2.03 is a leaf, and both gather rules declare it explicitly.** Nothing in WF2
+**2.02 is a leaf, and both gather rules declare it explicitly.** Nothing in WF2
 consumes the vector layers yet (ADR 0003 §10 leaves the consuming rules
 unnamed), so without that edge it would run in parallel with the merge and
 strand its log part under `_parts/` — the defect the `LOG_RULES` comments record
@@ -837,20 +845,20 @@ reachable at all: an undeclared leaf is simply never scheduled.
 
 | # | rule | in one line |
 |---|---|---|
-| 2.00 | `all` | Target aggregator. |
+| — | `all` (target) | Target aggregator. |
 | pre-parse | `scripts/run_workflow.py` | As WF1 pre-parse archive publication. |
-| 2.02 | `delineate_region` | As WF1 1.02 — the same artifact. |
-| 2.03 | `delineate_spatial_units` | As WF1 1.03 — the same artifacts. A leaf here. |
-| 2.04 | `fetch_gcm_slice` | Acquires one raw CMIP6 slice. The only remote read. |
-| 2.05 | `reduce_gcm_series` | Stage A: one local slice → one monthly series. |
-| 2.06 | `derive_change_factors` | Stage B, one job. WF2's terminal product. |
-| 2.07 | `plot_gcm_timeseries` | The eight projection figures. |
-| 2.08 | `gather_benchmarks` | Merges the timing parts. |
-| 2.09 | `gather_logs` | Merges the log parts. |
+| 2.01 | `delineate_region` | As WF1 1.01 — the same artifact. |
+| 2.02 | `delineate_subbasins_and_rivers` | As WF1 1.02 — the same artifacts. A leaf here. |
+| 2.03 | `fetch_cmip6_projections` | Acquires one raw CMIP6 slice. The only remote read. |
+| 2.04 | `reduce_to_basin_averages` | Stage A: one local slice → one monthly series. |
+| 2.05 | `derive_change_factors` | Stage B, one job. WF2's terminal product. |
+| 2.06 | `plot_climate_projections` | The eight projection figures. |
+| 2.07 | `gather_benchmarks` | Merges the timing parts. |
+| 2.08 | `gather_logs` | Merges the log parts. |
 
 ## WF2 rule detail
 
-#### 2.00 · `all`
+#### `all` (target, unnumbered)
 
 **Does.** Target aggregator — the change-factor summaries plus the projection
 plots, the merged log and the benchmark table.
@@ -861,30 +869,30 @@ plots, the merged log and the benchmark table.
 `config/runs/analyze_projections/{run_record.yml,sources/}` before WF2 starts.
 There is no rule 2.01.
 
-#### 2.02 · `delineate_region`
+#### 2.01 · `delineate_region`
 
-**Does.** As WF1 1.02 — the same one project region artifact, from the same
+**Does.** As WF1 1.01 — the same one project region artifact, from the same
 shared spec (ADR 0003), which is why a projections-only run does not trigger
 a full climate extraction just to learn a basin outline.
 
 **Writes.** `<spatial>/geoms/region.geojson`.
 
-#### 2.03 · `delineate_spatial_units`
+#### 2.02 · `delineate_subbasins_and_rivers`
 
-**Does.** As WF1 1.03 — the same shared vector foundation, from the same helper.
+**Does.** As WF1 1.02 — the same shared vector foundation, from the same helper.
 WF2 declares the **vector half only**: the thematic raster stack stays WF1-only,
 so a projections-only run obtains basin and subbasin boundaries without reading
 `vito`, `modis_lai` or `soilgrids` at all. That is the whole point of ADR 0003
-§8's split — `snakemake -n` on this file must list `delineate_spatial_units` and
+§8's split — `snakemake -n` on this file must list `delineate_subbasins_and_rivers` and
 no job whose inputs mention those three sources, which is §8's acceptance
 assertion.
 
 What it buys WF2: a context map beside the change-factor plots, and the option
 of subbasin-resolved indicators. It does not yet **consume** them (§10).
 
-**Writes.** As 1.03.
+**Writes.** As 1.02.
 
-#### 2.04 · `fetch_gcm_slice`
+#### 2.03 · `fetch_cmip6_projections`
 
 **Does.** Acquires one raw CMIP6 slice for a (model, scenario, member) key.
 **The only rule that reads the remote store.** Split from the reduction because
@@ -898,16 +906,16 @@ split while every test still passed.
 because Snakemake removes outputs in `Job.prepare()` and the revalidate-and-skip
 cache would otherwise never fire.
 
-#### 2.05 · `reduce_gcm_series`
+#### 2.04 · `reduce_to_basin_averages`
 
 **Does.** Stage A. Reduces one **local** raw slice to a monthly series over the
 region polygon, for its (model, scenario, member) key. One job per key, no edges
 between series, no network call.
 
 **Writes.** `<proj>/scalar/<series_key>.nc` — persistent + `update()`, same
-reason as 2.04.
+reason as 2.03.
 
-#### 2.06 · `derive_change_factors`
+#### 2.05 · `derive_change_factors`
 
 **Does.** Stage B, a **single job**: turns every reduced series into the change
 factors per model, scenario and horizon. Asserts that the set of series it opens
@@ -924,10 +932,10 @@ report. Kept as one rule deliberately: the design gives stage B no fan-out.
 `overview/change-factor-cloud-combined.png` when more than one horizon is
 configured (a single horizon has no cloud travel to show).
 
-#### 2.07 · `plot_gcm_timeseries`
+#### 2.06 · `plot_climate_projections`
 
 **Does.** Draws the two annual overviews (absolute and anomaly panels) from the
-per-member series of 2.05, and one monthly change-factor figure per configured
+per-member series of 2.04, and one monthly change-factor figure per configured
 horizon. Since 2026-08-17 the monthly figures RENDER
 `summary/*_change_factors_monthly.csv` rather than recomputing it: that table is
 a real input, opened and read. The annual table stays an **ordering edge only**.
@@ -936,15 +944,15 @@ a real input, opened and read. The annual table stays an **ordering edge only**.
 `<ensemble>_{precip,temp}_{annual,monthly}_{absolute,change}.png`. All eight
 are declared, so none is invisible to Snakemake.
 
-#### 2.08 · `gather_benchmarks`
+#### 2.07 · `gather_benchmarks`
 
-**Does.** As WF1 1.16, for WF2.
+**Does.** As WF1 1.17, for WF2.
 
 **Writes.** `benchmarks/wf2_benchmarks.md`.
 
-#### 2.09 · `gather_logs`
+#### 2.08 · `gather_logs`
 
-**Does.** As WF1 1.17, for WF2. Replaces two per-stage gathers that merged only
+**Does.** As WF1 1.18, for WF2. Replaces two per-stage gathers that merged only
 the fan-out rules, so following one run meant opening five files and knowing
 their order.
 
@@ -976,21 +984,22 @@ flowchart LR
 
 | Number | Rule or step | Where it runs | Output or role |
 |---|---|---|---|
-| 3.00 | `all` | Snakemake | Ready collection, merged log and benchmarks |
+| — | `all` (target) | Snakemake | Ready collection, merged log and benchmarks |
 | 3.01 | `delineate_region` | Snakemake (source phase) | Shared basin region |
-| 3.02 | `extract_historical_climate` | Snakemake (source phase) | Shared historical climate store |
+| 3.02 | `extract_climate_datasets` | Snakemake (source phase) | Shared historical climate store |
 | 3.03 | `prepare_perturbation_grid` | Snakemake (source phase) | Staged monthly perturbation lookup |
-| 3.04 | `prepare_collection_sources` | wrapper, before the DAG | Source inventory and frozen generation plan |
-| 3.05 | `initialize_scenario_collection` | wrapper, before the DAG | Exclusive collection claim and initialization receipt |
-| 3.06 | `prepare_weathergen_config` | wrapper, before the DAG | `weathergenr/weather_generation_input.yml` |
+| 3.04 | `snapshot_generation_inputs` | wrapper, before the DAG | Source inventory and frozen generation plan |
+| 3.05 | `claim_scenario_collection` | wrapper, before the DAG | Exclusive collection claim and initialization receipt |
+| 3.06 | `prepare_weather_generator_settings` | wrapper, before the DAG | `weathergenr/weather_generation_input.yml` |
 | 3.07 | `generate_weather_realizations` | Snakemake | Unperturbed roots, moved to `series/run_<id>.nc`; date products |
 | 3.08 | `perturb_climate_realizations` | Snakemake, one job per perturbed run | `series/run_<id>.nc` |
-| 3.10 | `publish_scenario_collection` | Snakemake | Validated collection and its ready marker |
-| 3.11 | `gather_benchmarks` | Snakemake (generation phase) | `benchmarks/wf3_benchmarks_<plan>.md` |
-| 3.12 | `gather_logs` | Snakemake (generation phase) | `logs/wf3_generate_scenarios_<plan>.log` |
+| 3.09 | `publish_scenario_collection` | Snakemake | Validated collection and its ready marker |
+| 3.10 | `gather_benchmarks` | Snakemake (generation phase) | `benchmarks/wf3_benchmarks_<plan>.md` |
+| 3.11 | `gather_logs` | Snakemake (generation phase) | `logs/wf3_generate_scenarios_<plan>.log` |
 
-3.09 is intentionally unused: its copy step was removed on 2026-09-24
-(`dev/milestones/post-r12/migration_wf3-generation-rules.md`).
+The former 3.09 copy step was removed on 2026-09-24
+(`dev/milestones/post-r12/migration_wf3-generation-rules.md`); the rules after
+it moved up one number in the 2026-09-24 rule-naming migration.
 
 Requests and plans live under `scenarios/_engine/requests/<request>/`. A
 collection's scientific records live under
@@ -1009,21 +1018,22 @@ simulation also reduces retained responses without recreating model forcing.
 
 | Number | Rule/checkpoint | Output or role |
 |---|---|---|
-| 4.00 | `all` | Complete selected metric set and execution records |
-| 4.01 | `write_model_reference` | Model reference |
-| 4.02 | `check_model_reference` | Live model-reference verification |
-| 4.03 | `freeze_wflow_simulation` | Frozen collection/model/settings/environment identity |
-| 4.04 | `downscale_climate_realization` | Temporary per-run catalog and model forcing; retained TOML |
-| 4.05 | `run_wflow_batch_<batch>` | Native run CSVs |
-| 4.06 | `publish_native_responses` | Complete simulation and response inventory |
-| 4.07 | `responses` | Native-response aggregate |
-| 4.08 | `prepare_metric_plan` | Response-dependent metric-set identity and exact targets |
-| 4.09 | `publish_metric_set` | Tables, unit index, declarations and `metrics.json` marker |
-| 4.10 | `metrics` | Selected metric-set aggregate |
-| 4.11 | `gather_logs` | Experiment-scoped merged log |
-| 4.12 | `gather_benchmarks` | Experiment-scoped benchmark table |
+| — | `all` (target) | Complete selected metric set and execution records |
+| 4.01 | `write_model_fingerprint` | Model reference |
+| 4.02 | `check_model_unchanged` | Live model-reference verification |
+| 4.03 | `snapshot_simulation_inputs` | Frozen collection/model/settings/environment identity |
+| 4.04 | `downscale_scenario_series` | Temporary per-run catalog and model forcing; retained TOML |
+| 4.05 | `run_wflow_simulations_batch_<batch>` | Native run CSVs |
+| 4.06 | `publish_wflow_outputs` | Complete simulation and response inventory |
+| — | `simulations_only` (target) | Native-response aggregate |
+| 4.07 | `prepare_indicator_plan` | Response-dependent metric-set identity and exact targets |
+| 4.08 | `derive_system_indicators` | Tables, unit index, declarations and `metrics.json` marker |
+| 4.09 | `gather_logs` | Experiment-scoped merged log |
+| 4.10 | `gather_benchmarks` | Experiment-scoped benchmark table |
+| — | `simulations_and_indicators` (target) | Selected metric-set aggregate |
 
-Metrics-only requires `operation: metrics-only` with `--target metrics` and
+Metrics-only requires `operation: metrics-only` with
+`--target simulations_and_indicators` (`metrics` is accepted for one release) and
 retained simulation/response records. It cannot schedule generation, preparation
 or Julia. Mixed or inconsistent targets are refused by the runner.
 

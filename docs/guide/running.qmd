@@ -92,7 +92,7 @@ or process limits. Set the total budget and override reservations using observed
 peak RSS from the workflow benchmarks, especially for larger basins:
 
 ```bash
-python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 12 -- --resources mem_mb=8192 --set-resources downscale_climate_realization:mem_mb=4096
+python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 12 -- --resources mem_mb=8192 --set-resources downscale_scenario_series:mem_mb=4096
 ```
 
 Without `--resources mem_mb=...`, the declarations do not impose a total RAM
@@ -154,12 +154,12 @@ For new metrics from existing responses, set `operation: metrics-only` and keep
 the experiment name in the simulation settings file:
 
 ```bash
-python scripts/simulate_system.py --config <config> --target metrics --cores 3
+python scripts/simulate_system.py --config <config> --target simulations_and_indicators --cores 3
 ```
 
 This operation uses retained response and simulation records; it needs no live
 model, generation inputs or Julia. The all-workflow runner accepts
-`--simulation-target metrics`; disable other stages for a retained-only run.
+`--simulation-target simulations_and_indicators`; disable other stages for a retained-only run.
 The default `all` target does not infer an operation from existing files.
 See [retained handoffs](../wf3-retained-handoffs.md).
 

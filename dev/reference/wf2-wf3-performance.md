@@ -31,7 +31,7 @@ Probes and command logs are retained locally under `.tmp/scratchpad/2026-09-06_2
 - Focused WF2/WF3 regression modules: 125 passed.
 - `pixi run pytest tests/test_cli.py -q`: all 19 dry-run contracts passed as part of the broader test commands.
 - `pixi run lint` and `pixi run format-check`: passed.
-- Baseline regeneration: WF2 `reduce_gcm_series` and `derive_change_factors` ran from local raw data; WF3 indicators were re-reduced from the existing 14 baseline simulations. Missing copied-fixture config snapshots were generated through `snapshot_config`.
+- Baseline regeneration: WF2 `reduce_to_basin_averages` and `derive_change_factors` ran from local raw data; WF3 indicators were re-reduced from the existing 14 baseline simulations. Missing copied-fixture config snapshots were generated through `snapshot_config`.
 - `pixi run python dev/scripts/check_baseline.py check`: all seven targets match. This covers the regenerated reductions; it does not claim a fresh full 14-member stochastic simulation run.
 - Regenerated WF2 change-factor cloud rendered and visually inspected.
 

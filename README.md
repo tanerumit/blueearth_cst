@@ -241,10 +241,10 @@ To reduce existing responses, set `operation: metrics-only` and the existing
 `experiment_name` in the simulation settings file, then run:
 
 ```console
-pixi run python scripts/simulate_system.py --config <project-config> --target metrics
+pixi run python scripts/simulate_system.py --config <project-config> --target simulations_and_indicators
 ```
 
-The all-workflow runner accepts `--simulation-target metrics` for this operation;
+The all-workflow runner accepts `--simulation-target simulations_and_indicators` for this operation;
 disable other workflows when only retained reduction is wanted. Default target
 `all` never infers an operation from files. Metrics-only requires no live model,
 generation inputs or Julia. Changed simulation inputs require a new experiment;

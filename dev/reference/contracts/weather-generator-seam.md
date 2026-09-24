@@ -61,7 +61,7 @@ per artifact (a literal 14-column table is illegible).
 
 - **path pattern:** `data/climate/historical/<key>/extract_historical.nc`, where
   `<key> = <clim_source>_<startYYYYMMDD>_<endYYYYMMDD>` (P3-1 keyed store).
-- **producer:** rule `extract_historical_climate`
+- **producer:** rule `extract_climate_datasets`
   (`blueearth_cst/climate_analysis/extract_historical_climate.py`) — ONE rule,
   declared identically in `generate_scenarios.smk` (3.02) and
   `build_model.smk` (1.04) from `snake_utils.climate_store_rule`
@@ -189,7 +189,7 @@ consumer reads while keeping the divergence honestly on the record.
 
 - **path pattern:** `scenarios/requests/<generation_request_id>/generation/config/weathergen_config.yml` —
   **one file** since C29.
-- **producer:** rule 3.06 `prepare_weathergen_config`
+- **producer:** rule 3.06 `prepare_weather_generator_settings`
   (`blueearth_cst/experiment/prepare_weathergen_config.py`).
 - **consumer:** rules 3.07 and 3.08 (both R side), which read the same file.
 - **one config, not one per member (C29).** Do not reintroduce a per-member
@@ -241,7 +241,7 @@ WG-3 is the *current* generator's contract, not a universal one.
 ## WG-5 — per-run HydroMT catalog
 
 - **Path:** `<exp>/hydrology/wflow/config/run_<run_id>.yml`, one per evaluated run.
-- **Producer/consumer:** WF4 `downscale_climate_realization`; the catalog points
+- **Producer/consumer:** WF4 `downscale_scenario_series`; the catalog points
   to retained collection forcing for that run.
 - **Pinned emitted subset:** exactly one `run_<run_id>` entry containing `uri`,
   `driver.name: raster_xarray`, `driver.options.preprocess: harmonise_dims`,
@@ -258,7 +258,7 @@ WG-3 is the *current* generator's contract, not a universal one.
 ## WG-6 — prepared Wflow forcing (WF4)
 
 - **Path:** `<exp>/hydrology/wflow/forcing/inmaps_run_<run_id>.nc`.
-- **Producer:** WF4 `downscale_climate_realization`.
+- **Producer:** WF4 `downscale_scenario_series`.
 - **Consumer:** WF4 Wflow batches.
 - **Content:** the model-grid forcing contract in [HM-2](hydrological-model-seam.md#hm-2--wflow-forcing-inmaps):
   daily `float32` `precip`, `pet`, `temp`, model grid and CRS. Preparation retains

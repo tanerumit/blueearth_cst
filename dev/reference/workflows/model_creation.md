@@ -15,7 +15,7 @@ In this workflow's own config file, reached through its
   (default `config/defaults/wflow_build_model.yml`).
 - `engine.waterbodies_config` — path to the reservoirs/lakes/glaciers
   update config (default `config/defaults/wflow_update_waterbodies.yml`).
-- `observations` — optional observed series for `plot_wflow_evaluation`,
+- `observations` — optional observed series for `plot_model_evaluation`,
   **per variable**: `{'river discharge': <path>}`. A variable named here
   that `model.outvars` does not ask for is refused at parse time — an
   observed series with no modelled counterpart has nothing to be
@@ -40,13 +40,13 @@ to have one home.
 - `shared.basin.spatial_sources.{rivers,lulc,lai,soil}` — catalog entries for
   the model-neutral thematic products.
 - `shared.historical_window.starttime`, `shared.historical_window.endtime` — how
-  much climate record to EXTRACT (rule 1.04, the climate store, the climate
+  much climate record to EXTRACT (rule 1.03, the climate store, the climate
   figures). Subject to `MIN_HISTORICAL_YEARS`, which is weathergenr's floor.
 - `workflows.build_model.simulation_window` — the period the model is RUN
-  over (rule 1.10): the forcing prepared for it and the wflow TOML's `[time]`
+  over (rule 1.09): the forcing prepared for it and the wflow TOML's `[time]`
   window, which are necessarily the same span. **Optional**; absent means exact
   passthrough of `historical_window`, so a config predating the key is
-  unaffected. Must sit INSIDE the record: rule 1.10 builds the forcing from the
+  unaffected. Must sit INSIDE the record: rule 1.09 builds the forcing from the
   extracted store, so a simulation period outside it has no data behind it.
   (This was unconstrained when the key shipped, while the forcing still came
   from the data catalog.) No length floor applies — the ≥16-year minimum is
@@ -64,12 +64,12 @@ to have one home.
 `project.static_dir` is gone (`C-07`): the two engine configs it used to
 prefix are named by full path in this workflow's own file.
 
-## Rule 1.02: engine-neutral spatial foundation
+## Rules 1.02 and 1.05: engine-neutral spatial foundation
 
-`prepare_spatial_maps` is a no-wildcard target and can be requested directly:
+`prepare_land_and_soil_maps` is a no-wildcard target and can be requested directly:
 
 ```powershell
-snakemake prepare_spatial_maps -c 1 -s build_model.smk --configfile <config.yml>
+snakemake prepare_land_and_soil_maps -c 1 -s build_model.smk --configfile <config.yml>
 ```
 
 It resolves every parent feature independently, snaps configured gauge/control
@@ -96,7 +96,7 @@ source. The generated catalog uses relative URIs, so the complete
 `data/spatial/` directory is portable as a unit.
 
 Targeting this rule directly does not schedule Wflow or create
-`models/hydrology/wflow/`. In the full DAG, rule 1.03 declares all nine spatial
+`models/hydrology/wflow/`. In the full DAG, rule 1.02 declares all nine spatial
 products as inputs. Wflow constants and derived parameter maps remain outside
 this product.
 
@@ -111,7 +111,7 @@ and then uses public `setup_config`, `set_flwdir`, `setup_gauges`,
 grid and current subbasin/location IDs and produces the standard Wflow
 `staticmaps.nc`, `wflow_sbm.toml`, and `staticgeoms/region.geojson` triplet.
 
-## Rule 1.03: Wflow-SBM build
+## Rule 1.06: Wflow-SBM build
 
 `build_wflow_model` consumes the complete P1 contract through
 `spatial_catalog.yml`; it cannot run `setup_basemaps`. The adapter converts D8
@@ -168,8 +168,8 @@ workflows 2/3; not in this `rule all`):
 *`{basin_dir}/run_default/output.csv` was listed here and is not a
 downstream-contract artifact: `dev/scripts/cross_workflow_inputs.py` stages only
 the TOML, `.outputs_configured` and `region.geojson`, so no WF2/WF4 rule ever
-consumed it. Rule 1.14 declares it `temp()`, so a successful run does not leave
-it at all — the readable per-variable tables (rule 1.14b) are what
+consumed it. Rule 1.13 declares it `temp()`, so a successful run does not leave
+it at all — the readable per-variable tables (rule 1.14) are what
 `run_default/` holds.*
 
 **Spatial-foundation contract** (`blueearth-cst-spatial-v1`):
@@ -177,7 +177,7 @@ it at all — the readable per-variable tables (rule 1.14b) are what
 - `{project_dir}/data/spatial/spatial_maps.nc`
 - `{project_dir}/data/spatial/geoms/{basins,subbasins,catchments,rivers,locations}.geojson`
 - `{project_dir}/data/spatial/geoms/region.geojson` — a **sixth** layer in the
-  same directory, written by rule 1.02 `delineate_region` (ADR 0003) rather
+  same directory, written by rule 1.01 `delineate_region` (ADR 0003) rather
   than by 1.06. Listed separately because the producer differs: enumerating
   five layers here is what let R9's migration map miss it (P1 finding F1a).
 - `{project_dir}/data/spatial/location_registry.csv`
@@ -202,8 +202,8 @@ exposes every artifact through HydroMT without containing Wflow configuration.
   via `merge_benchmarks.py`. All five workflows collect their own scoped parts.)
   — ephemeral run artifacts (R3 §6); not manifest targets, not committed. The
   `1.NN_` prefix is the `W.NN` rule-numbering scheme (naming.md §9). The
-  spatial and Wflow-build rules use `1.02_prepare_spatial_maps` and
-  `1.03_build_wflow_model`.
+  spatial and Wflow-build rules use `1.05_prepare_land_and_soil_maps` and
+  `1.06_build_wflow_model`.
 
 ## Downstream consumers
 
@@ -257,7 +257,7 @@ and `P`);
 remaining entries become basin-average timeseries (`{name}_basavg`, mean
 reducer over `subcatchment`).
 
-When observations are configured, rule 1.11 declares
+When observations are configured, rule 1.10 declares
 `data/spatial/location_registry.csv` as an input and validates the raw semicolon-
 separated header before HydroMT parses the table. Duplicate or registry-unknown
 IDs fail explicitly. Every user-provided control/observation location must have

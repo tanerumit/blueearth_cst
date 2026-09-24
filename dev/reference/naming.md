@@ -162,12 +162,13 @@ Every Snakemake rule identifier is `<verb>_<noun>`. The verb comes from this lis
 | `plot_` | render a figure |
 | `check_` | validate, fail loud |
 | `publish_` | **validate a finished product and mark it ready** — the ready marker is written last |
-| `snapshot_` | copy inputs for provenance |
+| `claim_` | reserve a durable identity before anything is written under it |
+| `snapshot_` | freeze or copy inputs for provenance, so a later step cannot drift from them |
 | `gather_` | merge parts |
 
 Two distinctions are the ones a new rule gets wrong:
 
-- **`reduce_` vs `derive_` splits by POSITION, not by operation.** Both turn many inputs into few outputs. `reduce_gcm_series` feeds a later rule; `derive_change_factors` and `derive_wflow_indicators` each produce their workflow's final answer.
+- **`reduce_` vs `derive_` splits by POSITION, not by operation.** Both turn many inputs into few outputs. `reduce_to_basin_averages` feeds a later rule; `derive_change_factors` and `derive_system_indicators` each produce their workflow's final answer.
 - **`prepare_` vs `write_` splits on where the work is.** The test:
 
   > **If you deleted the file-writing, would there be work left? Yes → `prepare_`. No → `write_`.**
@@ -186,12 +187,12 @@ Each rule in the five `*.smk` workflow definitions carries a `W.NN` reference nu
 
 It exists in exactly two places:
 
-- **A comment header above each rule** — `# 1.07  build_wflow_model — parameterize Wflow-SBM on the spatial foundation`.
-- **The `log:` / `benchmark:` filename prefix** — `logs/1.07_build_wflow_model.log`, `benchmarks/_parts/1.07_build_wflow_model.tsv`. For wildcard rules the prefix goes on the subdirectory (`logs/3.15_run_wflow/batch_{b}.log`). All workflows share `project_dir/logs`, so the `W` digit keeps their logs disambiguated and a single `ls logs/` sorts by workflow then step.
+- **A comment header above each rule** — `# 1.06  build_wflow_model — parameterize Wflow-SBM on the spatial foundation`.
+- **The `log:` / `benchmark:` filename prefix** — `logs/1.06_build_wflow_model.log`, `benchmarks/_parts/1.06_build_wflow_model.tsv`. For wildcard rules the prefix goes on the subdirectory (`logs/4.05_run_wflow_simulations/batch_{b}.log`). All workflows share `project_dir/logs`, so the `W` digit keeps their logs disambiguated and a single `ls logs/` sorts by workflow then step.
 
 Two properties hold:
 
-- **Contiguous** within each workflow, from `W.00` (`rule all`).
+- **Contiguous** within each workflow, from `W.01`. Target rules (`all`, WF4's `simulations_only` and `simulations_and_indicators`) carry no number: they do no work, and a numbered target reads as a pipeline step.
 - **Every dependency points from a lower number to a higher one**, checked against each rule's `input:` block — **`ancient()` included**. `ancient()` suppresses the timestamp rerun-trigger, not the DAG edge.
 
 **Numbers are REUSED, so a stale reference resolves to a different rule.** Read every `W.NN` in `dev/milestones/`, `dev/decisions/`, `dev/LOG.md` and the dated migration records **as of its date**, and translate through `dev/reference/workflows/rule-index.md` § *What changed*. Do not rewrite those archives to current numbers.
@@ -199,7 +200,7 @@ Two properties hold:
 Rules:
 
 - **Rule *identifiers* are NOT numbered** (MUST). Snakemake rule names are Python identifiers (no leading digit, no dot) and are the CLI target surface referenced across docs — a `W.NN` identifier would be both illegal-as-typed and a §7 contract rename. The number lives only in the comment and the log/benchmark path.
-- The number is a **reference and reading aid, not execution order** (MUST keep this framing). Snakemake executes from the DAG, so rules on separate branches run concurrently — WF1's `1.11`–`1.13` are parallel leaves and WF3 fans out over `rlz_num × st_num`. Low-to-high means **"cannot depend on"**, not "runs before". Each Snakefile states this in a header comment.
+- The number is a **reference and reading aid, not execution order** (MUST keep this framing). Snakemake executes from the DAG, so rules on separate branches run concurrently — WF1's `1.10`–`1.12` are parallel leaves and WF3 fans out over `rlz_num × st_num`. Low-to-high means **"cannot depend on"**, not "runs before". Each Snakefile states this in a header comment.
 - **Definition order in the file need not match the number.** Module-level code is interleaved between rule blocks and depends on its position, so reordering blocks is a behaviour risk taken for cosmetics. `W.NN` is the rule's place in the workflow, not its offset in the file. `LOG_RULES` *is* asserted to read in number order (`tests/test_log_rules_contract.py`), because that list is the merge order for the workflow log.
 - **Reference in prose and commits as "Rule 1.3"** (drop the pad); the padded `1.03` form is for sortable filenames.
 - **DO NOT RENUMBER TO INSERT A RULE. Use a letter suffix** (`1.09b`) until the next deliberate sweep, and take the whole workflow in one commit when that sweep comes. Renumbering is a migration, not an edit: the number appears in `LOG_RULES`, in log and benchmark paths, in `rule_banner`, in comment headers and in prose across `dev/`, and it has a silent failure mode — an unlisted `LOG_RULES` label drops its log section without erroring. A letter suffix sorts correctly against the padded numbers (`"1.09" < "1.09b" < "1.10"`), so an inserted rule does not break the `LOG_RULES` ordering assertion.

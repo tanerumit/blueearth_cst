@@ -38,7 +38,7 @@ Column by column, with the dict that owns it:
   **absent from `CODES`**: it does not travel the basin-average path, and its
   header is the fixed `Q` that `shared/gauges.py` and `export_wflow_results` both
   key on. Changing a code renames the csv column, the hydromt variable
-  (`<code>_subcatchment`), rule 1.14b's derived tables, and figure filenames.
+  (`<code>_subcatchment`), rule 1.14's derived tables, and figure filenames.
 - **token** — the short name in the result **filename** and in the composite
   metric. Owned by
   `blueearth_cst/shared/indicator_tables.py::VARIABLE_TOKENS`. Published as a

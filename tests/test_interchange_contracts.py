@@ -768,6 +768,18 @@ def test_gauge_identity_synthetic_fail():
     assert ic.validate_hm_gauge_column_identity(toml_cfg, output_rlz, qstats) != []
 
 
+def test_gauge_identity_expects_a_coincident_gauge_to_be_absent():
+    """A gauge on the outlet cell is published once, as the outlet (t2609151118)."""
+    toml_cfg, output_rlz, qstats = _gauge_identity_good()
+    gauges = sorted(str(v) for v in qstats["location"].unique())
+    dropped = {f"Q_{gauges[-1]}": f"Q_{gauges[0]}"}
+    fewer = qstats[qstats["location"].astype(str) != gauges[-1]]
+    assert ic.validate_hm_gauge_column_identity(toml_cfg, output_rlz, fewer) != []
+    assert (
+        ic.validate_hm_gauge_column_identity(toml_cfg, output_rlz, fewer, dropped) == []
+    )
+
+
 # --- C28: st_id and the cached-copy consistency check ------------------------
 
 
@@ -1104,6 +1116,7 @@ def test_gauge_identity_integration():
     from pathlib import Path
 
     from blueearth_cst.experiment.metric_plan import read_metric_set
+    from blueearth_cst.experiment.simulator_adapter import coincident_point_headers
 
     root, *_ = _successor_artifacts()
     # Find the q table through each ready metric-set/2 marker, not by globbing
@@ -1118,12 +1131,18 @@ def test_gauge_identity_integration():
     for run in _evaluated_runs():
         toml = Path(_RUN_SETTINGS) / f"run_{run}.toml"
         output = Path(_RUNS_DIR) / "output" / f"run_{run}.csv"
+        config = tomllib.loads(toml.read_text())
+        frame = pd.read_csv(output)
+        static = (
+            toml.parent / config.get("dir_input", ".") / config["input"]["path_static"]
+        )
+        coincident = coincident_point_headers(
+            config["output"]["csv"]["column"], list(frame.columns), static
+        )
         for table in tables:
             assert (
                 ic.validate_hm_gauge_column_identity(
-                    tomllib.loads(toml.read_text()),
-                    pd.read_csv(output),
-                    pd.read_csv(table),
+                    config, frame, pd.read_csv(table), coincident
                 )
                 == []
             )

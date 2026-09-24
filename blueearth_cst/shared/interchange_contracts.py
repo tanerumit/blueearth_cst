@@ -1293,6 +1293,7 @@ def validate_hm_gauge_column_identity(
     toml_cfg: Any,
     output_rlz_df: Any,
     qstats_df: Any,
+    coincident: Mapping | None = None,
 ) -> list[str]:
     """Relational: the HM-4 -> HM-5 -> HM-7 gauge-column identity (design §5.5).
 
@@ -1320,6 +1321,11 @@ def validate_hm_gauge_column_identity(
 
     ``output_rlz_df`` is expected with ``time`` as a **column** (default
     ``pd.read_csv`` shape).
+
+    ``coincident`` maps a dropped ``Q_`` header to the one kept for its model
+    cell (``simulator_adapter.coincident_point_headers``): a gauge on the
+    outlet cell is the outlet's series, so WF4 publishes it once and check 3
+    expects the output set minus those headers.
     """
     label = "gauge-identity"
     diffs: list[str] = []
@@ -1371,7 +1377,7 @@ def validate_hm_gauge_column_identity(
     # one-to-one property that mattered is preserved -- a gauge present in one
     # and absent from the other is still reported, by name.
     out_gauge = [c for c in out_cols if c.startswith("Q_")]
-    expected = {c[2:] for c in out_gauge}
+    expected = {c[2:] for c in out_gauge if c not in (coincident or {})}
     if "location" in _columns(qstats_df):
         present = {str(v) for v in qstats_df["location"]} - {"basin"}
         if present != expected:

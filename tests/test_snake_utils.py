@@ -4347,3 +4347,34 @@ def test_path_legend_makes_the_project_base_explicit(declare_folders, tmp_path):
     header = su._log_header_lines(str(project / "logs" / "extract.log"))
     assert f"# <project>: {project.as_posix()}" in header
     assert "# <climate>: <project>/data/climate/historical" in header
+
+
+def test_console_target_jobs_are_not_counted_as_work(monkeypatch):
+    """`all` finished as `[job 15/15]`; the counter now covers work jobs only.
+
+    A mid-run target (WF4's `simulations_only`) shifts every later counter down
+    by one, so the last work job still ends at N/N.
+    """
+    monkeypatch.setattr(cs, "_RULE_NUMBERS", {"work": "1.01"})
+    stats = "Job stats:\njob  count\n----  ---\nall  1\nsimulations_only  1\nwork  2\ntotal  4\n"
+    out = _emit(
+        _console_handler(),
+        _console_record(stats, event="run_info"),
+        _job_info(1, "work", "Rule 1.01: work"),
+        _console_record(event="job_finished", job_id=1),
+        _console_record(event="progress", done=1, total=4),
+        _job_info(2, "simulations_only", "Target: simulations_only"),
+        _console_record(event="job_finished", job_id=2),
+        _console_record(event="progress", done=2, total=4),
+        _job_info(3, "work", "Rule 1.01: work"),
+        _console_record(event="job_finished", job_id=3),
+        _console_record(event="progress", done=3, total=4),
+        _job_info(4, "all", "Target: all"),
+        _console_record(event="job_finished", job_id=4),
+        _console_record(event="progress", done=4, total=4),
+    )
+    done = [line for line in out.splitlines() if "- DONE " in line]
+    assert done[0].endswith("[job 1/2]"), done
+    assert "[job" not in done[1], done
+    assert done[2].endswith("[job 2/2]"), done
+    assert done[3].endswith("- DONE all"), done

@@ -1390,6 +1390,12 @@ class _ConsoleHandler(logging.StreamHandler):
         #: second counter, for the reason set out in :meth:`_render`.
         self._progress = (None, None)
         self._dynamic_progress = False
+        # Target jobs (`all`, WF4's partial targets) do no work, so the job
+        # counter leaves them out: `_target_jobs` from the job table, and
+        # `_targets_done` so jobs finishing AFTER a mid-run target keep counting
+        # from where the work actually is.
+        self._target_jobs = 0
+        self._targets_done = 0
         # Rule names whose summary clause has already been printed once. Held on
         # the INSTANCE, unlike `_RULE_NUMBERS`/`_RULE_SUMMARIES`, which are
         # module-level and outlive one workflow: `run_workflows.py` drives five
@@ -1572,6 +1578,7 @@ class _ConsoleHandler(logging.StreamHandler):
         """
         text = self.format(record)
         counts = _run_info_counts(text)
+        self._target_jobs = sum(counts.get(name, 0) for name in _PLAN_EXCLUDED_RULES)
         plan = _plan_lines(counts) if counts else None
         opening = self._opening(plan)
         if opening:
@@ -1750,6 +1757,11 @@ class _ConsoleHandler(logging.StreamHandler):
 
     def _done_line(self, jobid, fallback, counter, total):
         rule_name, wildcards, started = self._started.pop(jobid, (None, "", None))
+        if rule_name in _PLAN_EXCLUDED_RULES:
+            # A target is not a job of work: no counter on its own line, and
+            # every later counter shifts down by one.
+            self._targets_done += 1
+            counter = None
         if rule_name is None and fallback:
             # No start line was seen for this job, so there is nothing to render
             # in our grammar -- under `--quiet rules` the filter dropped it, and
@@ -1805,6 +1817,9 @@ class _ConsoleHandler(logging.StreamHandler):
         """Render a stable completed-job counter for static or dynamic DAGs."""
         if counter is None:
             return ""
+        counter -= self._targets_done
+        if total:
+            total -= self._target_jobs
         if self._dynamic_progress:
             return f"job {counter}"
         return f"job {counter}/{total}" if total else ""

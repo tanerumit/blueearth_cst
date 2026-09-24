@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-24 | t2608071224 | The per-cst persistence item below may already be answered by R9's CR-7 / F18 [superseded] | wf3  |
 | 2026-09-24 | t2609191457 | Make WF3 planning static before Snakemake | wf3 scenarios |
 | 2026-09-24 | t2609171940 | rule-index.md's WF3 section is wholly pre-R12, and AGENTS.md sends rule authors to it | docs / rule reference |
 | 2026-09-24 | t2609241329 | Show WF3 pre-DAG steps 3.04-3.06 in the rule overview and correct rule-index.md | wf3  |

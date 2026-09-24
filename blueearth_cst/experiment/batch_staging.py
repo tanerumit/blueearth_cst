@@ -24,6 +24,7 @@ from __future__ import annotations
 
 import json
 import os
+import subprocess
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -118,3 +119,39 @@ def restore_staged(members, staging):
         Path(staging).rmdir()
     except OSError:
         pass  # other batches still hold staged members
+
+
+def run_staged_batch(records, simulation_path, staging, launch):
+    """Rule 4.05's body: run what is not yet staged, then restore the batch.
+
+    ``records`` is the rule's ``params.records``; ``launch`` is the command
+    prefix the records are appended to (the logged Julia driver in the rule, a
+    stub in the contract test). Returns the members that ran.
+    """
+    from blueearth_cst.shared.snake_utils import log_row, plural
+
+    members = members_from_records(records)
+    pending = prepare_staging(members, staging, file_sha256(simulation_path))
+    if len(pending) < len(members):
+        log_row(
+            f"Reusing {plural(len(members) - len(pending), 'staged run')} "
+            "from an earlier attempt",
+            module="batching",
+        )
+    if pending:
+        tail = [
+            value
+            for member in pending
+            for value in (
+                member.run_id,
+                str(member.toml_path),
+                str(member.native_output_path),
+            )
+        ]
+        subprocess.run(
+            [*launch, str(records[0]), *tail],
+            check=True,
+            env={**os.environ, STAGING_ENV: str(staging)},
+        )
+    restore_staged(members, staging)
+    return pending

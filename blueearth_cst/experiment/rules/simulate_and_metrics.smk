@@ -248,12 +248,16 @@ if not _simulation_complete:
             benchmark:
                 RUN_WFLOW_SIMULATIONS.benchmark(f"batch_{batch}"),
             run:
+                from blueearth_cst.experiment.batch_staging import run_staged_batch
                 read_simulation_intent_v2(exp_dir)
                 if Path(f"{engine_dir}/simulation.json").exists() or any(Path(p).exists() for p in output.csvs):
                     raise SimulationFrozenError("native responses already exist; use a new experiment name")
-                subprocess.run([sys.executable, "-u", str(REPOSITORY / "blueearth_cst/shared/run_logged.py"),
-                    str(log[0]), "--", *shlex.split(params.julia),
-                    str(REPOSITORY / "blueearth_cst/experiment/run_wflow_batch.jl"), *params.records], check=True)
+                # Finished members of a failed attempt wait in staging, keyed by
+                # run id; only the rest run (t2608071217, batch_staging.py).
+                run_staged_batch(params.records, input.simulation, f"{engine_dir}/batch_staging",
+                    [sys.executable, "-u", str(REPOSITORY / "blueearth_cst/shared/run_logged.py"),
+                     str(log[0]), "--", *shlex.split(params.julia),
+                     str(REPOSITORY / "blueearth_cst/experiment/run_wflow_batch.jl")])
 
     # 4.06  publish_wflow_outputs
     rule publish_wflow_outputs:

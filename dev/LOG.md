@@ -17,6 +17,8 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2609171637 | Two interchange contract tests are not guarded against a pre-R14 fixture | tests / fixtures |
+| 2026-09-25 | t2609241852 | HM-7 validator has no metric-set/2 version | tests |
 | 2026-09-25 | t2609161500 | The julia_threads refusal names a key a project cannot set | config / error messages |
 | 2026-09-24 | t2608071217 | One failing member re-runs its whole WF4 Wflow batch | wf4 batching |
 | 2026-09-24 | t2609241942 | Rename WF4 rules to domain names, hide targets, renumber 4.01-4.10 | wf4  |

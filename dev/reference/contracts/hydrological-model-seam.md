@@ -285,35 +285,33 @@ synthetic schema checks. `--notemp` does not recreate this retired output.
 
 ## HM-7 — retained metric-set interchange
 
-- **Path:** `<exp>/results/metric_sets/<metric_set_id>/<token>_indicators.csv`.
-  `unit_index.csv` and `metrics.json` reside in the same ready set.
+- **Path:** `<exp>/results/metric_sets/<short id>/<token>_indicators.csv` and
+  `metric_run_lookup.csv`; the ready marker is
+  `<exp>/_engine/metric_sets/<short id>/metrics.json` (`metric-set/2`), written
+  last.
 - **Producer:** `prepare_indicator_plan` resolves response-dependent declarations,
   units and references; `derive_system_indicators` publishes complete results.
 - **Consumer:** terminal reporting, CST-API and notebooks. Readers validate
-  `metrics.json` and its inventory before consuming tables.
-- **Header:** exactly `metric,location,unit_id,value`. IDs are text and retain
-  one width per metric set. `(metric, location, unit_id)` keys are globally
-  unique and exactly equal the independently derived declaration/unit/location
-  set. Extra rows, missing rows, duplicate keys and metric-invalid values fail.
-- **Membership:** `unit_index.csv` has `unit_id,grain,member_run_id`; a run unit
-  has one member, a bundle has its complete declared members. Every member
-  resolves to a scenario row. Empty stochastic `st_id` denotes the unperturbed
-  bundle; every nonempty key resolves to the collection's monthly lookup.
-- **Values:** existing metric vocabulary, location spelling and publication
-  precision stand. See [indicator glossary](../indicator-glossary.md). Class A
-  is per run; Class B belongs to a bundle. Class C is per run at one shared
-  wet/dry reference month. Its reference member set, gauge, statistic, tie rule
-  and resolved month are persisted. The old pooled value has the accepted
-  mean-over-runs relation before independent per-run publication rounding.
+  `metrics.json` and its inventory before consuming tables
+  (`metric_plan.read_metric_set`).
+- **Header:** exactly `metric,location,run_group_id,value`; the lookup is
+  exactly `run_group_id,grain,run_id`. IDs are text. `(metric, location,
+  run_group_id)` keys are unique per table.
+- **Membership:** the lookup equals the marker's `run_groups`. Grain `run` has
+  exactly one group per collection run, named after it; grain `bundle` groups
+  list their member runs. Every run belongs to the collection.
+- **Coverage:** a table's locations equal the response inventory's locations
+  for that variable, and each metric covers every location x every run group of
+  its one grain. Metric names are not derivable independently of the tables in
+  `/2`, so a whole missing metric is caught by the reader's digests, not here.
+- **Values:** numeric; existing metric vocabulary, location spelling and
+  publication precision stand. See [indicator glossary](../indicator-glossary.md).
 - **Lifecycle:** immutable; `metrics.json` is published last. A changed metric
   request selects a new set without modifying native responses or prior sets.
 
-`validate_hm7` requires parsed tables, `unit_index`, `scenario_table`, retained
-`declarations`, independent requested `locations`, the `lookup`,
-`unit_id_capacity` and the frozen `response_request`. It validates complete
-membership and expected keys rather than inferring completeness from results.
-`surface_axes.resolve_unit_design` joins units to design keys; axes are then
-derived from the retained lookup, with no filename parsing or live config.
+`validate_hm7_v2` takes the marker, the parsed tables and lookup, the response
+inventory's `series` and the collection's run ids. `validate_hm7` still
+describes the retired `metric-set/1` surface (`unit_index.csv`, `unit_id`).
 
 ## HM-4 → HM-5 → HM-7 gauge-column identity
 

@@ -1023,6 +1023,116 @@ def validate_hm7(
     return diffs
 
 
+HM7_V2_COLUMNS = ("metric", "location", "run_group_id", "value")
+HM7_V2_LOOKUP_COLUMNS = ("run_group_id", "grain", "run_id")
+
+
+def validate_hm7_v2(
+    manifest: Mapping,
+    tables: dict,
+    *,
+    lookup,
+    series,
+    collection_run_ids,
+) -> list[str]:
+    """HM-7 for metric-set/2: exact keys and run-group membership.
+
+    ``manifest`` is the ready ``metrics.json``; ``tables`` maps each token to
+    its parsed ``<token>_indicators.csv``; ``lookup`` is ``metric_run_lookup.csv``.
+    Completeness is checked against sources other than the tables themselves:
+    run groups from the manifest, locations per variable from the response
+    inventory's ``series``, runs from the collection. Metric names cannot be
+    derived independently in /2, so each metric is held to a full
+    location x run-group rectangle for its one grain instead.
+    """
+    import math
+
+    label = "HM-7"
+    diffs = []
+    if manifest.get("schema_version") != "metric-set/2":
+        return [f"{label}: not a metric-set/2 marker"]
+    if tuple(lookup.columns) != HM7_V2_LOOKUP_COLUMNS:
+        return [f"{label}: lookup header is not {','.join(HM7_V2_LOOKUP_COLUMNS)}"]
+    rows = [tuple(str(v) for v in row) for row in lookup.itertuples(index=False)]
+    declared = [
+        (str(g["run_group_id"]), str(g["grain"]), str(g["run_id"]))
+        for g in manifest.get("run_groups", [])
+    ]
+    if len(rows) != len(set(rows)):
+        diffs.append(f"{label}: duplicate lookup rows")
+    if set(rows) != set(declared):
+        diffs.append(f"{label}: lookup differs from the manifest's run groups")
+    groups: dict[str, set] = {}
+    for group, grain, run in rows:
+        if grain not in ("run", "bundle"):
+            diffs.append(f"{label}: unknown grain {grain!r}")
+            continue
+        groups.setdefault((grain, group), set()).add(run)
+    runs = {str(run) for run in collection_run_ids}
+    members = {run for group_runs in groups.values() for run in group_runs}
+    if not members <= runs:
+        diffs.append(f"{label}: lookup names runs outside the collection")
+    run_groups = {g: r for (grain, g), r in groups.items() if grain == "run"}
+    if set(run_groups) != runs or any(r != {g} for g, r in run_groups.items()):
+        diffs.append(f"{label}: run grain is not exactly one group per collection run")
+    by_grain: dict[str, set] = {}
+    for grain, group in groups:
+        by_grain.setdefault(grain, set()).add(group)
+
+    expected_locations: dict[str, set] = {}
+    for item in series:
+        expected_locations.setdefault(str(item["variable"]), set()).add(
+            str(item["location_id"])
+        )
+    tokens = {str(entry["token"]) for entry in manifest.get("tables", [])}
+    if set(tables) != tokens:
+        diffs.append(f"{label}: tables differ from the manifest's tokens")
+    for token, table in tables.items():
+        if tuple(table.columns) != HM7_V2_COLUMNS:
+            diffs.append(f"{label}: {token} header is not {','.join(HM7_V2_COLUMNS)}")
+            continue
+        keys = [
+            (str(m), str(loc), str(g))
+            for m, loc, g in zip(
+                table["metric"], table["location"], table["run_group_id"]
+            )
+        ]
+        if len(keys) != len(set(keys)):
+            diffs.append(f"{label}: {token} has duplicate keys")
+        locations = {loc for _, loc, _ in keys}
+        if locations != expected_locations.get(token, set()):
+            diffs.append(
+                f"{label}: {token} locations differ from the response inventory"
+            )
+        for metric in sorted({m for m, _, _ in keys}):
+            used = {g for m, _, g in keys if m == metric}
+            grains = [grain for grain, ids in by_grain.items() if used <= ids]
+            if not grains:
+                diffs.append(
+                    f"{label}: {token}/{metric} mixes or names unknown run groups"
+                )
+                continue
+            expected = {
+                (metric, loc, g)
+                for loc in expected_locations.get(token, set())
+                for g in by_grain[grains[0]]
+            }
+            if {k for k in keys if k[0] == metric} != expected:
+                diffs.append(
+                    f"{label}: {token}/{metric} does not cover every location x run group"
+                )
+        for value in table["value"]:
+            try:
+                number = float(value)
+            except (TypeError, ValueError):
+                diffs.append(f"{label}: {token} has a non-numeric value {value!r}")
+                break
+            if math.isinf(number):
+                diffs.append(f"{label}: {token} has an infinite value")
+                break
+    return diffs
+
+
 def _st_sort_key(st_id: str):
     """Sort st_ids numerically when they are numeric, lexically otherwise.
 

@@ -1064,18 +1064,38 @@ def test_hm5_integration_wf1():
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
 def test_hm7_integration():
-    # HM-7 validates the metric-set/1 surface (unit_index.csv, declarations,
-    # indicator_tables, an `evaluated` scenario column). A metric-set/2 marker
-    # under `_engine/metric_sets/` carries none of these; its integrity is what
-    # `read_metric_set`'s v2 path checks (see the gauge-identity case below).
-    from pathlib import Path
+    """HM-7 against every ready metric-set/2 on the real tree.
 
-    if list((Path(_EXP) / "_engine" / "metric_sets").glob("*/metrics.json")):
-        pytest.skip(
-            "HM-7 pins metric-set/1; metric-set/2 has no unit_index/declarations "
-            "and is checked by read_metric_set (_read_metric_set_v2)"
-        )
-    pytest.fail("no metric-set/2 marker under _engine/metric_sets")
+    Goes through `_successor_artifacts`, so a tree that predates the v2 records
+    skips by NAME rather than failing on a missing file (t2609171637).
+    """
+    import json
+
+    root, _, _, scenarios = _successor_artifacts()
+    markers = sorted((root / "_engine" / "metric_sets").glob("*/metrics.json"))
+    assert markers, "no metric-set/2 marker under _engine/metric_sets"
+    inventory = json.loads(
+        (root / "_engine" / "response_inventory.json").read_text(encoding="utf-8")
+    )
+    runs = {str(run) for run in scenarios["run_id"]}
+    read = {"dtype": str, "keep_default_na": False}
+    for marker in markers:
+        manifest = json.loads(marker.read_text(encoding="utf-8"))
+        tables = {
+            entry["token"]: pd.read_csv(root / entry["file"]["path"], **read)
+            for entry in manifest["tables"]
+        }
+        lookup = pd.read_csv(root / manifest["metric_run_lookup"]["path"], **read)
+        assert (
+            ic.validate_hm7_v2(
+                manifest,
+                tables,
+                lookup=lookup,
+                series=inventory["series"],
+                collection_run_ids=runs,
+            )
+            == []
+        ), marker
 
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)

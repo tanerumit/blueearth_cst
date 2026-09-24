@@ -40,6 +40,7 @@
 | [t2609181501](tasks/t2609181501-settle-wf0-climate-extraction-s-memory-growth-then-take-the-remaining-transfer-levers.md)                   | Settle wf0 climate extraction's memory growth, then take the remaining transfer levers                   | wf0 climate extraction                      | t2609181316 gabon-ntoum-deltares slow era5 download |     | active  |
 | [t2609241852](tasks/t2609241852-hm-7-validator-has-no-metric-set-2-version.md)                                                              | HM-7 validator has no metric-set/2 version                                                               | tests                                       | wf3 identity bundle (2026-09-24)                    |     | backlog |
 | [t2609241852a](tasks/t2609241852a-wf4-runs-write-no-per-run-warm-state-intended.md)                                                         | WF4 runs write no per-run warm state: intended?                                                          | wf4                                         | wf3 identity bundle (2026-09-24)                    |     | backlog |
+| [t2609241942](tasks/t2609241942-rename-wf4-rules-to-domain-names-hide-targets-renumber-4-01-4-10.md)                                        | Rename WF4 rules to domain names, hide targets, renumber 4.01-4.10                                       | wf4                                         | wf4 naming bundle (2026-09-24)                      |     | backlog |
 
 ## Watching
 

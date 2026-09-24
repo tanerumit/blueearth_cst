@@ -5,7 +5,7 @@ status: backlog
 branch: wf3-improvements
 effort: 1
 area: wf3
-origin: wf3-improvements
+origin: wf3 generation bundle (2026-09-24)
 queue:
 created: 2026-09-24
 updated: 2026-09-24

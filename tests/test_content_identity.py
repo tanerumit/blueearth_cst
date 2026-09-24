@@ -352,3 +352,63 @@ def test_code_inventory_ignores_checkout_line_endings(tmp_path):
     lf = repository_code_inventory(tmp_path, ["blueearth_cst/entry.py"])
     entry.write_bytes(b"A = 1\r\nB = 2\r\n")
     assert repository_code_inventory(tmp_path, ["blueearth_cst/entry.py"]) == lf
+
+
+def _write_climate(path, *, temp=1.5, units="degC"):
+    import numpy as np
+    import xarray as xr
+
+    xr.Dataset(
+        {"temp": (("time", "y", "x"), np.full((3, 2, 2), temp), {"units": units})},
+        coords={"time": [0, 1, 2], "y": [0.0, 1.0], "x": [0.0, 1.0]},
+        attrs={"region_bbox": [0.0, 0.0, 1.0, 1.0], "source": "era5"},
+    ).to_netcdf(path)
+
+
+def test_netcdf_content_digest_ignores_container_bytes(tmp_path):
+    import time
+
+    from blueearth_cst.experiment.content_identity import netcdf_content_sha256
+
+    first, second = tmp_path / "a.nc", tmp_path / "b.nc"
+    _write_climate(first)
+    time.sleep(1.1)
+    _write_climate(second)
+    assert netcdf_content_sha256(first) == netcdf_content_sha256(second)
+
+
+@pytest.mark.parametrize("change", [{"temp": 1.6}, {"units": "K"}])
+def test_netcdf_content_digest_sees_values_and_attributes(tmp_path, change):
+    from blueearth_cst.experiment.content_identity import netcdf_content_sha256
+
+    base, changed = tmp_path / "a.nc", tmp_path / "b.nc"
+    _write_climate(base)
+    _write_climate(changed, **change)
+    assert netcdf_content_sha256(base) != netcdf_content_sha256(changed)
+
+
+def test_source_entry_reads_both_identity_versions():
+    from blueearth_cst.experiment.content_identity import (
+        NETCDF_CONTENT_SCHEME,
+        SOURCE_IDENTITY_V2,
+        SOURCE_IDENTITY_V3,
+        scientific_source_entry,
+    )
+
+    file = {"sha256": "a" * 64, "size_bytes": 10}
+    metadata = {"content_scheme": NETCDF_CONTENT_SCHEME, "content_sha256": "b" * 64}
+    role = "historical_climate"
+    assert scientific_source_entry(role, file, metadata, SOURCE_IDENTITY_V2) == {
+        "role": role,
+        "sha256": "a" * 64,
+        "size_bytes": 10,
+    }
+    assert scientific_source_entry(role, file, metadata, SOURCE_IDENTITY_V3) == {
+        "role": role,
+        "content_sha256": "b" * 64,
+    }
+    with pytest.raises(ValueError, match="lacks"):
+        scientific_source_entry(role, file, {}, SOURCE_IDENTITY_V3)
+    assert "size_bytes" in scientific_source_entry(
+        "basin_cells", file, {}, SOURCE_IDENTITY_V3
+    )

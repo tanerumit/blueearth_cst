@@ -12,6 +12,7 @@ from blueearth_cst.experiment.content_identity import (
     content_sha256,
     identity_segment,
     read_canonical_json,
+    scientific_source_entry,
 )
 from blueearth_cst.experiment.generation_plan import (
     GENERATOR_SEED_FIELDS,
@@ -373,12 +374,9 @@ def _profile(intent: dict[str, Any]) -> None:
         if type(item["metadata"]) is not dict:
             raise ValueError("source metadata must be an evidence map")
     _interpretation(inventory["interpretation"])
+    version = projections["source_inventory"].get("schema_version")
     selected = [
-        {
-            "role": item["role"],
-            "sha256": item["file"]["sha256"],
-            "size_bytes": item["file"]["size_bytes"],
-        }
+        scientific_source_entry(item["role"], item["file"], item["metadata"], version)
         for item in sources
         if item["role"] in ("basin_cells", "historical_climate")
     ]
@@ -389,7 +387,7 @@ def _profile(intent: dict[str, Any]) -> None:
     if material["provider_revision"] != provider["revision"]:
         raise ValueError("seed material differs from provider code")
     projected_sources = {
-        "schema_version": "generation-sources-identity/2",
+        "schema_version": version,
         "sources": selected,
         "interpretation": inventory["interpretation"],
     }

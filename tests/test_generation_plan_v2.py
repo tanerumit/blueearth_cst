@@ -30,6 +30,7 @@ def test_candidate_intent_uses_wf3_only_seed_projection(tmp_path, monkeypatch):
         lambda *_: UnitInterpretation("fixture/1", "fixture", (("temp", "degC"),)),
     )
     monkeypatch.setattr(generation_plan, "_historical_calendar", lambda _: "standard")
+    monkeypatch.setattr(generation_plan, "netcdf_content_sha256", lambda _: "c" * 64)
     monkeypatch.setattr(
         generation_plan,
         "stage_environment",

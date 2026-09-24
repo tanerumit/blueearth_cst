@@ -222,9 +222,21 @@ def validate_provider_inputs(
     observed_rows = _observed_perturbation_rows(Path(lookup))
     if observed_rows != expected_rows:
         raise ValueError("provider monthly perturbation rows differ from plan")
-    expected_sources_identity = plan["intent"]["identity_projections"][
-        "source_inventory"
-    ]["sources"]
+    # Bytes against the pinned snapshot's file reference, not the identity
+    # projection: under generation-sources-identity/3 the projection carries a
+    # content digest, which every provider job would otherwise re-derive.
+    pinned_files = {
+        item["role"]: item["file"]
+        for item in plan["intent"]["documents"]["source_inventory"]["sources"]
+    }
+    expected_sources_identity = [
+        {
+            "role": role,
+            "sha256": pinned_files[role]["sha256"],
+            "size_bytes": pinned_files[role]["size_bytes"],
+        }
+        for role in sorted(observed_paths)
+    ]
     observed_sources_identity = [
         {
             "role": role,

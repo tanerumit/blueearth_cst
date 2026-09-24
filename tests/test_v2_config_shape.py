@@ -43,13 +43,26 @@ V2_CLEAN = (
 
 
 def _dry_run(snakefile: str) -> str:
-    """Dry-run one entry point on the v2 config; return the combined output."""
+    """Dry-run one entry point on the v2 config; return the combined output.
+
+    ``generate_scenarios.smk`` refuses a bare dry-run since P5 (`c83ead70`):
+    it requires ``CST_GENERATION_PHASE`` to name which of the launcher's two
+    owned phases is asking, and rejects anything else with `"WF3 requires the
+    owned source or generation phase"` (pinned by
+    ``tests/test_cli.py::test_snakefile_cli_generate_scenarios``). ``source``
+    is enough to reach a clean DAG here, mirroring
+    ``test_log_rules_contract.py``'s ``_parse_workflow``.
+    """
+    env = {**os.environ}
+    if snakefile == "generate_scenarios":
+        env["CST_GENERATION_PHASE"] = "source"
     result = subprocess.run(
         f"snakemake all -c 1 -s {snakefile}.smk --configfile {V2_CONFIG} --dry-run",
         shell=True,
         capture_output=True,
         text=True,
         cwd=REPO_ROOT,
+        env=env,
     )
     return (result.stdout or "") + (result.stderr or "")
 

@@ -34,7 +34,7 @@ from blueearth_cst.shared.provenance import (
     short_digest,
     toolbox_identity,
 )
-from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS
+from blueearth_cst.shared.wf3_science import ADVANCED_SETTINGS
 from blueearth_cst.shared.workflow_config_snapshot import (
     CapturedSource,
     archive_lock,

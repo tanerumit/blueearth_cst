@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""The wflow basin map: read a model off disk and draw its DEM (rule 1.12).
+"""The wflow basin map: read a model off disk and draw its DEM (rule 1.11).
 
 Created 2022-01-13 (@author: bouaziz); refactored in R3 into a guarded
 function; rebuilt in 2026-08 as a publication-grade figure; reduced in 2026-08
@@ -70,7 +70,7 @@ ELEVATION_VARIABLE = "land_elevation"
 # basin_area depicts ELEVATION, which is data rather than a model result, so it
 # is drawn from the shared spatial foundation instead of from the wflow model.
 
-#: Project-relative home of the shared spatial products (rule 1.03 / 1.06).
+#: Project-relative home of the shared spatial products (rule 1.02 / 1.05).
 SPATIAL_DIRNAME = "data/spatial"
 #: The hydrography grid stack; carries ``elevation`` on the model's own grid.
 HYDROGRAPHY_FILENAME = "hydrography.nc"
@@ -165,7 +165,7 @@ def _basin_outline(gdf_bas):
 
 
 def plot_basin_map(dem, rivers, basin, *, elevation_label=ELEVATION_LABEL, **kwargs):
-    """Draw the basin's DEM as a shaded-relief map — rule 1.12's figure.
+    """Draw the basin's DEM as a shaded-relief map — rule 1.11's figure.
 
     A thin caller of :func:`plot_raster_map` with the elevation style. It is
     kept as its own name because the elevation map is the one figure that wants
@@ -203,7 +203,7 @@ def load_spatial_basin_layers(spatial_dir):
     drawn before one exists.
 
     What is NOT here, and is the known cost of the move: waterbodies. Lakes,
-    reservoirs and glaciers reach ``staticgeoms/`` from rule 1.08, a MODEL rule,
+    reservoirs and glaciers reach ``staticgeoms/`` from rule 1.07, a MODEL rule,
     and the shared foundation carries none of them. Producing them data-side is
     the fix, tracked separately — see ADR 0007.
     """

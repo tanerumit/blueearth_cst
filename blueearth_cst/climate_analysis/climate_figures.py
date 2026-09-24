@@ -7,7 +7,7 @@ code and its own idea of what a climate figure is:
 Dataset (``dataset``)  Home                                       Producer
 =====================  =========================================  ==============
 ``source``             ``data/climate/historical/<key>/plots/``   rule 1.15
-``forcing``            ``models/hydrology/wflow/forcing/plots/``  rule 1.13
+``forcing``            ``models/hydrology/wflow/forcing/plots/``  rule 1.12
 =====================  =========================================  ==============
 
 They are the SAME climate at two stages — raw on the extraction grid, and
@@ -26,14 +26,14 @@ figure (O-24) instead of writing some of them invisibly — keep it that way whe
 extending, or the new figures become undeclared outputs.
 
 Deliberately plain matplotlib: no cartopy basemap tiles, so neither rule needs
-NETWORK access. Rule 1.13 used ``cartopy.io.img_tiles.QuadtreeTiles`` before
+NETWORK access. Rule 1.12 used ``cartopy.io.img_tiles.QuadtreeTiles`` before
 this module and therefore made a live tile request mid-workflow; the basin/river
 context it bought is available offline through ``overlays`` (drawn from the
-model's own geometries) and, at higher fidelity, from rule 1.12's
+model's own geometries) and, at higher fidelity, from rule 1.11's
 ``basin_area.png``.
 
 A third climate-figure family — the model-parity plots under
-``models/hydrology/wflow/evaluation/plots/`` (rule 1.11) — is NOT part of this
+``models/hydrology/wflow/evaluation/plots/`` (rule 1.10) — is NOT part of this
 set. It answers a different question (per-subcatchment climate as the model sees
 it, beside the discharge it produced) and is keyed by station rather than by
 grid.
@@ -256,7 +256,7 @@ def source_figure_names(
 def figure_names(dataset: str, variables: Optional[Sequence[str]] = None) -> list[str]:
     """Every filename this module writes for ``dataset``, in a stable order.
 
-    The FORCING family's declaration (rule 1.13), on the legacy spelling. The
+    The FORCING family's declaration (rule 1.12), on the legacy spelling. The
     source family is named by :func:`source_figure_names` under the WF0 grammar;
     the two spellings coexist deliberately while that migration is staged.
     """
@@ -397,7 +397,7 @@ def _label_points(ax, gdf) -> None:
     """Annotate a point overlay with its station names.
 
     A marker with no name answers "something is here" but not "which one",
-    which is the question a reader brings to a multi-gauge basin. Rule 1.12's
+    which is the question a reader brings to a multi-gauge basin. Rule 1.11's
     basin_area.png has labelled its gauges since R07; this brings the canonical
     climate maps into line rather than leaving one figure family mute.
 
@@ -438,8 +438,8 @@ def _river_order_column(rivers) -> Optional[str]:
 #: model-grid maps differ only in the raster underneath — which is the whole
 #: point of drawing them as one set.
 #:
-#: Deliberately the ENGINE-NEUTRAL products from rule 1.03, not the wflow
-#: model's staticgeoms: rule 1.05 runs off the climate store and must stay
+#: Deliberately the ENGINE-NEUTRAL products from rule 1.02, not the wflow
+#: model's staticgeoms: rule 1.04 runs off the climate store and must stay
 #: independent of the model build (1.07), so the shared foundation is the only
 #: layer set both callers can reach. The model's separate ``outlets.geojson``
 #: is not in it — but its point IS: the basin outlet is one of ``locations``,
@@ -489,7 +489,7 @@ def _render_map(
     """Climatological field as a cartographic map.
 
     A caller of ``shared.cartographic_map.plot_raster_map``, so this figure carries
-    same furniture as rule 1.12's basin map: graticule and frame, latitude-
+    same furniture as rule 1.11's basin map: graticule and frame, latitude-
     corrected scale bar, north arrow, locator inset, and the side panel holding
     the colourbar over the vector legend. Only the raster and its palette
     differ, which is the point of the template — a new quantity is an entry in
@@ -525,7 +525,7 @@ def _render_map(
     # Every overlay is optional, and the two datasets supply them from
     # different products: the FORCING maps take the wflow model's staticgeoms
     # (one polygon per subcatchment in ``basins``), the SOURCE maps take the
-    # engine-neutral ``data/spatial/geoms/`` from rule 1.03 (a dissolved
+    # engine-neutral ``data/spatial/geoms/`` from rule 1.02 (a dissolved
     # ``basins`` plus a separate ``subbasins``). Accepting both shapes is what
     # lets one renderer serve both without either caller reshaping its layers.
     overlays = overlays or {}
@@ -822,7 +822,7 @@ _RENDERERS = {
 #
 # What this gave up, stated plainly: the two maps of a variable no longer share
 # a scale, so a source/forcing difference can no longer be read off the colours
-# alone. Rules 1.05 and 1.13 lost the DAG edge that carried the file.
+# alone. Rules 1.04 and 1.12 lost the DAG edge that carried the file.
 
 
 def plot_climate_figures(
@@ -911,7 +911,7 @@ def plot_climate_figures(
     title = DATASETS[dataset]
     extent_policy = MAP_EXTENT[dataset]
     # One scope, unmasked, when the caller supplied none -- which is what keeps
-    # the forcing family (rule 1.13) drawing exactly what it drew before.
+    # the forcing family (rule 1.12) drawing exactly what it drew before.
     scopes = dict(area_masks) if area_masks else {"basin_avg": None}
     subbasin_dir = Path(subbasin_dir) if subbasin_dir is not None else plot_dir
     if any(scope.startswith("subbasin_") for scope in scopes):
@@ -988,7 +988,7 @@ def plot_climate_figures(
     # has it.
     #
     # The bundle is flushed EXPLICITLY in that row's place, rather than left to
-    # `tee_to_log`'s drain at close. Two reasons. Rules 1.13 and 0.05 write
+    # `tee_to_log`'s drain at close. Two reasons. Rules 1.12 and 0.04 write
     # nothing after this call, so the figure rows would land at the very end of
     # the log instead of beside the figures they describe. And a bundle left
     # pending is process state: in a bare test process nothing drains it, so it

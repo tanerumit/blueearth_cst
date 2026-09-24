@@ -198,11 +198,13 @@ def render(wf: Workflow, failed: bool = False) -> str:
     total = len(wf.jobs)
     done = 0
     for jobid, job in enumerate(wf.jobs, start=1):
-        # `rule all` prints an unnumbered target_banner, not a rule_banner: the banner
-        # plus one line per declared target.
+        # A target rule prints an unnumbered target_banner, not a rule_banner:
+        # the banner plus one line per declared target (only `all` lists any).
         msg = (
-            cs.target_banner("all", wf.targets, wf.project)
-            if job.rule == "all"
+            cs.target_banner(
+                job.rule, wf.targets if job.rule == "all" else [], wf.project
+            )
+            if job.rule in cs._PLAN_EXCLUDED_RULES
             else banners[job.rule]
         )
         if job.wildcards:

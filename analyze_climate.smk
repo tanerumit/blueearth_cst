@@ -16,7 +16,7 @@ from blueearth_cst.shared.workflow_archive_launch import captured_projection, re
 from blueearth_cst.spatial.config import parse_spatial_config
 # One source-plot definition for WF0 and WF1, including the filename registry.
 from blueearth_cst.climate_analysis.source_plot_rule import source_plot_rule
-# The cross-source comparison set (rule 0.06). Imported for the same reason:
+# The cross-source comparison set (rule 0.05). Imported for the same reason:
 # the module that WRITES the table and the figures is the one that names them.
 from blueearth_cst.climate_analysis.compare_sources import comparison_outputs
 
@@ -24,11 +24,11 @@ from blueearth_cst.climate_analysis.compare_sources import comparison_outputs
 # WF0's figures follow `dev/reference/wf0-figure-filename-rule.md`:
 #   <dataset_scope>_<variable>_<plot_context>_<spatial_scope>.png
 # built by `climate_analysis.figure_naming`, never spelled here. The wflow
-# FORCING family (rule 1.13) keeps its own names -- the rule stages WF0 first.
+# FORCING family (rule 1.12) keeps its own names -- the rule stages WF0 first.
 #
 # ONE spatial scope is declarable: `basin_avg`. The per-subbasin figures are
 # named `..._subbasin_<id>_avg.png`, and the ids come from the DELINEATION --
-# rule 0.03's `subbasins.geojson`, which need not exist when this file is
+# rule 0.02's `subbasins.geojson`, which need not exist when this file is
 # parsed. Their count is therefore unknowable at DAG-construction time, exactly
 # as rule 1.15's per-station figures are (see the O-24 note in build_model.smk).
 # They land in a `subbasins/` bin declared as a `directory()`, which keeps
@@ -177,7 +177,7 @@ CONFIGURATION_INPUTS_DIGEST = CAPTURE_DIGESTS[1] if CAPTURE_DIGESTS else configu
 )
 
 # --- The one project region artifact (ADR 0006) -------------------------------
-# Splatted into rule 0.02 below, byte-identical to 1.02 / 2.02 / 3.03 except
+# Splatted into rule 0.01 below, byte-identical to 1.01 / 2.01 / 3.03 except
 # message/log/benchmark. tests/test_region_rule.py parses every workflow and
 # fails on ANY other difference.
 REGION = region_rule(
@@ -201,7 +201,7 @@ SPATIAL_UNITS = spatial_units_rule(
 # --- One climate store per candidate source -----------------------------------
 # Built from the SAME factory the other three workflows splat, once per source.
 # For `shared.clim_historical` the resulting spec is identical to the one WF1's
-# rule 1.04 declares -- same script, inputs, params and outputs -- so the store
+# rule 1.03 declares -- same script, inputs, params and outputs -- so the store
 # this workflow writes is the store WF1 and WF3 read, at the same path, and
 # whichever workflow runs first builds it.
 #
@@ -251,25 +251,23 @@ CLIMATE_STORES = {
 # `ls logs/` sorts wf0, wf1, wf2, wf3 in execution order without renumbering
 # the three that already exist.
 #
-# 0.07-0.09 ARE RESERVED, not missing: the station-sampling, observation
-# comparison and Budyko rules land under them in this same milestone. A gap that
-# closes within one landing is cheaper than renumbering the gathers afterwards,
-# which naming.md calls a migration rather than an edit. 0.06 was part of that
-# band until 2026-08-17, when the cross-source comparison took it.
+# No numbers are reserved: the reserved 0.07-0.09 band was dropped in the
+# 2026-09-24 rule-naming migration. The evaluation rules (t2608181139) take
+# numbers when they are built.
 #
 # DO NOT RENUMBER TO INSERT A RULE. Use a letter suffix (0.04b).
 
 # --- log layout ---------------------------------------------------------------
-# Every logging rule writes a PART under logs/_parts/, and rule 0.11 merges the
+# Every logging rule writes a PART under logs/_parts/, and rule 0.07 merges the
 # parts into ONE logs/wf0_analyze_climate.log, then deletes them.
 #
 # LOG_RULES is the merge order: rule LABELS, not part paths, and for a fan-out
-# rule the label is SINGULAR. Rules 0.04 and 0.05 are generated once per
+# rule the label is SINGULAR. Rules 0.03 and 0.04 are generated once per
 # candidate source, so each writes into a DIRECTORY named for the label
-# (`0.04_extract_historical_climate/<source>.log`) and merge_logs lists that
+# (`0.03_extract_climate_datasets/<source>.log`) and merge_logs lists that
 # directory to find its members -- the fan-out width lives only in the rule that
-# owns it. Same shape as WF3's `3.15_run_wflow`, whose rule identifiers are
-# `run_wflow_batch_<b>`.
+# owns it. Same shape as WF4's `4.05_run_wflow_simulations`, whose rule
+# identifiers are `run_wflow_simulations_batch_<b>`.
 #
 # The list is built by the RuleRegistry below, one registration per rule, and
 # tests/test_log_rules_contract.py asserts it in BOTH directions and in
@@ -302,17 +300,17 @@ declare_path_tokens(
 declare_project_root(project_dir)
 RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
 LOG_RULES = RULES.log_rules
-DELINEATE_REGION = RULES.logged("0.02", "delineate_region")
-DELINEATE_SPATIAL_UNITS = RULES.logged("0.03", "delineate_spatial_units")
-EXTRACT_HISTORICAL_CLIMATE = RULES.logged("0.04", "extract_historical_climate", summary="clip global climate to the basin")
-PLOT_CLIMATE_SOURCE = RULES.logged("0.05", "plot_climate_source")
+DELINEATE_REGION = RULES.logged("0.01", "delineate_region")
+DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers")
+EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="clip global climate to the basin")
+PLOT_CLIMATE_DATASETS = RULES.logged("0.04", "plot_climate_datasets")
 
-# Rule 0.06 exists only when there is more than one source to compare, so it
+# Rule 0.05 exists only when there is more than one source to compare, so it
 # is registered -- and its label enters LOG_RULES -- only then.
 if len(CANDIDATE_SOURCES) > 1:
-    COMPARE_CLIMATE_SOURCES = RULES.logged("0.06", "compare_climate_sources", summary="compare the candidate climate datasets")
-GATHER_BENCHMARKS = RULES.banner_only("0.10", "gather_benchmarks")
-GATHER_LOGS = RULES.banner_only("0.11", "gather_logs")
+    COMPARE_CLIMATE_DATASETS = RULES.logged("0.05", "compare_climate_datasets", summary="compare the candidate climate datasets")
+GATHER_BENCHMARKS = RULES.banner_only("0.06", "gather_benchmarks")
+GATHER_LOGS = RULES.banner_only("0.07", "gather_logs")
 
 
 SOURCE_PLOTS = {
@@ -323,7 +321,7 @@ SOURCE_PLOTS = {
 }
 
 
-# --- the cross-source comparison (rule 0.06) ----------------------------------
+# --- the cross-source comparison (rule 0.05) ----------------------------------
 # ONE directory beside the per-source stores, not inside any of them: it belongs
 # to no single source, and `data/climate/historical/` is already the root this
 # workflow tokenizes its paths against (see declare_path_tokens above).
@@ -347,16 +345,16 @@ COMPARISON_OUTPUTS = (
 # upstream of them and none feeds another rule, which is exactly the input set
 # the two gather rules need and what schedules each of them LAST.
 #
-# ONE representative figure per source is enough: rule 0.05 writes its whole set
+# ONE representative figure per source is enough: rule 0.04 writes its whole set
 # as a single job, so requesting one schedules the rest. The map is the
 # representative because every source draws one, precipitation-only included.
 WF0_TERMINALS = [
     *[SOURCE_PLOTS[s].figures[0] for s in CANDIDATE_SOURCES],
-    # Empty on a single-source run, where rule 0.06 is not declared either.
+    # Empty on a single-source run, where rule 0.05 is not declared either.
     *COMPARISON_OUTPUTS,
     # The vector foundation is a LEAF here -- nothing in this workflow consumes
     # `basins.geojson` downstream of the figures -- so without this edge rule
-    # 0.03 could run in parallel with the merge and strand its log part under
+    # 0.02 could run in parallel with the merge and strand its log part under
     # `_parts/`. That is the defect WF1, WF2 and WF3 each recorded in turn.
     SPATIAL_UNITS.outputs["basins"],
 ]
@@ -374,8 +372,8 @@ rule all:
     input:
         WF0_TARGETS,
 
-# 0.02  delineate_region — the one project region artifact (ADR 0006).
-# Byte-identical to 1.02, 2.02 and 3.03 except message/log/benchmark; everything
+# 0.01  delineate_region — the one project region artifact (ADR 0006).
+# Byte-identical to 1.01, 2.01 and 3.03 except message/log/benchmark; everything
 # else is splatted from REGION so the four cannot drift.
 rule delineate_region:
     message: DELINEATE_REGION.banner()
@@ -391,14 +389,14 @@ rule delineate_region:
         DELINEATE_REGION.benchmark(),
     script: REGION.script
 
-# 0.03  delineate_spatial_units — the shared vector foundation (ADR 0006 §8).
-# Byte-identical to 1.03, 2.03 and 3.04 except message/log/benchmark.
+# 0.02  delineate_subbasins_and_rivers — the shared vector foundation (ADR 0006 §8).
+# Byte-identical to 1.02, 2.02 and 3.04 except message/log/benchmark.
 #
-# The VECTOR half only, as in WF2: the raster half (rule 1.06) stays WF1-only,
+# The VECTOR half only, as in WF2: the raster half (rule 1.05) stays WF1-only,
 # so a climate-only run obtains basin and subbasin boundaries without reading
 # `vito`, `modis_lai` or `soilgrids` at all.
-rule delineate_spatial_units:
-    message: DELINEATE_SPATIAL_UNITS.banner()
+rule delineate_subbasins_and_rivers:
+    message: DELINEATE_SUBBASINS_AND_RIVERS.banner()
     input:
         **SPATIAL_UNITS.inputs,
     params:
@@ -406,14 +404,14 @@ rule delineate_spatial_units:
     output:
         **SPATIAL_UNITS.outputs,
     log:
-        DELINEATE_SPATIAL_UNITS.log(),
+        DELINEATE_SUBBASINS_AND_RIVERS.log(),
     benchmark:
-        DELINEATE_SPATIAL_UNITS.benchmark(),
+        DELINEATE_SUBBASINS_AND_RIVERS.benchmark(),
     script: SPATIAL_UNITS.script
 
 
-# 0.04  extract_historical_climate — ONE rule per candidate source.
-# 0.05  plot_climate_source        — the canonical figure set for that source.
+# 0.03  extract_climate_datasets — ONE rule per candidate source.
+# 0.04  plot_climate_datasets        — the canonical figure set for that source.
 #
 # GENERATED IN A LOOP RATHER THAN WILDCARDED, and the reason is the store's
 # output SET, not style: `climate_store_rule` returns `oro_nc` for a selected
@@ -422,10 +420,10 @@ rule delineate_spatial_units:
 # these roles. Generating a concrete rule per source takes the shape from the
 # spec instead.
 #
-# Not a new mechanism: WF3 declares its batch fan-out the same way
-# (`run_stress_test.smk`, `run_wflow_batch_<b>`).
+# Not a new mechanism: WF4 declares its batch fan-out the same way
+# (`simulate_and_metrics.smk`, `run_wflow_simulations_batch_<b>`).
 #
-# For `shared.clim_historical` the generated 0.04 is the shared producer
+# For `shared.clim_historical` the generated 0.03 is the shared producer
 # contract with a different rule NAME -- same script, inputs, params, outputs.
 # tests/test_climate_store_contract.py pins that equivalence rather than
 # byte-identity of the declaration, which is the honest form of the claim.
@@ -435,8 +433,8 @@ for _source in CANDIDATE_SOURCES:
     _spec = CLIMATE_STORES[_source]
 
     rule:
-        name: EXTRACT_HISTORICAL_CLIMATE.job_name(_source)
-        message: EXTRACT_HISTORICAL_CLIMATE.banner(part=_source)
+        name: EXTRACT_CLIMATE_DATASETS.job_name(_source)
+        message: EXTRACT_CLIMATE_DATASETS.banner(part=_source)
         input:
             **_spec.inputs,
         params:
@@ -444,17 +442,17 @@ for _source in CANDIDATE_SOURCES:
         output:
             **_spec.outputs,
         log:
-            EXTRACT_HISTORICAL_CLIMATE.log(_source),
+            EXTRACT_CLIMATE_DATASETS.log(_source),
         benchmark:
-            EXTRACT_HISTORICAL_CLIMATE.benchmark(_source),
+            EXTRACT_CLIMATE_DATASETS.benchmark(_source),
         script:
             _spec.script
 
     _plot = SOURCE_PLOTS[_source]
 
     rule:
-        name: PLOT_CLIMATE_SOURCE.job_name(_source)
-        message: PLOT_CLIMATE_SOURCE.banner(part=_source)
+        name: PLOT_CLIMATE_DATASETS.job_name(_source)
+        message: PLOT_CLIMATE_DATASETS.banner(part=_source)
         input:
             **_plot.inputs,
         output:
@@ -463,13 +461,13 @@ for _source in CANDIDATE_SOURCES:
         params:
             **_plot.params,
         log:
-            PLOT_CLIMATE_SOURCE.log(_source),
+            PLOT_CLIMATE_DATASETS.log(_source),
         benchmark:
-            PLOT_CLIMATE_SOURCE.benchmark(_source),
+            PLOT_CLIMATE_DATASETS.benchmark(_source),
         script: _plot.script
 
 
-# 0.06  compare_climate_sources — every candidate on ONE axis, plus the table.
+# 0.05  compare_climate_datasets — every candidate on ONE axis, plus the table.
 #
 # Canonical source figures use source-local scales in both WF0 and WF1.
 # This separate product places every candidate on common axes for comparison.
@@ -478,19 +476,19 @@ for _source in CANDIDATE_SOURCES:
 # appended to LOG_RULES above.
 if len(CANDIDATE_SOURCES) > 1:
 
-    rule compare_climate_sources:
-        message: COMPARE_CLIMATE_SOURCES.banner()
+    rule compare_climate_datasets:
+        message: COMPARE_CLIMATE_DATASETS.banner()
         input:
             climate_ncs = [CLIMATE_STORES[s].outputs["climate_nc"] for s in CANDIDATE_SOURCES],
             # The DOMAIN the figures average over: the cells each source's own
             # grid contributes to the basin. Without it the means are taken over
             # each store's buffered bbox, and the buffer is counted in CELLS --
             # so a coarse grid reaches physically further out and the comparison
-            # is partly of neighbouring climate. Rule 0.04 already writes this,
+            # is partly of neighbouring climate. Rule 0.03 already writes this,
             # and weathergenr already averages over it.
             basin_cells = [CLIMATE_STORES[s].outputs["basin_cells"] for s in CANDIDATE_SOURCES],
             # The subbasin polygons the per-subbasin comparison figures reduce
-            # over -- rule 0.03's shared foundation, the same layer rule 0.05
+            # over -- rule 0.02's shared foundation, the same layer rule 0.04
             # takes its subbasin set from, so both families cover the same
             # areas under the same ids.
             subbasins = SPATIAL_UNITS.outputs["subbasins"],
@@ -507,19 +505,19 @@ if len(CANDIDATE_SOURCES) > 1:
             data_sources = DATA_SOURCES,
         output:
             COMPARISON_OUTPUTS,
-            # As in rule 0.05: the per-subbasin figures are named for
+            # As in rule 0.04: the per-subbasin figures are named for
             # delineation ids, so their count is a runtime fact.
             directory(COMPARISON_SUBBASIN_DIR),
         log:
-            COMPARE_CLIMATE_SOURCES.log(),
+            COMPARE_CLIMATE_DATASETS.log(),
         benchmark:
-            COMPARE_CLIMATE_SOURCES.benchmark(),
+            COMPARE_CLIMATE_DATASETS.benchmark(),
         script:
             "blueearth_cst/climate_analysis/compare_sources.py"
 
 
 # --- benchmark gather ---------------------------------------------------------
-# 0.10  gather_benchmarks — merge the WF0 parts into one benchmarks table.
+# 0.06  gather_benchmarks — merge the WF0 parts into one benchmarks table.
 rule gather_benchmarks:
     message: GATHER_BENCHMARKS.banner()
     input:
@@ -532,9 +530,9 @@ rule gather_benchmarks:
     script: "blueearth_cst/shared/merge_benchmarks.py"
 
 # --- log gather ---------------------------------------------------------------
-# 0.11  gather_logs — merge every WF0 log part into ONE workflow log.
+# 0.07  gather_logs — merge every WF0 log part into ONE workflow log.
 #
-# Same rule as WF1's 1.17, WF2's 2.09 and WF3's 3.18, against the same script;
+# Same rule as WF1's 1.18, WF2's 2.08 and WF3's 3.18, against the same script;
 # only the label list, the parts dir and the output name differ. `input:` is
 # WF0_TERMINALS, which is what schedules it LAST. The parts stay in `params:` --
 # they are `log:` files, which Snakemake does not track in the DAG, so naming

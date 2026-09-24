@@ -1,6 +1,6 @@
 """One table and one figure per variable, COMPARING the candidate climate sources.
 
-Rule ``compare_climate_sources``'s script (``analyze_climate.smk`` 0.06). WF0
+Rule ``compare_climate_datasets``'s script (``analyze_climate.smk`` 0.06). WF0
 draws canonical source-local figures in each store's directory. This separate
 product places every source on common axes, plus a summary table describing
 each dataset.
@@ -53,7 +53,7 @@ if TYPE_CHECKING:
 
 # matplotlib, numpy, pandas and xarray are DEFERRED into the fifteen functions
 # that use them. `analyze_climate.smk` imports this module at PARSE time for
-# `comparison_outputs` alone -- rule 0.06's output declaration, pure Python over
+# `comparison_outputs` alone -- rule 0.05's output declaration, pure Python over
 # the registries below -- so a module-level import bought the numeric and
 # plotting stack on every WF0 dry-run in order to list filenames.
 #
@@ -186,7 +186,7 @@ def comparison_table_names() -> list:
 
 
 def comparison_outputs(sources: Sequence[str]) -> list:
-    """Every file rule 0.06 writes for ``sources``, table first."""
+    """Every file rule 0.05 writes for ``sources``, table first."""
     return comparison_table_names() + comparison_figure_names(
         comparison_variables(sources)
     )
@@ -261,7 +261,7 @@ def _catalog_entries(data_sources) -> dict:
     Keyed on the library rather than on ``(library, source)``, which is what the
     first version did — and `to_dict()` parses the WHOLE library either way, so
     that cached the answer while re-paying the cost for every row. Measured on
-    the rapid fixture: rule 0.06 took 18 s, of which 12 s was parsing the same
+    the rapid fixture: rule 0.05 took 18 s, of which 12 s was parsing the same
     catalog twice for two sources.
     """
     key = str(data_sources)
@@ -495,7 +495,7 @@ def write_comparison_table(table: "pd.DataFrame", out_dir: Union[str, Path]) -> 
 
 
 # The basin mask itself comes from `shared.grid_cells.cells_csv_mask`, the one
-# predicate rule 0.05 also averages over — which is what makes this figure's era5
+# predicate rule 0.04 also averages over — which is what makes this figure's era5
 # line and `era5_precip_annual_ts_basin_avg.png` show the SAME period mean. They
 # did not before: measured 2026-08-17, the per-source figure said 2,546 mm/y over
 # the buffered extraction while this one said 2,722 over the basin.
@@ -843,7 +843,7 @@ def compare_climate_sources(
         variables,
         anchor,
         basin_cells,
-        # The SAME vector foundation rule 0.05 draws its subbasin set from, so
+        # The SAME vector foundation rule 0.04 draws its subbasin set from, so
         # the two families cover the same areas under the same ids. Passed
         # directly by a caller that already holds the layer (the tests); read
         # from `geoms_dir` by the rule, which holds a path.
@@ -867,12 +867,12 @@ if __name__ == "__main__":
                 dict(zip(sm.params.sources, sm.input.climate_ncs)),
                 sm.params.out_dir,
                 anchor=water_year_end_anchor(sm.params.water_year_start),
-                # In `params`, not `input`, for the same reason rule 0.05 keeps
-                # its catalog there: the freshness boundary is rule 0.04's
+                # In `params`, not `input`, for the same reason rule 0.04 keeps
+                # its catalog there: the freshness boundary is rule 0.03's
                 # catalog edge (ext2-01), and duplicating it here would rebuild
                 # the table on every catalog touch with no extraction change.
                 data_sources=sm.params.data_sources,
-                # A real `input`, unlike the catalog: it is rule 0.04's own
+                # A real `input`, unlike the catalog: it is rule 0.03's own
                 # output and changes with the extraction it describes.
                 basin_cells=dict(zip(sm.params.sources, sm.input.basin_cells)),
                 geoms_dir=sm.params.geoms_dir,

@@ -104,7 +104,7 @@ def summary_climate_proj(
     # numbers, long format, per-row provenance, plus the future level the wide
     # form never carried. Verified before removal that nothing outside this
     # workflow read them -- the generation/simulation workflows and
-    # `blueearth_cst/experiment/` reference them zero times, and rule 2.06
+    # `blueearth_cst/experiment/` reference them zero times, and rule 2.05
     # declared the `.nc` as an input it never opened.
     #
     # The `.nc` survives as an intermediate because the tidy reshape reads it

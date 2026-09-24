@@ -16,10 +16,10 @@ PROJECT = "test_case/test_rapid"
 #
 # A TWO-SOURCE comparison run (era5 + chirps), everything to build. Chosen
 # because it exercises what WF2 could not:
-#   * rules 0.04 and 0.05 are built in a Python loop, so three rule objects
+#   * rules 0.03 and 0.04 are built in a Python loop, so three rule objects
 #     share one number and collapse to one plan row (`_plan_rule_name`);
 #   * a fresh run has NO up-to-date rules, so the gutter is dropped entirely;
-#   * `0.04b` sorts between `0.04` and `0.05` on the lexicographic rule order;
+#   * `0.04b` sorts between `0.03` and `0.04` on the lexicographic rule order;
 #   * two real WARNING rows, which WF2's transcript never reached.
 # ==========================================================================
 
@@ -34,50 +34,48 @@ WF0 = Workflow(
         "climate": f"{PROJECT}/data/climate/historical",
     },
     rules=[
-        Rule("0.01", "snapshot_config"),
-        Rule("0.02", "delineate_region"),
-        Rule("0.03", "delineate_spatial_units"),
+        Rule("0.01", "delineate_region"),
+        Rule("0.02", "delineate_subbasins_and_rivers"),
         Rule(
-            "0.04",
-            "extract_historical_climate_era5",
+            "0.03",
+            "extract_climate_datasets_era5",
             summary="clip global climate to the basin",
         ),
         Rule(
-            "0.04",
-            "extract_historical_climate_chirps",
+            "0.03",
+            "extract_climate_datasets_chirps",
             summary="clip global climate to the basin",
         ),
         Rule(
-            "0.04b",
+            "0.03b",
             "derive_plot_scales",
             summary="one plotting scale per variable, across sources",
         ),
-        Rule("0.05", "plot_climate_source_era5"),
-        Rule("0.05", "plot_climate_source_chirps"),
+        Rule("0.04", "plot_climate_datasets_era5"),
+        Rule("0.04", "plot_climate_datasets_chirps"),
         Rule(
-            "0.06",
-            "compare_climate_sources",
+            "0.05",
+            "compare_climate_datasets",
             summary="compare the candidate climate datasets",
         ),
-        Rule("0.10", "gather_benchmarks"),
-        Rule("0.11", "gather_logs"),
+        Rule("0.06", "gather_benchmarks"),
+        Rule("0.07", "gather_logs"),
     ],
     stats="""Job stats:
 job                                count
 -------------------------------  -------
 all                                    1
-snapshot_config                        1
 delineate_region                       1
-delineate_spatial_units                1
-extract_historical_climate_era5        1
-extract_historical_climate_chirps      1
+delineate_subbasins_and_rivers                1
+extract_climate_datasets_era5        1
+extract_climate_datasets_chirps      1
 derive_plot_scales                     1
-plot_climate_source_era5               1
-plot_climate_source_chirps             1
-compare_climate_sources                1
+plot_climate_datasets_era5               1
+plot_climate_datasets_chirps             1
+compare_climate_datasets                1
 gather_benchmarks                      1
 gather_logs                            1
-total                                 12
+total                                 11
 """,
     targets=[
         f"{PROJECT}/data/climate/historical/era5/plots/era5_precip_map_basin.png",
@@ -90,7 +88,6 @@ total                                 12
         f"{PROJECT}/benchmarks/wf0_benchmarks.md",
     ],
     jobs=[
-        Job("snapshot_config", seconds=1),
         # spatial/products.py: `Delineating region ...`, `Wrote region: ...`
         Job(
             "delineate_region",
@@ -106,7 +103,7 @@ total                                 12
         ),
         # spatial/products.py:873, :868 (WARNING), plus the basin-cells row
         Job(
-            "delineate_spatial_units",
+            "delineate_subbasins_and_rivers",
             seconds=7,
             body=(
                 (
@@ -129,7 +126,7 @@ total                                 12
         ),
         # climate_analysis/extract_historical_climate.py
         Job(
-            "extract_historical_climate_era5",
+            "extract_climate_datasets_era5",
             seconds=22,
             body=(
                 ("climate", "Extracting historical climate grid", 1),
@@ -142,7 +139,7 @@ total                                 12
             ),
         ),
         Job(
-            "extract_historical_climate_chirps",
+            "extract_climate_datasets_chirps",
             seconds=34,
             body=(
                 ("climate", "Extracting historical climate grid", 1),
@@ -176,7 +173,7 @@ total                                 12
         # climate_analysis/plot_climate_source.py:276, and the figure bundle
         # row from snake_utils.py:4055
         Job(
-            "plot_climate_source_era5",
+            "plot_climate_datasets_era5",
             seconds=31,
             body=(
                 (
@@ -190,7 +187,7 @@ total                                 12
             ),
         ),
         Job(
-            "plot_climate_source_chirps",
+            "plot_climate_datasets_chirps",
             seconds=19,
             body=(
                 (
@@ -210,7 +207,7 @@ total                                 12
         ),
         # climate_analysis/compare_sources.py -- including its WARNING at :713
         Job(
-            "compare_climate_sources",
+            "compare_climate_datasets",
             seconds=12,
             body=(
                 ("compare", "Comparing 2 sources (chirps, era5) on precip", 1),
@@ -256,39 +253,40 @@ WF2 = Workflow(
     config="test_case/project_config_rapid.yml",
     elapsed=94,
     rules=[
-        Rule("2.01", "snapshot_config"),
-        Rule("2.02", "delineate_region"),
-        Rule("2.03", "delineate_spatial_units"),
+        Rule("2.01", "delineate_region"),
+        Rule("2.02", "delineate_subbasins_and_rivers"),
         Rule(
-            "2.04", "fetch_gcm_slice", "series {series_key}", "download one CMIP6 slice"
+            "2.03",
+            "fetch_cmip6_projections",
+            "series {series_key}",
+            "download one CMIP6 slice",
         ),
         Rule(
-            "2.05",
-            "reduce_gcm_series",
+            "2.04",
+            "reduce_to_basin_averages",
             "series {series_key}",
             "reduce the slice to a basin-average series",
         ),
         Rule(
-            "2.06",
+            "2.05",
             "derive_change_factors",
             summary="compare each horizon against the reference period",
         ),
-        Rule("2.07", "plot_gcm_timeseries"),
-        Rule("2.08", "gather_benchmarks"),
-        Rule("2.09", "gather_logs"),
+        Rule("2.06", "plot_climate_projections"),
+        Rule("2.07", "gather_benchmarks"),
+        Rule("2.08", "gather_logs"),
     ],
     stats="""Job stats:
 job                       count
 ----------------------  -------
 all                           1
-snapshot_config               1
-fetch_gcm_slice               4
-reduce_gcm_series             4
+fetch_cmip6_projections               4
+reduce_to_basin_averages             4
 derive_change_factors         1
-plot_gcm_timeseries           1
+plot_climate_projections           1
 gather_benchmarks             1
 gather_logs                   1
-total                        14
+total                        13
 """,
     targets=[
         f"{PROJECT}/climate_projections/summary/rapid_change_factors_annual.csv",
@@ -300,10 +298,9 @@ total                        14
         f"{PROJECT}/benchmarks/wf2_analyze_projections.csv",
     ],
     jobs=[
-        Job("snapshot_config", seconds=1),
         # fetch_gcm_raw.py:766, :848, :1001, :1032
         Job(
-            "fetch_gcm_slice",
+            "fetch_cmip6_projections",
             seconds=3,
             wildcards={"series_key": "cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp245_r1i1p1f1"},
             body=(
@@ -319,19 +316,19 @@ total                        14
             ),
         ),
         Job(
-            "fetch_gcm_slice",
+            "fetch_cmip6_projections",
             seconds=24,
             wildcards={"series_key": "cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp585_r1i1p1f1"},
         ),
         Job(
-            "fetch_gcm_slice",
+            "fetch_cmip6_projections",
             seconds=19,
             wildcards={
                 "series_key": "cmip6_EC-Earth-Consortium_EC-Earth3_ssp245_r1i1p1f1"
             },
         ),
         Job(
-            "fetch_gcm_slice",
+            "fetch_cmip6_projections",
             seconds=23,
             wildcards={
                 "series_key": "cmip6_EC-Earth-Consortium_EC-Earth3_ssp585_r1i1p1f1"
@@ -339,19 +336,19 @@ total                        14
         ),
         # get_stats_climate_proj.py: `{model} {scenario} {member} reducing raw -> series`
         Job(
-            "reduce_gcm_series",
+            "reduce_to_basin_averages",
             seconds=3,
             wildcards={"series_key": "cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp245_r1i1p1f1"},
             body=(("reduce", "ACCESS-CM2 ssp245 r1i1p1f1 reducing raw -> series", 1),),
         ),
         Job(
-            "reduce_gcm_series",
+            "reduce_to_basin_averages",
             seconds=3,
             wildcards={"series_key": "cmip6_CSIRO-ARCCSS_ACCESS-CM2_ssp585_r1i1p1f1"},
             body=(("reduce", "ACCESS-CM2 ssp585 r1i1p1f1 reducing raw -> series", 1),),
         ),
         Job(
-            "reduce_gcm_series",
+            "reduce_to_basin_averages",
             seconds=2,
             wildcards={
                 "series_key": "cmip6_EC-Earth-Consortium_EC-Earth3_ssp245_r1i1p1f1"
@@ -359,7 +356,7 @@ total                        14
             body=(("reduce", "EC-Earth3 ssp245 r1i1p1f1 reducing raw -> series", 1),),
         ),
         Job(
-            "reduce_gcm_series",
+            "reduce_to_basin_averages",
             seconds=3,
             wildcards={
                 "series_key": "cmip6_EC-Earth-Consortium_EC-Earth3_ssp585_r1i1p1f1"
@@ -396,7 +393,7 @@ total                        14
         ),
         # plot_proj_timeseries.py:202, :212; bundle row snake_utils.py:4055
         Job(
-            "plot_gcm_timeseries",
+            "plot_climate_projections",
             seconds=4,
             body=(
                 ("plot", "Reading the monthly change-factor table", 1),
@@ -433,49 +430,52 @@ WF1 = Workflow(
         "climate": f"{PROJECT}/data/climate/historical/era5",
     },
     rules=[
-        Rule("1.01", "snapshot_config"),
-        Rule("1.02", "delineate_region"),
-        Rule("1.03", "delineate_spatial_units"),
+        Rule("1.01", "delineate_region"),
+        Rule("1.02", "delineate_subbasins_and_rivers"),
         Rule(
-            "1.04",
-            "extract_historical_climate",
+            "1.03",
+            "extract_climate_datasets",
             summary="clip the global climate dataset to the basin",
         ),
-        Rule("1.05", "plot_climate_source"),
-        Rule("1.06", "prepare_spatial_maps"),
+        Rule("1.04", "plot_climate_datasets"),
+        Rule("1.05", "prepare_land_and_soil_maps"),
         Rule(
-            "1.07",
+            "1.06",
             "build_wflow_model",
             summary="parameterize Wflow-SBM from global data",
         ),
         Rule(
-            "1.08",
+            "1.07",
             "add_reservoirs_lakes_glaciers",
             summary="add waterbodies to the model",
         ),
-        Rule("1.09", "declare_wflow_outputs"),
+        Rule("1.08", "declare_gauges_and_outputs"),
         Rule(
-            "1.10",
+            "1.09",
             "add_climate_forcing",
             summary="build the forcing netCDF for the run period",
         ),
-        Rule("1.11", "write_outlet_index"),
-        Rule("1.12", "plot_basin_map"),
-        Rule("1.13", "plot_forcing"),
-        Rule("1.14", "run_wflow", summary="run the model over the simulation window"),
-        Rule("1.14b", "export_wflow_tables"),
-        Rule("1.15", "plot_wflow_evaluation"),
-        Rule("1.15b", "write_run_metadata"),
-        Rule("1.16", "gather_benchmarks"),
-        Rule("1.17", "gather_logs"),
+        Rule("1.10", "write_gauge_index"),
+        Rule("1.11", "plot_basin_map"),
+        Rule("1.12", "plot_model_forcing"),
+        Rule(
+            "1.13",
+            "run_historical_simulation",
+            summary="run the model over the simulation window",
+        ),
+        Rule("1.14", "export_simulation_tables"),
+        Rule("1.15", "plot_model_evaluation"),
+        Rule("1.16", "write_run_metadata"),
+        Rule("1.17", "gather_benchmarks"),
+        Rule("1.18", "gather_logs"),
     ],
     stats="""Job stats:
 job                      count
 ---------------------  -------
 all                          1
-run_wflow                    1
-export_wflow_tables          1
-plot_wflow_evaluation        1
+run_historical_simulation                    1
+export_simulation_tables          1
+plot_model_evaluation        1
 gather_benchmarks            1
 gather_logs                  1
 total                        6
@@ -493,7 +493,7 @@ total                        6
         # the heartbeat when a redraw gap gets long. Only the LAST bar frame
         # survives on a captured transcript; one mid-run frame is shown here.
         Job(
-            "run_wflow",
+            "run_historical_simulation",
             seconds=180,
             body=(
                 # snake_utils.py:2655 -- `format_elapsed`, i.e. h:mm:ss, the same
@@ -505,18 +505,18 @@ total                        6
                 # here put a word on the transcript that no run prints.
                 (
                     "heartbeat",
-                    "Rule 1.14: run_wflow still running, 0:04:00 elapsed",
+                    "Rule 1.13: run_historical_simulation still running, 0:04:00 elapsed",
                     240,
                 ),
             ),
         ),
         Job(
-            "export_wflow_tables",
+            "export_simulation_tables",
             seconds=9,
             body=(("tables", "Wrote 4 table(s) -> <model>/run_default", 6),),
         ),
         Job(
-            "plot_wflow_evaluation",
+            "plot_model_evaluation",
             seconds=26,
             body=(
                 (
@@ -539,20 +539,20 @@ total                        6
     # does to it is relativize its paths onto the run's tokens, which is the
     # behaviour the failure transcript exists to show.
     failure=Failure(
-        rule="run_wflow",
+        rule="run_historical_simulation",
         seconds=9,
         body=(
             (
                 "heartbeat",
-                "Rule 1.14: run_wflow still running, 0:04:00 elapsed",
+                "Rule 1.13: run_historical_simulation still running, 0:04:00 elapsed",
                 240,
             ),
         ),
-        error="""Error in rule run_wflow:
+        error="""Error in rule run_historical_simulation:
     jobid: 1
     input: test_case/test_rapid/hydrology_model/wflow_sbm.toml
     output: test_case/test_rapid/hydrology_model/run_default/output.csv
-    log: test_case/test_rapid/logs/_parts/1.14_run_wflow.log (check log file(s) for error details)
+    log: test_case/test_rapid/logs/_parts/1.13_run_wflow.log (check log file(s) for error details)
     shell:
         julia --project=julia_env -e "using Wflow; Wflow.run()" test_case/test_rapid/hydrology_model/wflow_sbm.toml
         (one of the commands exited with non-zero exit code; note that snakemake uses bash strict mode!)
@@ -585,15 +585,15 @@ WF3 = Workflow(
     },
     rules=[
         Rule("3.01", "delineate_region"),
-        Rule("3.02", "extract_historical_climate"),
+        Rule("3.02", "extract_climate_datasets"),
         Rule("3.03", "prepare_perturbation_grid"),
         Rule(
             "3.04",
-            "prepare_collection_sources",
+            "snapshot_generation_inputs",
             summary="fingerprint the generation inputs into a scenario request",
         ),
-        Rule("3.05", "initialize_scenario_collection"),
-        Rule("3.06", "prepare_weathergen_config"),
+        Rule("3.05", "claim_scenario_collection"),
+        Rule("3.06", "prepare_weather_generator_settings"),
         Rule(
             "3.07",
             "generate_weather_realizations",
@@ -606,26 +606,26 @@ WF3 = Workflow(
             "apply one stress-test member to one realization",
         ),
         Rule(
-            "3.09",
+            "3.08b",
             "retain_scenario_forcing",
             "collection {collection_id} | run {run_id}",
         ),
         Rule(
-            "3.10",
+            "3.09",
             "publish_scenario_collection",
             "collection {collection_id}",
             "seal the collection and make it immutable",
         ),
         Rule("3.11", "gather_logs"),
-        Rule("3.12", "gather_benchmarks"),
+        Rule("3.10", "gather_benchmarks"),
     ],
     stats="""Job stats:
 job                              count
 -----------------------------  -------
 all                                  1
-prepare_collection_sources           1
-initialize_scenario_collection       1
-prepare_weathergen_config            1
+snapshot_generation_inputs           1
+claim_scenario_collection       1
+prepare_weather_generator_settings            1
 generate_weather_realizations        1
 perturb_climate_realization          8
 retain_scenario_forcing              8
@@ -642,7 +642,7 @@ total                               24
     jobs=[
         # scenario_collection.py / generation_plan.py
         Job(
-            "prepare_collection_sources",
+            "snapshot_generation_inputs",
             seconds=5,
             body=(
                 (
@@ -653,9 +653,9 @@ total                               24
                 ),
             ),
         ),
-        Job("initialize_scenario_collection", seconds=2),
+        Job("claim_scenario_collection", seconds=2),
         Job(
-            "prepare_weathergen_config",
+            "prepare_weather_generator_settings",
             seconds=3,
             body=(
                 (
@@ -797,62 +797,70 @@ WF4 = Workflow(
     # `metrics-only` (simulation_runner.py:29) -- not the `--target` value.
     details={"experiment": "experiment_rapid", "operation": "simulate-and-metrics"},
     rules=[
-        Rule("4.01", "write_model_reference"),
-        Rule("4.02", "check_model_reference"),
+        Rule("4.01", "write_model_fingerprint"),
+        Rule("4.02", "check_model_unchanged"),
         Rule(
             "4.03",
-            "freeze_wflow_simulation",
+            "snapshot_simulation_inputs",
             summary="pin the simulation's inputs so the experiment cannot drift",
         ),
         Rule(
             "4.04",
-            "downscale_climate_realization",
+            "downscale_scenario_series",
             "run {run_id}",
             "downscale the perturbed climate onto the model grid",
         ),
-        Rule("4.05", "run_wflow_batch_0", "4 members", "run Wflow for one batch"),
-        Rule("4.05", "run_wflow_batch_1", "4 members", "run Wflow for one batch"),
+        Rule(
+            "4.05",
+            "run_wflow_simulations_batch_0",
+            "4 members",
+            "run Wflow for one batch",
+        ),
+        Rule(
+            "4.05",
+            "run_wflow_simulations_batch_1",
+            "4 members",
+            "run Wflow for one batch",
+        ),
         Rule(
             "4.06",
-            "publish_native_responses",
+            "publish_wflow_outputs",
             summary="inventory the retained native runs",
         ),
-        Rule("4.07", "responses"),
-        Rule("4.08", "prepare_metric_plan", "metric_request {metric_request_id}"),
+        Rule("4.07", "prepare_indicator_plan", "metric_request {metric_request_id}"),
         Rule(
-            "4.09",
-            "publish_metric_set",
+            "4.08",
+            "derive_system_indicators",
             "metric_set {metric_set_id}",
             "reduce the retained responses to the immutable metric set",
         ),
-        Rule("4.10", "metrics"),
-        Rule("4.11", "gather_logs"),
-        Rule("4.12", "gather_benchmarks"),
+        Rule("4.09", "gather_logs"),
+        Rule("4.10", "gather_benchmarks"),
     ],
     stats="""Job stats:
 job                             count
 ----------------------------  -------
-write_model_reference               1
-check_model_reference               1
-freeze_wflow_simulation             1
-downscale_climate_realization       8
-run_wflow_batch_0                   1
-run_wflow_batch_1                   1
-publish_native_responses            1
-responses                           1
-prepare_metric_plan                 1
-publish_metric_set                  1
-metrics                             1
+write_model_fingerprint               1
+check_model_unchanged               1
+snapshot_simulation_inputs             1
+downscale_scenario_series       8
+run_wflow_simulations_batch_0                   1
+run_wflow_simulations_batch_1                   1
+publish_wflow_outputs            1
+simulations_only                    1
+prepare_indicator_plan                 1
+derive_system_indicators                  1
+simulations_and_indicators          1
 gather_logs                         1
 gather_benchmarks                   1
 total                              20
 """,
     targets=[],
     jobs=[
-        Job("write_model_reference", seconds=3),
+        Job("write_model_fingerprint", seconds=3),
         # check_model_reference.py:103
         Job(
-            "check_model_reference",
+            "check_model_unchanged",
             seconds=1,
             body=(
                 (
@@ -864,7 +872,7 @@ total                              20
         ),
         # simulation_record.py:321
         Job(
-            "freeze_wflow_simulation",
+            "snapshot_simulation_inputs",
             seconds=11,
             body=(
                 (
@@ -875,19 +883,19 @@ total                              20
                 ),
             ),
         ),
-        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "01"}),
-        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "02"}),
-        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "03"}),
-        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "04"}),
-        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "05"}),
-        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "06"}),
-        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "07"}),
-        Job("downscale_climate_realization", seconds=14, wildcards={"run_id": "08"}),
-        Job("run_wflow_batch_0", seconds=96),
-        Job("run_wflow_batch_1", seconds=93),
+        Job("downscale_scenario_series", seconds=14, wildcards={"run_id": "01"}),
+        Job("downscale_scenario_series", seconds=14, wildcards={"run_id": "02"}),
+        Job("downscale_scenario_series", seconds=14, wildcards={"run_id": "03"}),
+        Job("downscale_scenario_series", seconds=14, wildcards={"run_id": "04"}),
+        Job("downscale_scenario_series", seconds=14, wildcards={"run_id": "05"}),
+        Job("downscale_scenario_series", seconds=14, wildcards={"run_id": "06"}),
+        Job("downscale_scenario_series", seconds=14, wildcards={"run_id": "07"}),
+        Job("downscale_scenario_series", seconds=14, wildcards={"run_id": "08"}),
+        Job("run_wflow_simulations_batch_0", seconds=96),
+        Job("run_wflow_simulations_batch_1", seconds=93),
         # response_inventory.py:429
         Job(
-            "publish_native_responses",
+            "publish_wflow_outputs",
             seconds=7,
             body=(
                 (
@@ -897,10 +905,10 @@ total                              20
                 ),
             ),
         ),
-        Job("responses", seconds=1),
+        Job("simulations_only", seconds=1),
         # metric_plan.py:431
         Job(
-            "prepare_metric_plan",
+            "prepare_indicator_plan",
             seconds=3,
             wildcards={"metric_request_id": "3ad81f5c2e70"},
             body=(
@@ -913,7 +921,7 @@ total                              20
         ),
         # metric_plan.py:718, export_wflow_results.py:364
         Job(
-            "publish_metric_set",
+            "derive_system_indicators",
             seconds=19,
             wildcards={"metric_set_id": "9f41c7d0b6a2"},
             body=(
@@ -930,7 +938,7 @@ total                              20
                 ),
             ),
         ),
-        Job("metrics", seconds=1),
+        Job("simulations_and_indicators", seconds=1),
         Job("gather_logs", seconds=2),
         Job("gather_benchmarks", seconds=2),
     ],

@@ -1,13 +1,13 @@
-"""Assemble the hydromt forcing recipe and apply it — rules 1.07 + 1.08, merged.
+"""Assemble the hydromt forcing recipe and apply it — rules 1.06 + 1.08, merged.
 
-`dev/followups-archive.md` `[R10-1]`. Rule 1.07 wrote a `steps:` YAML whose **only**
-consumer was rule 1.08, which ran `hydromt update wflow_sbm -i` against it. Two
+`dev/followups-archive.md` `[R10-1]`. Rule 1.06 wrote a `steps:` YAML whose **only**
+consumer was rule 1.07, which ran `hydromt update wflow_sbm -i` against it. Two
 rules, one job — and a recipe that never leaves the pair needs no rule name of
 its own, which is why 1.07's R10 rename was withdrawn rather than replaced.
 
 **Why a `script:` and not a `shell:`.** Snakemake allows one of the two per rule,
 and the halves were one of each. Driving hydromt's CLI from Python keeps the
-command byte-identical to what rule 1.08 issued, which is what makes this merge
+command byte-identical to what rule 1.07 issued, which is what makes this merge
 behaviour-preserving; calling hydromt's Python API instead would have been a
 second change wearing the same commit.
 
@@ -193,7 +193,7 @@ def add_climate_forcing(
     """Write the forcing recipe, then apply it to the model with hydromt.
 
     When ``climate_nc`` is given the forcing is built from the CLIMATE STORE --
-    the extraction rule 1.04 already produced -- instead of re-reading the
+    the extraction rule 1.03 already produced -- instead of re-reading the
     global dataset from the catalog. That read was the second full pass over the
     same source in one workflow, and the store is a basin-sized clip of it.
 

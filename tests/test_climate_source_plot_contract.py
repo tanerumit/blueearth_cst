@@ -33,12 +33,12 @@ def test_selected_source_plot_declarations_are_identical(tmp_path, source):
     cfg["climate"]["sources"] = [source]
     single = write_config(tmp_path / "single", cfg)
     wf1 = _parse_workflow("build_model.smk", single)
-    reference = (wf1, wf1.get_rule("plot_climate_source"))
+    reference = (wf1, wf1.get_rule("plot_climate_datasets"))
     for sources in ([source], list(dict.fromkeys([source, "era5", "chirps"]))):
         cfg["climate"]["sources"] = sources
         path = write_config(tmp_path / f"sources_{len(sources)}", cfg)
         wf0 = _parse_workflow("analyze_climate.smk", path)
-        rule = wf0.get_rule(f"plot_climate_source_{source}")
+        rule = wf0.get_rule(f"plot_climate_datasets_{source}")
         assert not _differences((wf0, rule), reference)
         assert "scales_json" not in rule.input.keys()
         assert {str(p) for p in rule.output if p.is_directory} == {
@@ -87,8 +87,8 @@ def test_alternating_workflows_preserves_provenance_but_detects_changes(tmp_path
     path = write_config(tmp_path, cfg)
     jobs = []
     for snakefile, name in (
-        ("analyze_climate.smk", "plot_climate_source_era5"),
-        ("build_model.smk", "plot_climate_source"),
+        ("analyze_climate.smk", "plot_climate_datasets_era5"),
+        ("build_model.smk", "plot_climate_datasets"),
     ):
         workflow = _parse_workflow(snakefile, path)
         workflow.execution_settings = ExecutionSettings()
@@ -116,7 +116,7 @@ def test_alternating_workflows_preserves_provenance_but_detects_changes(tmp_path
     workflow.execution_settings = ExecutionSettings()
     workflow.dag_settings = DAGSettings()
     changed = Job(
-        workflow.get_rule("plot_climate_source"),
+        workflow.get_rule("plot_climate_datasets"),
         SimpleNamespace(workflow=workflow),
         {},
     )

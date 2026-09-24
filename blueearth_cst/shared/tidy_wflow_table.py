@@ -98,7 +98,7 @@ def slugify(variable: str) -> str:
 def split_columns(columns) -> Dict[str, List[str]]:
     """Group ``<var>_<id>`` column names by variable, ids sorted.
 
-    The id is not always a GAUGE. Rule 1.09 declares two kinds of column and
+    The id is not always a GAUGE. Rule 1.08 declares two kinds of column and
     both match this grammar: ``Q_<station>`` on the outlets/gauges maps, and
     ``<code>_<subcatchment>`` for every other ``wflow_outvars`` entry, on the
     subcatchment map with a mean reducer. So ``gwr_101`` groups here exactly as
@@ -209,7 +209,7 @@ if __name__ == "__main__":
 
     # Snakemake `script:` entry point: reads snakemake.input/output, never argv.
     sm = snakemake  # noqa: F821 - injected by Snakemake
-    # `sm.output[0]` rather than a named output: rule 1.14b declares the whole
+    # `sm.output[0]` rather than a named output: rule 1.14 declares the whole
     # table set now (one per configured variable), and every member shares the
     # directory this needs. Indexing position 0 stays correct however many
     # there are, and does not have to track the declaration's name.

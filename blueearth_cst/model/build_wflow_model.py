@@ -381,7 +381,7 @@ def _step_call_kwargs(
         # catalog -- `soil_fn` is a SOURCE NAME, not a raster, so nothing is
         # injected here. What is coupled is the name: P1 resamples
         # `shared.basin.spatial_sources.soil` into the `soil_*` grid variables
-        # rule 1.12 plots, so leaving the template free to name a different
+        # rule 1.11 plots, so leaving the template free to name a different
         # source let the basin report describe one dataset while the model ran
         # on another. Both defaulted to soilgrids, so the two agreed until a
         # project changed one.

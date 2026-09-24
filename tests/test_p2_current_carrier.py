@@ -129,7 +129,11 @@ def test_current_carrier_operation_target_matrix(
         assert len(calls) == 1
         command, kwargs = calls[0]
         assert command[:3] == [sys.executable, "-m", "snakemake"]
-        assert command[3] == ("all" if target == "default" else targets[target][0])
+        expected = "all" if target == "default" else targets[target][0]
+        # A retired target name reaches Snakemake as its current rule name.
+        assert command[3] == {"metrics": "simulations_and_indicators"}.get(
+            expected, expected
+        )
         assert kwargs["env"]["CST_SIMULATION_OPERATION"] == operation
         records = list(invocation_dir.glob("*.json"))
         assert len(records) == 1

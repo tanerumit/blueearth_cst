@@ -571,7 +571,7 @@ def rule_banner(
     destinations, at the cost of two characters.
 
     ``summary`` is a plain-language clause saying what the rule DOES, for the
-    rules a person waits on: ``1.14  run_wflow`` is an identifier, and someone
+    rules a person waits on: ``1.13  run_historical_simulation`` is an identifier, and someone
     watching a multi-hour run should not have to know the codebase to read the
     console. Applied to the LONG-RUNNING rules only, per the parked note this
     discharges â€” a sentence on all 47 would lengthen every line to say what the
@@ -583,7 +583,7 @@ def rule_banner(
     once per job: the long-running rules are also the FANNED-OUT ones, so a
     summary reprinted per member is the same sentence on every line of the
     longest stretch of a WF3 run â€” 400 identical clauses on a 10 x 20 grid,
-    since rules 3.12 and 3.14 are one job per member. The string returned here
+    since rules 3.11 and 3.14 are one job per member. The string returned here
     is unchanged and always carries it; ``_ConsoleHandler._start_line`` does the
     trimming, because the other two destinations want the whole sentence on
     every line. The log file is grepped a line at a time, and a ``JOB_ERROR``
@@ -593,8 +593,8 @@ def rule_banner(
     because it is what the log filenames, the benchmark table and this file's
     own rule comments all key on.
 
-    The identifier is SPELLED OUT (``Rule 1.08: build_wflow_model``) rather than
-    left as a bare ``1.08  build_wflow_model``. Two digits and a dot are a rule
+    The identifier is SPELLED OUT (``Rule 1.07: build_wflow_model``) rather than
+    left as a bare ``1.07  build_wflow_model``. Two digits and a dot are a rule
     number to someone who already knows this console; to everyone else they are
     an unexplained figure sitting where a version or a count could equally well
     be, and the word costs five characters once per line.
@@ -955,7 +955,7 @@ def opening_block(workflow, project_dir, config_path=None, details=None, plan=No
     Layout, and why each part is where it is::
 
         >  2.01  snapshot_config          1
-           2.02  delineate_region
+           2.01  delineate_region
         7 of 9 rules to run  |  2 up to date  |  13 jobs
 
         project  <repo>/test_case/test_rapid
@@ -1146,7 +1146,7 @@ def _plan_rule_name(names):
     """One display name for the rules SHARING a number.
 
     WF0 builds ``extract_historical_climate_<source>`` in a Python loop, so
-    three rule objects carry the number ``0.04``; the shared prefix is the rule
+    three rule objects carry the number ``0.03``; the shared prefix is the rule
     as a person names it. Falls back to the first name when the group has no
     usable common prefix, which is the safe direction: a real name from the
     Snakefile beats a truncation.
@@ -1170,7 +1170,7 @@ def _plan_rows(counts):
 
     Grouped by NUMBER, not by name, because a number is not unique: see
     :func:`_plan_rule_name`. Sorted lexicographically on the number, which
-    orders ``1.14`` before ``1.14b`` before ``1.15`` without a version parser.
+    orders ``1.13`` before ``1.14`` before ``1.15`` without a version parser.
     """
     by_number = {}
     for name, number in _RULE_NUMBERS.items():
@@ -1268,7 +1268,7 @@ def _plan_lines(counts):
     unknown: such a rule is absent from Snakemake's table entirely, which is how
     :func:`_plan_rows` identifies it, so there is no number to print. For a
     non-fanned rule ``1`` would be a good guess and for
-    ``downscale_climate_realization`` on a full grid it could be 200. A ``-``
+    ``downscale_scenario_series`` on a full grid it could be 200. A ``-``
     was used until 2026-09-17 and dropped as redundant: on a partial run the
     ``>`` gutter already marks what runs and survives a pipe, and on an
     all-to-run one there are no up-to-date rows to mark.
@@ -1316,17 +1316,17 @@ class _ConsoleHandler(logging.StreamHandler):
     ``Execute N jobs...`` per scheduling wave. On a WF3 run that is thousands
     of lines in which one line per job is ours. This renders two::
 
-        23:26:44 - RUN  Rule 3.11: generate_weather_realizations - generate ...
-        23:27:14 - DONE Rule 3.11: generate_weather_realizations  0:00:30  [8/37]
+        23:26:44 - RUN  Rule 3.10: generate_weather_realizations - generate ...
+        23:27:14 - DONE Rule 3.10: generate_weather_realizations  0:00:30  [8/37]
 
     On a FANNED-OUT rule the summary clause is printed on the first member only
     and trimmed from the rest (:meth:`_trim_summary`), so the run's longest
     stretch reads as a list of members rather than one sentence restated a few
     hundred times::
 
-        16:16:57 - RUN  Rule 3.14: downscale_climate_realization - downscale ...  [rlz 2 | st 0]
-        16:16:57 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 2]
-        16:16:58 - RUN  Rule 3.14: downscale_climate_realization  [rlz 2 | st 3]
+        16:16:57 - RUN  Rule 3.14: downscale_scenario_series - downscale ...  [rlz 2 | st 0]
+        16:16:57 - RUN  Rule 3.14: downscale_scenario_series  [rlz 2 | st 2]
+        16:16:58 - RUN  Rule 3.14: downscale_scenario_series  [rlz 2 | st 3]
 
     The stamp is followed by ``- `` and a padded marker, so these lines open in
     the same grammar as every row :func:`log_row` and the tee emit between them
@@ -1500,7 +1500,7 @@ class _ConsoleHandler(logging.StreamHandler):
             ------------------------------------------------------
 
               >  2.01  snapshot_config
-                 2.02  delineate_region
+                 2.01  delineate_region
 
               project        .tmp/test_run
               <projections>  data/climate/projections/cmip6
@@ -1543,7 +1543,7 @@ class _ConsoleHandler(logging.StreamHandler):
         # No PROGRESS rule since 2026-09-17. It opened a section whose first
         # line is written by a different code path (`_start_line`, on the first
         # `job_info` record), and what that line looks like --
-        # `22:01:04 - RUN  Rule 0.02: ...` -- announces the section on its own:
+        # `22:01:04 - RUN  Rule 0.01: ...` -- announces the section on its own:
         # it is the first timestamped row on the console and nothing above it
         # wears that grammar. The blank line below is what separates the block
         # from it, and is the only separator the boundary needed.
@@ -1604,7 +1604,7 @@ class _ConsoleHandler(logging.StreamHandler):
         past on the RUN lines. What a reader wants from it is the SIZE of the
         run and which rules fan out, so that is what the line keeps::
 
-            37 jobs across 21 rules  (downscale_climate_realization x10, perturb_climate_realization x8)
+            37 jobs across 21 rules  (downscale_scenario_series x10, perturb_climate_realization x8)
 
         Parsed from the message text, because ``run_info`` carries only that
         text (``dag.stats`` formats the table before logging it). Parsing is
@@ -1708,7 +1708,7 @@ class _ConsoleHandler(logging.StreamHandler):
         not about the job -- so on a fanned-out rule it is the same sentence on
         every line for the length of the fan-out. Printed once, the reader has
         it; repeated, it is the widest column on screen carrying no per-job
-        information. What remains is ``Rule 3.14: downscale_climate_realization
+        information. What remains is ``Rule 3.14: downscale_scenario_series
         [rlz 2 | st 2]``, which is the grammar :meth:`_done_line` already builds
         -- it has never carried a summary -- so the pair converges rather than
         the start line acquiring a format of its own.
@@ -1719,7 +1719,7 @@ class _ConsoleHandler(logging.StreamHandler):
         from the registry and prints unchanged, which is also what happens if
         the two ever fall out of step.
 
-        Keyed on the rule NAME, so WF4's per-batch rules (``run_wflow_batch_1``,
+        Keyed on the rule NAME, so WF4's per-batch rules (``run_wflow_simulations_batch_1``,
         ``_2``, ...) are distinct rules and each prints its summary once. That
         is a handful of lines on a run, and it is deliberate: they are separate
         rules with separate numbers everywhere else on this console.

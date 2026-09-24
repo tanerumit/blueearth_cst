@@ -16,7 +16,7 @@ Every selected cell counts EQUALLY (owner ruling 2026-08-10, same origin). No
 fractional-area weighting: a cell either meets the polygon or it does not.
 
 **Why this is not imported from ``extract_historical_climate``.** That module is
-rule 0.04's ``script:``, and Snakemake hashes a script's file content to decide
+rule 0.03's ``script:``, and Snakemake hashes a script's file content to decide
 whether the rule is stale — so editing it to export a helper re-fires every
 extraction in every project tree, and in ``test_case/test_local`` that cascades
 through the model build. The duplication is one function's worth and it is
@@ -104,7 +104,7 @@ def cells_csv_mask(ds: xr.Dataset, cells_csv: Optional[Union[str, Path]]):
     """Boolean mask from a store's ``basin_cells.csv``, or ``None``.
 
     Preferred over re-deriving the basin's cells from ``basins.geojson``, and
-    not merely to save the arithmetic: this file is rule 0.04's declared output
+    not merely to save the arithmetic: this file is rule 0.03's declared output
     and the one weathergenr averages over, so reading it makes the figures, the
     weather generator and the stress test agree on what "the basin" is. Two
     derivations from two polygons would be two answers.
@@ -136,7 +136,7 @@ def cells_csv_mask(ds: xr.Dataset, cells_csv: Optional[Union[str, Path]]):
 
 
 #: The column carrying a subbasin's identifier in the shared vector foundation
-#: (rule 0.03's ``subbasins.geojson``). It is what the figure filename's
+#: (rule 0.02's ``subbasins.geojson``). It is what the figure filename's
 #: ``subbasin_<id>_avg`` scope is built from, so it must be stable and unique.
 SUBBASIN_ID_COLUMN = "subbasin_id"
 

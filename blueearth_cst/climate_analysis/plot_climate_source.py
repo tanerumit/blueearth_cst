@@ -1,6 +1,6 @@
 """Source-grid climate figures from the shared climate store (R07 B4 / P4).
 
-Rule ``plot_climate_source``'s script (``build_model.smk`` 1.15 — a
+Rule ``plot_climate_datasets``'s script (``build_model.smk`` 1.15 — a
 single declaration; none of B1's two-DAG machinery applies). It answers *"what
 does the source climate look like?"* from the store alone, so its whole
 subgraph is the B1 producer (whose sole input is the tracked data catalog) plus
@@ -10,7 +10,7 @@ itself: the three figures build with **neither** ``models/hydrology/wflow/``
 pinned by ``tests/test_plot_climate_source.py``.
 
 Three climate-figure families coexist (design § B4). This module owns the first
-and rule 1.13 owns the second, and since 2026-08 BOTH are drawn by the same
+and rule 1.12 owns the second, and since 2026-08 BOTH are drawn by the same
 canonical set (``climate_figures``) so the two are directly comparable — every
 filename is prefixed by its dataset, because a bare ``pet.png`` copied into a
 report or picked up by a GUI collector loses its parent directory and the two
@@ -21,7 +21,7 @@ Product                           Grid    Home
 ================================  ======  ============================================
 source climate (this module)      source  ``data/climate/historical/<key>/plots/``
 forcing / model-input QA (1.13)   model   ``models/hydrology/wflow/forcing/plots/``
-model-parity climate (rule 1.11)  model   ``models/hydrology/wflow/evaluation/plots/``
+model-parity climate (rule 1.10)  model   ``models/hydrology/wflow/evaluation/plots/``
 ================================  ======  ============================================
 
 The third stays outside the canonical set: it is keyed by STATION rather than by
@@ -183,7 +183,7 @@ def area_masks_for(
     The basin comes from the store's own ``basin_cells.csv`` and the subbasins
     from the shared vector foundation, both through
     :mod:`blueearth_cst.shared.grid_cells` — so one predicate decides every
-    domain, and rule 0.06's comparison of the same source lands on the same
+    domain, and rule 0.05's comparison of the same source lands on the same
     number as this rule's own figure.
 
     **The basin scope is always present, even with nothing to build it from**:
@@ -228,7 +228,7 @@ def plot_climate_source(
     ----------
     climate_nc : str | Path
         ``data/climate/historical/<key>/extract_historical.nc`` — the store's
-        extraction (rule 0.04 / 1.04 / 3.08 ``extract_historical_climate``).
+        extraction (rule 0.03 / 1.03 / 3.08 ``extract_climate_datasets``).
     plot_dir : str | Path
         ``data/climate/historical/<key>/plots/``. Created if absent.
     oro_nc : str | Path, optional
@@ -240,7 +240,7 @@ def plot_climate_source(
         ``shared.clim_historical``; recorded in the log for traceability.
     geoms_dir : str | Path, optional
         ``data/spatial/geoms/`` — the ENGINE-NEUTRAL vector foundation from rule
-        1.03. Supplies the basin outline, subcatchment divides, river network
+        1.02. Supplies the basin outline, subcatchment divides, river network
         and points of interest the maps are drawn over. Optional, and
         model-independent by construction: this rule runs off the climate store
         and must not wait on a wflow build to plot the source climate.
@@ -346,7 +346,7 @@ if __name__ == "__main__":
                 climate_nc=sm.input.climate_nc,
                 plot_dir=sm.params.plot_dir,
                 # declared only on the chirps/chirps_global branch, mirroring
-                # rule 1.11's input split
+                # rule 1.10's input split
                 oro_nc=getattr(sm.input, "oro_nc", None),
                 data_sources=sm.params.data_sources,
                 clim_source=sm.params.clim_source,
@@ -354,7 +354,7 @@ if __name__ == "__main__":
                 anchor=water_year_end_anchor(sm.params.water_year_start),
                 # Optional for direct callers; canonical workflow rules omit it.
                 scales_json=getattr(sm.input, "scales_json", None),
-                # Rule 0.04's own output: the cells the basin touches, which is
+                # Rule 0.03's own output: the cells the basin touches, which is
                 # what the basin-average figures reduce over -- and the same
                 # file weathergenr averages over, so the two agree.
                 basin_cells=getattr(sm.input, "basin_cells", None),

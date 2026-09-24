@@ -253,8 +253,8 @@ def prep_cst_parameters(
     st_width = index_width(ST_NUM)
 
     # `st_0` has NO row: the table is the PARAMETER GRID, and the reserved
-    # unperturbed baseline has no parameters -- it is produced by rule 3.11, not
-    # by perturbation, and rule 3.12 never runs for it.
+    # unperturbed baseline has no parameters -- it is produced by rule 3.10, not
+    # by perturbation, and rule 3.11 never runs for it.
     #
     # Its absence is LOAD-BEARING, and this supersedes C23's recorded rationale
     # ("a response surface missing its own origin forces every downstream

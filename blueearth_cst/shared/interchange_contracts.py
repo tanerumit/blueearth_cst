@@ -358,7 +358,7 @@ _WG3_GENERATE_WEATHER_KEYS = (
     "n_cores",
     "verbose",
     "save_plots",
-    # Injected per run by rule 3.10 (prepare_weathergen_config.build_weathergen_config).
+    # Injected per run by rule 3.09 (prepare_weathergen_config.build_weathergen_config).
     "year_start_month",
     "n_years",
     "start_year",
@@ -366,7 +366,7 @@ _WG3_GENERATE_WEATHER_KEYS = (
     "out_dir",
 )
 
-#: WG-3 ``apply_climate_perturbations`` surface (rule 3.12). Hardcoded in
+#: WG-3 ``apply_climate_perturbations`` surface (rule 3.11). Hardcoded in
 #: impose_climate_change.R until the 1.2.0 rename surfaced them.
 _WG3_PERTURBATION_KEYS = (
     "compute_pet",
@@ -387,7 +387,7 @@ _WG3_PERTURBATION_KEYS = (
     "diagnostic",
 )
 
-#: WG-3 ``write_netcdf`` surface — read by BOTH rule 3.11 and rule 3.12.
+#: WG-3 ``write_netcdf`` surface — read by BOTH rule 3.10 and rule 3.11.
 _WG3_WRITE_NETCDF_KEYS = (
     "calendar",
     "compression",
@@ -398,7 +398,7 @@ _WG3_WRITE_NETCDF_KEYS = (
     "file_prefix",
 )
 
-#: WG-3 ``run_weather_generator`` surface — the wrapper rule 3.11 calls. It runs
+#: WG-3 ``run_weather_generator`` surface — the wrapper rule 3.10 calls. It runs
 #: generate_weather and then the evaluation pass; ``_WG3_GENERATE_WEATHER_KEYS``
 #: above is handed to it verbatim as its ``config`` argument.
 _WG3_RUN_KEYS = (
@@ -1188,7 +1188,7 @@ def validate_hm_gauge_column_identity(
 
     The gauge-column set is a **single degree of freedom** flowing TOML
     ``[output.csv].column`` -> ``output_rlz`` -> ``q_indicators``. A per-artifact
-    validator cannot see a break *between* artifacts: rule 3.11 derives the gauge
+    validator cannot see a break *between* artifacts: rule 3.10 derives the gauge
     set from the FIRST csv via a hard-coded ``Q_`` prefix filter
     (``export_wflow_results.py:61``) and indexes every other csv with it, so a
     renamed gauge header silently empties ``Q_vars`` (a gauge-less q_indicators) and a
@@ -1198,7 +1198,7 @@ def validate_hm_gauge_column_identity(
       1. every non-``time`` ``output_rlz_df`` column traces to a declared
          ``[output.csv].column`` entry (map-typed -> ``<header>_<id>`` pattern;
          non-map -> exact ``header``), and every declared entry is represented;
-      2. the map-typed gauge columns carry the ``Q_`` prefix rule 3.11 hard-codes;
+      2. the map-typed gauge columns carry the ``Q_`` prefix rule 3.10 hard-codes;
       3. ``qstats_df``'s gauge set is list-equal to the ``output_rlz_df`` gauge
          set. Post-CR-2 this compares the ``location`` column's VALUE set rather
          than subtracting known columns from a wide header, which is why the
@@ -1238,14 +1238,14 @@ def validate_hm_gauge_column_identity(
                 f"{label}: declared column {exp!r} absent from output (have {out_cols})"
             )
 
-    # Check 2: map-typed gauge columns carry the Q_ prefix rule 3.11 hard-codes.
+    # Check 2: map-typed gauge columns carry the Q_ prefix rule 3.10 hard-codes.
     map_typed = [e for e in expected if e.endswith("_*")]
     if any(e.startswith("Q_") for e in map_typed):
         gauge_cols = [c for c in out_cols if c.startswith("Q_")]
         if not gauge_cols:
             diffs.append(
                 f"{label}: no output column carries the hard-coded 'Q_' prefix "
-                f"rule 3.11 filters on (have {out_cols})"
+                f"rule 3.10 filters on (have {out_cols})"
             )
 
     # Check 3: the q table's LOCATION SET equals the output_rlz gauge set.

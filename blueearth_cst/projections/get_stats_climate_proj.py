@@ -253,7 +253,7 @@ if __name__ == "__main__":
             )
 
             # makedirs, not mkdir-if-absent: the guarded mkdir raced whenever two
-            # reduce jobs started together, which is almost certainly why rule 2.03
+            # reduce jobs started together, which is almost certainly why rule 2.02
             # carried an ordering edge on 2.02's output that it never read. The edge
             # is gone (step 2b), so this must be race-free.
             os.makedirs(folder_out, exist_ok=True)

@@ -171,12 +171,15 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
     assert (
         simulation_runner.validate_targets("unused", ["all"]) == "simulate-and-metrics"
     )
-    assert (
-        simulation_runner.validate_targets("unused", ["responses"])
-        == "simulate-and-metrics"
-    )
-    with pytest.raises(ValueError, match="UnsupportedOperationTarget"):
-        simulation_runner.validate_targets("unused", ["metrics"])
+    # `responses` is the retired spelling, accepted for one release.
+    for target in ("simulations_only", "responses"):
+        assert (
+            simulation_runner.validate_targets("unused", [target])
+            == "simulate-and-metrics"
+        )
+    for target in ("simulations_and_indicators", "metrics"):
+        with pytest.raises(ValueError, match="UnsupportedOperationTarget"):
+            simulation_runner.validate_targets("unused", [target])
 
     selected = tmp_path / "_engine/metric_sets/abc123/metrics.json"
     monkeypatch.setattr(
@@ -196,7 +199,8 @@ def test_p6_target_matrix_uses_v2_contract(monkeypatch, tmp_path):
         "blueearth_cst.experiment.metric_plan.build_metric_plan",
         lambda *_: {"targets": {"manifest": selected.as_posix()}},
     )
-    assert simulation_runner.validate_targets("unused", ["metrics"]) == "metrics-only"
+    for target in ("simulations_and_indicators", "metrics"):
+        assert simulation_runner.validate_targets("unused", [target]) == "metrics-only"
     assert (
         simulation_runner.validate_targets("unused", [selected.as_posix()])
         == "metrics-only"
@@ -257,3 +261,11 @@ def test_metrics_only_reads_v2_collection_from_simulation_intent(tmp_path, monke
     assert actual_root == root
     assert tokens == ["q"]
     assert anchor == "YS-JAN"
+
+
+def test_retired_target_names_reach_snakemake_as_current_rule_names():
+    assert simulation_runner.current_targets(["responses", "metrics", "all"]) == [
+        "simulations_only",
+        "simulations_and_indicators",
+        "all",
+    ]

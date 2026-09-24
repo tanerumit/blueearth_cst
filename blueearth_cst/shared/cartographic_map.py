@@ -10,8 +10,8 @@ an auto-sized locator inset, and a side panel that stacks the colourbar over
 the vector legend.
 
 Adding a quantity is an entry in ``RASTER_STYLES``, not another plotting
-function. That is the whole point of the split: rule 1.12's basin map and rule
-1.13's three forcing maps were separate code with separate ideas of what a map
+function. That is the whole point of the split: rule 1.11's basin map and rule
+1.12's three forcing maps were separate code with separate ideas of what a map
 is, and the forcing maps had no furniture at all.
 
 The two entry points, split along reading-vs-drawing, are elsewhere:
@@ -64,7 +64,7 @@ from blueearth_cst.shared import plot_style
 #
 # RASTER_DPI is a deliberate re-export, not a leftover: `shared/plot_map.py`
 # imports it from here, and that file is a Snakemake `script:` target
-# (build_model.smk rule 1.12), so editing it would fire the `code`
+# (build_model.smk rule 1.11), so editing it would fire the `code`
 # rerun trigger on every project_dir for no behavioural gain. It moves to a
 # direct `plot_style` import in the plotting sweep, alongside a change to that
 # file that is worth the invalidation.

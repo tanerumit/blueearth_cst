@@ -16,7 +16,7 @@ because that is what a user writes in ``wflow_outvars``.
 
 **The code is a contract.** It appears in ``output.csv`` headers, in the
 variables hydromt derives from them (``<code>_subcatchment``), in the derived
-tables from rule 1.14b, and in figure filenames. Changing one renames all four.
+tables from rule 1.14, and in figure filenames. Changing one renames all four.
 
 Discharge is deliberately absent from ``CODES``: it does not travel the
 basin-average path at all. It is emitted per-gauge and per-outlet with the fixed

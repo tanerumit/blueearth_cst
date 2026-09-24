@@ -455,7 +455,7 @@ def build_project_tree_rules(
         ".model_final",
         "config/build_historical_forcing.yml",
         # The one-entry catalog pointing hydromt at the climate store — a
-        # DECLARED, non-temp() output of rule 1.10 beside the build YAML from
+        # DECLARED, non-temp() output of rule 1.09 beside the build YAML from
         # the same rule (`build_model.smk`, `store_catalog`). Added
         # 2026-08-11: `test_local`'s WF1 predates the output, so no tree the
         # gate was pointed at held one until `test_rapid` was rebuilt.
@@ -467,7 +467,7 @@ def build_project_tree_rules(
         # that map already made for `.model_final`.
         "config/climate_store_catalog.yml",
         "forcing/inmaps_historical.nc",
-        # The values hydromt was ACTUALLY handed, from rules 1.07 and 1.08
+        # The values hydromt was ACTUALLY handed, from rules 1.06 and 1.07
         # (config-snapshot redesign §5.6). Not copies of the build templates:
         # arguments are replaced with the P1 spatial products and some are
         # derived at call time, so these record what the template cannot.

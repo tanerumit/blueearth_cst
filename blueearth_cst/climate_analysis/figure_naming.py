@@ -32,8 +32,8 @@ period. Those belong to the run, not to the figure, and putting them in the name
 makes every filename churn when a window moves.
 
 **Scope of this grammar, today.** WF0's figures only -- the per-source set
-(rule 0.05) and the cross-source comparison (rule 0.06). The wflow FORCING
-family (rule 1.13) keeps its ``forcing_<var>_<kind>.png`` names, because the
+(rule 0.04) and the cross-source comparison (rule 0.05). The wflow FORCING
+family (rule 1.12) keeps its ``forcing_<var>_<kind>.png`` names, because the
 rule stages WF0 first and extending it is a separate migration with its own
 consumers. ``climate_figures`` therefore carries both spellings; see its
 ``_legacy_figure_name``.

@@ -134,7 +134,7 @@ def _log_path_parts(log_path):
 
     The parent of the first ``logs`` / ``benchmarks`` path component is the
     project dir; the path below that anchor is the rule-log id (so wildcard
-    sub-logs read e.g. ``3.10_run_wflow/rlz_1_st_1.log``). Both are ``""`` /
+    sub-logs read e.g. ``3.09_run_wflow/rlz_1_st_1.log``). Both are ``""`` /
     the bare basename when the anchor is absent (e.g. an ad-hoc test path).
     """
     log_path = os.fspath(log_path)
@@ -447,8 +447,8 @@ def _heartbeat_identity(label):
     """Spell a rule-log label the way the RUN and DONE lines spell the job.
 
     The watchdog is built from the log path, so it knows the job as
-    ``2.04_fetch_gcm_slice/cmip6_INM_...`` -- the parts directory -- while the
-    lines above and below its notice say ``Rule 2.04: fetch_gcm_slice
+    ``2.03_fetch_cmip6_projections/cmip6_INM_...`` -- the parts directory -- while the
+    lines above and below its notice say ``Rule 2.03: fetch_cmip6_projections
     [cmip6_INM_...]``. One job, two spellings on adjacent lines, which is the
     defect the console grammar exists to prevent; this is the translation.
 
@@ -568,7 +568,7 @@ class _Heartbeat:
         #
         # `text` is the MESSAGE; the row is assembled here so every notice this
         # watchdog prints has the stamp and module column the lines around it
-        # have. It used to print `   ... 2.04_fetch/<key>: still running, 2m00s
+        # have. It used to print `   ... 2.03_fetch/<key>: still running, 2m00s
         # elapsed` -- no stamp, the log-parts spelling of the job, and a fourth
         # duration format -- between a RUN and a DONE line that agreed on all
         # three. The identity is the job's console spelling (`_heartbeat_identity`).
@@ -900,7 +900,7 @@ _TEE_CONSOLE_MUTED = (
     # forcing write: once in a WF1 build, and once per run in WF4, where
     # every downscale rule writes one.
     ("forcing", "Write forcing file"),
-    # Rule 1.10 drives `hydromt update` through its CLI at `-vv`, which is what
+    # Rule 1.09 drives `hydromt update` through its CLI at `-vv`, which is what
     # puts hydromt's rows in the rule's log at all -- and at that level the CLI
     # also announces its version (three times, once per logger it configures),
     # names each `setup_*` step it is about to run, and echoes every keyword
@@ -1088,7 +1088,7 @@ class _Tee:
             # heartbeat). It was gated on "did I leave a frame standing" until
             # 2026-09-17, and that flag cannot see the case it most needs to:
             # a FANNED rule runs its members as separate PROCESSES (`-c 3` on
-            # wf0's `extract_historical_climate_{era5,chirps}`), so the tee
+            # wf0's `extract_climate_datasets_{era5,chirps}`), so the tee
             # holding the bar and the tee writing the row are in different
             # interpreters and share no state. Only the cursor is common, which
             # is why `_line_reset` is an escape rather than a flag.
@@ -1217,7 +1217,7 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
     success (t260721a; dev/tasks/). Teeing in-process restores exit-code
     fidelity while keeping live console output. The child runs with
     ``shell=False`` so argument quoting is preserved identically across cmd.exe
-    and bash (a quoted ``julia -e "..."`` body stays one argv -- rules 1.14 and
+    and bash (a quoted ``julia -e "..."`` body stays one argv -- rules 1.13 and
     3.15 now pass a driver *file* instead, but other callers still rely on it).
 
     Wflow progress frames (``[cst-progress] <label> <fraction>``, emitted by
@@ -2083,7 +2083,7 @@ def _line_reset(stream):
     A progress frame is left STANDING on the console line between redraws: the
     bar in ``shared.progress`` writes ``\\r<frame>`` and stops there, so the
     cursor sits at the frame's end with the frame still visible. Any writer that
-    then starts a new logical line appends to it -- ``13:18:23 - DONE Rule 0.03``
+    then starts a new logical line appends to it -- ``13:18:23 - DONE Rule 0.01``
     landing on the tail of an ``era5 store`` bar with no line break between them
     (observed 2026-09-03, on a ``-c 3`` WF0 run). This is the same defect
     :func:`_pad_line_over` fixes for ``run_and_tee``; that path never reached the
@@ -2199,7 +2199,7 @@ def _paint_line(line, code):
 
 
 def rule_id(number):
-    """Return a rule number in the console's spelling: ``Rule 1.08:``.
+    """Return a rule number in the console's spelling: ``Rule 1.07:``.
 
     One definition, because three places have to agree on it: the ``message:``
     banner a rule declares, the START line the console handler renders from

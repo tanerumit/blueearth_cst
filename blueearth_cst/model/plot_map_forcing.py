@@ -1,4 +1,4 @@
-"""Canonical climate figures for the wflow FORCING (rule 1.13).
+"""Canonical climate figures for the wflow FORCING (rule 1.12).
 
 The model-grid half of the pair:
 ``models/hydrology/wflow/forcing/inmaps_historical.nc``
@@ -15,8 +15,8 @@ Two things changed with the canonical set (2026-08), both deliberate:
 
 * **No more cartopy basemap tiles.** The previous ``plot_map_model`` called
   ``cartopy.io.img_tiles.QuadtreeTiles``, i.e. a live tile request in the middle
-  of WF1. Rule 1.13 now needs no NETWORK. The basin/river context it bought is
-  drawn from the model's own geometries instead. Rule 1.12's ``basin_area``
+  of WF1. Rule 1.12 now needs no NETWORK. The basin/river context it bought is
+  drawn from the model's own geometries instead. Rule 1.11's ``basin_area``
   dropped the same tiles in 2026-08 for the same reason plus two more —
   licence/attribution on a submitted figure, and a basemap that the server can
   re-render out from under a "reproducible" run — so NO rule in WF1 fetches
@@ -61,7 +61,7 @@ def plot_forcing(
     wflow_root : str | Path
         The wflow model root (``models/hydrology/wflow/``).
     plot_dir : str | Path, optional
-        Destination. Defaults to ``<wflow_root>/plots``; rule 1.13 passes
+        Destination. Defaults to ``<wflow_root>/plots``; rule 1.12 passes
         ``models/hydrology/wflow/forcing/plots`` so the figures sit beside the
         forcing they describe (R07 B10).
     gauges_fn : str | Path, optional
@@ -69,7 +69,7 @@ def plot_forcing(
         the model's own gauge layer (see ``geoms_dir``).
     geoms_dir : str | Path, optional
         ``data/spatial/geoms/`` — the ENGINE-NEUTRAL vector foundation from rule
-        1.03, and the SAME layers the source-grid maps draw. Both climate map
+        1.02, and the SAME layers the source-grid maps draw. Both climate map
         families read it so the two differ only in the raster underneath, which
         is what makes "what did downscaling change?" answerable by putting the
         two directories side by side.

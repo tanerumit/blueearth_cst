@@ -30,7 +30,7 @@ in the Snakefile would mean re-deriving WF3's fan-out arithmetic (``ST_START``,
 ``RLZ_NUM``, the ``_batches`` split) somewhere it could drift from the rules that
 actually own it. Scoping discovery to the label list is what keeps this from
 being a blind glob: an orphan dir left by a renamed rule (``test_local`` still
-holds ``2.04_monthly_change/``) is not a label, so it is never read and never
+holds ``2.03_monthly_change/``) is not a label, so it is never read and never
 deleted.
 
 A rule with no part is reported rather than silently skipped, so the merged log
@@ -51,7 +51,7 @@ _DIGITS = re.compile(r"(\d+)")
 
 
 def _rule_tag(label):
-    """Render a part label ``2.04_fetch_gcm_slice`` as the banner tag ``2.04  fetch_gcm_slice``.
+    """Render a part label ``2.03_fetch_cmip6_projections`` as the banner tag ``2.03  fetch_cmip6_projections``.
 
     Mirrors ``console_style.rule_banner`` so the merged log and the console use one
     spelling. A label that is not ``<W.NN>_<name>`` is passed through as-is.
@@ -165,7 +165,7 @@ def merge_logs(rules, out_path, parts_dir, remove_parts=False):
     Parameters
     ----------
     rules : list of str
-        Rule labels (``"2.04_fetch_gcm_slice"``) in the order their sections should
+        Rule labels (``"2.03_fetch_cmip6_projections"``) in the order their sections should
         appear. Rule-number order, matching the rule map and the benchmark table.
     out_path : str
         The merged log. Regenerated whole on every run.

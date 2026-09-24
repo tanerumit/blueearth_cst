@@ -140,7 +140,7 @@ def update_wflow_gauges_outputs(
         )
 
     with hydromt_progress("model"):
-        # Everything but the forcing: rule 1.10 owns that file, and a bare
+        # Everything but the forcing: rule 1.09 owns that file, and a bare
         # `write()` re-flushed it on every re-run into a duplicate under a
         # generated name. See `shared/wflow_write`.
         write_model_except_forcing(mod)

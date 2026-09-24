@@ -6,7 +6,7 @@ module draws the rest of the set: the delineation, land cover, leaf area and the
 soil profile, each through the SAME cartographic template, so a basin report is
 one visual family rather than ten unrelated pictures.
 
-:func:`plot_spatial_figure_set` draws BOTH — it is rule 1.12's entry point, and
+:func:`plot_spatial_figure_set` draws BOTH — it is rule 1.11's entry point, and
 the two halves are one deliverable rather than two that happen to share a
 folder. See its docstring.
 
@@ -91,7 +91,7 @@ from blueearth_cst.shared.snake_utils import save_figure
 # ---------------------------------------------------------------------------
 # WHERE THE INPUTS ARE
 # ---------------------------------------------------------------------------
-#: Project-relative home of the shared spatial products (rules 1.03 / 1.06).
+#: Project-relative home of the shared spatial products (rules 1.02 / 1.05).
 SPATIAL_DIRNAME = "data/spatial"
 #: The thematic raster stack this family draws.
 SPATIAL_MAPS_FILENAME = "spatial_maps.nc"
@@ -400,9 +400,9 @@ class SpatialFigure:
         #: appearance — that is the classifier's job.
         self.scale = scale
         #: Whether the source variable exists for EVERY shipped catalog source,
-        #: and so whether rule 1.12 may declare this figure as an output.
+        #: and so whether rule 1.11 may declare this figure as an output.
         #:
-        #: Most are: ``prepare_spatial_maps`` writes ``land_cover`` and
+        #: Most are: ``prepare_land_and_soil_maps`` writes ``land_cover`` and
         #: ``leaf_area_index`` under fixed names, ``subbasin_id`` always exists,
         #: and the six soil ``sl1`` properties keep their names across both
         #: shipped soil sources because the catalogs rename them onto the same
@@ -453,8 +453,8 @@ SPATIAL_MAP_FIGURES = (
 def figure_paths(plots_dir, formats=("png",), declared_only=True):
     """The figure files this family writes under ``plots_dir``.
 
-    Rule 1.12's ``output:`` comes from here rather than restating the stems, the
-    same way rule 1.13's does from ``climate_figures.figure_names`` — a registry
+    Rule 1.11's ``output:`` comes from here rather than restating the stems, the
+    same way rule 1.12's does from ``climate_figures.figure_names`` — a registry
     edit then reaches the Snakefile without a second place to remember.
 
     ``declared_only`` keeps the source-specific figures out of the rule's
@@ -676,7 +676,7 @@ def plot_spatial_maps(
         if figure.variable not in maps:
             # The ONLY skip. It can reach a figure the rule declared as an
             # output, which would fail the rule -- and that is the right
-            # failure: it means the registry and ``prepare_spatial_maps``
+            # failure: it means the registry and ``prepare_land_and_soil_maps``
             # disagree about what the foundation contains.
             print(
                 f"skip {figure.stem}: {SPATIAL_MAPS_FILENAME} has no {figure.variable!r}"
@@ -745,7 +745,7 @@ def plot_spatial_maps_from_project(project_dir, plot_dir=None, **kwargs):
 def plot_spatial_figure_set(spatial_dir, plot_dir=None, **kwargs):
     """Every figure the spatial foundation supports: ``basin_area`` and the family.
 
-    Rule 1.12's entry point. The two are drawn by ONE rule because they are one
+    Rule 1.11's entry point. The two are drawn by ONE rule because they are one
     deliverable — the same basin, the same overlay, the same folder — and because
     they are the reason each other reads: the family suppresses the overlay key
     precisely because ``basin_area`` carries it, so a run that produced one

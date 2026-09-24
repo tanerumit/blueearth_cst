@@ -2,7 +2,7 @@
 
 What it does
 ------------
-The same thing WF2's rule 2.04 does — open the remote CMIP6 store, clip to a
+The same thing WF2's rule 2.03 does — open the remote CMIP6 store, clip to a
 polygon plus a buffer, slice the acquisition window, write a small netCDF — but
 driven by a YAML file and writing wherever you point it, with no project and no
 Snakemake run.
@@ -29,7 +29,7 @@ an object store. The addressing has nothing in common, so this is a sibling
 tool rather than a new ``type:``.
 
 There is exactly ONE fetch implementation: ``fetch_gcm_raw.fetch_raw_slice``,
-which WF2's rule 2.04 also calls. This module contributes the config and the
+which WF2's rule 2.03 also calls. This module contributes the config and the
 digest recipe, never a second way to read the store.
 
 Configuration

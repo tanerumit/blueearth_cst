@@ -7,7 +7,7 @@ resamples ``vito``, ``modis_lai`` and ``soilgrids`` — the trade ADR 0003 exist
 to have removed, one level down.
 
 These pin the replacement: ``snake_utils.spatial_units_rule`` owns the contract,
-and the three workflow declarations of ``delineate_spatial_units`` may differ
+and the three workflow declarations of ``delineate_subbasins_and_rivers`` may differ
 only in ``message`` / ``log`` / ``benchmark``. Same shape, and the same reason,
 as ``tests/test_region_rule.py`` and ``tests/test_climate_store_contract.py`` —
 the third and last member of that family.
@@ -27,7 +27,7 @@ TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
 CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
-RULE_NAME = "delineate_spatial_units"
+RULE_NAME = "delineate_subbasins_and_rivers"
 
 
 def _rule(basin_overrides=None, **overrides):
@@ -247,7 +247,7 @@ _parse_workflow = parse_workflow
 
 @pytest.fixture(scope="module")
 def declarations():
-    """The built ``delineate_spatial_units`` rule from all three workflows."""
+    """The built ``delineate_subbasins_and_rivers`` rule from all three workflows."""
     return {
         label: _parse_workflow(snakefile, CONFIG_FN).get_rule(RULE_NAME)
         for label, snakefile in _SNAKEFILES

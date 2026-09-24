@@ -33,19 +33,32 @@ def simulation_settings(config_path):
     return project, settings
 
 
+#: Target names retired 2026-09-24, accepted for one release and rewritten to
+#: the current rule name before Snakemake sees them.
+LEGACY_TARGETS = {
+    "responses": "simulations_only",
+    "metrics": "simulations_and_indicators",
+}
+
+
+def current_targets(targets):
+    """``targets`` with any retired target name replaced by its current one."""
+    return [LEGACY_TARGETS.get(target, target) for target in targets]
+
+
 def validate_targets(config_path, targets):
     """Refuse operation bypass before Snakemake can build any DAG."""
     _, settings = simulation_settings(config_path)
     operation = settings["operation"]
     supported = (
-        "simulate-and-metrics + all/responses; "
-        "metrics-only + metrics or one selected metric output"
+        "simulate-and-metrics + all/simulations_only; "
+        "metrics-only + simulations_and_indicators or one selected metric output"
     )
     if len(targets) != 1:
         raise ValueError(f"UnsupportedOperationTarget: {supported}")
-    target = targets[0]
+    target = current_targets(targets)[0]
     if operation == "simulate-and-metrics":
-        allowed = target in {"all", "responses"}
+        allowed = target in {"all", "simulations_only"}
     else:
         from blueearth_cst.experiment.metric_plan import (
             build_metric_plan,
@@ -56,7 +69,7 @@ def validate_targets(config_path, targets):
         root, tokens, anchor = metrics_only_configuration(config_path)
         plan = build_metric_plan(root, current_metric_request(root, tokens, anchor))
         allowed = (
-            target == "metrics"
+            target == "simulations_and_indicators"
             or Path(target).resolve().as_posix() in plan["targets"].values()
         )
     if not allowed:
@@ -108,7 +121,7 @@ def simulation_command(config_path, targets, cores, extra=()):
         sys.executable,
         "-m",
         "snakemake",
-        *targets,
+        *current_targets(targets),
         "-s",
         str(repo / "simulate_system.smk"),
         "--configfile",

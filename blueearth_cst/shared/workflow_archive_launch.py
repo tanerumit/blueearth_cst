@@ -308,7 +308,7 @@ def prepare_workflow(
     # Content-addressed by the FILE's own bytes, in a bucket shared across
     # workflows -- not nested under this workflow's own `stage` (bundle digest).
     # WF0/WF1/WF2 declare byte-identical shared-foundation rules (delineate_region,
-    # delineate_spatial_units, extract_historical_climate) that consume a
+    # delineate_subbasins_and_rivers, extract_climate_datasets) that consume a
     # dependency such as the project data catalog. Staging it under `stage` kept
     # a separate copy per workflow, at a path that changed whenever ANY other
     # part of that workflow's bundle changed -- so switching between workflows

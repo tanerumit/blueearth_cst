@@ -29,8 +29,8 @@ paths, longest prefix first::
     renames:
       - from: hydrology_model/forcing/plots/
         to:   hydrology_model/plots/
-      - from: logs/1.11_plot_results.log
-        to:   logs/_parts/1.14_plot_results.log
+      - from: logs/1.10_plot_results.log
+        to:   logs/_parts/1.13_plot_results.log
 
 It doubles as the migration checklist once a layout is agreed.
 """

@@ -56,7 +56,7 @@ def test_staticmaps_edges_stay_ancient():
     """Guard the reason the obvious fix is wrong: 1.04 and 1.05 mutate
     staticmaps.nc via mod.write()/mod.close(), so a plain input edge would
     re-trigger them on their own execution."""
-    for rule in ("add_reservoirs_lakes_glaciers", "declare_wflow_outputs"):
+    for rule in ("add_reservoirs_lakes_glaciers", "declare_gauges_and_outputs"):
         block = _rule_block(rule)
         m = re.search(r"basin_nc\s*=\s*(.+)", block)
         assert m and "ancient(" in m.group(1), (
@@ -99,7 +99,7 @@ def test_rerunning_build_wflow_model_reschedules_the_whole_toml_chain():
     # worktree run could see that it now demands a rule the DAG cannot contain.
     for rule in (
         "add_reservoirs_lakes_glaciers",
-        "declare_wflow_outputs",
+        "declare_gauges_and_outputs",
         "add_climate_forcing",
     ):
         assert rule in combined, (

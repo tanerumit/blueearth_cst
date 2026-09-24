@@ -1,4 +1,4 @@
-"""Unit tests for prepare_weathergen_config helpers (R5 §8).
+"""Unit tests for prepare_weather_generator_settings helpers (R5 §8).
 
 Targets the year math (compute_nr_years, generate-branch) and the stress-test
 branch dict assembly (build_weathergen_config). Both are import-clean after the R5
@@ -17,7 +17,7 @@ from blueearth_cst.experiment.prepare_weathergen_config import (
 
 REPO_ROOT = os.path.join(os.path.dirname(__file__), "..")
 # The path rule 3.04 (generate_scenarios.smk:131) hands to
-# prepare_weathergen_config as ``default_config``. It lives under config/defaults/:
+# prepare_weather_generator_settings as ``default_config``. It lives under config/defaults/:
 # the 2026-08-11 split moved the three rule-read configs out of
 # config/templates/, which now holds only files you copy. This literal must
 # track that Snakefile param.

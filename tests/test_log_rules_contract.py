@@ -81,7 +81,7 @@ def _declared_log_rules(workflow, snakefile: str) -> list[str]:
 
     Read from ``workflow.globals`` rather than from the source text, and the
     difference is not stylistic. ``analyze_climate.smk`` APPENDS
-    ``0.06_compare_climate_sources`` at parse time when a run has candidate
+    ``0.06_compare_climate_datasets`` at parse time when a run has candidate
     sources, so the list literal is five entries while a multi-source run merges
     six. A source-text parser cannot see that by construction: it reads the
     literal, and the append is a statement.
@@ -164,7 +164,7 @@ def _label_from_log_path(log_path: str) -> str:
     index = parts.index(PARTS_DIR_NAME)
     for component in parts[index + 1 :]:
         # Strip only the `.log` extension. NOT `PurePosixPath.stem`, which reads
-        # the rule number's own dot as a suffix and turns `2.04_fetch_gcm_slice`
+        # the rule number's own dot as a suffix and turns `2.04_fetch_cmip6_projections`
         # into `2`.
         label = component[: -len(".log")] if component.endswith(".log") else component
         if _LABEL_PREFIX.match(label):

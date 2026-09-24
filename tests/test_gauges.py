@@ -141,7 +141,7 @@ def test_the_warning_says_what_renumbering_costs():
         warn_if_low_gauge_ids([1], "obs/output_locations.csv")
     message = str(caught[0].message)
     assert "obs/output_locations.csv" in message
-    assert "rule 1.05" in message
+    assert "rule 1.08" in message
     assert "timeseries column" in message
 
 

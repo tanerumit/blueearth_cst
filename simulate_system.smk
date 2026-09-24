@@ -8,23 +8,22 @@ sys.path.insert(0, str(REPOSITORY))
 from blueearth_cst.experiment.content_identity import content_sha256, read_canonical_json
 from blueearth_cst.experiment.simulation_runner import simulation_settings
 from blueearth_cst.shared.snake_utils import declare_warning_tally, patch_psutil_windows_benchmark, warning_count
-from blueearth_cst.shared.console_style import install_console_style, open_run_header, run_summary
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, run_summary, target_banner
 from blueearth_cst.shared.provenance import SHORT_DIGEST_CHARS, short_digest
 patch_psutil_windows_benchmark()
 config_path = workflow.configfiles[0]
 _, _settings = simulation_settings(config_path)
 OPERATION = _settings["operation"]
 if os.environ.get("CST_SIMULATION_OPERATION") != OPERATION or not os.environ.get("CST_SIMULATION_INVOCATION_ID"):
-    raise ValueError("Use python scripts/simulate_system.py --config <project> --target all (or --target metrics for metrics-only); bare simulate_system.smk is unsupported")
+    raise ValueError("Use python scripts/simulate_system.py --config <project> --target all (or --target simulations_and_indicators for metrics-only); bare simulate_system.smk is unsupported")
 if OPERATION == "metrics-only":
     include: "blueearth_cst/experiment/rules/metrics_only.smk"
 else:
     include: "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
 
 # RULES comes from whichever module was included above.
-PREPARE_METRIC_PLAN = RULES.banner_only("4.08", "prepare_metric_plan")
-PUBLISH_METRIC_SET = RULES.banner_only("4.09", "publish_metric_set", summary="reduce the retained responses to the immutable metric set")
-METRICS = RULES.banner_only("4.10", "metrics")
+PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan")
+DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", summary="reduce the retained responses to the immutable metric set")
 
 
 def _current_metric_request(wc=None):
@@ -34,9 +33,9 @@ def _current_metric_request(wc=None):
     return current_metric_request(exp_dir, METRIC_TOKENS, METRIC_ANCHOR)
 
 
-# 4.08  prepare_metric_plan
-checkpoint prepare_metric_plan:
-    message: PREPARE_METRIC_PLAN.banner(context="metric_request {wildcards.metric_request_id}")
+# 4.07  prepare_indicator_plan
+checkpoint prepare_indicator_plan:
+    message: PREPARE_INDICATOR_PLAN.banner(context="metric_request {wildcards.metric_request_id}")
     input:
         simulation=_frozen_simulation,
         responses=f"{engine_dir}/response_inventory.json",
@@ -72,16 +71,16 @@ def _metric_set_plan(wc):
     return path
 
 
-# 4.09  publish_metric_set
-rule publish_metric_set:
-    message: PUBLISH_METRIC_SET.banner(context="metric_set {wildcards.metric_set_id}")
+# 4.08  derive_system_indicators
+rule derive_system_indicators:
+    message: DERIVE_SYSTEM_INDICATORS.banner(context="metric_set {wildcards.metric_set_id}")
     input:
         plan=_metric_set_plan,
     output:
         manifest=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metrics.json"),
         units=update(f"{results_dir}/metric_sets/{{metric_set_id}}/metric_run_lookup.csv"),
         environment=update(f"{engine_dir}/metric_sets/{{metric_set_id}}/metric_environment.json"),
-        # publish_metric_set copies the checked benchmark report into the set so
+        # derive_system_indicators copies the checked benchmark report into the set so
         # a reader never needs the installed asset. Declared here because an
         # undeclared file is one Snakemake neither tracks nor cleans: a
         # --forcerun or partial clean would leave a manifest whose
@@ -95,15 +94,15 @@ rule publish_metric_set:
         publish_metric_set(exp_dir, read_canonical_json(Path(input.plan)))
 
 
-# 4.10  metrics
-rule metrics:
-    # NOT a `target_banner`, unlike 4.07 above and WF0/1/2's `rule all`.
-    # `_selected_metric_outputs` is a checkpoint-dependent input function, so
+# simulations_and_indicators -- target (unnumbered)
+rule simulations_and_indicators:
+    # A `target_banner` with NO target list, unlike `simulations_only` and
+    # every `rule all`. `_selected_metric_outputs` is a checkpoint-dependent input function, so
     # its targets do not exist at parse time and re-calling it from `params`
     # to list them would evaluate that resolution twice, at two different
-    # moments, for a cosmetic gain. The metric sets are named by 4.09's own
+    # moments, for a cosmetic gain. The metric sets are named by 4.08's own
     # `Published <id>` row instead.
-    message: METRICS.banner()
+    message: target_banner("simulations_and_indicators", [])
     input:
         _selected_metric_outputs,
 

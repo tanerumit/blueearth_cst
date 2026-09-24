@@ -132,7 +132,7 @@ def test_check_raises_and_the_message_says_what_to_do(tmp_path):
 def test_the_drift_message_reaches_the_rules_own_log_part(tmp_path):
     """[R10-13]: the rule fails naming a log file that must explain why.
 
-    Snakemake reported `Error in rule check_model_reference ... log:
+    Snakemake reported `Error in rule check_model_unchanged ... log:
     .../3.06_check_model_reference.log (check log file(s) for error details)`
     and that file held the three header lines and nothing else -- the
     ModelDriftError went to Snakemake's own log instead. Wired together here
@@ -199,11 +199,11 @@ def _rule_block(name: str) -> str:
 
 
 def test_the_guard_gates_the_first_rule_that_touches_the_model():
-    """Structural, not a comment: rule 3.09 downscale_climate_realization is the
+    """Structural, not a comment: rule 3.09 downscale_scenario_series is the
     first rule to use the model, and it must declare the guard's sentinel as an
     INPUT. Without this edge the guard could run after the simulation and every
     other test here would still pass."""
-    downscale = _rule_block("downscale_climate_realization")
+    downscale = _rule_block("downscale_scenario_series")
     inputs = downscale[downscale.index("input:") : downscale.index("output:")]
     assert ".model_reference_ok" in inputs, (
         "rule 3.09 does not declare the drift guard's sentinel as an input, so "
@@ -246,7 +246,7 @@ def test_the_guards_verdict_does_not_persist_between_invocations():
     rule does not declare, and declaring them would duplicate what
     `model_digest` discovers through the TOML's pointers.
     """
-    guard = _rule_block("check_model_reference")
+    guard = _rule_block("check_model_unchanged")
     out = guard[guard.index("output:") : guard.index("log:")]
     assert "temp(" in out, (
         "the guard's sentinel is not temp(), so its verdict persists and rule "
@@ -259,8 +259,8 @@ def test_the_guards_verdict_does_not_persist_between_invocations():
 def test_the_guard_reads_the_reference_and_the_writer_produces_it():
     """The two rules are a producer/consumer pair -- the class of bug this
     milestone hit three times. Asserted rather than assumed."""
-    writer = _rule_block("write_model_reference")
-    guard = _rule_block("check_model_reference")
+    writer = _rule_block("write_model_fingerprint")
+    guard = _rule_block("check_model_unchanged")
     assert "model_reference.yml" in writer[writer.index("output:") :]
     assert (
         "model_reference.yml" in guard[guard.index("input:") : guard.index("output:")]
@@ -271,7 +271,7 @@ def test_the_writer_declares_its_model_inputs_ancient():
     """Load-bearing, not incidental. If a rebuilt model re-triggered the writer,
     the reference would be rewritten to match, the comparison would always pass,
     and the guard would be decorative."""
-    writer = _rule_block("write_model_reference")
+    writer = _rule_block("write_model_fingerprint")
     decl = writer[writer.index("input:") : writer.index("params:")]
     for line in decl.splitlines():
         if "basin_dir" in line:
@@ -281,7 +281,7 @@ def test_the_writer_declares_its_model_inputs_ancient():
 def test_frozen_simulation_is_the_successor_to_the_project_snapshot_guard():
     text = SNAKEFILE.read_text(encoding="utf-8")
     assert "check_project_consistency" not in text
-    assert "checkpoint freeze_wflow_simulation:" in text
+    assert "checkpoint snapshot_simulation_inputs:" in text
     assert "SimulationFrozenError" in text
 
 

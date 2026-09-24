@@ -81,7 +81,7 @@ def test_wf1s_gather_neither_rows_nor_deletes_wf3s_nested_parts(tmp_path):
     diffs.
     """
     parts = tmp_path / "_parts"
-    _write(parts / "1.02_prepare_spatial_maps.tsv", 5.0, 50.0, 0.0, 4.0, 40.0)
+    _write(parts / "1.05_prepare_land_and_soil_maps.tsv", 5.0, 50.0, 0.0, 4.0, 40.0)
     wf3 = parts / "gabon_dry" / "3.16_derive_wflow_indicators.tsv"
     _write(wf3, 7.0, 70.0, 0.0, 6.0, 60.0)
 
@@ -89,7 +89,7 @@ def test_wf1s_gather_neither_rows_nor_deletes_wf3s_nested_parts(tmp_path):
     merge_benchmarks(str(parts), "1", str(out))
 
     text = out.read_text(encoding="utf-8")
-    assert "1.02_prepare_spatial_maps" in text
+    assert "1.05_prepare_land_and_soil_maps" in text
     assert "3.16_derive_wflow_indicators" not in text
     assert "gabon_dry" not in text
     assert wf3.is_file(), "WF1's gather deleted WF3's benchmark part"

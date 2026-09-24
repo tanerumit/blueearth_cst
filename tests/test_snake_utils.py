@@ -952,7 +952,7 @@ def test_tee_to_log_writes_the_traceback_into_the_log(tmp_path):
 def test_the_logged_traceback_carries_the_exception_message(tmp_path):
     """[R10-13]'s specific ask: the useful part must survive, not just a type.
 
-    `check_model_reference` raises `ModelDriftError` naming the changed input,
+    `check_model_unchanged` raises `ModelDriftError` naming the changed input,
     and that naming is the part an operator needs. It rides in ``str(exc)``, so
     the formatted traceback carries it -- asserted here so a future exception
     that hides its detail in unrendered attributes fails this instead of quietly
@@ -1370,7 +1370,7 @@ def test_tee_resets_even_after_the_bar_closed_its_own_line(tmp_path, monkeypatch
 def test_a_row_clears_a_frame_drawn_by_a_sibling_job(tmp_path, monkeypatch):
     """The reported defect, in the shape it actually occurs in.
 
-    wf0's `extract_historical_climate` fans out per source, so `-c 3` runs
+    wf0's `extract_climate_datasets` fans out per source, so `-c 3` runs
     era5 and chirps as two jobs -- two PROCESSES, two tees, one console. One
     holds a bar; the other writes rows, and until 2026-09-17 those rows landed
     on the tail of a frame their own tee had never drawn and could not know
@@ -1454,15 +1454,15 @@ def test_compact_matches_a_windows_spelt_path_stem():
     [
         ("2.05_merge", "Rule 2.05: merge"),
         (
-            "2.04_fetch_gcm_slice/cmip6_INM_x",
-            "Rule 2.04: fetch_gcm_slice  [cmip6_INM_x]",
+            "2.04_fetch_cmip6_projections/cmip6_INM_x",
+            "Rule 2.04: fetch_cmip6_projections  [cmip6_INM_x]",
         ),
         (
             "3.12_perturb_climate_realization/rlz_1_st_2",
             "Rule 3.12: perturb_climate_realization  [rlz 1 | st 2]",
         ),
         ("3.15_run_wflow/batch_0", "Rule 3.15: run_wflow  [batch 0]"),
-        ("1.14b_export_wflow_tables", "Rule 1.14b: export_wflow_tables"),
+        ("1.14_export_simulation_tables", "Rule 1.14: export_simulation_tables"),
         ("busy_rule", "busy_rule"),
     ],
 )
@@ -1513,7 +1513,7 @@ def test_heartbeat_notices_back_off():
     fixed interval would print ~18 here; the backoff prints a handful.
     """
     stream = io.StringIO()
-    hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
+    hb = _Heartbeat("2.04_fetch_cmip6_projections", stream, interval=0.05).start()
     time.sleep(0.9)  # stay silent across several would-be intervals
     hb.stop()
     notices = _still_running(stream)
@@ -1525,7 +1525,7 @@ def test_heartbeat_sparse_schedule_is_what_thins_the_notices(monkeypatch):
     monkeypatch.setattr(log_core, "_HEARTBEAT_SPARSE_MULTIPLIERS", (1.0,))
     monkeypatch.setattr(log_core, "_HEARTBEAT_SPARSE_STEP", 1.0)
     stream = io.StringIO()
-    hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
+    hb = _Heartbeat("2.04_fetch_cmip6_projections", stream, interval=0.05).start()
     time.sleep(0.9)
     hb.stop()
     assert len(_still_running(stream)) > 9
@@ -1534,7 +1534,7 @@ def test_heartbeat_sparse_schedule_is_what_thins_the_notices(monkeypatch):
 def test_heartbeat_keeps_its_first_notice_prompt():
     """A redirected run reports the first sparse notice at two intervals."""
     stream = io.StringIO()
-    hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
+    hb = _Heartbeat("2.04_fetch_cmip6_projections", stream, interval=0.05).start()
     time.sleep(0.13)
     hb.stop()
     assert _still_running(stream), "the first notice lands at two intervals"
@@ -1548,7 +1548,7 @@ def test_heartbeat_backoff_resets_when_output_resumes():
     watchdog failing at exactly the moment it exists for.
     """
     stream = io.StringIO()
-    hb = _Heartbeat("2.04_fetch_gcm_slice", stream, interval=0.05).start()
+    hb = _Heartbeat("2.04_fetch_cmip6_projections", stream, interval=0.05).start()
     time.sleep(0.5)  # let the threshold grow
     before = len(_still_running(stream))
     hb.touch()  # output resumed: the gap closes and the backoff resets
@@ -2659,14 +2659,14 @@ def test_console_marker_column_is_the_same_on_a_start_and_a_finish():
 
 def test_console_finish_line_carries_number_wildcards_elapsed_and_counter():
     """The finish record names only a jobid, so every other field is recovered."""
-    cs._RULE_NUMBERS["downscale_climate_realization"] = "3.14"
+    cs._RULE_NUMBERS["downscale_scenario_series"] = "3.14"
     handler = _console_handler()
     _emit(
         handler,
         _job_info(
             3,
-            "downscale_climate_realization",
-            "Rule 3.14: downscale_climate_realization  [rlz 1 | st 0]",
+            "downscale_scenario_series",
+            "Rule 3.14: downscale_scenario_series  [rlz 1 | st 0]",
             {"rlz": "1", "st": "0"},
         ),
     )
@@ -2681,7 +2681,7 @@ def test_console_finish_line_carries_number_wildcards_elapsed_and_counter():
     )
     done = out.splitlines()[1]
     assert re.fullmatch(
-        r"\d\d:\d\d:\d\d - DONE Rule 3\.14: downscale_climate_realization  "
+        r"\d\d:\d\d:\d\d - DONE Rule 3\.14: downscale_scenario_series  "
         r"\[rlz 1 \| st 0\]  0:01:11  \[job 27/37\]",
         done,
     ), done
@@ -2979,7 +2979,7 @@ def test_console_job_stats_collapse_to_one_line(monkeypatch):
         "Job stats:\njob                              count\n"
         "-----------------------------  -------\n"
         "all                                  1\n"
-        "downscale_climate_realization       10\n"
+        "downscale_scenario_series       10\n"
         "perturb_climate_realization          8\n"
         "run_wflow_batch_0                    1\n"
         "total                               20\n"
@@ -2987,7 +2987,7 @@ def test_console_job_stats_collapse_to_one_line(monkeypatch):
     out = _emit(handler, _console_record(table, event="run_info"))
     assert out == (
         "20 jobs across 4 rules  "
-        "(downscale_climate_realization x10, perturb_climate_realization x8)\n"
+        "(downscale_scenario_series x10, perturb_climate_realization x8)\n"
     ), out
     flat = _emit(
         _console_handler(),
@@ -3400,18 +3400,18 @@ def test_console_a_rule_without_a_message_still_gets_a_named_finish_line():
 
 def test_console_a_sub_second_job_shows_no_duration():
     """`0:00:00` reads as a broken clock, and bookkeeping rules are most of them."""
-    cs._RULE_NUMBERS["prepare_collection_sources"] = "3.04"
+    cs._RULE_NUMBERS["snapshot_generation_inputs"] = "3.04"
     handler = _console_handler()
     out = _emit(
         handler,
         _job_info(
-            1, "prepare_collection_sources", "Rule 3.04: prepare_collection_sources"
+            1, "snapshot_generation_inputs", "Rule 3.04: snapshot_generation_inputs"
         ),
         _console_record(event="job_finished", job_id=1),
         _console_record(event="progress", done=3, total=37),
     )
     done = out.splitlines()[1]
-    assert done.endswith("Rule 3.04: prepare_collection_sources  [job 3/37]"), done
+    assert done.endswith("Rule 3.04: snapshot_generation_inputs  [job 3/37]"), done
 
 
 def test_console_no_escape_codes_when_the_stream_is_not_a_tty():
@@ -3608,26 +3608,26 @@ def test_console_prints_a_rule_summary_once_and_trims_it_from_the_fan_out():
     def banner(context):
         return rule_banner(
             "3.14",
-            "downscale_climate_realization",
+            "downscale_scenario_series",
             context,
             summary="downscale the climate",
         )
 
     out = _emit(
         handler,
-        _job_info(1, "downscale_climate_realization", banner("rlz 2 | st 0")),
-        _job_info(2, "downscale_climate_realization", banner("rlz 2 | st 2")),
-        _job_info(3, "downscale_climate_realization", banner("rlz 2 | st 3")),
+        _job_info(1, "downscale_scenario_series", banner("rlz 2 | st 0")),
+        _job_info(2, "downscale_scenario_series", banner("rlz 2 | st 2")),
+        _job_info(3, "downscale_scenario_series", banner("rlz 2 | st 3")),
     )
     first, second, third = out.splitlines()
     assert first.endswith(
-        "RUN  Rule 3.14: downscale_climate_realization "
+        "RUN  Rule 3.14: downscale_scenario_series "
         "- downscale the climate  [rlz 2 | st 0]"
     ), first
     for line, context in ((second, "[rlz 2 | st 2]"), (third, "[rlz 2 | st 3]")):
-        assert line.endswith(
-            f"RUN  Rule 3.14: downscale_climate_realization  {context}"
-        ), line
+        assert line.endswith(f"RUN  Rule 3.14: downscale_scenario_series  {context}"), (
+            line
+        )
         # The identity survives: one grep on `3.14` still finds every member.
         assert "downscale the climate" not in line, line
 
@@ -4245,8 +4245,11 @@ def test_a_logged_rule_registers_its_label_in_declaration_order():
     """`LOG_RULES` IS the merge order, so the registry must build it in order."""
     reg = _registry()
     reg.logged("0.02", "delineate_region")
-    reg.logged("0.03", "delineate_spatial_units")
-    assert reg.log_rules == ["0.02_delineate_region", "0.03_delineate_spatial_units"]
+    reg.logged("0.03", "delineate_subbasins_and_rivers")
+    assert reg.log_rules == [
+        "0.02_delineate_region",
+        "0.03_delineate_subbasins_and_rivers",
+    ]
 
 
 def test_log_rules_is_the_live_list_a_snakefile_aliases():
@@ -4257,8 +4260,8 @@ def test_log_rules_is_the_live_list_a_snakefile_aliases():
     """
     reg = _registry()
     alias = reg.log_rules
-    reg.logged("0.06", "compare_climate_sources")
-    assert alias == ["0.06_compare_climate_sources"]
+    reg.logged("0.06", "compare_climate_datasets")
+    assert alias == ["0.06_compare_climate_datasets"]
     assert alias is reg.log_rules
 
 
@@ -4296,14 +4299,14 @@ def test_a_fan_out_rule_suffixes_its_NAME_and_nests_its_PARTS():
     part lands in ONE directory named for the singular label -- which is what
     keeps `LOG_RULES` singular and lets `merge_logs` list the directory.
     """
-    r = _registry().logged("0.04", "extract_historical_climate")
-    assert r.label == "0.04_extract_historical_climate"
-    assert r.job_name("chirps") == "extract_historical_climate_chirps"
+    r = _registry().logged("0.04", "extract_climate_datasets")
+    assert r.label == "0.04_extract_climate_datasets"
+    assert r.job_name("chirps") == "extract_climate_datasets_chirps"
     assert (
-        r.log("chirps") == "PROJ/logs/_parts/0.04_extract_historical_climate/chirps.log"
+        r.log("chirps") == "PROJ/logs/_parts/0.04_extract_climate_datasets/chirps.log"
     )
     assert r.benchmark("era5") == (
-        "PROJ/benchmarks/_parts/0.04_extract_historical_climate/era5.tsv"
+        "PROJ/benchmarks/_parts/0.04_extract_climate_datasets/era5.tsv"
     )
 
 
@@ -4315,9 +4318,9 @@ def test_the_banner_carries_the_rules_summary_and_the_fanned_name():
     assert described.banner() == cs.rule_banner(
         "0.04b", "derive_plot_scales", summary="one scale"
     )
-    fanned = reg.logged("0.05", "plot_climate_source")
+    fanned = reg.logged("0.05", "plot_climate_datasets")
     assert fanned.banner("chirps") == cs.rule_banner(
-        "0.05", "plot_climate_source_chirps"
+        "0.05", "plot_climate_datasets_chirps"
     )
 
 

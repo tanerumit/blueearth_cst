@@ -582,7 +582,7 @@ def _warn_on_low_gauge_ids(locations_path):
     """Advisory read of ``output_locations`` for the wflow_id convention.
 
     Rule 1.01 is the earliest point that sees this file, so a warning here
-    reaches the user BEFORE rule 1.05 writes the ids into the model and a
+    reaches the user BEFORE rule 1.04 writes the ids into the model and a
     renumbering would cost a rebuild.
 
     CSV only, and every failure is swallowed: hydromt accepts several formats

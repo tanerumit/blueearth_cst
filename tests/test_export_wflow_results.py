@@ -352,7 +352,7 @@ def test_a_variable_the_run_never_emitted_is_refused_by_name(tmp_path):
     """An empty table is indistinguishable from "never requested", so it raises.
 
     This reverses the pre-2026-08-11 behaviour, which wrote the header-only table
-    and deferred the mismatch to `check_model_reference`. That deferral does not
+    and deferred the mismatch to `check_model_unchanged`. That deferral does not
     hold: that rule compares the live model's digest against the one the
     experiment recorded, so it fires when the model CHANGES and is silent about a
     `wflow_outvars` entry the model never emitted a column for. Nothing else was

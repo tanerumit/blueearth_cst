@@ -117,8 +117,8 @@ def _version_string(value, where: str) -> str:
     """A quoted three-part version.
 
     The non-string rejection is load-bearing rather than defensive: unquoted
-    ``1.11`` in YAML parses to the FLOAT 1.11, which would silently become the
-    selector ``+1.11`` and let juliaup pick whatever patch it likes.
+    ``1.10`` in YAML parses to the FLOAT 1.11, which would silently become the
+    selector ``+1.10`` and let juliaup pick whatever patch it likes.
     """
     if not isinstance(value, str):
         raise ValueError(
@@ -336,7 +336,7 @@ def derive_seed(experiment_name: str) -> int:
         raise ValueError(
             f"cannot derive a seed from experiment_name={experiment_name!r}: "
             "`seed: auto` needs the experiment's name, which WF3 always "
-            "resolves before rule 3.10 runs"
+            "resolves before rule 3.09 runs"
         )
     return zlib.crc32(experiment_name.encode("utf-8")) % _SEED_MODULUS
 
@@ -572,7 +572,7 @@ def region_rule(
 
     ONE rule definition, declared in all three workflows (``1.01b`` / ``2.03b``
     / ``3.01b``), over the ONE delineation of ``shared.basin.region``. Before
-    ADR 0006 the polygon was derived twice — by rule 1.02 on its way to
+    ADR 0006 the polygon was derived twice — by rule 1.01 on its way to
     ``basins.geojson``, and per climate-store key as ``store_region.geojson`` —
     and WF2 ran the whole climate-store producer to obtain it.
 
@@ -598,7 +598,7 @@ def region_rule(
     hydrography, basin_index : str
         ``shared.basin.hydrography`` / ``shared.basin.basin_index`` — catalog
         entry names for the delineation. The defaults equal the shipped build
-        template's ``setup_basemaps`` values; rule 1.02 fails loud if the two
+        template's ``setup_basemaps`` values; rule 1.01 fails loud if the two
         ever disagree.
 
     Returns
@@ -654,9 +654,9 @@ def climate_store_rule(
     """Build the one producer contract for ``data/climate/historical/<key>/``
     (R07 B1).
 
-    ONE rule definition, declared in ``build_model.smk`` (rule 1.04) and
-    ``generate_scenarios.smk`` (rule 3.02) as ``extract_historical_climate``, and
-    generated per candidate source by ``analyze_climate.smk`` (rule 0.04) as
+    ONE rule definition, declared in ``build_model.smk`` (rule 1.03) and
+    ``generate_scenarios.smk`` (rule 3.02) as ``extract_climate_datasets``, and
+    generated per candidate source by ``analyze_climate.smk`` (rule 0.03) as
     ``extract_historical_climate_<source>``. All three resolve to the same
     store directory, so whichever workflow runs first extracts and the others
     read what is already there. Over the
@@ -672,7 +672,7 @@ def climate_store_rule(
     boundary (ext2-01), while the region declares the extraction extent; both
     are plain inputs, never ``ancient()``. Data behind an unchanged catalog
     entry is out of scope — edit the entry, or use ``snakemake --forcerun
-    extract_historical_climate`` (in wf0, name the generated source rule).
+    extract_climate_datasets`` (in wf0, name the generated source rule).
 
     Parameters
     ----------
@@ -693,7 +693,7 @@ def climate_store_rule(
         ``shared.basin.hydrography`` / ``shared.basin.basin_index`` — catalog
         ENTRY NAMES for the delineation, not paths. Optional config keys; the
         defaults equal the shipped build template's ``setup_basemaps`` values,
-        and rule 1.02 fails loud if the two ever disagree.
+        and rule 1.01 fails loud if the two ever disagree.
     enforce_min_years : bool, optional
         Whether a DELIVERED record below ``MIN_HISTORICAL_YEARS`` fails the
         extraction. ``True`` for every store that feeds the pipeline — which is
@@ -766,7 +766,7 @@ def climate_store_rule(
         # rather than a WF3-local artifact: the store is what both workflows
         # share, and the mask is a property of this extraction's grid, so it is
         # only derivable where the grid and the region polygon meet. Consumers
-        # (rule 3.11) average over exactly these cells instead of over every
+        # (rule 3.10) average over exactly these cells instead of over every
         # cell the bbox+buffer read happened to include.
         "basin_cells": f"{store_dir}/basin_cells.csv",
     }

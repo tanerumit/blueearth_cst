@@ -21,7 +21,7 @@ job                             count
 ----------------------------  -------
 all                                 1
 snapshot_config                     1
-write_outlet_index                  1
+write_gauge_index                  1
 total                               3
 """
 
@@ -43,7 +43,7 @@ def test_the_stats_table_parses_to_counts():
     assert cs._run_info_counts(WF1_STATS) == {
         "all": 1,
         "snapshot_config": 1,
-        "write_outlet_index": 1,
+        "write_gauge_index": 1,
     }
 
 
@@ -77,19 +77,19 @@ def test_rules_sharing_a_number_collapse_to_one_row(rules):
     """
     rules(
         {
-            "extract_historical_climate_era5": "0.04",
-            "extract_historical_climate_chirps": "0.04",
-            "extract_historical_climate_eobs": "0.04",
+            "extract_climate_datasets_era5": "0.04",
+            "extract_climate_datasets_chirps": "0.04",
+            "extract_climate_datasets_eobs": "0.04",
         }
     )
     (row,) = cs._plan_rows(
         {
-            "extract_historical_climate_era5": 1,
-            "extract_historical_climate_chirps": 1,
-            "extract_historical_climate_eobs": 1,
+            "extract_climate_datasets_era5": 1,
+            "extract_climate_datasets_chirps": 1,
+            "extract_climate_datasets_eobs": 1,
         }
     )
-    assert row == ("0.04", "extract_historical_climate", 3)
+    assert row == ("0.04", "extract_climate_datasets", 3)
 
 
 def test_a_shared_number_with_no_common_prefix_keeps_a_real_name(rules):
@@ -104,8 +104,8 @@ def test_numbers_sort_lexicographically(rules):
     rules(
         {
             "run_wflow": "1.14",
-            "export_wflow_tables": "1.14b",
-            "plot_wflow_evaluation": "1.15",
+            "export_simulation_tables": "1.14b",
+            "plot_model_evaluation": "1.15",
             "write_run_metadata": "1.15b",
             "snapshot_config": "1.01",
         }

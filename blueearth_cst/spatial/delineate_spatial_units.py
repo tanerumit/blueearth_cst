@@ -1,12 +1,12 @@
 """Delineate the shared vector foundation once per project (ADR 0003 §8).
 
-Rule ``delineate_spatial_units``'s script — the SINGLE producer of
+Rule ``delineate_subbasins_and_rivers``'s script — the SINGLE producer of
 ``spatial/geoms/{basins,subbasins,catchments,rivers,locations}.geojson``,
 ``spatial/location_registry.csv`` and the hydrography grid seam, declared
 identically in all three workflows (``1.01c`` / ``2.03c`` / ``3.01f``) from
 ``snake_utils.spatial_units_rule``.
 
-Before this split the layers were by-products of rule 1.02, whose real product
+Before this split the layers were by-products of rule 1.01, whose real product
 is ``spatial_maps.nc`` and the thematic raster stack behind it. WF2 and WF3
 want basin and subbasin boundaries for figures and metrics; declaring the
 unsplit rule would have made a projections-only run resample ``vito``,

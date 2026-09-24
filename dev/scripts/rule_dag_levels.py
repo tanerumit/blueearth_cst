@@ -26,7 +26,7 @@ so that is where extra cores actually go.
 
 What a level is **not** is a schedule. Snakemake starts a job the moment its own
 inputs exist, not level by level, so independent chains overlap — one series can
-be in ``reduce_gcm_series`` while another is still in ``fetch_gcm_slice``. Read the
+be in ``reduce_to_basin_averages`` while another is still in ``fetch_cmip6_projections``. Read the
 levels as dependency depth, never as "these run together and nothing else does".
 
 Usage (from the repo root, inside pixi)::
@@ -54,7 +54,7 @@ from typing import NamedTuple
 
 REPO = Path(__file__).resolve().parents[2]
 
-# `\t4[label = "fetch_gcm_slice\nseries_key: cmip6_...", color = "...", style="rounded,dashed"];`
+# `\t4[label = "fetch_cmip6_projections\nseries_key: cmip6_...", color = "...", style="rounded,dashed"];`
 # The label is taken non-greedily to the next quote. Snakemake does not escape
 # quotes inside a label, so a wildcard VALUE containing `"` would truncate the
 # rule name -- it cannot corrupt the graph, because only the first label line is
@@ -102,7 +102,7 @@ def topological_levels(
     Longest path, not shortest — a rule reachable by both a short and a long
     chain cannot start until the long one finishes, so the short path would
     understate when it runs. WF2 has exactly this shape:
-    ``plot_climate_proj_timeseries`` depends on both ``reduce_gcm_series``
+    ``plot_climate_proj_timeseries`` depends on both ``reduce_to_basin_averages``
     (level 2) and ``derive_change_factors`` (level 3), and belongs at 4.
     """
     successors: dict[int, list[int]] = defaultdict(list)

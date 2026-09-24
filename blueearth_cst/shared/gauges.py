@@ -98,7 +98,7 @@ def warn_if_low_gauge_ids(ids, source) -> list:
             f"positional wflow_N outlet labels — a column named Q_1 is "
             f"ambiguous, Q_101 is not. Nothing rejects these ids; renumbering "
             f"means changing output_locations AND the timeseries column "
-            f"headers together, then rebuilding from rule 1.05, because "
+            f"headers together, then rebuilding from rule 1.08, because "
             f"setup_gauges writes the ids into the model.",
             stacklevel=2,
         )
@@ -147,7 +147,7 @@ def _resolve(
         f"{available or 'no gauge entries at all'}. The gauges will be missing "
         f"from this output. If no gauge falls inside the model domain this is "
         f"expected (hydromt logs 'Skipping method, as no data has been found' "
-        f"during rule 1.05); otherwise the model was built without them.",
+        f"during rule 1.08); otherwise the model was built without them.",
         stacklevel=3,
     )
     return None
@@ -177,7 +177,7 @@ def gauges_variable_name(results, gauges_fn, variable: str = "Q") -> Optional[st
         The config's ``output_locations``.
     variable : str
         The wflow output header, ``Q`` (discharge) or ``P`` (precipitation);
-        rule 1.05 configures both for gauges.
+        rule 1.08 configures both for gauges.
     """
     return _resolve(
         results, gauges_fn, f"{variable} variable", f"{variable}_{GAUGES_PREFIX}"

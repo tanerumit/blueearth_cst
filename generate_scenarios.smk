@@ -69,7 +69,7 @@ BENCHMARKS_NAME = f"wf3_benchmarks_{_plan_key}.md"
 RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("3.01", "delineate_region")
-EXTRACT_HISTORICAL_CLIMATE = RULES.logged("3.02", "extract_historical_climate")
+EXTRACT_CLIMATE_DATASETS = RULES.logged("3.02", "extract_climate_datasets")
 PREPARE_PERTURBATION_GRID = RULES.logged("3.03", "prepare_perturbation_grid")
 if V2_MODE:
     GENERATE_WEATHER_REALIZATIONS = RULES.logged(
@@ -80,9 +80,9 @@ if V2_MODE:
         "3.08", "perturb_climate_realizations",
         summary="perturb each realization over the perturbation grid",
     )
-PUBLISH_SCENARIO_COLLECTION = RULES.banner_only("3.10", "publish_scenario_collection", summary="validate and publish the scenario collection")
-GATHER_BENCHMARKS = RULES.banner_only("3.11", "gather_benchmarks")
-GATHER_LOGS = RULES.banner_only("3.12", "gather_logs")
+PUBLISH_SCENARIO_COLLECTION = RULES.banner_only("3.09", "publish_scenario_collection", summary="validate and publish the scenario collection")
+GATHER_BENCHMARKS = RULES.banner_only("3.10", "gather_benchmarks")
+GATHER_LOGS = RULES.banner_only("3.11", "gather_logs")
 INVOCATION_ID = os.environ.setdefault("CST_GENERATION_INVOCATION_ID", uuid.uuid4().hex)
 RLZ_NUM = GENERATION["n_realizations"]
 ST_NUM = GENERATION["n_design_points"]
@@ -151,9 +151,9 @@ rule delineate_region:
     script: REGION.script
 
 
-# 3.02  extract_historical_climate
-rule extract_historical_climate:
-    message: EXTRACT_HISTORICAL_CLIMATE.banner()
+# 3.02  extract_climate_datasets
+rule extract_climate_datasets:
+    message: EXTRACT_CLIMATE_DATASETS.banner()
     input:
         **CLIMATE_STORE.inputs,
     params:
@@ -161,9 +161,9 @@ rule extract_historical_climate:
     output:
         **CLIMATE_STORE.outputs,
     log:
-        EXTRACT_HISTORICAL_CLIMATE.log(),
+        EXTRACT_CLIMATE_DATASETS.log(),
     benchmark:
-        EXTRACT_HISTORICAL_CLIMATE.benchmark(),
+        EXTRACT_CLIMATE_DATASETS.benchmark(),
     script:
         CLIMATE_STORE.script
 
@@ -187,9 +187,9 @@ rule prepare_perturbation_grid:
 if V2_MODE and V2_PLAN["decision"] == "create":
     # Done by scripts/generate_scenarios.py before this DAG was built: the plan
     # is frozen, the collection claimed and the generator input written.
-    pre_dag_step("3.04", "prepare_collection_sources")
-    pre_dag_step("3.05", "initialize_scenario_collection")
-    pre_dag_step("3.06", "prepare_weathergen_config")
+    pre_dag_step("3.04", "snapshot_generation_inputs")
+    pre_dag_step("3.05", "claim_scenario_collection")
+    pre_dag_step("3.06", "prepare_weather_generator_settings")
     from blueearth_cst.experiment.generation_publication import (
         publish_generation,
         validate_provider_inputs,
@@ -330,7 +330,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             )
 
 
-# 3.11 / 3.12 -- merge the run's benchmark and log parts, generation phase only:
+# 3.10 / 3.11 -- merge the run's benchmark and log parts, generation phase only:
 # the source phase runs first, and merging there would consume its parts before
 # the generation rules wrote theirs. The terminal is the ready marker (create)
 # or this invocation's receipt (reuse); both are new per run, so the merge is too.

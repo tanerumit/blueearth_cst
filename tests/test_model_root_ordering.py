@@ -56,7 +56,7 @@ SENTINEL_OWNER = "add_climate_forcing"
 MODEL_ROOT_WRITERS = (
     "build_wflow_model",  # 1.03 creates staticmaps.nc + the toml
     "add_reservoirs_lakes_glaciers",  # 1.04 mod.write()/mod.close()
-    "declare_wflow_outputs",  # 1.05 mod.write()/mod.close()
+    "declare_gauges_and_outputs",  # 1.05 mod.write()/mod.close()
     "add_climate_forcing",  # 1.08 hydromt update -- rewrites all of it,
     #      and since R10-1 also writes the
     #      forcing yml 1.07 used to hand it
@@ -82,7 +82,7 @@ def _rule_bodies() -> dict[str, str]:
     `rule` -- the Snakefile interleaves module-level code between rules, and
     running to the next rule swept that code into the preceding rule's body.
     Caught by this module's own first run: it reported rule 1.10
-    `extract_historical_climate` as a model-root reader because the `_evaluation_pngs`
+    `extract_climate_datasets` as a model-root reader because the `_evaluation_pngs`
     comprehension sits after it.
     """
     text = _strip_comments(SNAKEFILE.read_text(encoding="utf-8"))

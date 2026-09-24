@@ -30,7 +30,7 @@ It also lives in ``dev/scripts/``, which is never part of a run.
 
 **Why a relationship rather than a rerun rule.** Temporal drift is already
 structurally impossible: ``data/spatial/`` is upstream of the model build, and
-ADR 0004 makes rule 1.10 the terminal writer of the whole model root, so a
+ADR 0004 makes rule 1.09 the terminal writer of the whole model root, so a
 partially-failed build cannot leave one tree ahead of the other. What is NOT
 guaranteed is that hydromt keeps deriving its ``region`` the way it does today
 -- ``GridComponent._region_data`` returns ``box(*self.bounds)``

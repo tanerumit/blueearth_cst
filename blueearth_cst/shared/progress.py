@@ -8,7 +8,7 @@ graph, so every workflow's long write animates the same labelled line:
 * wf1's and wf3's writes go through hydromt, which hard-codes
   ``progressbar=True`` and offers no way in for a caller's bar --
   :func:`hydromt_progress` rebinds the name hydromt resolves;
-* rule 1.08 drives hydromt through its CLI, so the bar is drawn in a child
+* rule 1.07 drives hydromt through its CLI, so the bar is drawn in a child
   process no rebind can reach -- :class:`DaskFrameRelay` re-renders the frames
   arriving on the pipe.
 
@@ -200,7 +200,7 @@ class DaskProgress(Callback):
 
     # -- the same bar, driven by something other than a dask graph ----------
     #
-    # Rule 1.08's bar arrives as text from a child process, so there is no
+    # Rule 1.07's bar arrives as text from a child process, so there is no
     # graph to attach a Callback to. These three are that entry point; the
     # Callback hooks above are thin wrappers over them, so both drivers render
     # through exactly one implementation.
@@ -362,7 +362,7 @@ _DASK_FRAME_RE = re.compile(r"^\[[#\s]*\]\s*\|\s*(\d{1,3})%\s+Completed\b")
 class DaskFrameRelay:
     """Re-render a child process's dask bar frames as one of ours.
 
-    Rule 1.08 drives hydromt through its CLI, so the bar is drawn inside a
+    Rule 1.07 drives hydromt through its CLI, so the bar is drawn inside a
     process whose module namespace :func:`hydromt_progress` cannot reach. The
     frames still arrive on the pipe, though, and they carry the one number that
     matters -- so the parent parses the percentage out and redraws the line in
@@ -371,7 +371,7 @@ class DaskFrameRelay:
     Parsing another project's output is normally a bad trade. It is the right
     one here because the alternative is bootstrapping the child through a
     ``python -c`` preamble, which would stop the command being the byte-identical
-    ``hydromt update`` invocation that made rule 1.07+1.08's merge
+    ``hydromt update`` invocation that made rule 1.06+1.07's merge
     behaviour-preserving. A frame that does not match is simply not consumed and
     falls through to the caller unchanged, so a format change upstream costs the
     bar, never the run.
@@ -488,7 +488,7 @@ class WflowFrameRelay:
         # side maps to 1.0 as well. Both are genuine frames, so the emitter
         # cannot drop either without guessing which is last -- swallowing the
         # repeat here is what keeps one finished bar from printing as two
-        # identical rows (observed on rule 1.14, 2026-08-18).
+        # identical rows (observed on rule 1.13, 2026-08-18).
         if fraction >= 1.0 and not self._active and label == self._done_label:
             return ""
 

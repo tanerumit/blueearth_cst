@@ -127,7 +127,7 @@ def compute_plot_scales(
         Water-year resample anchor, as the figures use.
     basin_cells : mapping, optional
         ``{source_name: basin_cells.csv}``. The SERIES kinds are pooled over the
-        basin's cells, because that is what rule 0.05 now draws -- a scale
+        basin's cells, because that is what rule 0.04 now draws -- a scale
         computed over the buffered extraction and applied to a basin mean is
         exactly the "computed over one quantity, applied to another" defect the
         indirection through ``VALUE_DERIVATIONS`` exists to prevent.
@@ -228,7 +228,7 @@ if __name__ == "__main__":
                     dict(zip(sm.params.sources, sm.input.climate_ncs)),
                     sm.params.variables,
                     anchor=water_year_end_anchor(sm.params.water_year_start),
-                    # The series scales are pooled over the SAME cells rule 0.05
+                    # The series scales are pooled over the SAME cells rule 0.04
                     # averages, or the shared axis describes a domain no figure
                     # draws.
                     basin_cells=dict(zip(sm.params.sources, sm.input.basin_cells)),

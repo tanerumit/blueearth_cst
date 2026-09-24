@@ -153,7 +153,7 @@ def test_each_leaf_is_required(tmp_path, monkeypatch, dropped):
     project = tmp_path / "project"
     declared = {
         Path(str(path)).relative_to(project).as_posix()
-        for path in workflow.get_rule("write_model_reference").input
+        for path in workflow.get_rule("write_model_fingerprint").input
     }
     assert dropped in declared
     assert declared == set(cwi.LEAVES)

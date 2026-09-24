@@ -15,8 +15,8 @@ traceback respectively.
 One target is special: the workflow-1 Wflow **discharge** series
 (`models/hydrology/wflow/run_default/output.csv`).
 
-**Produce the run with `--notemp`.** Since 2026-08-10 rule 1.14 declares that
-file as `temp()`, so an ordinary run deletes it once rules 1.14b and 1.15 have
+**Produce the run with `--notemp`.** Since 2026-08-10 rule 1.13 declares that
+file as `temp()`, so an ordinary run deletes it once rules 1.14 and 1.15 have
 consumed it and this target then fails "target missing on disk" — a gate
 failure that indicates no defect. The derived `output_q.csv` beside it is NOT a
 substitute: it is rounded to 5 decimal places, and on discharge running
@@ -373,7 +373,7 @@ TARGETS: list[tuple[str, str, str]] = [
     # numbers are designed not to.
     #
     # What it would have guarded is guarded at RUN time instead, and better --
-    # rule 4.02 `check_model_reference` plus the collection and metric-set
+    # rule 4.02 `check_model_unchanged` plus the collection and metric-set
     # immutability errors, all of which fire during the run rather than in a gate
     # someone remembers to run afterwards.
 ]

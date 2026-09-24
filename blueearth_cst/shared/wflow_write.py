@@ -1,8 +1,8 @@
 """Writing a Wflow model back to disk without touching the forcing.
 
-Rule 1.10 (``add_climate_forcing``) owns the forcing netCDF: it builds it, it
-declares it as a Snakemake output, and its name is on the file. Rules 1.08
-(``add_reservoirs_lakes_glaciers``) and 1.09 (``declare_wflow_outputs``) change
+Rule 1.09 (``add_climate_forcing``) owns the forcing netCDF: it builds it, it
+declares it as a Snakemake output, and its name is on the file. Rules 1.07
+(``add_reservoirs_lakes_glaciers``) and 1.09 (``declare_gauges_and_outputs``) change
 staticmaps, geoms and the TOML and have no business writing forcing at all --
 but ``WflowBaseModel.write()`` flushes every component, so on a re-run they
 wrote it anyway.
@@ -26,12 +26,12 @@ On a FRESH build there is no file to read, so the component stays empty and
 hydromt logs ``Write forcing skipped: dataset is empty`` -- which is why this
 never showed up on a clean run.
 
-Rule 1.10 runs after both and repoints the key back, so a COMPLETE run ends
+Rule 1.09 runs after both and repoints the key back, so a COMPLETE run ends
 with a correct TOML. The window is what makes this worth fixing rather than
-tidying: between rule 1.09 finishing and rule 1.10 rewriting the forcing, the
+tidying: between rule 1.08 finishing and rule 1.09 rewriting the forcing, the
 model config names a file Snakemake does not track. A run that stops there -- a
-failure, an interrupt, ``--until``, or rule 1.10 judged up to date -- leaves it
-that way, and rule 1.14 would then run Wflow against it.
+failure, an interrupt, ``--until``, or rule 1.09 judged up to date -- leaves it
+that way, and rule 1.13 would then run Wflow against it.
 
 **Why the sequence is replicated rather than parameterised.** ``hydromt``'s
 base ``Model.write`` takes a ``components`` list, and naming every component
@@ -83,7 +83,7 @@ def write_model_except_forcing(model) -> None:
     console at all (hydromt's rows arrive through a handler hydromt installs on
     its OWN logger, bound to the tee'd stdout), so the row would only have
     landed by binding ``logging.getLogger("hydromt_wflow.wflow_base")`` and
-    signing hydromt's name to our output. It is no loss: rules 1.08 and 1.09
+    signing hydromt's name to our output. It is no loss: rules 1.07 and 1.08
     are not silent without it -- a 1.09 run prints thirteen rows naming every
     grid, geom and config file as it is written, and a generic "writing the
     model" above them is the repetition this console work has been removing.

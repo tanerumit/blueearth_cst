@@ -746,11 +746,11 @@ def _rule(workflow, name):
 
 def test_rule_is_absent_on_a_single_source_config():
     """With ONE entry in `climate.sources`, WF0 is what WF1 already draws."""
-    assert _rule(_parse_workflow(CONFIG_FN), "compare_climate_sources") is None
+    assert _rule(_parse_workflow(CONFIG_FN), "compare_climate_datasets") is None
 
 
 def test_rule_declares_the_module_named_outputs_on_two_sources(two_source_config):
-    rule = _rule(_parse_workflow(two_source_config), "compare_climate_sources")
+    rule = _rule(_parse_workflow(two_source_config), "compare_climate_datasets")
     assert rule is not None, "rule 0.06 must be declared for a multi-source run"
     declared = sorted(Path(str(path)).name for path in rule.output)
     # The named figures and the table, PLUS the per-subbasin bin: those members
@@ -762,7 +762,7 @@ def test_rule_declares_the_module_named_outputs_on_two_sources(two_source_config
 
 def test_rule_takes_each_store_and_its_basin_cells(two_source_config):
     """The masking is carried by the DAG, not read behind Snakemake's back."""
-    rule = _rule(_parse_workflow(two_source_config), "compare_climate_sources")
+    rule = _rule(_parse_workflow(two_source_config), "compare_climate_datasets")
     names = [Path(str(path)).name for path in rule.input]
     assert names.count("extract_historical.nc") == 2
     assert names.count("basin_cells.csv") == 2
@@ -772,7 +772,7 @@ def test_the_appended_log_label_matches_the_rule(two_source_config):
     """The rule's own log label, still pinned here; the LIST is not.
 
     The second half of this test -- a regex over `analyze_climate.smk` matching
-    `LOG_RULES.append("0.06_compare_climate_sources")` -- is GONE, and the
+    `LOG_RULES.append("0.05_compare_climate_datasets")` -- is GONE, and the
     reason is the one this module's sibling states as a rule: two modules
     asserting one property by different parsers is how they come to disagree
     (`[R10-10]`). That regex existed only because
@@ -786,6 +786,6 @@ def test_the_appended_log_label_matches_the_rule(two_source_config):
     falsification: renaming the appended label fails exactly the two
     `analyze_climate.smk-two_source` cases there.
     """
-    rule = _rule(_parse_workflow(two_source_config), "compare_climate_sources")
+    rule = _rule(_parse_workflow(two_source_config), "compare_climate_datasets")
     label = Path(str(rule.log[0])).name[: -len(".log")]
-    assert label == "0.06_compare_climate_sources"
+    assert label == "0.05_compare_climate_datasets"

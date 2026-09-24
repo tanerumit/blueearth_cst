@@ -18,8 +18,8 @@ def prep_hydromt_update_forcing_config(
     """Write a hydromt 1.x `steps:`-format YAML to add forcing to a wflow model.
 
     ``store_source`` names the catalog entry the forcing is READ from, when that
-    differs from the source it came from. Rule 1.10 passes the climate store's
-    entry so the forcing is built from the extraction rule 1.04 already made,
+    differs from the source it came from. Rule 1.09 passes the climate store's
+    entry so the forcing is built from the extraction rule 1.03 already made,
     instead of re-reading the global dataset from the catalog a second time.
 
     It is a separate argument rather than a substituted ``precip_source``

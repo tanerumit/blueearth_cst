@@ -110,9 +110,9 @@ def test_sections_follow_the_label_order_not_disk_order(tmp_path):
 def test_members_sort_naturally_not_lexicographically(tmp_path):
     """WF3 fans out to RLZ_NUM x ST_NUM, so `rlz_10` must not precede `rlz_2`."""
     members = [f"rlz_{n}_st_1" for n in (1, 2, 10, 11)]
-    parts_dir = _parts(tmp_path, {"3.09_downscale_climate_realization": members})
+    parts_dir = _parts(tmp_path, {"3.09_downscale_scenario_series": members})
     out = tmp_path / "merged.log"
-    merge_logs(["3.09_downscale_climate_realization"], str(out), parts_dir)
+    merge_logs(["3.09_downscale_scenario_series"], str(out), parts_dir)
     text = out.read_text(encoding="utf-8")
     order = [text.index(f"body of {m}") for m in members]
     assert order == sorted(order)

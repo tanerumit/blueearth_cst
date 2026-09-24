@@ -581,9 +581,9 @@ def resolve_simulation_window(
 
     The simulation window must sit INSIDE the record, and that is a change from
     how this shipped on 2026-08-10. It was written unconstrained, correctly at
-    the time: rule 1.10 declared no climate-store input and read its forcing
+    the time: rule 1.09 declared no climate-store input and read its forcing
     from the data catalog, so the two windows were genuinely independent. Rule
-    1.10 now builds the forcing FROM the store, to stop re-reading the same
+    1.09 now builds the forcing FROM the store, to stop re-reading the same
     source twice, and a simulation period outside the extraction therefore has
     no data behind it. Caught here, at parse time, rather than as a truncated or
     empty forcing twenty rules downstream.
@@ -656,7 +656,7 @@ class SpatialUnitsRule:
 
     The THIRD member of the shared-rule family, beside :class:`RegionRule` and
     :class:`ClimateStoreRule` and with the same shape. All three workflows
-    declare ``delineate_spatial_units`` from this object, so the three rule
+    declare ``delineate_subbasins_and_rivers`` from this object, so the three rule
     bodies cannot drift apart.
 
     Named ``_rule``, not ``_spec``: the object holds a rule's script, inputs,
@@ -685,9 +685,9 @@ def spatial_units_rule(project_dir, spatial_config, data_sources) -> SpatialUnit
     """Build the one producer contract for the shared vector foundation.
 
     ONE rule definition, declared in all three workflows (``1.01c`` / ``2.03c``
-    / ``3.01f``), over the vector half of what rule 1.02 used to do alone.
+    / ``3.01f``), over the vector half of what rule 1.01 used to do alone.
     Before ADR 0006 §8, WF2 and WF3 could not reach the basin and subbasin
-    boundaries without declaring ``prepare_spatial_maps`` — whose real product
+    boundaries without declaring ``prepare_land_and_soil_maps`` — whose real product
     is ``spatial_maps.nc`` — so a projections-only run would have resampled
     ``vito``, ``modis_lai`` and ``soilgrids`` to draw a subbasin outline.
 
@@ -849,7 +849,7 @@ def member_index_regex(width: int) -> str:
     ``0*[1-9][0-9]*``:
 
     1. **Bar the reserved baseline.** ``st_0`` (``st_00`` at width 2) is written
-       by ``generate_weather_realizations``; rule 3.12 must never become a
+       by ``generate_weather_realizations``; rule 3.11 must never become a
        second producer of it, which surfaces as a ``CyclicGraphException``
        (``generate_scenarios.smk``, rule 3.08's own comment).
     2. **Reject an UNPADDED name outright.** At width 2, ``st_1`` fails to match
@@ -865,7 +865,7 @@ def member_index_regex(width: int) -> str:
     ``$`` anchors to the end of that path rather than to the end of the
     wildcard. With ``.nc`` always following, ``0+$`` can never match, the
     lookahead always succeeds, and the constraint silently degenerates to
-    ``[0-9]{width}`` -- which admits the baseline and makes rule 3.12 a second
+    ``[0-9]{width}`` -- which admits the baseline and makes rule 3.11 a second
     producer of it. Caught by ``test_cross_workflow_inputs`` and
     ``test_guard_invalidation`` as a ``CyclicGraphException``, and NOT by a
     plain ``--dry-run``, because whether the ambiguity surfaces depends on the

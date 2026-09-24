@@ -23,13 +23,13 @@ def _rule_block(name: str) -> str:
 def test_delineate_spatial_units_declares_the_vector_file_contract():
     """The six vector artifacts and the seam are files, not a directory sentinel.
 
-    They moved here from `prepare_spatial_maps` with ADR 0003 §8, and every
+    They moved here from `prepare_land_and_soil_maps` with ADR 0003 §8, and every
     content-determining field is splatted from `snake_utils.spatial_units_rule`
     so the three workflow declarations cannot drift -- which is why this test
     asserts the SPLAT rather than the paths, and
     `tests/test_spatial_units_rule.py` asserts what the splat contains.
     """
-    block = _rule_block("delineate_spatial_units")
+    block = _rule_block("delineate_subbasins_and_rivers")
 
     for splat in (
         "**SPATIAL_UNITS.inputs",
@@ -56,7 +56,7 @@ def test_prepare_spatial_maps_declares_the_raster_file_contract():
     `spatial_maps.nc` and the model-build interface, and consumes the vector
     layers rather than writing them.
     """
-    block = _rule_block("prepare_spatial_maps")
+    block = _rule_block("prepare_land_and_soil_maps")
 
     for path in (
         "spatial_maps.nc",
@@ -89,7 +89,7 @@ def test_the_vector_artifacts_have_exactly_one_producing_rule():
     The split moved six `output:` entries from one rule to another; leaving a
     copy behind is the mistake this catches.
     """
-    raster = _rule_block("prepare_spatial_maps")
+    raster = _rule_block("prepare_land_and_soil_maps")
     outputs = raster.split("output:", 1)[1].split("params:", 1)[0]
     for path in (
         "geoms/basins.geojson",
@@ -105,8 +105,8 @@ def test_the_vector_artifacts_have_exactly_one_producing_rule():
 @pytest.mark.parametrize(
     "rule_name,module",
     [
-        ("prepare_spatial_maps", "prepare_spatial_maps.py"),
-        ("delineate_spatial_units", "delineate_spatial_units.py"),
+        ("prepare_land_and_soil_maps", "prepare_spatial_maps.py"),
+        ("delineate_subbasins_and_rivers", "delineate_spatial_units.py"),
     ],
 )
 def test_spatial_rules_and_scripts_are_wflow_independent(rule_name, module):
@@ -143,7 +143,7 @@ def test_spatial_only_dry_run_has_no_wflow_edge():
     result = subprocess.run(
         [
             "snakemake",
-            "prepare_spatial_maps",
+            "prepare_land_and_soil_maps",
             "-c",
             "1",
             "-s",
@@ -159,12 +159,12 @@ def test_spatial_only_dry_run_has_no_wflow_edge():
     combined = (result.stdout or "") + (result.stderr or "")
 
     assert result.returncode == 0, combined[-3000:]
-    assert "prepare_spatial_maps" in combined
+    assert "prepare_land_and_soil_maps" in combined
     # ...and it schedules its own producer, which is what a split rule must do.
-    assert "delineate_spatial_units" in combined
+    assert "delineate_subbasins_and_rivers" in combined
     for forbidden_rule in (
         "build_wflow_model",
         "add_reservoirs_lakes_glaciers",
-        "declare_wflow_outputs",
+        "declare_gauges_and_outputs",
     ):
         assert forbidden_rule not in combined, combined[-3000:]

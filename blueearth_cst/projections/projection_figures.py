@@ -3,7 +3,7 @@
 
 **This module is the single source of the figure set.** Every declaration
 downstream is derived from :func:`figure_relative_paths`: the Snakefile's
-``WF2_TARGETS``, rule 2.06's ``figure_names`` promise, rule 2.07's outputs, the
+``WF2_TARGETS``, rule 2.05's ``figure_names`` promise, rule 2.06's outputs, the
 ``gather_logs`` / ``gather_benchmarks`` edges, the project-tree inventory and
 ``check_baseline``. That is deliberate — the defect this replaces is eight
 figures written where three were declared, so five were invisible to Snakemake:
@@ -116,7 +116,7 @@ def figure_relative_paths(
 
     The order is the reading order of the set — overviews, clouds, then one
     monthly figure per horizon in configured order — and it is stable because
-    ``figure_names`` is threaded into rule 2.06 as a `params:` value, so a
+    ``figure_names`` is threaded into rule 2.05 as a `params:` value, so a
     reordering would re-trigger the rule for no reason.
 
     The combined cloud appears only for a multi-horizon config. It answers "how

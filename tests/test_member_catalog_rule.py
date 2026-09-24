@@ -34,7 +34,7 @@ SNAKEDIR = TESTDIR.parent
 CONFIG_FN = TESTDIR / "project_config_fixture.yml"
 
 SNAKEFILE = "simulate_system.smk"
-RULE_NAME = "downscale_climate_realization"
+RULE_NAME = "downscale_scenario_series"
 
 
 def _parse_workflow(snakefile: str, config_path):

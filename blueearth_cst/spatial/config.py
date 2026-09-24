@@ -93,7 +93,7 @@ def resolve_gauge_points_path(
 
     **A legacy-only config raises.** It cannot be honoured, which is why the
     former ``FutureWarning`` was not enough. Gauge points became an input to
-    rule 1.03 ``delineate_spatial_units``, and ADR 0003 §8b requires that
+    rule 1.02 ``delineate_subbasins_and_rivers``, and ADR 0003 §8b requires that
     rule's params to be a pure function of ``project`` + ``basin`` —
     it is declared by all three workflows and the other two carry no
     ``workflows.build_model`` section at all. So the legacy key reaches the

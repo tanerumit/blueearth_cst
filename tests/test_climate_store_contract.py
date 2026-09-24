@@ -1,6 +1,6 @@
-"""R07 B1: the three ``extract_historical_climate`` declarations are ONE rule.
+"""R07 B1: the three ``extract_climate_datasets`` declarations are ONE rule.
 
-The store producer is declared as ``extract_historical_climate`` in
+The store producer is declared as ``extract_climate_datasets`` in
 ``build_model.smk`` (rule 1.04) and ``generate_scenarios.smk`` (rule 3.08), both
 from the same ``snake_utils.climate_store_rule`` object.
 ``analyze_projections.smk`` declares it NOT AT ALL — ADR 0003 removed it, and
@@ -45,7 +45,7 @@ from tests.conftest import parse_workflow, write_config  # noqa: E402
 
 SNAKEDIR = Path(__file__).resolve().parents[1]
 CONFIG_FN = Path(__file__).resolve().parent / "project_config_fixture.yml"
-RULE_NAME = "extract_historical_climate"
+RULE_NAME = "extract_climate_datasets"
 
 #: Sentinel for "the built Rule carries no such attribute on this Snakemake".
 #: Compared as a value, so absent-on-both is equal and absent-on-one fails.
@@ -203,7 +203,7 @@ def config_variants(tmp_path_factory):
 
 @pytest.fixture(scope="module", params=["defaults", "custom_basin"])
 def declarations(request, config_variants):
-    """The built ``extract_historical_climate`` rule from both workflows, one config.
+    """The built ``extract_climate_datasets`` rule from both workflows, one config.
 
     Parametrized over both config variants: a defaults-only comparison passes
     whenever the two Snakefiles happen to share a fallback, which is a weaker
@@ -356,7 +356,7 @@ def test_retired_declarations_are_gone(declarations):
     """No wf1-only store, and no rule anywhere writes under ``wf1_raw/``."""
     wf1_workflow, _ = declarations["wf1"]
     rule_names = {rule.name for rule in wf1_workflow.rules}
-    assert "extract_historical_climate_wf1" not in rule_names
+    assert "extract_climate_datasets_wf1" not in rule_names
     stale = [
         (rule.name, str(path))
         for rule in wf1_workflow.rules
@@ -397,7 +397,7 @@ def test_chirps_branch_declares_and_consumes_one_orography_path(tmp_path):
     params string pointed at the second spelling. The seed config is era5, so no
     gate in this repo would otherwise exercise the chirps branch at all.
 
-    The consumer is rule 3.14 ``downscale_climate_realization`` since
+    The consumer is rule 3.14 ``downscale_scenario_series`` since
     2026-08-18: it writes its own member catalog, and building the chirps
     ``<source>_orography`` entry is what needs the sidecar path. It was rule
     3.13 ``write_climate_data_catalog``, which is gone with the aggregate

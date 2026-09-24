@@ -5,7 +5,7 @@ Rule ``delineate_region``'s script — the SINGLE producer of
 (``1.01b`` / ``2.03b`` / ``3.01b``) from ``snake_utils.region_rule``.
 
 Before ADR 0003 the same polygon was delineated TWICE from the same inputs:
-once by rule 1.02 (``spatial/products.py::_region_geometry``, on its way to
+once by rule 1.01 (``spatial/products.py::_region_geometry``, on its way to
 ``basins.geojson``) and once per climate-store key by the store producer
 (``store_region.geojson``). Measured on a real project, the two agreed exactly
 — agreement maintained by coincidence, since nothing compared them. Worse, WF2
@@ -55,7 +55,7 @@ def delineate_region(
     ``hydrography``/``basin_index`` are catalog ENTRY NAMES, not paths — hydromt
     resolves them against ``data_libs`` itself (verified on the pinned hydromt
     1.3.1). They default to the shipped build template's ``setup_basemaps``
-    values; rule 1.02 raises if the two ever disagree.
+    values; rule 1.01 raises if the two ever disagree.
 
     Parameters
     ----------

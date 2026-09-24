@@ -292,7 +292,7 @@ def test_tasmin_and_tasmax_are_renamed_and_converted_to_celsius(gen):
     """`temp_min`/`temp_max` are already the toolbox's names for these.
 
     `interchange_contracts` declares their units and
-    `extract_historical_climate` extracts them, so WF2 was the one workflow that
+    `extract_climate_datasets` extracts them, so WF2 was the one workflow that
     could not speak them -- and the archived pre-generated catalog carried this
     exact mapping before the generated one narrowed it to four names.
     """

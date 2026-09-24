@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Rule 2.07 — the WF2 annual overviews and the per-horizon monthly figures.
+"""Rule 2.06 — the WF2 annual overviews and the per-horizon monthly figures.
 
 Reads the durable `scalar/*.nc` series and the authoritative monthly
 change-factor table, and draws the figure set declared by
@@ -16,7 +16,7 @@ the figure-input functions below.
 Superseded on 2026-08-17 (owner ruling, board item `t2608091006`): the eight
 independently styled figures this drew — `{proj}_{variable}_{view}_{quantity}.png`
 — became two annual overviews plus one monthly figure per configured horizon,
-on the shared WF1 page contract. The change-factor cloud is drawn by rule 2.06,
+on the shared WF1 page contract. The change-factor cloud is drawn by rule 2.05,
 from the stage-B merge, and is not duplicated here.
 """
 

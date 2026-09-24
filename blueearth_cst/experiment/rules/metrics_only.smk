@@ -23,7 +23,7 @@ LOG_PARTS_DIR = f"{project_dir}/logs/_parts/simulate_system/{experiment}"
 # produce would be a lie waiting for the day it starts printing them again.
 WORKFLOW_LOG_NAME = None
 BENCHMARKS_NAME = None
-# Registry for the banner-only 4.08-4.10 rules in simulate_system.smk.
+# Registry for the banner-only 4.07 and 4.08 rules in simulate_system.smk.
 RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts/simulate_system/{experiment}")
 
 declare_path_tokens(experiment=exp_dir)

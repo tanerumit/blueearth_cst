@@ -245,7 +245,7 @@ def analyse_wflow_historical(
     ### 1. Prepare output and plotting options ###
 
     # Create output folders. R07 B10: the project-level
-    # plots/wflow_model_performance/ tree is retired; rule 1.11's artifacts
+    # plots/wflow_model_performance/ tree is retired; rule 1.10's artifacts
     # live inside the engine subtree, split by KIND (P1) — figures under
     # evaluation/plots/, the metrics table one level up in evaluation/,
     # because plots/ holds figures only.

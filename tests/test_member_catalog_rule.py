@@ -136,7 +136,10 @@ def test_the_downscale_rule_reads_only_its_own_member(downscale, monkeypatch, tm
     for run_id in rows:
         wc = SimpleNamespace(run_id=run_id)
         path = Path(selector(wc))
-        assert path == tmp_path / "forcing" / f"run_{run_id}.nc"
+        # Each member resolves to its own series in the selected collection
+        # (`scenarios/<collection>/series/run_<id>.nc` since 2026-09-24).
+        assert path.name == f"run_{run_id}.nc", path
+        assert path.parent.name == "series", path
         selected.append(path)
     assert len(set(selected)) == len(rows)
     for path in downscale.input:

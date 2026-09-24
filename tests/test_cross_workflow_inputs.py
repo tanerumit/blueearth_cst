@@ -25,7 +25,7 @@ sys.path.insert(0, str(SNAKEDIR / "dev" / "scripts"))
 import cross_workflow_inputs as cwi  # noqa: E402
 
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
-from tests.conftest import write_config  # noqa: E402
+from tests.conftest import phase_env, write_config  # noqa: E402
 
 #: The workflows that consume wf1 artifacts. WF1 produces them, so it is not here.
 DOWNSTREAM = {
@@ -80,6 +80,7 @@ def _dry_run(snakefile: str, config_path: Path) -> subprocess.CompletedProcess:
             "--dry-run",
         ],
         cwd=SNAKEDIR,
+        env=phase_env(snakefile),
         capture_output=True,
         text=True,
         encoding="utf-8",

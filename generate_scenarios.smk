@@ -6,6 +6,7 @@ import uuid
 from pathlib import Path
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
+from blueearth_cst.shared.workflow_archive_launch import non_producing_invocation
 from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, patch_psutil_windows_benchmark, warning_count
 from blueearth_cst.shared.wf3_science import index_width
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, pre_dag_step, RuleRegistry, rule_banner, run_summary, target_banner
@@ -21,7 +22,9 @@ SOURCE_ONLY = os.environ.get("CST_GENERATION_PHASE") == "source"
 V2_MODE = os.environ.get("CST_GENERATION_PHASE") == "generation"
 if not SOURCE_ONLY and not V2_MODE:
     raise ValueError("WF3 requires the owned source or generation phase")
-GENERATION = generation_configuration(config, workflow.basedir)
+GENERATION = generation_configuration(
+    config, workflow.basedir, stage=bool(os.environ.get("CST_GENERATION_OWNED"))
+)
 project_dir = GENERATION["project_dir"]
 REGION = GENERATION["region"]
 CLIMATE_STORE = GENERATION["store"]
@@ -429,7 +432,7 @@ def _header():
 
 
 onstart:
-    if not os.environ.get("CST_GENERATION_OWNED"):
+    if not os.environ.get("CST_GENERATION_OWNED") and not non_producing_invocation(sys.argv):
         raise ValueError("WF3 execution requires an owned generation launcher")
     # Restyle Snakemake's own console output into this toolbox's grammar (one
     # line per job start and end). Here and not at parse time: the logging

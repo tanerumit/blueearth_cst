@@ -16,6 +16,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import sys
 import uuid
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -460,10 +461,51 @@ def prepare_workflow(
     return execution_project, context
 
 
+#: Snakemake options under which no rule body runs and nothing scientific is
+#: written: planning (`--dry-run`), bookkeeping (`--touch`, output deletion) and
+#: reporting (listings, summaries, graphs, lint).
+_NON_PRODUCING_OPTIONS = frozenset(
+    {
+        "--dry-run",
+        "--dryrun",
+        "-n",
+        "--touch",
+        "-t",
+        "--delete-all-output",
+        "--delete-temp-output",
+        "--list",
+        "--list-rules",
+        "-l",
+        "--list-target-rules",
+        "--lt",
+        "--summary",
+        "-S",
+        "--detailed-summary",
+        "-D",
+        "--dag",
+        "--rulegraph",
+        "--filegraph",
+        "--lint",
+    }
+)
+
+
+def non_producing_invocation(argv: Sequence[str]) -> bool:
+    """Whether a Snakemake command line runs no rule body and writes no science."""
+    return any(item in _NON_PRODUCING_OPTIONS for item in argv)
+
+
 def require_capture(
-    workflow: str, config_path: str, *, dry_run: bool = False
+    workflow: str, config_path: str, *, dry_run: bool | None = None
 ) -> dict[str, Any] | None:
-    """Refuse raw production before any rule or scientific write is admitted."""
+    """Refuse raw production before any rule or scientific write is admitted.
+
+    ``dry_run`` defaults to reading the process's own command line: any
+    non-producing Snakemake invocation (``non_producing_invocation``) is
+    admitted without the launcher's capture context.
+    """
+    if dry_run is None:
+        dry_run = non_producing_invocation(sys.argv)
     context_path = os.environ.get(CONTEXT_ENV)
     if context_path is None:
         if dry_run:

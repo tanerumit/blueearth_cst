@@ -70,6 +70,9 @@ def test_prepare_spatial_maps_declares_the_raster_file_contract():
         'SPATIAL_UNITS.outputs["subbasins"]',
         'SPATIAL_UNITS.outputs["catchments"]',
         'SPATIAL_UNITS.outputs["rivers"]',
+        # Read through the spatial catalog; undeclared, an old tree never
+        # re-ran the producer and this rule failed as missing DATA.
+        'SPATIAL_UNITS.outputs["river_attributes"]',
         'SPATIAL_UNITS.outputs["locations"]',
         'SPATIAL_UNITS.outputs["location_registry"]',
     ):

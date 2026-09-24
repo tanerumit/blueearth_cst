@@ -597,6 +597,7 @@ rule prepare_spatial_maps:
         subbasins = SPATIAL_UNITS.outputs["subbasins"],
         catchments = SPATIAL_UNITS.outputs["catchments"],
         rivers = SPATIAL_UNITS.outputs["rivers"],
+        river_attributes = SPATIAL_UNITS.outputs["river_attributes"],
         locations = SPATIAL_UNITS.outputs["locations"],
         location_registry = SPATIAL_UNITS.outputs["location_registry"],
     output:

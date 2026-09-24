@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, patch_psutil_windows_benchmark, warning_count
 from blueearth_cst.shared.wf3_science import index_width
-from blueearth_cst.shared.console_style import install_console_style, open_run_header, pre_dag_step, rule_banner, run_summary, target_banner
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, pre_dag_step, RuleRegistry, rule_banner, run_summary, target_banner
 from blueearth_cst.experiment.generation_plan import generation_configuration
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
 patch_psutil_windows_benchmark()
@@ -63,13 +63,17 @@ WORKFLOW_LOG_NAME = f"wf3_generate_scenarios_{_plan_key}.log"
 # `snake_utils.declare_warning_tally`.
 declare_warning_tally(project_dir, WORKFLOW_LOG_NAME)
 BENCHMARKS_NAME = f"wf3_benchmarks_{_plan_key}.md"
-LOG_RULES = [
-    "3.01_delineate_region",
-    "3.02_extract_historical_climate",
-    "3.03_prepare_stress_test_grid",
-]
+RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
+LOG_RULES = RULES.log_rules
+DELINEATE_REGION = RULES.logged("3.01", "delineate_region")
+EXTRACT_HISTORICAL_CLIMATE = RULES.logged("3.02", "extract_historical_climate")
+# 3.03, 3.07 and 3.08 log under a label that is not `<number>_<rule name>`,
+# so their banners stay literal and only log/benchmark use these identities.
+PREPARE_STRESS_TEST_GRID = RULES.logged("3.03", "prepare_stress_test_grid")
 if V2_MODE:
-    LOG_RULES.extend(["3.07_generate_roots_v2", "3.08_transform_member_v2"])
+    GENERATE_ROOTS_V2 = RULES.logged("3.07", "generate_roots_v2")
+    TRANSFORM_MEMBER_V2 = RULES.logged("3.08", "transform_member_v2")
+PUBLISH_SCENARIO_COLLECTION = RULES.banner_only("3.10", "publish_scenario_collection", summary="validate and publish the scenario collection")
 INVOCATION_ID = os.environ.setdefault("CST_GENERATION_INVOCATION_ID", uuid.uuid4().hex)
 RLZ_NUM = GENERATION["n_realizations"]
 ST_NUM = GENERATION["n_design_points"]
@@ -120,7 +124,7 @@ rule all:
 
 # 3.01  delineate_region
 rule delineate_region:
-    message: rule_banner("3.01", "delineate_region")
+    message: DELINEATE_REGION.banner()
     input:
         **REGION.inputs,
     params:
@@ -128,15 +132,15 @@ rule delineate_region:
     output:
         **REGION.outputs,
     log:
-        f"{LOG_PARTS_DIR}/3.01_delineate_region.log",
+        DELINEATE_REGION.log(),
     benchmark:
-        f"{BENCH_PARTS_DIR}/3.01_delineate_region.tsv",
+        DELINEATE_REGION.benchmark(),
     script: REGION.script
 
 
 # 3.02  extract_historical_climate
 rule extract_historical_climate:
-    message: rule_banner("3.02", "extract_historical_climate")
+    message: EXTRACT_HISTORICAL_CLIMATE.banner()
     input:
         **CLIMATE_STORE.inputs,
     params:
@@ -144,9 +148,9 @@ rule extract_historical_climate:
     output:
         **CLIMATE_STORE.outputs,
     log:
-        f"{LOG_PARTS_DIR}/3.02_extract_historical_climate.log",
+        EXTRACT_HISTORICAL_CLIMATE.log(),
     benchmark:
-        f"{BENCH_PARTS_DIR}/3.02_extract_historical_climate.tsv",
+        EXTRACT_HISTORICAL_CLIMATE.benchmark(),
     script:
         CLIMATE_STORE.script
 
@@ -161,9 +165,9 @@ rule prepare_perturbation_grid:
     output:
         lookup_csv = lookup_path,
     log:
-        f"{LOG_PARTS_DIR}/3.03_prepare_stress_test_grid.log",
+        PREPARE_STRESS_TEST_GRID.log(),
     benchmark:
-        f"{BENCH_PARTS_DIR}/3.03_prepare_stress_test_grid.tsv",
+        PREPARE_STRESS_TEST_GRID.benchmark(),
     script:
         "blueearth_cst/experiment/prepare_cst_parameters.py"
 
@@ -231,7 +235,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             roots=[_v2_series[run_id].as_posix() for run_id in _v2_root_ids],
             dates=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["date_products"]],
         log:
-            f"{LOG_PARTS_DIR}/3.07_generate_roots_v2.log"
+            GENERATE_ROOTS_V2.log()
         run:
             source_inputs = SourceInputs(
                 historical_climate=Path(input.historical),
@@ -268,7 +272,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
         wildcard_constraints:
             run_id="|".join(_v2_derived_ids),
         log:
-            f"{LOG_PARTS_DIR}/3.08_transform_member_v2/run_{{run_id}}.log"
+            TRANSFORM_MEMBER_V2.log("run_{run_id}")
         run:
             validate_provider_inputs(
                 V2_PLAN, _v2_root,
@@ -290,7 +294,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             )
 
     rule publish_scenario_collection:
-        message: rule_banner("3.10", "publish_scenario_collection", summary="validate and publish the scenario collection")
+        message: PUBLISH_SCENARIO_COLLECTION.banner()
         input:
             receipt=_v2_receipt.as_posix(),
             series=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["series"]],

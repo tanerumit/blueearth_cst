@@ -17,7 +17,7 @@ from snakemake.exceptions import WorkflowError
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, listed, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, warning_count, window_year_pair
-from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
+from blueearth_cst.shared.console_style import defer_warning, install_console_style, open_run_header, RuleRegistry, rule_banner, run_header, run_summary, target_banner, warn_if_project_dir_in_repo, warn_row
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
@@ -861,14 +861,16 @@ declare_path_tokens(
     projections=clim_project_dir,
 )
 declare_project_root(project_dir)
-LOG_RULES = [
-    "2.02_delineate_region",
-    "2.03_delineate_spatial_units",
-    "2.04_fetch_gcm_slice",
-    "2.05_reduce_gcm_series",
-    "2.06_derive_change_factors",
-    "2.07_plot_gcm_timeseries",
-]
+RULES = RuleRegistry(LOG_PARTS_DIR, f"{project_dir}/benchmarks/_parts")
+LOG_RULES = RULES.log_rules
+DELINEATE_REGION = RULES.logged("2.02", "delineate_region")
+DELINEATE_SPATIAL_UNITS = RULES.logged("2.03", "delineate_spatial_units")
+FETCH_GCM_SLICE = RULES.logged("2.04", "fetch_gcm_slice", summary="download one CMIP6 slice")
+REDUCE_GCM_SERIES = RULES.logged("2.05", "reduce_gcm_series", summary="reduce the slice to a basin-average series")
+DERIVE_CHANGE_FACTORS = RULES.logged("2.06", "derive_change_factors", summary="compare each horizon against the reference period")
+PLOT_GCM_TIMESERIES = RULES.logged("2.07", "plot_gcm_timeseries")
+GATHER_BENCHMARKS = RULES.banner_only("2.08", "gather_benchmarks")
+GATHER_LOGS = RULES.banner_only("2.09", "gather_logs")
 
 # 2.00  all — target aggregator: change-factor summaries + projection plots
 #
@@ -944,7 +946,7 @@ rule all:
 # a multi-decade extraction to learn a basin outline. The region is now its own
 # artifact, so WF2 declares the delineation alone.
 rule delineate_region:
-    message: rule_banner("2.02", "delineate_region")
+    message: DELINEATE_REGION.banner()
     input:
         **REGION.inputs,
     params:
@@ -952,9 +954,9 @@ rule delineate_region:
     output:
         **REGION.outputs,
     log:
-        f"{LOG_PARTS_DIR}/2.02_delineate_region.log",
+        DELINEATE_REGION.log(),
     benchmark:
-        f"{project_dir}/benchmarks/_parts/2.02_delineate_region.tsv",
+        DELINEATE_REGION.benchmark(),
     script: REGION.script
 
 # 2.03  delineate_spatial_units — the shared vector foundation (ADR 0003 §8).
@@ -965,7 +967,7 @@ rule delineate_region:
 # reading `vito`, `modis_lai` or `soilgrids` at all — see the SPATIAL_UNITS
 # comment block above for why that is the whole point.
 rule delineate_spatial_units:
-    message: rule_banner("2.03", "delineate_spatial_units")
+    message: DELINEATE_SPATIAL_UNITS.banner()
     input:
         **SPATIAL_UNITS.inputs,
     params:
@@ -973,9 +975,9 @@ rule delineate_spatial_units:
     output:
         **SPATIAL_UNITS.outputs,
     log:
-        f"{LOG_PARTS_DIR}/2.03_delineate_spatial_units.log",
+        DELINEATE_SPATIAL_UNITS.log(),
     benchmark:
-        f"{project_dir}/benchmarks/_parts/2.03_delineate_spatial_units.tsv",
+        DELINEATE_SPATIAL_UNITS.benchmark(),
     script: SPATIAL_UNITS.script
 
 # 2.04  fetch_gcm_slice — acquire ONE raw slice; the only rule that reads the store.
@@ -993,7 +995,7 @@ rule delineate_spatial_units:
 # formula edit. Passing `digest_components` here instead would silently undo the
 # entire split while every test still passed.
 rule fetch_gcm_slice:
-    message: rule_banner("2.04", "fetch_gcm_slice", "{params.series_label}", summary="download one CMIP6 slice")
+    message: FETCH_GCM_SLICE.banner(context="{params.series_label}")
     wildcard_constraints:
         series_key = "|".join(re.escape(k) for k in SERIES),
     input:
@@ -1026,9 +1028,9 @@ rule fetch_gcm_slice:
     resources:
         mem_mb = 1024,
     log:
-        LOG_PARTS_DIR + "/2.04_fetch_gcm_slice/{series_key}.log",
+        FETCH_GCM_SLICE.log("{series_key}"),
     benchmark:
-        project_dir + "/benchmarks/_parts/2.04_fetch_gcm_slice/{series_key}.tsv",
+        FETCH_GCM_SLICE.benchmark("{series_key}"),
     script: "blueearth_cst/projections/fetch_gcm_raw.py"
 
 # 2.05  reduce_gcm_series — ONE stage-A rule over {series_key} (step 3).
@@ -1041,7 +1043,7 @@ rule fetch_gcm_slice:
 # series at all: every series is independent, so the stage fans out at full width.
 # Since revision 6 it reads the local raw slice above and makes NO network call.
 rule reduce_gcm_series:
-    message: rule_banner("2.05", "reduce_gcm_series", "{params.series_label}", summary="reduce the slice to a basin-average series")
+    message: REDUCE_GCM_SERIES.banner(context="{params.series_label}")
     wildcard_constraints:
         # Anchor to the keys actually built at parse time. Without this the
         # wildcard would also match paths that merely look like keys.
@@ -1080,9 +1082,9 @@ rule reduce_gcm_series:
     resources:
         mem_mb = 1024,
     log:
-        LOG_PARTS_DIR + "/2.05_reduce_gcm_series/{series_key}.log",
+        REDUCE_GCM_SERIES.log("{series_key}"),
     benchmark:
-        project_dir + "/benchmarks/_parts/2.05_reduce_gcm_series/{series_key}.tsv",
+        REDUCE_GCM_SERIES.benchmark("{series_key}"),
     script: "blueearth_cst/projections/get_stats_climate_proj.py"
 
 # 2.06  derive_change_factors — stage B, ONE job (step 4d, design §5 "B. Derive")
@@ -1092,7 +1094,7 @@ rule reduce_gcm_series:
 # in-memory datasets; no temporary NetCDFs are written. Durable outputs retain
 # their existing shape.
 rule derive_change_factors:
-    message: rule_banner("2.06", "derive_change_factors", summary="compare each horizon against the reference period")
+    message: DERIVE_CHANGE_FACTORS.banner()
     input:
         # EXPLICIT expanded list (risk-06 / revision 4), never a glob and never a
         # config cross-product: exactly the series the resolved combination set
@@ -1207,14 +1209,14 @@ rule derive_change_factors:
     resources:
         mem_mb = 1024,
     log:
-        f"{LOG_PARTS_DIR}/2.06_derive_change_factors.log",
+        DERIVE_CHANGE_FACTORS.log(),
     benchmark:
-        f"{project_dir}/benchmarks/_parts/2.06_derive_change_factors.tsv",
+        DERIVE_CHANGE_FACTORS.benchmark(),
     script: "blueearth_cst/projections/derive_change_factors.py"
 
 # 2.07  plot_gcm_timeseries — plot projected anomaly time series
 rule plot_gcm_timeseries:
-    message: rule_banner("2.07", "plot_gcm_timeseries")
+    message: PLOT_GCM_TIMESERIES.banner()
     input:
         # Ordering edge only -- 2.07 never opens this. Repointed at S8-05 from the
         # retired wide summary to the tidy annual table, which is the stage-B
@@ -1255,9 +1257,9 @@ rule plot_gcm_timeseries:
     resources:
         mem_mb = 1024,
     log:
-        f"{LOG_PARTS_DIR}/2.07_plot_gcm_timeseries.log",
+        PLOT_GCM_TIMESERIES.log(),
     benchmark:
-        f"{project_dir}/benchmarks/_parts/2.07_plot_gcm_timeseries.tsv",
+        PLOT_GCM_TIMESERIES.benchmark(),
     script: "blueearth_cst/projections/plot_proj_timeseries.py"
 
 # --- log gather ---------------------------------------------------------------
@@ -1287,7 +1289,7 @@ rule plot_gcm_timeseries:
 # WF1 (1.17) and WF3 (3.18) declare the same rule against the same script; only
 # the label list, the parts dir and the output name differ.
 rule gather_logs:
-    message: rule_banner("2.09", "gather_logs")
+    message: GATHER_LOGS.banner()
     input:
         (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
         CHANGE_FACTOR_CLOUD_PLOT,
@@ -1310,7 +1312,7 @@ rule gather_logs:
 # benchmarks/wf2_benchmarks.md (rule column + TOTAL row) once the summary +
 # plots are built (all WF2 rules ran).
 rule gather_benchmarks:
-    message: rule_banner("2.08", "gather_benchmarks")
+    message: GATHER_BENCHMARKS.banner()
     input:
         (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
         CHANGE_FACTOR_CLOUD_PLOT,

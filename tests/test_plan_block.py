@@ -272,3 +272,27 @@ def test_nothing_is_declared_when_the_ledger_is_complete(rules):
     rules({"a": "1.01"})
     head, _ = cs._plan_lines({"all": 1, "a": 1})
     assert "unlisted" not in head
+
+
+# --- rules behind a checkpoint ---------------------------------------------
+
+
+def test_a_rule_behind_a_checkpoint_is_not_called_up_to_date(rules, monkeypatch):
+    """WF4's 4.07-4.10 are absent from the opening table because a checkpoint
+    has not run yet, not because they are satisfied (reported 2026-09-25)."""
+    rules({"publish": "4.06", "plan": "4.07", "derive": "4.08", "done": "4.05"})
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan", "derive"})
+    head, rows = cs._plan_lines({"publish": 1})
+    assert head == "1 of 2 rules to run  |  1 up to date  |  2 after checkpoint"
+    texts = [text for text, _ in rows]
+    assert texts[2].endswith("after checkpoint") and not texts[2].startswith(">")
+    assert texts[1].startswith(">")
+
+
+def test_a_checkpoint_rule_with_jobs_shows_its_count(rules, monkeypatch):
+    """Once the checkpoint has resolved (a re-run), the table lists the jobs."""
+    rules({"plan": "4.07"})
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan"})
+    head, rows = cs._plan_lines({"plan": 1})
+    assert "after checkpoint" not in head
+    assert rows[0][0].endswith("1")

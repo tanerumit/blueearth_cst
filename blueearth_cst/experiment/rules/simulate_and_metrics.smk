@@ -48,8 +48,8 @@ SNAPSHOT_SIMULATION_INPUTS = RULES.banner_only("4.03", "snapshot_simulation_inpu
 DOWNSCALE_SCENARIO_SERIES = RULES.logged("4.04", "downscale_scenario_series", summary="downscale the perturbed climate onto the model grid")
 RUN_WFLOW_SIMULATIONS = RULES.logged("4.05", "run_wflow_simulations", summary="run Wflow for one batch")
 PUBLISH_WFLOW_OUTPUTS = RULES.banner_only("4.06", "publish_wflow_outputs", summary="inventory the retained native runs")
-GATHER_LOGS = RULES.banner_only("4.09", "gather_logs")
-GATHER_BENCHMARKS = RULES.banner_only("4.10", "gather_benchmarks")
+GATHER_LOGS = RULES.banner_only("4.09", "gather_logs", after_checkpoint=True)
+GATHER_BENCHMARKS = RULES.banner_only("4.10", "gather_benchmarks", after_checkpoint=True)
 METRIC_TOKENS = list(my_cfg.get("metrics", indicator_tables((project.get("model") or {}).get("outvars", DEFAULT_WFLOW_OUTVARS))))
 METRIC_ANCHOR = f"YS-{resolve_water_year_start((project.get('climate') or {}).get('water_year_start')).upper()}"
 
@@ -114,6 +114,8 @@ WF4_TARGETS = [
     f"{engine_dir}/simulation.json",
     f"{engine_dir}/response_inventory.json",
     "selected immutable metric set",
+    f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+    f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
 ]
 
 # all
@@ -123,6 +125,10 @@ rule all:
         f"{engine_dir}/simulation.json",
         f"{engine_dir}/response_inventory.json",
         lambda wc: _selected_metric_outputs(wc),
+        # The gathers were declared but requested by nothing, so no WF4 run
+        # merged its log or benchmark parts.
+        f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+        f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
 
 if not _simulation_complete:
     # 4.01  write_model_fingerprint

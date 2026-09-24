@@ -1023,7 +1023,7 @@ simulation also reduces retained responses without recreating model forcing.
 | 4.02 | `check_model_unchanged` | Live model-reference verification |
 | 4.03 | `snapshot_simulation_inputs` | Frozen collection/model/settings/environment identity |
 | 4.04 | `downscale_scenario_series` | Temporary per-run catalog and model forcing; retained TOML |
-| 4.05 | `run_wflow_simulations_batch_<batch>` | Native run CSVs |
+| 4.05 | `run_wflow_simulations_batch_<batch>` | Native run CSVs; a retry after a failure re-runs only the failed members |
 | 4.06 | `publish_wflow_outputs` | Complete simulation and response inventory |
 | — | `simulations_only` (target) | Native-response aggregate |
 | 4.07 | `prepare_indicator_plan` | Response-dependent metric-set identity and exact targets |
@@ -1031,6 +1031,14 @@ simulation also reduces retained responses without recreating model forcing.
 | 4.09 | `gather_logs` | Experiment-scoped merged log |
 | 4.10 | `gather_benchmarks` | Experiment-scoped benchmark table |
 | — | `simulations_and_indicators` (target) | Selected metric-set aggregate |
+
+A batch is one Snakemake job, so a failing member fails the job and Snakemake
+deletes its declared outputs. The driver therefore moves each finished member's
+CSV into `<exp>/_engine/batch_staging/` at once, keyed by run id with an `.ok`
+marker recording its TOML and frozen-simulation digests. A retry reuses matching
+members, runs the rest, and restores every CSV to `output/` on success
+(`blueearth_cst/experiment/batch_staging.py`). The staging directory exists only
+between a failed attempt and its successful retry.
 
 Metrics-only requires `operation: metrics-only` with
 `--target simulations_and_indicators` (`metrics` is accepted for one release) and

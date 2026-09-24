@@ -30,29 +30,70 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECTION = ("project", "basin", "climate", "workflows.generate_scenarios")
 
 
+class _Capture:
+    """Handle yielded by ``_captured_output`` so a caller can flag a failed
+    return code (an exception is flagged automatically)."""
+
+    def __init__(self) -> None:
+        self.failed = False
+
+    def mark_failed(self) -> None:
+        self.failed = True
+
+
 @contextlib.contextmanager
 def _captured_output():
-    """Redirect stdout/stderr to a temp file, restoring them on exit.
+    """Redirect stdout/stderr to a temp file, replaying only on failure.
 
-    Yields the capture file so the caller can replay it after deciding --
-    from either the return code or an exception -- whether the call failed.
+    Best-effort: a console-hygiene helper must never crash a scientific step.
+    If saving, redirecting, or restoring the standard fds fails (WinError 6,
+    "the handle is invalid", is a known Windows fd quirk), the failure is
+    swallowed and output is left unsuppressed rather than propagated. The
+    replay -- when the body raises or calls ``mark_failed()`` -- happens
+    only after the real fds are restored, so it reaches the console instead
+    of being written back into the very file it came from. Mirrors
+    ``simulate_and_metrics.smk``'s ``_replay_output_on_error`` helper.
     """
-    saved_stdout = os.dup(1)
-    saved_stderr = os.dup(2)
+    try:
+        saved_stdout = os.dup(1)
+        saved_stderr = os.dup(2)
+    except OSError:
+        yield _Capture()
+        return
     capture = tempfile.TemporaryFile()
+    handle = _Capture()
     try:
         sys.stdout.flush()
         sys.stderr.flush()
         os.dup2(capture.fileno(), 1)
         os.dup2(capture.fileno(), 2)
-        yield capture
+    except OSError:
+        for saved in (saved_stdout, saved_stderr):
+            with contextlib.suppress(OSError):
+                os.close(saved)
+        yield handle
+        return
+    try:
+        try:
+            yield handle
+        except BaseException:
+            handle.failed = True
+            raise
     finally:
         sys.stdout.flush()
         sys.stderr.flush()
-        os.dup2(saved_stdout, 1)
-        os.dup2(saved_stderr, 2)
-        os.close(saved_stdout)
-        os.close(saved_stderr)
+        for saved, fd in ((saved_stdout, 1), (saved_stderr, 2)):
+            with contextlib.suppress(OSError):
+                os.dup2(saved, fd)
+        for saved in (saved_stdout, saved_stderr):
+            with contextlib.suppress(OSError):
+                os.close(saved)
+        if handle.failed:
+            with contextlib.suppress(OSError):
+                capture.seek(0)
+                sys.stderr.write(capture.read().decode(errors="replace"))
+                sys.stderr.flush()
+        capture.close()
 
 
 def _run_source_phase_quietly(
@@ -66,17 +107,9 @@ def _run_source_phase_quietly(
     ``simulate_and_metrics.smk``'s ``_replay_output_on_error`` helper.
     """
     with _captured_output() as capture:
-        try:
-            code = run_project_child(source_command, cwd=cwd, env=env, writing=True)
-        except BaseException:
-            capture.seek(0)
-            sys.stderr.write(capture.read().decode(errors="replace"))
-            sys.stderr.flush()
-            raise
+        code = run_project_child(source_command, cwd=cwd, env=env, writing=True)
         if code:
-            capture.seek(0)
-            sys.stderr.write(capture.read().decode(errors="replace"))
-            sys.stderr.flush()
+            capture.mark_failed()
         return code
 
 
@@ -89,16 +122,10 @@ def _plan_quietly(config: dict) -> tuple[dict, dict, dict]:
     subprocess it wraps. This step runs in-process between the two snakemake
     children, so it needs the same fd-level capture rather than a subprocess one.
     """
-    with _captured_output() as capture:
-        try:
-            settings = generation_configuration(config, REPO_ROOT)
-            candidate = build_candidate_intent(settings)
-            plan = select_generation_plan(settings, candidate)
-        except BaseException:
-            capture.seek(0)
-            sys.stderr.write(capture.read().decode(errors="replace"))
-            sys.stderr.flush()
-            raise
+    with _captured_output():
+        settings = generation_configuration(config, REPO_ROOT)
+        candidate = build_candidate_intent(settings)
+        plan = select_generation_plan(settings, candidate)
     return settings, candidate, plan
 
 

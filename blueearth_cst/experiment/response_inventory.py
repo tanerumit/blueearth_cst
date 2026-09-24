@@ -43,30 +43,6 @@ def response_reader_revision():
     )
 
 
-def _coincident_keys(run, csv_path, toml_path, config):
-    """``(run, variable, location)`` keys the planner dropped as same-cell copies."""
-
-    from blueearth_cst.experiment.simulator_adapter import coincident_point_headers
-    from blueearth_cst.experiment.wflow_response_reader import NATIVE_VARIABLES
-
-    headers = list(pd.read_csv(csv_path, nrows=0).columns)
-    static = (
-        Path(toml_path).parent
-        / config.get("dir_input", ".")
-        / config["input"]["path_static"]
-    )
-    dropped = coincident_point_headers(
-        config["output"]["csv"]["column"], headers, static
-    )
-    variable_of = {spec[0]: name for name, spec in NATIVE_VARIABLES.items()}
-    keys = set()
-    for header in dropped:
-        prefix, _, location = header.partition("_")
-        if prefix in variable_of:
-            keys.add((run, variable_of[prefix], location))
-    return keys
-
-
 def make_response_request(run_ids, variables):
     """Freeze evaluated runs and model-declared ordered locations before execution.
 
@@ -611,15 +587,6 @@ def build_response_inventory_v2(
         expected_keys = {
             tuple(key) for key in request["expected_series"] if key[0] == run
         }
-        if actual_keys - expected_keys:
-            # A same-cell duplicate the planner left out on purpose is still in
-            # Wflow's CSV; accept exactly those, recomputed from this run's own
-            # TOML and static maps, and nothing else (t2609151118).
-            coincident = _coincident_keys(
-                run, native.csv_path, native.toml_path, config
-            )
-            values = [item for item in values if item.key not in coincident]
-            actual_keys -= coincident
         if actual_keys != expected_keys:
             raise MissingResponseRequirement(
                 f"run {run}: response keys missing={sorted(expected_keys - actual_keys)} "

@@ -53,3 +53,43 @@ def test_distinct_cells_and_area_maps_are_untouched(tmp_path):
     static = _static(tmp_path, {1020: (2, 2), 1030: (0, 5)})
     headers = ["Q_101", "Q_1020", "Q_1030", "gwr_1", "gwr_2"]
     assert coincident_point_headers(COLUMNS, headers, static) == {}
+
+
+def test_open_responses_drops_the_duplicate_before_numbering(tmp_path):
+    """Every reader of a native CSV sees one series per cell, ordinals contiguous."""
+    import pandas as pd
+
+    from blueearth_cst.experiment.wflow_response_reader import (
+        NativeRunArtifacts,
+        ResponseRequest,
+        open_responses,
+    )
+
+    static = _static(tmp_path, {1010: (4, 0), 1020: (2, 2)})
+    toml = tmp_path / "run_01.toml"
+    toml.write_text(
+        '[time]\ncalendar = "standard"\ntimestepsecs = 86400\n'
+        'starttime = "2000-01-01T00:00:00"\nendtime = "2000-01-03T00:00:00"\n'
+        f'[input]\npath_static = "{static.name}"\n'
+        "[[output.csv.column]]\n"
+        'header = "Q"\nmap = "outlets"\n'
+        'parameter = "river_water__volume_flow_rate"\n'
+        "[[output.csv.column]]\n"
+        'header = "Q"\nmap = "gauges_locations"\n'
+        'parameter = "river_water__volume_flow_rate"\n',
+        encoding="utf-8",
+    )
+    csv = tmp_path / "run_01.csv"
+    frame = pd.DataFrame(
+        {"Q_101": [1.0, 2.0], "Q_1010": [1.0, 2.0], "Q_1020": [3.0, 4.0]},
+        index=pd.to_datetime(["2000-01-02", "2000-01-03"]),
+    )
+    frame.index.name = "time"
+    frame.to_csv(csv)
+    series = open_responses(
+        "01", NativeRunArtifacts(csv, toml), ResponseRequest(("q",))
+    )
+    assert [(s.location_id, s.location_ordinal) for s in series] == [
+        ("101", 0),
+        ("1020", 1),
+    ]

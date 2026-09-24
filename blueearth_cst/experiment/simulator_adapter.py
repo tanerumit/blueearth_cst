@@ -16,6 +16,7 @@ from blueearth_cst.experiment.forcing_descriptor import ForcingDescriptor
 from blueearth_cst.experiment.wflow_response_reader import (
     NativeRunArtifacts,
     ResponseRequest,
+    coincident_point_headers,
     open_responses,
 )
 from blueearth_cst.shared.provenance import file_sha256
@@ -251,61 +252,6 @@ def validate_ancillary_grid(
             f"run_id={run_id}: ancillary_grid; required=aligned covering elevation, "
             f"observed={elevation_grid.raster.crs}, {elevation_grid.raster.bounds}; artifact={artifact}"
         )
-
-
-#: The point-map a coincident pair keeps, as WF1's `plot_results._merge_gauges`
-#: does: the model outlet wins over a gauge snapped to the same cell.
-_PREFERRED_POINT_MAP = "outlets"
-
-
-def coincident_point_headers(columns, headers, static_path):
-    """Headers that repeat another point column's model cell, to leave out.
-
-    WF1 declares discharge on two point maps -- the model outlets and the user's
-    gauges -- and a gauge snapped onto the basin outlet sits on the outlet's
-    cell, so Wflow writes the same series twice under two ids (101 and 1010 on
-    the fixture; t2609151118). WF1's figures already drop the duplicate
-    (`plot_results.resolve_stations`); this is the same rule for WF4's response
-    request, so a metric set holds one row per physical location.
-
-    ``columns`` is the TOML's ``output.csv.column`` list, ``headers`` Wflow's
-    own ordered header names. Only point maps are compared (entries whose
-    ``map`` is a static variable with isolated ids); a column is kept when its
-    cell is new, and on a collision the ``outlets`` map wins, then header order.
-    Returns ``{dropped header: kept header}``.
-    """
-    import numpy as np
-    import xarray as xr
-
-    by_header = {}
-    for item in columns:
-        by_header.setdefault(item["header"], []).append(item["map"])
-    cells = {}
-    with xr.open_dataset(static_path) as dataset:
-        for header, maps in by_header.items():
-            for name in maps:
-                values = np.asarray(dataset[name].values)
-                ids, counts = np.unique(
-                    values[np.isfinite(values) & (values > 0)], return_counts=True
-                )
-                if len(ids) == 0 or counts.max() != 1:
-                    continue  # an area map (subcatchment), not points
-                for value in ids:
-                    row, col = np.argwhere(values == value)[0]
-                    key = f"{header}_{int(value)}"
-                    rank = 0 if name == _PREFERRED_POINT_MAP else 1
-                    cells[key] = ((header, int(row), int(col)), rank)
-    kept, dropped = {}, {}
-    order = {name: i for i, name in enumerate(headers)}
-    for key in sorted(cells, key=lambda k: (cells[k][1], order.get(k, len(order)))):
-        if key not in order:
-            continue
-        cell = cells[key][0]
-        if cell in kept:
-            dropped[key] = kept[cell]
-        else:
-            kept[cell] = key
-    return dropped
 
 
 def plan_native_response_request(

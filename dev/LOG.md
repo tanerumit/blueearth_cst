@@ -17,6 +17,9 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-24 | t2608071213 | Define one label constant per rule, so a rename is a one-line edit | rule identifiers |
+| 2026-09-24 | t2608241413 | The generated series is anchored to a hardcoded 2010 | wf3 / weather generator |
+| 2026-09-24 | t2609241506 | Scenario collection identity changes on every re-extraction of the historical climate | wf3  |
 | 2026-09-24 | t2608071224 | The per-cst persistence item below may already be answered by R9's CR-7 / F18 [superseded] | wf3  |
 | 2026-09-24 | t2609191457 | Make WF3 planning static before Snakemake | wf3 scenarios |
 | 2026-09-24 | t2609171940 | rule-index.md's WF3 section is wholly pre-R12, and AGENTS.md sends rule authors to it | docs / rule reference |

@@ -5,7 +5,7 @@ status: backlog
 branch:
 effort: 1
 area: wf1 / DAG
-origin: R13 baseline pass 1 (2026-08-21)
+origin: wf4 naming bundle (2026-09-24)
 queue:
 created: 2026-08-22
 updated: 2026-08-22

@@ -88,11 +88,17 @@ cover freezing inputs as well as copying them.
 - Identities are unaffected. The files in the generation, simulation, metric
   and climate-store code inventories were left byte-identical, so existing
   collections, simulations and metric sets are reused.
-- On an existing project, WF1's next run re-runs from `delineate_region` once:
-  comments in `script:` modules changed, and Snakemake's `code` trigger sees
-  that. Outputs are unchanged. A dry run against `test_case/test_local`
-  scheduled every WF1 rule for that reason and no other; no rule was scheduled
-  because of its new name.
+- Rerun exposure on an existing project. Snakemake's `code` trigger hashes
+  shell commands only (`snakemake/persistence.py`, `_code`), so neither a rule's
+  new name nor the changed `run:`-body literal in 4.03 schedules a job. Script
+  modules whose comments changed are compared by mtime, so rules calling them
+  may re-run once, with unchanged outputs. What was measured: a WF1 dry run
+  against `test_case/test_local` schedules every rule, but it does so
+  identically on `main`, where `delineate_region` is already stale ("code has
+  changed", "set of input files has changed"). That existing cascade hides any
+  trigger this branch adds, so WF1 proves nothing either way. WF0, WF2, WF3 and
+  WF4 were not dry-run against a real tree: this worktree's `test_local` lacks
+  the current WF3 collection.
 
 ## Also in this bundle
 

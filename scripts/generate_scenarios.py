@@ -5,6 +5,7 @@ import contextlib
 import hashlib
 import io
 import json
+import logging
 import os
 import re
 import sys
@@ -44,6 +45,23 @@ class _Capture:
 
     def mark_failed(self) -> None:
         self.failed = True
+
+
+def _console_log_handlers(*streams) -> dict[logging.StreamHandler, Any]:
+    """Every live logging stream handler writing to one of ``streams``."""
+    loggers = [logging.getLogger()] + [
+        item
+        for item in logging.Logger.manager.loggerDict.values()
+        if isinstance(item, logging.Logger)
+    ]
+    return {
+        handler: handler.stream
+        for logger in loggers
+        for handler in logger.handlers
+        if isinstance(handler, logging.StreamHandler)
+        and not isinstance(handler, logging.FileHandler)
+        and any(handler.stream is stream for stream in streams)
+    }
 
 
 @contextlib.contextmanager
@@ -87,6 +105,12 @@ def _captured_output():
     )
     real_stdout, real_stderr = sys.stdout, sys.stderr
     sys.stdout = sys.stderr = stream
+    # Logging handlers bound the console stream when they were created (HydroMT's
+    # among them), so they need the same swap; otherwise their write raises
+    # WinError 6 and logging prints `--- Logging error ---` instead of the record.
+    console_handlers = _console_log_handlers(real_stdout, real_stderr)
+    for handler in console_handlers:
+        handler.stream = stream
     try:
         try:
             yield handle
@@ -94,6 +118,8 @@ def _captured_output():
             handle.failed = True
             raise
     finally:
+        for handler, original in console_handlers.items():
+            handler.stream = original
         sys.stdout, sys.stderr = real_stdout, real_stderr
         with contextlib.suppress(OSError, ValueError):
             stream.flush()

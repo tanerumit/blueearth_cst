@@ -205,3 +205,22 @@ def test_disabled_wf3_cannot_initialize_collection(tmp_path, monkeypatch):
     assert len(calls) == 1  # source preparation only; no generation child
     assert calls[0][-2:] == ["--quiet", "all"]
     assert not (project / "scenarios").exists()
+
+
+def test_console_log_handlers_are_captured_and_restored(capfd):
+    import logging
+
+    logger = logging.getLogger("cst-test-capture")
+    handler = logging.StreamHandler(sys.stderr)
+    logger.addHandler(handler)
+    logger.propagate = False
+    try:
+        with generate_scenarios._captured_output():
+            assert handler.stream is not sys.__stderr__
+            logger.warning("WARNING: captured through the handler")
+        assert handler.stream is sys.stderr
+    finally:
+        logger.removeHandler(handler)
+    err = capfd.readouterr().err
+    assert "WARNING: captured through the handler" in err
+    assert "Logging error" not in err

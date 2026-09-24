@@ -1,15 +1,10 @@
 """Owned two-phase WF3 launcher: prepare sources, freeze a plan, then generate."""
 
 import argparse
-import contextlib
 import hashlib
-import io
 import json
-import logging
 import os
-import re
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any
 
@@ -26,124 +21,12 @@ from blueearth_cst.experiment.generation_plan import (
 from blueearth_cst.experiment.generation_publication import initialize_generation
 from blueearth_cst.shared import invocation_history
 from blueearth_cst.shared.config_composition import compose_config
+from blueearth_cst.shared.output_capture import captured_output
 from blueearth_cst.shared.windows_job import run_project_child
 from blueearth_cst.shared.workflow_config_snapshot import archive_lock
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECTION = ("project", "basin", "climate", "workflows.generate_scenarios")
-
-
-_ALERT = re.compile(r"warn|error|exception|traceback|fail", re.IGNORECASE)
-
-
-class _Capture:
-    """Handle yielded by ``_captured_output`` so a caller can flag a failed
-    return code (an exception is flagged automatically)."""
-
-    def __init__(self) -> None:
-        self.failed = False
-
-    def mark_failed(self) -> None:
-        self.failed = True
-
-
-def _console_log_handlers(*streams) -> dict[logging.StreamHandler, Any]:
-    """Every live logging stream handler writing to one of ``streams``."""
-    loggers = [logging.getLogger()] + [
-        item
-        for item in logging.Logger.manager.loggerDict.values()
-        if isinstance(item, logging.Logger)
-    ]
-    return {
-        handler: handler.stream
-        for logger in loggers
-        for handler in logger.handlers
-        if isinstance(handler, logging.StreamHandler)
-        and not isinstance(handler, logging.FileHandler)
-        and any(handler.stream is stream for stream in streams)
-    }
-
-
-@contextlib.contextmanager
-def _captured_output():
-    """Redirect stdout/stderr to a temp file; replay it all on failure, and
-    only its warning/error lines on success.
-
-    Best-effort: a console-hygiene helper must never crash a scientific step.
-    If saving or redirecting the standard fds fails, output is left
-    unsuppressed rather than the error propagated. Python-level streams are
-    redirected too: on a Windows console they write through WriteConsoleW,
-    which fails with WinError 6 on a redirected fd. The replay happens
-    only after the real fds are restored, so it reaches the console instead
-    of being written back into the very file it came from. Mirrors
-    ``simulate_and_metrics.smk``'s ``_replay_output_on_error`` helper.
-    """
-    try:
-        saved_stdout = os.dup(1)
-        saved_stderr = os.dup(2)
-    except OSError:
-        yield _Capture()
-        return
-    capture = tempfile.TemporaryFile()
-    handle = _Capture()
-    try:
-        sys.stdout.flush()
-        sys.stderr.flush()
-        os.dup2(capture.fileno(), 1)
-        os.dup2(capture.fileno(), 2)
-    except OSError:
-        for saved in (saved_stdout, saved_stderr):
-            with contextlib.suppress(OSError):
-                os.close(saved)
-        yield handle
-        return
-    # On a real Windows console sys.stdout/sys.stderr are _WindowsConsoleIO,
-    # whose WriteConsoleW on the redirected fd fails with WinError 6, so the
-    # Python-level streams must point at the capture file as well.
-    stream = io.TextIOWrapper(
-        capture, encoding="utf-8", errors="replace", write_through=True
-    )
-    real_stdout, real_stderr = sys.stdout, sys.stderr
-    sys.stdout = sys.stderr = stream
-    # Logging handlers bound the console stream when they were created (HydroMT's
-    # among them), so they need the same swap; otherwise their write raises
-    # WinError 6 and logging prints `--- Logging error ---` instead of the record.
-    console_handlers = _console_log_handlers(real_stdout, real_stderr)
-    for handler in console_handlers:
-        handler.stream = stream
-    try:
-        try:
-            yield handle
-        except BaseException:
-            handle.failed = True
-            raise
-    finally:
-        for handler, original in console_handlers.items():
-            handler.stream = original
-        sys.stdout, sys.stderr = real_stdout, real_stderr
-        with contextlib.suppress(OSError, ValueError):
-            stream.flush()
-        stream.detach()
-        for saved, fd in ((saved_stdout, 1), (saved_stderr, 2)):
-            with contextlib.suppress(OSError):
-                os.dup2(saved, fd)
-        for saved in (saved_stdout, saved_stderr):
-            with contextlib.suppress(OSError):
-                os.close(saved)
-        with contextlib.suppress(OSError):
-            capture.seek(0)
-            text = capture.read().decode(errors="replace")
-            if not handle.failed:
-                # Success hides only routine output; warnings and errors
-                # are never silenced.
-                text = "".join(
-                    line
-                    for line in text.splitlines(keepends=True)
-                    if _ALERT.search(line)
-                )
-            sys.stderr.write(text)
-            sys.stderr.flush()
-        capture.close()
 
 
 def _run_source_phase_quietly(
@@ -153,10 +36,10 @@ def _run_source_phase_quietly(
 
     The source phase re-parses data catalogs (HydroMT INFO logging) and its
     own snakemake preamble -- a duplicate, uninformative leak in front of the
-    generation phase's identical banner when it succeeds. Mirrors
-    ``simulate_and_metrics.smk``'s ``_replay_output_on_error`` helper.
+    generation phase's identical banner when it succeeds. Uses the
+    shared ``output_capture.captured_output``.
     """
-    with _captured_output() as capture:
+    with captured_output() as capture:
         code = run_project_child(source_command, cwd=cwd, env=env, writing=True)
         if code:
             capture.mark_failed()
@@ -172,7 +55,7 @@ def _plan_quietly(config: dict) -> tuple[dict, dict, dict]:
     subprocess it wraps. This step runs in-process between the two snakemake
     children, so it needs the same fd-level capture rather than a subprocess one.
     """
-    with _captured_output():
+    with captured_output():
         settings = generation_configuration(config, REPO_ROOT)
         candidate = build_candidate_intent(settings)
         plan = select_generation_plan(settings, candidate)

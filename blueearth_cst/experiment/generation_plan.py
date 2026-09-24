@@ -272,7 +272,12 @@ def snapshot_generation_input(
                 raise ValueError(
                     "generation source bytes changed during snapshot capture"
                 )
-        destination = target_root / sha256 / source.name
+        # The repo's 12-character handle, like request and collection folders;
+        # the full digest stays in the file reference, and the byte check
+        # below refuses a prefix collision rather than reusing the wrong file.
+        destination = (
+            target_root / identity_segment(sha256, "generation_input") / source.name
+        )
         destination.parent.mkdir(parents=True, exist_ok=True)
         if destination.parent.resolve() != destination.parent:
             raise ValueError(

@@ -5,7 +5,7 @@ import subprocess
 import tempfile
 import os
 import sys
-from contextlib import contextmanager
+from blueearth_cst.shared.output_capture import captured_output
 from datetime import datetime
 from blueearth_cst.experiment.simulation_runner import simulation_settings, resolve_selected_collection
 from blueearth_cst.experiment.simulation_record import live_simulation_inputs_v2, read_simulation_intent_v2, read_simulation_v2, SimulationFrozenError
@@ -72,65 +72,11 @@ declare_project_root(project_dir)
 def _selected_collection(wc):
     return SELECTION["manifest_path"]
 
-@contextmanager
-def _replay_output_on_error():
-    """Hide successful native-library probes, but preserve their failure diagnostics.
-
-    Redirection is best-effort: a console-hygiene helper must never crash a
-    scientific rule (the same rule ``toolbox_identity`` follows for provenance
-    capture). On Windows, Snakemake's local executor runs a checkpoint's
-    ``run:`` body in a spawned child process, and that child's inherited fd
-    1/2 do not always support dup2/close the way the calling process's do --
-    saving, restoring, or closing them there can raise ``OSError`` (WinError 6,
-    "the handle is invalid"). Any such failure during setup or teardown is
-    swallowed and output is left unsuppressed rather than propagated.
-    """
-    try:
-        saved_stdout = os.dup(1)
-        saved_stderr = os.dup(2)
-    except OSError:
-        yield
-        return
-    capture = tempfile.TemporaryFile()
-    failed = False
-    try:
-        sys.stdout.flush()
-        sys.stderr.flush()
-        os.dup2(capture.fileno(), 1)
-        os.dup2(capture.fileno(), 2)
-    except OSError:
-        for saved in (saved_stdout, saved_stderr):
-            with contextlib.suppress(OSError):
-                os.close(saved)
-        yield
-        return
-    try:
-        try:
-            yield
-        except BaseException:
-            failed = True
-            raise
-    finally:
-        sys.stdout.flush()
-        sys.stderr.flush()
-        for saved, fd in ((saved_stdout, 1), (saved_stderr, 2)):
-            with contextlib.suppress(OSError):
-                os.dup2(saved, fd)
-        for saved in (saved_stdout, saved_stderr):
-            with contextlib.suppress(OSError):
-                os.close(saved)
-        if failed:
-            with contextlib.suppress(OSError):
-                capture.seek(0)
-                sys.stderr.write(capture.read().decode(errors="replace"))
-                sys.stderr.flush()
-        capture.close()
-
 def _live_simulation_inputs():
     catalogs = project["project"]["catalog"]
     catalogs = catalogs if isinstance(catalogs, list) else [catalogs]
     source = project["climate"]["selected"]
-    with _replay_output_on_error():
+    with captured_output():
         preparation = resolve_wf4_preparation(
             Path(project_dir), Path(exp_dir), climate_source=source,
             catalogs=catalogs,

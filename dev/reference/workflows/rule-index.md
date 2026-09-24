@@ -957,40 +957,46 @@ their order.
 ![Generation and retained simulation handoffs](wf3-stage-flow.svg)
 
 Generation reads basin/climate inputs and its own settings, with no model edge.
-The source checkpoint resolves content identity after historical inputs exist.
-The publication checkpoint validates the full collection before exposing its
-readiness marker; downstream consumers never create or delete collection data.
+`scripts/generate_scenarios.py` runs it in two phases. The source phase runs
+3.01–3.03 under Snakemake; then, outside Snakemake, the wrapper freezes the
+generation plan, claims the collection and writes the generator input (3.04–3.06).
+The generation phase builds a static DAG from that frozen plan: no checkpoint,
+so the opening table reports exact job counts, and it lists 3.04–3.06 as
+`done in planning`. Publication validates the full collection before writing
+its ready marker; downstream consumers never create or delete collection data.
 
 ```mermaid
 flowchart LR
   region --> climate --> sources
   lookup --> sources
   sources --> claim --> config --> roots --> perturbed
-  roots --> retain
-  perturbed --> retain --> publish
+  roots --> publish
+  perturbed --> publish
 ```
 
-| Number | Rule/checkpoint | Output or role |
-|---|---|---|
-| 3.00 | `all` | Ready collection, merged log and benchmarks |
-| 3.01 | `delineate_region` | Shared basin region |
-| 3.02 | `extract_historical_climate` | Shared historical climate store |
-| 3.03 | `prepare_stress_test_grid` | Staged monthly perturbation lookup |
-| 3.04 | `prepare_collection_sources` | Source/preparation inventory and exact generation plan |
-| 3.05 | `initialize_scenario_collection` | Exclusive collection claim and worker receipt |
-| 3.06 | `prepare_weathergen_config` | Generator configuration |
-| 3.07 | `generate_weather_realizations` | Temporary unperturbed generator members |
-| 3.08 | `perturb_climate_realization` | Temporary derived members |
-| 3.09 | `retain_scenario_forcing` | Durable `forcing/run_<run_id>.nc` |
-| 3.10 | `publish_scenario_collection` | Complete `collection.json` marker |
-| 3.11 | `gather_logs` | Generation-request-scoped merged log |
-| 3.12 | `gather_benchmarks` | Generation-request-scoped benchmark table |
+| Number | Rule or step | Where it runs | Output or role |
+|---|---|---|---|
+| 3.00 | `all` | Snakemake | Ready collection, merged log and benchmarks |
+| 3.01 | `delineate_region` | Snakemake (source phase) | Shared basin region |
+| 3.02 | `extract_historical_climate` | Snakemake (source phase) | Shared historical climate store |
+| 3.03 | `prepare_perturbation_grid` | Snakemake (source phase) | Staged monthly perturbation lookup |
+| 3.04 | `prepare_collection_sources` | wrapper, before the DAG | Source inventory and frozen generation plan |
+| 3.05 | `initialize_scenario_collection` | wrapper, before the DAG | Exclusive collection claim and initialization receipt |
+| 3.06 | `prepare_weathergen_config` | wrapper, before the DAG | `weathergenr/weather_generation_input.yml` |
+| 3.07 | `generate_weather_realizations` | Snakemake | Unperturbed roots, moved to `series/run_<id>.nc`; date products |
+| 3.08 | `perturb_climate_realizations` | Snakemake, one job per perturbed run | `series/run_<id>.nc` |
+| 3.10 | `publish_scenario_collection` | Snakemake | Validated collection and its ready marker |
+| – | log and benchmark gathering | end-of-run handler (`run_summary`) | `logs/wf3_generate_scenarios_<plan>.log`, `benchmarks/wf3_benchmarks_<plan>.md` |
 
-Staging lives under `scenarios/requests/<generation_request_id>/generation/`.
-Published collections live under `scenarios/collections/<collection_id>/` and
-include the scenario table, lookup, forcing descriptors, environment/code/source
-inventories and portable preparation context. The exact plan identifies the
-collection; consumers never scan for the latest match.
+3.09 is intentionally unused: its copy step was removed on 2026-09-24
+(`dev/milestones/post-r12/migration_wf3-generation-rules.md`).
+
+Requests and plans live under `scenarios/_engine/requests/<request>/`. A
+collection's scientific records live under
+`scenarios/_engine/collections/<collection>/`, and its user-facing products under
+`scenarios/<collection>/`: `series/`, `scenario_run_lookup.csv`,
+`perturbation_lookup.csv`, `weathergenr/` and the creator `config/` archive. The
+frozen plan identifies the collection; consumers never scan for the latest match.
 
 # WF4 — system simulation (`simulate_system.smk`)
 

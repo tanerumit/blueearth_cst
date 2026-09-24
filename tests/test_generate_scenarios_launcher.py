@@ -31,6 +31,33 @@ def test_source_phase_hides_console_chatter_only_on_success(capfd, monkeypatch):
     assert captured.err == ""
 
 
+def test_source_phase_never_silences_warnings_on_success(capfd, monkeypatch):
+    def warning_child(_command, **_kwargs):
+        subprocess.run(
+            [
+                sys.executable,
+                "-c",
+                "print('routine chatter'); print('WARNING: catalog lacks units')",
+            ],
+            check=False,
+        )
+        return 0
+
+    monkeypatch.setattr(generate_scenarios, "run_project_child", warning_child)
+    assert generate_scenarios._run_source_phase_quietly([], cwd=None, env={}) == 0
+    captured = capfd.readouterr()
+    assert "WARNING: catalog lacks units" in captured.err
+    assert "routine chatter" not in captured.err
+
+
+def test_in_process_writes_are_captured_and_errors_surface(capfd):
+    with pytest.raises(RuntimeError, match="boom"):
+        with generate_scenarios._captured_output():
+            print("in-process chatter")
+            raise RuntimeError("boom")
+    assert "in-process chatter" in capfd.readouterr().err
+
+
 def test_source_phase_replays_console_chatter_on_failure(capfd, monkeypatch):
     def noisy_failing_child(_command, **_kwargs):
         subprocess.run(

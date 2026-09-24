@@ -3,8 +3,10 @@
 import argparse
 import contextlib
 import hashlib
+import io
 import json
 import os
+import re
 import sys
 import tempfile
 from pathlib import Path
@@ -30,6 +32,9 @@ REPO_ROOT = Path(__file__).resolve().parents[1]
 PROJECTION = ("project", "basin", "climate", "workflows.generate_scenarios")
 
 
+_ALERT = re.compile(r"warn|error|exception|traceback|fail", re.IGNORECASE)
+
+
 class _Capture:
     """Handle yielded by ``_captured_output`` so a caller can flag a failed
     return code (an exception is flagged automatically)."""
@@ -43,13 +48,14 @@ class _Capture:
 
 @contextlib.contextmanager
 def _captured_output():
-    """Redirect stdout/stderr to a temp file, replaying only on failure.
+    """Redirect stdout/stderr to a temp file; replay it all on failure, and
+    only its warning/error lines on success.
 
     Best-effort: a console-hygiene helper must never crash a scientific step.
-    If saving, redirecting, or restoring the standard fds fails (WinError 6,
-    "the handle is invalid", is a known Windows fd quirk), the failure is
-    swallowed and output is left unsuppressed rather than propagated. The
-    replay -- when the body raises or calls ``mark_failed()`` -- happens
+    If saving or redirecting the standard fds fails, output is left
+    unsuppressed rather than the error propagated. Python-level streams are
+    redirected too: on a Windows console they write through WriteConsoleW,
+    which fails with WinError 6 on a redirected fd. The replay happens
     only after the real fds are restored, so it reaches the console instead
     of being written back into the very file it came from. Mirrors
     ``simulate_and_metrics.smk``'s ``_replay_output_on_error`` helper.
@@ -73,6 +79,14 @@ def _captured_output():
                 os.close(saved)
         yield handle
         return
+    # On a real Windows console sys.stdout/sys.stderr are _WindowsConsoleIO,
+    # whose WriteConsoleW on the redirected fd fails with WinError 6, so the
+    # Python-level streams must point at the capture file as well.
+    stream = io.TextIOWrapper(
+        capture, encoding="utf-8", errors="replace", write_through=True
+    )
+    real_stdout, real_stderr = sys.stdout, sys.stderr
+    sys.stdout = sys.stderr = stream
     try:
         try:
             yield handle
@@ -80,19 +94,29 @@ def _captured_output():
             handle.failed = True
             raise
     finally:
-        sys.stdout.flush()
-        sys.stderr.flush()
+        sys.stdout, sys.stderr = real_stdout, real_stderr
+        with contextlib.suppress(OSError, ValueError):
+            stream.flush()
+        stream.detach()
         for saved, fd in ((saved_stdout, 1), (saved_stderr, 2)):
             with contextlib.suppress(OSError):
                 os.dup2(saved, fd)
         for saved in (saved_stdout, saved_stderr):
             with contextlib.suppress(OSError):
                 os.close(saved)
-        if handle.failed:
-            with contextlib.suppress(OSError):
-                capture.seek(0)
-                sys.stderr.write(capture.read().decode(errors="replace"))
-                sys.stderr.flush()
+        with contextlib.suppress(OSError):
+            capture.seek(0)
+            text = capture.read().decode(errors="replace")
+            if not handle.failed:
+                # Success hides only routine output; warnings and errors
+                # are never silenced.
+                text = "".join(
+                    line
+                    for line in text.splitlines(keepends=True)
+                    if _ALERT.search(line)
+                )
+            sys.stderr.write(text)
+            sys.stderr.flush()
         capture.close()
 
 

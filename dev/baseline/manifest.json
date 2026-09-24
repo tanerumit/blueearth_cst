@@ -1,18 +1,18 @@
 {
   "project_dir": "test_case/test_local",
   "recorded_by": {
-    "branch": "wf4-batch-failure-rerun",
-    "commit": "80968df26992aefb9898412182d7219c07111380",
+    "branch": "small-bug-fixes",
+    "commit": "03b29b4ca162c718e970d0deabef08634befa934",
     "dirty": false
   },
   "targets": {
     "test_case/test_local/config/runs/analyze_projections/run_record.yml": {
-      "sha256": "f88e935addbe6bca9c69a24b11b3a7f628eff725635c40c19a73002c50e9b3ba",
+      "sha256": "0ed42dcf8e0a590c3563dedb56475717430d01dd259d42ba29342bb2c99a1850",
       "template": "{project_dir}/config/runs/analyze_projections/run_record.yml",
       "type": "yaml"
     },
     "test_case/test_local/config/runs/build_model/run_record.yml": {
-      "sha256": "1ffe006812975dfa6d9ff02b0c0d047d1c4846ee468c4cfd3edff675ddd1914e",
+      "sha256": "a5446652ea30dbaea39828b311a77517aeba53ff672afe11b87e6d1652519662",
       "template": "{project_dir}/config/runs/build_model/run_record.yml",
       "type": "yaml"
     },
@@ -28,15 +28,15 @@
       "template": "{clim_project_dir}/summary/{clim_project}_change_factors_monthly.csv",
       "type": "csv"
     },
-    "test_case/test_local/experiments/experiment/results/metric_sets/8849f434851a/q_indicators.csv": {
+    "test_case/test_local/experiments/experiment/results/metric_sets/b9a511869e29/q_indicators.csv": {
       "columns": [
         "metric",
         "location",
         "run_group_id",
         "value"
       ],
-      "n_groups": 55,
-      "n_rows": 700,
+      "n_groups": 44,
+      "n_rows": 560,
       "ref_table": "indicator_ref/817f2af741db97c1.csv",
       "template": "{metric_set_dir}/q_indicators.csv",
       "type": "indicator"

@@ -92,7 +92,8 @@ COVERED: dict[str, list[str]] = {
         # one record per workflow at an enumerated path, so there is no digest
         # level left for a regex to match. A surviving bundle in an existing
         # project now reports as undeclared -- which is the migration's signal,
-        # and dev/scripts/prune_config_snapshots.py is what clears it.
+        # and deleting the bundle clears it (the one-shot prune script was
+        # retired 2026-09-24; tag archive/dev-scripts-2026-09-24).
         "config/runs/build_model/run_record.yml",
         "config/runs/analyze_projections/run_record.yml",
         # Written by the workflow's lifecycle handlers rather than by a rule,

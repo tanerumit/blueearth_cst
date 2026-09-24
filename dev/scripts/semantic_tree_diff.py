@@ -388,8 +388,9 @@ def build_project_tree_rules(
     # 2026-08-13); the regex that matched
     # `config/runs/<workflow>/<digest>/...` went with them, so a surviving
     # bundle in an existing project now reports as undeclared. That is the
-    # migration's own signal, and `dev/scripts/prune_config_snapshots.py` is
-    # what clears it.
+    # migration's own signal; delete the bundle. (The one-shot
+    # `prune_config_snapshots.py` that did so was retired 2026-09-24; it is
+    # recoverable from tag `archive/dev-scripts-2026-09-24`.)
     #
     # What replaces them is ONE record per workflow, at an enumerated path --
     # no digest level, so nothing needs a regex.

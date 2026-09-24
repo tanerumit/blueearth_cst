@@ -118,7 +118,7 @@ consumer reads while keeping the divergence honestly on the record.
 - **path pattern:** `<collection>/stress_test_lookup.csv`, retained with the
   collection. Producer staging is under
   `scenarios/requests/<generation_request_id>/generation/config/`.
-- **producer:** WF3 `prepare_stress_test_grid` and collection publication.
+- **producer:** WF3 `prepare_perturbation_grid` and collection publication.
 - **consumer:** the stochastic provider reads the scenario row's explicit
   `st_id`; reporting derives axes from the retained lookup. Simulation and
   metric identities never reconstruct membership from filenames.

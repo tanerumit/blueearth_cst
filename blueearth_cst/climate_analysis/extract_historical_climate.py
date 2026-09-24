@@ -559,7 +559,8 @@ def prep_historical_climate(
         Content digest of the region artifact the ``bbox`` came from, stamped
         on the extraction as ``region_geojson_sha256`` (ADR 0003).
     region_source : str, Path, optional
-        Path of that artifact, stamped as ``region_source``.
+        Path of that artifact, stamped as ``region_source`` relative to the
+        directory of ``fn_out``.
     enforce_min_years : bool, optional
         Whether a delivered record below ``MIN_HISTORICAL_YEARS`` is an ERROR
         (default) or a logged warning. ``False`` only for wf0's extra
@@ -783,7 +784,12 @@ def prep_historical_climate(
     if region_sha256 is not None:
         ds.attrs["region_geojson_sha256"] = region_sha256
     if region_source is not None:
-        ds.attrs["region_source"] = os.fspath(region_source)
+        # Relative to the written file, so the same extraction in another
+        # project folder is byte-identical: this file's hash feeds the WF3
+        # automatic seed and collection id. region_geojson_sha256 pins content.
+        ds.attrs["region_source"] = Path(
+            os.path.relpath(region_source, Path(fn_out).parent)
+        ).as_posix()
 
     dvars = ds.raster.vars
     encoding = {k: {"zlib": True} for k in dvars}

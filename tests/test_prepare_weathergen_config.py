@@ -208,8 +208,10 @@ def test_f7_the_pinned_template_is_a_declared_generation_input():
     snakefile = (
         Path(__file__).resolve().parents[1] / "generate_scenarios.smk"
     ).read_text(encoding="utf-8")
-    rule = re.search(r"rule generate_roots_v2:.*?\n[ \t]+output:", snakefile, re.S)
-    assert rule, "rule generate_roots_v2 not found"
+    rule = re.search(
+        r"rule generate_weather_realizations:.*?\n[ \t]+output:", snakefile, re.S
+    )
+    assert rule, "rule generate_weather_realizations not found"
     inputs = re.search(r"\n[ \t]+input:(.*)", rule.group(0), re.S).group(1)
     assert "yaml=_v2_yaml.as_posix()" in inputs, (
         "F7 regression: the weathergen template is not declared as an input of "

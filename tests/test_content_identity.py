@@ -340,3 +340,15 @@ def test_an_unreadable_incumbent_is_left_to_the_callers_exclusivity_rules(tmp_pa
     target = tmp_path / identity_segment(identity, "x")
     target.mkdir()
     assert claim_identity_segment(tmp_path, identity, lambda path: None) == target
+
+
+def test_code_inventory_ignores_checkout_line_endings(tmp_path):
+    from blueearth_cst.experiment.content_identity import repository_code_inventory
+
+    package = tmp_path / "blueearth_cst"
+    package.mkdir()
+    entry = package / "entry.py"
+    entry.write_bytes(b"A = 1\nB = 2\n")
+    lf = repository_code_inventory(tmp_path, ["blueearth_cst/entry.py"])
+    entry.write_bytes(b"A = 1\r\nB = 2\r\n")
+    assert repository_code_inventory(tmp_path, ["blueearth_cst/entry.py"]) == lf

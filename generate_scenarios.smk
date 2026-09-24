@@ -8,7 +8,7 @@ sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, patch_psutil_windows_benchmark, warning_count
 from blueearth_cst.shared.wf3_science import index_width
-from blueearth_cst.shared.console_style import install_console_style, open_run_header, rule_banner, run_summary, target_banner
+from blueearth_cst.shared.console_style import install_console_style, open_run_header, pre_dag_step, rule_banner, run_summary, target_banner
 from blueearth_cst.experiment.generation_plan import generation_configuration
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
 patch_psutil_windows_benchmark()
@@ -120,7 +120,7 @@ rule all:
 
 # 3.01  delineate_region
 rule delineate_region:
-    message: rule_banner("3.01", "delineate_region", dynamic_progress=True)
+    message: rule_banner("3.01", "delineate_region")
     input:
         **REGION.inputs,
     params:
@@ -136,7 +136,7 @@ rule delineate_region:
 
 # 3.02  extract_historical_climate
 rule extract_historical_climate:
-    message: rule_banner("3.02", "extract_historical_climate", dynamic_progress=True)
+    message: rule_banner("3.02", "extract_historical_climate")
     input:
         **CLIMATE_STORE.inputs,
     params:
@@ -150,9 +150,9 @@ rule extract_historical_climate:
     script:
         CLIMATE_STORE.script
 
-# 3.03  prepare_stress_test_grid
-rule prepare_stress_test_grid:
-    message: rule_banner("3.03", "prepare_stress_test_grid", dynamic_progress=True)
+# 3.03  prepare_perturbation_grid
+rule prepare_perturbation_grid:
+    message: rule_banner("3.03", "prepare_perturbation_grid")
     input:
         config = ancient(config_path),
         config_workflows = ancient(WF_CONFIG_PATHS),
@@ -168,6 +168,11 @@ rule prepare_stress_test_grid:
         "blueearth_cst/experiment/prepare_cst_parameters.py"
 
 if V2_MODE and V2_PLAN["decision"] == "create":
+    # Done by scripts/generate_scenarios.py before this DAG was built: the plan
+    # is frozen, the collection claimed and the generator input written.
+    pre_dag_step("3.04", "prepare_collection_sources")
+    pre_dag_step("3.05", "initialize_scenario_collection")
+    pre_dag_step("3.06", "prepare_weathergen_config")
     from blueearth_cst.experiment.generation_publication import (
         publish_generation,
         validate_provider_inputs,
@@ -179,7 +184,6 @@ if V2_MODE and V2_PLAN["decision"] == "create":
     )
     from blueearth_cst.experiment.forcing_descriptor import ClimateArtifact
     from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
-    import shutil
 
     _v2_root = Path(project_dir).resolve()
     _v2_data = _v2_root / V2_PLAN["outputs"]["data_root"]
@@ -189,10 +193,13 @@ if V2_MODE and V2_PLAN["decision"] == "create":
     _v2_rows = {row["run_id"]: row for row in V2_PLAN["rows"]}
     _v2_root_ids = [row["run_id"] for row in V2_PLAN["rows"] if not row["st_id"]]
     _v2_derived_ids = [row["run_id"] for row in V2_PLAN["rows"] if row["st_id"]]
-    _v2_temp = {
-        row["run_id"]: _v2_data / "weathergenr" / "output" / f"run_{row['run_id']}.nc"
-        for row in V2_PLAN["rows"]
+    # Every member is written once, straight to its retained series path; only
+    # the roots pass through the generator's own output directory on the way.
+    _v2_series = {
+        item["run_id"]: _v2_root / item["path"]
+        for item in V2_PLAN["outputs"]["series"]
     }
+    _v2_generator_output = _v2_data / "weathergenr" / "output"
     _v2_sources = {
         item["role"]: item["file"]
         for item in V2_PLAN["intent"]["documents"]["source_inventory"]["sources"]
@@ -211,17 +218,17 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             item for item in V2_PLAN["rows"]
             if item["rlz"] == row["rlz"] and not item["st_id"]
         )
-        return _v2_temp[root["run_id"]].as_posix()
+        return _v2_series[root["run_id"]].as_posix()
 
-    rule generate_roots_v2:
-        message: rule_banner("3.07", "generate_roots_v2", summary="generate stochastic weather realizations")
+    rule generate_weather_realizations:
+        message: rule_banner("3.07", "generate_weather_realizations", summary="generate stochastic weather realizations")
         input:
             receipt=_v2_receipt.as_posix(),
             historical=_v2_input("historical_climate").as_posix(),
             cells=_v2_input("basin_cells").as_posix(),
             yaml=_v2_yaml.as_posix(),
         output:
-            roots=temp([_v2_temp[run_id].as_posix() for run_id in _v2_root_ids]),
+            roots=[_v2_series[run_id].as_posix() for run_id in _v2_root_ids],
             dates=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["date_products"]],
         log:
             f"{LOG_PARTS_DIR}/3.07_generate_roots_v2.log"
@@ -230,7 +237,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 historical_climate=Path(input.historical),
                 weathergen_config=Path(input.yaml),
                 basin_cells=Path(input.cells),
-                output_dir=_v2_data / "weathergenr" / "output",
+                output_dir=_v2_generator_output,
                 rlz_width=len(str(RLZ_NUM)),
                 st_width=len(str(ST_NUM)),
             )
@@ -243,17 +250,21 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 output_dir=source_inputs.output_dir,
             )
             root_rows = tuple(_rows_by_id[run_id] for run_id in _v2_root_ids)
-            generate_roots(root_rows, source_inputs, log_path=Path(log[0]))
+            roots = generate_roots(root_rows, source_inputs, log_path=Path(log[0]))
+            for artifact in roots:
+                target = _v2_series[artifact.run_id]
+                target.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(artifact.path, target)
 
-    rule transform_member_v2:
-        message: rule_banner("3.08", "transform_member_v2", "run {wildcards.run_id}", summary="apply climate perturbations")
+    rule perturb_climate_realizations:
+        message: rule_banner("3.08", "perturb_climate_realizations", "run {wildcards.run_id}", summary="perturb each realization over the perturbation grid")
         input:
             receipt=_v2_receipt.as_posix(),
             ancestor=_v2_ancestor,
             lookup=_v2_lookup.as_posix(),
             yaml=_v2_yaml.as_posix(),
         output:
-            temp((_v2_data / "weathergenr" / "output" / "run_{run_id}.nc").as_posix())
+            (_v2_data / "series" / "run_{run_id}.nc").as_posix()
         wildcard_constraints:
             run_id="|".join(_v2_derived_ids),
         log:
@@ -278,22 +289,8 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 log_path=Path(log[0]),
             )
 
-    rule retain_series_v2:
-        message: rule_banner("3.09", "retain_series_v2", "run {wildcards.run_id}", quiet_start=True)
-        input:
-            receipt=_v2_receipt.as_posix(),
-            member=lambda wc: _v2_temp[wc.run_id].as_posix(),
-        output:
-            (_v2_data / "series" / "run_{run_id}.nc").as_posix()
-        wildcard_constraints:
-            run_id="|".join(_v2_rows),
-        run:
-            target = Path(output[0])
-            target.parent.mkdir(parents=True, exist_ok=True)
-            shutil.copyfile(input.member, target)
-
-    rule publish_collection_v2:
-        message: rule_banner("3.10", "publish_collection_v2", summary="publish the immutable scenario collection")
+    rule publish_scenario_collection:
+        message: rule_banner("3.10", "publish_scenario_collection", summary="validate and publish the scenario collection")
         input:
             receipt=_v2_receipt.as_posix(),
             series=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["series"]],

@@ -1,13 +1,13 @@
 ---
-title: Recover per-cst persistence isolation under batching
+title: One failing member re-runs its whole WF4 Wflow batch
 type: todo-item
 status: backlog
 effort: 2
-area: wf3 batching
+area: wf4 batching
 origin: P3-3
 queue: 1
 created: 2026-08-07
-updated: 2026-08-20
+updated: 2026-09-24
 ---
 
 > [!note] Overview
@@ -18,6 +18,17 @@ updated: 2026-08-20
 ## Progress
 
 - [ ] <first step>
+
+## Checked 2026-09-24
+
+Still relevant, but the location moved: since the R12 split, batched Wflow
+runs are WF4 rule 4.05 `run_wflow_batch_<n>` in
+`blueearth_cst/experiment/rules/simulate_and_metrics.smk`, sized by
+`batch_sizing.resolve_batch_size` with `batch_size_max` default 8. The Detail
+below still says cst and rule 3.11. The C35 proposal (default B=1, batching
+opt-in) was not adopted. Rule on C35 first: with B=1 this item disappears.
+Folded in the watch item t2608071224, which pointed at CR-7 / F18 in
+`dev/milestones/r09/wf3-change-requests.md` for the time economics.
 
 ## Refs
 

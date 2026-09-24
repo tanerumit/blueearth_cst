@@ -47,7 +47,7 @@ Wildcards used across Snakefiles MUST come from this list. Adding one requires u
 
 **Member indices are zero-padded to a width derived from the count**, so lexical order matches run order: `st_01 … st_12` for a twelve-point grid, `st_001` past ninety-nine, no padding below ten. `rlz_` and `st_` pad independently, each from its own count. `snake_utils.index_width` owns the width; `member_index_regex` builds the matching `wildcard_constraints` so an unpadded name raises `MissingRuleException` rather than routing silently. That regex MUST stay anchor-free: Snakemake embeds a constraint in the whole path's regex, so a `$` inside one binds to the end of the path and silently voids the condition.
 
-Only `perturb_climate_realization` carries a rule-local `wildcard_constraints` barring the all-zeros baseline, so it cannot become a second producer of `st_0`. Downstream rules keep the default match that admits `0`.
+WF3's generation rules key their files on the scenario `run_id`, not on `rlz_`/`st_` tokens: `perturb_climate_realizations` constrains `run_id` to the plan's perturbed rows, so it cannot become a second producer of a root.
 
 **Three different things spell themselves `cst`**, so a bare `cst_` grep is never the right tool: the package `blueearth_cst`, the historical member token (now `st_`), and the WF2 netCDF provenance attributes in `blueearth_cst/projections/` (`cst_calendar`, `cst_raw_digest`, `cst_source_paths`, …), which mean "written by CST" and are part of WF2's on-disk output.
 
@@ -161,6 +161,7 @@ Every Snakemake rule identifier is `<verb>_<noun>`. The verb comes from this lis
 | `derive_` | compute a workflow's **terminal product** from reduced inputs |
 | `plot_` | render a figure |
 | `check_` | validate, fail loud |
+| `publish_` | **validate a finished product and mark it ready** — the ready marker is written last |
 | `snapshot_` | copy inputs for provenance |
 | `gather_` | merge parts |
 

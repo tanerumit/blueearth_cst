@@ -132,7 +132,12 @@ def repository_code_inventory(
     return [
         {
             "path": path.relative_to(root).as_posix(),
-            "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+            # Line endings are a checkout setting (core.autocrlf), not code: an
+            # LF and a CRLF checkout of one commit must hash alike, or the
+            # automatic WF3 seed and every collection id depend on the clone.
+            "sha256": hashlib.sha256(
+                path.read_bytes().replace(b"\r\n", b"\n")
+            ).hexdigest(),
         }
         for path in sorted(observed)
     ]

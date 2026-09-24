@@ -67,6 +67,7 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
     data_root = root / "scenarios/collection"
     output_dir = data_root / "weathergenr/output"
     output_dir.mkdir(parents=True)
+    series_dir = data_root / "series"
     historical = root / "historical.nc"
     cells = root / "cells.csv"
     generator_yaml = data_root / "weathergenr/weather_generation_input.yml"
@@ -76,7 +77,7 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
         (cells, b"cells"),
         (generator_yaml, b"generator"),
         (lookup, b"lookup"),
-        (output_dir / "run_01.nc", b"root"),
+        (series_dir / "run_01.nc", b"root"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
@@ -121,7 +122,16 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
             {"run_id": "01", "rlz": "1", "st_id": None},
             {"run_id": "02", "rlz": "1", "st_id": "1"},
         ],
-        "outputs": {"data_root": "scenarios/collection"},
+        "outputs": {
+            "data_root": "scenarios/collection",
+            "series": [
+                {
+                    "run_id": run_id,
+                    "path": f"scenarios/collection/series/run_{run_id}.nc",
+                }
+                for run_id in ("01", "02")
+            ],
+        },
     }
     monkeypatch.setattr(
         publication,
@@ -181,14 +191,20 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
         **arguments,
         "root_run_ids": None,
         "output_dir": None,
-        "ancestor": output_dir / "run_01.nc",
+        "ancestor": series_dir / "run_01.nc",
         "row_id": "02",
-        "output": output_dir / "run_02.nc",
+        "output": series_dir / "run_02.nc",
     }
     publication.validate_provider_inputs(plan, root, **derived)
     with pytest.raises(ValueError, match="member mapping"):
         publication.validate_provider_inputs(
-            plan, root, **{**derived, "output": output_dir / "run_03.nc"}
+            plan, root, **{**derived, "output": series_dir / "run_03.nc"}
+        )
+    # A perturbed member is written once, to its retained series path; the
+    # generator's own output directory is no longer an accepted target.
+    with pytest.raises(ValueError, match="member mapping"):
+        publication.validate_provider_inputs(
+            plan, root, **{**derived, "output": output_dir / "run_02.nc"}
         )
 
 

@@ -124,6 +124,9 @@ the seeded fixture, which is the divergence hazard [[t2608121258]] records.
 > nothing from the module it checked. Three options: keep it as an independent
 > falsifier (and say so in its docstring), retarget it, or retire it. Needs an
 > owner call.
+>
+> **Ruled 2026-09-24 (owner): retired.** Recoverable from tag
+> `archive/dev-scripts-2026-09-24`.
 
 - **Run it:** `pixi run python dev/scripts/preview_wf2_projection_plots.py
   --horizon near=2040-2060 --horizon far=2070-2090`. Renders to `.tmp/`, reads
@@ -157,7 +160,8 @@ the seeded fixture, which is the divergence hazard [[t2608121258]] records.
         overviews plus one monthly figure per horizon
   - [ ] `shared/func_plot_signature.py` (`plot_signatures`, `plot_hydro`,
         `plot_basavg` — `plot_clim` is gone, ADR 0006)
-  - [ ] `dev/scripts/basin_map_example.py`
+  - [x] ~~`dev/scripts/basin_map_example.py`~~ retired 2026-09-24, superseded by
+        `preview_basin_map.py`
   - [ ] `dev/scripts/preview_basin_map.py`
 
 **Two traps this item must respect**, both already paid for once:

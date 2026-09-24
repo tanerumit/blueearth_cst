@@ -1,46 +1,52 @@
 {
   "project_dir": "test_case/test_local",
   "recorded_by": {
-    "branch": "chore/post-r12",
-    "commit": "a13336f26d1f1fd5fe9786e26b924e609ad0f913",
-    "dirty": false
+    "branch": "wf3-improvements",
+    "commit": "8f76cf8d649d71154d1be6af44ed54e81ace4482",
+    "dirty": true
   },
   "targets": {
-    "test_case/test_local/config/runs/analyze_projections/composed_config.yml": {
-      "sha256": "a0da41e4fd3b2a25a3e67e7f7f4013be9bbcb77a82c736d8346fd079b2da8dae",
+    "test_case/test_local/config/runs/analyze_projections/run_record.yml": {
+      "sha256": "c39424c9fafeb3eede478f05c2502d1726cc45adb43253c29423768f08f7e8a1",
+      "template": "{project_dir}/config/runs/analyze_projections/run_record.yml",
       "type": "yaml"
     },
-    "test_case/test_local/config/runs/build_model/composed_config.yml": {
-      "sha256": "a4c2866cf59bb514089eca8b3bb702540fdad224dd967e61867819f8021815a5",
+    "test_case/test_local/config/runs/build_model/run_record.yml": {
+      "sha256": "7d063c9ead8d8af69b7a5c58daca24927cb4c785c1c55576beb1d2e6f2e3d004",
+      "template": "{project_dir}/config/runs/build_model/run_record.yml",
       "type": "yaml"
     },
     "test_case/test_local/data/climate/projections/cmip6/summary/cmip6_change_factors_annual.csv": {
       "sha256": "1e61f97e0b40dfeffebcd99d8c16432b07672580534d4c87931baf41eb8a22ba",
       "size_bytes": 4547,
+      "template": "{clim_project_dir}/summary/{clim_project}_change_factors_annual.csv",
       "type": "csv"
     },
     "test_case/test_local/data/climate/projections/cmip6/summary/cmip6_change_factors_monthly.csv": {
       "sha256": "bab48eab58765aea009908df110476d6ef691d8ce57114291d5efa7a968f9a76",
       "size_bytes": 53925,
+      "template": "{clim_project_dir}/summary/{clim_project}_change_factors_monthly.csv",
       "type": "csv"
     },
-    "test_case/test_local/experiments/experiment/results/metric_sets/b71ca72a2b13/q_indicators.csv": {
+    "test_case/test_local/experiments/experiment/results/metric_sets/f67ada140bde/q_indicators.csv": {
       "columns": [
         "metric",
         "location",
-        "unit_id",
+        "run_group_id",
         "value"
       ],
       "n_groups": 55,
       "n_rows": 700,
-      "ref_table": "indicator_ref/3cf4f94b4e7bfe09.csv",
+      "ref_table": "indicator_ref/817f2af741db97c1.csv",
+      "template": "{metric_set_dir}/q_indicators.csv",
       "type": "indicator"
     },
     "test_case/test_local/models/hydrology/wflow/run_default/output.csv": {
       "column": "Q_101",
       "mean_ref": 10.58012255,
       "n_rows": 6209,
-      "ref_series": "discharge_ref/9baa48f90ceaf138.csv",
+      "ref_series": "discharge_ref/f13fd7fe5d8fb804.csv",
+      "template": "{project_dir}/models/hydrology/wflow/run_default/output.csv",
       "type": "discharge"
     }
   },

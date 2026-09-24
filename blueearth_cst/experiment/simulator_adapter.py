@@ -302,12 +302,17 @@ end
     with model_toml.open("rb") as handle:
         config = tomllib.load(handle)
     columns = config["output"]["csv"]["column"]
+    # Same guard as `open_responses`, which must reach the same answer: no
+    # static maps means no cells to compare, so nothing is dropped.
+    static = config.get("input", {}).get("path_static")
     static_path = (
-        model_toml.parent
-        / config.get("dir_input", ".")
-        / config["input"]["path_static"]
+        model_toml.parent / config.get("dir_input", ".") / static if static else None
     )
-    dropped = coincident_point_headers(columns, headers, static_path)
+    dropped = (
+        coincident_point_headers(columns, headers, static_path)
+        if static_path is not None and static_path.is_file()
+        else {}
+    )
     if dropped:
         from blueearth_cst.shared.snake_utils import log_row
 

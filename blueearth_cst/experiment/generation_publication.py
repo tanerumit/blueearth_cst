@@ -272,18 +272,9 @@ def validate_provider_inputs(
             for item in rows
             if item["rlz"] == selected["rlz"] and not item["st_id"]
         )
-        expected_ancestor = (
-            project_root
-            / plan["outputs"]["data_root"]
-            / "weathergenr/output"
-            / f"run_{root['run_id']}.nc"
-        )
-        expected_output = (
-            project_root
-            / plan["outputs"]["data_root"]
-            / "weathergenr/output"
-            / f"run_{row_id}.nc"
-        )
+        series = {item["run_id"]: item["path"] for item in plan["outputs"]["series"]}
+        expected_ancestor = (project_root / series[root["run_id"]]).resolve()
+        expected_output = (project_root / series[row_id]).resolve()
         if (
             Path(ancestor).resolve(strict=True) != expected_ancestor
             or Path(output).resolve() != expected_output

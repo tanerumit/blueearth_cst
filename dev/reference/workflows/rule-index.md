@@ -986,7 +986,8 @@ flowchart LR
 | 3.07 | `generate_weather_realizations` | Snakemake | Unperturbed roots, moved to `series/run_<id>.nc`; date products |
 | 3.08 | `perturb_climate_realizations` | Snakemake, one job per perturbed run | `series/run_<id>.nc` |
 | 3.10 | `publish_scenario_collection` | Snakemake | Validated collection and its ready marker |
-| – | log and benchmark gathering | end-of-run handler (`run_summary`) | `logs/wf3_generate_scenarios_<plan>.log`, `benchmarks/wf3_benchmarks_<plan>.md` |
+| 3.11 | `gather_benchmarks` | Snakemake (generation phase) | `benchmarks/wf3_benchmarks_<plan>.md` |
+| 3.12 | `gather_logs` | Snakemake (generation phase) | `logs/wf3_generate_scenarios_<plan>.log` |
 
 3.09 is intentionally unused: its copy step was removed on 2026-09-24
 (`dev/milestones/post-r12/migration_wf3-generation-rules.md`).

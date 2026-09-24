@@ -67,13 +67,19 @@ RULES = RuleRegistry(LOG_PARTS_DIR, BENCH_PARTS_DIR)
 LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("3.01", "delineate_region")
 EXTRACT_HISTORICAL_CLIMATE = RULES.logged("3.02", "extract_historical_climate")
-# 3.03, 3.07 and 3.08 log under a label that is not `<number>_<rule name>`,
-# so their banners stay literal and only log/benchmark use these identities.
-PREPARE_STRESS_TEST_GRID = RULES.logged("3.03", "prepare_stress_test_grid")
+PREPARE_PERTURBATION_GRID = RULES.logged("3.03", "prepare_perturbation_grid")
 if V2_MODE:
-    GENERATE_ROOTS_V2 = RULES.logged("3.07", "generate_roots_v2")
-    TRANSFORM_MEMBER_V2 = RULES.logged("3.08", "transform_member_v2")
+    GENERATE_WEATHER_REALIZATIONS = RULES.logged(
+        "3.07", "generate_weather_realizations",
+        summary="generate stochastic weather realizations",
+    )
+    PERTURB_CLIMATE_REALIZATIONS = RULES.logged(
+        "3.08", "perturb_climate_realizations",
+        summary="perturb each realization over the perturbation grid",
+    )
 PUBLISH_SCENARIO_COLLECTION = RULES.banner_only("3.10", "publish_scenario_collection", summary="validate and publish the scenario collection")
+GATHER_BENCHMARKS = RULES.banner_only("3.11", "gather_benchmarks")
+GATHER_LOGS = RULES.banner_only("3.12", "gather_logs")
 INVOCATION_ID = os.environ.setdefault("CST_GENERATION_INVOCATION_ID", uuid.uuid4().hex)
 RLZ_NUM = GENERATION["n_realizations"]
 ST_NUM = GENERATION["n_design_points"]
@@ -120,7 +126,11 @@ V2_TARGET = (
 rule all:
     message: target_banner("3.00", "all", WF3_TARGETS, project_dir)
     input:
-        SOURCE_TARGETS if SOURCE_ONLY else [V2_TARGET],
+        SOURCE_TARGETS if SOURCE_ONLY else [
+            V2_TARGET,
+            f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+            f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+        ],
 
 # 3.01  delineate_region
 rule delineate_region:
@@ -156,7 +166,7 @@ rule extract_historical_climate:
 
 # 3.03  prepare_perturbation_grid
 rule prepare_perturbation_grid:
-    message: rule_banner("3.03", "prepare_perturbation_grid")
+    message: PREPARE_PERTURBATION_GRID.banner()
     input:
         config = ancient(config_path),
         config_workflows = ancient(WF_CONFIG_PATHS),
@@ -165,9 +175,9 @@ rule prepare_perturbation_grid:
     output:
         lookup_csv = lookup_path,
     log:
-        PREPARE_STRESS_TEST_GRID.log(),
+        PREPARE_PERTURBATION_GRID.log(),
     benchmark:
-        PREPARE_STRESS_TEST_GRID.benchmark(),
+        PREPARE_PERTURBATION_GRID.benchmark(),
     script:
         "blueearth_cst/experiment/prepare_cst_parameters.py"
 
@@ -225,7 +235,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
         return _v2_series[root["run_id"]].as_posix()
 
     rule generate_weather_realizations:
-        message: rule_banner("3.07", "generate_weather_realizations", summary="generate stochastic weather realizations")
+        message: GENERATE_WEATHER_REALIZATIONS.banner()
         input:
             receipt=_v2_receipt.as_posix(),
             historical=_v2_input("historical_climate").as_posix(),
@@ -235,7 +245,9 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             roots=[_v2_series[run_id].as_posix() for run_id in _v2_root_ids],
             dates=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["date_products"]],
         log:
-            GENERATE_ROOTS_V2.log()
+            GENERATE_WEATHER_REALIZATIONS.log()
+        benchmark:
+            GENERATE_WEATHER_REALIZATIONS.benchmark()
         run:
             source_inputs = SourceInputs(
                 historical_climate=Path(input.historical),
@@ -261,7 +273,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 os.replace(artifact.path, target)
 
     rule perturb_climate_realizations:
-        message: rule_banner("3.08", "perturb_climate_realizations", "run {wildcards.run_id}", summary="perturb each realization over the perturbation grid")
+        message: PERTURB_CLIMATE_REALIZATIONS.banner(context="run {wildcards.run_id}")
         input:
             receipt=_v2_receipt.as_posix(),
             ancestor=_v2_ancestor,
@@ -272,7 +284,9 @@ if V2_MODE and V2_PLAN["decision"] == "create":
         wildcard_constraints:
             run_id="|".join(_v2_derived_ids),
         log:
-            TRANSFORM_MEMBER_V2.log("run_{run_id}")
+            PERTURB_CLIMATE_REALIZATIONS.log("run_{run_id}")
+        benchmark:
+            PERTURB_CLIMATE_REALIZATIONS.benchmark("run_{run_id}")
         run:
             validate_provider_inputs(
                 V2_PLAN, _v2_root,
@@ -311,6 +325,34 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 os.environ["CST_GENERATION_PLAN_SHA256"],
                 INVOCATION_ID,
             )
+
+
+# 3.11 / 3.12 -- merge the run's benchmark and log parts, generation phase only:
+# the source phase runs first, and merging there would consume its parts before
+# the generation rules wrote theirs. The terminal is the ready marker (create)
+# or this invocation's receipt (reuse); both are new per run, so the merge is too.
+if V2_MODE:
+    rule gather_benchmarks:
+        message: GATHER_BENCHMARKS.banner()
+        input:
+            V2_TARGET,
+        output:
+            f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
+        params:
+            parts_dir = BENCH_PARTS_DIR,
+            workflow_num = 3,
+        script: "blueearth_cst/shared/merge_benchmarks.py"
+
+    rule gather_logs:
+        message: GATHER_LOGS.banner()
+        input:
+            V2_TARGET,
+        output:
+            f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
+        params:
+            rules = LOG_RULES,
+            parts_dir = LOG_PARTS_DIR,
+        script: "blueearth_cst/shared/merge_logs.py"
 
 
 # --------------------------------------------------------------------------

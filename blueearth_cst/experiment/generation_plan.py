@@ -146,10 +146,17 @@ def generation_configuration(config, repository):
     store = climate_store_rule(
         **shared, clim_source=climate["selected"], historical_window=climate["window"]
     )
+    _, historical_end = window_year_pair(climate["window"], "climate.window")
     region = region_rule(**shared)
     start, end = window_year_pair(
         cfg["simulation_window"], "generate_scenarios.simulation_window"
     )
+    if start < historical_end:
+        raise ValueError(
+            f"generate_scenarios.simulation_window starts in {start}, before "
+            f"climate.window ends in {historical_end}; generated weather begins "
+            "where the historical record ends"
+        )
     _, _, count = stress_test_grid(cfg["climate_perturbations"])
     realizations = cfg.get("n_realizations", 1)
     template = cfg.get("weathergen_config", "config/defaults/weathergen_config.yml")
@@ -209,6 +216,7 @@ def generation_configuration(config, repository):
         region=region,
         start=start,
         end=end,
+        historical_end=historical_end,
         n_realizations=realizations,
         n_design_points=count,
         capacity=cfg.get("unit_id_capacity", (realizations + 1) * (count + 1)),
@@ -359,6 +367,7 @@ def build_candidate_intent(settings: dict) -> dict:
         settings["request"]["water_year_start"],
         dry,
         wet,
+        settings["historical_end"],
     )
     generator["generate_weather"]["out_dir"] = None
     for section, keys in (

@@ -27,28 +27,17 @@ DEFAULT_WEAGEN_CONFIG = os.path.join(
 
 
 @pytest.mark.parametrize(
-    "sim_end, expected",
+    "sim_end, historical_end, expected",
     [
-        # `C-67`: the window END is declared, so these are window ends now, not
-        # (centre, length) pairs. Each is the end the old pair resolved to.
-        (2090, 82),  # was (2080, 20)
-        (2065, 57),  # was (2050, 30)
-        (2010, 2),  # was (2010, 0) -- a single-year window
+        (2090, 2010, 82),  # the old fixed anchor, reproduced for legacy plans
+        (2054, 2016, 40),  # baseline: climate window ends 2016
+        (2065, 2020, 47),
+        (2020, 2020, 2),  # simulation ends where the record does: the pad only
     ],
 )
-def test_compute_nr_years(sim_end, expected):
-    """Year math spans 2010 -> the declared window END, +2 pad (`C-67`)."""
-    assert compute_nr_years(sim_end) == expected
-
-
-def test_seed_year_math_value():
-    """Pin the seed-config value explicitly.
-
-    Horizon 2080 with run_length 20 resolved to a window ending 2090, which
-    `C-67` now has the config declare directly. The PINNED VALUE is unchanged,
-    which is the point of keeping this beside the parametrised case.
-    """
-    assert compute_nr_years(2090) == 82
+def test_compute_nr_years(sim_end, historical_end, expected):
+    """Year math spans the historical END -> the window END, +2 pad."""
+    assert compute_nr_years(sim_end, historical_end) == expected
 
 
 def test_default_weathergen_config_resolves_at_defaults_path():
@@ -77,7 +66,9 @@ def test_build_weathergen_config_generate_reads_moved_default(tmp_path):
     # Seeded from the moved default template, then overridden by project config.
     assert out["generate_weather"]["seed"] == 123  # injected, not templated
     assert out["generate_weather"]["n_realizations"] == 2
-    assert out["generate_weather"]["n_years"] == 82
+    # Anchored at the climate window's end (2016), not a fixed year.
+    assert out["generate_weather"]["start_year"] == 2016
+    assert out["generate_weather"]["n_years"] == 2090 - 2016 + 2
 
 
 def _generate_kwargs(tmp_path, stress_test=None):
@@ -100,6 +91,7 @@ def _generate_kwargs(tmp_path, stress_test=None):
         nc_file_prefix="rlz_1",
         default_config_path=DEFAULT_WEAGEN_CONFIG,
         sim_end=2090,
+        historical_end=2016,
         seed=123,
         water_year_start="Jan",
         dry_spell_factor=[1.0] * 12,

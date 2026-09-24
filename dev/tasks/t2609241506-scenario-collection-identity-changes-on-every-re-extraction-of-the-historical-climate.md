@@ -4,7 +4,8 @@ type: todo-item
 status: backlog
 effort: 1
 area: wf3
-origin: wf3 generation bundle (2026-09-24)
+origin: wf3 identity bundle (2026-09-24)
+branch: wf3-improvements
 queue:
 created: 2026-09-24
 updated: 2026-09-24

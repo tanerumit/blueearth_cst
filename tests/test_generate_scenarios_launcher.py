@@ -3,6 +3,7 @@
 import json
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
@@ -45,6 +46,38 @@ def test_source_phase_replays_console_chatter_on_failure(capfd, monkeypatch):
     assert code == 7
     captured = capfd.readouterr()
     assert "Using workflow specific profile" in captured.err
+
+
+def test_source_phase_replay_reaches_a_real_terminal_fd():
+    """Regression: pytest's ``capfd`` masks a replay-ordering bug that a real
+    console does not. ``capfd`` redirects fd 1/2 for the whole test process
+    before it starts, so ``_run_source_phase_quietly``'s own nested dup2/restore
+    cycle still lands its replay write on a descendant of that same pipe either
+    way -- the two prior tests above pass whether the replay runs before or
+    after the restore. Only a fresh, unwrapped interpreter distinguishes them:
+    before the fix, the replay wrote into the already-discarded capture temp
+    file instead of the real fd, so a genuine failure surfaced no diagnostic
+    at all (the exact silent-exit symptom this regression guards against).
+    """
+    script = (
+        "import subprocess, sys\n"
+        "sys.path.insert(0, '.')\n"
+        "from scripts import generate_scenarios\n"
+        "def noisy_failing_child(_command, **_kwargs):\n"
+        "    subprocess.run([sys.executable, '-c', \"print('boom')\"], check=False)\n"
+        "    return 7\n"
+        "generate_scenarios.run_project_child = noisy_failing_child\n"
+        "code = generate_scenarios._run_source_phase_quietly(['snakemake'], cwd=None, env={})\n"
+        "sys.exit(code)\n"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", script],
+        cwd=str(Path(__file__).resolve().parents[1]),
+        capture_output=True,
+        text=True,
+    )
+    assert result.returncode == 7
+    assert "boom" in result.stderr
 
 
 @pytest.mark.parametrize("exit_code", [0, 9])

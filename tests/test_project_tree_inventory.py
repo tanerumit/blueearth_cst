@@ -76,7 +76,7 @@ COVERED: dict[str, list[str]] = {
         "benchmarks/_parts/1.02_prepare_spatial_maps.tsv",
         f"benchmarks/_parts/{E}/3.16_derive_wflow_indicators.tsv",
         f"logs/_parts/generate_scenarios/{PK}/3.07_generate_weather_realizations.log",
-        f"benchmarks/_parts/generate_scenarios/{PK}/3.08_perturb_climate_realization.tsv",
+        f"benchmarks/_parts/generate_scenarios/{PK}/3.08_perturb_climate_realizations.tsv",
     ],
     "config": [
         "config/runs/build_model/sources/project_config_baseline.yml",

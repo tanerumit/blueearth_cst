@@ -590,7 +590,7 @@ WF3 = Workflow(
         Rule("3.00", "all"),
         Rule("3.01", "delineate_region"),
         Rule("3.02", "extract_historical_climate"),
-        Rule("3.03", "prepare_stress_test_grid"),
+        Rule("3.03", "prepare_perturbation_grid"),
         Rule(
             "3.04",
             "prepare_collection_sources",

@@ -150,9 +150,9 @@ rule extract_historical_climate:
     script:
         CLIMATE_STORE.script
 
-# 3.03  prepare_stress_test_grid
-rule prepare_stress_test_grid:
-    message: rule_banner("3.03", "prepare_stress_test_grid", dynamic_progress=True)
+# 3.03  prepare_perturbation_grid
+rule prepare_perturbation_grid:
+    message: rule_banner("3.03", "prepare_perturbation_grid", dynamic_progress=True)
     input:
         config = ancient(config_path),
         config_workflows = ancient(WF_CONFIG_PATHS),
@@ -215,8 +215,8 @@ if V2_MODE and V2_PLAN["decision"] == "create":
         )
         return _v2_series[root["run_id"]].as_posix()
 
-    rule generate_roots_v2:
-        message: rule_banner("3.07", "generate_roots_v2", summary="generate stochastic weather realizations")
+    rule generate_weather_realizations:
+        message: rule_banner("3.07", "generate_weather_realizations", summary="generate stochastic weather realizations")
         input:
             receipt=_v2_receipt.as_posix(),
             historical=_v2_input("historical_climate").as_posix(),
@@ -251,8 +251,8 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 target.parent.mkdir(parents=True, exist_ok=True)
                 os.replace(artifact.path, target)
 
-    rule transform_member_v2:
-        message: rule_banner("3.08", "transform_member_v2", "run {wildcards.run_id}", summary="apply climate perturbations")
+    rule perturb_climate_realizations:
+        message: rule_banner("3.08", "perturb_climate_realizations", "run {wildcards.run_id}", summary="perturb each realization over the perturbation grid")
         input:
             receipt=_v2_receipt.as_posix(),
             ancestor=_v2_ancestor,
@@ -284,8 +284,8 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 log_path=Path(log[0]),
             )
 
-    rule publish_collection_v2:
-        message: rule_banner("3.10", "publish_collection_v2", summary="publish the immutable scenario collection")
+    rule publish_scenario_collection:
+        message: rule_banner("3.10", "publish_scenario_collection", summary="validate and publish the scenario collection")
         input:
             receipt=_v2_receipt.as_posix(),
             series=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["series"]],

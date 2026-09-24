@@ -44,6 +44,7 @@
 | [t2609191457](tasks/t2609191457-make-wf3-planning-static-before-snakemake.md)                                                               | Make WF3 planning static before Snakemake                                                                | wf3 scenarios                               |                                                     |     | backlog |
 | [t2609241251](tasks/t2609241251-rename-wf3-generation-rules-3-07-3-10-to-domain-names.md)                                                   | Rename WF3 generation rules 3.03 and 3.07-3.10 to domain names                                           | wf3                                         | wf3 generation bundle (2026-09-24)                  |     | backlog |
 | [t2609241323](tasks/t2609241323-drop-the-wf3-retain-copy-step-3-09-write-scenario-series-directly-to-the-kept-location.md)                  | Drop the WF3 retain copy step (3.09): write scenario series directly to the kept location                | wf3                                         | wf3 generation bundle (2026-09-24)                  |     | backlog |
+| [t2609241329](tasks/t2609241329-show-wf3-pre-dag-steps-3-04-3-06-in-the-rule-overview-and-correct-rule-index-md.md)                         | Show WF3 pre-DAG steps 3.04-3.06 in the rule overview and correct rule-index.md                          | wf3                                         | wf3 generation bundle (2026-09-24)                  |     | backlog |
 
 ## Watching
 

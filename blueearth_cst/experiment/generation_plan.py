@@ -108,8 +108,14 @@ def generator_seed_projection(generator):
     return projection
 
 
-def generation_configuration(config, repository):
-    """Resolve scheduling settings without reading generation source contents."""
+def generation_configuration(config, repository, *, stage=True):
+    """Resolve scheduling settings without reading generation source contents.
+
+    ``stage`` copies the project catalogs into the execution-config store, as
+    the owned launcher does for every workflow. A direct, non-producing parse
+    passes ``False`` and reads them in place, like WF0-WF2 without a capture
+    context, so a dry-run writes nothing into the project.
+    """
     cfg = config["workflows"]["generate_scenarios"]
     unknown = set(cfg) - set(SEED_FIELDS)
     if unknown:
@@ -130,6 +136,8 @@ def generation_configuration(config, repository):
             f"project_catalog_{index}",
             Path(catalog),
         )
+        if stage
+        else Path(catalog)
         for index, catalog in enumerate(catalogs)
     ]
     shared = dict(

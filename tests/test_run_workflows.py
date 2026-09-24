@@ -838,9 +838,11 @@ def test_failure_console_carries_the_verdict_and_what_did_not_run(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert code == 4
-    assert "[2/5]  WF1  BUILD MODEL  --  FAILED (exit 4) after 0:00:0" in out
+    assert re.search(
+        r"\[2/5\]  WF1  BUILD MODEL  --  FAILED \(exit 4\) after \d+:\d\d:\d\d", out
+    )
     assert "stopping; later workflows not invoked" in out
-    assert "run_workflows FAILED in 0:00:0" in out
+    assert re.search(r"run_workflows FAILED in \d+:\d\d:\d\d", out)
     assert (
         "not run: wf2 analyze_projections, wf3 generate_scenarios, "
         "wf4 simulate_system" in out
@@ -864,7 +866,9 @@ def test_ordinary_dag_failure_carries_no_unusual_exit_note(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert code == 1
-    assert "[2/5]  WF1  BUILD MODEL  --  FAILED (exit 1) after 0:00:0" in out
+    assert re.search(
+        r"\[2/5\]  WF1  BUILD MODEL  --  FAILED \(exit 1\) after \d+:\d\d:\d\d", out
+    )
     assert "is not one Snakemake's own CLI ever raises" not in out
 
 

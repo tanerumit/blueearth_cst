@@ -33,7 +33,7 @@ from pathlib import Path
 import pytest
 
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
-from tests.conftest import write_config  # noqa: E402
+from tests.conftest import phase_env, write_config  # noqa: E402
 
 pytestmark = pytest.mark.workflow_contract
 
@@ -89,7 +89,12 @@ def _run(args, snakefile, cfg_path):
         f'-s {snakefile} --configfile "{cfg_path}"'
     )
     return subprocess.run(
-        cmd, shell=True, capture_output=True, text=True, cwd=str(SNAKEDIR)
+        cmd,
+        shell=True,
+        capture_output=True,
+        text=True,
+        cwd=str(SNAKEDIR),
+        env=phase_env(snakefile),
     )
 
 

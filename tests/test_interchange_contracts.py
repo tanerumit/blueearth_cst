@@ -12,10 +12,11 @@
   tree and carries the repo fixture-absent guard (mirroring
   ``tests/test_store_region_bbox.py``): a module-level ``_FIXTURE_ABSENT``
   reason constant + ``@pytest.mark.skipif``. Absence is a NAMED, reported
-  condition (read via ``pytest -rs``), never silence. The three temp() content
-  validators (WG-4/WG-6/HM-6b) additionally skip with a documented reason when
-  the temp artifact is absent (the default fixture state) — see the commit-4
-  temp layer.
+  condition (read via ``pytest -rs``), never silence. The temp() content
+  validators (WG-4/WG-6) additionally skip with a documented reason when the
+  temp artifact is absent (the default fixture state) — see the commit-4 temp
+  layer. HM-6b (per-run warm state) and HM-7 (metric-set/1 tables) skip by
+  name since 2026-09-24: current WF4 writes neither artifact.
 
 Source of record: ``dev/milestones/p32b/interchange-contracts-design.md`` §5.5 and the two
 seam docs ``dev/reference/contracts/*-seam.md``.
@@ -61,6 +62,7 @@ _MODEL_DIR = join(_FIXTURE, "models", "hydrology", "wflow")
 _STORE_ROOT = join(_FIXTURE, "data", "climate", "historical")
 _WG_DIR = join(_EXP, "climate", "weathergenr")
 _RUNS_DIR = join(_EXP, "hydrology", "wflow")
+_RUN_SETTINGS = join(_RUNS_DIR, "run_settings")
 # The generated climate catalog is PER MEMBER since 2026-08-18 -- rule 3.14
 # writes its own one-entry file beside the member's TOML, and the single
 # `config/catalogs/data_catalog_run_stress_test.yml` that rule 3.13 built over
@@ -70,26 +72,45 @@ _RUNS_DIR = join(_EXP, "hydrology", "wflow")
 
 
 def _successor_artifacts():
-    import json
+    """Resolve the consumed collection through the records, as WF4 does.
+
+    ``_engine/simulation.json`` -> its intent's collection manifest reference
+    -> ``read_collection_v2``. Skips only on the SPECIFIC predecessor shape (a
+    legacy marker present where the v2 marker is absent); anything else falls
+    through and fails loudly.
+    """
     from pathlib import Path
 
-    root = Path(_EXP)
-    marker = root / "config/simulation.json"
-    if not marker.exists() and (root / "results/q_indicators.csv").exists():
-        pytest.skip(
-            "standing fixture predates R12; GF9 successor run has not replaced it"
-        )
-    simulation = json.loads(marker.read_text(encoding="utf-8"))
-    collection = Path(simulation["collection"]["manifest_path"]).parent
-    scenarios = pd.read_csv(
-        collection / "scenario_table.csv", dtype=str, keep_default_na=False
+    from blueearth_cst.experiment.scenario_collection_v2 import read_collection_v2
+    from blueearth_cst.experiment.simulation_record import (
+        read_simulation_intent_v2,
+        read_simulation_v2,
     )
-    return root, collection, scenarios
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
+
+    root = Path(_EXP).resolve()
+    project = root.parent.parent
+    if not (root / "_engine/simulation.json").exists() and (
+        (root / "config/simulation.json").exists()
+        or (root / "results/q_indicators.csv").exists()
+    ):
+        pytest.skip("standing fixture predates the v2 simulation/collection records")
+    read_simulation_v2(root)
+    manifest = read_simulation_intent_v2(root)["collection"]["manifest"]
+    marker_path = resolve_file_reference(manifest, {"project_root": project})
+    marker = read_collection_v2(marker_path)
+    anchors = {"project_root": project, "record_directory": marker_path.parent}
+    scenarios = pd.read_csv(
+        resolve_file_reference(marker["scenario_run_lookup"], anchors),
+        dtype=str,
+        keep_default_na=False,
+    )
+    return root, marker, anchors, scenarios
 
 
 def _evaluated_runs():
-    _, _, scenarios = _successor_artifacts()
-    return scenarios.loc[scenarios.evaluated == "true", "run_id"].tolist()
+    *_, scenarios = _successor_artifacts()
+    return scenarios.loc[scenarios.evaluate == "true", "run_id"].tolist()
 
 
 _FIXTURE_ABSENT = (
@@ -118,11 +139,13 @@ def _fixture_present() -> bool:
 # -- so it will stay that way, and refreshing it would destroy the reference.
 # Guard the one schema-dependent case rather than widening `_fixture_present`,
 # which would skip the sixteen that a pre-R14 tree still answers correctly.
-_WF1_SNAPSHOT = join(_FIXTURE, "config", "runs", "build_model", "composed_config.yml")
+# The snapshot is now the run-record/2 archive (`run_record.yml`), whose
+# `loaded_config` carries the composed v2 config `composed_config.yml` did.
+_WF1_SNAPSHOT = join(_FIXTURE, "config", "runs", "build_model", "run_record.yml")
 
 _FIXTURE_PRE_R14 = (
-    "test_case/test_local predates R14: no config/runs/"
-    "build_model/composed_config.yml, so its v1 snapshot cannot answer a v2 key "
+    "test_case/test_local predates the run-record/2 archive: no config/runs/"
+    "build_model/run_record.yml, so it cannot answer a v2 key "
     "(the WG-1 store-key case is skipped; the rest of the layer still runs)"
 )
 
@@ -857,8 +880,8 @@ def test_hm6b_synthetic_fail():
 # ===========================================================================
 #
 # Each case opens a persisted fixture artifact and asserts the validator's
-# report is empty. The 12 continuously-verified checks: 10 per-artifact
-# (WG-1,2,3,5; HM-1,2,3,4,5,7) + 2 relational (gauge-identity — parametrized
+# report is empty. The 11 continuously-verified checks: 9 per-artifact
+# (WG-1,2,3,5; HM-1,2,3,4,5; HM-7 skips on a metric-set/2 tree) + 2 relational (gauge-identity — parametrized
 # over the 12 (toml, output_rlz) pairs; catalog-grid).
 
 
@@ -887,10 +910,15 @@ def _store_key() -> str:
     the migration green and failed the moment the fixture caught up. The
     conversion back to a day-resolution key goes through the same helper
     `climate_store_rule` uses, so this cannot become a second implementation of
-    the key.
+    the key. The snapshot is read through `validate_archive`, the run-record/2
+    reader, so a tampered archive fails here rather than answering.
     """
-    with open(_WF1_SNAPSHOT) as f:
-        climate = yaml.safe_load(f)["climate"]
+    from pathlib import Path
+
+    from blueearth_cst.shared.workflow_config_snapshot import validate_archive
+
+    record = validate_archive(Path(_WF1_SNAPSHOT).parent)
+    climate = record["loaded_config"]["climate"]
     _start, _end = historical_window_bounds(climate["window"])
     slug = slugify_window(_start.isoformat(), _end.isoformat())
     return f"{climate['selected']}_{slug}"
@@ -912,39 +940,35 @@ _PRE_LOOKUP_GRID = (
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
 def test_wg2_integration():
-    _, collection, scenarios = _successor_artifacts()
-    lookup = pd.read_csv(collection / "stress_test_lookup.csv", dtype={"st_id": str})
+    # The stress-test lookup is the collection's `perturbation_lookup` now.
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
+
+    _, marker, anchors, scenarios = _successor_artifacts()
+    lookup = pd.read_csv(
+        resolve_file_reference(marker["perturbation_lookup"], anchors),
+        dtype={"st_id": str},
+    )
     assert ic.validate_wg2(lookup) == []
     assert set(scenarios.st_id) == set(lookup.st_id) | {""}
 
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
 def test_wg3_integration():
-    import json
-    from pathlib import Path
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
 
-    _, collection, _ = _successor_artifacts()
-    # Compare FULL identity to FULL identity. `collection.name` is the 12-hex
-    # `identity_segment(...)`, which `content_identity` documents as "the *path*
-    # form, and only the path form" -- a prefix is never equal to the digest it
-    # was cut from, so the old `== collection.name` matched nothing and this
-    # assertion could only pass by the module skipping. The full id lives in the
-    # collection manifest; read it there rather than reconstructing it from a
-    # directory name that cannot be checked against anything on its own.
-    collection_id = json.loads(
-        (collection / "collection.json").read_text(encoding="utf-8")
-    )["collection_id"]
-    plans = [
-        p
-        for p in (Path(_FIXTURE) / "scenarios" / "requests").glob("*/request.json")
-        if json.loads(p.read_text())["collection_id"] == collection_id
+    # The generator config is no longer found by scanning request directories:
+    # the consumed collection's marker binds its installed generator YAML as the
+    # `weather_generation_input` provider product (checked by read_collection_v2
+    # against the creator archive), so read exactly that file.
+    _, marker, anchors, _ = _successor_artifacts()
+    configs = [
+        resolve_file_reference(item["file"], anchors)
+        for item in marker["provider_products"]
+        if item["role"] == "weather_generation_input"
     ]
-    assert plans, "no generation plan for the consumed collection"
-    for plan in plans:
-        cfg = yaml.safe_load(
-            (plan.parent / "generation/config/weathergen_config.yml").read_text()
-        )
-        assert ic.validate_wg3(cfg) == []
+    assert configs, "no generator config bound to the consumed collection"
+    for path in configs:
+        assert ic.validate_wg3(yaml.safe_load(path.read_text())) == []
 
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
@@ -952,7 +976,7 @@ def test_wg5_integration():
     from pathlib import Path
 
     runs = _evaluated_runs()
-    paths = [Path(_RUNS_DIR) / "config" / f"run_{run}.yml" for run in runs]
+    paths = [Path(_RUN_SETTINGS) / f"run_{run}.yml" for run in runs]
     if not any(p.exists() for p in paths):
         pytest.skip(_TEMP_ABSENT)
     for p in paths:
@@ -964,7 +988,7 @@ def test_wg5_catalog_runs_integration():
     from pathlib import Path
 
     runs = _evaluated_runs()
-    paths = {run: Path(_RUNS_DIR) / "config" / f"run_{run}.yml" for run in runs}
+    paths = {run: Path(_RUN_SETTINGS) / f"run_{run}.yml" for run in runs}
     if not any(p.exists() for p in paths.values()):
         pytest.skip(_TEMP_ABSENT)
     catalogs = {run: yaml.safe_load(p.read_text()) for run, p in paths.items()}
@@ -1001,7 +1025,7 @@ def test_hm4_integration():
     from pathlib import Path
 
     for run in _evaluated_runs():
-        path = Path(_RUNS_DIR) / "config" / f"run_{run}.toml"
+        path = Path(_RUN_SETTINGS) / f"run_{run}.toml"
         assert (
             ic.validate_hm4(tomllib.loads(path.read_text()), require_output_state=False)
             == []
@@ -1040,40 +1064,18 @@ def test_hm5_integration_wf1():
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
 def test_hm7_integration():
-    import json
+    # HM-7 validates the metric-set/1 surface (unit_index.csv, declarations,
+    # indicator_tables, an `evaluated` scenario column). A metric-set/2 marker
+    # under `_engine/metric_sets/` carries none of these; its integrity is what
+    # `read_metric_set`'s v2 path checks (see the gauge-identity case below).
+    from pathlib import Path
 
-    from blueearth_cst.experiment.metric_plan import read_metric_set
-
-    root, collection, scenarios = _successor_artifacts()
-    markers = list((root / "results/metric_sets").glob("*/metrics.json"))
-    assert markers, "completed successor fixture has no ready metric set"
-    intent = json.loads((collection / "collection_intent.json").read_text())
-    request = json.loads((root / "config/response_request.json").read_text())
-    for marker in markers:
-        manifest = read_metric_set(root, marker)
-        tables = {
-            item["token"]: pd.read_csv(
-                marker.parent / item["path"], dtype={"unit_id": str, "location": str}
-            )
-            for item in manifest["indicator_tables"]
-        }
-        assert (
-            ic.validate_hm7(
-                tables,
-                unit_index=pd.read_csv(marker.parent / "unit_index.csv", dtype=str),
-                scenario_table=scenarios,
-                declarations=manifest["declarations"],
-                locations={
-                    item["variable"]: item["locations"] for item in request["variables"]
-                },
-                lookup=pd.read_csv(
-                    collection / "stress_test_lookup.csv", dtype={"st_id": str}
-                ),
-                unit_id_capacity=intent["unit_id_capacity"],
-                response_request=request,
-            )
-            == []
+    if list((Path(_EXP) / "_engine" / "metric_sets").glob("*/metrics.json")):
+        pytest.skip(
+            "HM-7 pins metric-set/1; metric-set/2 has no unit_index/declarations "
+            "and is checked by read_metric_set (_read_metric_set_v2)"
         )
+    pytest.fail("no metric-set/2 marker under _engine/metric_sets")
 
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
@@ -1081,11 +1083,20 @@ def test_gauge_identity_integration():
     import tomllib
     from pathlib import Path
 
-    root, _, _ = _successor_artifacts()
-    tables = list((root / "results/metric_sets").glob("*/q_indicators.csv"))
-    assert tables
+    from blueearth_cst.experiment.metric_plan import read_metric_set
+
+    root, *_ = _successor_artifacts()
+    # Find the q table through each ready metric-set/2 marker, not by globbing
+    # the results tree: `file.path` is relative to the experiment root.
+    tables = [
+        root / item["file"]["path"]
+        for marker in (root / "_engine/metric_sets").glob("*/metrics.json")
+        for item in read_metric_set(root, marker)["tables"]
+        if item["token"] == "q"
+    ]
+    assert tables, "no ready metric set carries a q table"
     for run in _evaluated_runs():
-        toml = Path(_RUNS_DIR) / "config" / f"run_{run}.toml"
+        toml = Path(_RUN_SETTINGS) / f"run_{run}.toml"
         output = Path(_RUNS_DIR) / "output" / f"run_{run}.csv"
         for table in tables:
             assert (
@@ -1122,9 +1133,14 @@ _TEMP_ABSENT = "temp() artifact absent; capture via --notemp"
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
 def test_wg4_integration():
-    _, collection, scenarios = _successor_artifacts()
-    for run in scenarios.run_id:
-        with _open_ds(collection / "forcing" / f"run_{run}.nc") as ds:
+    from blueearth_cst.shared.workflow_config_snapshot import resolve_file_reference
+
+    # Every run's series, persisted in the collection (read_collection_v2 has
+    # already checked the entries match the scenario lookup order).
+    _, marker, anchors, _ = _successor_artifacts()
+    assert marker["series"]
+    for entry in marker["series"]:
+        with _open_ds(resolve_file_reference(entry["file"], anchors)) as ds:
             assert ic.validate_wg4(ds) == []
 
 
@@ -1145,14 +1161,8 @@ def test_wg6_integration():
 
 @pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
 def test_hm6b_integration():
-    from pathlib import Path
-
-    paths = [
-        Path(_RUNS_DIR) / "output" / f"outstates_run_{run}.nc"
-        for run in _evaluated_runs()
-    ]
-    if not any(p.exists() for p in paths):
-        pytest.skip(_TEMP_ABSENT)
-    for path in paths:
-        with _open_ds(path) as ds:
-            assert ic.validate_hm6b(ds) == []
+    pytest.skip(
+        "retired: WF4 runs write no per-run warm state (no [state] path_output; "
+        "HM-4 runs with require_output_state=False) and start from WF1's "
+        "instate/instates.nc"
+    )

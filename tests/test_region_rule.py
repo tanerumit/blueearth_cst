@@ -18,6 +18,7 @@ from pathlib import Path
 import pytest
 
 from blueearth_cst.shared import snake_utils as su
+from tests.conftest import parse_workflow
 
 TESTDIR = Path(__file__).resolve().parent
 SNAKEDIR = TESTDIR.parent
@@ -98,27 +99,7 @@ _SNAKEFILES = (
 )
 
 
-def _parse_workflow(snakefile: str, config_path):
-    """Parse a Snakefile in-process and return its ``Workflow``.
-
-    Same helper, same pinning caveat, as ``test_climate_store_contract.py``:
-    rules are built exactly as a real invocation builds them, and
-    ``wf_api._workflow`` is private on the pinned Snakemake.
-    """
-    import snakemake.api as api
-
-    with api.SnakemakeApi() as sa:
-        wf_api = sa.workflow(
-            resource_settings=api.ResourceSettings(cores=1),
-            config_settings=api.ConfigSettings(configfiles=[Path(config_path)]),
-            storage_settings=api.StorageSettings(),
-            workflow_settings=api.WorkflowSettings(),
-            snakefile=SNAKEDIR / snakefile,
-            workdir=SNAKEDIR,
-        )
-        workflow = wf_api._workflow
-        workflow.include(workflow.main_snakefile, overwrite_default_target=True)
-        return workflow
+_parse_workflow = parse_workflow
 
 
 @pytest.fixture(scope="module")

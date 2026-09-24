@@ -17,6 +17,8 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-24 | t2609241822 | Interchange integration tests read the pre-successor WF4 layout | tests |
+| 2026-09-24 | t2609241523 | test-full: 18 failures and 23 errors from launch guards in pre-launcher contract tests | tests |
 | 2026-09-24 | t2608071213 | Define one label constant per rule, so a rename is a one-line edit | rule identifiers |
 | 2026-09-24 | t2608241413 | The generated series is anchored to a hardcoded 2010 | wf3 / weather generator |
 | 2026-09-24 | t2609241506 | Scenario collection identity changes on every re-extraction of the historical climate | wf3  |

@@ -36,7 +36,7 @@ patch_psutil_windows_benchmark()
 # downstream R scripts can be handed the same path. Forwarding config_path is
 # a repo convention — keep it even though the Snakefile itself uses `config`.
 config_path = workflow.configfiles[0]
-CAPTURE_RECORD = require_capture("build_model", config_path, dry_run="--dry-run" in sys.argv or "-n" in sys.argv)
+CAPTURE_RECORD = require_capture("build_model", config_path)
 
 # The consumed-key PROJECTION: the config paths this workflow actually reads.
 # Digesting the projection rather than the whole file is what stops a WF3-only

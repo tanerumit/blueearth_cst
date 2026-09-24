@@ -203,3 +203,58 @@ def write_config(tmp_path, cfg, stem: str = "project_config") -> Path:
     t1 = tmp_path / f"{stem}.yml"
     t1.write_text(yaml.safe_dump(cfg, sort_keys=False), encoding="utf-8")
     return t1
+
+
+def parse_workflow(snakefile: str, config_path):
+    """Parse a Snakefile in-process, as a non-producing invocation, and return it.
+
+    Rules are built exactly as a real invocation builds them. ``--dry-run`` is on
+    ``sys.argv`` for the duration, because WF0-WF2 refuse a producing parse
+    without the launcher's capture context (``require_capture``); WF3 also
+    needs ``CST_GENERATION_PHASE``, and parses as its source phase.
+    ``wf_api._workflow`` is private on the pinned Snakemake; there is no public
+    accessor for the parsed workflow.
+    """
+    import os
+    import sys
+
+    import snakemake.api as api
+
+    argv = sys.argv[:]
+    phase = os.environ.get("CST_GENERATION_PHASE")
+    try:
+        sys.argv.append("--dry-run")
+        if Path(snakefile).name == "generate_scenarios.smk" and phase is None:
+            os.environ["CST_GENERATION_PHASE"] = "source"
+        with api.SnakemakeApi() as sa:
+            wf_api = sa.workflow(
+                resource_settings=api.ResourceSettings(cores=1),
+                config_settings=api.ConfigSettings(configfiles=[Path(config_path)]),
+                storage_settings=api.StorageSettings(),
+                workflow_settings=api.WorkflowSettings(),
+                snakefile=Path(SNAKEDIR) / snakefile,
+                workdir=Path(SNAKEDIR),
+            )
+            workflow = wf_api._workflow
+            workflow.include(workflow.main_snakefile, overwrite_default_target=True)
+            return workflow
+    finally:
+        sys.argv[:] = argv
+        if phase is None:
+            os.environ.pop("CST_GENERATION_PHASE", None)
+        else:
+            os.environ["CST_GENERATION_PHASE"] = phase
+
+
+def phase_env(snakefile) -> dict:
+    """Subprocess environment for a direct Snakemake call on ``snakefile``.
+
+    WF3 refuses to parse without the launcher's phase; a direct test call runs
+    it as the source phase, the one that needs no frozen plan.
+    """
+    import os
+
+    env = dict(os.environ)
+    if Path(str(snakefile)).name == "generate_scenarios.smk":
+        env.setdefault("CST_GENERATION_PHASE", "source")
+    return env

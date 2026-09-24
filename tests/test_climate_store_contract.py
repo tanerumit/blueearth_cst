@@ -41,7 +41,7 @@ from pathlib import Path
 import pytest
 
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
-from tests.conftest import write_config  # noqa: E402
+from tests.conftest import parse_workflow, write_config  # noqa: E402
 
 SNAKEDIR = Path(__file__).resolve().parents[1]
 CONFIG_FN = Path(__file__).resolve().parent / "project_config_fixture.yml"
@@ -52,30 +52,7 @@ RULE_NAME = "extract_historical_climate"
 _ABSENT = "<<absent>>"
 
 
-def _parse_workflow(snakefile: str, config_path):
-    """Parse a Snakefile in-process and return its ``Workflow``.
-
-    Uses the ``snakemake.api`` entry point so rules are built exactly as a real
-    invocation builds them — the comparison then runs against effective rule
-    state (post-``RuleInfo``-application), which is what actually determines
-    reruns. ``wf_api._workflow`` is private on Snakemake 9.6.2; there is no
-    public accessor for the parsed workflow object, so this is pinned to the
-    pinned version deliberately.
-    """
-    import snakemake.api as api
-
-    with api.SnakemakeApi() as sa:
-        wf_api = sa.workflow(
-            resource_settings=api.ResourceSettings(cores=1),
-            config_settings=api.ConfigSettings(configfiles=[Path(config_path)]),
-            storage_settings=api.StorageSettings(),
-            workflow_settings=api.WorkflowSettings(),
-            snakefile=SNAKEDIR / snakefile,
-            workdir=SNAKEDIR,
-        )
-        workflow = wf_api._workflow
-        workflow.include(workflow.main_snakefile, overwrite_default_target=True)
-        return workflow
+_parse_workflow = parse_workflow
 
 
 # --- normalizers --------------------------------------------------------------
@@ -437,12 +414,13 @@ def test_chirps_branch_declares_and_consumes_one_orography_path(tmp_path):
 
     workflow = _parse_workflow("generate_scenarios.smk", cfg_path)
     producer = workflow.get_rule(RULE_NAME)
-    consumer = workflow.get_rule("prepare_collection_sources")
 
+    # Since static WF3 planning (2026-09) no WF3 rule consumes the sidecar: its
+    # pinned sources are the store's climate and cells. The consumer is WF4's
+    # downscaling, covered by tests/test_member_catalog_rule.py.
     oro_out = str(producer.output.oro_nc)
     assert oro_out.endswith("/orography.nc"), oro_out
     assert "chirps_global_orography" not in oro_out
-    assert oro_out in list(map(str, consumer.expand_input({})[0]))
 
     # wf1 declares the same sidecar output on the same branch.
     wf1 = _parse_workflow("build_model.smk", cfg_path)
@@ -618,8 +596,12 @@ def test_wf0_relaxes_the_floor_for_candidates_only(tmp_path):
 
 @pytest.mark.workflow_contract
 def test_generation_plan_declares_the_store_before_seed_resolution(tmp_path):
-    """Actual source bytes and the historical floor precede the generator config."""
+    """Actual source bytes and the historical floor precede the generator config.
+
+    Planning (3.04-3.06) runs in the launcher after the source phase, so the
+    source phase's own target must be the extracted store it will pin.
+    """
     workflow = _parse_workflow("generate_scenarios.smk", CONFIG_FN)
-    rule = workflow.get_rule("prepare_collection_sources")
+    rule = workflow.get_rule("all")
     store_nc = str(workflow.get_rule(RULE_NAME).output.climate_nc)
     assert store_nc in list(map(str, rule.expand_input({})[0]))

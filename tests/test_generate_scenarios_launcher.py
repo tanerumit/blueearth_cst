@@ -7,6 +7,7 @@ from pathlib import Path
 
 import pytest
 
+from blueearth_cst.shared import output_capture
 from scripts import generate_scenarios
 
 
@@ -52,7 +53,7 @@ def test_source_phase_never_silences_warnings_on_success(capfd, monkeypatch):
 
 def test_in_process_writes_are_captured_and_errors_surface(capfd):
     with pytest.raises(RuntimeError, match="boom"):
-        with generate_scenarios._captured_output():
+        with output_capture.captured_output():
             print("in-process chatter")
             raise RuntimeError("boom")
     assert "in-process chatter" in capfd.readouterr().err
@@ -215,7 +216,7 @@ def test_console_log_handlers_are_captured_and_restored(capfd):
     logger.addHandler(handler)
     logger.propagate = False
     try:
-        with generate_scenarios._captured_output():
+        with output_capture.captured_output():
             assert handler.stream is not sys.__stderr__
             logger.warning("WARNING: captured through the handler")
         assert handler.stream is sys.stderr

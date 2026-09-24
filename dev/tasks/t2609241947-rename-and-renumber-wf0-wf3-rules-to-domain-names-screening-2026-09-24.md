@@ -2,7 +2,7 @@
 title: Rename and renumber WF0-WF3 rules to domain names (screening 2026-09-24)
 type: todo-item
 status: backlog
-branch: wf3-improvements
+branch: workflow-rule-naming
 effort: 1
 area: workflows
 origin: wf4 naming bundle (2026-09-24)

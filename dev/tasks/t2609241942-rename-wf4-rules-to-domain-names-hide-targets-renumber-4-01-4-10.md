@@ -2,7 +2,7 @@
 title: Rename WF4 rules to domain names, hide targets, renumber 4.01-4.10
 type: todo-item
 status: backlog
-branch: wf3-improvements
+branch: workflow-rule-naming
 effort: 1
 area: wf4
 origin: wf4 naming bundle (2026-09-24)

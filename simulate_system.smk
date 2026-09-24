@@ -54,7 +54,7 @@ checkpoint prepare_indicator_plan:
 
 def _selected_metric_outputs(wc):
     request = _current_metric_request(wc)
-    path = checkpoints.prepare_metric_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
+    path = checkpoints.prepare_indicator_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
     from blueearth_cst.experiment.metric_plan import read_metric_set, verify_metric_plan
     plan = verify_metric_plan(exp_dir, request)
     if Path(plan["targets"]["manifest"]).exists():
@@ -64,7 +64,7 @@ def _selected_metric_outputs(wc):
 
 def _metric_set_plan(wc):
     request = _current_metric_request(wc)
-    path = checkpoints.prepare_metric_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
+    path = checkpoints.prepare_indicator_plan.get(metric_request_id=short_digest(content_sha256(request))).output[0]
     plan = read_canonical_json(Path(path))
     if wc.metric_set_id != short_digest(plan["metric_set_id"]):
         raise ValueError("metric set differs from its exact selected plan")

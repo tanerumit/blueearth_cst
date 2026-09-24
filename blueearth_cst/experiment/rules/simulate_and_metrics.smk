@@ -102,7 +102,7 @@ if Path(f"{exp_dir}/_engine/simulation.json").exists():
 def _frozen_simulation(wc):
     if _simulation_complete:
         return f"{exp_dir}/_engine/simulation_intent.json"
-    return checkpoints.freeze_wflow_simulation.get().output.simulation
+    return checkpoints.snapshot_simulation_inputs.get().output.simulation
 
 # The targets `rule all` lists, built HERE rather than inline in its `message:`:
 # Snakemake's f-string preprocessor cannot parse an f-string inside a multi-line

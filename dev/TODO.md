@@ -25,7 +25,6 @@ cssclasses: [todo-board]
 | [t2608202351][]    |     | Publish the technical background — split the 2025 note… | docs / site / quarto-docs-s… | blocked    |
 | [t2608191733][]    |     | Ship a sample dataset bundle so a user needs no…        | distribution / sample data   | backlog    |
 | [t2608161450][]    |     | The chirps store does not satisfy the WG-1 seam…        | wf0 / climate store /…       | backlog    |
-| [t2608151154][]    |     | st_0 is not method-comparable with the stress-test…     | wf3 / scenarios / R12        | backlog    |
 | [t2608122022][]    |     | Verify the newly-honoured water year, and sweep for…    | wf2 projections / config /…  | backlog    |
 | [t2608091730][]    |     | Produce waterbody layers data-side so basin_area can…   | plotting                     | backlog    |
 | [t2608091006][]    |     | Standardize plotting across the toolbox with shared…    | plotting                     | active     |
@@ -48,7 +47,6 @@ cssclasses: [todo-board]
 [t2608202351]: tasks/t2608202351-publish-technical-background-split-the-note.md
 [t2608191733]: tasks/t2608191733-ship-a-sample-dataset-bundle-so-a-user-needs-no-deltares-p-drive.md
 [t2608161450]: tasks/t2608161450-the-chirps-store-does-not-satisfy-the-wg1-seam-contract.md
-[t2608151154]: tasks/t2608151154-st0-not-comparable-with-the-surface.md
 [t2608122022]: tasks/t2608122022-verify-the-newly-honoured-water-year-and-sweep-for-projects-it-moves.md
 [t2608091730]: tasks/t2608091730-produce-waterbody-layers-data-side-so-basin-area-can-show-them-again.md
 [t2608091006]: tasks/t2608091006-standardize-plotting-across-the-toolbox-with-shared-templates-then-sweep-the-existing-figures-onto-them.md

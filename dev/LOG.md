@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2609171730 | 34 exception messages carry characters a cp1252 console cannot encode [dropped] | console / errors |
 | 2026-09-25 | t2609172119 | Snakemake's error block keeps full-length paths that every other console row shortens | console / path tokens |
 | 2026-09-25 | t2609070015 | Widen C-37 to the shipped seeds, and ask its mirror question | config / gates |
 | 2026-09-25 | t2608112051 | WF2 can serve change factors computed for a window the config no longer asks for | wf2 projections |

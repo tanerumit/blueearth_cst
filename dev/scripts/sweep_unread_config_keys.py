@@ -12,6 +12,10 @@ template header says is how an optional setting is shown — is a promise that
 setting it does something. A key no code reads is a promise the toolbox does not
 keep, and it is invisible: the run succeeds and the setting changes nothing.
 
+**And its mirror** (t2609070015): a key a shipped seed under `test_case/` sets
+that no template documents. The seeds are declared too, so their keys also need
+a reader; a seed-only key additionally needs a template that names it.
+
 **Why it is not `sweep_stale_spellings`.** That sweep asks whether a spelling is
 DEAD, from the loader's retired-key table. This asks whether a LIVE key has a
 consumer, and its two sides are built from different places entirely.
@@ -57,24 +61,23 @@ from dev.scripts.sweep_common import (  # noqa: E402
 #: excludes anyway: its README withholds support and says a stale key there
 #: fails at parse time rather than being ignored.
 #:
-#: **The shipped seeds under `test_case/` are a KNOWN GAP, measured rather than
-#: assumed.** On 2026-09-07 they carried 58 leaf names against the templates'
-#: 53, and 11 the templates do not declare. Two of those are real config keys
-#: (`build_config`, `waterbodies_config`, both read) — a template documentation
-#: gap, which is this check's MIRROR question and not this one. Most of the rest
-#: are `VariableSpec` fields (`source`, `canonical`, `units`, `change`), read by
-#: dataclass construction rather than by subscript, so extending the declared
-#: side to the seeds needs a reader form for that first or it would report four
-#: keys that are read perfectly well. Filed rather than half-done; the boundary
-#: is pinned by a test so a green run is not mistaken for full coverage.
 TEMPLATE_GLOB = "config/templates/project_config*.template.yml"
+
+#: The shipped seeds are declared too (t2609070015). A green run once certified
+#: the templates only, while the seeds carried keys the templates did not name;
+#: most of those were read through forms this check did not recognise
+#: (`body["source"]`, `spells.get("dry")`), and two it could not see at all
+#: because the templates comment them one level deeper (`#  build_config:`).
+#: Only tracked seeds: `project_config_` is the prefix AGENTS.md keeps tracked,
+#: and the untracked personal `test*.yml` configs are nobody's promise.
+SEED_GLOB = "test_case/project_config_*.yml"
 
 #: A YAML key line, live or commented at its default. The template header says
 #: "Lines starting with `#` are optional settings, shown at their default", so a
 #: commented key is a DECLARATION — arguably the more important half, since an
 #: unread live key at least shows up in a filled-in config someone reads.
 _KEY_LINE = re.compile(
-    r"^(?P<indent> *)(?:# ?)?(?P<key>[a-z_][a-z0-9_]*)\s*:"
+    r"^(?P<indent> *)(?:# *)?(?P<key>[a-z_][a-z0-9_]*)\s*:"
     r"(?P<rest>\s*(?:#.*)?$|\s+\S.*$)"
 )
 
@@ -89,7 +92,10 @@ _PROSE_REST = re.compile(r"^\s+[A-Z][a-z]+\s+[a-z]")
 #: left exactly one key reportable, which is a green run that means nothing.
 #: `t1`/`t2` are the loader's names for the two config tiers; `raw` is the
 #: freshly-parsed document.
-_CFG_NAME = r"(?:[a-z_]*(?:cfg|config|settings|stanza|section|params)[a-z_]*|t1|t2|raw|workflows|perturbations)"
+#: `compute`, `spells`, `body` and `entry` hold a config sub-mapping by a name
+#: that says what it is rather than that it is config: the batch-sizing stanza,
+#: the spell factors, one `variables:` entry, one `future_windows` entry.
+_CFG_NAME = r"(?:[a-z_]*(?:cfg|config|settings|stanza|section|params)[a-z_]*|t1|t2|raw|workflows|perturbations|compute|spells|body|entry)"
 
 #: A subscript chain, and EVERY segment of it counts as a read. `min` reaches a
 #: reader only through `stress_test_cfg["temp"]["mean"]["min"]`, and so do
@@ -106,6 +112,12 @@ _CHAIN_HEAD = re.compile(rf"{_CFG_NAME}\s*(?=\[)")
 _GET_CONFIG = re.compile(rf"""get_config\(\s*{_CFG_NAME}[^,]*,\s*["']([\w-]+)["']""")
 _DOT_GET = re.compile(
     rf"""{_CFG_NAME}(?:\[[^]\n]{{0,40}}\])*\s*\.\s*get\(\s*["']([\w-]+)["']"""
+)
+#: A key handed to an accessor, not subscripted: `_source_name(sources_cfg,
+#: "lai", ...)` in `spatial/config.py`, and batch sizing's local
+#: `pick("julia_threads", ...)`, whose first argument is the `compute` key.
+_ACCESSOR_CALL = re.compile(
+    rf"""(?:\w+\(\s*{_CFG_NAME}\s*,|\bpick\()\s*["']([\w-]+)["']"""
 )
 #: R takes its config through `commandArgs`, then reads it as a list.
 _R_DOLLAR = re.compile(rf"{_CFG_NAME}\$([A-Za-z_][\w.]*)")
@@ -133,8 +145,8 @@ FLOORS = (
     Floor(
         name="declared",
         minimum=30,
-        count=53,
-        measured="2026-09-07, at 10e3510a",
+        count=79,
+        measured="2026-09-25, seeds declared (t2609070015)",
         why=(
             "the five templates are the config surface a user copies; a "
             "collapse means the glob or the key matcher stopped seeing them, "
@@ -145,8 +157,8 @@ FLOORS = (
     Floor(
         name="readers",
         minimum=45,
-        count=81,
-        measured="2026-09-07, at 10e3510a",
+        count=168,
+        measured="2026-09-25, seeds declared (t2609070015)",
         why=(
             "an empty reader side reports EVERY declared key as unread, which "
             "is the shape R14's re-measure failed in -- more findings, less "
@@ -156,8 +168,8 @@ FLOORS = (
     Floor(
         name="surfaces",
         minimum=70,
-        count=107,
-        measured="2026-09-07, at 10e3510a",
+        count=150,
+        measured="2026-09-25, seeds declared (t2609070015)",
         why=(
             "the files the reader side is extracted from. Counted separately "
             "because a walk that returns nothing and a walk that returns files "
@@ -167,8 +179,30 @@ FLOORS = (
 )
 
 
+def _yaml_keys(node, out: set) -> set:
+    """Every mapping key in a parsed YAML document, at any depth."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            out.add(str(key))
+            _yaml_keys(value, out)
+    elif isinstance(node, list):
+        for value in node:
+            _yaml_keys(value, out)
+    return out
+
+
 def declared_keys(root: Path = REPO_ROOT) -> dict[str, tuple[str, int, str]]:
-    """``{key: (template, line, text)}`` for every key the templates declare."""
+    """``{key: (file, line, text)}`` for every key the templates or seeds declare.
+
+    Templates are read LINE BY LINE, because their commented defaults are
+    declarations YAML would discard. Seeds are real YAML with nothing commented
+    out, so they are PARSED, which also sees flow-style keys
+    (`{source: precip, canonical: rate}`) a line matcher cannot. A user-chosen
+    name outside the key grammar (`river discharge`) is not a declared key.
+    Templates first, so a key both declare is reported against the template.
+    """
+    import yaml
+
     out: dict[str, tuple[str, int, str]] = {}
     for path in sorted(root.glob(TEMPLATE_GLOB)):
         rel = path.relative_to(root).as_posix()
@@ -177,6 +211,20 @@ def declared_keys(root: Path = REPO_ROOT) -> dict[str, tuple[str, int, str]]:
             if match is None or _PROSE_REST.match(match.group("rest")):
                 continue
             out.setdefault(match.group("key"), (rel, lineno, line.strip()[:80]))
+    grammar = re.compile(r"[a-z_][a-z0-9_]*")
+    for path in sorted(root.glob(SEED_GLOB)):
+        rel = path.relative_to(root).as_posix()
+        text = path.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        for key in sorted(_yaml_keys(yaml.safe_load(text), set())):
+            if key in out or not grammar.fullmatch(key):
+                continue
+            where = re.compile(rf"(?<![\w-]){re.escape(key)}\s*:")
+            lineno = next(
+                (i for i, line in enumerate(lines, 1) if where.search(line)), 0
+            )
+            text_line = lines[lineno - 1].strip()[:80] if lineno else key
+            out[key] = (rel, lineno, text_line)
     return out
 
 
@@ -217,7 +265,7 @@ def reader_keys(root: Path = REPO_ROOT) -> dict[str, str]:
         patterns = (
             (_R_DOLLAR, _R_SUBSCRIPT)
             if path.suffix == ".R"
-            else (_GET_CONFIG, _DOT_GET)
+            else (_GET_CONFIG, _DOT_GET, _ACCESSOR_CALL)
         )
         for pattern in patterns:
             for match in pattern.finditer(text):
@@ -263,6 +311,18 @@ def sweep(root: Path = REPO_ROOT):
                 break
         else:
             defects.append((root / rel, lineno, text, "UNREAD"))
+    # The MIRROR: a key a shipped seed sets that no template documents, so a
+    # user copying the templates never learns it exists. A template counts as
+    # documenting a key it names anywhere, flow style included --
+    # `- {start: 2046, end: 2054, name: mid}` documents `name`.
+    template_text = "\n".join(
+        path.read_text(encoding="utf-8") for path in sorted(root.glob(TEMPLATE_GLOB))
+    )
+    for key, (rel, lineno, text) in sorted(declared.items()):
+        if rel.startswith("config/templates/"):
+            continue
+        if not re.search(rf"(?<![\w-]){re.escape(key)}\s*:", template_text):
+            defects.append((root / rel, lineno, text, "UNDOCUMENTED"))
     return defects, allowed, observed
 
 
@@ -279,8 +339,13 @@ def main(argv=None) -> int:
             json.dumps(
                 {
                     "defects": [
-                        {"path": str(p.relative_to(REPO_ROOT)), "line": n, "text": t}
-                        for p, n, t, _ in defects
+                        {
+                            "path": str(p.relative_to(REPO_ROOT)),
+                            "line": n,
+                            "text": t,
+                            "kind": kind,
+                        }
+                        for p, n, t, kind in defects
                     ],
                     "allowed": len(allowed),
                     "observed": observed,
@@ -303,9 +368,12 @@ def main(argv=None) -> int:
         )
         print(f"{len(allowed)} declared-but-unmatched key(s) classified.")
         if defects:
-            print(f"\n{len(defects)} DECLARED KEY(S) that no reader reads:\n")
-            for path, lineno, text, _ in defects:
-                print(f"  {path.relative_to(REPO_ROOT)}:{lineno}")
+            print(
+                f"\n{len(defects)} key(s) UNREAD (declared, no reader) or "
+                "UNDOCUMENTED (a seed sets it, no template names it):\n"
+            )
+            for path, lineno, text, kind in defects:
+                print(f"  {kind}  {path.relative_to(REPO_ROOT)}:{lineno}")
                 print(f"      {text[:110]}")
         else:
             print("Every declared key reaches a reader.")

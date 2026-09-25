@@ -10,7 +10,6 @@ cssclasses: [todo-board]
 | [t2608181139][]    | 1   | Give WF0 its forcing-selection evaluation layer…        | wf0 / evaluation layer /…    | backlog    |
 | [t2608071208][]    | 1   | Diagnose the staging-harness stall that hangs…          | test hygiene / R7            | backlog    |
 | [t2608071207][]    | 1   | Show the per-member wflow log falsifier actually…       | wf3 logging / R7             | blocked    |
-| [t2609070015][]    | 2   | Widen C-37 to the shipped seeds, and ask its mirror…    | config / gates / C-37…       | backlog    |
 | [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup        | run cost / julia /…          | backlog    |
 | [t2609242252][]    |     | Refresh stale rule numbers in the five…                 | workflows / rule naming…     | backlog    |
 | [t2609172119][]    |     | Snakemake's error block keeps full-length paths that…   | console / path tokens /…     | backlog    |
@@ -36,7 +35,6 @@ cssclasses: [todo-board]
 [t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md
 [t2608071208]: tasks/t2608071208-r7-14.md
 [t2608071207]: tasks/t2608071207-r7-8.md
-[t2609070015]: tasks/t2609070015-widen-c-37-to-the-shipped-seeds-and-ask-its-mirror-question.md
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 [t2609242252]: tasks/t2609242252-refresh-stale-rule-numbers-in-the-five-code-inventoried-modules-at-the-next-identity-change.md
 [t2609172119]: tasks/t2609172119-snakemake-s-error-block-keeps-full-length-paths-that-every-other-console-row-shortens.md

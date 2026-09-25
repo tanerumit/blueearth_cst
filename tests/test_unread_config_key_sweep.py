@@ -199,21 +199,23 @@ def test_the_window_bounds_are_classified_not_silently_dropped():
 def test_the_templates_it_reads_are_the_ones_a_user_copies():
     """A check pointed at the wrong templates is blind in a way no floor
     catches: `config/defaults/` would give it plenty of keys, all of them
-    hydromt's rather than ours."""
+    hydromt's rather than ours. The tracked seeds are the one other source."""
     names = {path for path, _line, _text in declared_keys().values()}
-    assert names
-    assert all(name.startswith("config/templates/project_config") for name in names)
+    assert any(name.startswith("config/templates/project_config") for name in names)
+    assert all(
+        name.startswith(
+            ("config/templates/project_config", "test_case/project_config_")
+        )
+        for name in names
+    )
     assert (REPO_ROOT / "config" / "templates").is_dir()
 
 
-def test_the_shipped_seeds_are_a_pinned_gap_not_silent_coverage():
-    """The check reads the TEMPLATES. The filled-in seeds under `test_case/`
-    carry keys the templates do not declare, and a green run says nothing about
-    those — so the gap is measured here rather than left to be discovered.
+def test_the_shipped_seeds_are_declared_and_covered():
+    """t2609070015: a green run now covers the seeds, not the templates only.
 
-    Extending the declared side to the seeds needs a reader form for dataclass
-    fields first: `source`, `canonical`, `units` and `change` are `VariableSpec`
-    fields read by construction, not by subscript, and would report as unread.
+    `build_config` and `waterbodies_config` were once the MIRROR gap. They were
+    documented all along, commented one level deeper than the matcher saw.
     """
     import yaml
 
@@ -230,11 +232,57 @@ def test_the_shipped_seeds_are_a_pinned_gap_not_silent_coverage():
     seed_leaves = set()
     for path in sorted((REPO_ROOT / "test_case").glob("project_config_*.yml")):
         leaves(yaml.safe_load(path.read_text(encoding="utf-8")), seed_leaves)
-
-    undeclared = seed_leaves - set(declared_keys())
-    assert seed_leaves, "no shipped seed configs found; the gap cannot be measured"
-    assert {"build_config", "waterbodies_config"} <= undeclared, (
-        "a seed key the templates do not document is the MIRROR question this "
-        "check does not ask; if these two gained template entries, update the "
-        "boundary note in `TEMPLATE_GLOB` rather than deleting this assertion"
+    declared = set(declared_keys())
+    assert seed_leaves, "no shipped seed configs found"
+    assert {"build_config", "waterbodies_config", "source", "dry"} <= declared
+    # Only user-chosen names outside the key grammar stay undeclared.
+    assert all(" " in str(key) for key in seed_leaves - declared), (
+        seed_leaves - declared
     )
+
+
+def test_a_deeper_commented_default_is_a_declaration(tmp_path):
+    root = _project(tmp_path, "model:\n#  build_config: x.yml\n", "")
+    assert "build_config" in declared_keys(root)
+
+
+@pytest.mark.parametrize(
+    "reader_body",
+    [
+        'name = _source_name(sources_cfg, "build_config", "x")\n',
+        'value = pick("build_config", "a", "b")\n',
+        'value = body["build_config"]\n',
+    ],
+)
+def test_an_accessor_or_sub_mapping_read_counts(tmp_path, reader_body):
+    root = _project(tmp_path, "model:\n  build_config: x.yml\n", reader_body)
+    defects, _allowed, _observed = sweep(root)
+    assert not defects
+
+
+def test_a_seed_key_no_template_names_is_undocumented(tmp_path):
+    root = _project(tmp_path, "model:\n  kept: 1\n", 'cfg["kept"]\ncfg["extra"]\n')
+    seeds = root / "test_case"
+    seeds.mkdir()
+    (seeds / "project_config_x.yml").write_text(
+        "model:\n  kept: 1\n  extra: 2\n", encoding="utf-8"
+    )
+    defects, _allowed, _observed = sweep(root)
+    assert [(p.name, kind) for p, _n, _t, kind in defects] == [
+        ("project_config_x.yml", "UNDOCUMENTED")
+    ]
+
+
+def test_a_flow_style_template_mention_documents_a_seed_key(tmp_path):
+    root = _project(
+        tmp_path,
+        "model:\n  windows:\n  - {start: 1, name: mid}\n",
+        'cfg["windows"]\ncfg["start"]\nentry.get("name")\n',
+    )
+    seeds = root / "test_case"
+    seeds.mkdir()
+    (seeds / "project_config_x.yml").write_text(
+        "model:\n  windows:\n  - start: 1\n    name: mid\n", encoding="utf-8"
+    )
+    defects, _allowed, _observed = sweep(root)
+    assert not defects

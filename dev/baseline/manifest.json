@@ -1,20 +1,20 @@
 {
   "project_dir": "test_case/test_local",
   "recorded_by": {
-    "branch": "wf4-batch-count-model",
-    "commit": "87eea773b1926d79ae69838ff22a025a2cbffa86",
+    "branch": "maint/identity-and-baseline",
+    "commit": "43ffbffb2beed21df9d54fb31157fd6d1c663cfb",
     "dirty": false
   },
   "targets": {
     "test_case/test_local/config/runs/analyze_projections/run_record.yml": {
-      "sha256": "7b15f303e207bb74584f3221edf62e00aba096425ea4d96572d04f5300ce9ee5",
+      "sha256": "4975a17c9d4838e2abca61566d101bd9bf8f4d453a588d04a521cba8a561b0f6",
       "template": "{project_dir}/config/runs/analyze_projections/run_record.yml",
-      "type": "yaml"
+      "type": "run_record"
     },
     "test_case/test_local/config/runs/build_model/run_record.yml": {
-      "sha256": "1651273dcf4e310b59ca62588d204418368e747ad770ae555221c89441c70e36",
+      "sha256": "07af91dbac2fcfe14d924f68a9c4342a04194f236537b06ca229d9dffd610317",
       "template": "{project_dir}/config/runs/build_model/run_record.yml",
-      "type": "yaml"
+      "type": "run_record"
     },
     "test_case/test_local/data/climate/projections/cmip6/summary/cmip6_change_factors_annual.csv": {
       "sha256": "1e61f97e0b40dfeffebcd99d8c16432b07672580534d4c87931baf41eb8a22ba",
@@ -28,7 +28,7 @@
       "template": "{clim_project_dir}/summary/{clim_project}_change_factors_monthly.csv",
       "type": "csv"
     },
-    "test_case/test_local/experiments/experiment/results/metric_sets/ff01e76f8726/q_indicators.csv": {
+    "test_case/test_local/experiments/experiment/results/metric_sets/d646a98f02b1/q_indicators.csv": {
       "columns": [
         "metric",
         "location",

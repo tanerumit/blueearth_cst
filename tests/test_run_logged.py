@@ -542,8 +542,7 @@ def test_off_a_terminal_a_finished_wflow_bar_is_still_a_console_row(
     monkeypatch.setattr(sys, "stdout", out)
     monkeypatch.setattr(sys, "stderr", err)
     snippet = (
-        "print('[cst-progress] 01 0.5 [1/2]')\n"
-        "print('[cst-progress] 01 1.0 [1/2]')\n"
+        "print('[cst-progress] 01 0.5 [1/2]')\nprint('[cst-progress] 01 1.0 [1/2]')\n"
     )
     rc = run_and_tee([sys.executable, "-c", snippet], tmp_path / "pipe.log")
     assert rc == 0

@@ -213,7 +213,8 @@ def test_completed_simulation_validation_suppresses_successful_dependency_chatte
     workflow = (
         REPO / "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
     ).read_text(encoding="utf-8")
-    assert "with captured_output():" in workflow
+    # Captured, and its warnings deferred to the run header (`defer_rows`).
+    assert "with captured_output(replay=defer_rows):" in workflow
 
 
 def test_tree_tooling_knows_the_new_leaf():

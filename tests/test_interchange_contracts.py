@@ -768,15 +768,21 @@ def test_gauge_identity_synthetic_fail():
     assert ic.validate_hm_gauge_column_identity(toml_cfg, output_rlz, qstats) != []
 
 
-def test_gauge_identity_expects_a_coincident_gauge_to_be_absent():
-    """A gauge on the outlet cell is published once, as the outlet (t2609151118)."""
+def test_gauge_identity_expects_the_labelled_location_set():
+    """A same-cell duplicate is absent, the rest keyed by wflow_id (t2609251515)."""
     toml_cfg, output_rlz, qstats = _gauge_identity_good()
     gauges = sorted(str(v) for v in qstats["location"].unique())
-    dropped = {f"Q_{gauges[-1]}": f"Q_{gauges[0]}"}
     fewer = qstats[qstats["location"].astype(str) != gauges[-1]]
     assert ic.validate_hm_gauge_column_identity(toml_cfg, output_rlz, fewer) != []
+    labels = {f"Q_{g}": g for g in gauges[:-1]}
     assert (
-        ic.validate_hm_gauge_column_identity(toml_cfg, output_rlz, fewer, dropped) == []
+        ic.validate_hm_gauge_column_identity(toml_cfg, output_rlz, fewer, labels) == []
+    )
+    relabelled = fewer.assign(location=fewer["location"].astype(str) + "0")
+    labels = {f"Q_{g}": g + "0" for g in gauges[:-1]}
+    assert (
+        ic.validate_hm_gauge_column_identity(toml_cfg, output_rlz, relabelled, labels)
+        == []
     )
 
 
@@ -1116,7 +1122,7 @@ def test_gauge_identity_integration():
     from pathlib import Path
 
     from blueearth_cst.experiment.metric_plan import read_metric_set
-    from blueearth_cst.experiment.simulator_adapter import coincident_point_headers
+    from blueearth_cst.shared.native_locations import native_location_labels
 
     root, *_ = _successor_artifacts()
     # Find the q table through each ready metric-set/2 marker, not by globbing
@@ -1136,13 +1142,13 @@ def test_gauge_identity_integration():
         static = (
             toml.parent / config.get("dir_input", ".") / config["input"]["path_static"]
         )
-        coincident = coincident_point_headers(
+        labels = native_location_labels(
             config["output"]["csv"]["column"], list(frame.columns), static
         )
         for table in tables:
             assert (
                 ic.validate_hm_gauge_column_identity(
-                    config, frame, pd.read_csv(table), coincident
+                    config, frame, pd.read_csv(table), labels
                 )
                 == []
             )

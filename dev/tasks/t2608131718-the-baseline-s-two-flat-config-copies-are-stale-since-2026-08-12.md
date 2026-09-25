@@ -2,7 +2,7 @@
 title: The baseline's two flat config copies are stale since 2026-08-12
 type: watch-item
 area: baseline / test fixtures
-origin: config-snapshot P6 verification (2026-08-13)
+origin: config-snapshot P6 (2026-08-13)
 created: 2026-08-13
 updated: 2026-08-13
 ---

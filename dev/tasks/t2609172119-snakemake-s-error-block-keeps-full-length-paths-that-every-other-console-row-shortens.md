@@ -4,7 +4,7 @@ type: todo-item
 status: backlog
 effort: 1
 area: console / path tokens
-origin: wf1 failure-transcript render, 2026-09-17
+origin: wf1 failure render (2026-09-17)
 queue:
 created: 2026-09-17
 updated: 2026-09-17

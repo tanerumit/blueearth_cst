@@ -2,7 +2,7 @@
 title: A missing catalog source is logged identically to an empty basin, so 1.08 can silently omit a real reservoir
 type: watch-item
 area: wf1 / data catalog
-origin: 2026-08-12 t2608091730 investigation
+origin: t2608091730 (2026-08-12)
 created: 2026-08-12
 updated: 2026-08-12
 ---

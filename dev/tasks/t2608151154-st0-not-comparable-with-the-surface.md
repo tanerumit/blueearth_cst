@@ -3,7 +3,7 @@ title: st_0 is not method-comparable with the stress-test surface
 type: todo-item
 status: backlog
 effort: 2
-area: wf3 / scenario generation + reporting
+area: wf3 / scenarios
 origin: R12
 queue:
 created: 2026-08-15

@@ -2,7 +2,7 @@
 title: Fold Julia box-drawing blocks into the tee's log grammar
 type: watch-item
 area: logging / console
-origin: console-output review (2026-08-13), items 1 and 4
+origin: console review (2026-08-13)
 created: 2026-08-13
 updated: 2026-08-13
 ---

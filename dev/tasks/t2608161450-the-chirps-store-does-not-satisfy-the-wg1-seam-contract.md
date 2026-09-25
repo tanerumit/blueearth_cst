@@ -3,7 +3,7 @@ title: The chirps store does not satisfy the WG-1 seam contract, and nothing rep
 type: todo-item
 status: backlog
 effort: 2
-area: wf0 / climate store + interchange contracts
+area: wf0 / climate store
 origin: 2026-08-16 wf0 two-source run
 queue:
 created: 2026-08-16

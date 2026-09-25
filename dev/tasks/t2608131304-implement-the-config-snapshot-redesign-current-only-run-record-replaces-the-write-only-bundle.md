@@ -4,7 +4,7 @@ type: todo-item
 status: active  # P0-P7 done; only P4's end-to-end rung outstanding
 effort: 2
 area: config / provenance
-origin: config-snapshot design review (2026-08-13)
+origin: config-snapshot review (2026-08-13)
 queue:
 created: 2026-08-13
 updated: 2026-08-13  # P0 done, Gate 1 tripped

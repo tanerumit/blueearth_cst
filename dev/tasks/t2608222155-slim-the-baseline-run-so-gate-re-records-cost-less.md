@@ -4,7 +4,7 @@ type: todo-item
 status: backlog
 effort: 2
 area: baseline / run cost
-origin: owner request, R14 branch opening (2026-08-22)
+origin: owner request (2026-08-22)
 queue:
 created: 2026-08-22
 updated: 2026-08-23

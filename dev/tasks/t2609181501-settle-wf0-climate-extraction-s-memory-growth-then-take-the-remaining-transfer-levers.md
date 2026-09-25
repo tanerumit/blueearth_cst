@@ -5,7 +5,7 @@ status: active
 branch: feat/wf0-chirps-candidate
 effort: 2
 area: wf0 climate extraction
-origin: t2609181316 gabon-ntoum-deltares slow era5 download
+origin: t2609181316 slow ERA5 download
 queue:
 created: 2026-09-18
 updated: 2026-09-18

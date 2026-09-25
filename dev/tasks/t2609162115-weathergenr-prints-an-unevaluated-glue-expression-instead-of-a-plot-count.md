@@ -4,7 +4,7 @@ type: known-issue
 status: backlog
 effort: 1
 area: upstream / weathergenr
-origin: observed in a WF3 run while closing t2609161645, 2026-09-16
+origin: WF3 run (2026-09-16)
 queue:
 created: 2026-09-16
 updated: 2026-09-16

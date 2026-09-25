@@ -4,7 +4,7 @@ type: todo-item
 status: backlog
 effort: 2
 area: project-tree
-origin: owner review of test_rapid, 2026-09-17
+origin: test_rapid review (2026-09-17)
 queue:
 created: 2026-09-17
 updated: 2026-09-17

@@ -52,10 +52,21 @@ attribution: the absence came from an unstaged source, not a lost data root.
 - [x] Decide whether the figure shows physical or modelled waterbodies — owner ruling 2026-08-11: **physical, unfiltered**. Rule 1.08 keeps naming the catalog sources exactly as today and is not modified
 - [x] Decide which rule owns the data-side producer — owner ruling 2026-08-12: **1.03 `delineate_spatial_units`**
 - [x] Stage the three sources locally so a producer can be written and its figure looked at — `360f5cb`
-- [ ] Write the producer: clip the three sources to `basins`, write `geoms/{reservoirs,lakes,glaciers}.geojson`, register them in `spatial_catalog.yml` beside the existing layers
-- [ ] Add the three layers to `SPATIAL_MAP_LAYERS` in `shared/plot_map.py` — `plot_raster_map` already accepts all three keys and needs no change
+- [x] Write the producer (2026-09-25): clip the three sources to `basins`, write `geoms/{reservoirs,lakes,glaciers}.geojson`, register them in `spatial_catalog.yml` beside the existing layers
+- [x] Add the three layers to `SPATIAL_MAP_LAYERS` in `shared/plot_map.py` — `plot_raster_map` already accepts all three keys and needs no change
 - [ ] Verify by rendering `basin_area` and looking at it. **Confirm first that the staged reservoir falls inside the basin POLYGON** — it was staged against the configured bbox and the producer clips to `basins`, so a bbox hit is not yet a basin hit. If it does, this fixture is a real verification case for the reservoir layer; if it does not, the reservoir layer is in the same position as `rgi` below and the check needs another basin
-- [ ] Correct ADR 0007's consequences, which still describe the rejected "1.08 consumes them" plan
+- [x] Correct ADR 0007's consequences, which still describe the rejected "1.08 consumes them" plan
+
+## 2026-09-25: the fixture has NO waterbody inside its basin
+
+Clipped to `basins`, `hydro_reservoirs` and `hydro_lakes` both return nothing:
+the staged reservoir is inside the configured bbox but OUTSIDE the basin
+polygon, which answers the check above in the negative. `rgi.gpkg` is not staged
+on this machine at all, so the producer takes its missing-SOURCE branch (a
+warning, by the 2026-09-25 ruling that an optional map layer must not fail WF1-3)
+rather than the empty-RESULT one. The render therefore shows no change here and
+verifies only that empty layers draw cleanly. Drawing a real waterbody needs a
+basin that has one -- the remaining box.
 
 ## What this fixture can and cannot verify
 

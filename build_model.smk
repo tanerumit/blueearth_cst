@@ -1143,7 +1143,8 @@ rule plot_basin_map:
         # abort-below-Python they existed to prevent, all gone).
         hydrography_nc = SPATIAL_UNITS.hydrography_nc,
         **{name: SPATIAL_UNITS.outputs[name] for name in
-           ("basins", "subbasins", "rivers", "locations")},
+           ("basins", "subbasins", "rivers", "locations",
+            "reservoirs", "lakes", "glaciers")},
         # The thematic half's raster stack. This is a NEW EDGE: 1.11 used to
         # depend on rule 1.02 alone and could run as soon as the vectors
         # existed; it now waits for 1.05 as well. That costs nothing in

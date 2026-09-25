@@ -87,6 +87,73 @@ class SpatialUnits:
     river_attributes: gpd.GeoDataFrame
     locations: gpd.GeoDataFrame
     location_registry: pd.DataFrame
+    #: Physical waterbodies clipped to the basins, keyed by layer name
+    #: (:data:`WATERBODY_SOURCES`); an empty frame where there are none.
+    waterbodies: dict[str, gpd.GeoDataFrame] | None = None
+
+
+#: Layer name -> catalog source for the physical waterbodies drawn on the
+#: study-area map (t2608091730). The same three sources rule 1.07 hands the
+#: model build, named for what they are rather than in the model's vocabulary
+#: (the model plugin has no `lakes` geom). Physical and unfiltered, by the
+#: 2026-08-11 ruling: the map shows what is there, not what the model keeps.
+WATERBODY_SOURCES = {
+    "reservoirs": "hydro_reservoirs",
+    "lakes": "hydro_lakes",
+    "glaciers": "rgi",
+}
+
+
+def _empty_layer() -> gpd.GeoDataFrame:
+    return gpd.GeoDataFrame(geometry=gpd.GeoSeries([], crs=4326), crs=4326)
+
+
+def clip_waterbodies(
+    catalog: DataCatalog, basins: gpd.GeoDataFrame
+) -> dict[str, gpd.GeoDataFrame]:
+    """Clip each waterbody source to ``basins``; an empty layer where none fall.
+
+    Two failures hydromt reports alike are told apart here (t2608121606):
+    no feature inside the basins is an EMPTY RESULT, written silently as an
+    empty layer; a source absent from the catalog or its file absent from disk
+    is a MISSING SOURCE, which warns by name and also writes an empty layer.
+    Warn rather than fail, by the 2026-09-25 ruling: this rule runs in every
+    workflow, and an optional map layer must not stop one.
+    """
+    from hydromt.error import NoDataException
+
+    layers = {}
+    for layer, source in WATERBODY_SOURCES.items():
+        layers[layer] = _empty_layer()
+        if source not in getattr(catalog, "sources", {}):
+            log_row(
+                f"Catalog has no {source!r} source; the study-area map draws no {layer}",
+                module="spatial",
+                level="WARNING",
+            )
+            continue
+        try:
+            frame = catalog.get_geodataframe(source, geom=basins)
+        except NoDataException as error:
+            if "found no files" in str(error):
+                log_row(
+                    f"{source} file is missing ({catalog.get_source(source).full_uri}); "
+                    f"the study-area map draws no {layer}",
+                    module="spatial",
+                    level="WARNING",
+                )
+            continue
+        if frame is None or frame.empty:
+            continue
+        if frame.crs is None:
+            raise ValueError(f"catalog source {source!r} has no CRS")
+        layers[layer] = frame.to_crs(4326)
+    drawn = [
+        f"{plural(len(f), name[:-1], name)}" for name, f in layers.items() if len(f)
+    ]
+    if drawn:
+        log_row(f"Waterbodies in the basins: {', '.join(drawn)}", module="spatial")
+    return layers
 
 
 #: Layer name for the catalog's river vector, kept beside the derived network.
@@ -886,6 +953,7 @@ def prepare_spatial_units(
         river_attributes=river_attributes,
         locations=locations,
         location_registry=registry,
+        waterbodies=clip_waterbodies(catalog, basins.to_crs(4326)),
     )
 
 
@@ -1044,6 +1112,7 @@ def _catalog_dict() -> dict[str, Any]:
         "rivers",
         RIVER_ATTRIBUTES_NAME,
         "locations",
+        *WATERBODY_SOURCES,
     ):
         entries[name] = {
             "data_type": "GeoDataFrame",
@@ -1087,6 +1156,11 @@ def write_spatial_units(units: SpatialUnits, output_dir: str | Path) -> None:
     ):
         frame = getattr(units, name)
         frame.to_file(geoms_dir / f"{name}.geojson", driver="GeoJSON")
+    for name in WATERBODY_SOURCES:
+        frame = (units.waterbodies or {}).get(name)
+        (_empty_layer() if frame is None else frame).to_file(
+            geoms_dir / f"{name}.geojson", driver="GeoJSON"
+        )
     units.location_registry.to_csv(output_dir / "location_registry.csv", index=False)
 
 

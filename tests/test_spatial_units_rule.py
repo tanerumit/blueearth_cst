@@ -71,7 +71,8 @@ def test_the_seventh_output_is_the_seam_intermediate():
     rule = _rule()
     assert rule.hydrography_nc == "/proj/data/spatial/hydrography.nc"
     assert rule.outputs["hydrography"] == rule.hydrography_nc
-    assert len(rule.outputs) == 8
+    # Eight, plus the three waterbody layers (t2608091730).
+    assert len(rule.outputs) == 11
 
 
 def test_the_inputs_are_the_catalog_and_the_shared_region():
@@ -304,6 +305,9 @@ def test_the_outputs_are_the_shared_vector_artifacts(declarations):
         "geoms/rivers.geojson",
         "geoms/river_attributes.geojson",
         "geoms/locations.geojson",
+        "geoms/reservoirs.geojson",
+        "geoms/lakes.geojson",
+        "geoms/glaciers.geojson",
         "location_registry.csv",
         "hydrography.nc",
     }

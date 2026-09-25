@@ -65,6 +65,11 @@ exists, the same property rule 1.05's source-climate figures have.
   directory by name. The shortcut — 1.08 also writing into `data/spatial/` — is
   still rejected, for the reason this ADR gives: a model rule writing there
   makes the tree model-dependent and undoes this decision.
+
+  **Landed 2026-09-25.** `spatial.products.clip_waterbodies` writes
+  `geoms/{reservoirs,lakes,glaciers}.geojson`, empty where none fall, and a
+  missing source WARNS rather than failing every workflow (owner ruling
+  2026-09-25).
 - The figure's old `models/hydrology/wflow/plots/` home was covered by the R9
   one-way migration map, which correctly described R9's move rather than this
   later, separate one. That map (`tests/test_r09_path_map.py`) was **retired

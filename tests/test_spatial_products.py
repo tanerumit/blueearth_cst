@@ -485,3 +485,57 @@ def test_catalog_uris_are_relative_to_the_generated_catalog():
     catalog = products_module._catalog_dict()
 
     assert all(not Path(entry["uri"]).is_absolute() for entry in catalog.values())
+
+
+# --- t2608091730: physical waterbodies for the study-area map ----------------
+
+
+class _WaterbodyCatalog:
+    """`hydro_reservoirs` has one feature, `hydro_lakes` none, `rgi` no file."""
+
+    def __init__(self):
+        from shapely.geometry import box
+
+        self.sources = {"hydro_reservoirs": 1, "hydro_lakes": 1, "rgi": 1}
+        self._reservoir = gpd.GeoDataFrame(geometry=[box(0, 0, 1, 1)], crs=4326)
+
+    def get_source(self, name):
+        class _Source:
+            full_uri = f"C:/data/{name}.gpkg"
+
+        return _Source()
+
+    def get_geodataframe(self, name, geom=None):
+        from hydromt.error import NoDataException
+
+        if name == "hydro_reservoirs":
+            return self._reservoir
+        if name == "hydro_lakes":
+            raise NoDataException("No data from pyogrio driver for file uris: x")
+        raise NoDataException(f"Resolver 'convention' found no files at {name}")
+
+
+def test_waterbodies_tell_an_empty_clip_from_a_missing_source(capsys):
+    from blueearth_cst.spatial.products import clip_waterbodies
+
+    basins = gpd.GeoDataFrame(geometry=[], crs=4326)
+    layers = clip_waterbodies(_WaterbodyCatalog(), basins)
+    assert {name: len(frame) for name, frame in layers.items()} == {
+        "reservoirs": 1,
+        "lakes": 0,
+        "glaciers": 0,
+    }
+    out = capsys.readouterr().out
+    assert "rgi file is missing" in out
+    assert "hydro_lakes" not in out  # an empty clip is not a fault
+    assert all(frame.crs.to_epsg() == 4326 for frame in layers.values())
+
+
+def test_a_source_absent_from_the_catalog_warns_and_draws_nothing(capsys):
+    from blueearth_cst.spatial.products import clip_waterbodies
+
+    catalog = _WaterbodyCatalog()
+    catalog.sources = {}
+    layers = clip_waterbodies(catalog, gpd.GeoDataFrame(geometry=[], crs=4326))
+    assert all(frame.empty for frame in layers.values())
+    assert "Catalog has no 'rgi' source" in capsys.readouterr().out

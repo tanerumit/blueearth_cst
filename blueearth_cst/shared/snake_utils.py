@@ -798,6 +798,11 @@ def spatial_units_rule(project_dir, spatial_config, data_sources) -> SpatialUnit
         # carries the global product's own drainage-area floor, and drawing it
         # as one is what left station 1030 with no branch.
         "river_attributes": f"{geoms_dir}/river_attributes.geojson",
+        # Physical waterbodies for the study-area map (t2608091730); an empty
+        # layer where the basins hold none or the source is missing.
+        "reservoirs": f"{geoms_dir}/reservoirs.geojson",
+        "lakes": f"{geoms_dir}/lakes.geojson",
+        "glaciers": f"{geoms_dir}/glaciers.geojson",
         "locations": f"{geoms_dir}/locations.geojson",
         "location_registry": f"{spatial_dir}/location_registry.csv",
         "hydrography": hydrography_nc,

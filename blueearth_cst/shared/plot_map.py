@@ -83,6 +83,10 @@ SPATIAL_MAP_LAYERS = {
     "subbasins": "subbasins",
     "rivers": "rivers",
     "gauges": "locations",
+    # Written by the shared spatial rule (t2608091730), empty where none fall.
+    "reservoirs": "reservoirs",
+    "lakes": "lakes",
+    "glaciers": "glaciers",
 }
 
 #: Layers the figure cannot be drawn without; everything else is optional.

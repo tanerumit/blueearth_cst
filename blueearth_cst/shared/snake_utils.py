@@ -53,7 +53,6 @@ from blueearth_cst.shared.run_log_core import (
     _ANSI_DIM,
     _ANSI_FAIL,
     _ANSI_RESET,
-    _ANSI_WARN,
     _ASCII_GLYPH_FALLBACK,
     _COMPONENT_PREFIX_RE,
     _DATA_SOURCE_FROM_RE,

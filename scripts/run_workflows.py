@@ -58,7 +58,10 @@ from blueearth_cst.shared.provenance import (  # noqa: E402
     toolbox_identity,
 )
 from blueearth_cst.shared.snake_utils import (  # noqa: E402
+    _ANSI_FAIL,
     ADVANCED_SETTINGS,
+    _ansi,
+    _console_colour,
     format_elapsed,
     region_geojson_path,
 )
@@ -769,8 +772,12 @@ def _closing_block(
     ran: list[tuple[str, str]],
     elapsed_seconds: float,
     failed: bool,
+    colour: bool = False,
 ) -> str:
     """The end-of-invocation block: what ran, how long, and where it landed.
+
+    With ``colour``, the FAILED verdict and each FAILED outcome row are painted
+    red, the one failure colour on this console.
 
     `ran` holds only workflows this invocation actually INVOKED, each with its
     already-formatted outcome; everything the stop boundary left behind is named
@@ -835,7 +842,13 @@ def _closing_block(
             )
             if diagnosis is not None:
                 groups.append((diagnosis, []))
-    return _console_block(head, groups, close=True)
+    block = _console_block(head, groups, close=True)
+    if not colour:
+        return block
+    return "\n".join(
+        _ansi(line, _ANSI_FAIL) if "FAILED" in line else line
+        for line in block.split("\n")
+    )
 
 
 def _under_project(path: Path, project_dir: Path) -> str:
@@ -1307,7 +1320,8 @@ def _report(**kwargs: Any) -> None:
     already handling an exception.
     """
     try:
-        print("\n" + _closing_block(**kwargs), flush=True)
+        block = _closing_block(**kwargs, colour=_console_colour(sys.stdout))
+        print("\n" + block, flush=True)
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, because sys.stderr may be exactly what failed above. An
         # OSError escaping here would replace the wrapper's own exit code with

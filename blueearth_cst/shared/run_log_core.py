@@ -697,7 +697,7 @@ class _Heartbeat:
         if not failed:
             return
         elapsed = format_elapsed(time.monotonic() - self._start)
-        self._emit(f"failed after {elapsed}", _ANSI_WARN)
+        self._emit(f"failed after {elapsed}", _ANSI_FAIL)
 
 
 def _cr_overwrite(line):
@@ -2018,8 +2018,6 @@ _ANSI_BODY = None  # the terminal's OWN foreground -- no SGR at all
 _ANSI_DIM = "38;5;243"  # dim grey -- the plan block, and a row's scaffolding
 
 _ANSI_FAIL = "91"  # bright red
-
-_ANSI_WARN = "93"  # bright yellow
 
 _ANSI_ALERT = "38;5;208"  # orange
 

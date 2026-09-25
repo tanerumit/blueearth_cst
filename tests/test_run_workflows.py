@@ -1262,3 +1262,28 @@ def test_the_preflight_exits_two_through_main(tmp_path, capture_runs, capsys):
 
     assert rw.main(["--config", str(cfg)]) == 2
     assert "error:" in capsys.readouterr().err
+
+
+def test_closing_block_paints_every_failed_line_red(tmp_path):
+    """A failed run's verdict and its FAILED outcome row are the failure colour."""
+    manifest = {
+        "no_op": False,
+        "workflows": {
+            name: {"status": "failed" if i == 0 else "not_run", "exit_code": 1}
+            for i, name in enumerate(rw.WORKFLOW_ORDER)
+        },
+    }
+    kwargs = dict(
+        project_dir=tmp_path,
+        manifest_path=tmp_path / "config/runs/_engine/invocations/x.json",
+        manifest=manifest,
+        ran=[(rw.WORKFLOW_ORDER[0], "FAILED (exit 1) after 0:00:01")],
+        elapsed_seconds=1.0,
+        failed=True,
+    )
+    painted = rw._closing_block(**kwargs, colour=True)
+    red = f"\033[{rw._ANSI_FAIL}m"
+    failed_lines = [line for line in painted.split("\n") if "FAILED" in line]
+    assert len(failed_lines) == 2
+    assert all(line.startswith(red) for line in failed_lines)
+    assert "\033" not in rw._closing_block(**kwargs)

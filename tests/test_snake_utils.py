@@ -4020,7 +4020,7 @@ def test_heartbeat_redraws_a_routine_status_frame_without_an_all_clear():
     out = _unreset(stream.getvalue())
     assert out.count("no output for") >= 2
     assert "done in" not in out
-    assert f"\033[{su._ANSI_WARN}m" not in out
+    assert f"\033[{su._ANSI_FAIL}m" not in out
     assert "\r" in stream.getvalue()
 
 
@@ -4029,7 +4029,7 @@ def test_heartbeat_paints_the_failure_verdict(monkeypatch):
     stream = _TTYStringIO()
     hb = su._Heartbeat("3.15_run_wflow", stream, interval=10.0).start()
     hb.stop(failed=True)
-    assert _unreset(stream.getvalue()).startswith(f"\033[{su._ANSI_WARN}m")
+    assert _unreset(stream.getvalue()).startswith(f"\033[{su._ANSI_FAIL}m")
 
 
 def test_run_summary_failure_keeps_the_block_a_success_no_longer_needs():

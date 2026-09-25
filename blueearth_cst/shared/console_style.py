@@ -280,19 +280,21 @@ def _flush_undrained_warnings():
 # palette rather than pinning an exact hue -- so they stay in whatever key the
 # theme is written in. All three are swappable here and nowhere else.
 #
-# Two more sit OUTSIDE the routine three, for the two lines that report that
+# Two more sit OUTSIDE the routine three, for the lines that report that
 # something went wrong or might have. They are deliberately not a fourth and
 # fifth tier: the three above classify every routine line, while these mark the
-# exceptional one, so they appear at most twice in a run.
+# exceptional ones.
 #
-# * ``_ANSI_FAIL`` (red) -- ``run_summary``'s FAILED verdict, and nothing else.
+# * ``_ANSI_FAIL`` (red) -- every failure: ``run_summary``'s and run_workflows'
+#   FAILED verdicts, a FAILED outcome row, the heartbeat's ``failed after``, and
+#   any row ``_SEVERITY_PATTERNS`` reads as an error.
 #   Snakemake's own error block is already red, and the verdict is the line a
 #   reader scrolls to the bottom to find; in the routine three it was grey.
 #   The SUCCESS verdict stays uncoloured on purpose. Colouring both would make
 #   the pair a status field to be read, when the whole value here is that a
 #   failed run looks different from every other run without being read.
-# * ``_ANSI_WARN`` (yellow) -- the heartbeat's ``failed after`` verdict. Routine
-#   silence is a replaceable body-tier status frame; only a known failure warns.
+# * ``_ANSI_ALERT`` (orange) -- every warning row. There is no yellow: a
+#   failure is red and a warning orange, whoever prints it.
 _ANSI_RUN = "94"  # bright blue
 
 

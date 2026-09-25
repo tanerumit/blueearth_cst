@@ -17,6 +17,9 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2608071218 | Make a code change to wf2's rule 2.04 actually re-trigger it | wf2  |
+| 2026-09-25 | t2609251004 | WF3 scenario identity moves with unrelated code | wf3 / scenario identity |
+| 2026-09-25 | t2608301524 | A CRLF checkout of pixi.lock re-keys every CMIP6 series | projections / series identity |
 | 2026-09-25 | t2609242342 | Choose the WF4 batch count from a makespan model of run length and resources | wf4 batching |
 | 2026-09-25 | t2609151118 | Locations 101 and 1010 are the same series in the P3 basin configuration | wf3  |
 | 2026-09-25 | t2609151037 | export_wflow_results carries a second, unreachable return-level estimator | wf3  |

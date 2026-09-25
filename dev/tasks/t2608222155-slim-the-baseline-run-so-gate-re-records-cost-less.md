@@ -302,7 +302,7 @@ than a run's length:
 - [x] Stop provenance-only re-records: run-record targets gate config only
 - [ ] Owner decision on [[t2608202331]] — the ESET/pixi exclusion, worth far
       more than everything below
-- [ ] Decide whether a Wflow sysimage is worth boarding (P3-3 ranked it -39%)
+- [x] Decide whether a Wflow sysimage is worth boarding: yes, boarded 2026-09-25
 - [x] Edit the window and the coupled horizon — landed 2026-09-07 (`241e1a79`)
       as `simulation_window: 2046-2054` + `future_windows` `mid`, on both twins.
       One key, not two: `C-67` folded the old pair into `simulation_window.end`

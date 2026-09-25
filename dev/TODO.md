@@ -2,39 +2,40 @@
 
 # TODO
 
-| ID               | Item                                                                                                     | Area                          | Origin                              | #   | State   |
-| ---------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------- | ----------------------------------- | --- | ------- |
-| [t2608071207][]  | Show the per-member wflow log falsifier actually failing with `path_log` unset                           | wf3 logging                   | R7                                  | 1   | blocked |
-| [t2608071208][]  | Diagnose the staging-harness stall that hangs tests/test_stage_data_incremental.py                       | test hygiene                  | R7                                  | 1   | backlog |
-| [t2608181139][]  | Give WF0 its forcing-selection evaluation layer — rules 0.07-0.09                                        | wf0 / evaluation layer        | t2608131847a split (2026-08-18)     | 1   | backlog |
-| [t2608071218][]  | Make a code change to wf2's rule 2.04 actually re-trigger it                                             | wf2                           | R6                                  | 2   | backlog |
-| [t2609070015][]  | Widen C-37 to the shipped seeds, and ask its mirror question                                             | config / gates                | C-37 closure                        | 2   | backlog |
-| [t2608091006][]  | Standardize plotting across the toolbox with shared templates, then sweep the existing figures onto them | plotting                      |                                     |     | active  |
-| [t2608091730][]  | Produce waterbody layers data-side so basin_area can show them again                                     | plotting                      |                                     |     | backlog |
-| [t2608122022][]  | Verify the newly-honoured water year, and sweep for projects whose results it moves                      | wf2 projections / config      | water-year promotion (2026-08-12)   |     | backlog |
-| [t2608131304][]  | Implement the config-snapshot redesign — current-only run record replaces the write-only bundle          | config / provenance           | config-snapshot review (2026-08-13) |     | active  |
-| [t2608151154][]  | st_0 is not method-comparable with the stress-test surface                                               | wf3 / scenarios               | R12                                 |     | backlog |
-| [t2608161450][]  | The chirps store does not satisfy the WG-1 seam contract, and nothing reports it                         | wf0 / climate store           | 2026-08-16 wf0 two-source run       |     | backlog |
-| [t2608191733][]  | Ship a sample dataset bundle so a user needs no Deltares P: drive                                        | distribution / sample data    |                                     |     | backlog |
-| [t2608202351][]  | Publish the technical background — split the 2025 note into eight chapters                               | docs / site                   | quarto-docs-site (2026-08-19)       |     | blocked |
-| [t2608202351a][] | Put the three pipeline notebooks on the site via a committed docs/_freeze/                               | docs / site                   | quarto-docs-site (2026-08-19)       |     | backlog |
-| [t2608202352][]  | Publish the docs site to GitHub Pages, and reduce the README onto it                                     | docs / site                   | quarto-docs-site (2026-08-19)       |     | blocked |
-| [t2608210010][]  | Replace the docs site's approximate brand colours with the official Deltares values                      | docs / site                   | quarto-docs-site (2026-08-19)       |     | blocked |
-| [t2608222155][]  | Slim the baseline run so gate re-records cost less                                                       | baseline / run cost           | owner request (2026-08-22)          |     | backlog |
-| [t2608222239][]  | Support additional historical climate datasets in the raw-climate path                                   | wf0 / wf1 climate store       | R14                                 |     | backlog |
-| [t2608222252][]  | Make the climate extraction variable set derived and configurable                                        | wf0 / wf1 climate store       | R14                                 |     | backlog |
-| [t2608242212][]  | Give the analysis variable set a config surface (R14 C-48)                                               | wf0 / wf1 climate figures     | R14                                 |     | backlog |
-| [t2608301524][]  | A CRLF checkout of pixi.lock re-keys every CMIP6 series                                                  | projections / series identity | R14 Gate 5                          |     | backlog |
-| [t2609151346][]  | Qualify the isolated Linux environment and execute source-qualified GF15 parity                          | wf3 / platform                |                                     |     | backlog |
-| [t2609152104][]  | Separate engine bookkeeping from user-facing artifacts in the project tree                               | project-tree                  |                                     |     | backlog |
-| [t2609161642][]  | Scope R15 — run independent workflows concurrently as one DAG                                            | workflow architecture         | owner question 2026-09-16           |     | backlog |
-| [t2609171500][]  | Move the experiment's frozen simulation documents into _engine                                           | project-tree                  | test_rapid review (2026-09-17)      |     | backlog |
-| [t2609171730][]  | 34 exception messages carry characters a cp1252 console cannot encode                                    | console / errors              | console styling pass (2026-09-17)   |     | backlog |
-| [t2609172119][]  | Snakemake's error block keeps full-length paths that every other console row shortens                    | console / path tokens         | wf1 failure render (2026-09-17)     |     | backlog |
-| [t2609181501][]  | Settle wf0 climate extraction's memory growth, then take the remaining transfer levers                   | wf0 climate extraction        | t2609181316 slow ERA5 download      |     | active  |
-| [t2609241852a][] | WF4 runs write no per-run warm state: intended?                                                          | wf4                           | wf3 identity bundle (2026-09-24)    |     | backlog |
-| [t2609242252][]  | Refresh stale rule numbers in the five code-inventoried modules at the next identity change              | workflows                     | rule naming bundle (2026-09-24)     |     | backlog |
-| [t2609251004][]  | WF3 scenario identity moves with unrelated code                                                          | wf3 / scenario identity       | owner request (2026-09-25)          |     | active  |
+| ID               | Item                                                                                                     | Area                          | Origin                                | #   | State   |
+| ---------------- | -------------------------------------------------------------------------------------------------------- | ----------------------------- | ------------------------------------- | --- | ------- |
+| [t2608071207][]  | Show the per-member wflow log falsifier actually failing with `path_log` unset                           | wf3 logging                   | R7                                    | 1   | blocked |
+| [t2608071208][]  | Diagnose the staging-harness stall that hangs tests/test_stage_data_incremental.py                       | test hygiene                  | R7                                    | 1   | backlog |
+| [t2608181139][]  | Give WF0 its forcing-selection evaluation layer — rules 0.07-0.09                                        | wf0 / evaluation layer        | t2608131847a split (2026-08-18)       | 1   | backlog |
+| [t2608071218][]  | Make a code change to wf2's rule 2.04 actually re-trigger it                                             | wf2                           | R6                                    | 2   | backlog |
+| [t2609070015][]  | Widen C-37 to the shipped seeds, and ask its mirror question                                             | config / gates                | C-37 closure                          | 2   | backlog |
+| [t2608091006][]  | Standardize plotting across the toolbox with shared templates, then sweep the existing figures onto them | plotting                      |                                       |     | active  |
+| [t2608091730][]  | Produce waterbody layers data-side so basin_area can show them again                                     | plotting                      |                                       |     | backlog |
+| [t2608122022][]  | Verify the newly-honoured water year, and sweep for projects whose results it moves                      | wf2 projections / config      | water-year promotion (2026-08-12)     |     | backlog |
+| [t2608131304][]  | Implement the config-snapshot redesign — current-only run record replaces the write-only bundle          | config / provenance           | config-snapshot review (2026-08-13)   |     | active  |
+| [t2608151154][]  | st_0 is not method-comparable with the stress-test surface                                               | wf3 / scenarios               | R12                                   |     | backlog |
+| [t2608161450][]  | The chirps store does not satisfy the WG-1 seam contract, and nothing reports it                         | wf0 / climate store           | 2026-08-16 wf0 two-source run         |     | backlog |
+| [t2608191733][]  | Ship a sample dataset bundle so a user needs no Deltares P: drive                                        | distribution / sample data    |                                       |     | backlog |
+| [t2608202351][]  | Publish the technical background — split the 2025 note into eight chapters                               | docs / site                   | quarto-docs-site (2026-08-19)         |     | blocked |
+| [t2608202351a][] | Put the three pipeline notebooks on the site via a committed docs/_freeze/                               | docs / site                   | quarto-docs-site (2026-08-19)         |     | backlog |
+| [t2608202352][]  | Publish the docs site to GitHub Pages, and reduce the README onto it                                     | docs / site                   | quarto-docs-site (2026-08-19)         |     | blocked |
+| [t2608210010][]  | Replace the docs site's approximate brand colours with the official Deltares values                      | docs / site                   | quarto-docs-site (2026-08-19)         |     | blocked |
+| [t2608222155][]  | Slim the baseline run so gate re-records cost less                                                       | baseline / run cost           | owner request (2026-08-22)            |     | backlog |
+| [t2608222239][]  | Support additional historical climate datasets in the raw-climate path                                   | wf0 / wf1 climate store       | R14                                   |     | backlog |
+| [t2608222252][]  | Make the climate extraction variable set derived and configurable                                        | wf0 / wf1 climate store       | R14                                   |     | backlog |
+| [t2608242212][]  | Give the analysis variable set a config surface (R14 C-48)                                               | wf0 / wf1 climate figures     | R14                                   |     | backlog |
+| [t2608301524][]  | A CRLF checkout of pixi.lock re-keys every CMIP6 series                                                  | projections / series identity | R14 Gate 5                            |     | backlog |
+| [t2609151346][]  | Qualify the isolated Linux environment and execute source-qualified GF15 parity                          | wf3 / platform                |                                       |     | backlog |
+| [t2609152104][]  | Separate engine bookkeeping from user-facing artifacts in the project tree                               | project-tree                  |                                       |     | backlog |
+| [t2609161642][]  | Scope R15 — run independent workflows concurrently as one DAG                                            | workflow architecture         | owner question 2026-09-16             |     | backlog |
+| [t2609171500][]  | Move the experiment's frozen simulation documents into _engine                                           | project-tree                  | test_rapid review (2026-09-17)        |     | backlog |
+| [t2609171730][]  | 34 exception messages carry characters a cp1252 console cannot encode                                    | console / errors              | console styling pass (2026-09-17)     |     | backlog |
+| [t2609172119][]  | Snakemake's error block keeps full-length paths that every other console row shortens                    | console / path tokens         | wf1 failure render (2026-09-17)       |     | backlog |
+| [t2609181501][]  | Settle wf0 climate extraction's memory growth, then take the remaining transfer levers                   | wf0 climate extraction        | t2609181316 slow ERA5 download        |     | active  |
+| [t2609241852a][] | WF4 runs write no per-run warm state: intended?                                                          | wf4                           | wf3 identity bundle (2026-09-24)      |     | backlog |
+| [t2609242252][]  | Refresh stale rule numbers in the five code-inventoried modules at the next identity change              | workflows                     | rule naming bundle (2026-09-24)       |     | backlog |
+| [t2609251004][]  | WF3 scenario identity moves with unrelated code                                                          | wf3 / scenario identity       | owner request (2026-09-25)            |     | active  |
+| [t2609251025][]  | Wflow sysimage to remove per-batch Julia startup                                                         | run cost / julia              | t2608222155 owner ruling (2026-09-25) |     | backlog |
 
 [t2608071207]: tasks/t2608071207-r7-8.md
 [t2608071208]: tasks/t2608071208-r7-14.md
@@ -67,6 +68,7 @@
 [t2609241852a]: tasks/t2609241852a-wf4-runs-write-no-per-run-warm-state-intended.md
 [t2609242252]: tasks/t2609242252-refresh-stale-rule-numbers-in-the-five-code-inventoried-modules-at-the-next-identity-change.md
 [t2609251004]: tasks/t2609251004-wf3-scenario-identity-moves-with-unrelated-code.md
+[t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 
 ## Watching
 

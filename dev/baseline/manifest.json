@@ -1,8 +1,8 @@
 {
   "project_dir": "test_case/test_local",
   "recorded_by": {
-    "branch": "maint/identity-and-baseline",
-    "commit": "43ffbffb2beed21df9d54fb31157fd6d1c663cfb",
+    "branch": "fix/up-to-date-verdict",
+    "commit": "e8ba712abb636d82396c07fbed8824a486103761",
     "dirty": false
   },
   "targets": {
@@ -28,7 +28,7 @@
       "template": "{clim_project_dir}/summary/{clim_project}_change_factors_monthly.csv",
       "type": "csv"
     },
-    "test_case/test_local/experiments/experiment/results/metric_sets/d646a98f02b1/q_indicators.csv": {
+    "test_case/test_local/experiments/experiment/results/metric_sets/4473984560e6/q_indicators.csv": {
       "columns": [
         "metric",
         "location",

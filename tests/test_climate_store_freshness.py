@@ -102,7 +102,7 @@ def _scheduled_count(snakefile, cfg_path, target):
     """How many ``extract_climate_datasets`` jobs a dry-run would run (0 when clean).
 
     A missing job-stats row is read as 0, so every ``== 0`` assertion below
-    pairs this with an explicit "Nothing to be done" check — otherwise a
+    pairs this with an explicit up-to-date check (Snakemake's "Nothing to be done", restated by `console_style` as "All requested files are present and up to date") — otherwise a
     changed job-stats format would silently turn the no-oscillation assertions
     into no-ops.
     """
@@ -117,7 +117,9 @@ def _assert_clean(snakefile, cfg_path, target, why):
     """Assert a dry-run schedules nothing, on positive evidence not absence."""
     count, out = _scheduled_count(snakefile, cfg_path, target)
     assert count == 0, f"{snakefile} {why}\n{out}"
-    assert "Nothing to be done" in out, f"{snakefile} {why}\n{out[-2000:]}"
+    assert "All requested files are present and up to date" in out, (
+        f"{snakefile} {why}\n{out[-2000:]}"
+    )
 
 
 def _seed_provenance(cfg_path, target):

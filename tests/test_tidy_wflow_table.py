@@ -277,3 +277,19 @@ def test_the_raw_wflow_csv_is_never_removed_as_stale(tmp_path):
 
     write_tidy_tables(src, out)
     assert src.exists(), "the raw csv was deleted as a stale derived table"
+
+
+def test_labels_key_columns_by_wflow_id_and_drop_the_duplicate():
+    """The outlet's Q_101 is gauge 1010's cell: one column, 1010 (t2609251515)."""
+    frame = _frame().assign(aet_101=[0.5, 0.6], aet_104=[0.7, 0.8])
+    labels = {
+        "Q_1010": "1010",
+        "Q_1040": "1040",
+        "P_1040": "1040",
+        "aet_101": "1010",
+        "aet_104": "1040",
+    }
+    tables = tidy_tables(frame, labels=labels)
+    assert list(tables["Q"].columns) == ["time", "1010", "1040"]
+    assert tables["Q"]["1010"].tolist() == ["0.00357", "0.0009"]
+    assert list(tables["aet"].columns) == ["time", "1010", "1040"]

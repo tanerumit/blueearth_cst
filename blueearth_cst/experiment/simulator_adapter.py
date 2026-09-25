@@ -16,9 +16,9 @@ from blueearth_cst.experiment.forcing_descriptor import ForcingDescriptor
 from blueearth_cst.experiment.wflow_response_reader import (
     NativeRunArtifacts,
     ResponseRequest,
-    coincident_point_headers,
     open_responses,
 )
+from blueearth_cst.shared.native_locations import native_location_labels
 from blueearth_cst.shared.provenance import file_sha256
 
 __all__ = [
@@ -303,25 +303,27 @@ end
         config = tomllib.load(handle)
     columns = config["output"]["csv"]["column"]
     # Same guard as `open_responses`, which must reach the same answer: no
-    # static maps means no cells to compare, so nothing is dropped.
+    # static maps means no cells to compare, so ids stay native and nothing
+    # is dropped.
     static = config.get("input", {}).get("path_static")
     static_path = (
         model_toml.parent / config.get("dir_input", ".") / static if static else None
     )
-    dropped = (
-        coincident_point_headers(columns, headers, static_path)
+    dropped = {}
+    labels = (
+        native_location_labels(columns, headers, static_path, dropped)
         if static_path is not None and static_path.is_file()
-        else {}
+        else None
     )
     if dropped:
-        from blueearth_cst.shared.snake_utils import log_row
+        from blueearth_cst.shared.snake_utils import listed, log_row
 
         # A WARNING, not an INFO row: a location leaving the metric set is a
         # fact a reader must see, and planning runs inside `captured_output`,
         # which replays only warnings and errors on success.
         log_row(
-            "Duplicate discharge columns on one model cell, kept once: "
-            + ", ".join(f"{gone} as {kept}" for gone, kept in sorted(dropped.items())),
+            "Duplicate series on one model point, kept once: "
+            + listed(f"{gone} as {kept}" for gone, kept in sorted(dropped.items())),
             module="responses",
             level="WARNING",
         )
@@ -344,7 +346,10 @@ end
         declared.append(
             {
                 "variable": variable,
-                "locations": [name[len(header) + 1 :] for name in selected],
+                "locations": [
+                    name[len(header) + 1 :] if labels is None else labels[name]
+                    for name in selected
+                ],
                 "units": units,
                 "calendar": calendar,
                 "timestep": "P1D"

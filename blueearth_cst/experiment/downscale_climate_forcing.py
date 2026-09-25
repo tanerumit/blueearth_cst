@@ -394,7 +394,8 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
 
     # Write forcing + per-realization toml to absolute paths so the model root
     # (which is the source hydrology_model dir) doesn't have to be moved.
-    with hydromt_progress(f"{run_name} forcing"):
+    # "Run 14 forcing", matching the Wflow bar's "Run 14" for the same member.
+    with hydromt_progress(f"Run {run_name} forcing"):
         mod.forcing.write(filename=str(fn_out.resolve()))
     mod.config.write(
         filename=config_out_name,

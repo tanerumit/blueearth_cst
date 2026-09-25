@@ -54,7 +54,12 @@ def response_reader_revision():
     return content_sha256(
         [
             {"path": name, "sha256": file_sha256(directory / name)}
-            for name in ("response_series.py", "wflow_response_reader.py")
+            for name in (
+                "response_series.py",
+                "wflow_response_reader.py",
+                # The labels the reader keys every series by.
+                "../shared/native_locations.py",
+            )
         ]
     )
 

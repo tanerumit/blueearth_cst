@@ -10,6 +10,7 @@ import numpy as np
 import pandas as pd
 
 from blueearth_cst.experiment.response_series import ResponseSeries, validate_responses
+from blueearth_cst.shared.native_locations import native_location_labels
 
 
 @dataclass(frozen=True)
@@ -46,62 +47,6 @@ NATIVE_VARIABLES = {
 }
 
 
-#: The point-map a coincident pair keeps, as WF1's `plot_results._merge_gauges`
-#: does: the model outlet wins over a gauge snapped to the same cell.
-_PREFERRED_POINT_MAP = "outlets"
-
-
-def coincident_point_headers(columns, headers, static_path):
-    """Headers that repeat another point column's model cell, to leave out.
-
-    WF1 declares discharge on two point maps -- the model outlets and the user's
-    gauges -- and a gauge snapped onto the basin outlet sits on the outlet's
-    cell, so Wflow writes the same series twice under two ids (101 and 1010 on
-    the fixture; t2609151118). WF1's figures already drop the duplicate
-    (`plot_results.resolve_stations`); WF4 applies the same rule here, where
-    every reader of a native CSV passes, so the plan, the inventory and the
-    metric reduction all see one series per physical location.
-
-    ``columns`` is the TOML's ``output.csv.column`` list, ``headers`` Wflow's
-    own ordered header names. Only point maps are compared (entries whose
-    ``map`` is a static variable with isolated ids); a column is kept when its
-    cell is new, and on a collision the ``outlets`` map wins, then header order.
-    Returns ``{dropped header: kept header}``.
-    """
-    import numpy as np
-    import xarray as xr
-
-    by_header = {}
-    for item in columns:
-        by_header.setdefault(item["header"], []).append(item["map"])
-    cells = {}
-    with xr.open_dataset(static_path) as dataset:
-        for header, maps in by_header.items():
-            for name in maps:
-                values = np.asarray(dataset[name].values)
-                ids, counts = np.unique(
-                    values[np.isfinite(values) & (values > 0)], return_counts=True
-                )
-                if len(ids) == 0 or counts.max() != 1:
-                    continue  # an area map (subcatchment), not points
-                for value in ids:
-                    row, col = np.argwhere(values == value)[0]
-                    key = f"{header}_{int(value)}"
-                    rank = 0 if name == _PREFERRED_POINT_MAP else 1
-                    cells[key] = ((header, int(row), int(col)), rank)
-    kept, dropped = {}, {}
-    order = {name: i for i, name in enumerate(headers)}
-    for key in sorted(cells, key=lambda k: (cells[k][1], order.get(k, len(order)))):
-        if key not in order:
-            continue
-        cell = cells[key][0]
-        if cell in kept:
-            dropped[key] = kept[cell]
-        else:
-            kept[cell] = key
-    return dropped
-
-
 def open_responses(
     run_id: str,
     native_artifacts: NativeRunArtifacts,
@@ -132,18 +77,19 @@ def open_responses(
         header = next(csv.reader(stream))
     if len(set(header)) != len(header):
         raise ValueError(f"run_id={run_id}: duplicate native CSV columns")
-    # Same-cell duplicates (a gauge on the outlet cell) are dropped BEFORE
-    # ordinals are assigned, so every reader agrees with the planned request.
+    # Every mapped column is labelled by its wflow_id, and same-cell duplicates
+    # (a gauge on the outlet cell) dropped, BEFORE ordinals are assigned, so
+    # every reader agrees with the planned request.
     static = config.get("input", {}).get("path_static")
     static_path = (
         native_artifacts.toml_path.parent / config.get("dir_input", ".") / static
         if static
         else None
     )
-    dropped = (
-        coincident_point_headers(columns, header, static_path)
+    labels = (
+        native_location_labels(columns, header, static_path)
         if static_path is not None and static_path.is_file()
-        else {}
+        else None
     )
     frame = pd.read_csv(native_artifacts.csv_path, index_col=0, parse_dates=True)
     expected_first = pd.Timestamp(time_config["starttime"]) + step
@@ -168,9 +114,9 @@ def open_responses(
             )
         prefix = native_header + "_"
         locations = [
-            (column, column[len(prefix) :])
+            (column, column[len(prefix) :] if labels is None else labels[column])
             for column in frame.columns
-            if column.startswith(prefix) and column not in dropped
+            if column.startswith(prefix) and (labels is None or column in labels)
         ]
         if not locations or any(not location for _, location in locations):
             raise ValueError(f"run_id={run_id}: missing requested response {variable}")

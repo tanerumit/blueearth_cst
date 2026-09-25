@@ -4133,6 +4133,24 @@ def test_console_shortens_paths_in_snakemakes_own_lines(declare_folders):
     assert "<model>/staticmaps.nc" in out, out
 
 
+def test_console_shortens_an_error_block_under_a_relative_project_dir(
+    declare_folders, monkeypatch
+):
+    """Snakemake's error block prints the RELATIVE spelling the Snakefile
+    declared, which an absolute token alone cannot match (t2609172119)."""
+    declare_folders(model="test_case/test_rapid/models/hydrology/wflow")
+    monkeypatch.setenv(su._PROJECT_ROOT_ENV, "test_case/test_rapid")
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _console_record(
+            "    output: test_case/test_rapid/models/hydrology/wflow/run_default/output.csv",
+            level=_logging.ERROR,
+        ),
+    )
+    assert "<model>/run_default/output.csv" in out, out
+
+
 def test_run_header_omits_rows_a_workflow_does_not_have():
     """WF1 and WF2 pass no experiment; the block shrinks rather than showing a blank."""
     out = cs.run_header("wf1 build_model", "test_case/test_rapid")

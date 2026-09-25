@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2609172119 | Snakemake's error block keeps full-length paths that every other console row shortens | console / path tokens |
 | 2026-09-25 | t2609070015 | Widen C-37 to the shipped seeds, and ask its mirror question | config / gates |
 | 2026-09-25 | t2608112051 | WF2 can serve change factors computed for a window the config no longer asks for | wf2 projections |
 | 2026-09-25 | t2608222155 | Slim the baseline run so gate re-records cost less | baseline / run cost |

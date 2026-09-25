@@ -53,6 +53,7 @@ from blueearth_cst.shared.snake_utils import (
     _ANSI_BODY,
     _ANSI_FAIL,
     _PROJECT_DIR_EXEMPT_NAMES,
+    _PROJECT_ROOT_ENV,
     _ansi,
     _console_colour,
     _folder_rows,
@@ -1583,7 +1584,16 @@ class _ConsoleHandler(logging.StreamHandler):
                 # run with a 100-character absolute path, in OS separators,
                 # directly above a summary block whose every path is short and
                 # forward-slashed. One console, one spelling of a path.
-                shown = _relativize_paths(self.format(record), "", _path_tokens())
+                #
+                # With the declared project root, as `log_row` passes it: the
+                # error block prints paths in the RELATIVE spelling the
+                # Snakefile declared, which only the root-relative token
+                # spelling can match (t2609172119).
+                shown = _relativize_paths(
+                    self.format(record),
+                    os.environ.get(_PROJECT_ROOT_ENV, ""),
+                    _path_tokens(),
+                )
                 if record.levelno <= logging.INFO:
                     shown = self._paint(shown, _ANSI_BODY)
                 lines.append(shown)

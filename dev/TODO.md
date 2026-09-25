@@ -12,7 +12,6 @@ cssclasses: [todo-board]
 | [t2608071207][]    | 1   | Show the per-member wflow log falsifier actually…       | wf3 logging / R7             | blocked    |
 | [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup        | run cost / julia /…          | backlog    |
 | [t2609242252][]    |     | Refresh stale rule numbers in the five…                 | workflows / rule naming…     | backlog    |
-| [t2609172119][]    |     | Snakemake's error block keeps full-length paths that…   | console / path tokens /…     | backlog    |
 | [t2609171730][]    |     | 34 exception messages carry characters a cp1252…        | console / errors / console…  | backlog    |
 | [t2609171500][]    |     | Move the experiment's frozen simulation documents into… | project-tree / test_rapid…   | backlog    |
 | [t2609161642][]    |     | Scope R15 — run independent workflows concurrently as…  | workflow architecture /…     | backlog    |
@@ -37,7 +36,6 @@ cssclasses: [todo-board]
 [t2608071207]: tasks/t2608071207-r7-8.md
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 [t2609242252]: tasks/t2609242252-refresh-stale-rule-numbers-in-the-five-code-inventoried-modules-at-the-next-identity-change.md
-[t2609172119]: tasks/t2609172119-snakemake-s-error-block-keeps-full-length-paths-that-every-other-console-row-shortens.md
 [t2609171730]: tasks/t2609171730-34-exception-messages-carry-characters-a-cp1252-console-cannot-encode.md
 [t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
 [t2609161642]: tasks/t2609161642-scope-r15-run-independent-workflows-concurrently-as-one-dag.md

@@ -307,8 +307,10 @@ def _relativize_paths(text, project_root, tokens=()):
     ``tokens`` are the run's DECLARED key folders (see
     :func:`declare_path_tokens`), and they are applied BEFORE the project strip
     for a mechanical reason: by then a path under the project has already lost
-    its root, so a token registered in absolute form — which is the only form
-    that can match what a rule prints — would find nothing left to match. They
+    its root, so a token would find nothing left to match. Each is tried in its
+    absolute form and, given ``project_root``, in the root-relative form too
+    (:func:`_spelt_tokens`): a rule prints either, and Snakemake's own error
+    block prints the relative spelling the Snakefile declared. They
     are also what makes an external data root shortenable at all; the paragraph
     above is still true of an UNDECLARED one.
     """

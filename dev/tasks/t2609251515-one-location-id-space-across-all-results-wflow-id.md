@@ -1,7 +1,7 @@
 ---
 title: One location id space across all results (wflow_id)
 type: todo-item
-status: backlog
+status: active
 effort: 1
 area: results / locations
 origin: gabon-ntoum-v3 review (2026-09-25)
@@ -17,4 +17,8 @@ updated: 2026-09-25
 
 ## Progress
 
-- [ ] <first step>
+- [x] WF4 labels every series by wflow_id via shared/native_locations (a39d3044, e8ba712a)
+- [x] WF1 output_q/aet/gwr.csv relabelled, duplicate outlet column dropped (7e18b5b5)
+- [x] Rapid smoke: WF1 tables and WF4 q/aet/gwr metric sets all on 1010..1040
+- [x] test_local regenerated, baseline re-recorded (only diff: q 101 -> 1010), contract integration tests green
+- [ ] test-full, then PR

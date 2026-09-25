@@ -333,7 +333,8 @@ _RULE_SUMMARIES = {}
 # by `pre_dag_step`.
 _PRE_DAG_STEPS = {}
 
-# The plan table's cell for a pre-DAG step, in place of a job count.
+# The plan head's tally label for pre-DAG steps. Their table cell is empty,
+# like an up-to-date rule's: the head states the count once.
 _PRE_DAG_LABEL = "done in planning"
 
 # Rules whose jobs Snakemake adds only after a checkpoint resolves, so they are
@@ -680,8 +681,8 @@ def rule_banner(
 def pre_dag_step(number, name):
     """Register a step completed before Snakemake built the DAG.
 
-    The plan table lists it at its number, dimmed and marked
-    ``done in planning`` in place of a job count, so a workflow whose
+    The plan table lists it at its number, dimmed with an empty count cell,
+    and the head tallies it as ``done in planning``, so a workflow whose
     planning runs outside Snakemake (WF3) still reads as one numbered
     pipeline. Call it only once the step has actually run.
     """
@@ -1283,8 +1284,8 @@ def _plan_lines(counts):
 
     One row per DECLARED rule, ordered by rule id so the workflow's shape reads
     as a spine. Rows that will run carry a ``>`` gutter; rows already satisfied
-    are dimmed. Pre-DAG steps (:func:`pre_dag_step`) are dimmed too and read
-    ``done in planning`` where a job count would be. The gutters survive a
+    are dimmed. Pre-DAG steps (:func:`pre_dag_step`) are dimmed too, with an
+    empty count cell; the head line tallies them as ``done in planning``. The gutters survive a
     pipe, redirect and CI where colour does not.
 
     FLUSH LEFT, like every other line the opening block writes. The block was
@@ -1336,8 +1337,7 @@ def _plan_lines(counts):
         else:
             gutter = ">  " if will_run else "   "
         if jobs is None:
-            # Left-aligned: the label is wider than any count column.
-            cell = _PRE_DAG_LABEL
+            cell = ""
         elif isinstance(jobs, str):
             cell = jobs
         else:

@@ -213,8 +213,8 @@ def test_pre_dag_steps_are_listed_in_number_order(rules, monkeypatch):
     )
     assert rows == [
         ("   3.03  cached", False),
-        ("   3.04  plan      done in planning", False),
-        ("   3.05  claim     done in planning", False),
+        ("   3.04  plan", False),
+        ("   3.05  claim", False),
         (">  3.07  generate   1", True),
         (">  3.08  perturb   12", True),
     ]

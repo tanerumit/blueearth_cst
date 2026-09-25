@@ -969,8 +969,8 @@ Generation reads basin/climate inputs and its own settings, with no model edge.
 3.01–3.03 under Snakemake; then, outside Snakemake, the wrapper freezes the
 generation plan, claims the collection and writes the generator input (3.04–3.06).
 The generation phase builds a static DAG from that frozen plan: no checkpoint,
-so the opening table reports exact job counts, and it lists 3.04–3.06 as
-`done in planning`. Publication validates the full collection before writing
+so the opening table reports exact job counts, and it lists 3.04–3.06 dimmed
+with an empty count, tallied in the head line as `done in planning`. Publication validates the full collection before writing
 its ready marker; downstream consumers never create or delete collection data.
 
 ```mermaid

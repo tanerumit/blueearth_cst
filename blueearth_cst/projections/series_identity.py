@@ -328,18 +328,18 @@ def _is_own_docstring(const, func) -> bool:
 
 
 def file_digest(path: str | os.PathLike) -> str:
-    """sha256 of one file's bytes — the environment fingerprint for the cache key.
+    """sha256 of one lock file, CRLF folded to LF — the env fingerprint for the cache key.
 
     Used with ``pixi.lock`` so a dependency upgrade re-derives the series rather
     than reusing numbers produced by a different xarray. Separate from
     :func:`module_hash` because this file is not source we hash for logic; it is
-    an opaque environment identity.
+    an opaque environment identity. Line endings are normalised because they
+    are a checkout setting: a CRLF and an LF clone of one commit must share
+    every series key (:func:`blueearth_cst.shared.provenance.lock_file_sha256`).
     """
-    digest = hashlib.sha256()
-    with open(path, "rb") as handle:
-        for block in iter(lambda: handle.read(1 << 20), b""):
-            digest.update(block)
-    return digest.hexdigest()
+    from blueearth_cst.shared.provenance import lock_file_sha256
+
+    return lock_file_sha256(path)
 
 
 def load_catalog_entry(catalog_path: str | os.PathLike, catalog_entry: str) -> dict:

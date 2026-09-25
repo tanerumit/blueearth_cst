@@ -18,6 +18,7 @@ from blueearth_cst.shared.provenance import (
     effective_config_document,
     environment_file_hashes,
     file_sha256,
+    lock_file_sha256,
     project_config,
     read_journal_lines,
     short_digest,
@@ -383,7 +384,7 @@ def test_environment_file_hashes_records_absence_explicitly(tmp_path: Path) -> N
 
     hashes = environment_file_hashes(repo_root=tmp_path)
 
-    assert hashes["pixi.lock"] == file_sha256(tmp_path / "pixi.lock")
+    assert hashes["pixi.lock"] == lock_file_sha256(tmp_path / "pixi.lock")
     assert hashes["Manifest.toml"] is None
 
 
@@ -417,3 +418,16 @@ def test_journal_reader_tolerates_a_torn_final_line(tmp_path: Path) -> None:
 def test_journal_reader_reads_a_missing_file_as_empty(tmp_path: Path) -> None:
     """A young project has no journal yet; that is not an error."""
     assert read_journal_lines(tmp_path / "absent.jsonl") == []
+
+
+def test_environment_file_hashes_ignore_the_checkout_line_ending(
+    tmp_path: Path,
+) -> None:
+    lf, crlf = tmp_path / "lf", tmp_path / "crlf"
+    for root, eol in ((lf, b"\n"), (crlf, b"\r\n")):
+        root.mkdir()
+        (root / "pixi.lock").write_bytes(b"version: 6" + eol + b"- a" + eol)
+        (root / "Manifest.toml").write_bytes(b"[deps]" + eol)
+    assert environment_file_hashes(repo_root=lf) == environment_file_hashes(
+        repo_root=crlf
+    )

@@ -151,6 +151,18 @@ def file_sha256(path: str | Path) -> str:
     return digest.hexdigest()
 
 
+def lock_file_sha256(path: str | Path) -> str:
+    """Return the SHA-256 of a text lock file with CRLF folded to LF.
+
+    ``pixi.lock`` and ``Manifest.toml`` are ``text`` under ``.gitattributes``,
+    so a Windows checkout holds them CRLF and a Linux one LF while git reports
+    both clean. Line endings are a checkout setting, not an environment: one
+    commit must fingerprint alike in every clone, or every identity keyed on it
+    re-derives per worktree.
+    """
+    return hashlib.sha256(Path(path).read_bytes().replace(b"\r\n", b"\n")).hexdigest()
+
+
 def collection_canonical_bytes(value: Any) -> bytes:
     """Serialize a plain JSON value with the accepted collection-canon/1 rules."""
 
@@ -507,7 +519,8 @@ def environment_file_hashes(repo_root: str | Path | None = None) -> dict[str, An
     """Hash the lock files that identify the resolved dependency set.
 
     Returns:
-        One entry per :data:`ENVIRONMENT_FILES`, its byte SHA-256 or ``None``
+        One entry per :data:`ENVIRONMENT_FILES`, its line-ending-normalised
+        SHA-256 (:func:`lock_file_sha256`) or ``None``
         when the file is absent. The key is always present: an explicit
         ``None`` records "this file was not there", which an omitted key
         cannot distinguish from "nobody looked".
@@ -517,7 +530,7 @@ def environment_file_hashes(repo_root: str | Path | None = None) -> dict[str, An
     for name in ENVIRONMENT_FILES:
         path = root / name
         try:
-            hashes[name] = file_sha256(path) if path.is_file() else None
+            hashes[name] = lock_file_sha256(path) if path.is_file() else None
         except OSError:
             hashes[name] = None
     return hashes

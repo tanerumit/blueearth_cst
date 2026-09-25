@@ -17,7 +17,7 @@ from pathlib import Path, PureWindowsPath
 from typing import Any
 
 from blueearth_cst.experiment.scenario_rows import ScenarioRow
-from blueearth_cst.shared.provenance import short_digest
+from blueearth_cst.shared.provenance import lock_file_sha256, short_digest
 
 
 def _check_json(value: Any) -> None:
@@ -272,9 +272,7 @@ for (name in sort(setdiff(deps, "R"))) {
                 + entry.get("git-tree-sha1", entry["uuid"])
                 for entry in entries
             )
-        locks["Manifest.toml"] = hashlib.sha256(
-            Path(julia_manifest).read_bytes()
-        ).hexdigest()
+        locks["Manifest.toml"] = lock_file_sha256(julia_manifest)
     return {
         "packages": dict(sorted(packages.items())),
         "locks": dict(sorted(locks.items())),

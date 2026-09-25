@@ -1101,3 +1101,14 @@ def test_inherited_attr_set_is_exactly_three():
     assert si.INHERITED_SINGLE_SOURCE_ATTRS == frozenset(
         {"variable_id", "tracking_id", "status"}
     )
+
+
+def test_file_digest_ignores_the_checkout_line_ending(tmp_path):
+    # t2608301524: pixi.lock is `text`, so a Windows clone holds it CRLF. One
+    # commit must key every CMIP6 series alike in both clones.
+    lf, crlf = tmp_path / "lf.lock", tmp_path / "crlf.lock"
+    lf.write_bytes(b"version: 6\npackages:\n- a\n")
+    crlf.write_bytes(b"version: 6\r\npackages:\r\n- a\r\n")
+    assert si.file_digest(lf) == si.file_digest(crlf)
+    crlf.write_bytes(b"version: 6\r\npackages:\r\n- b\r\n")
+    assert si.file_digest(lf) != si.file_digest(crlf)

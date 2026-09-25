@@ -94,6 +94,7 @@
 | [t2609171637a][] | The console's module column is unpadded, so the message column drifts                                        | console                   | console styling pass (2026-09-17)   | A reader complains about the drift, or the module vocabulary narrows enough that a fixed width…     |
 | [t2609171637b][] | Four non-console modules still hedge their plurals                                                           | wording                   | console styling pass (2026-09-17)   | Someone is editing one of those four for another reason, or the convention is extended beyond…      |
 | [t2609181302][]  | Snakemake's six-line preamble is not suppressible from inside a workflow                                     | console / snakemake       | console polishing (2026-09-18)      | Revisit if a snakemake logger plugin is added for another reason, or if upstream makes the…         |
+| [t2609251520][]  | Open question: flat, hash-suffixed names for generation_inputs snapshots?                                    | wf3 / generation inputs   | gabon-ntoum-v3 review (2026-09-25)  | Owner decides whether folder readability is worth a mixed layout; then board implementation…        |
 
 [t2608071214]: tasks/t2608071214-r10-6.md
 [t2608071201]: tasks/t2608071201-r10-12.md
@@ -119,3 +120,4 @@
 [t2609171637a]: tasks/t2609171637a-the-console-s-module-column-is-unpadded-so-the-message-column-drifts.md
 [t2609171637b]: tasks/t2609171637b-four-non-console-modules-still-hedge-their-plurals.md
 [t2609181302]: tasks/t2609181302-snakemake-s-six-line-preamble-is-not-suppressible-from-inside-a-workflow.md
+[t2609251520]: tasks/t2609251520-open-question-flat-hash-suffixed-names-for-generation-inputs-snapshots.md

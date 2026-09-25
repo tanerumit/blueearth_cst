@@ -182,8 +182,10 @@ def _header():
         # first thing this toolbox puts on the console and it must not open
         # flush against Snakemake's preamble nor close flush against its
         # `Job stats:`. `open_run_header` owns that spacing.
+        batching = globals().get("BATCH_PLAN_SUMMARY")
         open_run_header("wf4 simulate_system", project_dir, config_path,
-                        experiment=experiment, operation=OPERATION)
+                        experiment=experiment, operation=OPERATION,
+                        **({"batching": batching} if batching else {}))
     except Exception as exc:  # noqa: BLE001 -- never break a run over a banner
         # Nested, for the reason given on `_summary` -- and it matters more
         # here: this runs from `onstart`, so a raise aborts the run before any

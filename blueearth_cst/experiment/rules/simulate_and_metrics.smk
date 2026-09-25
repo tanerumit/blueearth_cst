@@ -12,7 +12,7 @@ from blueearth_cst.experiment.simulation_record import live_simulation_inputs_v2
 from blueearth_cst.experiment.wf4_ancillary_descriptor import resolve_wf4_preparation
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import resolved_unit_interpretation
 from blueearth_cst.experiment.allocate import resolve_default_experiment_name
-from blueearth_cst.experiment.batch_sizing import disk_headroom_bytes, measure_member_footprint, resolve_batch_size, split_evenly
+from blueearth_cst.experiment.batch_sizing import count_active_cells, disk_headroom_bytes, measure_member_footprint, resolve_batch_plan, resolve_batch_size, split_evenly
 from blueearth_cst.shared.indicator_tables import indicator_tables
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, validate_experiment_name
 from blueearth_cst.shared.console_style import RuleRegistry, defer_warning, target_banner
@@ -213,10 +213,18 @@ if not _simulation_complete:
 
     compute = my_cfg.get("compute") or {}
     _cores = int(workflow.cores or 1)
-    _threads = min([DEFAULT_JULIA_THREADS, *[int(value) for name, value in
+    # Threads per batch and batches at once come from the batch plan
+    # (t2609242342): project `compute` keys, then `advanced_settings.batching`,
+    # then a regime chosen by the model's active cell count. A `--set-threads`
+    # on the batch rules still wins, as before.
+    import psutil
+    _plan = resolve_batch_plan(count_active_cells(f"{basin_dir}/staticmaps.nc"), _cores,
+        ADVANCED_SETTINGS["batching"], compute, psutil.virtual_memory().available)
+    _threads = min([_plan.threads, *[int(value) for name, value in
         getattr(workflow.resource_settings, "overwrite_threads", {}).items() if name.startswith("run_wflow_simulations_batch_")]])
-    sizing = resolve_batch_size(member_count=len(RUN_IDS), cores=max(1, _cores // max(1, min(_cores, _threads))),
-        batch_size_max=compute.get("batch_size_max", 8), explicit=compute.get("batch_size"),
+    BATCH_PLAN_SUMMARY = _plan.summary()
+    sizing = resolve_batch_size(member_count=len(RUN_IDS), cores=_plan.max_parallel,
+        batch_size_max=compute.get("batch_size_max"), explicit=compute.get("batch_size"),
         footprint=measure_member_footprint(basin_dir, SIM_WINDOW_START, SIM_WINDOW_END, write_states=False),
         headroom_bytes=disk_headroom_bytes(project_dir,
             fraction=ADVANCED_SETTINGS["defaults"]["batch_disk_headroom_fraction"], headroom_gb=compute.get("disk_headroom_gb")))
@@ -241,7 +249,7 @@ if not _simulation_complete:
                 tomls=[f"{runs_dir}/run_settings/run_{run}.toml" for run in members],
             output:
                 csvs=[update(f"{runs_dir}/output/run_{run}.csv") for run in members],
-            threads: DEFAULT_JULIA_THREADS
+            threads: _threads
             resources:
                 mem_mb=2048,
             params:

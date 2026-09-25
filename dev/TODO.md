@@ -77,7 +77,6 @@ cssclasses: [todo-board]
 | [t2608132310][]    | Fold Julia box-drawing blocks into the tee's log grammar | logging / console /…        | A box block appears in a log recorded AFTER `silent = true`. The plausible source is Julia…         |
 | [t2608121606][]    | A missing catalog source is logged identically to an…    | wf1 / data catalog /…       | Any basin whose results look implausible around a known reservoir, lake or glacier; or a model…     |
 | [t2608121104][]    | pixi install reports success without repairing a…        | environment / 2026-08-12…   | A pixi-provided executable is missing while `pixi list` reports its package installed — or pixi…    |
-| [t2608112051][]    | WF2 can serve change factors computed for a window the…  | wf2 projections /…          | Someone reads a change-factor product as current when its provenance.json horizon or reference…     |
 | [t2608071229][]    | hydromt's `to_yml` silently strips…                      | upstream / hydromt / M02b   | Upstream fixes `to_yml` — `tests/test_prepare_climate_data_catalog.py`'s xfail flips to a pass and… |
 | [t2608071228][]    | dask cannot be stubbed at module level, because pandas…  | tests / M02c                | pandas changes how it probes dask, or a test needs dask stubbed and hits the wall.                  |
 | [t2608071227][]    | The first test file to call `sys.modules.setdefault`…    | tests / M02c                | A new stubbing test file lands, or an ordering change makes a passing suite fail.                   |
@@ -100,7 +99,6 @@ cssclasses: [todo-board]
 [t2608132310]: tasks/t2608132310-fold-julia-box-drawing-blocks-into-the-log-grammar.md
 [t2608121606]: tasks/t2608121606-a-missing-catalog-source-is-logged-identically-to-an-empty-basin-so-1-08-can-silently-omit-a-real-reservoir.md
 [t2608121104]: tasks/t2608121104-pixi-install-reports-success-without-repairing-a-missing-console-script.md
-[t2608112051]: tasks/t2608112051-wf2-can-serve-change-factors-computed-for-a-window-the-config-no-longer-asks-for.md
 [t2608071229]: tasks/t2608071229-hydromt-1-x-to-dict.md
 [t2608071228]: tasks/t2608071228-dask-cannot-be-stubbed.md
 [t2608071227]: tasks/t2608071227-test-pollution-between.md

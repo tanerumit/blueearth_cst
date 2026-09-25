@@ -1088,6 +1088,36 @@ rule reduce_to_basin_averages:
         REDUCE_TO_BASIN_AVERAGES.benchmark("{series_key}"),
     script: "blueearth_cst/projections/get_stats_climate_proj.py"
 
+# Stage B's settings as an INPUT FILE, rewritten only when they change
+# (t2608112051). The params rerun-trigger needs Snakemake metadata from the run
+# that built summary/, and a .snakemake that never saw that build -- another
+# worktree, a fresh clone -- has none, so a changed reference window, horizon
+# or model set fell through to mtime and left the OLD change factors in place
+# while reporting success. An input's mtime needs no metadata.
+_STAGE_B_STAMP = f"{clim_project_dir}/_engine/stage_b_settings.json"
+_stage_b_settings = json.dumps(
+    {
+        "horizons": future_horizons,
+        "time_horizon_hist": time_horizon_hist,
+        "water_year_start": water_year_start,
+        "stats": stats,
+        "stage_b_hash": STAGE_B_HASH,
+        "min_reference": MIN_REFERENCE,
+        "max_flagged_months": MAX_FLAGGED_MONTHS,
+        "variable_spec": {k: list(v) for k, v in VARIABLE_SPEC.items()},
+        "points": sorted(POINT_KEYS),
+    },
+    sort_keys=True,
+    indent=1,
+    default=str,
+)
+if (
+    not os.path.isfile(_STAGE_B_STAMP)
+    or Path(_STAGE_B_STAMP).read_text(encoding="utf-8") != _stage_b_settings
+):
+    Path(_STAGE_B_STAMP).parent.mkdir(parents=True, exist_ok=True)
+    Path(_STAGE_B_STAMP).write_text(_stage_b_settings, encoding="utf-8")
+
 # 2.05  derive_change_factors — stage B, ONE job (step 4d, design §5 "B. Derive")
 # Replaces monthly_change (fanned out per point_key x horizon) + its aggregator
 # monthly_change_scalar_merge. The design gives stage B one job with no fan-out.
@@ -1113,6 +1143,8 @@ rule derive_change_factors:
         # D9: stage B recomputes every expected digest INCLUDING the current
         # polygon fingerprint, so it needs the polygon itself.
         region_path = region_path,
+        # Re-derives on a settings change without Snakemake metadata; above.
+        stage_b_settings = _STAGE_B_STAMP,
     output:
         # S8-05: the three wide `annual_change_scalar_stats_summary*` files are
         # GONE. The tidy tables below supersede them -- same numbers, long format,

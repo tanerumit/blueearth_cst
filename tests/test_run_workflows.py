@@ -747,7 +747,8 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     )
     assert lines[title_at].startswith("[1/4]")
     assert lines[title_at - 1] == rw._RULE  # the rule it hangs from
-    assert lines[title_at + 1].startswith("snakemake ")
+    assert lines[title_at + 1] == ""  # a blank line parts title and command
+    assert lines[title_at + 2].startswith("snakemake ")
     # A disabled workflow gets NO band -- the sequence diagram above already
     # named it, once, before anything ran.
     assert "WF2  ANALYZE PROJECTIONS  --  starting" not in out
@@ -757,9 +758,10 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     wf4_title_at = next(
         i for i, line in enumerate(lines) if "WF4  SIMULATE SYSTEM  --" in line
     )
-    assert "-m snakemake" in lines[wf4_title_at + 1]
-    assert "simulate_system.smk" in lines[wf4_title_at + 1]
-    assert "simulate_system.py" not in lines[wf4_title_at + 1]
+    wf4_command = lines[wf4_title_at + 2]
+    assert "-m snakemake" in wf4_command
+    assert "simulate_system.smk" in wf4_command
+    assert "simulate_system.py" not in wf4_command
 
 
 def test_every_wrapper_utterance_is_bounded_by_a_rule(tmp_path, capture_runs, capsys):

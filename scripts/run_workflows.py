@@ -417,12 +417,14 @@ def _handoff(tag: str, detail: str, *, note: str | None = None) -> str:
     label, which is what an indent means there; a band has no label and no
     rows, so the same two spaces only made the one line a reader scans for --
     `[1/4]  wf0 analyze_climate` -- start one column later than the rule that
-    announces it. The command sits directly under the title for the same
-    reason: it is the title's detail, not a row of anything.
+    announces it. The command sits under the title, flush left for the same
+    reason, after one blank line: the command is long, and without the gap the
+    title reads as the first line of it.
     """
     lines = [_RULE, f"{tag}  --  {detail}"]
     if note:
-        lines.append(note)
+        # A blank line parts the title from the long command under it.
+        lines.extend(["", note])
     return "\n".join(lines)
 
 

@@ -236,7 +236,22 @@ def _zarr_complete(dst: Path) -> bool:
 MANIFEST_VERSION = 2
 DEFAULT_RASTER_GLOB_WORKERS = 4
 
-#: Serialises every netCDF WRITE this module makes (`_clip_netcdf_to_file`).
+#: Serialises every netCDF touch this module makes from a worker: each
+#: `netcdf_glob` file's whole unit of work (open, clip, write, close) and every
+#: write (`_clip_netcdf_to_file`). Reentrant, because the write is taken again
+#: inside the unit.
+#:
+#: WIDENED 2026-09-25 (t2608071208): the write-only lock below was not enough.
+#: CI run 36179897121 hung with the complete thread dump this note had waited
+#: for: the writer HELD this lock while two readers of other glob files were
+#: entering xarray's own netCDF locks, and no thread was inside netCDF I/O.
+#: Whatever the xarray-level mechanism (a lock-order inversion inside
+#: `CombinedLock` was probed and is recorded on the board), it needs two
+#: threads in the library at once, so now at most one is. The cost is the read
+#: parallelism the narrow version kept for `netcdf_glob` -- a dev staging tool,
+#: and a slower stage beats one that hangs without a timeout.
+#:
+#: History, as first written:
 #:
 #: `_run_glob` stages a glob across a `ThreadPoolExecutor`, and
 #: `_raster_glob_workers` returns 4 for any glob holding more than five files --
@@ -263,7 +278,7 @@ DEFAULT_RASTER_GLOB_WORKERS = 4
 #: so nothing here can be shown to fix it, only to remove the contention the
 #: stacks show. If it recurs, the harness now dumps its own threads and the
 #: next stack will say whether this lock was held.
-_NETCDF_WRITE_LOCK = threading.Lock()
+_NETCDF_WRITE_LOCK = threading.RLock()
 RASTER_TILE_SIZE = 256
 RASTER_TILE_MIN_SIZE = 16
 
@@ -1187,6 +1202,13 @@ def subset_netcdf_file(
     span and the effective clip window, so widening a glob's `time_range` only
     stages the newly-in-range files and leaves unchanged years untouched.
     """
+    # The whole unit under the netCDF lock, and dask synchronous inside it, so
+    # no second thread -- ours or dask's -- reaches the library meanwhile.
+    with _NETCDF_WRITE_LOCK, _serial_dask():
+        return _subset_netcdf_file_locked(src, dst, bbox, time_range, variables)
+
+
+def _subset_netcdf_file_locked(src, dst, bbox, time_range, variables):
     with xr.open_dataset(src, chunks="auto") as ds:
         natural = _natural_time(ds)
         status, detail = _clip_netcdf_to_file(

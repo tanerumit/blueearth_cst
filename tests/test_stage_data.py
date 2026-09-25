@@ -417,3 +417,49 @@ def test_total_output_bytes_sums_written_and_existing_results() -> None:
     report.record("failed", "d", "detail", 8_000)
 
     assert report.total_output_bytes() == 3_000
+
+
+# --- t2608071208: one thread in netCDF at a time --------------------------------
+
+
+def test_netcdf_glob_units_never_overlap(tmp_path, monkeypatch):
+    """The glob's per-file unit -- open, clip, write, close -- runs one at a time.
+
+    The 2026-09-25 stall dump showed the WRITER holding the old write-only lock
+    while two readers entered xarray's netCDF locks. Green runs cannot show a
+    once-a-month hang is gone, so the property that excludes it is pinned
+    instead: however many workers `_run_glob` starts, peak occupancy is 1.
+    """
+    import threading
+    import time
+    from concurrent.futures import ThreadPoolExecutor
+
+    active, peak, guard = [0], [0], threading.Lock()
+
+    def unit(src, dst, bbox, time_range, variables):
+        with guard:
+            active[0] += 1
+            peak[0] = max(peak[0], active[0])
+        time.sleep(0.05)
+        dst.write_bytes(b"clipped")
+        with guard:
+            active[0] -= 1
+        return stage_data.WRITTEN, "", {}
+
+    monkeypatch.setattr(stage_data, "_subset_netcdf_file_locked", unit)
+    sources = []
+    for i in range(8):
+        src = tmp_path / f"src_{i}.nc"
+        src.write_bytes(b"source")
+        sources.append(src)
+    with ThreadPoolExecutor(max_workers=4) as pool:
+        results = list(
+            pool.map(
+                lambda src: stage_data.subset_netcdf_file(
+                    src, tmp_path / "out" / src.name, (0, 0, 1, 1)
+                ),
+                sources,
+            )
+        )
+    assert [status for status, _ in results] == [stage_data.WRITTEN] * 8
+    assert peak[0] == 1

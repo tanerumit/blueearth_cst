@@ -520,6 +520,11 @@ class _Heartbeat:
         #: thread and read in ``stop()`` only after it has been joined, so it
         #: needs no lock -- the same argument ``_quiet`` above makes.
         self._noticed = False
+        # The notice schedule, advanced by `_tick`; `_run` resets it on start.
+        self._quiet_since = None
+        self._sparse_index = 0
+        self._next_notice = self._first_notice()
+        self._seen = self._last
         self._stop = threading.Event()
         self._thread = threading.Thread(target=self._run, daemon=True)
 
@@ -602,18 +607,21 @@ class _Heartbeat:
         except Exception:
             pass  # console I/O must never break the job
 
+    def _first_notice(self):
+        """Silence length at which a fresh silence is first reported."""
+        if self._interactive:
+            return self._interval
+        return self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[0]
+
     def _run(self):
-        # `quiet_since` is the timestamp of the last real write BEFORE the
+        """Wake every interval and hand the current time to :meth:`_tick`."""
+        # `_quiet_since` is the timestamp of the last real write BEFORE the
         # current silence, i.e. where the gap starts. It is carried across
-        # iterations so one contiguous silence yields ONE recorded period no
+        # ticks so one contiguous silence yields ONE recorded period no
         # matter how many notices it prints.
-        quiet_since = None
-        sparse_index = 0
-        next_notice = (
-            self._interval
-            if self._interactive
-            else self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[sparse_index]
-        )
+        self._quiet_since = None
+        self._sparse_index = 0
+        self._next_notice = self._first_notice()
         # The last `touch()` this loop has already accounted for. Resumption is
         # detected by this value CHANGING, not by catching a tick while
         # `now - last < interval`: the thread wakes every `interval` and the
@@ -622,65 +630,69 @@ class _Heartbeat:
         # flip before 2026-09-06, which mattered little when the only cost was
         # a quiet period recorded late, and matters now that the sparse schedule
         # resets with it -- a missed reset delays the next silence report.
-        seen = self._last
+        self._seen = self._last
         # The THREAD still wakes every interval. Backing the wake off too would
-        # blind the watchdog to output resuming, and `next_notice` could then be
-        # half an hour stale when the next silence began.
+        # blind the watchdog to output resuming, and `_next_notice` could then
+        # be half an hour stale when the next silence began.
         while not self._stop.wait(self._interval):
-            now = time.monotonic()
-            last = self._last
-            if last != seen:
-                # Output happened since the previous tick. `last` is when, so a
-                # quiet period closes exactly where it did before.
-                if quiet_since is not None:
-                    self._quiet.append((quiet_since, last))
-                    quiet_since = None
-                sparse_index = 0
-                next_notice = (
-                    self._interval
-                    if self._interactive
-                    else self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[sparse_index]
-                )
-                seen = last
-            silence = now - last
-            if silence >= self._interval:
-                if quiet_since is None:
-                    quiet_since = last
-                if silence < next_notice:
-                    continue  # still silent, not yet time to say so again
-                # A rule that is drawing a progress bar answers the stall in the
-                # bar's own line: the hook redraws it with the clock advanced,
-                # which is the only fact the notice carries, and the notice's
-                # row would otherwise land ON the line the bar occupies. The
-                # silence is still REAL and is still recorded in `_quiet` below
-                # -- only its console presentation changed, so `quiet_rows` is
-                # unaffected. `_noticed` stays unset too: no watchdog frame was
-                # opened here, so `stop()` has none to clear.
-                #
-                # The schedule does not advance here: it counts watchdog
-                # presentations, and this branch prints none.
-                if self._on_stall is not None and self._on_stall():
-                    continue
-                self._noticed = True
-                self._emit(
-                    f"{format_elapsed(now - self._start)} elapsed · "
-                    f"no output for {format_elapsed(silence)}",
-                    redraw=self._interactive,
-                )
-                if self._interactive:
-                    next_notice += self._interval
-                elif sparse_index + 1 < len(_HEARTBEAT_SPARSE_MULTIPLIERS):
-                    sparse_index += 1
-                    next_notice = (
-                        self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[sparse_index]
-                    )
-                else:
-                    next_notice += self._interval * _HEARTBEAT_SPARSE_STEP
-        if quiet_since is not None:
+            self._tick(time.monotonic())
+        if self._quiet_since is not None:
             # Still silent when the rule ended -- close the period at the stop,
             # not at `_last`, or the final and usually most interesting gap is
             # recorded as ending when the silence BEGAN.
-            self._quiet.append((quiet_since, time.monotonic()))
+            self._quiet.append((self._quiet_since, time.monotonic()))
+
+    def _tick(self, now):
+        """One watchdog step at monotonic time ``now``.
+
+        Separate from the thread so the schedule can be driven with exact
+        timestamps: tests call this directly instead of sleeping on a real
+        clock and hoping the thread woke on time.
+        """
+        last = self._last
+        if last != self._seen:
+            # Output happened since the previous tick. `last` is when, so a
+            # quiet period closes exactly where it did before.
+            if self._quiet_since is not None:
+                self._quiet.append((self._quiet_since, last))
+                self._quiet_since = None
+            self._sparse_index = 0
+            self._next_notice = self._first_notice()
+            self._seen = last
+        silence = now - last
+        if silence >= self._interval:
+            if self._quiet_since is None:
+                self._quiet_since = last
+            if silence < self._next_notice:
+                return  # still silent, not yet time to say so again
+            # A rule that is drawing a progress bar answers the stall in the
+            # bar's own line: the hook redraws it with the clock advanced,
+            # which is the only fact the notice carries, and the notice's
+            # row would otherwise land ON the line the bar occupies. The
+            # silence is still REAL and is still recorded in `_quiet` below
+            # -- only its console presentation changed, so `quiet_rows` is
+            # unaffected. `_noticed` stays unset too: no watchdog frame was
+            # opened here, so `stop()` has none to clear.
+            #
+            # The schedule does not advance here: it counts watchdog
+            # presentations, and this branch prints none.
+            if self._on_stall is not None and self._on_stall():
+                return
+            self._noticed = True
+            self._emit(
+                f"{format_elapsed(now - self._start)} elapsed · "
+                f"no output for {format_elapsed(silence)}",
+                redraw=self._interactive,
+            )
+            if self._interactive:
+                self._next_notice += self._interval
+            elif self._sparse_index + 1 < len(_HEARTBEAT_SPARSE_MULTIPLIERS):
+                self._sparse_index += 1
+                self._next_notice = (
+                    self._interval * _HEARTBEAT_SPARSE_MULTIPLIERS[self._sparse_index]
+                )
+            else:
+                self._next_notice += self._interval * _HEARTBEAT_SPARSE_STEP
 
     def start(self):
         if self._enabled:

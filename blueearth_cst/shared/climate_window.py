@@ -38,6 +38,7 @@ import pandas as pd
 
 from blueearth_cst.shared.snake_utils import (
     MIN_HISTORICAL_YEARS,
+    format_years,
     log_row,
     meets_min_historical_years,
 )
@@ -97,10 +98,10 @@ class WindowCoverage:
         delivered = f"{self.effective_start.date()}..{self.effective_end.date()}"
         requested = f"{self.requested_start.date()}..{self.requested_end.date()}"
         if delivered == requested:
-            return f"{self.source}: {delivered} (~{self.years:.1f} years)"
+            return f"{self.source}: {delivered} (~{format_years(self.years)} years)"
         return (
             f"{self.source}: requested {requested}, "
-            f"delivered {delivered} (~{self.years:.1f} years)"
+            f"delivered {delivered} (~{format_years(self.years)} years)"
         )
 
 
@@ -173,7 +174,7 @@ def floor_shortfall_message(coverage: WindowCoverage, *, where: str) -> str:
     return (
         f"Extracted {coverage.source} record covers "
         f"{coverage.effective_start.date()}..{coverage.effective_end.date()} "
-        f"(~{coverage.years:.1f} years) for the requested "
+        f"(~{format_years(coverage.years)} years) for the requested "
         f"{coverage.requested_start.date()}..{coverage.requested_end.date()}, "
         f"below the {MIN_HISTORICAL_YEARS}-year minimum this toolbox requires "
         f"(weathergenr's wavelet decomposition needs at least "
@@ -270,7 +271,7 @@ def require_min_years(bounds, source: str, climate_nc, *, where: str) -> None:
     raise ValueError(
         f"The {source} store at {climate_nc} covers "
         f"{bounds[0].date()}..{bounds[1].date()} "
-        f"(~{(bounds[1] - bounds[0]).days / 365.25:.1f} years), below the "
+        f"(~{format_years((bounds[1] - bounds[0]).days / 365.25)} years), below the "
         f"{MIN_HISTORICAL_YEARS}-year minimum this toolbox requires "
         f"(weathergenr's wavelet decomposition needs at least "
         f"{MIN_HISTORICAL_YEARS} annual observations). If wf0 wrote it as a "

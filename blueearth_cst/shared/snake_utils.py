@@ -12,6 +12,7 @@ import gc
 import io
 import json
 import logging
+import math
 import os
 import posixpath
 import re
@@ -517,6 +518,19 @@ def _shift_years(moment, years):
         return moment.replace(year=moment.year + years, month=2, day=28)
 
 
+def format_years(years: float) -> str:
+    """A record length for the console: whole years, rounded half up.
+
+    One decimal is kept only when rounding would lift a span that falls short of
+    ``MIN_HISTORICAL_YEARS`` onto the floor itself -- ``~30 years, below the
+    30-year minimum`` would contradict itself, so that case reads ``~29.6``.
+    """
+    rounded = math.floor(years + 0.5)
+    if years < MIN_HISTORICAL_YEARS <= rounded:
+        return f"{years:.1f}"
+    return str(rounded)
+
+
 def meets_min_historical_years(start, end) -> bool:
     """Does ``start..end`` span at least ``MIN_HISTORICAL_YEARS`` calendar years?
 
@@ -558,7 +572,7 @@ def validate_historical_window(historical_window) -> int:
     if not meets_min_historical_years(start, end):
         raise ValueError(
             f"climate.window {start.date()} .. {end.date()} spans "
-            f"{days / 365.25:.1f} years, below the "
+            f"{format_years(days / 365.25)} years, below the "
             f"{MIN_HISTORICAL_YEARS}-year minimum this toolbox requires: "
             f"weathergenr's wavelet decomposition needs at least "
             f"{MIN_HISTORICAL_YEARS} annual observations, so a shorter record "

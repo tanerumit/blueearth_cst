@@ -258,3 +258,15 @@ def test_an_unreadable_store_axis_does_not_raise():
     from blueearth_cst.shared.climate_window import require_min_years
 
     assert require_min_years(None, "era5", "nowhere.nc", where="ctx") is None
+
+
+def test_format_years_rounds_to_whole_years_except_at_the_floor():
+    """Whole years, unless rounding would lift a short record onto the floor."""
+    from blueearth_cst.shared.snake_utils import MIN_HISTORICAL_YEARS, format_years
+
+    assert format_years(17.0) == "17"
+    assert format_years(70.5) == "71"
+    assert (
+        format_years(MIN_HISTORICAL_YEARS - 0.4) == f"{MIN_HISTORICAL_YEARS - 0.4:.1f}"
+    )
+    assert format_years(MIN_HISTORICAL_YEARS - 0.6) == str(MIN_HISTORICAL_YEARS - 1)

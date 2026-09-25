@@ -112,11 +112,11 @@ def test_rejection_names_the_window_its_length_the_floor_and_the_cause():
         validate_historical_window(_window(2000, 2006))
     message = str(excinfo.value)
     assert "2000-01-01" in message and "2006-12-31" in message
-    # 7.0, not 6.0: the endpoints are INCLUSIVE years since R14 (`C-70`), so
+    # 7, not 6: the endpoints are INCLUSIVE years since R14 (`C-70`), so
     # 2000..2006 spans seven of them. The v1 ISO pair 2000-01-01..2006-01-01
     # spanned six, and the number moving here is the retype being honest rather
     # than a defect -- the same span in days, counted from a different endpoint.
-    assert "7.0 years" in message
+    assert "spans 7 years" in message
     assert str(MIN_HISTORICAL_YEARS) in message
     assert "weathergenr" in message
 

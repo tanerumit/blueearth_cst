@@ -15,6 +15,21 @@ updated: 2026-09-17
 > **Why** — sys.stderr.encoding is cp1252 whenever output is piped, which is how scripts/run_workflows.py and CI capture it -- verified on this machine. So raising one of these under a redirect can fail with UnicodeEncodeError WHILE reporting the original error, replacing a clear diagnosis with a confusing one. The console-row rule in log_row's docstring already forbids this for rows; exception messages were never swept.
 > **Effort** — small
 
+## Falsified 2026-09-25 -- dropped
+
+Measured under pixi on this machine, stderr redirected to a file:
+
+- `sys.stderr` is `cp1252` with errors=`backslashreplace` -- Python's default for
+  stderr, whatever the encoding. An uncaught exception therefore cannot fail with
+  UnicodeEncodeError while being reported: `raise ValueError('bad — §
+  → ≥ ✓')` printed `bad  § → ≥ ✓`.
+- The two characters this note names ARE in cp1252 (`'— §'.encode('cp1252')`
+  == `b' §'`), so they would not fail even under `strict`.
+
+What survives is cosmetic: a cp1252-encoded byte reads as the replacement
+character when that log is later opened as UTF-8. Not the defect described here;
+board it separately if it ever bites.
+
 ## Progress
 
 - [ ] <first step>

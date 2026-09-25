@@ -33,6 +33,7 @@
 | [t2609241852a][] | WF4 runs write no per-run warm state: intended?                                                          | wf4                        | wf3 identity bundle (2026-09-24)      |     | backlog |
 | [t2609242252][]  | Refresh stale rule numbers in the five code-inventoried modules at the next identity change              | workflows                  | rule naming bundle (2026-09-24)       |     | backlog |
 | [t2609251025][]  | Wflow sysimage to remove per-batch Julia startup                                                         | run cost / julia           | t2608222155 owner ruling (2026-09-25) |     | backlog |
+| [t2609251515][]  | One location id space across all results (wflow_id)                                                      | results / locations        | gabon-ntoum-v3 review (2026-09-25)    |     | backlog |
 
 [t2608071207]: tasks/t2608071207-r7-8.md
 [t2608071208]: tasks/t2608071208-r7-14.md
@@ -63,6 +64,7 @@
 [t2609241852a]: tasks/t2609241852a-wf4-runs-write-no-per-run-warm-state-intended.md
 [t2609242252]: tasks/t2609242252-refresh-stale-rule-numbers-in-the-five-code-inventoried-modules-at-the-next-identity-change.md
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
+[t2609251515]: tasks/t2609251515-one-location-id-space-across-all-results-wflow-id.md
 
 ## Watching
 

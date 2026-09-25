@@ -747,7 +747,7 @@ def _opening_block(
     if enabled:
         groups.append(
             (
-                f"sequence  ({enabled} of {total} enabled, in order)",
+                "sequence",
                 list(_sequence_lines(flags)),
             )
         )
@@ -798,12 +798,12 @@ def _closing_block(
     elif manifest["no_op"]:
         groups.append(("nothing ran -- every workflow was disabled", []))
 
+    # `project` defines the `<project>` token the rows below it use, the same
+    # spelling the rule logs use (`run_log_core`).
     wrote: list[Any] = [("project", root)]
     if launched:
-        wrote.append(("logs", f"{root}/logs/"))
-    wrote.append(
-        ("invocation", os.fspath(manifest_path).replace(os.sep, "/")),
-    )
+        wrote.append(("logs", "<project>/logs/"))
+    wrote.append(("invocation", _under_project(manifest_path, project_dir)))
     groups.append(("wrote", wrote))
 
     not_run = [
@@ -836,6 +836,15 @@ def _closing_block(
             if diagnosis is not None:
                 groups.append((diagnosis, []))
     return _console_block(head, groups, close=True)
+
+
+def _under_project(path: Path, project_dir: Path) -> str:
+    """``path`` as ``<project>/...`` when it sits under ``project_dir``, else whole."""
+    try:
+        relative = Path(path).resolve().relative_to(Path(project_dir).resolve())
+    except ValueError:
+        return os.fspath(path).replace(os.sep, "/")
+    return "<project>/" + relative.as_posix()
 
 
 def _project_name(cfg: Mapping[str, Any], project_dir: Path) -> str:
@@ -970,8 +979,10 @@ def _run_owned(
     # step backwards mid-run and these are durations, never timestamps.
     started = time.monotonic()
     try:
+        # The leading blank line parts the banner from the shell prompt above it.
         print(
-            _opening_block(
+            "\n"
+            + _opening_block(
                 cfg=cfg,
                 project_name=_project_name(cfg, project_dir),
                 project_dir=project_dir,
@@ -1027,7 +1038,7 @@ def _run_owned(
                 "\n"
                 + _handoff(
                     tag,
-                    f"STARTING {_clock()}",
+                    f"starting {_clock()}",
                     note=" ".join(sanitize_argv(cmd)),
                 )
                 + "\n",

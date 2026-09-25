@@ -546,7 +546,7 @@ def test_opening_block_diagrams_the_sequence_and_marks_the_disabled(
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
-    assert "sequence  (4 of 5 enabled, in order)" in out
+    assert "  sequence\n" in out
     assert "[1/4]  wf0 analyze_climate" in out
     assert "[2/4]  wf1 build_model" in out
     assert "[3/4]  wf3 generate_scenarios" in out
@@ -735,8 +735,8 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     flags = {n: "true" for n in rw.WORKFLOW_ORDER}
     flags["analyze_projections"] = "false"
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
-    assert re.search(r"\[1/4]  WF0  ANALYZE CLIMATE  --  STARTING \d\d:\d\d:\d\d", out)
-    assert re.search(r"\[4/4]  WF4  SIMULATE SYSTEM  --  STARTING \d\d:\d\d:\d\d", out)
+    assert re.search(r"\[1/4]  WF0  ANALYZE CLIMATE  --  starting \d\d:\d\d:\d\d", out)
+    assert re.search(r"\[4/4]  WF4  SIMULATE SYSTEM  --  starting \d\d:\d\d:\d\d", out)
     assert "  --  done in " not in out
     # Flush left, title and command both. A band has no group label and no rows,
     # so an indent would only make the line a reader scans for start one column
@@ -750,7 +750,7 @@ def test_each_invoked_workflow_gets_a_hand_off_band_at_its_leading_edge(
     assert lines[title_at + 1].startswith("snakemake ")
     # A disabled workflow gets NO band -- the sequence diagram above already
     # named it, once, before anything ran.
-    assert "WF2  ANALYZE PROJECTIONS  --  STARTING" not in out
+    assert "WF2  ANALYZE PROJECTIONS  --  starting" not in out
     # WF4's band must show the snakemake invocation it actually launches, not
     # `simulate_system.py`'s own entry-point command -- the wrapper script is
     # an implementation detail of getting there, never what ran.
@@ -779,7 +779,9 @@ def test_every_wrapper_utterance_is_bounded_by_a_rule(tmp_path, capture_runs, ca
     # Opening banner (2), one per hand-off band (3 = 3 workflows, leading edge
     # only on a clean run), and the closing banner's pair. A bare count is the
     # assertion that would pass on any two extra rules, so check placement.
-    assert lines[0] == rule and lines[1] == "  run_workflows" and lines[2] == rule
+    # A blank line first parts the banner from the shell prompt.
+    assert lines[0] == ""
+    assert lines[1] == rule and lines[2] == "  run_workflows" and lines[3] == rule
     assert lines[-1] == rule
     for index, line in enumerate(lines):
         if line.startswith("  [") and "  --  " in line:
@@ -804,8 +806,8 @@ def test_the_console_is_not_muted_by_the_rule_log_level(
         tmp_path, capsys, {n: "true" for n in rw.WORKFLOW_ORDER}
     )
     assert "  run_workflows" in out.splitlines()
-    assert "  sequence  (5 of 5 enabled, in order)" in out
-    assert re.search(r"\[1/5]  WF0  ANALYZE CLIMATE  --  STARTING \d\d:\d\d:\d\d", out)
+    assert "  sequence\n" in out
+    assert re.search(r"\[1/5]  WF0  ANALYZE CLIMATE  --  starting \d\d:\d\d:\d\d", out)
     assert "run_workflows done in" in out
 
 
@@ -820,8 +822,9 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     assert "run_workflows done in 0:00:0" in out
     wrote = _group_rows(out, "wrote")
     assert wrote["project"] == root
-    assert wrote["logs"] == f"{root}/logs/"
-    assert wrote["invocation"].startswith(f"{root}/config/runs/_engine/invocations/")
+    # Rows under the project use the token the project row defines.
+    assert wrote["logs"] == "<project>/logs/"
+    assert wrote["invocation"].startswith("<project>/config/runs/_engine/invocations/")
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
     # "ran" naming a workflow that did not is worse than not printing it.
     ran = out.split("\n  ran\n")[1].split("\n\n")[0].splitlines()

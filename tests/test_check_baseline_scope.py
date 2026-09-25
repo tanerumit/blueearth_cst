@@ -87,8 +87,8 @@ def _write_target(path: str, kind: str) -> None:
         xr.Dataset({"v": (("t",), np.array([1.0, 2.0, 3.0]))}).to_netcdf(p)
     elif kind == "csv":
         p.write_text("a,b\n1,2\n")
-    elif kind == "yaml":
-        p.write_text("project:\n  project_dir: synthetic\n")
+    elif kind in ("yaml", "run_record"):
+        p.write_text("loaded_config:\n  project:\n    project_dir: synthetic\n")
     elif kind == "png":
         p.write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
     elif kind == "discharge":

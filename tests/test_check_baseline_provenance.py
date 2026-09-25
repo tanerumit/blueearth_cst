@@ -19,6 +19,8 @@ import subprocess
 import sys
 from pathlib import Path
 
+import yaml
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "dev" / "scripts"))
 import check_baseline as cb  # noqa: E402
 
@@ -260,3 +262,26 @@ def test_a_warning_does_not_flip_a_real_pass(tmp_path, capsys, monkeypatch):
     assert "SHARED BY EVERY BRANCH" in out, "the advisory warning must still fire"
     assert rc == 0, "provenance is advisory -- it must not change the verdict"
     assert "OK -" in out
+
+
+def test_run_record_fingerprint_ignores_provenance_and_checkout(tmp_path):
+    # A new commit, invocation or settings section must not move the gate; the
+    # same configuration recorded from another worktree must not either.
+    record = {
+        "loaded_config": {
+            "project": {"catalog": str(cb.REPO_ROOT / "test_case" / "c.yml")}
+        },
+        "toolbox": {"commit": "a"},
+        "advanced_settings": {"batching": {"threads": 1}},
+    }
+    first = tmp_path / "first.yml"
+    first.write_text(yaml.safe_dump(record), encoding="utf-8")
+    record["toolbox"]["commit"] = "b"
+    record["advanced_settings"]["batching"]["threads"] = 4
+    second = tmp_path / "second.yml"
+    second.write_text(yaml.safe_dump(record), encoding="utf-8")
+    assert cb.fingerprint_run_record(first) == cb.fingerprint_run_record(second)
+    assert "test_case/c.yml" in json.dumps(cb._repo_relative(record["loaded_config"]))
+    record["loaded_config"]["climate"] = {"selected": "era5"}
+    second.write_text(yaml.safe_dump(record), encoding="utf-8")
+    assert cb.fingerprint_run_record(first) != cb.fingerprint_run_record(second)

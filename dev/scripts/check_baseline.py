@@ -282,7 +282,7 @@ TARGETS: list[tuple[str, str, str]] = [
     ),
     (
         "build_model",
-        "yaml",
+        "run_record",
         "{project_dir}/config/runs/build_model/run_record.yml",
     ),
     # Unmoved within the tree (prefix change only) -- and exception 3(d)
@@ -334,7 +334,7 @@ TARGETS: list[tuple[str, str, str]] = [
     ),
     (
         "analyze_projections",
-        "yaml",
+        "run_record",
         "{project_dir}/config/runs/analyze_projections/run_record.yml",
     ),
     # run_stress_test.smk. R9 P3 renames the two tables and moves them
@@ -682,7 +682,47 @@ def fingerprint_yaml(path: str) -> dict:
     }
 
 
+def _repo_relative(value):
+    """Rewrite absolute paths under the repository as repo-relative POSIX text."""
+    if isinstance(value, dict):
+        return {key: _repo_relative(item) for key, item in value.items()}
+    if isinstance(value, list):
+        return [_repo_relative(item) for item in value]
+    if isinstance(value, str) and Path(value).is_absolute():
+        try:
+            return Path(value).resolve().relative_to(REPO_ROOT).as_posix()
+        except ValueError:
+            return value
+    return value
+
+
+def fingerprint_run_record(path: str) -> dict:
+    """Fingerprint a run record's CONFIGURATION, not its provenance.
+
+    A run record also carries the toolbox commit, invocation, archive id,
+    environment digests and the whole advanced-settings file. Hashing all of it
+    made every commit -- and every WF4-only settings section -- force a
+    full-run re-record while no number moved (2026-09-25 `5c3804df`, "run records
+    only"). `loaded_config` is what the pre-P2 `composed_config.yml` target gated.
+    Its absolute paths point into the recording worktree, so they are made
+    repo-relative; the content digest each engine path embeds still pins the
+    referenced file.
+    """
+    data = yaml.safe_load(Path(path).read_text(encoding="utf-8"))
+    js = json.dumps(
+        _repo_relative(data["loaded_config"]),
+        sort_keys=True,
+        ensure_ascii=False,
+        default=str,
+    )
+    return {
+        "type": "run_record",
+        "sha256": hashlib.sha256(js.encode("utf-8")).hexdigest(),
+    }
+
+
 FINGERPRINTERS = {
+    "run_record": fingerprint_run_record,
     "png": fingerprint_png,
     "nc": fingerprint_nc,
     "csv": fingerprint_csv,

@@ -326,8 +326,8 @@ def _write_simulate_system_targets(project_dir: str) -> str:
                 p, index=False
             )
             indicator = path
-        elif kind == "yaml":
-            p.write_text("project:\n  project_dir: synthetic\n")
+        elif kind in ("yaml", "run_record"):
+            p.write_text("loaded_config:\n  project:\n    project_dir: synthetic\n")
         elif kind == "csv":
             p.write_text("a,b\n1,2\n")
         elif kind == "png":

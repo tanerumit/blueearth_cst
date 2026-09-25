@@ -206,8 +206,8 @@ def _write_build_model_targets(project_dir: str) -> str:
             disch = path
         elif kind == "png":
             p.write_bytes(b"\x89PNG\r\n\x1a\n" + b"0" * 64)
-        elif kind == "yaml":
-            p.write_text("project:\n  project_dir: synthetic\n")
+        elif kind in ("yaml", "run_record"):
+            p.write_text("loaded_config:\n  project:\n    project_dir: synthetic\n")
     return disch
 
 

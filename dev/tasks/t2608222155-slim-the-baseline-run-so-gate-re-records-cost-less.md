@@ -280,8 +280,26 @@ still implies.
 Related: [[t2608131807]] (collapsing the per-workflow copies; its cost 3 is
 this same re-record), [[t2608202331]] (the actual lever).
 
+## 2026-09-25: the re-record FREQUENCY was the larger cost
+
+Five full re-records on 2026-09-25 were forced by identity moves, not number
+moves. Four fixes on `maint/identity-and-baseline` cut that frequency rather
+than a run's length:
+
+- The two `run_record.yml` targets hashed the whole record -- toolbox commit,
+  invocation, archive id, environment digests, advanced settings -- so any
+  commit re-recorded (`5c3804df`, "run records only"). They now fingerprint
+  `loaded_config` only, repo-relative (`fingerprint_run_record`).
+- WF3's generation identity no longer hashes logging, config composition or the
+  settings schema ([[t2609251004]]).
+- Lock-file digests fold CRLF, so a clone's line endings cannot re-key series
+  ([[t2608301524]]).
+- WF2's kernel hashes follow callees ([[t2608071218]]), so a code edit re-derives
+  when it should, not on a later unrelated run.
+
 ## Progress
 
+- [x] Stop provenance-only re-records: run-record targets gate config only
 - [ ] Owner decision on [[t2608202331]] — the ESET/pixi exclusion, worth far
       more than everything below
 - [ ] Decide whether a Wflow sysimage is worth boarding (P3-3 ranked it -39%)

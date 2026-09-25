@@ -3371,14 +3371,32 @@ def test_console_an_unparsed_run_info_passes_through():
     assert out == "Job counts unavailable.\n"
 
 
-def test_console_restates_nothing_to_be_done_as_an_up_to_date_verdict():
-    handler = _console_handler()
-    record = _console_record(
+def test_nothing_to_be_done_is_restated_as_an_up_to_date_verdict():
+    """A logger filter, because onstart -- and so the handler -- never runs then."""
+    import logging as _logging
+
+    record = _logging.LogRecord(
+        "snakemake.logging",
+        _logging.INFO,
+        __file__,
+        1,
         "Nothing to be done (all requested files are present and up to date).",
-        event="run_info",
+        (),
+        None,
     )
-    out = _emit(handler, record)
-    assert out == "\nAll requested files are present and up to date\n"
+    assert cs._UpToDateVerdict().filter(record) is True
+    assert record.getMessage() == "\nAll requested files are present and up to date"
+
+
+def test_the_verdict_filter_is_on_snakemakes_logger_once():
+    import snakemake.logging as sm_logging
+
+    cs._install_up_to_date_verdict()
+    cs._install_up_to_date_verdict()
+    installed = [
+        f for f in sm_logging.logger.filters if isinstance(f, cs._UpToDateVerdict)
+    ]
+    assert len(installed) == 1
 
 
 def test_console_the_preamble_is_left_alone():

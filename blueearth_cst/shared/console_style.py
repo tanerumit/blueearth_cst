@@ -1567,11 +1567,7 @@ class _ConsoleHandler(logging.StreamHandler):
                 opening = self._opening()
                 if opening:
                     lines.append("\n".join(opening) + "\n")
-            if str(record.msg or "").startswith("Nothing to be done"):
-                # Snakemake's up-to-date verdict, restated as the result it is:
-                # set off by a blank line and painted as a success.
-                lines.append("\n" + self._paint(_UP_TO_DATE_LINE, _ANSI_DONE))
-            elif event == "job_info":
+            if event == "job_info":
                 lines.append(self._start_line(fields, record))
             elif event == "job_started":
                 pass  # "Execute N jobs..." -- scheduler bookkeeping
@@ -2127,3 +2123,44 @@ def title_rule(text):
     wrap a narrow console.
     """
     return "-" * len(text)
+
+
+class _UpToDateVerdict(logging.Filter):
+    """Restate Snakemake's "Nothing to be done" as a green up-to-date verdict.
+
+    A logger FILTER, not a branch in :class:`_ConsoleHandler`: that record is
+    logged only when there are no jobs, and then ``onstart:`` never fires, so
+    the handler is never installed to see it. A filter on Snakemake's own
+    logger rewrites the record as it is logged, whichever handler prints it.
+    Set off by a blank line; painted only on a colour-capable stderr, which is
+    where Snakemake's default handler writes.
+    """
+
+    def filter(self, record):
+        try:
+            if str(record.msg).startswith("Nothing to be done"):
+                verdict = _paint_body(
+                    _UP_TO_DATE_LINE, _console_colour(sys.stderr), _ANSI_DONE
+                )
+                record.msg, record.args = "\n" + verdict.rstrip("\n"), ()
+        except Exception:  # noqa: BLE001 -- a console style must never end a run
+            pass
+        return True
+
+
+def _install_up_to_date_verdict():
+    """Attach :class:`_UpToDateVerdict` to Snakemake's logger, once.
+
+    Runs at import, which for a Snakefile is parse time -- before the DAG is
+    built and the verdict logged. Only when Snakemake is already loaded, so
+    importing this module elsewhere pulls nothing in. Fail-open.
+    """
+    module = sys.modules.get("snakemake.logging")
+    target = getattr(module, "logger", None)
+    if not isinstance(target, logging.Logger):
+        return
+    if not any(isinstance(item, _UpToDateVerdict) for item in target.filters):
+        target.addFilter(_UpToDateVerdict())
+
+
+_install_up_to_date_verdict()

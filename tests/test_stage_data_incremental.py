@@ -62,11 +62,22 @@ def test_netcdf_glob_widening_is_incremental_and_value_identical(tmp_path) -> No
         # Report what the child managed to emit before it stalled. `capture_output`
         # means TimeoutExpired carries the partial streams, and they are the only
         # evidence of WHERE it stopped -- exactly what the CI kill destroyed.
+        #
+        # STDERR IN FULL. It carries the child's faulthandler dump, and a tail
+        # cap cut the first thread's stack mid-frame on the 2026-09-18 ubuntu
+        # occurrence -- the one capture a once-a-month stall owes us. Stdout is
+        # progress banners, so its tail is enough. TimeoutExpired can carry
+        # bytes even under text=True, so both are decoded here.
+        def _text(stream):
+            if isinstance(stream, bytes):
+                return stream.decode("utf-8", errors="replace")
+            return stream or ""
+
         pytest.fail(
             f"the staging harness did not finish within {HARNESS_TIMEOUT_S}s -- "
             f"treat this as the t2608071208 stall, not as a slow machine.\n"
-            f"PARTIAL STDOUT:\n{(exc.stdout or '')[-4000:]}\n"
-            f"PARTIAL STDERR:\n{(exc.stderr or '')[-4000:]}"
+            f"PARTIAL STDOUT (tail):\n{_text(exc.stdout)[-4000:]}\n"
+            f"PARTIAL STDERR (full):\n{_text(exc.stderr)}"
         )
     assert result.returncode == 0, (
         f"equivalence harness failed\nSTDOUT:\n{result.stdout}\nSTDERR:\n{result.stderr}"

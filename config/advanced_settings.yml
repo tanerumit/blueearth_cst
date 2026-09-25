@@ -234,3 +234,33 @@ runtime:
   # two-part selector lets juliaup resolve a different patch than the manifest
   # was built against.
   julia_version: "1.11.7"
+
+batching:
+
+  # WF4 runs its retained members in batches, one Julia session per batch.
+  # Three things set the wall time: threads per batch, batches running at once,
+  # and how many members share a batch (a cold start costs several warm
+  # members). Measured 2026-09-25 on the baseline basin (257 active cells,
+  # 9 years, 12 logical CPUs): 1 thread beat 2 and 4, and two batches at once
+  # ran at full speed each while three or more slowed every member down --
+  # 124 s for 12 members against ~304 s at 4 threads one batch at a time
+  # (t2609242342). Run `scripts/calibrate_batching.py` to measure a basin and
+  # machine of your own.
+  #
+  # `auto` picks by the model's active cell count. Only the SMALL regime is
+  # measured; the LARGE values are a provisional guess -- threads should pay on
+  # a big grid -- until calibrated. A project overrides either per run with
+  # `compute.julia_threads` / `compute.max_parallel_batches`.
+  threads: auto
+  max_parallel: auto
+  small_basin_cells: 5000
+  small_threads: 1
+  small_max_parallel: 2
+  large_threads: 4
+  large_max_parallel: 1
+
+  # Per-batch memory estimate, which caps batches at once to what fits in 80%
+  # of available memory. 1.3 GB was measured per batch on the baseline basin;
+  # the per-cell term is a provisional guess, not a measurement.
+  memory_per_batch_gb: 1.5
+  memory_per_cell_kb: 20.0

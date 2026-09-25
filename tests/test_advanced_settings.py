@@ -41,6 +41,17 @@ VALID = {
         "change_factor_stats": ["mean", "median", "std"],
     },
     "runtime": {"julia_threads": 4, "julia_version": "1.11.7"},
+    "batching": {
+        "threads": "auto",
+        "max_parallel": "auto",
+        "small_basin_cells": 5000,
+        "small_threads": 1,
+        "small_max_parallel": 2,
+        "large_threads": 4,
+        "large_max_parallel": 1,
+        "memory_per_batch_gb": 1.5,
+        "memory_per_cell_kb": 20.0,
+    },
 }
 
 
@@ -266,3 +277,20 @@ def test_the_statistic_set_is_open_not_an_enumeration_of_todays_eight(tmp_path, 
         _write(tmp_path, _with_default("change_factor_stats", ok))
     )
     assert resolved["defaults"]["change_factor_stats"] == ok
+
+
+@pytest.mark.parametrize("value", ["auto", 2])
+def test_batching_threads_take_auto_or_a_count(tmp_path, value):
+    path = tmp_path / "advanced_settings.yml"
+    payload = {**VALID, "batching": {**VALID["batching"], "threads": value}}
+    path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+    assert su.load_advanced_settings(path)["batching"]["threads"] == value
+
+
+@pytest.mark.parametrize("value", ["fast", 0])
+def test_batching_threads_refuse_anything_else(tmp_path, value):
+    path = tmp_path / "advanced_settings.yml"
+    payload = {**VALID, "batching": {**VALID["batching"], "threads": value}}
+    path.write_text(yaml.safe_dump(payload), encoding="utf-8")
+    with pytest.raises(ValueError, match="batching.threads"):
+        su.load_advanced_settings(path)

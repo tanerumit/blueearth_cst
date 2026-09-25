@@ -241,10 +241,12 @@ def resolve_batch_size(
         chosen, bound_by = int(explicit), "explicit"
     else:
         # Ceiling 1, parallelism: enough batches to keep the cores busy.
-        ceilings = {
-            "parallelism": max(1, math.ceil(member_count / cores)),
-            "batch_size_max": int(batch_size_max),
-        }
+        ceilings = {"parallelism": max(1, math.ceil(member_count / cores))}
+        # Optional since t2609242342: staging keeps a failed batch's finished
+        # members, so a big batch no longer risks its whole width on a failure,
+        # and every extra batch pays another cold start.
+        if batch_size_max is not None:
+            ceilings["batch_size_max"] = int(batch_size_max)
         # Ceiling 2, disk -- but only when the WHOLE sweep cannot fit anyway.
         # Peak is `min(K, p x B) x per_member`, not `p x B x per_member`: once
         # every member is resident at once the batch structure has stopped
@@ -306,3 +308,95 @@ def split_evenly(members, batch_size):
         batches.append(members[start : start + size])
         start += size
     return batches
+
+
+@dataclass(frozen=True)
+class BatchPlan:
+    """Threads per WF4 batch and batches at once, with the reason for each."""
+
+    threads: int
+    max_parallel: int
+    #: `small basin` / `large basin` / `unknown size` when `auto` chose, else
+    #: `settings` or `project`; `+ memory` / `+ cores` when a cap lowered it.
+    regime: str
+    active_cells: int | None
+
+    def summary(self) -> str:
+        from blueearth_cst.shared.snake_utils import plural
+
+        cells = "" if self.active_cells is None else f", {self.active_cells} cells"
+        return (
+            f"{plural(self.max_parallel, 'batch', 'batches')} at once, "
+            f"{plural(self.threads, 'Julia thread')} each ({self.regime}{cells})"
+        )
+
+
+def count_active_cells(staticmaps_path) -> int | None:
+    """Cells inside the model's subcatchments, or ``None`` if there is no model yet."""
+    import numpy as np
+    import xarray as xr
+
+    path = Path(staticmaps_path)
+    if not path.is_file():
+        return None
+    with xr.open_dataset(path) as dataset:
+        if "subcatchment" not in dataset:
+            return None
+        values = np.asarray(dataset["subcatchment"].values)
+    return int((np.isfinite(values) & (values > 0)).sum())
+
+
+def resolve_batch_plan(
+    active_cells, cores, settings, compute=None, available_memory_bytes=None
+) -> BatchPlan:
+    """Choose threads per batch and batches at once (t2609242342).
+
+    Precedence per value: the project's ``compute`` key, then a numeric
+    ``batching`` setting, then the regime ``auto`` picks by ``active_cells``
+    against ``small_basin_cells`` (an unknown size takes the large regime,
+    whose single-batch default is the conservative one). Batches at once is
+    then capped by ``cores // threads`` and by what fits in 80% of
+    ``available_memory_bytes`` at the per-batch estimate; the regime says so.
+    """
+    compute = compute or {}
+    if active_cells is None:
+        regime = "unknown size"
+        prefix = "large"
+    elif active_cells < settings["small_basin_cells"]:
+        regime, prefix = "small basin", "small"
+    else:
+        regime, prefix = "large basin", "large"
+
+    def pick(project_key, setting_key, regime_key):
+        if compute.get(project_key) is not None:
+            return int(compute[project_key]), "project"
+        if settings[setting_key] != "auto":
+            return int(settings[setting_key]), "settings"
+        return int(settings[regime_key]), regime
+
+    threads, thread_source = pick("julia_threads", "threads", f"{prefix}_threads")
+    width, width_source = pick(
+        "max_parallel_batches", "max_parallel", f"{prefix}_max_parallel"
+    )
+    sources = (
+        [thread_source]
+        if thread_source == width_source
+        else [
+            thread_source,
+            width_source,
+        ]
+    )
+    by_cores = max(1, int(cores) // max(1, threads))
+    if width > by_cores:
+        width = by_cores
+        sources.append("cores")
+    if available_memory_bytes is not None:
+        per_batch = (
+            settings["memory_per_batch_gb"] * BYTES_PER_GB
+            + (active_cells or 0) * settings["memory_per_cell_kb"] * 1024
+        )
+        by_memory = max(1, int(0.8 * available_memory_bytes // per_batch))
+        if width > by_memory:
+            width = by_memory
+            sources.append("memory")
+    return BatchPlan(threads, width, " + ".join(sources), active_cells)

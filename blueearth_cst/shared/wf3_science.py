@@ -44,6 +44,20 @@ _ADVANCED_SETTINGS_SCHEMA = {
     # per-project override. `defaults:` is for values a project could have
     # overridden; nothing overrides this one now.
     "runtime": {"julia_threads": "positive_int", "julia_version": "version_string"},
+    # WF4's batched Wflow runs (t2609242342). `threads`/`max_parallel` may be
+    # `auto`, which picks a regime by the model's active cell count; the rest
+    # are the regimes' values and the memory estimate that caps parallelism.
+    "batching": {
+        "threads": "auto_or_positive_int",
+        "max_parallel": "auto_or_positive_int",
+        "small_basin_cells": "positive_int",
+        "small_threads": "positive_int",
+        "small_max_parallel": "positive_int",
+        "large_threads": "positive_int",
+        "large_max_parallel": "positive_int",
+        "memory_per_batch_gb": "positive_float",
+        "memory_per_cell_kb": "positive_float",
+    },
 }
 
 _VERSION_RE = re.compile(r"^\d+\.\d+\.\d+$")
@@ -242,7 +256,15 @@ def _statistic_names(value, where: str) -> list[str]:
     return out
 
 
+def _auto_or_positive_int(value, where: str):
+    """``auto`` (defer to the regime), or a whole number >= 1."""
+    if value == "auto":
+        return value
+    return _positive_int(value, where)
+
+
 _VALIDATORS = {
+    "auto_or_positive_int": _auto_or_positive_int,
     "positive_int": _positive_int,
     "nonnegative_int": _nonnegative_int,
     "month_abbrev": _month_abbrev,

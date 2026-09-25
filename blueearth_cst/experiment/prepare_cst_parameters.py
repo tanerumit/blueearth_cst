@@ -180,7 +180,7 @@ def prep_cst_parameters(
         param (R13 D-10.6) so this module never re-reads the config from
         disk: since the split, ``workflows.generate_scenarios.stress_test``
         exists in no single file a caller could hand over. Passing the
-        section is also what gives rule 3.09 a rerun trigger at all -- its
+        section is also what gives rule 3.03 a rerun trigger at all -- its
         only config input is ``ancient()``, which by construction triggers
         nothing, so before this the grid values could change and the rule
         stay satisfied with a stale lookup table.
@@ -253,8 +253,8 @@ def prep_cst_parameters(
     st_width = index_width(ST_NUM)
 
     # `st_0` has NO row: the table is the PARAMETER GRID, and the reserved
-    # unperturbed baseline has no parameters -- it is produced by rule 3.11, not
-    # by perturbation, and rule 3.12 never runs for it.
+    # unperturbed baseline has no parameters -- it is produced by rule 3.07, not
+    # by perturbation, and rule 3.08 never runs for it.
     #
     # Its absence is LOAD-BEARING, and this supersedes C23's recorded rationale
     # ("a response surface missing its own origin forces every downstream
@@ -297,7 +297,7 @@ def prep_cst_parameters(
     lookup = pd.DataFrame(rows, columns=list(LOOKUP_COLUMNS))
     Path(lookup_fn).parent.mkdir(parents=True, exist_ok=True)
     lookup.to_csv(lookup_fn, index=False)
-    # Rule 3.09 declares a `log:`, so `merge_logs` opened a section for it on
+    # Rule 3.03 declares a `log:`, so `merge_logs` opened a section for it on
     # every run and found nothing to put under it. The member count is the
     # grid this experiment will actually run -- the one number a reader of this
     # rule wants -- and twelve rows per member is WG-2's monthly grain.

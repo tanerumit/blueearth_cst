@@ -17,4 +17,11 @@ updated: 2026-09-24
 
 ## Progress
 
-- [ ] <first step>
+- [x] 2026-09-25: downscale_climate_forcing.py, metric_plan.py,
+      prepare_cst_parameters.py and prepare_weathergen_config.py refreshed, in
+      the bundle whose other commits already move the collection, simulation
+      and metric-plan identities.
+- [ ] extract_historical_climate.py -- fingerprinted on its OWN bytes
+      (`CLIMATE_STORE_SCRIPT`, `extraction_sha256`), so a comment edit forces a
+      climate-store re-extraction nothing else in that bundle needed. Still
+      waits for a change that moves the climate-store identity.

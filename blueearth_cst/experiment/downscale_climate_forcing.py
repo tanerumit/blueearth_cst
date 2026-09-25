@@ -340,7 +340,7 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
             # Wflow's `[logging] path_log` defaults to `log.txt` beside the TOML.
             # While each realization owned a run directory that was already one
             # shared log per realization; removing the level puts EVERY member's
-            # log at one path, and rule 3.10 batches members concurrently, so it
+            # log at one path, and rule 4.05 batches members concurrently, so it
             # becomes a race rather than an overwrite. Measured on the
             # pre-flattening tree (R9 P1 observed tier): exactly two log.txt for
             # twelve members -- one per realization, six writers each. Keyed per

@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2609242342 | Choose the WF4 batch count from a makespan model of run length and resources | wf4 batching |
 | 2026-09-25 | t2609151118 | Locations 101 and 1010 are the same series in the P3 basin configuration | wf3  |
 | 2026-09-25 | t2609151037 | export_wflow_results carries a second, unreachable return-level estimator | wf3  |
 | 2026-09-25 | t2609171637 | Two interchange contract tests are not guarded against a pre-R14 fixture | tests / fixtures |

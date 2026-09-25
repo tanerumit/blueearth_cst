@@ -1532,12 +1532,21 @@ def test_heartbeat_sparse_schedule_is_what_thins_the_notices(monkeypatch):
 
 
 def test_heartbeat_keeps_its_first_notice_prompt():
-    """A redirected run reports the first sparse notice at two intervals."""
+    """A redirected run reports the first sparse notice at two intervals.
+
+    Due at 0.4 s, and the next notice not before 1.0 s (five intervals), so
+    waiting up to 0.9 s for exactly one notice proves the first is not held
+    back to the second slot while leaving half a second for thread wake-up
+    jitter. A 0.05 s interval with a 0.13 s sleep left 30 ms and flaked on a
+    slow Windows runner (CI 36123429933).
+    """
     stream = io.StringIO()
-    hb = _Heartbeat("2.04_fetch_cmip6_projections", stream, interval=0.05).start()
-    time.sleep(0.13)
+    hb = _Heartbeat("2.04_fetch_cmip6_projections", stream, interval=0.2).start()
+    deadline = time.monotonic() + 0.9
+    while not _still_running(stream) and time.monotonic() < deadline:
+        time.sleep(0.01)
     hb.stop()
-    assert _still_running(stream), "the first notice lands at two intervals"
+    assert len(_still_running(stream)) == 1, "the first notice lands at two intervals"
 
 
 def test_heartbeat_backoff_resets_when_output_resumes():

@@ -46,7 +46,7 @@ def _console_log_handlers(*streams) -> dict[logging.StreamHandler, Any]:
 
 
 @contextlib.contextmanager
-def captured_output():
+def captured_output(replay=None):
     """Redirect stdout/stderr to a temp file; replay it all on failure, and
     only its warning/error lines on success.
 
@@ -57,6 +57,10 @@ def captured_output():
     which fails with WinError 6 on a redirected fd. The replay happens
     only after the real fds are restored, so it reaches the console instead
     of being written back into the very file it came from.
+
+    ``replay`` receives the text to show instead of it going to stderr -- a
+    Snakefile at parse time passes :func:`console_style.defer_rows` so the rows
+    print under the run header rather than above it.
     """
     try:
         saved_stdout = os.dup(1)
@@ -121,6 +125,9 @@ def captured_output():
                     for line in text.splitlines(keepends=True)
                     if _ALERT.search(line)
                 )
-            sys.stderr.write(text)
-            sys.stderr.flush()
+            if replay is not None and text:
+                replay(text)
+            else:
+                sys.stderr.write(text)
+                sys.stderr.flush()
         capture.close()

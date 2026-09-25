@@ -319,3 +319,16 @@ def test_a_declared_rule_lists_even_when_its_banner_never_renders(rules, tmp_pat
     texts = [text.split() for text, _ in rows]
     assert [t[1] if t[0] == ">" else t[0] for t in texts] == ["3.04", "3.07", "3.09"]
     assert texts[0] == ["3.04", "snapshot"] and texts[1] == ["3.07", "generate"]
+
+
+def test_defer_rows_queues_a_captured_warning_for_the_run_header(monkeypatch, capsys):
+    """A parse-time warning row waits for the header instead of printing above it."""
+    monkeypatch.setattr(cs, "_DEFERRED_WARNINGS", [])
+    cs.defer_rows(
+        "13:27:21 - responses - WARNING - Duplicate discharge columns: Q_1 as Q_2\n"
+        "Traceback-free stray line\n"
+    )
+    assert cs._DEFERRED_WARNINGS == [
+        ("13:27:21", "responses", "Duplicate discharge columns: Q_1 as Q_2")
+    ]
+    assert capsys.readouterr().err == "Traceback-free stray line\n"

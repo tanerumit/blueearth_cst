@@ -3367,8 +3367,18 @@ def test_undrained_warning_is_printed_out_of_position_not_dropped(monkeypatch):
 
 def test_console_an_unparsed_run_info_passes_through():
     handler = _console_handler()
-    out = _emit(handler, _console_record("Nothing to be done.", event="run_info"))
-    assert out == "Nothing to be done.\n"
+    out = _emit(handler, _console_record("Job counts unavailable.", event="run_info"))
+    assert out == "Job counts unavailable.\n"
+
+
+def test_console_restates_nothing_to_be_done_as_an_up_to_date_verdict():
+    handler = _console_handler()
+    record = _console_record(
+        "Nothing to be done (all requested files are present and up to date).",
+        event="run_info",
+    )
+    out = _emit(handler, record)
+    assert out == "\nAll requested files are present and up to date\n"
 
 
 def test_console_the_preamble_is_left_alone():

@@ -15,7 +15,7 @@ from blueearth_cst.experiment.allocate import resolve_default_experiment_name
 from blueearth_cst.experiment.batch_sizing import count_active_cells, disk_headroom_bytes, measure_member_footprint, resolve_batch_plan, resolve_batch_size, split_evenly
 from blueearth_cst.shared.indicator_tables import indicator_tables
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, declare_path_tokens, declare_project_root, julia_prefix, project_slug, resolve_water_year_start, validate_experiment_name
-from blueearth_cst.shared.console_style import RuleRegistry, defer_warning, target_banner
+from blueearth_cst.shared.console_style import RuleRegistry, defer_rows, defer_warning, target_banner
 
 project, my_cfg = simulation_settings(config_path)
 project_dir = Path(project["project"]["project_dir"]).resolve().as_posix()
@@ -76,7 +76,8 @@ def _live_simulation_inputs():
     catalogs = project["project"]["catalog"]
     catalogs = catalogs if isinstance(catalogs, list) else [catalogs]
     source = project["climate"]["selected"]
-    with captured_output():
+    # Warnings print under the run header, not above it (`defer_rows`).
+    with captured_output(replay=defer_rows):
         preparation = resolve_wf4_preparation(
             Path(project_dir), Path(exp_dir), climate_source=source,
             catalogs=catalogs,

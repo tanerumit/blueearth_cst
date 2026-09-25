@@ -199,6 +199,24 @@ def defer_warning(message, module="cst"):
     _DEFERRED_WARNINGS.append((f"{datetime.now():%H:%M:%S}", str(module), str(message)))
 
 
+def defer_rows(text):
+    """Hold already-printed WARNING rows for the run header, like :func:`defer_warning`.
+
+    For output captured at parse time (``captured_output(replay=defer_rows)``):
+    a ``HH:MM:SS - <module> - WARNING - <message>`` row keeps its stamp and is
+    queued; anything else is written to stderr now, since only a warning row
+    has a place under the header. Not re-counted: the ``log_row`` that printed
+    the row already noted it in the warning tally.
+    """
+    for line in text.splitlines():
+        fields = line.split(" - ", 3)
+        if len(fields) == 4 and fields[2] == "WARNING":
+            _DEFERRED_WARNINGS.append((fields[0], fields[1], fields[3]))
+        elif line.strip():
+            sys.stderr.write(line + "\n")
+    sys.stderr.flush()
+
+
 def _drain_deferred_warnings(colour):
     """Pop every held row, painted, as lines ready to join with newlines.
 
@@ -299,6 +317,10 @@ _ANSI_RUN = "94"  # bright blue
 
 
 _ANSI_DONE = "92"  # bright green
+
+
+#: What an up-to-date run prints in place of Snakemake's "Nothing to be done".
+_UP_TO_DATE_LINE = "All requested files are present and up to date"
 
 
 _ANSI_DIM = "38;5;243"  # dim grey -- the plan block's up-to-date rows
@@ -1545,7 +1567,11 @@ class _ConsoleHandler(logging.StreamHandler):
                 opening = self._opening()
                 if opening:
                     lines.append("\n".join(opening) + "\n")
-            if event == "job_info":
+            if str(record.msg or "").startswith("Nothing to be done"):
+                # Snakemake's up-to-date verdict, restated as the result it is:
+                # set off by a blank line and painted as a success.
+                lines.append("\n" + self._paint(_UP_TO_DATE_LINE, _ANSI_DONE))
+            elif event == "job_info":
                 lines.append(self._start_line(fields, record))
             elif event == "job_started":
                 pass  # "Execute N jobs..." -- scheduler bookkeeping

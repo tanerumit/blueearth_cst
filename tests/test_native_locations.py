@@ -163,3 +163,17 @@ def test_open_responses_labels_before_numbering(tmp_path):
         ("gwr", "1010", 0),
         ("gwr", "1020", 1),
     ]
+
+
+def test_dropped_names_the_label_each_duplicate_is_kept_under(tmp_path):
+    static = _static(tmp_path, {1010: (4, 0)}, [(1010, 101, True)])
+    dropped = {}
+    native_location_labels(COLUMNS, ["Q_101", "Q_1010"], static, dropped)
+    assert dropped == {"Q_101": "1010"}
+
+
+def test_an_unresolved_area_id_is_a_warning(tmp_path, capsys):
+    static = _static(tmp_path, {1010: (4, 0)}, [(1010, 101, True)])
+    labels = native_location_labels(COLUMNS, ["Q_1010", "gwr_101", "gwr_102"], static)
+    assert labels["gwr_102"] == "102"
+    assert "gwr_102" in capsys.readouterr().out

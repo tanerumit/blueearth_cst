@@ -86,13 +86,17 @@ def primary_wflow_ids(geoms_dir, gauge_maps, point_ids) -> dict[int, int]:
     return primary
 
 
-def native_location_labels(columns, headers, static_path) -> dict[str, str]:
+def native_location_labels(
+    columns, headers, static_path, dropped=None
+) -> dict[str, str]:
     """``{native header: location id}`` for every mapped column kept.
 
     ``columns`` is the TOML's ``output.csv.column`` list, ``headers`` Wflow's
     ordered header names. A mapped header missing from the result is a
-    same-cell duplicate of one that is kept. Headers of unmapped columns are not
-    keys. Raises when two kept columns of one variable end on one label.
+    same-cell duplicate of one that is kept; ``dropped``, when given, is filled
+    with ``{that header: the label it is kept under}``. Headers of unmapped
+    columns are not keys. Raises when two kept columns of one variable end on
+    one label; warns when an outlet or area id has no primary wflow_id to take.
     """
     import numpy as np
     import xarray as xr
@@ -131,7 +135,8 @@ def native_location_labels(columns, headers, static_path) -> dict[str, str]:
                 )
                 natives = [int(s) for s in suffixes if s.isdigit()]
             candidates += [(rank, header, name, native) for native in natives]
-    labels, taken, used = {}, set(), set()
+    labels, taken, used, unresolved = {}, {}, set(), set()
+    dropped = {} if dropped is None else dropped
     for rank, header, name, native in sorted(
         candidates,
         key=lambda c: (c[0], order.get(f"{c[1]}_{c[3]}", len(order))),
@@ -142,16 +147,30 @@ def native_location_labels(columns, headers, static_path) -> dict[str, str]:
         if name in points:
             cell = (header, points[name][native])
             if cell in taken:
+                dropped[key] = taken[cell]
                 continue
-            taken.add(cell)
+        if rank and native not in primary:
+            unresolved.add(key)
         label = str(native if rank == 0 else primary.get(native, native))
+        if name in points:
+            taken[cell] = label
         if rank == 1 and (header, label) in used:
             # The outlet's primary is a gauge off the outlet cell (a snapped
             # location a cell away): that gauge IS the subbasin's discharge
             # point, so the outlet column is the duplicate.
+            dropped[key] = label
             continue
         used.add((header, label))
         labels[key] = label
+    if unresolved and gauge_maps:
+        from blueearth_cst.shared.snake_utils import listed, log_row
+
+        log_row(
+            "No primary wflow_id in the model's gauge layer for "
+            f"{listed(sorted(unresolved))}; these keep their native subbasin id",
+            module="locations",
+            level="WARNING",
+        )
     for header in maps_of:
         kept = [
             label for key, label in labels.items() if key.rpartition("_")[0] == header

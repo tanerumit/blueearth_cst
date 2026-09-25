@@ -309,22 +309,21 @@ end
     static_path = (
         model_toml.parent / config.get("dir_input", ".") / static if static else None
     )
+    dropped = {}
     labels = (
-        native_location_labels(columns, headers, static_path)
+        native_location_labels(columns, headers, static_path, dropped)
         if static_path is not None and static_path.is_file()
         else None
     )
-    mapped_headers = {item["header"] for item in columns if "map" in item}
-    mapped = {name for name in headers if name.rpartition("_")[0] in mapped_headers}
-    dropped = sorted(mapped - set(labels)) if labels is not None else []
     if dropped:
-        from blueearth_cst.shared.snake_utils import log_row
+        from blueearth_cst.shared.snake_utils import listed, log_row
 
         # A WARNING, not an INFO row: a location leaving the metric set is a
         # fact a reader must see, and planning runs inside `captured_output`,
         # which replays only warnings and errors on success.
         log_row(
-            "Duplicate columns on one model cell, kept once: " + ", ".join(dropped),
+            "Duplicate series on one model point, kept once: "
+            + listed(f"{gone} as {kept}" for gone, kept in sorted(dropped.items())),
             module="responses",
             level="WARNING",
         )

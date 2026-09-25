@@ -107,8 +107,9 @@ def split_columns(columns) -> Dict[str, List[str]]:
     both match this grammar: ``Q_<station>`` on the outlets/gauges maps, and
     ``<code>_<subcatchment>`` for every other ``wflow_outvars`` entry, on the
     subcatchment map with a mean reducer. So ``gwr_101`` groups here exactly as
-    ``Q_101`` does, and yields ``output_gwr.csv`` whose columns are
-    SUBCATCHMENT ids.
+    ``Q_101`` does, and yields ``output_gwr.csv`` whose native ids are
+    SUBCATCHMENT ids -- relabelled to their primary ``wflow_id`` when
+    ``tidy_tables`` is given labels.
 
     That is a change from the original ``<var>_basavg`` spelling, which carried
     no numeric id and so was skipped by this function. Nothing is skipped for

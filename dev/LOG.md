@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2609251254 | Make the heartbeat first-notice test deterministic | tests / flake |
 | 2026-09-25 | t2608071218 | Make a code change to wf2's rule 2.04 actually re-trigger it | wf2  |
 | 2026-09-25 | t2609251004 | WF3 scenario identity moves with unrelated code | wf3 / scenario identity |
 | 2026-09-25 | t2608301524 | A CRLF checkout of pixi.lock re-keys every CMIP6 series | projections / series identity |

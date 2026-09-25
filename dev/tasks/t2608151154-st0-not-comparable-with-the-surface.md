@@ -126,6 +126,37 @@ a second one is needed.
 tree produces 756, so it is not evidence about the unit-factor change; rule on it
 on its own terms (`t2608121258`) rather than absorbing it into this diff.
 
+## Landed 2026-09-25 (a39c024b) -- measured on weathergenr 2.0
+
+Every run, the baseline included, is now transformed from its realization's
+raw generated series; the baseline at unit factors via the `identity` member.
+
+- **Falsifier passed.** On `test_local` the baseline series is BIT-IDENTICAL to
+  the grid's identity member (st 2: 0 degC, 0 %) in both realizations, for every
+  variable (precip, temp, temp_min, temp_max, kin, kout, press_msl).
+- **Re-measured, old baseline -> new**, mean relative change over the four
+  locations and two realizations. Only the baseline's own rows moved (runs 01
+  and 08, and their bundle), 80 of 560 q rows:
+
+| metric | change |
+|---|---|
+| `q_driest_month_mean` | -90.4% |
+| `q_mean_annual_7day_min` | -63.2% |
+| `q_baseflow_index` | -59.8% |
+| `q_mean_annual_min` | -46.8% |
+| `q_return_level_10yr_max` | -21.0% |
+| `q_return_level_2yr_7day_min` | -14.7% |
+| `q_mean_annual_max` | -12.6% |
+| `q_mean_annual_7day_max` | -10.6% |
+| `q_mean_annual_p95` | -2.0% |
+| `q_annual_mean` | -1.7% |
+| `q_wettest_month_mean` | +0.1% |
+
+  Same direction as the 2026-08-15 table (low flows most affected), larger on
+  the current generator. The baseline now sits on the grid's origin.
+- `t2608152230` and `t2608082036`, which this note asked to re-check, were both
+  closed (2026-08-16, 2026-08-18) before this landed.
+
 ## Progress
 
 - [x] Decide: fix the pipeline (unit-factor pass for `st_0`) or caveat the

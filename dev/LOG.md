@@ -17,6 +17,13 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-25 | t2608222155 | Slim the baseline run so gate re-records cost less | baseline / run cost |
+| 2026-09-25 | t2608131304 | Implement the config-snapshot redesign — current-only run record replaces the write-only bundle | config / provenance |
+| 2026-09-25 | t2608202308 | Two Snakemake-running test files carry no tier marker | testing / tiering |
+| 2026-09-25 | t2608131718 | The baseline's two flat config copies are stale since 2026-08-12 | baseline / test fixtures |
+| 2026-09-25 | t2609241852a | WF4 runs write no per-run warm state: intended? | wf4  |
+| 2026-09-25 | t2609181501 | Settle wf0 climate extraction's memory growth, then take the remaining transfer levers | wf0 climate extraction |
+| 2026-09-25 | t2608071230 | Outlet stations are named by subcatchment ID, which is not a human-readable station name | naming |
 | 2026-09-25 | t2609251515 | One location id space across all results (wflow_id) | results / locations |
 | 2026-09-25 | t2609251254 | Make the heartbeat first-notice test deterministic | tests / flake |
 | 2026-09-25 | t2608071218 | Make a code change to wf2's rule 2.04 actually re-trigger it | wf2  |

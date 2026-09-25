@@ -13,8 +13,6 @@ cssclasses: [todo-board]
 | [t2609070015][]    | 2   | Widen C-37 to the shipped seeds, and ask its mirror…    | config / gates / C-37…       | backlog    |
 | [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup        | run cost / julia /…          | backlog    |
 | [t2609242252][]    |     | Refresh stale rule numbers in the five…                 | workflows / rule naming…     | backlog    |
-| [t2609241852a][]   |     | WF4 runs write no per-run warm state: intended?         | wf4 / wf3 identity bundle…   | backlog    |
-| [t2609181501][]    |     | Settle wf0 climate extraction's memory growth, then…    | wf0 climate extraction /…    | active     |
 | [t2609172119][]    |     | Snakemake's error block keeps full-length paths that…   | console / path tokens /…     | backlog    |
 | [t2609171730][]    |     | 34 exception messages carry characters a cp1252…        | console / errors / console…  | backlog    |
 | [t2609171500][]    |     | Move the experiment's frozen simulation documents into… | project-tree / test_rapid…   | backlog    |
@@ -24,7 +22,6 @@ cssclasses: [todo-board]
 | [t2608242212][]    |     | Give the analysis variable set a config surface (R14…   | wf0 / wf1 climate figures…   | backlog    |
 | [t2608222252][]    |     | Make the climate extraction variable set derived and…   | wf0 / wf1 climate store /…   | backlog    |
 | [t2608222239][]    |     | Support additional historical climate datasets in the…  | wf0 / wf1 climate store /…   | backlog    |
-| [t2608222155][]    |     | Slim the baseline run so gate re-records cost less      | baseline / run cost /…       | backlog    |
 | [t2608210010][]    |     | Replace the docs site's approximate brand colours with… | docs / site / quarto-docs-s… | blocked    |
 | [t2608202352][]    |     | Publish the docs site to GitHub Pages, and reduce the…  | docs / site / quarto-docs-s… | blocked    |
 | [t2608202351a][]   |     | Put the three pipeline notebooks on the site via a…     | docs / site / quarto-docs-s… | backlog    |
@@ -32,7 +29,6 @@ cssclasses: [todo-board]
 | [t2608191733][]    |     | Ship a sample dataset bundle so a user needs no…        | distribution / sample data   | backlog    |
 | [t2608161450][]    |     | The chirps store does not satisfy the WG-1 seam…        | wf0 / climate store /…       | backlog    |
 | [t2608151154][]    |     | st_0 is not method-comparable with the stress-test…     | wf3 / scenarios / R12        | backlog    |
-| [t2608131304][]    |     | Implement the config-snapshot redesign — current-only…  | config / provenance /…       | active     |
 | [t2608122022][]    |     | Verify the newly-honoured water year, and sweep for…    | wf2 projections / config /…  | backlog    |
 | [t2608091730][]    |     | Produce waterbody layers data-side so basin_area can…   | plotting                     | backlog    |
 | [t2608091006][]    |     | Standardize plotting across the toolbox with shared…    | plotting                     | active     |
@@ -43,8 +39,6 @@ cssclasses: [todo-board]
 [t2609070015]: tasks/t2609070015-widen-c-37-to-the-shipped-seeds-and-ask-its-mirror-question.md
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 [t2609242252]: tasks/t2609242252-refresh-stale-rule-numbers-in-the-five-code-inventoried-modules-at-the-next-identity-change.md
-[t2609241852a]: tasks/t2609241852a-wf4-runs-write-no-per-run-warm-state-intended.md
-[t2609181501]: tasks/t2609181501-settle-wf0-climate-extraction-s-memory-growth-then-take-the-remaining-transfer-levers.md
 [t2609172119]: tasks/t2609172119-snakemake-s-error-block-keeps-full-length-paths-that-every-other-console-row-shortens.md
 [t2609171730]: tasks/t2609171730-34-exception-messages-carry-characters-a-cp1252-console-cannot-encode.md
 [t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
@@ -54,7 +48,6 @@ cssclasses: [todo-board]
 [t2608242212]: tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md
 [t2608222252]: tasks/t2608222252-derived-extraction-vars.md
 [t2608222239]: tasks/t2608222239-more-climate-datasets.md
-[t2608222155]: tasks/t2608222155-slim-the-baseline-run-so-gate-re-records-cost-less.md
 [t2608210010]: tasks/t2608210010-official-deltares-brand-colours-in-theme-scss.md
 [t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
 [t2608202351a]: tasks/t2608202351a-notebooks-on-the-site-via-committed-freeze.md
@@ -62,7 +55,6 @@ cssclasses: [todo-board]
 [t2608191733]: tasks/t2608191733-ship-a-sample-dataset-bundle-so-a-user-needs-no-deltares-p-drive.md
 [t2608161450]: tasks/t2608161450-the-chirps-store-does-not-satisfy-the-wg1-seam-contract.md
 [t2608151154]: tasks/t2608151154-st0-not-comparable-with-the-surface.md
-[t2608131304]: tasks/t2608131304-implement-the-config-snapshot-redesign-current-only-run-record-replaces-the-write-only-bundle.md
 [t2608122022]: tasks/t2608122022-verify-the-newly-honoured-water-year-and-sweep-for-projects-it-moves.md
 [t2608091730]: tasks/t2608091730-produce-waterbody-layers-data-side-so-basin-area-can-show-them-again.md
 [t2608091006]: tasks/t2608091006-standardize-plotting-across-the-toolbox-with-shared-templates-then-sweep-the-existing-figures-onto-them.md
@@ -79,16 +71,13 @@ cssclasses: [todo-board]
 | [t2609062317][]    | The shell-write scope backstop is inert in advisory mode | tooling / 2026-09-06…       | The repo moves back to slot_registry: atomic, OR the brain's git-workflow skill gains an…           |
 | [t2609041718][]    | WF1 writes the model three times, and the split is…      | wf1 / model build           | Someone proposes merging 1.07-1.09 again (the docstring that used to invite it is corrected, but…   |
 | [t2608202331][]    | Real-time scanning makes every Python import ~7x slower  | environment / dev machine…  | Admin rights on ESET exclusions become available, IT policy changes, or the work moves to a…        |
-| [t2608202308][]    | Two Snakemake-running test files carry no tier marker    | testing / tiering / xdist…  | An intermittent failure or lock error appears in either file under -n auto, or someone proposes…    |
 | [t2608202148][]    | WF2's behavioural contract has no live home              | wf2 / dev records /…        | Someone needs WF2's config-key or unit semantics and finds only the sealed doc; or a WF2 change…    |
 | [t2608200008][]    | Retrofit the remaining over-cap LOG.md rows…             | dev records / ledger        | see below; this is deliberately not scheduled work.                                                 |
 | [t2608171130][]    | Hoist the categorical palette out of compare_sources…    | wf0 / figures / 2026-08-17… | A second figure family needs to colour by CATEGORY rather than by quantity.                         |
 | [t2608132310][]    | Fold Julia box-drawing blocks into the tee's log grammar | logging / console /…        | A box block appears in a log recorded AFTER `silent = true`. The plausible source is Julia…         |
-| [t2608131718][]    | The baseline's two flat config copies are stale since…   | baseline / test fixtures /… |                                                                                                     |
 | [t2608121606][]    | A missing catalog source is logged identically to an…    | wf1 / data catalog /…       | Any basin whose results look implausible around a known reservoir, lake or glacier; or a model…     |
 | [t2608121104][]    | pixi install reports success without repairing a…        | environment / 2026-08-12…   | A pixi-provided executable is missing while `pixi list` reports its package installed — or pixi…    |
 | [t2608112051][]    | WF2 can serve change factors computed for a window the…  | wf2 projections /…          | Someone reads a change-factor product as current when its provenance.json horizon or reference…     |
-| [t2608071230][]    | Outlet stations are named by subcatchment ID, which is…  | naming / M02b               | The owner rules on a naming scheme, or a deliverable needs readable station names.                  |
 | [t2608071229][]    | hydromt's `to_yml` silently strips…                      | upstream / hydromt / M02b   | Upstream fixes `to_yml` — `tests/test_prepare_climate_data_catalog.py`'s xfail flips to a pass and… |
 | [t2608071228][]    | dask cannot be stubbed at module level, because pandas…  | tests / M02c                | pandas changes how it probes dask, or a test needs dask stubbed and hits the wall.                  |
 | [t2608071227][]    | The first test file to call `sys.modules.setdefault`…    | tests / M02c                | A new stubbing test file lands, or an ordering change makes a passing suite fail.                   |
@@ -105,16 +94,13 @@ cssclasses: [todo-board]
 [t2609062317]: tasks/t2609062317-scope-backstop-inert-advisory.md
 [t2609041718]: tasks/t2609041718-consolidate-wf1-model-round-trips.md
 [t2608202331]: tasks/t2608202331-real-time-scanning-makes-every-python-import-7x-slower.md
-[t2608202308]: tasks/t2608202308-two-snakemake-running-test-files-carry-no-tier-marker.md
 [t2608202148]: tasks/t2608202148-wf2-s-behavioural-contract-has-no-live-home.md
 [t2608200008]: tasks/t2608200008-retrofit-the-remaining-over-cap-log-md-rows-opportunistically.md
 [t2608171130]: tasks/t2608171130-hoist-the-categorical-palette-out-of-compare-sources.md
 [t2608132310]: tasks/t2608132310-fold-julia-box-drawing-blocks-into-the-log-grammar.md
-[t2608131718]: tasks/t2608131718-the-baseline-s-two-flat-config-copies-are-stale-since-2026-08-12.md
 [t2608121606]: tasks/t2608121606-a-missing-catalog-source-is-logged-identically-to-an-empty-basin-so-1-08-can-silently-omit-a-real-reservoir.md
 [t2608121104]: tasks/t2608121104-pixi-install-reports-success-without-repairing-a-missing-console-script.md
 [t2608112051]: tasks/t2608112051-wf2-can-serve-change-factors-computed-for-a-window-the-config-no-longer-asks-for.md
-[t2608071230]: tasks/t2608071230-outlet-station-naming-convention.md
 [t2608071229]: tasks/t2608071229-hydromt-1-x-to-dict.md
 [t2608071228]: tasks/t2608071228-dask-cannot-be-stubbed.md
 [t2608071227]: tasks/t2608071227-test-pollution-between.md

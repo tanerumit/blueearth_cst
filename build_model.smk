@@ -998,6 +998,9 @@ rule export_simulation_tables:
         # anyway for the same reason 1.13 and 1.15 declare it: the invariant is
         # LOCAL, not something a reader has to re-derive from a chain.
         model_final = ancient(f"{basin_dir}/.model_final"),
+        # Its [output.csv] columns and static maps label each table column
+        # with the registry wflow_id (shared/native_locations).
+        toml_path = ancient(f"{basin_dir}/wflow_sbm.toml"),
     output:
         # EVERY table, derived from the config -- not just discharge. Declared
         # as the individual files rather than a directory() so Snakemake tracks

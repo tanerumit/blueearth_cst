@@ -37,12 +37,17 @@ basin (``C:/TESTS/CST/gabon_1008``, 2026-08-10):
 
 Columns are sorted numerically, not lexically: as text, ``1010`` sorts before
 ``101``, and station ids are integers.
+
+Columns carry the location registry's ``wflow_id`` when the model's labels are
+supplied (``shared/native_locations``, t2609251515): the outlet's ``Q_101`` and a
+gauge ``Q_1010`` on the same cell are one column, ``1010``, and a subcatchment
+table's ``101..104`` read as the subbasins' primary ``1010..1040``.
 """
 
 import re
 import sys
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 import pandas as pd
 
@@ -122,13 +127,19 @@ def split_columns(columns) -> Dict[str, List[str]]:
 
 
 def tidy_tables(
-    frame: pd.DataFrame, decimals: int = DEFAULT_DECIMALS
+    frame: pd.DataFrame,
+    decimals: int = DEFAULT_DECIMALS,
+    labels: Optional[Dict[str, str]] = None,
 ) -> Dict[str, pd.DataFrame]:
     """One Excel-ready frame per variable, keyed by the variable name.
 
     The index is the formatted timestamp; columns are bare station ids in
     numeric order. Values are strings, deliberately: the rounding has to survive
     being written, and a float column would be re-expanded by pandas on write.
+
+    ``labels`` (``native_location_labels``) renames each kept column to its
+    ``wflow_id``; a mapped column absent from it duplicates another's model cell
+    and is left out. Without ``labels`` a column is its native id.
     """
     time_col = frame.columns[0]
     moments = pd.to_datetime(frame[time_col])
@@ -153,11 +164,14 @@ def tidy_tables(
 
     tables = {}
     for var, names in split_columns(frame.columns).items():
-        data = {
-            _COLUMN.match(name)["station"]: [
-                _format_value(v, decimals) for v in frame[name]
-            ]
+        ids = {
+            name: _COLUMN.match(name)["station"] if labels is None else labels[name]
             for name in names
+            if labels is None or name in labels
+        }
+        data = {
+            ids[name]: [_format_value(v, decimals) for v in frame[name]]
+            for name in sorted(ids, key=lambda name: int(ids[name]))
         }
         table = pd.DataFrame(data)
         table.insert(0, "time", stamps.to_numpy())
@@ -166,7 +180,11 @@ def tidy_tables(
 
 
 def write_tidy_tables(
-    csv_path, out_dir, prefix: str = "output", decimals: int = DEFAULT_DECIMALS
+    csv_path,
+    out_dir,
+    prefix: str = "output",
+    decimals: int = DEFAULT_DECIMALS,
+    labels: Optional[Dict[str, str]] = None,
 ) -> List[Path]:
     """Read wflow's csv and write ``<prefix>_<var>.csv`` per variable.
 
@@ -180,7 +198,7 @@ def write_tidy_tables(
     out_dir.mkdir(parents=True, exist_ok=True)
 
     written = []
-    for var, table in tidy_tables(frame, decimals).items():
+    for var, table in tidy_tables(frame, decimals, labels).items():
         path = out_dir / f"{prefix}_{slugify(var)}.csv"
         table.to_csv(path, index=False)
         written.append(path)
@@ -218,7 +236,22 @@ if __name__ == "__main__":
     # it declares a `log:`, so `merge_logs` opened a section for it on every run
     # and found nothing to put under it.
     with tee_to_log(sm.log[0]):
-        written = write_tidy_tables(sm.input.csv_path, out_dir)
+        import tomllib
+
+        from blueearth_cst.shared.native_locations import native_location_labels
+
+        toml_path = Path(sm.input.toml_path)
+        with toml_path.open("rb") as stream:
+            config = tomllib.load(stream)
+        header = pd.read_csv(sm.input.csv_path, nrows=0).columns.tolist()
+        labels = native_location_labels(
+            config["output"]["csv"]["column"],
+            header,
+            toml_path.parent
+            / config.get("dir_input", ".")
+            / config["input"]["path_static"],
+        )
+        written = write_tidy_tables(sm.input.csv_path, out_dir, labels=labels)
         # One file named, several counted -- `flush_figure_bundles`' grammar,
         # because a rule that writes ONE table should say which.
         if len(written) == 1:

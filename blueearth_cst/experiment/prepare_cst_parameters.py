@@ -253,18 +253,14 @@ def prep_cst_parameters(
     st_width = index_width(ST_NUM)
 
     # `st_0` has NO row: the table is the PARAMETER GRID, and the reserved
-    # unperturbed baseline has no parameters -- it is produced by rule 3.07, not
-    # by perturbation, and rule 3.08 never runs for it.
+    # unperturbed baseline has no parameters. Rule 3.08 still runs for it, at
+    # unit factors synthesized from the `identity` member token, so it takes
+    # the same quantile-mapping path as the grid (t2608151154) -- before that it
+    # was the raw generated series, and five of eleven `q` metrics differed
+    # from the grid's own identity member by a factor.
     #
-    # Its absence is LOAD-BEARING, and this supersedes C23's recorded rationale
-    # ("a response surface missing its own origin forces every downstream
-    # consumer to reconstruct it"), which assumed st_0 IS the surface origin. It
-    # is not: an all-zero st_0 row would be indistinguishable from an identity
-    # member's row while denoting a differently-processed climate -- the raw
-    # generated series, not that series round-tripped through a perturbation
-    # that is NOT the identity at unit factors (measured: five of eleven `q`
-    # metrics move by a factor). Absence is the strongest available marking, and
-    # it makes "not on the surface" structural rather than conventional.
+    # Its absence stays LOAD-BEARING: the lookup is the grid a user configured,
+    # and the baseline is not one of its points whatever values it takes.
     rows = []
 
     i = 0

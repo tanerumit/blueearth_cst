@@ -161,3 +161,38 @@ def test_descriptor_keeps_native_attributes_separate_from_effective_units(tmp_pa
         describe(
             ClimateArtifact("01", path), UnitInterpretation("fixture/1", "fixture", ())
         )
+
+
+def test_a_root_is_transformed_from_itself_at_the_identity_member(tmp_path):
+    """t2608151154: the baseline takes the grid's own perturbation path."""
+    rows = stochastic_rows(2, 1, unit_id_capacity=10)
+    raw = tmp_path / "raw_01.nc"
+    raw.write_bytes(b"raw root")
+    seen = []
+
+    def execute(command, log):
+        seen.append(command)
+        Path(command[6]).write_bytes(Path(command[3]).read_bytes() + b" mapped")
+
+    output = tmp_path / "run_01.nc"
+    transform(
+        rows[0],
+        ClimateArtifact("01", raw),
+        weathergen_config=tmp_path / "wg.yml",
+        lookup_csv=tmp_path / "grid.csv",
+        output_path=output,
+        log_path=tmp_path / "t.log",
+        execute=execute,
+    )
+    assert seen[0][-1] == "identity"
+    assert output.read_bytes() == b"raw root mapped"
+    with pytest.raises(ValueError, match="ancestor id mismatch"):
+        transform(
+            rows[0],
+            ClimateArtifact("03", raw),
+            weathergen_config=tmp_path / "wg.yml",
+            lookup_csv=tmp_path / "grid.csv",
+            output_path=tmp_path / "other.nc",
+            log_path=tmp_path / "t.log",
+            execute=execute,
+        )

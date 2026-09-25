@@ -99,6 +99,11 @@ def generate_roots(
     return artifacts
 
 
+#: The member token of the unperturbed baseline. It has no lookup row; the
+#: perturbation step synthesizes zero change for it (t2608151154).
+IDENTITY_MEMBER = "identity"
+
+
 def transform(
     derived_row: ScenarioRow,
     ancestor_artifact: ClimateArtifact,
@@ -109,11 +114,18 @@ def transform(
     log_path: Path,
     execute: Callable[[list[str], Path], None] = _execute,
 ) -> ClimateArtifact:
-    """Consume the exact ancestor selected by the validated row's edge."""
+    """Consume the exact ancestor selected by the validated row's edge.
+
+    A ROOT row (no ``st_id``) is transformed too, from its own raw generated
+    series at unit factors, so the baseline reaches the collection through the
+    same perturbation step as every grid member (t2608151154).
+    """
     payload = dict(derived_row.payload)
-    if derived_row.scenario_type != "stochastic" or not payload.get("st_id"):
-        raise ValueError("transform requires a stochastic design-point row")
-    if derived_row.derived_from != ancestor_artifact.run_id:
+    if derived_row.scenario_type != "stochastic":
+        raise ValueError("transform requires a stochastic row")
+    root = not payload.get("st_id")
+    ancestor_id = derived_row.run_id if root else derived_row.derived_from
+    if ancestor_id != ancestor_artifact.run_id:
         raise ValueError(f"run_id={derived_row.run_id}: ancestor id mismatch")
     if not ancestor_artifact.path.is_file():
         raise FileNotFoundError(ancestor_artifact.path)
@@ -127,7 +139,7 @@ def transform(
         str(weathergen_config),
         str(lookup_csv),
         str(output_path),
-        payload["st_id"],
+        IDENTITY_MEMBER if root else payload["st_id"],
     ]
     execute(command, log_path)
     if not output_path.is_file():

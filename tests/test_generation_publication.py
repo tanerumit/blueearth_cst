@@ -77,7 +77,7 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
         (cells, b"cells"),
         (generator_yaml, b"generator"),
         (lookup, b"lookup"),
-        (series_dir / "run_01.nc", b"root"),
+        (output_dir / "run_01.nc", b"raw root"),
     ):
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(content)
@@ -145,6 +145,12 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
                 }
                 for run_id in ("01", "02")
             ],
+            "temporary_members": [
+                {
+                    "run_id": "01",
+                    "path": "scenarios/collection/weathergenr/output/run_01.nc",
+                }
+            ],
         },
     }
     monkeypatch.setattr(
@@ -205,11 +211,21 @@ def test_provider_binding_rejects_wrong_seed_rows_and_member_mapping(
         **arguments,
         "root_run_ids": None,
         "output_dir": None,
-        "ancestor": series_dir / "run_01.nc",
+        "ancestor": output_dir / "run_01.nc",
         "row_id": "02",
         "output": series_dir / "run_02.nc",
     }
     publication.validate_provider_inputs(plan, root, **derived)
+    # t2608151154: the root is transformed too, from its own raw series.
+    publication.validate_provider_inputs(
+        plan, root, **{**derived, "row_id": "01", "output": series_dir / "run_01.nc"}
+    )
+    series_dir.mkdir(parents=True, exist_ok=True)
+    (series_dir / "run_01.nc").write_bytes(b"published root")
+    with pytest.raises(ValueError, match="member mapping"):
+        publication.validate_provider_inputs(
+            plan, root, **{**derived, "ancestor": series_dir / "run_01.nc"}
+        )
     with pytest.raises(ValueError, match="member mapping"):
         publication.validate_provider_inputs(
             plan, root, **{**derived, "output": series_dir / "run_03.nc"}

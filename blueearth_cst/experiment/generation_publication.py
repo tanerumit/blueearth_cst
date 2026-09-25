@@ -277,7 +277,7 @@ def validate_provider_inputs(
             raise ValueError("provider root argument mapping differs")
     else:
         selected = next((item for item in rows if item["run_id"] == row_id), None)
-        if selected is None or not selected["st_id"]:
+        if selected is None:
             raise ValueError("provider perturbed run ID differs")
         root = next(
             item
@@ -285,7 +285,13 @@ def validate_provider_inputs(
             if item["rlz"] == selected["rlz"] and not item["st_id"]
         )
         series = {item["run_id"]: item["path"] for item in plan["outputs"]["series"]}
-        expected_ancestor = (project_root / series[root["run_id"]]).resolve()
+        # Every run, the root included, is transformed from its realization's
+        # RAW generated series (t2608151154).
+        raw = {
+            item["run_id"]: item["path"]
+            for item in plan["outputs"]["temporary_members"]
+        }
+        expected_ancestor = (project_root / raw[root["run_id"]]).resolve()
         expected_output = (project_root / series[row_id]).resolve()
         if (
             Path(ancestor).resolve(strict=True) != expected_ancestor

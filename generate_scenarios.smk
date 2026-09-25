@@ -235,15 +235,21 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             _v2_sources[role], {"project_root": _v2_root}
         )
 
+    # The generator's RAW root per realization. Every published run -- the
+    # unperturbed baseline included -- is transformed from it, so the baseline
+    # takes the same quantile-mapping path as the grid (t2608151154).
+    _v2_raw = {
+        item["run_id"]: _v2_root / item["path"]
+        for item in V2_PLAN["outputs"]["temporary_members"]
+    }
+
     def _v2_ancestor(wc):
         row = _v2_rows[wc.run_id]
-        if not row["st_id"]:
-            raise ValueError("root cannot use perturbation rule")
         root = next(
             item for item in V2_PLAN["rows"]
             if item["rlz"] == row["rlz"] and not item["st_id"]
         )
-        return _v2_series[root["run_id"]].as_posix()
+        return _v2_raw[root["run_id"]].as_posix()
 
     rule generate_weather_realizations:
         message: GENERATE_WEATHER_REALIZATIONS.banner()
@@ -253,7 +259,9 @@ if V2_MODE and V2_PLAN["decision"] == "create":
             cells=_v2_input("basin_cells").as_posix(),
             yaml=_v2_yaml.as_posix(),
         output:
-            roots=[_v2_series[run_id].as_posix() for run_id in _v2_root_ids],
+            # temp(): consumed only by the perturbation step, which publishes
+            # every run's series from them.
+            roots=[temp(_v2_raw[run_id].as_posix()) for run_id in _v2_root_ids],
             dates=[(_v2_root / item["path"]).as_posix() for item in V2_PLAN["outputs"]["date_products"]],
         log:
             GENERATE_WEATHER_REALIZATIONS.log()
@@ -277,11 +285,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 output_dir=source_inputs.output_dir,
             )
             root_rows = tuple(_rows_by_id[run_id] for run_id in _v2_root_ids)
-            roots = generate_roots(root_rows, source_inputs, log_path=Path(log[0]))
-            for artifact in roots:
-                target = _v2_series[artifact.run_id]
-                target.parent.mkdir(parents=True, exist_ok=True)
-                os.replace(artifact.path, target)
+            generate_roots(root_rows, source_inputs, log_path=Path(log[0]))
 
     rule perturb_climate_realizations:
         message: PERTURB_CLIMATE_REALIZATIONS.banner(context="run {wildcards.run_id}")
@@ -293,7 +297,7 @@ if V2_MODE and V2_PLAN["decision"] == "create":
         output:
             (_v2_data / "series" / "run_{run_id}.nc").as_posix()
         wildcard_constraints:
-            run_id="|".join(_v2_derived_ids),
+            run_id="|".join(_v2_root_ids + _v2_derived_ids),
         log:
             PERTURB_CLIMATE_REALIZATIONS.log("run_{run_id}")
         benchmark:
@@ -308,7 +312,8 @@ if V2_MODE and V2_PLAN["decision"] == "create":
                 output=Path(output[0]),
             )
             row = _rows_by_id[wildcards.run_id]
-            root_id = row.derived_from
+            root_id = row.derived_from or row.run_id
+            Path(output[0]).parent.mkdir(parents=True, exist_ok=True)
             transform(
                 row,
                 ClimateArtifact(root_id, Path(input.ancestor)),

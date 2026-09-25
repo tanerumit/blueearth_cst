@@ -39,7 +39,22 @@ log_row(sub("\\.nc$", "", basename(output_nc_path)),
 rlz_input <- weathergenr::read_netcdf(rlz_path, keep_leap_day = FALSE)
 # This member's slice of the experiment's stress-test lookup: twelve rows in
 # month order, or a stop() naming the token.
-cst_data <- read_member_grid(lookup_csv_path, st_id_token)
+#
+# `identity` is the unperturbed baseline (t2608151154). It has NO lookup row --
+# the lookup is the parameter grid and st_0 is absent from it on purpose -- so
+# its twelve rows are synthesized at zero change. The baseline then takes the
+# SAME path as every grid member: apply_climate_perturbations quantile-maps
+# precipitation unconditionally, so a baseline that skipped it differed from
+# the grid's own identity member by a processing step (low-flow metrics moved
+# by -70% to +128%), not only by a perturbation.
+if (identical(st_id_token, "identity")) {
+  cst_data <- data.frame(
+    month = 1:12, temp_change = 0, precip_change = 0,
+    precip_variance_change = 0
+  )
+} else {
+  cst_data <- read_member_grid(lookup_csv_path, st_id_token)
+}
 
 # PERCENT -> the generator's multiplier form (WG-2). The rule is stated over the
 # percent COLUMNS rather than per column, so a future column inherits it:

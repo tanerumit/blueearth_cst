@@ -142,19 +142,28 @@ It reserves the directory atomically, versions a generated collision to `_v2`,
 and refuses to overwrite a name already set — which would strand a completed
 experiment's outputs under a name nothing points at.
 
-### `julia_threads` — a toolbox setting, not a project one
+### `compute.julia_threads` / `compute.max_parallel_batches`
 
-It lives in `config/advanced_settings.yml` under `runtime:` and has no
-per-project override. Wflow parallelizes over grid **cells**, so raising it pays
-on a large basin and does nothing on a small one. It is not Snakemake's
-`--cores`: the two multiply, so keep `--cores N × julia_threads <= logical CPUs`.
+WF4 runs its members in batches, one Julia session each. Left unset, the
+toolbox picks threads per batch and batches at once from the model's active
+cell count (`config/advanced_settings.yml`, `batching:`). Only the small-basin
+choice is measured (1 thread, 2 batches at once, on a 257-cell basin); the
+large-basin one is a provisional guess. Wflow parallelizes over grid cells, so
+threads pay on a big grid and cost time on a small one, and more than a couple
+of Julia sessions at once can slow every member down. To measure your own case:
+
+```console
+pixi run python scripts/calibrate_batching.py --project-dir <project> --years 5
+```
+
+It prints the two keys to set here. WF1's single historical run still uses
+`runtime.julia_threads`.
 
 ### `compute.batch_size` / `compute.batch_size_max`
 
-WF3 groups stress-test members into batches for the Wflow run. Disk is the
-binding constraint on large sweeps, because concurrent batches are resident at
-once — so `batch_size_max` (default 8) bounds the footprint, while an explicit
-`batch_size` wins outright. Both fail at parse time, naming the offending key, if
+Members are split evenly across the batches, one batch per slot, so each extra
+batch costs another Julia start-up. `batch_size_max` (no cap by default) bounds
+the members per batch, and an explicit `batch_size` wins outright. Both fail at parse time, naming the offending key, if
 set below 1. `compute.disk_headroom_gb` states an absolute disk budget; absent,
 the toolbox keeps `defaults.batch_disk_headroom_fraction` of free disk
 (`config/advanced_settings.yml`).

@@ -199,9 +199,8 @@ runtime:
   # thing for this one.
   #
   # Wflow parallelizes over grid CELLS, so raising this pays on a large basin
-  # and does nothing on a small one. WF3 now reserves these threads within
-  # Snakemake's total --cores budget (and scales down when that budget is smaller).
-  # WF1 still launches one Julia job with this fixed thread count.
+  # and costs time on a small one. Only WF1's single historical run reads it;
+  # WF4's batches take their threads from `batching:` below.
   #
   # 4 is one leg of the frozen resource triple `(-c 3, --threads 4, B=1)` that
   # every recorded performance baseline was measured at

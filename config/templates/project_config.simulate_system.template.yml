@@ -23,8 +23,12 @@ operation: simulate-and-metrics
 #  COMPUTE
 # -----------------------------------------------------------------------------
 
-# How model runs are grouped. Larger batches need more disk at once.
+# How model runs are grouped. Left unset, the toolbox picks by basin size
+# (advanced_settings `batching`); `scripts/calibrate_batching.py` measures
+# your own basin and machine and prints the values to put here.
 #compute:
-#  batch_size_max: 8                       # most runs per batch
+#  julia_threads: 1                        # Julia threads per batch
+#  max_parallel_batches: 2                 # batches running at once
+#  batch_size_max: 8                       # most runs per batch (default: no cap)
 #  batch_size: 4                           # fixed batch size (skips automatic sizing)
 #  disk_headroom_gb: 40                    # disk to keep free; default is a share of free space

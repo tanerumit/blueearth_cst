@@ -123,3 +123,35 @@ def test_K6_a_clipped_window_can_trigger_BOTH_warnings():
 def test_every_configured_window_shape_normalises_to_the_same_years(requested):
     """`historical_year_range` has appeared as a list, a string and dates."""
     assert clip_reference_window(requested).effective == (1990, 2010)
+
+
+def test_console_rows_state_the_period_then_its_alignment():
+    from blueearth_cst.projections.reference_window import console_rows
+
+    record = {
+        "reference_window_requested": "1985-2014",
+        "reference_window_effective": "1985-2014",
+        "reference_window_clipped": False,
+        "reference_window_years": 29,
+        "shared_historical_window": "2000-2016",
+        "reference_alignment": "differs",
+    }
+    assert console_rows(record) == [
+        "Reference period 1985-2014 (29 years)",
+        "Reference period differs from the observed historical window 2000-2016",
+    ]
+
+
+def test_console_rows_name_a_clip_and_omit_a_missing_comparison():
+    from blueearth_cst.projections.reference_window import console_rows
+
+    record = {
+        "reference_window_requested": "1990-2020",
+        "reference_window_effective": "1990-2014",
+        "reference_window_clipped": True,
+        "reference_window_years": 25,
+    }
+    assert console_rows(record) == [
+        "Reference period 1990-2014 (25 years), clipped from the requested "
+        "1990-2020 where the CMIP6 historical experiment ends (2014)"
+    ]

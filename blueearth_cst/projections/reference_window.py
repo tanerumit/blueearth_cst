@@ -182,3 +182,31 @@ def alignment_record(window: ReferenceWindow, shared_window=None) -> dict:
             "matches" if window.effective == shared else "differs"
         )
     return record
+
+
+def console_rows(record) -> list[str]:
+    """The reference-window record as console rows, one finding per row.
+
+    The period first, with its length and any clip; then how it relates to the
+    observed historical window, when there is one to compare against. The
+    ``key=value`` spelling stays in ``provenance.json``, which is the structured
+    copy -- these rows are for the person watching the run.
+    """
+    effective = record["reference_window_effective"]
+    years = record["reference_window_years"]
+    period = f"Reference period {effective} ({years} years)"
+    if record.get("reference_window_clipped"):
+        period += (
+            f", clipped from the requested {record['reference_window_requested']}"
+            f" where the CMIP6 historical experiment ends ({HISTORICAL_END_YEAR})"
+        )
+    rows = [period]
+    shared = record.get("shared_historical_window")
+    if shared is not None:
+        verb = (
+            "matches"
+            if record.get("reference_alignment") == "matches"
+            else ("differs from")
+        )
+        rows.append(f"Reference period {verb} the observed historical window {shared}")
+    return rows

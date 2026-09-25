@@ -37,8 +37,8 @@ import os
 import xarray as xr
 
 from blueearth_cst.projections import provenance as _prov
+from blueearth_cst.projections import reference_window, series_identity
 from blueearth_cst.projections import report as _report
-from blueearth_cst.projections import series_identity
 from blueearth_cst.projections.calendar_weights import CalendarError, assert_weightable
 from blueearth_cst.projections.change_factor_table import (
     TABLE_COLUMNS_ANNUAL,
@@ -411,22 +411,11 @@ if "snakemake" in globals():
             f"{plural(len(horizons), 'horizon')}",
             module="change",
         )
-        # Step 5e / D1: the durable reference-window record. Its designated homes
-        # -- provenance.json (6a) and report.md (7) -- do not exist yet, so it
-        # lands in this log and 6a relocates it.
-        #
-        # ONE row, not one per fact. Every key already begins `reference_`, so
-        # seven rows differing only in their suffix read as repetition rather than
-        # as seven findings, and this rule is a single job covering every point --
-        # there is no model or scenario that would distinguish them. The keys stay
-        # `key=value` on the joined row, so grepping a single condition
-        # (`reference_window_years=`) still lands on it; provenance.json remains
-        # the structured copy.
-        _facts = " ".join(
-            f"{_key}={_value}"
-            for _key, _value in sorted(dict(sm.params.reference_record).items())
-        )
-        log_row(f"reference_window {_facts}", module="change")
+        # Step 5e / D1: the reference-window record, one finding per row: the
+        # period (and any clip), then its relation to the observed window.
+        # provenance.json keeps the structured `key=value` copy.
+        for _row in reference_window.console_rows(dict(sm.params.reference_record)):
+            log_row(_row, module="change")
 
         # Snakemake params carry plain data; rebuild the typed spec here so the
         # aggregation looks up fields by name rather than by list position.

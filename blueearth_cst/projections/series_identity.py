@@ -250,6 +250,122 @@ def _consts_repr(consts) -> str:
     return render(tuple(consts))
 
 
+#: Package whose functions the kernel closure follows. Anything else a kernel
+#: calls (xarray, numpy) is environment, covered by ``env_fingerprint``.
+_OWN_PACKAGE = "blueearth_cst."
+
+#: Modules the closure never enters: they log, style or report and cannot change
+#: a reduced number. Without this a ``log_row`` call added to a kernel function
+#: would re-key every series on each logging edit.
+KERNEL_CLOSURE_EXCLUDED = frozenset(
+    {
+        "blueearth_cst.shared.console_style",
+        "blueearth_cst.shared.progress",
+        "blueearth_cst.shared.run_log_core",
+        "blueearth_cst.shared.snake_utils",
+    }
+)
+
+
+def _is_plain_constant(value) -> bool:
+    if value is None or isinstance(value, (bool, int, float, str, bytes)):
+        return True
+    if isinstance(value, (tuple, list, frozenset, set)):
+        return all(_is_plain_constant(item) for item in value)
+    return False
+
+
+def _plain_repr(value) -> str:
+    # Sets iterate in hash-randomised order for str items, so render them sorted.
+    if isinstance(value, (frozenset, set)):
+        return type(value).__name__ + repr(sorted(_plain_repr(v) for v in value))
+    if isinstance(value, (tuple, list)):
+        return type(value).__name__ + repr([_plain_repr(v) for v in value])
+    return repr(value)
+
+
+def _code_names(func) -> list[str]:
+    """Every global/attribute name the function and its nested code refer to."""
+    from types import CodeType
+
+    names: set[str] = set()
+    stack = [func.__code__]
+    while stack:
+        code = stack.pop()
+        names.update(code.co_names)
+        stack.extend(c for c in code.co_consts if isinstance(c, CodeType))
+    return sorted(names)
+
+
+def kernel_closure(functions) -> dict:
+    """The functions and plain module constants a kernel reaches, and what it skips.
+
+    Starts from ``functions`` and follows every name their code (nested code
+    included) resolves in its module globals, or as an attribute of an own-package
+    module it references. Own-package functions outside
+    :data:`KERNEL_CLOSURE_EXCLUDED` join the closure; plain constants (numbers,
+    strings, and tuples/sets of them) are recorded by value; any other own-package
+    global is listed under ``skipped`` so the coverage gap is visible, never
+    implied. Traversal order is sorted throughout, so the result is identical in
+    every process.
+
+    Returns ``{"functions": {qualified name: function}, "constants": {qualified
+    name: repr}, "skipped": [qualified name, ...]}``.
+    """
+    from types import FunctionType, ModuleType
+
+    found: dict = {}
+    constants: dict = {}
+    skipped: set = set()
+
+    def owned(module_name: str) -> bool:
+        return (
+            module_name.startswith(_OWN_PACKAGE)
+            and module_name not in KERNEL_CLOSURE_EXCLUDED
+        )
+
+    def consider(module_name: str, name: str, value, pending: list) -> None:
+        if isinstance(value, FunctionType):
+            if owned(value.__module__):
+                pending.append(value)
+        elif isinstance(value, ModuleType) or isinstance(value, type):
+            return
+        elif _is_plain_constant(value):
+            constants[f"{module_name}.{name}"] = _plain_repr(value)
+        elif not callable(value):
+            skipped.add(f"{module_name}.{name}")
+
+    pending = list(functions)
+    while pending:
+        func = pending.pop()
+        key = f"{func.__module__}.{func.__qualname__}"
+        if key in found:
+            continue
+        found[key] = func
+        scope = func.__globals__
+        names = _code_names(func)
+        for name in names:
+            if name not in scope:
+                continue
+            value = scope[name]
+            if isinstance(value, ModuleType):
+                if not owned(value.__name__):
+                    continue
+                for attribute in names:
+                    if attribute in vars(value):
+                        consider(
+                            value.__name__, attribute, vars(value)[attribute], pending
+                        )
+            elif owned(func.__module__):
+                consider(func.__module__, name, value, pending)
+        pending.sort(key=lambda f: (f.__module__, f.__qualname__), reverse=True)
+    return {
+        "functions": dict(sorted(found.items())),
+        "constants": dict(sorted(constants.items())),
+        "skipped": sorted(skipped),
+    }
+
+
 def kernel_hash(functions, env_fingerprint: str | None = None) -> str:
     """sha256 over the BEHAVIOUR of the numerical reduction functions.
 
@@ -279,9 +395,13 @@ def kernel_hash(functions, env_fingerprint: str | None = None) -> str:
     error-message edit costs one invalidation again; the fetch/reduce split
     (design amendment pending) makes that re-reduction local and cheap.
 
-    What it still deliberately misses: a change in a *callee* that is not itself
-    listed — so the enumeration must name every function whose arithmetic matters,
-    exactly as ``module_hash``'s file list had to.
+    **Callees are followed** (:func:`kernel_closure`, t2608071218). Until
+    2026-09-25 only the listed functions were hashed and the list had to name
+    every callee by hand; it had missed ``intersection``, ``_spatial_dim``,
+    ``check_axis`` and three module constants, so an edit to any of them
+    re-queued the job on script mtime and then cache-hit on a stale digest. The
+    listed functions are now roots. Own-package globals that are neither
+    functions nor plain constants are not hashed; ``kernel_closure`` reports them.
 
     ``env_fingerprint`` folds the environment into the same digest: the reduction's
     output depends on xarray/pandas behaviour, which no source hash can see. Pass
@@ -289,13 +409,14 @@ def kernel_hash(functions, env_fingerprint: str | None = None) -> str:
     dependency change re-derives — which is the conservative direction for a cache
     whose failure mode is silently wrong numbers.
 
-    Each function contributes its qualified name too, so moving logic between
-    functions invalidates rather than cancelling out.
+    Each function contributes its module and qualified name too, so moving logic
+    between functions invalidates rather than cancelling out.
     """
+    closure = kernel_closure(functions)
     digest = hashlib.sha256()
-    for func in sorted(functions, key=lambda f: f.__qualname__):
+    for key, func in closure["functions"].items():
         code = func.__code__
-        digest.update(func.__qualname__.encode("utf-8"))
+        digest.update(key.encode("utf-8"))
         digest.update(code.co_code)
         # Constants and names: a changed threshold, a swapped attribute lookup, a
         # changed dimension name or resample code are all behaviour changes that
@@ -310,6 +431,8 @@ def kernel_hash(functions, env_fingerprint: str | None = None) -> str:
         # default is a changed computation with identical bytecode.
         digest.update(repr(func.__defaults__).encode("utf-8"))
         digest.update(repr(sorted((func.__kwdefaults__ or {}).items())).encode("utf-8"))
+    for key, value in closure["constants"].items():
+        digest.update(f"const:{key}={value}".encode("utf-8"))
     if env_fingerprint is not None:
         digest.update(b"env:")
         digest.update(env_fingerprint.encode("utf-8"))

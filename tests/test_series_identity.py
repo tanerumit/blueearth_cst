@@ -1112,3 +1112,145 @@ def test_file_digest_ignores_the_checkout_line_ending(tmp_path):
     assert si.file_digest(lf) == si.file_digest(crlf)
     crlf.write_bytes(b"version: 6\r\npackages:\r\n- b\r\n")
     assert si.file_digest(lf) != si.file_digest(crlf)
+
+
+# --------------------------------------------------------------------------
+# kernel_closure — callees are followed (t2608071218)
+# --------------------------------------------------------------------------
+
+
+def _compile_module(*lines):
+    """Compile source into a namespace that claims to be an own-package module."""
+    namespace = {"__name__": "blueearth_cst._probe"}
+    exec(compile(chr(10).join(lines), "<probe>", "exec"), namespace)
+    return namespace
+
+
+def test_kernel_hash_notices_a_change_in_an_unlisted_callee():
+    before = _compile_module(
+        "def helper(x):", "    return x * 2", "def reduce(x):", "    return helper(x)"
+    )
+    after = _compile_module(
+        "def helper(x):", "    return x * 3", "def reduce(x):", "    return helper(x)"
+    )
+    assert si.kernel_hash([before["reduce"]]) != si.kernel_hash([after["reduce"]])
+
+
+def test_kernel_hash_notices_a_changed_module_constant():
+    before = _compile_module("DIMS = ('x', 'lon')", "def reduce(d):", "    return DIMS")
+    after = _compile_module("DIMS = ('lon', 'x')", "def reduce(d):", "    return DIMS")
+    assert si.kernel_hash([before["reduce"]]) != si.kernel_hash([after["reduce"]])
+
+
+def _reducer_kernel():
+    from blueearth_cst.projections import get_stats_climate_proj as stats
+    from blueearth_cst.projections import grid_weights as weights
+
+    return [
+        stats.get_stats_clim_projections,
+        stats.merge_member_series,
+        weights.weighted_spatial_mean,
+        weights.cell_area_weights,
+        weights.latitude_weights,
+        weights.longitude_weights,
+        weights.midpoint_edges,
+    ]
+
+
+def _stage_b_kernel():
+    from blueearth_cst.projections import calendar_weights as calendar
+    from blueearth_cst.projections import get_change_climate_proj as change
+
+    return [
+        change.get_change_annual_clim_proj,
+        change.hydrological_year_bounds,
+        change.quantile_label,
+        calendar.month_length_weights,
+        calendar.days_in_month,
+    ]
+
+
+# Pinned so a function or constant entering either cache key -- or a global the
+# closure cannot hash, under "skipped" -- is a reviewed change, never drift.
+REDUCER_CLOSURE = {
+    "functions": [
+        "blueearth_cst.projections.get_stats_climate_proj._spatial_dim",
+        "blueearth_cst.projections.get_stats_climate_proj.get_stats_clim_projections",
+        "blueearth_cst.projections.get_stats_climate_proj.merge_member_series",
+        "blueearth_cst.projections.grid_weights.cell_area_weights",
+        "blueearth_cst.projections.grid_weights.check_axis",
+        "blueearth_cst.projections.grid_weights.latitude_weights",
+        "blueearth_cst.projections.grid_weights.longitude_weights",
+        "blueearth_cst.projections.grid_weights.midpoint_edges",
+        "blueearth_cst.projections.grid_weights.weighted_spatial_mean",
+    ],
+    "constants": [
+        "blueearth_cst.projections.get_stats_climate_proj.XDIMS",
+        "blueearth_cst.projections.get_stats_climate_proj.YDIMS",
+    ],
+    "skipped": [],
+}
+STAGE_B_CLOSURE = {
+    "functions": [
+        "blueearth_cst.projections.calendar_weights.assert_weightable",
+        "blueearth_cst.projections.calendar_weights.days_in_month",
+        "blueearth_cst.projections.calendar_weights.month_length_weights",
+        "blueearth_cst.projections.get_change_climate_proj._to_datetime_index",
+        "blueearth_cst.projections.get_change_climate_proj.get_change_annual_clim_proj",
+        "blueearth_cst.projections.get_change_climate_proj.hydrological_year_bounds",
+        "blueearth_cst.projections.get_change_climate_proj.quantile_label",
+        "blueearth_cst.projections.variable_spec.canonical_kind",
+        "blueearth_cst.projections.variable_spec.change_kind",
+        "blueearth_cst.shared.collection_utils.intersection",
+    ],
+    "constants": [
+        "blueearth_cst.projections.calendar_weights.CALENDAR_UNKNOWN",
+        "blueearth_cst.projections.calendar_weights.SUPPORTED_CALENDARS",
+        "blueearth_cst.projections.get_change_climate_proj.COMPANION_SEP",
+        "blueearth_cst.projections.get_change_climate_proj.DEFAULT_STATS",
+    ],
+    "skipped": [],
+}
+
+
+@pytest.mark.parametrize(
+    "kernel, expected",
+    [(_reducer_kernel, REDUCER_CLOSURE), (_stage_b_kernel, STAGE_B_CLOSURE)],
+    ids=["reducer", "stage_b"],
+)
+def test_kernel_closures_are_pinned(kernel, expected):
+    closure = si.kernel_closure(kernel())
+    assert {
+        "functions": list(closure["functions"]),
+        "constants": list(closure["constants"]),
+        "skipped": closure["skipped"],
+    } == expected
+
+
+def test_kernel_hashes_agree_across_hash_seeds():
+    # A set walked in hash order would move STAGE_B_HASH per process, and it is a
+    # rule param: stage B would then re-run on every invocation.
+    import os
+    import subprocess
+    import sys
+
+    probe = (
+        "import sys; sys.path.insert(0, 'tests');"
+        "from test_series_identity import _reducer_kernel, _stage_b_kernel;"
+        "from blueearth_cst.projections import series_identity as si;"
+        "print(si.kernel_hash(_reducer_kernel()), si.kernel_hash(_stage_b_kernel()))"
+    )
+    outputs = set()
+    for seed in ("1", "2"):
+        env = {**os.environ, "PYTHONHASHSEED": seed}
+        outputs.add(
+            subprocess.run(
+                [sys.executable, "-c", probe],
+                check=True,
+                capture_output=True,
+                text=True,
+                env=env,
+                cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+            ).stdout.strip()
+        )
+    assert len(outputs) == 1

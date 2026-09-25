@@ -182,6 +182,23 @@ def get_stats_clim_projections(
     return mean_stats_time
 
 
+def merge_member_series(member_series, variable_units):
+    """Merge the per-member reductions and stamp each variable's stored units.
+
+    A function rather than inline in the Snakemake branch so ``REDUCER_KERNEL``
+    can root it: code in the ``__main__`` block is never hashed, so an edit there
+    re-queued the job on script mtime and then cache-hit on the old digest
+    (t2608071218).
+    """
+    import xarray as xr
+
+    merged = xr.merge(member_series)
+    for name, units in variable_units.items():
+        if name in merged:
+            merged[name].attrs["units"] = units
+    return merged
+
+
 if __name__ == "__main__":
     if "snakemake" in globals():
         sm = globals()["snakemake"]
@@ -388,10 +405,9 @@ if __name__ == "__main__":
                 # merge members results
                 ds_members_mean_stats_time.append(mean_stats_time)
 
-            nc_mean_stats_time = xr.merge(ds_members_mean_stats_time)
-            for _name, _units in variable_units.items():
-                if _name in nc_mean_stats_time:
-                    nc_mean_stats_time[_name].attrs["units"] = _units
+            nc_mean_stats_time = merge_member_series(
+                ds_members_mean_stats_time, variable_units
+            )
 
             # write netcdf:
 

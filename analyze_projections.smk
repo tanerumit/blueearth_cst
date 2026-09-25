@@ -448,14 +448,17 @@ STORE_INDEX = str(Path(DATA_SOURCES).parent / "cmip6_store_index.json")
 # (INCLUDING strings -- `resample(time="MS")` -> `("YS")` is a string-only edit),
 # a changed default argument, and a swapped attribute lookup.
 #
-# The enumeration must name every function whose ARITHMETIC matters; a change in
-# an unlisted callee is invisible, exactly as an unlisted file was before.
+# The list names the ROOTS. Since t2608071218 `kernel_hash` follows their calls
+# into blueearth_cst (and hashes the plain module constants they read), because
+# hand enumeration had missed `_spatial_dim`, `check_axis` and `intersection`.
+# Code in a script's `__main__` block is still never hashed -- keep arithmetic in
+# a rooted function (`merge_member_series` moved out for that reason).
 #
 # `pixi.lock` is folded in as the environment fingerprint: the reduction's numbers
 # depend on xarray/pandas behaviour, which no source hash can see. Coarse on
 # purpose -- any dependency change re-derives, which is the safe direction for a
 # cache whose failure mode is silently wrong numbers.
-from blueearth_cst.projections.get_stats_climate_proj import get_stats_clim_projections
+from blueearth_cst.projections.get_stats_climate_proj import get_stats_clim_projections, merge_member_series
 from blueearth_cst.projections.grid_weights import (
     cell_area_weights,
     latitude_weights,
@@ -466,13 +469,11 @@ from blueearth_cst.projections.grid_weights import (
 
 # Step 5a: the spatial reduction is no longer a single `.mean()` inside
 # get_stats_clim_projections -- it is a weighted mean whose weights come from the
-# five functions below. They MUST be enumerated here. `kernel_hash` hashes the
-# behaviour of the functions it is given and follows no call graph, so a changed
-# edge derivation or area formula in an unlisted callee would be invisible and
-# every cached series would be silently reused across a weighting change. That is
-# the exact failure the enumeration exists to prevent.
+# five functions below. The closure would reach them through the root anyway;
+# they stay listed so the kernel reads as the reduction it hashes.
 REDUCER_KERNEL = [
     get_stats_clim_projections,
+    merge_member_series,
     weighted_spatial_mean,
     cell_area_weights,
     latitude_weights,
@@ -496,8 +497,8 @@ REDUCER_HASH = _si.kernel_hash(
 # Found 2026-07-30 by the hydrological-year fix: the fix was correct, its unit
 # tests passed, and the workflow would not have applied it.
 #
-# Same enumeration discipline as REDUCER_KERNEL: name every function whose
-# ARITHMETIC matters, because kernel_hash follows no call graph.
+# Same roots-plus-closure rule as REDUCER_KERNEL; the closure is what reaches
+# `intersection` and `_to_datetime_index`.
 from blueearth_cst.projections.get_change_climate_proj import (
     get_change_annual_clim_proj,
     hydrological_year_bounds,

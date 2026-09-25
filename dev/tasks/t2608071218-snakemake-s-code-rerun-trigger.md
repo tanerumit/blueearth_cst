@@ -15,9 +15,30 @@ updated: 2026-09-01
 > **Why** — Snakemake's `code` trigger does not reach it, so a fix to that rule can land and never re-run — the output stays stale and looks current.
 > **Effort** — Unknown: the cause was found in 2026-07 and the mechanism is understood, but the fix shape is not settled.
 
+> [!done] Re-diagnosed and fixed 2026-09-25 (`maint/identity-and-baseline`)
+> The 2026-07-25 explanation below (`temp()` on 2.04 + `ancient()` on 2.05) is
+> obsolete: D9 removed both. The mechanism today, read from Snakemake 9.6.2:
+> `persistence._code` hashes only `shell:` bodies, and a `script:` rule is
+> re-queued when the script's **mtime** is newer than its outputs -- regardless
+> of `--rerun-triggers`. So the job DID re-queue; the script then cache-hit on
+> its own series digest, whose `REDUCER_HASH`/`STAGE_B_HASH` hashed only the
+> hand-listed kernel functions. They had missed `intersection` (the very edit
+> this note was filed for), `_spatial_dim`, `check_axis`, `_to_datetime_index`,
+> `assert_weightable`, `canonical_kind`/`change_kind` and six module constants.
+>
+> Fix: `kernel_hash` follows the call graph from the listed roots into
+> `blueearth_cst` (stop-set: logging/console modules) and hashes plain module
+> constants; the member merge + units stamping moved out of `__main__` into the
+> rooted `merge_member_series`. Both closures are pinned in
+> `tests/test_series_identity.py`, with a cross-`PYTHONHASHSEED` check.
+>
+> **Known remaining gap:** the rest of the reduce script's `__main__` block
+> (series attrs, netCDF encoding) is still unhashed -- metadata, not numbers.
+> Keep arithmetic in rooted functions.
+
 ## Progress
 
-- [ ] <first step>
+- [x] Re-diagnose on Snakemake 9.6.2 and fix the kernel coverage
 
 ## Refs
 

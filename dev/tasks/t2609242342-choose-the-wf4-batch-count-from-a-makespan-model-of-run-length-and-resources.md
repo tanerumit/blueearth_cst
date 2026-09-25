@@ -18,3 +18,26 @@ updated: 2026-09-24
 ## Progress
 
 - [ ] <first step>
+
+## Probe and outcome (2026-09-25)
+
+Baseline basin (257 active cells, 9 years), 12 logical CPUs, 12 members:
+
+| Setup | Wall | Cold | Warm/member |
+|---|---|---|---|
+| 1 thread, one batch (4 members) | 97 s | 51 s | ~12 s |
+| 2 threads, one batch | 156 s | 89 s | ~22 s |
+| 4 threads, one batch | 129 s | 77 s | ~15 s |
+| 2 x 1-thread batches at once | 124 s | 58 s | ~12.5 s |
+| 3 x 1-thread batches at once | 142 s | 80 s | ~19 s |
+| 6 x 1-thread batches at once | 173 s | 136 s | ~30 s |
+
+Threads cost time on a small grid, and more than two Julia sessions at once
+contend. The makespan model reduced to one rule -- one balanced batch per
+slot -- with the thread count and the slot limit as regime settings
+(`advanced_settings.batching`, project `compute.julia_threads` /
+`compute.max_parallel_batches`) capped by cores and a memory estimate.
+Large-basin values stay provisional until `scripts/calibrate_batching.py` is
+run on one. A full WF4 run on the baseline took 3:23 in one 1-thread batch
+(memory capped it at one with 3.2 GB free) against ~4:28 before.
+

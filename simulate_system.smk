@@ -22,8 +22,10 @@ else:
     include: "blueearth_cst/experiment/rules/simulate_and_metrics.smk"
 
 # RULES comes from whichever module was included above.
-PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True)
-DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, summary="reduce the retained responses to the immutable metric set")
+# One metric request per invocation -> one plan -> one metric set, so each runs
+# one job once the simulation checkpoint resolves.
+PREPARE_INDICATOR_PLAN = RULES.banner_only("4.07", "prepare_indicator_plan", after_checkpoint=True, planned_jobs=1)
+DERIVE_SYSTEM_INDICATORS = RULES.banner_only("4.08", "derive_system_indicators", after_checkpoint=True, planned_jobs=1, summary="reduce the retained responses to the immutable metric set")
 
 
 def _current_metric_request(wc=None):

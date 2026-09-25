@@ -338,11 +338,12 @@ _PRE_DAG_STEPS = {}
 _PRE_DAG_LABEL = "done in planning"
 
 # Rules whose jobs Snakemake adds only after a checkpoint resolves, so they are
-# absent from the opening job table without being up to date. name set, filled
-# by `rule_banner`'s `after_checkpoint`; the plan block labels them instead of
-# counting them as satisfied.
-_AFTER_CHECKPOINT_RULES = set()
-_AFTER_CHECKPOINT_LABEL = "after checkpoint"
+# absent from the opening job table without being up to date. name -> the job
+# count the rule plans once the checkpoint resolves (``planned_jobs``), or None
+# when it declared none; filled by `rule_banner`'s `after_checkpoint`. The plan
+# block shows the planned count as that rule's jobs, and an empty cell when
+# there is none to show.
+_AFTER_CHECKPOINT_RULES = {}
 
 
 # Rule names belonging to a dynamic DAG whose progress denominator can change
@@ -390,6 +391,7 @@ class RuleIdentity:
     quiet_start: bool = False
     dynamic_progress: bool = False
     after_checkpoint: bool = False
+    planned_jobs: int | None = None
 
     @property
     def label(self) -> str:
@@ -410,6 +412,7 @@ class RuleIdentity:
             quiet_start=self.quiet_start,
             dynamic_progress=self.dynamic_progress,
             after_checkpoint=self.after_checkpoint,
+            planned_jobs=self.planned_jobs,
         )
 
     def log(self, part=None) -> str:
@@ -495,6 +498,7 @@ class RuleRegistry:
         quiet_start=False,
         dynamic_progress=False,
         after_checkpoint=False,
+        planned_jobs=None,
     ) -> RuleIdentity:
         """Register a rule that writes a log part, and record its label.
 
@@ -509,6 +513,7 @@ class RuleRegistry:
             quiet_start=quiet_start,
             dynamic_progress=dynamic_progress,
             after_checkpoint=after_checkpoint,
+            planned_jobs=planned_jobs,
         )
         self.log_rules.append(identity.label)
         return identity
@@ -522,6 +527,7 @@ class RuleRegistry:
         quiet_start=False,
         dynamic_progress=False,
         after_checkpoint=False,
+        planned_jobs=None,
     ) -> RuleIdentity:
         """A rule with a banner and no log part -- bookkeeping and terminal rules.
 
@@ -540,6 +546,7 @@ class RuleRegistry:
             quiet_start=quiet_start,
             dynamic_progress=dynamic_progress,
             after_checkpoint=after_checkpoint,
+            planned_jobs=planned_jobs,
         )
 
 
@@ -556,6 +563,7 @@ def rule_banner(
     quiet_start=False,
     dynamic_progress=False,
     after_checkpoint=False,
+    planned_jobs=None,
 ):
     """Return a rule's ``message:`` string: a numbered console banner.
 
@@ -648,8 +656,9 @@ def rule_banner(
     during a long rule is to say that something is running.
 
     ``after_checkpoint`` marks a rule whose jobs Snakemake adds only once a
-    checkpoint resolves: absent from the opening job table, it reads
-    ``after checkpoint`` in the plan block rather than counting as up to date.
+    checkpoint resolves, so it is absent from the opening job table without
+    being up to date. ``planned_jobs`` is the count it will run then; the plan
+    block shows it as the rule's job count, or an empty cell when not given.
 
     ``dynamic_progress`` marks a rule in a workflow whose job total can change
     after checkpoint expansion. Once a handler sees one, finish lines keep the
@@ -669,7 +678,7 @@ def rule_banner(
     if dynamic_progress:
         _DYNAMIC_PROGRESS_RULES.add(name)
     if after_checkpoint:
-        _AFTER_CHECKPOINT_RULES.add(name)
+        _AFTER_CHECKPOINT_RULES[name] = planned_jobs
     tag = f"{rule_id(number)} {name}"
     if summary:
         tag = f"{tag} - {summary}"
@@ -1216,7 +1225,10 @@ def _plan_rows(counts):
     for number, names in by_number.items():
         jobs = sum(counts.get(name, 0) for name in names)
         if not jobs and all(name in _AFTER_CHECKPOINT_RULES for name in names):
-            jobs = _AFTER_CHECKPOINT_LABEL
+            # Absent only because the checkpoint has not resolved: its planned
+            # count, or an empty cell when it declared none.
+            planned = [_AFTER_CHECKPOINT_RULES[name] for name in names]
+            jobs = sum(planned) if all(n is not None for n in planned) else ""
         rows.append((number, _plan_rule_name(names), jobs))
     if rows:
         rows.extend(
@@ -1239,7 +1251,6 @@ def _plan_head(rows, jobs, unlisted=0):
     tool that bounds its own coverage.
     """
     planned = sum(1 for row in rows if row[2] is None)
-    pending = sum(1 for row in rows if row[2] == _AFTER_CHECKPOINT_LABEL)
     rows = [row for row in rows if isinstance(row[2], int)]
     total = len(rows)
     running = sum(1 for row in rows if row[2] > 0)
@@ -1261,8 +1272,6 @@ def _plan_head(rows, jobs, unlisted=0):
         fields = [f"{total} {plural}", "all up to date"]
     if planned:
         fields.append(f"{planned} {_PRE_DAG_LABEL}")
-    if pending:
-        fields.append(f"{pending} {_AFTER_CHECKPOINT_LABEL}")
     # The job count only when it says something the rule count does not, i.e.
     # when something fans out. `_run_info_line`, which this replaces, always
     # carried it. Counted over the LISTED rows, not over Snakemake's table, so
@@ -1321,7 +1330,7 @@ def _plan_lines(counts):
     rows = _plan_rows(counts)
     if not rows:
         return None
-    # Only a COUNT means "will run"; an `after checkpoint` row may or may not.
+    # Only a COUNT means "will run"; an empty checkpoint-gated cell may or may not.
     runs = [isinstance(row[2], int) and row[2] > 0 for row in rows]
     partial = any(runs) and not all(runs)
     number_width = max(len(row[0]) for row in rows) + 2

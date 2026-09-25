@@ -277,22 +277,32 @@ def test_nothing_is_declared_when_the_ledger_is_complete(rules):
 # --- rules behind a checkpoint ---------------------------------------------
 
 
-def test_a_rule_behind_a_checkpoint_is_not_called_up_to_date(rules, monkeypatch):
-    """WF4's 4.07-4.10 are absent from the opening table because a checkpoint
-    has not run yet, not because they are satisfied (reported 2026-09-25)."""
+def test_a_rule_behind_a_checkpoint_shows_its_planned_count(rules, monkeypatch):
+    """WF4's 4.07/4.08 are absent from the opening table because a checkpoint
+    has not run yet, not because they are satisfied: they show the jobs they
+    plan, as runnable rows, and the head counts them."""
     rules({"publish": "4.06", "plan": "4.07", "derive": "4.08", "done": "4.05"})
-    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan", "derive"})
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan": 1, "derive": 1})
     head, rows = cs._plan_lines({"publish": 1})
-    assert head == "1 of 2 rules to run  |  1 up to date  |  2 after checkpoint"
+    assert head == "3 of 4 rules to run  |  1 up to date"
     texts = [text for text, _ in rows]
-    assert texts[2].endswith("after checkpoint") and not texts[2].startswith(">")
-    assert texts[1].startswith(">")
+    assert texts[2].startswith(">") and texts[2].endswith("1")
+    assert texts[3].startswith(">") and texts[3].endswith("1")
+    assert "checkpoint" not in head + "".join(texts)
+
+
+def test_a_checkpoint_rule_without_a_planned_count_is_left_empty(rules, monkeypatch):
+    rules({"publish": "4.06", "plan": "4.07"})
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan": None})
+    head, rows = cs._plan_lines({"publish": 1})
+    assert rows[1][0].rstrip().endswith("plan")
+    assert "checkpoint" not in head
 
 
 def test_a_checkpoint_rule_with_jobs_shows_its_count(rules, monkeypatch):
     """Once the checkpoint has resolved (a re-run), the table lists the jobs."""
     rules({"plan": "4.07"})
-    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan"})
+    monkeypatch.setattr(cs, "_AFTER_CHECKPOINT_RULES", {"plan": 1})
     head, rows = cs._plan_lines({"plan": 1})
     assert "after checkpoint" not in head
     assert rows[0][0].endswith("1")

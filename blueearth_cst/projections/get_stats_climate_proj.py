@@ -49,7 +49,6 @@ from blueearth_cst.projections.grid_weights import (
     geometry_check_label,
     weighted_spatial_mean,
 )
-from blueearth_cst.shared.progress import DaskProgress
 from blueearth_cst.shared.snake_utils import log_row, plural
 
 # %%
@@ -476,18 +475,14 @@ if __name__ == "__main__":
             series_identity.drop_inherited_single_source_attrs(nc_mean_stats_time)
 
             os.makedirs(os.path.dirname(series_nc_out), exist_ok=True)
-            delayed_obj = nc_mean_stats_time.to_netcdf(
+            # No progress bar: the series is already reduced in memory, so the
+            # write takes well under a second and a bar only ever read
+            # `0:00:00 elapsed` -- beside the fetch rows, as if it timed the
+            # fetch. The rule's DONE row carries the real duration.
+            nc_mean_stats_time.to_netcdf(
                 series_nc_out,
                 encoding={k: {"zlib": True} for k in dvars},
-                compute=False,
             )
-            # Labelled with the model/scenario the series belongs to: WF2 writes
-            # one series per (model, scenario), so an unlabelled bar would show
-            # the same anonymous line dozens of times. The label is the human
-            # identity rather than the file stem it used to be -- same fact,
-            # and it no longer restates the key the RUN line already carries.
-            with DaskProgress(f"{name_model} {name_scenario} series"):
-                delayed_obj.compute()
 
     else:
         raise RuntimeError("get_stats_climate_proj.py runs only as a Snakemake script:")

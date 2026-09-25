@@ -7,6 +7,7 @@ per compute, an ASCII fallback, and a final frame that reads as a summary.
 
 import io
 import os
+import re
 import sys
 import time
 
@@ -443,6 +444,32 @@ def test_wflow_relay_renders_a_frame_in_the_house_style():
     assert "\n" not in out
 
 
+def test_wflow_relay_puts_stamp_run_label_and_position_on_one_row():
+    """A batch member's bar is its whole record: time, run, bar, [k/N]."""
+    relay = WflowFrameRelay(width=10)
+    out = relay.feed("[cst-progress] 01 1.0 [1/7]\n", stream=_FakeStream())
+
+    assert re.match(r"\d\d:\d\d:\d\d - wflow - Run 01  ", out)
+    assert out.endswith("elapsed  [1/7]\n")
+
+
+def test_wflow_relay_drops_a_label_that_repeats_the_module():
+    """WF1's single run is labelled ``wflow``; the row says it once."""
+    relay = WflowFrameRelay(width=10)
+    out = relay.feed(_cst("wflow", 0.5), stream=_FakeStream())
+
+    assert out.count("wflow") == 1
+
+
+def test_render_bar_wraps_prefix_and_suffix_around_the_frame():
+    line = render_bar(
+        1.0, 3.0, "x", 10, _GLYPHS_ASCII, prefix="07:00:00 - ", suffix="  [2/3]"
+    )
+
+    assert line.startswith("07:00:00 - x  ")
+    assert line.endswith("0:00:03 elapsed  [2/3]")
+
+
 def test_wflow_relay_refuses_anything_that_is_not_a_frame():
     relay = WflowFrameRelay()
     for line in (
@@ -560,7 +587,7 @@ def test_wflow_relay_tick_redraws_the_open_bar_with_the_clock_advanced():
     assert drawn.endswith("\r") and ticked.endswith("\r")
     # The POSITION is the child's to report; a tick may not invent progress.
     assert "50.0%" in ticked
-    assert ticked.startswith("wflow")
+    assert re.match(r"\d\d:\d\d:\d\d - wflow - ", ticked)
     # Only the elapsed clock may differ, so the frames are the same width -- a
     # shorter redraw would leave a tail of the one it overwrites.
     assert len(ticked) == len(drawn)

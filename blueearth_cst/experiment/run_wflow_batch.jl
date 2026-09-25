@@ -28,8 +28,8 @@ row(body) = println("$(Dates.format(now(), "HH:MM:SS")) - wflow - $(body)")
 if abspath(PROGRAM_FILE) == @__FILE__
     batch_id, members = parse_batch(ARGS)
     include(joinpath(@__DIR__, "..", "shared", "wflow_progress.jl"))
-    using .WflowProgress: open_frame, run_with_progress, format_elapsed
-    open_frame(first(members).run_id)
+    using .WflowProgress: open_frame, run_with_progress
+    open_frame(first(members).run_id; position = "[1/$(length(members))]")
     using Wflow
 
     exitcode = 0
@@ -39,7 +39,9 @@ if abspath(PROGRAM_FILE) == @__FILE__
         global exitcode
         tag = member.run_id
         try
-            dt = @elapsed run_with_progress(Wflow, member.toml_path; label=tag)
+            # The member's finished bar row, stamped and carrying `[k/N]`, is
+            # its record; only a failure prints a row of its own.
+            run_with_progress(Wflow, member.toml_path; label=tag, position="[$(k)/$(total)]")
             isfile(member.native_output_path) ||
                 error("Missing native output $(member.native_output_path)")
             if !isempty(staging)
@@ -47,10 +49,8 @@ if abspath(PROGRAM_FILE) == @__FILE__
                 mv(member.native_output_path, joinpath(staging, "run_$(tag).csv"); force=true)
                 mv(joinpath(staging, "run_$(tag).expect"), joinpath(staging, "run_$(tag).ok"); force=true)
             end
-            row("[$(k)/$(total)] $(tag)  $(format_elapsed(dt))")
-            flush(stdout)
         catch e
-            row("FAILED [$(k)/$(total)] $(tag) batch=$(batch_id)  $(sprint(showerror, e))")
+            row("FAILED [$(k)/$(total)] Run $(tag) batch=$(batch_id)  $(sprint(showerror, e))")
             flush(stdout)
             exitcode = 1
         end

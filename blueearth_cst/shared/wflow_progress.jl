@@ -66,6 +66,12 @@ const FRAME_PREFIX = "[cst-progress]"
 # also keeping the tee's 60 s silence heartbeat from ever firing on these rules.
 const FRAME_INTERVAL = 1.0
 
+# One frame line. `position` is a batch member's `[k/N]`, carried so the Python
+# relay can print it on the bar row itself; a single run passes "".
+_frame(label, fraction, position) =
+    isempty(position) ? "$(FRAME_PREFIX) $(label) $(fraction)" :
+    "$(FRAME_PREFIX) $(label) $(fraction) $(position)"
+
 """
     open_frame(label; io = stdout)
 
@@ -88,8 +94,8 @@ the member.
 Callable without Wflow loaded -- this module needs only stdlib `Logging` -- which
 is what lets a driver call it ABOVE its own `using Wflow`.
 """
-function open_frame(label::AbstractString; io::IO = stdout)
-    println(io, "$(FRAME_PREFIX) $(label) 0.0")
+function open_frame(label::AbstractString; io::IO = stdout, position::AbstractString = "")
+    println(io, _frame(label, 0.0, position))
     flush(io)
     return nothing
 end
@@ -106,13 +112,15 @@ logger, so passing records through would duplicate them.
 struct FrameLogger <: AbstractLogger
     io::IO
     label::String
+    position::String
     interval::Float64
     last::Ref{Float64}
     started::Ref{Bool}
 end
 
-FrameLogger(io::IO, label::AbstractString; interval::Real = FRAME_INTERVAL) =
-    FrameLogger(io, String(label), Float64(interval), Ref(0.0), Ref(false))
+FrameLogger(io::IO, label::AbstractString; position::AbstractString = "",
+            interval::Real = FRAME_INTERVAL) =
+    FrameLogger(io, String(label), String(position), Float64(interval), Ref(0.0), Ref(false))
 
 # `-1` is ProgressLogging's level (`ProgressLogging.ProgressLevel`), which is
 # below `Debug`. Spelled as the literal so this file needs no dependency on
@@ -160,7 +168,7 @@ function Logging.handle_message(
     logger.started[] = true
     logger.last[] = now_s
 
-    println(logger.io, "$(FRAME_PREFIX) $(logger.label) $(round(fraction; digits = 5))")
+    println(logger.io, _frame(logger.label, round(fraction; digits = 5), logger.position))
     flush(logger.io)
     return nothing
 end
@@ -203,7 +211,7 @@ function Logging.handle_message(t::TeeLogger, level, message, _module, group, id
 end
 
 """
-    run_with_progress(Wflow, tomlpath; label, io = stdout)
+    run_with_progress(Wflow, tomlpath; label, io = stdout, position = "")
 
 Run one Wflow simulation, emitting progress frames as it goes.
 
@@ -214,12 +222,13 @@ Wflow's own file log is preserved exactly as `Wflow.run(tomlpath)` would write
 it: same `init_logger`, same `silent`, same `close` in a `finally`. The only
 addition is the second tee leg.
 """
-function run_with_progress(Wflow, tomlpath::AbstractString; label::AbstractString, io::IO = stdout)
+function run_with_progress(Wflow, tomlpath::AbstractString; label::AbstractString,
+                           io::IO = stdout, position::AbstractString = "")
     # Before `Wflow.Config`, so the bar is already open across the model
     # construction this call is about to spend most of a minute on; see
     # `open_frame`. In a batch this is also what hands the bar from the previous
     # member to this one, since the relay keys a new bar on the label.
-    open_frame(label; io = io)
+    open_frame(label; io = io, position = position)
     config = Wflow.Config(tomlpath)
     # Honour the TOML's own `silent`, exactly as `Wflow.run(tomlpath)` does, so
     # this driver never overrides an operator who set `silent = false` to debug.
@@ -238,7 +247,7 @@ function run_with_progress(Wflow, tomlpath::AbstractString; label::AbstractStrin
     # stacktrace into the log file, which is the whole reason the log survives a
     # crash. (Upstream's own comment: "to catch stacktraces in the log file a
     # try-catch is required".)
-    with_logger(TeeLogger(logger, FrameLogger(io, label))) do
+    with_logger(TeeLogger(logger, FrameLogger(io, label; position = position))) do
         @info "Wflow version `v$(Wflow.VERSION)`"
         try
             Wflow.run(config)

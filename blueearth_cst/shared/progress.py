@@ -51,6 +51,7 @@ import re
 import shutil
 import sys
 import time
+from datetime import datetime
 
 from dask.callbacks import Callback
 
@@ -114,8 +115,15 @@ def render_bar(
     label: str = "",
     width: int = _BAR_DEFAULT,
     glyphs: dict[str, str] | None = None,
+    *,
+    prefix: str = "",
+    suffix: str = "",
 ) -> str:
     """Render one frame as plain text, without the carriage return.
+
+    ``prefix`` leads the row (the ``HH:MM:SS - `` stamp :func:`_stamp` builds)
+    and ``suffix`` trails it (a batch member's ``  [k/N]``). Both are passed in,
+    never read from a clock here, so the rendering stays pure.
 
     Pure, so the rendering is testable without a dask graph. ``fraction`` is
     clamped to ``[0, 1]``: a dask state can briefly report more finished tasks
@@ -145,14 +153,27 @@ def render_bar(
         # is most likely to believe it.
         tail = f"{format_duration(elapsed)} elapsed"
 
-    prefix = f"{label}  " if label else ""
-    return f"{prefix}{bar}  {fraction * 100:5.1f}%  {tail}"
+    lead = f"{prefix}{label}  " if label else prefix
+    return f"{lead}{bar}  {fraction * 100:5.1f}%  {tail}{suffix}"
 
 
-def _bar_width(label: str) -> int:
-    """Fit the bar to the terminal, within bounds that stay readable."""
+def _stamp(module: str = "") -> str:
+    """The log-row prefix a bar wears: ``HH:MM:SS - `` or ``HH:MM:SS - module - ``.
+
+    Restamped on every redraw, so the frame left standing carries the time the
+    work finished -- the same clock every ``log_row`` reads.
+    """
+    hms = f"{datetime.now():%H:%M:%S}"
+    return f"{hms} - {module} - " if module else f"{hms} - "
+
+
+def _bar_width(fixed: str) -> int:
+    """Fit the bar to the terminal, within bounds that stay readable.
+
+    ``fixed`` is every other character on the row -- stamp, label, suffix.
+    """
     columns = shutil.get_terminal_size(fallback=(80, 24)).columns
-    available = columns - len(label) - _LINE_OVERHEAD
+    available = columns - len(fixed) - _LINE_OVERHEAD
     return max(_BAR_MIN, min(_BAR_MAX, available))
 
 
@@ -238,13 +259,15 @@ class DaskProgress(Callback):
         if not force and (now - self._last_draw) < self._min_interval:
             return
         self._last_draw = now
-        width = self._width or _bar_width(self._label)
+        prefix = _stamp()
+        width = self._width or _bar_width(prefix + self._label)
         line = render_bar(
             fraction,
             now - self._start_time,
             label=self._label,
             width=width,
             glyphs=self._glyphs,
+            prefix=prefix,
         )
         # Pad to the previous frame's length so a shortening line (a shrinking
         # ETA, an hour clock narrowing to minutes) leaves no tail behind.
@@ -424,10 +447,28 @@ class DaskFrameRelay:
 # --------------------------------------------------------------------------
 
 #: One frame emitted by ``shared/wflow_progress.jl``, e.g.
-#: ``[cst-progress] rlz_1_st_2 0.24561``. A sentinel rather than a
+#: ``[cst-progress] 01 0.24561 [1/7]``. A sentinel rather than a
 #: percentage-bearing sentence, so no ordinary log row can match it and so the
-#: frame is recognisable without knowing which engine produced it.
-_CST_FRAME_RE = re.compile(r"^\[cst-progress\]\s+(\S+)\s+([0-9]*\.?[0-9]+)\s*$")
+#: frame is recognisable without knowing which engine produced it. The trailing
+#: ``[k/N]`` is a batch member's position; a single run (WF1) sends none.
+_CST_FRAME_RE = re.compile(
+    r"^\[cst-progress\]\s+(\S+)\s+([0-9]*\.?[0-9]+)(?:\s+(\[\d+/\d+\]))?\s*$"
+)
+
+#: The module column every Wflow bar row carries.
+_WFLOW_MODULE = "wflow"
+
+
+def _wflow_label(label: str) -> str:
+    """The bar's label for a Wflow run id.
+
+    A numeric batch id reads ``Run 01``. A label equal to the module column
+    (WF1's single run is labelled ``wflow``) is dropped, so the row does not
+    state its subsystem twice.
+    """
+    if label.isdigit():
+        return f"Run {label}"
+    return "" if label == _WFLOW_MODULE else label
 
 
 class WflowFrameRelay:
@@ -458,10 +499,31 @@ class WflowFrameRelay:
         #: Label of the run whose bar has already been completed, so the
         #: duplicate final frame described in ``feed`` can be recognised.
         self._done_label = None
+        #: The open run's ``  [k/N]`` suffix, empty for a single run.
+        self._suffix = ""
 
     @property
     def active(self) -> bool:
         return self._active
+
+    def _render(self, fraction: float) -> str:
+        elapsed = time.monotonic() - self._start_time
+        prefix = _stamp(_WFLOW_MODULE)
+        label = _wflow_label(self._label)
+        width = (
+            self._width
+            if self._width is not None
+            else _bar_width(f"{prefix}{label}  {self._suffix}")
+        )
+        return render_bar(
+            fraction,
+            elapsed,
+            label,
+            width,
+            self._glyphs,
+            prefix=prefix,
+            suffix=self._suffix,
+        )
 
     def feed(self, line: str, stream=None) -> str | None:
         """Render ``line`` as a bar frame.
@@ -476,7 +538,7 @@ class WflowFrameRelay:
         match = _CST_FRAME_RE.match(line.strip("\r\n"))
         if match is None:
             return None
-        label, raw = match.group(1), match.group(2)
+        label, raw, position = match.group(1), match.group(2), match.group(3)
         try:
             fraction = float(raw)
         except ValueError:  # unreachable via the regex; belt and braces
@@ -507,11 +569,10 @@ class WflowFrameRelay:
             self._glyphs = _stream_glyphs(stream if stream is not None else sys.stdout)
             self._active = True
             self._done_label = None
+        self._suffix = f"  {position}" if position else ""
 
         self._fraction = fraction
-        elapsed = time.monotonic() - self._start_time
-        width = self._width if self._width is not None else _bar_width(label)
-        text = render_bar(fraction, elapsed, label, width, self._glyphs)
+        text = self._render(fraction)
         if fraction >= 1.0:
             self._active = False
             self._done_label = label
@@ -538,10 +599,7 @@ class WflowFrameRelay:
         """
         if not self._active:
             return None
-        elapsed = time.monotonic() - self._start_time
-        width = self._width if self._width is not None else _bar_width(self._label)
-        frame = render_bar(self._fraction, elapsed, self._label, width, self._glyphs)
-        return frame + "\r"
+        return self._render(self._fraction) + "\r"
 
     def close(self) -> str | None:
         """Close an unfinished bar's line; ``None`` when there is nothing open.

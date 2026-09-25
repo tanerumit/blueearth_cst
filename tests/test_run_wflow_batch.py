@@ -36,8 +36,8 @@ SOURCE = DRIVER.read_text(encoding="utf-8")
 #: The rows the driver prints, as they reach the tee. Kept beside the assertions
 #: rather than derived from the source: a test that re-derived the format from
 #: the file it is checking would pass on any format.
-OK_ROW = "08:03:16 - wflow - [1/3] rlz_1_st_0  0.2 s"
-FAIL_ROW = "08:03:16 - wflow - FAILED [2/3] rlz_1_st_2  boom: forcing not found"
+OK_ROW = "08:03:16 - wflow - Run 01  ━━━━━━━━━━  100.0%  0:00:01 elapsed  [1/3]"
+FAIL_ROW = "08:03:16 - wflow - FAILED [2/3] Run 02 batch=b1  boom: forcing not found"
 
 
 def _code_lines():
@@ -91,7 +91,7 @@ def test_status_rows_go_through_the_one_helper():
 def test_every_status_row_carries_its_position_in_the_batch():
     """A row saying a member finished, without saying how much is left, is the
     gap this driver had: the batch is opaque until its last member returns."""
-    rows = [line for line in _code_lines() if "row(" in line and "=" not in line]
+    rows = [line for line in _code_lines() if 'row("' in line]
     assert rows, SOURCE
     for line in rows:
         assert "[$(k)/$(total)]" in line, line
@@ -111,7 +111,13 @@ def test_the_member_tag_is_explicit_and_failure_names_member_and_batch():
     """
     assert "tag = member.run_id" in SOURCE
     assert "basename(" not in SOURCE and "splitext(" not in SOURCE
-    assert "FAILED [$(k)/$(total)] $(tag) batch=$(batch_id)" in SOURCE
+    assert "FAILED [$(k)/$(total)] Run $(tag) batch=$(batch_id)" in SOURCE
+
+
+def test_a_member_sends_its_position_on_the_bar_instead_of_a_success_row():
+    """The finished bar row is the member's record, so success prints no row."""
+    assert 'position="[$(k)/$(total)]"' in SOURCE
+    assert not [line for line in _code_lines() if 'row("[' in line]
 
 
 def test_a_finished_member_is_staged_before_its_marker():

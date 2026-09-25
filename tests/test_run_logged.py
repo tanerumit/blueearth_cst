@@ -532,3 +532,23 @@ def test_a_stall_with_no_bar_open_still_says_so(tmp_path, monkeypatch):
 
     assert rc == 0
     assert "no output for" in err.getvalue()
+
+
+def test_off_a_terminal_a_finished_wflow_bar_is_still_a_console_row(
+    tmp_path, monkeypatch
+):
+    """No frames stream to a pipe, but the finished bar is the member's record."""
+    out, err = io.StringIO(), io.StringIO()
+    monkeypatch.setattr(sys, "stdout", out)
+    monkeypatch.setattr(sys, "stderr", err)
+    snippet = (
+        "print('[cst-progress] 01 0.5 [1/2]')\n"
+        "print('[cst-progress] 01 1.0 [1/2]')\n"
+    )
+    rc = run_and_tee([sys.executable, "-c", snippet], tmp_path / "pipe.log")
+    assert rc == 0
+
+    rows = [line for line in out.getvalue().splitlines() if "Run 01" in line]
+    assert len(rows) == 1, out.getvalue()
+    assert "100.0%" in rows[0] and rows[0].rstrip().endswith("[1/2]")
+    assert "\r" not in out.getvalue()

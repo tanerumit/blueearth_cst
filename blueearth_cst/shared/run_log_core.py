@@ -1459,6 +1459,15 @@ def run_and_tee(command, log_path, *, frame_relay_factory=None):
                     # that line must pass through untouched.
                     if not rendered:
                         continue
+                    if not stream_frames and rendered.endswith("\n"):
+                        # Off a terminal no frame reached the console, so the
+                        # finished bar goes out as an ordinary row: it is a
+                        # batch member's only record there (it carries
+                        # `[k/N]`), and dropping it like a redraw would leave a
+                        # CI log with no per-member line at all.
+                        frames = []
+                        deliver(rendered, redraw=False)
+                        continue
                     raw = rendered
                 if raw.endswith("\r"):
                     if stream_frames:

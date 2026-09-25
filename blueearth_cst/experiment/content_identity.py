@@ -83,20 +83,27 @@ def atomic_record(path: Path, document: Any, *, replace: bool = False) -> None:
 
 
 def repository_code_inventory(
-    repo_root: Path, entry_paths: Sequence[str]
+    repo_root: Path, entry_paths: Sequence[str], excluded: Sequence[str] = ()
 ) -> list[dict[str, str]]:
     """Inventory declared executables and their static repository Python imports.
 
     R/Julia include files are supplied explicitly as entry paths. No top-N bound
     or sampling applies. Imported external packages belong in the stage's
     environment descriptor, rather than this repository source inventory.
+
+    ``excluded`` names repository files that are neither inventoried nor
+    followed: code a caller has judged cannot change the stage's output bytes
+    (logging, provenance, archiving) or whose effect it already hashes by value.
+    The list lives in the caller's source, which is itself inventoried, so
+    changing it moves the identity like any other code change.
     """
     root = Path(repo_root).resolve()
+    stop = {confined_path(root, name) for name in excluded}
     pending = [confined_path(root, name) for name in entry_paths]
     observed = set()
     while pending:
         path = pending.pop()
-        if path in observed:
+        if path in observed or path in stop:
             continue
         if not path.is_file():
             raise FileNotFoundError(f"invoked repository code is missing: {path}")

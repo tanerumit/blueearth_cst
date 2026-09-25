@@ -34,6 +34,7 @@
 | [t2609181501][]  | Settle wf0 climate extraction's memory growth, then take the remaining transfer levers                   | wf0 climate extraction        | t2609181316 slow ERA5 download      |     | active  |
 | [t2609241852a][] | WF4 runs write no per-run warm state: intended?                                                          | wf4                           | wf3 identity bundle (2026-09-24)    |     | backlog |
 | [t2609242252][]  | Refresh stale rule numbers in the five code-inventoried modules at the next identity change              | workflows                     | rule naming bundle (2026-09-24)     |     | backlog |
+| [t2609251004][]  | WF3 scenario identity moves with unrelated code                                                          | wf3 / scenario identity       | owner request (2026-09-25)          |     | active  |
 
 [t2608071207]: tasks/t2608071207-r7-8.md
 [t2608071208]: tasks/t2608071208-r7-14.md
@@ -65,6 +66,7 @@
 [t2609181501]: tasks/t2609181501-settle-wf0-climate-extraction-s-memory-growth-then-take-the-remaining-transfer-levers.md
 [t2609241852a]: tasks/t2609241852a-wf4-runs-write-no-per-run-warm-state-intended.md
 [t2609242252]: tasks/t2609242252-refresh-stale-rule-numbers-in-the-five-code-inventoried-modules-at-the-next-identity-change.md
+[t2609251004]: tasks/t2609251004-wf3-scenario-identity-moves-with-unrelated-code.md
 
 ## Watching
 

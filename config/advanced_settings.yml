@@ -22,8 +22,8 @@
 # parse time rather than silently keeping the built-in value.
 #
 # Adding a setting: put it in the right section here, add it to the schema in
-# `snake_utils._ADVANCED_SETTINGS_SCHEMA`, and give it a test in
-# `tests/test_advanced_settings.py`. The schema is what makes the rejection
+# `blueearth_cst/shared/advanced_settings.py` (`_ADVANCED_SETTINGS_SCHEMA`), and
+# give it a test in `tests/test_advanced_settings.py`. The schema is what makes the rejection
 # above possible, so the two must stay in step.
 
 constraints:

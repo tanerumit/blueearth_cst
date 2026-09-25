@@ -306,3 +306,16 @@ def test_a_checkpoint_rule_with_jobs_shows_its_count(rules, monkeypatch):
     head, rows = cs._plan_lines({"plan": 1})
     assert "after checkpoint" not in head
     assert rows[0][0].endswith("1")
+
+
+def test_a_declared_rule_lists_even_when_its_banner_never_renders(rules, tmp_path):
+    """WF3 reusing a collection defines no generation rules, so no `message:`
+    renders their banner; declaring the rule is what puts it in the table."""
+    rules({"publish": "3.09"})
+    registry = cs.RuleRegistry(str(tmp_path / "logs"), str(tmp_path / "bench"))
+    registry.logged("3.07", "generate")
+    cs.declared_step("3.04", "snapshot")
+    _, rows = cs._plan_lines({"publish": 1})
+    texts = [text.split() for text, _ in rows]
+    assert [t[1] if t[0] == ">" else t[0] for t in texts] == ["3.04", "3.07", "3.09"]
+    assert texts[0] == ["3.04", "snapshot"] and texts[1] == ["3.07", "generate"]

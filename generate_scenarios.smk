@@ -9,6 +9,7 @@ from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import non_producing_invocation
 from blueearth_cst.shared.snake_utils import catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, patch_psutil_windows_benchmark, warning_count
 from blueearth_cst.shared.wf3_science import index_width
+from blueearth_cst.shared.console_style import declared_step
 from blueearth_cst.shared.console_style import install_console_style, open_run_header, pre_dag_step, RuleRegistry, rule_banner, run_summary, target_banner
 from blueearth_cst.experiment.generation_plan import generation_configuration
 from blueearth_cst.experiment.scenario_rows import stochastic_rows
@@ -184,6 +185,13 @@ rule prepare_perturbation_grid:
     script:
         "blueearth_cst/experiment/prepare_cst_parameters.py"
 
+if V2_MODE and V2_PLAN["decision"] != "create":
+    # Reusing a published collection: planning created nothing, but the steps
+    # still list, so the table shows the whole pipeline.
+    declared_step("3.04", "snapshot_generation_inputs")
+    declared_step("3.05", "claim_scenario_collection")
+    declared_step("3.06", "prepare_weather_generator_settings")
+
 if V2_MODE and V2_PLAN["decision"] == "create":
     # Done by scripts/generate_scenarios.py before this DAG was built: the plan
     # is frozen, the collection claimed and the generator input written.
@@ -334,11 +342,16 @@ if V2_MODE and V2_PLAN["decision"] == "create":
 # the source phase runs first, and merging there would consume its parts before
 # the generation rules wrote theirs. The terminal is the ready marker (create)
 # or this invocation's receipt (reuse); both are new per run, so the merge is too.
+# The gathers re-run when the COLLECTION or its sources change -- never on
+# V2_TARGET alone, which on a reuse is the per-invocation receipt: a new file
+# every run, so the gathers re-ran on every otherwise up-to-date invocation.
+GATHER_INPUTS = [V2_MARKER, *SOURCE_TARGETS] if V2_MODE else []
+
 if V2_MODE:
     rule gather_benchmarks:
         message: GATHER_BENCHMARKS.banner()
         input:
-            V2_TARGET,
+            GATHER_INPUTS,
         output:
             f"{project_dir}/benchmarks/{BENCHMARKS_NAME}",
         params:
@@ -349,7 +362,7 @@ if V2_MODE:
     rule gather_logs:
         message: GATHER_LOGS.banner()
         input:
-            V2_TARGET,
+            GATHER_INPUTS,
         output:
             f"{project_dir}/logs/{WORKFLOW_LOG_NAME}",
         params:

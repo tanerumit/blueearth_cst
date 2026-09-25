@@ -480,6 +480,11 @@ class RuleRegistry:
         self.log_rules = []
 
     def _make(self, number, name, logged, **banner):
+        # Registered at DECLARATION, not only when a `message:` renders the
+        # banner, so the plan table lists every rule the workflow declares --
+        # including those this run's DAG does not define (WF3 reusing a
+        # collection defines no generation rules) -- as rows with no jobs.
+        _RULE_NUMBERS.setdefault(name, str(number))
         return RuleIdentity(
             number=number,
             name=name,
@@ -685,6 +690,16 @@ def rule_banner(
     if not context:
         return tag
     return f"{tag}  [{context}]"
+
+
+def declared_step(number, name):
+    """Register a pipeline step that has no job in this run's DAG.
+
+    It lists at its number as a row with no jobs, so the plan table still
+    shows the whole pipeline when a run skips the step outright -- WF3's
+    3.04-3.06 when an existing collection is reused rather than created.
+    """
+    _RULE_NUMBERS.setdefault(name, str(number))
 
 
 def pre_dag_step(number, name):

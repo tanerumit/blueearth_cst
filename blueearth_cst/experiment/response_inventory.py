@@ -32,6 +32,22 @@ class ResponseReaderUnavailable(ValueError):
     """The native reader revision needed by retained state is not installed."""
 
 
+def _reader_changed(experiment_root, recorded):
+    """The refusal for a frozen experiment read with a different reader.
+
+    Not an installation fault, though the class name says "unavailable": the
+    reader's revision is a hash of its own source, so any toolbox change to it
+    retires every experiment simulated before, and the way out is a new name.
+    """
+    return ResponseReaderUnavailable(
+        f"experiment {Path(experiment_root).name!r} was simulated with response "
+        f"reader {str(recorded.get('revision'))[:12]}, and this toolbox's reader "
+        f"is {response_reader_revision()[:12]}, so its retained responses cannot "
+        "be re-read. Set a new experiment_name to simulate again, or move this "
+        "experiment aside."
+    )
+
+
 def response_reader_revision():
     """Fingerprint the actual native reader and neutral validation implementation."""
     directory = Path(__file__).parent
@@ -228,7 +244,7 @@ def build_response_inventory(experiment_root, native_runs, temporal_preparation)
         "name": "wflow-csv",
         "revision": response_reader_revision(),
     }:
-        raise ResponseReaderUnavailable(f"reader unavailable: {request['reader']}")
+        raise _reader_changed(experiment_root, request["reader"])
     if set(native_runs) != set(request["run_ids"]):
         raise MissingResponseRequirement(
             "native runs differ from frozen response request"
@@ -515,7 +531,7 @@ def build_response_inventory_v2(
         "name": "wflow-csv",
         "revision": response_reader_revision(),
     }:
-        raise ResponseReaderUnavailable(f"reader unavailable: {request['reader']}")
+        raise _reader_changed(experiment_root, request["reader"])
     if set(native_runs) != set(request["run_ids"]):
         raise MissingResponseRequirement(
             "native runs differ from frozen response request"

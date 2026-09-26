@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-26 | t2608071208 | Diagnose the staging-harness stall that hangs tests/test_stage_data_incremental.py [dropped]. Owner closed the remaining investigation because the intermittent stall cannot be reproduced on demand; the local serialization fix and regression test remain. | test hygiene |
 | 2026-09-25 | t2608151154 | st_0 is not method-comparable with the stress-test surface | wf3 / scenarios |
 | 2026-09-25 | t2609171730 | 34 exception messages carry characters a cp1252 console cannot encode [dropped] | console / errors |
 | 2026-09-25 | t2609172119 | Snakemake's error block keeps full-length paths that every other console row shortens | console / path tokens |

@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-26 | t2609151346 | Qualify the isolated Linux environment and execute source-qualified GF15 parity. WSL2, the D7 wheel/source pins, fixed-tolerance controls and independent adapter-parity review passed; evidence is in `dev/milestones/r12/implementation/evidence/gf15-production-integration/linux-qualification/`. This does not establish a full Linux workflow run or method adequacy. | wf3 / platform |
 | 2026-09-26 | t2608071208 | Diagnose the staging-harness stall that hangs tests/test_stage_data_incremental.py [dropped]. Owner closed the remaining investigation because the intermittent stall cannot be reproduced on demand; the local serialization fix and regression test remain. | test hygiene |
 | 2026-09-25 | t2608151154 | st_0 is not method-comparable with the stress-test surface | wf3 / scenarios |
 | 2026-09-25 | t2609171730 | 34 exception messages carry characters a cp1252 console cannot encode [dropped] | console / errors |

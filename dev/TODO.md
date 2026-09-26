@@ -14,7 +14,6 @@ cssclasses: [todo-board]
 | [t2609171500][]    |     | Move the experiment's frozen simulation documents into… | project-tree / test_rapid…   | backlog    |
 | [t2609161642][]    |     | Scope R15 — run independent workflows concurrently as…  | workflow architecture /…     | backlog    |
 | [t2609152104][]    |     | Separate engine bookkeeping from user-facing artifacts… | project-tree                 | backlog    |
-| [t2609151346][]    |     | Qualify the isolated Linux environment and execute…     | wf3 / platform               | blocked    |
 | [t2608242212][]    |     | Give the analysis variable set a config surface (R14…   | wf0 / wf1 climate figures…   | backlog    |
 | [t2608222252][]    |     | Make the climate extraction variable set derived and…   | wf0 / wf1 climate store /…   | backlog    |
 | [t2608222239][]    |     | Support additional historical climate datasets in the…  | wf0 / wf1 climate store /…   | backlog    |
@@ -35,7 +34,6 @@ cssclasses: [todo-board]
 [t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
 [t2609161642]: tasks/t2609161642-scope-r15-run-independent-workflows-concurrently-as-one-dag.md
 [t2609152104]: tasks/t2609152104-separate-engine-bookkeeping-from-user-facing-artifacts-in-the-project-tree.md
-[t2609151346]: tasks/t2609151346-qualify-the-isolated-linux-environment-and-execute-source-qualified-gf15-parity.md
 [t2608242212]: tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md
 [t2608222252]: tasks/t2608222252-derived-extraction-vars.md
 [t2608222239]: tasks/t2608222239-more-climate-datasets.md

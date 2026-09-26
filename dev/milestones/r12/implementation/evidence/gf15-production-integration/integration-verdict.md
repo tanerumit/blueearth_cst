@@ -197,3 +197,24 @@ prior verdict, source evidence or test was edited to manufacture acceptance: the
 Stage 3 rejection stands recorded in full, its findings are discharged by
 correction rather than by removal, and the one falsified claim in this record's
 own predecessor is marked and dated in place. Nothing has been pushed.
+
+## Addendum — linux-64 parity, 2026-09-26
+
+D8 handoff 2/4's Linux setup and source-qualified estimator parity are now
+**accepted within the tested domain**, independently reviewed in the
+[Linux verdict](linux-qualification/independent-verdict.md) and supported by the
+[execution record](linux-qualification/execution-record.md). The linux-64 Pixi
+install uses D7's pinned PyPI wheel and matches both installed source digests.
+Production and the frozen candidate match on 196 sample/probability cases and
+84 additional invalid-probability refusals; a changed published value fails
+the parity comparator. All 44 retained quantile controls satisfy the unchanged
+fixed tolerance. Three differ from Windows by one ULP, so the owning suite
+retains Windows bit-exact tests and uses separate Linux fixed-tolerance tests.
+The owning tests pass on both platforms (86 passed and five expected
+platform-specific skips each).
+
+This addendum discharges only item 2 in the historical Outstanding list above.
+The September 15 Windows verdict remains the record of what was accepted then.
+The §7.5 method ruling, actual-bundle applicability, low-flow accuracy and
+other listed limits remain open. No full Linux workflow, production-response
+validation, new method-adequacy claim or milestone seal is inferred.

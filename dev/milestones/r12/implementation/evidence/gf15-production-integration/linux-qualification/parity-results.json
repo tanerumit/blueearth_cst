@@ -1,0 +1,13 @@
+{
+  "accepted": 168,
+  "mismatches": [],
+  "pairs": 196,
+  "probability_sets": 7,
+  "refusal_cases": 84,
+  "refusal_mismatches": [],
+  "refused": 28,
+  "sample_shapes": 28,
+  "wrong_result_mutant_failures": [
+    "quantiles.0.estimate"
+  ]
+}

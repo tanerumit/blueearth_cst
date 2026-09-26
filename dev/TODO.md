@@ -14,7 +14,7 @@ cssclasses: [todo-board]
 | [t2609171500][]    |     | Move the experiment's frozen simulation documents into… | project-tree / test_rapid…   | backlog    |
 | [t2609161642][]    |     | Scope R15 — run independent workflows concurrently as…  | workflow architecture /…     | backlog    |
 | [t2609152104][]    |     | Separate engine bookkeeping from user-facing artifacts… | project-tree                 | backlog    |
-| [t2609151346][]    |     | Qualify the isolated Linux environment and execute…     | wf3 / platform               | backlog    |
+| [t2609151346][]    |     | Qualify the isolated Linux environment and execute…     | wf3 / platform               | blocked    |
 | [t2608242212][]    |     | Give the analysis variable set a config surface (R14…   | wf0 / wf1 climate figures…   | backlog    |
 | [t2608222252][]    |     | Make the climate extraction variable set derived and…   | wf0 / wf1 climate store /…   | backlog    |
 | [t2608222239][]    |     | Support additional historical climate datasets in the…  | wf0 / wf1 climate store /…   | backlog    |

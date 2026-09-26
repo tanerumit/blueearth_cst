@@ -1,12 +1,12 @@
 ---
 title: Qualify the isolated Linux environment and execute source-qualified GF15 parity
 type: todo-item
-status: backlog
+status: blocked
 effort: 1
 area: wf3 / platform
 queue:
 created: 2026-09-15
-updated: 2026-09-15
+updated: 2026-09-26
 ---
 
 > [!note] Overview
@@ -26,6 +26,16 @@ updated: 2026-09-15
 Owner deferred it on 2026-09-14, authorized Windows-only continuation, and ruled
 it out of scope for the sealing session on 2026-09-15. It is boarded here so the
 obligation outlives `t2609100916`, which closed with this line unticked.
+
+**Blocked on a Linux execution environment, 2026-09-26.** This Windows host
+reports WSL is not installed (`wsl --list --verbose` and `wsl --status`).
+`wsl --install` did not enable it, and querying the required Windows optional
+features reports that elevation is required. Docker and Podman are absent.
+The owner confirmed no other Linux environment is available.
+No source-qualified Linux parity was run, and none of the Windows evidence
+below changes that status. Resume when WSL can be installed by an administrator
+or an accessible Linux host/runner is provided. Then execute the six Progress
+steps below, preserving separate Linux evidence and an independent verdict.
 
 ## This is why `main`'s CI is RED, and what that costs
 

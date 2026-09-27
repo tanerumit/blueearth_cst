@@ -151,3 +151,24 @@ WF2 continuation: the owned-wrapper dry run passed with 25 jobs and nine model×
 - Seventeen diagnostic PNGs were produced under `scenarios/4e097bef80e7/weathergenr/evaluation/plots`. Visually inspected `monthly_cycle.png` and `daily_mean.png`: readable panels, no apparent clipping. Their captions/axes could better identify units and explain the colour encodings; the annual-cycle sheet has coloured realizations and a black comparison curve without an explicit legend. These are presentation opportunities, not demonstrated numerical defects.
 - Diagnostic evaluation explicitly capped coverage at **25 of 38 basin cells** for memory control and standardized the comparison to 2001–2016 versus generated 2023–2038. Startup R locale warnings and a no-testable-spectral-peak warning occurred without preventing publication. No claim of scientific adequacy follows from these execution checks.
 - WF4 owned-runner dry run passed: 22 initial jobs, fourteen downscales and one automatic fourteen-member batch; checkpoint completion may expand the metric DAG. Simulation execution is the next authorized phase. Evidence: session scratch `wf3-execute.log` and `wf4-dryrun.log`.
+
+### Simulation blocker and stopping disposition — 2026-09-27
+
+- WF4 actual execution failed, exit 1, approximately 44s (08:14:46–08:15:31). Model fingerprint matched the live model and the input snapshot completed. The first concurrent downscaling jobs for runs `05`, `06` and `07` failed before any Wflow scenario run or retained-response metric calculation. These are three jobs in one failed invocation, not three retry attempts.
+- **LIB-17 — confirmed ancillary-grid rejection; longitude-normalization cause strongly indicated:** `simulator_adapter.py::validate_ancillary_grid` rejected the physical elevation raster loaded by `downscale_climate_forcing.py::prepare_model_forcing`. The ERA5 ancillary artifact `data/climate/ancillary/era5/77aa8f51a556/era5_orography_2018.nc` has WGS84 bounds `(-0.125, -90.125, 359.875, 90.125)`, whereas Liberia scenario coordinates use negative longitude. The unnormalized global raster fails HydroMT's aligned-covering-grid predicate. A global raster on a different longitude convention is not evidence that physical elevation is absent over Liberia. Investigate normalization through the documented catalog/preparation boundary before this strict check; preserve the compatibility guard and never patch installed HydroMT/Wflow packages. A focused regression should cover a western-hemisphere basin and the corresponding wrapped elevation grid. No source fix or repeat execution applied.
+- WF4 warned that duplicate native response `Q_101` mapped to `1010` was retained once. This was explicitly reported and did not cause the downscaling failure; no additional defect established.
+- Evidence: scratch `wf4-execute.log`; external `logs/_parts/simulate_system/liberia_hydropower_outlet_20260927/4.04_downscale_scenario_series/run_{05,06,07}.log`. Experiment namespace `liberia_hydropower_outlet_20260927` retains its pinned input snapshot for diagnosis. Generated collection, historical model/forcing, synthetic fixture and successful evaluation plots remain available.
+- Stop unchanged retries at these deterministic blockers. WF2 requires the LIB-16 schema repair; WF4 requires LIB-17 preparation/grid investigation. The test has **not** completed end-to-end scenario simulation, response metrics or any response-surface plotting. Repair and focused rerun are follow-up work on this same pinned branch. No toolbox source edits, landing or push occurred in this exercise.
+
+### Latest outcome for review
+
+| Coverage | Outcome |
+|---|---|
+| WF0 historical climate | Passed; ERA5/CHIRPS comparison retained |
+| WF1 historical Wflow, 2001–2016 | Passed; 5,843 daily response rows at 11 locations |
+| Synthetic observation evaluation | Passed; four outlet sheets rendered and inspected; LIB-15 count-label bug recorded |
+| WF2 projection sources | Nine combinations fetched/reduced; final tables/plots blocked by LIB-16 |
+| WF3 compact generation | Passed; ready collection `4e097bef80e7`, fourteen runs, seed `1026957974`, seventeen diagnostic PNGs |
+| WF4 scenarios/metrics | Dry run passed; actual downscaling blocked by LIB-17 before engine execution |
+
+The compact scenario test covers 2040–2042, retaining the full configured grid and realizations. The original 2040–2060 definition remains preserved; 2043–2060 and long-period behavior are untested. Historical synthetic-fit metrics are plotting fixtures, not model validation. Validation for this documentation-only work: `git diff --check`; no unrelated full-suite or baseline run.

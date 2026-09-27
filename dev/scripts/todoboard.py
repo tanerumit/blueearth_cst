@@ -15,12 +15,15 @@ Usage (from anywhere in the repo, including a session slot):
     python dev/scripts/todoboard.py list
     python dev/scripts/todoboard.py add "Title" --area wf3
 
-Every verb and flag is the CLI's own; this only resolves the package and
-delegates. Set TODOBOARD_SKILL_DIR to override the search.
+Every verb and flag is the CLI's own. This wrapper resolves the package and
+widens its Item and Area / Origin columns to 110 and 44 characters for this
+project, including automatic renders after board mutations. Set
+TODOBOARD_SKILL_DIR to override the search.
 """
 
 from __future__ import annotations
 
+import importlib
 import os
 import pathlib
 import runpy
@@ -78,6 +81,10 @@ def resolve_skill_dir() -> pathlib.Path:
 
 def main() -> None:
     sys.path.insert(0, str(resolve_skill_dir()))
+    # The CLI has no width option. Keep this project-specific presentation
+    # override here rather than editing the shared per-user skill package.
+    renderer = importlib.import_module("todoboard.render")
+    renderer._COLUMN_MAX_WIDTHS.update({"Item": 110, "Area / Origin": 44})
     # runpy rather than import+call: `python -m todoboard` is the CLI's own
     # documented entry point, so its argument parsing stays entirely upstream.
     sys.argv[0] = "todoboard"

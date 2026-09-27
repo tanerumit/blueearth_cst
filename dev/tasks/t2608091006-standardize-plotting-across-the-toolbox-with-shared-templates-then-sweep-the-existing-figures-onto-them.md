@@ -5,9 +5,9 @@ status: active
 branch:
 effort: 2
 area: plotting
-queue:
+queue: 4
 created: 2026-08-09
-updated: 2026-08-12
+updated: 2026-09-27
 ---
 
 > [!warning] This is a sweep, not a lane

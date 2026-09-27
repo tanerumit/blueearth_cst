@@ -2,44 +2,44 @@
 
 # TODO
 
-| ID                 | #   | Item                                                    | Area / Origin                | State                |
-| ------------------ | --- | ------------------------------------------------------- | ---------------------------- | -------------------- |
-| [t2608181139][]    | 1   | Give WF0 its forcing-selection evaluation layer…        | wf0 / evaluation layer /…    | backlog (0/4)        |
-| [t2608071207][]    | 1   | Show the per-member wflow log falsifier actually…       | wf3 logging / R7             | blocked              |
-| [t2609171500][]    |     | Move the experiment's frozen simulation documents into… | project-tree / test_rapid…   | backlog (0/5)        |
-| [t2609161642][]    |     | Scope R15 — run independent workflows concurrently as…  | workflow architecture /…     | backlog (0/1)        |
-| [t2608202352][]    |     | Publish the docs site to GitHub Pages, and reduce the…  | docs / site / quarto-docs-s… | blocked              |
-| [t2608202351a][]   |     | Put the three pipeline notebooks on the site via a…     | docs / site / quarto-docs-s… | backlog (0/5)        |
-| [t2608202351][]    |     | Publish the technical background — split the 2025 note… | docs / site / quarto-docs-s… | blocked              |
-| [t2608191733][]    |     | Ship a sample dataset bundle so a user needs no…        | distribution / sample data   | in progress (1/9)    |
-| [t2608161450][]    |     | The chirps store does not satisfy the WG-1 seam…        | wf0 / climate store /…       | ready to close (1/1) |
-| [t2608122022][]    |     | Verify the newly-honoured water year, and sweep for…    | wf2 projections / config /…  | halfway (2/4)        |
-| [t2608091730][]    |     | Produce waterbody layers data-side so basin_area can…   | plotting                     | blocked              |
-| [t2608091006][]    |     | Standardize plotting across the toolbox with shared…    | plotting                     | mostly done (7/8)    |
-| [t2609251520][]    |     | Open question: flat, hash-suffixed names for…           | wf3 / generation inputs /…   | watching             |
-| [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup…       | run cost / julia /…          | watching             |
-| [t2609181302][]    |     | Snakemake's six-line preamble is not suppressible from… | console / snakemake /…       | watching             |
-| [t2608222252][]    |     | Make the climate extraction variable set derived and…   | wf0 / wf1 climate store /…   | watching             |
-| [t2608222239][]    |     | Support additional historical climate datasets in the…  | wf0 / wf1 climate store /…   | watching             |
-| [t2608210010][]    |     | Replace the docs site's approximate brand colours with… | docs / site / quarto-docs-s… | watching             |
-| [t2608202148][]    |     | WF2's behavioural contract has no live home — Watch…    | wf2 / dev records /…         | watching             |
-| [t2608121606][]    |     | A missing catalog source is logged identically to an…   | wf1 / data catalog /…        | watching             |
-| [t2608071222][]    |     | The R layer has no test infrastructure; Python helpers… | testing                      | watching             |
-| [t2608071221][]    |     | Docker (O-06) and Linux end-to-end (O-18, O-19) are…    | platform / R7                | watching             |
-| [t2608071201][]    |     | A WF1 rebuild always trips WF3's drift guard, and the…  | wf1 / drift guard / R10      | watching             |
+| ID                 | #   | Item                                                                                                          | Area / Origin                               | State                |
+| ------------------ | --- | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | -------------------- |
+| [t2608161450][]    | 1   | The chirps store does not satisfy the WG-1 seam contract, and nothing reports it                              | wf0 / climate store / 2026-08-16 wf0…       | ready to close (1/1) |
+| [t2608122022][]    | 2   | Verify the newly-honoured water year, and sweep for projects whose results it moves                           | wf2 projections / config / water-year…      | halfway (2/4)        |
+| [t2608181139][]    | 3   | Give WF0 its forcing-selection evaluation layer — rules 0.07-0.09                                             | wf0 / evaluation layer / t2608131847a…      | backlog (0/4)        |
+| [t2608091006][]    | 4   | Standardize plotting across the toolbox with shared templates, then sweep the existing figures onto them      | plotting                                    | mostly done (7/8)    |
+| [t2608191733][]    | 5   | Ship a sample dataset bundle so a user needs no Deltares P: drive                                             | distribution / sample data                  | in progress (1/9)    |
+| [t2608202351a][]   | 6   | Put the three pipeline notebooks on the site via a committed docs/_freeze/                                    | docs / site / quarto-docs-site (2026-08-19) | backlog (0/5)        |
+| [t2609161642][]    | 7   | Scope R15 — run independent workflows concurrently as one DAG                                                 | workflow architecture / owner question…     | backlog (0/1)        |
+| [t2608091730][]    | 8   | Produce waterbody layers data-side so basin_area can show them again                                          | plotting                                    | blocked              |
+| [t2608071207][]    | 9   | Show the per-member wflow log falsifier actually failing with `path_log` unset                                | wf3 logging / R7                            | blocked              |
+| [t2609171500][]    | 10  | Move the experiment's frozen simulation documents into _engine                                                | project-tree / test_rapid review…           | backlog (0/5)        |
+| [t2608202352][]    | 11  | Publish the docs site to GitHub Pages, and reduce the README onto it                                          | docs / site / quarto-docs-site (2026-08-19) | blocked              |
+| [t2608202351][]    | 12  | Publish the technical background — split the 2025 note into eight chapters                                    | docs / site / quarto-docs-site (2026-08-19) | blocked              |
+| [t2609251520][]    |     | Open question: flat, hash-suffixed names for generation_inputs snapshots? — Watch for: Owner decides whether… | wf3 / generation inputs / gabon-ntoum-v3…   | watching             |
+| [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup — Watch for: A Julia/Wflow runtime upgrade or packaging…     | run cost / julia / t2608222155 owner…       | watching             |
+| [t2609181302][]    |     | Snakemake's six-line preamble is not suppressible from inside a workflow — Watch for: Revisit if a snakemake… | console / snakemake / console polishing…    | watching             |
+| [t2608222252][]    |     | Make the climate extraction variable set derived and configurable — Watch for: A second model adapter is…     | wf0 / wf1 climate store / R14               | watching             |
+| [t2608222239][]    |     | Support additional historical climate datasets in the raw-climate path — Watch for: The owner selects an…     | wf0 / wf1 climate store / R14               | watching             |
+| [t2608210010][]    |     | Replace the docs site's approximate brand colours with the official Deltares values — Watch for: The owner…   | docs / site / quarto-docs-site (2026-08-19) | watching             |
+| [t2608202148][]    |     | WF2's behavioural contract has no live home — Watch for: Someone needs WF2's config-key or unit semantics…    | wf2 / dev records / reference-doc cleanup…  | watching             |
+| [t2608121606][]    |     | A missing catalog source is logged identically to an empty basin, so 1.08 can silently omit a real reservoir… | wf1 / data catalog / t2608091730…           | watching             |
+| [t2608071222][]    |     | The R layer has no test infrastructure; Python helpers carry the coverage — Watch for: The R layer grows…     | testing                                     | watching             |
+| [t2608071221][]    |     | Docker (O-06) and Linux end-to-end (O-18, O-19) are unexercised — Watch for: A Linux machine or runner…       | platform / R7                               | watching             |
+| [t2608071201][]    |     | A WF1 rebuild always trips WF3's drift guard, and the re-record is accepted as normal — Watch for: Re-open…   | wf1 / drift guard / R10                     | watching             |
 
-[t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md
-[t2608071207]: tasks/t2608071207-r7-8.md
-[t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
-[t2609161642]: tasks/t2609161642-scope-r15-run-independent-workflows-concurrently-as-one-dag.md
-[t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
-[t2608202351a]: tasks/t2608202351a-notebooks-on-the-site-via-committed-freeze.md
-[t2608202351]: tasks/t2608202351-publish-technical-background-split-the-note.md
-[t2608191733]: tasks/t2608191733-ship-a-sample-dataset-bundle-so-a-user-needs-no-deltares-p-drive.md
 [t2608161450]: tasks/t2608161450-the-chirps-store-does-not-satisfy-the-wg1-seam-contract.md
 [t2608122022]: tasks/t2608122022-verify-the-newly-honoured-water-year-and-sweep-for-projects-it-moves.md
-[t2608091730]: tasks/t2608091730-produce-waterbody-layers-data-side-so-basin-area-can-show-them-again.md
+[t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md
 [t2608091006]: tasks/t2608091006-standardize-plotting-across-the-toolbox-with-shared-templates-then-sweep-the-existing-figures-onto-them.md
+[t2608191733]: tasks/t2608191733-ship-a-sample-dataset-bundle-so-a-user-needs-no-deltares-p-drive.md
+[t2608202351a]: tasks/t2608202351a-notebooks-on-the-site-via-committed-freeze.md
+[t2609161642]: tasks/t2609161642-scope-r15-run-independent-workflows-concurrently-as-one-dag.md
+[t2608091730]: tasks/t2608091730-produce-waterbody-layers-data-side-so-basin-area-can-show-them-again.md
+[t2608071207]: tasks/t2608071207-r7-8.md
+[t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
+[t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
+[t2608202351]: tasks/t2608202351-publish-technical-background-split-the-note.md
 [t2609251520]: tasks/t2609251520-open-question-flat-hash-suffixed-names-for-generation-inputs-snapshots.md
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 [t2609181302]: tasks/t2609181302-snakemake-s-six-line-preamble-is-not-suppressible-from-inside-a-workflow.md

@@ -5,9 +5,9 @@ status: backlog
 effort: 2
 area: wf0 / climate store
 origin: 2026-08-16 wf0 two-source run
-queue:
+queue: 1
 created: 2026-08-16
-updated: 2026-08-17
+updated: 2026-09-27
 ---
 
 > [!note] Overview

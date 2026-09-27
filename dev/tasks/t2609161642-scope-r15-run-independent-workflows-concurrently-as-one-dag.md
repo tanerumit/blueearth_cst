@@ -80,9 +80,9 @@ not by re-reading the table above.
       entry points, or whether the CLI surface changes (a §7 contract rename).
 - [ ] Establish what one shared `region_rule` declaration does to the four
       workflows' independent `enabled:` switches.
-- [ ] Check the interaction with `t2609152104`'s finding: WF3's provider-code
-      closure already pulls in WF4 modules through a function-level import, so
-      "independent" is weaker than it looks in more than one place.
+- [ ] Check the provider-code closure: WF3 already pulls in WF4 modules through
+      a function-level import, so "independent" is weaker than it looks in more
+      than one place. This finding came from the post-R12 tree review.
 
 ## Refs
 

@@ -9,12 +9,52 @@ columns populated only when the point actually resolved.
 
 import csv
 
+import numpy as np
+import xarray as xr
+
+from blueearth_cst.projections.change_factor_table import tidy_rows
 from blueearth_cst.projections.derive_change_factors import (
     COMPOSITION_CSV_COLUMNS,
     COMPOSITION_FIELDS,
+    _flagged_months,
     composition_rows,
     write_composition,
 )
+
+
+def test_flagged_months_uses_tidy_model_identity_and_counts_distinct_months():
+    coords = {
+        "model": ["INM/INM-CM4-8"],
+        "scenario": ["ssp245"],
+        "member": ["r1i1p1f1"],
+        "horizon": ["far"],
+        "stats": ["mean", "median", "std"],
+    }
+    shape = tuple(len(values) for values in coords.values())
+    ds = xr.Dataset(
+        {
+            "precip": (tuple(coords), np.zeros(shape)),
+            "precip__flagged": (tuple(coords), np.ones(shape, dtype=bool)),
+        },
+        coords=coords,
+    )
+    monthly_rows = tidy_rows(ds, month=1) + tidy_rows(ds, month=2)
+    assert all("dataset" not in row for row in monthly_rows)
+    expected = [
+        {
+            "dataset": "INM/INM-CM4-8",
+            "scenario": "ssp245",
+            "member": "r1i1p1f1",
+            "horizon": "far",
+            "variable": "precip",
+            "n_flagged_months": 2,
+            "exceeds_max": False,
+        }
+    ]
+    assert _flagged_months(monthly_rows, _rows(), 2) == expected
+    assert _flagged_months(monthly_rows, _rows(), 1)[0]["exceeds_max"] is True
+    ds["precip__flagged"][:] = False
+    assert _flagged_months(tidy_rows(ds, month=3), _rows(), 2) == []
 
 
 def _combo(dataset, scenario, member, status, detail=""):

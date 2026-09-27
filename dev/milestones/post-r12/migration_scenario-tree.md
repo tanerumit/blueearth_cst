@@ -4,8 +4,7 @@
 Landed 2026-09-16 on `chore/post-r12`. Six §7 events, boarded as
 [`t2609152040`](../../tasks/t2609152040-regroup-the-scenario-trees-under-scenarios-and-rename-scenario-plans-to-requests.md)
 and [`t2609152107`](../../tasks/t2609152107-shorten-content-digest-path-segments-to-a-fixed-prefix-keeping-full-digests-as-identities.md),
-plus change 2 of
-[`t2609152104`](../../tasks/t2609152104-separate-engine-bookkeeping-from-user-facing-artifacts-in-the-project-tree.md).
+plus the engine-bookkeeping follow-up, whose landed scope is recorded as event 6 below.
 Event 5 is unboarded — a direct owner request on 2026-09-16, recorded here
 because §7 obliges a note for a rule-identifier rename.
 

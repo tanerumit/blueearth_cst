@@ -41,8 +41,9 @@ Windows evidence cannot satisfy the outstanding Linux gate.
 ## GF15 production integration — 2026-09-15
 
 Stages 1-3 of the [production integration](evidence/gf15-production-integration/)
-are executed on **Windows only**, under the owner's 2026-09-14 sequencing
-override. Nothing below releases cross-platform acceptance or a seal.
+were executed on **Windows only** under the owner's 2026-09-14 sequencing
+override. Linux source-qualified adapter parity was added on 2026-09-26 below;
+it does not constitute a full Linux workflow run or a seal.
 
 **Stage 2** landed the adapter across six commits `ce4d3bfa`…`eba69df2`, and
 independent E7 parity was **ACCEPTED at `5cd2d8ce`** after a first-round
@@ -79,11 +80,18 @@ inputs. All findings are discharged. The owner **closed the review loop on
 was issued on that authority — two independent reviews plus an owner ruling, not
 three reviews; the round-2 corrections are executor-verified only.
 
-Outstanding and explicitly not discharged: **Linux setup and parity** (D8 handoff
-2/4, owner-deferred and ruled out of scope for now — Windows evidence cannot
-satisfy it; boarded as `t2609151346`), the **§7.5 owner method ruling**, **actual-bundle applicability**,
-and the accuracy of low-flow return levels in both the near-zero and
-outside-shape regimes. No milestone seal is inferred.
+**Linux setup and parity** (D8 handoff 2/4) are now accepted within the tested
+domain. The [Linux execution record](evidence/gf15-production-integration/linux-qualification/execution-record.md)
+and [independent verdict](evidence/gf15-production-integration/linux-qualification/independent-verdict.md)
+retain the source-qualified environment, 196 production/candidate pairs, 84
+additional refusal cases, fixed-tolerance controls and discriminating mutant.
+Three quantile controls differ from Windows by one ULP; Linux asserts the
+unchanged fixed tolerance while Windows retains bit-exact assertions. The
+metric-stage environment projections differ by platform, as recorded.
+
+Still outstanding: the **§7.5 owner method ruling**, **actual-bundle
+applicability**, and low-flow return-level accuracy in both the near-zero and
+outside-shape regimes. No full Linux workflow or milestone seal is inferred.
 
 ## Earlier checkpoints and preparation allocation
 

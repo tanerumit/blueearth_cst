@@ -1491,9 +1491,12 @@ previous 75. Evidence:
 [standing-seal-status.md](milestones/r12/implementation/evidence/standing-seal-status.md).
 
 **What the seal does NOT cover, and is not implied by it.** Linux setup and
-parity (D8 handoff 2/4) are outstanding: owner-deferred 2026-09-14 and ruled out
-of scope 2026-09-15, and Windows evidence cannot satisfy them. Tracked as
-`t2609151346`. The §7.5 owner
+parity (D8 handoff 2/4) were owner-deferred on 2026-09-14 and ruled out of the
+2026-09-15 seal. They were subsequently accepted within the tested domain on
+2026-09-26, on separate
+[Linux evidence](milestones/r12/implementation/evidence/gf15-production-integration/linux-qualification/execution-record.md)
+and an [independent verdict](milestones/r12/implementation/evidence/gf15-production-integration/linux-qualification/independent-verdict.md).
+This does not retroactively extend the seal. The §7.5 owner
 method ruling on the estimator is outstanding. Actual-bundle applicability
 remains `unestablished` — the 8x benchmark is a post-results development rescore,
 not independent validation — and low-flow return levels are unvalidated in both

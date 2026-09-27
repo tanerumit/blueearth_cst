@@ -274,19 +274,29 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
     run_name = run_forcing.run_id
     settings.native_log_path.parent.mkdir(parents=True, exist_ok=True)
 
-    # Read metadata through the same public catalog adapters as preparation;
-    # no coordinate/unit repair is introduced by this compatibility check.
+    # Instantiate model in r+ on the source root, then redirect writes to the
+    # per-realization run directory by rebinding root.
+    mod = WflowSbmModel(root=model_root, mode="r+", data_libs=data_libs)
+
+    # Match setup_temp_pet_forcing's spatial reads so HydroMT wraps global
+    # elevation longitudes before checking the grid actually used downstream.
     from blueearth_cst.experiment.simulator_adapter import validate_ancillary_grid
 
     physical_catalog = hydromt.DataCatalog(data_libs=data_libs)
-    forcing_grid = physical_catalog.get_rasterdataset(climate_name, variables=["temp"])
+    forcing_grid = physical_catalog.get_rasterdataset(
+        climate_name,
+        geom=mod.region,
+        buffer=1,
+        time_range=(starttime, endtime),
+        variables=["temp"],
+    )
     if (
         run_forcing.descriptor.calendar == "noleap"
         and str(forcing_grid.time.dt.calendar) == "proleptic_gregorian"
     ):
         temporal_operations.append("hydromt_reader_to_datetime64")
     elevation_grid = physical_catalog.get_rasterdataset(
-        oro_source, variables=["elevtn"]
+        oro_source, geom=forcing_grid.raster.box, buffer=2, variables=["elevtn"]
     )
     try:
         validate_ancillary_grid(
@@ -295,10 +305,6 @@ def prepare_model_forcing(run_forcing, model_reference, settings):
     finally:
         forcing_grid.close()
         elevation_grid.close()
-
-    # Instantiate model in r+ on the source root, then redirect writes to the
-    # per-realization run directory by rebinding root.
-    mod = WflowSbmModel(root=model_root, mode="r+", data_libs=data_libs)
 
     chunksize = forcing_chunksize(mod.staticmaps.data.raster.size)
 

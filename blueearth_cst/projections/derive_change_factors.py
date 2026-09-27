@@ -65,6 +65,38 @@ XDIMS = ("x", "longitude", "lon", "long")
 YDIMS = ("y", "latitude", "lat")
 
 
+def _flagged_months(monthly_rows, composition, max_flagged_months):
+    """Count distinct flagged months, retaining provenance's full dataset id."""
+    datasets = {
+        (row["source_id"], row["scenario"], row["member"]): row["dataset"]
+        for row in composition
+    }
+    flagged_months = {}
+    for row in monthly_rows:
+        if row["status"] == FLAGGED_STATUS:
+            key = (
+                datasets[(row["model"], row["scenario"], row["member"])],
+                row["scenario"],
+                row["member"],
+                row["horizon"],
+                row["variable"],
+            )
+            # Statistics share a month; they must not multiply its count.
+            flagged_months.setdefault(key, set()).add(row["month"])
+    return [
+        {
+            "dataset": k[0],
+            "scenario": k[1],
+            "member": k[2],
+            "horizon": k[3],
+            "variable": k[4],
+            "n_flagged_months": len(months),
+            "exceeds_max": combination_is_flagged(len(months), max_flagged_months),
+        }
+        for k, months in sorted(flagged_months.items())
+    ]
+
+
 # `_to_str_tuple` is IMPORTED, not reimplemented, despite the leading underscore.
 # A local copy was written first and was already wrong: it raised on `[]`, where
 # the original returns `()` — a contract `tests/test_get_change_climate_proj.py`
@@ -626,29 +658,9 @@ if "snakemake" in globals():
         # Step 6b: counted from the rows the monthly table wrote, not by a second
         # traversal -- a value recorded twice has disagreed four times in this
         # milestone, and this is the fifth chance.
-        flagged_counts = {}
-        for row in monthly_rows:
-            if row["status"] == FLAGGED_STATUS:
-                key = (
-                    row["dataset"],
-                    row["scenario"],
-                    row["member"],
-                    row["horizon"],
-                    row["variable"],
-                )
-                flagged_counts[key] = flagged_counts.get(key, 0) + 1
-        document["flagged_months"] = [
-            {
-                "dataset": k[0],
-                "scenario": k[1],
-                "member": k[2],
-                "horizon": k[3],
-                "variable": k[4],
-                "n_flagged_months": n,
-                "exceeds_max": combination_is_flagged(n, sm.params.max_flagged_months),
-            }
-            for k, n in sorted(flagged_counts.items())
-        ]
+        document["flagged_months"] = _flagged_months(
+            monthly_rows, rows, sm.params.max_flagged_months
+        )
         _prov.write(str(sm.output.provenance_json), document)
 
         # --- step 7-ii: report.md ---------------------------------------------

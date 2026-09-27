@@ -1,0 +1,37 @@
+{
+  "linux_locks": {
+    "installed-conda-dependency-records": "7b9d26eda220a97a40fc94abc6299c3011e18ecb1df20286500652c6804bd279",
+    "installed-python-distribution-metadata": "d2f96dd11cdb3b4ac28721378207e18fcfc7f36bc228c1221141767f95b6ed81"
+  },
+  "linux_only_examples": [
+    "conda:gflags",
+    "conda:glog",
+    "conda:keyutils",
+    "conda:ld-impl-linux-64",
+    "conda:libedit",
+    "conda:libev",
+    "conda:libgcc-ng",
+    "conda:libgfortran"
+  ],
+  "linux_only_keys": 20,
+  "linux_packages": 224,
+  "shared_different_values": 121,
+  "shared_equal_values": 83,
+  "shared_keys": 204,
+  "windows_locks": {
+    "installed-conda-dependency-records": "9a9414c9d7a9561e50a63b96e212367293d4e82b0b2a1aee895b3705d1a74d02",
+    "installed-python-distribution-metadata": "9ba17384828e2d703cd2f5eaa1e64e9d7160410b51b79f598ef238ea5f4e37cb"
+  },
+  "windows_only_examples": [
+    "conda:colorama",
+    "conda:libhwloc",
+    "conda:libwinpthread",
+    "conda:llvm-openmp",
+    "conda:mkl",
+    "conda:onemkl-license",
+    "conda:python-tzdata",
+    "conda:tbb"
+  ],
+  "windows_only_keys": 16,
+  "windows_packages": 220
+}

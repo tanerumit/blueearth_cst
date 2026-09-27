@@ -5,18 +5,18 @@ status: backlog
 area: wf2 projections / config
 origin: water-year promotion (2026-08-12)
 created: 2026-08-12
-updated: 2026-08-12
+updated: 2026-09-27
 ---
 
 > [!note] Overview
-> **What** — `shared.water_year_start` now reaches WF2's change-factor arithmetic, which it never did before. Two loose ends: the non-Jan path has never been run against real data, and no one has checked which existing projects it changes.
+> **What** — `climate.water_year_start` now reaches WF2's change-factor arithmetic, which it never did before. Two loose ends: the non-Jan path has never been run against real data, and no one has checked which existing projects it changes.
 > **Why** — The fix is landed and gated only at the Jan default, where it is provably a no-op. Everything the change actually *enables* is untested, and any project that already set a non-Jan value has recorded results that silently used Jan.
 > **Effort** — S for the verification run; unknown for the sweep, since production project roots live outside this repo.
 
 ## Background — what was fixed, so this is not re-diagnosed
 
 `workflows.climate_projections.start_month_hyd_year` was **inert**. The
-Snakefile read it and passed it to rule 2.06; `derive_change_factors.py` never
+Snakefile read it and passed it to rule 2.05; `derive_change_factors.py` never
 read the param. Every change factor ever produced was computed Jan–Dec,
 whatever the config said. The module's own comment recorded the deferral
 ("forwarding the key would change results for any non-Jan config and belongs
@@ -24,7 +24,7 @@ in its own commit with its own gate").
 
 Fixed 2026-08-12 in `086ba7b`: the value now reaches both
 `hydrological_year_bounds` calls and `get_change_annual_clim_proj`, the key
-moved to `shared.water_year_start`, and the legacy key is **refused** at parse
+moved to `climate.water_year_start`, and the legacy key is **refused** at parse
 time rather than quietly starting to work — because honouring it silently
 would change a project's numbers as a side effect of an upgrade.
 
@@ -64,7 +64,7 @@ the sweep's question gets asked then, about a project that is in front of you.
       far is DAG-parse, unit tests, and value-neutrality at `Jan` — where the
       change is provably a no-op, so the gate that passed proves nothing about
       the path this work exists to enable. Use the fixture, set
-      `shared.water_year_start: Oct`, and confirm the change factors move, that
+      `climate.water_year_start: Oct`, and confirm the change factors move, that
       `n_hyd_years_reference` is the Oct→Sep count, and that
       `reference_window_effective` reports the window actually used.
 - [ ] **Check the Oct boundary against `hydrological_year_bounds`' known
@@ -73,6 +73,17 @@ the sweep's question gets asked then, about a project that is in front of you.
       October-start case until 2026-07-30. That fix has never been exercised
       end-to-end with a non-Jan config, because no non-Jan config ever reached
       the arithmetic. This is the first run that would.
+### Attempted 2026-09-27
+
+Copied `test_case/test_rapid` and its configs to
+`.tmp/scratchpad/2026-09-27_01/wf2-oct/`, set
+`climate.water_year_start: Oct`, and requested a dry-run targeting the annual
+change-factor table. Snakemake remained CPU-bound while parsing for over three
+minutes without producing a DAG; I stopped that planning process. No rule ran,
+no projection was fetched, and the source rapid fixture was untouched. This
+does not verify the October arithmetic; repeat the targeted WF2 run when the
+workflow can be planned in a practical time.
+
 The two sweep steps that stood here are closed above. Their original text, kept
 because it states the hazard that would return if a project ever adopts a
 non-Jan value: *"They now hard-error until the key is moved, and once moved
@@ -86,7 +97,7 @@ today.
   WF1 figures.
 - `blueearth_cst/projections/derive_change_factors.py` — the two
   `hydrological_year_bounds` calls and the `get_change_annual_clim_proj` call.
-- `Snakefile_climate_projections` — the refusal, with the replacement block in
+- `analyze_projections.smk` — the refusal, with the replacement block in
   its message.
 - `dev/milestones/r08/2026-07-30_wf2-5f-hydyear-offbyone.md` — the
   October-start off-by-one this run would exercise for the first time.

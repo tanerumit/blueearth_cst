@@ -8,40 +8,22 @@ cssclasses: [todo-board]
 | ID                 | #   | Item                                                    | Area / Origin                | State      |
 | ------------------ | --- | ------------------------------------------------------- | ---------------------------- | ---------- |
 | [t2608181139][]    | 1   | Give WF0 its forcing-selection evaluation layer…        | wf0 / evaluation layer /…    | backlog    |
-| [t2608071208][]    | 1   | Diagnose the staging-harness stall that hangs…          | test hygiene / R7            | backlog    |
 | [t2608071207][]    | 1   | Show the per-member wflow log falsifier actually…       | wf3 logging / R7             | blocked    |
-| [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup        | run cost / julia /…          | backlog    |
-| [t2609242252][]    |     | Refresh stale rule numbers in the five…                 | workflows / rule naming…     | backlog    |
 | [t2609171500][]    |     | Move the experiment's frozen simulation documents into… | project-tree / test_rapid…   | backlog    |
 | [t2609161642][]    |     | Scope R15 — run independent workflows concurrently as…  | workflow architecture /…     | backlog    |
-| [t2609152104][]    |     | Separate engine bookkeeping from user-facing artifacts… | project-tree                 | backlog    |
-| [t2609151346][]    |     | Qualify the isolated Linux environment and execute…     | wf3 / platform               | backlog    |
-| [t2608242212][]    |     | Give the analysis variable set a config surface (R14…   | wf0 / wf1 climate figures…   | backlog    |
-| [t2608222252][]    |     | Make the climate extraction variable set derived and…   | wf0 / wf1 climate store /…   | backlog    |
-| [t2608222239][]    |     | Support additional historical climate datasets in the…  | wf0 / wf1 climate store /…   | backlog    |
-| [t2608210010][]    |     | Replace the docs site's approximate brand colours with… | docs / site / quarto-docs-s… | blocked    |
 | [t2608202352][]    |     | Publish the docs site to GitHub Pages, and reduce the…  | docs / site / quarto-docs-s… | blocked    |
 | [t2608202351a][]   |     | Put the three pipeline notebooks on the site via a…     | docs / site / quarto-docs-s… | backlog    |
 | [t2608202351][]    |     | Publish the technical background — split the 2025 note… | docs / site / quarto-docs-s… | blocked    |
 | [t2608191733][]    |     | Ship a sample dataset bundle so a user needs no…        | distribution / sample data   | backlog    |
 | [t2608161450][]    |     | The chirps store does not satisfy the WG-1 seam…        | wf0 / climate store /…       | backlog    |
 | [t2608122022][]    |     | Verify the newly-honoured water year, and sweep for…    | wf2 projections / config /…  | backlog    |
-| [t2608091730][]    |     | Produce waterbody layers data-side so basin_area can…   | plotting                     | backlog    |
+| [t2608091730][]    |     | Produce waterbody layers data-side so basin_area can…   | plotting                     | blocked    |
 | [t2608091006][]    |     | Standardize plotting across the toolbox with shared…    | plotting                     | active     |
 
 [t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md
-[t2608071208]: tasks/t2608071208-r7-14.md
 [t2608071207]: tasks/t2608071207-r7-8.md
-[t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
-[t2609242252]: tasks/t2609242252-refresh-stale-rule-numbers-in-the-five-code-inventoried-modules-at-the-next-identity-change.md
 [t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
 [t2609161642]: tasks/t2609161642-scope-r15-run-independent-workflows-concurrently-as-one-dag.md
-[t2609152104]: tasks/t2609152104-separate-engine-bookkeeping-from-user-facing-artifacts-in-the-project-tree.md
-[t2609151346]: tasks/t2609151346-qualify-the-isolated-linux-environment-and-execute-source-qualified-gf15-parity.md
-[t2608242212]: tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md
-[t2608222252]: tasks/t2608222252-derived-extraction-vars.md
-[t2608222239]: tasks/t2608222239-more-climate-datasets.md
-[t2608210010]: tasks/t2608210010-official-deltares-brand-colours-in-theme-scss.md
 [t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
 [t2608202351a]: tasks/t2608202351a-notebooks-on-the-site-via-committed-freeze.md
 [t2608202351]: tasks/t2608202351-publish-technical-background-split-the-note.md
@@ -53,37 +35,45 @@ cssclasses: [todo-board]
 
 ## Watching
 
-| ID                 | Item                                                     | Area / Origin               | Trigger                                                                                             |
-| ------------------ | -------------------------------------------------------- | --------------------------- | --------------------------------------------------------------------------------------------------- |
-| [t2608071214][]    | Measure the hydrography read cost §8 adds to WF2         | spatial rules / R10         | A basin config materially larger than 384 cells (16 × 24)                                           |
-| [t2609251520][]    | Open question: flat, hash-suffixed names for…            | wf3 / generation inputs /…  | Owner decides whether folder readability is worth a mixed layout; then board implementation…        |
-| [t2609181302][]    | Snakemake's six-line preamble is not suppressible from…  | console / snakemake /…      | Revisit if a snakemake logger plugin is added for another reason, or if upstream makes the…         |
-| [t2609171637b][]   | Four non-console modules still hedge their plurals       | wording / console styling…  | Someone is editing one of those four for another reason, or the convention is extended beyond…      |
-| [t2609171637a][]   | The console's module column is unpadded, so the…         | console / console styling…  | A reader complains about the drift, or the module vocabulary narrows enough that a fixed width…     |
-| [t2609062317][]    | The shell-write scope backstop is inert in advisory mode | tooling / 2026-09-06…       | The repo moves back to slot_registry: atomic, OR the brain's git-workflow skill gains an…           |
-| [t2609041718][]    | WF1 writes the model three times, and the split is…      | wf1 / model build           | Someone proposes merging 1.07-1.09 again (the docstring that used to invite it is corrected, but…   |
-| [t2608202331][]    | Real-time scanning makes every Python import ~7x slower  | environment / dev machine…  | Admin rights on ESET exclusions become available, IT policy changes, or the work moves to a…        |
-| [t2608202148][]    | WF2's behavioural contract has no live home              | wf2 / dev records /…        | Someone needs WF2's config-key or unit semantics and finds only the sealed doc; or a WF2 change…    |
-| [t2608200008][]    | Retrofit the remaining over-cap LOG.md rows…             | dev records / ledger        | see below; this is deliberately not scheduled work.                                                 |
-| [t2608171130][]    | Hoist the categorical palette out of compare_sources…    | wf0 / figures / 2026-08-17… | A second figure family needs to colour by CATEGORY rather than by quantity.                         |
-| [t2608132310][]    | Fold Julia box-drawing blocks into the tee's log grammar | logging / console /…        | A box block appears in a log recorded AFTER `silent = true`. The plausible source is Julia…         |
-| [t2608121606][]    | A missing catalog source is logged identically to an…    | wf1 / data catalog /…       | Any basin whose results look implausible around a known reservoir, lake or glacier; or a model…     |
-| [t2608121104][]    | pixi install reports success without repairing a…        | environment / 2026-08-12…   | A pixi-provided executable is missing while `pixi list` reports its package installed — or pixi…    |
-| [t2608071229][]    | hydromt's `to_yml` silently strips…                      | upstream / hydromt / M02b   | Upstream fixes `to_yml` — `tests/test_prepare_climate_data_catalog.py`'s xfail flips to a pass and… |
-| [t2608071228][]    | dask cannot be stubbed at module level, because pandas…  | tests / M02c                | pandas changes how it probes dask, or a test needs dask stubbed and hits the wall.                  |
-| [t2608071227][]    | The first test file to call `sys.modules.setdefault`…    | tests / M02c                | A new stubbing test file lands, or an ordering change makes a passing suite fail.                   |
-| [t2608071222][]    | The R layer has no test infrastructure; Python helpers…  | testing                     | The R layer grows past the weather-generator wrappers, or an R-side defect ships.                   |
-| [t2608071221][]    | Docker (O-06) and Linux end-to-end (O-18, O-19) are…     | platform / R7               | A Linux machine or runner capable of a full pipeline run becomes available.                         |
-| [t2608071220][]    | A comment-only edit to a shared-rule script…             | rerun triggers / R10        | Someone edits one of the three shared-rule scripts often enough that the full re-run cost bites…    |
-| [t2608071201][]    | A WF1 rebuild always trips WF3's drift guard, and the…   | wf1 / drift guard / R10     | Re-open if a re-record ever masks a **real** drift, if someone reports having accepted one without… |
+| ID                 | Item                                                     | Area / Origin                | Trigger                                                                                             |
+| ------------------ | -------------------------------------------------------- | ---------------------------- | --------------------------------------------------------------------------------------------------- |
+| [t2608071214][]    | Measure the hydrography read cost §8 adds to WF2         | spatial rules / R10          | A basin config materially larger than 384 cells (16 × 24)                                           |
+| [t2609251520][]    | Open question: flat, hash-suffixed names for…            | wf3 / generation inputs /…   | Owner decides whether folder readability is worth a mixed layout; then board implementation…        |
+| [t2609251025][]    | Wflow sysimage to remove per-batch Julia startup         | run cost / julia /…          | A Julia/Wflow runtime upgrade or packaging change is planned, so the sysimage option can be…        |
+| [t2609181302][]    | Snakemake's six-line preamble is not suppressible from…  | console / snakemake /…       | Revisit if a snakemake logger plugin is added for another reason, or if upstream makes the…         |
+| [t2609171637b][]   | Four non-console modules still hedge their plurals       | wording / console styling…   | Someone is editing one of those four for another reason, or the convention is extended beyond…      |
+| [t2609171637a][]   | The console's module column is unpadded, so the…         | console / console styling…   | A reader complains about the drift, or the module vocabulary narrows enough that a fixed width…     |
+| [t2609062317][]    | The shell-write scope backstop is inert in advisory mode | tooling / 2026-09-06…        | The repo moves back to slot_registry: atomic, OR the brain's git-workflow skill gains an…           |
+| [t2609041718][]    | WF1 writes the model three times, and the split is…      | wf1 / model build            | Someone proposes merging 1.07-1.09 again (the docstring that used to invite it is corrected, but…   |
+| [t2608222252][]    | Make the climate extraction variable set derived and…    | wf0 / wf1 climate store /…   | A second model adapter is introduced, or a WF0-only use case demonstrates that extracting the…      |
+| [t2608222239][]    | Support additional historical climate datasets in the…   | wf0 / wf1 climate store /…   | The owner selects an additional historical dataset for a basin or milestone.                        |
+| [t2608210010][]    | Replace the docs site's approximate brand colours with…  | docs / site / quarto-docs-s… | The owner supplies the official palette or explicitly accepts the current approximations.           |
+| [t2608202331][]    | Real-time scanning makes every Python import ~7x slower  | environment / dev machine…   | Admin rights on ESET exclusions become available, IT policy changes, or the work moves to a…        |
+| [t2608202148][]    | WF2's behavioural contract has no live home              | wf2 / dev records /…         | Someone needs WF2's config-key or unit semantics and finds only the sealed doc; or a WF2 change…    |
+| [t2608200008][]    | Retrofit the remaining over-cap LOG.md rows…             | dev records / ledger         | see below; this is deliberately not scheduled work.                                                 |
+| [t2608171130][]    | Hoist the categorical palette out of compare_sources…    | wf0 / figures / 2026-08-17…  | A second figure family needs to colour by CATEGORY rather than by quantity.                         |
+| [t2608132310][]    | Fold Julia box-drawing blocks into the tee's log grammar | logging / console /…         | A box block appears in a log recorded AFTER `silent = true`. The plausible source is Julia…         |
+| [t2608121606][]    | A missing catalog source is logged identically to an…    | wf1 / data catalog /…        | Any basin whose results look implausible around a known reservoir, lake or glacier; or a model…     |
+| [t2608121104][]    | pixi install reports success without repairing a…        | environment / 2026-08-12…    | A pixi-provided executable is missing while `pixi list` reports its package installed — or pixi…    |
+| [t2608071229][]    | hydromt's `to_yml` silently strips…                      | upstream / hydromt / M02b    | Upstream fixes `to_yml` — `tests/test_prepare_climate_data_catalog.py`'s xfail flips to a pass and… |
+| [t2608071228][]    | dask cannot be stubbed at module level, because pandas…  | tests / M02c                 | pandas changes how it probes dask, or a test needs dask stubbed and hits the wall.                  |
+| [t2608071227][]    | The first test file to call `sys.modules.setdefault`…    | tests / M02c                 | A new stubbing test file lands, or an ordering change makes a passing suite fail.                   |
+| [t2608071222][]    | The R layer has no test infrastructure; Python helpers…  | testing                      | The R layer grows past the weather-generator wrappers, or an R-side defect ships.                   |
+| [t2608071221][]    | Docker (O-06) and Linux end-to-end (O-18, O-19) are…     | platform / R7                | A Linux machine or runner capable of a full pipeline run becomes available.                         |
+| [t2608071220][]    | A comment-only edit to a shared-rule script…             | rerun triggers / R10         | Someone edits one of the three shared-rule scripts often enough that the full re-run cost bites…    |
+| [t2608071201][]    | A WF1 rebuild always trips WF3's drift guard, and the…   | wf1 / drift guard / R10      | Re-open if a re-record ever masks a **real** drift, if someone reports having accepted one without… |
 
 [t2608071214]: tasks/t2608071214-r10-6.md
 [t2609251520]: tasks/t2609251520-open-question-flat-hash-suffixed-names-for-generation-inputs-snapshots.md
+[t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 [t2609181302]: tasks/t2609181302-snakemake-s-six-line-preamble-is-not-suppressible-from-inside-a-workflow.md
 [t2609171637b]: tasks/t2609171637b-four-non-console-modules-still-hedge-their-plurals.md
 [t2609171637a]: tasks/t2609171637a-the-console-s-module-column-is-unpadded-so-the-message-column-drifts.md
 [t2609062317]: tasks/t2609062317-scope-backstop-inert-advisory.md
 [t2609041718]: tasks/t2609041718-consolidate-wf1-model-round-trips.md
+[t2608222252]: tasks/t2608222252-derived-extraction-vars.md
+[t2608222239]: tasks/t2608222239-more-climate-datasets.md
+[t2608210010]: tasks/t2608210010-official-deltares-brand-colours-in-theme-scss.md
 [t2608202331]: tasks/t2608202331-real-time-scanning-makes-every-python-import-7x-slower.md
 [t2608202148]: tasks/t2608202148-wf2-s-behavioural-contract-has-no-live-home.md
 [t2608200008]: tasks/t2608200008-retrofit-the-remaining-over-cap-log-md-rows-opportunistically.md

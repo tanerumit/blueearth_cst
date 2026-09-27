@@ -1,6 +1,7 @@
 """Real NetCDF collection publication and source-independent physical binding."""
 
 from copy import deepcopy
+from types import SimpleNamespace
 
 import numpy as np
 import pytest
@@ -29,6 +30,94 @@ from blueearth_cst.experiment.scenario_collection import (
 from blueearth_cst.experiment.wf4_ancillary_descriptor import describe_ancillary
 from blueearth_cst.shared.provenance import file_sha256
 from tests.test_scenario_collection import planned  # noqa: F401
+
+
+@pytest.mark.parametrize("longitude_shift", [0.0, 0.25])
+def test_preparation_checks_wrapped_elevation_grid(
+    tmp_path, monkeypatch, longitude_shift
+):
+    """Catalog wrapping preserves western cell values and rejects shifted grids."""
+    import hydromt
+    import yaml
+
+    from blueearth_cst.experiment import downscale_climate_forcing as preparation
+    from blueearth_cst.experiment.simulator_adapter import IncompatibleForcingError
+
+    forcing = xr.Dataset(
+        {"temp": (("time", "latitude", "longitude"), np.ones((1, 3, 4)))},
+        coords={
+            "time": [np.datetime64("2046-01-01")],
+            "latitude": [7.0, 6.0, 5.0],
+            "longitude": [-10.0, -9.0, -8.0, -7.0],
+        },
+    )
+    forcing.raster.set_crs(4326)
+    elevation = xr.Dataset(
+        {"elevtn": (("latitude", "longitude"), np.tile(np.arange(360), (11, 1)))},
+        coords={
+            "latitude": np.arange(10, -1, -1, dtype=float),
+            "longitude": np.arange(360, dtype=float) + longitude_shift,
+        },
+    )
+    elevation.raster.set_crs(4326)
+    catalog = {}
+    for name, dataset in (("forcing", forcing), ("elevation", elevation)):
+        path = tmp_path / f"{name}.nc"
+        dataset.to_netcdf(path)
+        catalog[name] = {
+            "uri": str(path),
+            "data_type": "RasterDataset",
+            "driver": "raster_xarray",
+            "metadata": {"crs": 4326},
+        }
+    catalog_path = tmp_path / "catalog.yml"
+    catalog_path.write_text(yaml.safe_dump(catalog), encoding="utf-8")
+
+    class PreparationReached(Exception):
+        pass
+
+    class Model:
+        region = forcing.raster.box
+
+        def __init__(self, **kwargs):
+            self.staticmaps = SimpleNamespace(data=forcing)
+
+        def setup_config(self, **kwargs):
+            raise PreparationReached
+
+    monkeypatch.setattr(preparation, "WflowSbmModel", Model)
+    context = SimpleNamespace(
+        catalogs=[SimpleNamespace(path=catalog_path)],
+        ancillary=[SimpleNamespace(path=tmp_path / "elevation.nc")],
+        forcing_entry="forcing",
+        elevation_entry="elevation",
+        pet_method="debruin",
+    )
+    run = SimpleNamespace(
+        preparation_context=context,
+        run_id="007",
+        descriptor=SimpleNamespace(calendar="standard"),
+    )
+    settings = SimpleNamespace(
+        forcing_path=tmp_path / "prepared.nc",
+        toml_path=tmp_path / "wflow.toml",
+        first_time="2046-01-01",
+        last_time="2046-01-01",
+        native_output_path=tmp_path / "output/discharge.csv",
+        native_log_path=tmp_path / "output/log.txt",
+    )
+    expected = PreparationReached if longitude_shift == 0 else IncompatibleForcingError
+    with pytest.raises(expected):
+        preparation.prepare_model_forcing(run, SimpleNamespace(root=tmp_path), settings)
+    if longitude_shift == 0:
+        selected = hydromt.DataCatalog(data_libs=[str(catalog_path)]).get_rasterdataset(
+            "elevation", geom=forcing.raster.box, buffer=2, variables=["elevtn"]
+        )
+        np.testing.assert_array_equal(
+            selected.sel(longitude=forcing.longitude, latitude=forcing.latitude),
+            np.tile([350, 351, 352, 353], (3, 1)),
+        )
+        selected.close()
 
 
 def test_planned_publication_across_separate_workers(retained, tmp_path):

@@ -22,7 +22,7 @@ cssclasses: [todo-board]
 | [t2608191733][]    |     | Ship a sample dataset bundle so a user needs no…        | distribution / sample data   | backlog    |
 | [t2608161450][]    |     | The chirps store does not satisfy the WG-1 seam…        | wf0 / climate store /…       | backlog    |
 | [t2608122022][]    |     | Verify the newly-honoured water year, and sweep for…    | wf2 projections / config /…  | backlog    |
-| [t2608091730][]    |     | Produce waterbody layers data-side so basin_area can…   | plotting                     | backlog    |
+| [t2608091730][]    |     | Produce waterbody layers data-side so basin_area can…   | plotting                     | blocked    |
 | [t2608091006][]    |     | Standardize plotting across the toolbox with shared…    | plotting                     | active     |
 
 [t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md

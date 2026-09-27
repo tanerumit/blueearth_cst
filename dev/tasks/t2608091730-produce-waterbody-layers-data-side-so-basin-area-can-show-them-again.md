@@ -1,12 +1,12 @@
 ---
 title: Produce waterbody layers data-side so basin_area can show them again
 type: todo-item
-status: backlog
+status: blocked
 effort: 1
 area: plotting
 queue:
 created: 2026-08-09
-updated: 2026-08-21
+updated: 2026-09-27
 ---
 
 > [!note] Overview
@@ -141,3 +141,18 @@ and the WF2/WF3 blast radius has not been checked.
 - `blueearth_cst/shared/plot_map.py::load_spatial_basin_layers` — its docstring points here.
 - **`lakes` is a stale name model-side.** hydromt_wflow 1.0.2 has no `lakes` geom: `setup_lakes` became `setup_reservoirs_no_control`, and the geoms it writes are `meta_reservoirs_no_control`, `meta_reservoirs_simple_control` and `glaciers`. Data-side the names come from the SOURCES instead (`hydro_lakes` → `lakes`, `hydro_reservoirs` → `reservoirs`, `rgi` → `glaciers`) and are physically meaningful — a further argument for drawing the figure from the foundation rather than from the model's vocabulary.
 - Rule 1.08 does far more than emit vectors: it derives rating curves, storage curves and demand parameters onto `staticmaps.nc`. Leaving it untouched is what keeps this task off the baseline.
+
+## Verification — 2026-09-27
+
+The producer and map wiring are present, but this worktree cannot yet verify a
+non-empty overlay. `test_case/test_rapid/data/spatial/geoms/` contains zero
+features in `reservoirs.geojson`, `lakes.geojson` and `glaciers.geojson`;
+`test_case/basin_map_fixture` has no waterbody layer either. The configured
+global catalog paths on `P:` are inaccessible in this session.
+
+The preview was attempted against the rapid tree. Matplotlib reached
+`cartographic_map._draw_raster` and terminated with Windows fatal exception
+`0xc06d007f` inside NumPy `linalg.inv` while creating the inset colorbar, before
+writing a figure. The remaining check needs a basin with at least one real
+waterbody and a working figure-render environment; inspect that rendered map
+for the overlay before closing this item.

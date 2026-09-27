@@ -2,6 +2,32 @@
 
 Working checklist: update items in place as fixes are verified. Git history retains the detailed run chronology. Checked items are resolved for this case; unchecked items remain open.
 
+## Completed geographic areas — diagnostic register
+
+Updated 2026-09-27. Completion refers to the recorded test scope, not scientific validation. `Not identified` means the area was reported by the user but its run folder has not been matched.
+
+| Area / representative run | Basin area (km²) | Active model cells / raster size | Historical daily steps (forcing / response) | Scenario daily steps per run (forcing / response) | Coverage |
+|---|---:|---|---|---|---|
+| Ntoum, Gabon — `gabon-ntoum-v3`, 2026-09-25 | 219.7 | 257 / 16×24 | 6,210 / 6,209; 2000–2016 | 7,671 / 7,670; 2040–2060 | WF0–WF4 passed; 14 scenarios |
+| Libreville + SP2 | Not identified | Not identified | Not identified | Not identified | Completed area reported by user; run identity/diagnostics pending |
+| Liberia — `liberia-hydropower-outlet`, 2026-09-27 | 17,775.4 | 20,983 / 231×223 | 5,844 / 5,843; 2001–2016 | 1,096 / 1,095; 2040–2042 | WF0–WF3 and 14 simulations passed; AET/recharge metrics only |
+
+Model resolution is approximately 0.008333° in both verified cases. Active cells count positive subcatchment-mask cells, not the rectangular raster. Areas are WGS84 geodesic polygon areas. Response rows start one day after forcing (interval-end convention). Each scenario set has two realizations × (2 temperature × 3 precipitation levels + baseline).
+
+### Recorded workflow runtimes
+
+Elapsed wall time; not sums of rule benchmarks. Both verified runs used three cores. These are observed executions, not controlled performance comparisons. Partial and cached runs are labelled; failed/no-op attempts are not folded into successful totals.
+
+| Area | WF0 | WF1 | WF2 | WF3 | WF4 |
+|---|---|---|---|---|---|
+| Ntoum v3 | 2m41s | 2m35s | 4m59s | 1m41s | 7m25s |
+| Libreville + SP2 | Not identified | Not identified | Not identified | Not identified | Not identified |
+| Liberia | 1h58m53s | Preparation 3m41s + resumed run 12m17s | Cached repair rerun 46s | 2m43s | 48m38s through failed default metrics; compact metrics-only 1m09s |
+
+- **Ntoum:** first recorded full pipeline invocation took 19m23s; later reuse invocations excluded. Source: `C:/Users/taner/workspace/cst-test-cases/runs/gabon-ntoum-v3/config/runs/_engine/invocations/`, parent `92fd71ea6c964c7ab450a7f11d2b6bea`; polygon and model mask under that output root.
+- **Liberia:** WF1 historical engine alone 11m44s; WF4 engine batch alone 44m19s. WF2's earlier fetch/reduction attempt took 4m24s and failed at provenance; the 46s repair reused those sources. Runtime scopes are not interchangeable with a fresh end-to-end run.
+- **Follow-up:** identify Libreville + SP2 output root and populate its diagnostics. For future cases record run date/revision, core count, reused inputs and metric coverage alongside timings.
+
 ## Liberia — current status (2026-09-27)
 
 | Workflow / check | Result |

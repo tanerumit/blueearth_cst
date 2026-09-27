@@ -1,5 +1,48 @@
 # Task Brief — Prototype the standardized Workflow 2 projection figures
 
+> **Current disposition (2026-09-27).** The owner adopted this figure set on
+> 2026-08-17 and retained the cloud orientation. Production drawing lives in
+> `blueearth_cst/projections/projection_plots.py`; declarations derive from
+> `projection_figures.py`. The independent prototype was retired by owner
+> ruling on 2026-09-24 and is recoverable from tag
+> `archive/dev-scripts-2026-09-24`. The prototype instructions below are history.
+
+## Retained plotting rulings and evidence
+
+The toolbox-wide convention is no figure or panel titles: use `a)` / `b)`
+panel labels and identify subcatchments with annotations. WF1 series use
+`cartographic_map._publication_rc()`, `series_figure_size()`, constrained
+layout and `supxlabel(wrap=True)`. Derived tunable values must be evaluated
+in functions, so map preview overrides affect the render.
+
+WF2 retains model-name annotations, the combined all-horizons cloud alongside
+the faceted cloud, and the existing cloud orientation. Monthly plots render
+the authoritative `*_change_factors_monthly.csv`, rather than independently
+recomputing changes. The prototype falsifier found the old producer used an
+annual historical mean and the full future series instead of corresponding
+calendar months within each horizon. Across 72 rows the corrected prototype
+matched the table within 0.000491% precipitation and 0.000894 °C temperature
+(worst case `GFDL-ESM4 · ssp585`). The regression
+`test_values_come_through_untouched` sends sentinel values 999.0 and −42.0
+through the table-to-figure path to prevent a second formula returning.
+
+The production port was checked with 53 new unit tests, 14 CLI checks and a
+full suite (2538 passed, 6 skipped, 1 xfailed). Its render matched the adopted
+prototype's 9 traces per overview panel, 6 cloud points and 6 monthly traces:
+[production render](https://claude.ai/code/artifact/3f2d49aa-c292-4e95-8483-2485912e0d32).
+The task identity `t2608091006` remains resolvable through `dev/LOG.md` after
+closure; this document retains its design rulings.
+
+The remaining sweep completed on 2026-09-27: `plot_basavg` adopts the shared
+page, typography, constrained layout and export settings; the evaluation
+sheets replacing `plot_hydro` / `plot_signatures` use letter-only panels with
+station identity and quantity descriptions in their captions. Calculations
+and declared output names are unchanged. The basin-map preview already uses
+the production template. Verification covered 40 focused tests, repository
+Ruff lint/format checks and inspected renders of single/multiple subcatchments,
+the multi-gauge map and all four evaluation sheets. Render fixtures are
+illustrative; these checks make no claim about model performance.
+
 > **Prototype only — reframed 2026-08-11.** This brief previously specified an
 > integrated change to the WF2 figure contract. It now specifies a **design
 > prototype**: render the proposed figure set outside the workflow, publish it as
@@ -74,7 +117,8 @@ Artifact. The deliverable is a **design decision**, not a merged output contract
 **Approval-gated**
 
 - The active plotting-standardization task note
-  (`dev/tasks/t2608091006-…md`). Its half-2 checkboxes for the two WF2 producers
+  (historical task `t2608091006`, recorded in `dev/LOG.md` after closure).
+  Its half-2 checkboxes for the two WF2 producers
   currently read as swept, which the reframing may falsify — but that follows
   from `dc40a22`'s disposition, which is the owner's call, not this task's.
 - Any shared-helper edit. If the shared contract is genuinely missing a

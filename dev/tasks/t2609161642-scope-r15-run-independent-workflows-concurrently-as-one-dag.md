@@ -5,7 +5,7 @@ status: backlog
 effort: 2
 area: workflow architecture
 origin: owner question 2026-09-16
-queue: 6
+queue: 5
 created: 2026-09-16
 updated: 2026-09-27
 ---

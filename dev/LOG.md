@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-27 | t2608091006 | Standardize plotting across the toolbox with shared templates, then sweep the existing figures onto them | plotting |
 | 2026-09-27 | t2608161450 | Verified CHIRPS daily values and corrected their precipitation label without scaling. WF0 reports WG-1 diffs and reads provenance from the store; evidence and limits are in `dev/reference/contracts/weather-generator-seam.md`. | wf0 / climate store |
 | 2026-09-27 | t2609062317 | The shell-write scope backstop is inert in advisory mode — The advisory-mode scope limitation and revisit trigger remain in `dev/reference/task-lanes.md`. | tooling |
 | 2026-09-27 | t2608202331 | Historical slow-import measurements; scanner attribution was inferred — Timings and uncertainty remain in `docs/env_setup_notes.md`. | environment / dev machine |

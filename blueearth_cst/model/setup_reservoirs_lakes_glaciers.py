@@ -17,11 +17,11 @@ that are often absent or mis-resolved. Folding them in would redo the whole
 parameterization whenever a catalog lookup fails — trading a fixed few seconds
 for a rebuild cost that grows with the basin.
 
-The earlier note here claimed the split existed because hydromt 1.3's
+The earlier rationale claimed the split existed because hydromt 1.3's
 ``hydromt build`` cannot tolerate per-method no-data, with a removal trigger
 waiting on upstream. That trigger is withdrawn: rule 1.06 never invokes the
-``hydromt build`` CLI, so the condition could not have fired. Measurements and
-the full argument are in ``dev/tasks/t2609041718``.
+``hydromt build`` CLI, so the condition could not have fired. See
+``dev/reference/workflows/model_creation.md`` for the measurement and decision.
 """
 
 import os

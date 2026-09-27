@@ -206,7 +206,7 @@ ruling.
   the only surviving copy.
 - `dev/tasks/t2608090907a-adr0005-stage2.md` — stage 2, carrying the trigger
   that schedules it.
-- `dev/tasks/t2608071220-r10-14.md` (R10-14, watch) — the measured blast radius
+- `dev/LOG.md` (`t2608071220`, closed) — the measured blast radius
   of the `code` rerun trigger: one line, 42 jobs. Stage 2's entire cost model
   rests on it.
 - `dev/tasks/t2608071205-r8-1.md` (R8-1) — why a red ruff gate went unnoticed.

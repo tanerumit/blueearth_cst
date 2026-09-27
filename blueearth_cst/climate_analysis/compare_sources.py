@@ -114,8 +114,7 @@ TABLE_STEM = "dataset_comparison"
 #: figure family in the toolbox that encodes a CATEGORY by colour; everything
 #: else colours by quantity through ``RASTER_STYLES``, and editing
 #: ``plot_style.py`` would escalate a figure change to the full validation
-#: ladder. Hoist it if a second caller appears — that is the Trigger on
-#: ``dev/tasks/t2608171130-hoist-the-categorical-palette-out-of-compare-sources.md``.
+#: ladder. Hoist it if a second caller appears.
 SOURCE_COLORS = (
     "#0072B2",  # blue
     "#D55E00",  # vermillion

@@ -267,3 +267,15 @@ The baseline discharge reader uses `staticgeoms/outlet_index.csv` to select
 the deterministic `wflow_1`/`subcatchment_id` outlet when registry gauges add
 multiple `Q_*` columns to raw `output.csv`. Do not assume discharge is the only
 Q column.
+
+## Model write isolation
+
+Rules 1.07, 1.08 and 1.09 each write the model directory. On the rapid fixture,
+the read plus full write in the later rules costs about 1.7 seconds each; the
+larger apparent delay in a concurrent run log was contended and overstated it.
+The split remains deliberate: waterbody methods can fail on external catalog
+lookups, while repeating rule 1.07's basin-scaled parameterization would grow
+cost with basin size. The fixed seconds saved by merging do not justify coupling
+those failure paths. Reconsider only if a production-root measurement shows
+round-trips taking minutes; the decision rationale is in
+`blueearth_cst/model/setup_reservoirs_lakes_glaciers.py`.

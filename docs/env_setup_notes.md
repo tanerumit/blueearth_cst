@@ -173,3 +173,38 @@ anymore. Sanity-check inside `pixi shell`:
 python -c "import xarray, numpy; print(xarray.__version__, numpy.__version__)"
 Test-Path (Join-Path $env:CONDA_PREFIX 'Library\bin\ffi.dll')
 ```
+
+### Missing console script with a healthy pixi package record
+
+A package can import and appear installed in `pixi list` while its generated
+console executable is absent. A clean `pixi install` can trust the package
+metadata and leave the missing file behind; the failure then appears only in
+tests or tools that shell out to the command. `check_env.py` detects missing
+files by comparing distribution `RECORD` entries with `Scripts/`.
+
+For the recorded Snakemake 9.6.2 incident, pixi repaired the environment after
+its exact `snakemake-9.6.2.dist-info` record was removed and `pixi install`
+rerun. Inspect the candidate path, confirm it is the expected record, and use
+that exact path with `Remove-Item -LiteralPath`:
+
+```powershell
+Get-ChildItem .pixi\envs\default\Lib\site-packages -Directory -Filter 'snakemake-9.6.2.dist-info'
+Remove-Item -LiteralPath '.pixi\envs\default\Lib\site-packages\snakemake-9.6.2.dist-info' -Recurse -Force
+pixi install
+```
+
+`pixi clean` + `pixi install` rebuilds the environment. Do not edit
+`pixi.lock` or `pixi.toml`. Incident date: 2026-08-12; see `t2608121104` in
+`dev/LOG.md`.
+
+### Local import timings under real-time scanning
+
+On one Windows 11 machine, fresh-process `python -X importtime -c "import hydromt"`
+measured 13.3–15.6 seconds across three runs (3,173 modules; about 4.79 ms per
+module), while normal per-module imports were estimated at 0.3–1 ms. This is
+observed slow import timing; a real-time scanner was present, but no exclusion
+A/B established it as the cause. Treat scanner attribution and the estimated
+suite-time payoff as a hypothesis, not a general pixi property. The owner
+could not obtain an exclusion on 2026-09-04. At that time the local full suite
+took about 59 minutes versus about 9 minutes on CI; that gap is historical and
+not wholly attributed to the scanner. Incident ID: `t2608202331`.

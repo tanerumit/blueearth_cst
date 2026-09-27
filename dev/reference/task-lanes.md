@@ -109,3 +109,12 @@ Tried 2026-08-07 and it failed exactly that way. Another session merged its own 
 Seeding is therefore not the cheap option, it is the correct one — a seeded worktree cannot be moved by another session. The residual difference is small and worth stating: a copied fixture proves the code runs, the primary's tree is the one the baseline was recorded from. When that distinction actually matters — a baseline re-record — take the primary deliberately, with no other session live, which `worktree_policy: always` is what enforces.
 
 `.pixi/` self-ignores through a `.gitignore` the tool writes itself, so it needs no repo rule. The pytest and ruff caches were redirected out of the root on 2026-08-11 (`pyproject.toml` `cache_dir` / `cache-dir`) and now sit under the ignored `.tmp/`. **The root carries no cache directory of any kind, and `tests/test_cache_dir_hygiene.py` fails if one appears** -- matched by shape, so a tool nobody has added yet is caught too. Ignoring was never the guard: it keeps such a directory out of a commit, not out of the root, and the two the redirect left behind sat there unread for a week because nothing failed. The one invocation that still writes one is `ruff check --isolated` (which discards config by definition, and both `pyproject.toml` and `ci.yml` invite it as a rule-set diagnostic); run it as `RUFF_CACHE_DIR=.tmp/ruff_cache ruff check --isolated`, since the variable outranks the config-less default. That variable does NOT belong in `pixi.toml` `[activation.env]`: pixi does not expand values there, so it would have to be relative -- and a relative `RUFF_CACHE_DIR` resolves against the CWD, scattering `.tmp/ruff_cache` into whichever directory ruff ran from, while `cache-dir` already resolves correctly from any of them.
+
+## Advisory mode has no shell-write scope source
+
+The repository uses `slot_registry: advisory`. The PostToolUse scope-backstop
+returns without checking because advisory claims do not contain
+`expected_paths`; registering the same hook in another runtime would add a
+second no-op. Native-edit guards remain a separate protection. Revisit this if
+the repository returns to atomic slots or the canonical git-workflow guidance
+adds an advisory scope source. See `t2609062317` in `dev/LOG.md`.

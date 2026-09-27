@@ -48,7 +48,7 @@ from blueearth_cst.spatial.delineate_region import delineate_region, read_region
 #: Grid cells kept AROUND the basin bbox when reading a source.
 #:
 #: Two, not one, since 2026-08-10. The store is becoming the forcing source for
-#: rule 1.10 instead of that rule re-reading the global dataset from the
+#: rule 1.09 instead of that rule re-reading the global dataset from the
 #: catalog, and hydromt reads precipitation for a model region with
 #: ``buffer=2`` (``hydromt_wflow/wflow_sbm.py:3288``,
 #: ``setup_precip_forcing``). A store built at ``buffer=1`` is one ring short of
@@ -208,7 +208,7 @@ def _check_window_coverage(ds, starttime, endtime, clim_source, enforce_min_year
     That relaxation cannot leak into WF1/WF3 by way of a shared store. Those two
     declare the store ONLY for ``shared.clim_historical``, without the flag, so
     a candidate promoted to primary re-extracts (the params differ, which is
-    Snakemake's rerun trigger) and meets the floor here. Rule 1.10 checks the
+    Snakemake's rerun trigger) and meets the floor here. Rule 1.09 checks the
     store it consumes as well -- see ``model/add_climate_forcing.py`` -- so the
     guarantee does not rest on that trigger alone.
     """
@@ -887,8 +887,8 @@ if __name__ == "__main__":
             # Two declared inputs (ADR 0003). The catalog is the store's
             # freshness boundary (R07 ext2-01), so an in-place catalog edit
             # mtime-triggers exactly one re-extraction; the region is the shared
-            # project artifact, delineated once by rule 1.01b/2.03b/3.01b rather
-            # than re-derived here per store key.
+            # project artifact, delineated once by WF0 rule 0.01, WF1 rule 1.02,
+            # WF2 rule 2.02 or WF3 rule 3.03 rather than re-derived here per key.
             catalog = sm.input.catalog
             region_fn = sm.input.region_geojson
             gdf = read_region(region_fn)

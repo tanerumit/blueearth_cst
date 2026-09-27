@@ -31,7 +31,6 @@ import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
-import yaml
 
 from blueearth_cst.climate_analysis.climate_figures import CLIMATE_VARS, annual_series
 from blueearth_cst.climate_analysis.compare_sources import (
@@ -47,6 +46,7 @@ from blueearth_cst.climate_analysis.compare_sources import (
     comparison_variables,
     mutual_window,
     summarize_sources,
+    write_comparison_table,
 )
 from blueearth_cst.climate_analysis.figure_naming import subbasin_scope
 from blueearth_cst.shared.config_composition import load_composed_config
@@ -582,7 +582,12 @@ def test_rule_0_05_and_0_06_report_the_same_basin_mean(stores, cells, tmp_path):
 def test_table_is_five_columns_plus_the_footnote(stores):
     """Compact by ruling: Dataset, time step, window, grid size, reference."""
     table = summarize_sources(stores)
-    assert list(table.columns) == [*DISPLAY_HEADERS, FOOTNOTE_COLUMN]
+    assert list(table.columns) == [
+        *DISPLAY_HEADERS,
+        FOOTNOTE_COLUMN,
+        "wg1_status",
+        "wg1_diffs",
+    ]
     assert list(DISPLAY_HEADERS) == [
         "source",
         "temporal_resolution",
@@ -595,6 +600,42 @@ def test_table_is_five_columns_plus_the_footnote(stores):
 def test_table_lists_every_candidate(stores):
     """The >=2 filter is about FIGURES; the table summarises all candidates."""
     assert list(summarize_sources(stores)["source"]) == ["era5", "chirps"]
+
+
+def test_readiness_reports_full_and_precip_only_stores(tmp_path):
+    from blueearth_cst.shared.interchange_contracts import validate_wg1
+    from tests.test_climate_store_wg1_conformance import _store as forcing_store
+
+    full = forcing_store(
+        variables=(
+            "precip",
+            "temp",
+            "temp_min",
+            "temp_max",
+            "kin",
+            "kout",
+            "press_msl",
+        ),
+        attrs={"crs": 4326, "category": "meteo", "paper_ref": "Extracted citation"},
+    ).assign_coords(spatial_ref=0)
+    candidate = full[["precip"]]
+    stores = {}
+    for name, ds in (("era5", full), ("chirps", candidate)):
+        path = tmp_path / f"{name}.nc"
+        ds.to_netcdf(path)
+        stores[name] = path
+    table = summarize_sources(stores).set_index("source")
+    assert table.loc["era5", "wg1_status"] == "ready"
+    assert table.loc["era5", "wg1_diffs"] == ""
+    assert table.loc["chirps", "wg1_status"] == "not ready"
+    assert table.loc["chirps", "wg1_diffs"].splitlines() == validate_wg1(candidate)
+    assert "no ERA5 companion fields" in table.loc["chirps", FOOTNOTE_COLUMN]
+    paths = write_comparison_table(table.reset_index(), tmp_path / "report")
+    rendered = paths[1].read_text(encoding="utf-8")
+    for diff in validate_wg1(candidate):
+        assert diff in rendered
+    assert "**era5** — ready" in rendered
+    assert "**chirps** — not ready" in rendered
 
 
 def test_table_reports_the_extracted_window_as_one_cell(stores):
@@ -622,57 +663,6 @@ def test_missing_provenance_renders_rather_than_raising(tmp_path):
         )
     }
     assert summarize_sources(bare).loc[0, "reference"] == MISSING
-
-
-def test_provenance_falls_back_to_the_catalog(tmp_path):
-    """A store that kept NO metadata still gets its Reference column.
-
-    This is the real chirps case, not a hypothetical: that branch fetches one
-    variable and calls ``.to_dataset()``, and the entry's metadata does not
-    survive — measured 2026-08-17, the store's only attribute is
-    ``region_bbox``. Reading the store alone blanks the provenance columns for
-    exactly the precipitation-only sources a comparison exists to judge.
-    """
-    catalog = tmp_path / "catalog.yml"
-    catalog.write_text(
-        yaml.safe_dump(
-            {
-                "meta": {"version": "test"},
-                "chirps": {
-                    "data_type": "RasterDataset",
-                    "uri": "meteo/chirps_{year}.nc",
-                    "driver": {"name": "raster_xarray"},
-                    "metadata": {
-                        "crs": 4326,
-                        "paper_ref": "Funk et al (2015)",
-                        "source_version": "v2.0",
-                    },
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    bare = {
-        "chirps": _store(
-            tmp_path / "bare" / "extract_historical.nc", step=0.05, precip_scale=2.4
-        )
-    }
-    assert summarize_sources(bare).loc[0, "reference"] == MISSING
-    assert (
-        summarize_sources(bare, data_sources=str(catalog)).loc[0, "reference"]
-        == "Funk et al (2015)"
-    )
-
-
-def test_an_unreadable_catalog_costs_columns_not_the_table(tmp_path):
-    """Provenance is never worth failing the rule over."""
-    bare = {
-        "era5": _store(
-            tmp_path / "bare" / "extract_historical.nc", step=0.25, precip_scale=3.0
-        )
-    }
-    table = summarize_sources(bare, data_sources=str(tmp_path / "absent.yml"))
-    assert table.loc[0, "reference"] == MISSING
 
 
 # --- the rendered outputs -----------------------------------------------------

@@ -2,7 +2,7 @@
 title: Verify the newly-honoured water year, and sweep for projects whose results it moves
 type: todo-item
 status: backlog
-queue: 2
+queue: 1
 area: wf2 projections / config
 origin: water-year promotion (2026-08-12)
 created: 2026-08-12

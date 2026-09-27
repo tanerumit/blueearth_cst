@@ -52,6 +52,7 @@ class _FakeDataArray:
         # here (once against a double that cannot be wrong) would be worse than
         # not asserting it at all.
         self.dtype = dtype
+        self.attrs = {}
 
 
 class _FakeDataset:

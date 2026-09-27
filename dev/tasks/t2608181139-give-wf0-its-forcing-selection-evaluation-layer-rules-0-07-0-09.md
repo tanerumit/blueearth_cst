@@ -5,7 +5,7 @@ status: backlog
 effort: 2
 area: wf0 / evaluation layer
 origin: t2608131847a split (2026-08-18)
-queue: 3
+queue: 2
 created: 2026-08-18
 updated: 2026-09-27
 ---

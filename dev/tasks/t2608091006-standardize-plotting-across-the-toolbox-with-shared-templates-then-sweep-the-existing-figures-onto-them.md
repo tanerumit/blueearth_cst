@@ -5,7 +5,7 @@ status: active
 branch:
 effort: 2
 area: plotting
-queue: 4
+queue: 3
 created: 2026-08-09
 updated: 2026-09-27
 ---

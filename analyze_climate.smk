@@ -498,11 +498,6 @@ if len(CANDIDATE_SOURCES) > 1:
             subbasin_plot_dir = COMPARISON_SUBBASIN_DIR,
             geoms_dir = SPATIAL_UNITS.spatial_dir + "/geoms",
             water_year_start = WATER_YEAR_START,
-            # Read ONLY to fill provenance a store did not keep: the chirps
-            # branch fetches a single variable and loses the entry's metadata,
-            # so without this the Reference/Version/DOI columns are blank for
-            # exactly the precipitation-only sources a comparison judges.
-            data_sources = DATA_SOURCES,
         output:
             COMPARISON_OUTPUTS,
             # As in rule 0.04: the per-subbasin figures are named for

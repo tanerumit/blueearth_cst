@@ -254,6 +254,16 @@ def plot_climate_source(
     """
     log_row(f"Reading store ({clim_source}): {climate_nc}", module="plot")
     ds_raw = xr.open_dataset(climate_nc)
+    from blueearth_cst.shared.interchange_contracts import validate_wg1
+
+    wg1_diffs = validate_wg1(ds_raw)
+    log_row(
+        f"WG-1 {'not ready' if wg1_diffs else 'ready'}: {clim_source}",
+        module="plot",
+        level="WARNING" if wg1_diffs else "INFO",
+    )
+    for diff in wg1_diffs:
+        log_row(diff, module="plot", level="WARNING")
     variables = source_climate_vars(clim_source)
 
     if variables == ("precip",):

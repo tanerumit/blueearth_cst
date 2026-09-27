@@ -297,6 +297,13 @@ per variable — plus a summary table of what each source is (resolution,
 extracted window, reference) and what it delivers. This is the rule that stops
 asking the reader to do the comparing.
 
+The CSV also records `wg1_status` and full `wg1_diffs`; the Markdown report
+lists the same per-source findings below its summary table. These are structural
+and metadata checks against the full forcing store contract, not a replacement
+for coverage or physical-value checks. Precipitation-only comparison candidates
+remain usable for comparison while their missing forcing companions are reported.
+Rule 0.04's per-source plot log reports the same checks in single-source runs.
+
 **Writes.** The comparison figures and table, plus the per-subbasin comparison
 set as a `directory(...)`.
 

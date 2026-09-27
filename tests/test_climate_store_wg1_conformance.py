@@ -9,13 +9,13 @@ re-extracted under the full contract when promoted.
 The fix is at the single write path rather than in the branch that failed, and
 that is what these tests pin: a hand-assembled store — precipitation-only,
 float64, carrying nothing but its bbox, which is exactly what the chirps branch
-produced — comes out conforming, and an era5-shaped store that already conforms
-is left alone.
+produced — clears the dtype and metadata diffs while its absent companions
+remain reported, and an era5-shaped store that already conforms is left alone.
 
-The falsifier that cannot live here is the one that needs a real chirps store on
-disk: whether `precip` units of `mm` are a wrong LABEL or a wrong MAGNITUDE. The
-producer does not touch units for that reason, and the board note keeps that
-step.
+The real-data magnitude witness in `dev/reference/contracts/weather-generator-
+seam.md` established unchanged CHIRPS daily depths. The producer now corrects
+the `mm` label to `mm d**-1` for both CHIRPS names without rescaling values;
+the parametrized guard below checks that narrow correction and its controls.
 """
 
 import numpy as np
@@ -148,6 +148,26 @@ class TestStampCatalogMetadata:
         assert "paper_ref" not in out.attrs
 
 
+@pytest.mark.parametrize(
+    "source,units,expected",
+    [
+        ("chirps", "mm", "mm d**-1"),
+        ("chirps_global", "mm", "mm d**-1"),
+        ("era5", "mm", "mm"),
+        ("chirps", "kg m-2 s-1", "kg m-2 s-1"),
+        ("chirps_global", None, None),
+    ],
+)
+def test_daily_precip_label_changes_only_verified_sources(source, units, expected):
+    store = _store()
+    if units is not None:
+        store.precip.attrs["units"] = units
+    before = store.precip.values.copy()
+    out = ehc._normalize_precip_units(store, source)
+    assert out.precip.attrs.get("units") == expected
+    np.testing.assert_array_equal(out.precip.values, before)
+
+
 class TestEndToEndConformance:
     """The falsifier: the chirps-shaped store must FAIL, then PASS."""
 
@@ -170,9 +190,10 @@ class TestEndToEndConformance:
         assert "category" in joined
         assert "float32" in joined
 
-    def test_the_fixed_store_clears_the_dtype_and_attribute_rows(self):
+    @pytest.mark.parametrize("source", ["chirps", "chirps_global"])
+    def test_the_fixed_store_clears_the_dtype_and_attribute_rows(self, source):
         store = self._chirps_shaped()
-        store = ehc._stamp_catalog_metadata(store, _Catalog(), "chirps")
+        store = ehc._stamp_catalog_metadata(store, _Catalog(), source)
         store = ehc._coerce_store_dtypes(store)
         diffs = ic.validate_wg1(store)
         joined = " ".join(diffs)

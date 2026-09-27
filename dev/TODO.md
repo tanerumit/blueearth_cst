@@ -12,7 +12,6 @@ cssclasses: [todo-board]
 | [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup        | run cost / julia /…          | backlog    |
 | [t2609171500][]    |     | Move the experiment's frozen simulation documents into… | project-tree / test_rapid…   | backlog    |
 | [t2609161642][]    |     | Scope R15 — run independent workflows concurrently as…  | workflow architecture /…     | backlog    |
-| [t2608242212][]    |     | Give the analysis variable set a config surface (R14…   | wf0 / wf1 climate figures…   | backlog    |
 | [t2608222252][]    |     | Make the climate extraction variable set derived and…   | wf0 / wf1 climate store /…   | backlog    |
 | [t2608222239][]    |     | Support additional historical climate datasets in the…  | wf0 / wf1 climate store /…   | backlog    |
 | [t2608210010][]    |     | Replace the docs site's approximate brand colours with… | docs / site / quarto-docs-s… | blocked    |
@@ -30,7 +29,6 @@ cssclasses: [todo-board]
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 [t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
 [t2609161642]: tasks/t2609161642-scope-r15-run-independent-workflows-concurrently-as-one-dag.md
-[t2608242212]: tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md
 [t2608222252]: tasks/t2608222252-derived-extraction-vars.md
 [t2608222239]: tasks/t2608222239-more-climate-datasets.md
 [t2608210010]: tasks/t2608210010-official-deltares-brand-colours-in-theme-scss.md

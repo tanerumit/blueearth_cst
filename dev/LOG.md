@@ -17,6 +17,7 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-27 | t2608242212 | Give the analysis variable set a config surface (R14 C-48) [dropped] | wf0 / wf1 climate figures |
 | 2026-09-27 | t2609242252 | Refresh stale rule numbers in the five code-inventoried modules at the next identity change | workflows |
 | 2026-09-27 | t2609152104 | Separate engine bookkeeping from user-facing artifacts in the project tree | project-tree |
 | 2026-09-26 | t2609151346 | Qualify the isolated Linux environment and execute source-qualified GF15 parity. WSL2, the D7 wheel/source pins, fixed-tolerance controls and independent adapter-parity review passed; evidence is in `dev/milestones/r12/implementation/evidence/gf15-production-integration/linux-qualification/`. This does not establish a full Linux workflow run or method adequacy. | wf3 / platform |

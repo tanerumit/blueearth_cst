@@ -10,10 +10,8 @@ cssclasses: [todo-board]
 | [t2608181139][]    | 1   | Give WF0 its forcing-selection evaluation layer…        | wf0 / evaluation layer /…    | backlog    |
 | [t2608071207][]    | 1   | Show the per-member wflow log falsifier actually…       | wf3 logging / R7             | blocked    |
 | [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup        | run cost / julia /…          | backlog    |
-| [t2609242252][]    |     | Refresh stale rule numbers in the five…                 | workflows / rule naming…     | backlog    |
 | [t2609171500][]    |     | Move the experiment's frozen simulation documents into… | project-tree / test_rapid…   | backlog    |
 | [t2609161642][]    |     | Scope R15 — run independent workflows concurrently as…  | workflow architecture /…     | backlog    |
-| [t2609152104][]    |     | Separate engine bookkeeping from user-facing artifacts… | project-tree                 | backlog    |
 | [t2608242212][]    |     | Give the analysis variable set a config surface (R14…   | wf0 / wf1 climate figures…   | backlog    |
 | [t2608222252][]    |     | Make the climate extraction variable set derived and…   | wf0 / wf1 climate store /…   | backlog    |
 | [t2608222239][]    |     | Support additional historical climate datasets in the…  | wf0 / wf1 climate store /…   | backlog    |
@@ -30,10 +28,8 @@ cssclasses: [todo-board]
 [t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md
 [t2608071207]: tasks/t2608071207-r7-8.md
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
-[t2609242252]: tasks/t2609242252-refresh-stale-rule-numbers-in-the-five-code-inventoried-modules-at-the-next-identity-change.md
 [t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
 [t2609161642]: tasks/t2609161642-scope-r15-run-independent-workflows-concurrently-as-one-dag.md
-[t2609152104]: tasks/t2609152104-separate-engine-bookkeeping-from-user-facing-artifacts-in-the-project-tree.md
 [t2608242212]: tasks/t2608242212-give-the-analysis-variable-set-a-config-surface-r14-c-48.md
 [t2608222252]: tasks/t2608222252-derived-extraction-vars.md
 [t2608222239]: tasks/t2608222239-more-climate-datasets.md

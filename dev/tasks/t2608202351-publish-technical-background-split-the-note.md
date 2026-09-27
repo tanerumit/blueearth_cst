@@ -5,9 +5,9 @@ status: blocked
 effort: 2
 area: docs / site
 origin: quarto-docs-site (2026-08-19)
-queue:
+queue: 10
 created: 2026-08-20
-updated: 2026-08-20
+updated: 2026-09-27
 ---
 
 > [!note] Overview

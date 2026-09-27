@@ -27,6 +27,8 @@ import scipy.stats as stats
 import xarray as xr
 from hydromt.stats import skills
 
+from blueearth_cst.shared import plot_style
+from blueearth_cst.shared.cartographic_map import _publication_rc, series_figure_size
 from blueearth_cst.shared.snake_utils import save_figure
 
 # %%
@@ -162,6 +164,9 @@ def plot_basavg(ds, Folder_out, fs=10):
     not a preference: the subcatchment count is not known at DAG-parse time, so
     N separate PNGs could not be declared as outputs. One file per variable
     keeps the declaration in `_basavg_pngs` exact.
+
+    ``fs`` remains accepted for call compatibility; shared publication
+    typography now controls the font sizes.
     """
     month_labels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
 
@@ -181,30 +186,66 @@ def plot_basavg(ds, Folder_out, fs=10):
             if "index" in series.dims
             else [None]
         )
-        fig, axes = plt.subplots(
-            len(units), 1, sharex=True, figsize=(11, 3 * len(units)), squeeze=False
-        )
-
-        for ax, unit in zip(axes[:, 0], units):
-            one = resampled if unit is None else resampled.sel(index=unit)
-            grouped = one.groupby("time.month")
-            ax.plot(np.arange(1, 13), grouped.mean("time"), color="darkblue")
-            ax.fill_between(
-                np.arange(1, 13),
-                grouped.quantile(0.25, "time"),
-                grouped.quantile(0.75, "time"),
-                color="lightblue",
+        with plt.rc_context(_publication_rc()):
+            fig, axes = plt.subplots(
+                len(units),
+                1,
+                sharex=True,
+                figsize=series_figure_size(0.42 * len(units)),
+                layout="constrained",
+                squeeze=False,
             )
-            ax.set_ylabel(meta["legend"], fontsize=fs)
-            ax.tick_params(axis="both", labelsize=fs)
-            ax.set_xlabel("")
-            ax.grid(alpha=0.5)
-            if unit is not None:
-                ax.set_title(f"subcatchment {int(unit)}", fontsize=fs)
 
-        axes[-1, 0].set_xticks(ticks=np.arange(1, 13), labels=month_labels, fontsize=fs)
-        plt.tight_layout()
-        save_figure(os.path.join(Folder_out, f"{dvar}.png"), dpi=300)
+            for panel, (ax, unit) in enumerate(zip(axes[:, 0], units)):
+                label = ""
+                number = panel + 1
+                while number:
+                    number, remainder = divmod(number - 1, 26)
+                    label = chr(97 + remainder) + label
+                one = resampled if unit is None else resampled.sel(index=unit)
+                grouped = one.groupby("time.month")
+                ax.plot(np.arange(1, 13), grouped.mean("time"), color="darkblue")
+                ax.fill_between(
+                    np.arange(1, 13),
+                    grouped.quantile(0.25, "time"),
+                    grouped.quantile(0.75, "time"),
+                    color="lightblue",
+                )
+                ax.set_ylabel(meta["legend"], fontsize=plot_style.FONT_SIZE_BASE)
+                ax.tick_params(axis="both", labelsize=plot_style.FONT_SIZE_TICK)
+                ax.set_xlabel("")
+                ax.grid(axis="y", alpha=0.25, lw=0.5)
+                ax.set_axisbelow(True)
+                ax.spines[["top", "right"]].set_visible(False)
+                ax.annotate(
+                    f"{label})",
+                    (0.01, 0.96),
+                    xycoords="axes fraction",
+                    va="top",
+                )
+                if unit is not None:
+                    ax.annotate(
+                        f"subcatchment {int(unit)}",
+                        (0.99, 0.96),
+                        xycoords="axes fraction",
+                        ha="right",
+                        va="top",
+                        fontsize=plot_style.FONT_SIZE_BASE,
+                    )
+
+            axes[-1, 0].set_xticks(ticks=np.arange(1, 13), labels=month_labels)
+            fig.supxlabel(
+                "Simulated monthly mean and interquartile range across years.",
+                fontsize=plot_style.FONT_SIZE_CAVEAT,
+                color=plot_style.COLOR_CAVEAT,
+                wrap=True,
+            )
+            plot_style.align_caveat_to_plot_area(fig, axes[-1, 0])
+            save_figure(
+                os.path.join(Folder_out, f"{dvar}.png"),
+                fig=fig,
+                dpi=plot_style.RASTER_DPI,
+            )
 
 
 # %%

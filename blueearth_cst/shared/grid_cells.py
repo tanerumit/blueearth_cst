@@ -20,8 +20,8 @@ rule 0.03's ``script:``, and Snakemake hashes a script's file content to decide
 whether the rule is stale — so editing it to export a helper re-fires every
 extraction in every project tree, and in ``test_case/test_local`` that cascades
 through the model build. The duplication is one function's worth and it is
-deliberate; unifying the two belongs to the producer fix already planned on
-``dev/tasks/t2608161450``, which edits that file anyway.
+deliberate: both callers retain the same intersects predicate without changing
+the extraction script merely to share its helper.
 """
 
 # NO `from __future__ import annotations`: this module is imported by `script:`

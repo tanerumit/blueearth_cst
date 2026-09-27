@@ -114,8 +114,7 @@ TABLE_STEM = "dataset_comparison"
 #: figure family in the toolbox that encodes a CATEGORY by colour; everything
 #: else colours by quantity through ``RASTER_STYLES``, and editing
 #: ``plot_style.py`` would escalate a figure change to the full validation
-#: ladder. Hoist it if a second caller appears — that is the Trigger on
-#: ``dev/tasks/t2608171130-hoist-the-categorical-palette-out-of-compare-sources.md``.
+#: ladder. Hoist it if a second caller appears.
 SOURCE_COLORS = (
     "#0072B2",  # blue
     "#D55E00",  # vermillion
@@ -225,77 +224,16 @@ DISPLAY_HEADERS = {
 #: reader most needs about a precipitation-only source.
 FOOTNOTE_COLUMN = "remarks"
 
-#: Rendered for a provenance field neither the store nor the catalog supplies.
+#: Rendered for a provenance field the store does not supply.
 #: Absent keys render rather than raise: a summary table with one blank cell is
 #: worth more than no table, and a locally staged catalog entry legitimately
 #: carries no DOI.
 MISSING = "—"
 
 
-def _catalog_metadata(source: str, data_sources) -> dict:
-    """The catalog entry's ``metadata:`` block for ``source``, or ``{}``.
-
-    **The fallback is load-bearing, not belt-and-braces.** hydromt attaches an
-    entry's metadata to what it returns, and ``extract_historical_climate``
-    writes that through — but only on the branch that fetches a whole Dataset.
-    The chirps branch fetches ONE variable and calls ``.to_dataset()`` on it,
-    and the metadata does not survive: measured 2026-08-17 on a real extraction,
-    that store's only attribute is ``region_bbox``. Reading the store alone
-    would therefore blank the Reference, Version and DOI columns for exactly the
-    precipitation-only sources a comparison is usually run to judge.
-
-    Resolved through ``DataCatalog.to_dict()`` rather than by parsing the YAML,
-    so an ``alias:`` entry resolves to the target it points at. Never raises: an
-    unreachable catalog costs the provenance columns, not the table.
-    """
-    if not data_sources:
-        return {}
-    entry = _catalog_entries(data_sources).get(source, {})
-    found = entry.get("metadata") or entry.get("meta") or {}
-    return found if isinstance(found, dict) else {}
-
-
-def _catalog_entries(data_sources) -> dict:
-    """Every entry in the catalog library, parsed ONCE per process.
-
-    Keyed on the library rather than on ``(library, source)``, which is what the
-    first version did — and `to_dict()` parses the WHOLE library either way, so
-    that cached the answer while re-paying the cost for every row. Measured on
-    the rapid fixture: rule 0.05 took 18 s, of which 12 s was parsing the same
-    catalog twice for two sources.
-    """
-    key = str(data_sources)
-    if key in _CATALOG_CACHE:
-        return _CATALOG_CACHE[key]
-    entries: dict = {}
-    try:
-        import hydromt
-
-        entries = hydromt.DataCatalog(data_libs=data_sources).to_dict()
-    except Exception as exc:  # noqa: BLE001 -- provenance is not worth a failed rule
-        log_row(
-            f"Could not read catalog metadata from {data_sources}: {exc}",
-            module="compare",
-            level="WARNING",
-        )
-    _CATALOG_CACHE[key] = entries
-    return entries
-
-
-#: One parse per catalog LIBRARY per process, keyed by the library path.
-_CATALOG_CACHE: dict = {}
-
-
-def _attr(ds: "xr.Dataset", name: str, fallback: Optional[Mapping] = None) -> str:
-    """A provenance field: the store's own attribute, else the catalog entry's.
-
-    Store first, because that is the record of what was actually extracted; the
-    catalog is what the entry says TODAY and may have been edited since.
-    """
-
+def _attr(ds: "xr.Dataset", name: str) -> str:
+    """A provenance field recorded by the extraction itself."""
     value = ds.attrs.get(name)
-    if value is None or (isinstance(value, str) and not value.strip()):
-        value = (fallback or {}).get(name)
     if value is None or (isinstance(value, str) and not value.strip()):
         return MISSING
     return str(value).strip()
@@ -385,22 +323,23 @@ def _time_window(ds: "xr.Dataset") -> str:
     return f"{time.min().date().isoformat()} → {time.max().date().isoformat()}"
 
 
-def _remarks(source: str, ds: "xr.Dataset", metadata: Optional[Mapping] = None) -> str:
-    """The catalog's note, plus what a precipitation-only store really holds."""
+def _remarks(source: str, ds: "xr.Dataset") -> str:
+    """The extraction note, plus the actual supplementation present."""
 
     parts = []
-    note = _attr(ds, "notes", metadata)
+    note = _attr(ds, "notes")
     if note != MISSING:
         parts.append(note)
     if source in PRECIP_ONLY_SOURCES:
-        parts.append(
-            "precipitation only; temperature, radiation and pressure in this "
-            "store are era5's, regridded so the model can be forced"
-        )
+        parts.append("precipitation only")
+        if "temp" in ds:
+            parts.append("ERA5 temperature companion is present")
+        else:
+            parts.append("no ERA5 companion fields; promotion requires re-extraction")
     return "; ".join(parts) if parts else MISSING
 
 
-def summarize_sources(stores: Mapping, data_sources=None) -> "pd.DataFrame":
+def summarize_sources(stores: Mapping) -> "pd.DataFrame":
     """One row per candidate source: what it is, and what was extracted from it.
 
     Parameters
@@ -409,10 +348,6 @@ def summarize_sources(stores: Mapping, data_sources=None) -> "pd.DataFrame":
         ``{source_name: extract_historical.nc}``, in the order the rows are to
         read — declaration order, so the project's own ``clim_historical``
         leads.
-    data_sources : str | Path | list, optional
-        hydromt data catalog(s), used ONLY to fill provenance a store did not
-        keep (see :func:`_catalog_metadata`). Omitted, the table reports what
-        the extractions themselves carry.
 
     Notes
     -----
@@ -431,18 +366,22 @@ def summarize_sources(stores: Mapping, data_sources=None) -> "pd.DataFrame":
     import pandas as pd
     import xarray as xr
 
+    from blueearth_cst.shared.interchange_contracts import validate_wg1
+
     rows = []
     for source, path in stores.items():
-        metadata = _catalog_metadata(source, data_sources)
         with xr.open_dataset(path) as ds:
+            diffs = validate_wg1(ds)
             rows.append(
                 {
                     "source": source,
                     "temporal_resolution": _temporal_resolution(ds),
                     "time_window": _time_window(ds),
                     "spatial_resolution": _spatial_resolution(ds),
-                    "reference": _attr(ds, "paper_ref", metadata),
-                    FOOTNOTE_COLUMN: _remarks(source, ds, metadata),
+                    "reference": _attr(ds, "paper_ref"),
+                    FOOTNOTE_COLUMN: _remarks(source, ds),
+                    "wg1_status": "not ready" if diffs else "ready",
+                    "wg1_diffs": "\n".join(diffs),
                 }
             )
     return pd.DataFrame(rows)
@@ -474,6 +413,19 @@ def write_comparison_table(table: "pd.DataFrame", out_dir: Union[str, Path]) -> 
             if row[FOOTNOTE_COLUMN] and row[FOOTNOTE_COLUMN] != MISSING
         ]
         notes = "\n" + "\n".join(lines) + "\n" if lines else ""
+    if "wg1_status" in table.columns:
+        notes += "\n## WG-1 readiness of extracted stores\n\n"
+        notes += (
+            "Readiness checks the existing full forcing contract; it does not "
+            "block available-variable comparisons. Precipitation-only candidates "
+            "require re-extraction with ERA5 companions when selected. This is "
+            "structural and metadata conformance, not a check of record length, "
+            "missing values or scientific suitability.\n\n"
+        )
+        for _, row in table.iterrows():
+            notes += f"- **{row['source']}** — {row['wg1_status']}\n"
+            for diff in row["wg1_diffs"].splitlines():
+                notes += f"  - {diff}\n"
     md_path.write_text(
         "# Gridded climate datasets compared\n\n"
         + rendered.to_markdown(index=False)
@@ -815,7 +767,6 @@ def compare_climate_sources(
     stores: Mapping,
     out_dir: Union[str, Path],
     anchor: str = DEFAULT_WATER_YEAR_ANCHOR,
-    data_sources=None,
     basin_cells: Optional[Mapping] = None,
     geoms_dir: Optional[Union[str, Path]] = None,
     subbasin_dir: Optional[Union[str, Path]] = None,
@@ -823,8 +774,8 @@ def compare_climate_sources(
 ) -> list:
     """The rule's whole job: the summary table, then the comparison figures.
 
-    ``data_sources`` is the hydromt catalog, read only to fill provenance the
-    stores did not keep; ``basin_cells`` is ``{source: basin_cells.csv}``, the
+    Provenance comes only from the stores. ``basin_cells`` is
+    ``{source: basin_cells.csv}``, the
     domain the basin figures average over; ``geoms_dir`` supplies
     ``subbasins.geojson`` for the per-subbasin set. Returns every path written,
     the declared ones first — the order :func:`comparison_outputs` gives them.
@@ -836,7 +787,7 @@ def compare_climate_sources(
         module="compare",
     )
     os.makedirs(out_dir, exist_ok=True)
-    written = write_comparison_table(summarize_sources(stores, data_sources), out_dir)
+    written = write_comparison_table(summarize_sources(stores), out_dir)
     written += plot_comparison_figures(
         stores,
         out_dir,
@@ -867,13 +818,6 @@ if __name__ == "__main__":
                 dict(zip(sm.params.sources, sm.input.climate_ncs)),
                 sm.params.out_dir,
                 anchor=water_year_end_anchor(sm.params.water_year_start),
-                # In `params`, not `input`, for the same reason rule 0.04 keeps
-                # its catalog there: the freshness boundary is rule 0.03's
-                # catalog edge (ext2-01), and duplicating it here would rebuild
-                # the table on every catalog touch with no extraction change.
-                data_sources=sm.params.data_sources,
-                # A real `input`, unlike the catalog: it is rule 0.03's own
-                # output and changes with the extraction it describes.
                 basin_cells=dict(zip(sm.params.sources, sm.input.basin_cells)),
                 geoms_dir=sm.params.geoms_dir,
                 subbasin_dir=sm.params.subbasin_plot_dir,

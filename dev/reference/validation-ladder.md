@@ -82,3 +82,14 @@ gh api "repos/tanerumit/blueearth_cst/actions/runs/<id>/jobs" \
 ```
 
 Do not filter by `head_sha=<short sha>`: the parameter needs the full 40-character value and silently matches nothing otherwise.
+
+### Module-level test stubs and collection order
+
+Tests that install heavy-dependency stubs with `sys.modules.setdefault` at
+module import time can silently inherit a real module or an earlier test's
+stub, depending on collection order. Prefer patching the imported source
+module's bindings in a fixture and restore them per test. Do not stub `dask`
+with `SimpleNamespace`: pandas may lazily import it and inspect `dask.__spec__`
+during collection. Keep the real pixi-installed package, or mock the specific
+call site. The live examples are documented in
+`tests/test_extract_historical_climate.py` and `tests/test_prepare_climate_data_catalog.py`.

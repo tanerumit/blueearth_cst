@@ -17,6 +17,22 @@ board never issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-09-27 | t2608091006 | Standardize plotting across the toolbox with shared templates, then sweep the existing figures onto them | plotting |
+| 2026-09-27 | t2608161450 | Verified CHIRPS daily values and corrected their precipitation label without scaling. WF0 reports WG-1 diffs and reads provenance from the store; evidence and limits are in `dev/reference/contracts/weather-generator-seam.md`. | wf0 / climate store |
+| 2026-09-27 | t2609062317 | The shell-write scope backstop is inert in advisory mode — The advisory-mode scope limitation and revisit trigger remain in `dev/reference/task-lanes.md`. | tooling |
+| 2026-09-27 | t2608202331 | Historical slow-import measurements; scanner attribution was inferred — Timings and uncertainty remain in `docs/env_setup_notes.md`. | environment / dev machine |
+| 2026-09-27 | t2608121104 | pixi install reports success without repairing a missing console script — Diagnosis and PowerShell repair steps remain in `docs/env_setup_notes.md`. | environment |
+| 2026-09-27 | t2608071229 | hydromt's `to_yml` silently strips `driver.options.preprocess` on a catalog round-trip — The serialization workaround remains pinned by `tests/test_prepare_climate_data_catalog.py` and `tests/test_fetch_gcm_raw.py`. | upstream / hydromt |
+| 2026-09-27 | t2608071228 | dask cannot be stubbed at module level, because pandas imports it lazily and reads `dask.__spec__` — The `dask.__spec__` constraint and no-stub guidance remain in `dev/reference/validation-ladder.md`. | tests |
+| 2026-09-27 | t2608071227 | The first test file to call `sys.modules.setdefault` decides the stub for every later file — Collection-order stub risks and fixture guidance remain in `dev/reference/validation-ladder.md` and `tests/test_extract_historical_climate.py`. | tests |
+| 2026-09-27 | t2608071220 | A comment-only edit to a shared-rule script invalidates up to three whole workflows — The measured 42-job rerun remains in `dev/decisions/0005-adopt-ruff-format-in-two-stages.md`. | rerun triggers |
+| 2026-09-27 | t2609041718 | WF1 writes the model three times, and the split is worth keeping — The cost measurement and keep-split ruling remain in `dev/reference/workflows/model_creation.md`. | wf1 / model build |
+| 2026-09-27 | t2608071214 | Measure the hydrography read cost §8 adds to WF2 — The 384-cell measurement and scale limitation remain in `dev/decisions/0003-one-shared-region-artifact.md`. | spatial rules |
+| 2026-09-27 | t2608171130 | Hoist the categorical palette out of compare_sources when a second caller appears — The one-caller category palette and hoist trigger remain in `compare_sources.py`. | wf0 / figures |
+| 2026-09-27 | t2608132310 | Fold Julia box-drawing blocks into the tee's log grammar [dropped] | logging / console |
+| 2026-09-27 | t2609171637a | The console's module column is unpadded, so the message column drifts [dropped] | console |
+| 2026-09-27 | t2609171637b | Four non-console modules still hedge their plurals [dropped] | wording |
+| 2026-09-27 | t2608200008 | Retrofit the remaining over-cap LOG.md rows, opportunistically [dropped] | dev records / ledger |
 | 2026-09-27 | t2608242212 | Give the analysis variable set a config surface (R14 C-48) [dropped] | wf0 / wf1 climate figures |
 | 2026-09-27 | t2609242252 | Refresh stale rule numbers in the five code-inventoried modules at the next identity change | workflows |
 | 2026-09-27 | t2609152104 | Separate engine bookkeeping from user-facing artifacts in the project tree | project-tree |
@@ -30,7 +46,7 @@ board never issued.
 | 2026-09-25 | t2608222155 | Slim the baseline run so gate re-records cost less | baseline / run cost |
 | 2026-09-25 | t2608131304 | Implement the config-snapshot redesign — current-only run record replaces the write-only bundle | config / provenance |
 | 2026-09-25 | t2608202308 | Two Snakemake-running test files carry no tier marker | testing / tiering |
-| 2026-09-25 | t2608131718 | The baseline's two flat config copies are stale since 2026-08-12 | baseline / test fixtures |
+| 2026-09-25 | t2608131718 | The baseline's two flat config copies are stale since 2026-08-12 [superseded] | baseline / test fixtures |
 | 2026-09-25 | t2609241852a | WF4 runs write no per-run warm state: intended? | wf4  |
 | 2026-09-25 | t2609181501 | Settle wf0 climate extraction's memory growth, then take the remaining transfer levers | wf0 climate extraction |
 | 2026-09-25 | t2608071230 | Outlet stations are named by subcatchment ID, which is not a human-readable station name | naming |

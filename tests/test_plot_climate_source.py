@@ -163,7 +163,7 @@ def test_source_grid_pet_uses_the_source_orography():
     assert not np.allclose(low.values, high.values)
 
 
-def test_missing_parity_variable_raises(tmp_path):
+def test_missing_parity_variable_raises(tmp_path, capsys):
     """A short extraction fails loud, not with an opaque MissingOutputException."""
     from blueearth_cst.climate_analysis.plot_climate_source import plot_climate_source
 
@@ -172,6 +172,9 @@ def test_missing_parity_variable_raises(tmp_path):
     ds.to_netcdf(nc)
     with pytest.raises(ValueError, match="kout"):
         plot_climate_source(nc, tmp_path / "plots", data_sources=None)
+    report = capsys.readouterr().out
+    assert "WG-1 not ready: era5" in report
+    assert "expected data variable 'kout' absent" in report
 
 
 # --------------------------------------------------------------------------- #

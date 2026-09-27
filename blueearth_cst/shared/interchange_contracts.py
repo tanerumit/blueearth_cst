@@ -46,8 +46,8 @@ Design invariants this module obeys (do not relax without a design change):
 
 Stdlib + xarray + pandas + geopandas + pyyaml + tomllib only — no new
 dependency. This module is imported by ``tests/test_interchange_contracts.py``
-and by **no** Snakefile rule: it is DAG-invisible and changes no pipeline
-behavior (design C2).
+and by WF0's comparison report for WG-1 readiness. WF0 reports divergences
+without blocking available-variable comparisons.
 """
 
 from __future__ import annotations
@@ -192,8 +192,9 @@ def validate_wg1(ds: Any) -> list[str]:
     WG-1 units live under the ``units`` (plural) key — asserted only where
     present (the extraction always writes them, but a swap need not).
 
-    chirps-branch facts (precip-only + the orography sidecar) are NOT checked
-    here — no chirps fixture exists (design R2); this validator is era5-grounded.
+    The full forcing shape remains ERA5-grounded. Comparison-only CHIRPS
+    stores intentionally report their absent companion variables; selected
+    CHIRPS stores include ERA5 companions. The orography sidecar is not checked.
     """
     label = "WG-1"
     diffs: list[str] = []

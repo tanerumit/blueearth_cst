@@ -466,6 +466,17 @@ def _stamp_catalog_metadata(ds, data_catalog, source):
     return ds
 
 
+def _normalize_precip_units(ds, source):
+    """Label verified CHIRPS daily depths without rescaling their values."""
+    if (
+        source in {"chirps", "chirps_global"}
+        and "precip" in ds.data_vars
+        and ds["precip"].attrs.get("units") == "mm"
+    ):
+        ds["precip"].attrs["units"] = "mm d**-1"
+    return ds
+
+
 def _coerce_store_dtypes(ds):
     """Cast the WG-1 coordinates and variables to ``float32``.
 
@@ -776,9 +787,10 @@ def prep_historical_climate(
     # deliberate. A per-branch fix is correct for chirps and silently absent for
     # the next source someone adds to `_SUPPORTED_SOURCES` -- which is exactly
     # how `chirps_global` came to carry the identical defect behind a second
-    # name. Both calls are idempotent, so the era5 path is unaffected.
+    # name. These operations are idempotent, so the era5 path is unaffected.
     ds = _stamp_catalog_metadata(ds, data_catalog, clim_source)
     ds = _coerce_store_dtypes(ds)
+    ds = _normalize_precip_units(ds, clim_source)
 
     ds.attrs["region_bbox"] = [float(value) for value in bbox]
     if region_sha256 is not None:

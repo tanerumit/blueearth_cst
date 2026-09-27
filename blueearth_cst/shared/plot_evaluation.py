@@ -172,8 +172,8 @@ def _rc():
 
     The page settings come from ``plot_style`` — the same 180 mm and 600 dpi the
     maps and the climate figures use. What is added here is picture-level: a
-    grid (a hydrograph is read by value, unlike a map), and left-aligned bold
-    panel titles, which is what makes a lettered panel scannable.
+    grid (a hydrograph is read by value, unlike a map). Panel identities
+    are annotations, following the toolbox convention of no titles.
     """
     params = plot_style.rcparams(axes_linewidth=0.6)
     params.update(
@@ -182,10 +182,6 @@ def _rc():
             "grid.color": COLOR_GRID,
             "grid.linewidth": 0.4,
             "axes.edgecolor": "0.3",
-            "axes.titlesize": plot_style.FONT_SIZE_BASE,
-            "axes.titleweight": "bold",
-            "axes.titlelocation": "left",
-            "axes.titlepad": 3.0,
             "figure.facecolor": "white",
         }
     )
@@ -200,27 +196,37 @@ def _figure_size(height_mm):
 
 
 def _panel(ax, letter, title):
-    """Letter and title one panel. Every panel gets both.
-
-    The predecessor cleared all ten of its titles (``ax.set_title("")``), which
-    left the reader decoding each panel from its axis labels.
-    """
-    ax.set_title(f"{letter}  {title}")
+    """Identify one panel with a letter; retain its quantity for the caption key."""
+    ax._evaluation_panel_caption = f"{letter}) {title}"
+    ax.annotate(
+        f"{letter.rstrip(')')})",
+        (0.01, 1.02),
+        xycoords="axes fraction",
+        va="bottom",
+        fontsize=plot_style.FONT_SIZE_BASE,
+        bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.8},
+    )
 
 
 def _identity(fig, station, subject, legend_ax=None):
-    """The header line, the footnote, and one figure-level legend.
+    """Station identity footnote and one figure-level legend.
 
     A single legend rather than one per panel: every panel on a sheet draws the
     same two series, so repeating the key is noise. ``legend_ax`` is whichever
     axes carries both handles.
     """
-    fig.suptitle(
-        f"{station.caption} · {subject}",
-        fontsize=plot_style.FONT_SIZE_TITLE,
-        fontweight="bold",
-        x=0.006,
-        ha="left",
+    import textwrap
+
+    key = "; ".join(
+        ax._evaluation_panel_caption
+        for ax in fig.axes
+        if hasattr(ax, "_evaluation_panel_caption")
+    )
+    fig.supxlabel(
+        f"{station.caption} · {subject}\n{textwrap.fill(key, width=110)}",
+        fontsize=plot_style.FONT_SIZE_CAVEAT,
+        color=plot_style.COLOR_CAVEAT,
+        wrap=True,
     )
     if legend_ax is not None:
         handles, labels = legend_ax.get_legend_handles_labels()
@@ -237,8 +243,14 @@ def _identity(fig, station, subject, legend_ax=None):
 
 def _caveat(fig, text):
     if text:
+        identity = getattr(fig, "_supxlabel", None)
+        if identity is not None:
+            text = f"{identity.get_text()}\n{text}"
         fig.supxlabel(
-            text, fontsize=plot_style.FONT_SIZE_CAVEAT, color=plot_style.COLOR_CAVEAT
+            text,
+            fontsize=plot_style.FONT_SIZE_CAVEAT,
+            color=plot_style.COLOR_CAVEAT,
+            wrap=True,
         )
 
 

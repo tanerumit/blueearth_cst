@@ -34,9 +34,11 @@ the collection through the Wflow adapter. Native metadata and effective units
 are recorded separately; see the accepted
 [unit trace](../../milestones/r12/implementation/evidence/p1-forcing-units.md).
 
-**Fixture branch = era5.** Branch-specific facts (chirps precip-only, the chirps
-orography sidecar) are documented from code and tagged **not fixture-verified
-(no chirps fixture)** where no chirps fixture exists — never faked green.
+**Original fixture branch = era5.** The CHIRPS hybrid store in the rapid tree
+was inspected on 2026-09-27; its precipitation values were compared with real
+daily source data as recorded below. The `chirps_global` path shares the producer
+fix and is covered by parametrized tests, but no real global-source extraction
+was available for this check.
 
 **Contract-surface tiers** (design §5.1), applied per artifact below:
 
@@ -93,25 +95,56 @@ per artifact (a literal 14-column table is illegible).
   chunk/encoding.
 - **validator:** `validate_wg1`.
 
-**Branch note (not fixture-verified — no chirps fixture).** The era5 branch
-writes all seven variables. The **chirps** branch writes `precip` from
-chirps-native data and reprojects era5 `temp`/radiation/`press_msl` onto the
-chirps grid; the chirps orography sidecar is a chirps-only input. These
-chirps-only facts are documented from code and asserted only under a chirps
-fixture — tagged **not fixture-verified (no chirps fixture)** in the validator
-index.
+**Branch note.** Selected CHIRPS forcing writes all seven variables: native
+precipitation plus ERA5 temperature, radiation and pressure on the CHIRPS grid,
+with an orography sidecar. A comparison-only CHIRPS candidate intentionally
+writes precipitation alone; WF0 reports the missing WG-1 variables rather than
+inventing them. Promotion to selected forcing re-extracts with supplementation.
 
-**Units note (grounded — corrects the p32a °C assumption; design §5.2).** WG-1
-`temp*` is in **Kelvin** (`long_name` + observed value, under the `units` plural
-key): the extraction writes native era5 K. The Kelvin→°C conversion happens
-inside the forcing build / downscale, so the °C value lands on the model-grid
-forcing (HM-2 `temp.attrs['unit'] = 'degree C.'`, fixture-verified). **Units are
-NOT pinned as a hard contract surface** on either artifact — wflow maps forcing
-by variable NAME via the TOML `[input.forcing]` block (HM-2), never by the
-netCDF unit attribute — so the K-vs-°C divergence is an **observed, documented
-cross-seam fact**, asserted only **if the attr is present** (§5.5), not pinned as
-a required property. This avoids over-constraining a swap with a property no
-consumer reads while keeping the divergence honestly on the record.
+**Units note.** The labels above are the native attributes inspected by the
+validator, not proof of physical magnitude. The daily ERA5 catalog already
+converts temperature values to Celsius during extraction while retaining the
+plural `units="K"` label. See the accepted
+[R12 forcing-unit trace](../../milestones/r12/implementation/evidence/p1-forcing-units.md)
+for that code path and the separate effective-unit interpretation. This CHIRPS
+fix does not repair ERA5 labels or change its numerical conversions.
+
+### CHIRPS closure evidence (2026-09-27)
+
+The original 2026-08-16 CHIRPS store failed WG-1 on eight counts: float64
+coordinates and temperatures, missing `crs`/`category`, and precipitation
+labelled `mm`. Fetching a DataArray and calling `to_dataset()` lost the catalog
+metadata. Commit `33bf0ef` moved metadata stamping and float32 coercion to the
+shared write path so both `chirps` and `chirps_global` receive the fix. The rapid
+hybrid store subsequently retained all seven variables, float32 coordinates
+and values, and the catalog citation block; only the precipitation label failed
+WG-1 before the label correction.
+
+The magnitude witness compared raw `CHIRPS_rainfall_2000.nc` with the retained
+`chirps_20000101_20161231/extract_historical.nc` in `test_case/test_rapid`:
+366 daily records × 56 cells = 20,496 values, with 9,553 nonzero values. After
+the catalog's `unit_add: {time: 86400}` timestamp shift, the source values cast
+to float32 matched the store exactly (maximum absolute difference 0). Controls
+using unshifted dates, multiplication by 86400, or division by 86400 failed.
+The catalog performs no precipitation-value conversion. This establishes a
+label discrepancy for this daily binding, not a magnitude defect. The official
+[CHIRPS daily product description](https://developers.google.com/earth-engine/datasets/catalog/UCSB-CHG_CHIRPS_DAILY)
+also records a one-day cadence and precipitation in mm/d.
+
+The producer normalizes the verified CHIRPS `mm` label to `mm d**-1` without
+scaling values or altering timestamps. A fresh one-year comparison-only
+extraction from the staged catalog was also checked against the retained hybrid
+over the same dates: all 20,496 precipitation values were identical. Its only
+six WG-1 diffs were the intentionally absent ERA5 companion variables; its
+catalog citation block survived. The retained full hybrid cleared WG-1 after
+the label helper was applied in memory, without writing that retained file.
+The comparison report smoke retained every diff in both CSV and Markdown.
+
+Existing stores require regeneration
+to obtain the repaired label; changed file metadata changes content hashes,
+so downstream generation identities can change even though historical values
+do not. The magnitude witness is local CHIRPS evidence; tests cover the shared
+`chirps_global` path without claiming a real global-source run.
 
 ## WG-2 — stress-test perturbation grid
 

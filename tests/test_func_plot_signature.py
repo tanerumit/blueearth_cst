@@ -283,13 +283,13 @@ def test_every_subcatchment_gets_its_own_panel(captured, tmp_path):
 def test_the_panels_read_in_sorted_subcatchment_order(captured, tmp_path):
     """Not wflow's internal order, which was measured as [103, 101, 104, 102].
 
-    The titles are the only place the ordering is observable, and a reader who
+    The annotations identify the sorted panels, and a reader who
     cannot trust them has to cross-reference every panel against the map.
     """
     plot_basavg(_basavg(["gwr"], indices=[103, 101, 104, 102]), str(tmp_path))
 
     ((_, fig),) = captured
-    assert [ax.get_title() for ax in fig.axes] == [
+    assert [ax.texts[-1].get_text() for ax in fig.axes] == [
         "subcatchment 101",
         "subcatchment 102",
         "subcatchment 103",
@@ -304,7 +304,7 @@ def test_a_series_without_an_index_dimension_still_draws_exactly_one_panel(
 
     That squeeze is what made the old one-object implementation look correct, so
     the fix must not have broken the case it accidentally worked for. The lone
-    panel carries no subcatchment title, because there is no id to name.
+    panel carries no subcatchment annotation, because there is no id to name.
     """
     plot_basavg(_basavg(["gwr"], indices=None), str(tmp_path))
 
@@ -313,12 +313,12 @@ def test_a_series_without_an_index_dimension_still_draws_exactly_one_panel(
     assert fig.axes[0].get_title() == ""
 
 
-def test_a_single_subcatchment_keeps_its_id_in_the_title(captured, tmp_path):
+def test_a_single_subcatchment_keeps_its_id_in_an_annotation(captured, tmp_path):
     """A size-1 index that survived the squeeze is still identified."""
     plot_basavg(_basavg(["gwr"], indices=[101]), str(tmp_path))
 
     ((_, fig),) = captured
-    assert [ax.get_title() for ax in fig.axes] == ["subcatchment 101"]
+    assert [ax.texts[-1].get_text() for ax in fig.axes] == ["subcatchment 101"]
 
 
 # ---------------------------------------------------------------------------

@@ -1,167 +1,117 @@
 ---
 title: "Running the workflows"
-subtitle: "The five workflows, their runners, and the flags that matter"
+subtitle: "Run a whole assessment or one workflow at a time"
 ---
 
-The five root Snakefiles define the workflows. Invoke simulation through
-`scripts/simulate_system.py` or the all-workflow runner, which validate the
-operation and targets before launching Snakemake once. Direct Snakemake
-commands remain supported for WF0–WF2. WF3 requires the owned launcher, which
-freezes its collection plan before generation.
+Run all enabled workflows with `scripts/run_workflows.py`. To run one workflow,
+use the commands below. Simulation uses `scripts/simulate_system.py`; scenario
+generation uses the all-workflow runner with only that workflow enabled.
 
-| Entry point | id | What it does |
+| Workflow | What it does |
 |---|---|---|
-| `analyze_climate.smk` | wf0 | The basin's historical climate — **model-free** |
-| `build_model.smk` | wf1 | Builds the Wflow-SBM model, runs it on historical forcing |
-| `analyze_projections.smk` | wf2 | CMIP6 change factors — a plausibility overlay |
-| `generate_scenarios.smk` | wf3 | Publish a reusable scenario collection |
-| `simulate_system.smk` via `scripts/simulate_system.py` | wf4 | Simulate a collection or reduce retained responses |
+| Historical climate (`analyze_climate`) | Compare climate data sources before choosing the forcing for the model; optional |
+| Model (`build_model`) | Build Wflow-SBM and run it with historical climate data |
+| Projections (`analyze_projections`) | Calculate CMIP6 changes to compare with the stress-test range |
+| Scenarios (`generate_scenarios`) | Generate climate series for the chosen perturbations |
+| Simulation (`simulate_system`) | Run the model with those series and calculate indicators |
 
-The convenience order is analyze_climate → generate_scenarios → build_model
-→ simulate_system → analyze_projections. Generation and model construction are
-independent prerequisites of simulation. WF0 is optional; run it first or alone
-for forcing selection. Projections provide a terminal plausibility overlay.
+The runner uses this order: historical climate → model → projections → scenarios
+→ simulation. Model building and scenario generation are both needed before
+simulation. Historical climate analysis is optional. CMIP6 projections provide
+context for the tested changes and never supply the generated scenarios.
 
-## Invoking one workflow
+## Run everything enabled in the project file
 
 ```bash
 pixi shell
-snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml
-# For WF3 alone, enable only generate_scenarios in the project config:
-python scripts/run_workflows.py --config <wf3-only-project-config.yml> --project-dir <project-dir> --cores 3
+python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 ```
 
-Angle-bracket labels in the opening path legend are aliases: `<project>` names
-the project root, and `<data>` names the external catalog data root. `config`
-is the configuration file, not an alias. Aliases inside the project include
-their base explicitly: in WF0, `<climate>` is
-`<project>/data/climate/historical`; in WF1 and WF3 it includes the selected
-store key as well. Extraction save rows identify their source, for example
-`era5: saving to netCDF`.
+The runner follows the `enabled:` choices in the project file and stops if a
+workflow fails. It records the result of each attempt under
+`<project_dir>/config/runs/_engine/invocations/`, including checks and failed
+runs. Set `enabled: false` for a workflow you want to skip. Check that any
+earlier results used by a later workflow still match your current project
+settings.
 
-The flags worth knowing:
+To preview the enabled workflows, add `-- --dry-run` to the command. A dry run
+may show only part of a workflow until inputs from an earlier step exist.
+
+## Run one workflow
+
+From the toolbox root, after `pixi shell`, use the individual runner for
+historical climate, model building, or projections:
+
+```bash
+python scripts/run_workflow.py analyze_climate --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
+python scripts/run_workflow.py build_model --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
+python scripts/run_workflow.py analyze_projections --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 --keep-going
+```
+
+For scenario generation alone, make a copy of the project configuration set,
+enable only `generate_scenarios`, and run:
+
+```bash
+python scripts/run_workflows.py --config <project-file.yml> --project-dir <project-dir> --cores 3
+```
+
+To run simulation with a ready scenario collection and model:
+
+```bash
+python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
+```
+
+The flags most users need are:
 
 | Flag | Effect |
 |---|---|
-| `-s` | which workflow file to run |
-| `--configfile` | the YAML configuration |
-| `-c` | cores; more than 1 enables parallelism |
-| `--dry-run`, `-n` | list what would execute, run nothing |
-| `--unlock` | clear the working-directory lock left by a crash |
-| `--keep-going`, `-k` | keep running independent jobs after a failure |
-| `--notemp` | keep intermediate files Snakemake would delete |
+| `--config` | project file with basin and workflow settings |
+| `--project-dir` | directory where this project writes its results |
+| `--cores` | CPU budget for the run |
+| `--target` | simulation outputs to produce; `all` is the usual choice |
+| `--dry-run` | show planned steps without running them |
 
-The full option set is in the [Snakemake CLI
-documentation](https://snakemake.readthedocs.io/en/stable/executing/cli.html).
+The all-workflow runner passes options after `--` to each enabled workflow.
+For example, `-- --dry-run` checks each workflow. For simulation alone,
+`scripts/simulate_system.py` accepts `--dry-run` directly.
 
-The recommended sequence for any workflow is: render the graph, clear a stale
-lock if there is one, then run.
-
-```bash
-python scripts/plot_workflow_dag.py -s build_model.smk --configfile <config>
-snakemake --unlock -s build_model.smk --configfile <config>
-snakemake all -c 3 -s build_model.smk --configfile <config>
-```
-
-The first command renders a DAG image into `<project_dir>/logs/dag/`, named
-after the run that would produce it (`<project_name>_wf<N>_dag.png`, with the
-stress test carrying its experiment id). It draws the graph and runs nothing;
-it needs Graphviz's `dot`, which the pixi environment provides.
-
-::: {.callout-tip}
-## Dry-run after editing anything structural
-
-`--dry-run` validates the whole dependency graph in seconds. Run it after
-changing a rule, a script signature, or any config key that feeds a rule's
-inputs — it is the difference between finding a broken path now and finding it
-forty minutes into a model build.
-:::
-
-## CPU and memory budgets
-
-WF4's Julia jobs reserve `runtime.julia_threads` (default 4) within Snakemake's
-total `--cores` budget. The actual allocation is passed to Julia. With `-c 3`,
-one Julia batch runs with three threads; `-c 12` permits up to three four-thread
-batches. This replaces the previous behavior where `-c 3` could launch three
-four-thread Julia processes. Choose a budget that fits the machine and other work.
-
-The main WF2 analysis jobs and WF4 indicator reduction reserve 1024 MB each;
-weather generation, perturbation, downscaling and Wflow reserve 2048 MB each.
-These are initial scheduling reservations, **not measured peak-memory guarantees**
-or process limits. Set the total budget and override reservations using observed
-peak RSS from the workflow benchmarks, especially for larger basins:
+If Snakemake reports that the directory is locked after an interrupted run,
+first make sure no other process is using the project. Then clear the lock for
+the affected workflow, for example:
 
 ```bash
-python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 12 -- --resources mem_mb=8192 --set-resources downscale_scenario_series:mem_mb=4096
+snakemake --unlock -s build_model.smk --configfile test_case/project_config_rapid.yml
 ```
 
-Without `--resources mem_mb=...`, the declarations do not impose a total RAM
-budget. Resource overrides also belong in a Snakemake execution profile; they do
-not belong in the scientific project configuration. Batched Wflow rule names are
-`run_wflow_batch_<number>`; `--set-threads` overrides for them are included
-conservatively when estimating batch concurrency and temporary disk use.
-
-WF2 computes change-factor summaries in memory and reuses historical statistics
-within the job. WF4 computes PET in HydroMT during downscaling, reads each
-simulation CSV once for all indicators, and writes no unused per-member final
-state. Input-state settings are preserved; WF1 still retains its final state.
-
-## Running everything the config enables
-
-`scripts/run_workflows.py` reads the `workflows.<name>.enabled` flags and runs
-Snakemake for exactly the enabled workflows, in order:
-
-```bash
-pixi run run-workflows --config test_case/project_config_rapid.yml
-pixi run run-workflows --config <config> --cores 4 -- --dry-run
-```
-
-What it guarantees:
-
-- It accepts **full-orchestration configs only** — a `workflows:` section with
-  all five subsections, each with an `enabled:` key.
-- A missing section or key is a **hard error naming the absent key**, never a
-  silent default.
-- It **stops at the first nonzero Snakemake exit and returns that code**, so a
-  failed upstream workflow is never followed by a downstream run.
-- `--cores N`, and anything after a `--` sentinel, forwards to every invocation.
-- Every invocation — including a dry run, a no-op, or a failure — writes an
-  immutable manifest under `<project_dir>/config/runs/invocations/`.
-
-It narrates its own run: which project, which config, a numbered sequence of the
-enabled workflows, a line at each workflow's start and finish with its duration,
-and a closing verdict listing what was written. Every line it speaks is bounded
-by a full-width rule that nothing else in the console draws, so you can always
-tell the runner's voice from the workflow's.
+If a run exhausts memory, lower `--cores` and rerun it. Larger basins and longer
+scenario collections need more memory and disk space; timings and resource use
+are recorded under `<project_dir>/benchmarks/`.
 
 ::: {.callout-note}
-## Run the pipeline from one checkout
+## Run a project from one toolbox checkout
 
-Snakemake keeps its "what is up to date" bookkeeping in a `.snakemake/`
-directory under the *working directory*, and it locks that directory while
-running. Driving one `project_dir` from two checkouts gives you two
-disagreeing sets of bookkeeping and two independent locks over the same output
-files. Pick one checkout for runs and stay in it.
+Use the same toolbox checkout for repeat runs of a project. Running one project
+from two copies of the toolbox can give conflicting decisions about which
+results need to be refreshed.
 :::
 
-## Retained metrics and model rebuilds
+## Calculate different indicators from existing simulations
 
-An experiment freezes its collection, model and simulator settings. Changed
-simulation inputs require a new `experiment_name`; deleting a model-reference
-file does not authorize replacing the frozen simulation identity.
+An experiment is tied to its scenario collection, model, and simulation
+settings. Give a changed simulation a new `experiment_name`.
 
-For new metrics from existing responses, set `operation: metrics-only` and keep
-the experiment name in the simulation settings file:
+To calculate different indicators from completed simulations, set
+`operation: metrics-only` in the simulation settings file and keep the existing
+`experiment_name`:
 
 ```bash
 python scripts/simulate_system.py --config <config> --target simulations_and_indicators --cores 3
 ```
 
-This operation uses retained response and simulation records; it needs no live
-model, generation inputs or Julia. The all-workflow runner accepts
-`--simulation-target simulations_and_indicators`; disable other stages for a retained-only run.
-The default `all` target does not infer an operation from existing files.
-See [retained handoffs](../wf3-retained-handoffs.md).
+This reads the retained model responses and creates a new indicator set without
+rerunning the model. The all-workflow runner can do the same with
+`--simulation-target simulations_and_indicators` when the other four workflows
+are disabled. See [Reading the outputs](outputs.qmd) for the result files.
 
 ## Next
 

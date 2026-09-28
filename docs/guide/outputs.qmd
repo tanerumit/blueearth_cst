@@ -1,6 +1,6 @@
 ---
 title: "Reading the outputs"
-subtitle: "Collections, native responses, metric sets, and their provenance"
+subtitle: "Find the generated climate series, model responses, and indicators"
 ---
 
 Run products live under the configured `project_dir`. For production projects,
@@ -10,70 +10,60 @@ use a directory outside the toolbox checkout.
 
 ```text
 <project_dir>/
-  config/runs/                   configuration records and invocation history
+  config/runs/                   configuration and run records
   data/spatial/                  basin geometry, locations and maps
   data/climate/                  historical forcing and projection products
   models/hydrology/wflow/         model, historical run and evaluation
-  scenarios/requests/<request_id>/  exact generation selection and staging
-  scenarios/collections/<id>/     immutable collection
-    collection.json              readiness marker and inventory
-    scenario_table.csv           explicit run membership and ancestry
-    stress_test_lookup.csv       monthly perturbation parameters
-    forcing/run_<run_id>.nc       durable generated forcing
-    preparation_context.json     portable adapter declaration
-    preparation_catalog.yml      reduced HydroMT catalog
-    ancillary/                   packaged preparation inputs
+  scenarios/requests/<request_id>/  scenario generation settings
+  scenarios/collections/<id>/     generated climate series
+    collection.json              collection inventory
+    scenario_table.csv           generated series and their relationships
+    stress_test_lookup.csv       monthly temperature and precipitation changes
+    forcing/run_<run_id>.nc       generated climate series
   experiments/<name>/
-    config/simulation.json       frozen simulation identity
-    hydrology/wflow/output/      retained native responses
+    config/simulation.json       simulation settings used
+    hydrology/wflow/output/      retained model responses
     results/metric_sets/<id>/
-      metrics.json              readiness marker and provenance
-      unit_index.csv            run and bundle membership
-      metric_environment.json   resolved stage dependencies
-      return_level_benchmark.json  the return-level estimator's evidence
+      metrics.json              indicator definitions and source records
+      unit_index.csv            links indicator rows to simulations
+      return_level_benchmark.json  scope of return-level checks
       <token>_indicators.csv     metric,location,unit_id,value
   logs/
   benchmarks/
 ```
 
-Two experiments can consume the same collection. Their native responses and
-metric sets remain scoped to their own experiment. Never infer membership from
-filenames: join textual `unit_id` through `unit_index.csv` to the scenario table.
-The empty stochastic `st_id` is the unperturbed scenario, outside the surface.
+Two experiments can use the same generated climate series, but each experiment
+keeps its own model responses and indicators. To relate an indicator to the
+climate change that produced it, match its `unit_id` to `unit_index.csv`, then
+match the listed run to `scenario_table.csv` and `stress_test_lookup.csv`.
+The scenario with an empty `st_id` is the unperturbed reference case.
 
-## Logs and benchmarks
+## Check whether a run finished
 
-WF0, WF1 and WF2 retain their project-level merged logs. Generation uses
-`logs/wf3_generate_scenarios_<plan_key>.log`; simulation uses
-`logs/wf4_simulate_system_<experiment>.log`. Parts are separated under
-`logs/_parts/generate_scenarios/<plan_key>/` and
-`logs/_parts/simulate_system/<experiment>/`. Benchmark parts use the same
-scoping beneath `benchmarks/_parts/`.
+Look under `logs/` for each workflow's messages. Scenario generation writes
+`logs/wf3_generate_scenarios_<plan_key>.log`; simulation writes
+`logs/wf4_simulate_system_<experiment>.log`. The `benchmarks/` directory
+records the time and resource use of individual steps.
 
-`<plan_key>` is the first 12 characters of the scenario request's
-`generation_request_id` — enough to tell one request's records from another at a
-glance. Since the post-R12 tree change the request's own directory,
-`scenarios/requests/<request_id>/`, carries that **same** 12-character form, so a
-log and its request now share a name outright. Every identity recorded inside a
-document is still the complete 64-character digest; only the directory is
-short, and it is a prefix of the full value. See
-[the post-R12 migration](../migration-post-r12.md).
+`<plan_key>` matches the name of the corresponding directory under
+`scenarios/requests/`. An incomplete run can leave logs and partial files.
+Check `collection.json` or `metrics.json` before treating a collection or
+indicator set as complete.
 
-The runners record invocations under `config/runs/_engine/invocations/`, including
-failure and dry-run outcomes. An invocation record describes execution; it does
-not make an incomplete collection or metric set ready.
+The runners record each attempt under `config/runs/_engine/invocations/`,
+including failed runs and dry runs. These records help diagnose a run; they do
+not establish that its results are complete.
 
 ## Reading a metric set
 
-Read the selected metric set's `metrics.json` before its tables. It records
-metric declarations, response identity, environment, resolved references and
-exact expected keys. Missing, duplicate or extra keys are validation failures.
+Read a metric set's `metrics.json` before its tables. It identifies the
+indicators, the model responses they came from, and the files in the set.
 
-Class-A metrics have one value per run. Class-B fits belong to explicit bundles.
-Class-C wet/dry-month values have one value per run at a shared reference month;
-the manifest records the reference gauge and members. Values retain the existing
-four-significant-digit format. Return-level qualification and limitations are
-recorded alongside the results.
+Some indicators have one value per simulation. Return levels are fitted from
+groups of simulations; wet- and dry-month indicators use a shared reference
+month. The set records the group members and reference location. Numerical
+values are stored to four significant digits, so retain the underlying model
+responses if you need more detailed analysis.
 
 ### Opening a metric table in Excel
 
@@ -113,108 +103,44 @@ If a table's ids have already been flattened, do not repair them by re-padding t
 the width of the longest value --- that is a guess. Re-export the metric set, or
 recover the file from the set, which is immutable.
 
-## Return levels and their evidence
+## Return levels and their limits
 
-Class-B return levels are fitted with a range-normalized sample L-moment GEV
-estimator (`gf15-lmoments-c/1`). Each set records what backs that fit:
+Return levels are fitted from groups of simulated years with a GEV distribution.
+Read `return_level_validation` in `metrics.json` before using them. It identifies
+the return periods and conditions assessed by the supplied benchmark;
+`return_level_benchmark.json` holds that assessment. The benchmark covers a
+limited set of synthetic cases. It does not establish accuracy for your basin,
+and the results have no uncertainty intervals. Treat these return levels as
+screening indicators, not design estimates.
 
-- `return_level_validation` in `metrics.json` — the closed declaration: the
-  policy, the screening settings, the exact tested domain, and the criteria.
-- `return_level_benchmark.json` — the benchmark report those criteria come
-  from, copied into the set so it stays readable without the installed
-  toolbox. The declaration carries its digest; a set whose report is missing or
-  altered is refused rather than read as unassessed.
-- `return_level_evidence` — per location, the usable-block counts and coverage,
-  the fitted parameters, the retained fit record with its reached stages, and
-  `shape_coverage`.
+The recorded GEV parameters use SciPy's `(c, loc, scale)` convention. The shape
+parameter often written as ξ is `-c`; check this sign when comparing fits with
+another tool. Each fit also reports `shape_coverage`, including how far its
+estimated `c` falls outside the shapes tested in the benchmark. A fit outside
+that range has not been assessed by this benchmark. Small departures are not
+strong evidence on their own because shape estimates from short records are
+uncertain.
 
-The fitted parameters are recorded in the order `(c, loc, scale)`, where `c` is
-**SciPy's shape convention**: the shape parameter usually written ξ in the
-extreme-value literature is `-c`, not `c`. A positive `c` is a bounded upper
-tail (ξ < 0, Weibull-type); a negative `c` a heavy one (ξ > 0, Fréchet-type).
-Reading the sign the other way inverts the tail behaviour, so check the
-convention before comparing these parameters with values from another tool.
-
-Read the declaration before the numbers. It is deliberately narrow: the
-benchmark is a bounded assessment on synthetic fixtures at the two production
-probabilities, re-scored against owner-selected relaxed limits on data that had
-already been observed. It states `application_scope: operational_screen_only`,
-`actual_bundle_applicability: unestablished` and `screening_policy_validated:
-false`. Return levels are first-order screening values with no uncertainty
-interval, not validated design estimates, and a bounded declaration is never
-widened to cover a return period it did not test — asking for one aborts the
-run instead.
-
-### Was this fit inside what the benchmark tested?
-
-The benchmark assessed accuracy only for data generated from a **narrow set of
-shapes**, `c ∈ {-0.2, 0.0, 0.2}`. Real basin data is not obliged to stay there,
-and in practice low-flow fits often do not.
-
-Every fit therefore records `shape_coverage` beside its parameters: the tested
-shapes, the fitted `c`, whether it falls inside the tested range, and — the part
-that matters — **how far outside it falls**. Use the distance, not the flag.
-
-The flag alone will mislead you. These fits come from few values, so the shape
-estimate is itself uncertain by about **0.2**, which is as wide as the tested
-range. A true shape sitting comfortably inside that range still produces a
-fitted shape outside it roughly **30–50 % of the time**, so `within_tested_range:
-false` is common and, on its own, weak evidence. The distance only becomes
-informative at around **0.6**, three times the estimate's own noise: a fitted
-`0.21` against a tested `0.2` is not a finding, while a fitted `0.9` is.
-
-Note also that `within_tested_range` tests the *hull* of the tested shapes, so a
-fitted `-0.1` reports `true` although `-0.1` itself was never generated. The
-tested values are published alongside as `tested_shapes_c`; read them when the
-distinction matters.
-
-A fit well outside the tested shapes is **not wrong** — it is unassessed. The
-benchmark says nothing about its accuracy in either direction. Treat that return
-level as a screening flag rather than a magnitude, which is what
-`application_scope: operational_screen_only` already asks of every value here,
-and be correspondingly more reluctant to read it as a design estimate.
-
-Nothing refuses on this basis, deliberately. A shape is a property of the
-*result*, not of the request, and it is estimated from the same few values it
-describes; refusing on it would discard fits whose true shape is inside the
-tested range while admitting others whose true shape is outside. The declared
-probabilities *are* enforced, because a return period is known before any fit
-happens — asking for an untested one aborts the run.
-
-::: {.callout-warning}
-## A detached indicators CSV cannot tell you which estimator produced it
-
-The four-column `<token>_indicators.csv` carries metric names and values and
-nothing about provenance. Metric names did **not** change when the estimator
-did, so a CSV copied out of its metric set is indistinguishable from one
-produced by the previous estimator, and two vintages will merge silently and
-wrongly.
-
-When you compare or archive results, keep the whole metric set: the table, its
-`metrics.json`, the `return_level_benchmark.json` beside it, and the retained
-responses they were reduced from. Never infer the estimator from a file name, a
-metric name or the CSV schema.
-:::
+Keep a metric table together with its `metrics.json` and
+`return_level_benchmark.json` when sharing or comparing return levels. The CSV
+alone does not identify the estimator or its assessment.
 
 ## Are these outputs current?
 
-Routine simulation validates its exact generation request against current inputs.
-A missing or stale request names the generation command needed to repair it;
-simulation never generates a collection or chooses the latest directory.
-An explicit collection manifest permits independent reuse with its packaged
-preparation inputs.
+Simulation checks that its requested scenario collection still matches the
+current inputs. If the request is missing or out of date, the error names the
+generation command to run. Simulation does not automatically choose a
+collection. You can also name an existing collection explicitly in the
+simulation settings file.
 
-An experiment's frozen simulation record binds the collection, model and
-simulator settings. Changed simulation inputs require a new experiment name.
-Changing only metrics creates a new immutable metric set from retained responses.
-`operation: metrics-only` needs no live model, generation data or Julia.
+The `config/simulation.json` record ties an experiment to its collection,
+model, and simulation settings. Use a new experiment name when those inputs
+change. If you change only the indicators, `operation: metrics-only` creates a
+new metric set from retained model responses without rerunning simulation.
 
-WF1 and WF2 retain configuration digests in their run records and result
-sidecars. For WF1, `models/hydrology/wflow/hydromt_build_config.yml` records the
-settings actually passed to HydroMT. Configuration provenance alone does not
-establish scientific data identity; collection and response manifests carry the
-corresponding content records.
+For a reproducible comparison, keep the whole project output directory, not
+only the indicator CSVs. The model build settings used by HydroMT are recorded
+in `models/hydrology/wflow/hydromt_build_config.yml`.
 
-See [retained handoffs](../wf3-retained-handoffs.md),
-[workflow migration](../migration-workflow-names.md), and
-[running the workflows](running.qmd).
+See [Running the workflows](running.qmd) to calculate different indicators
+from retained responses.

@@ -1,33 +1,34 @@
 ---
 title: "Configuring a project"
-subtitle: "A set of YAML files describes a basin, and each workflow reads its own"
+subtitle: "Choose the basin, climate data, and stress-test settings"
 ---
 
-Scientific settings come from
-**a set of configuration files**: one project file, plus one file per workflow.
-Pass the *project* file to Snakemake's `--configfile`, or to the simulation
-runner's `--config`; it names the others.
+The settings are stored in a project file and a separate file for each
+workflow. Give the project file to a runner with `--config`; it names the other
+files. A direct Snakemake command uses `--configfile` instead.
 
-Start from `config/templates/`, which annotates every option inline. Copy the
-whole set — its header says which template becomes which file.
+Start from the six current `project_config*.template.yml` files in
+`config/templates/`. Copy them into the directory where you will keep your
+project settings, and update the `config_path` values in the project file to
+match the copied filenames.
 `test_case/project_config_baseline.yml` is a filled-in worked example, and
 `test_case/project_config_rapid.yml` is the same basin sized for a quick
 end-to-end run.
 
 ::: {.callout-important}
-## Two path rules that catch people out
+## How paths are read
 
-**`config_path:` resolves against the project file's own directory.** That is
-what lets the set move as a unit: hand a colleague the folder and it runs
-unchanged.
+**`config_path:` is relative to the project file's directory.** Keep the
+workflow files beside the project file and use their filenames here.
 
-**Every other path resolves against the directory you run Snakemake from** (the
-repository root). So `project_dir: test_case/test_rapid` means the same thing
-wherever the config lives.
+**Other relative paths resolve from the run directory** (normally the toolbox
+root). For example, `project_dir: test_case/test_rapid` names a directory under
+the toolbox root even if the project file is elsewhere.
 
-The two rules differ on purpose, and the second one is why: for real work, point
-`project_dir` **outside the repository tree**. Run outputs are not source. The
-in-repo `test_case/` projects are a development convention only.
+For an assessment, set `project_dir` to an absolute path outside the toolbox
+checkout. The in-repository `test_case/` locations are for the supplied example.
+Input datasets are not installed with the toolbox. Check that the named
+catalogs and their data locations are available to you before running.
 :::
 
 ## Anatomy
@@ -39,7 +40,9 @@ schema_version: 2
 
 project:
   project_dir: test_case/test_rapid
-  catalog: config/catalogs/deltares_data.yml
+  catalog:
+    - config/catalogs/deltares_data.yml
+    - config/catalogs/deltares_era5_daily_zarr.yml
 
 basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
@@ -52,7 +55,7 @@ climate:
   sources: [era5, chirps]
 
 model:
-  outvars: ['river discharge', 'actual evapotranspiration']
+  outvars: ['river discharge', 'actual evapotranspiration', 'groundwater recharge']
 
 workflows:
   analyze_climate:
@@ -72,36 +75,32 @@ workflows:
     config_path: project_config_rapid_simulate_system.yml
 ```
 
-**`schema_version: 2` is required.** It is checked before anything else, so a
-config written for an older layout is refused with one message naming
-[the migration note](../migration-config-shape.md) rather than a scatter of
-complaints about individual keys.
+**`schema_version: 2` is required.** If an older project file no longer opens,
+follow the [configuration migration guide](../migration-config-shape.md).
 
-- **`project.catalog`** names a **HydroMT data catalog**. Every dataset a run
-  reads is registered in a catalog and referenced by name — data paths are never
-  written directly into a workflow.
+- **`project.catalog`** names one or more HydroMT data catalogs. They tell the
+  toolbox where to find climate, terrain, and other input datasets. The rapid
+  example uses a second catalog to select its ERA5 source. Replace these
+  example paths with catalogs available on your machine.
 - **`basin.region`** is a HydroMT region specification. The example delineates
-  the subbasin draining to a point at (9.666 °E, 0.4476 °N) with at least 100 km²
-  of upstream area.
+  the subbasin draining to a point at (9.666 °E, 0.4476 °N), near a location
+  with 100 km² of upstream area.
 - **`climate.window`** is **inclusive calendar years**, and it sizes the
-  historical climate store. The weather generator needs a floor of historical
-  years to work from; a shorter window is refused at parse time rather than
-  producing a quietly degraded stress test.
+  historical climate record. The weather generator requires at least 16 years;
+  the rapid example uses 2000–2016, inclusive.
 - **`climate.selected`** is the forcing dataset the model is driven with. Because
-  the toolbox does no local calibration, this is the single most consequential
-  setting in the set — which is what workflow 0 exists to inform.
+  the toolbox does no local calibration, review this choice carefully. The
+  optional historical climate analysis helps compare candidate sources.
   **`climate.sources`** is the full candidate list it compares; `selected` must
   be one of them.
 
-Everything above `workflows:` is read by **more than one** workflow, and that is
-the rule deciding what belongs here: a key two workflows read has to have one
-home, or they can disagree about it. A key only one workflow reads is refused
-here and belongs in that workflow's own file.
+The project file holds the basin, climate source, and model output choices
+shared across workflows. Settings specific to one workflow go in that
+workflow's file.
 
 ### The per-workflow files
 
-Each `workflows.<name>` entry carries exactly two keys — `enabled:` and
-`config_path:` — and nothing else. The settings live in the file it names:
+Each workflow entry says whether to run it and where to find its settings:
 
 ```yaml
 # project_config_rapid_build_model.yml
@@ -113,21 +112,17 @@ observations:
 simulation_window: {start: 2010, end: 2016}
 ```
 
-`enabled:` must be a real boolean — unquoted `true`/`false`. A quoted `"true"`
-or an integer `1` is rejected rather than guessed at, and a missing `enabled:` is
-a hard error naming the absent key rather than a silent default.
+Use unquoted `true` or `false` for `enabled:`.
 
-`config_path:` is optional. A workflow you never run needs no file: delete the
-key and set `enabled: false`. But a `config_path:` naming a file that is not
-there is a hard parse error, on purpose, so a typo cannot pass as an empty
-config.
+You can omit `config_path:` when a workflow is disabled and has no settings
+file. If you provide a path, the file must exist.
 
 ::: {.callout-warning}
 ## `enabled: false` skips the run, it does not clean up after it
 
-Disabling a workflow means the wrapper does not invoke it. Its previous outputs
-are neither deleted nor refreshed, so an enabled downstream workflow consumes
-whatever is already on disk. Staleness is yours to reason about.
+Disabling a workflow leaves its previous results in place. Before using those
+results in a later workflow, check that they belong to the same basin, climate
+source, model, and settings you intend to use.
 :::
 
 ## Where the other configuration lives
@@ -135,16 +130,11 @@ whatever is already on disk. Staleness is yours to reason about.
 | Directory | What it is | Do you edit it? |
 |---|---|---|
 | `config/catalogs/` | HydroMT data catalogs — the `-d` targets | Yes, to register a data source |
-| `config/defaults/` | Build configs a rule actually reads (`wflow_build_model.yml`, `wflow_update_waterbodies.yml`, `weathergen_config.yml`) | Yes — changing one changes a run |
-| `config/templates/` | Scaffolds you copy, including the set above | Copy, don't edit in place |
-| `config/advanced_settings.yml` | Toolbox-wide limits and defaults, read for every project | Rarely |
+| `config/defaults/` | Supplied settings used by the model and weather generator | Only when you need to change those settings |
+| `config/templates/` | Starting files for a new project | Copy them to your project settings directory |
+| `config/advanced_settings.yml` | Toolbox-wide limits and defaults | Usually leave as supplied |
 
-`config/advanced_settings.yml` is **not** a `--configfile` target — it is read
-once, for every project. It holds hard constraints no project config can relax
-(the minimum number of historical years; the point at which a monthly relative
-product stops being reportable), defaults a project config may override, and
-external toolchain pins. Its schema is closed: an unknown key is rejected at
-parse time rather than ignored.
+Pass your project file to the runner, not `config/advanced_settings.yml`.
 
 ::: {.callout-note}
 ## On Linux
@@ -155,33 +145,25 @@ data-catalog paths differ from Windows.
 
 ## Naming an experiment
 
-`experiment_name` in the stress-test file is optional. Left unset, the stress
-test names the experiment after the project plus the date it was first created,
-and **reuses** an existing dated experiment rather than minting today's date — so
-incremental re-runs keep landing in the same place.
+`experiment_name` in the simulation settings file is optional. If omitted, the
+toolbox assigns a name based on the project and the date of its first run, and
+reuses that experiment for later runs with the same settings.
 
-To pin a deliberate name (a scenario label, or a second experiment beside the
-first), run this **once, before the first stress-test run**:
+To choose a name for a new experiment, run this **before its first simulation**:
 
 ```bash
 pixi run python scripts/suggest_experiment_name.py <your project file> --name dry_scenario
 ```
 
-It reserves the directory atomically and writes the key back into your config,
-leaving comments and layout intact. An existing value is never overwritten: the
-experiment directory is what a completed run's outputs are addressed by, so
-renaming it would strand them. Clear the key by hand to go back to the default.
+The command adds `experiment_name` to the simulation settings file. Use a new
+name when changing the collection, model, or simulation settings; an existing
+experiment keeps the inputs that produced its results.
 
 ## Next
 
-- [Running the workflows](running.qmd) — the four entry points, the wrapper, and
-  the flags that matter.
+- [Running the workflows](running.qmd) — run the whole project or selected workflows.
 - [Reading the outputs](outputs.qmd) — what the run wrote, and whether it is
   still current.
 
-If a config you already had stopped parsing after an upgrade, one command
-migrates it and the change is explained in
-[the config-shape migration note](../migration-config-shape.md). Earlier
-migrations, for reference: [the tier split](../migration-config-tiers.md),
-[workflow names](../migration-workflow-names.md) and
-[workflow 2](../migration-r08-wf2.md).
+If an older project file no longer opens, see the
+[configuration migration guide](../migration-config-shape.md).

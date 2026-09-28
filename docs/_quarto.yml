@@ -67,6 +67,7 @@ website:
         aria-label: "Source on GitHub"
   sidebar:
     style: floating
+    collapse-level: 1
     contents:
       - section: "User guide"
         contents:

@@ -35,7 +35,6 @@ the task branch. The repository wrapper refuses to use a different board root.
 | Path | Holds |
 |---|---|
 | `roadmap.md` | The phase narrative: what each milestone set out to do and how it landed |
-| `followups-archive.md` | **Pre-board ledger** — everything closed before 2026-08-07, one brief entry each. IDs kept resolvable because code, tests and Snakefiles cite them. `LOG.md` takes over from here; this file is not extended |
 | `reference/` | The rules: `naming.md`, `agent-activation.md`, `git-conventions.md`, `contracts/`, `workflows/` — see its `README.md` |
 
 **Happened** — records of what was done, kept by identity:
@@ -128,8 +127,10 @@ skill, so the brief was spent. Recoverable from that commit if ever needed.)
 
 On 2026-08-07 that file had reached 2,038 lines, roughly half of it items
 already closed, because a closure note had grown into a post-mortem averaging
-29 lines. The closed items were compressed into `followups-archive.md` at a few
-lines each; the open ones became board notes later the same day.
+29 lines. The closed items were compressed into a brief archive; the open ones
+became board notes later the same day. The archive was retired once its lessons
+had durable homes. Recover a cited pre-board item by ID with
+`git show 45e3a564:dev/followups-archive.md`.
 
 That was allowed only because condition 3 above — **its durable output has
 left** — was checked item by item and already held. Every reusable lesson in

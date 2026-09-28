@@ -61,7 +61,8 @@ and defer blocked or run-dependent work when its prerequisite is unavailable.
 Watch items remain unnumbered after the work queue. Priority edits belong in
 the notes and require a render; they do not change lifecycle status.
 
-Item ids from `dev/followups-archive.md` are cited by code, tests and Snakefiles; keep it readable.
+Pre-board item IDs cited by code, tests and Snakefiles are recoverable from
+commit `45e3a564` (`dev/README.md` explains the command).
 
 **Three inspection helpers, all report-only by default** — `prune_series_cache.py` (orphaned WF2 series), `prune_climate_store.py` (stale `<source>_<window>` climate stores) and `snapshot_project_tree.py` (a tree as a path list, checked against the project-tree inventory; also `pixi run tree-check`). Deleting is an explicit owner action via `--delete`. Run pruning **before** any reference snapshot, or the snapshot bakes the orphans in and the gate compares those instead of the live artifacts. Neither prune tool sees everything: files under directories the path map routes wholesale need an mtime sweep.
 

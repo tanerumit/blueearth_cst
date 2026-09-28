@@ -417,7 +417,7 @@ def test_short_window_fails_wf1_dry_run_at_parse_time(tmp_path, end_year, label)
     no execution can rescue the config, so the earliest failure is the most
     legible one. Pre-guard, a sub-year window reached rule 1.11 and died with
     MissingOutputException nine rules and one hydromt build past the cause
-    (dev/followups-archive.md R7-6), and a ten-year window ran WF1 to
+    (pre-board record 45e3a564 R7-6), and a ten-year window ran WF1 to
     completion before failing a whole workflow away.
     """
     cfg = load_composed_config(config_fn)

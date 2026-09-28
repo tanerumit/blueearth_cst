@@ -279,7 +279,7 @@ def build_project_tree_rules(
     ONE WAY: pre-R9 paths to post-R9 ones. A live tree holds only the post-R9
     side, so nothing matched the old-side patterns and every relocated artifact
     fell through as UNMAPPED — `pixi run tree-check` returned exit 1 on every
-    CORRECTLY migrated tree (`dev/followups-archive.md` `[R10-11]`; measured 153
+    CORRECTLY migrated tree (`pre-board record 45e3a564` `[R10-11]`; measured 153
     of 186 unmapped on a clean run, and 165 of 203 on a tree that predated the
     artifact people first suspected). The map was never wrong; it was being
     asked about an era that has passed.

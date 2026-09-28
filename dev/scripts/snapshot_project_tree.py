@@ -209,7 +209,7 @@ def main(argv: list[str] | None = None) -> int:
         "pre-R9 -> post-R9 migration map, was retired 2026-08-11 "
         "(dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md); no "
         "un-migrated tree survives to point it at. See also "
-        "dev/followups-archive.md [R10-11]",
+        "pre-board record 45e3a564 [R10-11]",
     )
     parser.add_argument(
         "--quiet",

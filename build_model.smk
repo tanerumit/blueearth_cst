@@ -107,7 +107,7 @@ historical_window = get_config(climate_cfg, "window", optional=False)
 # at extraction. WF1 rejects it too, deliberately: a record too short for a
 # stress test is a misconfigured project, and letting WF1 build a model on it
 # only moves the failure to the workflow least able to explain it
-# (dev/followups-archive.md R7-6, R3). Parse time, before any rule executes — same
+# (pre-board record 45e3a564 R7-6, R3). Parse time, before any rule executes — same
 # stance as the eobs rejection below. Whether the staged source actually COVERS
 # the requested window is a different question, checked at rule 1.03.
 validate_historical_window(historical_window)
@@ -1272,7 +1272,7 @@ rule plot_climate_datasets:
 # The merge DELETES the parts it consumed and prunes the emptied dirs, so a clean
 # full run leaves no logs/_parts/ at all. After a PARTIAL re-run only the re-run
 # rules have parts, so the rewritten log marks the rest "no part from this run" —
-# the same trade `merge_benchmarks` makes (dev/followups-archive.md R7-9).
+# the same trade `merge_benchmarks` makes (pre-board record 45e3a564 R7-9).
 rule gather_logs:
     message: GATHER_LOGS.banner()
     input:

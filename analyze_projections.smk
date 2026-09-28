@@ -1316,7 +1316,7 @@ rule plot_climate_projections:
 # re-run only the re-run rules have parts, so the merged log rewrites with the
 # untouched sections marked "no part from this run" rather than resurrecting text
 # it no longer has. That is the same trade `merge_benchmarks` already makes
-# (dev/followups-archive.md R7-9) — the artifact describes the run that produced it, not
+# (pre-board record 45e3a564 R7-9) — the artifact describes the run that produced it, not
 # an accumulated history.
 #
 # WF1 (1.18) and WF3 (3.18) declare the same rule against the same script; only

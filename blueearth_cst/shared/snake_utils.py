@@ -684,7 +684,7 @@ class SpatialUnitsRule:
     Named ``_rule``, not ``_spec``: the object holds a rule's script, inputs,
     outputs and params, so it IS a rule definition minus its labels. This was
     the first of the three to carry the suffix; the other two joined it in the
-    R10 step-6 sweep (``dev/followups-archive.md`` ``[R10-7]``), so the family is
+    R10 step-6 sweep (``pre-board record 45e3a564`` ``[R10-7]``), so the family is
     uniform again.
 
     **Name the next one ``<thing>_rule``.** ``_contract`` was rejected — this

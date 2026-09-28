@@ -69,51 +69,57 @@ website:
   sidebar:
     - title: "User guide"
       style: docked
-      collapse-level: 2
+      collapse-level: 3
       contents:
-        - section: "User guide"
-          href: guide/quick-start.qmd
+        - section: "Getting started"
           contents:
             - guide/quick-start.qmd
             - guide/configuration.qmd
+        - section: "Running and results"
+          contents:
             - guide/running.qmd
             - guide/outputs.qmd
     - title: "Setup"
       style: docked
-      collapse-level: 2
+      collapse-level: 3
       contents:
-        - section: "Setup"
-          href: install.md
+        - section: "Installation"
           contents:
             - install.md
             - env_setup_notes.md
     - title: "Scientific approach"
       style: docked
-      collapse-level: 2
+      collapse-level: 3
       contents:
-        - section: "Scientific approach"
-          href: scientific-approach/overview.qmd
+        - scientific-approach/overview.qmd
+        - section: "Methods and interpretation"
           contents:
             - scientific-approach/models-and-methods.qmd
             - scientific-approach/climate-information.qmd
             - scientific-approach/conventions-and-interpretation.qmd
     - title: "Toolbox reference"
       style: docked
-      collapse-level: 2
+      collapse-level: 3
       contents:
-        - section: "Toolbox reference"
-          href: toolbox-reference/overview.qmd
+        - toolbox-reference/overview.qmd
+        - section: "Workflows"
+          href: toolbox-reference/workflows.qmd
           contents:
-            - section: "Workflows"
-              href: toolbox-reference/workflows.qmd
-              contents:
-                - toolbox-reference/workflow-analyze-climate.qmd
-                - toolbox-reference/workflow-build-model.qmd
-                - toolbox-reference/workflow-analyze-projections.qmd
-                - toolbox-reference/workflow-generate-scenarios.qmd
-                - toolbox-reference/workflow-simulate-system.qmd
-            - toolbox-reference/modeling-tools.qmd
-            - toolbox-reference/datasets.qmd
+            - toolbox-reference/workflow-analyze-climate.qmd
+            - toolbox-reference/workflow-build-model.qmd
+            - toolbox-reference/workflow-analyze-projections.qmd
+            - toolbox-reference/workflow-generate-scenarios.qmd
+            - toolbox-reference/workflow-simulate-system.qmd
+        - section: "Modeling Tools"
+          href: toolbox-reference/modeling-tools.qmd
+          contents:
+            - text: "Overview"
+              href: toolbox-reference/modeling-tools.qmd
+        - section: "Datasets"
+          href: toolbox-reference/datasets.qmd
+          contents:
+            - text: "Overview"
+              href: toolbox-reference/datasets.qmd
   search:
     location: navbar
     type: textbox

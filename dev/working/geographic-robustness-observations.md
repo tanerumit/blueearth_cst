@@ -2,6 +2,20 @@
 
 Working checklist: update items in place as fixes are verified. Git history retains the detailed run chronology. Checked items are resolved for this case; unchecked items remain open.
 
+## Chuzaco, Colombia — started 2026-09-27
+
+- Case: `C:/Users/taner/workspace/cst-cases/applications/colombia-chuzaco`; outputs: `C:/Users/taner/workspace/cst-cases/runs/colombia-chuzaco`. Toolbox `e836fb06`, session-2 / `test/case-studies`, three cores.
+- Supplied region: `{'subbasin': [-73.73, 4.638], 'uparea': 30}`. Delineated WGS84 geodesic area 61.3490 km²; outlet snapped 107.7347 m. One subbasin, one river reach at the default 32 km² threshold, primary control `1010`.
+- Current shipped templates retained: 1990–2020 climate/historical record, ERA5 selected, two realizations, 2 temperature × 3 precipitation levels plus baseline (14 runs), 2040–2060 scenario period, three CMIP6 models / two SSPs / near and far horizons, discharge/AET outputs, automatic compute sizing. No compact variant.
+- **CHU-01 — Local coverage:** WF0 dry-run passed, actual default local catalog failed at basin-index selection (`NoDataException`). The local raster store contains small staged extracts. Required change: global P-drive Deltares catalog, its river/LULC names `hydro_rivers_lin`/`globcover`, and the shipped ERA5 Zarr override retaining the requested 1990–2020 record. Global delineation passed.
+- **CHU-02 — CHIRPS geography:** P-drive `chirps` is Africa-only; failed bbox clipping for Colombia. Changed comparison source to supported `chirps_global`; ERA5 remains selected. No comparison source dropped.
+- Synthetic fixture is independent artificial discharge, not measured data or a model-skill benchmark: 11,323 positive daily rows, 1990–2020, m³/s, seed 27092026, seasonal signal plus correlated lognormal variability. Formula and generator retained beside the CSV; registry `1010` matches its header. Synthetic input exercises evaluation metrics/plots only.
+- Verification: all five corrected workflow configs passed `load_composed_config`; both WF0 dry-runs passed; PowerShell parser checks passed for generator/continuation; regenerating the synthetic CSV matched its recorded SHA-256. Hydrography raster is 13 × 9 cells; active model-cell count remains pending model construction. No toolbox code was changed, so no software suite or baseline comparison was run.
+- **CHU-03 — Continuation launcher:** first detached supervisor did not wait for the existing process and was refused by `archive_lock` before workflow launch. Corrected supervisor waits on parent invocation `e0546c96fee44238a95e445e17438970`; no unlock or termination. Operational launcher issue; no toolbox fix claimed.
+- At launch handoff: the original WF0 attempt was finishing its ERA5 netCDF write after the Africa-only CHIRPS failure. Hidden continuation PID is recorded in `run-evidence/continuation-status.json`; it waited for that invocation to finish, then executed the corrected full WF0–WF4 sequence and appended terminal workflow statuses to case `notes.md`. WF1–WF4 had not yet executed. The pinned worktree had to remain in place while the continuation ran.
+- Evidence: `run-evidence/wf0-dry-run.log`, `wf0-pdrive-dry-run.log`, `wf0-to-wf4.log` (local failure), `wf0-to-wf4-pdrive.log` (Africa-only CHIRPS failure), `wf0-to-wf4-global.log` (launcher lock refusal), and `wf0-to-wf4-global-v2.log` (corrected continuation, completed successfully). Toolbox invocation records remain under `config/runs/_engine/invocations/`.
+- Current status (2026-09-28): `continuation-status.json` reports `passed` (exit 0); the corrected log reports WF0–WF4 completed and parent invocation `b61b386ff4aa431ebca1d1d728951462` succeeded. Next inspect historical evaluation sheets, ready collection, retained responses, and complete discharge/AET metric tables. Pipeline completion alone is not scientific validation.
+
 ## Completed geographic areas — diagnostic register
 
 Updated 2026-09-27. Completion refers to the recorded test scope, not scientific validation. `Not identified` means the area was reported by the user but its run folder has not been matched.

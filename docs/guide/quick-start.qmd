@@ -1,63 +1,56 @@
 ---
 title: "Quick start"
-subtitle: "From a fresh install to a finished stress test on the shipped example basin"
+subtitle: "Run the example basin and find its results"
 ---
 
 This page runs the whole pipeline once, on the example basin that ships with the
-toolbox, so you can see what each stage produces before pointing it at a basin of
-your own. Budget roughly an hour of machine time.
+toolbox, so you can see what each stage produces before setting up your own
+basin. Allow at least an hour; the time depends on your computer and data access.
 
 If the toolbox is not installed yet, do that first: [Setup guide](../install.md).
+The example also needs access to the datasets named in its HydroMT catalogs;
+the supplied catalog paths may need to be replaced for your machine. Check
+`project.catalog` and the data source entries before starting.
 
 ::: {.callout-important}
-## Both install steps, not just the first
+## Complete both installation steps
 
 ```bash
-pixi install       # Python stack, R toolchain, Snakemake, Graphviz
-pixi run install   # + the weathergenr weather generator (R) and the Julia environment
+pixi install
+pixi run install
 ```
 
-`pixi install` alone is **not** enough to run the stress test: the weather
-generator is installed from GitHub by the second command, and a run without it
-fails an hour in with `there is no package called 'weathergenr'`. Julia itself
-is deliberately outside the pixi environment — it is managed by juliaup and must
-already be on your `PATH`.
+The second command installs the weather generator and prepares the Julia
+environment. Julia itself must already be available through juliaup; see the
+[setup guide](../install.md).
 :::
 
 ## The shape of a run
 
-Five workflows share one project configuration set:
+Five workflows share one project configuration set. The arrows show the
+all-workflow runner's execution order. Select a workflow to see what it does.
 
-```{mermaid}
-flowchart LR
-    wf0["wf0 · analyze_climate<br/>optional historical analysis"]
-    wf1["wf1 · build_model<br/>Wflow-SBM + historical run"] --> wf4
-    wf3["wf3 · generate_scenarios<br/>ready collection"] --> wf4
-    wf4["wf4 · simulate_system<br/>responses and metrics"]
-    wf2["wf2 · analyze_projections<br/>terminal plausibility overlay"]
-```
+<iframe src="assets/shape-of-a-run.html" title="Interactive diagram of the five workflows in execution order" style="width:100%;height:460px;border:0;" loading="lazy"></iframe>
 
-Generation and model construction are independent prerequisites of simulation.
-**wf0 is optional** for the pipeline: it
-produces the region, vector layers and climate store that wf1 also declares, so
-running it first simply means those already exist when the build asks. Run it
-*alone* when your question is which forcing dataset to use. **wf2 never drives a
-run** — its change factors situate the perturbation grid in projection space,
-nothing more.
+The model and generated climate scenarios are both needed for the stress test.
+The historical climate comparison is optional; run it on its own when choosing
+the climate data for the model. CMIP6 projections help judge which tested
+climate changes are plausible; they do not determine the scenarios to simulate.
 
 ## Pick a configuration
 
-Two configurations ship with the toolbox, both under `test_case/`, both
-describing the same basin:
+Two example configuration sets ship under `test_case/`. Each has a project file
+and one settings file per workflow; both describe the same basin:
 
 | Config | Use it for |
 |---|---|
-| `test_case/project_config_rapid.yml` | **the default.** Anything you want to watch *execute* — a first run, a rule you edited, a smoke test |
-| `test_case/project_config_baseline.yml` | runs whose *numbers* you will quote or compare |
+| `test_case/project_config_rapid.yml` | A short first run to learn the workflow; its results are for checking execution |
+| `test_case/project_config_baseline.yml` | The longer reference run for numerical comparisons |
 
-Rapid is cheap, not narrow: it keeps the historical baseline scenario and two
-CMIP6 models, so no code path is skipped — it just runs fewer years and fewer
-members. Start there.
+The rapid example covers all five workflows with fewer years and realizations.
+Its fitted return levels are not suitable for interpretation. Start with this
+example to learn the steps, then choose periods and sample sizes appropriate to
+your assessment.
 
 ## Run it
 
@@ -69,24 +62,23 @@ pixi shell
 python scripts/run_workflows.py --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 ```
 
-The wrapper runs whichever workflows the config enables, in order. Set only
-`generate_scenarios.enabled: true` to run WF3 alone.
+The command runs the workflows enabled in the project file, in this order:
+historical climate, model, projections, scenario generation, and simulation.
 
 ::: {.callout-tip}
-## Look before you leap
+## Check a workflow before running it
 
-`--dry-run` (`-n`) lists what *would* execute without running anything. It is
-the cheapest way to confirm the workflow can resolve its inputs, and it costs
-seconds:
+`--dry-run` lists the steps that can be determined without running them. For
+example, check the model workflow with:
 
 ```bash
-snakemake all -c 3 -s build_model.smk --configfile test_case/project_config_rapid.yml --dry-run
+python scripts/run_workflow.py build_model --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 --dry-run
 ```
 :::
 
 ## What you get
 
-Everything lands under the `project_dir` named in the config —
+Results are written under the `project_dir` named in the config —
 `test_case/test_rapid` for the rapid config:
 
 ```
@@ -94,21 +86,23 @@ test_case/test_rapid/
   data/spatial/         basin, subbasins, rivers, gauge locations, and their plots
   data/climate/         the historical climate store, and the CMIP6 slices
   models/hydrology/     the Wflow-SBM model, its forcing, its run, its evaluation
-  scenarios/requests/   exact generation requests
-  scenarios/collections/ durable forcing and portable preparation inputs
-  experiments/<name>/   one simulation identity, native responses and metric sets
+  scenarios/requests/   scenario generation settings
+  scenarios/collections/ generated climate series
+  experiments/<name>/   simulated responses and indicators
   logs/                 one log per workflow
   benchmarks/           per-rule timings
-  config/runs/          what each run was configured with (see Reading the outputs)
+  config/runs/          configuration and run records
 ```
 
-The stress test's payoff is in `experiments/<name>/results/metric_sets/`: the hydrological
-indicators computed for every temperature × precipitation combination, which
-form the response surface.
+Find the hydrological indicators under
+`experiments/<name>/results/metric_sets/`. Join each indicator to its
+temperature and precipitation change using the files described in
+[Reading the outputs](outputs.qmd).
 
 ## When something goes wrong
 
-- **"Directory cannot be locked"** — a previous run crashed. Clear it:
+- **"Directory cannot be locked"** — if no other run is using this project,
+  clear a lock left by an interrupted run:
   `snakemake --unlock -s <workflow>.smk --configfile <config>`.
 - **`there is no package called 'weathergenr'`** — the second install step was
   skipped; run `pixi run install`.

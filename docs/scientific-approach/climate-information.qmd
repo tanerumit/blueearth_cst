@@ -1,0 +1,29 @@
+---
+title: "Climate information"
+subtitle: "Historical reference, stress-test conditions, and projection context"
+format: html
+---
+
+The assessment uses three different forms of climate information. Keeping their purposes separate is central to the bottom-up approach described in the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md).
+
+| Information | Source | Use |
+|---|---|---|
+| Historical climate | Selected gridded meteorological record | Reference model forcing and statistical conditioning of the weather generator |
+| Stress-test weather | Stochastic realizations with configured perturbations | Systematic sampling of hydrological response across climate conditions |
+| Future climate context | CMIP6 change factors | Plausibility overlay on the tested temperature–precipitation space |
+
+## Start from a historical reference
+
+The historical record establishes the local seasonality, spatial patterns, and variability from which the weather generator samples. It also drives the model's historical run. An error in precipitation or temperature can therefore affect both the reference response and the generated weather. Compare candidate sources with WF0, inspect the extracted period, and evaluate the historical hydrological response where observations permit. [Datasets](../toolbox-reference/datasets.qmd) describes the source classes and selection checks.
+
+## Explore conditions independently of projections
+
+The stress-test design specifies changes to monthly temperature and precipitation statistics. Stochastic realizations sample natural variability at each tested condition. This separates two questions: **how does the system respond to a specified climate change?** and **how much can response vary under weather variability at that change?** The perturbation range should cover decision-relevant changes and potential failure conditions, including changes beyond the available projection ensemble.
+
+For a chosen indicator and output location, the model responses can be mapped against precipitation and temperature changes. A performance threshold supplied by the assessment divides that response surface into acceptable and vulnerable conditions. The toolbox produces the hydrological responses and indicators; selecting a decision threshold and interpreting the resulting vulnerability domain remain assessment judgments. See [Conventions and interpretation](conventions-and-interpretation.qmd).
+
+## Add projections as context
+
+CMIP6 change factors summarize differences between reference and future windows for the selected models, scenarios, and members. After matching units and periods, their points can be placed on the response surface to see whether projected changes lie near vulnerable conditions. Their position helps prioritize attention; it does not determine which conditions are tested, establish a probability of failure, or rule out conditions outside the ensemble.
+
+The projection overlay is sensitive to the ensemble, scenario, member-selection rule, and windows chosen. Report those choices beside the response surface. Keep uncertainty from the projection ensemble distinct from weather-realization spread and hydrological-model uncertainty.

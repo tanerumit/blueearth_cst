@@ -19,8 +19,8 @@ The wrapper always targets the worktree checked out on `main`, so the board
 does not split across session branches. Commit board changes on `main`
 separately from feature work. The shared CLI lock under `.git` may require
 sandbox escalation in an agent session. Every CLI verb and flag except
-`--root` is forwarded. This wrapper also widens its Item and Area / Origin
-columns to 110 and 44 characters. Set TODOBOARD_SKILL_DIR to override the
+`--root` is forwarded. This wrapper widens ID, #, Item, and Area / Origin
+columns to 24, 6, 110, and 44 characters. Set TODOBOARD_SKILL_DIR to override the
 skill search.
 """
 
@@ -114,6 +114,7 @@ def main() -> None:
     # The CLI has no width option. Keep this project-specific presentation
     # override here rather than editing the shared per-user skill package.
     renderer = importlib.import_module("todoboard.render")
+    renderer._COLUMN_MIN_WIDTHS.update({"ID": 24, "#": 6})
     renderer._COLUMN_MAX_WIDTHS.update({"Item": 110, "Area / Origin": 44})
     # runpy rather than import+call: `python -m todoboard` is the CLI's own
     # documented entry point, so its argument parsing stays entirely upstream.

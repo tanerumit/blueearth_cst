@@ -4,12 +4,11 @@
 # directory that already holds only documentation. Design and phasing:
 # dev/working/2026-08-19_quarto-docs-site/design.md
 #
-# PHASE 3, in progress (t2608202351b). The site publishes the landing page, the
-# setup guide, the user guide and the two migration notes. The technical
-# background is still gated on O-3 -- the note's 38 figures are absent from the
-# repository, so its chapters would publish as numbered captions under nothing
-# (t2608202351). Its GUI and platform chapters stay unpublished by ruling
-# (O-1c); they remain in the repo as source.
+# PHASE 3, in progress (t2608202351b). The site publishes the landing page,
+# setup guide and user guide. The scientific approach and toolbox reference summarize current methods and interfaces
+# without republishing the 2025 note. That note's 38 figures are absent from the
+# repository, so it remains outside the render list (t2608202351). Its GUI and
+# platform chapters remain unpublished by ruling O-1c.
 #
 # Nothing here publishes. There is deliberately no `site-url` and no deploy
 # workflow: the subpath a GitHub Pages project page needs is not known until the
@@ -17,11 +16,15 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - "guide/assets/shape-of-a-run.html"
   render:
     # Globs, not directories. A bare `guide/` matches nothing and renders
     # nothing -- silently, with a successful exit and a smaller site.
     - "index.qmd"
     - "guide/*.qmd"
+    - "scientific-approach/*.qmd"
+    - "toolbox-reference/*.qmd"
     # Explicit, like everything else here: quarto special-cases a 404.qmd only
     # when it is rendered, and this project enumerates its render targets.
     - "404.qmd"
@@ -30,12 +33,6 @@ project:
     # README.md cite these paths, and a navbar entry does the same job for free.
     - "install.md"
     - "env_setup_notes.md"
-
-    # Migration notes. Both tell a user how to repair a config the toolbox now
-    # refuses, which is site material and not a development record -- so they
-    # render even though their sibling notes under dev/ never will.
-    - "migration-workflow-names.md"
-    - "migration-r08-wf2.md"
 
     # Vendored upstream Deltares documentation. Held here so an agent can read
     # it offline; republishing it would put a second, staler copy of hydromt's
@@ -52,7 +49,7 @@ project:
     #                  which is filed but not yet done -- t2608202351a.
 
 website:
-  title: "BlueEarth CST"
+  title: "Climate Stress Testing (CST) Toolbox"
   description: "Climate stress testing for water systems — the workflow toolbox"
   favicon: _images/favicon.svg
   navbar:
@@ -61,43 +58,73 @@ website:
         href: guide/quick-start.qmd
       - text: "Setup"
         href: install.md
+      - text: "Scientific approach"
+        href: scientific-approach/overview.qmd
+      - text: "Toolbox reference"
+        href: toolbox-reference/overview.qmd
     right:
       - icon: github
         href: https://github.com/tanerumit/blueearth_cst
         aria-label: "Source on GitHub"
   sidebar:
-    style: floating
-    contents:
-      - section: "User guide"
-        contents:
-          - guide/quick-start.qmd
-          - guide/configuration.qmd
-          - guide/running.qmd
-          - guide/outputs.qmd
-      - section: "Setup"
-        contents:
-          - install.md
-          - env_setup_notes.md
-      - section: "Migration notes"
-        contents:
-          - migration-workflow-names.md
-          - migration-r08-wf2.md
-  search: true
+    - title: "User guide"
+      style: docked
+      collapse-level: 2
+      contents:
+        - section: "User guide"
+          href: guide/quick-start.qmd
+          contents:
+            - guide/quick-start.qmd
+            - guide/configuration.qmd
+            - guide/running.qmd
+            - guide/outputs.qmd
+    - title: "Setup"
+      style: docked
+      collapse-level: 2
+      contents:
+        - section: "Setup"
+          href: install.md
+          contents:
+            - install.md
+            - env_setup_notes.md
+    - title: "Scientific approach"
+      style: docked
+      collapse-level: 2
+      contents:
+        - section: "Scientific approach"
+          href: scientific-approach/overview.qmd
+          contents:
+            - scientific-approach/models-and-methods.qmd
+            - scientific-approach/climate-information.qmd
+            - scientific-approach/conventions-and-interpretation.qmd
+    - title: "Toolbox reference"
+      style: docked
+      collapse-level: 2
+      contents:
+        - section: "Toolbox reference"
+          href: toolbox-reference/overview.qmd
+          contents:
+            - toolbox-reference/assessment-workflow.qmd
+            - toolbox-reference/datasets.qmd
+  search:
+    location: navbar
+    type: textbox
   page-footer:
     center: "Deltares · World Bank Global Water Practice — GPL-3.0"
 
 format:
   html:
-    # Light only, by ruling (2026-08-21). A dark base was wired first and
-    # removed: the site should present one look rather than one the reader has
-    # to choose. Re-adding it is a two-line change back to a `light:`/`dark:`
-    # pair, which is why theme.scss still keeps its hands off $body-bg.
-    theme: [cosmo, theme.scss]
+    theme:
+      light: [cosmo, theme.scss]
+      dark: [cosmo, theme.scss, theme-dark.scss]
     toc: true
     toc-depth: 3
-    number-sections: true
+    number-sections: false
     code-copy: true
     code-overflow: wrap
+
+language:
+  search-text-placeholder: Search
 
 # The site must never execute anything during a build. A render has no
 # project_dir, no CMIP6 access and no Julia, and a fresh rapid run costs ~73

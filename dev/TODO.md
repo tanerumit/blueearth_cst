@@ -14,6 +14,7 @@
 | [t2609171500][]    | 8   | Move the experiment's frozen simulation documents into _engine                                                | project-tree / test_rapid review…           | backlog (0/5)     |
 | [t2608202352][]    | 9   | Publish the docs site to GitHub Pages, and reduce the README onto it                                          | docs / site / quarto-docs-site (2026-08-19) | blocked           |
 | [t2608202351][]    | 10  | Publish the technical background — split the 2025 note into eight chapters                                    | docs / site / quarto-docs-site (2026-08-19) | blocked           |
+| [t2609281102][]    |     | Complete reviewed expert Wflow model revisions design                                                         | wf1 / model revisions                       | blocked           |
 | [t2609251520][]    |     | Open question: flat, hash-suffixed names for generation_inputs snapshots? — Watch for: Owner decides whether… | wf3 / generation inputs / gabon-ntoum-v3…   | watching          |
 | [t2609251025][]    |     | Wflow sysimage to remove per-batch Julia startup — Watch for: A Julia/Wflow runtime upgrade or packaging…     | run cost / julia / t2608222155 owner…       | watching          |
 | [t2609181302][]    |     | Snakemake's six-line preamble is not suppressible from inside a workflow — Watch for: Revisit if a snakemake… | console / snakemake / console polishing…    | watching          |
@@ -36,6 +37,7 @@
 [t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
 [t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
 [t2608202351]: tasks/t2608202351-publish-technical-background-split-the-note.md
+[t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
 [t2609251520]: tasks/t2609251520-open-question-flat-hash-suffixed-names-for-generation-inputs-snapshots.md
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 [t2609181302]: tasks/t2609181302-snakemake-s-six-line-preamble-is-not-suppressible-from-inside-a-workflow.md

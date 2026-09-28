@@ -6,18 +6,53 @@ title: "WF4 — Simulate system"
 
 ## Rules
 
-| Rules | Operation |
+| Rule | Operation |
 |---|---|
-| 4.01–4.03 | Fingerprint the model, verify it has not changed, and freeze simulation inputs. |
-| 4.04–4.06 | Downscale selected climate series, run Wflow in batches, and publish the response inventory. |
-| 4.07–4.08 | Plan and derive a metric set from retained responses. |
-| 4.09–4.10 | Gather experiment logs and benchmarks. |
+| `all` (target) | Collect the selected metric set and records. |
+| 4.01 `write_model_fingerprint` | Record the model reference. |
+| 4.02 `check_model_unchanged` | Verify the live model against its reference. |
+| 4.03 `snapshot_simulation_inputs` | Freeze collection, model, settings, and environment identity. |
+| 4.04 `downscale_scenario_series` | Prepare per-run model forcing. |
+| 4.05 `run_wflow_simulations_batch_<batch>` | Run Wflow in batches, retaining native responses. |
+| 4.06 `publish_wflow_outputs` | Publish the response inventory. |
+| `simulations_only` (target) | Collect simulation outputs without indicators. |
+| 4.07 `prepare_indicator_plan` | Resolve metric-set identity and targets. |
+| 4.08 `derive_system_indicators` | Produce indicator tables and the metric-set marker. |
+| 4.09 `gather_logs` | Merge experiment logs. |
+| 4.10 `gather_benchmarks` | Merge experiment benchmarks. |
+| `simulations_and_indicators` (target) | Collect the selected metric set. |
 
 The supported target includes `all`; the workflow also exposes simulation-only and simulation-plus-indicator target aggregates. A metrics-only operation can produce another metric set from completed responses without rerunning Wflow. The wrapper selects the appropriate module and validates the requested operation/target combination.
 
-## Configuration and inputs
+## Rule flow
 
-The project file supplies the model context and `workflows.simulate_system.config_path`. The workflow file names `experiment_name` and `operation`; the rapid example uses `simulate-and-metrics`. The runner's target and run selection determine the actual simulation request. See [Running the workflows](../guide/running.qmd) for supported command options and [Configuration](../guide/configuration.qmd) for the split project files.
+```{mermaid}
+flowchart LR
+  A["4.01–4.03 Verify model and freeze inputs"] --> B["4.04 Downscale series"]
+  B --> C["4.05 Run Wflow batches"]
+  C --> D["4.06 Publish responses"]
+  D --> E["4.07 Plan indicators"]
+  E --> F["4.08 Derive metric set"]
+  D --> G["simulations_only target"]
+  F --> H["simulations_and_indicators target"]
+  D --> I["4.09–4.10 Records"]
+  F --> I
+```
+
+The metrics-only operation starts from existing retained responses and proceeds through the indicator branch. The simulation-only target stops after response publication.
+
+## Configuration
+
+The project file supplies the `model` context and `workflows.simulate_system.enabled` and `.config_path`; the latter resolves the workflow YAML beside the project file. The WF4 file, `test_case/project_config_rapid_simulate_system.yml`, sets `experiment_name` (the output namespace) and `operation` (`simulate-and-metrics` or `metrics-only`). The template at `config/templates/project_config.simulate_system.template.yml` also describes the optional `compute` block: `julia_threads`, `max_parallel_batches`, `batch_size_max`, `batch_size`, and `disk_headroom_gb`. The runner target and explicit run selection complete the simulation request.
+
+```yaml
+experiment_name: experiment_rapid
+operation: simulate-and-metrics
+# Optional compute: julia_threads, max_parallel_batches,
+# batch_size_max, batch_size, disk_headroom_gb
+```
+
+## Inputs
 
 WF4 requires the completed WF1 model and an explicitly selected ready WF3 collection and run IDs. It checks the model reference and freezes the selected collection, model, settings, and environment identity for the experiment. It does not consume WF2 projections.
 

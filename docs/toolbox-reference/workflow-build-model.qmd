@@ -6,19 +6,63 @@ title: "WF1 — Build model"
 
 ## Rules
 
-| Rules | Operation |
+| Rule | Operation |
 |---|---|
-| 1.01–1.04 | Delineate region and subbasins, extract selected historical climate, and plot it. |
-| 1.05–1.09 | Prepare land and soil maps, build the model, add waterbodies, declare outputs, and add climate forcing. |
-| 1.10–1.12 | Write the gauge index and plot basin and model forcing. |
-| 1.13–1.16 | Run the historical simulation, export tables, evaluate results, and record run metadata. |
-| 1.17–1.18 | Gather benchmarks and logs. |
+| `all` (target) | Collect model, simulation, figures, and records. |
+| 1.01 `delineate_region` | Define the shared basin region. |
+| 1.02 `delineate_subbasins_and_rivers` | Build shared vectors and location registry. |
+| 1.03 `extract_climate_datasets` | Extract the selected historical climate source. |
+| 1.04 `plot_climate_datasets` | Plot that source on its native grid. |
+| 1.05 `prepare_land_and_soil_maps` | Prepare thematic rasters for model building. |
+| 1.06 `build_wflow_model` | Build the Wflow-SBM model. |
+| 1.07 `add_reservoirs_lakes_glaciers` | Add waterbodies and glaciers. |
+| 1.08 `declare_gauges_and_outputs` | Configure gauges and Wflow output variables. |
+| 1.09 `add_climate_forcing` | Add model forcing and complete the model. |
+| 1.10 `write_gauge_index` | Map Wflow IDs to named stations. |
+| 1.11 `plot_basin_map` | Plot basin and thematic maps. |
+| 1.12 `plot_model_forcing` | Plot the model forcing grid. |
+| 1.13 `run_historical_simulation` | Run Wflow on the historical window. |
+| 1.14 `export_simulation_tables` | Export per-variable response tables. |
+| 1.15 `plot_model_evaluation` | Plot and score against available observations. |
+| 1.16 `write_run_metadata` | Record run identity and staleness metadata. |
+| 1.17 `gather_benchmarks` | Merge benchmark parts. |
+| 1.18 `gather_logs` | Merge log parts. |
 
 The `all` target collects the products. The historical climate store feeds figures; model forcing is assembled from the configured data catalog in rule 1.09.
 
-## Configuration and inputs
+## Rule flow
 
-The project file supplies the basin definition, catalog, `climate.selected`, `climate.window`, output locations, and `model.outvars`. Its `workflows.build_model.config_path` selects a workflow file. That file sets `engine.build_config` and `engine.waterbodies_config` (normally the recipes in `config/defaults/`), `simulation_window`, and optional `observations` by variable. Defaults are operational inputs, so changing one changes the build. See [Configuration](../guide/configuration.qmd).
+```{mermaid}
+flowchart LR
+  A["1.01–1.02 Region and vectors"] --> B["1.05–1.08 Build model and outputs"]
+  A --> C["1.03–1.04 Historical climate"]
+  B --> D["1.09 Add forcing"]
+  C --> D
+  D --> E["1.13 Historical simulation"]
+  D --> F["1.10–1.12 Index and figures"]
+  E --> G["1.14–1.16 Tables, evaluation, metadata"]
+  F --> H["1.17–1.18 Records"]
+  G --> H
+```
+
+The figure branches are terminal products; the historical simulation uses the completed model and forcing.
+
+## Configuration
+
+The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, the `basin` definition and `output_locations`, `climate.selected` and `climate.window`, and `model.outvars`. Its `workflows.build_model` stanza enables this workflow and points to its YAML file through `config_path`.
+
+The workflow file, `test_case/project_config_rapid_build_model.yml`, sets `engine.build_config` and `engine.waterbodies_config` to the hydromt recipes in `config/defaults/`, `simulation_window.start` and `.end` to the historical run years, and optional `observations` paths keyed by modeled variable. The template at `config/templates/project_config.build_model.template.yml` shows these keys; `engine` and `simulation_window` may be omitted to use the defaults. The run window must fit inside `climate.window`.
+
+```yaml
+engine:
+  build_config: config/defaults/wflow_build_model.yml
+  waterbodies_config: config/defaults/wflow_update_waterbodies.yml
+observations:
+  river discharge: test_case/test_data/observations_timeseries.csv
+simulation_window: {start: 2010, end: 2016}
+```
+
+## Inputs
 
 Inputs include cataloged terrain, land, soil, hydrography, waterbody, and climate data; output locations; the two Wflow build recipes; and observations when evaluation is requested. The simulation window lies inside the historical climate window.
 

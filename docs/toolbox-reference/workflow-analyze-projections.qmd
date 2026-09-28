@@ -6,20 +6,55 @@ title: "WF2 — Analyze projections"
 
 ## Rules
 
-| Rules | Operation |
+| Rule | Operation |
 |---|---|
-| 2.01–2.02 | Delineate the shared basin region, subbasins, and rivers. |
-| 2.03 | Fetch raw CMIP6 slices for configured members and variables. |
-| 2.04 | Reduce each local slice to a basin-average monthly series. |
-| 2.05 | Derive change factors against the reference window. |
-| 2.06 | Plot the projection series and summaries. |
-| 2.07–2.08 | Gather benchmarks and logs. |
+| `all` (target) | Collect change factors, plots, and records. |
+| 2.01 `delineate_region` | Define the shared basin region. |
+| 2.02 `delineate_subbasins_and_rivers` | Build shared vectors. |
+| 2.03 `fetch_cmip6_projections` | Fetch raw slices for configured model, scenario, member, and variable keys. |
+| 2.04 `reduce_to_basin_averages` | Reduce each local slice to a monthly basin series. |
+| 2.05 `derive_change_factors` | Compare future and reference windows and write tables and report. |
+| 2.06 `plot_climate_projections` | Render projection figures. |
+| 2.07 `gather_benchmarks` | Merge benchmark parts. |
+| 2.08 `gather_logs` | Merge log parts. |
 
 The `all` target collects these products. Rule 2.03 is the remote data read; subsequent reduction uses the acquired slices.
 
-## Configuration and inputs
+## Rule flow
 
-The project file supplies `basin.region` and `basin.resolution`; `workflows.analyze_projections.config_path` selects the workflow file. The workflow file sets its CMIP6 `catalog`, `ensemble`, `models`, `scenarios`, member preference, variable mapping and change type, `reference_window`, and named `future_windows`. See [Configuration](../guide/configuration.qmd).
+```{mermaid}
+flowchart LR
+  A["2.01–2.02 Region and vectors"] --> C["2.04 Basin monthly series"]
+  B["2.03 Fetch CMIP6 slices"] --> C
+  C --> D["2.05 Change factors"]
+  D --> E["2.06 Projection figures"]
+  D --> F["2.07–2.08 Records"]
+  E --> F
+```
+
+Fetching fans out by configured model, scenario, member, and variable before monthly reduction.
+
+## Configuration
+
+The project file supplies `project.catalog`, `basin.region`, and `basin.resolution`. Its `workflows.analyze_projections` stanza enables the workflow and points to its YAML file through `config_path`.
+
+The workflow file, `test_case/project_config_rapid_analyze_projections.yml`, sets `catalog` (the CMIP6 catalog), `ensemble` (output namespace), `models` and `scenarios` (the ensemble subset), `members.preference` (member selection order), and `variables` (source mapping, canonical rate or state, units, and relative or absolute change). `reference_window` supplies historical years; each `future_windows` entry supplies years and an output `name`. The template at `config/templates/project_config.analyze_projections.template.yml` also documents optional `members.selection`, `members.overrides`, and `stats`.
+
+```yaml
+catalog: config/catalogs/cmip6_data.yml
+ensemble: cmip6
+models: [NOAA-GFDL/GFDL-ESM4, INM/INM-CM4-8]
+scenarios: [ssp245]
+members: {preference: [r1i1p1f1]}
+variables:
+  precip: {source: precip, canonical: rate, units: mm/day, change: relative}
+  temp: {source: temp, canonical: state, units: degC, change: absolute}
+reference_window: {start: 2000, end: 2014}
+future_windows:
+  - {start: 2046, end: 2054, name: mid}
+```
+
+## Inputs
 
 Inputs are the basin polygon, cataloged CMIP6 data, and the selected model/scenario/member/variable combinations. The reference and future windows define the compared periods. WF2 does not read a scenario collection or model responses.
 

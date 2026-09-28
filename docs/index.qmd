@@ -5,24 +5,35 @@ toc: false
 number-sections: false
 ---
 
-The **BlueEarth Climate Stress Test (CST)** toolbox stress-tests a river basin
-against climate change without picking a climate scenario first. It perturbs the
-basin's own climate across a temperature × precipitation grid, runs a
-distributed hydrological model for every combination, and reduces the result to
-a response surface showing where the system starts to fail.
+The **BlueEarth Climate Stress Test (CST)** toolbox helps water resources
+specialists examine how river flow responds to changes in climate. It supports
+rapid, first-order assessments of water availability, low flows and high flows
+in a river basin. The central question is: **under which climate conditions
+does a hydrological outcome of concern emerge?**
 
-This site documents the **workflow toolbox** — the engine that does the
-computation. It is one of three components of the wider CST platform; the web
-backend and the user interface live in their own repositories.
+CST uses a bottom-up, scenario-neutral approach. It starts with the basin's
+historical climate, generates alternative weather sequences to represent
+natural variability, and applies a systematic range of temperature and
+precipitation changes. A distributed Wflow-SBM model simulates the resulting
+hydrological response. Indicators calculated from those simulations can be
+mapped across the tested climate range as a **response surface**. You can
+compare that surface with a decision-relevant threshold to identify conditions
+under which performance becomes unacceptable.
 
-::: {.callout-note}
-## This site is under construction
+CMIP6 projections serve a different purpose. The toolbox summarizes projected
+temperature and precipitation changes so you can place the tested range and
+any identified vulnerabilities in a plausible future context. Those
+projections do not select or drive the stress-test scenarios. This separation
+lets an assessment examine climate conditions beyond a chosen model ensemble
+and then ask which of those conditions merit closer attention.
 
-The **user guide** and the **setup guide** are published. The technical
-background is still being prepared. Until then, the
-[repository README](https://github.com/tanerumit/blueearth_cst#readme) carries
-the reference material that has not moved here yet.
-:::
+This site documents the **workflow toolbox** that performs the analysis. It is
+the computational part of the wider CST platform; the API and user interface
+are maintained separately. The toolbox uses global datasets and an automated
+model setup to make basin-scale screening practical. Results still depend on
+the quality of the climate inputs and hydrological model. They are a starting
+point for investigating risks and adaptation options, not a substitute for a
+locally calibrated model or detailed engineering design.
 
 ## Start here
 
@@ -31,39 +42,30 @@ the reference material that has not moved here yet.
 | Install the toolbox on your machine | [Setup guide](install.md) |
 | Run a basin assessment end to end | [Quick start](guide/quick-start.qmd) |
 | Point the toolbox at your own basin | [Configuring a project](guide/configuration.qmd) |
-| Understand what a stress test computes and why | Technical background *(in preparation)* |
+| Run selected analyses or revisit an experiment | [Running the workflows](guide/running.qmd) |
+| Find and interpret the results | [Reading the outputs](guide/outputs.qmd) |
 
-## What it does, in four steps
+## The five workflows
 
-The toolbox is four Snakemake workflows, run in order and sharing one
-configuration file:
+The workflows share a project configuration set. The runner executes those you
+enable in this order:
 
-1. **Analyze climate** — characterises the basin's historical climate from one
-   or more gridded datasets, with no model involved. This is the
-   forcing-selection question, and it matters here because the toolbox does no
-   local calibration: the choice of forcing dataset is the dominant lever on
-   everything downstream.
-2. **Build model** — builds a distributed Wflow-SBM model from global datasets
-   via HydroMT and runs it once on historical forcing. Rapid deployment, no
-   local calibration.
-3. **Analyze projections** — reduces CMIP6 output to monthly change factors per
-   model, scenario and horizon. This is a *plausibility overlay*: it situates
-   the perturbation grid in projection space, and never drives a stress-test
-   run.
-4. **Run stress test** — generates stochastic weather realizations, perturbs
-   each across the temperature × precipitation grid, runs the hydrological model
-   for every combination, and reduces the output to the indicators that form the
-   response surface.
+1. **Analyze historical climate** (optional) — compare gridded climate sources
+   for the basin before choosing the forcing dataset. This analysis does not
+   require a hydrological model.
+2. **Build the model** — use HydroMT and global datasets to prepare Wflow-SBM,
+   then run it with historical forcing and evaluate the simulated discharge
+   where observations are available.
+3. **Analyze projections** — calculate CMIP6 temperature and precipitation
+   change factors by model, scenario and future period for later comparison
+   with the stress-test range.
+4. **Generate scenarios** — create stochastic weather realizations and apply
+   the specified temperature and precipitation perturbations. The resulting
+   climate series form a reusable scenario collection.
+5. **Simulate the system** — run Wflow-SBM for the generated climate series and
+   calculate hydrological indicators from the retained model responses.
 
-## The approach
-
-CST is **bottom-up** stress testing — decision scaling, in the family of methods
-for decision-making under deep uncertainty. Rather than asking *what do the
-climate models say will happen, and what does that do to my system?*, it asks
-*what climate conditions would break my system, and how plausible are they?*
-The second question survives changes in the climate projections; the first does
-not.
-
-That inversion is what makes the toolbox useful for rapid, first-order basin
-assessments built on global data — which is what it is for. It is not a
-substitute for detailed engineering design.
+Model building and scenario generation are both needed before simulation.
+Projection analysis is independent of scenario generation and provides context
+for interpreting the response surface. See the [quick start](guide/quick-start.qmd)
+for an example run.

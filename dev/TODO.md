@@ -24,7 +24,7 @@
 | [t2608202148][]          |        | WF2's behavioural contract has no live home — Watch for: Someone needs WF2's config-key or unit semantics…    | wf2 / dev records / reference-doc cleanup…  | watching          |
 | [t2608121606][]          |        | A missing catalog source is logged identically to an empty basin, so 1.08 can silently omit a real reservoir… | wf1 / data catalog / t2608091730…           | watching          |
 | [t2608071222][]          |        | The R layer has no test infrastructure; Python helpers carry the coverage — Watch for: The R layer grows…     | testing                                     | watching          |
-| [t2608071221][]          |        | Docker (O-06) and Linux end-to-end (O-18, O-19) are unexercised — Watch for: A Linux machine or runner…       | platform / R7                               | watching          |
+| [t2608071221][]          |        | Docker (O-06) and Linux end-to-end (O-18, O-19) are unexercised — Watch for: A Linux runner can access the…   | platform / R7                               | watching          |
 | [t2608071201][]          |        | A WF1 rebuild always trips WF3's drift guard, and the re-record is accepted as normal — Watch for: Re-open…   | wf1 / drift guard / R10                     | watching          |
 
 [t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md

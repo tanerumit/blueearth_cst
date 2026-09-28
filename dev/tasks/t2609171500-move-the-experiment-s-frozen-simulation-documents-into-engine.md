@@ -16,6 +16,14 @@ updated: 2026-09-28
 > **Effort** — large
 > **Trigger** — A WF3+WF4 baseline re-run is being paid for another reason, AND a tree matching `dev/baseline/manifest.json` is available to re-record from.
 
+## Progress
+
+- [ ] Settle the open question above (`_engine/simulation/` vs `_engine/config/`)
+- [ ] Confirm the trigger is met -- a matching baseline tree AND a re-run already paid for
+- [ ] Move the directory; rewrite `model.reference_path` and the `config/` literals
+- [ ] User-facing migration note (post-r12 class: no compatibility read path)
+- [ ] Re-record `--workflow simulate_system` from the matching tree
+
 ## Where this came from
 
 An owner review of `test_case/test_rapid` on 2026-09-17 asked three questions of
@@ -80,11 +88,3 @@ because it is a third structural choice beyond the two the owner approved.
 plausible claim to being reader-facing. `simulation_window` is already carried
 verbatim in the new `composed_config.yml`, so moving `simulator_settings.json`
 out of sight costs nothing a reader needs.
-
-## Progress
-
-- [ ] Settle the open question above (`_engine/simulation/` vs `_engine/config/`)
-- [ ] Confirm the trigger is met -- a matching baseline tree AND a re-run already paid for
-- [ ] Move the directory; rewrite `model.reference_path` and the `config/` literals
-- [ ] User-facing migration note (post-r12 class: no compatibility read path)
-- [ ] Re-record `--workflow simulate_system` from the matching tree

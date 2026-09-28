@@ -17,7 +17,7 @@ updated: 2026-09-28
 
 ## Progress
 
-- [ ] <first step>
+- [ ] Measure WF1 and WF2 on a production-scale basin to establish whether concurrent execution is worth a one-DAG design.
 
 ## Why this is not "just run two snakemakes"
 

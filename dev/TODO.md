@@ -17,6 +17,7 @@
 | [t2609251520][]          |        | Open question: flat, hash-suffixed names for generation_inputs snapshots? — Watch for: Owner decides whether… | wf3 / generation inputs / gabon-ntoum-v3…   | watching          |
 | [t2609251025][]          |        | Wflow sysimage to remove per-batch Julia startup — Watch for: A Julia/Wflow runtime upgrade or packaging…     | run cost / julia / t2608222155 owner…       | watching          |
 | [t2609181302][]          |        | Snakemake's six-line preamble is not suppressible from inside a workflow — Watch for: Revisit if a snakemake… | console / snakemake / console polishing…    | watching          |
+| [t2609162115][]          |        | weathergenr prints an unevaluated glue expression instead of a plot count — Watch for: Recheck when…          | upstream / weathergenr / WF3 run…           | watching          |
 | [t2608222252][]          |        | Make the climate extraction variable set derived and configurable — Watch for: A second model adapter is…     | wf0 / wf1 climate store / R14               | watching          |
 | [t2608222239][]          |        | Support additional historical climate datasets in the raw-climate path — Watch for: The owner selects an…     | wf0 / wf1 climate store / R14               | watching          |
 | [t2608210010][]          |        | Replace the docs site's approximate brand colours with the official Deltares values — Watch for: The owner…   | docs / site / quarto-docs-site (2026-08-19) | watching          |
@@ -39,6 +40,7 @@
 [t2609251520]: tasks/t2609251520-open-question-flat-hash-suffixed-names-for-generation-inputs-snapshots.md
 [t2609251025]: tasks/t2609251025-wflow-sysimage-to-remove-per-batch-julia-startup.md
 [t2609181302]: tasks/t2609181302-snakemake-s-six-line-preamble-is-not-suppressible-from-inside-a-workflow.md
+[t2609162115]: tasks/t2609162115-weathergenr-prints-an-unevaluated-glue-expression-instead-of-a-plot-count.md
 [t2608222252]: tasks/t2608222252-derived-extraction-vars.md
 [t2608222239]: tasks/t2608222239-more-climate-datasets.md
 [t2608210010]: tasks/t2608210010-official-deltares-brand-colours-in-theme-scss.md

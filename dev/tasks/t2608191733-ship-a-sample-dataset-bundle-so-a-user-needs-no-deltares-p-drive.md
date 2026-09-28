@@ -25,14 +25,6 @@ updated: 2026-09-28
 `dev/working/2026-08-19_shipped-sample-dataset/design.md`.
 Input contract, already authored: `dev/scripts/sample_bundle.yml`.
 
-## The promise, stated honestly
-
-"No internet" is unreachable — `pixi install` solves from conda-forge,
-`pixi run install` pulls `weathergenr` via `remotes::install_github`, and Julia
-comes from juliaup. The deliverable is **no credentials and no `P:` drive: one
-anonymous download, then every pipeline run offline.** Do not let the item be
-judged against a promise it cannot keep.
-
 ## Progress
 
 - [x] **Source-completeness audit — DONE 2026-08-19.** Thirteen catalog names
@@ -102,6 +94,14 @@ judged against a promise it cannot keep.
       install`, then all four workflows on the sample config **with the network
       disabled**, from the PRIMARY checkout (a slot worktree gets its own
       `.snakemake`).
+
+## The promise, stated honestly
+
+"No internet" is unreachable — `pixi install` solves from conda-forge,
+`pixi run install` pulls `weathergenr` via `remotes::install_github`, and Julia
+comes from juliaup. The deliverable is **no credentials and no `P:` drive: one
+anonymous download, then every pipeline run offline.** Do not let the item be
+judged against a promise it cannot keep.
 
 ## Owner rulings (2026-08-19)
 

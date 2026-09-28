@@ -5,11 +5,10 @@
 # dev/working/2026-08-19_quarto-docs-site/design.md
 #
 # PHASE 3, in progress (t2608202351b). The site publishes the landing page,
-# setup guide and user guide. The technical
-# background is still gated on O-3 -- the note's 38 figures are absent from the
-# repository, so its chapters would publish as numbered captions under nothing
-# (t2608202351). Its GUI and platform chapters stay unpublished by ruling
-# (O-1c); they remain in the repo as source.
+# setup guide and user guide. The technical manual summarizes current methods
+# without republishing the 2025 note. That note's 38 figures are absent from the
+# repository, so it remains outside the render list (t2608202351). Its GUI and
+# platform chapters remain unpublished by ruling O-1c.
 #
 # Nothing here publishes. There is deliberately no `site-url` and no deploy
 # workflow: the subpath a GitHub Pages project page needs is not known until the
@@ -24,6 +23,7 @@ project:
     # nothing -- silently, with a successful exit and a smaller site.
     - "index.qmd"
     - "guide/*.qmd"
+    - "technical-manual/*.qmd"
     # Explicit, like everything else here: quarto special-cases a 404.qmd only
     # when it is rendered, and this project enumerates its render targets.
     - "404.qmd"
@@ -57,6 +57,8 @@ website:
         href: guide/quick-start.qmd
       - text: "Setup"
         href: install.md
+      - text: "Technical Manual"
+        href: technical-manual/overview.qmd
     right:
       - icon: github
         href: https://github.com/tanerumit/blueearth_cst
@@ -75,6 +77,13 @@ website:
         contents:
           - install.md
           - env_setup_notes.md
+      - section: "Technical Manual"
+        contents:
+          - technical-manual/overview.qmd
+          - technical-manual/assessment-workflow.qmd
+          - technical-manual/models-and-methods.qmd
+          - technical-manual/datasets.qmd
+          - technical-manual/conventions-and-interpretation.qmd
   search: true
   page-footer:
     center: "Deltares · World Bank Global Water Practice — GPL-3.0"

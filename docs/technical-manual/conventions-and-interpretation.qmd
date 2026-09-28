@@ -1,0 +1,40 @@
+---
+title: "Conventions and interpretation"
+format: html
+---
+
+## Time and change coordinates
+
+Keep four time choices distinct: the historical climate extraction window, the historical model simulation window, the CMIP6 reference and future windows, and the stress-test simulation window.
+The model period must lie within the extracted historical record.
+For a like-period plausibility comparison, choose a projection horizon that corresponds to the stress-test window.
+The configured first month of the water year affects annual summaries.
+
+In the stress-test grid, temperature means are additive changes in °C and precipitation means are multipliers: 0.7 means 30% less precipitation, 1.3 means 30% more.
+Monthly settings may differ, and constant and transient trajectories differ in the time at which the full change is reached.
+WF2 instead reports temperature change as an absolute difference and precipitation change as a relative difference between its own reference and future windows.
+Convert to common axes and periods before placing projection points on a response surface.
+
+## Reading a climate response surface
+
+For a selected location and indicator, each tested climate condition has model responses across the configured realizations.
+A response surface displays how that indicator varies across temperature and precipitation changes.
+The threshold separating acceptable and vulnerable outcomes is a decision criterion supplied by the assessment, not a property inferred by the model.
+The CMIP6 overlay helps assess whether climate-model changes fall near vulnerable conditions; it does not attach probabilities to grid cells or establish that unrepresented conditions are impossible.
+
+Separate uncertainty from the stochastic weather realizations, differences across climate projections, and uncertainty in the hydrological model, forcing, observations, and thresholds.
+More realizations improve sampling of weather variability but do not remove structural or input-data error.
+Use the historical evaluation, where observations exist, when judging how much confidence to place in absolute discharge values.
+
+## Traceability and limits
+
+The scenario collection identifies generated runs and perturbation settings; a simulation experiment records the selected collection and model; a metric set records definitions and source responses.
+Join indicator `unit_id` through `unit_index.csv` to the collection's `scenario_table.csv` and `stress_test_lookup.csv`.
+Keep the identifiers as text, including leading zeros.
+The case with an empty `st_id` is the unperturbed reference.
+See [Reading the outputs](../guide/outputs.qmd) for the exact layout.
+
+Return levels are GEV fits to groups of simulated years and should be used as screening indicators.
+The supplied benchmark covers limited synthetic conditions, offers no basin-specific guarantee, and does not provide uncertainty intervals.
+Read `return_level_validation` in `metrics.json` and the corresponding `return_level_benchmark.json` before interpretation.
+Short example runs are useful for execution checks, not return-period inference or engineering design.

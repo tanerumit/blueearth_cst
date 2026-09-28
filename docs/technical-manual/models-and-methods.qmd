@@ -1,0 +1,35 @@
+---
+title: "Models and methods"
+format: html
+---
+
+## From basin data to discharge
+
+HydroMT organizes source datasets and reproducibly builds model inputs.
+Its HydroMT-Wflow plugin converts the delineated basin and spatial layers into a Wflow-SBM model, including terrain, river, land-cover, vegetation, and soil parameters.
+Wflow-SBM then simulates distributed water balances and routing from meteorological forcing, producing discharge and other requested variables at configured locations.
+The reference model build is a rapid setup from gridded data rather than a basin-specific calibrated model.
+Optional observed series support evaluation of its historical behavior.
+
+The build settings use HydroMT-Wflow setup methods and Wflow parameter names; the effective model settings are retained with the model output.
+For source selection and its consequences, see [Datasets](datasets.qmd).
+
+## Weather generation and climate perturbations
+
+The `weathergenr` stochastic weather generator creates multiple weather realizations conditioned on the historical climate record.
+Its method combines a wavelet autoregressive representation of annual precipitation variability with daily multivariable resampling, as described in the [technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md).
+Realizations express variability under a specified climate condition; they are distinct from the temperature and precipitation perturbation levels.
+
+WF3 applies monthly temperature changes in degrees Celsius and precipitation multipliers to define a grid of climate conditions.
+The configuration also permits precipitation variance and wet/dry spell factors.
+A constant trajectory applies the configured change throughout the simulation window; a transient trajectory increases it over that window.
+An unperturbed reference case is included in the collection.
+The grid is specified independently of CMIP6, so it can expose vulnerabilities outside the sampled projection range.
+
+## Responses and indicators
+
+WF4 runs the model against the generated forcing and retains its native responses.
+Indicator definitions and source runs are recorded in each metric set.
+Some indicators yield one value per simulation; return levels are fitted from groups of simulated years.
+The output locations, variable, statistic, and aggregation period determine what a number means, so a metric value should be interpreted with its `metrics.json` record rather than as a standalone CSV cell.
+See [Conventions and interpretation](conventions-and-interpretation.qmd) for the response surface and return-level limits.

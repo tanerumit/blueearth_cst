@@ -1,0 +1,35 @@
+---
+title: "Assessment workflow"
+format: html
+---
+
+The five workflows divide historical climate characterization, model construction, projection analysis, weather generation, and simulation.
+Their usual execution order is WF0 → WF1 → WF2 → WF3 → WF4, but this order is not a chain of scientific inputs.
+WF1 and WF3 are independent prerequisites for WF4.
+WF2 supplies context for interpreting the stress test; it does not supply its forcing.
+
+| Stage | Scientific question | Main product |
+|---|---|---|
+| WF0 `analyze_climate` | What does the historical climate record say, and which forcing source should be used? | Source-specific climatology and, when multiple sources are supplied, comparison products |
+| WF1 `build_model` | How does the basin model respond to the selected historical forcing? | Delineated basin, Wflow-SBM model, historical simulation, and optional observation-based evaluation |
+| WF2 `analyze_projections` | Where do projected temperature and precipitation changes fall relative to the stress-test domain? | CMIP6 change factors by model, scenario, and horizon |
+| WF3 `generate_scenarios` | What climate conditions and natural variability should be tested? | Retained collection of stochastic, perturbed weather series |
+| WF4 `simulate_system` | How do selected hydrological indicators respond across those conditions? | Retained Wflow responses and immutable metric sets |
+
+## Historical reference and model setup
+
+WF0 is optional and does not require a hydrological model.
+Use it alone when comparing candidate forcing sources before choosing one for the project.
+WF1 delineates the basin, builds the distributed model from spatial data, runs the historical period, and can compare simulated variables with observations supplied at output locations.
+Because the toolbox does not perform local calibration, the forcing and spatial source choices deserve explicit scrutiny.
+
+## Projection context and stress-test experiment
+
+WF2 summarizes changes in CMIP6 precipitation and temperature between a reference window and named future windows.
+Those change factors are a **plausibility overlay** on the climate response surface.
+WF3 instead conditions the stochastic weather generator on the selected historical climate source, creates realizations, and applies the configured temperature–precipitation perturbation grid.
+The generated series form a durable collection that can be used by more than one simulation experiment.
+
+WF4 runs Wflow-SBM for explicit runs from a ready collection and derives requested indicators from the retained responses.
+It can also calculate a new metric set from completed responses without repeating model simulations.
+Read [Models and methods](models-and-methods.qmd) for the scientific operations, and [Reading the outputs](../guide/outputs.qmd) for the product layout and joins.

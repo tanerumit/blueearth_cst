@@ -1,0 +1,32 @@
+---
+title: "Datasets"
+format: html
+---
+
+The toolbox uses external gridded datasets through HydroMT catalogs.
+The project chooses a catalog and source names; the source files themselves are not distributed with the workflow code.
+The table describes roles rather than prescribing a universally best source.
+
+| Data role | Sources represented in the supplied catalog and templates | Effect on the assessment |
+|---|---|---|
+| Basin hydrography | MERIT Hydro and basin index | Delineation, drainage structure, river network, and output-location placement |
+| Model land surface | VITO land cover, MODIS leaf area index, SoilGrids, and river data | Spatial Wflow-SBM parameters and simulated runoff processes |
+| Waterbodies and glaciers | HydroLakes, reservoir inventories, and the Randolph Glacier Inventory when configured | Representation of lakes, reservoirs, and glacier processes where relevant |
+| Historical meteorology | ERA5 daily forcing; CHIRPS precipitation as a candidate or selected precipitation source | Historical model run and conditioning of weather generation |
+| Future climate context | CMIP6 model, scenario, member, and horizon selections | Temperature and precipitation change-factor overlay only |
+| Local evaluation | Optional observed daily series at configured output locations | Evidence about historical model performance |
+
+The named sources reflect the supplied [project template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/project_config.template.yml), [data catalog](https://github.com/tanerumit/blueearth_cst/blob/main/config/catalogs/deltares_data.yml), and [projection template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/project_config.analyze_projections.template.yml).
+Catalog entries point to data that must be accessible to the project; their presence in a YAML file does not establish that a dataset is installed or suitable for a basin.
+
+## Choosing and substituting sources
+
+The historical source affects both the reference simulation and the weather generator's baseline statistics.
+WF0 can compare available climate variables across candidates before selection.
+CHIRPS provides precipitation; when chosen for the full pipeline, the climate store is supplemented with ERA5 variables needed by model building and weather generation.
+Inspect the extracted record's coverage, missing values, units, and spatial behavior rather than treating structural readiness as scientific validation.
+
+Changing hydrography can move the basin boundary, river cells, and snapped output points.
+Changing land cover, vegetation, or soil sources changes model parameters and may alter simulated response even with identical weather.
+Changing the CMIP6 ensemble or windows changes the plausibility overlay, not the weather collection already generated.
+Record the catalog, source names, versions, temporal windows, and any local observations when comparing assessments.

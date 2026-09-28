@@ -19,6 +19,12 @@ it goes and when it may be deleted.
 | `LOG.md` | Closure ledger. One row per item the board has closed since 2026-08-07, **capped at three short sentences** — see the cap below |
 | `working/` | Working & handoff notes for **live** work; drained at closure, but see the promotion rule below |
 
+The `main` worktree is the canonical board. `dev/scripts/todoboard.py` targets
+it even when invoked from a session worktree. Edit notes there, render the view,
+and commit board changes on `main` separately from feature work. A task's
+`branch:` field links unfinished implementation without copying its note into
+the task branch. The repository wrapper refuses to use a different board root.
+
 **Stays true** — consulted while working, rewritten rarely and deliberately:
 
 | Path | Holds |

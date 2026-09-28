@@ -9,16 +9,19 @@ invocation is an undocumented `PYTHONPATH=<machine path> python -m todoboard`,
 which is how a board note landed on 2026-08-12 with the table left one row
 stale — the CLI was simply not reachable and nothing said so.
 
-Usage (from anywhere in the repo, including a session slot):
+Usage (from any worktree, including a session slot):
 
     python dev/scripts/todoboard.py render
     python dev/scripts/todoboard.py list
     python dev/scripts/todoboard.py add "Title" --area wf3
 
-Every verb and flag is the CLI's own. This wrapper resolves the package and
-widens its Item and Area / Origin columns to 110 and 44 characters for this
-project, including automatic renders after board mutations. Set
-TODOBOARD_SKILL_DIR to override the search.
+The wrapper always targets the worktree checked out on `main`, so the board
+does not split across session branches. Commit board changes on `main`
+separately from feature work. The shared CLI lock under `.git` may require
+sandbox escalation in an agent session. Every CLI verb and flag except
+`--root` is forwarded. This wrapper also widens its Item and Area / Origin
+columns to 110 and 44 characters. Set TODOBOARD_SKILL_DIR to override the
+skill search.
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ import importlib
 import os
 import pathlib
 import runpy
+import subprocess
 import sys
 
 _REPO_ROOT = pathlib.Path(__file__).resolve().parents[2]
@@ -79,7 +83,33 @@ def resolve_skill_dir() -> pathlib.Path:
     )
 
 
+def main_board_root() -> pathlib.Path:
+    """Find the canonical board in this repository's `main` worktree."""
+    result = subprocess.run(
+        ["git", "worktree", "list", "--porcelain"],
+        cwd=_REPO_ROOT,
+        capture_output=True,
+        text=True,
+        check=True,
+    )
+    matches: list[pathlib.Path] = []
+    worktree: pathlib.Path | None = None
+    for line in (*result.stdout.splitlines(), ""):
+        if line.startswith("worktree "):
+            worktree = pathlib.Path(line.removeprefix("worktree "))
+        elif line == "":
+            worktree = None
+        elif line == "branch refs/heads/main" and worktree is not None:
+            matches.append(worktree)
+    if len(matches) != 1 or not (matches[0] / "dev" / "tasks").is_dir():
+        raise SystemExit("Expected exactly one `main` worktree with dev/tasks/.")
+    return matches[0]
+
+
 def main() -> None:
+    if any(arg == "--root" or arg.startswith("--root=") for arg in sys.argv[1:]):
+        raise SystemExit("This repository's board root is the `main` worktree.")
+    board_root = main_board_root()
     sys.path.insert(0, str(resolve_skill_dir()))
     # The CLI has no width option. Keep this project-specific presentation
     # override here rather than editing the shared per-user skill package.
@@ -87,7 +117,7 @@ def main() -> None:
     renderer._COLUMN_MAX_WIDTHS.update({"Item": 110, "Area / Origin": 44})
     # runpy rather than import+call: `python -m todoboard` is the CLI's own
     # documented entry point, so its argument parsing stays entirely upstream.
-    sys.argv[0] = "todoboard"
+    sys.argv = ["todoboard", "--root", str(board_root), *sys.argv[1:]]
     runpy.run_module("todoboard", run_name="__main__", alter_sys=True)
 
 

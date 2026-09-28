@@ -19,6 +19,11 @@ it goes and when it may be deleted.
 | `LOG.md` | Closure ledger. One row per item the board has closed since 2026-08-07, **capped at three short sentences** — see the cap below |
 | `working/` | Working & handoff notes for **live** work; drained at closure, but see the promotion rule below |
 
+Do not create `dev/drafts/`. Put a substantial temporary plan in the owning
+live task's `tasks/<id>/` sidecar and link it from the board note. At closure,
+promote any plan that a future reader needs into `reference/` or `records/` and
+remove the task sidecar; otherwise let Git history retain it.
+
 The `main` worktree is the canonical board. `dev/scripts/todoboard.py` targets
 it even when invoked from a session worktree. Edit notes there, render the view,
 and commit board changes on `main` separately from feature work. A task's

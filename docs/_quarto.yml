@@ -95,6 +95,7 @@ website:
           href: scientific-approach/overview.qmd
           contents:
             - scientific-approach/models-and-methods.qmd
+            - scientific-approach/climate-information.qmd
             - scientific-approach/conventions-and-interpretation.qmd
     - title: "Toolbox reference"
       style: docked

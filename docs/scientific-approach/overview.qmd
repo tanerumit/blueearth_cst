@@ -25,7 +25,8 @@ Investment design and site-specific risk estimates require assessment of local d
 ## Read about the approach
 
 1. [Models and methods](models-and-methods.qmd) explains the hydrological model, weather generation, perturbations, and indicators.
-2. [Conventions and interpretation](conventions-and-interpretation.qmd) explains periods, climate response surfaces, uncertainty, and limits.
+2. [Climate information](climate-information.qmd) distinguishes historical forcing, stress-test weather, and the projection overlay.
+3. [Conventions and interpretation](conventions-and-interpretation.qmd) explains periods, climate response surfaces, uncertainty, and limits.
 
 The terminology follows the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md).
 That note describes the earlier three-workflow prototype and web application; the [Toolbox reference](../toolbox-reference/overview.qmd) describes the current workflow engine.

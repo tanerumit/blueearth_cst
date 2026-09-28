@@ -3,33 +3,47 @@ title: "Models and methods"
 format: html
 ---
 
-## From basin data to discharge
+The assessment links three distinct models or modeling functions: HydroMT prepares a basin-specific model, Wflow-SBM simulates hydrology, and `weathergenr` generates weather sequences for stress testing. CMIP6 projections provide a separate plausibility comparison. The scientific descriptions below draw on the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md); the workflow boundaries and options reflect the current toolbox.
 
-HydroMT organizes source datasets and reproducibly builds model inputs.
-Its HydroMT-Wflow plugin converts the delineated basin and spatial layers into a Wflow-SBM model, including terrain, river, land-cover, vegetation, and soil parameters.
-Wflow-SBM then simulates distributed water balances and routing from meteorological forcing, producing discharge and other requested variables at configured locations.
-The reference model build is a rapid setup from gridded data rather than a basin-specific calibrated model.
-Optional observed series support evaluation of its historical behavior.
+| Component | Role in the assessment | What it does not establish |
+|---|---|---|
+| HydroMT with HydroMT-Wflow | Turns catalogued spatial data and a basin definition into a reproducible Wflow-SBM model | That the selected global sources accurately represent this particular basin |
+| Wflow-SBM | Translates meteorological forcing into distributed water states, fluxes, and routed discharge | That an uncalibrated simulation is sufficiently accurate for a local decision |
+| `weathergenr` | Samples local weather variability and applies configured climate changes | The probability that a tested climate condition will occur |
+| CMIP6 change factors | Places projected changes alongside the response surface | The weather series used to run the stress test |
 
-The build settings use HydroMT-Wflow setup methods and Wflow parameter names; the effective model settings are retained with the model output.
-For source selection and its consequences, see [Datasets](../toolbox-reference/datasets.qmd).
+## Building the hydrological model
 
-## Weather generation and climate perturbations
+HydroMT is the data-to-model adapter, not the hydrological solver. It reads the project’s data catalogs, delineates the basin from hydrography, and uses HydroMT-Wflow setup methods to prepare the model grid, river network, land cover, leaf area index, soil maps, and model parameters. The basin definition and output locations determine the area represented and where responses are reported. The configured model resolution is the *model grid* resolution; it should not be mistaken for the native resolution or accuracy of each source dataset.
 
-The `weathergenr` stochastic weather generator creates multiple weather realizations conditioned on the historical climate record.
-Its method combines a wavelet autoregressive representation of annual precipitation variability with daily multivariable resampling, as described in the [technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md).
-Realizations express variability under a specified climate condition; they are distinct from the temperature and precipitation perturbation levels.
+This automated build supports rapid, globally applicable screening. Its static maps and parameters inherit limitations from the selected source products and from the HydroMT-Wflow setup assumptions. The toolbox does not perform local parameter calibration. Where observed series are available, comparison with the historical run is therefore an important test of whether the model is fit for the assessment question. See [Datasets](../toolbox-reference/datasets.qmd) for the role and substitution consequences of each source class.
 
-WF3 applies monthly temperature changes in degrees Celsius and precipitation multipliers to define a grid of climate conditions.
-The configuration also permits precipitation variance and wet/dry spell factors.
-A constant trajectory applies the configured change throughout the simulation window; a transient trajectory increases it over that window.
-An unperturbed reference case is included in the collection.
-The grid is specified independently of CMIP6, so it can expose vulnerabilities outside the sampled projection range.
+## Wflow-SBM and the historical reference
 
-## Responses and indicators
+The toolbox uses the **soil-bucket model (SBM)** concept in Wflow. Wflow-SBM represents water balance processes in each grid cell and transfers water through subsurface, overland, and river pathways. Depending on the configured model inputs and components, those processes include interception, evapotranspiration, soil-water storage, snow and glacier processes, and waterbodies. Meteorological forcing drives the time-varying simulation; spatial maps and parameters determine how cells respond and connect.
 
-WF4 runs the model against the generated forcing and retains its native responses.
-Indicator definitions and source runs are recorded in each metric set.
-Some indicators yield one value per simulation; return levels are fitted from groups of simulated years.
-The output locations, variable, statistic, and aggregation period determine what a number means, so a metric value should be interpreted with its `metrics.json` record rather than as a standalone CSV cell.
-See [Conventions and interpretation](conventions-and-interpretation.qmd) for the response surface and return-level limits.
+WF1 runs the model for a historical reference period. This run checks the configured model and forcing before the stress test, and provides a baseline for interpreting changed-climate responses. Discharge is reported at configured locations; other requested variables may be spatially aggregated according to their output definition. A good-looking basin map or a completed simulation is not evidence of hydrological skill. Examine observed discharge, timing, low flows, high flows, and known basin processes where suitable local evidence exists.
+
+## Stochastic weather generation
+
+`weathergenr` conditions on the selected historical meteorological record and generates multiple realizations. The [2025 note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md) describes its underlying semi-parametric method in three parts:
+
+| Method element | Role |
+|---|---|
+| Wavelet autoregressive model of area-averaged annual precipitation | Represents interannual and longer wet and dry variability in the generated sequence |
+| Markov-chain and nearest-neighbor resampling | Disaggregates to daily, multivariable, spatially coherent weather sequences |
+| Quantile mapping | Adjusts the daily distribution to the specified changed-climate statistics |
+
+These are **weather realizations**, not alternative GCM futures. Their spread samples variability conditional on the generator and its historical training record. It does not cover uncertainty in the historical dataset, hydrological structure, or climate-change magnitude. The historical record must be long and complete enough to support generator conditioning; inspect its coverage and quality before using the resulting ensemble.
+
+## Climate perturbations and trajectories
+
+WF3 defines a scenario-neutral grid in monthly temperature and precipitation changes. Temperature means are additive changes in °C; precipitation means are multipliers relative to the historical distribution. The current configuration also supports a precipitation-variance range and monthly dry- and wet-spell factors. The latter affect weather characteristics without becoming an additional grid axis. A **constant** trajectory applies the full configured change throughout the simulation window; a **transient** trajectory builds toward that change over the window. The collection includes an unperturbed reference processed through the same perturbation pathway.
+
+The grid is chosen to expose response and potential failure across decision-relevant conditions, including conditions beyond the available projection ensemble. It is specified independently of CMIP6. More realizations improve the sampling of weather variability at a grid point; finer perturbation steps improve resolution of the response surface. Neither choice fixes model bias.
+
+## Projection context, responses, and indicators
+
+WF2 computes monthly CMIP6 change factors for configured models, scenarios, members, and future windows. Temperature is an absolute change and precipitation a relative change against a reference window. These factors can be compared with the stress-test axes after aligning units and periods. They contextualize the plausibility of vulnerable conditions; they do not drive the generator or assign probabilities to grid cells.
+
+WF4 runs Wflow-SBM against selected generated forcing, retains the native model responses, and derives requested indicators. Indicators can summarize long-term conditions, low flows, or high flows. Some give one value per simulation; return levels are fitted from groups of simulated years. The variable, location, aggregation period, statistic, and source runs together define a result. Read a metric with its `metrics.json` record rather than as an isolated CSV value. See [Conventions and interpretation](conventions-and-interpretation.qmd) for response surfaces and return-level limits, and [Reading the outputs](../guide/outputs.qmd) for the retained files.

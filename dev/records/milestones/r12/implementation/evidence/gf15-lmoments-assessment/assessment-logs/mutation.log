@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\gf15-lmoments-assessment\wrong-denominator.py", line 929, in <module>
+    audit(Path.cwd(), args.output)
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\gf15-lmoments-assessment\wrong-denominator.py", line 360, in audit
+    mutations = discrimination()
+                ^^^^^^^^^^^^^^^^
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\gf15-lmoments-assessment\wrong-denominator.py", line 248, in discrimination
+    equal(result["valid_rate"], 0.949, "949 valid denominator")
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\gf15-lmoments-assessment\wrong-denominator.py", line 52, in equal
+    require(actual == expected, (context, actual, expected))
+  File "C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\.tmp\scratchpad\2026-09-11_0010\gf15-lmoments-assessment\wrong-denominator.py", line 37, in require
+    raise AssertionError(context)
+AssertionError: ('949 valid denominator', 1.0, 0.949)

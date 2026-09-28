@@ -1,0 +1,4 @@
+ WARN Using local manifest C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\pixi.toml rather than C:\Users\taner\workspace\blueearth_cst\pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`
+{"candidate": "A", "completed_fits": 186, "accepted": 180}
+{"candidate": "B", "completed_fits": 186, "accepted": 180}
+Candidate study complete; old evidence unchanged; no qualification claimed.

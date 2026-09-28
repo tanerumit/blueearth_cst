@@ -1,0 +1,2 @@
+ WARN Using local manifest C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\pixi.toml rather than C:\Users\taner\workspace\blueearth_cst\pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`
+{"verification_status": "passed", "scientific_verdict": "failed_owner_method_ruling_required", "unique_fits": 132000, "refused_fits": 0, "translation_deviations": 118457, "baseline_scale_pass_count": 3, "qualified_scale_and_relative_pass_count": 6, "qualified_pass_including_translation_count": 0}

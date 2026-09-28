@@ -1,0 +1,333 @@
+{
+  "status": "ready",
+  "metric_set_id": "49ca015882e8396f4fd46930b9a95be3ccbd4dfcaf2d5c7840bf1b3df95aa665",
+  "keys": 756,
+  "declarations": [
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_annual_mean",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "mean",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_mean_annual_max",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "max",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_mean_annual_min",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "min",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_mean_annual_p95",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "q95",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_mean_annual_7day_max",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "Q7day_max",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_mean_annual_7day_min",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "Q7day_min",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_baseflow_index",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "BaseFlowIndex",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": 1.0,
+      "bundle_by": "same_design_point",
+      "grain": "bundle",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_return_level_10yr_max",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": 10,
+      "statistic": "return_level_max",
+      "value_validity": "finite required; reject invalid GEV fit; no clipping"
+    },
+    {
+      "blocks_per_return_period": 1.0,
+      "bundle_by": "same_design_point",
+      "grain": "bundle",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_return_level_2yr_7day_min",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": 2,
+      "statistic": "return_level_7day_min",
+      "value_validity": "finite required; reject invalid GEV fit; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_wettest_month_mean",
+      "reference": "unperturbed_runs",
+      "reference_location": "class_c_first_gauge",
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "wetmonth_mean",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "q_driest_month_mean",
+      "reference": "unperturbed_runs",
+      "reference_location": "class_c_first_gauge",
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "m3 s-1",
+        "variable": "q"
+      },
+      "return_period": null,
+      "statistic": "drymonth_mean",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    },
+    {
+      "blocks_per_return_period": null,
+      "bundle_by": null,
+      "grain": "run",
+      "implementation_revision": "86e7718f4457956c35be4a18f3a5cfeecdc1f78949e005377f743f309f0f00ed",
+      "name": "gwr_annual_total",
+      "reference": null,
+      "reference_location": null,
+      "required_responses": {
+        "calendars": [
+          "standard",
+          "gregorian",
+          "proleptic_gregorian"
+        ],
+        "coverage": "entire retained response; preserve partial water years",
+        "location_grain": "location",
+        "missingness": "native NaN; preserve pandas skipna and rolling completeness",
+        "time_label": "interval_end",
+        "timestep_seconds": 86400,
+        "units": "mm dt-1",
+        "variable": "gwr"
+      },
+      "return_period": null,
+      "statistic": "sum",
+      "value_validity": "finite or native-reduction NaN; refuse infinity; no clipping"
+    }
+  ],
+  "tables": [
+    {
+      "path": "gwr_indicators.csv",
+      "row_count": 56,
+      "sha256": "cea695df0af5af01f962e02582786547879baa6777d360a29ec5b4c9c5947472",
+      "token": "gwr"
+    },
+    {
+      "path": "q_indicators.csv",
+      "row_count": 700,
+      "sha256": "2d9dd339ed0c0de93e9140ba0a1061fbce00925a0cbca993772c5133cd8250b7",
+      "token": "q"
+    }
+  ]
+}

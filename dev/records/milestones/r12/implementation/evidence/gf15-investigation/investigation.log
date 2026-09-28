@@ -1,0 +1,9 @@
+ WARN Using local manifest C:\Users\taner\workspace\.worktrees\blueearth_cst\session-3\pixi.toml rather than C:\Users\taner\workspace\blueearth_cst\pixi.toml from environment variable `PIXI_PROJECT_MANIFEST`
+{"stage": "retained_analysis", "fits_read": 132000, "seconds": 8.670233099997859}
+{"stage": "traces", "completed": 30, "total": 186}
+{"stage": "traces", "completed": 60, "total": 186}
+{"stage": "traces", "completed": 90, "total": 186}
+{"stage": "traces", "completed": 120, "total": 186}
+{"stage": "traces", "completed": 150, "total": 186}
+{"stage": "traces", "completed": 180, "total": 186}
+Investigation complete; all original evidence unchanged; no qualification decision altered.

@@ -63,8 +63,8 @@ both sizes moving by exactly +16 bytes -- the header delta and nothing else. So
 the wf1 delta demonstrably does NOT propagate into the wf3 reduction, and the wf3
 slice is no longer mixed-provenance in any way that matters: it was re-recorded
 from main@03e546c on those same numbers.
-Evidence: dev/milestones/r09/migration_indicator-axis-columns.md §5;
-dev/decisions/0001-restore-wflow-constant-parameters/baseline_diffs.md.
+Evidence: dev/records/milestones/r09/migration_indicator-axis-columns.md §5;
+dev/records/decisions/0001-restore-wflow-constant-parameters/baseline_diffs.md.
 (That paragraph describes the world before R11: both tables were byte-hashed and
 `basin_indicators.csv` still existed. Kept as written because it is the record of
 how the residual was closed, not a description of the current gate.)
@@ -146,7 +146,7 @@ def git_provenance(repo_root: Path = REPO_ROOT) -> dict | None:
     Observed, not hypothetical: a `basin_area.png` produced on
     `feat/outputs-figures` sat in the fixture for days and was read as the
     pre-R07 baseline reference, until a byte-size mismatch at the R07 gate
-    forced the question (see dev/followups-archive.md R7-3 / R7-21).
+    forced the question (see pre-board record 45e3a564 R7-3 / R7-21).
 
     Best-effort by design: a missing `git`, a non-repository checkout or a
     detached HEAD returns None rather than raising. Provenance is an aid to
@@ -252,7 +252,7 @@ VOLATILE_NC_ATTRS = frozenset(
 # and current sides. Mirrors `rule all` across build_model.smk,
 # analyze_projections.smk, run_stress_test.smk — plus the one
 # beyond-`rule all` discharge target (see module docstring / ADR 0001).
-# R07 (dev/milestones/r07/migration_project-layout.md §3a is the authority; this list is
+# R07 (dev/records/milestones/r07/migration_project-layout.md §3a is the authority; this list is
 # written FROM that table). 14 live targets: all 14 change manifest key via the
 # examples/ -> test_case/ rename, 10 also move within the tree, 3 change
 # content. Retargeted here, in the fixture-rename commit, as the SOLE owner of

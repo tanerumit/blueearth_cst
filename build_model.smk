@@ -5,7 +5,7 @@ from pathlib import Path
 
 # Shared helpers live in blueearth_cst/; make them importable regardless of the working
 # directory by prepending this Snakefile's own directory to sys.path.
-# See dev/milestones/r03/model-builder-design.md §3.
+# See dev/records/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, historical_window_bounds, julia_prefix, listed, patch_psutil_windows_benchmark, region_rule, resolve_simulation_window, resolve_water_year_start, spatial_units_rule, validate_historical_window, warning_count
@@ -107,7 +107,7 @@ historical_window = get_config(climate_cfg, "window", optional=False)
 # at extraction. WF1 rejects it too, deliberately: a record too short for a
 # stress test is a misconfigured project, and letting WF1 build a model on it
 # only moves the failure to the workflow least able to explain it
-# (dev/followups-archive.md R7-6, R3). Parse time, before any rule executes — same
+# (pre-board record 45e3a564 R7-6, R3). Parse time, before any rule executes — same
 # stance as the eobs rejection below. Whether the staged source actually COVERS
 # the requested window is a different question, checked at rule 1.03.
 validate_historical_window(historical_window)
@@ -1272,7 +1272,7 @@ rule plot_climate_datasets:
 # The merge DELETES the parts it consumed and prunes the emptied dirs, so a clean
 # full run leaves no logs/_parts/ at all. After a PARTIAL re-run only the re-run
 # rules have parts, so the rewritten log marks the rest "no part from this run" —
-# the same trade `merge_benchmarks` makes (dev/followups-archive.md R7-9).
+# the same trade `merge_benchmarks` makes (pre-board record 45e3a564 R7-9).
 rule gather_logs:
     message: GATHER_LOGS.banner()
     input:

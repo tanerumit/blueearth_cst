@@ -34,7 +34,7 @@ from blueearth_cst.experiment.content_identity import (  # noqa: E402
     canonical_json_bytes,
 )
 
-EVIDENCE = REPO / "dev/milestones/r12/implementation/evidence"
+EVIDENCE = REPO / "dev/records/milestones/r12/implementation/evidence"
 ACCURACY = EVIDENCE / "gf15-accuracy-8x"
 READINESS = EVIDENCE / "gf15-lmoments-readiness"
 ASSET = REPO / "blueearth_cst/experiment/data/gf15-accuracy-8x-v1.json"
@@ -51,7 +51,8 @@ SOURCE_SHA256 = {
     "distr.py": "f8859d11f10c3206e3e5009c1b238a328c6c9215b1cc7436800160fa929bb2ee",
 }
 
-# D5's embedded set, as repository-relative paths.
+# D5's embedded paths are frozen report content. Keep their historical spelling;
+# _read maps them to the records directory without changing the report digest.
 EMBEDDED = (
     "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/criteria.json",
     "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/README.md",
@@ -96,7 +97,7 @@ class PackagingError(RuntimeError):
 
 
 def _read(relative: str) -> tuple[bytes, str]:
-    path = REPO / relative
+    path = REPO / relative.replace("dev/milestones/", "dev/records/milestones/", 1)
     if not path.is_file():
         raise PackagingError(f"missing frozen evidence: {relative}")
     data = path.read_bytes()
@@ -112,9 +113,11 @@ def _repo_relative(recorded: str) -> str | None:
     guessed at.
     """
     text = recorded.replace("\\", "/")
-    marker = "dev/milestones/"
-    index = text.find(marker)
-    return text[index:] if index >= 0 else None
+    for marker in ("dev/milestones/", "dev/records/milestones/"):
+        index = text.find(marker)
+        if index >= 0:
+            return text[index:].replace("dev/records/milestones/", "dev/milestones/", 1)
+    return None
 
 
 def _checked(relative: str, expected: dict[str, str]) -> dict:

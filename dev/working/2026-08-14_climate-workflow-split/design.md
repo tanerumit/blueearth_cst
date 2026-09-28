@@ -43,7 +43,7 @@ migration:
 1. **A fourth workflow** that analyses the basin's historical climate without
    building a hydrology model, and evaluates candidate forcing datasets against
    observations. This is the direction the owner asked for at the `fao`-branch
-   assessment (`dev/reviews/2026-08-13_fao-branch-assessment.md` §2.1, §5.1) and
+   assessment (`dev/records/reviews/2026-08-13_fao-branch-assessment.md` §2.1, §5.1) and
    the same direction `dev/roadmap.md` records as "climate analysis /
    visualization as a model-independent subworkflow".
 2. **A rename of all four entry points** to verb-first `.smk` files, propagated
@@ -444,7 +444,7 @@ with the right name into a consistent world.
 `<exp>/config/project_config_climate_experiment.yml`.
 
 **Measured surface:** 171 live occurrences of `Snakefile_<name>` across 55 files
-and ~167 of `model_creation`, excluding `dev/` records. The `dev/milestones/`
+and ~167 of `model_creation`, excluding `dev/` records. The `dev/records/milestones/`
 and sealed records are **not** touched — they are the stated exception to
 "keep configuration references current", and `dev/reference/sealed-records.yml`
 hash-pins them.
@@ -630,11 +630,11 @@ R2.
 ## 10. References
 
 - `dev/tasks/t2608131847a-split-historical-climate-out-of-wf1.md` — the board item.
-- `dev/reviews/2026-08-13_fao-branch-assessment.md` §2.1, §3, §5.1, §5.3, §7.
+- `dev/records/reviews/2026-08-13_fao-branch-assessment.md` §2.1, §3, §5.1, §5.3, §7.
 - `dev/reference/naming.md` §7 (contract-surface renames), §9 (rule numbering).
 - `dev/reference/contracts/hydrological-model-seam.md` — HM-1..HM-7, untouched
   by ruling R1.
-- `dev/decisions/0003-one-shared-region-artifact.md`, `0006-retire-subcatchment-climate-plots.md`.
+- `dev/records/decisions/0003-one-shared-region-artifact.md`, `0006-retire-subcatchment-climate-plots.md`.
 - `dev/roadmap.md` — "climate analysis / visualization as a model-independent
   subworkflow"; its recorded tension with ADR 0002 is closed (0002 superseded by
   0006 on 2026-08-09).

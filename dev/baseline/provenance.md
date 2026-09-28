@@ -106,7 +106,7 @@ than of the branch.
 The indicator table's 624-row move (of 630 rows; the 6 that held are rounding
 collisions, not preserved structure) is the **weathergenr 1.2.0 → 2.0.0 upgrade**
 (`cf5daa0`, 2026-08-17), not R13's split. Argued in full, with the misleading
-signature that cost a session, in `dev/milestones/r13/baseline-pass-1-result.md`
+signature that cost a session, in `dev/records/milestones/r13/baseline-pass-1-result.md`
 § *The q_indicators drift is the weathergenr 2.0.0 upgrade, not R13*.
 
 Tracked sidecars at this recording:

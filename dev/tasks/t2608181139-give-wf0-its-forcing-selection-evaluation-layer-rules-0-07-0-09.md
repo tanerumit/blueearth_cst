@@ -77,6 +77,6 @@ wanted, it takes its own note.
 
 - `dev/working/2026-08-14_climate-workflow-split/design.md` — the design the
   split was executed from; its later sections describe this layer.
-- `dev/reviews/2026-08-13_fao-branch-assessment.md` §2 — where the item
+- `dev/records/reviews/2026-08-13_fao-branch-assessment.md` §2 — where the item
   originated.
 - `dev/LOG.md` — `t2608131847a`'s closure row, which points here.

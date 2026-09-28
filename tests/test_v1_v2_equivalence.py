@@ -57,7 +57,7 @@ V1_DIR = REPO_ROOT / "tests" / "data" / "v1_split"
 #: the `config_path:` keys inside them, which name their siblings. Renaming a
 #: captured artifact to a later convention would make it inaccurate about the
 #: thing it captures, which is the same objection that protects the sealed
-#: records under `dev/milestones/`.
+#: records under `dev/records/milestones/`.
 SETS = ["rapid", "baseline", "baseline_linux", "wf2_fast"]
 
 #: The prefix each side carried at the time it was written.

@@ -54,11 +54,11 @@ from dev.scripts.sweep_common import (  # noqa: E402
 #: place and narrower in another, and both differences are deliberate:
 #:
 #: * `dev/reference/**` and `dev/tasks/**` are IN. That sweep excuses them under
-#:   one "milestone records" class, which is right for `dev/milestones/**` —
+#:   one "milestone records" class, which is right for `dev/records/milestones/**` —
 #:   sealed baselines whose value is that they are not swept — and wrong here.
 #:   A reference doc and a board note are live working material, and two board
 #:   notes plus two reference docs were among R14's six instances.
-#: * `dev/milestones/**` is OUT, for that same sealed-record reason. So are the
+#: * `dev/records/milestones/**` is OUT, for that same sealed-record reason. So are the
 #:   four documents in `dev/reference/sealed-records.yml`, which a test forbids
 #:   editing: reporting a defect nobody may repair is noise.
 #: * `dev/TODO.md` and `dev/LOG.md` are OUT. `TODO.md` is GENERATED from the
@@ -69,7 +69,7 @@ SEARCHED = (
     "config/**/*.yml",
     "dev/reference/**/*.md",
     "dev/tasks/*.md",
-    "dev/decisions/*.md",
+    "dev/records/decisions/*.md",
     "docs/**/*.md",
     "docs/**/*.qmd",
     "README.md",
@@ -159,7 +159,7 @@ _RENAME_MAP_NAME_RE = re.compile(r"(_MAP|_MAPPING|RENAMES?|_OLD_TO_NEW)$")
 #:   neighbour moved. A table matcher fires on a correct record, in the very
 #:   file this check was filed over. Recognising the table would take a header
 #:   convention the repo does not have.
-#: * **`--map old=new` arguments.** Every instance is inside `dev/milestones/**`,
+#: * **`--map old=new` arguments.** Every instance is inside `dev/records/milestones/**`,
 #:   which is out of scope as a sealed record, so the form has no observable
 #:   population to floor against. A floor of 1 is the fail-open shape `D-14.5`
 #:   forbids, so the form is declared missing rather than implemented blind.
@@ -308,7 +308,7 @@ def _prose_rename_forms(root: Path):
     for glob in (
         "dev/reference/**/*.md",
         "dev/tasks/*.md",
-        "dev/decisions/*.md",
+        "dev/records/decisions/*.md",
         "docs/**/*.md",
         "docs/**/*.qmd",
         "README.md",

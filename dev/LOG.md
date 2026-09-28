@@ -1,9 +1,9 @@
 # LOG
 
 Closure ledger. One row per board item closed since the board was adopted
-(2026-08-07). Work closed BEFORE that lives in `followups-archive.md`, which is
-the pre-board ledger — this file is deliberately not backfilled with IDs the
-board never issued.
+(2026-08-07). Earlier work is recoverable from the pre-board record at commit
+`45e3a564`; this file is deliberately not backfilled with IDs the board never
+issued.
 
 > **A row is at most three short sentences in plain language: what closed, why,
 > and where anything durable now lives.** A finding worth keeping —

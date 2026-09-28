@@ -10,7 +10,7 @@ Origin: an owner review of `test_case/test_rapid` on 2026-09-17, which asked
 three questions of the generated tree. Two of them are these two changes; the
 third (the experiment's `config/` bin holding five machine-written JSON
 documents) is boarded, not done — see
-[`t2609171500`](../../tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md).
+[`t2609171500`](../../../tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md).
 
 ## Event 1 — the snapshot moves into the workflow's own directory
 

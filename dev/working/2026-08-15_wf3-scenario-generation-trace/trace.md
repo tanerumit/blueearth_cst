@@ -252,7 +252,7 @@ absence from the table is a declaration gap, not a zero.
 
 **The `fao` branch applies change factors ON THE FLY, at each timestep, and
 materialises no perturbed forcing at all.** That is recorded in
-`dev/reviews/2026-08-13_fao-branch-assessment.md` §4.2 as one of the two ideas
+`dev/records/reviews/2026-08-13_fao-branch-assessment.md` §4.2 as one of the two ideas
 worth keeping regardless of the code, and the assessment explicitly flags that
 it is *the opposite* of what WF3 does — WF3 writes per-member netCDFs and wraps
 them in `temp()` — with the note that "if the on-the-fly approach is adopted

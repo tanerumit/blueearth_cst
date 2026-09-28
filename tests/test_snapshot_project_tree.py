@@ -151,7 +151,7 @@ def _tree(tmp_path):
 
     Both sides are in TODAY's layout. Until 2026-08-11 this fixture was
     pre-migration and these tests passed `--map r09`; that one-way map is
-    retired (`dev/reviews/2026-08-11_test-suite-bloat-assessment.md` Â§6a) and
+    retired (`dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md` Â§6a) and
     the only map left is the post-migration inventory.
     """
     proj = tmp_path / "proj"

@@ -224,7 +224,7 @@ the candidate dependency is absent. Next is concrete adapter/dependency and
 validation-report/identity review, followed by measured implementation acceptance.
 No production change, new fit or baseline execution occurred in this assessment.
 
-**Production-adapter design at G1 — 2026-09-13:** [v1 and run state](../../../working/design-runs/gf15-production-adapter/status.md)
+**Production-adapter design at G1 — 2026-09-13:** [v1 and run state](../../../../working/design-runs/gf15-production-adapter/status.md)
 are ready for the owner's framing choice after scientific approval (zero
 blocking/major, two minor). Recommended provisional-use C integration includes
 the metadata/report gap, immutable identities and old-set compatibility.

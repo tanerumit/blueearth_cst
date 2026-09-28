@@ -18,7 +18,7 @@
   layer. HM-6b (per-run warm state) and HM-7 (metric-set/1 tables) skip by
   name since 2026-09-24: current WF4 writes neither artifact.
 
-Source of record: ``dev/milestones/p32b/interchange-contracts-design.md`` §5.5 and the two
+Source of record: ``dev/records/milestones/p32b/interchange-contracts-design.md`` §5.5 and the two
 seam docs ``dev/reference/contracts/*-seam.md``.
 """
 
@@ -135,7 +135,7 @@ def _fixture_present() -> bool:
 #
 # That is not hypothetical and it is not transient: the primary checkout's
 # fixture is deliberately pre-R14 -- Gate 5 kept it as the counterfactual it
-# compared the migrated tree against (`dev/milestones/r14/config-shape-gate5.md`)
+# compared the migrated tree against (`dev/records/milestones/r14/config-shape-gate5.md`)
 # -- so it will stay that way, and refreshing it would destroy the reference.
 # Guard the one schema-dependent case rather than widening `_fixture_present`,
 # which would skip the sixteen that a pre-R14 tree still answers correctly.

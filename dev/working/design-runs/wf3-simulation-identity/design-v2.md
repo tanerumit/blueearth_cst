@@ -2,7 +2,7 @@
 
 > **design-v2**, run `wf3-simulation-identity`, milestone R12. Genre:
 > **workflow-spec**. Scope authority:
-> `dev/milestones/r12/simulation-identity-intake.md` (frozen). Measurements this
+> `dev/records/milestones/r12/simulation-identity-intake.md` (frozen). Measurements this
 > document is bound by: `dev/working/design-runs/wf3-simulation-identity/probe-p1-p2.md`.
 > Owner rulings this revision implements: R-1 .. R-6 (`status.md` § G1). The E18
 > precondition (R-6) is discharged in
@@ -1987,13 +1987,13 @@ sites]. This design's replacement fixes it; it would need fixing regardless.
 
 ### 5.10 The superseding decision record — C24, C28, and why not C25
 
-**Mechanism.** `dev/milestones/r09/wf3-change-requests.md` is in
+**Mechanism.** `dev/records/milestones/r09/wf3-change-requests.md` is in
 `dev/reference/sealed-records.yml` and `tests/test_sealed_records.py` fails any
 edit to it. So the record is **superseded, never edited**, by a new ADR under
-`dev/decisions/` — the next free number is **0009** (`dev/decisions/` currently
+`dev/records/decisions/` — the next free number is **0009** (`dev/records/decisions/` currently
 runs 0001–0008), filed as
-`dev/decisions/0009-one-run-identity-with-declared-grain.md` and indexed in
-`dev/decisions/index.md`.
+`dev/records/decisions/0009-one-run-identity-with-declared-grain.md` and indexed in
+`dev/records/decisions/index.md`.
 
 **This section specifies that record's content. Writing it is a post-G2 act**
 (§8's authority note).
@@ -2341,7 +2341,7 @@ output filenames, column labels in `rule all` output tables, hydromt catalog
 source names, and fixture paths read by `check_baseline.py` — this change touches
 all four.
 
-**Note to be written:** `dev/milestones/r12/migration_scenario-identity.md`.
+**Note to be written:** `dev/records/milestones/r12/migration_scenario-identity.md`.
 No user-facing `docs/migration-*.md` guide is required: production `project_dir`
 outputs are regenerated, not migrated, and no config key a user writes changes
 name. (If a user is holding a WF3 results file for an external consumer, the

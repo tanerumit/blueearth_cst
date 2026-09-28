@@ -70,7 +70,7 @@ that adequacy by default. Owner choice remains pending.
 | E7 | untestable as stated | The independent readiness verdict accepts attempt-2 and binds its adapter, controls and environment. Production preservation cannot yet be observed. See domain-2; the settling observation is production parity and discriminating mutant evidence on each supported platform. |
 
 Evidence abbreviations above resolve through the design/intake register under
-`dev/milestones/r12/implementation/evidence/`. The accepted candidate design,
+`dev/records/milestones/r12/implementation/evidence/`. The accepted candidate design,
 R12 sections 7.5-7.6/8.4, readiness adapter, independent verdict and effective
 environment were inspected against the proposed contract and current reducer /
 planner / import-inventory seams.

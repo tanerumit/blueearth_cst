@@ -27,7 +27,9 @@ from blueearth_cst.shared.config_composition import RETIRED_KEYS, T1_TOP_LEVEL
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 MAPPING_PATH = REPO_ROOT / "config" / "migrations" / "v1_to_v2.yml"
-REGISTER_PATH = REPO_ROOT / "dev" / "milestones" / "r14" / "config-shape-scoping.md"
+REGISTER_PATH = (
+    REPO_ROOT / "dev" / "records" / "milestones" / "r14" / "config-shape-scoping.md"
+)
 
 #: Every transform the rewriter must implement. A mapping naming one outside
 #: this set is a row nothing can execute.

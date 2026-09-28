@@ -14,7 +14,7 @@ pytestmark = pytest.mark.workflow_contract
 
 FIXTURE = (
     Path(__file__).resolve().parents[1]
-    / "dev/milestones/r12/implementation/feasibility/p2b.smk"
+    / "dev/records/milestones/r12/implementation/feasibility/p2b.smk"
 )
 
 

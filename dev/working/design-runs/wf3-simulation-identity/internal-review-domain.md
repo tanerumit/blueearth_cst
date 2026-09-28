@@ -326,7 +326,7 @@ findings:
 ## Premise dispositions
 
 Dispositions are against the evidence register of
-`dev/milestones/r12/simulation-identity-intake.md` (revision 2). Where a row is
+`dev/records/milestones/r12/simulation-identity-intake.md` (revision 2). Where a row is
 `supported`, any finding attached to it lands on the design's **inference** from
 the row, not on the row.
 

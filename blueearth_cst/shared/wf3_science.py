@@ -163,7 +163,7 @@ def slugify_window(start, end) -> str:
     """Render a window ``(start, end)`` to a compact ``YYYYMMDD_YYYYMMDD`` slug.
 
     Builds the dataset-store key component for the wf3 historical-climate store
-    (dev/milestones/p31/experiment-structure-design.md §4/§4c/§4d). The store dir is
+    (dev/records/milestones/p31/experiment-structure-design.md §4/§4c/§4d). The store dir is
     ``data/climate/historical/<clim_source>_<start>_<end>/`` where
     ``<start>``/``<end>`` are this function's output. The window endpoints are ISO
     ``YYYY-MM-DDTHH:MM:SS``; ``:`` is illegal in Windows paths, so time-of-day and

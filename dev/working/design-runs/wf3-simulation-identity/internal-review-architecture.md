@@ -412,10 +412,10 @@ supports.
   untouched that breaks (arch-3), and HM-7's drops live assertions (arch-4). The six
   one-line path substitutions are fine.
 - **Gap 8 — closed in structure, incomplete as an engineering object.** The
-  supersession mechanism is right (a new ADR under `dev/decisions/`, next free
-  number **0009** — confirmed, `dev/decisions/` runs 0001-0008 plus `index.md`), the
+  supersession mechanism is right (a new ADR under `dev/records/decisions/`, next free
+  number **0009** — confirmed, `dev/records/decisions/` runs 0001-0008 plus `index.md`), the
   sealed record is correctly left unedited, the migration-note path
-  `dev/milestones/r12/migration_scenario-identity.md` matches `naming.md` §7's
+  `dev/records/milestones/r12/migration_scenario-identity.md` matches `naming.md` §7's
   mandated `migration_<topic>.md` form and the nine existing notes, and §5.10's
   reason-by-reason supersession of C24/C28 with C25 explicitly retained is
   well-built. What is not closed is the commit inventory (arch-6) and rule 3.09's

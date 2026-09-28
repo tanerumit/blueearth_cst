@@ -19,7 +19,7 @@ index 1e32b4b3..fbc5aff3 100644
 +> authoritative findings: `external-review-r1.md`, `ext1-1` through `ext1-4`.
  >
  > **Scope authority.** The frozen
- > `dev/milestones/r12/simulation-identity-intake.md`; owner rulings R-1 through
+ > `dev/records/milestones/r12/simulation-identity-intake.md`; owner rulings R-1 through
  > R-6 in `status.md`; and approved addendum v2 in
  > `scope-expansion-2026-09-09.md`; and the G1-v3 correction ruling dated
 -> 2026-09-09. This revision supersedes `design-v3.md` as the proposed design.

@@ -63,7 +63,7 @@ No independent savings/cost comparison is available.
 - [done] Round2 trigger check — no blocking findings, hence no blocking fix changed a mechanism; no blocking/major finding rejected. ext1-1 accepts the offered disclosure alternative (b); declining alternative (a) is not rejection of the finding. Round2 waived; new mechanisms require scoped verification.
 - [done] 6-scoped-verification — scoped-review-v3.md approves exact design-v3.md, zero blocking/major/minor findings; verifies all10 resolutions and round2 waiver, changed mechanisms and evidence premises. Requested GPT-6 Astra medium; effective settings unverified. Scoped reviewer x1, in addition to previously recorded dispatch counts.
 - [done] G2 — owner "yes I approve it" on2026-09-14 approves exact reviewed v3 for finalization and implementation handoff.
-- [done] 7-finalize — accepted design in dev/milestones/r12/gf15-production-adapter-design.md; original review archive in gf15-production-adapter-review beside it; four-stage implementation brief created. D1-D8 exact text preserved. Requested GPT-6 Astra medium author x4 total; effective settings unverified.
+- [done] 7-finalize — accepted design in dev/records/milestones/r12/gf15-production-adapter-design.md; original review archive in gf15-production-adapter-review beside it; four-stage implementation brief created. D1-D8 exact text preserved. Requested GPT-6 Astra medium author x4 total; effective settings unverified.
 
 ## Gates
 

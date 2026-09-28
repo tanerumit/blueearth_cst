@@ -6,8 +6,8 @@
 # plain importable directory rather than an installed distribution.
 #
 # That restraint is the point. Real packaging (O-14 decision 2) would reverse a
-# reviewed decision recorded in dev/milestones/r06/structural-refactor-design.md:368-376,
-# so it needs a superseding record in dev/decisions/ rather than arriving as a
+# reviewed decision recorded in dev/records/milestones/r06/structural-refactor-design.md:368-376,
+# so it needs a superseding record in dev/records/decisions/ rather than arriving as a
 # side effect of wanting pytest settings. Decision 1 -- this file -- costs one
 # root file, adds no dependency, and reverses no contract.
 #
@@ -16,7 +16,7 @@
 # the manifest here was assessed and rejected -- it churns a 100+ line manifest
 # and buys nothing.
 #
-# Assessment: dev/reviews/2026-07-25_post-r6-assessment.md § O-14.
+# Assessment: dev/records/reviews/2026-07-25_post-r6-assessment.md § O-14.
 
 [tool.pytest.ini_options]
 # Where tests live, so a bare `pytest` behaves like the documented `pytest tests/`.

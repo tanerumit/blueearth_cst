@@ -29,7 +29,9 @@ import pytest
 from blueearth_cst.experiment import gev_lmoments as gev
 
 REPO = Path(__file__).resolve().parents[1]
-READINESS = REPO / "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness"
+READINESS = (
+    REPO / "dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness"
+)
 CONTROLS = READINESS / "results/attempt-2/numerical-controls.json"
 CANDIDATE = READINESS / "candidate_adapter.py"
 

@@ -13,7 +13,7 @@ recommends reviewing a provisional-use adapter; the [readiness report](evidence/
 identifies incomplete validation metadata and missing candidate dependency.
 Production integration and milestone sealing remain open.
 
-The [production-adapter review](../../../working/design-runs/gf15-production-adapter/status.md)
+The [production-adapter review](../../../../working/design-runs/gf15-production-adapter/status.md)
 has G1 Option A approval on 2026-09-13. V3 resolves all10 domain/risk,
 external and promoted-panel findings. Independent scoped verification approves
 v3 with zero findings after an explicit round2 waiver; owner G2 approval was

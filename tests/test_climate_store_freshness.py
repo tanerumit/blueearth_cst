@@ -19,7 +19,7 @@ an option in a unit suite — it would fetch era5. The property under test is th
 input **edge**, which the mtime trigger exercises directly.
 
 Data behind an unchanged catalog entry is deliberately OUT of scope (see
-``dev/milestones/r07/migration_project-layout.md`` §2f); the escape hatch is
+``dev/records/milestones/r07/migration_project-layout.md`` §2f); the escape hatch is
 ``snakemake --forcerun extract_climate_datasets``.
 """
 

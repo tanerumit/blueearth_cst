@@ -20,12 +20,12 @@ updated: 2026-09-27
 
 An owner review of `test_case/test_rapid` on 2026-09-17 asked three questions of
 the generated tree. Two were answered by shipping
-[migration_config-snapshots.md](../milestones/post-r12/migration_config-snapshots.md);
+[migration_config-snapshots.md](../records/milestones/post-r12/migration_config-snapshots.md);
 this is the third. The owner's reading was: *"these don't seem to be user-facing
 files but more for machine-reading and records."* That reading is **correct by
 the criterion this repo already wrote down** for the `_engine/` bins -- "the
 files a workflow writes so it can refuse a stale run, rather than anything you
-open". The [post-R12 migration's event 6](../milestones/post-r12/migration_scenario-tree.md)
+open". The [post-R12 migration's event 6](../records/milestones/post-r12/migration_scenario-tree.md)
 records that boundary. What blocks this separate config move is cost, not the reasoning.
 
 ## The shape that works, and the one that does not

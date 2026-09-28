@@ -2,7 +2,7 @@
 """Unit tests for ``blueearth_cst/projections/fetch_gcm_raw.py``.
 
 The module had NO coverage until 2026-08-12
-(`dev/reviews/2026-08-11_test-suite-bloat-assessment.md` §4) and could not have
+(`dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md` §4) and could not have
 any: 336 lines with **zero functions**, the whole body inside
 ``if "snakemake" in globals():``. Its decisions were checked by running the
 pipeline or not at all. The same commit lifts the pure ones out, by the argument

@@ -2,7 +2,7 @@
 
 ### Context
 
-Canonical rules: [AGENTS.md](../../../../AGENTS.md). This is one bounded implementation unit, delivered as an artifact; it is not the three-stage qualification program.
+Canonical rules: [AGENTS.md](../../../../../AGENTS.md). This is one bounded implementation unit, delivered as an artifact; it is not the three-stage qualification program.
 
 - Governing contract: [accepted design](../gf15-alternative-estimator-design.md), D1–D6, derived from archived v4 SHA-256 `90ce735af1c15afb964194c78a24f47ecc0bc7f62d315d0fe5d22f70f6792ee9`. Read its Inputs, Method, Validation regime and Uncertainty treatment before implementation.
 - [G2 approval](../gf15-alternative-estimator-review/status.md#g2-approved--2026-09-12) on 2026-09-12 releases finalization and this brief only. Read the [scoped approval](../gf15-alternative-estimator-review/scoped-review-v4.md), especially Decimal rounding, and [round-2 review](../gf15-alternative-estimator-review/external-review-r2.md) for the resolved failure mechanism. No execution is authorized by this document.

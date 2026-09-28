@@ -88,4 +88,4 @@ runners. GF-15's separate criteria/owner gate and milestone-seal comparisons
 remain outside this P2 acceptance.
 
 The user-facing current behavior is documented in
-[WF3 retained handoffs](../../../../../../docs/wf3-retained-handoffs.md).
+[WF3 retained handoffs](../../../../../../../docs/wf3-retained-handoffs.md).

@@ -1,6 +1,6 @@
 """Unit tests for blueearth_cst.shared.snake_utils.validate_experiment_name.
 
-The §2b test matrix (dev/milestones/p31/experiment-structure-design.md): the validator is
+The §2b test matrix (dev/records/milestones/p31/experiment-structure-design.md): the validator is
 called once at run_stress_test.smk parse time, before exp_dir is built,
 so a malformed or adversarial experiment_name can never introduce a path
 component, escape the experiments/ dir, or collide via normalization. Uppercase

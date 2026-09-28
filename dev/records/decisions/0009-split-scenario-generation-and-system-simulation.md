@@ -64,8 +64,8 @@ enforce the complete operation/target matrix before DAG execution.
 
 - [Accepted design](../milestones/r12/wf3-simulation-identity-design.md)
 - [P3 implementation brief](../milestones/r12/implementation/phase-3-workflow-extraction.md)
-- [Workflow migration](../../docs/migration-workflow-names.md)
-- [Retained handoffs](../../docs/wf3-retained-handoffs.md)
+- [Workflow migration](../../../docs/migration-workflow-names.md)
+- [Retained handoffs](../../../docs/wf3-retained-handoffs.md)
 
 This supersedes the former WF3 ownership and path clauses identified as C24,
 C25 and C28 by R12. Their sealed records remain unchanged.

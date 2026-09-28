@@ -9,7 +9,7 @@
 > authoring/review state and does not replace the source-code baseline.
 >
 > **Scope authority.** The frozen
-> `dev/milestones/r12/simulation-identity-intake.md`; owner rulings R-1 through
+> `dev/records/milestones/r12/simulation-identity-intake.md`; owner rulings R-1 through
 > R-6 in `status.md`; and approved addendum v2 in
 > `scope-expansion-2026-09-09.md`; and the G1-v3 correction ruling dated
 > 2026-09-09. This revision supersedes `design-v3.md` as the proposed design.
@@ -23,7 +23,7 @@
 >
 > **Lifecycle.** Temporary while the design-review run is open. If accepted, the
 > maintained-current destination is
-> `dev/milestones/r12/wf3-simulation-identity-design.md`; its revision history is
+> `dev/records/milestones/r12/wf3-simulation-identity-design.md`; its revision history is
 > append-only. Prior versions and review artifacts remain historical evidence.
 >
 > **Normative-body budget.** Comparable accepted designs range from 1,041 lines

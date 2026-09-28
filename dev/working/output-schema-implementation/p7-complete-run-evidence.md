@@ -43,4 +43,4 @@ Honor the master brief's human gate and shared constraints. Do not infer complet
 ## Completion record
 
 P7 acceptance is recorded in
-[`dev/milestones/r12/implementation/evidence/p7/complete-run-record.md`](../../milestones/r12/implementation/evidence/p7/complete-run-record.md).
+[`dev/records/milestones/r12/implementation/evidence/p7/complete-run-record.md`](../../records/milestones/r12/implementation/evidence/p7/complete-run-record.md).

@@ -136,7 +136,7 @@ and the WF2/WF3 blast radius has not been checked.
 
 ## Refs
 
-- `dev/decisions/0007-draw-basin-area-from-the-spatial-foundation.md` — records the move and names this as its known cost. Its consequences still say the fix is to have 1.08 consume the layers; the 2026-08-11 ruling supersedes that, and the ADR needs the one-line correction listed above.
+- `dev/records/decisions/0007-draw-basin-area-from-the-spatial-foundation.md` — records the move and names this as its known cost. Its consequences still say the fix is to have 1.08 consume the layers; the 2026-08-11 ruling supersedes that, and the ADR needs the one-line correction listed above.
 - `dev/scripts/stage_data.yml` — the three entries added by `360f5cb`, with their field inventories. No `columns` filter on any of them: `deltares_data.yml` applies `rename` and `unit_mult` to named fields, and a column list would be a hand-maintained second copy of that mapping.
 - `blueearth_cst/shared/plot_map.py::load_spatial_basin_layers` — its docstring points here.
 - **`lakes` is a stale name model-side.** hydromt_wflow 1.0.2 has no `lakes` geom: `setup_lakes` became `setup_reservoirs_no_control`, and the geoms it writes are `meta_reservoirs_no_control`, `meta_reservoirs_simple_control` and `glaciers`. Data-side the names come from the SOURCES instead (`hydro_lakes` → `lakes`, `hydro_reservoirs` → `reservoirs`, `rgi` → `glaciers`) and are physically meaningful — a further argument for drawing the figure from the foundation rather than from the model's vocabulary.

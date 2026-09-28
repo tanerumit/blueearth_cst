@@ -34,7 +34,7 @@ Copy step first: whether 3.09 survives decides whether `store_` enters the
 | 3 | `feat(console): show WF3 pre-DAG steps` | Overview rows 3.04–3.06 in `shared/console_style.py` / WF3 banner, labelled as run before the DAG; on `--dry-run` they must not claim done. Remove the provisional `after checkpoint` state (check WF0–WF2/WF4 use first), add the migration note, prove exact counts for fresh and reuse runs; closes `t2609191457` | 2.5–3 h |
 | 4 | `docs(rule-index): WF3 table matches code` | `rule-index.md` WF3 section; closes `t2609171940` | 30 min |
 
-Sealed records (`dev/milestones/`, `dev/working/` design runs) are not swept;
+Sealed records (`dev/records/milestones/`, `dev/working/` design runs) are not swept;
 check `dev/reference/sealed-records.yml` before touching any `dev/` file.
 
 ## Validation

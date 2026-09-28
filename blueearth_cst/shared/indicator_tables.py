@@ -349,7 +349,7 @@ RETIRED_EXPERIMENT_KEYS = {
             "downstream aggregates as it likes. Delete the line; nothing "
             "replaces it."
         ),
-        "note": "dev/milestones/r11/migration_indicator-tables.md",
+        "note": "dev/records/milestones/r11/migration_indicator-tables.md",
     },
     "Tpeak": {
         "existing_results": "unchanged",
@@ -361,14 +361,14 @@ RETIRED_EXPERIMENT_KEYS = {
             "Delete the line. A different design standard is a toolbox edit, "
             "which re-names the indicator and is meant to be visible."
         ),
-        "note": "dev/reviews/2026-08-11_test-suite-bloat-assessment.md",
+        "note": "dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md",
     },
     "Tlow": {
         "existing_results": "unchanged",
         "why": (
             "As Tpeak: now indicator_tables.RETURN_PERIOD_LOW_YR (2). Delete the line."
         ),
-        "note": "dev/reviews/2026-08-11_test-suite-bloat-assessment.md",
+        "note": "dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md",
     },
 }
 

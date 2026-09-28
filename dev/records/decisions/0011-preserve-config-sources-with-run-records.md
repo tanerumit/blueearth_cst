@@ -27,7 +27,7 @@ dataset/environment bundle is not required.
 Replace the separate composed snapshot with one generated `run_record.yml` and
 a `sources/` archive of exact source files. Keep records owned by their workflow
 or scientific artifact. The owner accepted the reviewed P0 contract on
-2026-09-21; [the selected schema](../working/complete-run-output-schema.md#10-selected-p0-contract)
+2026-09-21; [the selected schema](../../working/complete-run-output-schema.md#10-selected-p0-contract)
 governs versions, digests, path resolution, publication and recovery. The
 implementation has not yet been completed.
 
@@ -248,13 +248,13 @@ elevation or preparation code changes.
 
 ### Related
 
-- [Current snapshot writer](../../blueearth_cst/model/copy_config_files.py)
-- [Configuration projections and digests](../../blueearth_cst/shared/provenance.py)
-- [Artifact-local snapshot writer](../../blueearth_cst/shared/workflow_config_snapshot.py)
+- [Current snapshot writer](../../../blueearth_cst/model/copy_config_files.py)
+- [Configuration projections and digests](../../../blueearth_cst/shared/provenance.py)
+- [Artifact-local snapshot writer](../../../blueearth_cst/shared/workflow_config_snapshot.py)
 - [ADR 0009: generation and simulation ownership](0009-split-scenario-generation-and-system-simulation.md)
 
-- [All-workflow invocation writer](../../scripts/run_workflows.py)
-- [Direct simulation invocation writer](../../scripts/simulate_system.py)
+- [All-workflow invocation writer](../../../scripts/run_workflows.py)
+- [Direct simulation invocation writer](../../../scripts/simulate_system.py)
 
 ### Revisions
 

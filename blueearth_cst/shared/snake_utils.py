@@ -288,7 +288,7 @@ def file_digest_or_absent(path) -> str:
     """Return the SHA-256 hex digest of a file's bytes, or ``"ABSENT"``.
 
     Absence-tolerant digest helper for the wf3 drift guard's params
-    (dev/milestones/p31/experiment-structure-design.md §3b/§3c, ext2-2). Called at
+    (dev/records/milestones/p31/experiment-structure-design.md §3b/§3c, ext2-2). Called at
     Snakefile parse time for the wf1/wf2 project-snapshot digests, so a fresh
     project (no snapshot yet) still parses, ``--dry-run``s, and ``--unlock``s
     cleanly — snapshot absence surfaces at the guard *rule* via its
@@ -400,7 +400,7 @@ def validate_experiment_name(name: str, project_dir) -> str:
     """Validate ``experiment_name`` as a safe ``experiments/<name>/`` path segment.
 
     Centralized slug validation for the WF4 experiment subtree
-    (dev/milestones/p31/experiment-structure-design.md §2b). Called once at
+    (dev/records/milestones/p31/experiment-structure-design.md §2b). Called once at
     simulation configuration preflight, BEFORE ``exp_dir`` (and every
     derived output/params path) is built, so all paths are constructed only from
     a vetted value. Parse-time is correct here: a malformed name makes the entire
@@ -684,7 +684,7 @@ class SpatialUnitsRule:
     Named ``_rule``, not ``_spec``: the object holds a rule's script, inputs,
     outputs and params, so it IS a rule definition minus its labels. This was
     the first of the three to carry the suffix; the other two joined it in the
-    R10 step-6 sweep (``dev/followups-archive.md`` ``[R10-7]``), so the family is
+    R10 step-6 sweep (``pre-board record 45e3a564`` ``[R10-7]``), so the family is
     uniform again.
 
     **Name the next one ``<thing>_rule``.** ``_contract`` was rejected — this

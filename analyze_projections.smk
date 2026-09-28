@@ -13,7 +13,7 @@ from snakemake.exceptions import WorkflowError
 
 # Shared helpers live in blueearth_cst/; make them importable regardless of the working
 # directory by prepending this Snakefile's own directory to sys.path.
-# See dev/milestones/r03/model-builder-design.md §3.
+# See dev/records/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_BASIN_INDEX, DEFAULT_HYDROGRAPHY, catalog_root, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, listed, patch_psutil_windows_benchmark, region_rule, resolve_water_year_start, spatial_units_rule, warning_count, window_year_pair
@@ -929,7 +929,7 @@ rule all:
 # order).
 #
 # This settles a deferral rather than skipping it. AGENTS.md and
-# dev/milestones/r04/climate-projections-design.md §3 recorded it as "stale insurance,
+# dev/records/milestones/r04/climate-projections-design.md §3 recorded it as "stale insurance,
 # removal deferred to a task that first encodes the ambiguity-sensitive config
 # shapes as regression tests". The 2026-07 dry-run evidence stands (it constrained
 # nothing on the tests fixture or a reduced config), and the merge removes the
@@ -985,7 +985,7 @@ rule delineate_subbasins_and_rivers:
 #
 # Stage A splits into fetch -> reduce (design revision 6) because the two have
 # wildly different costs and different invalidation causes. Measured 2026-07-30
-# (dev/milestones/r08/2026-07-30_wf2-fetch-reduce-benchmark.md): opening one remote source
+# (dev/records/milestones/r08/2026-07-30_wf2-fetch-reduce-benchmark.md): opening one remote source
 # ~1142 s, transferring its data ~19 s, reducing it ~0.2 s, raw slice 0.07 MB. So a
 # reduction edit used to cost a full re-download of nine sources; now it re-reads
 # local disk.
@@ -1316,7 +1316,7 @@ rule plot_climate_projections:
 # re-run only the re-run rules have parts, so the merged log rewrites with the
 # untouched sections marked "no part from this run" rather than resurrecting text
 # it no longer has. That is the same trade `merge_benchmarks` already makes
-# (dev/followups-archive.md R7-9) — the artifact describes the run that produced it, not
+# (pre-board record 45e3a564 R7-9) — the artifact describes the run that produced it, not
 # an accumulated history.
 #
 # WF1 (1.18) and WF3 (3.18) declare the same rule against the same script; only

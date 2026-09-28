@@ -2,12 +2,12 @@
 
 One folder per milestone, holding its design, plan, review, migration,
 and evidence documents. Narrative and rationale live in
-[`../roadmap.md`](../roadmap.md); this is the file index.
+[`../../roadmap.md`](../../roadmap.md); this is the file index.
 
 Most folders here are sealed milestones. A folder is also created when a
 milestone is **registered** — its design accepted but not yet implemented — so
 the accepted design has a source-of-record home instead of sitting in
-`../working/`. The `Sealed` column says which is which.
+`../../working/`. The `Sealed` column says which is which.
 
 These folders moved here from the `dev/` root on 2026-08-02. That was a path
 change only — no file was renamed, split, or edited beyond its path prefix, and
@@ -60,7 +60,7 @@ as *scoped 2026-07-24*, so the date column is left blank rather than guessed.
 ## Conventions
 
 - A milestone folder is the default home for that milestone's **promoted
-  working notes** — see the promotion rule in [`../README.md`](../README.md).
+  working notes** — see the promotion rule in [`../README.md`](../../../README.md).
   `r08/` is the fullest example: eighteen falsifier and validation notes, cited
   from shipped modules and tests.
 - Filenames vary by era and are grandfathered. Later milestones converge on

@@ -182,11 +182,11 @@ Every column in §1 except the CSDMS name is a `naming.md` §7 surface — old �
 mapping in a `dev/<milestone>/migration_<topic>.md` note. The CSDMS name is
 §6 tier 1 and cannot be renamed locally at all.
 
-Records so far, all against `dev/milestones/r11/migration_indicator-tables.md`
+Records so far, all against `dev/records/milestones/r11/migration_indicator-tables.md`
 and its banners: the wide → long reshape (2026-08-08), the identifier-first
 column reorder with `realization_id` → `rlz_id` (2026-08-11), and
 `recharge` → `gwr` (2026-08-11). Then
-`dev/milestones/r12/migration_stress-test-lookup.md` (2026-08-16), which removed
+`dev/records/milestones/r12/migration_stress-test-lookup.md` (2026-08-16), which removed
 the two axis columns. Two earlier ones are R9's:
 `migration_indicator-axis-columns.md` (`tavg` → `temp_change`, `prcp` →
 `precip_change`) and `migration_project-tree.md` (`Qstats.csv` →

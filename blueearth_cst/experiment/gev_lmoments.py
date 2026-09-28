@@ -1,7 +1,7 @@
 """Range-normalized sample L-moment GEV estimator (candidate C), typed.
 
 Accepted design D2-D3. This is the production form of the frozen candidate
-`dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/candidate_adapter.py`,
+`dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness/candidate_adapter.py`,
 which is what the 8x qualification was run against: the pinned implementation
 defines parity, so the arithmetic here is a faithful port and not a rewrite.
 

@@ -282,6 +282,15 @@ pixi run python scripts/plot_workflow_dag.py -s simulate_system.smk --configfile
 The graph helper applies the shared simulation target validator. Graphs live
 under the project's `logs/dag/`; simulation graphs include the experiment name.
 
+## Live applications and feedback
+
+Real basin configurations, concise run records, and ignored execution outputs
+live in the separate `cst-cases` repository. Its `README.md` defines the run
+record: case config commit, toolbox commit, workflows, outcome, and evidence
+path. When a case reveals a toolbox defect or reusable practice, link the
+relevant toolbox development task to `cst-cases:applications/<basin>/notes.md`
+and identify the dated run. Record the resulting task or fix in that case note.
+Keep code changes in this repository and case configurations in `cst-cases`.
 ## Testing
 
 The test suite has three explicit tiers. For normal development, run the fast

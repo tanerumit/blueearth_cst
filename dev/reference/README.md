@@ -7,6 +7,7 @@ This is the **stays-true** tier. What happened lives in `../records/milestones/`
 | Path | Holds |
 |---|---|
 | `naming.md` | Prescriptive style guide for identifiers and files, with `MUST` / `SHOULD` / `MAY` normative force |
+| `documentation-guidelines.md` | Audience, placement, accuracy, and review rules for user-facing documentation |
 | `wf0-figure-filename-rule.md` | The WF0 figure filename grammar (`<dataset_scope>_<variable>_<plot_context>_<spatial_scope>`), agreed 2026-08-17. Promoted out of `../working/` on 2026-08-19 — two Snakefiles, a shipped module and a test cite it |
 | `indicator-glossary.md` | Every spelling of every WF4 output variable — config label, CSDMS name, csv code, token, table, metric — plus the metric vocabulary. **Derived** from the code's dicts and checked against them by `tests/test_indicator_glossary.py` |
 | `agent-activation.md` | How roles and skills become available to Claude Code and Codex here, and why the two runtimes differ |

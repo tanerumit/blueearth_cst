@@ -26,13 +26,13 @@ $deltares-teal:  #00a0aa !default;  // accent, callout rules
 $primary:        $deltares-blue !default;
 $link-color:     $deltares-blue !default;
 
-// Light documentation chrome, following FloodAdapt's Quarto layout.
-$navbar-bg:      #f8f9fa !default;
-$navbar-fg:      $deltares-navy !default;
-$navbar-light-color: #555e66 !default;
-$navbar-light-hover-color: $deltares-navy !default;
-$navbar-light-active-color: $deltares-navy !default;
-$navbar-light-brand-color: $deltares-navy !default;
+// Keep BlueEarth's original dark navigation bar.
+$navbar-bg:      $deltares-navy !default;
+$navbar-fg:      #ffffff !default;
+$navbar-light-color: #ffffff !default;
+$navbar-light-hover-color: #ffffff !default;
+$navbar-light-active-color: #ffffff !default;
+$navbar-light-brand-color: #ffffff !default;
 
 // --- Typography ---------------------------------------------------------------
 // A system stack, deliberately: the site must render identically offline, and a
@@ -47,11 +47,11 @@ $toc-font-size:          0.875rem !default;
 /*-- scss:rules --*/
 
 .navbar {
-  border-bottom: 1px solid #e6e8eb;
+  border-bottom: 0;
 }
 
 .navbar-brand {
-  color: $deltares-navy;
+  color: #ffffff;
   font-weight: 700;
 }
 
@@ -72,7 +72,22 @@ $toc-font-size:          0.875rem !default;
   font-weight: 650;
 }
 
-// Sidebar: mark the active page with the brand accent rather than weight alone.
+// Give both levels of the sidebar room to read at documentation scale.
+.sidebar-navigation .sidebar-item-container {
+  padding-block: 0.18rem;
+}
+
+.sidebar-navigation .sidebar-item-text {
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+.sidebar-navigation .sidebar-item-section > .sidebar-item-container .sidebar-item-text {
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+// Mark the active page with the brand accent rather than weight alone.
 .sidebar-navigation .sidebar-item-container .active,
 .sidebar-navigation .sidebar-item-container .show > .menu-text {
   color: $deltares-blue;

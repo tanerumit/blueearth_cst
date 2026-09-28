@@ -67,24 +67,36 @@ website:
   sidebar:
     - title: "User guide"
       style: docked
+      collapse-level: 2
       contents:
-        - guide/quick-start.qmd
-        - guide/configuration.qmd
-        - guide/running.qmd
-        - guide/outputs.qmd
+        - section: "User guide"
+          href: guide/quick-start.qmd
+          contents:
+            - guide/quick-start.qmd
+            - guide/configuration.qmd
+            - guide/running.qmd
+            - guide/outputs.qmd
     - title: "Setup"
       style: docked
+      collapse-level: 2
       contents:
-        - install.md
-        - env_setup_notes.md
+        - section: "Setup"
+          href: install.md
+          contents:
+            - install.md
+            - env_setup_notes.md
     - title: "Technical Manual"
       style: docked
+      collapse-level: 2
       contents:
-        - technical-manual/overview.qmd
-        - technical-manual/assessment-workflow.qmd
-        - technical-manual/models-and-methods.qmd
-        - technical-manual/datasets.qmd
-        - technical-manual/conventions-and-interpretation.qmd
+        - section: "Technical Manual"
+          href: technical-manual/overview.qmd
+          contents:
+            - technical-manual/overview.qmd
+            - technical-manual/assessment-workflow.qmd
+            - technical-manual/models-and-methods.qmd
+            - technical-manual/datasets.qmd
+            - technical-manual/conventions-and-interpretation.qmd
   search: true
   page-footer:
     center: "Deltares · World Bank Global Water Practice — GPL-3.0"

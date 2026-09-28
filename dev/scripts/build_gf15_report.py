@@ -51,20 +51,21 @@ SOURCE_SHA256 = {
     "distr.py": "f8859d11f10c3206e3e5009c1b238a328c6c9215b1cc7436800160fa929bb2ee",
 }
 
-# D5's embedded set, as repository-relative paths.
+# D5's embedded paths are frozen report content. Keep their historical spelling;
+# _read maps them to the records directory without changing the report digest.
 EMBEDDED = (
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/criteria.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/README.md",
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/scientific-handoff.md",
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/individual-cells.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/translation-cells.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/summary.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/failures.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/source-freeze.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/signed-verdict.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness/environment/effective-environment.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/signed-verdict.json",
-    "dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/scientific-handoff.md",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/criteria.json",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/README.md",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/scientific-handoff.md",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/individual-cells.json",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/translation-cells.json",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/summary.json",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/failures.json",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/source-freeze.json",
+    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/signed-verdict.json",
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/environment/effective-environment.json",
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/signed-verdict.json",
+    "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/scientific-handoff.md",
 )
 
 LIMITATIONS = (
@@ -96,7 +97,7 @@ class PackagingError(RuntimeError):
 
 
 def _read(relative: str) -> tuple[bytes, str]:
-    path = REPO / relative
+    path = REPO / relative.replace("dev/milestones/", "dev/records/milestones/", 1)
     if not path.is_file():
         raise PackagingError(f"missing frozen evidence: {relative}")
     data = path.read_bytes()
@@ -112,10 +113,10 @@ def _repo_relative(recorded: str) -> str | None:
     guessed at.
     """
     text = recorded.replace("\\", "/")
-    for marker in ("dev/records/milestones/", "dev/milestones/"):
+    for marker in ("dev/milestones/", "dev/records/milestones/"):
         index = text.find(marker)
         if index >= 0:
-            return text[index:].replace("dev/milestones/", "dev/records/milestones/", 1)
+            return text[index:].replace("dev/records/milestones/", "dev/milestones/", 1)
     return None
 
 
@@ -144,9 +145,7 @@ def _frozen_expectations() -> dict[str, str]:
     conflict between two correct records.
     """
     expected: dict[str, str] = {}
-    results = (
-        "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results"
-    )
+    results = "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results"
 
     def claim(path: str | None, digest: str, origin: str) -> None:
         if path is None:
@@ -249,7 +248,7 @@ def build_report() -> dict:
     by_path = {item["source_path"]: item for item in embedded}
 
     # D5 requires the structured duplicates to agree with the embedded raw text.
-    accuracy = "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x"
+    accuracy = "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x"
     for relative, structured in (
         (f"{accuracy}/criteria.json", criteria),
         (f"{accuracy}/results/summary.json", summary),

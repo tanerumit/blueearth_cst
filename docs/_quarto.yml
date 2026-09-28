@@ -65,26 +65,26 @@ website:
         href: https://github.com/tanerumit/blueearth_cst
         aria-label: "Source on GitHub"
   sidebar:
-    style: docked
-    collapse-level: 1
-    contents:
-      - section: "User guide"
-        contents:
-          - guide/quick-start.qmd
-          - guide/configuration.qmd
-          - guide/running.qmd
-          - guide/outputs.qmd
-      - section: "Setup"
-        contents:
-          - install.md
-          - env_setup_notes.md
-      - section: "Technical Manual"
-        contents:
-          - technical-manual/overview.qmd
-          - technical-manual/assessment-workflow.qmd
-          - technical-manual/models-and-methods.qmd
-          - technical-manual/datasets.qmd
-          - technical-manual/conventions-and-interpretation.qmd
+    - title: "User guide"
+      style: docked
+      contents:
+        - guide/quick-start.qmd
+        - guide/configuration.qmd
+        - guide/running.qmd
+        - guide/outputs.qmd
+    - title: "Setup"
+      style: docked
+      contents:
+        - install.md
+        - env_setup_notes.md
+    - title: "Technical Manual"
+      style: docked
+      contents:
+        - technical-manual/overview.qmd
+        - technical-manual/assessment-workflow.qmd
+        - technical-manual/models-and-methods.qmd
+        - technical-manual/datasets.qmd
+        - technical-manual/conventions-and-interpretation.qmd
   search: true
   page-footer:
     center: "Deltares · World Bank Global Water Practice — GPL-3.0"

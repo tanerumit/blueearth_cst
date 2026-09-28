@@ -1,13 +1,10 @@
 /*-----------------------------------------------------------------------------
   BlueEarth CST documentation site — brand layer.
 
-  Applied over `cosmo`. The site is light-only by ruling (2026-08-21); a dark
-  base was wired first and removed.
+  Applied over `cosmo` in light mode and `darkly` in dark mode.
 
-  This file sets the accent colours, the type scale and the documentation chrome —
-  never `$body-bg` or `$body-color`. Those belong to the base, and leaving them
-  alone is what keeps re-adding a dark mode a two-line edit in `_quarto.yml`
-  rather than a rewrite of this file. Keep it that way.
+  This file sets the accent colours, type scale and documentation chrome.
+  Body colours belong to the base themes.
 
   !! THE THREE BRAND COLOURS BELOW ARE APPROXIMATIONS !!
   They were chosen to sit in the right family, not copied from the Deltares
@@ -53,11 +50,6 @@ $toc-font-size:          0.875rem !default;
 .navbar-brand {
   color: #ffffff;
   font-weight: 700;
-}
-
-.navbar-brand img {
-  height: 1.35rem;
-  margin-right: 0.35rem;
 }
 
 #quarto-sidebar {
@@ -109,4 +101,30 @@ $toc-font-size:          0.875rem !default;
 // The footer sits under the navbar's colour so the page is bracketed.
 .nav-footer {
   border-top: 1px solid #dfe3e8;
+}
+
+.quarto-dark #quarto-sidebar {
+  background: #202830;
+  border-right-color: #3d4750;
+}
+
+.quarto-dark #quarto-document-content h1,
+.quarto-dark #quarto-document-content h2,
+.quarto-dark #quarto-document-content h3 {
+  color: #eef3f7;
+}
+
+.quarto-dark #quarto-document-content h2,
+.quarto-dark #quarto-document-content .h2,
+.quarto-dark #quarto-document-content table > thead,
+.quarto-dark .nav-footer {
+  border-color: #3d4750;
+}
+
+.quarto-dark #quarto-document-content a {
+  color: #65c4f0;
+}
+
+.quarto-dark .sidebar-navigation .sidebar-item-container .active {
+  color: #65c4f0;
 }

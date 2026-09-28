@@ -49,11 +49,10 @@ project:
     #                  which is filed but not yet done -- t2608202351a.
 
 website:
-  title: "BlueEarth CST"
+  title: "Climate Stress Testing (CST) Toolbox"
   description: "Climate stress testing for water systems — the workflow toolbox"
   favicon: _images/favicon.svg
   navbar:
-    logo: _images/favicon.svg
     left:
       - text: "User guide"
         href: guide/quick-start.qmd
@@ -106,22 +105,26 @@ website:
           contents:
             - toolbox-reference/assessment-workflow.qmd
             - toolbox-reference/datasets.qmd
-  search: true
+  search:
+    location: navbar
+    type: textbox
   page-footer:
     center: "Deltares · World Bank Global Water Practice — GPL-3.0"
 
 format:
   html:
-    # Light only, by ruling (2026-08-21). A dark base was wired first and
-    # removed: the site should present one look rather than one the reader has
-    # to choose. Re-adding it is a two-line change back to a `light:`/`dark:`
-    # pair, which is why theme.scss still keeps its hands off $body-bg.
-    theme: [cosmo, theme.scss]
+    theme:
+      light: [cosmo, theme.scss]
+      dark: [darkly, theme.scss]
+    respect-user-color-scheme: true
     toc: true
     toc-depth: 3
     number-sections: false
     code-copy: true
     code-overflow: wrap
+
+language:
+  search-text-placeholder: Search
 
 # The site must never execute anything during a build. A render has no
 # project_dir, no CMIP6 access and no Julia, and a fresh rapid run costs ~73

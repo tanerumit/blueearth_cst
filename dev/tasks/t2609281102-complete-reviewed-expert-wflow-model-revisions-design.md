@@ -4,7 +4,6 @@ type: todo-item
 status: blocked
 effort: 2
 area: wf1 / model revisions
-branch: feat/wflow-improvements
 created: 2026-09-28
 updated: 2026-09-28
 ---
@@ -26,6 +25,6 @@ updated: 2026-09-28
 
 ## Refs
 
-- Resume from `dev/working/design-runs/expert-model-revisions/status.md`; it is the authoritative stage record.
-- Read `dev/working/design-runs/expert-model-revisions/design-v1.md` and `internal-review-domain.md` together at G1. The findings concern fitness-for-purpose selection, prespecified benchmarks and uncertainty, and development versus held-out evaluation labels.
-- The working design is intentionally uncommitted as an unfinished review artifact until the design-review loop reaches its commit gate.
+- Resume from `dev/tasks/t2609281102/status.md`; it is the authoritative stage record.
+- Read `dev/tasks/t2609281102/design-v1.md` and `internal-review-domain.md` together at G1. The findings concern fitness-for-purpose selection, prespecified benchmarks and uncertainty, and development versus held-out evaluation labels.
+- The unfinished review artifacts are checkpointed in this task sidecar for resumption. G1 remains pending; the design has not been accepted.

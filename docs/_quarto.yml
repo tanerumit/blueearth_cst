@@ -5,7 +5,7 @@
 # dev/working/2026-08-19_quarto-docs-site/design.md
 #
 # PHASE 3, in progress (t2608202351b). The site publishes the landing page,
-# setup guide and user guide. The technical manual summarizes current methods
+# setup guide and user guide. The scientific approach and toolbox reference summarize current methods and interfaces
 # without republishing the 2025 note. That note's 38 figures are absent from the
 # repository, so it remains outside the render list (t2608202351). Its GUI and
 # platform chapters remain unpublished by ruling O-1c.
@@ -23,7 +23,8 @@ project:
     # nothing -- silently, with a successful exit and a smaller site.
     - "index.qmd"
     - "guide/*.qmd"
-    - "technical-manual/*.qmd"
+    - "scientific-approach/*.qmd"
+    - "toolbox-reference/*.qmd"
     # Explicit, like everything else here: quarto special-cases a 404.qmd only
     # when it is rendered, and this project enumerates its render targets.
     - "404.qmd"
@@ -58,8 +59,10 @@ website:
         href: guide/quick-start.qmd
       - text: "Setup"
         href: install.md
-      - text: "Technical Manual"
-        href: technical-manual/overview.qmd
+      - text: "Scientific approach"
+        href: scientific-approach/overview.qmd
+      - text: "Toolbox reference"
+        href: toolbox-reference/overview.qmd
     right:
       - icon: github
         href: https://github.com/tanerumit/blueearth_cst
@@ -85,18 +88,26 @@ website:
           contents:
             - install.md
             - env_setup_notes.md
-    - title: "Technical Manual"
+    - title: "Scientific approach"
       style: docked
       collapse-level: 2
       contents:
-        - section: "Technical Manual"
-          href: technical-manual/overview.qmd
+        - section: "Scientific approach"
+          href: scientific-approach/overview.qmd
           contents:
-            - technical-manual/overview.qmd
-            - technical-manual/assessment-workflow.qmd
-            - technical-manual/models-and-methods.qmd
-            - technical-manual/datasets.qmd
-            - technical-manual/conventions-and-interpretation.qmd
+            - scientific-approach/overview.qmd
+            - scientific-approach/models-and-methods.qmd
+            - scientific-approach/conventions-and-interpretation.qmd
+    - title: "Toolbox reference"
+      style: docked
+      collapse-level: 2
+      contents:
+        - section: "Toolbox reference"
+          href: toolbox-reference/overview.qmd
+          contents:
+            - toolbox-reference/overview.qmd
+            - toolbox-reference/assessment-workflow.qmd
+            - toolbox-reference/datasets.qmd
   search: true
   page-footer:
     center: "Deltares · World Bank Global Water Practice — GPL-3.0"

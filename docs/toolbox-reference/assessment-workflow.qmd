@@ -32,4 +32,4 @@ The generated series form a durable collection that can be used by more than one
 
 WF4 runs Wflow-SBM for explicit runs from a ready collection and derives requested indicators from the retained responses.
 It can also calculate a new metric set from completed responses without repeating model simulations.
-Read [Models and methods](models-and-methods.qmd) for the scientific operations, and [Reading the outputs](../guide/outputs.qmd) for the product layout and joins.
+Read [Models and methods](../scientific-approach/models-and-methods.qmd) for the scientific operations, and [Reading the outputs](../guide/outputs.qmd) for the product layout and joins.

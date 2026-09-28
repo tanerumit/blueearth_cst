@@ -1,14 +1,14 @@
 ---
-title: "Scope and approach"
+title: "Scientific approach"
 subtitle: "Scientific basis and interpretation of the BlueEarth Climate Stress Test toolbox"
 format: html
 ---
 
 ## Purpose and audience
 
-This manual is for water-resources modelers and climate-risk practitioners who need to understand what a BlueEarth CST assessment represents before using its results.
-It describes the present five-workflow engine, its models and data, and the conventions needed to interpret a climate response surface.
-For installation and commands, use the [Setup guide](../install.md) and [User guide](../guide/quick-start.qmd).
+These pages are for water-resources modelers and climate-risk practitioners who need to understand what a BlueEarth CST assessment represents before using its results.
+They explain the scientific reasoning, models, and conventions needed to interpret a climate response surface.
+For the five-workflow implementation and its data sources, use the [Toolbox reference](../toolbox-reference/overview.qmd). For installation and commands, use [Setup](../install.md) and the [User guide](../guide/quick-start.qmd).
 
 ## Assessment logic
 
@@ -22,12 +22,10 @@ This is a sensitivity and vulnerability assessment, not a forecast for a particu
 Its rapid, globally supported model setup is suited to first-order screening of river-flow risks, including water availability and high-flow concerns.
 Investment design and site-specific risk estimates require assessment of local data quality, model skill, decision thresholds, and uncertainty appropriate to the decision.
 
-## Read this manual
+## Read about the approach
 
-1. [Assessment workflow](assessment-workflow.qmd) explains the five stages and their dependencies.
-2. [Models and methods](models-and-methods.qmd) explains the hydrological model, weather generation, perturbations, and indicators.
-3. [Datasets](datasets.qmd) identifies the role of each data class and what a source change can affect.
-4. [Conventions and interpretation](conventions-and-interpretation.qmd) explains periods, units, provenance, climate response surfaces, and limits.
+1. [Models and methods](models-and-methods.qmd) explains the hydrological model, weather generation, perturbations, and indicators.
+2. [Conventions and interpretation](conventions-and-interpretation.qmd) explains periods, climate response surfaces, uncertainty, and limits.
 
 The terminology follows the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md).
-That note describes the earlier three-workflow prototype and web application; the pages here describe the current workflow engine.
+That note describes the earlier three-workflow prototype and web application; the [Toolbox reference](../toolbox-reference/overview.qmd) describes the current workflow engine.

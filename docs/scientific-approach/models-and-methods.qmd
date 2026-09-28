@@ -12,7 +12,7 @@ The reference model build is a rapid setup from gridded data rather than a basin
 Optional observed series support evaluation of its historical behavior.
 
 The build settings use HydroMT-Wflow setup methods and Wflow parameter names; the effective model settings are retained with the model output.
-For source selection and its consequences, see [Datasets](datasets.qmd).
+For source selection and its consequences, see [Datasets](../toolbox-reference/datasets.qmd).
 
 ## Weather generation and climate perturbations
 

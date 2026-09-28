@@ -17,6 +17,8 @@
 project:
   type: website
   output-dir: _site
+  resources:
+    - "guide/assets/shape-of-a-run.html"
   render:
     # Globs, not directories. A bare `guide/` matches nothing and renders
     # nothing -- silently, with a successful exit and a smaller site.

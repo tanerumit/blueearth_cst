@@ -8,10 +8,11 @@
     :root { --paper:#f5f5f5; --ink:#2d3142; --muted:#4f5d75; --soft:#7a8399; --rule:#bfc0c0; --accent:#eb6c36; --tint:#fcebe3; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--paper); color:var(--ink); font-family:Geist,"Segoe UI",Arial,sans-serif; }
-    main { max-width:1120px; margin:auto; padding:36px 24px 56px; }
+    main { max-width:1120px; margin:auto; padding:12px 0 0; }
     .eyebrow, .tag, .detail-label { font:600 11px/1.4 "Geist Mono",Consolas,monospace; letter-spacing:.13em; text-transform:uppercase; color:var(--muted); }
     h1 { margin:7px 0 8px; font:400 clamp(30px,4vw,46px)/1.08 "Instrument Serif",Georgia,serif; }
     .intro { margin:0 0 22px; max-width:760px; color:var(--muted); line-height:1.5; }
+    .diagram-scroll { overflow-x:auto; }
     svg { display:block; width:100%; height:auto; overflow:visible; }
     .node { cursor:pointer; outline:none; }
     .node rect { fill:white; stroke:var(--ink); stroke-width:1.5; transition:fill .15s,stroke-width .15s; }
@@ -29,15 +30,12 @@
     .details { border-top:1px solid var(--rule); padding-top:19px; min-height:125px; max-width:780px; }
     .details h2 { font:600 19px Geist,"Segoe UI",Arial,sans-serif; margin:7px 0; }
     .details p { color:var(--muted); line-height:1.5; margin:0; }
-    footer { margin-top:25px; color:var(--soft); font:11px "Geist Mono",Consolas,monospace; }
-    @media (max-width:650px) { main { padding:24px 12px; } .intro { font-size:14px; } .name { font-size:17px; } }
+    @media (max-width:650px) { main { padding-top:8px; } svg { min-width:900px; } }
   </style>
 </head>
 <body>
 <main>
-  <div class="eyebrow">BlueEarth CST · Quick start</div>
-  <h1>The shape of a run</h1>
-  <p class="intro">Five workflows share one project configuration set. Arrows show the all-workflow runner’s execution order; select a workflow to see its role.</p>
+  <div class="diagram-scroll">
   <svg viewBox="0 0 1000 320" role="img" aria-labelledby="chart-title chart-desc">
     <title id="chart-title">Execution order of the five BlueEarth CST workflows</title>
     <desc id="chart-desc">The runner executes analyze_climate, build_model, analyze_projections, generate_scenarios, then simulate_system. Dashed arrows show order, not data dependencies. Analyze_climate is optional; build_model and generate_scenarios supply inputs required by simulate_system.</desc>
@@ -72,12 +70,12 @@
     <text class="caption" x="20" y="261">WF1 + WF3 SUPPLY THE REQUIRED INPUTS TO WF4 · WF2 ONLY OVERLAYS PLAUSIBILITY</text>
     <text class="caption" x="20" y="288">WF0 IS OPTIONAL AND RUNS ALONE WHEN CHOOSING FORCING</text>
   </svg>
+  </div>
   <section class="details" aria-live="polite" aria-atomic="true">
     <div class="detail-label" id="detail-label">How to explore</div>
     <h2 id="detail-title">Select a workflow</h2>
     <p id="detail-text">The dashed arrows show execution order. Simulation requires the model from WF1 and the scenario collection from WF3. WF2 is a plausibility overlay and does not generate scenarios.</p>
   </section>
-  <footer>Standalone diagram draft · Select with click, Enter, or Space</footer>
 </main>
 <script>
   const details = {

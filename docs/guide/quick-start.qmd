@@ -27,15 +27,10 @@ environment. Julia itself must already be available through juliaup; see the
 
 ## The shape of a run
 
-Five workflows share one project configuration set:
+Five workflows share one project configuration set. The arrows show the
+all-workflow runner's execution order. Select a workflow to see what it does.
 
-```{mermaid}
-flowchart LR
-    wf0["Historical climate<br/>optional"]
-    wf1["Build and run Wflow-SBM"] --> wf4["Simulate scenarios<br/>and calculate indicators"]
-    wf3["Generate climate scenarios"] --> wf4
-    wf2["CMIP6 projections<br/>plausibility check"]
-```
+<iframe src="assets/shape-of-a-run.html" title="Interactive diagram of the five workflows in execution order" style="width:100%;height:460px;border:0;" loading="lazy"></iframe>
 
 The model and generated climate scenarios are both needed for the stress test.
 The historical climate comparison is optional; run it on its own when choosing

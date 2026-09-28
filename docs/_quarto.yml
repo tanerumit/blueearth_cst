@@ -52,6 +52,7 @@ website:
   description: "Climate stress testing for water systems — the workflow toolbox"
   favicon: _images/favicon.svg
   navbar:
+    logo: _images/favicon.svg
     left:
       - text: "User guide"
         href: guide/quick-start.qmd
@@ -64,7 +65,7 @@ website:
         href: https://github.com/tanerumit/blueearth_cst
         aria-label: "Source on GitHub"
   sidebar:
-    style: floating
+    style: docked
     collapse-level: 1
     contents:
       - section: "User guide"
@@ -97,7 +98,7 @@ format:
     theme: [cosmo, theme.scss]
     toc: true
     toc-depth: 3
-    number-sections: true
+    number-sections: false
     code-copy: true
     code-overflow: wrap
 

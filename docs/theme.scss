@@ -4,7 +4,7 @@
   Applied over `cosmo`. The site is light-only by ruling (2026-08-21); a dark
   base was wired first and removed.
 
-  This file still sets only the accent colours, the type scale and a few rules —
+  This file sets the accent colours, the type scale and the documentation chrome —
   never `$body-bg` or `$body-color`. Those belong to the base, and leaving them
   alone is what keeps re-adding a dark mode a two-line edit in `_quarto.yml`
   rather than a rewrite of this file. Keep it that way.
@@ -18,7 +18,7 @@
 /*-- scss:defaults --*/
 
 // --- Brand palette (APPROXIMATE — see header) --------------------------------
-$deltares-navy:  #0a2e4d !default;  // navbar, footer
+$deltares-navy:  #0a2e4d !default;  // headings, identity
 $deltares-blue:  #0b7ebb !default;  // primary, links
 $deltares-teal:  #00a0aa !default;  // accent, callout rules
 
@@ -26,11 +26,13 @@ $deltares-teal:  #00a0aa !default;  // accent, callout rules
 $primary:        $deltares-blue !default;
 $link-color:     $deltares-blue !default;
 
-// A dark navbar against the light page: the one surface that carries the
-// brand rather than receding, and the anchor the rest of the palette reads
-// against.
-$navbar-bg:      $deltares-navy !default;
-$navbar-fg:      #ffffff !default;
+// Light documentation chrome, following FloodAdapt's Quarto layout.
+$navbar-bg:      #f8f9fa !default;
+$navbar-fg:      $deltares-navy !default;
+$navbar-light-color: #555e66 !default;
+$navbar-light-hover-color: $deltares-navy !default;
+$navbar-light-active-color: $deltares-navy !default;
+$navbar-light-brand-color: $deltares-navy !default;
 
 // --- Typography ---------------------------------------------------------------
 // A system stack, deliberately: the site must render identically offline, and a
@@ -44,6 +46,32 @@ $toc-font-size:          0.875rem !default;
 
 /*-- scss:rules --*/
 
+.navbar {
+  border-bottom: 1px solid #e6e8eb;
+}
+
+.navbar-brand {
+  color: $deltares-navy;
+  font-weight: 700;
+}
+
+.navbar-brand img {
+  height: 1.35rem;
+  margin-right: 0.35rem;
+}
+
+#quarto-sidebar {
+  background: #f8f9fa;
+  border-right: 1px solid #e0e3e7;
+}
+
+#quarto-document-content h1,
+#quarto-document-content h2,
+#quarto-document-content h3 {
+  color: #27333e;
+  font-weight: 650;
+}
+
 // Sidebar: mark the active page with the brand accent rather than weight alone.
 .sidebar-navigation .sidebar-item-container .active,
 .sidebar-navigation .sidebar-item-container .show > .menu-text {
@@ -51,21 +79,19 @@ $toc-font-size:          0.875rem !default;
   font-weight: 600;
 }
 
-// Section headings carry a hairline in the accent.
+// Section headings use a quiet rule rather than a brand accent.
 #quarto-document-content h2,
 #quarto-document-content .h2 {
-  border-bottom: 1px solid rgba($deltares-teal, 0.35);
+  border-bottom: 1px solid #dfe3e8;
   padding-bottom: 0.25rem;
 }
 
-// Tables are load-bearing in this guide (flag tables, layout tables, digest
-// comparisons), so give the header row the brand tint instead of leaving it
-// indistinguishable from the first data row.
+// Keep table headers distinct with a quiet rule.
 #quarto-document-content table > thead {
-  border-bottom: 2px solid rgba($deltares-blue, 0.5);
+  border-bottom: 1px solid #cfd6dd;
 }
 
 // The footer sits under the navbar's colour so the page is bracketed.
 .nav-footer {
-  border-top: 3px solid $deltares-teal;
+  border-top: 1px solid #dfe3e8;
 }

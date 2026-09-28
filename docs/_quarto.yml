@@ -95,7 +95,6 @@ website:
         - section: "Scientific approach"
           href: scientific-approach/overview.qmd
           contents:
-            - scientific-approach/overview.qmd
             - scientific-approach/models-and-methods.qmd
             - scientific-approach/conventions-and-interpretation.qmd
     - title: "Toolbox reference"
@@ -105,7 +104,6 @@ website:
         - section: "Toolbox reference"
           href: toolbox-reference/overview.qmd
           contents:
-            - toolbox-reference/overview.qmd
             - toolbox-reference/assessment-workflow.qmd
             - toolbox-reference/datasets.qmd
   search: true

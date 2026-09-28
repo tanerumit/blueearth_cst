@@ -34,7 +34,7 @@ from blueearth_cst.experiment.content_identity import (  # noqa: E402
     canonical_json_bytes,
 )
 
-EVIDENCE = REPO / "dev/milestones/r12/implementation/evidence"
+EVIDENCE = REPO / "dev/records/milestones/r12/implementation/evidence"
 ACCURACY = EVIDENCE / "gf15-accuracy-8x"
 READINESS = EVIDENCE / "gf15-lmoments-readiness"
 ASSET = REPO / "blueearth_cst/experiment/data/gf15-accuracy-8x-v1.json"
@@ -53,18 +53,18 @@ SOURCE_SHA256 = {
 
 # D5's embedded set, as repository-relative paths.
 EMBEDDED = (
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/criteria.json",
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/README.md",
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/scientific-handoff.md",
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/individual-cells.json",
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/translation-cells.json",
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/summary.json",
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/failures.json",
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/source-freeze.json",
-    "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/signed-verdict.json",
-    "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/environment/effective-environment.json",
-    "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/signed-verdict.json",
-    "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/scientific-handoff.md",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/criteria.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/README.md",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/scientific-handoff.md",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/individual-cells.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/translation-cells.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/summary.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/failures.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/source-freeze.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results/signed-verdict.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness/environment/effective-environment.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/signed-verdict.json",
+    "dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness/results/independent/scientific-handoff.md",
 )
 
 LIMITATIONS = (
@@ -112,9 +112,11 @@ def _repo_relative(recorded: str) -> str | None:
     guessed at.
     """
     text = recorded.replace("\\", "/")
-    marker = "dev/milestones/"
-    index = text.find(marker)
-    return text[index:] if index >= 0 else None
+    for marker in ("dev/records/milestones/", "dev/milestones/"):
+        index = text.find(marker)
+        if index >= 0:
+            return text[index:].replace("dev/milestones/", "dev/records/milestones/", 1)
+    return None
 
 
 def _checked(relative: str, expected: dict[str, str]) -> dict:
@@ -142,7 +144,9 @@ def _frozen_expectations() -> dict[str, str]:
     conflict between two correct records.
     """
     expected: dict[str, str] = {}
-    results = "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/results"
+    results = (
+        "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/results"
+    )
 
     def claim(path: str | None, digest: str, origin: str) -> None:
         if path is None:
@@ -245,7 +249,7 @@ def build_report() -> dict:
     by_path = {item["source_path"]: item for item in embedded}
 
     # D5 requires the structured duplicates to agree with the embedded raw text.
-    accuracy = "dev/milestones/r12/implementation/evidence/gf15-accuracy-8x"
+    accuracy = "dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x"
     for relative, structured in (
         (f"{accuracy}/criteria.json", criteria),
         (f"{accuracy}/results/summary.json", summary),

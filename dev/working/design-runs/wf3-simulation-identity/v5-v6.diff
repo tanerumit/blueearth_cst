@@ -24,7 +24,7 @@ index fbc5aff3..f63d0e00 100644
 +> authority: owner simplification ruling dated 2026-09-10 in `status.md`.
  >
  > **Scope authority.** The frozen
- > `dev/milestones/r12/simulation-identity-intake.md`; owner rulings R-1 through
+ > `dev/records/milestones/r12/simulation-identity-intake.md`; owner rulings R-1 through
 -> R-6 in `status.md`; and approved addendum v2 in
 -> `scope-expansion-2026-09-09.md`; and the G1-v3 correction ruling dated
 -> 2026-09-09. This revision supersedes `design-v4.md` as the proposed design.

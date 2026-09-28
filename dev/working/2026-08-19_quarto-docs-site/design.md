@@ -286,8 +286,8 @@ returns four live citers:
 | File | Refs | Fix |
 |---|---|---|
 | `AGENTS.md` | 2 | Background §, "(rationale: … §1)"; and the References list |
-| `dev/milestones/r07/migration_project-layout.md` | 1 | ordinary reference update — **not** in `dev/reference/sealed-records.yml`, checked |
-| `dev/milestones/r07/project-layout-design-review-record.md` | 1 | same |
+| `dev/records/milestones/r07/migration_project-layout.md` | 1 | ordinary reference update — **not** in `dev/reference/sealed-records.yml`, checked |
+| `dev/records/milestones/r07/project-layout-design-review-record.md` | 1 | same |
 | `docs/notebooks/README.md`, `docs/notebooks/Climate Stress Test.ipynb` | 1 each | repoint at the new chapter |
 
 Two mechanical passes apply to every chapter: rewrite the 38 `<img>` tags to

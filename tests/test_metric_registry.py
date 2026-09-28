@@ -37,7 +37,7 @@ def frozen_candidate():
 
     path = (
         pathlib.Path(__file__).resolve().parents[1]
-        / "dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness"
+        / "dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness"
         / "candidate_adapter.py"
     )
     if not path.is_file():

@@ -25,11 +25,11 @@ point estimation, not a claim of real-bundle adequacy.
 
 Authoritative inputs, paths relative to repository root:
 
-- `dev/milestones/r12/gf15-alternative-estimator-design.md`: frozen method D1–D6, parameters/defaults; requires separately reviewed production adapter.
-- `dev/milestones/r12/wf3-simulation-identity-design.md`: accepted sections 7.5–7.6 and 8.4; preserve existing R12 interfaces except explicitly designed integration delta.
-- `dev/milestones/r12/implementation/evidence/gf15-lmoments-readiness/`: accepted attempt-2, frozen adapter/reference controls and environment.
-- `dev/milestones/r12/implementation/evidence/gf15-accuracy-8x/`: exact criteria and signed bounded pass; original and 3x failures remain intact.
-- `dev/milestones/r12/implementation/evidence/gf15-production-applicability/`: scientific assessment and measured integration readiness at `d761a65b`.
+- `dev/records/milestones/r12/gf15-alternative-estimator-design.md`: frozen method D1–D6, parameters/defaults; requires separately reviewed production adapter.
+- `dev/records/milestones/r12/wf3-simulation-identity-design.md`: accepted sections 7.5–7.6 and 8.4; preserve existing R12 interfaces except explicitly designed integration delta.
+- `dev/records/milestones/r12/implementation/evidence/gf15-lmoments-readiness/`: accepted attempt-2, frozen adapter/reference controls and environment.
+- `dev/records/milestones/r12/implementation/evidence/gf15-accuracy-8x/`: exact criteria and signed bounded pass; original and 3x failures remain intact.
+- `dev/records/milestones/r12/implementation/evidence/gf15-production-applicability/`: scientific assessment and measured integration readiness at `d761a65b`.
 - `blueearth_cst/experiment/{metric_registry,metric_plan,content_identity,export_wflow_results}.py` and their existing tests: current seams and compatibility behavior.
 
 ## Constraints, decision criteria and success
@@ -77,7 +77,7 @@ milestone sealing, pushes/merges or edits to frozen designs/evidence.
 | E7 Production adapter/environment preserves C numerics | Stage1 independent reference controls available; no production adapter exists | Not yet measured | Hypothesis | Independent reference/parity checks in proposed locked environment with deliberate wrong-result mutant | Must be tested before implementation acceptance |
 
 Evidence paths abbreviated above resolve under
-`dev/milestones/r12/implementation/evidence/` unless a source filename is named.
+`dev/records/milestones/r12/implementation/evidence/` unless a source filename is named.
 
 ## Gate materialization
 

@@ -251,7 +251,7 @@ The principal current-code evidence is:
 - `blueearth_cst/shared/indicator_tables.py`: vocabulary, five-column shape,
   pooled sentinel and the reserved but currently unemitted basin scalar.
 - `dev/reference/contracts/weather-generator-seam.md` and
-  `dev/milestones/r09/wf3-change-requests.md`: live interchange and historical
+  `dev/records/milestones/r09/wf3-change-requests.md`: live interchange and historical
   identity rulings.
 - Current rapid and baseline WF3 configs: two realizations and the 2046–2054
   simulation window. Their comments describe 18 nominal pooled years; this

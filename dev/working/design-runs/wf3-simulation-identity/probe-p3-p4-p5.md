@@ -117,7 +117,7 @@ Real-rule side, read not run: rule 3.09 `run_stress_test.smk:875-899`; rule 3.16
   `stress_test_cfg = stress_test_cfg` at `:888`, landed in `b5052339` (2026-08-21,
   R13 D-10.6), reading the resolved `my_cfg["stress_test"]` mapping from `:186`. By
   measurement (a), an edit that changes that resolved mapping therefore **does**
-  schedule 3.09. The "deaf, no `params:`" record (`dev/milestones/r12/
+  schedule 3.09. The "deaf, no `params:`" record (`dev/records/milestones/r12/
   stress-test-lookup-intake.md:141` E5, verified 2026-08-15, citing `:819-821`)
   predates that commit and no longer describes the rule. **The live instance of the
   trap that GF-16 is built on does not exist any more.** What survives for 3.09 is
@@ -210,7 +210,7 @@ rename. It needs **two rows added in the same commit** for the design's new arti
 | **GF-6 (a)** | `[assumed]`, P4 unexecuted | **measured, holds** — a changed `params:` value schedules the rule; also holds for a **dict**-valued param mutated at a nested key | `p4/`, cases (a), dict-1 |
 | **GF-6 (b)** | `[assumed]` | **measured on both halves** — an imported module's body change does **not** schedule (`code` covers the `script:` file only); a source digest in `params:` **does** | `p4/` (b), (b′); `p4b/` code-1, code-2 |
 | **GF-8** | `[assumed]` | **measured, holds — for a different reason than stated.** The rename classifies IDENTITY under existing directory prefixes; no inventory rule names the member token. But the design's two new `config/` leaves classify UNMAPPED and must be added in the same commit | `p5_classify.py`; `semantic_tree_diff.py:270-524` |
-| **GF-16** | `[assumed]`, "same `ancient()` trap as GF-6" | **premise falsified; claim split, and BOTH halves now measured on the real rule (see Addendum).** Rule 3.09 carries `params: stress_test_cfg` since `b5052339` (2026-08-21), so case (a) is **already closed in the tree**; case (b) — a change to a module its script imports — remains open and needs the same digest as 3.16 | `run_stress_test.smk:888`; `dev/milestones/r12/stress-test-lookup-intake.md:141` (E5, 2026-08-15) predates it |
+| **GF-16** | `[assumed]`, "same `ancient()` trap as GF-6" | **premise falsified; claim split, and BOTH halves now measured on the real rule (see Addendum).** Rule 3.09 carries `params: stress_test_cfg` since `b5052339` (2026-08-21), so case (a) is **already closed in the tree**; case (b) — a change to a module its script imports — remains open and needs the same digest as 3.16 | `run_stress_test.smk:888`; `dev/records/milestones/r12/stress-test-lookup-intake.md:141` (E5, 2026-08-15) predates it |
 
 ## Not settled, and what it would take
 
@@ -329,7 +329,7 @@ Both tracked files restored with `git checkout --`.
   edit yields `total 0`.
 
 **Provenance of the stale claim — true when recorded, stale six days later.**
-`dev/milestones/r12/stress-test-lookup-intake.md:141` records E5 ("Rule 3.09 is deaf
+`dev/records/milestones/r12/stress-test-lookup-intake.md:141` records E5 ("Rule 3.09 is deaf
 to `stress_test` edits", citing `run_stress_test.smk:819-821`, `config = ancient(...)`
 and no `params:`) as **Verified 2026-08-15**. It was correct on that date. `b5052339`
 (2026-08-21) added the `params:` and invalidated it. The claim then propagated

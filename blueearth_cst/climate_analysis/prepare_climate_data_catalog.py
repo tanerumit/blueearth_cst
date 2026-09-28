@@ -113,8 +113,8 @@ def resolved_unit_interpretation(data_libs, precip_source):
     return UnitInterpretation(
         revision="daily-catalog-hydromt1.3.1-weathergenr2.0.0/2",
         evidence=(
-            "dev/milestones/r12/implementation/evidence/p1-forcing-units.md; "
-            "dev/decisions/0010-check-the-reviewed-variables-not-the-catalog-shape.md; "
+            "dev/records/milestones/r12/implementation/evidence/p1-forcing-units.md; "
+            "dev/records/decisions/0010-check-the-reviewed-variables-not-the-catalog-shape.md; "
             f"selected={precip_source}; catalogs={[(path, file_sha256(path)) for path in paths]}; "
             f"extraction_sha256={file_sha256(Path(__file__).parents[1] / 'climate_analysis' / 'extract_historical_climate.py')}"
         ),

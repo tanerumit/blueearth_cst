@@ -40,7 +40,7 @@ Collection and simulation fingerprints stay internal; neither `seed_id` nor
 `simulation_set_id` is an approved rename. See the owner ruling below.
 
 **Intake is NOT copied into this run dir.** It lives at
-`dev/milestones/r12/simulation-identity-intake.md` — already committed at the
+`dev/records/milestones/r12/simulation-identity-intake.md` — already committed at the
 durable location, cited by `dev/roadmap.md` by that path, and it declares itself
 frozen once a run opens. Two copies of a frozen 39 KB document is divergence risk
 for no gain, and it already satisfies the stage-7 landing checklist item (a).
@@ -231,12 +231,12 @@ brief names that path.
 
 ## Landing target
 
-`dev/milestones/r12/wf3-simulation-identity-design.md`, matching the
+`dev/records/milestones/r12/wf3-simulation-identity-design.md`, matching the
 `stress-test-lookup-*` sibling naming.
 
 ## Stage log
 
-- [done] 0-intake — outputs: `dev/milestones/r12/simulation-identity-intake.md`
+- [done] 0-intake — outputs: `dev/records/milestones/r12/simulation-identity-intake.md`
   (pre-existing, revision 2, commit `d50427e4`); run dir + `status.md`
 - [done] 0b-probes-P1-P2 — `python-engineer`, Opus — outputs: `probe-p1-p2.md`.
   P1 **feasible with conditions, no checkpoint**; P2 **feasible with conditions,
@@ -979,14 +979,14 @@ finding is withdrawn or downgraded, and no empirical validation is implied.
 G2 is discharged. No new editorial or material design changes were requested.
 
 Stage 7 authority: finalize the accepted design at
-`dev/milestones/r12/wf3-simulation-identity-design.md`; lifecycle maintained-current,
+`dev/records/milestones/r12/wf3-simulation-identity-design.md`; lifecycle maintained-current,
 revision history append-only. Preserve the reviewed v6 and review reports. The
 final author may only update acceptance/lifecycle status, append the G2 revision
 entry, reconcile resolved pending-G2 wording and repoint artifact citations.
 All normative/scientific/interface content remains the reviewed v6 contract.
 
 Archive source records verbatim in
-`dev/milestones/r12/wf3-simulation-identity-review/`, preserving filenames. This
+`dev/records/milestones/r12/wf3-simulation-identity-review/`, preserving filenames. This
 repository retains milestone audit evidence and forbids broad deletion without
 specific confirmation: copy durable records; retain the closed working record
 for existing historical references, without deleting/moving the source tree.
@@ -1001,10 +1001,10 @@ delegation, implementation, runtime execution, branch landing or push is authori
 - [done] G2 — owner approved reviewed v6; domain-7 scope limitation ratified and
   recorded as an owner-adjudicated rejected major, not withdrawn or downgraded.
 - [done] final-author — accepted maintained-current design at
-  `dev/milestones/r12/wf3-simulation-identity-design.md`. Only acceptance metadata,
+  `dev/records/milestones/r12/wf3-simulation-identity-design.md`. Only acceptance metadata,
   lifecycle, durable citations, resolved G2 wording and acceptance log changed.
 - [done] archive — all 29 source md/diff records copied verbatim to
-  `dev/milestones/r12/wf3-simulation-identity-review/`; intake already lives beside
+  `dev/records/milestones/r12/wf3-simulation-identity-review/`; intake already lives beside
   the design. Closed working copies remain for historical citations and safe
   retention; no destructive source-tree pruning was performed.
 - [done] derived planning — roadmap R12 rewritten from the accepted contract;

@@ -63,8 +63,8 @@ both sizes moving by exactly +16 bytes -- the header delta and nothing else. So
 the wf1 delta demonstrably does NOT propagate into the wf3 reduction, and the wf3
 slice is no longer mixed-provenance in any way that matters: it was re-recorded
 from main@03e546c on those same numbers.
-Evidence: dev/milestones/r09/migration_indicator-axis-columns.md §5;
-dev/decisions/0001-restore-wflow-constant-parameters/baseline_diffs.md.
+Evidence: dev/records/milestones/r09/migration_indicator-axis-columns.md §5;
+dev/records/decisions/0001-restore-wflow-constant-parameters/baseline_diffs.md.
 (That paragraph describes the world before R11: both tables were byte-hashed and
 `basin_indicators.csv` still existed. Kept as written because it is the record of
 how the residual was closed, not a description of the current gate.)
@@ -252,7 +252,7 @@ VOLATILE_NC_ATTRS = frozenset(
 # and current sides. Mirrors `rule all` across build_model.smk,
 # analyze_projections.smk, run_stress_test.smk — plus the one
 # beyond-`rule all` discharge target (see module docstring / ADR 0001).
-# R07 (dev/milestones/r07/migration_project-layout.md §3a is the authority; this list is
+# R07 (dev/records/milestones/r07/migration_project-layout.md §3a is the authority; this list is
 # written FROM that table). 14 live targets: all 14 change manifest key via the
 # examples/ -> test_case/ rename, 10 also move within the tree, 3 change
 # content. Retargeted here, in the fixture-rename commit, as the SOLE owner of

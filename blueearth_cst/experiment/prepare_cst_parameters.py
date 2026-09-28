@@ -218,7 +218,7 @@ def prep_cst_parameters(
             f"enumerates exactly {list(_KNOWN_AXES)} (plus the non-axis keys "
             f"{list(_NON_AXIS_KEYS)}). Adding a dimension means adding a lookup "
             f"column, and that needs a C28 ruling; "
-            f"see dev/milestones/r09/wf3-change-requests.md."
+            f"see dev/records/milestones/r09/wf3-change-requests.md."
         )
 
     # Grid step counts + total via the shared helper (single source of truth,

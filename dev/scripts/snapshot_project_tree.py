@@ -2,10 +2,10 @@
 
 The check runs against `semantic_tree_diff.build_project_tree_rules`, the
 post-migration INVENTORY. (The one-way R9 migration map this tool also drove
-was retired 2026-08-11 -- `dev/reviews/2026-08-11_test-suite-bloat-assessment.md`
+was retired 2026-08-11 -- `dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md`
 §6a -- so `--map` now has one choice.)
 
-Wraps steps 0, 3 and 4 of `dev/milestones/r09/observed-tier-runbook.md` in one
+Wraps steps 0, 3 and 4 of `dev/records/milestones/r09/observed-tier-runbook.md` in one
 command, and derives every map parameter from the config instead of asking for
 it on the command line -- the experiment name, the historical store key and the
 `clim_project` are all config-determined, and a mistyped `--dataset-key` would
@@ -148,7 +148,7 @@ def build_header(config_path: Path, params: dict, n_paths: int) -> str:
             "# Project-tree snapshot --- a sorted list of project-relative paths.",
             "#",
             "# The OBSERVED tier of the two-tier inventory ruled in",
-            "# dev/milestones/r09/migration_project-tree.md, *The inventory the map",
+            "# dev/records/milestones/r09/migration_project-tree.md, *The inventory the map",
             "# is validated against*: the only tier that carries UNDECLARED engine",
             "# artifacts (hydromt, Wflow.jl, weathergenr), which appear in no",
             "# `output:` declaration and which --dry-run structurally cannot see.",
@@ -207,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
         "POST-MIGRATION INVENTORY -- it asks 'does this tree hold "
         "anything nobody declared?'. The `r09` alternative, the one-way "
         "pre-R9 -> post-R9 migration map, was retired 2026-08-11 "
-        "(dev/reviews/2026-08-11_test-suite-bloat-assessment.md); no "
+        "(dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md); no "
         "un-migrated tree survives to point it at. See also "
         "dev/followups-archive.md [R10-11]",
     )
@@ -294,7 +294,7 @@ def main(argv: list[str] | None = None) -> int:
             f"\n{len(unmapped)} path(s) the map does not cover. Each is either a "
             "leftover ORPHAN (prune it -- see prune_series_cache.py, "
             "prune_climate_store.py, and the hand list in "
-            "dev/milestones/r09/observed-tier-runbook.md) or a real INVENTORY "
+            "dev/records/milestones/r09/observed-tier-runbook.md) or a real INVENTORY "
             "GAP "
             "(stop and report it: amending the map is an owner decision)."
         )

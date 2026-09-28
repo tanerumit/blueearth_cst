@@ -51,7 +51,7 @@ and `metric-set/2`, while retaining the predecessor readers and writers for
 their dedicated fixtures. The metric reduction algorithms and allocation order
 are unchanged; P7 owns the fresh-run numerical comparison against the pinned
 predecessor comparator. Focused implementation evidence is
-[`p6/implementation-record.md`](../../milestones/r12/implementation/evidence/p6/implementation-record.md).
+[`p6/implementation-record.md`](../../records/milestones/r12/implementation/evidence/p6/implementation-record.md).
 
 ### Task constraints
 

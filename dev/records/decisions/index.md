@@ -1,0 +1,23 @@
+# Decision records (ADRs)
+
+Architecture / method / tooling decision records for blueearth_cst. One ADR per
+subject area; revise in place as a design evolves, supersede only on a genuine
+reversal. Format: ddev/decisions/NNNN-<slug>.mdd (see the ddesign-documentd
+skill's decision-record reference).
+
+| # | Title | Status | Date |
+|---|---|---|---|
+| [0001](0001-restore-wflow-constant-parameters.md) | Reconcile the dropped Wflow constant parameters via evidence-gated CSDMS restoration | accepted | 2026-07-21 |
+| [0002](0002-revive-subcatchment-climate-plots.md) | Revive the subcatchment climate plots from the wflow forcing input | superseded by 0006 | 2026-07-21 |
+| [0003](0003-one-shared-region-artifact.md) | Spatial artifacts delineated once per project, shared across workflows | accepted §1–12 | 2026-08-06 |
+| [0004](0004-order-model-readers-on-a-terminal-sentinel.md) | Order model-root readers on a terminal build sentinel, not on a declared output | accepted | 2026-08-05 |
+| [0005](0005-adopt-ruff-format-in-two-stages.md) | Adopt druff formatd, in two stages split on the Snakemake code rerun trigger | accepted (both stages landed) | 2026-08-09 |
+| [0006](0006-retire-subcatchment-climate-plots.md) | Retire the subcatchment climate plots; the canonical climate figure set answers this | accepted | 2026-08-09 |
+| [0007](0007-draw-basin-area-from-the-spatial-foundation.md) | Draw basin_area from the spatial foundation, not the model | accepted | 2026-08-09 |
+| [0008](0008-ship-blueearth-cst-unpackaged.md) | Ship dblueearth_cstd unpackaged; dpyproject.tomld stays tool-config-only | accepted | 2026-08-17 |
+| [0009](0009-split-scenario-generation-and-system-simulation.md) | Split scenario generation and system simulation; supersede R12's C24/C25/C28 predecessor ownership | accepted design; P3 validation in progress | 2026-09-11 |
+| [0010](0010-check-the-reviewed-variables-not-the-catalog-shape.md) | Check the reviewed forcing variables, not the catalog entry's shape | accepted | 2026-09-17 |
+
+## Retired numbers
+
+_none._

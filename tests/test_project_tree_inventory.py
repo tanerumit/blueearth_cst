@@ -349,7 +349,7 @@ def test_a_pre_migration_path_is_unmapped_rather_than_quietly_accepted():
     UNMAPPED under `build_r09_path_map`, a pre-R9 path the exact inverse.
     Neither map was wrong — they answered about different eras, and
     `tree-check` was asking the wrong one. The migration map was retired
-    2026-08-11 (`dev/reviews/2026-08-11_test-suite-bloat-assessment.md` §6a),
+    2026-08-11 (`dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md` §6a),
     so what remains testable is the half that can still regress: the inventory
     must NOT silently absorb an old-layout path. A tree still holding one has
     not been migrated, and saying so is the report's job.

@@ -4,7 +4,7 @@
 > someone replacing `weathergenr` with an alternative weather generator, or the
 > R6 model-flexibility work — read end-to-end. Not an end-user doc (hence `dev/`,
 > not `docs/`; precedent `dev/reference/workflows/climate_experiment.md`).
-> **Source of record:** `dev/milestones/p32b/interchange-contracts-design.md` (ACCEPTED
+> **Source of record:** `dev/records/milestones/p32b/interchange-contracts-design.md` (ACCEPTED
 > 2026-07-24, §5.2 / §5.4 / §5.6 / §5.5). Every load-bearing fact below cites a
 > Snakefile line, a script line, or an observed fixture artifact; do not add a
 > contract fact that is not so grounded.
@@ -32,7 +32,7 @@ The provider binds pure scenario rows to the unchanged R generator operations.
 WF3 publishes durable forcing and a portable preparation context. WF4 consumes
 the collection through the Wflow adapter. Native metadata and effective units
 are recorded separately; see the accepted
-[unit trace](../../milestones/r12/implementation/evidence/p1-forcing-units.md).
+[unit trace](../../records/milestones/r12/implementation/evidence/p1-forcing-units.md).
 
 **Original fixture branch = era5.** The CHIRPS hybrid store in the rapid tree
 was inspected on 2026-09-27; its precipitation values were compared with real
@@ -105,7 +105,7 @@ inventing them. Promotion to selected forcing re-extracts with supplementation.
 validator, not proof of physical magnitude. The daily ERA5 catalog already
 converts temperature values to Celsius during extraction while retaining the
 plural `units="K"` label. See the accepted
-[R12 forcing-unit trace](../../milestones/r12/implementation/evidence/p1-forcing-units.md)
+[R12 forcing-unit trace](../../records/milestones/r12/implementation/evidence/p1-forcing-units.md)
 for that code path and the separate effective-unit interpretation. This CHIRPS
 fix does not repair ERA5 labels or change its numerical conversions.
 
@@ -319,6 +319,6 @@ python scripts/simulate_system.py --config <project-config.yml> --target all --c
 ```
 
 Historical ERA5 captures and bounded source-branch preservation evidence are
-recorded in [P2 acceptance](../../milestones/r12/implementation/evidence/p2/acceptance.md).
+recorded in [P2 acceptance](../../records/milestones/r12/implementation/evidence/p2/acceptance.md).
 Those records establish their stated scope; they do not claim validation of an
 arbitrary replacement generator or every possible forcing dataset.

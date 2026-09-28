@@ -10,7 +10,7 @@ checked against the Snakefile rather than believed.
 
 Rule numbers are reused, so any `W.NN` written before 2026-09-24 may name a
 different rule — translate through [What changed](#what-changed) before reading one in
-`dev/milestones/`, `dev/decisions/`, `dev/LOG.md` or a dated migration record.
+`dev/records/milestones/`, `dev/records/decisions/`, `dev/LOG.md` or a dated migration record.
 
 ## On the numbers
 
@@ -43,7 +43,7 @@ Dated translations for historical citations. Current WF3/WF4 numbering is in the
 
 Every workflow was renamed and renumbered from `W.01`, and target rules lost
 their numbers. The old → new table for all five workflows is in
-[`migration_domain-rule-names.md`](../../milestones/post-r12/migration_domain-rule-names.md).
+[`migration_domain-rule-names.md`](../../records/milestones/post-r12/migration_domain-rule-names.md).
 The older tables below use the names and numbers of their date.
 
 ### Renumbering — 2026-08-06 historical map
@@ -1005,7 +1005,7 @@ flowchart LR
 | 3.11 | `gather_logs` | Snakemake (generation phase) | `logs/wf3_generate_scenarios_<plan>.log` |
 
 The former 3.09 copy step was removed on 2026-09-24
-(`dev/milestones/post-r12/migration_wf3-generation-rules.md`); the rules after
+(`dev/records/milestones/post-r12/migration_wf3-generation-rules.md`); the rules after
 it moved up one number in the 2026-09-24 rule-naming migration.
 
 Requests and plans live under `scenarios/_engine/requests/<request>/`. A

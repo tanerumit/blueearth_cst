@@ -566,7 +566,7 @@ def test_diff_trees_self_compare_clean_with_p31_map(tmp_path):
 
 # ---------------------------------------------------------------------------
 # P3-1 commit 5b: cross-root YAML path normalization + run-log file exclusion
-# (adjudicated milestone-diff classes; dev/milestones/p31/baseline_diffs.md)
+# (adjudicated milestone-diff classes; dev/records/milestones/p31/baseline_diffs.md)
 # ---------------------------------------------------------------------------
 
 
@@ -907,7 +907,7 @@ def test_apply_path_map_is_the_projection_of_the_reporting_sibling():
     """Pins the delegation: no second matching pass that could drift.
 
     Driven off the post-migration INVENTORY since 2026-08-11, when the R07 map
-    this used was retired (`dev/reviews/2026-08-11_test-suite-bloat-assessment.md`
+    this used was retired (`dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md`
     §6a). Any non-trivial map serves — what the case needs is a mix of rules
     that fire and a path that falls through, which the last entry supplies.
     """

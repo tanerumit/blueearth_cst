@@ -5,7 +5,7 @@ from pathlib import Path
 
 # Shared helpers live in blueearth_cst/; make them importable regardless of the working
 # directory by prepending this Snakefile's own directory to sys.path.
-# See dev/milestones/r03/model-builder-design.md §3.
+# See dev/records/milestones/r03/model-builder-design.md §3.
 sys.path.insert(0, str(Path(workflow.basedir)))
 from blueearth_cst.shared.provenance import append_journal_line, configuration_inputs_digest, effective_config_digest, environment_file_hashes, file_sha256, journal_event, referenced_inputs_for_digest, toolbox_identity
 from blueearth_cst.shared.snake_utils import ADVANCED_SETTINGS, DEFAULT_JULIA_THREADS, DEFAULT_WFLOW_OUTVARS, catalog_root, climate_store_rule, declare_path_tokens, declare_project_root, declare_warning_tally, get_config, historical_window_bounds, julia_prefix, listed, patch_psutil_windows_benchmark, region_rule, resolve_simulation_window, resolve_water_year_start, spatial_units_rule, validate_historical_window, warning_count

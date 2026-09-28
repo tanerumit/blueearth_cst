@@ -9,7 +9,7 @@ closed ``{enabled, config_path}`` workflow stanzas plus **T2** files holding one
 workflow's settings each. This module is the loader that puts them back
 together, and the enforcement point for the rules that keep them apart.
 
-Source of record: ``dev/milestones/r13/config-tiers-design.md`` (ACCEPTED
+Source of record: ``dev/records/milestones/r13/config-tiers-design.md`` (ACCEPTED
 2026-08-21). Section references below are to that document; every ``D-`` tag is
 one of its decisions.
 
@@ -211,7 +211,7 @@ SHARED_SEAM_KEYS: frozenset[str] = frozenset(T1_SHARED_SECTIONS) | frozenset(
 #: merge into that workflow's own namespace -- there is no second option, and no
 #: way to reintroduce one without a design change that reads as one.
 #:
-#: Source: `dev/milestones/r14/config-shape-design.md` D-10.1 / D-10.2.
+#: Source: `dev/records/milestones/r14/config-shape-design.md` D-10.1 / D-10.2.
 
 #: RETIRED, deliberately: there is no registry of sanctioned cross-workflow
 #: value reads, because there are none. `CROSS_WORKFLOW_READS` existed to hold

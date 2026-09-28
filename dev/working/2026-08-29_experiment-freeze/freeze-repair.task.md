@@ -60,7 +60,7 @@ the rule, on a real run.
   `run_stress_test.smk`, `tests/**`.
 - **Approval-gated:** a new artifact path under `experiments/<id>/config/` —
   released by Gate 1 only if it rules option 1.
-- **Forbidden:** `dev/milestones/**`; `config/**`; any other workflow's
+- **Forbidden:** `dev/records/milestones/**`; `config/**`; any other workflow's
   Snakefile.
 
 ### Required changes (checklist)

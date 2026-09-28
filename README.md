@@ -344,13 +344,13 @@ Fork-specific (development):
 - `dev/reference/git-conventions.md` — branch / tag inventory plus the
   branching, tagging, and commit-message conventions.
 - `docs/install.md` — step-by-step install walkthrough.
-- `dev/milestones/phase-1/` — sealed foundation milestone artifacts (audits,
+- `dev/records/milestones/phase-1/` — sealed foundation milestone artifacts (audits,
   plans, baseline diffs).
-- `dev/milestones/r01/` … `dev/milestones/r06/` — sealed Phase 2 milestone
+- `dev/records/milestones/r01/` … `dev/records/milestones/r06/` — sealed Phase 2 milestone
   designs and review records (modularity contracts, naming, the three workflows,
   structural refactor).
-- `dev/milestones/p31/`, `dev/milestones/p32a/`, `dev/milestones/p32b/`,
-  `dev/milestones/p33/` — sealed Phase 3 milestone designs, review records and
+- `dev/records/milestones/p31/`, `dev/records/milestones/p32a/`, `dev/records/milestones/p32b/`,
+  `dev/records/milestones/p33/` — sealed Phase 3 milestone designs, review records and
   evidence notes.
 - `dev/tasks/` — the open backlog, with closed items retained and dated.
 - `CHANGELOG.md` — release history (release-level; milestone detail lives in

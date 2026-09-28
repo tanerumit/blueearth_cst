@@ -69,7 +69,7 @@ the sweep's question gets asked then, about a project that is in front of you.
       `n_hyd_years_reference` is the Oct→Sep count, and that
       `reference_window_effective` reports the window actually used.
 - [ ] **Check the Oct boundary against `hydrological_year_bounds`' known
-      off-by-one.** `dev/milestones/r08/2026-07-30_wf2-5f-hydyear-offbyone.md`
+      off-by-one.** `dev/records/milestones/r08/2026-07-30_wf2-5f-hydyear-offbyone.md`
       records that the complete-year count was wrong for exactly the
       October-start case until 2026-07-30. That fix has never been exercised
       end-to-end with a non-Jan config, because no non-Jan config ever reached
@@ -100,7 +100,7 @@ today.
   `hydrological_year_bounds` calls and the `get_change_annual_clim_proj` call.
 - `analyze_projections.smk` — the refusal, with the replacement block in
   its message.
-- `dev/milestones/r08/2026-07-30_wf2-5f-hydyear-offbyone.md` — the
+- `dev/records/milestones/r08/2026-07-30_wf2-5f-hydyear-offbyone.md` — the
   October-start off-by-one this run would exercise for the first time.
 - Related: [[t2608121742-run-weather-generator-does-not-forward-relax-priority]]
   — the other parameter this session found reaching nothing.

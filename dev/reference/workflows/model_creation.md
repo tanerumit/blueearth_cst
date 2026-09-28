@@ -1,7 +1,7 @@
 # Workflow: build_model
 
 Contract for `build_model.smk` (workflow 1). Format per
-`dev/milestones/r01/modularity-contracts-design.md` §4. Records current behavior
+`dev/records/milestones/r01/modularity-contracts-design.md` §4. Records current behavior
 and is grounded in `build_model.smk`, the templates under
 `config/templates/`, and the rule-called modules under `blueearth_cst/model/`
 and `blueearth_cst/spatial/`.

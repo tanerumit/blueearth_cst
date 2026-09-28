@@ -3,7 +3,7 @@
 How roles and skills become available to Claude Code and Codex **in this
 repository**, and why the two runtimes differ.
 
-The canonical spec is in the brain repo — `dev/decisions/0003-skill-activation.md`
+The canonical spec is in the brain repo — `dev/records/decisions/0003-skill-activation.md`
 (§3 D1/D2) and the `brain-agent-system` skill. This note records only how that
 spec resolves here, plus the repo-specific consequences. Do not restate the
 brain's rules; link to them.

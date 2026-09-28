@@ -36,7 +36,7 @@ steps:
 
   # Restore the upstream Deltares-template constant parameters under Wflow.jl 1.x
   # CSDMS Standard Names. Rationale + evidence: ADR 0001
-  # (dev/decisions/0001-restore-wflow-constant-parameters.md). Values are the git
+  # (dev/records/decisions/0001-restore-wflow-constant-parameters.md). Values are the git
   # 6ebc46f template; all 13 cleared the two-sided equivalence gate (units/sign/
   # scale/semantics preserved 0.x -> 1.x). Snow/soil/veg (8) pin the doc-template
   # default under a stable name (drift-protection); MaxLeakage=0 is the 9th proven

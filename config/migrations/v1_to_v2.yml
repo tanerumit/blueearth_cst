@@ -1,7 +1,7 @@
 # R14 — the v1 → v2 config mapping. NORMATIVE (design D-11.2a).
 #
 # This file is the SPECIFICATION the rewriter executes. The register in
-# `dev/milestones/r14/config-shape-scoping.md` (`C-01`..`C-85`) is the ARGUMENT
+# `dev/records/milestones/r14/config-shape-scoping.md` (`C-01`..`C-85`) is the ARGUMENT
 # for each change; 85 rows of markdown table cannot be executed, and cannot be
 # checked for completeness. This can.
 #
@@ -48,7 +48,7 @@
 
 schema: 1
 migration: v1_to_v2
-register: dev/milestones/r14/config-shape-scoping.md
+register: dev/records/milestones/r14/config-shape-scoping.md
 
 # --------------------------------------------------------------------------
 # OPEN — this value is NOT settled, and the rewriter must not run until it is.

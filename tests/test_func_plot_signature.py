@@ -2,7 +2,7 @@
 """Unit tests for ``blueearth_cst/shared/func_plot_signature.py``.
 
 The module had NO direct coverage until 2026-08-11
-(`dev/reviews/2026-08-11_test-suite-bloat-assessment.md` §4), while being a
+(`dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md` §4), while being a
 shared helper with three consumers — ``model/plot_results.py``,
 ``shared/plot_evaluation.py`` and ``shared/wflow_outputs.py``. That is the
 profile AGENTS.md names as *"a contract surface with other callers"*: only its

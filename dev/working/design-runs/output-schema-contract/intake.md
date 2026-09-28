@@ -37,7 +37,7 @@ This design includes domain-scientific content: seed and collection identity, sc
 | Artifact | Refresh after G2 |
 |---|---|
 | `dev/working/output-schema-implementation/master-brief.md` and P1–P7 briefs | Regenerate phase interfaces, versions, checks and gates from accepted design. |
-| `dev/decisions/0011-preserve-config-sources-with-run-records.md` | Align decision status and settled archive details without erasing history. |
+| `dev/records/decisions/0011-preserve-config-sources-with-run-records.md` | Align decision status and settled archive details without erasing history. |
 | `dev/working/t2609191457-wf3-static-planning.md` | Align the settled WF3 plan boundary and note supersession where needed. |
 | `dev/working/complete-run-output-schema.md` | Replace working proposal with the accepted reviewed contract at G2. |
 

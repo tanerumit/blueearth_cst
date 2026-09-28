@@ -37,15 +37,15 @@ the task branch. The repository wrapper refuses to use a different board root.
 
 | Path | Holds |
 |---|---|
-| `decisions/` | ADRs — **permanent**. Superseded ones stay with a pointer; evidence in a `<adr-slug>/` sibling folder |
-| `milestones/` | Every milestone's design / plan / review / evidence docs — see its own `README.md` for the index |
+| `records/decisions/` | ADRs — **permanent**. Superseded ones stay with a pointer; evidence in a `<adr-slug>/` sibling folder |
+| `records/milestones/` | Every milestone's design / plan / review / evidence docs — see its own `README.md` for the index |
 | `tasks/2026-07-21_pre-r6-followups.md` | The one **pre-board** record: `tasks/` held closed-task records until 2026-08-07, when it became the open board. Bannered, kept, and ignored by the board's loader (it carries no `type:`) |
 
 **Decays** — snapshots of a system that keeps moving:
 
 | Path | Holds |
 |---|---|
-| `reviews/` | Process reviews and post-milestone self-check registers. **Prunable** — see the retention rule below |
+| `records/reviews/` | Process reviews and post-milestone self-check registers. **Prunable** — see the retention rule below |
 
 **Pinned by code** — these paths are constructed in Python, so moving them is a
 code change, not a documentation change:
@@ -63,7 +63,7 @@ second scratch location, and nothing in `dev/` is a place to park disposables.
 The pytest and ruff caches were redirected into it on 2026-08-11
 (`.tmp/pytest_cache`, `.tmp/ruff_cache`), set in `pyproject.toml`.
 
-Shard `tasks/` or `reviews/` into `<year>/` subfolders only if a flat folder
+Shard `tasks/` or `records/reviews/` into `<year>/` subfolders only if a flat folder
 ever grows unwieldy. Generated results, figures, and model outputs go in the
 project-root `output/` (gitignored), not `dev/`. Create optional folders only
 when first needed — and put new ones in the table above when you do.
@@ -73,12 +73,12 @@ when first needed — and put new ones in the table above when you do.
 **A cited note is a record, not a draft.** Before deleting anything from
 `working/` at closure, grep the repo for its filename. If a test, module,
 config, or tracked document cites it, it is source-of-record: promote it to the
-milestone folder (or `tasks/` / `reviews/` / `decisions/`) and update every
+milestone folder (or `tasks/` / `records/reviews/` / `records/decisions/`) and update every
 citation in the same commit. Citations live in docstrings and prose, so
 deleting one breaks provenance silently and no test fails.
 
 This is not hypothetical. On 2026-08-02, 27 files were promoted out of
-`working/` — eighteen to `milestones/r08/` alone — and eight of them were cited
+`working/` — eighteen to `records/milestones/r08/` alone — and eight of them were cited
 by shipped modules, `analyze_projections.smk`, and `pixi.toml`.
 
 Never let `working/` or `tmp/` hold the only copy of a primary source: `tmp/`
@@ -86,7 +86,7 @@ is gitignored and one `git clean -fdX` from gone.
 
 ## The retention rule
 
-Only `reviews/` is prunable. A process review or a post-milestone self-check is
+Only `records/reviews/` is prunable. A process review or a post-milestone self-check is
 a snapshot of a system that keeps moving, so the folder would otherwise
 accumulate thousands of lines describing a repository that no longer exists.
 
@@ -139,13 +139,13 @@ lived somewhere it is actually read. Exactly one lesson was still unpromoted
 So the rule generalizes rather than contradicting the one above: **compress a
 closure note only after its lesson has a home outside the backlog, and name the
 commit the full text is recoverable from.** What is not allowed is compressing
-first and hoping the detail was not load-bearing — which is the `reviews/`
+first and hoping the detail was not load-bearing — which is the `records/reviews/`
 failure this file already records. The other half of the safeguard: the item IDs
 are cited from code, tests and Snakefiles, so the archive keeps every ID rather
 than merging items away.
 
-Nothing outside `reviews/` is prunable. `decisions/` is permanent by
-construction, `milestones/` and `tasks/` are identity-indexed records, and
+Nothing outside `records/reviews/` is prunable. `records/decisions/` is permanent by
+construction, `records/milestones/` and `tasks/` are identity-indexed records, and
 `reference/` describes the current system.
 
 ### The cap on `LOG.md` rows — the same rule, applied before the fact
@@ -190,7 +190,7 @@ post-mortem because there was no other place to put one.
 
 ## Milestone records
 
-`milestones/` holds one folder per milestone. **`milestones/README.md` is the
+`records/milestones/` holds one folder per milestone. **`milestones/README.md` is the
 index** — folder, milestone, seal date and tag — and is the only place that list
 is maintained.
 
@@ -207,7 +207,7 @@ because P3-2 split in two.
 Two rules govern them:
 
 - **New milestones get a folder there, not at the `dev/` root.** The thirteen
-  that were at the root moved into `milestones/` on 2026-08-02 — a path change
+  that were at the root moved into `records/milestones/` on 2026-08-02 — a path change
   only, no file renamed, split, or edited beyond the prefix.
 - **A sealed milestone's contents are not refactored.** Filenames and internal
   grammar vary by era and stay as written; later milestones converge on
@@ -227,5 +227,5 @@ Two rules govern them:
   blockers.
 - **Record exact validation** — the commands run and their outcomes.
 - **Log shipped features in the root changelog** (`CHANGELOG.md`) — feature-level
-  entries only, linking `decisions/` or `tasks/` for the detail. It lives at the
+  entries only, linking `records/decisions/` or `tasks/` for the detail. It lives at the
   project root, not in `dev/`.

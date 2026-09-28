@@ -2,7 +2,7 @@
 """Unit tests for ``blueearth_cst/model/add_climate_forcing.py`` (rules 1.07+1.08).
 
 The module had NO direct coverage until 2026-08-11
-(`dev/reviews/2026-08-11_test-suite-bloat-assessment.md` §4). What existed pinned
+(`dev/records/reviews/2026-08-11_test-suite-bloat-assessment.md` §4). What existed pinned
 only its RULE WIRING — ``test_model_rebuild_cascade`` proves re-firing the build
 reschedules it, ``test_model_root_ordering`` proves it runs after its last
 writer — and neither reads the command it issues.

@@ -85,7 +85,7 @@ completed before landing.
   entries were not modified by the scoped record.
 - Received explicit owner approval to land the branch at Gate 3.
 - Rebased all six task commits onto the current local `main`. The only manual
-  resolutions reconciled two moved `dev/milestones/` documentation paths; no
+  resolutions reconciled two moved `dev/records/milestones/` documentation paths; no
   behavioral code conflicted.
 - Post-rebase validation passed the 94-test WF1/spatial/baseline landing batch
   and the five-target scoped baseline check. The broader suite passed 1,022

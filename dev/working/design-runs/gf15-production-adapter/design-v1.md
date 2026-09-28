@@ -13,9 +13,9 @@ Reading guide: D1–D3 fix numerical behavior; D4–D6 fix evidence and identity
 
 Request type: **improve**. Recommend mapping fixed range-normalized L-moment candidate C into WF4 for provisional operational point estimation, together with portable bounded-benchmark evidence. This recommendation is subject to scientific review and G1. Approval of “8x” selected performance policy `gf15-accuracy-8x-v1`; it did not approve this adapter, screening policy, real-bundle adequacy or estimator superiority.
 
-Authoritative inputs are [intake.md](intake.md), [ledger.md](ledger.md), and [status.md](status.md). The ledger has no findings at authoring. Paths below are repository-relative. The frozen method is `dev/milestones/r12/gf15-alternative-estimator-design.md` (accepted v4 D1–D6); integration authority is `dev/milestones/r12/wf3-simulation-identity-design.md` §§7.5–7.6/8.4. The separate adapter record is required by the frozen candidate design; it does not revise that method.
+Authoritative inputs are [intake.md](intake.md), [ledger.md](ledger.md), and [status.md](status.md). The ledger has no findings at authoring. Paths below are repository-relative. The frozen method is `dev/records/milestones/r12/gf15-alternative-estimator-design.md` (accepted v4 D1–D6); integration authority is `dev/records/milestones/r12/wf3-simulation-identity-design.md` §§7.5–7.6/8.4. The separate adapter record is required by the frozen candidate design; it does not revise that method.
 
-Evidence abbreviations resolve under `dev/milestones/r12/implementation/evidence/`:
+Evidence abbreviations resolve under `dev/records/milestones/r12/implementation/evidence/`:
 
 | Premise | Source and supported conclusion | Boundary |
 |---|---|---|

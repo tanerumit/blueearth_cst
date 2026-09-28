@@ -9,7 +9,7 @@ its own script rather than a second mode in that one.
 **Why orphans happen here.**
 ``data/climate/historical/<clim_source>_<start>_<end>/``
 is a *cache key*, not multi-window support (R09 design Finding 3,
-`dev/milestones/r09/migration_project-tree.md`): two experiments sharing a
+`dev/records/milestones/r09/migration_project-tree.md`): two experiments sharing a
 source and a window reuse one extraction. The consequence is that changing
 ``shared.clim_historical`` or ``shared.historical_window`` mints a NEW key and
 strands the predecessor — with nothing in the repository to report it. Snakemake

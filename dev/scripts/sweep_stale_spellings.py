@@ -90,10 +90,15 @@ ALLOWANCES = (
     Allowance(
         name="milestone records",
         reason=(
-            "`dev/milestones/**` and `dev/tasks/**` are records of what was "
+            "`dev/records/milestones/**` and `dev/tasks/**` are records of what was "
             "decided; their value is that they are NOT swept"
         ),
-        path_globs=("dev/milestones/**", "dev/tasks/**", "dev/TODO.md", "dev/LOG.md"),
+        path_globs=(
+            "dev/records/milestones/**",
+            "dev/tasks/**",
+            "dev/TODO.md",
+            "dev/LOG.md",
+        ),
     ),
     Allowance(
         name="weathergenr's own vocabulary",

@@ -27,7 +27,6 @@ The page you asked for is not here. The likeliest reasons, in order:
 | Pointing it at your own basin | [Configuring a project](guide/configuration.qmd) |
 | The workflows and their flags | [Running the workflows](guide/running.qmd) |
 | What a run wrote | [Reading the outputs](guide/outputs.qmd) |
-| Fixing a config the toolbox now refuses | [Migration notes](migration-workflow-names.md) |
 | Anything else | [the repository](https://github.com/tanerumit/blueearth_cst) |
 
 Or use the search box in the navigation bar.

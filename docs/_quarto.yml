@@ -4,8 +4,8 @@
 # directory that already holds only documentation. Design and phasing:
 # dev/working/2026-08-19_quarto-docs-site/design.md
 #
-# PHASE 3, in progress (t2608202351b). The site publishes the landing page, the
-# setup guide, the user guide and the two migration notes. The technical
+# PHASE 3, in progress (t2608202351b). The site publishes the landing page,
+# setup guide and user guide. The technical
 # background is still gated on O-3 -- the note's 38 figures are absent from the
 # repository, so its chapters would publish as numbered captions under nothing
 # (t2608202351). Its GUI and platform chapters stay unpublished by ruling
@@ -30,12 +30,6 @@ project:
     # README.md cite these paths, and a navbar entry does the same job for free.
     - "install.md"
     - "env_setup_notes.md"
-
-    # Migration notes. Both tell a user how to repair a config the toolbox now
-    # refuses, which is site material and not a development record -- so they
-    # render even though their sibling notes under dev/ never will.
-    - "migration-workflow-names.md"
-    - "migration-r08-wf2.md"
 
     # Vendored upstream Deltares documentation. Held here so an agent can read
     # it offline; republishing it would put a second, staler copy of hydromt's
@@ -79,10 +73,6 @@ website:
         contents:
           - install.md
           - env_setup_notes.md
-      - section: "Migration notes"
-        contents:
-          - migration-workflow-names.md
-          - migration-r08-wf2.md
   search: true
   page-footer:
     center: "Deltares · World Bank Global Water Practice — GPL-3.0"

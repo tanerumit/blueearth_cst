@@ -75,8 +75,8 @@ workflows:
     config_path: project_config_rapid_simulate_system.yml
 ```
 
-**`schema_version: 2` is required.** If an older project file no longer opens,
-follow the [configuration migration guide](../migration-config-shape.md).
+**`schema_version: 2` is required.** Older project files need conversion before
+they can be used with the current toolbox.
 
 - **`project.catalog`** names one or more HydroMT data catalogs. They tell the
   toolbox where to find climate, terrain, and other input datasets. The rapid
@@ -165,5 +165,5 @@ experiment keeps the inputs that produced its results.
 - [Reading the outputs](outputs.qmd) — what the run wrote, and whether it is
   still current.
 
-If an older project file no longer opens, see the
-[configuration migration guide](../migration-config-shape.md).
+For older project files, see the
+[configuration migration notes in the repository](https://github.com/tanerumit/blueearth_cst/blob/main/docs/migration-config-shape.md).

@@ -4,16 +4,15 @@
 
 | ID                       | #      | Item                                                                                                          | Area / Origin                               | State             |
 | ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------- | ------------------------------------------- | ----------------- |
-| [t2608122022][]          | 1      | Verify the newly-honoured water year, and sweep for projects whose results it moves                           | wf2 projections / config / water-year…      | halfway (2/4)     |
-| [t2608181139][]          | 2      | Give WF0 its forcing-selection evaluation layer — rules 0.07-0.09                                             | wf0 / evaluation layer / t2608131847a…      | backlog (0/4)     |
-| [t2608191733][]          | 3      | Ship a sample dataset bundle so a user needs no Deltares P: drive                                             | distribution / sample data                  | in progress (1/9) |
-| [t2608202351a][]         | 4      | Put the three pipeline notebooks on the site via a committed docs/_freeze/                                    | docs / site / quarto-docs-site (2026-08-19) | backlog (0/5)     |
-| [t2609161642][]          | 5      | Scope R15 — run independent workflows concurrently as one DAG                                                 | workflow architecture / owner question…     | backlog (0/1)     |
-| [t2608091730][]          | 6      | Produce waterbody layers data-side so basin_area can show them again                                          | plotting                                    | blocked           |
-| [t2608071207][]          | 7      | Show the per-member wflow log falsifier actually failing with `path_log` unset                                | wf3 logging / R7                            | blocked           |
-| [t2609171500][]          | 8      | Move the experiment's frozen simulation documents into _engine                                                | project-tree / test_rapid review…           | backlog (0/5)     |
-| [t2608202352][]          | 9      | Publish the docs site to GitHub Pages, and reduce the README onto it                                          | docs / site / quarto-docs-site (2026-08-19) | blocked           |
-| [t2608202351][]          | 10     | Publish the technical background — split the 2025 note into eight chapters                                    | docs / site / quarto-docs-site (2026-08-19) | blocked           |
+| [t2608181139][]          | 1      | Give WF0 its forcing-selection evaluation layer — rules 0.07-0.09                                             | wf0 / evaluation layer / t2608131847a…      | backlog (0/4)     |
+| [t2608191733][]          | 2      | Ship a sample dataset bundle so a user needs no Deltares P: drive                                             | distribution / sample data                  | in progress (1/9) |
+| [t2608202351a][]         | 3      | Put the three pipeline notebooks on the site via a committed docs/_freeze/                                    | docs / site / quarto-docs-site (2026-08-19) | backlog (0/5)     |
+| [t2609161642][]          | 4      | Scope R15 — run independent workflows concurrently as one DAG                                                 | workflow architecture / owner question…     | backlog (0/1)     |
+| [t2608091730][]          | 5      | Produce waterbody layers data-side so basin_area can show them again                                          | plotting                                    | blocked           |
+| [t2608071207][]          | 6      | Show the per-member wflow log falsifier actually failing with `path_log` unset                                | wf3 logging / R7                            | blocked           |
+| [t2609171500][]          | 7      | Move the experiment's frozen simulation documents into _engine                                                | project-tree / test_rapid review…           | backlog (0/5)     |
+| [t2608202352][]          | 8      | Publish the docs site to GitHub Pages, and reduce the README onto it                                          | docs / site / quarto-docs-site (2026-08-19) | blocked           |
+| [t2608202351][]          | 9      | Publish the technical background — split the 2025 note into eight chapters                                    | docs / site / quarto-docs-site (2026-08-19) | blocked           |
 | [t2609281102][]          |        | Complete reviewed expert Wflow model revisions design                                                         | wf1 / model revisions                       | blocked           |
 | [t2609251520][]          |        | Open question: flat, hash-suffixed names for generation_inputs snapshots? — Watch for: Owner decides whether… | wf3 / generation inputs / gabon-ntoum-v3…   | watching          |
 | [t2609251025][]          |        | Wflow sysimage to remove per-batch Julia startup — Watch for: A Julia/Wflow runtime upgrade or packaging…     | run cost / julia / t2608222155 owner…       | watching          |
@@ -27,7 +26,6 @@
 | [t2608071221][]          |        | Docker (O-06) and Linux end-to-end (O-18, O-19) are unexercised — Watch for: A Linux machine or runner…       | platform / R7                               | watching          |
 | [t2608071201][]          |        | A WF1 rebuild always trips WF3's drift guard, and the re-record is accepted as normal — Watch for: Re-open…   | wf1 / drift guard / R10                     | watching          |
 
-[t2608122022]: tasks/t2608122022-verify-the-newly-honoured-water-year-and-sweep-for-projects-it-moves.md
 [t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md
 [t2608191733]: tasks/t2608191733-ship-a-sample-dataset-bundle-so-a-user-needs-no-deltares-p-drive.md
 [t2608202351a]: tasks/t2608202351a-notebooks-on-the-site-via-committed-freeze.md

@@ -1,0 +1,63 @@
+# blueearth_cst/.agent-system/agent-manifest.yml
+#
+# TRACKED project activation source. Record the rationale for changes in
+# dev/reference/agent-activation.md.
+roles:
+  - cst-architect
+  - cst-case-manager
+  - model-builder
+  - model-validator
+  - geospatial-data-analyst
+  - critical-thinker
+  - dataviz-designer
+  - python-engineer
+  - git-steward
+  - technical-writer        # README.rst, install/user guides, doc-drift checks
+  - r-developer             # 2026-09-06: four R workflow scripts under
+                            # blueearth_cst/weathergen/ and three under dev/scripts/
+                            # had no active specialist. python-engineer excludes R,
+                            # and model-builder routed general R work to this role
+                            # while it was inactive — a dangling pointer.
+
+# This block is the Codex ROOT discovery catalog, not an availability switch:
+# every brain skill an active role binds is already reachable without being
+# listed here (Codex routes it per-agent, Claude reads it via the path-read
+# rule in config/ai/AGENTS.md). A line here spends root-catalog budget to put
+# a description in front of the ROOT agent unprompted. So the test for adding
+# one is "does the root agent invoke this directly?", never "do I want it".
+#
+# Budget: the managed EFFECTIVE catalog (this manifest + the user scope) was
+# 9,211 chars across 19 skills on 2026-09-06, against an 8,000-char floor and
+# the accepted_ceiling of 10,857 in brain config/ai/codex-catalog-budget.yml.
+# Crossing the ceiling fails `brain status --strict` (ADR 0003 D1).
+skills:
+  # Root-only — no active role binds these promotingly, so this list is the
+  # sole main-thread activation. Removing a line removes the skill.
+  - design-review-loop
+  - design-scoping
+  - pixi-env                # pixi + R-outside-lock + juliaup env management, CI
+  - python-plotting         # dataviz-designer binds `always (role-only)`, which
+                            # does NOT promote; this line is its only main-thread route
+  - r-discipline            # 2026-09-06: bound `when`-only by model-builder /
+                            # model-validator / geospatial-data-analyst / dataviz-designer,
+                            # so it never reached the un-roled main loop that makes the
+                            # small R edits. 293 chars.
+
+  # Role-bound `always` AND root-invoked. Claude already has these via the role,
+  # so the line is Claude-redundant and Codex-essential — it is the only thing
+  # giving the root agent discovery. Do not read it as dead weight.
+  - git-workflow            # git-steward binds always; root commits directly
+  - python-discipline       # python-engineer binds always; root writes Python directly
+
+  # Role-gated behind `when`, deliberately promoted to always-on because the
+  # root agent invokes them directly. Owner-confirmed 2026-08-12.
+  - climate-stress-testing  # framing/sequencing discussed at the root
+  - cst-run-control         # runs opened and validated from the root session
+  - snakemake               # Snakefiles edited directly
+
+  # Removed 2026-08-12 to bring the catalog toward its floor: climate-projections,
+  # hydromt, hydromt-wflow, python-geospatial, wflow (1,767 chars). All are
+  # specialist-only — bound by cst-architect / model-builder / model-validator /
+  # geospatial-data-analyst under `when`, so they still route per-agent on Codex
+  # and stay reachable on Claude by the path-read fallback. Re-add one only if
+  # the ROOT agent needs it.

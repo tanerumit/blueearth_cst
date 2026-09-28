@@ -1,13 +1,11 @@
 """Report drift between the activation record and what is actually on disk.
 
 `dev/reference/agent-activation.md` is the TRACKED record of which agent roles
-and skills are active here; `.claude/agent-manifest.yml` is the untracked
+and skills are active here; `.agent-system/agent-manifest.yml` is the tracked
 source that `brain refresh --agent-system` materializes into symlink farms
-(`.claude/agents/`, `.claude/skills/`, `.agents/skills/`). Because the manifest
-is gitignored, nothing but that document preserves the decision -- and nothing
-but this script notices when the document stops describing the machine. It was
-written after an audit found the record naming 14 explicit skills where 9 were
-linked, and the wrong frontmatter key besides.
+(`.claude/agents/`, `.claude/skills/`, `.agents/skills/`). The manifest and the reference are both tracked. This script checks that the
+record still describes the materialized trees. It was written after an audit
+found a 14-versus-9 skill mismatch and the wrong frontmatter key.
 
 Three checks, all report-only:
 
@@ -255,8 +253,8 @@ def main(argv: list[str] | None = None) -> int:
     if failed:
         print(
             "\nThe record is dev/reference/agent-activation.md. If the trees are "
-            "right and the record is stale, fix the record -- the manifest is "
-            "gitignored, so the record is the only thing that survives a clone.",
+            "right and the record is stale, update the tracked manifest and "
+            "activation reference together.",
             file=sys.stderr,
         )
         return 1

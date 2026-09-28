@@ -8,22 +8,17 @@ The canonical spec is in the brain repo — `dev/decisions/0003-skill-activation
 spec resolves here, plus the repo-specific consequences. Do not restate the
 brain's rules; link to them.
 
-**This file is the tracked record of what is activated here and why.** Owner
-ruling, 2026-09-06: `.claude/agent-manifest.yml` stays gitignored per-user
-machine state (`.gitignore:171`), consistent with `AGENTS.md`'s rule that the
-agent-config directories are per-user. The consequence is that the manifest's
-own contents — including the rationale comments in it — exist on one machine
-only, so a change to `roles:` or `skills:` is not landed until it is recorded
-in the "How it resolves here" section below. A fresh clone gets no activation
-at all; that is expected, and `brain refresh --agent-system` is what supplies
-it.
+**The tracked `.agent-system/agent-manifest.yml` declares this repository's active
+roles and skills.** This file records why those choices were made and how they
+resolve here. Runtime projections under provider directories are regenerated with
+`brain refresh --agent-system`; a fresh clone retains the declaration.
 
 ## Where activation is declared
 
 | File | Scope | Tracked? | Materializes |
 |---|---|---|---|
-| `.claude/agent-manifest.yml` | this repo | **no** — `.gitignore:171` | `.claude/agents/`, `.claude/skills/`, `.agents/skills/`, `.codex/agents/*.toml` |
-| `brain/config/ai/agent-manifest.yml` | user | yes, in the brain | the same trees under `~/` |
+| `.agent-system/agent-manifest.yml` | this repo | yes | `.claude/agents/`, `.claude/skills/`, `.agents/skills/`, `.codex/agents/*.toml` |
+| `brain-infrastructure/config/ai/agent-manifest.yml` | user | yes, in infrastructure | the same trees under `~/` |
 | this file | this repo | yes | nothing — it is the record, not the source |
 
 Every materialized tree above is a **gitignored symlink farm** rebuilt by
@@ -31,7 +26,7 @@ Every materialized tree above is a **gitignored symlink farm** rebuilt by
 live. A skill or role on disk in the brain is inert until a manifest lists it
 or an active role binds it.
 
-`.claude/agent-manifest.yml` has two blocks: `roles:` and `skills:` (the
+`.agent-system/agent-manifest.yml` has two blocks: `roles:` and `skills:` (the
 *manifest-explicit* list). Roles additionally carry their own **`skill_bindings:`**
 frontmatter — not `skills:`, which is reserved: Copilot CLI discovers
 `.claude/agents/` and types custom-agent `skills:` as `string[]`, so the
@@ -109,10 +104,10 @@ Claude's sake.
 
 ## How it resolves here
 
-Verified 2026-09-06 against the materialized trees — **10 roles, 10
+Verified 2026-09-28 against the materialized trees — **11 roles, 10
 manifest-explicit skills**:
 
-- **Roles (10):** `cst-architect`, `model-builder`, `model-validator`,
+- **Roles (11):** `cst-architect`, `cst-case-manager`, `model-builder`, `model-validator`,
   `geospatial-data-analyst`, `critical-thinker`, `dataviz-designer`,
   `python-engineer`, `git-steward`, `technical-writer`, `r-developer`.
 - **Manifest-explicit (10):** `design-review-loop`, `design-scoping`, `pixi-env`,
@@ -123,7 +118,7 @@ manifest-explicit skills**:
   list (`python-engineer` and `r-developer` → `always`).
 - **Codex root catalog (10)** = the manifest-explicit set only.
 
-The promoting `always` bindings across the ten roles are just three:
+The promoting `always` bindings across the eleven roles are just three:
 `git-workflow` (`git-steward`), `python-discipline` (`python-engineer`), and
 `testing-policy` (`python-engineer`, `r-developer`). Everything else
 unconditional is marked `(role-only)` and stays out of main-thread scope by
@@ -185,12 +180,12 @@ and the main loop has no role to make it active.
   naming the skill in `AGENTS.md`, which Codex reads directly.
 - **`brain status --agent-system` reports the brain's own scope** when run from
   the brain root — its `catalog_budget` finding is about
-  `brain/.claude/agent-manifest.yml`. Pass `--project` to ask about this
+  `brain/.agent-system/agent-manifest.yml`. Pass `--project` to ask about this
   repository.
 - **Manifest edits do nothing until refreshed.** A listed-but-not-materialized
   skill is a silent gap, and `brain refresh` is the only thing that closes it.
-- **The manifest is not tracked, so the manifest is not the record.** Update
-  this file in the same change; nothing else preserves the decision.
+- **Keep the rationale with the declaration.** Update this record when a role or
+  skill choice changes; the manifest and this explanation are both tracked.
 
 ## Verifying
 
@@ -231,6 +226,9 @@ role-binding side and are not duplicated here.
   and `python-discipline` rests on implicit routing alone.
 
 ## History
+
+- **2026-09-28** — moved the project manifest to tracked `.agent-system/agent-manifest.yml`; the activation record now includes the already-linked `cst-case-manager` role.
+
 
 - **2026-09-06** — corrected against the materialized trees after an audit found
   this file materially stale: it claimed 14 manifest-explicit skills (there are

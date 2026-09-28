@@ -115,7 +115,7 @@ format:
   html:
     theme:
       light: [cosmo, theme.scss]
-      dark: [darkly, theme.scss]
+      dark: [cosmo, theme.scss, theme-dark.scss]
     respect-user-color-scheme: true
     toc: true
     toc-depth: 3

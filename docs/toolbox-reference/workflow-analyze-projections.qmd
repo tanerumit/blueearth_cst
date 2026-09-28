@@ -1,0 +1,28 @@
+---
+title: "WF2 — Analyze projections"
+---
+
+`analyze_projections.smk` reduces CMIP6 projections to basin monthly temperature and precipitation change factors. These factors position the stress-test grid against projection space; they do not determine WF3 perturbations.
+
+## Rules
+
+| Rules | Operation |
+|---|---|
+| 2.01–2.02 | Delineate the shared basin region, subbasins, and rivers. |
+| 2.03 | Fetch raw CMIP6 slices for configured members and variables. |
+| 2.04 | Reduce each local slice to a basin-average monthly series. |
+| 2.05 | Derive change factors against the reference window. |
+| 2.06 | Plot the projection series and summaries. |
+| 2.07–2.08 | Gather benchmarks and logs. |
+
+The `all` target collects these products. Rule 2.03 is the remote data read; subsequent reduction uses the acquired slices.
+
+## Configuration and inputs
+
+The project file supplies `basin.region` and `basin.resolution`; `workflows.analyze_projections.config_path` selects the workflow file. The workflow file sets its CMIP6 `catalog`, `ensemble`, `models`, `scenarios`, member preference, variable mapping and change type, `reference_window`, and named `future_windows`. See [Configuration](../guide/configuration.qmd).
+
+Inputs are the basin polygon, cataloged CMIP6 data, and the selected model/scenario/member/variable combinations. The reference and future windows define the compared periods. WF2 does not read a scenario collection or model responses.
+
+## Outputs
+
+WF2 retains the acquired slices and basin monthly series, a change-factor product by model, scenario, and horizon, projection figures, and merged logs and benchmarks. Interpret these as plausibility context alongside the response surface, not as forcing for its simulations.

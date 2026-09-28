@@ -1,0 +1,27 @@
+---
+title: "WF1 — Build model"
+---
+
+`build_model.smk` builds a Wflow-SBM basin model from catalog data, runs it on historical forcing, and evaluates available observed variables. It supplies the model used by WF4.
+
+## Rules
+
+| Rules | Operation |
+|---|---|
+| 1.01–1.04 | Delineate region and subbasins, extract selected historical climate, and plot it. |
+| 1.05–1.09 | Prepare land and soil maps, build the model, add waterbodies, declare outputs, and add climate forcing. |
+| 1.10–1.12 | Write the gauge index and plot basin and model forcing. |
+| 1.13–1.16 | Run the historical simulation, export tables, evaluate results, and record run metadata. |
+| 1.17–1.18 | Gather benchmarks and logs. |
+
+The `all` target collects the products. The historical climate store feeds figures; model forcing is assembled from the configured data catalog in rule 1.09.
+
+## Configuration and inputs
+
+The project file supplies the basin definition, catalog, `climate.selected`, `climate.window`, output locations, and `model.outvars`. Its `workflows.build_model.config_path` selects a workflow file. That file sets `engine.build_config` and `engine.waterbodies_config` (normally the recipes in `config/defaults/`), `simulation_window`, and optional `observations` by variable. Defaults are operational inputs, so changing one changes the build. See [Configuration](../guide/configuration.qmd).
+
+Inputs include cataloged terrain, land, soil, hydrography, waterbody, and climate data; output locations; the two Wflow build recipes; and observations when evaluation is requested. The simulation window lies inside the historical climate window.
+
+## Outputs
+
+WF1 writes the basin vectors and thematic maps, the Wflow-SBM model and forcing, a gauge crosswalk, the native historical simulation response, exported per-variable tables, evaluation figures and metrics where observations are available, and run metadata. Logs and benchmarks are gathered at the project level. WF4 consumes the completed model, not the historical evaluation figures.

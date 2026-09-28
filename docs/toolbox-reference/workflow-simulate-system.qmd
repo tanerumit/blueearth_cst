@@ -1,0 +1,26 @@
+---
+title: "WF4 — Simulate system"
+---
+
+`simulate_system.smk` runs Wflow-SBM for explicit series in a ready WF3 collection and reduces retained native responses to requested indicators. Invoke it through `scripts/simulate_system.py`, which validates the operation and target before Snakemake starts.
+
+## Rules
+
+| Rules | Operation |
+|---|---|
+| 4.01–4.03 | Fingerprint the model, verify it has not changed, and freeze simulation inputs. |
+| 4.04–4.06 | Downscale selected climate series, run Wflow in batches, and publish the response inventory. |
+| 4.07–4.08 | Plan and derive a metric set from retained responses. |
+| 4.09–4.10 | Gather experiment logs and benchmarks. |
+
+The supported target includes `all`; the workflow also exposes simulation-only and simulation-plus-indicator target aggregates. A metrics-only operation can produce another metric set from completed responses without rerunning Wflow. The wrapper selects the appropriate module and validates the requested operation/target combination.
+
+## Configuration and inputs
+
+The project file supplies the model context and `workflows.simulate_system.config_path`. The workflow file names `experiment_name` and `operation`; the rapid example uses `simulate-and-metrics`. The runner's target and run selection determine the actual simulation request. See [Running the workflows](../guide/running.qmd) for supported command options and [Configuration](../guide/configuration.qmd) for the split project files.
+
+WF4 requires the completed WF1 model and an explicitly selected ready WF3 collection and run IDs. It checks the model reference and freezes the selected collection, model, settings, and environment identity for the experiment. It does not consume WF2 projections.
+
+## Outputs
+
+An experiment retains native Wflow response CSVs and a response inventory. Each metric set retains `metrics.json`, indicator tables, unit index, and declarations that identify the source responses. Logs and benchmarks are scoped to the experiment. A metric set is immutable; changing an indicator request creates another set from the retained responses. See [Reading the outputs](../guide/outputs.qmd) for paths and join keys.

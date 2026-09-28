@@ -104,7 +104,15 @@ website:
         - section: "Toolbox reference"
           href: toolbox-reference/overview.qmd
           contents:
-            - toolbox-reference/assessment-workflow.qmd
+            - section: "Workflows"
+              href: toolbox-reference/workflows.qmd
+              contents:
+                - toolbox-reference/workflow-analyze-climate.qmd
+                - toolbox-reference/workflow-build-model.qmd
+                - toolbox-reference/workflow-analyze-projections.qmd
+                - toolbox-reference/workflow-generate-scenarios.qmd
+                - toolbox-reference/workflow-simulate-system.qmd
+            - toolbox-reference/modeling-tools.qmd
             - toolbox-reference/datasets.qmd
   search:
     location: navbar

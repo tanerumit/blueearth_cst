@@ -1,0 +1,28 @@
+---
+title: "WF3 — Generate scenarios"
+---
+
+`generate_scenarios.smk` builds a reusable collection of stochastic weather realizations across a configured temperature–precipitation perturbation grid. Generation is independent of CMIP6 and of the Wflow model. Use the owned `scripts/run_workflows.py` wrapper to prepare and claim the collection.
+
+## Rules and wrapper steps
+
+| Steps | Operation |
+|---|---|
+| 3.01–3.03 | Delineate the basin, extract historical climate, and prepare the monthly perturbation lookup. |
+| 3.04–3.06 | Wrapper snapshots the source plan, claims a collection, and prepares weather-generator settings. |
+| 3.07 | Generate unperturbed weather realizations. |
+| 3.08 | Perturb each realization for the selected grid points. |
+| 3.09 | Validate and publish the ready collection. |
+| 3.10–3.11 | Gather generation benchmarks and logs. |
+
+The `all` target waits for the ready collection and execution records. Wrapper steps 3.04–3.06 occur before the generation DAG; they are not Snakemake rules.
+
+## Configuration and inputs
+
+The project file supplies the basin, catalog, historical `climate.selected`, and `climate.window`. `workflows.generate_scenarios.config_path` points to the workflow file, which sets `n_realizations`, `simulation_window`, `climate_perturbations`, and `seed`. The perturbation settings define monthly temperature and precipitation levels and trajectories, with optional precipitation variance and wet/dry spell factors. See [Configuration](../guide/configuration.qmd).
+
+Inputs are historical climate data from the selected catalog source, the basin region, and the weather-generator and perturbation settings. WF3 does not consume WF2 change factors or a Wflow model.
+
+## Outputs
+
+The ready collection retains generated and perturbed climate series, a run/perturbation lookup, a collection inventory, and creator configuration. A ready marker signals publication; downstream consumers request explicit run IDs from a specific collection. Generation also writes logs and benchmarks. See [Reading the outputs](../guide/outputs.qmd) for the public collection layout and joins.

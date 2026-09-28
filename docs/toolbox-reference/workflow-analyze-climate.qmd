@@ -1,0 +1,26 @@
+---
+title: "WF0 — Analyze climate"
+---
+
+`analyze_climate.smk` characterizes candidate historical climate sources without a hydrological model. It is optional. Run it alone when selecting a forcing source, because WF0 shares region and climate products with other workflows.
+
+## Rules
+
+| Rules | Operation |
+|---|---|
+| 0.01–0.02 | Delineate the basin region, subbasins, and rivers. |
+| 0.03–0.04 | Extract and plot the historical climate record for each configured source. |
+| 0.05 | Compare sources when more than one is configured. |
+| 0.06–0.07 | Gather benchmark and log parts. |
+
+The `all` target collects the products. Rules 0.03 and 0.04 fan out by source; comparison is conditional. The runner publishes a configuration archive before Snakemake parses the workflow.
+
+## Configuration and inputs
+
+The project file supplies `basin.region`, `basin.resolution`, `climate.sources`, and `climate.window`. The `workflows.analyze_climate` stanza points to its workflow file, which currently has no settings of its own (`{}` in the rapid example). Source names resolve through the project's data catalogs. See [Configuration](../guide/configuration.qmd) for the complete project-file contract.
+
+Inputs are the basin definition, candidate historical climate datasets, and their catalog entries. The workflow does not consume a Wflow model or CMIP6 projections.
+
+## Outputs
+
+WF0 writes shared basin geometry and a historical climate store beneath `project_dir`, plus per-source climate figures. With multiple sources it also writes comparison products. Merged logs and benchmarks document the run. The selected source for subsequent workflows is set by `climate.selected` in the project file; a WF0 comparison does not silently change it.

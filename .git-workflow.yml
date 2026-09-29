@@ -27,8 +27,6 @@ auto_push: false
 session_slots:
   - session-1
   - session-2
-  - session-3
-  - session-4
 
 # advisory — infer occupancy from the branch checked out in each worktree
 # atomic   — enforce ownership through claims, scopes, and readiness state

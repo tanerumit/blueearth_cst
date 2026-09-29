@@ -6,12 +6,11 @@ format: html
 
 The BlueEarth CST toolbox implements a five-workflow climate stress test. This reference describes the workflow boundaries and the data they consume and produce. For the assessment rationale and interpretation of a climate response surface, start with [Scientific approach](../scientific-approach/overview.qmd).
 
-## Find an interface
+## Sections
 
-1. [Assessment workflow](assessment-workflow.qmd) summarizes WF0–WF4, their dependencies, and their main products.
-2. [Datasets](datasets.qmd) identifies the role of each source and the consequences of substituting it.
-3. [Configuration](../guide/configuration.qmd) explains the project file and workflow settings files.
-4. [Running the workflows](../guide/running.qmd) gives the supported commands and options.
-5. [Reading the outputs](../guide/outputs.qmd) explains the retained product layout and the identifiers used to join results.
+1. **Toolbox Architecture** — documentation is planned; the workflow and component pages below describe the current interfaces.
+2. [Workflows](workflows.qmd) introduces WF0–WF4 and links to a reference page for each workflow's rules, configuration, inputs, and outputs.
+3. [Modeling Tools](modeling-tools.qmd) identifies the model and software components used by the workflows.
+4. [Datasets](datasets.qmd) identifies the role of each source and the consequences of substituting it.
 
 The configuration, running, and output pages remain in the User guide so their procedures are available where readers carry out an assessment.

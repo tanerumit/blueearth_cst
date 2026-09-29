@@ -1,0 +1,63 @@
+---
+title: "WF3 — Generate scenarios"
+---
+
+`generate_scenarios.smk` builds a reusable collection of stochastic weather realizations across a configured temperature–precipitation perturbation grid. Generation is independent of CMIP6 and of the Wflow model. Use the owned `scripts/run_workflows.py` wrapper to prepare and claim the collection.
+
+## Rules and wrapper steps
+
+| Rule or wrapper step | Operation |
+|---|---|
+| `all` (target) | Collect the ready collection and execution records. |
+| 3.01 `delineate_region` | Define the shared basin region. |
+| 3.02 `extract_climate_datasets` | Extract the selected historical climate store. |
+| 3.03 `prepare_perturbation_grid` | Stage the monthly perturbation lookup. |
+| 3.04 `snapshot_generation_inputs` (wrapper step) | Freeze source inventory and generation plan. |
+| 3.05 `claim_scenario_collection` (wrapper step) | Claim and initialize the collection. |
+| 3.06 `prepare_weather_generator_settings` (wrapper step) | Write weather-generator input settings. |
+| 3.07 `generate_weather_realizations` | Generate unperturbed series. |
+| 3.08 `perturb_climate_realizations` | Generate the perturbed series by run. |
+| 3.09 `publish_scenario_collection` | Validate and mark the collection ready. |
+| 3.10 `gather_benchmarks` | Merge benchmark parts. |
+| 3.11 `gather_logs` | Merge log parts. |
+
+The `all` target waits for the ready collection and execution records. Wrapper steps 3.04–3.06 occur before the generation DAG; they are not Snakemake rules.
+
+## Rule flow
+
+```{mermaid}
+flowchart LR
+  A["3.01–3.03 Region, climate, grid"] --> B["3.04–3.06 Wrapper: snapshot, claim, settings"]
+  B --> C["3.07 Generate realizations"]
+  C --> D["3.08 Perturb realizations"]
+  D --> E["3.09 Publish ready collection"]
+  E --> F["3.10–3.11 Records"]
+```
+
+The wrapper stages run before the generation DAG. Generation and perturbation fan out over realizations and selected grid points.
+
+## Configuration
+
+The project file supplies `project.catalog`, the `basin` definition, and `climate.selected` and `climate.window`. Its `workflows.generate_scenarios` stanza enables the workflow and points to its YAML file through `config_path`.
+
+The workflow file, `test_case/project_config_rapid_generate_scenarios.yml`, sets `n_realizations`, `simulation_window.start` and `.end`, and `seed` (integer or `auto`). `climate_perturbations.temp` and `.precip` define monthly `mean.min` and `.max`, `n_levels`, and `trajectory`; precipitation can also set monthly `variance.min` and `.max`. `climate_perturbations.spell_factors.dry` and `.wet` modify spell lengths without adding grid axes. The template at `config/templates/project_config.generate_scenarios.template.yml` also shows optional `unit_id_capacity`.
+
+```text
+n_realizations: 2
+simulation_window: start, end
+climate_perturbations:
+  temp: n_levels, trajectory, mean.min/max (12 monthly values each)
+  precip: n_levels, trajectory, mean.min/max, variance.min/max
+  spell_factors: dry/wet (12 monthly values each)
+seed: 123
+```
+
+This is a key map, not a copyable YAML file. Use the twelve monthly values in the workflow YAML or template when configuring perturbations.
+
+## Inputs
+
+Inputs are historical climate data from the selected catalog source, the basin region, and the weather-generator and perturbation settings. WF3 does not consume WF2 change factors or a Wflow model.
+
+## Outputs
+
+The ready collection retains generated and perturbed climate series, a run/perturbation lookup, a collection inventory, and creator configuration. A ready marker signals publication; downstream consumers request explicit run IDs from a specific collection. Generation also writes logs and benchmarks. See [Reading the outputs](../guide/outputs.qmd) for the public collection layout and joins.

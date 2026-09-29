@@ -1,0 +1,16 @@
+---
+title: "Workflows"
+subtitle: "Five workflow contracts from source data to retained indicators"
+---
+
+The workflows share a project configuration but have distinct products. The usual execution order is WF0 → WF1 → WF2 → WF3 → WF4. [WF0](workflow-analyze-climate.qmd) is optional; run it alone when comparing candidate historical climate sources. [WF1](workflow-build-model.qmd) and [WF3](workflow-generate-scenarios.qmd) independently provide the model and scenario collection required by [WF4](workflow-simulate-system.qmd). [WF2](workflow-analyze-projections.qmd) supplies a projection plausibility overlay; its CMIP6 data never drives scenario generation.
+
+| Workflow | Purpose | Principal product |
+|---|---|---|
+| [WF0 — Analyze climate](workflow-analyze-climate.qmd) | Characterize and compare historical climate sources | Climate figures and source comparison |
+| [WF1 — Build model](workflow-build-model.qmd) | Build Wflow-SBM and run its historical reference | Model, historical responses, evaluation |
+| [WF2 — Analyze projections](workflow-analyze-projections.qmd) | Summarize CMIP6 change relative to a reference period | Monthly basin change factors and figures |
+| [WF3 — Generate scenarios](workflow-generate-scenarios.qmd) | Generate and perturb stochastic weather | Ready, reusable scenario collection |
+| [WF4 — Simulate system](workflow-simulate-system.qmd) | Simulate selected series and derive indicators | Retained responses and metric sets |
+
+Each page describes the rule sequence, configuration, inputs, and outputs. See [Configuration](../guide/configuration.qmd) for path resolution and the [Running guide](../guide/running.qmd) for commands. All products are written below the configured `project_dir`.

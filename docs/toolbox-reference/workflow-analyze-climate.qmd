@@ -1,0 +1,53 @@
+---
+title: "WF0 — Analyze climate"
+---
+
+`analyze_climate.smk` characterizes candidate historical climate sources without a hydrological model. It is optional. Run it alone when selecting a forcing source, because WF0 shares region and climate products with other workflows.
+
+## Rules
+
+| Rule | Operation |
+|---|---|
+| `all` (target) | Collect the workflow outputs and execution records. |
+| 0.01 `delineate_region` | Define the shared basin region. |
+| 0.02 `delineate_subbasins_and_rivers` | Define shared basin, subbasin, river, and location vectors. |
+| 0.03 `extract_climate_datasets_<source>` | Extract each configured historical source to its basin store. |
+| 0.04 `plot_climate_datasets_<source>` | Render figures for each source. |
+| 0.05 `compare_climate_datasets` | Compare sources when more than one is configured. |
+| 0.06 `gather_benchmarks` | Merge benchmark parts. |
+| 0.07 `gather_logs` | Merge log parts. |
+
+The `all` target collects the products. Rules 0.03 and 0.04 fan out by source; comparison is conditional. The runner publishes a configuration archive before Snakemake parses the workflow.
+
+## Rule flow
+
+```{mermaid}
+flowchart LR
+  A["0.01 Region"] --> B["0.02 Subbasins and rivers"]
+  A --> C["0.03 Extract each source"]
+  B --> D["0.04 Plot each source"]
+  C --> D
+  D --> E["0.05 Compare sources · if multiple"]
+  D --> F["0.06–0.07 Records"]
+  E --> F
+```
+
+The source branches fan out for every configured dataset. The comparison branch exists only when more than one source is configured.
+
+## Configuration
+
+The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, `basin.region`, `basin.resolution`, `climate.sources`, `climate.selected`, and `climate.window`. Its `workflows.analyze_climate` stanza enables the workflow and resolves `config_path` relative to the project file. The selected source leads the figures; comparing sources does not change that selection.
+
+The workflow file, `test_case/project_config_rapid_analyze_climate.yml`, is deliberately `{}`. Its template, `config/templates/project_config.analyze_climate.template.yml`, defines no workflow-specific keys. Candidate sources and the analysis years belong in the project file, where other workflows can share them.
+
+```yaml
+{} # WF0 has no workflow-specific settings
+```
+
+## Inputs
+
+Inputs are the basin definition, candidate historical climate datasets, and their catalog entries. The workflow does not consume a Wflow model or CMIP6 projections.
+
+## Outputs
+
+WF0 writes shared basin geometry and a historical climate store beneath `project_dir`, plus per-source climate figures. With multiple sources it also writes comparison products. Merged logs and benchmarks document the run. The selected source for subsequent workflows is set by `climate.selected` in the project file; a WF0 comparison does not silently change it.

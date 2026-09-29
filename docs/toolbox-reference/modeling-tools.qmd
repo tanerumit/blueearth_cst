@@ -1,0 +1,15 @@
+---
+title: "Modeling Tools"
+format: html
+---
+
+The toolbox coordinates several tools. Each has a distinct role in an assessment; the workflow pages identify where it is used.
+
+| Tool | Role | Used by |
+|---|---|---|
+| HydroMT and HydroMT-Wflow | Read catalogued spatial and climate data, delineate a basin, and construct the Wflow-SBM model and forcing | WF0–WF3 for data preparation; WF1 for model construction |
+| [Wflow-SBM](../scientific-approach/models-and-methods.qmd#wflow-sbm-and-the-historical-reference) | Simulate distributed hydrology under historical and generated forcing | WF1, WF4 |
+| `weathergenr` | Generate stochastic weather realizations conditioned on historical climate | WF3 |
+| Snakemake | Resolve rule dependencies and execute each workflow | WF0–WF4 |
+
+The [Models and methods](../scientific-approach/models-and-methods.qmd) page explains the scientific assumptions. The [Datasets](datasets.qmd) page describes source data and substitution choices.

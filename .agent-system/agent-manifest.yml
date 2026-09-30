@@ -35,6 +35,7 @@ skills:
   # sole main-thread activation. Removing a line removes the skill.
   - design-review-loop
   - design-scoping
+  - diagram-design
   - pixi-env                # pixi + R-outside-lock + juliaup env management, CI
   - python-plotting         # dataviz-designer binds `always (role-only)`, which
                             # does NOT promote; this line is its only main-thread route

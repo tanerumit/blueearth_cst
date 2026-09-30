@@ -1,7 +1,10 @@
 # Migration — the scenario tree moves, and digest directories get shorter
 
+> Historical post-R12 migration record. For current paths, use
+> [Reading the outputs](../../../../docs/site/guide/outputs.qmd).
+
 > Historical R12 migration guide. For a fresh output project, use the current
-> launcher commands in [README.md](../README.md); WF0--WF2 now publish
+> launcher commands in [README.md](../../../../README.md); WF0--WF2 now publish
 > `config/runs/<workflow>/run_record.yml` with exact `sources/` archives.
 
 Post-R12 changes the layout of generated project folders. **There is no
@@ -124,7 +127,7 @@ stranger.
 
 ## Related
 
-- [Workflow names migration](migration-workflow-names.md) — R12's split of
+- [Workflow names migration](../r12/migration-workflow-names.md) — R12's split of
   `run_stress_test.smk`, whose artifact table this change updates.
-- [Configuration shape migration](migration-config-shape.md) — R13's project
+- [Configuration shape migration](../r14/migration-config-shape.md) — R14's project
   config set. Unaffected by this change.

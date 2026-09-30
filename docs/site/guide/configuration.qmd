@@ -165,5 +165,4 @@ experiment keeps the inputs that produced its results.
 - [Reading the outputs](outputs.qmd) — what the run wrote, and whether it is
   still current.
 
-For older project files, see the
-[configuration migration notes in the repository](https://github.com/tanerumit/blueearth_cst/blob/main/docs/migration-config-shape.md).
+For older project files, follow [Migrating an older project config](migrating-project-config.qmd).

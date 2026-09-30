@@ -82,7 +82,7 @@ snakemake = "*"
 lmoments3 = "==1.0.8"
 
 # Env activation. Applied on every `pixi shell` / `pixi run`, so these no longer
-# have to be re-created by hand after each env rebuild (see docs/env_setup_notes.md).
+# have to be re-created by hand after each env rebuild (see docs/site/setup/env-setup-notes.md).
 [activation.env]
 # HDF5 takes an flock-style lock by default; the Deltares P: SMB share rejects
 # it, so netCDF4 reads fail mid-op. Disabling locking is also safe/recommended
@@ -231,10 +231,10 @@ run-workflows = { cmd = "python scripts/run_workflows.py", description = "Run th
 # Documentation site. The Quarto project is rooted at `docs/`, so both tasks
 # take that directory rather than the repo root -- the render scope is then a
 # directory that holds only documentation, and the vendored hydromt / wflow
-# guides are excluded by name in `docs/_quarto.yml` rather than the whole repo
+# guides are excluded by name in `docs/site/_quarto.yml` rather than the whole repo
 # being excluded by an allow-list nobody maintains.
 #
 # Neither task publishes anything. Deployment to GitHub Pages is deliberately
 # not wired yet -- see dev/working/2026-08-19_quarto-docs-site/design.md P4.
-docs-preview = { cmd = "quarto preview docs", description = "Serve the documentation site locally with live reload (Ctrl-C to stop)" }
-docs-build   = { cmd = "quarto render docs", description = "Render the documentation site to docs/_site (gitignored); the build gate" }
+docs-preview = { cmd = "quarto preview docs/site", description = "Serve the documentation site locally with live reload (Ctrl-C to stop)" }
+docs-build   = { cmd = "quarto render docs/site", description = "Render the documentation site to docs/site/_site (gitignored); the build gate" }

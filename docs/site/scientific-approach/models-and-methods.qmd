@@ -3,7 +3,7 @@ title: "Models and methods"
 format: html
 ---
 
-The assessment links three distinct models or modeling functions: HydroMT prepares a basin-specific model, Wflow-SBM simulates hydrology, and `weathergenr` generates weather sequences for stress testing. CMIP6 projections provide a separate plausibility comparison. The scientific descriptions below draw on the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md); the workflow boundaries and options reflect the current toolbox.
+The assessment links three distinct models or modeling functions: HydroMT prepares a basin-specific model, Wflow-SBM simulates hydrology, and `weathergenr` generates weather sequences for stress testing. CMIP6 projections provide a separate plausibility comparison. The scientific descriptions below draw on the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/references/cst-toolbox-technical-note-2025.md); the workflow boundaries and options reflect the current toolbox.
 
 | Component | Role in the assessment | What it does not establish |
 |---|---|---|
@@ -26,7 +26,7 @@ WF1 runs the model for a historical reference period. This run checks the config
 
 ## Stochastic weather generation
 
-`weathergenr` conditions on the selected historical meteorological record and generates multiple realizations. The [2025 note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md) describes its underlying semi-parametric method in three parts:
+`weathergenr` conditions on the selected historical meteorological record and generates multiple realizations. The [2025 note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/references/cst-toolbox-technical-note-2025.md) describes its underlying semi-parametric method in three parts:
 
 | Method element | Role |
 |---|---|

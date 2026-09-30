@@ -46,7 +46,7 @@ project:
 basin:
   # hydromt region, in quotes. This form: the basin draining to a point
   # (lon, lat), at least 100 km2 upstream. Other forms:
-  # docs/hydromt-user-guide/models/model_region.md
+  # docs/references/hydromt-user-guide/models/model_region.md
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833333                   # degrees (1/120 = 30 arc-seconds)
 

@@ -7,7 +7,7 @@ This page runs the whole pipeline once, on the example basin that ships with the
 toolbox, so you can see what each stage produces before setting up your own
 basin. Allow at least an hour; the time depends on your computer and data access.
 
-If the toolbox is not installed yet, do that first: [Setup guide](../install.md).
+If the toolbox is not installed yet, do that first: [Setup guide](../setup/install.md).
 The example also needs access to the datasets named in its HydroMT catalogs;
 the supplied catalog paths may need to be replaced for your machine. Check
 `project.catalog` and the data source entries before starting.
@@ -22,7 +22,7 @@ pixi run install
 
 The second command installs the weather generator and prepares the Julia
 environment. Julia itself must already be available through juliaup; see the
-[setup guide](../install.md).
+[setup guide](../setup/install.md).
 :::
 
 ## The shape of a run
@@ -108,7 +108,7 @@ temperature and precipitation change using the files described in
   skipped; run `pixi run install`.
 - **Julia not found** — Julia is deliberately not in the pixi environment. It is
   managed by juliaup and must be on your `PATH`; see the
-  [Setup guide](../install.md).
+  [Setup guide](../setup/install.md).
 
 ## Next
 

@@ -52,7 +52,7 @@ from typing import Dict, List, Optional
 import pandas as pd
 
 #: Wflow names a mapped column ``<header>_<id>``; see the vendored guide
-#: (docs/wflow-user-guide/03-toml-file.md, the `[[output.csv.column]]` section).
+#: (docs/references/wflow-user-guide/03-toml-file.md, the `[[output.csv.column]]` section).
 _COLUMN = re.compile(r"^(?P<var>.+?)_(?P<station>\d+)$")
 
 #: Decimal places kept in a derived table. Five is the owner ruling: it puts a

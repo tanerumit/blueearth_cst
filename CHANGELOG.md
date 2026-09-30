@@ -12,7 +12,7 @@ summaries.
 
 Workflow 2 restructured from a model/scenario fan-out into a monthly GCM
 projections analysis. **Breaking config changes** — see
-`docs/migration-r08-wf2.md`.
+`dev/records/milestones/r08/migration-wf2.md`.
 
 ### Breaking
 

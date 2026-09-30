@@ -4,7 +4,7 @@ subtitle: "Historical reference, stress-test conditions, and projection context"
 format: html
 ---
 
-The assessment uses three different forms of climate information. Keeping their purposes separate is central to the bottom-up approach described in the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md).
+The assessment uses three different forms of climate information. Keeping their purposes separate is central to the bottom-up approach described in the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/references/cst-toolbox-technical-note-2025.md).
 
 | Information | Source | Use |
 |---|---|---|

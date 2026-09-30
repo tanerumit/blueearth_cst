@@ -1,5 +1,8 @@
 # Migration — workflow 2 (R8, `v2.0` of the climate-projections workflow)
 
+> Historical R08 migration record. For current workflow inputs and outputs,
+> use the [WF2 reference](../../../../docs/site/toolbox-reference/workflow-analyze-projections.qmd).
+
 Workflow 2 was restructured in milestone R8. **Three config changes are breaking**
 and fail loudly at DAG build; everything else is additive or a value change you
 should know about.

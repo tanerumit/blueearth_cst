@@ -68,7 +68,14 @@ commit `45e3a564` (`dev/README.md` explains the command).
 
 ## docs/
 
-User-facing reference, including the vendored hydromt / hydromt-wflow / wflow guides. Configs are not mirrored here; `config/` is the single source.
+The Quarto site publishes `guide/`, `setup/`, `scientific-approach/`, and
+`toolbox-reference/`. `notebooks/` holds source-only walkthroughs;
+`references/` keeps the dated 2025
+technical note and vendored HydroMT / HydroMT-Wflow / Wflow guides for offline
+use. See `docs/README.md` for the map. Configs are not mirrored here;
+`config/` is the single source.
+Historical migration guides are filed under their relevant `dev/records/milestones/`
+directory; the current migrator is described in `docs/site/guide/`.
 
 ## .github/workflows/ci.yml
 

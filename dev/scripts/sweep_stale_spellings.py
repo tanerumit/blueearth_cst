@@ -187,16 +187,6 @@ ALLOWANCES = (
         path_globs=("config/templates/archive/*",),
     ),
     Allowance(
-        name="an earlier migration's record",
-        reason=(
-            "`docs/migration-config-tiers.md` documents R13's tier split and "
-            "has to show the v1 keys it moved, exactly as "
-            "`config/migrations/v1_to_v2.yml` does. The `milestone records` "
-            "class does not reach it because it lives under `docs/`"
-        ),
-        paths=("docs/migration-config-tiers.md",),
-    ),
-    Allowance(
         name="the staging tool's own vocabulary",
         reason=(
             "`dev/scripts/stage_cmip6.py` reads `dev/scripts/stage_cmip6.yml`, "

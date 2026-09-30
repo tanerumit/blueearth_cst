@@ -53,7 +53,7 @@ A `--config` override reaches the project config before composition, so it can
 toggle a workflow or repoint a stanza's ``config_path`` -- but a project
 config's top level and its workflow stanzas are both CLOSED, so an override
 that invents a top-level key or writes a workflow setting is refused at parse
-time. See ``docs/migration-config-tiers.md`` for the full mapping.
+time. See ``dev/records/milestones/r13/migration-config-tiers.md`` for the full mapping.
 
 Not a Snakemake rule and deliberately so: a rule that renders the DAG would sit
 inside the DAG it renders, and would show up in ``--summary`` and in the project

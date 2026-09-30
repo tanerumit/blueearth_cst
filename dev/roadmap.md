@@ -981,7 +981,7 @@ Phase 4 continued it from Phase 2's R1–R6.
 ### R8 — WF2 v2.0: GCM projections analysis (SEALED 2026-07-31)
 
 All seven steps of the design's §8 migration table are implemented. Tagged
-`r08-wf2-projections`; user migration note in `docs/migration-r08-wf2.md`.
+`r08-wf2-projections`; user migration note in `dev/records/milestones/r08/migration-wf2.md`.
 
 **Method discipline that shaped the outcome.** Every value-changing step wrote its
 falsifier *before* its code — the observation that would disprove the step, plus
@@ -1007,7 +1007,7 @@ never run at all.
    latitude-symmetric (so area weighting is exactly inert), wet year-round (so the
    dry-month rule never fires), and all three models share one calendar. Green
    fixture gates are necessary and never sufficient — see
-   `docs/migration-r08-wf2.md` and the per-step falsifier notes.
+   `dev/records/milestones/r08/migration-wf2.md` and the per-step falsifier notes.
 4. **`check_baseline` compares PNGs by size with a 10 % tolerance.** A figure whose
    content changed completely passes if its compressed size lands within 10 %.
    "3 PNGs pinned" reads as stronger coverage than it is. Not changed here —

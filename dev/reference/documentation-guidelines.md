@@ -18,8 +18,8 @@ These guidelines apply to new and revised BlueEarth CST documentation.
 
 ## Put information in the right place
 
-- `docs/index.qmd` introduces the assessment approach and directs readers to
-  tasks. `docs/guide/` explains setup choices, running workflows, and
+- `docs/site/index.qmd` introduces the assessment approach and directs readers to
+  tasks. `docs/site/guide/` explains setup choices, running workflows, and
   interpreting outputs. Keep each page focused on a reader's task and link to
   detail instead of repeating it.
 - `docs/` holds user-facing instructions and references. Put implementation

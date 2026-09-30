@@ -8,7 +8,7 @@ format: html
 
 These pages are for water-resources modelers and climate-risk practitioners who need to understand what a BlueEarth CST assessment represents before using its results.
 They explain the scientific reasoning, models, and conventions needed to interpret a climate response surface.
-For the five-workflow implementation and its data sources, use the [Toolbox reference](../toolbox-reference/overview.qmd). For installation and commands, use [Setup](../install.md) and the [User guide](../guide/quick-start.qmd).
+For the five-workflow implementation and its data sources, use the [Toolbox reference](../toolbox-reference/overview.qmd). For installation and commands, use [Setup](../setup/install.md) and the [User guide](../guide/quick-start.qmd).
 
 ## Assessment logic
 
@@ -28,5 +28,5 @@ Investment design and site-specific risk estimates require assessment of local d
 2. [Climate information](climate-information.qmd) distinguishes historical forcing, stress-test weather, and the projection overlay.
 3. [Conventions and interpretation](conventions-and-interpretation.qmd) explains periods, climate response surfaces, uncertainty, and limits.
 
-The terminology follows the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/cst-toolbox-technical-note-2025.md).
+The terminology follows the [2025 CST technical note](https://github.com/tanerumit/blueearth_cst/blob/main/docs/references/cst-toolbox-technical-note-2025.md).
 That note describes the earlier three-workflow prototype and web application; the [Toolbox reference](../toolbox-reference/overview.qmd) describes the current workflow engine.

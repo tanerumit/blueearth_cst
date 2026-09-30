@@ -82,8 +82,8 @@ if TYPE_CHECKING:
 # ---------------------------------------------------------------------------
 
 #: The user-facing migration guide, named by every refusal this module raises.
-#: R13's `docs/migration-config-tiers.md` is superseded by it and says so.
-MIGRATION_DOC = "docs/migration-config-shape.md"
+#: R13's `dev/records/milestones/r13/migration-config-tiers.md` is superseded by it and says so.
+MIGRATION_DOC = "docs/site/guide/migrating-project-config.qmd"
 
 #: The project config shape this loader accepts (R14 D-11.1). A document with no
 #: `schema_version`, or a lower one, is a v1 set and is refused rather than

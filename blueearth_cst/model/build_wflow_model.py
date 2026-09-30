@@ -26,7 +26,7 @@ _BASE_CONFIG = {
     },
     # Wflow logs to the terminal AND to a file by default. `silent` turns off
     # only the TERMINAL half; `path_log` still receives every record at
-    # `loglevel` (docs/wflow-user-guide/03-toml-file.md), so this suppresses a
+    # `loglevel` (docs/references/wflow-user-guide/03-toml-file.md), so this suppresses a
     # duplicate rather than discarding information.
     #
     # Set HERE, in the one base config, rather than as a `setup_config:` step in

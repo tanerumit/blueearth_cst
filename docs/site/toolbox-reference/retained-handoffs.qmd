@@ -1,0 +1,28 @@
+---
+title: "Retained scenario and simulation handoffs"
+---
+
+WF3 publishes a reusable scenario collection. WF4 selects explicit run IDs from
+a ready collection, runs Wflow-SBM against a completed WF1 model, and retains
+native responses for later metric requests. WF2 projection analysis is an
+independent plausibility overlay and does not select stress-test scenarios.
+
+| Handoff | Published under `project_dir` | Consumer |
+|---|---|---|
+| Scenario collection | `scenarios/collections/<collection_id>/`, including `collection.json` and generated series | WF4 selects a ready collection and explicit run IDs. |
+| Simulation responses | `experiments/<experiment_name>/hydrology/wflow/output/`, with `experiments/<experiment_name>/_engine/response_inventory.json` | Metric reduction reads retained native Wflow responses. |
+| Metric set | `experiments/<experiment_name>/results/metric_sets/<metric_set_id>/`, including `metrics.json` | Result readers join indicator tables to their unit index and request metadata. |
+
+The collection, simulation, and metric set have separate identities. A changed
+collection, model, or simulation setting requires a new experiment. A changed
+metric request creates another metric set from retained responses without
+rerunning Wflow. Published products are validated before reuse and are not
+silently overwritten.
+
+Use the owned launchers: `scripts/run_workflows.py` for generation and
+`scripts/simulate_system.py` for simulation. The
+[WF3 workflow](workflow-generate-scenarios.qmd),
+[WF4 workflow](workflow-simulate-system.qmd), and
+[output guide](../guide/outputs.qmd) give the current controls, paths, and join
+keys. The [historical migration records](https://github.com/tanerumit/blueearth_cst/tree/main/dev/records/milestones)
+describe older layouts.

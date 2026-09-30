@@ -1,7 +1,7 @@
 # Quarto project for the BlueEarth CST documentation site.
 #
-# Rooted at docs/, not at the repository root, so the render scope is a
-# directory that already holds only documentation. Design and phasing:
+# Rooted at docs/site/, so repository-only sources stay outside the render
+# scope. Design and phasing:
 # dev/working/2026-08-19_quarto-docs-site/design.md
 #
 # PHASE 3, in progress (t2608202351b). The site publishes the landing page,
@@ -28,25 +28,11 @@ project:
     # Explicit, like everything else here: quarto special-cases a 404.qmd only
     # when it is rendered, and this project enumerates its render targets.
     - "404.qmd"
-    # The setup guide, rendered where it already lives. These two are NOT moved
-    # into a setup/ directory: ten files across pixi.toml, scripts/, dev/ and
-    # README.md cite these paths, and a navbar entry does the same job for free.
-    - "install.md"
-    - "env_setup_notes.md"
+    # Setup pages are kept together; live references were updated with the move.
+    - "setup/*.md"
 
-    # Vendored upstream Deltares documentation. Held here so an agent can read
-    # it offline; republishing it would put a second, staler copy of hydromt's
-    # and wflow's own docs at a URL that looks authoritative. Link out instead.
-    - "!hydromt-user-guide/"
-    - "!hydromt-wflow/"
-    - "!wflow-user-guide/"
-    - "!hydromt-architecture.md"
-
-    # Not in the render list at all, and left that way on purpose:
-    #   notebooks/  -- their outputs are stripped by policy (commit a2596d0), so
-    #                  a no-execute render publishes code with no results. The
-    #                  ruling O-2(a) reverses this via a committed docs/_freeze/,
-    #                  which is filed but not yet done -- t2608202351a.
+    # Repository-only sources live outside docs/site. The notebook publication
+    # task must stage frozen copies here before adding them to this render list.
 
 website:
   title: "Climate Stress Testing (CST) Toolbox"
@@ -57,7 +43,7 @@ website:
       - text: "User guide"
         href: guide/quick-start.qmd
       - text: "Setup"
-        href: install.md
+        href: setup/install.md
       - text: "Scientific approach"
         href: scientific-approach/overview.qmd
       - text: "Toolbox reference"
@@ -75,6 +61,7 @@ website:
           contents:
             - guide/quick-start.qmd
             - guide/configuration.qmd
+            - guide/migrating-project-config.qmd
         - section: "Running and results"
           contents:
             - guide/running.qmd
@@ -85,8 +72,8 @@ website:
       contents:
         - section: "Installation"
           contents:
-            - install.md
-            - env_setup_notes.md
+            - setup/install.md
+            - setup/env-setup-notes.md
     - title: "Scientific approach"
       style: docked
       collapse-level: 3
@@ -115,6 +102,7 @@ website:
               href: toolbox-reference/workflow-generate-scenarios.qmd
             - text: "4.Simulate system"
               href: toolbox-reference/workflow-simulate-system.qmd
+            - toolbox-reference/retained-handoffs.qmd
         - section: "Modeling Tools"
           href: toolbox-reference/modeling-tools.qmd
           contents:
@@ -134,8 +122,8 @@ website:
 format:
   html:
     theme:
-      light: [cosmo, theme.scss]
-      dark: [cosmo, theme.scss, theme-dark.scss]
+      light: [cosmo, styles/theme.scss]
+      dark: [cosmo, styles/theme.scss, styles/theme-dark.scss]
     toc: true
     toc-depth: 3
     number-sections: false

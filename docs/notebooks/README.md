@@ -24,7 +24,7 @@ pixi run install   # + weathergenr (R) and the Julia environment
 ```
 
 Julia is **not** in the pixi environment — it is juliaup-managed and must
-already be on `PATH`. See `docs/install.md` if setup misbehaves.
+already be on `PATH`. See `docs/site/setup/install.md` if setup misbehaves.
 
 Then start Jupyter (or VS Code) from inside that environment:
 
@@ -177,8 +177,8 @@ evaluation section for what that means when reading the numbers.*
 ## Related reading
 
 - `README.md` — how the five workflows fit together.
-- `docs/cst-toolbox-technical-note-2025.md` — the stress-test method and the
+- `docs/references/cst-toolbox-technical-note-2025.md` — the stress-test method and the
   design rationale behind it. Read this before changing *what* a workflow
   computes.
-- `docs/install.md`, `docs/env_setup_notes.md` — when pixi, R or Julia setup
+- `docs/site/setup/install.md`, `docs/site/setup/env-setup-notes.md` — when pixi, R or Julia setup
   misbehaves.

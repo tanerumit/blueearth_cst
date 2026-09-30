@@ -41,7 +41,7 @@ initiative and uses [weathergenr](https://github.com/Deltares-research/weatherge
 its weather generator and [Wflow](https://github.com/Deltares/Wflow.jl) for
 hydrological modelling.
 
-![image](docs/_images/CST_scheme.png)
+![image](docs/site/_images/CST_scheme.png)
 
 ## Installation
 
@@ -50,7 +50,7 @@ managed with [pixi](https://pixi.sh/); Julia and Wflow.jl are managed via the
 standard `Project.toml` / `Manifest.toml`. A single `pixi run install` task
 wires both layers together.
 
-For a step-by-step walkthrough of a fresh install, see `docs/install.md`.
+For a step-by-step walkthrough of a fresh install, see `docs/site/setup/install.md`.
 
 ### Prerequisites
 
@@ -193,7 +193,7 @@ settings, seed and unit capacity. Simulation owns `experiment_name`, the require
 `operation`, optional `scenario_collection: {manifest_path: ...}`, compute controls
 and metric selection. Existing seeds are preserved by
 `scripts/migrate_project_config.py`; new `auto` seeds are independent of experiment
-names and identifier capacity. See [configuration migration](docs/migration-config-shape.md).
+names and identifier capacity. See [configuration migration](docs/site/guide/migrating-project-config.qmd).
 
 ### Commands
 
@@ -261,9 +261,7 @@ disable other workflows when only retained reduction is wanted. Default target
 `all` never infers an operation from files. Metrics-only requires no live model,
 generation inputs or Julia. Changed simulation inputs require a new experiment;
 changed metrics select a new immutable metric set. See
-[retained handoffs](docs/wf3-retained-handoffs.md),
-[workflow migration](docs/migration-workflow-names.md) and
-[the post-R12 project-tree migration](docs/migration-post-r12.md).
+[retained handoffs](docs/site/toolbox-reference/retained-handoffs.qmd).
 
 ### Logs and DAGs
 
@@ -352,7 +350,7 @@ Fork-specific (development):
   landed.
 - `dev/reference/git-conventions.md` — branch / tag inventory plus the
   branching, tagging, and commit-message conventions.
-- `docs/install.md` — step-by-step install walkthrough.
+- `docs/site/setup/install.md` — step-by-step install walkthrough.
 - `dev/records/milestones/phase-1/` — sealed foundation milestone artifacts (audits,
   plans, baseline diffs).
 - `dev/records/milestones/r01/` … `dev/records/milestones/r06/` — sealed Phase 2 milestone

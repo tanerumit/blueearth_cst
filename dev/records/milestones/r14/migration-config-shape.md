@@ -1,9 +1,12 @@
 # Migrating a project config to `schema_version: 2`
 
+> Historical R14 migration record. For the maintained command and current
+> workflow, use [Migrating an older project config](../../../../docs/site/guide/migrating-project-config.qmd).
+
 R12 also splits the former stress-test workflow into generation and simulation.
 The same migration command accepts an old version-2 project, writes both workflow
 files and pins its old resolved seed. Current projects carry five workflow
-stanzas. See [workflow migration](migration-workflow-names.md) for ownership,
+stanzas. See [workflow migration](../r12/migration-workflow-names.md) for ownership,
 commands and retained output paths. The legacy v1 map below describes its source
 spellings; the tool then applies this successor split.
 
@@ -204,7 +207,7 @@ internal derivations with no key you could have set.
 
 ## Related
 
-- `docs/migration-config-tiers.md` — R13's split into a project file plus one
+- `dev/records/milestones/r13/migration-config-tiers.md` — R13's split into a project file plus one
   file per workflow. Superseded as a *tool*, but it is the only written record
   of what that split did, which this note builds on rather than repeats.
 - `config/templates/` — copy these for a new project; the header explains the

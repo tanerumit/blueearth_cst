@@ -21,7 +21,7 @@ what it held; see `config/defaults/README.md`.
 The five YAML files are one set. Copy all five into your project folder and
 pass the project file to `--configfile`; its `config_path:` lines name the other
 four. A filled-in worked example is `test_case/project_config_rapid.yml` with
-its siblings; `docs/guide/configuration.qmd` walks through the layout.
+its siblings; `docs/site/guide/configuration.qmd` walks through the layout.
 
 `wflow_sbm.reference.toml` sits here as a **reference copy only** — no Snakefile,
 script or test reads it. Rule 1.06 has hydromt generate the project's own TOML

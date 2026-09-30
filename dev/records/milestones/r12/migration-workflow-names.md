@@ -1,5 +1,9 @@
 # Migration — separate scenario generation and system simulation
 
+> Historical R12 migration record. See the
+> [current workflow reference](../../../../docs/site/toolbox-reference/workflows.qmd)
+> for commands and retained products.
+
 R12 replaces `run_stress_test.smk` with `generate_scenarios.smk` (wf3) and
 `simulate_system.smk` (wf4). There is no compatibility wrapper. Simulation must
 be invoked through `scripts/simulate_system.py` or `scripts/run_workflows.py`.
@@ -15,7 +19,7 @@ The tool splits the old `workflows.run_stress_test` stanza into
 settings beside the project file, and preserves the old resolved integer seed.
 The schema remains version 2. An unmigrated stanza is refused with this migration
 command. Legacy v1 inputs first receive the existing v1-to-v2 transformation;
-its declared exceptions still apply. See [configuration migration](migration-config-shape.md).
+its declared exceptions still apply. See [configuration migration](../../../../docs/site/guide/migrating-project-config.qmd).
 
 Generation owns `n_realizations`, `simulation_window`, `climate_perturbations`,
 `weathergen_config`, `seed` and `unit_id_capacity`. Simulation owns
@@ -69,5 +73,5 @@ operational results; GF-15 benchmark qualification is separately gated.
 Missing or stale routine selection names the exact generation command; simulation
 never rebuilds a collection or falls back to a different one. An explicit
 `scenario_collection: {manifest_path: ...}` validates retained preparation inputs
-without their original sources. See [retained handoffs](wf3-retained-handoffs.md)
-and [ADR 0009](../dev/records/decisions/0009-split-scenario-generation-and-system-simulation.md).
+without their original sources. See [retained handoffs](../../../../docs/site/toolbox-reference/retained-handoffs.qmd)
+and [ADR 0009](../../decisions/0009-split-scenario-generation-and-system-simulation.md).

@@ -1,0 +1,31 @@
+---
+title: "Migrating an older project config"
+subtitle: "Use the current migrator before running an older project"
+---
+
+The current project config uses `schema_version: 2`, a project file, and one
+file per enabled workflow. If the loader refuses an older config, run the
+maintained migrator on the **project file**; it follows the workflow files named
+by `config_path`.
+
+```console
+pixi run python scripts/migrate_project_config.py path/to/project_config.yml --dry-run
+pixi run python scripts/migrate_project_config.py path/to/project_config.yml
+```
+
+The dry run reports proposed changes without writing. The migrator checks the
+whole set before replacing files, preserves comments, and leaves the originals
+beside the migrated files as `*.v1.bak` or `*.v2.bak`. It refuses a migration
+that cannot preserve the old meaning, including a non-January water-year start
+with calendar-aligned legacy dates. Read its refusal before changing any value
+by hand.
+
+After migration, review the proposed workflow enablement, climate selection,
+simulation settings, and file paths, then run a dry run of the intended
+workflow. For a new project, copy the [current template](https://github.com/tanerumit/blueearth_cst/blob/main/config/templates/project_config.template.yml)
+and use [Configuring a project](configuration.qmd).
+
+The detailed mappings and earlier output-tree migrations are retained with
+their [milestone records](https://github.com/tanerumit/blueearth_cst/tree/main/dev/records/milestones).
+They describe the transitions at those milestones and are not the current
+config specification.

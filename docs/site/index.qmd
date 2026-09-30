@@ -39,7 +39,7 @@ locally calibrated model or detailed engineering design.
 
 | If you want to… | Go to |
 |---|---|
-| Install the toolbox on your machine | [Setup guide](install.md) |
+| Install the toolbox on your machine | [Setup guide](setup/install.md) |
 | Run a basin assessment end to end | [Quick start](guide/quick-start.qmd) |
 | Point the toolbox at your own basin | [Configuring a project](guide/configuration.qmd) |
 | Run selected analyses or revisit an experiment | [Running the workflows](guide/running.qmd) |

@@ -11,7 +11,7 @@ Implemented in session-4, September 2026. Scientific calculations and persisted 
 - Indicator export reads each simulation CSV once for all requested variables, retaining discharge columns for only one perturbation at a time. Seasonal pooling keeps only the two selected months.
 - WF2/WF3 heavy rules declare memory reservations. Julia batches reserve their actual Snakemake thread allocation; automatic disk batching accounts for the resulting process concurrency and omits final-state size.
 
-The memory reservations are initial scheduling estimates, not measured peak-RSS limits. A total `--resources mem_mb=...` budget is needed to constrain concurrency. See `docs/guide/running.qmd` for overrides. Correct CPU accounting can reduce simultaneous Julia processes for the same `-c` setting; no universal end-to-end speedup is claimed.
+The memory reservations are initial scheduling estimates, not measured peak-RSS limits. A total `--resources mem_mb=...` budget is needed to constrain concurrency. See `docs/site/guide/running.qmd` for overrides. Correct CPU accounting can reduce simultaneous Julia processes for the same `-c` setting; no universal end-to-end speedup is claimed.
 
 ## Numerical evidence
 

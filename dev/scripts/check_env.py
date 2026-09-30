@@ -17,7 +17,7 @@ NOT guarantee, each of which has failed on its own:
    nor repairs this, and reports success either way. Only code that SHELLS OUT
    to the executable breaks, while everything importing the module passes — a
    suite failing in one narrow layer for no visible reason; see
-   ``docs/env_setup_notes.md`` for the recorded repair.
+   ``docs/site/setup/env-setup-notes.md`` for the recorded repair.
 
 **Worktrees are the case this exists for.** Each carries its own tracked
 ``pixi.toml`` and therefore builds its own ``.pixi/``, so every session slot needs the
@@ -161,7 +161,7 @@ def check(root: Path) -> bool:
         print(f"   console scripts  MISSING ({len(missing)}):")
         for entry in missing:
             print(f"       {entry}")
-        print("       repair: see docs/env_setup_notes.md")
+        print("       repair: see docs/site/setup/env-setup-notes.md")
     else:
         print("   console scripts  ok")
 

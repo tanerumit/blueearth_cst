@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "hooks": {
+    "PreToolUse": [
+      {
+        "type": "command",
+        "matcher": "Edit|Write|MultiEdit|NotebookEdit|ApplyPatch|apply_patch|create|edit|str_replace_editor",
+        "bash": "python \"$HOME/.agents/skills/git-workflow/scripts/worktree-session.py\" guard-hook",
+        "powershell": "python \"$HOME/.agents/skills/git-workflow/scripts/worktree-session.py\" guard-hook",
+        "timeoutSec": 15
+      },
+      {
+        "type": "command",
+        "matcher": "Bash|PowerShell|bash|powershell|shell_command|exec_command",
+        "bash": "python \"$HOME/.agents/skills/git-workflow/scripts/worktree-session.py\" topology-guard-hook",
+        "powershell": "python \"$HOME/.agents/skills/git-workflow/scripts/worktree-session.py\" topology-guard-hook",
+        "timeoutSec": 15
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "type": "command",
+        "bash": "python \"$HOME/.agents/skills/git-workflow/scripts/worktree-session.py\" lane-banner-hook --current",
+        "powershell": "python \"$HOME/.agents/skills/git-workflow/scripts/worktree-session.py\" lane-banner-hook --current",
+        "timeoutSec": 15
+      }
+    ],
+    "SessionStart": [
+      {
+        "type": "command",
+        "bash": "python \"$HOME/.agents/skills/git-workflow/scripts/worktree-session.py\" lane-banner-hook",
+        "powershell": "python \"$HOME/.agents/skills/git-workflow/scripts/worktree-session.py\" lane-banner-hook",
+        "timeoutSec": 15
+      }
+    ]
+  }
+}

@@ -272,7 +272,7 @@ def snapshot_generation_input(
     before = source.stat()
     digest = hashlib.sha256()
     project_root = Path(project_root).resolve()
-    target_root = project_root / "data" / "climate" / "generation_inputs"
+    target_root = project_root / "scenarios" / "_engine" / "generation_inputs"
     temporary = target_root / f".{uuid.uuid4().hex}.copy"
     target_root.mkdir(parents=True, exist_ok=True)
     if target_root.resolve() != target_root:

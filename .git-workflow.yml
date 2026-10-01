@@ -69,3 +69,6 @@ worktree_provision:
 
 # Verify a newly provisioned environment with:
 # pixi run python dev/scripts/check_env.py --all
+
+
+primary_maintenance_paths: [dev/]

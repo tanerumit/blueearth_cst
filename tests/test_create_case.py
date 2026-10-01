@@ -50,10 +50,6 @@ def args(cases: Path) -> list[str]:
         "12.5",
         "--latitude",
         "-3",
-        "--uparea",
-        "50",
-        "--country",
-        "Country",
         "--purpose",
         "Test | basin",
     ]
@@ -78,7 +74,7 @@ def test_create_preserves_template_and_inventory(cases: Path, dry_run: bool) -> 
         config["basin"]["output_locations"]
         == (application / "data/output_locations.csv").as_posix()
     )
-    assert config["basin"]["region"] == "{'subbasin': [12.5, -3.0], 'uparea': 50.0}"
+    assert config["basin"]["region"] == "{'subbasin': [12.5, -3.0], 'uparea': 100}"
     assert config["climate"]["selected"] == "era5"
     assert config["workflows"]["build_model"]["enabled"] is False
     assert "# Keep scientific comments" in config_text
@@ -86,6 +82,8 @@ def test_create_preserves_template_and_inventory(cases: Path, dry_run: bool) -> 
     assert "configured; not run" in (application / "notes.md").read_text()
     assert (cases / "cst-applications.md").read_bytes().startswith(before)
     assert "Test &#124; basin" in (cases / "cst-applications.md").read_text()
+    row = (cases / "cst-applications.md").read_text().splitlines()[-1]
+    assert row.split("|")[2].strip() == ""
     after = (cases / "cst-applications.md").read_bytes()
     assert main(args(cases)) == 2
     assert (cases / "cst-applications.md").read_bytes() == after
@@ -98,8 +96,7 @@ def test_create_preserves_template_and_inventory(cases: Path, dry_run: bool) -> 
         ("slug", "con"),
         ("--latitude", "nan"),
         ("--longitude", "181"),
-        ("--uparea", "0"),
-        ("--country", " "),
+        ("--purpose", " "),
     ],
 )
 def test_invalid_arguments_write_nothing(cases: Path, option: str, value: str) -> None:

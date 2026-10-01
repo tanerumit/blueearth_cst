@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 import csv
 import html
 import io
@@ -64,10 +65,8 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, Path, bytes, dict[Path, by
         number = getattr(args, name)
         if not math.isfinite(number) or not low <= number <= high:
             raise ValueError(f"{name} must be finite and between {low} and {high}")
-    if not math.isfinite(args.uparea) or args.uparea <= 0:
-        raise ValueError("uparea must be finite and positive (km2)")
-    if not args.country.strip() or not args.purpose.strip():
-        raise ValueError("Country and purpose must be nonempty")
+    if not args.purpose.strip():
+        raise ValueError("Purpose must be nonempty")
     root = Path(args.cases_root)
     if not root.is_absolute() or not root.is_dir():
         raise ValueError("--cases-root must name an existing absolute directory")
@@ -145,7 +144,17 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, Path, bytes, dict[Path, by
         ("basin", "output_locations"),
         (destination / "data/output_locations.csv").as_posix(),
     )
-    region = {"subbasin": [args.longitude, args.latitude], "uparea": args.uparea}
+    region = config["basin"]["region"]
+    if isinstance(region, str):
+        try:
+            region = ast.literal_eval(region)
+        except (SyntaxError, ValueError) as error:
+            raise ValueError(
+                "Template basin.region must define a subbasin mapping"
+            ) from error
+    if not isinstance(region, dict) or "subbasin" not in region:
+        raise ValueError("Template basin.region must define a subbasin mapping")
+    region = {**region, "subbasin": [args.longitude, args.latitude]}
     text = _replace(text, ("basin", "region"), str(region))
     if args.catalog is not None:
         if not args.catalog.strip():
@@ -204,11 +213,13 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, Path, bytes, dict[Path, by
     files[outlet] = stream.getvalue().encode("utf-8")
     command = f'pixi run python scripts/run_workflows.py --config "{destination.as_posix()}/project_config.yml" --cores 3'
     files[Path("README.md")] = (
-        f"# {slug}\n\nCountry: {_cell(args.country.strip())}\n\n"
+        f"# {slug}\n\n"
         f"Purpose: {_cell(args.purpose.strip())}\n\n"
         "Status: configured; not run. No results have been validated.\n\n"
         "Review catalog coverage, historical years, forcing, resolution, projection "
-        "horizons, and scenario settings before running. The example enables WF0 alone.\n\n"
+        "horizons, and scenario settings before running. Review the copied basin.region "
+        "uparea threshold and fill in the inventory country when useful. "
+        "The example enables WF0 alone.\n\n"
         f"Outputs: `{outputs.as_posix()}` (created by the workflows).\n\n"
         "From the toolbox root, preview WF0:\n\n"
         f"```powershell\n{command} -- --dry-run\n```\n\n"
@@ -243,9 +254,8 @@ def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("case_slug")
     parser.add_argument("--cases-root", required=True)
-    for name in ("longitude", "latitude", "uparea"):
+    for name in ("longitude", "latitude"):
         parser.add_argument(f"--{name}", required=True, type=float)
-    parser.add_argument("--country", required=True)
     parser.add_argument("--purpose", required=True)
     parser.add_argument("--catalog", help="Toolbox-relative or absolute data catalog")
     parser.add_argument(
@@ -258,7 +268,7 @@ def main(argv: list[str] | None = None) -> int:
             newline = b"\r\n" if b"\r\n" in original else b"\n"
             row = (
                 f"| [{args.case_slug}](applications/{args.case_slug}/notes.md) | "
-                f"{_cell(args.country.strip())} | | {date.today().isoformat()} | | | "
+                f"| | {date.today().isoformat()} | | | "
                 f"{_cell(args.purpose.strip())} | configured; not run |"
             ).encode("utf-8")
             updated = (

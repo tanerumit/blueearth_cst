@@ -1,4 +1,4 @@
-"""Run WF0, WF1 or WF2 with exact pre-parse configuration capture."""
+"""Run one of the five workflows through its owned runner."""
 
 from __future__ import annotations
 
@@ -25,7 +25,9 @@ def main(argv: list[str] | None = None) -> int:
     else:
         extra = []
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("workflow", choices=WORKFLOWS)
+    parser.add_argument(
+        "workflow", choices=(*WORKFLOWS, "generate_scenarios", "simulate_system")
+    )
     parser.add_argument("--config", required=True, type=Path)
     parser.add_argument("--project-dir", required=True, type=Path)
     parser.add_argument("--cores", type=int, default=3)
@@ -33,6 +35,39 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--dry-run", action="store_true")
     parser.add_argument("--keep-going", action="store_true")
     args = parser.parse_args(arguments)
+    if args.workflow in {"generate_scenarios", "simulate_system"}:
+        if (
+            args.workflow == "generate_scenarios"
+            and args.target
+            and args.target != ["all"]
+        ):
+            parser.error("generate_scenarios supports only --target all")
+        owned_args = [
+            "--config",
+            str(args.config),
+            "--project-dir",
+            str(args.project_dir),
+            "--cores",
+            str(args.cores),
+        ]
+        if args.workflow == "simulate_system":
+            from scripts.simulate_system import main as owned_main
+
+            owned_args += ["--target", *(args.target or ["all"])]
+        else:
+            from scripts.generate_scenarios import main as owned_main
+
+        forwarded = []
+        if args.dry_run:
+            if args.workflow == "simulate_system":
+                owned_args.append("--dry-run")
+            else:
+                forwarded.append("--dry-run")
+        if args.keep_going:
+            forwarded.append("--keep-going")
+        if forwarded or extra:
+            owned_args += ["--", *forwarded, *extra]
+        return owned_main(owned_args)
     return run_workflow(
         args.workflow,
         args.config,

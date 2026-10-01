@@ -4,8 +4,8 @@ subtitle: "Run a whole assessment or one workflow at a time"
 ---
 
 Run all enabled workflows with `scripts/run_workflows.py`. To run one workflow,
-use the commands below. Simulation uses `scripts/simulate_system.py`; scenario
-generation uses the all-workflow runner with only that workflow enabled.
+use `scripts/run_workflow.py <workflow_name>`. Scenario generation and simulation
+delegate to their dedicated runners.
 
 | Workflow | What it does |
 |---|---|---|
@@ -19,6 +19,31 @@ The runner uses this order: historical climate → model → projections → sce
 → simulation. Model building and scenario generation are both needed before
 simulation. Historical climate analysis is optional. CMIP6 projections provide
 context for the tested changes and never supply the generated scenarios.
+
+## Create an external case
+
+For a new external case, create its configuration set from the cases repository's
+`templates/example-basin/` starter. From the toolbox root:
+
+```powershell
+pixi run python scripts/create_case.py my-basin --cases-root C:/path/to/cst-cases --longitude 12.5 --latitude -3 --purpose "First-order basin assessment" --dry-run
+```
+
+Remove `--dry-run` after reviewing the preview. The command creates
+`applications/my-basin/`, sets absolute input and output paths, replaces the
+outlet coordinates, and appends a `configured; not run` inventory entry. It
+preserves the template's scientific settings and starts with historical climate
+analysis alone. The template's `basin.region` upstream-area threshold (`uparea`,
+km²) is retained; review it for the outlet before running. The inventory country
+cell starts blank and can be filled in later. Use `--catalog` to override the
+template's data catalog with a
+toolbox-relative or absolute path. Review catalog coverage and climate/scenario
+settings before running. Existing applications and inventory entries are refused;
+outputs under `runs/my-basin/active/` are neither created nor modified.
+
+Read the generated case README for preview and execution commands. After
+selecting forcing, disable historical climate analysis before enabling downstream
+workflows. The scaffold does not run workflows or commit files.
 
 ## Run everything enabled in the project file
 
@@ -39,27 +64,21 @@ may show only part of a workflow until inputs from an earlier step exist.
 
 ## Run one workflow
 
-From the toolbox root, after `pixi shell`, use the individual runner for
-historical climate, model building, or projections:
+From the toolbox root, after `pixi shell`, use the individual runner for any
+workflow. Enable the selected workflow in the project config:
 
 ```bash
 python scripts/run_workflow.py analyze_climate --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 python scripts/run_workflow.py build_model --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
 python scripts/run_workflow.py analyze_projections --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3 --keep-going
+python scripts/run_workflow.py generate_scenarios --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --cores 3
+python scripts/run_workflow.py simulate_system --config test_case/project_config_rapid.yml --project-dir test_case/test_rapid --target all --cores 3
 ```
 
-For scenario generation alone, make a copy of the project configuration set,
-enable only `generate_scenarios`, and run:
-
-```bash
-python scripts/run_workflows.py --config <project-file.yml> --project-dir <project-dir> --cores 3
-```
-
-To run simulation with a ready scenario collection and model:
-
-```bash
-python scripts/simulate_system.py --config test_case/project_config_rapid.yml --target all --cores 3
-```
+The individual runner launches only the named workflow; it does not run missing
+prerequisites. WF3 delegates to the generation runner and supports only target
+`all`. WF4 delegates to the simulation runner and needs a ready model and scenario
+collection. The dedicated runners remain available.
 
 The flags most users need are:
 
@@ -72,8 +91,9 @@ The flags most users need are:
 | `--dry-run` | show planned steps without running them |
 
 The all-workflow runner passes options after `--` to each enabled workflow.
-For example, `-- --dry-run` checks each workflow. For simulation alone,
-`scripts/simulate_system.py` accepts `--dry-run` directly.
+For example, `-- --dry-run` checks each workflow. The individual runner accepts
+`--dry-run` directly for all five workflows and forwards options after `--` to
+the selected owned runner.
 
 If Snakemake reports that the directory is locked after an interrupted run,
 first make sure no other process is using the project. Then clear the lock for

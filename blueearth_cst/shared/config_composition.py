@@ -439,6 +439,9 @@ OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
         # that legitimately holds the whole set at once, which is what
         # D-11.2b's preflight requires (`C-38`).
         ("scripts/migrate_project_config.py", "*"),
+        # The case scaffold checks enable flags and follows config_path entries
+        # to copy a template set; it consumes no workflow settings.
+        ("scripts/create_case.py", "*"),
         ("scripts/suggest_experiment_name.py", "simulate_system"),
         ("scripts/plot_workflow_dag.py", "simulate_system"),
         # The artifact-scoped config snapshot rebuilds `compose_config`'s shape

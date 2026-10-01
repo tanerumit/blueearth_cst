@@ -20,6 +20,29 @@ The runner uses this order: historical climate → model → projections → sce
 simulation. Historical climate analysis is optional. CMIP6 projections provide
 context for the tested changes and never supply the generated scenarios.
 
+## Create an external case
+
+For a new external case, create its configuration set from the cases repository's
+`templates/example-basin/` starter. From the toolbox root:
+
+```powershell
+pixi run python scripts/create_case.py my-basin --cases-root C:/path/to/cst-cases --longitude 12.5 --latitude -3 --uparea 50 --country "Country" --purpose "First-order basin assessment" --dry-run
+```
+
+Remove `--dry-run` after reviewing the preview. The command creates
+`applications/my-basin/`, sets absolute input and output paths, replaces the
+outlet coordinates, and appends a `configured; not run` inventory entry. It
+preserves the template's scientific settings and starts with historical climate
+analysis alone. `--uparea` is the upstream-area threshold in km²; review it for
+the outlet. Use `--catalog` to override the template's data catalog with a
+toolbox-relative or absolute path. Review catalog coverage and climate/scenario
+settings before running. Existing applications and inventory entries are refused;
+outputs under `runs/my-basin/active/` are neither created nor modified.
+
+Read the generated case README for preview and execution commands. After
+selecting forcing, disable historical climate analysis before enabling downstream
+workflows. The scaffold does not run workflows or commit files.
+
 ## Run everything enabled in the project file
 
 ```bash

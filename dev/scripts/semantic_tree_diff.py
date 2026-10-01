@@ -273,7 +273,7 @@ def build_project_tree_rules(
     dataset_key: str,
     clim_project: str = "cmip6",
 ) -> list[tuple[str | re.Pattern, str]]:
-    """Identity rules for the CURRENT project tree — the post-R9 inventory.
+    """Identity rules for the CURRENT project tree, including v2 handoffs.
 
     **Why this exists, and why it was not the R9 migration map.** That map ran
     ONE WAY: pre-R9 paths to post-R9 ones. A live tree holds only the post-R9
@@ -333,7 +333,7 @@ def build_project_tree_rules(
     # `[a-z0-9_]+`. WF3 has no user-facing name, so since R12 it keys on its
     # scenario-request fingerprint, shortened to SHORT_DIGEST_CHARS hex
     # (t2609151643) -- imported, not restated. Since t2609152107 that same
-    # constant also names the `scenarios/requests/` directory the key is READ
+    # constant also names the `scenarios/_engine/requests/` directory the key is READ
     # from, so one import now pins the row, the filename and the directory
     # together.
     #
@@ -352,6 +352,9 @@ def build_project_tree_rules(
     same_rx(r"logs/wf[012]_[^/]+\.log")
     same_rx(rf"logs/wf3_generate_scenarios_{_hex}\.log")
     same_rx(r"logs/wf4_simulate_system_[a-z0-9_]+\.log")
+    same_rx(r"logs/\.wf[012]_[^/]+\.log\.tally")
+    same_rx(rf"logs/\.wf3_generate_scenarios_{_hex}\.log\.tally")
+    same_rx(r"logs/\.wf4_simulate_system_[a-z0-9_]+\.log\.tally")
     same("logs/_parts/")
     same("logs/dag/")
     same_rx(r"benchmarks/wf[012]_benchmarks\.md")
@@ -438,9 +441,15 @@ def build_project_tree_rules(
     # (`climate_analysis/climate_figures.py`), so a tree carrying the old
     # spelling is a predecessor tree, not a second copy of this file.
     same("data/climate/historical/shared_plot_scales.json")
+    # Shared orography preserves the original portable netCDF basename.
+    same_rx(
+        rf"data/climate/ancillary/[a-z][a-z0-9_]*/{_hex}/"
+        r"[a-zA-Z0-9][a-zA-Z0-9_.-]*\.nc"
+    )
     for tier in ("raw", "scalar", "summary", "plots"):
         same(f"data/climate/projections/{clim_project}/{tier}/")
     same(f"data/climate/projections/{clim_project}/report.md")
+    same(f"data/climate/projections/{clim_project}/_engine/stage_b_settings.json")
 
     # -- models/ --------------------------------------------------------------
     wflow = "models/hydrology/wflow"
@@ -493,55 +502,51 @@ def build_project_tree_rules(
     # basin_area, to `data/spatial/plots/`. A leftover directory there is stale
     # output from a pre-0007 run and SHOULD report as undeclared.
 
-    # R12 durable generation artifacts and rebuildable exact-request state.
+    # Durable v2 collection products and separate rebuildable engine records.
     # Every content-digest PATH SEGMENT is the identity's first
     # SHORT_DIGEST_CHARS since t2609152107, so this is the same `_hex` the WF3
     # run-record rows use -- one constant, so a tree written by the engine and a
     # tree this tool accepts cannot disagree about name length.
     digest = _hex
-    collection = rf"scenarios/collections/{digest}"
+    collection = rf"scenarios/{digest}"
     for leaf in (
-        "collection.json",
-        "collection_intent.json",
-        "scenario_table.csv",
-        "generation_config.json",
-        "source_inventory.json",
-        "provider_code_inventory.json",
-        "generation_environment.json",
-        "preparation_context.json",
-        "preparation_catalog.yml",
-        "stress_test_lookup.csv",
-        # The composed-config snapshot: written into the collection at
-        # initialization, named by `collection_intent.json` nowhere, and so not
-        # part of `collection_id`. It is a leaf of the collection like the rest.
-        "composed_config.yml",
+        "config/run_record.yml",
+        "scenario_run_lookup.csv",
+        "perturbation_lookup.csv",
+        "weathergenr/weather_generation_input.yml",
+        "weathergenr/output/sim_dates.csv",
+        "weathergenr/output/resampled_dates.csv",
     ):
         same_rx(rf"{collection}/{re.escape(leaf)}")
-    same_rx(rf"{collection}/forcing/run_[0-9]+\.nc")
-    same_rx(rf"{collection}/ancillary/[^/]+/[^/]+")
-    same_rx(rf"scenarios/requests/{digest}/request\.json")
-    same_rx(rf"scenarios/requests/{digest}/initializations/[^/]+\.json")
-    same_rx(
-        rf"scenarios/requests/{digest}/generation/config/(weathergen_config\.yml|stress_test_lookup\.csv)"
-    )
-    same_rx(
-        rf"scenarios/requests/{digest}/generation/output/(rlz_[0-9]+_st_[0-9]+\.nc|sim_dates\.csv)"
-    )
-    same_rx(rf"scenarios/requests/{digest}/generation/output/resampled_dates\.csv")
-    same_rx(rf"scenarios/requests/{digest}/generation/plots/[^/]+\.(png|pdf)")
+    # Source archives preserve caller-supplied filenames; diagnostic plots are
+    # provider-owned. Neither is a fixed leaf set.
+    same_rx(rf"{collection}/config/sources/[^/]+")
+    same_rx(rf"{collection}/series/run_[0-9]+\.nc")
+    same_rx(rf"{collection}/weathergenr/output/run_[0-9]+\.nc")
+    same_rx(rf"{collection}/weathergenr/evaluation/plots/[^/]+\.(png|pdf)")
+    for leaf in ("collection.json", "collection_intent.json"):
+        same_rx(rf"scenarios/_engine/collections/{digest}/{re.escape(leaf)}")
+    request = rf"scenarios/_engine/requests/{digest}"
+    same_rx(rf"{request}/request\.json")
+    same_rx(rf"{request}/[0-9a-f]{{64}}\.json")
+    same_rx(rf"{request}/initializations/[0-9a-f]{{32}}\.json")
+    same_rx(rf"{request}/generation/config/stress_test_lookup\.csv")
+    # Pinned inputs preserve the source name: catalogs and generator templates
+    # are configurable. The digest directory remains constrained.
+    same_rx(rf"scenarios/_engine/generation_inputs/{digest}/[^/]+\.(yml|yaml)")
+    for leaf in ("basin_cells.csv", "extract_historical.nc"):
+        same_rx(rf"scenarios/_engine/generation_inputs/{digest}/{re.escape(leaf)}")
 
     # Simulation identities are frozen separately from metric-set identities.
     same(f"experiments/{e}/.model_reference_ok")
     for leaf in (
-        "composed_config.yml",
         "model_reference.yml",
         "simulation.json",
-        "simulator_settings.json",
-        "simulator_adapter_code_inventory.json",
-        "simulation_environment.json",
-        "response_request.json",
+        "simulation_intent.json",
     ):
-        same(f"experiments/{e}/config/{leaf}")
+        same(f"experiments/{e}/_engine/{leaf}")
+    same(f"experiments/{e}/config/run_record.yml")
+    same(f"experiments/{e}/config/sources/")
     same(f"experiments/{e}/_engine/response_inventory.json")
     same_rx(rf"experiments/{exp}/_engine/metric_requests/{digest}\.json")
     metric_set = rf"experiments/{exp}/results/metric_sets/{digest}"
@@ -551,15 +556,17 @@ def build_project_tree_rules(
     for leaf in (
         "metrics.json",
         "metric_environment.json",
-        "unit_index.csv",
         "return_level_benchmark.json",
     ):
-        same_rx(rf"{metric_set}/{re.escape(leaf)}")
+        same_rx(rf"experiments/{exp}/_engine/metric_sets/{digest}/{re.escape(leaf)}")
+    same_rx(rf"{metric_set}/metric_run_lookup\.csv")
     same_rx(rf"{metric_set}/[a-z][a-z0-9_]*_indicators\.csv")
     native = rf"experiments/{exp}/hydrology/wflow"
-    same_rx(rf"{native}/config/run_[0-9]+\.(toml|yml|temporal\.json)")
+    same_rx(rf"{native}/run_settings/run_[0-9]+\.(toml|yml|temporal\.json)")
+    same(f"experiments/{e}/hydrology/wflow/run_settings/forcing_elevation_catalog.yml")
     same_rx(rf"{native}/forcing/inmaps_run_[0-9]+\.nc")
-    same_rx(rf"{native}/output/run_[0-9]+\.(csv|log)")
+    same_rx(rf"{native}/output/run_[0-9]+\.csv")
+    same_rx(rf"{native}/output/_log/run_[0-9]+\.log")
     same_rx(rf"{native}/output/outstates_run_[0-9]+\.nc")
 
     rules.append((re.compile(rf"(experiments/(?!{exp}/)[^/]+/.*)"), r"\1"))

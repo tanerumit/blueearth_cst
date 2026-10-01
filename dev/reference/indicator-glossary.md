@@ -144,32 +144,28 @@ asymmetries in that table are ruled, not accidental:
 
 ## 3. Row identifiers
 
-Every indicator table carries the same seven columns, in this order
-(`indicator_tables.py::INDICATOR_COLUMNS`):
+Current `metric-set/2` indicator tables carry four columns, in this order:
 
 | column | meaning |
 | --- | --- |
 | `metric` | `<token>_<statistic>` from §2 |
-| `location` | the **bare** wflow id (`130000086`, not `Q_130000086`), so it joins `outlet_index.csv` with no crosswalk. Gauge/outlet ids in `q_indicators.csv`; **subcatchment** ids in every other table |
-| `st_id` | stress-test member; `st_0` is the unperturbed baseline |
-| `rlz_id` | realization `1..RLZ_NUM`, or **`0` meaning pooled over realizations** |
-| `value` | `float32`, unrounded |
+| `location` | the registry's bare Wflow id, joinable to `outlet_index.csv` |
+| `run_group_id` | zero-padded text identifying a run or a bundle of runs |
+| `value` | numeric result stored to four significant digits |
 
-**There are no axis columns.** `temp_change` and `precip_change` were removed on
-2026-08-16: they held a month-length-weighted ANNUAL mean of the member's twelve
-monthly perturbations, which misreports any seasonal design and made every other
-axis unrecoverable from the results. Where a member sits on the response surface
-is now DERIVED at reporting time by joining `st_id` to
-`<exp>/config/stress_test_lookup.csv`; the specification is HM-7
-(`dev/reference/contracts/hydrological-model-seam.md`) and the reference
-implementation is `blueearth_cst/shared/surface_axes.py`. The derived columns
-keep those two names, so a consumer that already plotted them keeps working and
-simply receives values that are correct for a seasonal design.
+Join `run_group_id` through the metric set's `metric_run_lookup.csv` to its
+member `run_id` values. Join those to the collection's `scenario_run_lookup.csv`
+for realization and `st_id`, then to `perturbation_lookup.csv` for monthly
+changes. An empty `st_id` identifies the unperturbed reference.
 
-(The glossary described `precip_change` as a "multiplicative factor" until that
-removal, which was wrong for the whole time the column existed — it was written
-as a percent by `perturbation_axes`. The lookup's `precip_change` is a percent
-too, and now says so.)
+Axis columns are derived at reporting time rather than stored in the indicator
+tables. `precip_change` in the perturbation lookup is a percent. HM-7 in
+`dev/reference/contracts/hydrological-model-seam.md` defines the current
+contract; `blueearth_cst/shared/surface_axes.py` supplies monthly axis calculations.
+Keep identifiers as text, including leading zeros.
+
+`indicator_tables.py::INDICATOR_COLUMNS` describes the legacy expanded rows;
+the current retained four-column schema is written by `metric_plan.py`.
 
 `basin` is a **reserved** `location` for a whole-basin scalar. Nothing emits it
 today: since 8bd51de the csv columns are per-subcatchment means, so no

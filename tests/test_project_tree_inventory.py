@@ -12,7 +12,7 @@ needed a row for.
 
 Two instruments here, and the second matters more than the first:
 
-1. row-driven coverage — every shape a clean three-workflow run produces
+1. row-driven coverage — every shape the current five workflows produce
    resolves as IDENTITY;
 2. the NON-CATCH-ALL guard — an artifact nobody declared still resolves to
    UNMAPPED. Without it the report is empty by construction and the gate passes
@@ -35,9 +35,7 @@ KEY = "era5_20000101_20201231"
 CP = "cmip6"
 #: A WF3 scenario-request key as it appears in a run-record FILENAME: the first
 #: 12 characters of the request fingerprint (t2609151643). The
-#: `scenarios/requests/` rows below still use the full 64, because the
-#: DIRECTORY keeps its full name -- the two lengths in this file are the
-#: contract.
+#: Directory handles use the same short digest; code documents retain SHA-256.
 PK = "c78c42d77345"
 INVENTORY = std.build_project_tree_rules(E, KEY, CP)
 
@@ -50,8 +48,8 @@ def _kind(rel: str) -> str:
 # 1. Coverage — the shapes a clean run produces
 # ---------------------------------------------------------------------------
 
-#: Taken from a clean three-workflow run on the seed config (2026-08-06, 186
-#: paths), collapsed to distinct shapes. Grouped by destination root.
+#: Producer-derived shapes, updated for the current collection/simulation
+#: writers and checked against the fresh v0.3.0 baseline tree.
 COVERED: dict[str, list[str]] = {
     "root": [
         "logs/wf1_build_model.log",
@@ -182,21 +180,25 @@ COVERED: dict[str, list[str]] = {
     ],
     "experiments": [
         f"experiments/{E}/.model_reference_ok",
-        f"experiments/{E}/config/simulation.json",
-        f"experiments/{E}/config/model_reference.yml",
-        f"experiments/{E}/config/response_request.json",
-        f"experiments/{E}/config/simulator_settings.json",
+        f"experiments/{E}/_engine/simulation.json",
+        f"experiments/{E}/_engine/simulation_intent.json",
+        f"experiments/{E}/_engine/model_reference.yml",
+        f"experiments/{E}/config/run_record.yml",
+        f"experiments/{E}/config/sources/SOURCES.md",
         f"experiments/{E}/_engine/response_inventory.json",
         f"experiments/{E}/_engine/metric_requests/{'a' * 12}.json",
-        f"experiments/{E}/results/metric_sets/{'b' * 12}/metrics.json",
-        f"experiments/{E}/results/metric_sets/{'b' * 12}/unit_index.csv",
+        f"experiments/{E}/_engine/metric_sets/{'b' * 12}/metrics.json",
+        f"experiments/{E}/_engine/metric_sets/{'b' * 12}/metric_environment.json",
+        f"experiments/{E}/_engine/metric_sets/{'b' * 12}/return_level_benchmark.json",
+        f"experiments/{E}/results/metric_sets/{'b' * 12}/metric_run_lookup.csv",
         f"experiments/{E}/results/metric_sets/{'b' * 12}/q_indicators.csv",
-        f"experiments/{E}/hydrology/wflow/config/run_001.toml",
-        f"experiments/{E}/hydrology/wflow/config/run_001.temporal.json",
-        f"experiments/{E}/hydrology/wflow/config/run_001.yml",
+        f"experiments/{E}/hydrology/wflow/run_settings/run_001.toml",
+        f"experiments/{E}/hydrology/wflow/run_settings/run_001.temporal.json",
+        f"experiments/{E}/hydrology/wflow/run_settings/run_001.yml",
+        f"experiments/{E}/hydrology/wflow/run_settings/forcing_elevation_catalog.yml",
         f"experiments/{E}/hydrology/wflow/forcing/inmaps_run_001.nc",
         f"experiments/{E}/hydrology/wflow/output/run_001.csv",
-        f"experiments/{E}/hydrology/wflow/output/run_001.log",
+        f"experiments/{E}/hydrology/wflow/output/_log/run_001.log",
         # outstates_run_<id>.nc is gone from this list (2026-09-15): the
         # experiment runs no longer emit a warm state at all, so it is not a
         # shape a clean run produces. `downscale_climate_forcing.py` pops
@@ -212,16 +214,29 @@ COVERED: dict[str, list[str]] = {
         # coverage rows describe what a run produces, not what is forbidden.
     ],
     "collections": [
-        f"scenarios/collections/{'c' * 12}/collection.json",
-        f"scenarios/collections/{'c' * 12}/scenario_table.csv",
-        f"scenarios/collections/{'c' * 12}/forcing/run_001.nc",
-        f"scenarios/collections/{'c' * 12}/stress_test_lookup.csv",
-        f"scenarios/collections/{'c' * 12}/preparation_catalog.yml",
-        f"scenarios/collections/{'c' * 12}/ancillary/dem/static.nc",
-        f"scenarios/requests/{'a' * 12}/request.json",
-        f"scenarios/requests/{'a' * 12}/initializations/invocation.json",
-        f"scenarios/requests/{'a' * 12}/generation/config/weathergen_config.yml",
-        f"scenarios/requests/{'a' * 12}/generation/output/resampled_dates.csv",
+        f"scenarios/_engine/collections/{PK}/collection.json",
+        f"scenarios/_engine/collections/{PK}/collection_intent.json",
+        f"scenarios/{PK}/config/run_record.yml",
+        f"scenarios/{PK}/config/sources/custom-project.yml",
+        f"scenarios/{PK}/scenario_run_lookup.csv",
+        f"scenarios/{PK}/perturbation_lookup.csv",
+        f"scenarios/{PK}/series/run_001.nc",
+        f"scenarios/{PK}/weathergenr/weather_generation_input.yml",
+        f"scenarios/{PK}/weathergenr/output/run_001.nc",
+        f"scenarios/{PK}/weathergenr/output/resampled_dates.csv",
+        f"scenarios/{PK}/weathergenr/output/sim_dates.csv",
+        f"scenarios/{PK}/weathergenr/evaluation/plots/daily_mean.png",
+        f"scenarios/_engine/requests/{PK}/request.json",
+        f"scenarios/_engine/requests/{PK}/initializations/{'a' * 32}.json",
+        f"scenarios/_engine/requests/{PK}/{'b' * 64}.json",
+        f"scenarios/_engine/requests/{PK}/generation/config/stress_test_lookup.csv",
+        f"scenarios/_engine/generation_inputs/{PK}/custom-catalog.yml",
+        f"scenarios/_engine/generation_inputs/{PK}/basin_cells.csv",
+        f"data/climate/ancillary/era5/{PK}/era5_orography_2018.nc",
+        f"data/climate/projections/{CP}/_engine/stage_b_settings.json",
+        "logs/.wf0_analyze_climate.log.tally",
+        f"logs/.wf3_generate_scenarios_{PK}.log.tally",
+        f"logs/.wf4_simulate_system_{E}.log.tally",
     ],
 }
 
@@ -236,6 +251,14 @@ def test_every_produced_shape_is_covered(section, rel):
     new, matched = std.apply_path_map_matched(rel, INVENTORY)
     assert matched, f"{rel} is UNMAPPED — the inventory does not cover it"
     assert new == rel, f"the inventory must be identity, got {new}"
+    # Configurable names must not accidentally be pinned to the release tree.
+    alternate = rel.replace(f"experiments/{E}/", "experiments/alternate_run/")
+    alternate = alternate.replace(f"projections/{CP}/", "projections/other_ensemble/")
+    alternate = alternate.replace("ancillary/era5/", "ancillary/chirps_global/")
+    alternate_rules = std.build_project_tree_rules(
+        "alternate_run", KEY, "other_ensemble"
+    )
+    assert std.apply_path_map_matched(alternate, alternate_rules) == (alternate, True)
 
 
 def test_coverage_is_not_trivially_satisfied():
@@ -259,6 +282,19 @@ def test_coverage_is_not_trivially_satisfied():
 #: point, and each one sits under a root the inventory DOES cover, so a prefix
 #: written one level too broad would swallow it silently.
 UNDECLARED = [
+    f"scenarios/{PK}/unknown.csv",
+    f"scenarios/{PK}/series/run_01.tmp.nc",
+    f"scenarios/{PK}/weathergenr/output/unknown_dates.csv",
+    f"scenarios/{PK[:-1]}/series/run_01.nc",
+    f"scenarios/_engine/requests/{PK}/{'a' * 63}.json",
+    f"scenarios/_engine/requests/{PK}/initializations/invocation.json",
+    f"scenarios/collections/{PK}/collection.json",
+    f"experiments/{E}/config/simulation.json",
+    f"experiments/{E}/hydrology/wflow/config/run_01.toml",
+    f"experiments/{E}/results/metric_sets/{PK}/metrics.json",
+    f"experiments/{E}/_engine/metric_sets/{PK}/unknown.json",
+    f"data/climate/ancillary/era5/{PK[:-1]}/orography.nc",
+    "logs/.wf3_anything.log.tally",
     "data/spatial/leftover_intermediate.nc",  # a settled dir: enumerated
     "data/spatial/spatial_maps.tmp.nc",  # a crashed write
     "models/hydrology/wflow/stray_output.nc",

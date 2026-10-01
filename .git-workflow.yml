@@ -21,6 +21,10 @@ isolation_landing: approval
 # Push only when requested. Set to true to enable the periodic backup trigger.
 auto_push: false
 
+# Manual toolbox releases use authoritative Git tags; the versioning helper
+# requires a file carrier, so versioning: is intentionally omitted.
+# Policy and release checklist: dev/reference/versioning.md
+
 # ── Session worktrees ────────────────────────────────────────────────────────
 #
 # Available reusable worktrees. Each modifying task claims one of these slots.

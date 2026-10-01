@@ -3,61 +3,69 @@
 Personal fork of `Deltares/blueearth_cst`. Release history follows
 [Keep a Changelog](https://keepachangelog.com/) loosely.
 
-Milestone-level detail (Phase 1 sealed M01–M02c, Phase 2 active R1–R6)
-lives in `dev/roadmap.md` and `dev/records/milestones/phase-1/<milestone>/` /
-`dev/records/milestones/r0N/<milestone>/` artifacts. This file captures release-level
-summaries.
+Releases follow the [manual toolbox versioning policy](dev/reference/versioning.md):
+Git release tags are authoritative; milestone tags are development checkpoints.
+Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
-## [Unreleased] — workflow 2 v2.0 (milestone R8)
+## [Unreleased]
 
-Workflow 2 restructured from a model/scenario fan-out into a monthly GCM
-projections analysis. **Breaking config changes** — see
-`dev/records/milestones/r08/migration-wf2.md`.
+These changes summarize development since `v0.2.0-alpha`; they do not declare
+another release. Historical release entries below are unchanged.
 
 ### Breaking
 
-- `save_grids` renamed to `save_gridded`; the old key raises rather than being
-  silently ignored.
-- `variables` is a mapping declaring `canonical` and `change` per variable, not a
-  list. Change semantics are no longer inferred from the literal name `"precip"`.
-- A model absent from the generated catalog fails at DAG build. A model that does
-  not publish a requested scenario or member is a recorded skip, not an error.
+- Reorganized the shipped code into `blueearth_cst/`, consolidated configuration
+  and project output layouts, and renamed workflow rules. Existing scripts,
+  rule targets, and output consumers need migration.
+- Split project configuration into a project file and per-workflow files, with
+  closed workflow stanzas and shared keys owned by the project file's `basin`,
+  `climate`, and `model` sections or top level. See the
+  [project-config migration guide](docs/site/guide/migrating-project-config.qmd).
+- Reworked projections analysis around monthly GCM series. `save_grids` became
+  `save_gridded`; variable declarations now specify canonical names and change
+  semantics. Missing catalog models fail at DAG construction; unavailable
+  scenario/member combinations are reported as skips. See the
+  [R8 migration record](dev/records/milestones/r08/migration-wf2.md).
+- Separated scenario generation (WF3) from system simulation and retained-response
+  metrics (WF4). Scenario collections, explicit run IDs, immutable metric sets,
+  and their output contracts replace the predecessor experiment layout. Use the
+  owned workflow runners described in [README.md](README.md).
+- Result locations now use the registry `wflow_id`; the baseline outlet changed
+  from `101` to `1010`. Consumers must use registry identifiers.
 
 ### Added
 
-- `change_factors/annual.csv` and `change_factors/monthly.csv` — long-format
-  tables, one row per (dataset, scenario, member, horizon, variable, statistic).
-  The monthly table is new: it shows the seasonal shift an annual figure averages
-  away.
-- `summary/composition.csv` — every **requested** combination and how it resolved.
-- `provenance.json` — sources with verified physical store paths, digests,
-  windows and settings.
-- `report.md` — with the disclaimer block: window clipping, alignment, weighting
-  scheme and its approximation, the dry-month rule, catalog snapshot date, and
-  unresolved combinations by status.
-- A persistent series cache with content-addressed identity, and a fetch/reduce
-  split so re-deriving from a formula change costs **zero network requests**.
-- Optional `stats` and `relative_change` config keys.
+- Model-independent historical climate analysis (WF0), forcing-readiness
+  reporting, model interchange contracts, and expanded practitioner documentation.
+- Projection annual and monthly change-factor tables, requested-combination
+  status reporting, provenance and limitation reports, and reusable series
+  caching with separate fetch and reduction steps.
+- Durable scenario collections with generation-code identity, simulation batch
+  recovery, batching calibration, and retained-response metric validation.
+- Cross-platform CI, focused validation gates, and the manual toolbox release
+  policy and checklist.
 
-### Changed — values move
+### Changed
 
-- Spatial reduction is spherical cell-area weighted (D10); annual aggregates are
-  weighted by month length in the model's own calendar; stage A no longer rounds
-  to 2 decimals; the default statistic set is `mean, median, std` with tail
-  quantiles opt-in and sample-size-labelled.
-- **A reference-window off-by-one is fixed**: `[1990, 2010]` now yields 21
-  complete hydrological years, not 20. The final complete year was discarded.
-- Figures show **one trace per combination** — no multi-model median, no 5–95 %
-  envelope. Each `(model, scenario, member)` is one data point.
+- Projection spatial means use spherical cell-area weights; annual aggregation
+  uses month lengths in each model's calendar. Reduction no longer rounds to
+  two decimals; default statistics are mean, median, and standard deviation,
+  with labelled, opt-in tail quantiles. Figures show individual combinations.
+- Scenario identity follows generation code; downstream simulation changes do
+  not invalidate generation. Simulation retains one discharge series per model
+  cell and stages completed batch members for reuse after interruption.
 
 ### Fixed
 
-- Series recorded `proleptic_gregorian` for every model, which is false for
-  `noleap` and `360_day` ones. The true calendar is now read from the store.
-- `kernel_hash` was not reproducible across processes for any function containing
-  a closure, so a cache key moved on every invocation.
-- Stage B had no hashed kernel, so an edit to imported change arithmetic left its
-  outputs silently stale.
+- Projection reference windows include the final complete hydrological year
+  (`1990–2010` includes 21 years). Model calendars are read from their stores,
+  and reduction-kernel identity now invalidates stale cached arithmetic.
+- The unperturbed scenario now passes through the same perturbation step as
+  other scenarios. In the recorded baseline, affected low-flow results decreased
+  by up to about 90%; the accepted baseline was re-recorded on 2026-09-25.
+  See [AGENTS.md](AGENTS.md) for baseline configuration and provenance.
+- Restored workflow log and benchmark gathering, corrected checkpoint lookups,
+  and repaired Windows console capture during simulation preparation.
 
 ## [v0.2.0-alpha] — 2026-05-09
 

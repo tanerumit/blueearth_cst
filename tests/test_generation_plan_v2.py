@@ -62,6 +62,10 @@ def test_candidate_intent_uses_wf3_only_seed_projection(tmp_path, monkeypatch):
         "resolved": 123,
     }
     assert len(intent["documents"]["source_inventory"]["sources"]) == 4
+    for source in intent["documents"]["source_inventory"]["sources"]:
+        assert source["file"]["path"].startswith("scenarios/_engine/generation_inputs/")
+        assert (project / source["file"]["path"]).is_file()
+    assert not (project / "data/climate/generation_inputs").exists()
     assert any(
         item["metadata"].get("unit_interpretation_evidence") == "fixture"
         for item in intent["documents"]["source_inventory"]["sources"]

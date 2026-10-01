@@ -58,6 +58,8 @@ This is a key map, not a copyable YAML file. Use the twelve monthly values in th
 
 Inputs are historical climate data from the selected catalog source, the basin region, and the weather-generator and perturbation settings. WF3 does not consume WF2 change factors or a Wflow model.
 
+The wrapper freezes historical climate, basin cells, the generator template, and source catalogs under `scenarios/_engine/generation_inputs/<content-hash>/`. These snapshots are shared across collections; the effective generator settings live in `scenarios/<collection-id>/weathergenr/weather_generation_input.yml`. Existing collections retain their recorded snapshot paths, including the former `data/climate/generation_inputs/` location; do not move those files manually.
+
 ## Outputs
 
 The ready collection retains generated and perturbed climate series, a run/perturbation lookup, a collection inventory, and creator configuration. A ready marker signals publication; downstream consumers request explicit run IDs from a specific collection. Generation also writes logs and benchmarks. See [Reading the outputs](../guide/outputs.qmd) for the public collection layout and joins.

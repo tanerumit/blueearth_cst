@@ -22,6 +22,10 @@ from blueearth_cst.shared.workflow_config_snapshot import (
     snapshot_document,
     write_snapshot,
 )
+from dev.scripts.semantic_tree_diff import (
+    apply_path_map_matched,
+    build_project_tree_rules,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 
@@ -217,7 +221,12 @@ def test_completed_simulation_validation_suppresses_successful_dependency_chatte
     assert "with captured_output(replay=defer_rows):" in workflow
 
 
-def test_tree_tooling_knows_the_new_leaf():
-    """An unregistered path reports as unmapped and reads as stray output."""
-    text = (REPO / "dev/scripts/semantic_tree_diff.py").read_text(encoding="utf-8")
-    assert text.count(f'"{SNAPSHOT_NAME}"') == 2
+def test_tree_tooling_knows_current_provenance_paths():
+    """Current archives are covered; retired standalone snapshots are stale."""
+    rules = build_project_tree_rules("experiment", "era5_20000101_20201231")
+    for root in ("scenarios/abcdef123456", "experiments/experiment"):
+        for leaf in ("run_record.yml", "sources/SOURCES.md", "sources/project.yml"):
+            path = f"{root}/config/{leaf}"
+            assert apply_path_map_matched(path, rules) == (path, True)
+        retired = f"{root}/config/{SNAPSHOT_NAME}"
+        assert apply_path_map_matched(retired, rules) == (retired, False)

@@ -217,7 +217,14 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, Path, bytes, dict[Path, by
         "enabling downstream workflows. Build and inspect the historical model before "
         "simulation. Projections provide a plausibility overlay; they never drive "
         "scenario generation. See data/README.md for sidecar formats and notes.md "
-        "for retained evidence.\n"
+        "for retained evidence.\n\n"
+        "## Run enabled downstream workflows\n\n"
+        "In project_config.yml, set analyze_climate.enabled to false and enable "
+        "the downstream workflows you want to run. The runner executes enabled "
+        "stages in order; model building and scenario generation must supply the "
+        "inputs for simulation. From the toolbox root:\n\n"
+        f"```powershell\n{command}\n```\n\n"
+        "To preview the enabled stages, append `-- --dry-run`.\n"
     ).encode("utf-8")
     files[Path("notes.md")] = (
         f"# {slug} — run notes\n\nStatus: configured; not run.\n\n"

@@ -1,7 +1,7 @@
 ---
 title: Adopt a manual toolbox versioning policy
 type: todo-item
-status: backlog
+status: active
 branch: chore/versioning-policy
 effort: 1
 area: tooling
@@ -18,12 +18,12 @@ updated: 2026-10-01
 ## Progress
 
 - [x] Agree on the policy — owner approved manual Semantic Versioning with authoritative Git release tags.
-- [ ] Add a concise versioning reference and link it from AGENTS.md and CHANGELOG.md.
-- [ ] Define compatibility, numerical-change handling, pre-1.0 breaking changes, and explicit stability approval.
-- [ ] Add the release checklist using existing validation and separate tagging, pushing, and publishing approvals.
-- [ ] Reconcile Unreleased changelog entries with changes since v0.2.0-alpha.
-- [ ] Assess tag-based versioning configuration and document any tooling limitation without adding unnecessary automation.
-- [ ] Check live references, validate the final documentation, and commit the policy changes.
+- [x] Add a concise versioning reference and link it from AGENTS.md and CHANGELOG.md.
+- [x] Define compatibility, numerical-change handling, pre-1.0 breaking changes, and explicit stability approval.
+- [x] Add the release checklist using existing validation and separate tagging, pushing, and publishing approvals.
+- [x] Reconcile Unreleased changelog entries with changes since v0.2.0-alpha.
+- [x] Assess tag-based versioning configuration and document any tooling limitation without adding unnecessary automation.
+- [x] Check live references, validate the final documentation, and commit the policy changes.
 
 ## Approved decisions
 
@@ -31,6 +31,6 @@ Use manual releases tagged vX.Y.Z; ordinary commits and milestone seals do not c
 
 Git release tags are authoritative. Milestone tags are development checkpoints. Existing alpha tags remain historical; future release tags use plain vX.Y.Z. Version 1.0 requires explicit owner acceptance of interface stability. Tag only a verified main commit with owner authorization; pushing and publishing remain separate decisions.
 
-Next: implement on chore/versioning-policy. No release, landing, or push is authorized.
+Implemented in 72ae2e2f on chore/versioning-policy. Policy: dev/reference/versioning.md (on the task branch). Configuration validation, local Markdown links, historical changelog preservation, and git diff --check passed. Board check: zero errors; existing editorial warnings. No version adapter was added because the helper requires a file carrier. Next: owner-approved landing; no release or push is authorized.
 
 

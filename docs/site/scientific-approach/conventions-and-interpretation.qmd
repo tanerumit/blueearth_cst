@@ -29,7 +29,7 @@ Use the historical evaluation, where observations exist, when judging how much c
 ## Traceability and limits
 
 The scenario collection identifies generated runs and perturbation settings; a simulation experiment records the selected collection and model; a metric set records definitions and source responses.
-Join indicator `unit_id` through `unit_index.csv` to the collection's `scenario_table.csv` and `stress_test_lookup.csv`.
+Join indicator `run_group_id` through `metric_run_lookup.csv` to the collection's `scenario_run_lookup.csv`, then join `st_id` to `perturbation_lookup.csv`.
 Keep the identifiers as text, including leading zeros.
 The case with an empty `st_id` is the unperturbed reference.
 See [Reading the outputs](../guide/outputs.qmd) for the exact layout.

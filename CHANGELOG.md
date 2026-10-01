@@ -9,8 +9,11 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
-These changes summarize development since `v0.2.0-alpha`; they do not declare
-another release. Historical release entries below are unchanged.
+## [v0.3.0] — 2026-10-01
+
+Pre-1.0 minor release with incompatible user interfaces, output contracts,
+and scientific calculations since `v0.2.0-alpha`. This entry is prepared for
+release; the authoritative version is established only by the approved Git tag.
 
 ### Breaking
 
@@ -44,6 +47,9 @@ another release. Historical release entries below are unchanged.
   recovery, batching calibration, and retained-response metric validation.
 - Cross-platform CI, focused validation gates, and the manual toolbox release
   policy and checklist.
+- A single-workflow selector (`scripts/run_workflow.py`) for all five workflows,
+  delegating generation and simulation to their owned runners; external basin
+  case scaffolding through `scripts/create_case.py`.
 
 ### Changed
 
@@ -54,6 +60,8 @@ another release. Historical release entries below are unchanged.
 - Scenario identity follows generation code; downstream simulation changes do
   not invalidate generation. Simulation retains one discharge series per model
   cell and stages completed batch members for reuse after interruption.
+- WF3 generation-input snapshots now live under the scenario collection's
+  `_engine` directory.
 
 ### Fixed
 
@@ -66,6 +74,35 @@ another release. Historical release entries below are unchanged.
   See [AGENTS.md](AGENTS.md) for baseline configuration and provenance.
 - Restored workflow log and benchmark gathering, corrected checkpoint lookups,
   and repaired Windows console capture during simulation preparation.
+- Serialized netCDF access during staging to avoid the observed lock-order
+  stall, and corrected projection flagged-month dataset identities.
+
+### Migration
+
+- Migrate older project configuration with
+  `pixi run python scripts/migrate_project_config.py <project-file> --dry-run`,
+  review the proposed changes, then run without `--dry-run`. See the
+  [current migration guide](docs/site/guide/migrating-project-config.qmd) for
+  backup behavior and cases the migrator refuses.
+- Update workflow commands using [README.md](README.md), and update consumers
+  against the [current output structure](docs/site/guide/outputs.qmd).
+  Configuration migration alone does not migrate predecessor output trees;
+  retain the old tree and regenerate into a separate project directory.
+- Recompute affected projections and scenario/simulation results under the
+  current contracts. Changes to weighting, calendars, reference windows, and
+  baseline perturbation mean numerical parity with the preceding release is
+  not expected. The measured low-flow change above describes the recorded
+  baseline, not a bound for other basins.
+
+### Known limitations
+
+- Docker and Linux end-to-end scientific replication remain unqualified;
+  cross-platform CI does not establish full-pipeline numerical equivalence.
+- A portable sample-data bundle is not shipped. Existing seed catalogs can
+  depend on machine-specific data locations; configure accessible data before
+  running a new basin. See [installation](docs/site/setup/install.md).
+- WF0 provides historical characterization and forcing-readiness reporting;
+  the planned forcing-selection evaluation layer remains future work.
 
 ## [v0.2.0-alpha] — 2026-05-09
 

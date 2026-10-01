@@ -235,17 +235,20 @@ $ pixi run python scripts/run_workflows.py \
 
 ### Retained results and metrics-only
 
-Collections live under `scenarios/collections/<collection_id>/`, selected by the
-exact `scenarios/requests/<generation_request_id>/request.json` or an explicit manifest.
+Collections live under `scenarios/<collection_id>/`, selected by the
+exact `scenarios/_engine/requests/<generation_request_id>/request.json` or an explicit manifest.
 Simulation never creates missing collections. A missing or stale plan names the
 generation command required to resolve it; no directory scan or latest fallback
 is used.
 
-Each `experiments/<experiment_name>/` retains `config/simulation.json`, its native
+Each `experiments/<experiment_name>/` retains `_engine/simulation.json`, its native
 `hydrology/wflow/output/run_<run_id>.csv` responses and
 `_engine/response_inventory.json`. Metric sets live in
 `results/metric_sets/<metric_set_id>/`; their tables contain
-`metric,location,unit_id,value`, joined through `unit_index.csv` to scenario rows.
+`metric,location,run_group_id,value`, joined through `metric_run_lookup.csv`
+to the collection's `scenario_run_lookup.csv` and `perturbation_lookup.csv`.
+Collection inventories live in `scenarios/_engine/collections/<collection_id>/`;
+metric metadata lives in the experiment's `_engine/metric_sets/<metric_set_id>/`.
 Model-grid forcing and per-run catalogs are temporary. Collection forcing and
 native responses are durable.
 

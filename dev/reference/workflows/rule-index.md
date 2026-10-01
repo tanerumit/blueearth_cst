@@ -177,7 +177,7 @@ Paths are relative to `project_dir`, with these shorthands:
 | `<store>/` | `data/climate/historical/<clim_source>_<window>/` |
 | `<proj>/` | `data/climate/projections/<ensemble>/` |
 | `<exp>/` | `experiments/<experiment_name>/` |
-| `<wg>/` | `<project>/scenarios/requests/<generation_request_id>/generation/` (P2 staging; predecessor captures use `<exp>/climate/weathergenr/`) |
+| `<wg>/` | `<project>/scenarios/<collection_id>/weathergenr/` (current products; predecessor captures use `<exp>/climate/weathergenr/`) |
 | `<runs>/` | `<exp>/hydrology/wflow/` |
 
 ---

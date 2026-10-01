@@ -12,7 +12,7 @@
       "type": "run_record"
     },
     "test_case/test_local/config/runs/build_model/run_record.yml": {
-      "sha256": "07af91dbac2fcfe14d924f68a9c4342a04194f236537b06ca229d9dffd610317",
+      "sha256": "2ec3537aaa2834c1b1bf57e7acbf6f3455021d5930f5c66c596d312651d5ddcc",
       "template": "{project_dir}/config/runs/build_model/run_record.yml",
       "type": "run_record"
     },

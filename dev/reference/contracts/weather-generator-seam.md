@@ -148,9 +148,9 @@ do not. The magnitude witness is local CHIRPS evidence; tests cover the shared
 
 ## WG-2 — stress-test perturbation grid
 
-- **path pattern:** `<collection>/stress_test_lookup.csv`, retained with the
+- **path pattern:** `<collection>/perturbation_lookup.csv`, retained with the
   collection. Producer staging is under
-  `scenarios/requests/<generation_request_id>/generation/config/`.
+  `scenarios/_engine/requests/<generation_request_id>/generation/config/`.
 - **producer:** WF3 `prepare_perturbation_grid` and collection publication.
 - **consumer:** the stochastic provider reads the scenario row's explicit
   `st_id`; reporting derives axes from the retained lookup. Simulation and
@@ -220,10 +220,10 @@ do not. The magnitude witness is local CHIRPS evidence; tests cover the shared
 
 ## WG-3 — weathergenr config surface
 
-- **path pattern:** `scenarios/requests/<generation_request_id>/generation/config/weathergen_config.yml` —
+- **path pattern:** `scenarios/<collection_id>/weathergenr/weather_generation_input.yml` —
   **one file** since C29.
-- **producer:** rule 3.06 `prepare_weather_generator_settings`
-  (`blueearth_cst/experiment/prepare_weathergen_config.py`).
+- **producer:** wrapper step 3.06 `prepare_weather_generator_settings`, using
+  `generation_plan.py` and `prepare_weathergen_config.py`.
 - **consumer:** rules 3.07 and 3.08 (both R side), which read the same file.
 - **one config, not one per member (C29).** Do not reintroduce a per-member
   `weathergen_config_*.yml`: nothing in it varied except the output
@@ -235,7 +235,7 @@ do not. The magnitude witness is local CHIRPS evidence; tests cover the shared
   benchmark parts. The rest of what it carried — copies of the `stress_test`
   step counts and monthly min/max ranges — was never read (finding F6) and
   deliberately did **not** move: the values that perturb a run come from
-  `stress_test_lookup.csv`.
+  `perturbation_lookup.csv`.
 - **Shape:** sections named for the current upstream functions:
   `generate_weather`, `apply_climate_perturbations`, and `write_netcdf`, plus
   `temp.transient_change` and `precip.transient_change`.
@@ -255,12 +255,12 @@ WG-3 is the *current* generator's contract, not a universal one.
 
 ## WG-4 — durable generated forcing
 
-- **Path:** `<collection>/forcing/run_<run_id>.nc`, exactly one inventoried
+- **Path:** `<collection>/series/run_<run_id>.nc`, exactly one inventoried
   forcing artifact per scenario row, including unperturbed rows.
 - **Producer:** WF3 provider generation/perturbation followed by
-  `retain_scenario_forcing` and `publish_scenario_collection`.
+  `publish_generation`; members are written directly to retained series paths.
 - **Consumer:** WF4's preparation adapter. `run_id` is opaque, textual and
-  zero-padded; ancestry and design keys come from `scenario_table.csv`.
+  zero-padded; ancestry and design keys come from `scenario_run_lookup.csv`.
 - **Content:** the existing daily `(time, lat, lon)` raster with at least
   `precip` and `temp`, plus adapter-required variables. EPSG:4326 is carried
   through `spatial_ref`; global `crs`/`category` attributes are checked if
@@ -273,7 +273,7 @@ WG-3 is the *current* generator's contract, not a universal one.
 
 ## WG-5 — per-run HydroMT catalog
 
-- **Path:** `<exp>/hydrology/wflow/config/run_<run_id>.yml`, one per evaluated run.
+- **Path:** `<exp>/hydrology/wflow/run_settings/run_<run_id>.yml`, one per evaluated run.
 - **Producer/consumer:** WF4 `downscale_scenario_series`; the catalog points
   to retained collection forcing for that run.
 - **Pinned emitted subset:** exactly one `run_<run_id>` entry containing `uri`,

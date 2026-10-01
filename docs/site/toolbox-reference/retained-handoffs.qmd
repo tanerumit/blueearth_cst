@@ -9,9 +9,9 @@ independent plausibility overlay and does not select stress-test scenarios.
 
 | Handoff | Published under `project_dir` | Consumer |
 |---|---|---|
-| Scenario collection | `scenarios/collections/<collection_id>/`, including `collection.json` and generated series | WF4 selects a ready collection and explicit run IDs. |
+| Scenario collection | `scenarios/<collection_id>/` for generated series and lookups; `scenarios/_engine/collections/<collection_id>/collection.json` for the inventory | WF4 selects a ready collection and explicit run IDs. |
 | Simulation responses | `experiments/<experiment_name>/hydrology/wflow/output/`, with `experiments/<experiment_name>/_engine/response_inventory.json` | Metric reduction reads retained native Wflow responses. |
-| Metric set | `experiments/<experiment_name>/results/metric_sets/<metric_set_id>/`, including `metrics.json` | Result readers join indicator tables to their unit index and request metadata. |
+| Metric set | `experiments/<experiment_name>/results/metric_sets/<metric_set_id>/` for tables and lookup; the experiment's `_engine/metric_sets/<metric_set_id>/metrics.json` for metadata | Result readers join indicator tables to their run-group lookup and request metadata. |
 
 The collection, simulation, and metric set have separate identities. A changed
 collection, model, or simulation setting requires a new experiment. A changed

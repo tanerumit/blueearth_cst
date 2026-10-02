@@ -1575,6 +1575,8 @@ class _ConsoleHandler(logging.StreamHandler):
             elif event == "run_info":
                 lines.extend(self._plan_block(record))
             elif not self._muted(record, event):
+                if event in {"job_error", "group_error"}:
+                    lines.extend(self._failure_lines(fields, event))
                 # Body tier for what is informational only. A WARNING or an ERROR keeps
                 # Snakemake's own colouring, which is the one thing on this
                 # console that must stay louder than a start line.
@@ -1599,6 +1601,40 @@ class _ConsoleHandler(logging.StreamHandler):
                 lines.append(shown)
 
         return "\n".join(line for line in lines if line) or None
+
+    def _failure_lines(self, fields, event):
+        """Identify failed jobs before the original traceback and log dump.
+
+        Use Snakemake's structured fields, including each member of a failed
+        group. Do not infer a failed rule from the last job that started: jobs
+        can run concurrently. Records without an identity retain native output.
+        """
+        jobs = fields.get("job_error_info", ()) if event == "group_error" else [fields]
+        lines = []
+        for job in jobs:
+            name = job.get("name") if event == "group_error" else job.get("rule_name")
+            if not name:
+                continue
+            number = _RULE_NUMBERS.get(name)
+            identity = f"{rule_id(number)} {name}" if number else name
+            jobid = job.get("jobid")
+            suffix = f"  |  job {jobid}" if jobid is not None else ""
+            head = f"FAILED {identity}{suffix}"
+            lines.extend(
+                [
+                    self._paint(head, _ANSI_FAIL),
+                    self._paint(title_rule(head), _ANSI_FAIL),
+                ]
+            )
+            for path in job.get("log", ()):
+                shown = _relativize_paths(
+                    os.fspath(path),
+                    os.environ.get(_PROJECT_ROOT_ENV, ""),
+                    _path_tokens(),
+                )
+                lines.append(f"  log  {shown}")
+            lines.append("")
+        return lines
 
     def _opening(self, plan=None):
         """The run's opening block, or ``[]`` when no header was declared.

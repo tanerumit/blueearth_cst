@@ -3441,6 +3441,48 @@ def test_console_a_rule_without_a_message_keeps_the_default_block():
     assert _emit(handler, record) == "rule some_rule:\n    output: a.nc\n"
 
 
+def test_console_failure_names_the_actual_job_and_preserves_diagnosis(monkeypatch):
+    monkeypatch.setitem(cs._RULE_NUMBERS, "build_model", "1.03")
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _job_info(9, "another_rule", "Another job running concurrently"),
+        _console_record(
+            "Error in rule build_model:\nFileNotFoundError: unavailable data",
+            level=_logging.ERROR,
+            event="job_error",
+            rule_name="build_model",
+            jobid=0,
+            log=["project/logs/build.log"],
+        ),
+    )
+    assert "FAILED Rule 1.03: build_model  |  job 0" in out
+    assert "  log  project/logs/build.log" in out
+    assert "FileNotFoundError: unavailable data" in out
+    assert out.index("FAILED") < out.index("FileNotFoundError")
+    assert "FAILED another_rule" not in out
+
+
+def test_console_group_failure_lists_all_members_without_requiring_rule_numbers():
+    handler = _console_handler()
+    out = _emit(
+        handler,
+        _console_record(
+            "Original group error",
+            level=_logging.ERROR,
+            event="group_error",
+            job_error_info=[
+                {"name": "unregistered_a", "jobid": 2, "log": ["a.log", "b.log"]},
+                {"name": "unregistered_b", "jobid": 3, "log": []},
+            ],
+        ),
+    )
+    assert "FAILED unregistered_a  |  job 2" in out
+    assert "FAILED unregistered_b  |  job 3" in out
+    assert "  log  a.log" in out and "  log  b.log" in out
+    assert "Original group error" in out
+
+
 def test_console_a_rule_without_a_message_still_gets_a_named_finish_line():
     """Delegating the START line must not cost the job its identity at the END."""
     handler = _console_handler()

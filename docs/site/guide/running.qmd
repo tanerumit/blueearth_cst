@@ -113,6 +113,13 @@ If a run exhausts memory, lower `--cores` and rerun it. Larger basins and longer
 scenario collections need more memory and disk space; timings and resource use
 are recorded under `<project_dir>/benchmarks/`.
 
+When a job fails, the console prints a prominent `FAILED` block naming its rule
+(with the toolbox rule ID when available), Snakemake job ID, and individual log
+paths alongside the original error details. Concurrent failures and
+failed grouped jobs identify each affected job. The closing workflow summary
+also points to the retained log parts. Errors before any job starts retain
+Snakemake's original diagnosis.
+
 ::: {.callout-note}
 ## Run a project from one toolbox checkout
 

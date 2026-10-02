@@ -6,9 +6,10 @@ staged content-addressed and shared across workflows, so an unchanged
 dependency resolves to the same execution path from WF0, WF1 or WF2 alike --
 this is what lets the shared-foundation rules (delineate_region and friends)
 skip on a rerun instead of rebuilding every time a different workflow last
-touched them. The composed project/workflow config documents remain staged
-per workflow bundle, since their content is workflow-specific by design. The
-original bytes live in run-record/2.
+touched them. Project/workflow execution documents use canonical filenames
+and are keyed by their parsed settings and selected dependency contents, not
+source locations or another workflow's scheduling choices. Original paths,
+bytes, and enable flags remain in run-record/2.
 """
 
 from __future__ import annotations
@@ -53,7 +54,7 @@ CONTEXT_ENV = "BLUEEARTH_WF012_CAPTURE_CONTEXT"
 # Bump whenever staging logic changes generated execution YAML while the
 # captured sources can remain byte-identical. Including this in the bundle
 # digest retains older immutable execution views instead of overwriting them.
-EXECUTION_CONFIG_SCHEMA_VERSION = "3"
+EXECUTION_CONFIG_SCHEMA_VERSION = "4"
 
 
 def split_config_overrides(extra: Sequence[str]) -> tuple[dict[str, Any], list[str]]:
@@ -114,6 +115,9 @@ def stage_shared_dependency(
     source = Path(source).resolve(strict=True)
     data = source.read_bytes()
     digest = short_digest(hashlib.sha256(data).hexdigest())
+    suffix = source.suffix.lower()
+    if suffix == ".yaml":
+        suffix = ".yml"
     destination = (
         Path(project_root).resolve()
         / "config"
@@ -123,7 +127,7 @@ def stage_shared_dependency(
         / "_shared"
         / dependency_id
         / digest
-        / source.name
+        / f"{dependency_id}{suffix}"
     )
     _write_once(destination, data)
     return destination
@@ -286,25 +290,6 @@ def prepare_workflow(
     for source in custom:
         _check_relocatable_yaml(source)
     sources = (*initial, *custom)
-    material = [("execution_config_schema", EXECUTION_CONFIG_SCHEMA_VERSION)]
-    material.extend(
-        (source.id, str(source.original_path), hashlib.sha256(source.data).hexdigest())
-        for source in sources
-    )
-    digest = short_digest(
-        hashlib.sha256(
-            json.dumps(material, sort_keys=True, separators=(",", ":")).encode("utf-8")
-        ).hexdigest()
-    )
-    stage = (
-        project_root
-        / "config"
-        / "runs"
-        / "_engine"
-        / "execution-configs"
-        / workflow
-        / digest
-    )
     # Content-addressed by the FILE's own bytes, in a bucket shared across
     # workflows -- not nested under this workflow's own `stage` (bundle digest).
     # WF0/WF1/WF2 declare byte-identical shared-foundation rules (delineate_region,
@@ -361,7 +346,11 @@ def prepare_workflow(
                 dependency_root
                 / dependency_dir
                 / content_hash
-                / source.original_path.name
+                / (
+                    "cmip6_store_index.json"
+                    if source.id == "projection_index"
+                    else "projection_catalog.yml"
+                )
             )
             _write_once(destination, source.data)
         generated_paths.append((f"execution_{source.id}", destination))
@@ -370,11 +359,47 @@ def prepare_workflow(
         (source for source in initial if source.role == f"workflow_config_{workflow}"),
         None,
     )
+    workflow_document = (
+        _replace_paths(yaml.safe_load(workflow_source.data), replacements)
+        if workflow_source is not None
+        else None
+    )
+    project_document = _replace_paths(yaml.safe_load(initial[0].data), replacements)
+    if overrides:
+        project_document.update(_replace_paths(dict(overrides), replacements))
+    # Scheduling choices and source locators remain in the exact archive. Only
+    # this workflow's executable settings belong in its immutable config view.
+    project_document["workflows"] = {
+        workflow: {
+            key: value
+            for key, value in project_document["workflows"][workflow].items()
+            if key != "config_path"
+        }
+    }
+    material = {
+        "execution_config_schema": EXECUTION_CONFIG_SCHEMA_VERSION,
+        "project": project_document,
+        "workflow": workflow_document,
+        "dependencies": [
+            (source.id, hashlib.sha256(source.data).hexdigest()) for source in custom
+        ],
+    }
+    digest = short_digest(
+        hashlib.sha256(
+            yaml.safe_dump(material, sort_keys=True).encode("utf-8")
+        ).hexdigest()
+    )
+    stage = (
+        project_root
+        / "config"
+        / "runs"
+        / "_engine"
+        / "execution-configs"
+        / workflow
+        / digest
+    )
     if workflow_source is not None:
-        workflow_document = _replace_paths(
-            yaml.safe_load(workflow_source.data), replacements
-        )
-        execution_workflow = stage / workflow_source.original_path.name
+        execution_workflow = stage / "workflow.yml"
         _write_once(
             execution_workflow,
             yaml.safe_dump(workflow_document, sort_keys=True).encode("utf-8"),
@@ -382,20 +407,9 @@ def prepare_workflow(
         generated_paths.append(("execution_workflow_config", execution_workflow))
     else:
         execution_workflow = None
-    project_document = _replace_paths(yaml.safe_load(initial[0].data), replacements)
-    captured_workflows = {
-        source.role.removeprefix("workflow_config_")
-        for source in initial
-        if source.role.startswith("workflow_config_")
-    }
-    for name, stanza in project_document["workflows"].items():
-        if name not in captured_workflows:
-            stanza.pop("config_path", None)
-    if overrides:
-        project_document.update(overrides)
     if execution_workflow is not None:
         project_document["workflows"][workflow]["config_path"] = str(execution_workflow)
-    execution_project = stage / initial[0].original_path.name
+    execution_project = stage / "project.yml"
     _write_once(
         execution_project,
         yaml.safe_dump(project_document, sort_keys=True).encode("utf-8"),

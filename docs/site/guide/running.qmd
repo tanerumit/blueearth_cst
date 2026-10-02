@@ -66,6 +66,16 @@ runs. Set `enabled: false` for a workflow you want to skip. Check that any
 earlier results used by a later workflow still match your current project
 settings.
 
+Historical climate, model building, and projections reuse completed steps when
+their consumed settings and dependency contents are unchanged. You can rename
+or move project/workflow configuration files, update their `config_path` links,
+or enable other workflows without rebuilding those steps. Paths to scientific
+data must still resolve to the same inputs. Each launch archives the original
+configuration files and paths separately from the stable execution view.
+Changing relevant settings or dependency contents still invalidates affected
+work. Existing runs may rebuild once after upgrading to this execution-view
+format; subsequent equivalent configurations reuse the staged inputs.
+
 To preview the enabled workflows, add `-- --dry-run` to the command. A dry run
 may show only part of a workflow until inputs from an earlier step exist.
 

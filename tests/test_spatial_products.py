@@ -245,6 +245,39 @@ def test_supplied_points_support_multiple_parents_and_downstream_snap():
     assert (result["snapped_distance_m"] > 0).all()
 
 
+@pytest.mark.parametrize("role", ["control", "observation"])
+@pytest.mark.parametrize("adjustment", ["unchanged", "cell-center", "downstream"])
+def test_supplied_coordinate_adjustments_are_warned(monkeypatch, role, adjustment):
+    maps, flow, _, outlets = _base_maps()
+    outlet = outlets[1]
+    index = outlet if adjustment != "downstream" else 0
+    gauges = _gauge_at(maps, index, "Supplied station", role)
+    if adjustment == "cell-center":
+        gauges.geometry = gpd.points_from_xy(
+            gauges.geometry.x + 0.0001, gauges.geometry.y
+        )
+    if adjustment == "downstream":
+        maps["river_mask"].values[:] = False
+        maps["river_mask"].values.ravel()[outlet] = True
+    rows = []
+    monkeypatch.setattr(
+        products_module,
+        "log_row",
+        lambda message, **kwargs: rows.append((message, kwargs)),
+    )
+    result = _snap_gauge_points(gauges, maps, flow, 10000, outlet_by_basin=outlets)
+    if adjustment == "unchanged":
+        assert rows == []
+    else:
+        assert len(rows) == 1
+        message, options = rows[0]
+        assert options == {"module": "spatial", "level": "WARNING"}
+        assert "Supplied station" in message
+        assert "lon=" in message and "lat=" in message and "->" in message
+        if adjustment == "cell-center":
+            assert result["snapped_distance_m"].iloc[0] == 0
+
+
 def test_outlet_only_control_uses_automatic_fallback():
     """An outlet point names a primary location but does not force a subdivision."""
     maps, flow, basins, outlets = _base_maps()

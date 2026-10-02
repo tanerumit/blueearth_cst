@@ -510,6 +510,32 @@ def _snap_gauge_points(
     result["basin_id"] = snapped_basins.astype("int32")
     result.geometry = snapped_wgs84.geometry
     result.set_crs(4326, allow_override=True, inplace=True)
+    original_wgs84 = gauges.to_crs(4326)
+    # Ignore only CRS roundtrip noise (~0.1 mm), including on river cells.
+    changed = ~(
+        np.isclose(
+            original_wgs84.geometry.x.values,
+            snapped_wgs84.geometry.x.values,
+            atol=1e-9,
+            rtol=0,
+        )
+        & np.isclose(
+            original_wgs84.geometry.y.values,
+            snapped_wgs84.geometry.y.values,
+            atol=1e-9,
+            rtol=0,
+        )
+    )
+    for index in np.flatnonzero(changed):
+        original = original_wgs84.iloc[index]
+        resolved = snapped_wgs84.geometry.iloc[index]
+        log_row(
+            f"Output location coordinates adjusted: {original.station_name} "
+            f"(lon={original.geometry.x:.9f}, lat={original.geometry.y:.9f}) -> "
+            f"(lon={resolved.x:.9f}, lat={resolved.y:.9f})",
+            module="spatial",
+            level="WARNING",
+        )
     return result
 
 

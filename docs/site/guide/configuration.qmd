@@ -98,6 +98,23 @@ The project file holds the basin, climate source, and model output choices
 shared across workflows. Settings specific to one workflow go in that
 workflow's file.
 
+### Output locations
+
+`basin.output_locations` points to a CSV with `station_name`, `x` (longitude),
+and `y` (latitude), in decimal degrees. The optional `location_role` column
+accepts `control` (the default) or `observation`.
+
+Each point must start within the active cells of a declared parent basin.
+The toolbox follows its drainage path downstream to a river cell, subject to
+`basin.delineation.snap_tolerance_m`; it does not move points to the
+geometrically nearest river across a drainage divide. Both controls and
+observations must drain to their assigned parent basin's outlet. Points in
+different declared parent basins are supported.
+
+Invalid points are rejected with their station names and original coordinates.
+Check their placement against the source hydrography before changing the snap
+tolerance. A point that reaches a pit without reaching a river is rejected.
+
 ### The per-workflow files
 
 Each workflow entry says whether to run it and where to find its settings:

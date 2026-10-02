@@ -228,6 +228,8 @@ env-check = { cmd = "python dev/scripts/check_env.py", description = "Report whe
 # run-workflows ...`.
 run-workflows = { cmd = "python scripts/run_workflows.py", description = "Run the enabled workflows in fixed order (climate -> model -> projections -> experiment); requires --config" }
 
+create-case = { cmd = "python scripts/create_case.py", description = "Create an external case from the cases repository template; requires case slug, --cases-root, outlet coordinates, and --purpose" }
+
 # Documentation site. The Quarto project is rooted at `docs/`, so both tasks
 # take that directory rather than the repo root -- the render scope is then a
 # directory that holds only documentation, and the vendored hydromt / wflow

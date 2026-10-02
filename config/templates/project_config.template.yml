@@ -36,7 +36,7 @@ schema_version: 2                          # leave as is
 
 project:
   project_dir: /path/to/my_project         # absolute path, outside this repository
-  catalog: config/catalogs/deltares_data.yml   # hydromt data catalog listing every dataset
+  catalog: config/catalogs/deltares_data_pdrive.yml   # requires the Deltares P-drive
 
 
 # -----------------------------------------------------------------------------
@@ -61,11 +61,11 @@ basin:
   #  max_subbasins: 11                      # per basin
 
   # Datasets used to build the basin, by catalog entry name.
-  #sources:
+  sources:
   #  hydrography: merit_hydro_ihu           # must match setup_basemaps in the build config
   #  basin_index: merit_hydro_index
-  #  rivers: rivers_lin2019_v1
-  #  lulc: vito
+    rivers: hydro_rivers_lin
+    lulc: globcover
   #  lai: modis_lai
   #  soil: soilgrids
 

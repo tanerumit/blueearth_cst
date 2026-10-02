@@ -98,6 +98,52 @@ The project file holds the basin, climate source, and model output choices
 shared across workflows. Settings specific to one workflow go in that
 workflow's file.
 
+### Search for an outlet within an area
+
+An approximate outlet coordinate can fall on a small isolated drainage cell.
+To select river outlets within a local search area, use HydroMT's bounding-box
+form of `subbasin`, with coordinates ordered west, south, east, north:
+
+```yaml
+basin:
+  region: "{'subbasin': [29.81375, 31.12208, 29.87375, 31.18208], 'uparea': 100}"
+  sources:
+    hydrography: merit_hydro_ihu
+    basin_index: merit_hydro_ihu_index
+```
+
+This example selects outlets on streams with at least 100 km² of upstream
+area. HydroMT delineates their upstream catchments, which can extend beyond
+the search box. This differs from the optional `bounds` argument, which limits
+the hydrography data used for delineation. An area intersecting several rivers
+can select several basins; inspect the resulting basin geometry and output
+locations before running the remaining workflows. Use a basin index matching
+the selected hydrography and available in your data catalog.
+
+The search area does not revise an existing `output_locations` CSV. Place its
+points within the selected drainage network, using the resolved outlet for an
+outlet point. Record any manual coordinate correction in the case's run notes.
+
+### Output locations
+
+`basin.output_locations` points to a CSV with `station_name`, `x` (longitude),
+and `y` (latitude), in decimal degrees. The optional `location_role` column
+accepts `control` (the default) or `observation`.
+
+Each point must start within the active cells of a declared parent basin.
+The toolbox follows its drainage path downstream to a river cell, subject to
+`basin.delineation.snap_tolerance_m`; it does not move points to the
+geometrically nearest river across a drainage divide. Both controls and
+observations must drain to their assigned parent basin's outlet. Points in
+different declared parent basins are supported.
+
+Invalid points are rejected with their station names and original coordinates.
+Check their placement against the source hydrography before changing the snap
+tolerance. A point that reaches a pit without reaching a river is rejected.
+Successful coordinate adjustments emit a warning with the station name and
+original and resolved longitude/latitude. This includes moving a point to its
+model-cell centre even when no downstream movement is needed.
+
 ### The per-workflow files
 
 Each workflow entry says whether to run it and where to find its settings:

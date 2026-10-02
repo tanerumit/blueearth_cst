@@ -403,8 +403,15 @@ def _snap_gauge_points(
     maps: xr.Dataset,
     flwdir: FlwdirRaster,
     tolerance_m: float,
+    *,
+    outlet_by_basin: dict[int, int] | None = None,
 ) -> gpd.GeoDataFrame:
-    """Snap configured points to rivers and attach parent/grid coordinates."""
+    """Trace valid parent cells downstream to rivers, retaining their parent.
+
+    When parent outlets are supplied, every role must drain to its assigned
+    outlet. Snapping follows flow direction and never crosses a divide to
+    select a geometrically nearer river.
+    """
     if gauges.empty:
         result = gauges.copy()
         for column in (
@@ -420,24 +427,69 @@ def _snap_gauge_points(
         ):
             result[column] = pd.Series(dtype="float64")
         return result
+
+    def reject(mask: np.ndarray, reason: str) -> None:
+        points = gauges.to_crs(4326).loc[mask]
+        details = "; ".join(
+            f"{point.station_name} (lon={point.geometry.x:.6f}, lat={point.geometry.y:.6f})"
+            for point in points.itertuples()
+        )
+        raise ValueError(f"{reason}: {details}")
+
     projected = gauges.to_crs(maps.raster.crs)
-    initial = maps.raster.xy_to_idx(
-        xs=projected.geometry.x.values, ys=projected.geometry.y.values
+    finite = np.isfinite(projected.geometry.x.values) & np.isfinite(
+        projected.geometry.y.values
     )
+    if not finite.all():
+        reject(~finite, "output locations must have finite longitude and latitude")
+    initial = maps.raster.xy_to_idx(
+        xs=projected.geometry.x.values,
+        ys=projected.geometry.y.values,
+        mask_outside=True,
+    )
+    valid = (initial >= 0) & (initial < maps["basin_id"].size)
+    if not valid.all():
+        reject(~valid, "output locations fall outside the analysis grid")
+    original_basins = maps["basin_id"].values.ravel()[initial]
+    active = (original_basins > 0) & flwdir.mask.ravel()[initial]
+    if not active.all():
+        reject(~active, "output locations fall outside active parent basin cells")
     snapped, distances = flwdir.snap(
         idxs=initial, mask=maps["river_mask"].values, unit="m"
     )
+    valid = (snapped >= 0) & (snapped < maps["basin_id"].size)
+    if not valid.all():
+        reject(~valid, "output locations have no valid downstream snap")
+    on_river = maps["river_mask"].values.ravel()[snapped].astype(bool)
+    if not on_river.all():
+        reject(~on_river, "output locations reach a terminal cell before a river")
+    snapped_basins = maps["basin_id"].values.ravel()[snapped]
+    same_parent = (snapped_basins > 0) & (snapped_basins == original_basins)
+    if not same_parent.all():
+        reject(
+            ~same_parent, "output locations snap outside their original parent basin"
+        )
+    if outlet_by_basin is not None:
+        target = np.zeros(flwdir.shape, dtype=bool)
+        target.ravel()[list(outlet_by_basin.values())] = True
+        terminal, _ = flwdir.snap(idxs=snapped, mask=target, unit="cell")
+        connected = np.asarray(
+            [
+                int(end) == outlet_by_basin[int(parent)]
+                for end, parent in zip(terminal, snapped_basins)
+            ]
+        )
+        if not connected.all():
+            reject(
+                ~connected, "output locations do not drain to their parent basin outlet"
+            )
     too_far = distances > tolerance_m
     if too_far.any():
-        names = gauges.loc[too_far, "station_name"].tolist()
-        raise ValueError(
-            f"gauge points exceed gauge_snap_tolerance_m={tolerance_m}: {names}"
-        )
+        reject(too_far, f"gauge points exceed gauge_snap_tolerance_m={tolerance_m}")
     duplicate_points = pd.Series(snapped).duplicated(keep=False)
     if duplicate_points.any():
-        duplicate_indices = sorted(set(snapped[duplicate_points].tolist()))
-        raise ValueError(
-            f"gauge points snap to duplicate river cells: {duplicate_indices}"
+        reject(
+            duplicate_points.to_numpy(), "gauge points snap to duplicate river cells"
         )
 
     snapped_x, snapped_y = maps.raster.idx_to_xy(snapped)
@@ -455,13 +507,35 @@ def _snap_gauge_points(
     result["snapped_row"], result["snapped_col"] = np.unravel_index(
         snapped, maps.raster.shape
     )
-    basin_ids = maps["basin_id"].values.ravel()[snapped]
-    if (basin_ids <= 0).any():
-        names = result.loc[basin_ids <= 0, "station_name"].tolist()
-        raise ValueError(f"gauge points fall outside resolved parent basins: {names}")
-    result["basin_id"] = basin_ids.astype("int32")
+    result["basin_id"] = snapped_basins.astype("int32")
     result.geometry = snapped_wgs84.geometry
     result.set_crs(4326, allow_override=True, inplace=True)
+    original_wgs84 = gauges.to_crs(4326)
+    # Ignore only CRS roundtrip noise (~0.1 mm), including on river cells.
+    changed = ~(
+        np.isclose(
+            original_wgs84.geometry.x.values,
+            snapped_wgs84.geometry.x.values,
+            atol=1e-9,
+            rtol=0,
+        )
+        & np.isclose(
+            original_wgs84.geometry.y.values,
+            snapped_wgs84.geometry.y.values,
+            atol=1e-9,
+            rtol=0,
+        )
+    )
+    for index in np.flatnonzero(changed):
+        original = original_wgs84.iloc[index]
+        resolved = snapped_wgs84.geometry.iloc[index]
+        log_row(
+            f"Output location coordinates adjusted: {original.station_name} "
+            f"(lon={original.geometry.x:.9f}, lat={original.geometry.y:.9f}) -> "
+            f"(lon={resolved.x:.9f}, lat={resolved.y:.9f})",
+            module="spatial",
+            level="WARNING",
+        )
     return result
 
 
@@ -891,6 +965,7 @@ def prepare_spatial_units(
         maps,
         flwdir,
         gauge_snap_tolerance_m,
+        outlet_by_basin=outlet_by_basin,
     )
     (
         subbasin_map,

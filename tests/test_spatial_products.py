@@ -196,6 +196,88 @@ def test_duplicate_snapped_controls_are_rejected():
         _snap_gauge_points(gauges, maps, flow, 1000)
 
 
+@pytest.mark.parametrize(
+    "fault",
+    ["outside", "inactive", "invalidflow", "nonfinite", "nonriver", "disconnected"],
+)
+@pytest.mark.parametrize("role", ["control", "observation"])
+def test_supplied_points_reject_invalid_drainage(fault, role):
+    maps, flow, _, outlets, _ = _two_parent_maps()
+    index = 0
+    gauges = _gauge_at(maps, index, "Invalid station", role)
+    if fault == "outside":
+        gauges.geometry = gpd.points_from_xy([10.0], [10.0])
+    elif fault == "inactive":
+        maps["basin_id"].values.ravel()[index] = 0
+    elif fault == "invalidflow":
+        directions = flow.to_array(ftype="d8")
+        directions.ravel()[index] = 247
+        flow = pyflwdir.from_array(directions, ftype="d8", transform=flow.transform)
+    elif fault == "nonfinite":
+        gauges.geometry = gpd.points_from_xy([np.inf], [0.0])
+    elif fault == "nonriver":
+        maps["river_mask"].values[:] = False
+    else:
+        maps["basin_id"].values[:] = 1
+        outlets = {1: outlets[1]}
+        index = next(value for value in flow.idxs_pit if value != outlets[1])
+        gauges = _gauge_at(maps, index, "Invalid station", role)
+    with pytest.raises(ValueError, match="Invalid station.*lon=.*lat="):
+        _snap_gauge_points(gauges, maps, flow, 10000, outlet_by_basin=outlets)
+
+
+def test_supplied_points_support_multiple_parents_and_downstream_snap():
+    maps, flow, _, outlets, _ = _two_parent_maps()
+    maps["river_mask"].values[:] = False
+    for outlet in outlets.values():
+        maps["river_mask"].values.ravel()[outlet] = True
+    gauges = gpd.GeoDataFrame(
+        pd.concat(
+            [_gauge_at(maps, 0, "West"), _gauge_at(maps, 3, "East", "observation")],
+            ignore_index=True,
+        ),
+        geometry="geometry",
+        crs=4326,
+    )
+    result = _snap_gauge_points(gauges, maps, flow, 10000, outlet_by_basin=outlets)
+    assert set(result["basin_id"]) == set(outlets)
+    assert set(result["snapped_index"]) == set(outlets.values())
+    assert (result["snapped_distance_m"] > 0).all()
+
+
+@pytest.mark.parametrize("role", ["control", "observation"])
+@pytest.mark.parametrize("adjustment", ["unchanged", "cell-center", "downstream"])
+def test_supplied_coordinate_adjustments_are_warned(monkeypatch, role, adjustment):
+    maps, flow, _, outlets = _base_maps()
+    outlet = outlets[1]
+    index = outlet if adjustment != "downstream" else 0
+    gauges = _gauge_at(maps, index, "Supplied station", role)
+    if adjustment == "cell-center":
+        gauges.geometry = gpd.points_from_xy(
+            gauges.geometry.x + 0.0001, gauges.geometry.y
+        )
+    if adjustment == "downstream":
+        maps["river_mask"].values[:] = False
+        maps["river_mask"].values.ravel()[outlet] = True
+    rows = []
+    monkeypatch.setattr(
+        products_module,
+        "log_row",
+        lambda message, **kwargs: rows.append((message, kwargs)),
+    )
+    result = _snap_gauge_points(gauges, maps, flow, 10000, outlet_by_basin=outlets)
+    if adjustment == "unchanged":
+        assert rows == []
+    else:
+        assert len(rows) == 1
+        message, options = rows[0]
+        assert options == {"module": "spatial", "level": "WARNING"}
+        assert "Supplied station" in message
+        assert "lon=" in message and "lat=" in message and "->" in message
+        if adjustment == "cell-center":
+            assert result["snapped_distance_m"].iloc[0] == 0
+
+
 def test_outlet_only_control_uses_automatic_fallback():
     """An outlet point names a primary location but does not force a subdivision."""
     maps, flow, basins, outlets = _base_maps()

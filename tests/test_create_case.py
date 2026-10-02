@@ -1,5 +1,6 @@
 """Case scaffolding checks using isolated, representative case repositories."""
 
+from datetime import datetime
 from pathlib import Path
 
 import pytest
@@ -80,6 +81,12 @@ def test_create_preserves_template_and_inventory(cases: Path, dry_run: bool) -> 
     assert "# Keep scientific comments" in config_text
     assert "outlet,12.5,-3.0" in (application / "data/output_locations.csv").read_text()
     assert "configured; not run" in (application / "notes.md").read_text()
+    assert not (application / "README.md").exists()
+    instructions = (application / "INSTRUCTIONS.md").read_text(encoding="utf-8")
+    created = next(line for line in instructions.splitlines() if "| Created |" in line)
+    datetime.strptime(created.split("|")[2].strip(), "%Y-%m-%d %H:%M:%S")
+    assert "| Status |" not in instructions
+    assert instructions.rsplit("\n## ", 1)[1].startswith("Output folder and results")
     assert (cases / "cst-applications.md").read_bytes().startswith(before)
     assert "Test &#124; basin" in (cases / "cst-applications.md").read_text()
     row = (cases / "cst-applications.md").read_text().splitlines()[-1]

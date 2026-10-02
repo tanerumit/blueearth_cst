@@ -47,7 +47,8 @@ toolbox-relative or absolute path. Review catalog coverage and climate/scenario
 settings before running. Existing applications and inventory entries are refused;
 outputs under `runs/my-basin/active/` are neither created nor modified.
 
-Read the generated case README for preview and execution commands. After
+Read the generated `INSTRUCTIONS.md` for preview and execution commands and
+a guide to the output folders. After
 selecting forcing, disable historical climate analysis before enabling downstream
 workflows. The scaffold does not run workflows or commit files.
 

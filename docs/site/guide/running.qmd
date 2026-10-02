@@ -29,6 +29,12 @@ For a new external case, create its configuration set from the cases repository'
 pixi run create-case my-basin --cases-root C:/path/to/cst-cases --longitude 12.5 --latitude -3 --purpose "First-order basin assessment" --dry-run
 ```
 
+The starter defaults to `config/catalogs/deltares_data_pdrive.yml` and
+data under `P:/wflow_global/hydromt`; mount the Deltares P-drive before
+running. Its basin sources use `rivers: hydro_rivers_lin` and
+`lulc: globcover`. The scaffold inherits the catalog and source settings
+from the cases repository's template.
+
 Remove `--dry-run` after reviewing the preview. The command creates
 `applications/my-basin/`, sets absolute input and output paths, replaces the
 outlet coordinates, and appends a `configured; not run` inventory entry. It

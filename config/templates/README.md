@@ -23,6 +23,13 @@ pass the project file to `--configfile`; its `config_path:` lines name the other
 four. A filled-in worked example is `test_case/project_config_rapid.yml` with
 its siblings; `docs/site/guide/configuration.qmd` walks through the layout.
 
+The project template uses `config/catalogs/deltares_data_pdrive.yml`, backed
+by `P:/wflow_global/hydromt`. Mount the Deltares P-drive before running.
+It explicitly selects `basin.sources.rivers: hydro_rivers_lin` and
+`basin.sources.lulc: globcover` to match that catalog. For a local-data
+installation, select `config/catalogs/deltares_data.yml` and review the
+source names and geographic coverage of the local datasets.
+
 `wflow_sbm.reference.toml` sits here as a **reference copy only** — no Snakefile,
 script or test reads it. Rule 1.06 has hydromt generate the project's own TOML
 from hydromt_wflow's defaults. Treat this file as documentation, and expect it to

@@ -16,6 +16,7 @@ cssclasses: [todo-board]
 | [t2609171500][]          | 7      | Move the experiment's frozen simulation documents into _engine                                                | project-tree          | backlog      |
 | [t2608202352][]          | 8      | Publish the docs site to GitHub Pages, and reduce the README onto it                                          | docs /                | blocked      |
 | [t2608202351][]          | 9      | Publish the technical background — split the 2025 note into eight chapters                                    | docs /                | blocked      |
+| [t2610022259][]          |        | Scope conceptual workflow improvements                                                                        | workflow methodology  | backlog      |
 | [t2610011613][]          |        | Adopt a manual toolbox versioning policy                                                                      | tooling               | active (7/7) |
 | [t2609281102][]          |        | Complete reviewed expert Wflow model revisions design                                                         | wf1 /                 | blocked      |
 | [t2609251520][]          |        | Open question: flat, hash-suffixed names for generation_inputs snapshots? — Trigger: Owner decides whether…   | wf3 /                 | watch        |
@@ -40,6 +41,7 @@ cssclasses: [todo-board]
 [t2609171500]: tasks/t2609171500-move-the-experiment-s-frozen-simulation-documents-into-engine.md
 [t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
 [t2608202351]: tasks/t2608202351-publish-technical-background-split-the-note.md
+[t2610022259]: tasks/t2610022259-conceptual-workflow-improvements.md
 [t2610011613]: tasks/t2610011613-manual-toolbox-versioning-policy.md
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
 [t2609251520]: tasks/t2609251520-open-question-flat-hash-suffixed-names-for-generation-inputs-snapshots.md

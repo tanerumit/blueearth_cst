@@ -26,7 +26,7 @@ For a new external case, create its configuration set from the cases repository'
 `templates/example-basin/` starter. From the toolbox root:
 
 ```powershell
-pixi run python scripts/create_case.py my-basin --cases-root C:/path/to/cst-cases --longitude 12.5 --latitude -3 --purpose "First-order basin assessment" --dry-run
+pixi run create-case my-basin --cases-root C:/path/to/cst-cases --longitude 12.5 --latitude -3 --purpose "First-order basin assessment" --dry-run
 ```
 
 Remove `--dry-run` after reviewing the preview. The command creates

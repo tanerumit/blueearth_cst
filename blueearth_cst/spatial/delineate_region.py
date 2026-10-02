@@ -28,6 +28,7 @@ data catalog, never from a built model's ``staticmaps.nc`` or
 import ast
 import gc
 import os
+from numbers import Real
 from pathlib import Path
 from typing import Optional, Union
 
@@ -83,16 +84,46 @@ def delineate_region(
     data_catalog = hydromt.DataCatalog(data_libs=data_libs)
     try:
         log_row(f"Delineating region {model_region} on {hydrography}", module="spatial")
-        gdf = parse_region_basin(
-            model_region,
-            data_catalog=data_catalog,
-            hydrography_path=hydrography,
-            basin_index_path=basin_index,
-        )
+        try:
+            gdf = parse_region_basin(
+                model_region,
+                data_catalog=data_catalog,
+                hydrography_path=hydrography,
+                basin_index_path=basin_index,
+            )
+        except ValueError as error:
+            if str(error).startswith(
+                (
+                    "Invalid raster: less than 2 cells in x_dim",
+                    "Invalid raster: less than 2 cells in y_dim",
+                )
+            ):
+                message = (
+                    "HydroMT selected a raster extent too small for delineation "
+                    f"from basin.region={model_region!r}. Check the outlet lies on "
+                    "the intended drainage channel and the hydrography/index pairing; "
+                    "consider a bounded subbasin outlet search area."
+                )
+                log_row(message, module="spatial", level="WARNING")
+                raise ValueError(message) from error
+            raise
         if gdf.empty:
             raise ValueError("shared.basin.region resolved to no parent basins")
         if gdf.crs is None:
             raise ValueError("resolved parent-basin geometry has no CRS")
+        selection = model_region.get("subbasin")
+        if (
+            isinstance(selection, (list, tuple))
+            and "xy" not in model_region
+            and len(selection) == 4
+            and all(isinstance(value, Real) for value in selection)
+        ):
+            log_row(
+                f"Outlet search area used: {selection}; inspect selected basin geometry "
+                "and output locations (no original point supplied)",
+                module="spatial",
+                level="WARNING",
+            )
         if region_out is not None:
             parent = os.path.dirname(os.fspath(region_out))
             if parent:

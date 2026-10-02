@@ -174,3 +174,70 @@ def test_no_workflow_delineates_the_region_twice():
         if "parse_region_basin(" in path.read_text(encoding="utf-8")
     )
     assert callers == ["blueearth_cst/spatial/delineate_region.py"], callers
+
+
+@pytest.mark.parametrize(
+    "selection, explicit_xy",
+    [
+        ([29.84, 31.15], False),
+        ([29.8, 31.1, 29.9, 31.2], False),
+        ([29.8, 31.1, 29.9, 31.2], True),
+    ],
+)
+def test_region_selection_diagnostics_are_truthful(monkeypatch, selection, explicit_xy):
+    import geopandas as gpd
+    from shapely.geometry import box
+
+    from blueearth_cst.spatial import delineate_region as module
+
+    geometry = gpd.GeoDataFrame(geometry=[box(0, 0, 1, 1)], crs=4326)
+    monkeypatch.setattr(module.hydromt, "DataCatalog", lambda **kwargs: object())
+    monkeypatch.setattr(module, "parse_region_basin", lambda *args, **kwargs: geometry)
+    rows = []
+    monkeypatch.setattr(
+        module, "log_row", lambda message, **kwargs: rows.append((message, kwargs))
+    )
+    region = {"subbasin": selection}
+    if explicit_xy:
+        region["xy"] = [29.84, 31.15]
+    assert module.delineate_region(region, "catalog.yml") is geometry
+    warnings = [
+        message for message, options in rows if options.get("level") == "WARNING"
+    ]
+    if len(selection) == 4 and not explicit_xy:
+        assert len(warnings) == 1
+        assert "search area" in warnings[0]
+        assert "original point" in warnings[0]
+        assert "shift" not in warnings[0]
+    else:
+        assert warnings == []
+
+
+@pytest.mark.parametrize("tiny", [True, False])
+def test_region_failure_retains_native_cause(monkeypatch, tiny):
+    from blueearth_cst.spatial import delineate_region as module
+
+    original = ValueError(
+        "Invalid raster: less than 2 cells in x_dim x" if tiny else "unrelated error"
+    )
+
+    def fail(*args, **kwargs):
+        raise original
+
+    monkeypatch.setattr(module.hydromt, "DataCatalog", lambda **kwargs: object())
+    monkeypatch.setattr(module, "parse_region_basin", fail)
+    rows = []
+    monkeypatch.setattr(
+        module, "log_row", lambda message, **kwargs: rows.append((message, kwargs))
+    )
+    with pytest.raises(ValueError) as caught:
+        module.delineate_region(
+            {"subbasin": [29.84, 31.15], "uparea": 100}, "catalog.yml"
+        )
+    if tiny:
+        assert caught.value.__cause__ is original
+        assert "29.84" in str(caught.value)
+        assert "search area" in str(caught.value)
+        assert any(options.get("level") == "WARNING" for _, options in rows)
+    else:
+        assert caught.value is original

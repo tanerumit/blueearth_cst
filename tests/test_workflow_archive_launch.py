@@ -23,6 +23,80 @@ from scripts import run_workflows
 ROOT = Path(__file__).resolve().parents[1]
 
 
+@pytest.mark.parametrize("workflow_name", launch.WORKFLOWS)
+def test_execution_inputs_ignore_source_locations_and_other_enable_flags(
+    tmp_path, workflow_name
+):
+    project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
+    project_root = tmp_path / "output"
+    project["project"]["project_dir"] = str(project_root)
+    catalog = tmp_path / "catalog.yml"
+    catalog.write_bytes((ROOT / "config/catalogs/deltares_data.yml").read_bytes())
+    project["project"]["catalog"] = [str(catalog)]
+    stanza = project["workflows"][workflow_name]
+    workflow_file = tmp_path / "workflow.yml"
+    workflow_file.write_bytes((ROOT / "test_case" / stanza["config_path"]).read_bytes())
+    stanza["config_path"] = str(workflow_file)
+    project_file = tmp_path / "project.yml"
+    project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
+
+    def prepare(path):
+        return prepare_workflow(
+            workflow_name,
+            path,
+            project_root,
+            command=["snakemake", "all"],
+            targets=["all"],
+        )[0]
+
+    original = prepare(project_file)
+    original_bytes = original.read_bytes()
+    original_mtime = original.stat().st_mtime_ns
+    for name in ("generate_scenarios", "simulate_system"):
+        project["workflows"][name]["enabled"] = not project["workflows"][name][
+            "enabled"
+        ]
+    project_file.write_text(yaml.safe_dump(project), encoding="utf-8")
+    assert prepare(project_file) == original
+
+    relocated = tmp_path / "relocated"
+    relocated.mkdir()
+    moved_workflow = relocated / "renamed-workflow.yml"
+    moved_workflow.write_bytes(workflow_file.read_bytes() + b"\n# relocated config\n")
+    moved_catalog = relocated / "renamed-catalog.yaml"
+    moved_catalog.write_bytes(catalog.read_bytes())
+    stanza["config_path"] = moved_workflow.name
+    project["project"]["catalog"] = [str(moved_catalog)]
+    moved_project = relocated / "renamed-project.yml"
+    moved_project.write_text(yaml.safe_dump(project), encoding="utf-8")
+    assert prepare(moved_project) == original
+    assert original.read_bytes() == original_bytes
+    assert original.stat().st_mtime_ns == original_mtime
+    record = read_archive(project_root, workflow_name, f"config/runs/{workflow_name}")
+    archived_project = next(
+        item for item in record["source_files"] if item["role"] == "project_config"
+    )
+    assert archived_project["original_path"] == str(moved_project)
+
+    project["basin"]["resolution"] *= 2
+    moved_project.write_text(yaml.safe_dump(project), encoding="utf-8")
+    changed = prepare(moved_project)
+    assert changed != original
+    moved_catalog.write_bytes(moved_catalog.read_bytes() + b"\n# dependency changed\n")
+    assert prepare(moved_project) != changed
+    overridden_basin = dict(project["basin"], resolution=0.025)
+    overridden, _ = prepare_workflow(
+        workflow_name,
+        moved_project,
+        project_root,
+        command=["snakemake", "all"],
+        targets=["all"],
+        overrides={"basin": overridden_basin},
+    )
+    assert overridden != prepare(moved_project)
+    assert yaml.safe_load(overridden.read_bytes())["basin"]["resolution"] == 0.025
+
+
 def test_preparse_capture_survives_source_edit(tmp_path, capsys):
     project = yaml.safe_load((ROOT / "test_case/project_config_rapid.yml").read_text())
     source_workflow = ROOT / "test_case/project_config_rapid_analyze_climate.yml"

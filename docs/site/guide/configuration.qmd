@@ -120,6 +120,14 @@ can select several basins; inspect the resulting basin geometry and output
 locations before running the remaining workflows. Use a basin index matching
 the selected hydrography and available in your data catalog.
 
+Rule `delineate_region` warns when a search area selects outlets. HydroMT's
+region parser returns the basin geometry without the selected outlet coordinates;
+the warning therefore reports selection, not a measured coordinate change. A
+search-area configuration contains no original point to compare. If point-based
+delineation fails because the selected raster has fewer than two cells along an
+axis, the rule reports the supplied region and suggests checking placement or
+using a bounded search area.
+
 The search area does not revise an existing `output_locations` CSV. Place its
 points within the selected drainage network, using the resolved outlet for an
 outlet point. Record any manual coordinate correction in the case's run notes.
@@ -140,8 +148,8 @@ different declared parent basins are supported.
 Invalid points are rejected with their station names and original coordinates.
 Check their placement against the source hydrography before changing the snap
 tolerance. A point that reaches a pit without reaching a river is rejected.
-Successful coordinate adjustments emit a warning with the station name and
-original and resolved longitude/latitude. This includes moving a point to its
+Successful coordinate adjustments in the spatial-units rule emit a warning
+with the station name and original and resolved longitude/latitude. This includes moving a point to its
 model-cell centre even when no downstream movement is needed.
 
 ### The per-workflow files

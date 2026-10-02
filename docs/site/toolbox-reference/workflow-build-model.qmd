@@ -53,6 +53,8 @@ The project file, for example `test_case/project_config_rapid.yml`, supplies `pr
 
 The workflow file, `test_case/project_config_rapid_build_model.yml`, sets `engine.build_config` and `engine.waterbodies_config` to the hydromt recipes in `config/defaults/`, `simulation_window.start` and `.end` to the historical run years, and optional `observations` paths keyed by modeled variable. The template at `config/templates/project_config.build_model.template.yml` shows these keys; `engine` and `simulation_window` may be omitted to use the defaults. The run window must fit inside `climate.window`.
 
+Wflow treats the run's start as the initial model state time. With daily forcing, the first update and output occur one day later: a run starting on January 1 requires forcing from January 2 through its end date. A store beginning on January 2 therefore covers that run; WF1 preserves the requested state time when HydroMT writes the forcing configuration. A later first stamp or an earlier final stamp still fails the coverage check.
+
 ```yaml
 engine:
   build_config: config/defaults/wflow_build_model.yml

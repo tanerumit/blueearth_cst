@@ -39,6 +39,7 @@ from pathlib import Path
 from typing import Sequence, Union
 
 import pandas as pd
+from hydromt_wflow import WflowSbmModel
 
 from blueearth_cst.climate_analysis.prepare_climate_data_catalog import (
     prepare_clim_data_catalog,
@@ -166,13 +167,18 @@ def check_store_window(climate_nc, starttime, endtime, clim_source):
     # refuse a configuration that is fine.
     sim_start = pd.Timestamp(pd.to_datetime(starttime)).normalize()
     sim_end = pd.Timestamp(pd.to_datetime(endtime)).normalize()
-    if sim_start < bounds[0].normalize() or sim_end > bounds[1].normalize():
+    # Wflow starttime is the initial STATE time, not a forcing update. Daily
+    # forcing is right-labelled; the first update is starttime + timestepsecs.
+    # See docs/references/wflow-user-guide/03-toml-file.md, Time settings.
+    first_update = sim_start + pd.Timedelta(days=1)
+    if first_update < bounds[0].normalize() or sim_end > bounds[1].normalize():
         raise ValueError(
             f"simulation_window {sim_start.date()}..{sim_end.date()} is not "
             f"inside the {clim_source} record the store actually holds "
             f"({bounds[0].date()}..{bounds[1].date()}). The window is inside "
             f"shared.historical_window -- which is what parse time can check -- "
-            f"but {clim_source} does not cover all of it, so the model would "
+            f"but {clim_source} does not cover the required updates "
+            f"{first_update.date()}..{sim_end.date()}, so the model would "
             f"run on truncated forcing. Move simulation_window onto the years "
             f"the source delivers, or force the model from a source that "
             f"covers them"
@@ -204,11 +210,12 @@ def add_climate_forcing(
     keeping them would convert twice).
     """
     store_source = None
+    bounds = None
     if climate_nc is not None:
         # BEFORE the catalog is written and hydromt is invoked: a store that
         # cannot force this run should fail here, naming the store, rather than
         # inside a hydromt update whose message names neither.
-        check_store_window(climate_nc, starttime, endtime, clim_source)
+        bounds = check_store_window(climate_nc, starttime, endtime, clim_source)
         prepare_clim_data_catalog(
             fns=[climate_nc],
             data_libs_like=data_catalog,
@@ -240,6 +247,18 @@ def add_climate_forcing(
         ],
         progress_label="forcing",
     )
+    if (
+        bounds is not None
+        and pd.Timestamp(starttime).normalize() < bounds[0].normalize()
+    ):
+        # HydroMT-Wflow 1.0.2 clamps starttime onto the first forcing stamp
+        # while writing forcing. Restore the requested STATE time through its
+        # config component after that write; otherwise Jan2 forcing would make
+        # the model's first update Jan3 and silently drop the Jan2 interval.
+        model = WflowSbmModel(root=basin_dir, mode="r+")
+        model.config.read()
+        model.config.set("time.starttime", starttime)
+        model.config.write()
 
 
 if __name__ == "__main__":

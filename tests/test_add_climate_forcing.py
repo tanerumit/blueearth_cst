@@ -428,6 +428,54 @@ def test_a_store_covering_the_run_passes(tmp_path):
     assert bounds is not None
 
 
+@pytest.mark.parametrize("first_stamp", ["2000-01-02", "2000-01-03"])
+def test_state_time_precedes_first_forcing_update(tmp_path, monkeypatch, first_stamp):
+    """Right-labelled forcing must preserve Jan1 state time, or reject a gap."""
+    import tomllib
+
+    from hydromt_wflow import WflowSbmModel
+
+    nc = _store_nc(tmp_path / "era5.nc", first_stamp, "2016-12-31")
+    model = tmp_path / "model"
+    model.mkdir()
+    config = model / "wflow_sbm.toml"
+    config.write_text(
+        '[time]\nstarttime = "2000-01-02T00:00:00"\n'
+        'endtime = "2016-12-31T00:00:00"\ntimestepsecs = 86400\n',
+        encoding="utf-8",
+    )
+    # Reproduce HydroMT's real write-time clamp, without a global-data build.
+    component = WflowSbmModel(root=model, mode="r").forcing
+    import xarray as xr
+
+    with xr.open_dataset(nc) as ds:
+        component._data = ds
+        clamped_start, _ = component._validate_timespan(
+            "2000-01-01T00:00:00", "2016-12-31T00:00:00"
+        )
+    assert str(clamped_start)[:10] == first_stamp
+    monkeypatch.setattr(acf, "prepare_clim_data_catalog", lambda **kw: None)
+    monkeypatch.setattr(acf, "prep_hydromt_update_forcing_config", lambda **kw: None)
+    monkeypatch.setattr(acf, "_run_streaming", lambda *a, **kw: None)
+    kwargs = dict(
+        starttime="2000-01-01T00:00:00",
+        endtime="2016-12-31T00:00:00",
+        clim_source="era5",
+        basin_dir=model,
+        data_catalog="catalog.yml",
+        forcing_yml=tmp_path / "forcing.yml",
+        climate_nc=nc,
+        store_catalog=tmp_path / "store.yml",
+    )
+    if first_stamp == "2000-01-03":
+        with pytest.raises(ValueError, match="simulation_window"):
+            acf.add_climate_forcing(**kwargs)
+    else:
+        acf.add_climate_forcing(**kwargs)
+        with config.open("rb") as stream:
+            assert tomllib.load(stream)["time"]["starttime"] == kwargs["starttime"]
+
+
 def test_a_store_below_the_floor_is_refused_here_not_inside_weathergenr(tmp_path):
     """The relaxed-candidate hole, closed at the consumer.
 

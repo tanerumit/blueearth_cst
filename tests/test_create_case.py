@@ -89,7 +89,9 @@ def test_create_preserves_template_and_leaves_inventory(
     datetime.strptime(created.split("|")[2].strip(), "%Y-%m-%d %H:%M:%S")
     assert "| Status |" not in instructions
     assert instructions.rsplit("\n## ", 1)[1].startswith("Output folder and results")
-    assert "Purpose: Test | basin" in (application / "notes.md").read_text()
+    notes = (application / "notes.md").read_text(encoding="utf-8")
+    assert "Purpose: Test | basin" in notes
+    assert "CST version at creation: " in notes
     # Cases are registered by hand only after every workflow completes.
     assert (cases / "cst-applications.md").read_bytes() == before
     assert main(args(cases)) == 2

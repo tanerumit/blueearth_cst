@@ -10,6 +10,7 @@ import json
 import math
 import re
 import shutil
+import subprocess
 import sys
 import tempfile
 from datetime import datetime
@@ -40,6 +41,28 @@ def _confined(path: Path, root: Path) -> Path:
     if not resolved.is_relative_to(root):
         raise ValueError(f"Path escapes cases root: {path}")
     return resolved
+
+
+def _toolbox_version() -> str:
+    """Describe the toolbox checkout from its release tags, or report unknown."""
+    try:
+        result = subprocess.run(
+            [
+                "git",
+                "describe",
+                "--tags",
+                "--match",
+                "v[0-9]*.[0-9]*.[0-9]*",
+                "--dirty",
+            ],
+            cwd=Path(__file__).resolve().parents[1],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+    except (OSError, subprocess.CalledProcessError):
+        return "unknown"
+    return result.stdout.strip() or "unknown"
 
 
 def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
@@ -238,6 +261,7 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     files[Path("notes.md")] = (
         f"# {slug} — run notes\n\nStatus: configured; not run.\n\n"
         f"Purpose: {args.purpose.strip()}\n\n"
+        f"CST version at creation: {_toolbox_version()}\n\n"
         "No run history or validation is inherited from the template.\n\n"
         "## Retained run record\n\n"
         "- Date:\n- Cases revision and dirty state:\n"

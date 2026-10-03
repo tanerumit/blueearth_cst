@@ -11,6 +11,8 @@ Recommend six core diagnostic components for model-independent historical climat
 
 Parent: [Scope conceptual workflow improvements](../t2610022259-conceptual-workflow-improvements.md). Candidate inventory: [WF0 climate analysis and visualization ideas](wf0-climate-analysis-ideas.md).
 
+Execution handoffs: [Create the standalone lab](wf0-lab-setup-instructions.md), then [implement the starter suite](wf0-starter-suite-task-brief.md). These are future execution assignments; no lab setup or implementation has been performed here.
+
 This is an initial recommendation, not an approved implementation specification. Saving it does not approve methods, configuration changes, or implementation work.
 
 ## Analysis scope and development data

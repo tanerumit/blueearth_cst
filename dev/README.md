@@ -31,6 +31,15 @@ it even when invoked from a session worktree. Edit notes there, render the view,
 and commit board changes on `main` separately from feature work. A task's
 `branch:` field links unfinished implementation without copying its note into
 the task branch. The repository wrapper refuses to use a different board root.
+On Windows, open `dev/00-current-board-main/TODO.md` in a session worktree to
+see the live main board in File Explorer. The local setup script links that
+directory to main's `dev/`. Run `pwsh -File dev/scripts/setup-board-view.ps1
+-ExcludeSnapshots` once per clean session worktree to leave its tracked
+`TODO.md` and `tasks/` out of the working tree through per-worktree sparse
+checkout. The main worktree keeps the complete board, and the session index
+still records it for Git history and merges. With `core.hooksPath` set to
+`.githooks`, checkout and merge hooks restore the link. The link is ignored by
+Git and never committed.
 
 **Stays true** — consulted while working, rewritten rarely and deliberately:
 

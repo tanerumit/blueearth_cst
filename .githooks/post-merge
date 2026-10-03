@@ -1,0 +1,5 @@
+#!/bin/sh
+# Git may replace TODO.md during a merge, clearing its local hidden attribute.
+if command -v pwsh >/dev/null 2>&1 && test -f dev/scripts/setup-board-view.ps1; then
+    pwsh -NoProfile -File dev/scripts/setup-board-view.ps1
+fi

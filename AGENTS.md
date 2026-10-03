@@ -86,7 +86,7 @@ Use `test_case/*_linux.yml` + `config/catalogs/*_linux.yml` on Linux — data-ca
 
 ## Validation ladder — match the check to the blast radius
 
-Batch integration: the user controls lane allocation and switching. On a free lane, wait for the user to claim it or ask for allocation through `task-start`, which creates the branch and claims the lane together from current local `main`. Keep follow-up tasks on the claimed session branch until the user asks to switch or approves landing. Flag substantially unrelated work; the switching decision remains the user's.
+Batch integration: the user controls lane switching and landing. A modifying request in a clean, detached, configured session authorizes that session to claim itself with `task-start --task <task> --session <name> --base main --no-launch` from the primary checkout; the command creates the branch from current local `main`. Never create the branch by hand. Keep follow-up tasks on the claimed session branch until the user asks to switch or approves landing. Flag substantially unrelated work; the switching decision remains the user's.
 
 At a new session's entry, rebase a clean, local, unpushed lane branch onto current local `main` before writing; use a merge for a published branch unless history rewriting is explicitly authorized. Dirty state or conflicts require resolution first, without automatic stash or reset. Do not repeat this synchronization for each conversational follow-up.
 

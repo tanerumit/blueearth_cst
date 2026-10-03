@@ -47,19 +47,17 @@ from blueearth_cst.spatial.delineate_region import delineate_region, read_region
 
 #: Grid cells kept AROUND the basin bbox when reading a source.
 #:
-#: Two, not one, since 2026-08-10. The store is becoming the forcing source for
-#: rule 1.09 instead of that rule re-reading the global dataset from the
-#: catalog, and hydromt reads precipitation for a model region with
-#: ``buffer=2`` (``hydromt_wflow/wflow_sbm.py:3288``,
-#: ``setup_precip_forcing``). A store built at ``buffer=1`` is one ring short of
-#: what that reader sees, so the regrid onto the model grid would differ at the
-#: basin edge -- silently, and worst on the small basins this toolbox targets.
+#: One cell on EACH side preserves cells touching the basin beyond HydroMT's
+#: rounded bbox and provides a margin for the current nearest-index forcing
+#: reprojection. HydroMT-Wflow requests two cells for precipitation, but that
+#: read margin does not require the store to retain two rings. Changing the
+#: reprojection method requires rechecking the necessary source coverage.
 #:
 #: The ring is NOT free downstream: weathergenr averages every cell in the store
-#: (``compute_area_averages``, an unweighted mean over ``n_grids``), so widening
-#: alone would dilute the series driving the stress test. That is why the
+#: (``compute_area_averages``, an unweighted mean over ``n_grids``), so including
+#: the ring would dilute the series driving the stress test. That is why the
 #: extraction also writes ``basin_cells.csv`` -- see ``write_basin_cell_mask``.
-BUFFER_CELLS = 2
+BUFFER_CELLS = 1
 
 #: The grid coordinate spelling EVERY store carries, whatever its source calls
 #: them. WG-1 pins the store's dims as ``(time, latitude, longitude)``, and

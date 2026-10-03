@@ -11,6 +11,7 @@ weathergenr's own unweighted mean correct for the subset.
 """
 
 import geopandas as gpd
+import numpy as np
 import pandas as pd
 import pytest
 import xarray as xr
@@ -37,11 +38,53 @@ def _region(geom):
     return gpd.GeoDataFrame(geometry=[geom], crs="EPSG:4326")
 
 
-def test_the_forcing_buffer_is_two_cells():
-    """hydromt reads precip for a model region with buffer=2
-    (hydromt_wflow/wflow_sbm.py, setup_precip_forcing). A store built narrower
-    is one ring short of what that reader sees."""
-    assert BUFFER_CELLS == 2
+def test_the_forcing_buffer_is_one_cell():
+    """Keep one source cell on each side of the rounded basin bbox."""
+    assert BUFFER_CELLS == 1
+
+
+def test_one_cell_buffer_preserves_basin_cells_and_nearest_forcing(tmp_path):
+    source = xr.DataArray(
+        np.arange(77, dtype=np.float32).reshape(7, 11),
+        dims=("latitude", "longitude"),
+        coords={
+            "latitude": np.arange(31.5, 29.99, -0.25),
+            "longitude": np.arange(28.5, 31.01, 0.25),
+        },
+        name="precip",
+    )
+    source.raster.set_crs(4326)
+    region = _region(box(28.9, 30.475, 30.65, 31.233333))
+    bounds = region.total_bounds
+    reference = source.raster.clip_bbox(bounds, buffer=2)
+    reduced = source.raster.clip_bbox(bounds, buffer=BUFFER_CELLS)
+
+    assert reduced.shape == (5, 9)
+    reference_mask = write_basin_cell_mask(
+        _store(tmp_path, reference.latitude, reference.longitude),
+        region,
+        tmp_path / "reference.csv",
+    )
+    reduced_mask = write_basin_cell_mask(
+        _store(tmp_path, reduced.latitude, reduced.longitude),
+        region,
+        tmp_path / "reduced.csv",
+    )
+    pd.testing.assert_frame_equal(reduced_mask, reference_mask)
+
+    target = xr.DataArray(
+        np.zeros((76, 175), dtype=np.float32),
+        dims=("latitude", "longitude"),
+        coords={
+            "latitude": np.linspace(bounds[3] - 0.005, bounds[1] + 0.005, 76),
+            "longitude": np.linspace(bounds[0] + 0.005, bounds[2] - 0.005, 175),
+        },
+    )
+    target.raster.set_crs(4326)
+    expected = reference.raster.reproject_like(target, method="nearest_index")
+    actual = reduced.raster.reproject_like(target, method="nearest_index")
+    assert np.isfinite(actual).all()
+    np.testing.assert_array_equal(actual.values, expected.values)
 
 
 def test_a_sub_cell_basin_selects_the_cells_it_touches(tmp_path):

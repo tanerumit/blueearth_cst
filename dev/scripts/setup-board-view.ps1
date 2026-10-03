@@ -1,6 +1,9 @@
 # Give session worktrees a visible Explorer path to the canonical board on main.
 # The tracked board snapshots stay intact for Git; Explorer hides them locally.
-param([string]$WorktreeRoot = (Join-Path $PSScriptRoot '../..'))
+param(
+    [string]$WorktreeRoot = (Join-Path $PSScriptRoot '../..'),
+    [switch]$ExcludeSnapshots
+)
 $ErrorActionPreference = 'Stop'
 if (-not $IsWindows) { return }
 
@@ -33,10 +36,17 @@ $link = Join-Path $sessionDev '00-current-board-main'
 $todo = Join-Path $sessionDev 'TODO.md'
 $tasks = Join-Path $sessionDev 'tasks'
 if (-not (Test-Path -LiteralPath (Join-Path $mainDev 'TODO.md')) -or
-    -not (Test-Path -LiteralPath (Join-Path $mainDev 'tasks')) -or
-    -not (Test-Path -LiteralPath $todo) -or
-    -not (Test-Path -LiteralPath $tasks)) {
-    throw 'The main or session board is missing.'
+    -not (Test-Path -LiteralPath (Join-Path $mainDev 'tasks'))) {
+    throw 'The main board is missing.'
+}
+
+if ($ExcludeSnapshots) {
+    $changes = git -C $targetRoot status --porcelain
+    if ($LASTEXITCODE -ne 0 -or $changes) {
+        throw 'The target worktree must be clean before excluding board snapshots.'
+    }
+    git -C $targetRoot sparse-checkout set --no-cone '/*' '!/dev/TODO.md' '!/dev/tasks/'
+    if ($LASTEXITCODE -ne 0) { throw 'Cannot exclude board snapshots.' }
 }
 
 $existing = Get-Item -LiteralPath $link -Force -ErrorAction SilentlyContinue
@@ -49,8 +59,12 @@ if ($existing) {
     New-Item -ItemType Junction -Path $link -Target $mainDev | Out-Null
 }
 
-attrib.exe +h $todo
-if ($LASTEXITCODE -ne 0) { throw "Cannot hide $todo" }
-attrib.exe +h $tasks
-if ($LASTEXITCODE -ne 0) { throw "Cannot hide $tasks" }
+if (Test-Path -LiteralPath $todo) {
+    attrib.exe +h $todo
+    if ($LASTEXITCODE -ne 0) { throw "Cannot hide $todo" }
+}
+if (Test-Path -LiteralPath $tasks) {
+    attrib.exe +h $tasks
+    if ($LASTEXITCODE -ne 0) { throw "Cannot hide $tasks" }
+}
 Write-Host "Current board: $link"

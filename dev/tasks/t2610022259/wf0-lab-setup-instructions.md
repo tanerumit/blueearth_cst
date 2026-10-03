@@ -48,7 +48,9 @@ wf0-lab/
         agent-manifest.yml   # tracked roles and skills
         runtime-hooks.json   # tracked neutral hook source when project hooks are needed
     .claude/                 # generated, ignored runtime adapter
-    .codex/                  # generated, ignored runtime adapter
+    .codex/
+        authored/config.toml # tracked minimal Codex activation opt-in
+        # generated runtime files are ignored
     .agents/                 # generated, ignored skill links
     wf0_lab/
         __init__.py
@@ -80,12 +82,12 @@ wf0-lab/
    Use `CLAUDE.md` only as a thin `@AGENTS.md` entry point. Keep the instructions under about 80 lines; do not copy BlueEarth's AGENTS.md.
 8. Configure the lab's Git workflow with `mode: trunk`, `worktree_policy: none`, and `auto_push: false`. This is a local single-branch project, not a linked BlueEarth worktree. If Git is absent, initialize local `main`; do not invent identity settings if commits lack an author.
 9. Set `.testing-policy.yml` to `scope: rapid`, `numerical: default`. The explicit task policy is targeted local verification during development; expensive toolbox checks are outside this project. Escalate scientific evidence when outputs are used in a report or decision.
-10. Ignore `.pixi/`, generated outputs, scratch, caches, notebook checkpoints, and machine-local configurations. Track source, instructions, examples, the environment manifest and generated lockfile, plus `.agent-system/agent-manifest.yml` and the project-owned `.agent-system/runtime-hooks.json` hook source. Ignore generated adapter trees and any generated hook state using the canonical tool's conventions. Do not copy or link BlueEarth's provider directories, credentials, task-lane settings or Git hooks; generate the lab's adapters from canonical infrastructure instead.
+10. Ignore `.pixi/`, generated outputs, scratch, caches, notebook checkpoints, and machine-local configurations. Track source, instructions, examples, the environment manifest and generated lockfile, plus `.agent-system/agent-manifest.yml` and the project-owned `.agent-system/runtime-hooks.json` hook source. Ignore generated adapter trees and any generated hook state using the canonical tool's conventions. Keep `.codex/authored/config.toml` tracked with explicit `.gitignore` parent/subtree exceptions; ignoring the whole `.codex/` directory would hide this required source file. Do not copy or link BlueEarth's provider directories, credentials, task-lane settings or Git hooks; generate the lab's adapters from canonical infrastructure instead.
 
 11. Complete canonical agent-system activation:
     - Resolve `BRAIN_INFRA_ROOT`; currently `C:/Users/taner/workspace/brain-infrastructure` on this machine. Read its `artifacts/skills/brain-agent-system/SKILL.md` and `references/manifests-and-sync.md`; use documented commands and the live artifact inventory.
     - Create a lab-specific `.agent-system/agent-manifest.yml`. Initial roles: `python-engineer`, `geospatial-data-analyst`, `model-validator`, `critical-thinker`, `dataviz-designer`, `technical-writer`, and `git-steward`. Select root-invoked skills for Python, plotting, data visualization, scientific validation, climate/time-series analysis, Pixi, and lightweight Git/testing. Check user-scope inheritance before duplicating entries. Role-bound conditional skills remain reachable through canonical bindings.
-    - Use BlueEarth as an activation reference, not a wholesale template. Materialize `.claude/`, `.codex/`, `.agents/`, and other standard supported runtime adapters through a project-targeted refresh. Verify resolved skill links, role profiles, root catalogs and canonical hook configurations. When project hooks require a source spec, author the lab-owned `.agent-system/runtime-hooks.json` using the documented schema and existing canonical scripts; the generator owns provider-specific settings/hooks. A missing ready-made lab template is not a reason to omit activation or invent new hook code.
+    - Use BlueEarth as an activation reference, not a wholesale template. Add the documented minimal tracked `.codex/authored/config.toml` opt-in so Codex configuration and hook projections are generated; use the supported authored-template mechanism without copying personal settings. Materialize `.claude/`, `.codex/`, `.agents/`, and other standard supported runtime adapters through a project-targeted refresh. Verify resolved skill links, role profiles, root catalogs and canonical hook configurations. When project hooks require a source spec, author the lab-owned `.agent-system/runtime-hooks.json` using the documented schema and existing canonical scripts; the generator owns provider-specific settings/hooks. A missing ready-made lab template is not a reason to omit activation or invent new hook code.
     - Check hook command paths and supported event/configuration formats. Hooks must respect the lab's trunk/no-worktree Git policy and focused checks. Check inherited user-scope safety coverage separately from project hooks, without modifying user settings. Probe mode-aware Git guards against the lab policy rather than assuming every guard enforces lanes. Keep safety hooks; do not suppress a failure by disabling them. Report any mandatory hook incompatible with lab policy.
     - Do not run a global refresh, external fetch, pruning, or edits to canonical artifacts for this setup. If a targeted operation needs writes outside the lab, report that precise scope before proceeding.
     - Keep lab instructions, README and local setup brief consistent with the active manifest. Remove prohibitions on the required activation while preserving the independent scientific environment and lightweight execution policy.
@@ -105,7 +107,7 @@ Run installation once after the final manifest change; repeat only for an enviro
 
 Verify independence with `pixi run python -c "import wf0_lab; print(wf0_lab.__file__)"` and inspect source imports using `rg -n 'blueearth_cst|snakemake|sys.path' wf0_lab`. A lab module resolving outside the lab, a toolbox runtime import, or a toolbox path injection falsifies the isolation claim. Scan hits require interpretation, not automatic deletion. Record toolbox Git status before and after as a coarse write check; this does not prove all external files are immutable.
 
-For creation or an activation change, run the canonical targeted commands once after the final manifest/configuration change:
+For creation or an activation change, run the canonical targeted commands once after the final manifest/configuration change. The CLI may otherwise place Python bytecode under the infrastructure checkout; scope `PYTHONPYCACHEPREFIX` to ignored lab `.tmp/` for these calls and restore the prior process setting afterward:
 
 ```powershell
 brain refresh --agent-system --project C:/Users/taner/workspace/wf0-lab

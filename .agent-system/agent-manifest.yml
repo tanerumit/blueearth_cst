@@ -55,6 +55,7 @@ skills:
   - climate-stress-testing  # framing/sequencing discussed at the root
   - cst-run-control         # runs opened and validated from the root session
   - snakemake               # Snakefiles edited directly
+  - todo-board
 
   # Removed 2026-08-12 to bring the catalog toward its floor: climate-projections,
   # hydromt, hydromt-wflow, python-geospatial, wflow (1,767 chars). All are

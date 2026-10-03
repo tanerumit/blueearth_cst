@@ -5,16 +5,14 @@ from __future__ import annotations
 import argparse
 import ast
 import csv
-import html
 import io
 import json
 import math
-import os
 import re
 import shutil
 import sys
 import tempfile
-from datetime import date, datetime
+from datetime import datetime
 from pathlib import Path
 
 import yaml
@@ -44,14 +42,7 @@ def _confined(path: Path, root: Path) -> Path:
     return resolved
 
 
-def _cell(text: str) -> str:
-    """Escape user text for a single Markdown table cell."""
-    return (
-        html.escape(text).replace("|", "&#124;").replace("\n", " ").replace("\r", " ")
-    )
-
-
-def _prepare(args: argparse.Namespace) -> tuple[Path, Path, bytes, dict[Path, bytes]]:
+def _prepare(args: argparse.Namespace) -> tuple[Path, dict[Path, bytes]]:
     """Validate inputs and build all new file contents without filesystem writes."""
     slug = args.case_slug
     reserved = {"con", "prn", "aux", "nul"} | {
@@ -88,29 +79,6 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, Path, bytes, dict[Path, by
         raise ValueError(f"Application already exists: {destination}")
     _confined(destination, root)
     outputs = _confined(root / "runs" / slug / "active", root)
-    inventory = root / "cst-applications.md"
-    if inventory.is_symlink() or inventory.is_junction():
-        raise ValueError("Inventory must not be a symbolic link")
-    original = inventory.read_bytes()
-    inventory_text = original.decode("utf-8")
-    header = "| application | country | project | date-created | date-completed | cst-version | purpose | status |"
-    lines = inventory_text.splitlines()
-    if lines.count(header) != 1:
-        raise ValueError(
-            "Inventory must contain the supported eight-column applications table"
-        )
-    index = lines.index(header)
-    if index + 1 >= len(lines) or not re.fullmatch(
-        r"\|(?:\s*:?-+:?\s*\|){8}", lines[index + 1]
-    ):
-        raise ValueError("Inventory table separator is malformed")
-    if any(line.strip() for line in lines[index + 2 :] if not line.startswith("|")):
-        raise ValueError("Inventory applications table must be the final content")
-    for line in lines[index + 2 :]:
-        if line and len(line.split("|")) != 10:
-            raise ValueError("Inventory row must have eight columns")
-    if re.search(rf"applications/{re.escape(slug)}(?:/|\))", inventory_text):
-        raise ValueError(f"Application already registered: {slug}")
     files: dict[Path, bytes] = {}
     for source in template.rglob("*"):
         if source.is_symlink() or source.is_junction():
@@ -269,14 +237,17 @@ def _prepare(args: argparse.Namespace) -> tuple[Path, Path, bytes, dict[Path, by
     ).encode("utf-8")
     files[Path("notes.md")] = (
         f"# {slug} — run notes\n\nStatus: configured; not run.\n\n"
+        f"Purpose: {args.purpose.strip()}\n\n"
         "No run history or validation is inherited from the template.\n\n"
         "## Retained run record\n\n"
         "- Date:\n- Cases revision and dirty state:\n"
         "- Toolbox revision and dirty state:\n- Configuration choices:\n"
         "- Command:\n- Outcome:\n- Checks actually performed:\n"
-        "- Evidence location:\n- Follow-up:\n"
+        "- Evidence location:\n- Follow-up:\n\n"
+        "Register the case in `cst-applications.md` only after every workflow "
+        "completes.\n"
     ).encode("utf-8")
-    return destination, inventory, original, files
+    return destination, files
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -293,20 +264,8 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
     try:
-        destination, inventory, original, files = _prepare(args)
+        destination, files = _prepare(args)
         if not args.dry_run:
-            newline = b"\r\n" if b"\r\n" in original else b"\n"
-            row = (
-                f"| [{args.case_slug}](applications/{args.case_slug}/notes.md) | "
-                f"| | {date.today().isoformat()} | | | "
-                f"{_cell(args.purpose.strip())} | configured; not run |"
-            ).encode("utf-8")
-            updated = (
-                original
-                + (b"" if original.endswith(b"\n") else newline)
-                + row
-                + newline
-            )
             with tempfile.TemporaryDirectory(
                 prefix=".create-case-", dir=destination.parent
             ) as scratch:
@@ -316,21 +275,16 @@ def main(argv: list[str] | None = None) -> int:
                     target = stage / relative
                     target.parent.mkdir(parents=True, exist_ok=True)
                     target.write_bytes(content)
-                if inventory.read_bytes() != original:
-                    raise ValueError("Inventory changed during preparation; retry")
                 # mkdir claims the destination without overwriting an existing case.
                 destination.mkdir()
                 try:
                     for child in stage.iterdir():
                         shutil.move(str(child), destination / child.name)
-                    staged_inventory = Path(scratch) / "inventory.md"
-                    staged_inventory.write_bytes(updated)
-                    os.replace(staged_inventory, inventory)
                 except OSError:
                     shutil.rmtree(destination)
                     raise
         verb = "Would create" if args.dry_run else "Created"
-        print(f"{verb} {destination}; inventory: {inventory}")
+        print(f"{verb} {destination}")
         print(
             f"Outputs: {Path(args.cases_root).resolve() / 'runs' / args.case_slug / 'active'}"
         )

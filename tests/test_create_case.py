@@ -35,9 +35,9 @@ def cases(tmp_path: Path) -> Path:
     (template / "notes.md").write_text("Old success\n", encoding="utf-8")
     (tmp_path / "cst-applications.md").write_bytes(
         b"Inventory\r\n\r\n"
-        b"| application | country | project | date-created | date-completed | cst-version | purpose | status |\r\n"
-        b"|---|---|---|---|---|---|---|---|\r\n"
-        b"| [old](applications/old/notes.md) | Place | | 2020-01-01 | | | Old | done |\r\n"
+        b"| application | project | date-created | cst-version | purpose |\r\n"
+        b"|---|---|---|---|---|\r\n"
+        b"| [old](applications/old/notes.md) | | 2020-01-01 | | Old |\r\n"
     )
     return tmp_path
 
@@ -57,7 +57,9 @@ def args(cases: Path) -> list[str]:
 
 
 @pytest.mark.parametrize("dry_run", [False, True])
-def test_create_preserves_template_and_inventory(cases: Path, dry_run: bool) -> None:
+def test_create_preserves_template_and_leaves_inventory(
+    cases: Path, dry_run: bool
+) -> None:
     before = (cases / "cst-applications.md").read_bytes()
     assert main(args(cases) + (["--dry-run"] if dry_run else [])) == 0
     application = cases / "applications" / "new-basin"
@@ -87,13 +89,10 @@ def test_create_preserves_template_and_inventory(cases: Path, dry_run: bool) -> 
     datetime.strptime(created.split("|")[2].strip(), "%Y-%m-%d %H:%M:%S")
     assert "| Status |" not in instructions
     assert instructions.rsplit("\n## ", 1)[1].startswith("Output folder and results")
-    assert (cases / "cst-applications.md").read_bytes().startswith(before)
-    assert "Test &#124; basin" in (cases / "cst-applications.md").read_text()
-    row = (cases / "cst-applications.md").read_text().splitlines()[-1]
-    assert row.split("|")[2].strip() == ""
-    after = (cases / "cst-applications.md").read_bytes()
+    assert "Purpose: Test | basin" in (application / "notes.md").read_text()
+    # Cases are registered by hand only after every workflow completes.
+    assert (cases / "cst-applications.md").read_bytes() == before
     assert main(args(cases)) == 2
-    assert (cases / "cst-applications.md").read_bytes() == after
 
 
 @pytest.mark.parametrize(
@@ -115,32 +114,23 @@ def test_invalid_arguments_write_nothing(cases: Path, option: str, value: str) -
     assert (cases / "cst-applications.md").read_bytes() == before
 
 
-@pytest.mark.parametrize(
-    "fault", ["inventory", "config", "observations", "duplicate", "write"]
-)
+@pytest.mark.parametrize("fault", ["config", "observations", "write"])
 def test_preflight_failure_leaves_no_partial_case(
     cases: Path, fault: str, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     template = cases / "templates/example-basin"
-    if fault == "inventory":
-        (cases / "cst-applications.md").write_text("not a table")
-    elif fault == "config":
+    if fault == "config":
         (template / "project_config.yml").write_text("project: [")
     elif fault == "observations":
         (template / "project_config_build_model.yml").write_text(
             "observations:\n  river discharge: /external/observations.csv\n"
         )
-    elif fault == "duplicate":
-        with (cases / "cst-applications.md").open("a") as handle:
-            handle.write(
-                "| [new-basin](applications/new-basin/notes.md) | Country | | | | | | |\n"
-            )
     else:
 
-        def fail_replace(*args: object) -> None:
-            raise PermissionError("Inventory write rejected")
+        def fail_move(*args: object) -> None:
+            raise PermissionError("Case write rejected")
 
-        monkeypatch.setattr("scripts.create_case.os.replace", fail_replace)
+        monkeypatch.setattr("scripts.create_case.shutil.move", fail_move)
     before = (cases / "cst-applications.md").read_bytes()
     assert main(args(cases)) == 2
     assert not (cases / "applications/new-basin").exists()

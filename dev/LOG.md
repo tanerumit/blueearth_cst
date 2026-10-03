@@ -17,6 +17,7 @@ issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-03 | t2610011613 | Adopt a manual toolbox versioning policy | tooling |
 | 2026-09-28 | t2608122022 | Verified October water years against rapid CMIP6 data: 14 complete years and changed annual factors in both models. The project sweep was descoped; results and limits are in `dev/reference/workflows/water-year-october-verification.md`. | wf2 projections / config |
 | 2026-09-27 | t2608091006 | Standardize plotting across the toolbox with shared templates, then sweep the existing figures onto them | plotting |
 | 2026-09-27 | t2608161450 | Verified CHIRPS daily values and corrected their precipitation label without scaling. WF0 reports WG-1 diffs and reads provenance from the store; evidence and limits are in `dev/reference/contracts/weather-generator-seam.md`. | wf0 / climate store |

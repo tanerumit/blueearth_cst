@@ -1,0 +1,5 @@
+#!/bin/sh
+# Restore the visible main-board link after checkout replaces a tracked snapshot.
+if command -v pwsh >/dev/null 2>&1 && test -f dev/scripts/setup-board-view.ps1; then
+    pwsh -NoProfile -File dev/scripts/setup-board-view.ps1
+fi

@@ -192,6 +192,7 @@ tests/test_project
 # The tool caches were redirected here on 2026-08-11 (pyproject.toml `cache_dir`
 # / `cache-dir`), so .tmp/ now covers them and the root carries neither dir.
 .tmp/
+dev/00-current-board-main/
 
 # dev/ is the process record: prose, tables, and small tabular evidence only.
 # netCDF probe/QA states belong outside the repo -- the two that reached

@@ -1,7 +1,7 @@
 ---
 title: "Missing catalog source can hide a reservoir"
 type: watch-item
-area: wf1 / data catalog
+area: wf1
 origin: t2608091730 (2026-08-12)
 created: 2026-08-12
 updated: 2026-08-12

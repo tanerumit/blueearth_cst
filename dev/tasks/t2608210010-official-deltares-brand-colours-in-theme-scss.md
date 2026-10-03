@@ -1,7 +1,7 @@
 ---
 title: "Use official Deltares colours on docs site"
 type: watch-item
-area: docs / site
+area: docs
 origin: quarto-docs-site (2026-08-19)
 created: 2026-08-21
 updated: 2026-09-27

@@ -3,7 +3,7 @@ title: "Publish pipeline notebooks on the docs site"
 type: todo-item
 status: backlog
 effort: 2
-area: docs / site
+area: docs
 origin: quarto-docs-site (2026-08-19)
 queue: 3
 created: 2026-08-20

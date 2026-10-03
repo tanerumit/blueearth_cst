@@ -3,7 +3,7 @@ title: "Scope conceptual workflow improvements"
 type: todo-item
 status: backlog
 effort: 2
-area: workflow methodology
+area: methods
 queue:
 doc: dev/tasks/t2610022259/wf0-climate-analysis-ideas.md
 created: 2026-10-02

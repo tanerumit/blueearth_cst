@@ -3,7 +3,7 @@ title: "Add forcing-selection evaluation to WF0"
 type: todo-item
 status: backlog
 effort: 2
-area: wf0 / evaluation layer
+area: wf0
 origin: t2608131847a split (2026-08-18)
 queue: 1
 created: 2026-08-18

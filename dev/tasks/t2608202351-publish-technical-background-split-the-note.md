@@ -3,7 +3,7 @@ title: "Publish the technical note as site chapters"
 type: todo-item
 status: blocked
 effort: 2
-area: docs / site
+area: docs
 origin: quarto-docs-site (2026-08-19)
 queue: 9
 created: 2026-08-20

@@ -1,7 +1,7 @@
 ---
 title: "Snakemake preamble cannot be suppressed"
 type: watch-item
-area: console / snakemake
+area: console
 origin: console polishing (2026-09-18)
 created: 2026-09-18
 updated: 2026-09-18

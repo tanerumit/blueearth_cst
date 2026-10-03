@@ -1,7 +1,7 @@
 ---
 title: "weathergenr prints a raw glue expression"
 type: watch-item
-area: upstream / weathergenr
+area: upstream
 origin: WF3 run (2026-09-16)
 created: 2026-09-16
 updated: 2026-09-28

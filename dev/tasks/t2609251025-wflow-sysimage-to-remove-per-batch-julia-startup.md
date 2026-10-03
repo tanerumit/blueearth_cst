@@ -1,7 +1,7 @@
 ---
 title: "Wflow sysimage to cut Julia startup"
 type: watch-item
-area: run cost / julia
+area: runtime
 origin: t2608222155 owner ruling (2026-09-25)
 created: 2026-09-25
 updated: 2026-09-27

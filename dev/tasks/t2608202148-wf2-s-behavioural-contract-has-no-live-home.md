@@ -1,7 +1,7 @@
 ---
 title: "WF2 behaviour has no current documentation"
 type: watch-item
-area: wf2 / dev records
+area: wf2
 origin: reference-doc cleanup (2026-08-20)
 created: 2026-08-20
 updated: 2026-08-20

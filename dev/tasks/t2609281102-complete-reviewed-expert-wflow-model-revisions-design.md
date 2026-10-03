@@ -3,7 +3,7 @@ title: "Finish Wflow model revisions design"
 type: todo-item
 status: blocked
 effort: 2
-area: wf1 / model revisions
+area: wf1
 branch: feat/model-upgrading
 created: 2026-09-28
 updated: 2026-09-30

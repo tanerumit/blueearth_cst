@@ -1,7 +1,7 @@
 ---
 title: "Decide naming of generation_inputs snapshots"
 type: watch-item
-area: wf3 / generation inputs
+area: wf3
 origin: gabon-ntoum-v3 review (2026-09-25)
 created: 2026-09-25
 updated: 2026-09-28

@@ -3,7 +3,7 @@ title: "Scope R15: run workflows as one DAG"
 type: todo-item
 status: backlog
 effort: 2
-area: workflow architecture
+area: workflows
 origin: owner question 2026-09-16
 queue: 4
 created: 2026-09-16

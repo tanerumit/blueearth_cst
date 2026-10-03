@@ -1,7 +1,7 @@
 ---
 title: "Make climate extraction variables configurable"
 type: watch-item
-area: wf0 / wf1 climate store
+area: climate
 origin: R14
 created: 2026-08-22
 updated: 2026-09-27

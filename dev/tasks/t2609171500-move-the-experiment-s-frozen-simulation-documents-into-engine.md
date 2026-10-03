@@ -3,7 +3,7 @@ title: "Move frozen simulation documents into _engine"
 type: todo-item
 status: backlog
 effort: 2
-area: project-tree
+area: layout
 origin: test_rapid review (2026-09-17)
 queue: 7
 created: 2026-09-17

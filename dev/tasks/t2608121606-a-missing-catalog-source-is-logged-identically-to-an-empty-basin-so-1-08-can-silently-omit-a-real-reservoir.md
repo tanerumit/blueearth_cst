@@ -1,5 +1,5 @@
 ---
-title: A missing catalog source is logged identically to an empty basin, so 1.08 can silently omit a real reservoir
+title: "Missing catalog source can hide a reservoir"
 type: watch-item
 area: wf1 / data catalog
 origin: t2608091730 (2026-08-12)

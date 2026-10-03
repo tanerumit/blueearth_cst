@@ -7,29 +7,29 @@ cssclasses: [todo-board]
 
 | ID                       | #      | Item                                                                                                          | Area                  | Status     |
 | ------------------------ | ------ | ------------------------------------------------------------------------------------------------------------- | --------------------- | ---------- |
-| [t2608181139][]          | 1      | Give WF0 its forcing-selection evaluation layer — rules 0.07-0.09                                             | wf0 /                 | backlog    |
-| [t2608191733][]          | 2      | Ship a sample dataset bundle so a user needs no Deltares P: drive                                             | distribution /        | backlog    |
-| [t2608202351a][]         | 3      | Put the three pipeline notebooks on the site via a committed docs/_freeze/                                    | docs /                | backlog    |
-| [t2609161642][]          | 4      | Scope R15 — run independent workflows concurrently as one DAG                                                 | workflow architecture | backlog    |
-| [t2608091730][]          | 5      | Produce waterbody layers data-side so basin_area can show them again                                          | plotting              | blocked    |
-| [t2608071207][]          | 6      | Show the per-member wflow log falsifier actually failing with `path_log` unset                                | wf3 logging           | blocked    |
-| [t2609171500][]          | 7      | Move the experiment's frozen simulation documents into _engine                                                | project-tree          | backlog    |
-| [t2608202352][]          | 8      | Publish the docs site to GitHub Pages, and reduce the README onto it                                          | docs /                | blocked    |
-| [t2608202351][]          | 9      | Publish the technical background — split the 2025 note into eight chapters                                    | docs /                | blocked    |
+| [t2608181139][]          | 1      | Add forcing-selection evaluation to WF0                                                                       | wf0 /                 | backlog    |
+| [t2608191733][]          | 2      | Ship a sample dataset bundle                                                                                  | distribution /        | backlog    |
+| [t2608202351a][]         | 3      | Publish pipeline notebooks on the docs site                                                                   | docs /                | backlog    |
+| [t2609161642][]          | 4      | Scope R15: run workflows as one DAG                                                                           | workflow architecture | backlog    |
+| [t2608091730][]          | 5      | Make waterbody layers for the basin map                                                                       | plotting              | blocked    |
+| [t2608071207][]          | 6      | Prove wflow log check fails without path_log                                                                  | wf3 logging           | blocked    |
+| [t2609171500][]          | 7      | Move frozen simulation documents into _engine                                                                 | project-tree          | backlog    |
+| [t2608202352][]          | 8      | Publish docs site to GitHub Pages                                                                             | docs /                | blocked    |
+| [t2608202351][]          | 9      | Publish the technical note as site chapters                                                                   | docs /                | blocked    |
 | [t2610022259][]          |        | Scope conceptual workflow improvements                                                                        | workflow methodology  | backlog    |
-| [t2609281102][]          |        | Complete reviewed expert Wflow model revisions design                                                         | wf1 /                 | blocked    |
-| [t2609251520][]          |        | Open question: flat, hash-suffixed names for generation_inputs snapshots? — Trigger: Owner decides whether…   | wf3 /                 | watch      |
-| [t2609251025][]          |        | Wflow sysimage to remove per-batch Julia startup — Trigger: A Julia/Wflow runtime upgrade or packaging…       | run cost              | watch      |
-| [t2609181302][]          |        | Snakemake's six-line preamble is not suppressible from inside a workflow — Trigger: Revisit if a snakemake…   | console /             | watch      |
-| [t2609162115][]          |        | weathergenr prints an unevaluated glue expression instead of a plot count — Trigger: Recheck when…            | upstream /            | watch      |
-| [t2608222252][]          |        | Make the climate extraction variable set derived and configurable — Trigger: A second model adapter is…       | wf0 /                 | watch      |
-| [t2608222239][]          |        | Support additional historical climate datasets in the raw-climate path — Trigger: The owner selects an…       | wf0 /                 | watch      |
-| [t2608210010][]          |        | Replace the docs site's approximate brand colours with the official Deltares values — Trigger: The owner…     | docs /                | watch      |
-| [t2608202148][]          |        | WF2's behavioural contract has no live home — Trigger: Someone needs WF2's config-key or unit semantics and…  | wf2 /                 | watch      |
-| [t2608121606][]          |        | A missing catalog source is logged identically to an empty basin, so 1.08 can silently omit a real reservoir… | wf1 /                 | watch      |
-| [t2608071222][]          |        | The R layer has no test infrastructure; Python helpers carry the coverage — Trigger: The R layer grows past…  | testing               | watch      |
-| [t2608071221][]          |        | Docker (O-06) and Linux end-to-end (O-18, O-19) are unexercised — Trigger: A Linux runner can access the…     | platform              | watch      |
-| [t2608071201][]          |        | A WF1 rebuild always trips WF3's drift guard, and the re-record is accepted as normal — Trigger: Re-open if…  | wf1 /                 | watch      |
+| [t2609281102][]          |        | Finish Wflow model revisions design                                                                           | wf1 /                 | blocked    |
+| [t2609251520][]          |        | Decide naming of generation_inputs snapshots — Trigger: Owner decides whether folder readability is worth a…  | wf3 /                 | watch      |
+| [t2609251025][]          |        | Wflow sysimage to cut Julia startup — Trigger: A Julia/Wflow runtime upgrade or packaging change is planned…  | run cost              | watch      |
+| [t2609181302][]          |        | Snakemake preamble cannot be suppressed — Trigger: Revisit if a snakemake logger plugin is added for another… | console /             | watch      |
+| [t2609162115][]          |        | weathergenr prints a raw glue expression — Trigger: Recheck when `weathergenr` releases a version that…       | upstream /            | watch      |
+| [t2608222252][]          |        | Make climate extraction variables configurable — Trigger: A second model adapter is introduced, or a…         | wf0 /                 | watch      |
+| [t2608222239][]          |        | Support more historical climate datasets — Trigger: The owner selects an additional historical dataset for a… | wf0 /                 | watch      |
+| [t2608210010][]          |        | Use official Deltares colours on docs site — Trigger: The owner supplies the official palette or explicitly…  | docs /                | watch      |
+| [t2608202148][]          |        | WF2 behaviour has no current documentation — Trigger: Someone needs WF2's config-key or unit semantics and…   | wf2 /                 | watch      |
+| [t2608121606][]          |        | Missing catalog source can hide a reservoir — Trigger: Any basin whose results look implausible around a…     | wf1 /                 | watch      |
+| [t2608071222][]          |        | R code has no tests — Trigger: The R layer grows past the weather-generator wrappers, or an R-side defect…    | testing               | watch      |
+| [t2608071221][]          |        | Docker and Linux end-to-end runs untested — Trigger: A Linux runner can access the baseline inputs and CMIP6… | platform              | watch      |
+| [t2608071201][]          |        | WF1 rebuild always trips WF3 drift guard — Trigger: Re-open if a re-record ever masks a **real** drift, if…   | wf1 /                 | watch      |
 
 [t2608181139]: tasks/t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md
 [t2608191733]: tasks/t2608191733-ship-a-sample-dataset-bundle-so-a-user-needs-no-deltares-p-drive.md

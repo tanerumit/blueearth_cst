@@ -1,5 +1,5 @@
 ---
-title: "Open question: flat, hash-suffixed names for generation_inputs snapshots?"
+title: "Decide naming of generation_inputs snapshots"
 type: watch-item
 area: wf3 / generation inputs
 origin: gabon-ntoum-v3 review (2026-09-25)

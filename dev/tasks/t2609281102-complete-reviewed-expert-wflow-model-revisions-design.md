@@ -1,5 +1,5 @@
 ---
-title: Complete reviewed expert Wflow model revisions design
+title: "Finish Wflow model revisions design"
 type: todo-item
 status: blocked
 effort: 2

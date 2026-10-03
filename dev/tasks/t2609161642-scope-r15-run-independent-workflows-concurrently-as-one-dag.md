@@ -1,5 +1,5 @@
 ---
-title: Scope R15 — run independent workflows concurrently as one DAG
+title: "Scope R15: run workflows as one DAG"
 type: todo-item
 status: backlog
 effort: 2

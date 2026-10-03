@@ -1,5 +1,5 @@
 ---
-title: "Ship a sample dataset bundle so a user needs no Deltares P: drive"
+title: "Ship a sample dataset bundle"
 type: todo-item
 status: backlog
 branch: feat/scope-shipped-sample-dataset

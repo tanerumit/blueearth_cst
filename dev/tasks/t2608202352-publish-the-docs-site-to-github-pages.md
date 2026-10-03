@@ -1,5 +1,5 @@
 ---
-title: Publish the docs site to GitHub Pages, and reduce the README onto it
+title: "Publish docs site to GitHub Pages"
 type: todo-item
 status: blocked
 effort: 2

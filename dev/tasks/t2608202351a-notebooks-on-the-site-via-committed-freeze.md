@@ -1,5 +1,5 @@
 ---
-title: Put the three pipeline notebooks on the site via a committed docs/_freeze/
+title: "Publish pipeline notebooks on the docs site"
 type: todo-item
 status: backlog
 effort: 2

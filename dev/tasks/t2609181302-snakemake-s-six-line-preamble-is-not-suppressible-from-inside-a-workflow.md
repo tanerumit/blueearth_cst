@@ -1,5 +1,5 @@
 ---
-title: Snakemake's six-line preamble is not suppressible from inside a workflow
+title: "Snakemake preamble cannot be suppressed"
 type: watch-item
 area: console / snakemake
 origin: console polishing (2026-09-18)

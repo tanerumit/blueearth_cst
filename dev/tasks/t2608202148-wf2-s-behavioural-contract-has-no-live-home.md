@@ -1,5 +1,5 @@
 ---
-title: WF2's behavioural contract has no live home
+title: "WF2 behaviour has no current documentation"
 type: watch-item
 area: wf2 / dev records
 origin: reference-doc cleanup (2026-08-20)

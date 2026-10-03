@@ -1,5 +1,5 @@
 ---
-title: Replace the docs site's approximate brand colours with the official Deltares values
+title: "Use official Deltares colours on docs site"
 type: watch-item
 area: docs / site
 origin: quarto-docs-site (2026-08-19)

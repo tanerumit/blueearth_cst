@@ -1,5 +1,5 @@
 ---
-title: Make the climate extraction variable set derived and configurable
+title: "Make climate extraction variables configurable"
 type: watch-item
 area: wf0 / wf1 climate store
 origin: R14

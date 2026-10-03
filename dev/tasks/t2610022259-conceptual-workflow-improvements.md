@@ -1,5 +1,5 @@
 ---
-title: Scope conceptual workflow improvements
+title: "Scope conceptual workflow improvements"
 type: todo-item
 status: backlog
 effort: 2

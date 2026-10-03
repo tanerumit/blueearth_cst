@@ -1,5 +1,5 @@
 ---
-title: Give WF0 its forcing-selection evaluation layer — rules 0.07-0.09
+title: "Add forcing-selection evaluation to WF0"
 type: todo-item
 status: backlog
 effort: 2

@@ -1,5 +1,5 @@
 ---
-title: Publish the technical background — split the 2025 note into eight chapters
+title: "Publish the technical note as site chapters"
 type: todo-item
 status: blocked
 effort: 2

@@ -1,5 +1,5 @@
 ---
-title: Support additional historical climate datasets in the raw-climate path
+title: "Support more historical climate datasets"
 type: watch-item
 area: wf0 / wf1 climate store
 origin: R14

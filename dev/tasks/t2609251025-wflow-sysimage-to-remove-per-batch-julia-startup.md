@@ -1,5 +1,5 @@
 ---
-title: Wflow sysimage to remove per-batch Julia startup
+title: "Wflow sysimage to cut Julia startup"
 type: watch-item
 area: run cost / julia
 origin: t2608222155 owner ruling (2026-09-25)

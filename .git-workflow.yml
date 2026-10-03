@@ -14,7 +14,8 @@ mode: slot
 
 # Explicit settings below override the selected mode.
 
-# The user controls allocation and switching; task-start claims a free lane from main.
+# A clean detached session may claim itself with task-start --no-launch;
+# the user controls switching and landing.
 # Keep follow-ups on one branch, commit separately, and gate the batch at landing.
 isolation_landing: approval
 

@@ -41,6 +41,20 @@ match its `run_id` to `scenario_run_lookup.csv`, then its `st_id` to
 `perturbation_lookup.csv`.
 The scenario with an empty `st_id` is the unperturbed reference case.
 
+### Climate extent and basin cells
+
+Historical climate stores retain a rectangular basin bounding box plus **one
+source-grid cell on each side**. For ERA5's 0.25° grid, the margin is approximately
+0.25° per side, with the exact extent determined by grid alignment.
+This margin supports the current nearest-neighbour forcing reprojection; it does
+not enlarge the modeled basin.
+
+The adjacent `basin_cells.csv` lists cells whose footprints intersect the basin.
+Only those cells, with equal weight, determine the weather generator's resampled
+dates. Generated climate series retain the full buffered rectangle for subsequent
+regridding. Existing stores and retained scenario collections are not cropped
+in place; the smaller extent applies when climate inputs are regenerated.
+
 ## Check whether a run finished
 
 Look under `logs/` for each workflow's messages. Scenario generation writes

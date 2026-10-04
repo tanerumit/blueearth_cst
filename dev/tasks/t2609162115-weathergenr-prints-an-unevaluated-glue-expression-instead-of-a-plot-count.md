@@ -11,12 +11,12 @@ updated: 2026-09-28
 ---
 
 > [!note] Overview
-> **What** — An UPSTREAM defect, recorded for visibility, not for action here.
+> **What changes** — An UPSTREAM defect, recorded for visibility, not for action here.
 > `weathergenr`'s evaluation stage prints its message template verbatim instead
 > of the values it meant to interpolate.
-> **Why** — One cosmetically broken line in every WF3 run's console and merged
+> **Why it matters** — One cosmetically broken line in every WF3 run's console and merged
 > log. It misreports nothing else; no artifact and no number is affected.
-> **Effort** — Start when: Recheck when `weathergenr` releases a version that changes evaluation plot logging.
+> **What it takes** — Start when: Recheck when `weathergenr` releases a version that changes evaluation plot logging.
 
 ## Progress
 

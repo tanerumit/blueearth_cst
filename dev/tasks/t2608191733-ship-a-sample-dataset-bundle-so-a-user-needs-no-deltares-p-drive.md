@@ -11,14 +11,14 @@ updated: 2026-09-28
 ---
 
 > [!note] Overview
-> **What** — Package a bbox-clipped sample of the hydromt tree plus
+> **What changes** — Package a bbox-clipped sample of the hydromt tree plus
 > WF2-cache-compatible CMIP6 slices as a downloadable bundle, and route a sample
 > project config at it, so all four workflows run with no Deltares `P:` access
 > and no cloud credentials.
-> **Why** — Today a new user cannot run anything without `P:` drive rights. The
+> **Why it matters** — Today a new user cannot run anything without `P:` drive rights. The
 > staging tools that produce the bundle already exist; what is missing is
 > packaging, routing and provenance.
-> **Effort** — Large. One new builder, one new fetcher, one new config, a
+> **What it takes** — Large. One new builder, one new fetcher, one new config, a
 > release process, and a source-completeness audit that has to happen first.
 
 **Scoped 2026-08-19.** Design and rulings:

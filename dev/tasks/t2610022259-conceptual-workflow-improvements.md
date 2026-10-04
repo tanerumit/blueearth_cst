@@ -11,9 +11,9 @@ updated: 2026-10-02
 ---
 
 > [!note] Overview
-> **What** — Scope and prioritize conceptual improvements to the climate stress testing workflows, covering WF0 historical climate diagnostics and WF2 projection analysis and uncertainty.
-> **Why** — Promising research ideas need a durable, scientifically qualified record before methods and implementation scope are selected.
-> **Effort** — Research and prioritization; the main unknowns are data adequacy, defensible inference, and the boundary between default diagnostics and advanced analyses.
+> **What changes** — Scope and prioritize conceptual improvements to the climate stress testing workflows, covering WF0 historical climate diagnostics and WF2 projection analysis and uncertainty.
+> **Why it matters** — Promising research ideas need a durable, scientifically qualified record before methods and implementation scope are selected.
+> **What it takes** — Research and prioritization; the main unknowns are data adequacy, defensible inference, and the boundary between default diagnostics and advanced analyses.
 
 ## Progress
 

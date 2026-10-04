@@ -11,9 +11,9 @@ updated: 2026-08-20
 ---
 
 > [!note] Overview
-> **What** — The WF2 behavioural contract — owned config keys, the precip/temp unit split, save_grids semantics, downstream-consumer semantics — exists only in dev/reference/workflows/climate_projections.md, which is SEALED. rule-index.md is rule/DAG level and does not carry it, and the overview that used to disclaim it ("lives in climate_projections.md and is not repeated here") was deleted 2026-08-20 as stale and self-contradictory.
-> **Why** — A sealed record is kept because it was true when written, not because it is current. Reading a behavioural contract off one is the failure the seal exists to prevent, and sealed-records.yml now routes a reader to rule-index.md, which cannot answer the question.
-> **Effort** — Start when: Someone needs WF2's config-key or unit semantics and finds only the sealed doc; or a WF2 change makes the sealed contract actively wrong rather than merely old.
+> **What changes** — The WF2 behavioural contract — owned config keys, the precip/temp unit split, save_grids semantics, downstream-consumer semantics — exists only in dev/reference/workflows/climate_projections.md, which is SEALED. rule-index.md is rule/DAG level and does not carry it, and the overview that used to disclaim it ("lives in climate_projections.md and is not repeated here") was deleted 2026-08-20 as stale and self-contradictory.
+> **Why it matters** — A sealed record is kept because it was true when written, not because it is current. Reading a behavioural contract off one is the failure the seal exists to prevent, and sealed-records.yml now routes a reader to rule-index.md, which cannot answer the question.
+> **What it takes** — Start when: Someone needs WF2's config-key or unit semantics and finds only the sealed doc; or a WF2 change makes the sealed contract actively wrong rather than merely old.
 
 ## Progress
 

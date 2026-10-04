@@ -11,19 +11,19 @@ updated: 2026-09-28
 ---
 
 > [!note] Overview
-> **What** — Add the rules that let WF0 *evaluate* candidate forcing datasets
+> **What changes** — Add the rules that let WF0 *evaluate* candidate forcing datasets
 > rather than only characterise them: station/subregion sampling with
 > observation comparison, and Budyko screening. The rule numbering already
 > reserves the space — WF0 runs 0.01–0.06 and then jumps to 0.10, so **0.07,
 > 0.08 and 0.09 are an empty gap**, which is the clearest statement of what is
 > missing.
-> **Why** — WF0 exists to answer *which forcing dataset should this basin use*,
+> **Why it matters** — WF0 exists to answer *which forcing dataset should this basin use*,
 > and that question matters here precisely because CST does no local
 > calibration, so forcing choice is the dominant lever on the historical run.
 > Today WF0 extracts, plots and compares the candidates against **each other**;
 > nothing compares them against **observations**. A user can see that CHIRPS and
 > ERA5 disagree, and still cannot see which is closer to the truth.
-> **Effort** — Large. Two new config keys with templates, a breaking config
+> **What it takes** — Large. Two new config keys with templates, a breaking config
 > move already ruled, and three rules.
 
 ## Progress

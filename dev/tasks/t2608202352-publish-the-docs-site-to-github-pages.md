@@ -11,9 +11,9 @@ updated: 2026-09-28
 ---
 
 > [!note] Overview
-> **What** — The design's phase 4: declare `site-url`, add a `quarto-actions` workflow rendering to `gh-pages`, add `.nojekyll`, and in the same change reduce the README's Running and Configuration sections to summaries pointing at the site (D11).
-> **Why** — The site is deliberately local-only today. Everything phases 1-3 build is invisible to anyone who has not cloned the repo, which is most of the audience the user guide was written for.
-> **Effort** — large — mostly first-deploy debugging, which is the part that cannot be rehearsed locally
+> **What changes** — The design's phase 4: declare `site-url`, add a `quarto-actions` workflow rendering to `gh-pages`, add `.nojekyll`, and in the same change reduce the README's Running and Configuration sections to summaries pointing at the site (D11).
+> **Why it matters** — The site is deliberately local-only today. Everything phases 1-3 build is invisible to anyone who has not cloned the repo, which is most of the audience the user guide was written for.
+> **What it takes** — large — mostly first-deploy debugging, which is the part that cannot be rehearsed locally
 
 ## Progress
 

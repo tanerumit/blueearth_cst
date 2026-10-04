@@ -10,9 +10,9 @@ updated: 2026-08-07
 ---
 
 > [!note] Overview
-> **What** — The R layer has no test infrastructure; Python helpers carry the coverage.
-> **Why** — Decided at the start of R5, not overlooked — but it means an R-side regression has no gate at all.
-> **Effort** — Start when: The R layer grows past the weather-generator wrappers, or an R-side defect ships.
+> **What changes** — The R layer has no test infrastructure; Python helpers carry the coverage.
+> **Why it matters** — Decided at the start of R5, not overlooked — but it means an R-side regression has no gate at all.
+> **What it takes** — Start when: The R layer grows past the weather-generator wrappers, or an R-side defect ships.
 
 ## Progress
 

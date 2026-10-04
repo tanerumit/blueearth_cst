@@ -11,9 +11,9 @@ updated: 2026-08-12
 ---
 
 > [!note] Overview
-> **What** — hydromt logs the RESOLVED URI before opening a source, then reports a missing file as 'Skipping method, as no data has been found' -- the same line an empty clip produces. Rule 1.08 add_reservoirs_lakes_glaciers therefore exits 0 whether the basin has no reservoirs or the reservoir dataset is absent from the machine.
-> **Why** — On a real basin with a major reservoir, a missing or misconfigured catalog entry yields a wflow model with no reservoir, no warning, and a green run. The stress test then routes water through a basin whose largest control structure is not represented. It also defeats log-based evidence: a 'Reading X from Y' line does not establish that Y exists, which is how t2608091730 recorded a blocker three weeks newer than it was.
-> **Effort** — Start when: Any basin whose results look implausible around a known reservoir, lake or glacier; or a model build on a fresh data root. Cheap check: assert the catalog's resolved URIs exist before the build, rather than trusting the run's exit code.
+> **What changes** — hydromt logs the RESOLVED URI before opening a source, then reports a missing file as 'Skipping method, as no data has been found' -- the same line an empty clip produces. Rule 1.08 add_reservoirs_lakes_glaciers therefore exits 0 whether the basin has no reservoirs or the reservoir dataset is absent from the machine.
+> **Why it matters** — On a real basin with a major reservoir, a missing or misconfigured catalog entry yields a wflow model with no reservoir, no warning, and a green run. The stress test then routes water through a basin whose largest control structure is not represented. It also defeats log-based evidence: a 'Reading X from Y' line does not establish that Y exists, which is how t2608091730 recorded a blocker three weeks newer than it was.
+> **What it takes** — Start when: Any basin whose results look implausible around a known reservoir, lake or glacier; or a model build on a fresh data root. Cheap check: assert the catalog's resolved URIs exist before the build, rather than trusting the run's exit code.
 
 ## Progress
 

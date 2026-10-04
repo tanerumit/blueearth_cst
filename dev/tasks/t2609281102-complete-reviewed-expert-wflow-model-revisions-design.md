@@ -10,9 +10,9 @@ updated: 2026-09-30
 ---
 
 > [!note] Overview
-> **What** — Record and land the accepted design for expert-edited Wflow model revisions in workflow 1 and their selection by workflow 4.
-> **Why** — The reviewed contract fixes model attribution, evaluation evidence, and experiment provenance before implementation is complete.
-> **Effort** — Design and review are complete; the accepted contract and review archive are committed on `feat/model-upgrading` and await approved landing.
+> **What changes** — Record and land the accepted design for expert-edited Wflow model revisions in workflow 1 and their selection by workflow 4.
+> **Why it matters** — The reviewed contract fixes model attribution, evaluation evidence, and experiment provenance before implementation is complete.
+> **What it takes** — Design and review are complete; the accepted contract and review archive are committed on `feat/model-upgrading` and await approved landing.
 
 ## Progress
 

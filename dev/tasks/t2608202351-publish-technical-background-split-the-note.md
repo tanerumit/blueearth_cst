@@ -11,9 +11,9 @@ updated: 2026-09-28
 ---
 
 > [!note] Overview
-> **What** — Split `docs/cst-toolbox-technical-note-2025.md` (157 KB, one file) into the eight chapters of the design's §4 and add them to the Quarto render list as a `background/` section. Chapters 7-8 (the web GUI and the wider platform) stay out by ruling O-1(c).
-> **Why** — The site publishes the user guide and setup, and nothing about *why* the toolbox computes what it does. The note is the only written method rationale, and today it is reachable only as a 157 KB file in the repo.
-> **Effort** — large
+> **What changes** — Split `docs/cst-toolbox-technical-note-2025.md` (157 KB, one file) into the eight chapters of the design's §4 and add them to the Quarto render list as a `background/` section. Chapters 7-8 (the web GUI and the wider platform) stay out by ruling O-1(c).
+> **Why it matters** — The site publishes the user guide and setup, and nothing about *why* the toolbox computes what it does. The note is the only written method rationale, and today it is reachable only as a 157 KB file in the repo.
+> **What it takes** — large
 
 ## Progress
 

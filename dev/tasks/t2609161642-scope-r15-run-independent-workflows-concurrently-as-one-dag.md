@@ -11,9 +11,9 @@ updated: 2026-09-28
 ---
 
 > [!note] Overview
-> **What** — Scope a milestone that lets independent workflow branches run concurrently, by collapsing the five entry points into one Snakemake DAG via the module system rather than by running concurrent snakemake processes.
-> **Why** — On the toy rapid basin the prize is 28s of ~21min. On a REAL basin WF2 fans out over dozens of CMIP6 models and WF1's build scales with the domain, so both can run for hours — which is where the arithmetic changes. Owner raised it 2026-09-16.
-> **Effort** — large
+> **What changes** — Scope a milestone that lets independent workflow branches run concurrently, by collapsing the five entry points into one Snakemake DAG via the module system rather than by running concurrent snakemake processes.
+> **Why it matters** — On the toy rapid basin the prize is 28s of ~21min. On a REAL basin WF2 fans out over dozens of CMIP6 models and WF1's build scales with the domain, so both can run for hours — which is where the arithmetic changes. Owner raised it 2026-09-16.
+> **What it takes** — large
 
 ## Progress
 

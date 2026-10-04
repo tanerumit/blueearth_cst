@@ -11,9 +11,9 @@ updated: 2026-09-28
 ---
 
 > [!note] Overview
-> **What** — Move `experiments/<name>/config/` -- the five hash-referenced simulation documents -- into the experiment's `_engine/` bin, keeping the whole directory together so the intra-directory relative paths survive.
-> **Why** — The repo's own `_engine/` criterion says these are files a workflow writes so it can refuse a stale run, not anything a reader opens. `simulation_environment.json` alone is 22 KB of package pins.
-> **Effort** — large
+> **What changes** — Move `experiments/<name>/config/` -- the five hash-referenced simulation documents -- into the experiment's `_engine/` bin, keeping the whole directory together so the intra-directory relative paths survive.
+> **Why it matters** — The repo's own `_engine/` criterion says these are files a workflow writes so it can refuse a stale run, not anything a reader opens. `simulation_environment.json` alone is 22 KB of package pins.
+> **What it takes** — large
 > **Trigger** — A WF3+WF4 baseline re-run is being paid for another reason, AND a tree matching `dev/baseline/manifest.json` is available to re-record from.
 
 ## Progress

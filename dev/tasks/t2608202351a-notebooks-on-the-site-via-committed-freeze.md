@@ -11,9 +11,9 @@ updated: 2026-09-28
 ---
 
 > [!note] Overview
-> **What** — Execute the three notebooks under `docs/notebooks/` once locally, commit the resulting `docs/_freeze/`, and add them to the render list in `docs/_quarto.yml`. Ruling O-2(a), taken 2026-08-19 and not yet applied.
-> **Why** — The notebooks are the only worked walkthrough of the pipeline, and they are the one part of `docs/` a reader cannot use from the repo: outputs are stripped by policy (`a2596d0`), so the committed `.ipynb` files are code with no results.
-> **Effort** — large — the cost is the run, not the docs edit
+> **What changes** — Execute the three notebooks under `docs/notebooks/` once locally, commit the resulting `docs/_freeze/`, and add them to the render list in `docs/_quarto.yml`. Ruling O-2(a), taken 2026-08-19 and not yet applied.
+> **Why it matters** — The notebooks are the only worked walkthrough of the pipeline, and they are the one part of `docs/` a reader cannot use from the repo: outputs are stripped by policy (`a2596d0`), so the committed `.ipynb` files are code with no results.
+> **What it takes** — large — the cost is the run, not the docs edit
 
 ## Progress
 

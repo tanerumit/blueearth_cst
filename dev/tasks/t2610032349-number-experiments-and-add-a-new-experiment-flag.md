@@ -10,9 +10,9 @@ updated: 2026-10-03
 ---
 
 > [!note] Overview
-> **What** — Default experiment_name to stress_test; allocate <name>_NN (01, 02, ...) for unset and set names; plain runs continue the highest number; run_workflows.py --new-experiment [--note] starts the next one; a name already ending in _NN pins that experiment.
-> **Why** — The <project_dir basename>_<date> default yields active_<date> for every create_case case and carries no meaning; numbered experiments with a recorded note are simpler and keep incremental reruns.
-> **Effort** — Two commits: allocation/numbering + tests, then the runner flag, experiment.yml note, console line and docs; main unknown is the >99 policy.
+> **What changes** — Default experiment_name to stress_test; allocate <name>_NN (01, 02, ...) for unset and set names; plain runs continue the highest number; run_workflows.py --new-experiment [--note] starts the next one; a name already ending in _NN pins that experiment.
+> **Why it matters** — The <project_dir basename>_<date> default yields active_<date> for every create_case case and carries no meaning; numbered experiments with a recorded note are simpler and keep incremental reruns.
+> **What it takes** — Two commits: allocation/numbering + tests, then the runner flag, experiment.yml note, console line and docs; main unknown is the >99 policy.
 
 ## Progress
 

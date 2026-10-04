@@ -528,6 +528,10 @@ def test_plan_keeps_a_combination_the_catalog_really_carries():
 # --- the parallel machinery, offline -----------------------------------------
 
 
+#: gcsfs without a credential search; see `_local_catalog`.
+ANON_GCS = {"protocol": "gcs", "token": "anon"}
+
+
 def _local_catalog(tmp_path):
     """A catalog whose one entry passes the filter but resolves to nothing.
 
@@ -547,6 +551,11 @@ def _local_catalog(tmp_path):
     # before giving up. An explicit local scheme fails immediately and keeps
     # the case genuinely offline.
     spec["uri"] = (tmp_path / "no_such_store" / "{variable}").as_uri()
+    # Anonymous, as the public CMIP6 bucket allows. With no token, gcsfs first
+    # searches for Google credentials and sleeps through the Compute Engine
+    # metadata server's retry backoff (~19 s per process, measured 2026-10-04)
+    # before falling back to anonymous -- which is all this case ever measured.
+    spec["driver"]["filesystem"] = ANON_GCS
     out = {}
     for name in ("FAKE/MODEL-A", "FAKE/MODEL-B"):
         entry = copy.deepcopy(spec)

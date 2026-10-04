@@ -790,7 +790,10 @@ def test_from_dict_honours_the_override_and_still_expands_the_member():
         "driver": {
             "name": "raster_xarray",
             "options": {"preprocess": "harmonise_dims", "consolidated": True},
-            "filesystem": "gcs",
+            # Anonymous: with no token gcsfs searches for Google credentials and
+            # sleeps through a metadata-server backoff (~19 s) before falling
+            # back to anonymous, which this read-path check never needed.
+            "filesystem": {"protocol": "gcs", "token": "anon"},
         },
         "metadata": {"crs": 4326},
         "placeholders": {"member": ["r1i1p1f1"]},

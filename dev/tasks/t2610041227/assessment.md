@@ -149,6 +149,13 @@ from that window are affected. The coverage was inverted: `metric_plan`'s
 expensive in-process tests all build a v1 experiment, while its production v2
 branch was tested only through stubbed v2 readers.
 
+**Fingerprint ruling (owner, 2026-10-04): edit `metric_plan.py` and re-record.**
+`metric_plan.py` is code-inventoried into every metric request, so removing
+its v1 branches mints new metric-set ids for every experiment (old sets stay
+readable; a metrics-only re-run publishes a new set). Re-record the baseline
+from a metrics-only run on `test_local` (values must be identical; only the
+set id moves) and note the id change in the CHANGELOG.
+
 Sequence: (1) a real retained-v2-experiment fixture plus v2 end-to-end metric
 tests; (2) port the `metric_plan`, carrier and R12 checkpoint tests onto it;
 (3) remove the v1 branches and modules with their tests. Open a PR for the

@@ -1,8 +1,11 @@
 ---
 title: "weathergenr prints a raw glue expression"
-type: watch-item
+type: todo-item
+status: backlog
+effort: 1
 area: upstream
 origin: WF3 run (2026-09-16)
+queue:
 created: 2026-09-16
 updated: 2026-09-28
 ---
@@ -13,7 +16,11 @@ updated: 2026-09-28
 > of the values it meant to interpolate.
 > **Why** — One cosmetically broken line in every WF3 run's console and merged
 > log. It misreports nothing else; no artifact and no number is affected.
-> **Trigger** — Recheck when `weathergenr` releases a version that changes evaluation plot logging.
+> **Effort** — Start when: Recheck when `weathergenr` releases a version that changes evaluation plot logging.
+
+## Progress
+
+- [ ] Reassess once the start condition in Effort holds
 
 ## The evidence
 

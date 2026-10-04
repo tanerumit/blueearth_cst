@@ -61,6 +61,36 @@ def experiment(bare, monkeypatch):
     return bare
 
 
+@pytest.fixture(scope="module")
+def _published_once(built, tmp_path_factory):
+    """One experiment with its gwr metric set already published.
+
+    The tamper tests only need a ready set to corrupt, and planning plus
+    publication is most of their cost, so they share this one and each gets a
+    private copy. Every reference inside a set is project-relative.
+    """
+    experiment = copy_v2_experiment(built, tmp_path_factory.mktemp("published"))
+    with pytest.MonkeyPatch.context() as patch:
+        from blueearth_cst.experiment import metric_plan
+
+        patch.setattr(
+            metric_plan, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
+        )
+        plan = _plan(experiment.root)
+        publish_metric_set(experiment.root, plan)
+    return experiment, identity_segment(plan["metric_set_id"], "metric_set_id")
+
+
+@pytest.fixture
+def published(_published_once, tmp_path, monkeypatch):
+    """A private copy: (root, engine marker, result directory)."""
+    _live(monkeypatch)
+    source, short = _published_once
+    root = copy_v2_experiment(source, tmp_path).root
+    marker = root / "_engine/metric_sets" / short / "metrics.json"
+    return root, marker, root / "results/metric_sets" / short
+
+
 def _plan(root, tokens=("gwr",)):
     return build_metric_plan(root, current_metric_request(root, list(tokens), "YS-JAN"))
 
@@ -156,22 +186,18 @@ def test_a_changed_native_response_byte_refuses_planning(experiment):
         _plan(experiment.root)
 
 
-def test_a_tampered_published_table_is_refused_on_read(experiment):
-    root = experiment.root
-    plan = _plan(root)
-    publish_metric_set(root, plan)
-    table = _result(root, plan) / "gwr_indicators.csv"
+def test_a_tampered_published_table_is_refused_on_read(published):
+    root, marker, result = published
+    read_metric_set(root, marker)
+    table = result / "gwr_indicators.csv"
     table.write_bytes(table.read_bytes() + b"gwr_mean,9,1,0\n")
     with pytest.raises(ImmutableMetricSetError):
-        read_metric_set(root, _engine(root, plan) / "metrics.json")
+        read_metric_set(root, marker)
 
 
-def test_a_table_renamed_in_the_manifest_is_refused(experiment):
-    root = experiment.root
-    plan = _plan(root)
-    manifest = publish_metric_set(root, plan)
-    marker = _engine(root, plan) / "metrics.json"
-    result = _result(root, plan)
+def test_a_table_renamed_in_the_manifest_is_refused(published):
+    root, marker, result = published
+    manifest = read_metric_set(root, marker)
     (result / "alternate.csv").write_bytes((result / "gwr_indicators.csv").read_bytes())
     manifest["tables"][0]["file"]["path"] = (
         f"results/metric_sets/{result.name}/alternate.csv"
@@ -184,16 +210,14 @@ def test_a_table_renamed_in_the_manifest_is_refused(experiment):
         read_metric_set(root, marker)
 
 
-def test_the_published_set_carries_and_verifies_its_benchmark_report(experiment):
+def test_the_published_set_carries_and_verifies_its_benchmark_report(published):
     from blueearth_cst.experiment import return_level_validation
 
-    root = experiment.root
-    plan = _plan(root)
-    manifest = publish_metric_set(root, plan)
-    report = _engine(root, plan) / return_level_validation.REPORT_FILENAME
+    root, marker, _ = published
+    manifest = read_canonical_json(marker)
+    report = marker.parent / return_level_validation.REPORT_FILENAME
     assert report.read_bytes() == return_level_validation.load_report_bytes()
     assert manifest["return_level_benchmark"]["path"] == report.name
-    marker = _engine(root, plan) / "metrics.json"
     assert read_metric_set(root, marker) == manifest
     # A tampered copy must fail the reader rather than downgrade silently.
     report.write_bytes(b"{}\n")

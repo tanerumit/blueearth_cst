@@ -72,7 +72,6 @@ def downscale(workflow):
     return workflow.get_rule(RULE_NAME)
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_no_rule_builds_a_catalog_over_the_whole_sweep(workflow):
     """The removed rule, by name and by artifact.
@@ -88,7 +87,6 @@ def test_no_rule_builds_a_catalog_over_the_whole_sweep(workflow):
     assert not [p for p in declared if "data_catalog_run_stress_test" in p]
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_the_member_catalog_sits_beside_the_member_toml(downscale):
     """One stem, three artifacts: the forcing, the run TOML, and the catalog."""
@@ -99,7 +97,6 @@ def test_the_member_catalog_sits_beside_the_member_toml(downscale):
     assert Path(catalog).stem == Path(toml).stem
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_the_member_catalog_is_temporary(downscale):
     """It is scaffolding for one hydromt call, not a result of the run.
@@ -112,7 +109,6 @@ def test_the_member_catalog_is_temporary(downscale):
     assert catalog in downscale.temp_output
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_the_downscale_rule_reads_only_its_own_member(downscale, monkeypatch, tmp_path):
     """The barrier regression test.

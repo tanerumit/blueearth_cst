@@ -255,7 +255,6 @@ def declarations():
     }
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_every_workflow_declares_the_rule(declarations):
     for label, rule in declarations.items():
@@ -333,7 +332,6 @@ def test_the_shared_rule_carries_no_thematic_source(declarations):
             assert source not in payload, f"{label}: {payload}"
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_only_wf1_can_reach_the_thematic_reads():
     """§8's acceptance assertion, as a test rather than a one-off dry-run.

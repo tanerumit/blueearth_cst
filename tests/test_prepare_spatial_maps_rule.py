@@ -136,7 +136,6 @@ def test_spatial_rules_and_scripts_are_wflow_independent(rule_name, module):
     )
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_spatial_only_dry_run_has_no_wflow_edge():
     """A direct target schedules exactly P1, not the existing model build."""

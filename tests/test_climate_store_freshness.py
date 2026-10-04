@@ -128,7 +128,6 @@ def _seed_provenance(cfg_path, target):
         assert result.returncode == 0, (result.stdout or "") + (result.stderr or "")
 
 
-@pytest.mark.slow
 def test_the_catalog_is_the_one_freshness_edge_in_both_workflows(staged_store):
     """Both properties, in one ordered sequence over one staged store.
 

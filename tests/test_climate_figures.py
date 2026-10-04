@@ -101,7 +101,6 @@ def test_an_empty_variable_set_is_rejected():
         cf.figure_names("source", variables=[])
 
 
-@pytest.mark.slow
 def test_a_narrowed_set_writes_only_those_figures(tmp_path):
     """The declaration and the drawing must agree, or the rule fails.
 
@@ -117,7 +116,6 @@ def test_a_narrowed_set_writes_only_those_figures(tmp_path):
     assert sorted(p.name for p in tmp_path.glob("*.png")) == sorted(expected)
 
 
-@pytest.mark.slow
 def test_a_narrowed_set_ignores_a_variable_absent_from_the_dataset(tmp_path):
     """A precip-only draw must not require the variables it does not draw."""
     ds = _dataset().drop_vars(["temp", "pet"])
@@ -130,7 +128,6 @@ def test_a_narrowed_set_ignores_a_variable_absent_from_the_dataset(tmp_path):
 # --- writing the set -------------------------------------------------------
 
 
-@pytest.mark.slow
 def test_writes_exactly_the_declared_names(tmp_path):
     written = cf.plot_climate_figures(_dataset(), tmp_path, "source")
     assert [p.name for p in written] == cf.figure_names("source")
@@ -139,7 +136,6 @@ def test_writes_exactly_the_declared_names(tmp_path):
     assert all(p.stat().st_size > 0 for p in written)
 
 
-@pytest.mark.slow
 def test_the_figure_bundle_is_drained_before_returning(tmp_path, capsys):
     """The figure rows land beside the figures, and no bundle outlives the call.
 
@@ -159,7 +155,6 @@ def test_the_figure_bundle_is_drained_before_returning(tmp_path, capsys):
     assert "figures ->" in capsys.readouterr().out
 
 
-@pytest.mark.slow
 def test_a_dask_backed_dataset_works(tmp_path):
     """The regression this module shipped with: PET arrives dask-backed from the
     meteo workflow while precip and temp come straight off the netCDF, and
@@ -179,7 +174,6 @@ def test_a_missing_variable_is_loud(tmp_path):
         cf.plot_climate_figures(ds, tmp_path, "source")
 
 
-@pytest.mark.slow
 def test_overlays_are_optional_and_absent_entries_are_skipped(tmp_path):
     """A caller with no model passes nothing; a caller with a partial set passes
     what it has."""

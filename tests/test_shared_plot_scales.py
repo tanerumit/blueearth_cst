@@ -107,7 +107,6 @@ def test_an_absent_levels_file_degrades_to_no_shared_scale(tmp_path, missing):
     assert cl.read_plot_scales(path) == {}
 
 
-@pytest.mark.slow
 def test_two_sources_render_against_the_same_scale(tmp_path):
     """End to end: the figures of two datasets carry one y-range."""
     import matplotlib

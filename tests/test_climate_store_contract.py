@@ -226,7 +226,6 @@ def declarations(request, config_variants):
     return out
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_optional_basin_keys_are_read_from_the_config_by_both(declarations):
     """Both declarations honour ``basin.sources.hydrography``/``basin_index``.
@@ -448,7 +447,6 @@ def _wf0_rule(workflow, source):
     return workflow.get_rule(f"{RULE_NAME}_{source}")
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_wf0_primary_source_rule_equals_the_shared_contract(tmp_path):
     """WF0's generated rule for the project's own source == WF1's declaration."""
@@ -475,7 +473,6 @@ def test_wf0_primary_source_rule_equals_the_shared_contract(tmp_path):
         )
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_wf0_candidate_source_gets_its_own_store_and_family_outputs(tmp_path):
     """A comparison-only CHIRPS store carries no forcing-only sidecar."""
@@ -570,7 +567,6 @@ def test_only_a_relaxed_store_carries_the_flag():
     assert "/data/climate/historical/chirps_20000101_20201231" in spec.store_dir
 
 
-@pytest.mark.slow
 @pytest.mark.workflow_contract
 def test_wf0_relaxes_the_floor_for_candidates_only(tmp_path):
     """The primary keeps the floor; the extras relax it.

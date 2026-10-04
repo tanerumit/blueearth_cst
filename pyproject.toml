@@ -44,13 +44,10 @@ markers = [
     "integration: end-to-end workflow test; opt-in via --run-integration",
     "workflow_contract: Snakemake CLI/API/DAG or lifecycle contract test",
     "process_isolation: non-Snakemake test that requires fresh Python processes",
-    # A LABEL ONLY -- nothing deselects it, so `pytest tests/` is unchanged.
-    # 15 tests carry it and account for ~302 s of the suite's ~492 s (measured
-    # 2026-08-03). 13 of those 15 already sit inside `workflow_contract or
-    # process_isolation`, which pixi.toml's test-fast / test-contract /
-    # test-full tasks already tier on -- so a default deselect should be wired
-    # to ONE of the two schemes, not both. Open decision.
-    "slow: >=2s measured; label only, nothing deselects it yet",
+    # Tiering runs on ONE scheme: test-fast deselects the two markers above.
+    # A `slow` label (>=2 s, label only) was retired 2026-10-04 (t2610041227)
+    # rather than wired into test-fast: deselecting it would drop the real-v2
+    # metric tests from the local gate, so they would first run after a push.
 ]
 
 # -ra shows the reason for every non-passing outcome, skips included. CI already

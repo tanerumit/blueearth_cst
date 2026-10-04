@@ -129,7 +129,6 @@ def fabricated_project(tmp_path):
     return cfg_path, expected, undeclared
 
 
-@pytest.mark.slow
 @pytest.mark.skipif(shutil.which("snakemake") is None, reason="snakemake not on PATH")
 @pytest.mark.workflow_contract
 def test_delete_all_output_removes_the_declared_plot_outputs(fabricated_project):
@@ -199,7 +198,6 @@ def project_with_basavg_outvar(tmp_path):
     return cfg_path, basavg, undeclared
 
 
-@pytest.mark.slow
 @pytest.mark.skipif(shutil.which("snakemake") is None, reason="snakemake not on PATH")
 @pytest.mark.workflow_contract
 def test_delete_all_output_removes_a_basavg_figure(project_with_basavg_outvar):

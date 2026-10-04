@@ -129,19 +129,27 @@ def _seed_provenance(cfg_path, target):
 
 
 @pytest.mark.slow
-def test_catalog_edit_schedules_extraction_exactly_once(staged_store):
+def test_the_catalog_is_the_one_freshness_edge_in_both_workflows(staged_store):
+    """Both properties, in one ordered sequence over one staged store.
+
+    A ``--dry-run`` changes no workflow state, so every dry-run below observes
+    the same tree the previous one did. That is what lets a single pass cover
+    the ext1-02 regression check -- wf1 then wf3 on an unchanged store schedule
+    nothing -- which an earlier version ran twice over a second store for an
+    identical observation (t2610041227 cut it from 16 Snakemake runs to 10).
+    """
     cfg_path, catalog, target = staged_store
     _seed_provenance(cfg_path, target)
 
-    # Baseline: fresh store, nothing scheduled in either DAG.
+    # No oscillation: a fresh store is clean in each DAG, in turn.
     for snakefile in SNAKEFILES:
-        _assert_clean(snakefile, cfg_path, target, "scheduled work on a fresh store")
+        _assert_clean(snakefile, cfg_path, target, "re-scheduled the producer")
 
-    # An in-place catalog edit is the supported signal for a data change.
+    # Freshness: an in-place catalog edit is the supported signal for a data
+    # change, and it schedules the producer exactly once in each DAG.
     catalog.write_text(
         catalog.read_text(encoding="utf-8") + "\n# freshness probe\n", encoding="utf-8"
     )
-
     for snakefile in SNAKEFILES:
         count, out = _scheduled_count(snakefile, cfg_path, target)
         assert count == 1, (
@@ -160,18 +168,3 @@ def test_catalog_edit_schedules_extraction_exactly_once(staged_store):
             "still schedules the producer after the store was remade — the "
             "cross-DAG oscillation is back",
         )
-
-
-@pytest.mark.slow
-def test_alternating_workflows_never_reextract(staged_store):
-    """wf1 -> wf3 -> wf1 -> wf3 on an unchanged store schedules nothing.
-
-    This is the ext1-02 regression check in its most direct form: the two
-    declarations carry identical singleton input sets and identical params, so
-    no rerun trigger has anything to fire on in either direction.
-    """
-    cfg_path, _catalog, target = staged_store
-    _seed_provenance(cfg_path, target)
-
-    for snakefile in SNAKEFILES * 2:
-        _assert_clean(snakefile, cfg_path, target, "re-scheduled the producer")

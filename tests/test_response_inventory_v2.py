@@ -174,3 +174,100 @@ def test_per_run_temporal_difference_refuses_publication(v2):
     with pytest.raises(MissingResponseRequirement, match="inconsistent temporal"):
         publish_response_inventory_v2(root, native_runs, temporal)
     assert not (root / "_engine/response_inventory.json").exists()
+
+
+# --- ported from the retired v1 inventory tests (t2610041227) ----------------
+
+
+def _all_runs(native_runs, payload):
+    for artifacts in native_runs.values():
+        artifacts.temporal_path.write_bytes(canonical_json_bytes(payload))
+
+
+def test_publication_is_self_contained_and_reuse_rewrites_nothing(v2):
+    root, native_runs, temporal = v2
+    inventory = publish_response_inventory_v2(root, native_runs, temporal)
+    assert [item["location_id"] for item in inventory["series"]] == ["9", "9"]
+    before = {
+        p: (p.read_bytes(), p.stat().st_mtime_ns)
+        for p in root.rglob("*")
+        if p.is_file()
+    }
+    assert read_response_inventory_v2(root) == inventory
+    assert publish_response_inventory_v2(root, native_runs, temporal) == inventory
+    assert before == {
+        p: (p.read_bytes(), p.stat().st_mtime_ns)
+        for p in root.rglob("*")
+        if p.is_file()
+    }
+
+
+@pytest.mark.parametrize(
+    "native",
+    [
+        b"time,Q_9,Q_2\n2046-01-02,1,2\n2046-01-03,4,\n",
+        b"time,Q_9,Q_2,gwr_3\n2046-01-02,1,2,3\n2046-01-03,4,,6\n",
+    ],
+    ids=["missing", "unexpected"],
+)
+def test_a_missing_or_unexpected_series_refuses_publication(v2, native):
+    root, native_runs, temporal = v2
+    native_runs[FIRST].csv_path.write_bytes(native)
+    # MissingResponseRequirement is itself a ValueError; the native reader
+    # refuses a missing column before the inventory's own key check runs.
+    with pytest.raises(ValueError):
+        publish_response_inventory_v2(root, native_runs, temporal)
+    assert not (root / "_engine/response_inventory.json").exists()
+
+
+@pytest.mark.parametrize("artifact", ["csv_path", "toml_path"])
+def test_a_changed_native_artifact_refuses_reopening(v2, artifact):
+    root, native_runs, temporal = v2
+    publish_response_inventory_v2(root, native_runs, temporal)
+    path = getattr(native_runs[FIRST], artifact)
+    path.write_bytes(path.read_bytes() + b"\n")
+    with pytest.raises((MissingResponseRequirement, ValueError)):
+        read_response_inventory_v2(root)
+
+
+def test_a_temporal_chain_off_the_native_clock_refuses_publication(v2):
+    root, native_runs, temporal = v2
+    temporal["response_start"] = "2046-01-01 00:00:00"
+    _all_runs(native_runs, temporal)
+    with pytest.raises(MissingResponseRequirement, match="clock"):
+        publish_response_inventory_v2(root, native_runs, temporal)
+
+
+@pytest.mark.parametrize("conversion", ["cftime_to_datetime64", None])
+def test_a_calendar_conversion_must_be_recorded(v2, conversion):
+    root, native_runs, temporal = v2
+    temporal["source_calendar"] = "noleap"
+    if conversion is not None:
+        temporal["operations"] = [conversion, *temporal["operations"]]
+    _all_runs(native_runs, temporal)
+    if conversion is None:
+        with pytest.raises(
+            MissingResponseRequirement, match="temporal preparation chain"
+        ):
+            publish_response_inventory_v2(root, native_runs, temporal)
+    else:
+        publish_response_inventory_v2(root, native_runs, temporal)
+        assert read_response_inventory_v2(root)["temporal_preparation"] == temporal
+
+
+def test_a_corrupt_inventory_digest_refuses_before_native_open(v2, monkeypatch):
+    root, native_runs, temporal = v2
+    inventory = publish_response_inventory_v2(root, native_runs, temporal)
+    inventory["series"][0]["units"] = "wrong"
+    (root / "_engine/response_inventory.json").write_bytes(
+        canonical_json_bytes(inventory)
+    )
+
+    def forbidden(*args, **kwargs):
+        pytest.fail("native reader called before inventory digest validation")
+
+    monkeypatch.setattr(
+        "blueearth_cst.experiment.response_inventory.open_responses", forbidden
+    )
+    with pytest.raises(MissingResponseRequirement):
+        read_response_inventory_v2(root)

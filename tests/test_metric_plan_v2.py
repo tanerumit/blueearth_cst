@@ -383,3 +383,18 @@ def test_q_bundles_and_class_c_use_exact_units_and_shared_reference(
     assert fitted == {"3", "4"}
     lookup = read_canonical_json(_engine(root, plan) / "metrics.json")["run_groups"]
     assert lookup == plan["units"]
+
+
+def test_a_pre_release_v1_experiment_is_refused_by_name(tmp_path):
+    """No release wrote v1 records; one is named as such, not read as missing."""
+    from blueearth_cst.experiment.simulation_record import (
+        MetricsOnlySimulationUnavailable,
+    )
+
+    root = tmp_path / "project/experiments/old_experiment"
+    (root / "config").mkdir(parents=True)
+    (root / "config/simulation.json").write_bytes(b"{}\n")
+    with pytest.raises(MetricsOnlySimulationUnavailable, match="pre-release v1"):
+        current_metric_request(root, ["gwr"], "YS-JAN")
+    with pytest.raises(MetricsOnlySimulationUnavailable, match="pre-release v1"):
+        build_metric_plan(root, {})

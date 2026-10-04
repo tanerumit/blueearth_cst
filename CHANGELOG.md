@@ -11,10 +11,15 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ### Breaking
 
-- Every metric-set id changes. Metric identity hashes the metric-planning
-  code, and that code lost its pre-release v1 branches. Existing metric sets
-  stay readable. A metrics-only re-run publishes a new set with identical
-  values instead of reusing the old one.
+- Scenario-collection, simulation and metric-set ids all change. Each identity
+  hashes the repository code its stage imports, and removing the pre-release v1
+  records edited shared modules on all three paths. The climate-store identity
+  does not change. Existing collections, experiments and metric sets stay
+  readable, but none is reused by a fresh run:
+  - WF3 generates a new collection instead of reusing the retained one.
+  - Re-simulating an existing experiment is refused; use a new experiment name.
+  - A metrics-only run over a retained experiment publishes a new metric set
+    with identical values.
 
 ### Removed
 

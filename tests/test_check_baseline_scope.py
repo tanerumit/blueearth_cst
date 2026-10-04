@@ -44,7 +44,7 @@ def _write_metric_plan_fixture(project_dir):
     request_id = content_sha256(request)
     set_id = "a" * 64
     plan = {
-        "schema_version": "metric-request/1",
+        "schema_version": "metric-request/2",
         "request": request,
         "metric_request_id": request_id,
         "metric_set_id": set_id,
@@ -60,14 +60,15 @@ def _write_metric_plan_fixture(project_dir):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_bytes(canonical_json_bytes(plan))
     marker = {
-        "schema_version": "metric-set/1",
+        "schema_version": "metric-set/2",
         "status": "ready",
         "metric_set_id": set_id,
         "response_inventory": {"sha256": "b" * 64},
     }
     marker["metrics_manifest_sha256"] = content_sha256(marker)
     target = (
-        root
+        root.parent
+        / "_engine"
         / "metric_sets"
         / identity_segment(set_id, "metric_set_id")
         / "metrics.json"
@@ -116,7 +117,10 @@ def test_baseline_metric_plan_refuses_legacy_fallback_and_ambiguity(tmp_path):
     with pytest.raises(ValueError, match="exactly one retained metric plan"):
         cb.resolve_metric_set_dir(str(tmp_path))
     plan, marker = _write_metric_plan_fixture(str(tmp_path))
-    assert cb.resolve_metric_set_dir(str(tmp_path)) == marker.parent.as_posix()
+    # The marker is in the engine bin; the gate compares the paired tables.
+    experiment = marker.parents[3]
+    tables = experiment / "results" / "metric_sets" / marker.parent.name
+    assert cb.resolve_metric_set_dir(str(tmp_path)) == tables.as_posix()
     another = plan.parent / ("c" * 12 + ".json")
     another.write_bytes(plan.read_bytes())
     with pytest.raises(ValueError, match="found 2"):

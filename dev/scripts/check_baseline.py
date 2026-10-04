@@ -563,11 +563,11 @@ def resolve_metric_set_dir(project_dir: str) -> str:
             "select a dedicated baseline fixture (legacy tables are not a successor baseline)"
         )
     plan = read_canonical_json(plans[0])
-    # /2 is the successor-metrics layout: same identity digests, but the ready
-    # marker moved under `_engine/metric_sets/`, beside the tables it certifies.
-    v2 = plan.get("schema_version") == "metric-request/2"
+    # The v2 layout: the ready marker sits under `_engine/metric_sets/`, the
+    # tables it certifies under `results/metric_sets/`. The pre-release /1
+    # layout is not read (t2610041227); no release wrote it.
     if (
-        plan.get("schema_version") not in ("metric-request/1", "metric-request/2")
+        plan.get("schema_version") != "metric-request/2"
         or content_sha256(
             {key: value for key, value in plan.items() if key != "request_sha256"}
         )
@@ -586,10 +586,11 @@ def resolve_metric_set_dir(project_dir: str) -> str:
         raise ValueError("baseline metric set id is not canonical SHA-256")
     segment = identity_segment(identity, "metric_set_id")
     destination = experiment / "results/metric_sets" / segment
-    marker_dir = experiment / "_engine/metric_sets" / segment if v2 else destination
-    marker = read_canonical_json(marker_dir / "metrics.json")
+    marker = read_canonical_json(
+        experiment / "_engine/metric_sets" / segment / "metrics.json"
+    )
     if (
-        marker.get("schema_version") != ("metric-set/2" if v2 else "metric-set/1")
+        marker.get("schema_version") != "metric-set/2"
         or marker.get("status") != "ready"
         or marker.get("metric_set_id") != identity
         or content_sha256(

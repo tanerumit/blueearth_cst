@@ -325,15 +325,20 @@ EXTRA_DROP_VARIABLES = ("time_bounds", "lat_bounds", "lon_bounds")
 def with_read_overrides(entry_spec):
     """A copy of ``entry_spec`` carrying the read settings the catalog lacks.
 
-    Two of them, both narrow and both about what the driver hands back rather
-    than about which store is read:
+    Three of them, all narrow and none about which store is read:
 
     * ``driver.options.preprocess`` becomes :data:`WIDE_TIME_PREPROCESS`, so a
       time axis running past 2262 can be decoded at all
       (:func:`harmonise_dims_wide_time`);
     * ``driver.options.drop_variables`` gains :data:`EXTRA_DROP_VARIABLES`,
       so a bounds variable the catalog did not know to name cannot break the
-      merge of two variables read from separate stores.
+      merge of two variables read from separate stores;
+    * a ``gcs`` filesystem with no token reads ANONYMOUSLY, as the public
+      CMIP6 bucket allows. With no token, gcsfs first searches for Google
+      credentials and, off Google Cloud, sleeps through the Compute Engine
+      metadata server's retry backoff (~19 s, measured 2026-10-04) before
+      falling back to anonymous -- once per fetch process, so once per series.
+      A catalog that names a token keeps it.
 
     Overridden on the SPEC rather than in the catalog because
     ``config/catalogs/cmip6_data.yml`` is generated and has no offline mode:
@@ -355,8 +360,23 @@ def with_read_overrides(entry_spec):
     dropped += [name for name in EXTRA_DROP_VARIABLES if name not in dropped]
     options["drop_variables"] = dropped
     driver["options"] = options
+    if "filesystem" in driver:
+        driver["filesystem"] = _anonymous_gcs(driver["filesystem"])
     spec["driver"] = driver
     return spec
+
+
+def _anonymous_gcs(filesystem):
+    """hydromt's flat filesystem dict for anonymous gcs, or ``filesystem`` as is.
+
+    hydromt reads every key but ``protocol`` as a storage option, so the token
+    sits beside it, not under a ``storage_options`` key (which gcsfs ignores).
+    """
+    if filesystem == "gcs":
+        return {"protocol": "gcs", "token": "anon"}
+    if isinstance(filesystem, dict) and filesystem.get("protocol") == "gcs":
+        return {"token": "anon", **filesystem}
+    return filesystem
 
 
 def pin_tail(template_uri, pin_uri):

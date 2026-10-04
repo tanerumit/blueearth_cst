@@ -772,6 +772,26 @@ def test_a_spec_missing_the_driver_levels_still_gets_the_preprocess(entry):
     assert spec["driver"]["options"]["preprocess"] == WIDE_TIME_PREPROCESS
 
 
+@pytest.mark.parametrize(
+    "declared, expected",
+    [
+        ("gcs", {"protocol": "gcs", "token": "anon"}),
+        ({"protocol": "gcs"}, {"protocol": "gcs", "token": "anon"}),
+        ({"protocol": "gcs", "token": "cloud"}, {"protocol": "gcs", "token": "cloud"}),
+        ("file", "file"),
+        (None, None),
+    ],
+)
+def test_a_tokenless_gcs_filesystem_reads_anonymously(declared, expected):
+    """No credential search for the public bucket; a declared token is kept."""
+    entry = {"uri": "gs://cmip6/x", "driver": {"name": "raster_xarray"}}
+    if declared is not None:
+        entry["driver"]["filesystem"] = declared
+    spec = with_read_overrides(entry)
+    assert spec["driver"].get("filesystem") == expected
+    assert entry["driver"].get("filesystem") == declared, "catalog entry mutated"
+
+
 def test_from_dict_honours_the_override_and_still_expands_the_member():
     """The whole fix rests on this, and one xfail in the suite invites doubt.
 
@@ -790,10 +810,9 @@ def test_from_dict_honours_the_override_and_still_expands_the_member():
         "driver": {
             "name": "raster_xarray",
             "options": {"preprocess": "harmonise_dims", "consolidated": True},
-            # Anonymous: with no token gcsfs searches for Google credentials and
-            # sleeps through a metadata-server backoff (~19 s) before falling
-            # back to anonymous, which this read-path check never needed.
-            "filesystem": {"protocol": "gcs", "token": "anon"},
+            # The catalog's own shape: `with_read_overrides` makes it anonymous,
+            # so this case also pins that no credential search is paid (~19 s).
+            "filesystem": "gcs",
         },
         "metadata": {"crs": 4326},
         "placeholders": {"member": ["r1i1p1f1"]},

@@ -19,11 +19,12 @@ updated: 2026-10-04
 ## Progress
 
 - [x] Preliminary assessment and owner rulings — tiers, cost shares and rulings in the backing document.
-- [x] Retire never-running and one-off tests — 27 R12 prototype cases, the R9 log-attribution falsifier, the HM-6b stub (`e0ae830b`).
-- [x] Build a real retained v2 experiment and move the metric, carrier, inventory and R12 checkpoint tests onto it (`8aced8a0`, `ec381eca`, `74792797`).
-- [x] Retire the v1 records with their tests and re-record the baseline metric set (`a8311a0a`, `fd1324c1`, `5dbd1381`, `b5d36810`); open a PR for the batch.
-- [ ] Retire the migration-era guards per the rulings: the migrator with its tests and guide, the equivalence test, two R14 sweeps, the gridded-key guard.
-- [ ] Cut runtime in the freshness, carrier and climate-figure files; settle the deselect marker; schedule a regular integration run.
+- [x] Retire never-running and one-off tests — 27 R12 prototype cases, the R9 log-attribution falsifier, the HM-6b stub (`960bef79` on `chore/test-trimming`).
+- [x] Build a real retained v2 experiment and move the metric, carrier, inventory and R12 checkpoint tests onto it (`178d09f8`, `7fb676c9`, `416c68cb`).
+- [x] Retire the v1 records with their tests; re-record the baseline metric set (`47963863`, `c073e9b3`, `546339c3`, `f5b77fc8`, `83749402`).
+- [ ] Open the PR for the batch, read both CI legs, land; then repeat the metrics-only re-record in every other worktree's `test_local`.
+- [ ] Run a full baseline (WF3+WF4) and re-record: the collection and simulation ids moved too.
+- [ ] Retire the migration-era guards per the rulings; cut runtime in the freshness, carrier and climate-figure files; schedule a regular integration run.
 
 ## Refs
 

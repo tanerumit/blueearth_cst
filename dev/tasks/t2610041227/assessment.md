@@ -156,6 +156,14 @@ readable; a metrics-only re-run publishes a new set). Re-record the baseline
 from a metrics-only run on `test_local` (values must be identical; only the
 set id moves) and note the id change in the CHANGELOG.
 
+**Identity scope, measured and ruled (owner, 2026-10-04): accept all moves.**
+`repository_code_inventory` follows static imports, so the shared-module edits
+moved the WF3 collection and WF4 simulation identities as well as the metric
+set; only the climate store is unchanged. Existing collections and experiments
+stay readable but are not reused: WF3 regenerates, and re-simulating an
+existing experiment needs a new name. The standing baseline needs a full
+WF3+WF4 re-run and re-record.
+
 Sequence: (1) a real retained-v2-experiment fixture plus v2 end-to-end metric
 tests; (2) port the `metric_plan`, carrier and R12 checkpoint tests onto it;
 (3) remove the v1 branches and modules with their tests. Open a PR for the
@@ -221,3 +229,8 @@ Also stale before this work: the source notebook
 `docs/notebooks/Climate Stress Test.ipynb` reads the v1 experiment layout
 (`config/simulation.json`, `scenario_table.csv`, `stress_test_lookup.csv`),
 which v0.3.0 already does not write.
+
+The site guides `docs/site/guide/outputs.qmd` and
+`docs/site/scientific-approach/conventions-and-interpretation.qmd` still
+describe the metric-set/1 vocabulary (`unit_index.csv`, `unit_id`); v0.3.0
+writes `metric_run_lookup.csv` and `run_group_id`.

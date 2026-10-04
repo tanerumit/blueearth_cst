@@ -19,7 +19,7 @@ updated: 2026-10-04
 ## Progress
 
 - [x] Preliminary assessment — tiers, measured cost shares and owner rulings in the backing document.
-- [ ] Rule on the four migration-era guards (assessment Tier 3).
+- [x] Rule on the four migration-era guards — retire equivalence test, two of three R14 sweeps, the migrator and the gridded-key guard; consequences listed in the assessment.
 - [ ] Schedule a regular integration run before any retirement that leans on end-to-end coverage.
 - [ ] Retire never-running and one-off tests; port the two R12 checkpoint cases to production Snakefiles first.
 - [ ] Confirm the v1 writers and legacy WF3 modules are unreachable, then move shared fixtures onto v2 producers.

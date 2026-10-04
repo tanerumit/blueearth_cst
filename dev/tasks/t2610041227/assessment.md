@@ -109,6 +109,35 @@ unmarked 45 s-class `test_collection_preparation::test_planned_publication_acros
 4. `test_gridded_outputs_removed` — August's watch-item; decide whether the
    removed `save_grids` key can still plausibly appear in a user config.
 
+### Rulings (owner, 2026-10-04)
+
+| Item | Ruling |
+|---|---|
+| 1. `test_v1_v2_equivalence.py` + `tests/data/v1_split/` | Retire. |
+| 2. R14 sweeps | Keep `test_unread_config_key_sweep` (+ `test_sweep_common`); retire `test_identity_rename_sweep` and `test_stale_spelling_sweep` with their `dev/scripts/` tools. |
+| 3. Migrator | Retire in this trim — against the keep-for-now recommendation. |
+| 4. `test_gridded_outputs_removed` | Retire now, with its refusal code path. |
+
+Consequences of rulings 3 and 4 that the implementation must carry:
+
+- Removing `scripts/migrate_project_config.py` removes a shipped, documented
+  CLI, so classify the release per `dev/reference/versioning.md` and add a
+  CHANGELOG entry pointing v1 users at `v0.3.0` to migrate.
+- Retire with it: `config/migrations/v1_to_v2.yml`, `test_migrate_project_config`,
+  `test_migration_mapping`, `docs/site/guide/migrating-project-config.qmd`
+  (and its README / CHANGELOG / site links), and the `ruamel.yaml` dependency
+  that `pixi.toml` marks as migrator-only — regenerate `pixi.lock` with pixi,
+  never by hand.
+- Repoint the refusal messages that name the migrator
+  (`scripts/run_workflows.py`, `blueearth_cst/experiment/simulation_runner.py`,
+  `blueearth_cst/shared/config_composition.py`) to the `v0.3.0` route.
+- Ruling 4: remove `blueearth_cst/projections/gridded_outputs.py` and its call
+  in `analyze_projections.smk`; a `save_grids` / `save_gridded` key then falls
+  to the generic unknown-key handling — confirm that path refuses or warns
+  rather than silently ignoring it.
+- Grep each retired spelling repo-wide and fix live references in the same
+  commit (AGENTS.md convention); `dev/records/` stays unedited.
+
 ## Tier 4 — cut runtime without deleting coverage
 
 1. `test_climate_store_freshness` (about 15% of total) guards cross-workflow

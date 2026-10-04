@@ -102,6 +102,7 @@ A task branch is isolated from `main` and cheap to revert, so spend validation t
 | **Before pushing to `origin`** | `pixi run test-fast` — the local gate. CI runs the whole suite on both platforms from the push, so running `test-full` here mostly re-proves what CI is about to check anyway, at roughly ten times the wall-clock. |
 | **After a push** | **Read the run it triggered.** This is what makes the line above safe, and a green local suite is no evidence about the ubuntu leg. |
 | Before merging a batch that touched `shared/` or a `script:` signature, or before a milestone seal | `pixi run test-full` — the `workflow_contract` and `process_isolation` tiers, which are the ones you would rather not first meet on two platforms at once. |
+| Before merging a batch that changed what a workflow RUNS (a rule, a `script:` module's behaviour, a runner), before a release, and before a milestone seal | `pixi run test-e2e` — all five workflows through `scripts/run_workflows.py` from a fresh root. Local only: CI has no data mirror, Julia or weathergenr. A skip is not a pass; read its reason. |
 | Before a milestone seal / after touching numeric outputs | `check_baseline.py check`, plus `semantic_tree_diff.py` if the tree shape moved. |
 
 **Redirect a gate to a FILE; never pipe it through `tail`** — a pipe discards the diagnosis of an intermittent failure while still printing the pass/fail line, so the run looks informative and is not. Write `pixi run test-contract > run.log 2>&1` and read the tail of the file.

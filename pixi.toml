@@ -151,10 +151,13 @@ install-julia = { cmd = "julia +1.11.7 --project=. -e 'using Pkg; Pkg.instantiat
 install       = { depends-on = ["install-rdeps", "install-julia"], description = "Install weathergenr + instantiate Julia env on top of pixi install" }
 
 # Pytest tiers. The unfiltered task remains the authoritative default suite;
-# integration-marked end-to-end runs stay opt-in via --run-integration.
+# integration-marked end-to-end runs stay opt-in via --run-integration, and
+# test-e2e is that opt-in (local only: it needs the data mirror, Julia,
+# weathergenr and network; the validation ladder says when to run it).
 test-fast = { cmd = "pytest tests/ -m \"not workflow_contract and not process_isolation\" -n auto --dist loadfile", description = "Run the fast non-integration suite in parallel; loadfile keeps a file's tests on one worker" }
 test-contract = { cmd = "pytest tests/ -m \"workflow_contract or process_isolation\"", description = "Run the expensive workflow and fresh-process contract tier" }
 test-full = { cmd = "pytest tests/", description = "Run the authoritative full non-integration suite" }
+test-e2e = { cmd = "pytest tests/ -m integration --run-integration -rs", description = "Run all five workflows end to end through scripts/run_workflows.py in a fresh temporary project root (rapid config; needs the data mirror, Julia, weathergenr and network; tens of minutes)" }
 
 # Editor-facing tasks. These exist so an IDE task file stays a one-line
 # `pixi run <name>` shim instead of duplicating the command: every editor's task

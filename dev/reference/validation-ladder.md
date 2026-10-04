@@ -23,6 +23,25 @@ State gate costs as orders of magnitude, never in seconds. The marker names and 
 
 `.testing-policy.yml` pins `scope: rapid`, and `auto_push: false` keeps the push a deliberate decision.
 
+## The end-to-end run (`test-e2e`)
+
+`pixi run test-e2e` is the only check that runs the workflows for real: all five,
+through `scripts/run_workflows.py`, on the rapid config, in a fresh temporary
+project root. It needs what CI cannot provide (the data mirror, juliaup Julia,
+`weathergenr`, network for WF2), so it is a local gate, and the ladder in
+`AGENTS.md` says when it is owed: a batch that changes what a workflow runs, a
+release, a milestone seal.
+
+It writes nowhere under `test_case/`, so it cannot disturb the baseline tree, and
+nothing an earlier run left behind can make it pass. It skips by name when a
+prerequisite is missing; a skip is no evidence, so read the reason (`-rs` is on).
+
+Until 2026-10-04 (t2610041227) this layer was three per-workflow smoke tests
+behind the same flag, and nothing scheduled them, so they drifted until none
+could test anything: two pointed at pre-R9 paths, one force-rebuilt the standing
+baseline tree, and one drove WF3 with bare Snakemake. An opt-in test with no
+trigger decays silently; the ladder row is its trigger.
+
 ## Which config to run
 
 Default to `project_config_rapid.yml`. Reach for `project_config_baseline.yml` only when the run's numbers are the point.

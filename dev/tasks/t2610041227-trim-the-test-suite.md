@@ -21,7 +21,8 @@ updated: 2026-10-04
 - [x] Preliminary assessment — tiers, measured cost shares and owner rulings in the backing document.
 - [x] Rule on the four migration-era guards — retire equivalence test, two of three R14 sweeps, the migrator and the gridded-key guard; consequences listed in the assessment.
 - [ ] Schedule a regular integration run before any retirement that leans on end-to-end coverage.
-- [ ] Retire never-running and one-off tests; port the two R12 checkpoint cases to production Snakefiles first.
+- [x] Retire never-running and one-off tests — 27 R12 prototype cases, the R9 log-attribution falsifier and the HM-6b stub (`e0ae830b` on `chore/test-trimming`).
+- [ ] Port the two kept R12 checkpoint cases to `simulate_system.smk` once a retained v2 experiment fixture exists, then delete `test_r12_wf3_feasibility.py`.
 - [ ] Confirm the v1 writers and legacy WF3 modules are unreachable, then move shared fixtures onto v2 producers.
 - [ ] Retire the v1 code with its tests.
 - [ ] Cut runtime in the freshness, metric-plan, carrier and climate-figure files; settle the deselect marker.

@@ -225,6 +225,45 @@ non-goal:
 4. The v2 manifest does not retain the per-unit return-level evidence the v1
    manifest carried; `reduce_metric_plan`'s evidence is discarded.
 
+**Ruled 2026-10-04 (owner).** v2 already validates tables against the
+expected keys before writing, and at read time checks every file's SHA-256
+and the manifest digest, so accidental corruption is caught. Gaps 1, 2 and 3
+add protection only against a consistent forgery, or, for 3, against an
+on-disk change after the code that computed the values was loaded:
+
+| Gap | Ruling |
+|---|---|
+| 1. Row-vs-expected-key check on read | Non-goal: forgery-only. |
+| 2a. Extra, unlisted tables accepted | Non-goal: forgery-only. |
+| 2b. Renamed engine marker accepted | **Fix**: require `metrics.json`. A one-line check, bundled with 4. |
+| 3. No late live-environment re-check | Non-goal: a late on-disk change does not alter loaded code, so it would refuse correct results. |
+| 4. Return-level evidence discarded | **Fix**: retain it as a SHA-referenced engine artifact (block counts, fitted GEV parameters, fit and shape coverage, policies), verified on read, and tolerated as absent in sets published before the fix. |
+
+4 and 2b ship as one batch before the next release. `metric_plan.py` is
+code-inventoried, so the metric-set id moves once; re-record with a
+metrics-only run.
+
+## Outcomes since the v1 retirement (2026-10-04)
+
+- **Tier 3** (landed `70fc6173`): the R14 stale-spelling and identity-rename
+  sweeps, the v1 -> v2 equivalence test and the migrator are retired; the
+  loader's refusals point at `v0.3.0`. The `save_grids` guard is **kept**,
+  reversing that ruling: without it the loader silently accepts
+  `save_gridded: true` (verified), so the ruling's precondition failed.
+- **Tier 4** (landed `29c1ebcf`): freshness checks merged (142 s -> 100 s),
+  the carrier matrix planned once per module (~97 s -> 47 s), the tamper tests
+  share one published set (79 s -> 45 s), and the label-only `slow` marker is
+  retired in favour of the contract tiers.
+- **Integration run** (`1b9389a8`): one end-to-end test of all five workflows
+  through `scripts/run_workflows.py` from a fresh root, `pixi run test-e2e`,
+  and a ladder row saying when it is owed.
+- **Slow unit tests**: both spent ~19 s in gcsfs credential discovery.
+  `fetch_gcm_raw.with_read_overrides` now reads the public CMIP6 bucket
+  anonymously, which also removes ~19 s per series from every WF2 fetch
+  process.
+- **Relocation defect**: copying `test_local` between worktrees fails at WF3
+  (board task t2610042152).
+
 Also stale before this work: the source notebook
 `docs/notebooks/Climate Stress Test.ipynb` reads the v1 experiment layout
 (`config/simulation.json`, `scenario_table.csv`, `stress_test_lookup.csv`),

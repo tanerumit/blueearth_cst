@@ -30,8 +30,6 @@ both legs, so an import-time error fails the suite.
 
 | Script | What it finds |
 |---|---|
-| [`sweep_stale_spellings.py`](sweep_stale_spellings.py) | Retired config spellings still live somewhere. |
-| [`sweep_identity_renames.py`](sweep_identity_renames.py) | Rename records whose two sides became identical (`X -> X`). |
 | [`sweep_unread_config_keys.py`](sweep_unread_config_keys.py) | Declared config keys no reader reads. |
 | [`scan_console_encoding.py`](scan_console_encoding.py) | Non-ASCII in strings that reach a console (cp1252). |
 

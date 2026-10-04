@@ -1,7 +1,7 @@
-"""`dev/scripts/sweep_common.py` — the contract three sweeps share.
+"""`dev/scripts/sweep_common.py` — the contract the repository sweeps share.
 
-`sweep_stale_spellings`, `sweep_identity_renames` and `sweep_unread_config_keys`
-all import `Allowance`, `classify`, `Floor` and `check_floors` from here, and
+`sweep_unread_config_keys` imports `Allowance`, `classify`, `Floor` and
+`check_floors` from here, and
 `dev/scripts/` libraries are contract surfaces with test consumers: an import
 error or a behaviour change here fails CI on a bare checkout, on both legs.
 

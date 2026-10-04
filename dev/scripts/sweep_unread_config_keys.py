@@ -16,8 +16,8 @@ keep, and it is invisible: the run succeeds and the setting changes nothing.
 that no template documents. The seeds are declared too, so their keys also need
 a reader; a seed-only key additionally needs a template that names it.
 
-**Why it is not `sweep_stale_spellings`.** That sweep asks whether a spelling is
-DEAD, from the loader's retired-key table. This asks whether a LIVE key has a
+**Why it was not `sweep_stale_spellings`** (retired with R14's campaign). That
+sweep asked whether a spelling is DEAD, from the loader's retired-key table. This asks whether a LIVE key has a
 consumer, and its two sides are built from different places entirely.
 
 **Fail-closed** (`D-14.5`, and the reason this note exists at all). R14's own

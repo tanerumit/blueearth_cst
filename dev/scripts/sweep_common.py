@@ -5,10 +5,10 @@ and **fails closed**: a hit that matches no declared class is a defect, and a
 sweep that cannot see its own subject matter refuses to report rather than
 reporting nothing (D-14.4, D-14.5).
 
-Extracted from `sweep_stale_spellings.py` when the second sweep arrived, so the
-two cannot drift on what an allowance is, which directories are out of scope, or
-what a clean run means. `C-37` is the third caller and this file is its contract
-too — add here only what more than one sweep needs.
+Extracted when R14 had several sweeps, so they could not drift on what an
+allowance is, which directories are out of scope, or what a clean run means.
+`sweep_unread_config_keys.py` (`C-37`) is the remaining caller; the R14
+stale-spelling and identity-rename sweeps were retired (t2610041227).
 
 The three pieces:
 

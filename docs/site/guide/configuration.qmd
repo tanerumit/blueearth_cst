@@ -219,4 +219,5 @@ experiment keeps the inputs that produced its results.
 - [Reading the outputs](outputs.qmd) — what the run wrote, and whether it is
   still current.
 
-For older project files, follow [Migrating an older project config](migrating-project-config.qmd).
+An older (pre-R14) project file is migrated with `scripts/migrate_project_config.py`
+from toolbox release `v0.3.0`, which also carries its guide.

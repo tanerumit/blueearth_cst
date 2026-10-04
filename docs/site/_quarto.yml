@@ -61,7 +61,6 @@ website:
           contents:
             - guide/quick-start.qmd
             - guide/configuration.qmd
-            - guide/migrating-project-config.qmd
         - section: "Running and results"
           contents:
             - guide/running.qmd

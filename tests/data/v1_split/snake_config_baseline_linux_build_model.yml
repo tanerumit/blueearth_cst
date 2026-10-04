@@ -1,3 +1,0 @@
-# Optional observed-discharge series. Gauge/control points live at
-# shared.basin.gauge_points; schemas: config/templates/.
-observations_timeseries: null

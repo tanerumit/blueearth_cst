@@ -191,9 +191,9 @@ unchanged.
 Generation owns realization count, simulation window, perturbations, generator
 settings, seed and unit capacity. Simulation owns `experiment_name`, the required
 `operation`, optional `scenario_collection: {manifest_path: ...}`, compute controls
-and metric selection. Existing seeds are preserved by
-`scripts/migrate_project_config.py`; new `auto` seeds are independent of experiment
-names and identifier capacity. See [configuration migration](docs/site/guide/migrating-project-config.qmd).
+and metric selection. New `auto` seeds are independent of experiment names and
+identifier capacity. An older (pre-R14) project config is migrated with
+`scripts/migrate_project_config.py` from release `v0.3.0`, the last that ships it.
 
 ### Commands
 

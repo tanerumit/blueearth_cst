@@ -15,5 +15,5 @@ For current commands and file layouts, use the guide and toolbox reference.
 The external guides describe their own tools; the 2025 note records the original
 method and platform design rather than the current workflow contract.
 Historical migration guides live with their relevant milestone records under
-[`dev/records/milestones/`](../dev/records/milestones/); the current migration
-command is documented in the [site guide](site/guide/migrating-project-config.qmd).
+[`dev/records/milestones/`](../dev/records/milestones/); the v1 -> v2 project-config
+migrator and its guide ship in release `v0.3.0`, the last that carries them.

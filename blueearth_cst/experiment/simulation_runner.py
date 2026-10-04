@@ -16,7 +16,8 @@ def simulation_settings(config_path):
     if "run_stress_test" in workflows:
         raise ValueError(
             "run_stress_test is retired; migrate to generate_scenarios and "
-            "simulate_system with scripts/migrate_project_config.py"
+            "simulate_system with scripts/migrate_project_config.py from "
+            "toolbox v0.3.0"
         )
     stanza = workflows.get("simulate_system", {})
     if set(stanza) != {"enabled", "config_path"} or not isinstance(

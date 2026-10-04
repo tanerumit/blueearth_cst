@@ -23,6 +23,10 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ### Removed
 
+- The v1 -> v2 project-config migrator (`scripts/migrate_project_config.py`),
+  its mapping (`config/migrations/v1_to_v2.yml`) and its guide. Migrate a
+  pre-R14 project config with release `v0.3.0`, which still ships all three; the
+  loader's refusals now say so. `ruamel.yaml` is no longer a declared dependency.
 - Support for the pre-release v1 records: the `config/simulation.json`
   simulation record, the v1 response inventory, `scenario-collection/1`, and
   `metric-set/1`. No release wrote them; they existed only between 2026-09-11

@@ -189,7 +189,7 @@ def _enabled_flags(cfg: Mapping[str, Any], config_path: str) -> dict[str, bool]:
         raise ConfigError(f"{config_path}: 'workflows:' is not a mapping")
     if "run_stress_test" in workflows:
         raise ConfigError(
-            "run_stress_test is retired; migrate to generate_scenarios and simulate_system with scripts/migrate_project_config.py"
+            "run_stress_test is retired; migrate to generate_scenarios and simulate_system with scripts/migrate_project_config.py from toolbox v0.3.0"
         )
     unknown = set(workflows) - set(WORKFLOW_ORDER)
     if unknown:

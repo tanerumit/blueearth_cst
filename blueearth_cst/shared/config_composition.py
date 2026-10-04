@@ -81,8 +81,12 @@ if TYPE_CHECKING:
 # Contract constants
 # ---------------------------------------------------------------------------
 
-#: The user-facing migration guide, named by every refusal this module raises.
-#: R13's `dev/records/milestones/r13/migration-config-tiers.md` is superseded by it and says so.
+#: The release that still ships the v1 -> v2 migrator and its guide. Both were
+#: retired from the toolbox after it (t2610041227), so every refusal below sends
+#: a user to that release rather than to a path this checkout no longer has.
+MIGRATION_RELEASE = "v0.3.0"
+
+#: The user-facing migration guide, as it exists in `MIGRATION_RELEASE`.
 MIGRATION_DOC = "docs/site/guide/migrating-project-config.qmd"
 
 #: The project config shape this loader accepts (R14 D-11.1). A document with no
@@ -92,12 +96,8 @@ MIGRATION_DOC = "docs/site/guide/migrating-project-config.qmd"
 #: different numbers.
 SCHEMA_VERSION: int = 2
 
-#: The migration TOOL every refusal points a user at. Pinned here, once, as a
-#: cross-phase contract (R14 Gate A): R13's `scripts/split_project_config.py`
-#: retired with the v1 shape it emitted, and the refusals below must name the
-#: command that replaces it. P1 writes the name and P3 ships the script; if the
-#: two disagree, every refusal in the tree names a path that does not exist and
-#: no gate catches it, because these tests assert the string this module chose.
+#: The migration TOOL every refusal points a user at, as it exists in
+#: `MIGRATION_RELEASE`. Named once so the refusals cannot disagree on it.
 MIGRATION_COMMAND = "scripts/migrate_project_config.py"
 
 #: **T1's shape, declared ONCE** — section name -> the leaf names that section
@@ -236,11 +236,9 @@ SHARED_SEAM_KEYS: frozenset[str] = frozenset(T1_SHARED_SECTIONS) | frozenset(
 #: `scripts/split_project_config.py`'s emission and round-trip normalization,
 #: both retired with that tool (R14 Gate A). The destination it records --
 #: `shared.wflow_outvars` -- is itself a v1 spelling that R14 `C-19` moves to
-#: `model.outvars`. It is KEPT rather than deleted because R14 P3 ships
-#: `config/migrations/v1_to_v2.yml` and this is plausibly one of its inputs:
-#: it is the one machine-readable record of where a key was before the move,
-#: which is exactly what a v1 -> v2 rewriter needs. **P3 owns the decision** to
-#: absorb it into that mapping or retire it; do not delete it here.
+#: `model.outvars`. The v1 -> v2 mapping that absorbed it,
+#: `config/migrations/v1_to_v2.yml`, shipped with the rewriter through
+#: `MIGRATION_RELEASE`; this entry stays as the loader's own record of the move.
 RELOCATED_KEYS: dict[tuple[str, ...], tuple[str, ...]] = {
     ("workflows", "build_model", "wflow_outvars"): ("shared", "wflow_outvars"),
 }
@@ -251,8 +249,8 @@ RELOCATED_KEYS: dict[tuple[str, ...], tuple[str, ...]] = {
 #: that name at the top of ANY workflow file.
 #:
 #: **This is a diagnostic, not the migration specification.** The complete,
-#: normative v1 -> v2 mapping is `config/migrations/v1_to_v2.yml` (R14 D-11.2a),
-#: which P3 ships and which the rewriter executes; 85 rows do not belong in a
+#: normative v1 -> v2 mapping was `config/migrations/v1_to_v2.yml` (R14 D-11.2a),
+#: shipped with the rewriter through `MIGRATION_RELEASE`; 85 rows do not belong in a
 #: loader. What lives here is the subset a parse-time check can see cheaply --
 #: T1 paths and T2 top-level names -- and its job is narrow by construction:
 #: `schema_version` is checked FIRST, so a whole v1 set is already refused with
@@ -432,12 +430,6 @@ OWNERLESS_SECTION_READS: frozenset[tuple[str, str]] = frozenset(
         ("scripts/run_workflows.py", "generate_scenarios"),
         ("scripts/generate_scenarios.py", "generate_scenarios"),
         ("blueearth_cst/shared/workflow_archive_launch.py", "*"),
-        # The v1->v2 rewriter reads the `workflows` mapping to DISCOVER a
-        # set -- it follows each `config_path` to find the files it must
-        # migrate. It consumes no workflow SETTING, and it is the one tool
-        # that legitimately holds the whole set at once, which is what
-        # D-11.2b's preflight requires (`C-38`).
-        ("scripts/migrate_project_config.py", "*"),
         # The case scaffold checks enable flags and follows config_path entries
         # to copy a template set; it consumes no workflow settings.
         ("scripts/create_case.py", "*"),
@@ -548,10 +540,11 @@ def _check_schema_version(t1: Mapping[str, Any], t1_path: str | os.PathLike) -> 
     raise ValueError(
         f"{t1_path}: this project config declares {found}, but this toolbox "
         f"reads `schema_version: {SCHEMA_VERSION}`.\n"
-        f"  Migrate it:  python {MIGRATION_COMMAND} {t1_path}\n"
+        f"  Migrate it with toolbox {MIGRATION_RELEASE}:  "
+        f"python {MIGRATION_COMMAND} {t1_path}\n"
         "That rewrites the project file AND its workflow files together, in one "
         "transactional pass, keeping your comments and leaving `*.v1.bak` "
-        f"alongside. See {MIGRATION_DOC}."
+        f"alongside. See {MIGRATION_DOC} in {MIGRATION_RELEASE}."
     )
 
 
@@ -604,9 +597,10 @@ def _check_retired_keys(
         "This config declares `schema_version: "
         f"{SCHEMA_VERSION}` but still carries key(s) R14 retired:\n"
         + "\n".join(sorted(hits))
-        + f"\nRe-run `python {MIGRATION_COMMAND}` on the project file to finish "
-        f"the migration -- it is idempotent on an already-migrated set and "
-        f"refuses a partial one by name. See {MIGRATION_DOC}."
+        + f"\nRe-run `python {MIGRATION_COMMAND}` from toolbox {MIGRATION_RELEASE} "
+        "on the project file to finish the migration -- it is idempotent on an "
+        "already-migrated set and refuses a partial one by name. See "
+        f"{MIGRATION_DOC} in {MIGRATION_RELEASE}."
     )
 
 
@@ -770,8 +764,9 @@ def _check_stanza_closed(name: str, stanza: Mapping[str, Any]) -> None:
             f"Move those settings into a workflow config file named "
             f"`<project_config_stem>_{name}.yml` beside this file and point "
             f"`workflows.{name}.config_path` at it. Run "
-            f"`python {MIGRATION_COMMAND} <this file>` to do it mechanically, "
-            f"and see {MIGRATION_DOC}."
+            f"`python {MIGRATION_COMMAND} <this file>` from toolbox "
+            f"{MIGRATION_RELEASE} to do it mechanically, and see {MIGRATION_DOC} "
+            "there."
         )
 
 
@@ -1049,7 +1044,7 @@ def compose_config(
         raise ValueError(
             f"{t1_path}: workflows.run_stress_test is retired. Split it into "
             "workflows.generate_scenarios and workflows.simulate_system using "
-            f"python {MIGRATION_COMMAND} <this file>."
+            f"python {MIGRATION_COMMAND} <this file> from toolbox {MIGRATION_RELEASE}."
         )
     unknown = set(workflows) - set(WORKFLOW_NAMES)
     if unknown:

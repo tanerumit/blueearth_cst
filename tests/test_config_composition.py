@@ -1097,9 +1097,8 @@ def test_a_broken_workflow_file_does_not_break_a_tool(tmp_path, capsys):
 #
 #   * `test_write_config_round_trips_through_compose`, still below, holds the
 #     composition helper to `compose(write(cfg)) == cfg`;
-#   * `tests/test_migrate_project_config.py` drives the v1 -> v2 rewriter
-#     against `tests/data/v1_split/`, an R13-SPLIT v1 set — the shape that
-#     actually migrates now;
+#   * the v1 -> v2 rewriter and its tests, which shipped through v0.3.0 and
+#     were retired after it (t2610041227);
 #   * P4's own falsifier re-runs the rewriter from the pre-migration commit and
 #     diffs, which is a stronger statement than digest equality: it says the
 #     shipped configs and the user's migration are byte-identical.
@@ -1195,9 +1194,9 @@ def test_the_relocation_map_is_one_declared_row(tmp_path):
     )
     # R14 note: the destination it records is the V1 one (`shared.wflow_outvars`),
     # and `shared:` no longer exists -- `C-19` moved the key on to `model.outvars`.
-    # The map is deliberately KEPT in that state as a candidate input to P3's
-    # `config/migrations/v1_to_v2.yml`, so what is pinned here is its CONTENT and
-    # SHAPE, not a claim that its destination is a live placement.
+    # The map is deliberately KEPT in that state as the loader's record of the
+    # move, so what is pinned here is its CONTENT and SHAPE, not a claim that its
+    # destination is a live placement.
     for _, dest in cc.RELOCATED_KEYS.items():
         assert isinstance(dest, tuple) and len(dest) == 2, (
             "a relocated key is recorded as a path tuple; a bare name would lose "

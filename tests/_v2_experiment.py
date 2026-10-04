@@ -62,6 +62,38 @@ TEMPORAL = {
 
 
 @dataclass(frozen=True)
+class Responses:
+    """What the retained native runs hold, and what the frozen request asks."""
+
+    csv: dict[str, bytes]
+    toml: str
+    temporal: dict
+    variables: list[dict]
+
+
+def default_responses() -> Responses:
+    """Two days of recharge at one location, the same in both runs."""
+    return Responses(
+        csv={run: NATIVE_CSV.encode("utf-8") for run in RUN_IDS},
+        toml=NATIVE_TOML,
+        temporal=TEMPORAL,
+        variables=[
+            {
+                "variable": "gwr",
+                "locations": ["9"],
+                "units": "mm dt-1",
+                "calendar": "standard",
+                "timestep": "P1D",
+                "time_label": "interval_end",
+                "start": TEMPORAL["response_start"],
+                "end": TEMPORAL["response_end"],
+                "missing_value": "NaN",
+            }
+        ],
+    )
+
+
+@dataclass(frozen=True)
 class V2Experiment:
     """Where the parts of one retained v2 experiment live."""
 
@@ -71,8 +103,12 @@ class V2Experiment:
     collection_marker: Path
 
 
-def collection_intent_v2() -> dict:
-    """One complete two-member scientific intent, assembled without a producer."""
+def collection_intent_v2(capacity: int = 2) -> dict:
+    """One complete two-member scientific intent, assembled without a producer.
+
+    ``capacity`` is the run-group id space; a bundle-grain metric needs one id
+    per run plus one per bundle.
+    """
     from blueearth_cst.experiment.content_identity import (
         automatic_seed_v2,
         collection_id_v2,
@@ -137,7 +173,7 @@ def collection_intent_v2() -> dict:
     generation = {
         "seed": {"requested": "auto", "resolved": seed},
         "seed_resolution": resolution,
-        "run_group_id_capacity": 2,
+        "run_group_id_capacity": capacity,
         "weathergen": generator,
         "climate_perturbations": perturbations,
     }
@@ -212,8 +248,8 @@ def collection_intent_v2() -> dict:
             ]
         ),
         "run_count": 2,
-        "run_group_id_capacity": 2,
-        "run_group_id_width": 1,
+        "run_group_id_capacity": capacity,
+        "run_group_id_width": len(str(capacity)),
         "documents": documents,
         "document_digests": {
             name: content_sha256(value) for name, value in documents.items()
@@ -315,7 +351,7 @@ def _archive(
     publish_archive(project, owner_id[:12], target, record, payloads)
 
 
-def _publish_collection(project: Path, config: Path) -> Path:
+def _publish_collection(project: Path, config: Path, capacity: int) -> Path:
     """Write a ready scenario-collection/2 the way WF3 publication does."""
     from blueearth_cst.experiment.content_identity import (
         atomic_record,
@@ -325,7 +361,7 @@ def _publish_collection(project: Path, config: Path) -> Path:
     from blueearth_cst.experiment.generation_publication import PROJECTION
     from blueearth_cst.shared.workflow_config_snapshot import file_reference
 
-    intent = collection_intent_v2()
+    intent = collection_intent_v2(capacity)
     segment = identity_segment(intent["collection_id"], "collection_id")
     record = project / "scenarios/_engine/collections" / segment
     data = project / "scenarios" / segment
@@ -462,7 +498,7 @@ def _preparation(project: Path, root: Path, base: Path) -> dict:
         )
 
 
-def _freeze_simulation(project, config, root, marker_path, base) -> dict:
+def _freeze_simulation(project, config, root, marker_path, base, responses):
     """Freeze the simulation intent and its creator archive (rule 4.03)."""
     from blueearth_cst.experiment.content_identity import content_sha256
     from blueearth_cst.experiment.response_inventory import make_response_request
@@ -480,27 +516,12 @@ def _freeze_simulation(project, config, root, marker_path, base) -> dict:
 
     model = project / "models/hydrology/wflow"
     model.mkdir(parents=True)
-    (model / "wflow_sbm.toml").write_bytes(NATIVE_TOML.encode("utf-8"))
+    (model / "wflow_sbm.toml").write_bytes(responses.toml.encode("utf-8"))
     reference = write_model_reference(
         model, project, root / "_engine/model_reference.yml"
     )
     collection = read_collection_v2(marker_path)
-    request = make_response_request(
-        list(RUN_IDS),
-        [
-            {
-                "variable": "gwr",
-                "locations": ["9"],
-                "units": "mm dt-1",
-                "calendar": "standard",
-                "timestep": "P1D",
-                "time_label": "interval_end",
-                "start": TEMPORAL["response_start"],
-                "end": TEMPORAL["response_end"],
-                "missing_value": "NaN",
-            }
-        ],
-    )
+    request = make_response_request(list(RUN_IDS), responses.variables)
     preparation = _preparation(project, root, base)
     environment = {"packages": {"julia:Wflow": "1.0.2:fixture"}, "locks": {}}
     documents = {
@@ -537,42 +558,72 @@ def _freeze_simulation(project, config, root, marker_path, base) -> dict:
     )
 
 
-def _publish_responses(root: Path) -> dict:
-    """Retain both native runs and publish inventory then readiness (rule 4.06)."""
+def native_runs(root: Path) -> dict:
+    """The retained native artifacts of every run, where rule 4.04/4.05 put them."""
+    from blueearth_cst.experiment.wflow_response_reader import NativeRunArtifacts
+
+    wflow = Path(root) / "hydrology/wflow"
+    return {
+        run: NativeRunArtifacts(
+            wflow / f"output/run_{run}.csv",
+            wflow / f"run_settings/run_{run}.toml",
+            wflow / f"run_settings/run_{run}.temporal.json",
+        )
+        for run in RUN_IDS
+    }
+
+
+def _write_native_runs(root: Path, responses: Responses) -> dict:
+    """Retain both native runs as Wflow and the forcing preparation leave them."""
     from blueearth_cst.experiment.content_identity import canonical_json_bytes
+
+    native = native_runs(root)
+    for run, artifacts in native.items():
+        artifacts.csv_path.parent.mkdir(parents=True, exist_ok=True)
+        artifacts.toml_path.parent.mkdir(parents=True, exist_ok=True)
+        # Bytes, not text: the inventory binds exact bytes on every platform.
+        artifacts.csv_path.write_bytes(responses.csv[run])
+        artifacts.toml_path.write_bytes(responses.toml.encode("utf-8"))
+        artifacts.temporal_path.write_bytes(canonical_json_bytes(responses.temporal))
+    return native
+
+
+def _publish_responses(root: Path, responses: Responses) -> dict:
+    """Publish inventory then readiness over the retained runs (rule 4.06)."""
     from blueearth_cst.experiment.response_inventory import (
         publish_response_inventory_v2,
     )
     from blueearth_cst.experiment.simulation_record import publish_simulation_v2
-    from blueearth_cst.experiment.wflow_response_reader import NativeRunArtifacts
 
-    wflow = root / "hydrology/wflow"
-    (wflow / "output").mkdir(parents=True)
-    (wflow / "run_settings").mkdir(parents=True, exist_ok=True)
-    native = {}
-    for run in RUN_IDS:
-        csv = wflow / f"output/run_{run}.csv"
-        toml = wflow / f"run_settings/run_{run}.toml"
-        temporal = wflow / f"run_settings/run_{run}.temporal.json"
-        # Bytes, not text: the inventory binds exact bytes on every platform.
-        csv.write_bytes(NATIVE_CSV.encode("utf-8"))
-        toml.write_bytes(NATIVE_TOML.encode("utf-8"))
-        temporal.write_bytes(canonical_json_bytes(TEMPORAL))
-        native[run] = NativeRunArtifacts(csv, toml, temporal)
-    inventory = publish_response_inventory_v2(root, native, TEMPORAL)
+    inventory = publish_response_inventory_v2(
+        root, native_runs(root), responses.temporal
+    )
     return publish_simulation_v2(root, inventory)
 
 
-def build_v2_experiment(base: Path) -> V2Experiment:
-    """Build one complete retained v2 experiment under ``base``."""
+def build_v2_experiment(
+    base: Path,
+    responses: Responses | None = None,
+    *,
+    capacity: int = 2,
+    publish: bool = True,
+) -> V2Experiment:
+    """Build one retained v2 experiment under ``base``.
+
+    ``publish=False`` stops after the native runs are retained, before the
+    response inventory and the readiness marker -- the state rule 4.06 sees.
+    """
+    responses = responses or default_responses()
     base = Path(base).resolve()
     project = base / "project"
     root = project / "experiments" / EXPERIMENT
     root.mkdir(parents=True)
     config = _write_configs(base, project)
-    marker = _publish_collection(project, config)
-    _freeze_simulation(project, config, root, marker, base)
-    _publish_responses(root)
+    marker = _publish_collection(project, config, capacity)
+    _freeze_simulation(project, config, root, marker, base, responses)
+    _write_native_runs(root, responses)
+    if publish:
+        _publish_responses(root, responses)
     return V2Experiment(project, config, root, marker)
 
 

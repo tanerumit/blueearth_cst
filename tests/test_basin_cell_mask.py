@@ -72,13 +72,19 @@ def test_one_cell_buffer_preserves_basin_cells_and_nearest_forcing(tmp_path):
     )
     pd.testing.assert_frame_equal(reduced_mask, reference_mask)
 
+    # A target point exactly on a source cell edge is a nearest-index TIE, and
+    # the two clips break it differently once rounding differs (it did on the
+    # ubuntu CI leg). Unshifted, every 25th longitude here lands on an edge, so
+    # the grid is offset and its clearance asserted: only unambiguous points.
+    latitude = np.linspace(bounds[3] - 0.005, bounds[1] + 0.005, 76)
+    longitude = np.linspace(bounds[0] + 0.005, bounds[2] - 0.005, 175) + 0.003
+    for coords, origin in ((latitude, 31.5), (longitude, 28.5)):
+        edges = (coords - origin) / 0.25 - 0.5
+        assert (np.abs(edges - np.round(edges)) * 0.25).min() > 1e-3
     target = xr.DataArray(
         np.zeros((76, 175), dtype=np.float32),
         dims=("latitude", "longitude"),
-        coords={
-            "latitude": np.linspace(bounds[3] - 0.005, bounds[1] + 0.005, 76),
-            "longitude": np.linspace(bounds[0] + 0.005, bounds[2] - 0.005, 175),
-        },
+        coords={"latitude": latitude, "longitude": longitude},
     )
     target.raster.set_crs(4326)
     expected = reference.raster.reproject_like(target, method="nearest_index")

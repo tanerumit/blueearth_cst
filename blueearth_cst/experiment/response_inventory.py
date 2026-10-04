@@ -1,6 +1,5 @@
 """Complete retained native response coverage without a live model or generation."""
 
-import os
 import tomllib
 from pathlib import Path
 
@@ -10,18 +9,13 @@ from blueearth_cst.experiment.content_identity import (
     content_sha256,
     read_canonical_json,
 )
-from blueearth_cst.experiment.simulation_record import (
-    atomic_record,
-    complete_simulation,
-    read_simulation,
-)
+from blueearth_cst.experiment.simulation_record import atomic_record
 from blueearth_cst.experiment.wflow_response_reader import (
     NativeRunArtifacts,
     ResponseRequest,
     open_responses,
 )
 from blueearth_cst.shared.provenance import file_sha256
-from blueearth_cst.shared.snake_utils import log_row, plural
 
 
 class MissingResponseRequirement(ValueError):
@@ -160,37 +154,6 @@ def validate_response_request(request):
         )
 
 
-def _artifact_path(root, inventory_dir, relative):
-    """Allow inventory-relative ../ paths while confining to the experiment."""
-    if (
-        not isinstance(relative, str)
-        or "\\" in relative
-        or ":" in relative
-        or Path(relative).is_absolute()
-    ):
-        raise MissingResponseRequirement(f"invalid retained artifact path {relative!r}")
-    from pathlib import PureWindowsPath
-
-    if any(
-        part not in {".", ".."}
-        and (part.endswith((".", " ")) or PureWindowsPath(part).is_reserved())
-        for part in relative.split("/")
-    ):
-        raise MissingResponseRequirement(
-            f"nonportable retained artifact path {relative!r}"
-        )
-    path = (inventory_dir / relative).resolve()
-    if not path.is_relative_to(root):
-        raise MissingResponseRequirement(
-            f"retained artifact escapes experiment: {relative}"
-        )
-    return path
-
-
-def _relative(path, directory):
-    return os.path.relpath(path, directory).replace("\\", "/")
-
-
 def _validate_temporal(temporal, config):
     required = {
         "source_calendar",
@@ -231,227 +194,6 @@ def _validate_temporal(temporal, config):
         raise MissingResponseRequirement(
             "temporal preparation differs from native simulation clock"
         )
-
-
-def build_response_inventory(experiment_root, native_runs, temporal_preparation):
-    """Reopen every requested native series and derive a complete inventory.
-
-    TOML reader dependencies are hashed inside adapter-private selectors. Native
-    CSV artifacts are retained without normalized copies. All expected locations,
-    ordering and metadata must match the prior immutable response request.
-    """
-    root = Path(experiment_root).resolve()
-    directory = root / "_engine"
-    simulation = read_simulation(root)
-    request = read_canonical_json(root / "config/response_request.json")
-    validate_response_request(request)
-    if request["reader"] != {
-        "name": "wflow-csv",
-        "revision": response_reader_revision(),
-    }:
-        raise _reader_changed(experiment_root, request["reader"])
-    if set(native_runs) != set(request["run_ids"]):
-        raise MissingResponseRequirement(
-            "native runs differ from frozen response request"
-        )
-    artifacts, series = [], []
-    for run in request["run_ids"]:
-        native = native_runs[run]
-        if native.temporal_path is None:
-            raise MissingResponseRequirement(
-                f"run {run}: missing retained temporal preparation evidence"
-            )
-        for path in (native.csv_path, native.toml_path, native.temporal_path):
-            if not Path(path).resolve().is_relative_to(root):
-                raise MissingResponseRequirement(
-                    f"native artifact escapes experiment: {path}"
-                )
-        csv_path, toml_path = Path(native.csv_path), Path(native.toml_path)
-        temporal = read_canonical_json(Path(native.temporal_path))
-        if temporal != temporal_preparation:
-            raise MissingResponseRequirement(
-                f"run {run}: inconsistent temporal preparation evidence"
-            )
-        with toml_path.open("rb") as handle:
-            _validate_temporal(temporal, tomllib.load(handle))
-        index = len(artifacts)
-        artifacts.append(
-            {
-                "run_id": run,
-                "path": _relative(csv_path, directory),
-                "sha256": file_sha256(csv_path),
-                "size_bytes": csv_path.stat().st_size,
-            }
-        )
-        values = open_responses(
-            run,
-            native,
-            ResponseRequest(tuple(item["variable"] for item in request["variables"])),
-        )
-        actual_keys = {item.key for item in values}
-        expected_keys = {
-            tuple(key) for key in request["expected_series"] if key[0] == run
-        }
-        if actual_keys != expected_keys:
-            raise MissingResponseRequirement(
-                f"run {run}: response keys missing={sorted(expected_keys - actual_keys)} extra={sorted(actual_keys - expected_keys)}"
-            )
-        metadata = {item["variable"]: item for item in request["variables"]}
-        for item in values:
-            declared = metadata[item.variable]
-            seconds = item.timestep.total_seconds()
-            observed = {
-                "units": item.units,
-                "calendar": item.calendar,
-                "timestep": "P1D" if seconds == 86400 else f"PT{seconds:g}S",
-                "time_label": item.time_label,
-                "start": str(item.time[0]),
-                "end": str(item.time[-1]),
-                "missing_value": "NaN",
-            }
-            for key, value in observed.items():
-                if declared[key] != value:
-                    raise MissingResponseRequirement(
-                        f"{item.key}: {key} expected={declared[key]} observed={value}"
-                    )
-            if declared["locations"][item.location_ordinal] != item.location_id:
-                raise MissingResponseRequirement(
-                    f"{item.key}: native location order differs from request"
-                )
-            from blueearth_cst.experiment.wflow_response_reader import NATIVE_VARIABLES
-
-            selector = {
-                "column": f"{NATIVE_VARIABLES[item.variable][0]}_{item.location_id}",
-                "toml_path": _relative(toml_path, directory),
-                "toml_sha256": file_sha256(toml_path),
-                "temporal_path": _relative(native.temporal_path, directory),
-                "temporal_sha256": file_sha256(native.temporal_path),
-            }
-            series.append(
-                {
-                    "run_id": run,
-                    "variable": item.variable,
-                    "location_id": item.location_id,
-                    "location_ordinal": item.location_ordinal,
-                    "artifact": index,
-                    "native_selector": selector,
-                    **observed,
-                }
-            )
-    series.sort(
-        key=lambda item: (
-            int(item["run_id"]),
-            item["variable"],
-            item["location_ordinal"],
-            item["location_id"],
-        )
-    )
-    inventory = {
-        "schema_version": "response-inventory/1",
-        "simulation_id": simulation["simulation_id"],
-        "collection_id": simulation["collection"]["collection_id"],
-        "collection_revision": simulation["collection"]["collection_revision"],
-        "model_digest": simulation["model"]["model_digest"],
-        "simulator": simulation["simulator"],
-        "settings_sha256": simulation["settings"]["sha256"],
-        "response_request": {
-            "path": "../config/response_request.json",
-            "sha256": simulation["response_request"]["sha256"],
-        },
-        "temporal_preparation": temporal_preparation,
-        "artifacts": artifacts,
-        "series": series,
-    }
-    inventory["response_inventory_sha256"] = content_sha256(inventory)
-    return inventory
-
-
-def read_response_inventory(experiment_root):
-    """Recompute retained native bytes, selectors and coverage before any reuse."""
-    root = Path(experiment_root).resolve()
-    directory = root / "_engine"
-    path = directory / "response_inventory.json"
-    try:
-        stored = read_canonical_json(
-            _artifact_path(root, directory, "response_inventory.json")
-        )
-        digest = content_sha256(
-            {
-                key: value
-                for key, value in stored.items()
-                if key != "response_inventory_sha256"
-            }
-        )
-        if stored["response_inventory_sha256"] != digest:
-            raise MissingResponseRequirement(
-                "response inventory digest mismatch before native opening"
-            )
-        native_runs = {}
-        for index, artifact in enumerate(stored["artifacts"]):
-            matching = [item for item in stored["series"] if item["artifact"] == index]
-            if not matching:
-                raise MissingResponseRequirement(
-                    "native artifact has no declared series"
-                )
-            tomls = {item["native_selector"]["toml_path"] for item in matching}
-            temporals = {item["native_selector"]["temporal_path"] for item in matching}
-            if (
-                len(tomls) != 1
-                or len(temporals) != 1
-                or artifact["run_id"] in native_runs
-            ):
-                raise MissingResponseRequirement(
-                    "ambiguous native artifact association"
-                )
-            native_runs[artifact["run_id"]] = NativeRunArtifacts(
-                _artifact_path(root, directory, artifact["path"]),
-                _artifact_path(root, directory, next(iter(tomls))),
-                _artifact_path(root, directory, next(iter(temporals))),
-            )
-        observed = build_response_inventory(
-            root, native_runs, stored["temporal_preparation"]
-        )
-        if stored != observed:
-            raise MissingResponseRequirement(
-                f"response inventory drift expected={stored.get('response_inventory_sha256')} observed={observed['response_inventory_sha256']}"
-            )
-        simulation = read_simulation(root)
-        if simulation["response_inventory_sha256"] not in {
-            None,
-            observed["response_inventory_sha256"],
-        }:
-            raise MissingResponseRequirement(
-                "response inventory differs from simulation completion"
-            )
-        return observed
-    except (OSError, KeyError, TypeError, ValueError) as exc:
-        if isinstance(exc, ResponseReaderUnavailable):
-            raise
-        raise MissingResponseRequirement(f"retained responses {path}: {exc}") from exc
-
-
-def publish_response_inventory(experiment_root, native_runs, temporal_preparation):
-    """Publish complete native coverage last, then fill simulation completion."""
-    root = Path(experiment_root).resolve()
-    path = root / "_engine/response_inventory.json"
-    if path.resolve() != path:
-        raise MissingResponseRequirement("response publication path is aliased")
-    inventory = build_response_inventory(root, native_runs, temporal_preparation)
-    if path.exists():
-        if read_response_inventory(root) != inventory:
-            raise MissingResponseRequirement(
-                "immutable response inventory already differs"
-            )
-    else:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        atomic_record(path, inventory)
-    complete_simulation(root, inventory["response_inventory_sha256"])
-    log_row(
-        f"Inventoried {plural(len(inventory['artifacts']), 'native run')}, {len(inventory['series'])} series -> "
-        f"{inventory['response_inventory_sha256'][:12]}",
-        module="responses",
-    )
-    return inventory
 
 
 def _v2_exact(value, fields, name):

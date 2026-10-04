@@ -169,22 +169,30 @@ def test_snapshot_is_named_by_no_identity_document():
     """The property that makes the placement safe.
 
     `simulation_id` and `collection_id` hash digests, never path strings. If
-    the snapshot were ever promoted into `_DOCUMENTS` or into the collection
-    intent, every retained metric set's identity would move -- so the name must
-    appear in neither module.
+    the snapshot were ever promoted into the simulation documents or into the
+    collection intent, every retained metric set's identity would move -- so the
+    name must appear in neither module's document set nor in the id projection.
     """
-    for module in (
-        "blueearth_cst/experiment/simulation_record.py",
-        "blueearth_cst/experiment/scenario_collection.py",
+    for module, pattern in (
+        (
+            "blueearth_cst/experiment/simulation_record.py",
+            r"_V2_DOCUMENTS = frozenset\((.*?)\)",
+        ),
+        (
+            "blueearth_cst/experiment/scenario_collection_v2.py",
+            r"_DOCUMENTS = \{(.*?)\}",
+        ),
     ):
         text = (REPO / module).read_text(encoding="utf-8")
-        body = re.search(r"_DOCUMENTS = \{(.*?)\}", text, re.S)
-        if body:
-            assert SNAPSHOT_NAME not in body.group(1)
+        body = re.search(pattern, text, re.S)
+        assert body, f"{module}: document set not found"
+        assert SNAPSHOT_NAME not in body.group(1)
     identity = (REPO / "blueearth_cst/experiment/simulation_record.py").read_text(
         encoding="utf-8"
     )
-    projection = re.search(r"def simulation_id\(record\):(.*?)\n\ndef ", identity, re.S)
+    projection = re.search(
+        r"def _v2_simulation_id\(intent\):(.*?)\n\ndef ", identity, re.S
+    )
     assert projection and SNAPSHOT_NAME not in projection.group(1)
 
 

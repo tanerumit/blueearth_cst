@@ -418,7 +418,6 @@ IDENTITY_COMPARISONS: frozenset[tuple[str, str]] = frozenset(
         ("blueearth_cst/experiment/simulation_runner.py", "*"),
         ("blueearth_cst/experiment/simulation_runner.py", "generate_scenarios"),
         ("blueearth_cst/experiment/generation_publication.py", "generate_scenarios"),
-        ("blueearth_cst/experiment/legacy_generation_plan.py", "generate_scenarios"),
     }
 )
 

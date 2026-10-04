@@ -9,6 +9,26 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+### Breaking
+
+- Scenario-collection, simulation and metric-set ids all change. Each identity
+  hashes the repository code its stage imports, and removing the pre-release v1
+  records edited shared modules on all three paths. The climate-store identity
+  does not change. Existing collections, experiments and metric sets stay
+  readable, but none is reused by a fresh run:
+  - WF3 generates a new collection instead of reusing the retained one.
+  - Re-simulating an existing experiment is refused; use a new experiment name.
+  - A metrics-only run over a retained experiment publishes a new metric set
+    with identical values.
+
+### Removed
+
+- Support for the pre-release v1 records: the `config/simulation.json`
+  simulation record, the v1 response inventory, `scenario-collection/1`, and
+  `metric-set/1`. No release wrote them; they existed only between 2026-09-11
+  and 2026-09-22. Such an experiment is now refused by name; simulate it again
+  under a new experiment name.
+
 ## [v0.3.0] — 2026-10-01
 
 Pre-1.0 minor release with incompatible user interfaces, output contracts,

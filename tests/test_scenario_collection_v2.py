@@ -17,169 +17,19 @@ from blueearth_cst.experiment.content_identity import (
     collection_id_v2,
     collection_revision_v2,
     content_sha256,
-    generation_seed_material_v2,
     identity_segment,
     repository_code_inventory,
-)
-from blueearth_cst.experiment.generation_plan import (
-    GENERATOR_SEED_FIELDS,
-    generator_seed_projection,
 )
 from blueearth_cst.experiment.scenario_collection_v2 import (
     _profile,
     read_collection_v2,
 )
 from blueearth_cst.shared.workflow_config_snapshot import file_reference
-
-
-def _intent() -> dict:
-    """Construct one complete two-member scientific intent without a producer."""
-    digest = sha256(b"x").hexdigest()
-    sources = [
-        {"role": role, "sha256": digest, "size_bytes": 1}
-        for role in ("basin_cells", "historical_climate")
-    ]
-    code = [{"path": "blueearth_cst/experiment/scenario_provider.py", "sha256": digest}]
-    month = [0.0] * 12
-    range12 = {"min": month, "max": month}
-    perturbations = {
-        "temp": {"n_levels": 1, "trajectory": "constant", "mean": range12},
-        "precip": {
-            "n_levels": 1,
-            "trajectory": "constant",
-            "mean": range12,
-            "variance": range12,
-        },
-        "spell_factors": {"dry": [1.0] * 12, "wet": [1.0] * 12},
-    }
-    window = {"start": 2046, "end": 2054}
-    generator = {
-        section: {key: 1 for key in included | excluded}
-        for section, (included, excluded) in GENERATOR_SEED_FIELDS.items()
-    }
-    generator["apply_climate_perturbations"]["diagnostic"] = False
-    generator["generate_weather"]["out_dir"] = None
-    for section, keys in (
-        ("generate_weather", ("plot_dpi", "plot_device")),
-        ("write_netcdf", ("file_suffix", "out_dir")),
-    ):
-        for key in keys:
-            generator[section][key] = {"present": False, "value": None}
-    generator_settings = generator_seed_projection(generator)
-    material = generation_seed_material_v2(
-        n_realizations=1,
-        simulation_window=window,
-        climate_perturbations=perturbations,
-        water_year_start="JAN",
-        provider_revision=content_sha256(code),
-        sources=sources,
-        generator_settings=generator_settings,
-    )
-    seed = automatic_seed_v2(material)
-    generator["generate_weather"]["seed"] = seed
-    resolution = {
-        "seed_request": "auto",
-        "resolved_seed": seed,
-        "projection": material,
-        "projection_sha256": content_sha256(material),
-    }
-    resolution["seed_resolution_id"] = content_sha256(resolution)
-    generation = {
-        "seed": {"requested": "auto", "resolved": seed},
-        "seed_resolution": resolution,
-        "run_group_id_capacity": 2,
-        "weathergen": generator,
-        "climate_perturbations": perturbations,
-    }
-    source_inventory = {
-        "sources": [
-            {
-                "role": role,
-                "original_path": role,
-                "file": {
-                    "schema_version": "artifact-reference/1",
-                    "path_base": "project_root",
-                    "path": f"data/{role}.dat",
-                    "sha256": digest,
-                    "size_bytes": 1,
-                },
-                "metadata": {},
-            }
-            for role in ("basin_cells", "historical_climate")
-        ],
-        "interpretation": {
-            "revision": "fixture/1",
-            "variables": [{"name": "temp", "units": "degC"}],
-            "calendar": "standard",
-            "time_label": "interval_end",
-        },
-    }
-    documents = {
-        "generation_config": generation,
-        "source_inventory": source_inventory,
-        "provider_code": code,
-        "environment": {
-            "packages": {"python": "fixture"},
-            "locks": {"Manifest.toml": digest},
-        },
-    }
-    projections = {
-        "generation_config": {
-            "schema_version": "generation-config-identity/2",
-            "resolved_seed": seed,
-            "generator_settings": material["generator_settings"],
-            "climate_perturbations": perturbations,
-            "simulation_window": window,
-            "n_realizations": 1,
-            "water_year_start": "JAN",
-        },
-        "source_inventory": {
-            "schema_version": "generation-sources-identity/2",
-            "sources": sources,
-            "interpretation": source_inventory["interpretation"],
-        },
-    }
-    intent = {
-        "schema_version": "scenario-collection-intent/2",
-        "canonicalization_id": "collection-canon/1",
-        "collection_id": digest,
-        "provider": {"name": "weathergenr", "revision": content_sha256(code)},
-        "scenario_type": "stochastic",
-        "scenario_spec": {
-            "scenario_type": "stochastic",
-            "n_realizations": 1,
-            "n_design_points": 1,
-            "unperturbed_per_realization": 1,
-            "expected_run_count": 2,
-            "simulation_window": window,
-            "pairing": "paired_across_design_points",
-            "row_order": "rlz-major/unperturbed-first/st-id-ascending",
-        },
-        "scenario_semantics_sha256": content_sha256(
-            [
-                {"evaluate": "true", "type": "stochastic", "rlz": "1", "st_id": ""},
-                {"evaluate": "true", "type": "stochastic", "rlz": "1", "st_id": "1"},
-            ]
-        ),
-        "run_count": 2,
-        "run_group_id_capacity": 2,
-        "run_group_id_width": 1,
-        "documents": documents,
-        "document_digests": {
-            name: content_sha256(value) for name, value in documents.items()
-        },
-        "identity_projections": projections,
-        "identity_digests": {
-            name: content_sha256(projections[name] if name in projections else value)
-            for name, value in documents.items()
-        },
-    }
-    intent["collection_id"] = collection_id_v2(intent)
-    return intent
+from tests._v2_experiment import collection_intent_v2
 
 
 def test_wf4_only_evidence_does_not_enter_seed_or_collection_identity():
-    intent = _intent()
+    intent = collection_intent_v2()
     _profile(intent)
     original_seed = intent["documents"]["generation_config"]["seed"]["resolved"]
     original_id = intent["collection_id"]
@@ -245,7 +95,7 @@ def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
     assert repository_code_inventory(tmp_path, entries) == original
 
     def identities(code):
-        intent = _intent()
+        intent = collection_intent_v2()
         generation = intent["documents"]["generation_config"]
         material = generation["seed_resolution"]["projection"]
         revision = content_sha256(code)
@@ -286,7 +136,7 @@ def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
 
 
 def test_collection_v2_refuses_unknown_nested_document_key():
-    intent = _intent()
+    intent = collection_intent_v2()
     intent["documents"]["generation_config"]["unclassified"] = True
     intent["document_digests"]["generation_config"] = content_sha256(
         intent["documents"]["generation_config"]
@@ -296,7 +146,7 @@ def test_collection_v2_refuses_unknown_nested_document_key():
 
 
 def test_explicit_and_auto_requests_with_same_seed_share_collection_identity():
-    intent = _intent()
+    intent = collection_intent_v2()
     changed = deepcopy(intent)
     generation = changed["documents"]["generation_config"]
     resolved = generation["seed"]["resolved"]
@@ -312,7 +162,7 @@ def test_explicit_and_auto_requests_with_same_seed_share_collection_identity():
 
 
 def test_collection_v2_requires_marker_and_matching_data(tmp_path, monkeypatch):
-    intent = _intent()
+    intent = collection_intent_v2()
     segment = identity_segment(intent["collection_id"], "collection_id")
     record = tmp_path / "scenarios" / "_engine" / "collections" / segment
     data = tmp_path / "scenarios" / segment

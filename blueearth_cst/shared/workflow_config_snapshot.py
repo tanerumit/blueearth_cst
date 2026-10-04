@@ -15,8 +15,8 @@ file the identity documents do not name changes no identity and invalidates no
 retained metric set. Recording these fields INSIDE ``collection_intent.json``
 or ``simulation.json`` would have been the tidier shape, and would have
 rewritten every existing experiment's identity to buy provenance. It would also
-fail closed rather than silently: ``read_simulation`` compares the record's key
-set against an exact expected set and raises on any extra field.
+fail closed rather than silently: ``read_simulation_intent_v2`` compares the
+record's key set against an exact expected set and raises on any extra field.
 
 What it closes, none of which the digest documents carried:
 

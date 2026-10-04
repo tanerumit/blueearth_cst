@@ -15,8 +15,8 @@
   condition (read via ``pytest -rs``), never silence. The temp() content
   validators (WG-4/WG-6) additionally skip with a documented reason when the
   temp artifact is absent (the default fixture state) — see the commit-4 temp
-  layer. HM-6b (per-run warm state) and HM-7 (metric-set/1 tables) skip by
-  name since 2026-09-24: current WF4 writes neither artifact.
+  layer. HM-6b (per-run warm state) has no integration case: current WF4
+  writes no per-run warm state, so only its synthetic pass/fail pair remains.
 
 Source of record: ``dev/records/milestones/p32b/interchange-contracts-design.md`` §5.5 and the two
 seam docs ``dev/reference/contracts/*-seam.md``.
@@ -1202,12 +1202,3 @@ def test_wg6_integration():
     for path in paths:
         with _open_ds(path) as ds:
             assert ic.validate_wg6(ds) == []
-
-
-@pytest.mark.skipif(not _fixture_present(), reason=_FIXTURE_ABSENT)
-def test_hm6b_integration():
-    pytest.skip(
-        "retired: WF4 runs write no per-run warm state (no [state] path_output; "
-        "HM-4 runs with require_output_state=False) and start from WF1's "
-        "instate/instates.nc"
-    )

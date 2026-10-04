@@ -1,24 +1,16 @@
 """Exact-byte and invalidation checks for R12 collection-canon/1."""
 
 import hashlib
-from copy import deepcopy
-from dataclasses import replace
 
 import pytest
 
 from blueearth_cst.experiment.content_identity import (
-    SegmentCollision,
     canonical_json_bytes,
-    claim_identity_segment,
-    collection_id,
-    collection_revision,
     confined_path,
     content_sha256,
     identity_segment,
     read_canonical_json,
-    scenario_semantics_sha256,
 )
-from blueearth_cst.experiment.scenario_rows import stochastic_rows
 
 
 def test_canonical_bytes_have_unicode_order_and_final_lf():
@@ -56,44 +48,6 @@ def test_persisted_canonical_document_round_trips(tmp_path):
     value = {"source": "水", "items": [1, None, True]}
     path.write_bytes(canonical_json_bytes(value))
     assert read_canonical_json(path) == value
-
-
-def test_semantics_strip_only_run_id_and_preserve_ancestry_and_order():
-    rows = stochastic_rows(1, 2, unit_id_capacity=100)
-    expected = [
-        {
-            "derived_from": "",
-            "evaluated": "true",
-            "scenario_type": "stochastic",
-            "rlz": "1",
-            "st_id": "",
-        },
-        {
-            "derived_from": "001",
-            "evaluated": "true",
-            "scenario_type": "stochastic",
-            "rlz": "1",
-            "st_id": "1",
-        },
-        {
-            "derived_from": "001",
-            "evaluated": "true",
-            "scenario_type": "stochastic",
-            "rlz": "1",
-            "st_id": "2",
-        },
-    ]
-    digest = scenario_semantics_sha256(rows)
-    assert digest == content_sha256(expected)
-    assert (
-        scenario_semantics_sha256([replace(row, run_id="other") for row in rows])
-        == digest
-    )
-    assert scenario_semantics_sha256(list(reversed(rows))) != digest
-    assert (
-        scenario_semantics_sha256([rows[0], replace(rows[1], derived_from=""), rows[2]])
-        != digest
-    )
 
 
 @pytest.mark.parametrize(
@@ -162,119 +116,6 @@ def test_windows_alias_spellings_are_not_portable_artifact_paths(tmp_path, relat
         confined_path(tmp_path, relative)
 
 
-@pytest.fixture
-def intent():
-    return {
-        "schema_version": "scenario-collection/1",
-        "canonicalization_id": "collection-canon/1",
-        "scenario_spec": {"scenario_type": "fixture", "expected_run_count": 1},
-        "scenario_semantics_sha256": "a" * 64,
-        "provider": {"name": "fixture", "revision": "b" * 64},
-        "unit_id_capacity": 100,
-        **{
-            name: {"path": f"{name}.json", "sha256": "c" * 64}
-            for name in (
-                "generation_config",
-                "source_inventory",
-                "provider_code",
-                "environment",
-                "preparation_context",
-            )
-        },
-    }
-
-
-def test_identity_projection_matches_independent_equation(intent):
-    expected = {
-        "schema_version": "scenario-collection/1",
-        "scenario_spec": intent["scenario_spec"],
-        "scenario_semantics_sha256": "a" * 64,
-        "generation_config_sha256": "c" * 64,
-        "source_inventory_sha256": "c" * 64,
-        "provider_name_and_revision": intent["provider"],
-        "provider_code_sha256": "c" * 64,
-        "environment_sha256": "c" * 64,
-        "preparation_context_sha256": "c" * 64,
-        "unit_id_capacity": 100,
-    }
-    assert collection_id(intent) == content_sha256(expected)
-    original = collection_id(intent)
-    intent.update(collection_id="d" * 64, created_at_utc="display only")
-    assert collection_id(intent) == original
-
-
-@pytest.mark.parametrize(
-    "field",
-    [
-        "scenario_spec",
-        "scenario_semantics_sha256",
-        "generation_config",
-        "source_inventory",
-        "provider",
-        "provider_code",
-        "environment",
-        "preparation_context",
-        "unit_id_capacity",
-    ],
-)
-def test_every_intent_input_invalidates_identity(intent, field):
-    changed = deepcopy(intent)
-    if field == "scenario_spec":
-        changed[field]["expected_run_count"] = 2
-    elif field == "provider":
-        changed[field]["revision"] = "d" * 64
-    elif field == "unit_id_capacity":
-        changed[field] = 1000
-    elif field == "scenario_semantics_sha256":
-        changed[field] = "d" * 64
-    else:
-        changed[field]["sha256"] = "d" * 64
-    assert collection_id(changed) != collection_id(intent)
-
-
-@pytest.mark.parametrize(
-    "field,value",
-    [
-        ("schema_version", "unknown"),
-        ("canonicalization_id", "unknown"),
-        ("unit_id_capacity", True),
-        ("unit_id_capacity", 0),
-        ("scenario_semantics_sha256", "A" * 64),
-    ],
-)
-def test_unsupported_identity_inputs_refuse(intent, field, value):
-    intent[field] = value
-    with pytest.raises(ValueError, match=field):
-        collection_id(intent)
-
-
-def test_revision_covers_ordered_bytes_and_descriptors():
-    manifest = {
-        "collection_id": "a" * 64,
-        "intent_sha256": "b" * 64,
-        "scenario_table": {"path": "scenario_table.csv", "sha256": "c" * 64},
-        "scenario_type_artifacts": [],
-        "preparation_context": {"path": "preparation_context.json", "sha256": "d" * 64},
-        "forcing": [
-            {"run_id": "001", "sha256": "e" * 64, "descriptor": {"units": "mm"}}
-        ],
-    }
-    expected = {
-        "collection_id": "a" * 64,
-        "intent_sha256": "b" * 64,
-        "scenario_table_sha256": "c" * 64,
-        "scenario_type_artifact_inventory": [],
-        "preparation_context_sha256": "d" * 64,
-        "ordered_forcing_inventory_with_descriptors": manifest["forcing"],
-    }
-    revision = collection_revision(manifest)
-    assert revision == content_sha256(expected)
-    manifest["collection_revision"] = revision
-    assert collection_revision(manifest) == revision
-    manifest["forcing"][0]["descriptor"]["units"] = "m"
-    assert collection_revision(manifest) != revision
-
-
 def test_code_inventory_follows_package_initializers_and_relative_imports(tmp_path):
     from blueearth_cst.experiment.content_identity import repository_code_inventory
 
@@ -311,35 +152,6 @@ def test_a_path_segment_is_the_leading_prefix_and_the_field_stays_complete():
     # cost. Truncation applies to the path segment and nothing else.
     with pytest.raises(ValueError, match="collection_id"):
         identity_segment("a1b2c3d4e5f6", "collection_id")
-
-
-def test_a_segment_claim_refuses_a_prefix_held_by_another_identity(tmp_path):
-    """The check that replaces the self-describing-directory property."""
-    held = "a" * 12 + "1" * 52
-    other = "a" * 12 + "2" * 52
-    assert identity_segment(held, "x") == identity_segment(other, "x")
-
-    def occupant(path):
-        return (path / "identity").read_text(encoding="utf-8")
-
-    target = claim_identity_segment(tmp_path, held, occupant, field="collection_id")
-    target.mkdir()
-    (target / "identity").write_text(held, encoding="utf-8")
-
-    # Re-claiming the SAME identity resolves to the same directory.
-    assert claim_identity_segment(tmp_path, held, occupant) == target
-    # A different full identity sharing the prefix is a loud failure, never a
-    # silent merge into the incumbent's directory.
-    with pytest.raises(SegmentCollision, match="collection_id"):
-        claim_identity_segment(tmp_path, other, occupant, field="collection_id")
-
-
-def test_an_unreadable_incumbent_is_left_to_the_callers_exclusivity_rules(tmp_path):
-    """A partial claim reports no identity, and this check does not invent one."""
-    identity = "b" * 64
-    target = tmp_path / identity_segment(identity, "x")
-    target.mkdir()
-    assert claim_identity_segment(tmp_path, identity, lambda path: None) == target
 
 
 def test_code_inventory_ignores_checkout_line_endings(tmp_path):

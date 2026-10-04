@@ -195,6 +195,38 @@ def test_a_tampered_published_table_is_refused_on_read(published):
         read_metric_set(root, marker)
 
 
+def test_tampered_return_level_evidence_is_refused_on_read(published):
+    from blueearth_cst.experiment.metric_plan import RETURN_LEVEL_EVIDENCE_FILENAME
+
+    root, marker, _ = published
+    evidence = marker.parent / RETURN_LEVEL_EVIDENCE_FILENAME
+    assert read_canonical_json(evidence)["bundles"] == [], "gwr fits no return level"
+    read_metric_set(root, marker)
+    evidence.write_bytes(b'{"bundles": [], "schema_version": "other"}\n')
+    with pytest.raises(ImmutableMetricSetError, match="metric artifact differs"):
+        read_metric_set(root, marker)
+
+
+def test_a_set_published_before_evidence_was_retained_stays_readable(published):
+    """Sets published before 2026-10-04 carry no evidence key at all."""
+    root, marker, _ = published
+    manifest = read_canonical_json(marker)
+    del manifest["return_level_evidence"]
+    manifest["metrics_manifest_sha256"] = content_sha256(
+        {k: v for k, v in manifest.items() if k != "metrics_manifest_sha256"}
+    )
+    marker.write_bytes(canonical_json_bytes(manifest))
+    assert read_metric_set(root, marker) == manifest
+
+
+def test_only_metrics_json_is_read_as_the_engine_marker(published):
+    root, marker, _ = published
+    renamed = marker.with_name("alternate.json")
+    renamed.write_bytes(marker.read_bytes())
+    with pytest.raises(ImmutableMetricSetError, match="named metrics.json"):
+        read_metric_set(root, renamed)
+
+
 def test_a_table_renamed_in_the_manifest_is_refused(published):
     root, marker, result = published
     manifest = read_metric_set(root, marker)
@@ -405,8 +437,22 @@ def test_q_bundles_and_class_c_use_exact_units_and_shared_reference(
         r["run_group_id"] for r in results if r["metric"].startswith("q_return_level")
     }
     assert fitted == {"3", "4"}
-    lookup = read_canonical_json(_engine(root, plan) / "metrics.json")["run_groups"]
-    assert lookup == plan["units"]
+    manifest = read_canonical_json(_engine(root, plan) / "metrics.json")
+    assert manifest["run_groups"] == plan["units"]
+    # Every fitted return level keeps its provenance: one record per bundle and
+    # metric, each location with its usable-block total and fitted parameters.
+    from blueearth_cst.experiment.metric_plan import RETURN_LEVEL_EVIDENCE_FILENAME
+
+    assert manifest["return_level_evidence"]["path"] == RETURN_LEVEL_EVIDENCE_FILENAME
+    evidence = read_canonical_json(_engine(root, plan) / RETURN_LEVEL_EVIDENCE_FILENAME)
+    assert evidence["schema_version"] == "return-level-evidence/1"
+    assert {item["run_group_id"] for item in evidence["bundles"]} == {"3", "4"}
+    for item in evidence["bundles"]:
+        assert {loc["location_id"] for loc in item["locations"]} == {"9", "2"}
+        for location in item["locations"]:
+            assert location["total"] == 30
+            assert location["total"] >= location["required"]
+            assert location["parameters"], "the fitted parameters are retained"
 
 
 def test_a_pre_release_v1_experiment_is_refused_by_name(tmp_path):

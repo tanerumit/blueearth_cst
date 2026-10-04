@@ -41,6 +41,10 @@ from blueearth_cst.experiment.wflow_response_reader import (
 from blueearth_cst.shared.provenance import file_sha256
 from blueearth_cst.shared.snake_utils import log_row, plural
 
+#: The published return-level provenance beside each v2 metric set's marker.
+RETURN_LEVEL_EVIDENCE_FILENAME = "return_level_evidence.json"
+RETURN_LEVEL_EVIDENCE_SCHEMA = "return-level-evidence/1"
+
 
 class MetricPlanStale(ValueError):
     """A scheduling plan cannot certify the requested live inputs or responses."""
@@ -749,7 +753,7 @@ def _publish_metric_set_v2(experiment_root, plan):
     check_live_metric_environment(plan)
     if any(path.exists() and any(path.iterdir()) for path in (engine, result)):
         raise ImmutableMetricSetError("partial metric set cannot be overwritten")
-    tables, _evidence = reduce_metric_plan(root, plan)
+    tables, evidence = reduce_metric_plan(root, plan)
     declarations_by_name = {
         item["name"]: item for item in plan["request"]["declarations"]
     }
@@ -772,6 +776,13 @@ def _publish_metric_set_v2(experiment_root, plan):
     }
     lookup = _csv_bytes(["run_group_id", "grain", "run_id"], plan["units"])
     environment = canonical_json_bytes(plan["request"]["metric_environment"])
+    # Each return level's provenance: usable block counts per member against
+    # the required minimum, the fitted parameters, fit and shape coverage, and
+    # the extraction / missingness / partial-block policies applied. Without it
+    # a published return level is a bare number that cannot be audited.
+    evidence_payload = canonical_json_bytes(
+        {"schema_version": RETURN_LEVEL_EVIDENCE_SCHEMA, "bundles": _plain(evidence)}
+    )
     report = return_level_validation.load_report_bytes()
     return_level_validation.verify_declaration(
         plan["request"]["return_level_validation"], report
@@ -788,6 +799,7 @@ def _publish_metric_set_v2(experiment_root, plan):
     (result / "metric_run_lookup.csv").write_bytes(lookup)
     (engine / "metric_environment.json").write_bytes(environment)
     (engine / return_level_validation.REPORT_FILENAME).write_bytes(report)
+    (engine / RETURN_LEVEL_EVIDENCE_FILENAME).write_bytes(evidence_payload)
     simulation = read_simulation_v2(root)
     manifest = {
         "schema_version": "metric-set/2",
@@ -818,6 +830,7 @@ def _publish_metric_set_v2(experiment_root, plan):
             for token in sorted(tables)
         ],
         "return_level_benchmark": ref(return_level_validation.REPORT_FILENAME, report),
+        "return_level_evidence": ref(RETURN_LEVEL_EVIDENCE_FILENAME, evidence_payload),
         "result_root": f"results/metric_sets/{short}",
         "engine_root": f"_engine/metric_sets/{short}",
     }
@@ -834,6 +847,11 @@ def read_metric_set(experiment_root, manifest_path):
             marker.parent.parent.name == "metric_sets"
             and marker.parent.parent.parent.name == "_engine"
         ):
+            if marker.name != "metrics.json":
+                raise ImmutableMetricSetError(
+                    f"metric set {manifest_path}: the engine marker is named "
+                    "metrics.json; another file in the set is not a marker"
+                )
             return _read_metric_set_v2(experiment_root, marker)
         raise ImmutableMetricSetError(
             f"metric set {manifest_path}: not an engine marker under "
@@ -871,7 +889,14 @@ def _read_metric_set_v2(experiment_root, marker):
     result = root / manifest["result_root"]
     if manifest["response_inventory"]["path"] != "../../response_inventory.json":
         raise ImmutableMetricSetError("metric inventory reference differs")
-    for item in [manifest["environment"], manifest["return_level_benchmark"]]:
+    artifacts = [manifest["environment"], manifest["return_level_benchmark"]]
+    # Sets published before 2026-10-04 carry no evidence and stay readable;
+    # one that names it must name the canonical file and match its bytes.
+    if "return_level_evidence" in manifest:
+        if manifest["return_level_evidence"]["path"] != RETURN_LEVEL_EVIDENCE_FILENAME:
+            raise ImmutableMetricSetError("return-level evidence reference differs")
+        artifacts.append(manifest["return_level_evidence"])
+    for item in artifacts:
         if file_sha256(engine / item["path"]) != item["sha256"]:
             raise ImmutableMetricSetError(f"metric artifact differs: {item['path']}")
     lookup = result / "metric_run_lookup.csv"

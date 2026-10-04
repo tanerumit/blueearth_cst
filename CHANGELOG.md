@@ -21,6 +21,21 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
   - A metrics-only run over a retained experiment publishes a new metric set
     with identical values.
 
+### Added
+
+- Each metric set retains its return-level evidence as
+  `_engine/metric_sets/<id>/return_level_evidence.json`, SHA-referenced from
+  the manifest and verified on read. For every fitted return level it records
+  the usable block counts per member against the required minimum, the fitted
+  parameters, fit and shape coverage, and the policies applied. Sets published
+  without it stay readable.
+
+### Changed
+
+- WF2 reads the public CMIP6 bucket anonymously. With no token, each fetch
+  process spent about 19 s searching for Google credentials first.
+- The metric-set reader accepts only `metrics.json` as a set's engine marker.
+
 ### Removed
 
 - The v1 -> v2 project-config migrator (`scripts/migrate_project_config.py`),

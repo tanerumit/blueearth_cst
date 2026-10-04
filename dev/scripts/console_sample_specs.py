@@ -640,7 +640,7 @@ total                               24
         f"{PROJECT}/benchmarks/wf3_benchmarks.md",
     ],
     jobs=[
-        # scenario_collection.py / generation_plan.py
+        # generation_plan.py / generation_publication.py
         Job(
             "snapshot_generation_inputs",
             seconds=5,

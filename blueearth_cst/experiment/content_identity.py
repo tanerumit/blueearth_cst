@@ -12,11 +12,10 @@ import json
 import os
 import re
 import tempfile
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path, PureWindowsPath
 from typing import Any
 
-from blueearth_cst.experiment.scenario_rows import ScenarioRow
 from blueearth_cst.shared.provenance import lock_file_sha256, short_digest
 
 
@@ -341,10 +340,6 @@ def _digest(value: Any, field: str) -> str:
     return value
 
 
-class SegmentCollision(ValueError):
-    """A directory segment is already held by a DIFFERENT full identity."""
-
-
 def identity_segment(value: Any, field: str) -> str:
     """Name a directory after the leading characters of a complete identity.
 
@@ -357,121 +352,10 @@ def identity_segment(value: Any, field: str) -> str:
 
     Truncation costs one property, and it is worth naming: a discovered
     directory is no longer self-describing, because a prefix cannot be checked
-    against anything on its own. :func:`claim_identity_segment` is what replaces
-    that property, and the two are meant to be used together.
+    against anything on its own, so every reader re-checks the full identity
+    recorded inside the directory.
     """
     return short_digest(_digest(value, field))
-
-
-def claim_identity_segment(
-    parent: Path,
-    value: Any,
-    occupant: Callable[[Path], str | None],
-    *,
-    field: str = "identity",
-) -> Path:
-    """Resolve an identity's directory, refusing to share it with another.
-
-    Because the segment is a deterministic prefix, exactly one sibling can ever
-    collide -- the one at that path -- so this is a single lookup rather than a
-    scan of the parent.
-
-    Args:
-        parent: Directory the segment is minted in.
-        value: The complete identity the directory stands for.
-        occupant: Reads the complete identity an EXISTING directory stands for,
-            returning ``None`` when it cannot be established. A partially
-            written claim returns ``None`` and is left to the caller's own
-            exclusivity rules, which already refuse to resume one.
-        field: Identity name, for the error message.
-
-    Raises:
-        SegmentCollision: The path is held by a different complete identity.
-            Loud, never a silent merge into another identity's directory.
-    """
-    target = Path(parent) / identity_segment(value, field)
-    if target.exists():
-        held = occupant(target)
-        if held is not None and held != value:
-            raise SegmentCollision(
-                f"{field}: {target} already holds {held}, not {value}"
-            )
-    return target
-
-
-def scenario_semantics_sha256(rows: Sequence[ScenarioRow]) -> str:
-    """Hash ordered semantic rows, stripping only run_id as required by R12."""
-    return content_sha256(
-        [
-            {key: value for key, value in row.as_record().items() if key != "run_id"}
-            for row in rows
-        ]
-    )
-
-
-def collection_id(intent: Mapping[str, Any]) -> str:
-    """Recompute the generation identity from the persisted intent projection.
-
-    Required identity fields raise on absence; the collection validator owns
-    full scenario-spec consistency and referenced-document verification.
-    """
-    for field, expected in (
-        ("schema_version", "scenario-collection/1"),
-        ("canonicalization_id", "collection-canon/1"),
-    ):
-        if intent[field] != expected:
-            raise ValueError(f"{field}: expected {expected!r}, got {intent[field]!r}")
-    capacity = intent["unit_id_capacity"]
-    if type(capacity) is not int or capacity < 1:
-        raise ValueError(
-            f"unit_id_capacity: expected positive integer, got {capacity!r}"
-        )
-    provider = intent["provider"]
-    if not isinstance(provider["name"], str) or not provider["name"]:
-        raise ValueError("provider.name: expected nonempty string")
-    projection = {
-        "schema_version": intent["schema_version"],
-        "scenario_spec": intent["scenario_spec"],
-        "scenario_semantics_sha256": _digest(
-            intent["scenario_semantics_sha256"], "scenario_semantics_sha256"
-        ),
-        "provider_name_and_revision": {
-            "name": provider["name"],
-            "revision": _digest(provider["revision"], "provider.revision"),
-        },
-        "unit_id_capacity": capacity,
-    }
-    for field in (
-        "generation_config",
-        "source_inventory",
-        "provider_code",
-        "environment",
-        "preparation_context",
-    ):
-        projection[f"{field}_sha256"] = _digest(intent[field]["sha256"], field)
-    return content_sha256(projection)
-
-
-def collection_revision(manifest: Mapping[str, Any]) -> str:
-    """Hash the produced-byte inventory in its declared order, excluding itself.
-
-    No sorting or normalization repairs a malformed inventory here; readiness
-    validation must reject wrong ordering, missing entries, and descriptors.
-    """
-    return content_sha256(
-        {
-            "collection_id": _digest(manifest["collection_id"], "collection_id"),
-            "intent_sha256": _digest(manifest["intent_sha256"], "intent_sha256"),
-            "scenario_table_sha256": _digest(
-                manifest["scenario_table"]["sha256"], "scenario_table.sha256"
-            ),
-            "scenario_type_artifact_inventory": manifest["scenario_type_artifacts"],
-            "preparation_context_sha256": _digest(
-                manifest["preparation_context"]["sha256"], "preparation_context.sha256"
-            ),
-            "ordered_forcing_inventory_with_descriptors": manifest["forcing"],
-        }
-    )
 
 
 #: Content-digest scheme for netCDF sources; stored beside the digest so a

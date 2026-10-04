@@ -143,6 +143,12 @@ force-exclude = true
 select = ["E4", "E7", "E9", "F", "I", "TC004"]
 
 [tool.ruff.lint.per-file-ignores]
+# Import order is the one rule whose verdict depends on OTHER files: ruff ranks
+# an import first- or third-party by whether that module still exists, so
+# deleting a module re-sorts every record that imports it. Records under
+# `dev/records` are sealed and must stay byte-identical, so they keep every
+# other check but not this one.
+"dev/records/**" = ["I001"]
 # NOTE: there is deliberately no F821 entry here. All 23 Snakemake `script:`
 # modules now read the injected object via the guarded
 # `if "snakemake" in globals()` idiom, which keeps them importable for unit

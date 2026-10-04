@@ -15,8 +15,12 @@ sys.modules[_SPEC.name] = wrapper
 _SPEC.loader.exec_module(wrapper)
 
 
-def test_board_root_is_main_even_when_another_worktree_is_first(monkeypatch):
-    main = Path(__file__).resolve().parents[1]
+def test_board_root_is_main_even_when_another_worktree_is_first(monkeypatch, tmp_path):
+    # A fake `main` worktree, not this checkout: session worktrees sparse-exclude
+    # `dev/tasks/` (the board lives only in the primary), so the test's own root
+    # would fail the wrapper's dev/tasks/ check wherever the suite runs from one.
+    main = tmp_path / "primary"
+    (main / "dev" / "tasks").mkdir(parents=True)
     output = (
         "worktree C:/other/session-1\n"
         "branch refs/heads/feat/example\n\n"

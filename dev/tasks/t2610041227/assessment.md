@@ -138,6 +138,22 @@ Consequences of rulings 3 and 4 that the implementation must carry:
 - Grep each retired spelling repo-wide and fix live references in the same
   commit (AGENTS.md convention); `dev/records/` stays unedited.
 
+### Ruling on v1 records (owner, 2026-10-04)
+
+**Retire v1 scenario-collection, simulation-record and response-inventory
+support, code and tests together.** Evidence: v1 records were introduced on
+2026-09-11 and superseded by v2 on 2026-09-22; `v0.2.0-alpha` predates both and
+`v0.3.0` writes only v2 (`freeze_simulation_v2`, `publish_response_inventory_v2`,
+`publish_simulation_v2`, `read_collection_v2`). Only pre-release experiments
+from that window are affected. The coverage was inverted: `metric_plan`'s
+expensive in-process tests all build a v1 experiment, while its production v2
+branch was tested only through stubbed v2 readers.
+
+Sequence: (1) a real retained-v2-experiment fixture plus v2 end-to-end metric
+tests; (2) port the `metric_plan`, carrier and R12 checkpoint tests onto it;
+(3) remove the v1 branches and modules with their tests. Open a PR for the
+batch, since it reaches `metric_plan` and `collection_resolution`.
+
 ## Tier 4 — cut runtime without deleting coverage
 
 1. `test_climate_store_freshness` (about 15% of total) guards cross-workflow

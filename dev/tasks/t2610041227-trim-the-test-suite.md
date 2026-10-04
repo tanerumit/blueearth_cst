@@ -18,14 +18,12 @@ updated: 2026-10-04
 
 ## Progress
 
-- [x] Preliminary assessment — tiers, measured cost shares and owner rulings in the backing document.
-- [x] Rule on the four migration-era guards — retire equivalence test, two of three R14 sweeps, the migrator and the gridded-key guard; consequences listed in the assessment.
-- [ ] Schedule a regular integration run before any retirement that leans on end-to-end coverage.
-- [x] Retire never-running and one-off tests — 27 R12 prototype cases, the R9 log-attribution falsifier and the HM-6b stub (`e0ae830b` on `chore/test-trimming`).
-- [ ] Port the two kept R12 checkpoint cases to `simulate_system.smk` once a retained v2 experiment fixture exists, then delete `test_r12_wf3_feasibility.py`.
-- [ ] Confirm the v1 writers and legacy WF3 modules are unreachable, then move shared fixtures onto v2 producers.
-- [ ] Retire the v1 code with its tests.
-- [ ] Cut runtime in the freshness, metric-plan, carrier and climate-figure files; settle the deselect marker.
+- [x] Preliminary assessment and owner rulings — tiers, cost shares and rulings in the backing document.
+- [x] Retire never-running and one-off tests — 27 R12 prototype cases, the R9 log-attribution falsifier, the HM-6b stub (`e0ae830b`).
+- [x] Build a real retained v2 experiment and move the metric, carrier, inventory and R12 checkpoint tests onto it (`8aced8a0`, `ec381eca`, `74792797`).
+- [x] Retire the v1 records with their tests and re-record the baseline metric set (`a8311a0a`, `fd1324c1`, `5dbd1381`, `b5d36810`); open a PR for the batch.
+- [ ] Retire the migration-era guards per the rulings: the migrator with its tests and guide, the equivalence test, two R14 sweeps, the gridded-key guard.
+- [ ] Cut runtime in the freshness, carrier and climate-figure files; settle the deselect marker; schedule a regular integration run.
 
 ## Refs
 

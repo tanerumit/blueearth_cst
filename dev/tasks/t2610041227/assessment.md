@@ -200,3 +200,24 @@ lower the `test-fast` floor.
 `test_todoboard_wrapper::test_board_root_is_main_even_when_another_worktree_is_first`
 failed on a clean `chore/test-trimming` in the session-2 worktree; it appears to
 depend on the worktree path (inferred, not diagnosed).
+
+## Findings from the v1 retirement (2026-10-04)
+
+The v1 metric tests pinned four properties the v2 metric-set code does not
+have. They were not ported as tests, because some may be deliberate v2 design;
+each needs an owner decision before it becomes either a fix or a recorded
+non-goal:
+
+1. `_read_metric_set_v2` does not check table rows against the plan's expected
+   result keys, so a table edited together with its manifest digests is read.
+2. It does not refuse extra, unlisted tables, and it accepts a renamed engine
+   marker file inside the right directory.
+3. `_publish_metric_set_v2` does not re-check the live metric environment just
+   before writing the marker (v1 did, after flushing payloads).
+4. The v2 manifest does not retain the per-unit return-level evidence the v1
+   manifest carried; `reduce_metric_plan`'s evidence is discarded.
+
+Also stale before this work: the source notebook
+`docs/notebooks/Climate Stress Test.ipynb` reads the v1 experiment layout
+(`config/simulation.json`, `scenario_table.csv`, `stress_test_lookup.csv`),
+which v0.3.0 already does not write.

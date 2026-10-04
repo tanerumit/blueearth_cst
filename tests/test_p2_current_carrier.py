@@ -4,79 +4,42 @@ import importlib.util
 import json
 import sys
 from pathlib import Path
-from shutil import copytree
 
 import pytest
 import yaml
 
-from blueearth_cst.experiment.content_identity import (
-    canonical_json_bytes,
-    read_canonical_json,
-)
 from blueearth_cst.experiment.metric_plan import (
     build_metric_plan,
     current_metric_request,
 )
-from tests.test_collection_preparation import retained  # noqa: F401
-from tests.test_metric_plan import metric_inputs  # noqa: F401
-from tests.test_response_inventory import frozen  # noqa: F401
-from tests.test_scenario_collection import planned  # noqa: F401
-from tests.test_simulation_record import inputs  # noqa: F401
-from tests.test_wflow_response_reader import native  # noqa: F401
+from tests._v2_experiment import (
+    FIXTURE_ENVIRONMENT,
+    RUN_IDS,
+    build_v2_experiment,
+    copy_v2_experiment,
+)
 
 REPO = Path(__file__).resolve().parents[1]
 HARNESS = REPO / "scripts/simulate_system.py"
 
 
+@pytest.fixture(scope="module")
+def built(tmp_path_factory):
+    return build_v2_experiment(tmp_path_factory.mktemp("carrier"))
+
+
 @pytest.fixture
-def carrier_state(metric_inputs, tmp_path):  # noqa: F811
-    original, _ = metric_inputs
-    project = tmp_path / "retained-project"
-    root = project / "experiments" / "metric_experiment"
-    copytree(original, root)
-    # The lower-level fixture uses a name outside the production namespace grammar.
-    record_path = root / "config/simulation.json"
-    record = read_canonical_json(record_path)
-    record["experiment_name"] = root.name
-    record_path.write_bytes(canonical_json_bytes(record))
-    workflow = tmp_path / "wf3.yml"
-    workflow.write_text(
-        yaml.safe_dump(
-            {
-                "experiment_name": root.name,
-                "operation": "metrics-only",
-                "metrics": ["gwr"],
-                "water_year_start": "jan",
-                "seed": "ignored",
-                "n_realizations": "ignored",
-            }
-        ),
-        encoding="utf-8",
+def carrier_state(built, tmp_path, monkeypatch):
+    """A retained v2 experiment whose project config declares metrics-only."""
+    from blueearth_cst.experiment import metric_plan
+
+    monkeypatch.setattr(
+        metric_plan, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
     )
-    config = tmp_path / "project.yml"
-    config.write_text(
-        yaml.safe_dump(
-            {
-                "project": {
-                    "project_dir": str(project),
-                    "catalog": str(tmp_path / "missing-generation.yml"),
-                },
-                "workflows": {
-                    "simulate_system": {"enabled": True, "config_path": workflow.name},
-                    "build_model": {
-                        "enabled": True,
-                        "config_path": "missing-model.yml",
-                    },
-                },
-            }
-        ),
-        encoding="utf-8",
-    )
-    request = current_metric_request(root, ["gwr"], "YS-JAN")
-    plan = build_metric_plan(root, request)
-    assert not (project / "models").exists()
-    assert not (tmp_path / "missing-generation.yml").exists()
-    return config, root, plan
+    experiment = copy_v2_experiment(built, tmp_path)
+    root = experiment.root
+    plan = build_metric_plan(root, current_metric_request(root, ["gwr"], "YS-JAN"))
+    return experiment.config, root, plan
 
 
 @pytest.mark.parametrize("operation", ["simulate-and-metrics", "metrics-only"])
@@ -105,7 +68,7 @@ def test_current_carrier_operation_target_matrix(
         "wrong-set": [
             str(root / "results/metric_sets" / ("0" * 64) / "gwr_indicators.csv")
         ],
-        "wflow": [str(root / "hydrology/wflow/output/run_01.csv")],
+        "wflow": [str(root / f"hydrology/wflow/output/run_{RUN_IDS[0]}.csv")],
         "mixed": ["metrics", plan["targets"]["gwr"]],
         "unknown": ["unknown"],
     }
@@ -124,7 +87,7 @@ def test_current_carrier_operation_target_matrix(
     ) or (operation == "metrics-only" and target in {"metrics", "selected"})
     if allowed:
         invocation_dir = root.parents[1] / "config/runs/_engine/invocations"
-        assert not invocation_dir.exists()
+        assert not list(invocation_dir.glob("*.json"))
         assert harness.main(argv) == 0
         assert len(calls) == 1
         command, kwargs = calls[0]

@@ -9,6 +9,21 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 ## [Unreleased]
 
+### Breaking
+
+- Every metric-set id changes. Metric identity hashes the metric-planning
+  code, and that code lost its pre-release v1 branches. Existing metric sets
+  stay readable. A metrics-only re-run publishes a new set with identical
+  values instead of reusing the old one.
+
+### Removed
+
+- Support for the pre-release v1 records: the `config/simulation.json`
+  simulation record, the v1 response inventory, `scenario-collection/1`, and
+  `metric-set/1`. No release wrote them; they existed only between 2026-09-11
+  and 2026-09-22. Such an experiment is now refused by name; simulate it again
+  under a new experiment name.
+
 ## [v0.3.0] — 2026-10-01
 
 Pre-1.0 minor release with incompatible user interfaces, output contracts,

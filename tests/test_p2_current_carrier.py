@@ -25,21 +25,35 @@ HARNESS = REPO / "scripts/simulate_system.py"
 
 @pytest.fixture(scope="module")
 def built(tmp_path_factory):
-    return build_v2_experiment(tmp_path_factory.mktemp("carrier"))
+    """One retained experiment and its metric plan's gwr target, relative to it.
+
+    Planning is the expensive part of each case and its result is
+    project-relative, so it is computed once here rather than on every copy.
+    """
+    from blueearth_cst.experiment import metric_plan
+
+    experiment = build_v2_experiment(tmp_path_factory.mktemp("carrier"))
+    with pytest.MonkeyPatch.context() as patch:
+        patch.setattr(
+            metric_plan, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
+        )
+        root = experiment.root
+        plan = build_metric_plan(root, current_metric_request(root, ["gwr"], "YS-JAN"))
+    return experiment, Path(plan["targets"]["gwr"]).relative_to(root)
 
 
 @pytest.fixture
 def carrier_state(built, tmp_path, monkeypatch):
-    """A retained v2 experiment whose project config declares metrics-only."""
+    """A private copy of the retained v2 experiment, declaring metrics-only."""
     from blueearth_cst.experiment import metric_plan
 
     monkeypatch.setattr(
         metric_plan, "resolve_metric_environment", lambda: FIXTURE_ENVIRONMENT
     )
-    experiment = copy_v2_experiment(built, tmp_path)
+    source, gwr = built
+    experiment = copy_v2_experiment(source, tmp_path)
     root = experiment.root
-    plan = build_metric_plan(root, current_metric_request(root, ["gwr"], "YS-JAN"))
-    return experiment.config, root, plan
+    return experiment.config, root, {"targets": {"gwr": str(root / gwr)}}
 
 
 @pytest.mark.parametrize("operation", ["simulate-and-metrics", "metrics-only"])

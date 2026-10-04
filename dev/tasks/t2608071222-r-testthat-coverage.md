@@ -12,11 +12,11 @@ updated: 2026-08-07
 > [!note] Overview
 > **What changes** — The R layer has no test infrastructure; Python helpers carry the coverage.
 > **Why it matters** — Decided at the start of R5, not overlooked — but it means an R-side regression has no gate at all.
-> **What it takes** — Start when: The R layer grows past the weather-generator wrappers, or an R-side defect ships.
+> **What it takes** — Nothing for now. Pick it up when the R code grows beyond the weather-generator wrappers, or when an R-side bug ships.
 
 ## Progress
 
-- [ ] Reassess once the start condition in Effort holds
+- [ ] Check whether the condition in What it takes has happened
 
 ## Refs
 

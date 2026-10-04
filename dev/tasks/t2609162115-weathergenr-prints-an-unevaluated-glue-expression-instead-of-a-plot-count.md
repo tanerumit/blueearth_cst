@@ -16,11 +16,11 @@ updated: 2026-09-28
 > of the values it meant to interpolate.
 > **Why it matters** — One cosmetically broken line in every WF3 run's console and merged
 > log. It misreports nothing else; no artifact and no number is affected.
-> **What it takes** — Start when: Recheck when `weathergenr` releases a version that changes evaluation plot logging.
+> **What it takes** — Nothing to do here; recheck when a new `weathergenr` release changes how evaluation plots are logged.
 
 ## Progress
 
-- [ ] Reassess once the start condition in Effort holds
+- [ ] Check whether the condition in What it takes has happened
 
 ## The evidence
 

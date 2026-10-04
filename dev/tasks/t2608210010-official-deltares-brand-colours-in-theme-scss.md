@@ -13,8 +13,8 @@ updated: 2026-09-27
 > [!note] Overview
 > **What changes** — `docs/theme.scss` and the favicon use three approximate Deltares palette values: navy `#0a2e4d`, blue `#0b7ebb`, and teal `#00a0aa`.
 > **Why it matters** — The site should use verified brand values if it is presented as an official Deltares-branded site; the current hexes were not copied from a brand guide.
-> **What it takes** — Start when: The owner supplies the official palette or explicitly accepts the current approximations.
+> **What it takes** — Waits on the owner: either the official palette, or a decision to keep the current close matches.
 
 ## Progress
 
-- [ ] Reassess once the start condition in Effort holds
+- [ ] Check whether the condition in What it takes has happened

@@ -5,7 +5,7 @@ status: backlog
 effort: 2
 area: testing
 queue: 6
-doc: dev/tasks/t2610041227/assessment.md
+doc:
 created: 2026-10-04
 updated: 2026-10-05
 ---
@@ -28,5 +28,5 @@ updated: 2026-10-05
 
 ## Refs
 
-- [Assessment](t2610041227/assessment.md) — evidence, tiers and recommendations from 2026-10-04.
+- [Assessment](../records/reviews/2026-10-04-test-suite-trim-assessment.md) — evidence, tiers and recommendations from 2026-10-04.
 - Prior assessment: `git show c7992c6f^:dev/reviews/2026-08-11_test-suite-bloat-assessment.md`.

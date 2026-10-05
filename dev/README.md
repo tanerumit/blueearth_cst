@@ -14,7 +14,7 @@ it goes and when it may be deleted.
 | Path | Holds |
 |---|---|
 | `tasks/` | **The board.** One note per open item — `todo-item` (work) or `watch-item` (true, tracked, no action intended). The source of truth |
-| ↳ `origin:` | Which milestone the item fell out of, using `roadmap.md`'s own IDs (`R10`, `P3-3`, `M02b`). Set it only from a **recorded** origin — the source item's ID, or the `followups.md` section it was migrated from. Leave it blank when the lineage would have to be inferred from prose, and say so in the note's `## Refs`: the Origin column is read when prioritising, so a guess there costs more than a gap |
+| ↳ `origin:` | Which milestone the item fell out of, using `reference/roadmap.md`'s own IDs (`R10`, `P3-3`, `M02b`). Set it only from a **recorded** origin — the source item's ID, or the `followups.md` section it was migrated from. Leave it blank when the lineage would have to be inferred from prose, and say so in the note's `## Refs`: the Origin column is read when prioritising, so a guess there costs more than a gap |
 | `TODO.md` | **Generated** view of `tasks/` — `todoboard render` writes it and the banner says do-not-edit. Never hand-edit it; edit the note |
 | `LOG.md` | Closure ledger. One row per item the board has closed since 2026-08-07, **capped at three short sentences** — see the cap below |
 | `working/` | Legacy working notes awaiting classification and migration; do not add files or folders |
@@ -45,8 +45,7 @@ Git and never committed.
 
 | Path | Holds |
 |---|---|
-| `roadmap.md` | The phase narrative: what each milestone set out to do and how it landed |
-| `reference/` | The rules: `naming.md`, `agent-activation.md`, `git-conventions.md`, `contracts/`, `workflows/` — see its `README.md` |
+| `reference/` | The rules and the phase narrative (`roadmap.md`): `naming.md`, `agent-activation.md`, `git-conventions.md`, `contracts/`, `workflows/` — see its `README.md` |
 
 **Happened** — records of what was done, kept by identity:
 
@@ -82,6 +81,18 @@ Shard `tasks/` or `records/reviews/` into `<year>/` subfolders only if a flat fo
 ever grows unwieldy. Generated results, figures, and model outputs go in the
 project-root `output/` (gitignored), not `dev/`. Create optional folders only
 when first needed — and put new ones in the table above when you do.
+
+## Exceptions
+
+`project-system`'s layout defines the `dev/` grammar; these entries sit outside
+it on purpose. Run `brain status --layout --project .` from the brain
+infrastructure checkout to check conformance.
+
+| Path | Owner | Retention | Depends on |
+|---|---|---|---|
+| `dev/baseline/` | Replication validation | Frozen per baseline; replaced only by a recorded successor baseline | `dev/scripts/check_baseline.py` (`MANIFEST_PATH_DEFAULT`), `build_model.smk`, `analyze_projections.smk`, `config/advanced_settings.yml` |
+| `dev/00-current-board-main/` | `dev/scripts/setup-board-view.ps1` | Ignored link to main's `dev/`, session worktrees only | `dev/scripts/setup-board-view.ps1`, `.githooks` checkout and merge hooks, `.gitignore` |
+| `dev/working/` | Repository owner | Frozen legacy; no new files; migrate folder by folder as citations move | `dev/reference/sealed-records.yml`, `.gitattributes` |
 
 ## The promotion rule
 

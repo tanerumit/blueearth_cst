@@ -6,6 +6,7 @@ This is the **stays-true** tier. What happened lives in `../records/milestones/`
 
 | Path | Holds |
 |---|---|
+| `roadmap.md` | The phase narrative: what each milestone set out to do and how it landed. Moved from the `dev/` root on 2026-10-05 |
 | `naming.md` | Prescriptive style guide for identifiers and files, with `MUST` / `SHOULD` / `MAY` normative force |
 | `documentation-guidelines.md` | Audience, placement, accuracy, and review rules for user-facing documentation |
 | `wf0-figure-filename-rule.md` | The WF0 figure filename grammar (`<dataset_scope>_<variable>_<plot_context>_<spatial_scope>`), agreed 2026-08-17. Promoted out of `../working/` on 2026-08-19 — two Snakefiles, a shipped module and a test cite it |

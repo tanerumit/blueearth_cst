@@ -19,7 +19,7 @@
 >   interchange contracts, and performance work (the wf3 stress-test sweep is
 >   ~35 % faster, value-identical).
 >
-> Phase 4 is open; CI was its first item. `dev/roadmap.md` is the authoritative
+> Phase 4 is open; CI was its first item. `dev/reference/roadmap.md` is the authoritative
 > status record — this note summarises it and may lag. See also `CHANGELOG.md`,
 > which tracks releases rather than milestones.
 
@@ -111,7 +111,7 @@ pixi shell
 > [!WARNING]
 > **Not supported in v0.2.0-alpha.** Docker / Linux end-to-end validation is
 > **deferred** in this fork — see "Deferred: Linux replication" in
-> `dev/roadmap.md`. The `Dockerfile` builds against the pixi env but is not
+> `dev/reference/roadmap.md`. The `Dockerfile` builds against the pixi env but is not
 > exercised in CI. Docker support will be re-introduced in a later Phase 2
 > milestone.
 >
@@ -349,7 +349,7 @@ User-facing:
 
 Fork-specific (development):
 
-- `dev/roadmap.md` — milestone roadmap: what each phase set out to do and how it
+- `dev/reference/roadmap.md` — milestone roadmap: what each phase set out to do and how it
   landed.
 - `dev/reference/git-conventions.md` — branch / tag inventory plus the
   branching, tagging, and commit-message conventions.
@@ -364,7 +364,7 @@ Fork-specific (development):
   evidence notes.
 - `dev/tasks/` — the open backlog, with closed items retained and dated.
 - `CHANGELOG.md` — release history (release-level; milestone detail lives in
-  `dev/roadmap.md`).
+  `dev/reference/roadmap.md`).
 
 ## Publishing
 
@@ -374,7 +374,7 @@ Fork-specific (development):
 > **v0.1.0-alpha only.** The build / tag / push instructions below describe the
 > upstream Deltares container registry workflow for the conda-based stack.
 > Docker publishing is **still deferred** in the pixi-based fork — see
-> "Deferred: Linux replication" in `dev/roadmap.md`. It was *not* re-introduced
+> "Deferred: Linux replication" in `dev/reference/roadmap.md`. It was *not* re-introduced
 > during Phase 2 or 3, and is not currently scheduled. It remains blocked on the
 > same thing as Linux replication (no Linux machine), though CI's green
 > `ubuntu-latest` leg now shows the linux-64 half of `pixi.lock` resolves and

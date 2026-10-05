@@ -263,13 +263,19 @@ metrics-only run.
   process.
 - **Relocation defect**: copying `test_local` between worktrees fails at WF3
   (board task t2610042152).
+- **Metric-set gaps** (landed `da9f2e82`): return-level evidence is retained
+  as `return_level_evidence.json`, and the reader accepts only `metrics.json`
+  as the engine marker. Gaps 1-3 stay non-goals per the rulings above.
+- **Cleanup** (landed `a2dbd0d7`): `check_baseline.py` reads only the v2
+  metric-set layout, and a test that replaced `hydromt` in `sys.modules`
+  process-wide no longer leaks into other files under xdist.
 
 Also stale before this work: the source notebook
-`docs/notebooks/Climate Stress Test.ipynb` reads the v1 experiment layout
+`docs/notebooks/Climate Stress Test.ipynb` read the v1 experiment layout
 (`config/simulation.json`, `scenario_table.csv`, `stress_test_lookup.csv`),
-which v0.3.0 already does not write.
+which v0.3.0 already does not write. Ported to the v2 records in `5d7887ba`.
 
-The site guides `docs/site/guide/outputs.qmd` and
-`docs/site/scientific-approach/conventions-and-interpretation.qmd` still
-describe the metric-set/1 vocabulary (`unit_index.csv`, `unit_id`); v0.3.0
-writes `metric_run_lookup.csv` and `run_group_id`.
+Correction: an earlier draft of this section said `docs/site/guide/outputs.qmd`
+and `docs/site/scientific-approach/conventions-and-interpretation.qmd` still
+used the metric-set/1 vocabulary. They did not; both already describe
+`metric_run_lookup.csv` and `run_group_id`. Only the notebook was stale.

@@ -2,13 +2,12 @@
 title: Trim the test suite by cost and lasting value
 type: todo-item
 status: backlog
-branch: chore/test-trimming
 effort: 2
 area: testing
 queue:
 doc: dev/tasks/t2610041227/assessment.md
 created: 2026-10-04
-updated: 2026-10-04
+updated: 2026-10-05
 ---
 
 > [!note] Overview
@@ -22,9 +21,10 @@ updated: 2026-10-04
 - [x] Retire never-running and one-off tests — 27 R12 prototype cases, the R9 log-attribution falsifier, the HM-6b stub (`960bef79` on `chore/test-trimming`).
 - [x] Build a real retained v2 experiment and move the metric, carrier, inventory and R12 checkpoint tests onto it (`178d09f8`, `7fb676c9`, `416c68cb`).
 - [x] Retire the v1 records with their tests; re-record the baseline metric set (`47963863`, `c073e9b3`, `546339c3`, `f5b77fc8`, `83749402`).
-- [ ] Open the PR for the batch, read both CI legs, land; then repeat the metrics-only re-record in every other worktree's `test_local`.
-- [ ] Run a full baseline (WF3+WF4) and re-record: the collection and simulation ids moved too.
-- [ ] Retire the migration-era guards per the rulings; cut runtime in the freshness, carrier and climate-figure files; schedule a regular integration run.
+- [x] Land the batch with both CI legs green (PR #12, `9182b0b5`); re-record the full manifest from a fresh-root run (`95762b58`).
+- [x] Retire the migration-era guards per the rulings, keeping the `save_grids` guard (`70fc6173`); cut runtime in the freshness, carrier and tamper files (`29c1ebcf`); add `pixi run test-e2e` (`d503d65d`).
+- [x] Read CMIP6 anonymously (`1bd67a16`); retain return-level evidence (`da9f2e82`); port the notebook and `check_baseline` to v2 (`a2dbd0d7`).
+- [ ] Re-seed `test_local` in session-1 and session-2 from the primary's re-recorded tree, then close.
 
 ## Refs
 

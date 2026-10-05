@@ -112,6 +112,10 @@ pixi run python scripts/run_workflow.py build_model --config test_case/project_c
 
 ## Troubleshooting
 
+- **R says Rtools is required** during `pixi run install` → no separate Rtools
+  installation is needed for this toolbox. The pinned `weathergenr` package is
+  pure R, and pixi supplies its dependencies. Let the install finish; investigate
+  only if it ends with an error.
 - **PowerShell says running scripts is disabled** when entering `pixi shell` →
   run commands with `pixi run`, as shown in Step 7. This does not require a
   change to your PowerShell execution policy.

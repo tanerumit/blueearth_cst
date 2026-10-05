@@ -13,7 +13,7 @@
 #
 # **Editing either set means editing both.** `dev/baseline/manifest.json` is
 # recorded from the Windows set and nothing else; end-to-end validation on Linux
-# is deferred (dev/roadmap.md), so this set's obligation is to parse cleanly and
+# is deferred (dev/reference/roadmap.md), so this set's obligation is to parse cleanly and
 # to stay a twin. `tests/test_cli.py` dry-runs it against `build_model.smk`.
 #
 # Paths are relative to the repo root, where you run Snakemake, except

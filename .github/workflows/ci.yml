@@ -54,7 +54,7 @@ jobs:
           # drifted from pixi.toml, so lock drift becomes a CI failure instead of
           # a surprise on someone's next `pixi install`. This is also the first
           # place the linux-64 half of pixi.lock has ever been resolved at all
-          # (no Linux machine has been available — see dev/roadmap.md
+          # (no Linux machine has been available — see dev/reference/roadmap.md
           # "Deferred: Linux replication"), so the ubuntu leg doubles as the
           # de-risking step for that parked work.
           locked: true

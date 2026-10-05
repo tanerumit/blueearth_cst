@@ -1478,7 +1478,7 @@ landed the feasibility baseline, logical contracts, durable handoffs and the
 entry-point extraction, each with signed independent acceptance; the GF15
 estimator replacement followed as a four-stage production integration. The
 implementation record is `t2609100916`; the gate-by-gate position is
-[validation-map.md](milestones/r12/implementation/validation-map.md).
+[validation-map.md](../records/milestones/r12/implementation/validation-map.md).
 
 **What the seal covers.** Two runnable entry points with metrics-only
 recomputation, the successor project layout, and the L-moment GEV return-level
@@ -1487,30 +1487,30 @@ screening only**. The standing baseline was re-established from the tracked seed
 and all three standing checks pass — `check_baseline check` 7 targets,
 `snapshot_project_tree` MAP CLEAN at 326 paths with 0 unmapped against the
 previous 75. Evidence:
-[successor-baseline-record.md](milestones/r12/implementation/evidence/successor-baseline-record.md),
-[standing-seal-status.md](milestones/r12/implementation/evidence/standing-seal-status.md).
+[successor-baseline-record.md](../records/milestones/r12/implementation/evidence/successor-baseline-record.md),
+[standing-seal-status.md](../records/milestones/r12/implementation/evidence/standing-seal-status.md).
 
 **What the seal does NOT cover, and is not implied by it.** Linux setup and
 parity (D8 handoff 2/4) were owner-deferred on 2026-09-14 and ruled out of the
 2026-09-15 seal. They were subsequently accepted within the tested domain on
 2026-09-26, on separate
-[Linux evidence](milestones/r12/implementation/evidence/gf15-production-integration/linux-qualification/execution-record.md)
-and an [independent verdict](milestones/r12/implementation/evidence/gf15-production-integration/linux-qualification/independent-verdict.md).
+[Linux evidence](../records/milestones/r12/implementation/evidence/gf15-production-integration/linux-qualification/execution-record.md)
+and an [independent verdict](../records/milestones/r12/implementation/evidence/gf15-production-integration/linux-qualification/independent-verdict.md).
 This does not retroactively extend the seal. The §7.5 owner
 method ruling on the estimator is outstanding. Actual-bundle applicability
 remains `unestablished` — the 8x benchmark is a post-results development rescore,
 not independent validation — and low-flow return levels are unvalidated in both
 the near-zero and outside-tested-shape regimes. GF15's own verdict
-([integration-verdict.md](milestones/r12/implementation/evidence/gf15-production-integration/integration-verdict.md))
+([integration-verdict.md](../records/milestones/r12/implementation/evidence/gf15-production-integration/integration-verdict.md))
 rests on two independent reviews plus an owner ruling closing the loop, not on
 three reviews; the corrections that closed round two are executor-verified only.
 
 The owner accepted the reviewed v6
-[workflow design](milestones/r12/wf3-simulation-identity-design.md) on
+[workflow design](../records/milestones/r12/wf3-simulation-identity-design.md) on
 2026-09-10. Astra approved its final scoped delta with no findings. R12 is
 registered for implementation; no runtime or scientific validation is claimed.
-The [frozen intake](milestones/r12/simulation-identity-intake.md) and
-[verbatim review archive](milestones/r12/wf3-simulation-identity-review/)
+The [frozen intake](../records/milestones/r12/simulation-identity-intake.md) and
+[verbatim review archive](../records/milestones/r12/wf3-simulation-identity-review/)
 preserve the scope rulings, original findings and their dispositions.
 
 **Accepted destination.** Two independently runnable entry points:
@@ -1526,7 +1526,7 @@ fingerprints are computed internally. Explicit collection-manifest reuse is adva
 materialize durable handoffs there, then extract entry points and migrate config,
 runner and references atomically. The accepted design §§4.2, 9 and 12 govern
 sequencing, file ownership and the GF-1..32 claim-to-falsifier gates. The
-[preparation handoff](milestones/r12/wf3-simulation-identity-task-brief.md) and
+[preparation handoff](../records/milestones/r12/wf3-simulation-identity-task-brief.md) and
 `t2609100916` track the next work. Baseline preparation, framework feasibility,
 source/response checkpoint behavior, portability, numerical equivalence and
 scientific validation remain prerequisites, not completed checks.

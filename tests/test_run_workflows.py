@@ -570,8 +570,12 @@ def test_the_sequence_is_drawn_as_a_rail_of_nodes(tmp_path, capture_runs, capsys
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
     lines = [line.strip() for line in out.splitlines()]
 
+    # Nothing has run when the opening block prints, so every node is hollow;
+    # the closing block's `ran` rows fill the node of each completed workflow.
     enabled = lines.index(next(ln for ln in lines if "[1/4]  wf0" in ln))
-    assert lines[enabled].startswith(rw._NODE_ON)
+    assert lines[enabled].startswith(rw._NODE_OFF)
+    assert lines[lines.index("sequence") + 1] == ""
+    assert f"{rw._NODE_ON}  wf0 analyze_climate" in out
 
     disabled = lines.index(next(ln for ln in lines if "wf2 analyze_projections" in ln))
     assert lines[disabled].startswith(rw._NODE_OFF)
@@ -830,7 +834,8 @@ def test_closing_block_names_what_ran_how_long_and_where_it_landed(
     # `ran` lists what was invoked, in order, and nothing else -- a group headed
     # "ran" naming a workflow that did not is worse than not printing it.
     ran = out.split("\n  ran\n")[1].split("\n\n")[0].splitlines()
-    assert [line.split()[0] for line in ran] == ["wf0", "wf1", "wf3", "wf4"]
+    assert [line.split()[0] for line in ran] == [rw._NODE_ON] * 4
+    assert [line.split()[1] for line in ran] == ["wf0", "wf1", "wf3", "wf4"]
 
 
 def test_failure_console_carries_the_verdict_and_what_did_not_run(

@@ -26,11 +26,11 @@ schema_version: 2
 
 project:
   project_dir: test_case/test_rapid
-  # Catalog order is precedence order. Keep the original local base catalog,
+  # Catalog order is precedence order. Use the Deltares P-drive base catalog,
   # then replace only `era5` with the faster P-drive Zarr source. ERA5 requests
   # must end by 2023-02-01.
   catalog:
-  - config/catalogs/deltares_data.yml
+  - config/catalogs/deltares_data_pdrive.yml
   - config/catalogs/deltares_era5_daily_zarr.yml
 
 
@@ -42,6 +42,9 @@ basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833
   output_locations: test_case/test_data/output_locations.csv
+  sources:
+    rivers: hydro_rivers_lin
+    lulc: globcover
 
 
 # -----------------------------------------------------------------------------

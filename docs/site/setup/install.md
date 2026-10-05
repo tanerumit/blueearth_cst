@@ -3,6 +3,14 @@
 Step-by-step setup for running the BlueEarth Climate Stress Test toolbox on a
 fresh Windows machine. Use **Windows PowerShell** for every command below.
 
+Before starting, install Git for Windows so you can clone the project in Step 4:
+
+```powershell
+winget install --id Git.Git --exact --source winget
+```
+
+Close and reopen PowerShell, then check that `git --version` reports a version.
+
 Steps 1–3 are a one-time machine setup. Steps 4–7 install the project itself.
 
 ## Step 1 — Install pixi
@@ -81,32 +89,56 @@ where it left off. (If it keeps failing here, go back and do step 2.)
 
 ## Step 7 — Check that it works
 
-Enter the project environment:
+Run the quick check inside the project environment (without opening a separate
+shell):
 ```powershell
-pixi shell
+pixi run pytest tests/test_cli.py
 ```
-Run the quick check (validates all three workflows without heavy computation):
-```powershell
-pytest tests/test_cli.py
-```
+On success, pytest ends with a summary like `20 passed in 12.34s` (the time
+varies). A `FAILED` or `ERROR` summary means the check did not pass; read the
+error above it before continuing.
 This is fast but only checks that the workflows are wired correctly — it does not
 actually run them.
 
+The workflow runs below require access to the Deltares P-drive; `git clone` and
+`pixi install` do not download its HydroMT data. The supplied project catalogs
+expect `P:\wflow_global\hydromt`. Check that it is mounted before running a model:
+
+```powershell
+Test-Path 'P:\wflow_global\hydromt'
+```
+
+If this returns `False`, mount the Deltares P-drive, or select a catalog for
+data available on this machine. The model will fail at Rule 1.01 with
+`None of the specified roots were found` until the data are available.
+
 For a full end-to-end check that runs all five workflows to completion on the
-small rapid test basin, in a fresh temporary project folder (needs the data files
-from step 5, Julia, `pixi run install`, and internet access for the CMIP6 data;
-expect tens of minutes):
+small rapid test basin, in a fresh temporary project folder (requires the
+Deltares P-drive, Julia, `pixi run install`, and internet access for the
+CMIP6 data; expect tens of minutes):
 ```powershell
 pixi run test-e2e
 ```
 
 Or run the small test model directly:
 ```powershell
-python scripts/run_workflow.py build_model --config test_case/project_config_baseline.yml --project-dir test_case/test_local --cores 1
+pixi run python scripts/run_workflow.py build_model --config test_case/project_config_baseline.yml --project-dir test_case/test_local --cores 1
 ```
 
 ## Troubleshooting
 
+- **`Python was not found`** when running a workflow command → prefix it with
+  `pixi run`, as in Step 7. Python is installed in the project environment.
+- **`None of the specified roots were found`** in Rule 1.01 → the HydroMT data
+  root expected by the project's catalog is unavailable. Run the `Test-Path`
+  check in Step 7, then mount the P-drive or select a catalog for its location.
+- **R says Rtools is required** during `pixi run install` → no separate Rtools
+  installation is needed for this toolbox. The pinned `weathergenr` package is
+  pure R, and pixi supplies its dependencies. Let the install finish; investigate
+  only if it ends with an error.
+- **PowerShell says running scripts is disabled** when entering `pixi shell` →
+  run commands with `pixi run`, as shown in Step 7. This does not require a
+  change to your PowerShell execution policy.
 - **"`1.11.7` is not installed"** when running a workflow → you have a different
   Julia version. Run `juliaup add 1.11.7`.
 - **"Access is denied" or "directory not empty"** during a Julia install → do

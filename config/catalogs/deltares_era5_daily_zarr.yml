@@ -1,9 +1,7 @@
 # Project-owned ERA5 override for the rapid project's existing base catalog.
 #
-# Load this file AFTER `deltares_data.yml`. HydroMT retains the root captured by
-# every source when its catalog is parsed, so this P-drive root applies to the
-# replacement `era5` source only. The other sources retain the original
-# C:\data root. The complete entry is intentional: DataCatalog replacement is
+# Load this file AFTER `deltares_data_pdrive.yml`. The complete entry is
+# intentional: DataCatalog replacement is
 # at source level, not a recursive YAML merge.
 #
 # The Zarr store ends earlier than the netCDF series. The extraction validates

@@ -28,7 +28,7 @@ schema_version: 2
 
 project:
   project_dir: test_case/gabon
-  catalog: config/catalogs/deltares_data_linux.yml
+  catalog: config/catalogs/deltares_data_pdrive.yml
 
 
 # -----------------------------------------------------------------------------
@@ -39,6 +39,9 @@ basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833
   output_locations: test_case/test_data/output_locations.csv
+  sources:
+    rivers: hydro_rivers_lin
+    lulc: globcover
   delineation:
     max_subbasins: 11
 

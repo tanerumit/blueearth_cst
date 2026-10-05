@@ -143,7 +143,7 @@ harmless in a browser but not offline-clean.
 ## Data
 
 The rapid config builds a small test basin from global datasets, registered in
-`config/catalogs/deltares_data.yml` (physiography, land surface, climate) and
+`config/catalogs/deltares_data_pdrive.yml` (physiography, land surface, climate) and
 `config/catalogs/cmip6_data.yml` (projections, generated from a live listing of
 the public CMIP6 store).
 
@@ -156,8 +156,8 @@ citation.
 | Name | Catalog entry | Type | Reference |
 |---|---|---|---|
 | MERIT Hydro IHU | `merit_hydro_ihu` | Hydrography | Eilander et al. (2020). doi:10.5281/zenodo.5166932 |
-| Reach-level bankfull river width | `rivers_lin2019_v1` | Hydrography | Lin et al. (2019). doi:10.5281/zenodo.3552776 |
-| Copernicus Global Land Cover 100 m | `vito` | Land cover | Buchhorn et al. (2020). doi:10.5281/zenodo.3939038 |
+| Reach-level bankfull river width | `hydro_rivers_lin` | Hydrography | Lin et al. (2019). doi:10.5281/zenodo.3552776 |
+| GlobCover v2.3 | `globcover` | Land cover | Arino et al. (2012). doi:10.1594/PANGAEA.787668 |
 | MODIS/Terra+Aqua Leaf Area Index | `modis_lai` | Leaf area index | Myneni et al. (2015). doi:10.5067/MODIS/MCD15A3H.006 |
 | SoilGrids | `soilgrids` | Soil properties | Hengl et al. (2017). doi:10.1371/journal.pone.0169748 |
 | GRanD v1.1 + HydroLAKES v10 + JRC 2016 | `hydro_reservoirs` | Reservoirs | Lehner et al. (2011). doi:10.1890/100125 |
@@ -167,7 +167,7 @@ citation.
 | CMIP6 | `config/catalogs/cmip6_data.yml` | Climate projections | Eyring et al. (2016). doi:10.5194/gmd-9-1937-2016 |
 
 Which land-cover, LAI and soil products a run actually used is set by
-`basin.spatial_sources.{lulc,lai,soil}`; the waterbody sources come from
+`basin.sources.{lulc,lai,soil}`; the waterbody sources come from
 `config/defaults/wflow_update_waterbodies.yml`.
 
 *The basin, the model and the results in these notebooks are for illustration.

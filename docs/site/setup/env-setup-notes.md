@@ -149,12 +149,11 @@ the rest.
 
 ### Switch the workflow to the local catalog
 
-Use `config/deltares_data_local.yml` (a copy of `deltares_data.yml` with
-`root:` pointing at `C:/data/wflow_global/hydromt`) by either:
-
-- pointing the project config's data catalog key at it, or
-- passing `--config data_catalog=config/deltares_data_local.yml` to snakemake
-  if your Snakefile reads it from `config`.
+The optional `config/catalogs/deltares_data.yml` uses the local
+`C:/data/wflow_global/hydromt` root. Select it with `project.catalog` in a
+project config, then review `basin.sources`: the local catalog's river and
+land-cover names differ from the default P-drive catalog. The supplied seed
+configs use `config/catalogs/deltares_data_pdrive.yml`.
 
 ### Limits
 

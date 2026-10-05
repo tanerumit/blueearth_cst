@@ -100,21 +100,21 @@ error above it before continuing.
 This is fast but only checks that the workflows are wired correctly — it does not
 actually run them.
 
-The workflow runs below require the external HydroMT data mirror; `git clone` and
-`pixi install` do not download it. The supplied baseline catalog expects
-`C:\data\wflow_global\hydromt`. Check that it exists before running a model:
+The workflow runs below require access to the Deltares P-drive; `git clone` and
+`pixi install` do not download its HydroMT data. The supplied project catalogs
+expect `P:\wflow_global\hydromt`. Check that it is mounted before running a model:
 
 ```powershell
-Test-Path 'C:\data\wflow_global\hydromt'
+Test-Path 'P:\wflow_global\hydromt'
 ```
 
-If this returns `False`, copy or mount the required data there, or configure a
-catalog with roots that exist on this machine. The model will fail at Rule 1.01
-with `None of the specified roots were found` until the data are available.
+If this returns `False`, mount the Deltares P-drive, or select a catalog for
+data available on this machine. The model will fail at Rule 1.01 with
+`None of the specified roots were found` until the data are available.
 
 For a full end-to-end check that runs all five workflows to completion on the
 small rapid test basin, in a fresh temporary project folder (requires the
-external data mirror, Julia, `pixi run install`, and internet access for the
+Deltares P-drive, Julia, `pixi run install`, and internet access for the
 CMIP6 data; expect tens of minutes):
 ```powershell
 pixi run test-e2e
@@ -130,8 +130,8 @@ pixi run python scripts/run_workflow.py build_model --config test_case/project_c
 - **`Python was not found`** when running a workflow command → prefix it with
   `pixi run`, as in Step 7. Python is installed in the project environment.
 - **`None of the specified roots were found`** in Rule 1.01 → the HydroMT data
-  mirror expected by the project's catalog is missing. Run the `Test-Path`
-  check in Step 7, then provide the data or select a catalog for its location.
+  root expected by the project's catalog is unavailable. Run the `Test-Path`
+  check in Step 7, then mount the P-drive or select a catalog for its location.
 - **R says Rtools is required** during `pixi run install` → no separate Rtools
   installation is needed for this toolbox. The pinned `weathergenr` package is
   pure R, and pixi supplies its dependencies. Let the install finish; investigate

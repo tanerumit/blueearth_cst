@@ -3,6 +3,14 @@
 Step-by-step setup for running the BlueEarth Climate Stress Test toolbox on a
 fresh Windows machine. Use **Windows PowerShell** for every command below.
 
+Before starting, install Git for Windows so you can clone the project in Step 4:
+
+```powershell
+winget install --id Git.Git --exact --source winget
+```
+
+Close and reopen PowerShell, then check that `git --version` reports a version.
+
 Steps 1–3 are a one-time machine setup. Steps 4–7 install the project itself.
 
 ## Step 1 — Install pixi

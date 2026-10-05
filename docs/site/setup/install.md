@@ -94,6 +94,9 @@ shell):
 ```powershell
 pixi run pytest tests/test_cli.py
 ```
+On success, pytest ends with a summary like `20 passed in 12.34s` (the time
+varies). A `FAILED` or `ERROR` summary means the check did not pass; read the
+error above it before continuing.
 This is fast but only checks that the workflows are wired correctly — it does not
 actually run them.
 

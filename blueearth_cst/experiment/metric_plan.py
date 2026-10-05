@@ -559,18 +559,48 @@ def write_metric_plan(experiment_root, request):
     return plan
 
 
+def _rebased_plan(stored, root, expected):
+    """The stored plan as written at ``root``, when only its root differs.
+
+    A plan's targets are absolute, so a tree copied from another project root
+    keeps that root's (t2610042152). The copy is accepted only when every
+    target keeps its root-relative tail under one common old root and the
+    stored self-digest still matches; anything else is returned unchanged and
+    so still differs.
+    """
+    targets = stored.get("targets")
+    if not isinstance(targets, dict) or set(targets) != set(expected["targets"]):
+        return stored
+    here = root.as_posix()
+    old_roots = set()
+    for key, target in expected["targets"].items():
+        tail = target[len(here) :]
+        old = targets[key]
+        if not (target.startswith(here + "/") and isinstance(old, str)):
+            return stored
+        if not old.endswith(tail):
+            return stored
+        old_roots.add(old[: -len(tail)])
+    body = {key: value for key, value in stored.items() if key != "request_sha256"}
+    if len(old_roots) != 1 or stored.get("request_sha256") != content_sha256(body):
+        return stored
+    rebased = {**body, "targets": expected["targets"]}
+    rebased["request_sha256"] = content_sha256(rebased)
+    return rebased
+
+
 def verify_metric_plan(experiment_root, request):
     """Validate existing plans even when timestamps would schedule no job."""
     root = Path(experiment_root).resolve()
     path = _metric_request_path(root, content_sha256(request))
     stored = read_canonical_json(path)
     expected = build_metric_plan(root, request)
-    if stored != expected:
+    if _rebased_plan(stored, root, expected) != expected:
         raise MetricPlanStale(
             f"metric request expected={expected['request_sha256']} "
             f"observed={stored.get('request_sha256')}"
         )
-    return stored
+    return expected
 
 
 def _csv_bytes(fields, rows):

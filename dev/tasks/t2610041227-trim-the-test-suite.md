@@ -4,7 +4,7 @@ type: todo-item
 status: backlog
 effort: 2
 area: testing
-queue:
+queue: 6
 doc: dev/tasks/t2610041227/assessment.md
 created: 2026-10-04
 updated: 2026-10-05

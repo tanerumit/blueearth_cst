@@ -89,13 +89,10 @@ where it left off. (If it keeps failing here, go back and do step 2.)
 
 ## Step 7 — Check that it works
 
-Enter the project environment:
+Run the quick check inside the project environment (without opening a separate
+shell):
 ```powershell
-pixi shell
-```
-Run the quick check (validates all three workflows without heavy computation):
-```powershell
-pytest tests/test_cli.py
+pixi run pytest tests/test_cli.py
 ```
 This is fast but only checks that the workflows are wired correctly — it does not
 actually run them.
@@ -110,11 +107,14 @@ pixi run test-e2e
 
 Or run the small test model directly:
 ```powershell
-python scripts/run_workflow.py build_model --config test_case/project_config_baseline.yml --project-dir test_case/test_local --cores 1
+pixi run python scripts/run_workflow.py build_model --config test_case/project_config_baseline.yml --project-dir test_case/test_local --cores 1
 ```
 
 ## Troubleshooting
 
+- **PowerShell says running scripts is disabled** when entering `pixi shell` →
+  run commands with `pixi run`, as shown in Step 7. This does not require a
+  change to your PowerShell execution policy.
 - **"`1.11.7` is not installed"** when running a workflow → you have a different
   Julia version. Run `juliaup add 1.11.7`.
 - **"Access is denied" or "directory not empty"** during a Julia install → do

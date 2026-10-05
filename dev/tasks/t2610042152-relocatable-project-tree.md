@@ -2,7 +2,6 @@
 title: Make a copied project tree reusable in another worktree
 type: todo-item
 status: backlog
-branch: fix/t2610042152-relocatable-project-tree
 effort: 2
 area: testing
 queue:
@@ -13,16 +12,16 @@ updated: 2026-10-05
 > [!note] Overview
 > **What** — A test_local tree copied from one worktree into another can run WF3 and WF4 there without regenerating, as copy-seeding assumes.
 > **Why** — Copy-seeding a worktree fails at WF3 and then at WF4, because both retain absolute paths that are checked on reuse. Every other worktree's tree can only be brought current by a full five-workflow rebuild of about an hour.
-> **Effort** — WF3 fixed without moving any id; WF4 needs a ruling, because the natural fix is in `metric_plan.py` and moves the metric-set id once.
+> **Effort** — Landed (`0bc65957`); only re-seeding the session worktrees remains.
 
 ## Progress
 
 - [x] Reproduce — measured 2026-10-04, re-measured 2026-10-05 on a fresh copy of the primary's tree in a scratch root (WF3+WF4 only).
-- [x] WF3: reuse-only relaxation of the installed `out_dir` check (`125ba757`); all three code inventories unchanged, measured.
-- [x] WF4: owner ruled for the fix in `metric_plan.py` (2026-10-05); `verify_metric_plan` accepts a plan whose targets differ only by root (`9a3b5da1`). The metric-set id moves once (`169fc1931781` -> `b7e1afe8dea5` on the baseline, identical tables).
+- [x] WF3: reuse-only relaxation of the installed `out_dir` check (`dd745f2e`); all three code inventories unchanged, measured.
+- [x] WF4: owner ruled for the fix in `metric_plan.py` (2026-10-05); `verify_metric_plan` accepts a plan whose targets differ only by root (`1cb444a9`). The metric-set id moves once (`169fc1931781` -> `b7e1afe8dea5` on the baseline, identical tables).
 - [x] Prove it: a copy of a copy ran WF3+WF4 with every target up to date.
-- [ ] Land; re-record the baseline metric set in the primary with a metrics-only run.
-- [ ] Re-seed session-1 and session-2 from the primary once a copy works (user-run: replacing a seed tree needs the user's permission).
+- [x] Land (`0bc65957`, test-fast 3,888 passed; test-e2e passed before landing). Metrics-only run in the primary published `b7e1afe8dea5`; the superseded plan and set were moved out of the tree; `check_baseline check` passes all 6 targets, so no re-record was needed.
+- [ ] Re-seed session-1 and session-2 from the primary (user-run: replacing a seed tree needs the user's permission), then close this item and t2610041227.
 
 ## Measured failures
 

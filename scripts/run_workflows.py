@@ -810,20 +810,7 @@ def _closing_block(
 
     groups: list[tuple[str, list[Any]]] = []
     if ran:
-        # Filled node for a workflow that completed, hollow for one that failed.
-        groups.append(
-            (
-                "ran",
-                [
-                    (
-                        f"{_NODE_OFF if outcome.startswith('FAILED') else _NODE_ON}"
-                        f"  {_label(name)}",
-                        outcome,
-                    )
-                    for name, outcome in ran
-                ],
-            )
-        )
+        groups.append(("ran", [(_label(name), outcome) for name, outcome in ran]))
     elif manifest["no_op"]:
         groups.append(("nothing ran -- every workflow was disabled", []))
 

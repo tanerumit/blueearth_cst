@@ -5,9 +5,9 @@ status: backlog
 effort: 1
 area: wf3
 origin: gabon-ntoum-v3 review (2026-09-25)
-queue: 9
+queue: 8
 created: 2026-09-25
-updated: 2026-09-28
+updated: 2026-10-05
 ---
 
 > [!note] Overview

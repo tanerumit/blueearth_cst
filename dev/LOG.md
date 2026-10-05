@@ -17,6 +17,8 @@ issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-05 | t2610041227 | Trim the test suite by cost and lasting value | testing |
+| 2026-10-05 | t2610042152 | Make a copied project tree reusable in another worktree | testing |
 | 2026-10-03 | t2610011613 | Adopt a manual toolbox versioning policy | tooling |
 | 2026-09-28 | t2608122022 | Verified October water years against rapid CMIP6 data: 14 complete years and changed annual factors in both models. The project sweep was descoped; results and limits are in `dev/reference/workflows/water-year-october-verification.md`. | wf2 projections / config |
 | 2026-09-27 | t2608091006 | Standardize plotting across the toolbox with shared templates, then sweep the existing figures onto them | plotting |

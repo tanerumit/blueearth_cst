@@ -5,9 +5,9 @@ status: backlog
 effort: 1
 area: console
 origin: console polishing (2026-09-18)
-queue: 11
+queue: 10
 created: 2026-09-18
-updated: 2026-09-18
+updated: 2026-10-05
 ---
 
 > [!note] Overview

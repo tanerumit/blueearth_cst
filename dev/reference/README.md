@@ -34,6 +34,7 @@ This is the **stays-true** tier. What happened lives in `../records/milestones/`
   | `validation-ladder.md` | `AGENTS.md` |
   | `sealed-records.yml` | `AGENTS.md`, `pyproject.toml` |
   | `git-conventions.md` | `README.md` |
+  | `roadmap.md` | `README.md`, `.github/workflows/ci.yml`, `test_case/project_config_baseline_linux.yml` |
 
 Renaming a file here means updating those citations in the same commit.
 - **`workflows/` is not `.github/workflows/`.** This one holds prose contracts; that one holds CI definitions. A third, `config/workflows/`, was retired on 2026-08-10 (`7f776c4`) — every `--configfile` target now sits beside the project it writes into, under `test_case/`.

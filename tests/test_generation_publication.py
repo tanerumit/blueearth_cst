@@ -1,8 +1,10 @@
 """Reject self-consistent but scientifically wrong WF3 provider arguments."""
 
 import hashlib
+import shutil
 
 import pytest
+import yaml
 
 from blueearth_cst.experiment import generation_publication as publication
 from blueearth_cst.experiment.content_identity import atomic_record
@@ -355,3 +357,87 @@ def test_competing_initialization_cannot_replace_receipt(tmp_path, monkeypatch):
             command=[],
         )
     assert receipt.read_bytes() == b"first owner"
+
+
+def _installed_plan():
+    weathergen = {
+        "generate_weather": {
+            "seed": 1,
+            "save_plots": False,
+            "plot_dpi": {"present": False},
+            "plot_device": {"present": False},
+        },
+        "write_netcdf": {
+            "compression": 4,
+            "file_suffix": {"present": False},
+            "out_dir": {"present": False},
+        },
+        "run_weather_generator": {"eval_max_grids": 2},
+    }
+    record = "scenarios/_engine/collections/collection"
+    outputs = {
+        "data_root": "scenarios/collection",
+        "record_root": record,
+        "archive_root": f"{record}/config",
+        "generator_input": "scenarios/collection/weathergenr/input.yml",
+        "scenario_run_lookup": "scenarios/collection/scenario_run_lookup.csv",
+        "perturbation_lookup": "scenarios/collection/perturbation_lookup.csv",
+        "diagnostic_root": "scenarios/collection/diagnostics",
+    }
+    return {
+        "documents": {"generation_config": {"weathergen": weathergen}},
+        "outputs": outputs,
+    }
+
+
+def _copied_install(tmp_path, monkeypatch, plan, edit=None):
+    """Install the generator under one root, then copy the tree to another."""
+    origin, copy = tmp_path / "origin", tmp_path / "copy"
+    data = publication._installed_generator(plan, origin)
+    if edit:
+        edit(data)
+    installed = origin / plan["outputs"]["generator_input"]
+    installed.parent.mkdir(parents=True)
+    installed.write_bytes(yaml.safe_dump(data, sort_keys=False).encode("utf-8"))
+    shutil.copytree(origin, copy)
+    reference = file_reference(
+        copy / plan["outputs"]["generator_input"], "project_root", copy
+    )
+    monkeypatch.setattr(
+        publication,
+        "validate_archive",
+        lambda *_: {
+            "generated_inputs": [
+                {"role": "weather_generation_input", "file": reference}
+            ]
+        },
+    )
+    return copy
+
+
+def test_a_copied_ready_collection_validates_only_where_it_is_not_regenerated(
+    tmp_path, monkeypatch
+):
+    """t2610042152: the installed out_dir names the root it was generated in."""
+    plan = _installed_plan()
+    copy = _copied_install(tmp_path, monkeypatch, plan)
+    with pytest.raises(ValueError, match="differ from pinned plan"):
+        publication.validate_installed_generator(plan, copy)
+    publication.validate_installed_generator(plan, copy, relocatable=True)
+
+
+@pytest.mark.parametrize(
+    "edit",
+    [
+        lambda data: data["generate_weather"].update(
+            out_dir="C:/elsewhere/scenarios/other/weathergenr"
+        ),
+        lambda data: data["write_netcdf"].update(compression=5),
+    ],
+    ids=["another-collection", "another-argument"],
+)
+def test_relocation_admits_only_the_collection_out_dir(tmp_path, monkeypatch, edit):
+    plan = _installed_plan()
+    copy = _copied_install(tmp_path, monkeypatch, plan, edit)
+    with pytest.raises(ValueError, match="differ from pinned plan"):
+        publication.validate_installed_generator(plan, copy, relocatable=True)

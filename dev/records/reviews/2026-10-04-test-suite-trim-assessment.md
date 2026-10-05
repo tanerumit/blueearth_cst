@@ -261,8 +261,11 @@ metrics-only run.
   `fetch_gcm_raw.with_read_overrides` now reads the public CMIP6 bucket
   anonymously, which also removes ~19 s per series from every WF2 fetch
   process.
-- **Relocation defect**: copying `test_local` between worktrees fails at WF3
-  (board task t2610042152).
+- **Relocation defect** (t2610042152, landed `0bc65957`): a copied tree
+  failed reuse at WF3 (the installed generator's absolute `out_dir`) and WF4
+  (metric plans' absolute targets). Both checks now accept a root-only
+  difference; the metric-set id moved once (`169fc1931781` -> `b7e1afe8dea5`,
+  identical tables). Session worktrees were re-seeded by copy on 2026-10-05.
 - **Metric-set gaps** (landed `da9f2e82`): return-level evidence is retained
   as `return_level_evidence.json`, and the reader accepts only `metrics.json`
   as the engine marker. Gaps 1-3 stay non-goals per the rulings above.

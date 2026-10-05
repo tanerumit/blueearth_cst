@@ -10,8 +10,6 @@ the xfail regression tests below.
 
 from __future__ import annotations
 
-import sys
-import types
 from pathlib import Path
 
 import pytest
@@ -34,13 +32,11 @@ class _FakeDataCatalog:
         return self
 
 
-# NOTE: don't rely on sys.modules.setdefault('hydromt', ...) here. Other test
-# files (test_extract_historical_climate.py) install their own hydromt stub
-# during collection, so setdefault becomes a no-op and pcdc ends up bound to
-# the wrong DataCatalog. Each fixture below monkeypatches pcdc.hydromt
-# directly per test — guarantees isolation regardless of collection order.
-
-sys.modules.setdefault("hydromt", types.SimpleNamespace(DataCatalog=_FakeDataCatalog))
+# No sys.modules stub: each fixture below monkeypatches pcdc.hydromt.DataCatalog
+# per test, which monkeypatch undoes. A module-level stub is process-wide -- a
+# `setdefault` that won the race replaced the real hydromt for every later test
+# in the worker, and a later `import hydromt` elsewhere then got this fake
+# (t2610041227: test_downscale_climate_forcing failed on that, by xdist order).
 
 from blueearth_cst.climate_analysis import (  # noqa: E402
     prepare_climate_data_catalog as pcdc,
@@ -346,9 +342,7 @@ def test_hydromt_to_yml_round_trip_preserves_preprocess(tmp_path):
     upstream fixes it. When this passes, remove the yaml.safe_dump
     bypass in blueearth_cst/climate_analysis/prepare_climate_data_catalog.py.
     """
-    # Pop the stub so we get the real hydromt for this one test.
-    sys.modules.pop("hydromt", None)
-    import hydromt as real_hydromt  # noqa: E402
+    import hydromt as real_hydromt
 
     catalog = {
         "test_source": {
@@ -363,9 +357,6 @@ def test_hydromt_to_yml_round_trip_preserves_preprocess(tmp_path):
     out_yml = tmp_path / "round_trip.yml"
     real_hydromt.DataCatalog().from_dict(catalog).to_yml(out_yml)
     written = yaml.safe_load(out_yml.read_text())
-
-    # Restore stub for any later tests in the file.
-    sys.modules["hydromt"] = types.SimpleNamespace(DataCatalog=_FakeDataCatalog)
 
     # The assertion that fails until upstream fix:
     assert written["test_source"]["driver"]["options"]["preprocess"] == "harmonise_dims"

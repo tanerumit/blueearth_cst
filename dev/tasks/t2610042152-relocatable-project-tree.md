@@ -19,7 +19,9 @@ updated: 2026-10-05
 
 - [x] Reproduce — measured 2026-10-04, re-measured 2026-10-05 on a fresh copy of the primary's tree in a scratch root (WF3+WF4 only).
 - [x] WF3: reuse-only relaxation of the installed `out_dir` check (`125ba757`); all three code inventories unchanged, measured.
-- [ ] WF4: rule on the metric-plan fix (failure 3), then implement it with a relocation test.
+- [x] WF4: owner ruled for the fix in `metric_plan.py` (2026-10-05); `verify_metric_plan` accepts a plan whose targets differ only by root (`9a3b5da1`). The metric-set id moves once (`169fc1931781` -> `b7e1afe8dea5` on the baseline, identical tables).
+- [x] Prove it: a copy of a copy ran WF3+WF4 with every target up to date.
+- [ ] Land; re-record the baseline metric set in the primary with a metrics-only run.
 - [ ] Re-seed session-1 and session-2 from the primary once a copy works (user-run: replacing a seed tree needs the user's permission).
 
 ## Measured failures

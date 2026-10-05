@@ -26,7 +26,7 @@ updated: 2026-10-05
 ## Measured failures
 
 1. **Reused collection, copied in place.** WF3 refused with `installed generator arguments differ from pinned plan`. `generation_publication._installed_generator` binds `generate_weather.out_dir` to the absolute `<data_root>/weathergenr`, so the installed `weather_generation_input.yml` copied from another worktree names that worktree's path, and `validate_installed_generator` compares it against the new root.
-   Fixed in `125ba757`: the reuse path admits an `out_dir` whose trailing `<data_root>/weathergenr` matches; paths that run the generator stay strict.
+   Fixed in `dd745f2e`: the reuse path admits an `out_dir` whose trailing `<data_root>/weathergenr` matches; paths that run the generator stay strict.
 2. **Copied tree with the scenario store moved aside.** WF3 refused with `archive terminal state is corrupt: committed`: the copied archive records refer to a publication whose files were no longer there. Inferred not a copy defect: transaction journals store project-relative paths, and a plain copy passed WF3 on 2026-10-05. The failure came from moving the store aside by hand.
 3. **WF4 metric plan.** `MetricPlanStale`: `build_metric_plan` stores absolute `targets`, and `request_sha256` hashes them, so `verify_metric_plan` refuses the copied `_engine/metric_requests/<id>.json`. With the comparison bypassed (a reverted probe), WF4 reused the simulation and metric set `169fc1931781`, running only the gather rules. So this is the last failure.
 

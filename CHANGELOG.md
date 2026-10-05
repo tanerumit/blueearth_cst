@@ -13,8 +13,8 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 
 - Scenario-collection, simulation and metric-set ids all change. Each identity
   hashes the repository code its stage imports, and removing the pre-release v1
-  records edited shared modules on all three paths. The climate-store identity
-  does not change. Existing collections, experiments and metric sets stay
+  records edited shared modules on all three paths; the relocation fix below
+  moves the metric-set id once more. The climate-store identity does not change. Existing collections, experiments and metric sets stay
   readable, but none is reused by a fresh run:
   - WF3 generates a new collection instead of reusing the retained one.
   - Re-simulating an existing experiment is refused; use a new experiment name.
@@ -35,6 +35,13 @@ Milestone detail lives in `dev/roadmap.md` and `dev/records/milestones/`.
 - WF2 reads the public CMIP6 bucket anonymously. With no token, each fetch
   process spent about 19 s searching for Google credentials first.
 - The metric-set reader accepts only `metrics.json` as a set's engine marker.
+
+### Fixed
+
+- A project tree copied to another root reuses its ready scenario collection,
+  simulation and metric set instead of refusing them. The installed
+  weather-generator input and each metric plan record absolute paths under
+  the original root, and reuse compared those paths against the new root.
 
 ### Removed
 

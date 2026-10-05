@@ -28,6 +28,8 @@ from blueearth_cst.experiment.metric_plan import (
     current_metric_request,
     publish_metric_set,
     read_metric_set,
+    verify_metric_plan,
+    write_metric_plan,
 )
 from tests._v2_experiment import (
     FIXTURE_ENVIRONMENT,
@@ -284,6 +286,56 @@ def test_a_stale_live_environment_leaves_no_ready_marker(experiment, monkeypatch
     with pytest.raises(MetricPlanStale):
         publish_metric_set(root, plan)
     assert not (_engine(root, plan) / "metrics.json").exists()
+
+
+def _moved_plan(experiment, tmp_path_factory):
+    """Write the gwr plan, then copy the experiment to another project root."""
+    request = current_metric_request(experiment.root, ["gwr"], "YS-JAN")
+    write_metric_plan(experiment.root, request)
+    moved = copy_v2_experiment(experiment, tmp_path_factory.mktemp("moved")).root
+    (stored,) = (moved / "_engine/metric_requests").glob("*.json")
+    return moved, request, stored
+
+
+def test_a_plan_copied_from_another_root_verifies_at_the_new_root(
+    experiment, tmp_path_factory
+):
+    """t2610042152: a stored plan's targets name the root it was written at."""
+    moved, request, stored = _moved_plan(experiment, tmp_path_factory)
+    assert experiment.root.as_posix() in stored.read_text(encoding="utf-8")
+    plan = verify_metric_plan(moved, request)
+    assert plan == build_metric_plan(moved, request)
+    assert all(
+        target.startswith(moved.as_posix() + "/") for target in plan["targets"].values()
+    )
+
+
+def _other_field(plan, origin):
+    plan["expected_result_keys"] = plan["expected_result_keys"][:1]
+
+
+def _mixed_roots(plan, origin):
+    """One target keeps its tail but under a third root."""
+    target = plan["targets"]["gwr"]
+    plan["targets"]["gwr"] = "C:/elsewhere" + target[len(origin.as_posix()) :]
+
+
+@pytest.mark.parametrize(
+    "tamper, redigest",
+    [(_other_field, True), (_mixed_roots, True), (lambda plan, origin: None, False)],
+    ids=["another-field", "mixed-roots", "stale-self-digest"],
+)
+def test_a_moved_plan_still_refuses_any_other_difference(
+    experiment, tmp_path_factory, tamper, redigest
+):
+    moved, request, stored = _moved_plan(experiment, tmp_path_factory)
+    plan = read_canonical_json(stored)
+    tamper(plan, experiment.root)
+    body = {key: value for key, value in plan.items() if key != "request_sha256"}
+    plan["request_sha256"] = content_sha256(body) if redigest else "0" * 64
+    stored.write_bytes(canonical_json_bytes(plan))
+    with pytest.raises(MetricPlanStale):
+        verify_metric_plan(moved, request)
 
 
 @pytest.mark.parametrize("mismatch", [False, True])

@@ -333,8 +333,37 @@ def _validate_supported_execution_choices(data: dict) -> None:
         raise ValueError("provider plotting requires at least two evaluation grids")
 
 
-def validate_installed_generator(plan: dict, project_root: Path) -> dict:
-    """Require both exact archived bytes and semantic equality to the plan."""
+def _relocated_generator(data: dict, plan: dict, project_root: Path) -> dict:
+    """Rebind an installed ``out_dir`` written under another project root.
+
+    The installed YAML is archived bytes, so a copied tree keeps the absolute
+    ``out_dir`` of the root it was generated in. Only the trailing
+    ``<data_root>/weathergenr`` components identify the collection; anything
+    else still differs from the plan.
+    """
+    installed = data["generate_weather"].get("out_dir")
+    tail = (*Path(plan["outputs"]["data_root"]).parts, "weathergenr")
+    if not isinstance(installed, str):
+        return data
+    parts = tuple(part for part in re.split(r"[\\/]", installed) if part)
+    if parts[-len(tail) :] != tail:
+        return data
+    rebound = deepcopy(data)
+    rebound["generate_weather"]["out_dir"] = str(
+        (_paths(project_root, plan)["data_root"] / "weathergenr").resolve()
+    )
+    return rebound
+
+
+def validate_installed_generator(
+    plan: dict, project_root: Path, *, relocatable: bool = False
+) -> dict:
+    """Require both exact archived bytes and semantic equality to the plan.
+
+    ``relocatable`` admits an ``out_dir`` installed under another project root.
+    Pass it only where the generator will not run again, so it cannot write
+    into the root the tree was copied from.
+    """
     path = _paths(project_root, plan)["generator_input"]
     # The receipt exists only after archive publication completed. Concurrent
     # Snakemake jobs can validate its immutable bytes without taking the same
@@ -351,7 +380,8 @@ def validate_installed_generator(plan: dict, project_root: Path) -> dict:
     ):
         raise ValueError("creator archive does not bind installed generator input")
     data = _decode_generator(path.read_bytes())
-    if data != _installed_generator(plan, project_root):
+    compared = _relocated_generator(data, plan, project_root) if relocatable else data
+    if compared != _installed_generator(plan, project_root):
         raise ValueError("installed generator arguments differ from pinned plan")
     _validate_supported_execution_choices(data)
     return data
@@ -379,7 +409,9 @@ def initialize_generation(
         marker = read_collection_v2(paths["record_root"] / "collection.json")
         if marker["collection_revision"] != plan["collection_revision"]:
             raise ValueError("ready collection revision changed after planning")
-        validate_installed_generator(plan, project_root)
+        # A ready collection is never generated again, so a tree copied from
+        # another root may keep its installed out_dir (t2610042152).
+        validate_installed_generator(plan, project_root, relocatable=True)
         archive_ref = plan["creator_archive"]
     elif plan["decision"] == "create":
         if paths["record_root"].exists() or paths["data_root"].exists():

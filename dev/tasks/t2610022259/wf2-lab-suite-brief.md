@@ -29,7 +29,7 @@ executor owns a phase; no parallel agents or orchestration are required.
 
 | Phase | Where | Input | Expected output |
 |---|---|---|---|
-| P0 | BlueEarth session | CMIP6 catalog, baseline basin | WF2 run of the development ensemble, list recorded |
+| P0 | BlueEarth session | CMIP6 catalog, baseline basin | WF2 run of the dev ensemble, list recorded |
 | P1 | Lab | P0 `scalar/` series, `composition.csv` | `wf2_lab` setup, input contract, C0 coverage |
 | P2 | Lab | P1 normalized series | Long per-member change table (shared core) |
 | P3 | Lab | P2 table | C1 mean change, C5 scenario agreement |
@@ -121,10 +121,10 @@ During iteration, run only the current phase's tests and render only its changed
 name test files to create; they are acceptance targets, not claims that the files exist.
 
 The program-level falsifier is P2's reconciliation. For the simulation-aligned window, the lab's per-member
-`mean` changes must match `cmip6_change_factors_annual.csv` and `cmip6_change_factors_monthly.csv` from the
-same P0 run. The tolerance is 0.001 in each table's printed relative units; the CSVs are rounded to three
-decimals. A mismatch means the lab computes a different quantity from the toolbox, and later components
-cannot be integrated as stated.
+`mean` and undetrended `std` changes (status `ok`) must match `cmip6_change_factors_annual.csv` and
+`cmip6_change_factors_monthly.csv` from the same P0 run. The tolerance is 0.001 in each table's printed
+relative units; the CSVs are rounded to three decimals. A mismatch means the lab computes a different
+quantity from the toolbox, and later components cannot be integrated as stated.
 
 Once per completed suite, P6 runs `pixi run python -m pytest tests -q` (WF0 and WF2 together, confirming
 `wf0_lab` is unaffected) and the end-to-end run on the P0 ensemble. Repeat only after a shared-input change.
@@ -275,6 +275,8 @@ Forming changes, which belongs to P2; refetching data; reading `raw/` grids.
       institution, scenario, member, time, variable, value, units, calendar, plus a pointer to the series'
       historical reference.
 - [ ] Check units, calendars, monotonic monthly time, spans and duplicate identities. Fail on ambiguity.
+      The calendar source is each file's `cst_calendar` attribute, not its time encoding. `time` may decode
+      to `datetime64` even for a `noleap` model, and pandas month lengths would then add 29 February.
 - [ ] C0: a coverage table and matrix (model × scenario, members per cell, status and reason, institution),
       plus a reusable "n models / n members" annotation for later figures.
 - [ ] Demonstrate an excluded combination and a missing scenario with useful unavailable reasons, on a
@@ -314,6 +316,23 @@ This is the single calculator for every component. It extends the toolbox change
 (model, scenario, member, horizon, period, variable, statistic, reference value, future value, change,
 status) with the columns `period` and `window_kind`.
 
+Read-only references for the arithmetic to match, in BlueEarth `blueearth_cst/projections/`:
+
+- `get_change_climate_proj.py`: `hydrological_year_bounds`, `get_change_annual_clim_proj` and
+  `get_change_monthly_clim_proj`;
+- `calendar_weights.py`;
+- `dry_month.py`.
+
+As read on 2026-10-06, an annual value is a month-length-weighted aggregate per water year. Precipitation
+is summed, so its change is a ratio of annual integrals, while its level is reported in mm/day; temperature
+is averaged. Years are resampled as `YS-<water_year_start>` and only complete years are kept. Statistics run
+across those annual values; `std` is xarray's default (ddof = 0). Re-read the code rather than trusting this
+summary.
+
+Take the water-year start and the effective reference and horizon bounds from the P0 run's own
+`summary/provenance.json` and `_engine/stage_b_settings.json`. The baseline resolves to January. Do not
+borrow the WF0 lab's reporting-year convention.
+
 ### Goal
 
 Produce the long per-member change table for both window kinds, the annual, seasonal and monthly periods,
@@ -338,7 +357,9 @@ Own `wf2_lab/core.py` and `tests/test_wf2_core.py`.
 - [ ] Interannual SD of period values per window, with a declared forced-response removal. The default is
       a per-member linear detrend within each window. Report the undetrended SD beside it under a distinct
       statistic label, and the CV of detrended precipitation where the mean is above the dry threshold.
-- [ ] Reconcile the aligned-window `mean` rows against the P0 CSVs.
+- [ ] Reconcile the aligned-window `mean` and undetrended `std` rows against the P0 CSVs, for rows with
+      status `ok` only. Where the dry-month guard applies, compare the absolute change only. Matching `std`
+      pins ddof and the aggregation path before P5 builds on them.
 
 ### Validation
 
@@ -452,9 +473,9 @@ Own `wf2_lab/seasonal.py`, `wf2_lab/trajectories.py`, their figure functions in 
 
 - [ ] C2: reference and future monthly climatologies per model, in absolute units, for both window kinds.
       Show monthly change as the median and model range, with individual points.
-- [ ] C3: annual anomalies against each model's own reference. Apply a declared running mean (20 years by
-      default; label the endpoint treatment) and draw a scenario-faceted fan of the model median and range,
-      with faint smoothed traces.
+- [ ] C3: annual anomalies against each model's own analysis-window reference (1985–2014). Apply a
+      declared running mean (20 years by default; label the endpoint treatment) and draw a scenario-faceted
+      fan of the model median and range, with faint smoothed traces.
 
 ### Validation
 

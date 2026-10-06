@@ -138,8 +138,8 @@ resume record; the toolbox copy stays read-only.
 
 | Phase | State | Last durable marker | Blocked on | Next action |
 |---|---|---|---|---|
-| [P0](#p0) | in progress | all 125 series fetched to `C:/data/cmip6/…`; stage 2.05 fails (2026-10-06) | owner decision on WF2 defects | Fix or work around the stage-2.05 defects; rerun 2.05 only |
-| [P1](#p1) | not started | — | P0 | Copy docs into the lab; read one P0 scalar file |
+| [P0](#p0) | done | record below; WF2 fixes `6090ebf0`, `34af1452` (2026-10-06) | — | — |
+| [P1](#p1) | not started | — | — | Copy docs into the lab; read one P0 scalar file |
 | [P2](#p2) | not started | — | P1 | Build the change table; reconcile against the CSVs |
 | [P3](#p3) | not started | — | P2 | Reduce C1 changes; draw dot strips |
 | [P4](#p4) | not started | — | P2 | Monthly climatologies; smoothed anomalies |
@@ -171,6 +171,9 @@ repository, and the chosen list and fetch volume are recorded in this brief.
 
 Any BlueEarth code, tracked config or seed change; tuning WF2 figures for many models; running other
 workflows.
+
+*Revision 2026-10-06:* the owner approved two WF2 defect fixes found during P0, landed as separate commits
+on `feat/wf2-cmip6-improvements` (`6090ebf0`, `34af1452`). No other BlueEarth change was made.
 
 ### Allowed scope
 
@@ -239,30 +242,41 @@ rather than this brief. A WF2 lock after a crash is released with `snakemake --u
 
 ### Development ensemble (filled by P0)
 
-**State 2026-10-06 (incomplete).** Untracked configs `test_case/test_wf2_ensemble*.yml` in the `session-1`
-worktree; project `C:/data/cmip6/gabon-ntoum-dev-ensemble`.
+**Done 2026-10-06.** Project `C:/data/cmip6/gabon-ntoum-dev-ensemble`, from the untracked configs
+`test_case/test_wf2_ensemble*.yml` in the `session-1` worktree (copied from the baseline). The basin,
+reference window 2000–2014, horizon `mid` 2046–2054 and variables are unchanged.
 
-- **Requested:** 13 models from 12 institutions × historical + SSP1-2.6/2-4.5/3-7.0/5-8.5:
+- **Ensemble:** 13 models from 12 institutions × historical + SSP1-2.6/2-4.5/3-7.0/5-8.5:
   AWI-CM-1-1-MR, BCC-CSM2-MR, CanESM5, CMCC-ESM2, INM-CM4-8, INM-CM5-0, IPSL-CM6A-LR, MIROC6,
   MPI-ESM1-2-LR, MRI-ESM2-0, CESM2, NorESM2-MM and GFDL-ESM4.
-- **Members:** `r1i1p1f1` except three five-member models: CanESM5 r11–r15 (r1–r10 have ambiguous store
-  pins), IPSL-CM6A-LR r1–r4 and r6, MPI-ESM1-2-LR r1–r5.
-- **Excluded at selection:** ACCESS-CM2 and EC-Earth3, which have ambiguous `{grid}/{version}` pins (WF2
+- **Members:** `r1i1p1f1`, except three five-member models:
+  - CanESM5 r11–r15, an alternative recorded because r1–r10 have ambiguous store pins;
+  - IPSL-CM6A-LR r1–r4 and r6;
+  - MPI-ESM1-2-LR r1–r5.
+- **Outcome:** 100 (model, scenario, member) points, all `resolved` in `composition.csv`. 125 series
+  (25 historical, 100 scenario), every one spanning 1950–2014 or 2015–2100. The change-factor tables
+  hold exactly the 100 resolved identities: 600 annual rows, 7,200 monthly.
+- **Volume and time:** `raw/` 9.1 MB, `scalar/` 6.4 MB. About 80 s per fetch at 3 cores; roughly
+  1.5 h wall-clock including two scheduler stalls.
+- **Excluded at selection:** ACCESS-CM2 and EC-Earth3, whose `{grid}/{version}` pins are ambiguous (WF2
   refuses them at parse). MRI-ESM2-0 has a clean pin only for r1.
-- **Fetched:** all 125 series, raw slices about 0.07 MB each, at about 80 s per fetch with 3 cores.
+- **Dry months:** 1,764 monthly rows are `reference_below_threshold`, and 49 of 100 combinations have more
+  than three flagged months. P2's dry-reference guard will be exercised on real data.
+- **Existing WF2 figures at this size:** the cloud's model-name annotations collide badly at 100 points,
+  and SSP3-7.0 and SSP5-8.5 are hard to tell apart. This is evidence for C1's dot strips; the figures were
+  not changed.
 
-Defects found:
+Defects found and how they were handled:
 
-1. **Snakemake hang.** The scheduler stalled twice (about 21:46 and 22:42): job logs complete, no
-   children, zero CPU. Recovered by kill, `-- --unlock`, `-- --rerun-incomplete`. Logs are in `session-1`
-   `.tmp/scratchpad/wf2-p0/run{1,2}-hung.err`.
-2. **Calendar alias refused.** Stage 2.05 raises `CalendarError` on MIROC6: `proleptic_gregorian`
-   historical versus `gregorian` scenarios, which are identical after 1582. MIROC6 was dropped
-   provisionally.
-3. **Phantom rows.** Stage 2.05 combines points with `join="outer"`, so models with different member
-   labels yield phantom (model, member) cells. `tidy_rows` emits them, and a NaN `__flagged` companion
-   reads as flagged. `_flagged_months` then raises `KeyError: ('AWI-CM-1-1-MR', 'ssp126', 'r11i1p1f1')`.
-   Any multi-member ensemble with heterogeneous labels hits this.
+1. **Scheduler stall.** Snakemake stalled twice: job logs complete, no children, zero CPU. Recovered by
+   kill, `-- --unlock`, `-- --rerun-incomplete`. Boarded as `t2610062309`; not fixed.
+2. **Calendar alias refused.** Stage 2.05 rejected MIROC6's `proleptic_gregorian`/`gregorian` pair. Fixed
+   in `34af1452` (comparison by month length; CF aliases).
+3. **Phantom rows.** The outer join padded heterogeneous member labels into phantom rows, and the run
+   failed with `KeyError`. Fixed in `6090ebf0` (rows and cloud points only for derived combinations).
+
+On `test_case/test_local` the fixed code gives byte-identical annual, monthly and composition CSVs, from
+series whose values are equal. Only digest attributes moved, with the 2026-10-04 catalog switch.
 
 <a id="p1"></a>
 

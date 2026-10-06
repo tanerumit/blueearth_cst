@@ -17,6 +17,7 @@ issued.
 
 | Closed | ID | Item | Area |
 | ------ | -- | ---- | ---- |
+| 2026-10-06 | t2610061951 | Port the wf0-lab spatial map revisions to WF1 | wf1  |
 | 2026-10-05 | t2610041227 | Trim the test suite by cost and lasting value | testing |
 | 2026-10-05 | t2610042152 | Make a copied project tree reusable in another worktree | testing |
 | 2026-10-03 | t2610011613 | Adopt a manual toolbox versioning policy | tooling |

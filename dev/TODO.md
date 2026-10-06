@@ -31,7 +31,6 @@ cssclasses: [todo-board]
 | [t2608071222][]          | 22     | R code has no tests                              | testing   | backlog    |
 | [t2608071221][]          | 23     | Docker and Linux end-to-end runs untested        | platform  | backlog    |
 | [t2608071201][]          | 24     | WF1 rebuild always trips WF3 drift guard         | wf1       | backlog    |
-| [t2610061951][]          |        | Port the wf0-lab spatial map revisions to WF1    | wf1       | backlog    |
 
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
 [t2608202352]: tasks/t2608202352-publish-the-docs-site-to-github-pages.md
@@ -57,4 +56,3 @@ cssclasses: [todo-board]
 [t2608071222]: tasks/t2608071222-r-testthat-coverage.md
 [t2608071221]: tasks/t2608071221-r7-17.md
 [t2608071201]: tasks/t2608071201-r10-12.md
-[t2610061951]: tasks/t2610061951-port-wf0-lab-spatial-map-revisions.md

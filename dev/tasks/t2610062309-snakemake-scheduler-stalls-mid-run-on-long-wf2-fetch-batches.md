@@ -24,8 +24,7 @@ updated: 2026-10-06
 ## Evidence
 
 - Stalls at about 21:46 and 22:42 on 2026-10-06, after about 60 jobs each, in project
-  `C:/data/cmip6/gabon-ntoum-dev-ensemble`. Logs are in worktree `session-1`
-  `.tmp/scratchpad/wf2-p0/run1-hung.err` and `run2-hung.err` (scratch; copy before cleanup).
+  `C:/data/cmip6/gabon-ntoum-dev-ensemble`. Scheduler tails: [stall evidence](t2610062309/stall-evidence.md).
 - The three jobs in flight had each written their outputs and per-job logs; Snakemake (python.exe under
   snakemake.exe) had no children and accrued no CPU over 10 s.
 - Recovery that worked: stop the process tree, `run_workflow.py ... -- --unlock`, relaunch with

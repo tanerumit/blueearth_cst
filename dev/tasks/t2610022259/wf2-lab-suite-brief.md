@@ -172,8 +172,9 @@ repository, and the chosen list and fetch volume are recorded in this brief.
 Any BlueEarth code, tracked config or seed change; tuning WF2 figures for many models; running other
 workflows.
 
-*Revision 2026-10-06:* the owner approved two WF2 defect fixes found during P0, landed as separate commits
-on `feat/wf2-cmip6-improvements` (`6090ebf0`, `34af1452`). No other BlueEarth change was made.
+*Revision 2026-10-06:* the owner approved two WF2 defect fixes found during P0. They are committed on
+`feat/wf2-cmip6-improvements` (`6090ebf0`, `34af1452`) and not yet merged to `main`. No other BlueEarth
+change was made.
 
 ### Allowed scope
 
@@ -242,8 +243,9 @@ rather than this brief. A WF2 lock after a crash is released with `snakemake --u
 
 ### Development ensemble (filled by P0)
 
-**Done 2026-10-06.** Project `C:/data/cmip6/gabon-ntoum-dev-ensemble`, from the untracked configs
-`test_case/test_wf2_ensemble*.yml` in the `session-1` worktree (copied from the baseline). The basin,
+**Done 2026-10-06.** Project `C:/data/cmip6/gabon-ntoum-dev-ensemble`. The durable copy of the two
+config files is the project's own archive, `config/runs/analyze_projections/sources/`; the working
+copies are untracked in the `session-1` worktree's `test_case/`. The basin,
 reference window 2000–2014, horizon `mid` 2046–2054 and variables are unchanged.
 
 - **Ensemble:** 13 models from 12 institutions × historical + SSP1-2.6/2-4.5/3-7.0/5-8.5:
@@ -314,6 +316,10 @@ Forming changes, which belongs to P2; refetching data; reading `raw/` grids.
 - [ ] Check units, calendars, monotonic monthly time, spans and duplicate identities. Fail on ambiguity.
       The calendar source is each file's `cst_calendar` attribute, not its time encoding. `time` may decode
       to `datetime64` even for a `noleap` model, and pandas month lengths would then add 29 February.
+      The P0 ensemble carries `365_day`, `noleap`, `gregorian` and `proleptic_gregorian`, and MIROC6 names
+      its historical and scenario calendars differently. Treat CF aliases, and `standard` versus
+      `proleptic_gregorian` after 1582, as one calendar, matching `calendar_weights.same_month_lengths`
+      (read-only reference); any other mismatch is still an error.
 - [ ] C0: a coverage table and matrix (model × scenario, members per cell, status and reason, institution),
       plus a reusable "n models / n members" annotation for later figures.
 - [ ] Demonstrate an excluded combination and a missing scenario with useful unavailable reasons, on a

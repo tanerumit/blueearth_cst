@@ -1,4 +1,4 @@
-# Add WF0 basin diagnostics without replacing existing figures
+# Make the lab-derived plotting system canonical in WF0
 
 Status: proposed — Gate 1 owner approval pending
 Date: 2026-10-06
@@ -38,19 +38,20 @@ forcing store contains ERA5 companions. Rule 0.05 writes
 variables carried by at least two sources, plus subbasin figures. ERA5/CHIRPS
 therefore has two basin comparison PNGs and no temperature comparison.
 
-The existing annual and monthly views are related to three accepted lab forms
-but are not equivalents: monthly boxes/mean-only lines differ from percentile
-ribbons; annual series have different completeness treatment and no Sen line.
-Replacing them would change live contracts and WF1 behavior.
+The owner has directed replacement of WF0's existing plotting system. Old
+monthly boxes, annual time series and comparison climatology lines are retired
+from WF0 targets. The newer percentile-band and trend-series views supersede
+them. Existing source maps are replaced by the lab spatial-map structure.
 
 ## Decision
 
-Add WF0-only computation and rendering rules beside 0.04/0.05. Use the toolbox's
-own extracted daily basin series and mask helper, pure diagnostic functions,
-retained plot-ready tables, one output inventory, and separate recoverable
-captions. Preserve the paths and content contracts of all pre-existing products.
-Adopt the accepted lab visual meanings in the new diagnostic figure family.
-Do not change shared `plot_style.py`, extraction, WF1–WF4, or lab files.
+Use one canonical WF0 computation/rendering system with retained tables,
+native-grid map fields, one output inventory and recoverable captions. No old
+WF0 figure producer remains active. New outputs live under the diagnostic roots;
+previous `plots/` outputs are no longer declared by WF0 and are not deleted
+automatically. This intentionally supersedes the original additive proposal.
+WF1 retains its current source-figure producer and contracts. Do not modify
+extraction, shared plotting style, WF2–WF4 or lab files.
 
 ### D1. Periods, inputs and scientific conventions
 
@@ -140,7 +141,7 @@ Unknown keys fail rather than silently retaining defaults.
 
 No lab display-period arrays, input-path/unit overrides, `time_shift_days`,
 HTML output or synthetic CLI enter the toolbox. This block adds outputs and
-cost to WF0 by default but leaves all pre-existing numerical artifacts neutral.
+cost to WF0 by default but preserves extracted climate inputs.
 Approval includes documenting these T2 keys and adding optional commented
 examples in WF0 seed configs. No config-composition default injection or new
 advanced-settings schema entries are proposed.
@@ -152,10 +153,10 @@ when multiple precipitation sources/explicit source pairs are plotted.
 All new files have the four semantic fields
 `<dataset_scope>_<variable>_<plot_context>_<spatial_scope>`; underscores inside
 controlled fields are permitted by the existing grammar.
-The variable tokens remain `precip`, `temp`, and combined `precip_temp`.
+The variable tokens are `precip`, `temp`, `pet`, and combined `precip_temp`.
 
-Every row below adds a new diagnostic view. **None is an existing exact
-equivalent.** Rows 2, 3 and 15 retain the related old view alongside the new one.
+The following views are the canonical temporal figures. Rows 2, 3 and 15
+replace the related old views; those old views are not also rendered.
 New diagnostic figures are PNG-only; no PDF twins are declared.
 
 | # | Lab accepted form | Existing 0.04 / 0.05 relationship | New comparison basename / source behavior | Input table |
@@ -190,10 +191,9 @@ accepted visual references:
 
 Extend `figure_naming.PLOT_CONTEXTS` with exactly the contexts in these tables;
 keep `annual_ts`, `monthly_box`, `monthly_clim_line`, maps and all old names.
-No new spatial scope; this integration is **basin only**, with no diagnostic
-subbasin fan-out. Update the controlled-context reference with implementation.
+No new spatial scope; basin diagnostics are the default; optional subbasin temporal views are defined below. Update the controlled-context reference with implementation.
 
-For ERA5/CHIRPS: ERA5 has 18 new source forms; CHIRPS has 16 (no own temp/P–T);
+For ERA5/CHIRPS: ERA5 has 21 source forms; CHIRPS has 17 (no own temp/P–T);
 comparison has 17 (no one-carrier temperature climatology). The accepted
 compare reference set maps to 15 comparison views plus ERA5's source temperature
 view. The other two comparison views are the proposed fit/sensitivity additions.
@@ -207,6 +207,28 @@ temperature source over complete shared seasons. Legend entries identify
 columns preserve both source IDs. This reproduces the accepted lab P–T meaning
 without representing ERA5 temperature as a CHIRPS measurement. If no declared
 temperature source exists, omit P–T at parse time and record its unavailability.
+
+### Canonical spatial maps
+
+Add `S_precip_annual_clim_map_basin_ext.png`,
+`S_temp_annual_clim_map_basin_ext.png` and
+`S_pet_annual_clim_map_basin_ext.png` for supported source variables.
+ERA5 supplies all three; CHIRPS supplies precipitation only. Use the structure
+of lab `figures/era5/era5-precip-annual-climatology.png` and its temperature
+counterpart: native-grid cells, basin boundary, dashed subbasin boundaries,
+river/gauge overlays, discrete colourbar, geographic axes and complete-year
+annotation. No interpolation or cellwise cross-source difference map.
+Subbasin boundary overlays are independent of optional subbasin plot fan-out.
+Use complete reporting-year totals for precipitation/PET and complete-year
+means for temperature, consistent with D1's start-year convention. Shared
+per-variable colour bounds cover the configured sources over their displayed
+basin extent. PET retains the existing source-grid derivation and its caveat;
+the lab has no PET map reference, so this is a layout extension requiring review.
+Retain map fields in source `tables/annual_climatology.nc` with units, valid-year
+counts and unavailable-cell masks. Source computation declares this additional
+file; rendering receives it plus declared spatial overlays. Maps use the same
+caption inventory as temporal figures. Default source counts become ERA5 21,
+CHIRPS 17; comparison stays 17: 55 PNGs, plus 55 optional captioned copies.
 
 ### D4. Table, metadata, figure and caption output contracts
 
@@ -227,7 +249,7 @@ No diagnostic table is `temp()`.
 
 | Declared filename under tables/ | Row keys and required values | Source / comparison |
 |---|---|---|
-| `daily_basin.csv` | date; observed precip, genuine temp (NaN otherwise), contributing-cell counts | source only; gap-preserving handoff to 0.05b |
+| `daily_basin.csv` | date; observed precip, genuine temp (NaN otherwise), contributing-cell counts | source only; gap-preserving handoff to 0.05 |
 | `coverage.csv` | reporting_year, calendar_month; fraction, missing_days, class 0/1/2 | both |
 | `valid_years.csv` | reporting_year; full_year, valid_precip, valid_temp, missing_days, reason | both; includes invalid years |
 | `annual_indices.csv` | reporting_year; total, wet_days, SDII, Rx1day, Rx5day | both |
@@ -288,10 +310,11 @@ All new modules live under `blueearth_cst/climate_analysis/`:
 | `diagnostic_settings.py` | pure closed settings parser; resolved defaults without mutating composed config |
 | `diagnostic_tables.py` | gap-preserving basin adapter, period-specific compute, CSV/JSON I/O |
 | `diagnostic_figures.py` | figures from retained plot-ready tables; family-local layout/style |
+| `diagnostic_maps.py` | native-grid annual fields and lab-derived spatial-map rendering |
 | `diagnostic_captions.py` | recoverable scientific captions independent of figures |
-| `compute_climate_diagnostics.py` | 0.04b script glue |
-| `plot_climate_diagnostics.py` | 0.04c script glue |
-| `compare_climate_diagnostics.py` | 0.05b script glue and common-period table/figure production |
+| `compute_climate_diagnostics.py` | 0.04 script glue |
+| `plot_climate_diagnostics.py` | 0.04b script glue |
+| `compare_climate_diagnostics.py` | 0.05 script glue and common-period table/figure production |
 
 Use `diagnostic_source_outputs(store_dir, source, settings)` and
 `diagnostic_comparison_outputs(comparison_dir, sources, settings)` returning
@@ -301,24 +324,22 @@ Tests assert exact recursive output-file equality and rule declaration equality.
 
 | Rule number/name | Declared inputs | Declared outputs / writer |
 |---|---|---|
-| 0.04 `plot_climate_datasets_<source>` | current SourcePlotRule inputs; subbasin plotting enabled by WF0 setting | existing basin plots; existing subbasin paths only when enabled; current writer |
-| 0.04b `compute_climate_diagnostics_<source>` | own extracted climate_nc + basin_cells; settings in params | daily_basin + 17 plot-ready CSVs + diagnostics.json; compute script |
-| 0.04c `plot_climate_diagnostics_<source>` | own 0.04b table/metadata outputs; all candidates' monthly_values/metadata for pooled anomaly bounds | capability-selected source PNGs + both caption files + optional captioned PNGs; plot script |
-| 0.05 `compare_climate_datasets` | current extracted stores/cells; subbasins for plotting only when enabled | current basin comparison files; existing subbasin paths only when enabled; current writer |
-| 0.05b `compare_climate_diagnostics` | each source's daily_basin + diagnostics.json (full native series/lineage) | 17 common-period plot-ready CSVs + agreement.csv/.md + diagnostics.json + selected comparison PNGs + captions/optional variants; compare script |
+| 0.04 `compute_climate_diagnostics_<source>` | own extracted climate_nc + basin_cells; source orography for derived PET; subbasins when enabled; settings in params | daily_basin + 17 plot-ready CSVs + annual_climatology.nc + diagnostics.json; optional subbasin tables; compute script |
+| 0.04b `plot_climate_diagnostics_<source>` | own 0.04 table/metadata outputs; all candidates' monthly_values/metadata and map fields for pooled bounds; spatial overlays | capability-selected source PNGs + both caption files + optional captioned/subbasin PNGs; plot script |
+| 0.05 `compare_climate_diagnostics` | each source's daily_basin + diagnostics.json (full native series/lineage) | 17 common-period plot-ready CSVs + agreement.csv/.md + diagnostics.json + selected comparison PNGs + captions/optional variants; compare script |
 
-0.05b recomputes **period-dependent** climatologies, trends, sensitivity, ACF,
+0.05 recomputes **period-dependent** climatologies, trends, sensitivity, ACF,
 spells and event tables using the same pure computation functions; it does not
 filter full-record aggregates. SPI/reference means are computed from the full
 series before display clipping. A read-only specialist suggested computing both
-full/common sets in 0.04b; this design instead keeps the single-source job
+full/common sets in 0.04; this design instead keeps the single-source job
 independent, retaining daily data so the comparison owns its period. This costs
 some repeated fits but avoids coupling every source job to every other store.
 Only the source rendering jobs wait for all candidates' monthly anomaly tables
 to establish the shared colour scale; single-source computation stays independent.
 
-Register letter-suffixed rules through the current RuleRegistry without
-renumbering 0.01–0.07. Register 0.05b only for >1 declared source. Add all new
+Replace the WF0 0.04/0.05 producer registrations and add 0.04b through the
+current RuleRegistry; keep other rule numbers unchanged. Register 0.05 only for >1 declared source. Add all new
 terminal output paths to WF0_TERMINALS so gathers await tables, captions and
 figures; no logs are stranded. WF0_TARGETS includes the new terminals.
 No one-source comparison directory/job or agreement table is introduced.
@@ -330,8 +351,8 @@ availability notices in captions/JSON. No common valid years means no numerical
 agreement claim; no temporal overlap means unavailable comparison panels, not
 an own-period overlay. Empty events mean "no events", distinct from failed SPI.
 
-For default ERA5/CHIRPS this declares 51 new standard forms, 51 PNG files;
-captioned_figures=true adds another 51 files. Source compute: 19 files/source;
+For default ERA5/CHIRPS this declares 55 canonical standard forms, 55 PNG files;
+captioned_figures=true adds another 55 files. Source compute: 20 files/source;
 source render: 2 caption files plus selected images. Comparison: 20 table/
 metadata files, 2 caption files plus selected images. Counts are verification
 consequences of the inventory, not hardcoded caps.
@@ -376,21 +397,19 @@ Sensitivity has panel letters (the lab function's older titles lack them).
 Positive: WF0 has auditable six-family source diagnostics, genuine comparisons,
 recoverable captions, and independent figure reruns from retained tables.
 
-Negative: additive plots overlap some older views, produce 51 additional
-default images for ERA5/CHIRPS, and add compute/storage even in a single-source
+Negative: the canonical family produces 55 default images for ERA5/CHIRPS, and add compute/storage even in a single-source
 WF0 run. Comparison recomputation repeats some fits. New exports remain
 exploratory scientific products.
 
-Neutral: no existing output migration; no new dependency expected (numpy,
+Neutral: old WF0 plot paths are retired in favor of diagnostic-root paths; no new dependency expected (numpy,
 pandas, scipy, xarray and Matplotlib already exist). New controlled contexts,
 WF0 T2 settings, rule wiring and docs require focused verification.
 
 ## Alternatives considered
 
-1. Extend existing 0.04/0.05 figures in place. Preferable if the owner approves
-   changing both WF0/WF1 source figures and old comparison content contracts.
-   Rejected here because the accepted percentile/trend/completeness views change
-   scientific meaning and the shared source producer affects WF1.
+1. Keep old and new WF0 figures alongside each other. Rejected by the owner:
+   the new system must be WF0's sole plotting system. Keeping WF1's existing
+   producer avoids extending this replacement into another workflow.
 2. Compute full/common tables in every per-source job. Preferable if comparison
    periods are fixed independently of other sources or avoiding repeated fits
    dominates. Not chosen because mutual availability/reference choices would
@@ -468,10 +487,10 @@ Toolbox docs must carry the following lab section unchanged:
 ## Gate 1 decision requested
 
 Approve D1–D6, including the complete 16-form reconciliation, two additional
-fit/sensitivity views, additive paths and table schemas, PNG plus optional
+fit/sensitivity views, canonical paths, map fields and table schemas, PNG plus optional
 captioned output contract, WF0-owned T2 configuration, explicit common-period
 and P–T source binding, unavailable-panel behavior, and local visual style.
-There are no proposed existing-output renames/content changes, project climate
+This proposal retires existing WF0 figure paths/content. There are no project climate
 keys, advanced settings changes, or shared plotting-style changes.
 
 Owner approval: pending. Implementation is paused at the integration brief's
@@ -493,7 +512,7 @@ the record format; the pause is required by the user-invoked integration brief.
 
 The proposed new diagnostic family uses PNG only, including captioned copies.
 Shortened contexts match [project-tree.md](project-tree.md). The four-field
-grammar and existing output paths are preserved; new contexts identify the
+grammar is preserved; existing WF0 plot outputs are retired; new contexts identify the
 diagnostic while registered definitions and captions specify its visual form.
 Update the controlled vocabulary and its plot-form requirement for this new
 family at implementation. Gate 1 approval of the full design remains pending.
@@ -505,22 +524,25 @@ paths from implemented paths so the owner can inspect the current layout quickly
 
 ### Owner-directed optional subbasin figures
 
-Add the WF0-owned T2 boolean `subbasin_figures`, default `false`, to the
-`analyze_climate` workflow settings file. It controls the existing source
-(0.04) and multisource comparison (0.05) subbasin figure families together.
-Basin figures and the new basin diagnostics remain enabled. Enabling it retains
-the existing `plots/subbasins/` and comparison `subbasins/` paths and basenames.
-No new subbasin diagnostic family is introduced.
+WF0-owned T2 boolean `subbasin_figures` defaults to `false`. When enabled,
+the canonical source and multisource comparison renderers produce precipitation
+`monthly_clim_band` and `annual_trend_ts` views per subbasin, plus genuine
+temperature `monthly_clim_band` views where supported. Use the four-field
+grammar with `subbasin_<id>_avg`, under `D/figures/subbasins/`; optional captioned
+copies live under `D/figures/captioned/subbasins/`. Declare runtime directories
+because delineation supplies the IDs. Retain corresponding subbasin plot-ready
+tables under `D/tables/subbasins/`, declared by computation/comparison rules
+only when enabled. Never revive old monthly-box or annual_ts renderers.
 
-With the option off, omit subbasin figure directories from declared outputs and
-terminal targets, and skip their rendering; do not create empty placeholder
-directories. Existing subbasin vector products remain governed by their current
-spatial-foundation contract. Previously generated subbasin plots are not deleted;
-they are not current declared outputs while the option is off.
+With the option off, omit these directories from declarations and targets and
+skip their calculations/rendering. Spatial-foundation products and map overlays
+remain available. Previously generated plots are not deleted. WF1 keeps its
+existing behavior. Test default/false and true declarations and renders,
+single-source behavior, and unchanged WF1 source-plot behavior.
 
-The source producer is shared with WF1: adapt its declaration and writer
-interfaces to support this choice while retaining WF1's existing behavior by
-default. Document this intentional WF0 default-output change and opt-in setting.
-Focused validation must cover false/default and true declarations and renders,
-single-source behavior, and unchanged WF1 source-plot behavior. Gate 1 approval
-of implementation remains pending.
+### Owner-directed canonical replacement revision
+
+The owner superseded the additive design: only the new system plots WF0.
+The lab spatial references were inspected read-only; lab `git status --short`
+was clean at this inspection (no lab commit is cited). The complete revised
+design and output inventory still require Gate 1 approval before implementation.

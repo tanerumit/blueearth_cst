@@ -431,7 +431,9 @@ The integration was checked against the approved plan:
 | Output inventory | 55 standard PNGs; opt-in case: 83 standard plus 83 captioned |
 
 The opt-in case includes four subbasins. All recorded rendered paths exist; no PDFs were produced.
-Fresh shared delineation was stopped during a slow P-drive index read. Diagnostic execution used retained
+Fresh shared delineation was stopped after its last logged index read. A repeat using a local copy of that
+index also remained in delineation; an independent local index read took 5.6 seconds. The precise slow
+operation is unresolved. Diagnostic execution used retained
 spatial and climate prerequisites, so it does not prove a fresh full-workflow run. Combined batch gates remain
 due at an approved landing. Commands, numerical comparisons and results deltas are retained in the
 [technical reference](design-reference.md#implementation-validation--2026-10-06).

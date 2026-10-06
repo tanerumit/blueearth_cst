@@ -841,6 +841,25 @@ newer percentile-band and trend-series views supersede them. Existing source map
 replaced by the lab spatial-map structure.
 
 
+## Fresh-run follow-up — 2026-10-06
+
+The fresh rapid WF0 run was attempted through `scripts/run_workflow.py` using scratch configuration and an
+empty output root. It remained in rule 0.01, before any new diagnostic job started, and was interrupted.
+The basin-index reader continued transferring data; this was not evidence of a dead process.
+
+A second attempt used a scratch catalog override pointing to a local copy of the same existing MERIT
+index. It also remained in delineation and was interrupted. An independent GeoPandas bounding-box read
+of the copied index returned 21 features in 5.603 seconds. HydroMT performs basin-raster work after that
+index read; the last log row therefore does not establish which operation was slow. No upstream code,
+repository catalog, or scientific settings were changed. Both process trees were confirmed stopped.
+
+Scratch logs: `wf0-fresh-validation.log`, `wf0-fresh-local-index.log`, and `wf0-index-probe.log` under
+`.tmp/scratchpad/`. The fresh full-workflow check remains incomplete. This follow-up does not replace
+the passing diagnostic subgraph checks or count as an end-to-end pass.
+
+Gate 1 is the brief's only human design gate. The earlier conversational "Gate 2" label was incorrect.
+Repository authorization for landing remains separate from design approval.
+
 ## Implementation validation — 2026-10-06
 
 ### Matched Ntoum numerical regression

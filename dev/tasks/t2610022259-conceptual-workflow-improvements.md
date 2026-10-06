@@ -33,4 +33,5 @@ Conceptual research and prioritization only. The current seeds are WF0 and WF2; 
 - [WF0 climate analysis ideas](t2610022259/wf0-climate-analysis-ideas.md) — research captured from the 2026-10-02 discussion; temporary task backing document.
 - [WF2 climate projections ideas](t2610022259/wf2-climate-projections-ideas.md) — projection changes, ensemble interpretation, uncertainty quantification, and optional extensions.
 - [WF2 starter suite proposal](t2610022259/wf2-starter-suite-proposal.md) — recommended initial suite, deferrals and owner decisions (2026-10-06).
+- [WF2 lab suite brief](t2610022259/wf2-lab-suite-brief.md) — master brief: P0 ensemble fetch in BlueEarth, P1–P6 in wf0-lab.
 - [Existing WF0 forcing-selection evaluation task](t2608181139-give-wf0-its-forcing-selection-evaluation-layer-rules-0-07-0-09.md) — owns observation comparison and Budyko screening; includes overlapping optional index ideas.

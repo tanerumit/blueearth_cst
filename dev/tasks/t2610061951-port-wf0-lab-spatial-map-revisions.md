@@ -25,7 +25,7 @@ Brief: [task-brief.md](t2610061951/task-brief.md).
 - [x] Rename rule 1.11 outputs to `<variable>_basin` with a migration note (`1a2bf137`).
 - [x] Rebased on main; test-fast (3925) and test-full (4004) passed on the combined tree.
 - [x] Landed on main as `c8c31103` with the owner's approval (2026-10-06); not pushed.
-- [ ] test-e2e: blocked by the P: drive dropping mid-run (WF0 read `30sec_elevtn.tif` failed). Re-run when P: is reachable; rule 1.11 has not yet run end to end under the new names.
+- [x] test-e2e passed on the merged code (1 passed, 20 min) once P: was reachable again.
 
 ## Decisions
 

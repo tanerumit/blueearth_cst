@@ -115,6 +115,9 @@ years. **Why:** comparing source summaries from different periods can mislead. R
 comparison to use matched periods correctly. This rule combines calculation and rendering to keep the workflow
 compact; changing comparison styling therefore repeats its calculations.
 
+Retain `comparison/dataset_comparison.csv` and `.md` at their existing paths. They describe the extracted
+datasets and forcing readiness; the new agreement summary describes their numerical agreement.
+
 ### 3.4. Rules being replaced
 
 The existing 0.04 source plot jobs and 0.05 comparison plot job are replaced by these rules. They do not run
@@ -210,6 +213,7 @@ blueearth_cst/                                           repository root
 │   │   ├── diagnostic_settings.py                       [new] WF0 settings and defaults
 │   │   ├── diagnostic_outputs.py                        [new] shared declaration/writer inventory
 │   │   ├── diagnostic_tables.py                         [new] basin series, calculations and table I/O
+│   │   ├── diagnostic_source_summary.py                 [new] retained source-summary table contract
 │   │   ├── diagnostic_figures.py                        [new] artists using retained results
 │   │   ├── diagnostic_render.py                         [new] rendering and export orchestration
 │   │   ├── diagnostic_maps.py                           [new] native-grid map fields and layout
@@ -277,6 +281,8 @@ diagnostic code.
             │           ├── subbasins/             optional canonical subbasin PNGs
             │           └── captioned/             optional PNG copies, including subbasins/
             └── comparison/                        multisource runs only
+                ├── dataset_comparison.csv         [retained] extracted-source summary and forcing readiness
+                ├── dataset_comparison.md          [retained] readable source summary
                 └── diagnostics/                   [new] comparison diagnostics root D_c
                     ├── _engine/                   retained machine-readable records
                     │   ├── diagnostics.json
@@ -423,12 +429,13 @@ The integration was checked against the approved plan:
 
 | Check | Result |
 | --- | --- |
-| Focused numerical and contract tests | 85 passed; final adapter rerun: 7 passed |
+| Focused numerical and contract tests | 85 passed; source-summary contract checks: 8 passed |
 | CLI checks | 20 passed |
 | Lint, formatting and documentation links | Passed |
 | Ntoum numerical regression | Matched within the approved tolerances |
 | New diagnostic jobs through Snakemake | All five passed with defaults and opt-in settings |
 | Fresh WF0 with local staged inputs | All 11 jobs passed in 1 minute 16 seconds |
+| Matched fresh runs before/after integration | 18 retained products match; values and paths unchanged |
 | Output inventory | 55 standard PNGs; opt-in case: 83 standard plus 83 captioned |
 
 The opt-in case includes four subbasins. All recorded rendered paths exist; no PDFs were produced.
@@ -462,6 +469,7 @@ remain separate decisions and are not authorized.
 
 ## 9. Revision record
 
+- 2026-10-06: Matched fresh products verified; restored the two source-summary files and their declarations.
 - 2026-10-06: Fresh WF0 passed with local staged Ntoum inputs; retained memory and output-inventory evidence.
 - 2026-10-06: Implemented the approved canonical system; updated the tree and retained validation results.
 - 2026-10-06: Gate 1 approved by Ümit Taner; toolbox-native implementation started.

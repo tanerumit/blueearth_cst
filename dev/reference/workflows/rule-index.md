@@ -260,6 +260,9 @@ Writes tables, `agreement.csv`, `agreement.md`, metadata, PNGs and captions bene
 `data/climate/historical/comparison/diagnostics/`. Compared source IDs appear in legends,
 captions and provenance; filenames use the `comparison` token.
 
+Also retains `comparison/dataset_comparison.csv` and `.md`, describing extracted-source metadata
+and WG-1 readiness at their existing paths. Readiness is structural conformance, not scientific qualification.
+
 The canonical system replaces WF0's former source boxes/plain annual series and
 comparison lines. WF1's `source_plot_rule.py` producer and its `plots/` contract remain.
 Existing run products are not automatically removed. All new WF0 figures are PNGs.

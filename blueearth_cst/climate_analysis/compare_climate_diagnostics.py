@@ -10,6 +10,10 @@ from blueearth_cst.climate_analysis.diagnostic_outputs import (
     diagnostic_comparison_outputs,
 )
 from blueearth_cst.climate_analysis.diagnostic_render import render
+from blueearth_cst.climate_analysis.diagnostic_source_summary import (
+    summarize_sources,
+    write_comparison_table,
+)
 from blueearth_cst.climate_analysis.diagnostic_tables import compute, write_tables
 
 
@@ -17,6 +21,10 @@ def run(sm):
     settings = dict(sm.params.settings)
     sources = list(sm.params.sources)
     paths = diagnostic_comparison_outputs(sm.params.comparison_dir, sources, settings)
+    write_comparison_table(
+        summarize_sources(dict(zip(sources, sm.input.source_stores, strict=True))),
+        sm.params.comparison_dir,
+    )
     m0 = int(sm.params.m0)
     period = tuple(settings["comparison_period"][k] for k in ("start", "end"))
     daily = {

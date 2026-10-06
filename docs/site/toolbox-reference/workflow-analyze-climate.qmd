@@ -76,6 +76,10 @@ Each source gets a `diagnostics/` root inside its store. With multiple sources,
 `data/climate/historical/comparison/diagnostics/` contains the comparison products.
 There is no one-source comparison.
 
+Multisource runs also retain `comparison/dataset_comparison.csv` and `.md` at their existing paths. These
+describe the extracted sources, their grids, periods and structural forcing readiness. They complement
+the diagnostic agreement summary; readiness does not establish scientific suitability.
+
 ```text
 diagnostics/
 ├── _engine/

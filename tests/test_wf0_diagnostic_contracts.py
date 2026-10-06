@@ -16,6 +16,62 @@ from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
 from blueearth_cst.climate_analysis.diagnostic_tables import compute, write_tables
 
 
+def test_source_summary_preserves_extracted_metadata_and_readiness(tmp_path):
+    import xarray as xr
+
+    from blueearth_cst.climate_analysis.diagnostic_source_summary import (
+        summarize_sources,
+        write_comparison_table,
+    )
+
+    stores = {}
+    for source, step in (("era5", 0.25), ("chirps", 0.05)):
+        ds = xr.Dataset(
+            {"precip": (("time", "latitude", "longitude"), np.ones((2, 2, 2)))},
+            coords={
+                "time": pd.date_range("2001-02-03", periods=2),
+                "latitude": [0, step],
+                "longitude": [10, 10 + step],
+            },
+            attrs={"paper_ref": "Source paper", "notes": "Extraction note"},
+        )
+        stores[source] = tmp_path / f"{source}.nc"
+        ds.to_netcdf(stores[source])
+    table = summarize_sources(stores)
+    assert list(table.columns) == [
+        "source",
+        "temporal_resolution",
+        "time_window",
+        "spatial_resolution",
+        "reference",
+        "remarks",
+        "wg1_status",
+        "wg1_diffs",
+    ]
+    assert table.source.tolist() == ["era5", "chirps"]
+    assert table.temporal_resolution.tolist() == ["daily", "daily"]
+    assert table.time_window.tolist() == ["2001-02-03 → 2001-02-04"] * 2
+    assert table.spatial_resolution.tolist() == ["0.25°", "0.05°"]
+    assert table.reference.tolist() == ["Source paper"] * 2
+    assert table.remarks.tolist() == [
+        "Extraction note",
+        "Extraction note; precipitation only; no ERA5 companion fields; promotion requires re-extraction",
+    ]
+    assert table.wg1_status.tolist() == ["not ready"] * 2
+    assert "expected data variable 'temp' absent" in table.wg1_diffs.iloc[1]
+    csv, md = write_comparison_table(table, tmp_path / "comparison")
+    pd.testing.assert_frame_equal(pd.read_csv(csv), table)
+    text = md.read_text(encoding="utf-8")
+    assert text.startswith("# Gridded climate datasets compared\n\n")
+    assert "## WG-1 readiness of extracted stores" in text
+    assert (
+        "not a check of record length, missing values or scientific suitability" in text
+    )
+    assert "precipitation only; no ERA5 companion fields" in text
+    with pytest.raises(ValueError, match="two sources"):
+        summarize_sources({"era5": stores["era5"]})
+
+
 def test_canonical_inventory_and_one_source_refusal():
     settings = parse_settings(None, {"start": 2000, "end": 2016}, ["era5", "chirps"])
     era5 = diagnostic_source_outputs("era5", "era5", settings)
@@ -23,6 +79,10 @@ def test_canonical_inventory_and_one_source_refusal():
     comparison = diagnostic_comparison_outputs(
         "comparison", ["era5", "chirps"], settings
     )
+    assert comparison["source_summary"] == {
+        "dataset_comparison_csv": str(Path("comparison/dataset_comparison.csv")),
+        "dataset_comparison_md": str(Path("comparison/dataset_comparison.md")),
+    }
     assert [len(x["figures"]) for x in (era5, chirps, comparison)] == [21, 17, 17]
     assert all(
         p.endswith(".png")

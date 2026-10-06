@@ -100,4 +100,12 @@ def diagnostic_source_outputs(store_dir, source, settings):
 def diagnostic_comparison_outputs(comparison_dir, sources, settings):
     if len(sources) < 2:
         raise ValueError("A comparison requires at least two sources")
-    return inventory(Path(comparison_dir) / "diagnostics", sources, settings, True)
+    paths = inventory(Path(comparison_dir) / "diagnostics", sources, settings, True)
+    # These pre-existing summaries describe extracted stores, outside diagnostics.
+    paths["source_summary"] = {
+        f"dataset_comparison_{suffix}": str(
+            Path(comparison_dir) / f"dataset_comparison.{suffix}"
+        )
+        for suffix in ("csv", "md")
+    }
+    return paths

@@ -841,6 +841,42 @@ newer percentile-band and trend-series views supersede them. Existing source map
 replaced by the lab spatial-map structure.
 
 
+## Matched fresh-run acceptance and source-summary repair — 2026-10-06
+
+The pre-integration code at `7704e7e2` was exported read-only into worktree scratch and run through its owned
+WF0 launcher with the same local catalog, Ntoum basin, years and river source as the new fresh run. The
+reference run completed all nine jobs in 1 minute 33 seconds. No branch switch or lab write was involved.
+
+All 16 shared spatial/climate products retained their project-relative paths and exact data: two extracted
+NetCDF stores, two cell tables, hydrography, the location registry and ten GeoJSON layers. NetCDF comparisons
+checked variables, coordinates and unit attributes, rather than serialization bytes or run provenance.
+
+The inventory exposed a dropped source-summary contract: `comparison/dataset_comparison.csv` and `.md`.
+Only the old plots had been explicitly retired. Those summary paths were restored through a plot-free native
+helper, with their outputs declared alongside the comparison inventory and extracted stores declared as
+rule inputs. Diagnostic JSON and caption inventories remain rooted in `diagnostics/`; summary outputs use
+a separate inventory section because their established paths are above that root.
+
+The revised rule ran successfully in 22 seconds. Comparing all 18 retained products then passed, including
+exact source-summary CSV values and Markdown text. Plot counts and scientific calculations did not change.
+The maintained tree and user guide now show the retained summaries.
+
+The Python engineer handled the bounded helper/adapter/declaration/test repair; the coordinator handled
+documentation, live execution and matched comparisons. Runtime model and effort settings were inherited.
+A contract regression failed before the repair and eight focused tests passed afterward in 35.28 seconds.
+CLI checks passed: 20 tests in 52.75 seconds. Lint and formatting passed after normalizing import spacing;
+the formatter checked 419 files. Documentation width and `git diff --check` passed.
+
+Evidence under `.tmp/scratchpad/`: `wf0-reference-run.log`, `wf0-fresh-comparison.log/.json`,
+`wf0-summary-red.log`, `wf0-summary-green.log`, `wf0-summary-execution.log`, `wf0-summary-cli.log`,
+`wf0-summary-lint-final.log` and `wf0-summary-format-final.log`.
+No old plot producer was restored. No files were deleted by this repair.
+
+The next boundary is repository landing authorization, required by `.git-workflow.yml` and the pinned
+session policy. At an approved landing, synchronize with current `main` and run the combined batch's
+`test-fast`, `test-full` and fresh five-workflow `test-e2e` gates. The local WF0 check is not a substitute
+for that five-workflow gate. No landing or push was performed.
+
 ## Successful local-data fresh run — 2026-10-06
 
 At the owner's request, fresh WF0 execution was retried with `config/catalogs/deltares_data.yml`, whose

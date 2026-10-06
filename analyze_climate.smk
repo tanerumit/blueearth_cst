@@ -23,16 +23,10 @@ from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
 # built by `climate_analysis.figure_naming`, never spelled here. The wflow
 # FORCING family (rule 1.12) keeps its own names -- the rule stages WF0 first.
 #
-# ONE spatial scope is declarable: `basin_avg`. The per-subbasin figures are
-# named `..._subbasin_<id>_avg.png`, and the ids come from the DELINEATION --
-# rule 0.02's `subbasins.geojson`, which need not exist when this file is
-# parsed. Their count is therefore unknowable at DAG-construction time, exactly
-# as rule 1.15's per-station figures are (see the O-24 note in build_model.smk).
-# They land in a `subbasins/` bin declared as a `directory()`, which keeps
-# `--delete-all-output` complete without the checkpoint that rule shape would
-# otherwise need. Rule 1.15 took the same device on 2026-08-18 for the same
-# reason (t2608071206), so `stations/` there and `subbasins/` here are one
-# pattern rather than two coincidences.
+# Basin temporal figures use `basin_avg`; source maps use `basin_ext`.
+# Optional `..._subbasin_<id>_avg.png` figures use IDs from rule 0.02's
+# `subbasins.geojson`, which need not exist at DAG parse time. Their runtime
+# inventory is covered by declared `directory()` outputs when enabled.
 SUBBASIN_PLOT_DIRNAME = "subbasins"
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
@@ -324,7 +318,7 @@ COMPARISON_DIR = f"{project_dir}/data/climate/historical/comparison"
 COMPARISON_DIAGNOSTICS = diagnostic_comparison_outputs(COMPARISON_DIR, CANDIDATE_SOURCES, DIAGNOSTIC_SETTINGS) if len(CANDIDATE_SOURCES) > 1 else None
 WF0_TERMINALS = [p for spec in SOURCE_DIAGNOSTICS.values() for p in spec["render"].values()]
 if COMPARISON_DIAGNOSTICS:
-    WF0_TERMINALS += list(COMPARISON_DIAGNOSTICS["compute"].values()) + list(COMPARISON_DIAGNOSTICS["render"].values())
+    WF0_TERMINALS += list(COMPARISON_DIAGNOSTICS["compute"].values()) + list(COMPARISON_DIAGNOSTICS["render"].values()) + list(COMPARISON_DIAGNOSTICS["source_summary"].values())
 if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
     WF0_TERMINALS += [f"{spec['root']}/figures/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
     if COMPARISON_DIAGNOSTICS:
@@ -465,8 +459,9 @@ for _source in CANDIDATE_SOURCES:
         script: "blueearth_cst/climate_analysis/plot_climate_diagnostics.py"
 
 if COMPARISON_DIAGNOSTICS:
-    _comparison_outputs = {**COMPARISON_DIAGNOSTICS["compute"], **COMPARISON_DIAGNOSTICS["render"]}
+    _comparison_outputs = {**COMPARISON_DIAGNOSTICS["compute"], **COMPARISON_DIAGNOSTICS["render"], **COMPARISON_DIAGNOSTICS["source_summary"]}
     _comparison_inputs = {
+        "source_stores": [CLIMATE_STORES[s].outputs["climate_nc"] for s in CANDIDATE_SOURCES],
         "daily": [SOURCE_DIAGNOSTICS[s]["compute"]["daily"] for s in CANDIDATE_SOURCES],
         "metadata": [SOURCE_DIAGNOSTICS[s]["compute"]["metadata"] for s in CANDIDATE_SOURCES],
         "pooled": [SOURCE_DIAGNOSTICS[s]["compute"]["monthly_values"] for s in CANDIDATE_SOURCES],

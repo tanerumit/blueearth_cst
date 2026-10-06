@@ -382,3 +382,69 @@ def test_written_cells_carry_no_long_float(wide, tmp_path):
         assert "e" not in cell.lower() or not re.match(r"^[+-]?[\d.]+e", cell, re.I)
         if re.match(r"^[+-]?\d+\.\d+$", cell):
             assert len(cell.split(".")[1]) <= 3, cell
+
+
+# --- mixed member labels: outer-join padding is not data -----------------------
+
+
+def _point(model, member, value):
+    """One stage-B point: a single (model, member) slice, as one job derives it."""
+    coords = {
+        "clim_project": ["cmip6"],
+        "model": [model],
+        "scenario": ["ssp245"],
+        "horizon": ["far"],
+        "member": [member],
+        "stats": ["mean"],
+    }
+    shape = (1,) * len(coords)
+    return xr.Dataset(
+        {
+            "precip": (tuple(coords), np.full(shape, value)),
+            "temp": (tuple(coords), np.full(shape, value / 10)),
+            "precip__flagged": (tuple(coords), np.zeros(shape, dtype=bool)),
+        },
+        coords=coords,
+    )
+
+
+DERIVED = {
+    ("AWI/AWI-CM-1-1-MR", "ssp245", "r1i1p1f1"),
+    ("CCCma/CanESM5", "ssp245", "r11i1p1f1"),
+}
+
+
+@pytest.fixture
+def padded():
+    """Two models whose member labels differ, merged the way stage B merges."""
+    from blueearth_cst.projections.get_change_climate_proj_summary import (
+        combine_changes,
+    )
+
+    return combine_changes(
+        [
+            _point("AWI/AWI-CM-1-1-MR", "r1i1p1f1", 1.0),
+            _point("CCCma/CanESM5", "r11i1p1f1", 2.0),
+        ]
+    )
+
+
+def test_the_outer_join_pads_differing_member_labels(padded):
+    """The defect's precondition: a 2 x 2 grid from two series, two cells padding.
+    A padding cell's NaN `__flagged` reads as True, so without the derived set it
+    would surface as a dry month of a combination that does not exist."""
+    rows = [r for r in _rows(padded) if r["variable"] == "precip"]
+    assert len(rows) == 4
+    assert sum(np.isnan(r["relative_value"]) for r in rows) == 2
+
+
+def test_only_derived_combinations_become_rows(padded):
+    rows = _rows(padded, combinations=DERIVED)
+    precip = {
+        (r["model"], r["member"]): r["relative_value"]
+        for r in rows
+        if r["variable"] == "precip"
+    }
+    assert precip == {("AWI-CM-1-1-MR", "r1i1p1f1"): 1.0, ("CanESM5", "r11i1p1f1"): 2.0}
+    assert len(rows) == 4  # two combinations x two variables
+    assert all(r["status"] == "ok" for r in rows)

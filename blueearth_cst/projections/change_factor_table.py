@@ -95,7 +95,15 @@ def _sort_key(columns):
     return columns[:n]
 
 
-def tidy_rows(ds, *, month=None, window_facts=None, row_facts=None, variable_spec=None):
+def tidy_rows(
+    ds,
+    *,
+    month=None,
+    window_facts=None,
+    row_facts=None,
+    variable_spec=None,
+    combinations=None,
+):
     """Long-format rows from the wide change-factor dataset stage B produces.
 
     ``ds`` carries data variables per climate variable (`precip`, `temp`) over
@@ -121,8 +129,16 @@ def tidy_rows(ds, *, month=None, window_facts=None, row_facts=None, variable_spe
     ``variable_spec`` maps variable name to a spec exposing ``.units`` and
     ``.change``. It is what decides whether ``relative_value`` is a percent or a
     difference — never the variable's name.
+
+    ``combinations`` is the set of `(model, scenario, member)` identities the run
+    resolved, `model` in its `institution/source_id` form. Stage B merges its
+    points with an outer join, so models whose member labels differ (CanESM5
+    `r11i1p1f1` beside AWI `r1i1p1f1`) span a grid holding cells no series
+    produced. Those cells are padding, not data: given the set, only its members
+    become rows. ``None`` keeps every cell, for a dataset with no padding.
     """
     columns = TABLE_COLUMNS_ANNUAL if month is None else TABLE_COLUMNS_MONTHLY
+    keep = None if combinations is None else set(combinations)
     facts = dict(window_facts or {})
     per_row = dict(row_facts or {})
     spec = dict(variable_spec or {})
@@ -164,6 +180,8 @@ def tidy_rows(ds, *, month=None, window_facts=None, row_facts=None, variable_spe
             scenario = str(coords.get("scenario", ""))
             member = str(coords.get("member", ""))
             horizon = str(coords.get("horizon", ""))
+            if keep is not None and (dataset, scenario, member) not in keep:
+                continue
 
             row = dict.fromkeys(columns, "")
             row.update(

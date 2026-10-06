@@ -135,8 +135,13 @@ def combine_changes(datasets):
     )
 
 
-def plot_change_summary(ds, clim_dir, horizons):
-    """Draw the cloud from the same in-memory dataset used by the tidy tables."""
+def plot_change_summary(ds, clim_dir, horizons, combinations=None):
+    """Draw the cloud from the same in-memory dataset used by the tidy tables.
+
+    ``combinations`` is the resolved `(model, scenario, member)` set, as for
+    :func:`change_factor_table.tidy_rows`: the outer-joined merge pads models
+    with differing member labels, and a padding cell is not a point to draw.
+    """
     # just keep mean for temp and precip for the change-factor cloud
     df = ds.sel(stats="mean").to_dataframe().reset_index()
     missing = [c for c in ("model", "scenario", "horizon") if c not in df.columns]
@@ -145,6 +150,10 @@ def plot_change_summary(ds, clim_dir, horizons):
             f"the stage-B merge carries no {plural(missing, 'coordinate')}; the "
             "change-factor cloud cannot be keyed by combination"
         )
+    if combinations is not None:
+        keep = set(combinations)
+        identity = zip(df["model"], df["scenario"], df["member"])
+        df = df[[key in keep for key in identity]]
 
     plots_dir = Path(clim_dir) / "plots"
     plots_dir.mkdir(parents=True, exist_ok=True)

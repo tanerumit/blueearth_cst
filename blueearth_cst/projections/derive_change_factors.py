@@ -513,7 +513,15 @@ if "snakemake" in globals():
             join="outer",
             combine_attrs="override",
         )
-        plot_change_summary(merged, clim_project_dir, horizons)
+        # The outer join spans model x scenario x member, so models with differing
+        # member labels leave cells no series produced. Every consumer of the
+        # merge reads only the combinations that were actually derived.
+        derived = {
+            (p["model"], p["scenario"], p["member"])
+            for p in points
+            if p["point_key"] in resolved_facts
+        }
+        plot_change_summary(merged, clim_project_dir, horizons, combinations=derived)
 
         # --- step 6a-i: the tidy annual change-factor table (design §5.9) ----
         # The cloud and tidy tables consume the same merged dataset.
@@ -560,6 +568,7 @@ if "snakemake" in globals():
             window_facts=window_facts,
             row_facts=row_facts,
             variable_spec=VARIABLE_SPEC,
+            combinations=derived,
         )
         write_table(
             str(sm.output.change_factors_annual), rows, columns=TABLE_COLUMNS_ANNUAL
@@ -574,6 +583,7 @@ if "snakemake" in globals():
                     window_facts=window_facts,
                     row_facts=row_facts,
                     variable_spec=VARIABLE_SPEC,
+                    combinations=derived,
                 )
             )
         write_table(

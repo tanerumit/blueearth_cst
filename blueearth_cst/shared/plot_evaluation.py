@@ -20,7 +20,7 @@ This replaces ``func_plot_signature.plot_hydro`` (five stacked panels) and
   invented in ``plot_results`` — or by a station_name the delineation generated.
   Every other artifact of a run names a point by its ``wflow_id``: the
   ``Q_1010`` column in ``output.csv``, the registry, the labels on
-  ``basin_area``. So do these.
+  ``elevation_basin``. So do these.
 * **Three unit errors fixed.** The annual and monthly panels plotted
   ``resample(...).sum()`` of a series in m3 s-1 and labelled the result
   ``m3 yr-1`` / ``m3 month-1`` — wrong by 86400, since a sum of daily mean
@@ -130,7 +130,7 @@ class Station:
     """Who a sheet is about: the wflow_id, and the context around it.
 
     ``wflow_id`` is the key — it names the ``output.csv`` column, the registry
-    row and the point on ``basin_area``, and it is what the filenames use. The
+    row and the point on ``elevation_basin``, and it is what the filenames use. The
     other two are shown on the sheet because a user-supplied station name is
     real information when a project has one, and because the subbasin is how a
     reader finds this point on the delineation map.

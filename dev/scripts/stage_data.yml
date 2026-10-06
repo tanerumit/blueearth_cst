@@ -114,7 +114,7 @@ datasets:
     #                         Slp, Elev, order, area
 
   # The three waterbody layers rule 1.08 `add_reservoirs_lakes_glaciers` reads,
-  # and the ones `basin_area.png` needs before it can draw a reservoir
+  # and the ones `elevation_basin.png` needs before it can draw a reservoir
   # (t2608091730). Full tables are read and clipped -- no `columns` -- because
   # `deltares_data.yml` applies `rename` and `unit_mult` to named fields, and a
   # column list here would have to be kept in step with that by hand.

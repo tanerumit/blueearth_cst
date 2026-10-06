@@ -138,15 +138,17 @@ def test_output_stems_are_unique():
 
 def test_no_stem_collides_with_the_basin_map_in_the_same_folder():
     """One rule writes both into ``data/spatial/plots``."""
-    assert "basin_area" not in {figure.stem for figure in family.SPATIAL_MAP_FIGURES}
+    assert "elevation_basin" not in {
+        figure.stem for figure in family.SPATIAL_MAP_FIGURES
+    }
 
 
-def test_every_soil_stem_records_its_depth_slice():
-    """The filename is the only place the slice is written down now that the
-    figures carry no title, and ``sl1`` is one of seven the source ships."""
+def test_only_the_surface_soil_slice_is_registered():
+    """Soil stems carry no depth token, so a second slice would be ambiguous."""
     for figure in family.SPATIAL_MAP_FIGURES:
-        if figure.variable.startswith("soil_") and "sl1" in figure.variable:
-            assert figure.stem.endswith("_topsoil"), figure.stem
+        if figure.variable.startswith("soil_") and "_sl" in figure.variable:
+            assert figure.variable.endswith("_sl1"), figure.variable
+            assert figure.stem.endswith("_basin"), figure.stem
 
 
 def test_the_figure_set_declares_exactly_what_the_rule_promises():
@@ -173,21 +175,21 @@ def test_the_rule_output_list_is_one_png_per_declared_figure():
     paths = family.figure_paths("P/plots")
     declared = [f for f in family.SPATIAL_MAP_FIGURES if f.guaranteed]
     assert len(paths) == len(declared)
-    assert "P/plots/land_cover.png" in paths
+    assert "P/plots/land_cover_basin.png" in paths
     assert not any(path.endswith(".pdf") for path in paths)
-    assert "P/plots/soil_depth_to_bedrock.png" not in paths
+    assert "P/plots/soil_depth_to_bedrock_basin.png" not in paths
 
 
 def test_a_caller_can_still_ask_for_a_pdf():
     paths = family.figure_paths("P/plots", formats=("png", "pdf"))
-    assert "P/plots/land_cover.pdf" in paths
+    assert "P/plots/land_cover_basin.pdf" in paths
 
 
 def test_the_undeclared_figures_are_still_drawn():
     """`guaranteed=False` keeps a figure out of the rule's promise, not out of
     the run -- it is the difference between a lost figure and a failed workflow."""
     everything = family.figure_paths("P/plots", declared_only=False)
-    assert "P/plots/soil_depth_to_bedrock.png" in everything
+    assert "P/plots/soil_depth_to_bedrock_basin.png" in everything
 
 
 def test_a_constant_layer_is_noted_but_still_drawn():

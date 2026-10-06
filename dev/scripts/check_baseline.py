@@ -273,7 +273,7 @@ TARGETS: list[tuple[str, str, str]] = [
     (
         "build_model",
         "png",
-        "{project_dir}/data/spatial/plots/basin_area.png",
+        "{project_dir}/data/spatial/plots/elevation_basin.png",
     ),
     (
         "build_model",

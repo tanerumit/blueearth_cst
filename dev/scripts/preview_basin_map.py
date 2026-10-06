@@ -95,7 +95,7 @@ _CANDIDATE_PROJECT_DIRS = (
     "test_case/test_local",
 )
 
-_FIGURE_STEM = "basin_area"
+_FIGURE_STEM = "elevation_basin"
 
 
 # --- the tunable block, read out of the source --------------------------------

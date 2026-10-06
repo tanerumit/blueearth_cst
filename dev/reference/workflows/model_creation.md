@@ -146,7 +146,7 @@ waterbodies, outputs, runtime, and forcing.
 
 **Direct `rule all` targets** (named statically by this workflow's `rule all`):
 - `{basin_dir}/evaluation/plots/hydro_wflow_1.png` (the run)
-- `{basin_dir}/plots/basin_area.png` (the model)
+- `{basin_dir}/plots/elevation_basin.png` (the model)
 - `{basin_dir}/forcing/plots/forcing_precip_map.png` (model inputs)
 - `{project_dir}/data/climate/historical/<key>/plots/source_{precip,temp,pet}.png`
   (source-grid figures from the shared store; produced with no model)

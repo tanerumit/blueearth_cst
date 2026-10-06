@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The thematic map family drawn from ``data/spatial/spatial_maps.nc``.
 
-``basin_area`` shows one layer of the spatial foundation — elevation. This
+``elevation_basin`` shows one layer of the spatial foundation — elevation. This
 module draws the rest of the set: the delineation, land cover, leaf area and the
 soil profile, each through the SAME cartographic template, so a basin report is
 one visual family rather than ten unrelated pictures.
@@ -27,23 +27,23 @@ Two things every figure here does NOT have, and both are deliberate:
 * **no title.** The colourbar label or the class legend already names the
   quantity, and a title over the map costs panel height on every sheet. The
   FILENAME is what names the figure, which is why the stems read as the
-  quantity (``soil_ph_topsoil``) rather than as a position in a set. The one
+  quantity (``soil_ph_basin``) rather than as a position in a set. The one
   thing the title did carry and a filename cannot — the product credit — moved
   to a footnote under the axes; see :data:`SOURCE_CREDITS`.
 * **no overlay key.** Rivers, the basin outline, the divides and the points of
   interest are still DRAWN — that is what ties ten rasters to one basin — but
-  they get no legend entries. ``basin_area``, in this same folder, carries the
-  key that explains them once; repeating it ten times spends the panel height
-  the land-cover legend needs and teaches a reader nothing after the first sheet.
+  they get no legend entries. The styling reads without one (black outline,
+  dashed divides, blue rivers stepped by order, labelled points), and a key on
+  every sheet would spend the room the land-cover legend needs.
 
 What is NOT drawn, and why, is as much a decision as what is:
 
-* ``elevation`` — it is ``basin_area.png``, which lands in this same folder.
+* ``elevation`` — it is ``elevation_basin.png``, which lands in this same folder.
   Drawing it twice under two names would put two different-looking figures of
   one quantity in front of a reader.
 * ``slope``, ``upstream_area``, ``river_order`` — drawn in the first draft and
   cut on review (owner's call, 2026-08-10): terrain derivatives a first-order
-  basin assessment does not read, where ``basin_area`` already carries the
+  basin assessment does not read, where ``elevation_basin`` already carries the
   relief and the river layer already carries the network.
 * ``flow_accumulation`` — proportional to ``upstream_area`` (the cells are
   equal-area to within 0.002% here), so it is the same map in different units.
@@ -96,7 +96,7 @@ SPATIAL_DIRNAME = "data/spatial"
 #: The thematic raster stack this family draws.
 SPATIAL_MAPS_FILENAME = "spatial_maps.nc"
 #: Vector layers drawn over every figure, mapped to the template's arguments.
-#: The same four ``basin_area`` uses, for the same reason: the overlay is what
+#: The same four ``elevation_basin`` uses, for the same reason: the overlay is what
 #: makes ten rasters read as ten views of ONE basin. Drawn, but not explained —
 #: see the module docstring on the missing key.
 SPATIAL_MAP_LAYERS = {
@@ -112,7 +112,7 @@ SPATIAL_MAP_LAYERS = {
 BASIN_MASK_VARIABLE = "subbasin_id"
 
 #: Where the figures are written, relative to the spatial directory. The same
-#: folder ``basin_area`` uses — this family is the rest of that figure's set.
+#: folder ``elevation_basin`` uses — this family is the rest of that figure's set.
 PLOTS_DIRNAME = "plots"
 
 #: Product credits, keyed by the catalog entry name each layer records in its
@@ -242,7 +242,7 @@ def land_cover_classes(layer):
 
 
 #: Legend titles for the nominal figures, by figure stem.
-LEGEND_TITLES = {"land_cover": "Land cover", "subbasin_delineation": "Subbasins"}
+LEGEND_TITLES = {"land_cover_basin": "Land cover", "subbasins": "Subbasins"}
 
 #: Subbasin fills: ColorBrewer Set3 without its grey, a light qualitative set
 #: that keeps rivers and divides readable over it, drawn at ``SUBBASIN_ALPHA``.
@@ -464,9 +464,10 @@ class SpatialFigure:
         #: These figures carry NO TITLE — a title over the map panel is furniture
         #: the colourbar label and the legend already provide, and it costs panel
         #: height on every sheet. The filename is what names the figure, so the
-        #: stem has to read as the quantity on its own: ``soil_ph_topsoil``, not
-        #: ``fig_07``. It is also the only place the depth slice is recorded,
-        #: which is why every soil stem carries ``_topsoil``.
+        #: stem has to read as the quantity on its own: ``soil_ph_basin``, not
+        #: ``fig_07``. Soil stems carry no depth token: only the surface slice
+        #: (``sl1``) is registered, so ``soil_<property>_basin`` is unambiguous.
+        #: A deeper slice would need its depth in the stem.
         self.stem = stem
         #: A continuous style, or ``None`` for a nominal layer.
         self.style = style
@@ -519,24 +520,22 @@ class SpatialFigure:
 SPATIAL_MAP_FIGURES = (
     SpatialFigure(
         "subbasin_id",
-        "subbasin_delineation",
+        "subbasins",
         classes=subbasin_classes,
         mask_to_basin=False,
         expected_units=("1",),
     ),
-    SpatialFigure("land_cover", "land_cover", classes=land_cover_classes),
-    SpatialFigure(
-        "leaf_area_index", "leaf_area_index_annual_mean", LEAF_AREA_INDEX_STYLE
-    ),
-    SpatialFigure("soil_clyppt_sl1", "soil_clay_topsoil", _texture_style("Clay")),
-    SpatialFigure("soil_sltppt_sl1", "soil_silt_topsoil", _texture_style("Silt")),
-    SpatialFigure("soil_sndppt_sl1", "soil_sand_topsoil", _texture_style("Sand")),
-    SpatialFigure("soil_oc_sl1", "soil_organic_carbon_topsoil", ORGANIC_CARBON_STYLE),
-    SpatialFigure("soil_ph_sl1", "soil_ph_topsoil", SOIL_PH_STYLE),
-    SpatialFigure("soil_bd_sl1", "soil_bulk_density_topsoil", BULK_DENSITY_STYLE),
+    SpatialFigure("land_cover", "land_cover_basin", classes=land_cover_classes),
+    SpatialFigure("leaf_area_index", "lai_clim_basin", LEAF_AREA_INDEX_STYLE),
+    SpatialFigure("soil_clyppt_sl1", "soil_clay_basin", _texture_style("Clay")),
+    SpatialFigure("soil_sltppt_sl1", "soil_silt_basin", _texture_style("Silt")),
+    SpatialFigure("soil_sndppt_sl1", "soil_sand_basin", _texture_style("Sand")),
+    SpatialFigure("soil_oc_sl1", "soil_organic_carbon_basin", ORGANIC_CARBON_STYLE),
+    SpatialFigure("soil_ph_sl1", "soil_ph_basin", SOIL_PH_STYLE),
+    SpatialFigure("soil_bd_sl1", "soil_bulk_density_basin", BULK_DENSITY_STYLE),
     SpatialFigure(
         "soil_BDTICM_M_250m_ll",
-        "soil_depth_to_bedrock",
+        "soil_depth_to_bedrock_basin",
         SOIL_DEPTH_STYLE,
         # cm in the file, metres on the bar. See SpatialFigure.scale.
         scale=0.01,
@@ -557,7 +556,7 @@ def figure_paths(plots_dir, formats=("png",), declared_only=True):
     promise; see :attr:`SpatialFigure.guaranteed` for why that is not a
     shortcut. It does NOT stop them being drawn.
 
-    PNG ONLY since 2026-08-10 (owner's call, applied first to ``basin_area`` and
+    PNG ONLY since 2026-08-10 (owner's call, applied first to ``elevation_basin`` and
     then to the whole deliverable). The PDF was the vector, embedded-font
     publication copy and nothing in the toolbox or the platform read it; at
     600 dpi and 180 mm the PNG carries the figure everywhere it is used. It also
@@ -797,7 +796,7 @@ def plot_spatial_maps(
                 palette=None,
                 categories=classes,
             )
-            if figure.stem == "subbasin_delineation":
+            if figure.stem == "subbasins":
                 style.alpha = SUBBASIN_ALPHA
 
         fig, _ = plot_raster_map(
@@ -821,8 +820,8 @@ def plot_spatial_maps(
             # keep the locator, the thematic maps carry their key in a corner.
             profile="spatial",
             key_on_map=True,
-            show_key=figure.stem != "subbasin_delineation",
-            locator=figure.stem == "subbasin_delineation",
+            show_key=figure.stem != "subbasins",
+            locator=figure.stem == "subbasins",
         )
         for extension in formats:
             path = os.path.join(str(plot_dir), f"{figure.stem}.{extension}")
@@ -850,15 +849,13 @@ def plot_spatial_maps_from_project(project_dir, plot_dir=None, **kwargs):
 
 
 def plot_spatial_figure_set(spatial_dir, plot_dir=None, **kwargs):
-    """Every figure the spatial foundation supports: ``basin_area`` and the family.
+    """Every figure the spatial foundation supports: ``elevation_basin`` and the family.
 
     Rule 1.11's entry point. The two are drawn by ONE rule because they are one
-    deliverable — the same basin, the same overlay, the same folder — and because
-    they are the reason each other reads: the family suppresses the overlay key
-    precisely because ``basin_area`` carries it, so a run that produced one
-    without the other would ship ten maps whose linework nothing explains.
+    deliverable — the same basin, the same overlay, the same style profile and
+    the same folder.
 
-    ``basin_area`` is drawn FIRST for the same reason it is listed first
+    ``elevation_basin`` is drawn FIRST for the same reason it is listed first
     everywhere else: it is the sheet a reader meets before the thematic ones.
     """
     from blueearth_cst.shared.plot_map import plot_basin_map_from_spatial

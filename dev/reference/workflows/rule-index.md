@@ -614,7 +614,8 @@ map — plus the thematic family beside it: `subbasins`, `land_cover_basin`,
 `lai_clim_basin` and the topsoil properties `soil_<property>_basin`. All use
 `cartographic_map.PROFILES["spatial"]`; renamed from `basin_area`,
 `subbasin_delineation`, `land_cover`, `leaf_area_index_annual_mean` and
-`soil_<property>_topsoil` in task t2610061951.
+`soil_<property>_topsoil` in task t2610061951
+(`dev/records/migrations/migration_spatial_map_names.md`).
 
 ONE rule for both, because they are one deliverable: the same overlay, the same
 style profile and the same folder. Both halves are leaves, so splitting them

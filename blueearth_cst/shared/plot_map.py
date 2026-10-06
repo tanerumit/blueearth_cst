@@ -16,7 +16,7 @@ What is left here is the reading half and one style choice:
   only one that asks for a hillshade and the only one kept on a LINEAR scale:
   elevation is the quantity a reader does arithmetic on.
 * ``plot_basin_map_from_model`` resolves a model directory into layers and
-  writes ``basin_area.{pdf,png}``. This is what the Snakemake rule runs.
+  writes ``elevation_basin.{pdf,png}``. This is what the Snakemake rule runs.
 
 Verified equivalent before the hydromt drop, not assumed: rendering the same
 model through ``WflowSbmModel`` and through the files produced byte-identical
@@ -67,7 +67,7 @@ STATICGEOMS_DIRNAME = "staticgeoms"
 ELEVATION_VARIABLE = "land_elevation"
 
 # --- the engine-neutral spatial products (ADR 0007) --------------------------
-# basin_area depicts ELEVATION, which is data rather than a model result, so it
+# elevation_basin depicts ELEVATION, which is data rather than a model result, so it
 # is drawn from the shared spatial foundation instead of from the wflow model.
 
 #: Project-relative home of the shared spatial products (rule 1.02 / 1.05).
@@ -236,13 +236,13 @@ def load_spatial_basin_layers(spatial_dir):
 
 
 def plot_basin_map_from_spatial(spatial_dir, plot_dir=None):
-    """Render basin_area.{pdf,png} from the shared spatial products.
+    """Render elevation_basin.{pdf,png} from the shared spatial products.
 
     Reading the foundation rather than the model retired this rule's HDF5 race
     workaround: it no longer opens ``staticmaps.nc``, so it no longer has to be
     ordered behind every writer of that file. Since 2026-08 it is no longer the
     rule's entry point either — ``plot_spatial_maps.plot_spatial_figure_set``
-    is, and calls this first — because basin_area and the thematic family are
+    is, and calls this first — because elevation_basin and the thematic family are
     one deliverable.
 
     It carries the same source footnote as the rest of that set, so the folder
@@ -266,6 +266,9 @@ def plot_basin_map_from_spatial(spatial_dir, plot_dir=None):
         subbasins=layers.get("subbasins"),
         gauges=layers.get("gauges"),
         caveat=source_caveat(elevation),
+        # The rule 1.11 style, shared with the thematic maps in this folder.
+        profile="spatial",
+        vector_legend=False,
     )
     # PNG only since 2026-08-10 (owner's call). The PDF was the vector,
     # embedded-font deliverable and nothing in the toolbox or the platform read
@@ -273,7 +276,7 @@ def plot_basin_map_from_spatial(spatial_dir, plot_dir=None):
     # actually used. Dropping it also halves this rule's render time, since the
     # figure was serialised twice.
     save_figure(
-        os.path.join(str(plot_dir), "basin_area.png"),
+        os.path.join(str(plot_dir), "elevation_basin.png"),
         fig=fig,
         dpi=RASTER_DPI,
         metadata={"Software": None},
@@ -282,7 +285,7 @@ def plot_basin_map_from_spatial(spatial_dir, plot_dir=None):
 
 
 def plot_basin_map_from_model(project_dir, gauges_fn, plot_dir=None, model_dir=None):
-    """Render basin_area.{pdf,png} for a wflow model on disk.
+    """Render elevation_basin.{pdf,png} for a wflow model on disk.
 
     The file-reading half of the figure: it resolves a model directory into the
     layers ``plot_basin_map`` takes, then saves the result. This is what the
@@ -300,7 +303,7 @@ def plot_basin_map_from_model(project_dir, gauges_fn, plot_dir=None, model_dir=N
     # the fallback for standalone callers (R9 P2 commit 1).
     root = str(model_dir) if model_dir else f"{project_dir}/{MODEL_DIRNAME}"
     if plot_dir is None:
-        # basin_area depicts the MODEL, not its evaluation, so it sits at the
+        # elevation_basin depicts the MODEL, not its evaluation, so it sits at the
         # model root's plots/ -- not under evaluation/ (P1).
         plot_dir = f"{root}/plots"
 
@@ -333,7 +336,7 @@ def plot_basin_map_from_model(project_dir, gauges_fn, plot_dir=None, model_dir=N
     # PNG only, matching `plot_basin_map_from_spatial` above — the two write the
     # same figure and should not disagree about its formats.
     save_figure(
-        os.path.join(plot_dir, "basin_area.png"),
+        os.path.join(plot_dir, "elevation_basin.png"),
         fig=fig,
         dpi=RASTER_DPI,
         # Same reason: the default embeds the matplotlib version, which

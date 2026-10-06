@@ -22,10 +22,8 @@ from matplotlib import colors
 from blueearth_cst.shared import cartographic_map as carto
 from blueearth_cst.shared import plot_map
 from blueearth_cst.shared.cartographic_map import (
-    _CORNERS,
     _EXTENT_BUFFER_FRACTION,
     _EXTENT_BUFFER_MIN_DEG,
-    _NORTH_ARROW_CORNER,
     FIGURE_WIDTH_MM,
     GRATICULE_MAX_TICKS,
     MM_PER_INCH,
@@ -34,7 +32,6 @@ from blueearth_cst.shared.cartographic_map import (
     RasterStyle,
     _class_levels,
     _colorbar_inset,
-    _corner_occupancy,
     _divide_linework,
     _elevation_colormap,
     _equal_interval_levels,
@@ -49,7 +46,6 @@ from blueearth_cst.shared.cartographic_map import (
     _overlay_contrast,
     _publication_rc,
     _river_linewidths,
-    _scale_bar_corner,
     _style_colormap,
     _weighted_quantiles,
     _wrap_label,
@@ -214,76 +210,55 @@ def _basin_covering(x0, y0, x1, y1):
 _UNIT_EXTENT = (0.0, 1.0, 0.0, 1.0)
 
 
-def test_occupancy_is_one_for_a_basin_filling_the_box():
-    occupancy = _corner_occupancy(_basin_covering(0, 0, 1, 1), _UNIT_EXTENT)
-    assert set(occupancy) == set(_CORNERS)
-    assert all(value == pytest.approx(1.0) for value in occupancy.values())
+@pytest.fixture
+def spatial_profile():
+    """The rule 1.11 profile, applied for one test."""
+    with carto._Overrides(**carto.PROFILES["spatial"]):
+        yield
 
 
-def test_occupancy_is_zero_where_the_basin_is_absent():
-    # basin hugging the top-right only
-    occupancy = _corner_occupancy(_basin_covering(0.75, 0.75, 1, 1), _UNIT_EXTENT)
-    assert occupancy["lower left"] == pytest.approx(0.0)
-    assert occupancy["upper right"] > 0.5
+def test_by_default_the_scale_bar_keeps_its_first_corner():
+    """Figures outside the profile keep today's pinned lower-left bar."""
+    corner, extent, pad = carto.place_scale_bar(
+        _basin_covering(0, 0, 1, 1), list(_UNIT_EXTENT)
+    )
+    assert (corner, pad) == ("lower left", 0.0)
+    assert extent == list(_UNIT_EXTENT)
 
 
-def test_scale_bar_avoids_the_occupied_corner():
-    """A basin in the south-west must not get the scale bar drawn on top of it."""
+def test_the_scale_bar_moves_off_a_basin_in_the_south_west(spatial_profile):
     basin = _basin_covering(0.0, 0.0, 0.45, 0.45)
-    assert _scale_bar_corner(basin, _UNIT_EXTENT) != "lower left"
+    corner, _, pad = carto.place_scale_bar(basin, list(_UNIT_EXTENT))
+    assert (corner, pad) == ("lower right", 0.0)
 
 
-def test_scale_bar_never_takes_the_north_arrow_corner():
-    """The arrow's corner is reserved, even when it is the emptiest."""
-    basin = _basin_covering(0.0, 0.0, 0.9, 0.9)  # leaves only upper right free
-    assert _scale_bar_corner(basin, _UNIT_EXTENT) != _NORTH_ARROW_CORNER
+def test_a_frame_filling_basin_pads_the_map_south(spatial_profile):
+    basin = _basin_covering(0.0, 0.0, 1.0, 1.0)
+    corner, extent, pad = carto.place_scale_bar(basin, list(_UNIT_EXTENT))
+    assert pad and pad > 0 and extent[2] < 0.0
+    assert not carto._scale_bar_footprint(extent, corner).intersects(basin)
 
 
-def test_scale_bar_prefers_a_lower_corner_among_EQUALLY_empty_ones():
-    """The bottom preference breaks ties; it does not override emptiness."""
-    central = _basin_covering(0.35, 0.35, 0.65, 0.65)  # touches no corner
-    assert _scale_bar_corner(central, _UNIT_EXTENT) == "lower left"
+def test_the_padding_cap_is_reported_not_silent(spatial_profile):
+    """A basin larger than the cap can clear reports ``None`` to the caller."""
+    basin = _basin_covering(-1.0, -5.0, 2.0, 2.0)
+    _, extent, pad = carto.place_scale_bar(basin, list(_UNIT_EXTENT))
+    assert pad is None and extent == list(_UNIT_EXTENT)
 
 
-def test_emptiness_outranks_the_bottom_preference():
-    """A basin on lower left sends the bar to the OTHER lower corner.
-
-    The legend used to occupy lower right, which forced the bar upward here.
-    Now that the legend sits in the side panel, the bar keeps a bottom corner.
-    """
-    basin = _basin_covering(0.0, 0.0, 0.45, 0.45)
-    assert _scale_bar_corner(basin, _UNIT_EXTENT) == "lower right"
+def test_the_inset_takes_a_clear_upper_corner(spatial_profile):
+    carto.LOCATOR_ENABLED = True
+    basin = _basin_covering(0.0, 0.0, 0.5, 1.0)  # west half taken
+    corner, width, _, pad = carto.place_locator(basin, list(_UNIT_EXTENT))
+    assert (corner, pad) == ("upper right", 0.0)
+    assert carto._LOCATOR_MIN_WIDTH <= width <= carto._LOCATOR_WIDTH
 
 
-def test_placement_is_deterministic_for_a_symmetric_basin():
-    """Ties must not make the figure depend on dict iteration order."""
-    basin = _basin_covering(0.35, 0.35, 0.65, 0.65)  # touches no corner
-    assert _scale_bar_corner(basin, _UNIT_EXTENT) == _scale_bar_corner(
-        basin, _UNIT_EXTENT
-    )
-
-
-def test_a_basin_filling_its_box_still_yields_a_valid_corner():
-    assert _scale_bar_corner(_basin_covering(0, 0, 1, 1), _UNIT_EXTENT) in _CORNERS
-
-
-def test_the_scale_bar_yields_the_corner_the_locator_took():
-    """Two artists in one corner is the collision this budgeting prevents."""
-    central = _basin_covering(0.35, 0.35, 0.65, 0.65)  # every corner equally free
-    taken = _scale_bar_corner(central, _UNIT_EXTENT, {_NORTH_ARROW_CORNER})
-    assert (
-        _scale_bar_corner(central, _UNIT_EXTENT, {_NORTH_ARROW_CORNER, taken}) != taken
-    )
-
-
-def test_reserving_every_corner_still_returns_one():
-    """Better a crowded bar than a crash: the fallback must not empty the list."""
-    assert (
-        _scale_bar_corner(
-            _basin_covering(0.35, 0.35, 0.65, 0.65), _UNIT_EXTENT, set(_CORNERS)
-        )
-        in _CORNERS
-    )
+def test_the_profile_is_scoped_to_one_call():
+    before = carto.COLOR_GAUGE
+    with carto._Overrides(**carto.PROFILES["spatial"]):
+        assert carto.COLOR_GAUGE == carto.PROFILES["spatial"]["COLOR_GAUGE"]
+    assert carto.COLOR_GAUGE == before
 
 
 # --- locator inset ------------------------------------------------------------
@@ -295,7 +270,6 @@ def test_reserving_every_corner_still_returns_one():
 def restore_locator():
     names = (
         "LOCATOR_ENABLED",
-        "_LOCATOR_CORNER",
         "_LOCATOR_WIDTH",
         "_LOCATOR_PLACEMENT",
         "_LOCATOR_SPAN_DEG",
@@ -345,36 +319,6 @@ def test_the_locator_box_lands_in_the_corner_it_is_given(
     x0, y0, width, height = carto._locator_box(np.array([0.0, 1.0, 0.0, 1.0]), corner)
     assert (x0 < 0.5) is expect_left
     assert (y0 + height > 0.5) is expect_upper
-
-
-def test_no_corner_is_reserved_when_the_locator_is_off(restore_locator):
-    carto.LOCATOR_ENABLED = False
-    assert carto._locator_corner(_basin_covering(0, 0, 1, 1), _UNIT_EXTENT) is None
-
-
-def test_the_locator_never_takes_the_north_arrow_corner(restore_locator):
-    carto.LOCATOR_ENABLED = True
-    carto._LOCATOR_CORNER = "auto"
-    basin = _basin_covering(0.0, 0.0, 0.9, 0.9)  # only upper right is free
-    assert carto._locator_corner(basin, _UNIT_EXTENT) != _NORTH_ARROW_CORNER
-
-
-def test_an_explicit_locator_corner_is_honoured(restore_locator):
-    carto.LOCATOR_ENABLED = True
-    carto._LOCATOR_PLACEMENT = "map"
-    carto._LOCATOR_CORNER = "lower right"
-    assert (
-        carto._locator_corner(_basin_covering(0, 0, 1, 1), _UNIT_EXTENT)
-        == "lower right"
-    )
-
-
-def test_a_panel_locator_claims_no_map_corner(restore_locator):
-    """It is not on the map, so the scale bar gets that corner back."""
-    carto.LOCATOR_ENABLED = True
-    carto._LOCATOR_PLACEMENT = "panel"
-    carto._LOCATOR_CORNER = "lower right"
-    assert carto._locator_corner(_basin_covering(0, 0, 1, 1), _UNIT_EXTENT) is None
 
 
 # --- the vendored basemap -----------------------------------------------------

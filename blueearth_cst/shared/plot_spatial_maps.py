@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 """The thematic map family drawn from ``data/spatial/spatial_maps.nc``.
 
-``basin_area`` shows one layer of the spatial foundation — elevation. This
+``elevation_basin`` shows one layer of the spatial foundation — elevation. This
 module draws the rest of the set: the delineation, land cover, leaf area and the
 soil profile, each through the SAME cartographic template, so a basin report is
 one visual family rather than ten unrelated pictures.
@@ -27,23 +27,23 @@ Two things every figure here does NOT have, and both are deliberate:
 * **no title.** The colourbar label or the class legend already names the
   quantity, and a title over the map costs panel height on every sheet. The
   FILENAME is what names the figure, which is why the stems read as the
-  quantity (``soil_ph_topsoil``) rather than as a position in a set. The one
+  quantity (``soil_ph_basin``) rather than as a position in a set. The one
   thing the title did carry and a filename cannot — the product credit — moved
   to a footnote under the axes; see :data:`SOURCE_CREDITS`.
 * **no overlay key.** Rivers, the basin outline, the divides and the points of
   interest are still DRAWN — that is what ties ten rasters to one basin — but
-  they get no legend entries. ``basin_area``, in this same folder, carries the
-  key that explains them once; repeating it ten times spends the panel height
-  the land-cover legend needs and teaches a reader nothing after the first sheet.
+  they get no legend entries. The styling reads without one (black outline,
+  dashed divides, blue rivers stepped by order, labelled points), and a key on
+  every sheet would spend the room the land-cover legend needs.
 
 What is NOT drawn, and why, is as much a decision as what is:
 
-* ``elevation`` — it is ``basin_area.png``, which lands in this same folder.
+* ``elevation`` — it is ``elevation_basin.png``, which lands in this same folder.
   Drawing it twice under two names would put two different-looking figures of
   one quantity in front of a reader.
 * ``slope``, ``upstream_area``, ``river_order`` — drawn in the first draft and
   cut on review (owner's call, 2026-08-10): terrain derivatives a first-order
-  basin assessment does not read, where ``basin_area`` already carries the
+  basin assessment does not read, where ``elevation_basin`` already carries the
   relief and the river layer already carries the network.
 * ``flow_accumulation`` — proportional to ``upstream_area`` (the cells are
   equal-area to within 0.002% here), so it is the same map in different units.
@@ -96,7 +96,7 @@ SPATIAL_DIRNAME = "data/spatial"
 #: The thematic raster stack this family draws.
 SPATIAL_MAPS_FILENAME = "spatial_maps.nc"
 #: Vector layers drawn over every figure, mapped to the template's arguments.
-#: The same four ``basin_area`` uses, for the same reason: the overlay is what
+#: The same four ``elevation_basin`` uses, for the same reason: the overlay is what
 #: makes ten rasters read as ten views of ONE basin. Drawn, but not explained —
 #: see the module docstring on the missing key.
 SPATIAL_MAP_LAYERS = {
@@ -112,7 +112,7 @@ SPATIAL_MAP_LAYERS = {
 BASIN_MASK_VARIABLE = "subbasin_id"
 
 #: Where the figures are written, relative to the spatial directory. The same
-#: folder ``basin_area`` uses — this family is the rest of that figure's set.
+#: folder ``elevation_basin`` uses — this family is the rest of that figure's set.
 PLOTS_DIRNAME = "plots"
 
 #: Product credits, keyed by the catalog entry name each layer records in its
@@ -181,19 +181,87 @@ LAND_COVER_CLASSES = (
     (200, "#000080", "Open sea"),
 )
 
-#: Okabe-Ito, the qualitative set designed to stay separable under all three
-#: dichromacies (Okabe & Ito 2008). Used for NOMINAL identifiers — subbasins —
-#: where the numbering carries no order and a sequential ramp would invent one.
-#: Black is left out: it is the basin outline's colour on every figure here.
-_QUALITATIVE_COLORS = (
-    "#e69f00",
-    "#56b4e9",
-    "#009e73",
-    "#f0e442",
-    "#0072b2",
-    "#d55e00",
-    "#cc79a7",
+#: The GlobCover 2009 (ESA / UCLouvain) legend: codes and OFFICIAL colours,
+#: labels shortened from the product's definitions and wrapped like the table
+#: above. GlobCover reuses code numbers Copernicus gives other meanings — 40 is
+#: broadleaved evergreen forest here and cropland there — so a GlobCover raster
+#: drawn with the Copernicus table mislabels most of a tropical basin.
+GLOBCOVER_CLASSES = (
+    (11, "#aaf0f0", "Irrigated cropland"),
+    (14, "#ffff64", "Rainfed cropland"),
+    (20, "#dcf064", "Mosaic cropland /\nvegetation"),
+    (30, "#cdcd66", "Mosaic vegetation /\ncropland"),
+    (40, "#006400", "Broadleaved evergreen\nforest"),
+    (50, "#00a000", "Closed broadleaved\ndeciduous forest"),
+    (60, "#aac800", "Open broadleaved\ndeciduous forest"),
+    (70, "#003c00", "Closed needleleaved\nevergreen forest"),
+    (90, "#286400", "Open needleleaved\nforest"),
+    (100, "#788200", "Mixed broadleaved /\nneedleleaved forest"),
+    (110, "#8ca000", "Mosaic forest-shrubland /\ngrassland"),
+    (120, "#be9600", "Mosaic grassland /\nforest-shrubland"),
+    (130, "#966400", "Shrubland"),
+    (140, "#ffb432", "Herbaceous vegetation"),
+    (150, "#ffebaf", "Sparse vegetation"),
+    (160, "#00785a", "Flooded forest,\nfresh water"),
+    (170, "#009678", "Flooded forest,\nsaline water"),
+    (180, "#00dc82", "Flooded grassland /\nwoody vegetation"),
+    (190, "#c31400", "Artificial surfaces"),
+    (200, "#fff5d7", "Bare areas"),
+    (210, "#0046c8", "Water bodies"),
+    (220, "#ffffff", "Permanent snow and ice"),
+    (230, "#000000", "No data"),
 )
+
+#: Class table per land-cover product, keyed by the catalog source-name prefix
+#: (``globcover``, ``globcover_2009_v2.3``; ``vito``, ``vito_2019_v3.0.1``).
+_LAND_COVER_TABLES = (("globcover", GLOBCOVER_CLASSES), ("vito", LAND_COVER_CLASSES))
+
+
+def land_cover_classes(layer):
+    """The class table of the product the layer came from, read from ``source``.
+
+    The table must follow the data: products share code numbers with different
+    meanings. An unrecognised source gets NO table, with a warning, so its cells
+    draw as unclassified rather than under another product's labels.
+    """
+    import warnings
+
+    source = str(layer.attrs.get("source", "")).lower()
+    for prefix, table in _LAND_COVER_TABLES:
+        if source.startswith(prefix):
+            return table
+    warnings.warn(
+        f"no land-cover class table for source {source!r}; drawn unclassified",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    # Not ``()``: an empty table reads as "not nominal" and would draw the codes
+    # on a continuous ramp. One never-present code keeps the layer nominal, and
+    # ``category_entries`` sends every real code to its unclassified entry.
+    return ((-1, "#000000", None),)
+
+
+#: Legend titles for the nominal figures, by figure stem.
+LEGEND_TITLES = {"land_cover_basin": "Land cover", "subbasins": "Subbasins"}
+
+#: Subbasin fills: ColorBrewer Set3 without its grey, a light qualitative set
+#: that keeps rivers and divides readable over it, drawn at ``SUBBASIN_ALPHA``.
+#: Colours are assigned so touching subbasins never share one
+#: (``_neighbour_aware_colours``).
+SUBBASIN_COLORS = (
+    "#8dd3c7",
+    "#ffffb3",
+    "#bebada",
+    "#fb8072",
+    "#80b1d3",
+    "#fdb462",
+    "#b3de69",
+    "#fccde5",
+    "#bc80bd",
+    "#ccebc5",
+    "#ffed6f",
+)
+SUBBASIN_ALPHA = 0.6
 
 #: How many subbasins still get a legend entry each. The side panel is about
 #: 40 mm wide and its legend is anchored at the map's floor and grows upward, so
@@ -231,14 +299,39 @@ def subbasin_classes(raster):
             f"note: {len(codes)} subbasins is more than a legend can carry; "
             "drawing the delineation without a class key"
         )
+    colour_of = _neighbour_aware_colours(values, codes, SUBBASIN_COLORS)
     return tuple(
-        (
-            code,
-            _QUALITATIVE_COLORS[index % len(_QUALITATIVE_COLORS)],
-            f"Subbasin {code}" if labelled else None,
-        )
-        for index, code in enumerate(codes)
+        (code, colour_of[code], f"Subbasin {code}" if labelled else None)
+        for code in codes
     )
+
+
+def _neighbour_aware_colours(values, codes, palette):
+    """``{code: colour}`` so that no two touching units share a colour.
+
+    Adjacency is read off the raster (cells sharing an edge). Units are coloured
+    greedily, most-connected first, each taking the least-used palette colour
+    none of its neighbours holds; the fallback (reuse the least-used colour)
+    only fires for a unit touching more units than the palette has colours.
+    """
+    import numpy as np
+
+    neighbours = {code: set() for code in codes}
+    for a, b in ((values[:, :-1], values[:, 1:]), (values[:-1, :], values[1:, :])):
+        mask = np.isfinite(a) & np.isfinite(b) & (a != b)
+        for x, y in set(zip(a[mask].astype(int), b[mask].astype(int))):
+            if x in neighbours and y in neighbours:
+                neighbours[x].add(y)
+                neighbours[y].add(x)
+    used = dict.fromkeys(palette, 0)
+    colour_of = {}
+    for code in sorted(codes, key=lambda c: (-len(neighbours[c]), c)):
+        taken = {colour_of[n] for n in neighbours[code] if n in colour_of}
+        free = [c for c in palette if c not in taken] or list(palette)
+        choice = min(free, key=lambda c: (used[c], palette.index(c)))
+        colour_of[code] = choice
+        used[choice] += 1
+    return colour_of
 
 
 # ---------------------------------------------------------------------------
@@ -256,7 +349,10 @@ def subbasin_classes(raster):
 
 #: Vegetation density. Green is the one hue a reader will not misread here.
 LEAF_AREA_INDEX_STYLE = RasterStyle(
-    label="Leaf area index (m$^2$ m$^{-2}$)",
+    label="Mean leaf area index (m$^2$ m$^{-2}$)",
+    # Fixed 1-unit classes, 0-6: LAI has a physical scale (bare ground ~0, dense
+    # tropical forest ~6), so equal steps read the same on every basin.
+    levels=(0, 1, 2, 3, 4, 5, 6),
     palette="YlGn",
     zero_baseline=True,
 )
@@ -368,9 +464,10 @@ class SpatialFigure:
         #: These figures carry NO TITLE — a title over the map panel is furniture
         #: the colourbar label and the legend already provide, and it costs panel
         #: height on every sheet. The filename is what names the figure, so the
-        #: stem has to read as the quantity on its own: ``soil_ph_topsoil``, not
-        #: ``fig_07``. It is also the only place the depth slice is recorded,
-        #: which is why every soil stem carries ``_topsoil``.
+        #: stem has to read as the quantity on its own: ``soil_ph_basin``, not
+        #: ``fig_07``. Soil stems carry no depth token: only the surface slice
+        #: (``sl1``) is registered, so ``soil_<property>_basin`` is unambiguous.
+        #: A deeper slice would need its depth in the stem.
         self.stem = stem
         #: A continuous style, or ``None`` for a nominal layer.
         self.style = style
@@ -423,24 +520,22 @@ class SpatialFigure:
 SPATIAL_MAP_FIGURES = (
     SpatialFigure(
         "subbasin_id",
-        "subbasin_delineation",
+        "subbasins",
         classes=subbasin_classes,
         mask_to_basin=False,
         expected_units=("1",),
     ),
-    SpatialFigure("land_cover", "land_cover", classes=LAND_COVER_CLASSES),
-    SpatialFigure(
-        "leaf_area_index", "leaf_area_index_annual_mean", LEAF_AREA_INDEX_STYLE
-    ),
-    SpatialFigure("soil_clyppt_sl1", "soil_clay_topsoil", _texture_style("Clay")),
-    SpatialFigure("soil_sltppt_sl1", "soil_silt_topsoil", _texture_style("Silt")),
-    SpatialFigure("soil_sndppt_sl1", "soil_sand_topsoil", _texture_style("Sand")),
-    SpatialFigure("soil_oc_sl1", "soil_organic_carbon_topsoil", ORGANIC_CARBON_STYLE),
-    SpatialFigure("soil_ph_sl1", "soil_ph_topsoil", SOIL_PH_STYLE),
-    SpatialFigure("soil_bd_sl1", "soil_bulk_density_topsoil", BULK_DENSITY_STYLE),
+    SpatialFigure("land_cover", "land_cover_basin", classes=land_cover_classes),
+    SpatialFigure("leaf_area_index", "lai_clim_basin", LEAF_AREA_INDEX_STYLE),
+    SpatialFigure("soil_clyppt_sl1", "soil_clay_basin", _texture_style("Clay")),
+    SpatialFigure("soil_sltppt_sl1", "soil_silt_basin", _texture_style("Silt")),
+    SpatialFigure("soil_sndppt_sl1", "soil_sand_basin", _texture_style("Sand")),
+    SpatialFigure("soil_oc_sl1", "soil_organic_carbon_basin", ORGANIC_CARBON_STYLE),
+    SpatialFigure("soil_ph_sl1", "soil_ph_basin", SOIL_PH_STYLE),
+    SpatialFigure("soil_bd_sl1", "soil_bulk_density_basin", BULK_DENSITY_STYLE),
     SpatialFigure(
         "soil_BDTICM_M_250m_ll",
-        "soil_depth_to_bedrock",
+        "soil_depth_to_bedrock_basin",
         SOIL_DEPTH_STYLE,
         # cm in the file, metres on the bar. See SpatialFigure.scale.
         scale=0.01,
@@ -461,7 +556,7 @@ def figure_paths(plots_dir, formats=("png",), declared_only=True):
     promise; see :attr:`SpatialFigure.guaranteed` for why that is not a
     shortcut. It does NOT stop them being drawn.
 
-    PNG ONLY since 2026-08-10 (owner's call, applied first to ``basin_area`` and
+    PNG ONLY since 2026-08-10 (owner's call, applied first to ``elevation_basin`` and
     then to the whole deliverable). The PDF was the vector, embedded-font
     publication copy and nothing in the toolbox or the platform read it; at
     600 dpi and 180 mm the PNG carries the figure everywhere it is used. It also
@@ -696,7 +791,13 @@ def plot_spatial_maps(
             # The label is unused on a nominal figure — there is no colourbar to
             # put it on — but it is what ``check_geographic_inputs`` names when
             # the units disagree, so it stays the quantity rather than empty.
-            style = RasterStyle(label=figure.stem, palette=None, categories=classes)
+            style = RasterStyle(
+                label=LEGEND_TITLES.get(figure.stem, figure.stem),
+                palette=None,
+                categories=classes,
+            )
+            if figure.stem == "subbasins":
+                style.alpha = SUBBASIN_ALPHA
 
         fig, _ = plot_raster_map(
             layer,
@@ -711,11 +812,16 @@ def plot_spatial_maps(
             # a catalog change cannot leave a figure crediting the wrong product.
             caveat=source_caveat(layer),
             # No title: the filename names the figure (see SpatialFigure.stem).
-            # No overlay key either — the layers are still DRAWN, tying the set
-            # to one basin, but ``basin_area`` in this same folder carries the
-            # legend that explains them, and repeating four entries on ten maps
-            # spends the panel height a land-cover legend needs.
+            # No overlay key: the layers are still DRAWN, tying the set to one
+            # basin, and their styling reads without one.
             vector_legend=False,
+            # The rule 1.11 style (cartographic_map.PROFILES["spatial"]). Every
+            # family map takes the full-width layout; subbasins show no key and
+            # keep the locator, the thematic maps carry their key in a corner.
+            profile="spatial",
+            key_on_map=True,
+            show_key=figure.stem != "subbasins",
+            locator=figure.stem == "subbasins",
         )
         for extension in formats:
             path = os.path.join(str(plot_dir), f"{figure.stem}.{extension}")
@@ -743,15 +849,13 @@ def plot_spatial_maps_from_project(project_dir, plot_dir=None, **kwargs):
 
 
 def plot_spatial_figure_set(spatial_dir, plot_dir=None, **kwargs):
-    """Every figure the spatial foundation supports: ``basin_area`` and the family.
+    """Every figure the spatial foundation supports: ``elevation_basin`` and the family.
 
     Rule 1.11's entry point. The two are drawn by ONE rule because they are one
-    deliverable — the same basin, the same overlay, the same folder — and because
-    they are the reason each other reads: the family suppresses the overlay key
-    precisely because ``basin_area`` carries it, so a run that produced one
-    without the other would ship ten maps whose linework nothing explains.
+    deliverable — the same basin, the same overlay, the same style profile and
+    the same folder.
 
-    ``basin_area`` is drawn FIRST for the same reason it is listed first
+    ``elevation_basin`` is drawn FIRST for the same reason it is listed first
     everywhere else: it is the sheet a reader meets before the thematic ones.
     """
     from blueearth_cst.shared.plot_map import plot_basin_map_from_spatial

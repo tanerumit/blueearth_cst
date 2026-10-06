@@ -19,7 +19,7 @@ from blueearth_cst.spatial.config import parse_spatial_config
 from blueearth_cst.climate_analysis.climate_figures import figure_names
 from blueearth_cst.climate_analysis.source_plot_rule import source_plot_rule
 
-# The thematic map family rule 1.11 draws beside basin_area. Same reason as
+# The thematic map family rule 1.11 draws beside elevation_basin. Same reason as
 # above: the output list comes from the registry the plotter iterates, so a
 # figure cannot be added in one place and forgotten in the other.
 from blueearth_cst.shared.plot_spatial_maps import figure_paths
@@ -506,7 +506,7 @@ WF1_TERMINALS = [
     # the whole set (WFLOW_TABLE_PATHS) in a single job, so requesting the
     # discharge table schedules every other table with it.
     f"{basin_dir}/run_default/output_q.csv",
-    f"{spatial_dir}/plots/basin_area.png",
+    f"{spatial_dir}/plots/elevation_basin.png",
     # One representative of each canonical climate set: the rules produce their
     # nine figures as a unit, so naming every one here would add no edge.
     f"{FORCING_PLOTS_DIR}/forcing_precip_map.png",
@@ -1125,16 +1125,14 @@ rule write_run_metadata:
 # 1.11  plot_basin_map — every figure the spatial foundation supports: the
 # basin/DEM map plus the thematic family beside it (parallel leaf).
 #
-# ONE rule for both, because they are one deliverable. The thematic maps draw
-# the same overlay and suppress its legend precisely BECAUSE basin_area carries
-# it, so a run that produced one set without the other would ship ten maps whose
-# linework nothing explains. Splitting them would also duplicate the vector
-# inputs and the plots directory across two rules for no scheduling gain — both
-# halves are leaves.
+# ONE rule for both, because they are one deliverable: the same overlay, the
+# same style profile and the same folder. Splitting them would also duplicate
+# the vector inputs and the plots directory across two rules for no scheduling
+# gain — both halves are leaves.
 rule plot_basin_map:
     message: PLOT_BASIN_MAP.banner()
     input:
-        # ADR 0007: basin_area depicts ELEVATION, which is data rather than a
+        # ADR 0007: elevation_basin depicts ELEVATION, which is data rather than a
         # model result, so it is drawn from the shared spatial foundation and
         # not from the wflow model. That also retires this rule's HDF5 race
         # workaround wholesale — it no longer opens staticmaps.nc, so it no
@@ -1156,11 +1154,11 @@ rule plot_basin_map:
         # PNG only since 2026-08-10 (owner's call): nothing in the toolbox
         # or the platform read the vector deliverable, and 600 dpi at 180 mm
         # carries the figure everywhere it is used.
-        basin_png = f"{spatial_dir}/plots/basin_area.png",
+        basin_png = f"{spatial_dir}/plots/elevation_basin.png",
         # From the registry the plotter iterates, not restated here — the same
         # contract rule 1.12 has with climate_figures.figure_names(). Only the
         # figures whose source variable exists for EVERY shipped catalog source
-        # are declared; `soil_depth_to_bedrock` is drawn but left out, because
+        # are declared; `soil_depth_to_bedrock_basin` is drawn but left out, because
         # its variable is soilgrids v1.0's and a project on soilgrids_2020 would
         # fail this rule on "missing output files" rather than lose one figure.
         # See SpatialFigure.guaranteed.

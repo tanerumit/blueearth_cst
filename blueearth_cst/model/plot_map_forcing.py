@@ -16,7 +16,7 @@ Two things changed with the canonical set (2026-08), both deliberate:
 * **No more cartopy basemap tiles.** The previous ``plot_map_model`` called
   ``cartopy.io.img_tiles.QuadtreeTiles``, i.e. a live tile request in the middle
   of WF1. Rule 1.12 now needs no NETWORK. The basin/river context it bought is
-  drawn from the model's own geometries instead. Rule 1.11's ``basin_area``
+  drawn from the model's own geometries instead. Rule 1.11's ``elevation_basin``
   dropped the same tiles in 2026-08 for the same reason plus two more —
   licence/attribution on a submitted figure, and a basemap that the server can
   re-render out from under a "reproducible" run — so NO rule in WF1 fetches

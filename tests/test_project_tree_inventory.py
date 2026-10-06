@@ -113,8 +113,8 @@ COVERED: dict[str, list[str]] = {
         "data/spatial/geoms/region.geojson",
         "data/spatial/geoms/basins.geojson",
         "data/spatial/geoms/subbasins.geojson",
-        # ADR 0007: basin_area depicts elevation, so it sits with the data.
-        "data/spatial/plots/basin_area.png",
+        # ADR 0007: elevation_basin depicts elevation, so it sits with the data.
+        "data/spatial/plots/elevation_basin.png",
         f"data/climate/historical/{KEY}/extract_historical.nc",
         # The basin-cell mask that ships with every extraction (2026-08-10).
         f"data/climate/historical/{KEY}/basin_cells.csv",

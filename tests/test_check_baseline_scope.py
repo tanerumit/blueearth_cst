@@ -200,7 +200,7 @@ def test_targets_tagged_with_expected_cardinality():
     `build_model` gained the beyond-`rule all` discharge target, then dropped
     one again on 2026-08-10: the evaluation hydrograph is keyed by `wflow_id`
     now, so no per-station figure has a config-invariant NAME and none can be a
-    template target. Its `png` kind is still exercised by `basin_area.png` and
+    template target. Its `png` kind is still exercised by `elevation_basin.png` and
     `forcing_precip_map.png`, and the run's NUMBERS are covered by `output.csv`
     and `performance_metrics.csv`, which the baseline does track.
     `simulate_system` dropped from 3 to 2 at R11 CR-2: `basin_indicators.csv`

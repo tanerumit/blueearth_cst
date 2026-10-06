@@ -608,15 +608,16 @@ a hydromt `r+` mutation — it *adds* an edge.
 
 #### 1.11 · `plot_basin_map`
 
-**Does.** Draws every figure the shared spatial foundation supports: `basin_area`
-— basin, rivers, gauges and the DEM on one map — plus the thematic family beside
-it, the subbasin delineation, land cover, leaf area index and the topsoil
-properties.
+**Does.** Draws every figure the shared spatial foundation supports, named
+`<variable>_basin`: `elevation_basin` — basin, rivers, gauges and the DEM on one
+map — plus the thematic family beside it: `subbasins`, `land_cover_basin`,
+`lai_clim_basin` and the topsoil properties `soil_<property>_basin`. All use
+`cartographic_map.PROFILES["spatial"]`; renamed from `basin_area`,
+`subbasin_delineation`, `land_cover`, `leaf_area_index_annual_mean` and
+`soil_<property>_topsoil` in task t2610061951.
 
-ONE rule for both, because they are one deliverable. The thematic maps draw the
-same vector overlay and deliberately suppress its legend *because* `basin_area`
-carries the key; a run that produced one set without the other would ship ten
-maps whose linework nothing explains. Both halves are leaves, so splitting them
+ONE rule for both, because they are one deliverable: the same overlay, the same
+style profile and the same folder. Both halves are leaves, so splitting them
 would duplicate the vector inputs and the plots directory for no scheduling gain.
 
 **Reads.** The spatial foundation only — `hydrography.nc` and the vector layers
@@ -638,15 +639,17 @@ manuscript can ask for a PDF. The thematic list is declared from that function,
 the same contract 1.12 has with `climate_figures.figure_names()`.
 
 Not every figure is *declared*. A figure whose source variable is specific to one
-catalog source — `soil_depth_to_bedrock`, which reads soilgrids v1.0's own
+catalog source — `soil_depth_to_bedrock_basin`, which reads soilgrids v1.0's own
 `BDTICM` filename and has no soilgrids_2020 equivalent — is drawn but left out of
 `output:`. Declaring it would fail the RULE on a project that merely chose the
 other soil source, which is a workflow crash in exchange for one figure.
 `data/spatial/plots/` is a directory in the tree inventory, so the undeclared
 renders are still accounted for.
 
-**No title, no overlay key**, on the thematic half only. The filename names the
-figure and `basin_area` carries the legend; see `shared/plot_spatial_maps.py`.
+**No title, no overlay key.** The filename names the figure and the overlay
+styling reads without a key. The thematic maps carry their colourbar or class
+legend in a clear upper map corner and no inset; `elevation_basin` and `subbasins`
+keep the locator inset. See `shared/plot_spatial_maps.py`.
 
 #### 1.12 · `plot_model_forcing`
 

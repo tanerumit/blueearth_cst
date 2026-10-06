@@ -300,7 +300,7 @@ def _figure(tmp_path, name, subdir="plots"):
 
 def test_save_figure_writes_creates_parent_and_announces(tmp_path, capsys):
     su._FIGURE_BUNDLES.clear()
-    out = _figure(tmp_path, "basin_area.png")  # parent does not exist yet
+    out = _figure(tmp_path, "elevation_basin.png")  # parent does not exist yet
     assert out.exists()
     su.flush_figure_bundles()
     printed = capsys.readouterr().out.strip()

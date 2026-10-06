@@ -79,12 +79,13 @@ def test_declared_order_is_kept_not_the_order_the_codes_appear_in():
 def test_an_undeclared_code_is_drawn_and_warned_about_never_dropped():
     """Dropping it would render real ground transparent -- i.e. as nodata."""
     style = RasterStyle(label="x", palette=None, categories=_THREE_CLASSES)
-    with pytest.warns(RuntimeWarning, match="does not declare"):
+    # The codes are named in the warning; the legend label stays short.
+    with pytest.warns(RuntimeWarning, match=r"does not declare: \[99\]"):
         entries = category_entries(_codes([10, 10, 99, 99]), style)
     codes, colour, label = entries[-1]
     assert codes == (99,)
     assert colour == COLOR_UNCLASSIFIED
-    assert LABEL_UNCLASSIFIED in label and "99" in label
+    assert label == LABEL_UNCLASSIFIED
 
 
 def test_several_undeclared_codes_collapse_into_one_legend_entry():
@@ -137,15 +138,17 @@ def test_output_stems_are_unique():
 
 def test_no_stem_collides_with_the_basin_map_in_the_same_folder():
     """One rule writes both into ``data/spatial/plots``."""
-    assert "basin_area" not in {figure.stem for figure in family.SPATIAL_MAP_FIGURES}
+    assert "elevation_basin" not in {
+        figure.stem for figure in family.SPATIAL_MAP_FIGURES
+    }
 
 
-def test_every_soil_stem_records_its_depth_slice():
-    """The filename is the only place the slice is written down now that the
-    figures carry no title, and ``sl1`` is one of seven the source ships."""
+def test_only_the_surface_soil_slice_is_registered():
+    """Soil stems carry no depth token, so a second slice would be ambiguous."""
     for figure in family.SPATIAL_MAP_FIGURES:
-        if figure.variable.startswith("soil_") and "sl1" in figure.variable:
-            assert figure.stem.endswith("_topsoil"), figure.stem
+        if figure.variable.startswith("soil_") and "_sl" in figure.variable:
+            assert figure.variable.endswith("_sl1"), figure.variable
+            assert figure.stem.endswith("_basin"), figure.stem
 
 
 def test_the_figure_set_declares_exactly_what_the_rule_promises():
@@ -172,21 +175,21 @@ def test_the_rule_output_list_is_one_png_per_declared_figure():
     paths = family.figure_paths("P/plots")
     declared = [f for f in family.SPATIAL_MAP_FIGURES if f.guaranteed]
     assert len(paths) == len(declared)
-    assert "P/plots/land_cover.png" in paths
+    assert "P/plots/land_cover_basin.png" in paths
     assert not any(path.endswith(".pdf") for path in paths)
-    assert "P/plots/soil_depth_to_bedrock.png" not in paths
+    assert "P/plots/soil_depth_to_bedrock_basin.png" not in paths
 
 
 def test_a_caller_can_still_ask_for_a_pdf():
     paths = family.figure_paths("P/plots", formats=("png", "pdf"))
-    assert "P/plots/land_cover.pdf" in paths
+    assert "P/plots/land_cover_basin.pdf" in paths
 
 
 def test_the_undeclared_figures_are_still_drawn():
     """`guaranteed=False` keeps a figure out of the rule's promise, not out of
     the run -- it is the difference between a lost figure and a failed workflow."""
     everything = family.figure_paths("P/plots", declared_only=False)
-    assert "P/plots/soil_depth_to_bedrock.png" in everything
+    assert "P/plots/soil_depth_to_bedrock_basin.png" in everything
 
 
 def test_a_constant_layer_is_noted_but_still_drawn():
@@ -255,8 +258,43 @@ def test_the_land_cover_table_is_the_products_own_legend():
 
 
 def test_the_land_cover_codes_are_unique_and_ordered():
-    codes = [code for code, _, _ in family.LAND_COVER_CLASSES]
-    assert codes == sorted(set(codes))
+    for table in (family.LAND_COVER_CLASSES, family.GLOBCOVER_CLASSES):
+        codes = [code for code, _, _ in table]
+        assert codes == sorted(set(codes))
+
+
+def test_the_globcover_table_is_the_products_own_legend():
+    table = {code: colour for code, colour, _ in family.GLOBCOVER_CLASSES}
+    assert table[40] == "#006400"  # broadleaved evergreen forest
+    assert table[210] == "#0046c8"  # water bodies
+    assert len(family.GLOBCOVER_CLASSES) == 23
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("globcover", "GLOBCOVER_CLASSES"),
+        ("globcover_2009_v2.3", "GLOBCOVER_CLASSES"),
+        ("vito", "LAND_COVER_CLASSES"),
+        ("vito_2019_v3.0.1", "LAND_COVER_CLASSES"),
+    ],
+)
+def test_the_land_cover_table_follows_the_layer_source(source, expected):
+    assert family.land_cover_classes(_layer(source)) is getattr(family, expected)
+
+
+def test_globcover_code_40_is_forest_not_cropland():
+    """The defect this table exists for: GlobCover drawn with Copernicus codes."""
+    labels = {
+        code: label for code, _, label in family.land_cover_classes(_layer("globcover"))
+    }
+    assert "evergreen" in labels[40] and "Cropland" not in labels[40]
+
+
+def test_an_unknown_land_cover_source_is_drawn_unclassified_with_a_warning():
+    with pytest.warns(RuntimeWarning, match="no land-cover class table"):
+        table = family.land_cover_classes(_layer("esa_worldcover"))
+    assert [code for code, _, _ in table] == [-1]
 
 
 # --- the source footnote ------------------------------------------------------
@@ -374,12 +412,20 @@ def test_subbasin_classes_are_derived_from_the_raster_not_declared():
     ]
 
 
-def test_subbasin_colours_cycle_rather_than_run_out():
-    """A 30-subbasin project still renders; the divides keep them apart."""
-    codes = list(range(101, 101 + len(family._QUALITATIVE_COLORS) + 2))
+def test_subbasin_colours_reuse_rather_than_run_out():
+    """More subbasins than palette colours still renders, every unit coloured."""
+    codes = list(range(101, 101 + len(family.SUBBASIN_COLORS) + 2))
     classes = family.subbasin_classes(_codes(codes, nx=1))
     assert len(classes) == len(codes)
-    assert classes[0][1] == classes[len(family._QUALITATIVE_COLORS)][1]
+    assert {colour for _, colour, _ in classes} <= set(family.SUBBASIN_COLORS)
+
+
+def test_touching_subbasins_never_share_a_colour():
+    """A row of units: each touches its neighbours, so adjacent colours differ."""
+    codes = list(range(101, 101 + 3 * len(family.SUBBASIN_COLORS)))
+    classes = family.subbasin_classes(_codes(codes, nx=1))
+    colour = {code: c for code, c, _ in classes}
+    assert all(colour[a] != colour[b] for a, b in zip(codes, codes[1:]))
 
 
 def test_an_unknown_variable_is_refused_rather_than_drawn_on_a_default_ramp(tmp_path):

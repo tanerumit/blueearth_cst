@@ -67,7 +67,7 @@ DECLARED_PLOT_OUTPUTS = (
     "models/hydrology/wflow/evaluation/performance_metrics.csv",
     # Rule 1.12's basin map. PNG only since 2026-08-10; the vector deliverable
     # was dropped because nothing read it.
-    "data/spatial/plots/basin_area.png",
+    "data/spatial/plots/elevation_basin.png",
 ) + tuple(
     f"models/hydrology/wflow/forcing/plots/{name}" for name in _figure_names("forcing")
 )

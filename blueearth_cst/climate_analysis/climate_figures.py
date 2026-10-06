@@ -30,7 +30,7 @@ NETWORK access. Rule 1.12 used ``cartopy.io.img_tiles.QuadtreeTiles`` before
 this module and therefore made a live tile request mid-workflow; the basin/river
 context it bought is available offline through ``overlays`` (drawn from the
 model's own geometries) and, at higher fidelity, from rule 1.11's
-``basin_area.png``.
+``elevation_basin.png``.
 
 A third climate-figure family — the model-parity plots under
 ``models/hydrology/wflow/evaluation/plots/`` (rule 1.10) — is NOT part of this
@@ -398,7 +398,7 @@ def _label_points(ax, gdf) -> None:
 
     A marker with no name answers "something is here" but not "which one",
     which is the question a reader brings to a multi-gauge basin. Rule 1.11's
-    basin_area.png has labelled its gauges since R07; this brings the canonical
+    elevation_basin.png has labelled its gauges since R07; this brings the canonical
     climate maps into line rather than leaving one figure family mute.
 
     Silently does nothing for a layer without the column (the model's own

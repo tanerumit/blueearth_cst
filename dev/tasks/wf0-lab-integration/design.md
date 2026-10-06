@@ -217,7 +217,7 @@ Roots (resolved from existing specs, never guessed from source names):
 - Tables `D/tables/`; standard figures `D/figures/`; optional captioned
   figures `D/figures/captioned/` with the **same four-field basename**.
   Directory placement, not a fifth `_captioned` field, identifies the variant.
-- Metadata `D/diagnostics.json`; captions `D/figure_captions.json` and
+- Metadata `D/_engine/diagnostics.json`; captions `D/_engine/figure_captions.json` and
   `D/figure_captions.md`. These are declared files, not incidental side effects.
 
 All CSVs have fixed headers, including when empty/unavailable. `source` and
@@ -267,6 +267,15 @@ caption formatter; JSON, Markdown and captioned exports reuse its text.
 New standard figures have no bottom descriptive paragraph. Existing figure
 footers remain unchanged; their support/resolution warning is carried once in
 each new caption/metadata entry, not duplicated in the optional caption band.
+
+Both JSON files are retained machine-readable records under `D/_engine/`,
+not disposable cache. All recorded output paths and caption keys resolve from
+the diagnostic root `D`, not the JSON file's parent directory. Writers and
+Snakemake declarations use the same paths. `D/figure_captions.md` remains the
+user-facing reference and includes each figure's periods, data support,
+availability, method caveats and scientific qualification notice, so users can
+interpret figures without opening JSON. The Markdown is generated from the
+same caption records and is not maintained independently.
 
 ### D5. Single declaration source and Snakemake mapping
 

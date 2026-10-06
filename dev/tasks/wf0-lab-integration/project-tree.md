@@ -80,8 +80,9 @@ store specification; it is not constructed by the new diagnostic code.
             │   ├── plots/
             │   │   └── subbasins/     existing figure family; only if subbasin_figures: true
             │   └── diagnostics/      [new] source diagnostics root D_s
-            │       ├── diagnostics.json
-            │       ├── figure_captions.json
+            │       ├── _engine/      retained machine-readable records
+            │       │   ├── diagnostics.json
+            │       │   └── figure_captions.json
             │       ├── figure_captions.md
             │       ├── tables/       shared table set detailed below
             │       │   └── daily_basin.csv    source-only addition to shared set
@@ -90,8 +91,9 @@ store specification; it is not constructed by the new diagnostic code.
             └── comparison/           multisource runs only
                 ├── subbasins/        existing figure family; only if subbasin_figures: true
                 └── diagnostics/      [new] comparison diagnostics root D_c
-                    ├── diagnostics.json
-                    ├── figure_captions.json
+                    ├── _engine/      retained machine-readable records
+                    │   ├── diagnostics.json
+                    │   └── figure_captions.json
                     ├── figure_captions.md
                     ├── tables/       shared table set detailed below
                     │   ├── agreement.csv     comparison-only addition
@@ -133,6 +135,9 @@ Unavailable table products retain their headers and have reasons in metadata.
 
 ### User-facing changes in this revision
 
+- Both JSON records live under each diagnostic root's `_engine/` folder.
+  `figure_captions.md` remains at the root as the readable caption and
+  interpretation reference. JSON output paths resolve from the diagnostic root.
 - New diagnostic figures use PNG only, including optional captioned copies.
   No PDF files are created by the proposed diagnostic rules.
 - WF0 `subbasin_figures` defaults to `false`. Set it to `true` in the

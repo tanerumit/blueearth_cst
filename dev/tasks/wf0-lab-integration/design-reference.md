@@ -841,7 +841,36 @@ newer percentile-band and trend-series views supersede them. Existing source map
 replaced by the lab spatial-map structure.
 
 
-## Fresh-run follow-up — 2026-10-06
+## Successful local-data fresh run — 2026-10-06
+
+At the owner's request, fresh WF0 execution was retried with `config/catalogs/deltares_data.yml`, whose
+root is `C:/data/wflow_global/hydromt`. These are existing staged Ntoum subsets. The scratch project kept
+the rapid basin, 2000–2016 window, two sources and diagnostic defaults. Its river key was changed from
+`hydro_rivers_lin` to the local catalog's `rivers_lin2019_v1`. The P-drive ERA5 override was omitted.
+No tracked catalog or seed configuration changed.
+
+Command, run from the BlueEarth session-2 worktree:
+
+```powershell
+pixi run python scripts/run_workflow.py analyze_climate --config .tmp/scratchpad/wf0-local-config/project_config_rapid.yml --project-dir .tmp/scratchpad/wf0-fresh-local-data --cores 3
+```
+
+All 11 jobs passed from a new empty output root in 1 minute 16 seconds. The output audit verified all
+declared paths, all PNG caption records and no PDFs: ERA5 21, CHIRPS 17 and comparison 17 PNGs. Optional
+subbasin and captioned products were absent, as configured. The fresh ERA5 precipitation map was inspected.
+
+Snakemake recorded peak RSS of 341.28 MB for delineation and 532.23 MB for the largest individual job.
+These are per-job measurements, not the concurrent workflow's combined peak. System samples reported
+roughly 2.2–2.4 GiB free physical memory. Six warnings covered four tiny gauge-coordinate adjustments,
+a missing glacier layer and the documented ERA5 K-label/Celsius-value guard. None failed execution.
+
+Evidence is retained in scratch under `wf0-fresh-local-data.log`, `wf0-local-inventory.log`, and the output
+root's `logs/wf0_analyze_climate.log`, `benchmarks/wf0_benchmarks.md` and captured run configuration.
+This closes fresh WF0 execution coverage for local staged inputs. It is not a matched-input comparison
+against the P-drive run, a full five-workflow test, or scientific qualification. Local inputs differ in extent
+and catalog representation; the exact earlier bottleneck remains unresolved.
+
+## Earlier fresh-run follow-up — 2026-10-06
 
 The fresh rapid WF0 run was attempted through `scripts/run_workflow.py` using scratch configuration and an
 empty output root. It remained in rule 0.01, before any new diagnostic job started, and was interrupted.
@@ -854,8 +883,8 @@ index read; the last log row therefore does not establish which operation was sl
 repository catalog, or scientific settings were changed. Both process trees were confirmed stopped.
 
 Scratch logs: `wf0-fresh-validation.log`, `wf0-fresh-local-index.log`, and `wf0-index-probe.log` under
-`.tmp/scratchpad/`. The fresh full-workflow check remains incomplete. This follow-up does not replace
-the passing diagnostic subgraph checks or count as an end-to-end pass.
+`.tmp/scratchpad/`. At that point the fresh full-workflow check remained incomplete. This follow-up does
+not replace the passing diagnostic subgraph checks or count as an end-to-end pass.
 
 Gate 1 is the brief's only human design gate. The earlier conversational "Gate 2" label was incorrect.
 Repository authorization for landing remains separate from design approval.

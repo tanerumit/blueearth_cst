@@ -428,14 +428,16 @@ The integration was checked against the approved plan:
 | Lint, formatting and documentation links | Passed |
 | Ntoum numerical regression | Matched within the approved tolerances |
 | New diagnostic jobs through Snakemake | All five passed with defaults and opt-in settings |
+| Fresh WF0 with local staged inputs | All 11 jobs passed in 1 minute 16 seconds |
 | Output inventory | 55 standard PNGs; opt-in case: 83 standard plus 83 captioned |
 
 The opt-in case includes four subbasins. All recorded rendered paths exist; no PDFs were produced.
-Fresh shared delineation was stopped after its last logged index read. A repeat using a local copy of that
-index also remained in delineation; an independent local index read took 5.6 seconds. The precise slow
-operation is unresolved. Diagnostic execution used retained
-spatial and climate prerequisites, so it does not prove a fresh full-workflow run. Combined batch gates remain
-due at an approved landing. Commands, numerical comparisons and results deltas are retained in the
+Fresh WF0 execution passed with local Ntoum input subsets, including delineation, climate extraction and
+all diagnostic jobs. The default inventory passed again. Delineation used about 341 MB peak RAM; the
+largest individual job used about 532 MB. The earlier P-drive delay remains unresolved: local staged inputs
+change both access location and spatial extent, so this does not isolate network latency from global-raster
+processing. The local catalog switch is temporary; shipped defaults are unchanged. Combined batch gates
+remain due at an approved landing. Commands, numerical comparisons and results deltas are retained in the
 [technical reference](design-reference.md#implementation-validation--2026-10-06).
 
 Source agreement is not evidence of accuracy. Input homogeneity is unverified, no independent station
@@ -460,6 +462,7 @@ remain separate decisions and are not authorized.
 
 ## 9. Revision record
 
+- 2026-10-06: Fresh WF0 passed with local staged Ntoum inputs; retained memory and output-inventory evidence.
 - 2026-10-06: Implemented the approved canonical system; updated the tree and retained validation results.
 - 2026-10-06: Gate 1 approved by Ümit Taner; toolbox-native implementation started.
 - 2026-10-06: Proposed the lab integration and revised its scope with the owner.

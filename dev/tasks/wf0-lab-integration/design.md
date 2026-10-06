@@ -54,6 +54,13 @@ automatically. This intentionally supersedes the original additive proposal.
 WF1 retains its current source-figure producer and contracts. Do not modify
 extraction, shared plotting style, WF2–WF4 or lab files.
 
+### Proposed tree/layout
+
+The maintained [project-tree.md](project-tree.md) is part of this design's
+deliverable. It shows affected repository files and generated project outputs,
+proposed changes, conditional products, naming and current output counts.
+It is the authoritative tree; update it with every relevant design revision.
+
 ### D1. Periods, inputs and scientific conventions
 
 - Read `climate.sources`, `climate.selected`, `climate.window` and

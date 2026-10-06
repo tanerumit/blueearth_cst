@@ -138,7 +138,7 @@ resume record; the toolbox copy stays read-only.
 
 | Phase | State | Last durable marker | Blocked on | Next action |
 |---|---|---|---|---|
-| [P0](#p0) | not started | — | — | Select the ensemble from the catalog; dry-run the DAG |
+| [P0](#p0) | in progress | all 125 series fetched to `C:/data/cmip6/…`; stage 2.05 fails (2026-10-06) | owner decision on WF2 defects | Fix or work around the stage-2.05 defects; rerun 2.05 only |
 | [P1](#p1) | not started | — | P0 | Copy docs into the lab; read one P0 scalar file |
 | [P2](#p2) | not started | — | P1 | Build the change table; reconcile against the CSVs |
 | [P3](#p3) | not started | — | P2 | Reduce C1 changes; draw dot strips |
@@ -239,7 +239,30 @@ rather than this brief. A WF2 lock after a crash is released with `snakemake --u
 
 ### Development ensemble (filled by P0)
 
-`<NOT YET RECORDED>`
+**State 2026-10-06 (incomplete).** Untracked configs `test_case/test_wf2_ensemble*.yml` in the `session-1`
+worktree; project `C:/data/cmip6/gabon-ntoum-dev-ensemble`.
+
+- **Requested:** 13 models from 12 institutions × historical + SSP1-2.6/2-4.5/3-7.0/5-8.5:
+  AWI-CM-1-1-MR, BCC-CSM2-MR, CanESM5, CMCC-ESM2, INM-CM4-8, INM-CM5-0, IPSL-CM6A-LR, MIROC6,
+  MPI-ESM1-2-LR, MRI-ESM2-0, CESM2, NorESM2-MM and GFDL-ESM4.
+- **Members:** `r1i1p1f1` except three five-member models: CanESM5 r11–r15 (r1–r10 have ambiguous store
+  pins), IPSL-CM6A-LR r1–r4 and r6, MPI-ESM1-2-LR r1–r5.
+- **Excluded at selection:** ACCESS-CM2 and EC-Earth3, which have ambiguous `{grid}/{version}` pins (WF2
+  refuses them at parse). MRI-ESM2-0 has a clean pin only for r1.
+- **Fetched:** all 125 series, raw slices about 0.07 MB each, at about 80 s per fetch with 3 cores.
+
+Defects found:
+
+1. **Snakemake hang.** The scheduler stalled twice (about 21:46 and 22:42): job logs complete, no
+   children, zero CPU. Recovered by kill, `-- --unlock`, `-- --rerun-incomplete`. Logs are in `session-1`
+   `.tmp/scratchpad/wf2-p0/run{1,2}-hung.err`.
+2. **Calendar alias refused.** Stage 2.05 raises `CalendarError` on MIROC6: `proleptic_gregorian`
+   historical versus `gregorian` scenarios, which are identical after 1582. MIROC6 was dropped
+   provisionally.
+3. **Phantom rows.** Stage 2.05 combines points with `join="outer"`, so models with different member
+   labels yield phantom (model, member) cells. `tidy_rows` emits them, and a NaN `__flagged` companion
+   reads as flagged. `_flagged_months` then raises `KeyError: ('AWI-CM-1-1-MR', 'ssp126', 'r11i1p1f1')`.
+   Any multi-member ensemble with heterogeneous labels hits this.
 
 <a id="p1"></a>
 

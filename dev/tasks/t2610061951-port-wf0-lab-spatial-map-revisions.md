@@ -19,9 +19,16 @@ updated: 2026-10-06
 
 Brief: [task-brief.md](t2610061951/task-brief.md).
 
-- [ ] GlobCover land-cover class table chosen by layer source (correctness fix, lands alone).
-- [ ] Scale bar, inset and on-map key placement with collision check and padding fallback.
-- [ ] Gate 1: owner decides whether shared-style changes extend beyond rule 1.11's figures.
-- [ ] Keys and styling (on-map keys, plain colourbar ends, bold titles, river ramp, points, subbasins, LAI).
-- [ ] Replace the lab's constant-rebinding with explicit parameters (no render change).
-- [ ] Rename rule 1.11 outputs to `<variable>_basin` with a migration note.
+- [x] GlobCover land-cover class table chosen by layer source (`cc834f8e`).
+- [x] Placement, inset, keys and styling as `cartographic_map.PROFILES["spatial"]` (`5fa3909c`); default-path renders pixel-identical to main.
+- [x] Rule 1.11 figures opt into the profile; subbasin palette, LAI classes, legend titles (`5684e04c`); Liberia renders match the lab set.
+- [x] Rename rule 1.11 outputs to `<variable>_basin` with a migration note (`1a2bf137`).
+- [ ] Merge gates on `feat/wf0-spatial-map-improvements` (session-3): test-fast, test-full, test-e2e.
+- [ ] Land on main (owner approval).
+
+## Decisions
+
+- 2026-10-06, Gate 1 (taken without a pause on the owner's "do not stop"): the new style stays on rule 1.11's figures only. It is an opt-in profile (`profile="spatial"`); WF0 climate, WF2 projection and forcing maps keep today's defaults.
+- The brief's separate parameter-refactor commit was folded into the profile design (4 commits instead of 5); the lab's constant rebinding survives only as the scoped `_Overrides` behind a named profile.
+- Unknown land-cover sources draw unclassified with a warning rather than borrowing the Copernicus table.
+- The rename's migration note lives in the task folder (`t2610061951/migration_spatial_map_names.md`): there is no milestone folder for it.

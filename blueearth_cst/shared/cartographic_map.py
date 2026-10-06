@@ -201,6 +201,10 @@ _PANEL_LEFT = 1.03
 #: height without a hand-tuned constant per combination.
 _COLORBAR_WIDTH = 0.030
 _COLORBAR_HEIGHT = 1.50
+#: Which end of its free band the bar sits at: "bottom" aligns it with the
+#: map's lower edge (above the legend, when one is drawn); "top" hangs it
+#: from the top of the band.
+_COLORBAR_ANCHOR = "top"
 #: The bar never shrinks below this, even if that overruns the panel. A bar too
 #: short to carry its own tick labels is not a smaller bar, it is a broken one —
 #: better to overflow visibly than to render something unreadable.
@@ -226,6 +230,17 @@ _COLORBAR_TITLE_PAD = 5.0
 #: a fixed value would either clip the second line or leave a gap above a
 #: one-line one.
 _COLORBAR_TOP_LABEL_HEADROOM = 0.055
+
+#: The key (colourbar or class legend) drawn INSIDE the map, in an upper
+#: corner, for figures that carry no locator inset. ``_KEY_SCALE`` shrinks its
+#: fonts relative to the side-panel key; the bar is shorter for the same reason.
+_KEY_SCALE = 0.9
+_KEY_BAR_HEIGHT = 0.30  #: bar length as a fraction of the map height
+_KEY_BAR_WIDTH = 0.025  #: bar width as a fraction of the map width
+_KEY_MARGIN = 0.02  #: inset from the map frame, axes fractions
+_KEY_WRAP_IN = 1.5  #: colourbar title wraps to this width, inches
+_KEY_TICK_LABEL_IN = 0.28  #: room for the bar's tick labels, inches
+_KEY_PREFERENCE = ("upper left", "upper right")
 
 #: The values ``COLORBAR_LABEL_POSITION`` accepts.
 _COLORBAR_LABEL_POSITIONS = ("right", "top")
@@ -332,6 +347,13 @@ _LEGEND_GAP = 0.05
 _LEGEND_ROW_FACTOR = 1.55
 _LEGEND_FRAME_ALPHA = 0.85  #: 1.0 = opaque, 0.0 = no fill
 _LEGEND_FRAME_WIDTH = 0.5  #: border weight, points
+#: Draw the legend's frame. The "spatial" profile draws it frameless.
+_LEGEND_FRAME = True
+#: Weight of colourbar and legend titles; "bold" in the "spatial" profile.
+KEY_TITLE_WEIGHT = "normal"
+#: Colourbars carry triangular ends for out-of-range values; the "spatial"
+#: profile drops them and clips those values into the end classes.
+COLORBAR_EXTEND_ARROWS = True
 _LEGEND_BORDER_PAD = 0.4  #: padding inside the frame, in font units
 _LEGEND_HANDLE_LENGTH = 1.4  #: length of the sample line/marker, in font units
 #: ``None`` drops the title row. Titled since 2026-08-16, and the wording is
@@ -360,6 +382,8 @@ LABEL_GAUGE = "Points of interest"
 #: and the user's gauges, which is deliberate: it ties a gauge to the network it
 #: sits on and separates it from the model's own outlets, which stay black.
 COLOR_RIVER = "#2c6fad"
+#: Points of interest: purple, so they never read as part of the blue river
+#: network (taken from the Egypt QGIS map's location style).
 COLOR_GAUGE = "#2c6fad"
 COLOR_OUTLET = "k"
 COLOR_BASIN_OUTLINE = "k"
@@ -398,15 +422,28 @@ _DEM_ANCHORS = ("#f6f2ea", "#e3d5ba", "#c9aa7d", "#a07f52", "#6f5533", "#46351f"
 
 # --- line weights (points) -------------------------------------------------
 
-#: River width scales with Strahler stream order, between these two bounds. The
-#: minimum is what a headwater gets, the maximum the trunk — widen the gap for a
-#: more dramatic network, narrow it for a flatter, more uniform one.
-#: 0.2 pt is below what most printers hold and vanishes on screen at any
-#: reasonable zoom, so the headwaters of the network simply were not there.
-RIVER_WIDTH_MIN = 0.5
-RIVER_WIDTH_MAX = 1.4
 #: Used when every river shares one stream order, so there is nothing to scale.
 RIVER_WIDTH_UNIFORM = 0.6
+#: River width scales linearly with stream order between these bounds, in
+#: ``COLOR_RIVER``. Used unless ``RIVER_STYLE`` is "order_steps".
+RIVER_WIDTH_MIN = 0.5
+RIVER_WIDTH_MAX = 1.4
+#: "linear" (one colour, width scaled between the bounds above) or
+#: "order_steps" (width AND colour stepped by order, ``RIVER_ORDER_STEPS``).
+RIVER_STYLE = "linear"
+#: Per-order river steps, lowest order first: (width in points, colour). Taken
+#: from the Egypt QGIS map's Strahler ramp (0.2-1.6 mm, ~x1.4 per order, light
+#: to dark blue), converted from millimetres to points. The basin's lowest
+#: order takes the first step; orders beyond the last step reuse it.
+RIVER_ORDER_STEPS = (
+    (0.57, "#a6cee3"),
+    (0.85, "#74add1"),
+    (1.19, "#4f94cd"),
+    (1.70, "#2c7bb6"),
+    (2.41, "#1f5fa3"),
+    (3.26, "#0f4c8a"),
+    (4.54, "#08306b"),
+)
 
 WIDTH_BASIN_OUTLINE = 0.9  #: the dissolved outer boundary — the map's key line
 #: Internal divides. Still lighter than the basin outline — that hierarchy is
@@ -483,13 +520,25 @@ _SCALE_BAR_WIDTH_FRACTION = 0.25
 #: extent. The horizontal one is ``_FURNITURE_INSET_X``, shared with the north
 #: arrow — see there.
 _SCALE_BAR_INSET_Y = 0.06
-#: Which corner the bar takes, or ``"auto"`` for the emptiest one left after the
-#: north arrow and the locator have been placed. Pinned to lower left so the
-#: figure's furniture sits where a reader expects it on EVERY basin — an
-#: auto-placed bar that moves corner between two basins makes two maps of the
-#: same study harder to compare, which is the cost the auto rule was not paying
-#: attention to. Set "auto" to get the old behaviour back.
-_SCALE_BAR_CORNER = "lower left"
+#: Where the bar may go, in order of preference. The first position whose
+#: footprint (bar, labels and ``_SCALE_BAR_CLEARANCE``) stays off the basin wins,
+#: so the bar keeps one predictable place on most basins and moves only when the
+#: basin forces it. A single entry pins it. Names are ``"lower left"`` and
+#: ``"lower right"`` (``"upper ..."`` also works but collides with the arrow).
+_SCALE_BAR_PREFERENCE = ("lower left",)
+#: Clearance kept between the bar's footprint and the basin outline, as a
+#: fraction of the larger map span.
+_SCALE_BAR_CLEARANCE = 0.01
+#: Test furniture against the basin and gauges, padding the map when no
+#: preferred corner is clear. Off by default: the bar sits at its first
+#: preference whatever lies under it. The "spatial" profile turns it on.
+_FURNITURE_AVOIDS_BASIN = False
+#: When no preferred position is clear, the map's south edge is extended in
+#: steps of this fraction of the latitude span until a preference is clear, up
+#: to ``_SCALE_BAR_MAX_PAD``. Past the cap the bar is drawn at the first
+#: preference anyway, and a note says so.
+_SCALE_BAR_PAD_STEP = 0.02
+_SCALE_BAR_MAX_PAD = 0.30
 #: Gap between the bar and its numbers, as a fraction of the latitude span.
 _SCALE_BAR_LABEL_GAP = 0.008
 _SCALE_BAR_EDGE_WIDTH = 0.5
@@ -529,6 +578,7 @@ _NORTH_ARROW_CORNER = "upper left"
 #: is printed, so a copy of this module taken to another project still renders.
 LOCATOR_ENABLED = True
 
+
 #: Half-width of the locator's window, in degrees, around the basin's centre —
 #: or ``"auto"`` to derive it from the basin's own size.
 #:
@@ -546,6 +596,8 @@ _LOCATOR_SPAN_DEG = "auto"
 #: width. 3% is the measured answer on this fixture: it is what a 4 deg
 #: half-width gives, and 4 deg is the width that reads as a shape while keeping
 #: the coast, the country and the nearest capital in frame.
+# Raised from 0.03 (tuned on a 0.24 deg test basin, which put a 2 deg basin in
+# a +/-35 deg window) so the study area stays visible at any basin size.
 _LOCATOR_TARGET_BASIN_FRACTION = 0.03
 
 #: Half-widths the auto rule may choose, in degrees. A ladder rather than a
@@ -561,17 +613,22 @@ _LOCATOR_MIN_SPAN_MARGIN = 0.75
 #: The inset's width as a fraction of the map panel's width, and its inset from
 #: the corner. Its HEIGHT is derived so the box comes out square on the page —
 #: a square window drawn into a non-square box would otherwise letterbox.
+#: The inset's width on the map, as a fraction of the map width: the largest
+#: size it tries, and the smallest it shrinks to before the map is padded.
+#: 0.28 matches the old side-panel inset on Liberia; 0.32 is 1.15x that.
 _LOCATOR_WIDTH = 0.22
+_LOCATOR_MIN_WIDTH = 0.22
+_LOCATOR_WIDTH_STEP = 0.02
+# 0: the inset sits flush in its corner, sharing two edges with the map frame.
 _LOCATOR_MARGIN = 0.025
 
-#: Which corner it sits in, or ``"auto"`` for the emptiest one the north arrow
-#: is not using. Pinned to upper right, the conventional place to read a
-#: locator, so it does not move between two basins of the same study. The cost
-#: is real and was the reason for "auto": the inset is OPAQUE, so a pinned
-#: corner can cover basin the reader wanted — on this fixture it lands on the
-#: basin's highest ground. ``_LOCATOR_PLACEMENT = "panel"`` is the way out that
-#: keeps the position fixed AND covers nothing.
-_LOCATOR_CORNER = "upper right"
+#: Where the inset may go on the map, in order of preference. The first corner
+#: whose box (plus ``_LOCATOR_CLEARANCE``) misses the basin and gauges wins; when
+#: none does, the map's north edge is extended in ``_SCALE_BAR_PAD_STEP`` steps,
+#: up to ``_LOCATOR_MAX_PAD``. The north arrow takes the other upper corner.
+_LOCATOR_PREFERENCE = ("upper left", "upper right")
+_LOCATOR_CLEARANCE = 0.01
+_LOCATOR_MAX_PAD = 0.60
 
 #: Where the inset is drawn: ``"map"`` puts it in a corner OF THE MAP, over the
 #: basin; ``"panel"`` puts it at the top of the side panel, above the colourbar,
@@ -620,6 +677,12 @@ COLOR_LOCATOR_BASIN_EDGE = "#7d2318"
 WIDTH_LOCATOR_COAST = 0.35
 WIDTH_LOCATOR_BORDER = 0.3
 WIDTH_LOCATOR_FRAME = 0.6
+WIDTH_LOCATOR_EXTENT_BOX = 0.9  #: the main map's frame drawn on the inset
+#: What marks the study area on the inset: "basin" (the filled outline) or
+#: "extent_box" (a rectangle around the main map's frame).
+LOCATOR_MARK = "basin"
+#: Drop inset cities whose label would cross the inset frame.
+_LOCATOR_FIT_CITIES = False
 
 #: Cities are filtered by Natural Earth's own prominence rank (0 = most
 #: prominent), then the largest few by population are kept. Both limits matter:
@@ -640,18 +703,6 @@ WIDTH_LOCATOR_BASIN = 0.5
 HALO_WIDTH_LOCATOR_BASIN = 1.6
 #: Label offset for a city name.
 _LOCATOR_CITY_LABEL_OFFSET = (2.5, -1.0)
-
-# --- furniture placement ---------------------------------------------------
-
-#: Lower-left corner of each candidate furniture box, as a fraction of the map
-#: extent. Names are matplotlib ``legend(loc=...)`` values verbatim.
-_CORNER_BOX = 0.30
-_CORNERS = {
-    "lower left": (0.0, 0.0),
-    "lower right": (1.0 - _CORNER_BOX, 0.0),
-    "upper left": (0.0, 1.0 - _CORNER_BOX),
-    "upper right": (1.0 - _CORNER_BOX, 1.0 - _CORNER_BOX),
-}
 
 # --- hillshade -------------------------------------------------------------
 
@@ -701,9 +752,10 @@ GAUGE_LABEL_COLUMN = "wflow_id"
 #: A no-op where the layer is already in-basin, as the wflow model's is.
 CLIP_RIVERS_TO_BASIN = True
 
-#: Column whose values scale the river line weights. ``strord`` is wflow's
-#: Strahler stream order. Any numeric column works; ``None``, or a column the
-#: frame does not carry, draws every reach at ``RIVER_WIDTH_UNIFORM``.
+#: Columns tried, in order, for the Strahler stream order that styles the
+#: rivers: ``strord`` is the wflow model's, ``order`` the spatial foundation's
+#: ``rivers.geojson``. A frame carrying neither draws every reach at
+#: ``RIVER_WIDTH_UNIFORM`` in ``COLOR_RIVER``.
 RIVER_ORDER_COLUMN = "strord"
 
 #: Colourbar label. Units are the DEM's, so change it with the DEM. One line:
@@ -908,10 +960,12 @@ def _colorbar_inset(label_lines=1, reserved_top=0.0, band_bottom=0.0):
     band_top = 1.0 - reserved_top
     band = max(band_top - band_bottom, 0.0)
     height = min(_colorbar_height(), max(band - label, _COLORBAR_MIN_HEIGHT))
-    # Pinned to the TOP of what is free, so the bar sits directly under the
-    # locator and any slack falls between the bar and the legend rather than
-    # opening a gap under the inset.
-    bottom = max(band_top - label - height, band_bottom)
+    if _COLORBAR_ANCHOR == "bottom":
+        bottom = band_bottom
+    else:
+        # Hung from the top of what is free, so any slack falls between the bar
+        # and the legend rather than opening a gap under the band's top.
+        bottom = max(band_top - label - height, band_bottom)
     return (_PANEL_LEFT, bottom, _COLORBAR_WIDTH, height)
 
 
@@ -2063,98 +2117,23 @@ def _add_graticule(ax, extent):
             spine.set_color(COLOR_BASIN_OUTLINE)
 
 
-def _corner_occupancy(basin_geometry, extent):
-    """Fraction of each corner box the basin covers.
-
-    Fixed corners are only safe for basins shaped like the one they were tuned
-    on. A basin that fills its bounding box, or simply carries mass in the
-    south-west, gets the scale bar and the opaque legend frame drawn over its
-    own rivers.
-    """
-    lon_min, lon_max, lat_min, lat_max = extent
-    span_lon, span_lat = lon_max - lon_min, lat_max - lat_min
-    occupancy = {}
-    for name, (x_fraction, y_fraction) in _CORNERS.items():
-        corner = shapely_box(
-            lon_min + x_fraction * span_lon,
-            lat_min + y_fraction * span_lat,
-            lon_min + (x_fraction + _CORNER_BOX) * span_lon,
-            lat_min + (y_fraction + _CORNER_BOX) * span_lat,
-        )
-        area = corner.area
-        occupancy[name] = (
-            corner.intersection(basin_geometry).area / area if area > 0 else 1.0
-        )
-    return occupancy
-
-
 def _locator_drawn():
     """Whether the inset will actually be drawn, so corners can be budgeted."""
     return LOCATOR_ENABLED and BASEMAP_PATH.is_file()
 
 
-def _locator_corner(basin_geometry, extent):
-    """The corner the locator takes: the emptiest, or the configured one.
+def _scale_bar_geometry(extent, corner):
+    """Bar length and anchor: ``(length_km, length_deg, x_start, y_bar)``.
 
-    Returns ``None`` when there is no inset, which hands the corner back to the
-    scale bar rather than reserving it for something that never appears.
+    The single source of the bar's position, read both by the drawing code and
+    by the clearance test, so the two cannot disagree.
     """
-    if not _locator_drawn():
-        return None
-    if _LOCATOR_PLACEMENT == "panel":
-        # It is not on the map, so it claims no map corner — and the scale bar
-        # gets that corner back rather than avoiding something that is not there.
-        return None
-    if _LOCATOR_CORNER != "auto":
-        return _LOCATOR_CORNER
-    occupancy = _corner_occupancy(basin_geometry, extent)
-    candidates = [name for name in _CORNERS if name != _NORTH_ARROW_CORNER]
-    return min(
-        candidates,
-        key=lambda name: (
-            round(occupancy[name], 3),
-            0 if name.startswith("upper") else 1,
-            name,
-        ),
-    )
-
-
-def _scale_bar_corner(basin_geometry, extent, excluded=None):
-    """The emptiest corner left for the scale bar, ties broken toward the bottom.
-
-    ``excluded`` defaults to the corners the north arrow and the locator inset
-    hold. The legend is not among them — it lives in the side panel rather than
-    on the map, which gives the bar back a lower corner it used to yield.
-
-    Ties are rounded before ranking so "equally empty" really does fall through
-    to the bottom preference, and the corner name breaks the last tie so the
-    figure never depends on dict iteration order.
-    """
-    if excluded is None:
-        excluded = {_NORTH_ARROW_CORNER}
-    elif isinstance(excluded, str):
-        excluded = {excluded}
-    occupancy = _corner_occupancy(basin_geometry, extent)
-    candidates = [name for name in _CORNERS if name not in excluded] or list(_CORNERS)
-    return min(
-        candidates,
-        key=lambda name: (
-            round(occupancy[name], 3),
-            0 if name.startswith("lower") else 1,
-            name,
-        ),
-    )
-
-
-def _add_scale_bar(ax, extent, corner="lower left"):
-    """A scale bar in kilometres, corrected for the basin's latitude."""
     lon_min, lon_max, lat_min, lat_max = extent
     metres_per_degree_lon, _ = _metres_per_degree(0.5 * (lat_min + lat_max))
     span_lon, span_lat = lon_max - lon_min, lat_max - lat_min
     map_width_km = span_lon * metres_per_degree_lon / 1000.0
     length_km = _nice_round_length(_SCALE_BAR_WIDTH_FRACTION * map_width_km)
     length_deg = length_km * 1000.0 / metres_per_degree_lon
-
     if corner.endswith("right"):
         x_start = lon_max - _FURNITURE_INSET_X * span_lon - length_deg
     else:
@@ -2165,6 +2144,198 @@ def _add_scale_bar(ax, extent, corner="lower left"):
         y_bar = lat_max - (_SCALE_BAR_INSET_Y + 0.04) * span_lat
     else:
         y_bar = lat_min + _SCALE_BAR_INSET_Y * span_lat
+    return length_km, length_deg, x_start, y_bar
+
+
+def _scale_bar_footprint(extent, corner):
+    """The bar plus its labels and clearance, as a box in map degrees.
+
+    Label size is predicted from the font size and the map panel's size in
+    inches, which ``_figure_size`` fixes from the extent before anything is
+    drawn, so this can run before the figure exists.
+    """
+    lon_min, lon_max, lat_min, lat_max = extent
+    span_lon, span_lat = lon_max - lon_min, lat_max - lat_min
+    length_km, length_deg, x_start, y_bar = _scale_bar_geometry(extent, corner)
+    deg_per_inch_y = span_lat / _map_height_inches(extent)
+    deg_per_inch_x = span_lon / _map_width_inches()
+    text_height = 1.3 * FONT_SIZE_SCALE_BAR / 72.0 * deg_per_inch_y
+    # The end label ("50 km") is centred on the bar's end, so half of it
+    # overhangs; ~0.6 em per character.
+    end_label = f"{length_km:g} km"
+    overhang = 0.5 * len(end_label) * 0.6 * FONT_SIZE_SCALE_BAR / 72.0 * deg_per_inch_x
+    top = (
+        y_bar
+        + _SCALE_BAR_HEIGHT * span_lat
+        + _SCALE_BAR_LABEL_GAP * span_lat
+        + text_height
+    )
+    clearance = _SCALE_BAR_CLEARANCE * max(span_lon, span_lat)
+    return shapely_box(
+        x_start - overhang - clearance,
+        y_bar - clearance,
+        x_start + length_deg + overhang + clearance,
+        top + clearance,
+    )
+
+
+def place_scale_bar(footprint, extent, preference=None):
+    """``(corner, extent, pad)``: the first clear preferred position.
+
+    Tries each position in ``preference`` (default ``_SCALE_BAR_PREFERENCE``)
+    against the basin footprint. When none is clear, extends the extent's south
+    edge step by step until one is, and returns the padded extent with the
+    added fraction of the latitude span. ``pad`` is ``None`` when the cap was
+    reached without clearing; the caller reports it.
+    """
+    preference = tuple(preference or _SCALE_BAR_PREFERENCE)
+    if not _FURNITURE_AVOIDS_BASIN:
+        return preference[0], extent, 0.0
+    lon_min, lon_max, lat_min, lat_max = extent
+    span_lat = lat_max - lat_min
+    steps = int(round(_SCALE_BAR_MAX_PAD / _SCALE_BAR_PAD_STEP))
+    for step in range(steps + 1):
+        pad = step * _SCALE_BAR_PAD_STEP
+        candidate = [lon_min, lon_max, lat_min - pad * span_lat, lat_max]
+        for corner in preference:
+            if not _scale_bar_footprint(candidate, corner).intersects(footprint):
+                return corner, (extent if step == 0 else candidate), pad
+    return preference[0], extent, None
+
+
+def _locator_widths():
+    """Inset widths to try, largest first, down to ``_LOCATOR_MIN_WIDTH``."""
+    widths, width = [], _LOCATOR_WIDTH
+    while width > _LOCATOR_MIN_WIDTH + 1e-9:
+        widths.append(round(width, 4))
+        width -= _LOCATOR_WIDTH_STEP
+    return [*widths, _LOCATOR_MIN_WIDTH]
+
+
+def _locator_footprint(extent, corner, width=None):
+    """The map inset's box plus clearance, in map degrees."""
+    lon_min, lon_max, lat_min, lat_max = extent
+    span_lon, span_lat = lon_max - lon_min, lat_max - lat_min
+    x0, y0, w, h = _locator_box(extent, corner, width)
+    clearance = _LOCATOR_CLEARANCE * max(span_lon, span_lat)
+    return shapely_box(
+        lon_min + x0 * span_lon - clearance,
+        lat_min + y0 * span_lat - clearance,
+        lon_min + (x0 + w) * span_lon + clearance,
+        lat_min + (y0 + h) * span_lat + clearance,
+    )
+
+
+def place_locator(footprint, extent, preference=None):
+    """``(corner, width, extent, pad)`` for the map inset.
+
+    The north-edge twin of :func:`place_scale_bar`, with one more lever: the
+    inset first shrinks from ``_LOCATOR_WIDTH`` toward ``_LOCATOR_MIN_WIDTH`` to
+    fit a clear corner, and the map is padded only when the smallest size still
+    does not fit. ``pad`` is ``None`` when the cap was reached.
+    """
+    preference = tuple(preference or _LOCATOR_PREFERENCE)
+    if not _FURNITURE_AVOIDS_BASIN:
+        return preference[0], _LOCATOR_WIDTH, extent, 0.0
+    lon_min, lon_max, lat_min, lat_max = extent
+    span_lat = lat_max - lat_min
+    steps = int(round(_LOCATOR_MAX_PAD / _SCALE_BAR_PAD_STEP))
+    for step in range(steps + 1):
+        pad = step * _SCALE_BAR_PAD_STEP
+        candidate = [lon_min, lon_max, lat_min, lat_max + pad * span_lat]
+        widths = _locator_widths() if step == 0 else [_LOCATOR_MIN_WIDTH]
+        for width in widths:
+            for corner in preference:
+                box = _locator_footprint(candidate, corner, width)
+                if not box.intersects(footprint):
+                    return corner, width, (extent if step == 0 else candidate), pad
+    return preference[0], _LOCATOR_MIN_WIDTH, extent, None
+
+
+def _box_footprint(extent, box, clearance):
+    """An axes-fraction box ``[x0, y0, w, h]`` plus clearance, in map degrees."""
+    lon_min, lon_max, lat_min, lat_max = extent
+    span_lon, span_lat = lon_max - lon_min, lat_max - lat_min
+    x0, y0, w, h = box
+    pad = clearance * max(span_lon, span_lat)
+    return shapely_box(
+        lon_min + x0 * span_lon - pad,
+        lat_min + y0 * span_lat - pad,
+        lon_min + (x0 + w) * span_lon + pad,
+        lat_min + (y0 + h) * span_lat + pad,
+    )
+
+
+def _key_box(extent, corner, size_in):
+    """The on-map key's ``[x0, y0, w, h]`` in axes fractions, in ``corner``."""
+    w = size_in[0] / _map_width_inches()
+    h = size_in[1] / _map_height_inches(extent)
+    x0 = _KEY_MARGIN if corner.endswith("left") else 1.0 - _KEY_MARGIN - w
+    y0 = 1.0 - _KEY_MARGIN - h if corner.startswith("upper") else _KEY_MARGIN
+    return [x0, y0, w, h]
+
+
+def place_key(footprint, extent, size_in, preference=None):
+    """``(corner, extent, pad)`` for the on-map key; the inset's rule, fixed size."""
+    preference = tuple(preference or _KEY_PREFERENCE)
+    lon_min, lon_max, lat_min, lat_max = extent
+    span_lat = lat_max - lat_min
+    steps = int(round(_LOCATOR_MAX_PAD / _SCALE_BAR_PAD_STEP))
+    for step in range(steps + 1):
+        pad = step * _SCALE_BAR_PAD_STEP
+        candidate = [lon_min, lon_max, lat_min, lat_max + pad * span_lat]
+        for corner in preference:
+            box = _box_footprint(candidate, _key_box(candidate, corner, size_in), 0.005)
+            if not box.intersects(footprint):
+                return corner, (extent if step == 0 else candidate), pad
+    return preference[0], extent, None
+
+
+def place_furniture(obstacles, extent, locator=True, key_size_in=None):
+    """``(locator_box, locator_corner, bar_corner, extent, notes)``, all clear.
+
+    The inset pads north and the bar pads south; each pad changes the span the
+    other is laid out in, so the pair is settled by repeating until neither
+    moves the extent (two passes in practice).
+    """
+    notes = []
+    locator_corner = locator_width = None
+    for _ in range(4):
+        before = list(extent)
+        if key_size_in is not None:
+            locator_corner, extent, pad = place_key(obstacles, extent, key_size_in)
+            if pad is None:
+                notes.append("map key overlaps the basin; padding cap reached")
+            elif pad:
+                notes.append(f"map extended {pad:.0%} north to clear the map key")
+        elif locator and _locator_drawn() and _LOCATOR_PLACEMENT == "map":
+            locator_corner, locator_width, extent, pad = place_locator(
+                obstacles, extent
+            )
+            if pad is None:
+                notes.append("locator inset overlaps the basin; padding cap reached")
+            elif pad:
+                notes.append(f"map extended {pad:.0%} north to clear the locator inset")
+        bar_corner, extent, pad = place_scale_bar(obstacles, extent)
+        if pad is None:
+            notes.append("scale bar overlaps the basin; padding cap reached")
+        elif pad:
+            notes.append(f"map extended {pad:.0%} south to clear the scale bar")
+        if list(extent) == before:
+            break
+    if key_size_in is not None:
+        locator_box = _key_box(extent, locator_corner, key_size_in)
+    elif locator_corner:
+        locator_box = _locator_box(extent, locator_corner, locator_width)
+    else:
+        locator_box = None
+    return locator_box, locator_corner, bar_corner, extent, notes
+
+
+def _add_scale_bar(ax, extent, corner="lower left"):
+    """A scale bar in kilometres, corrected for the basin's latitude."""
+    span_lat = extent[3] - extent[2]
+    length_km, length_deg, x_start, y_bar = _scale_bar_geometry(extent, corner)
 
     # Alternating filled and open segments — the conventional bar, which lets a
     # reader step off a distance rather than only read the total.
@@ -2245,7 +2416,7 @@ def _locator_window(extent):
     ]
 
 
-def _locator_box(extent, corner):
+def _locator_box(extent, corner, width=None):
     """[x0, y0, w, h] in axes fractions, square ON THE PAGE, in its corner.
 
     The map axes is not square — PlateCarree locks it to the extent's own
@@ -2255,7 +2426,7 @@ def _locator_box(extent, corner):
     """
     lon_span = max(float(extent[1] - extent[0]), 1e-9)
     lat_span = max(float(extent[3] - extent[2]), 1e-9)
-    width = _LOCATOR_WIDTH
+    width = _LOCATOR_WIDTH if width is None else width
     height = width * lon_span / lat_span
     # A tall, narrow basin makes the panel tall: the square would then overflow
     # the map vertically, so cap it and take the width back down to match.
@@ -2290,7 +2461,9 @@ def _locator_cities(window):
     if places.empty:
         return places
     places = places[places["scalerank"] <= _LOCATOR_CITY_MAX_SCALERANK]
-    return places.sort_values("pop_max", ascending=False).head(_LOCATOR_MAX_CITIES)
+    # Not capped here: the inset drops cities whose labels do not fit first,
+    # then keeps the largest ``_LOCATOR_MAX_CITIES`` of the rest.
+    return places.sort_values("pop_max", ascending=False)
 
 
 def _add_locator_inset(ax, extent, basin, corner, box=None):
@@ -2340,7 +2513,28 @@ def _add_locator_inset(ax, extent, basin, corner, box=None):
         )
 
     halo = [pe.withStroke(linewidth=HALO_WIDTH_GAUGE_LABEL, foreground=COLOR_HALO)]
+    # A city is listed only if its marker and label fit inside the window: the
+    # label runs right of the marker, and one crossing the frame reads as a
+    # rendering fault.
+    inset_width_in = box[2] * _map_width_inches()
+    deg_per_pt = (window[1] - window[0]) / max(inset_width_in * 72.0, 1e-6)
+    margin = 0.03 * (window[1] - window[0])
+    shown = 0
     for _, city in _locator_cities(window).iterrows():
+        if shown >= _LOCATOR_MAX_CITIES:
+            break
+        label_deg = (
+            _LOCATOR_CITY_LABEL_OFFSET[0]
+            + 0.6 * FONT_SIZE_LOCATOR_CITY * len(city["name"])
+        ) * deg_per_pt
+        x, y = city.geometry.x, city.geometry.y
+        if _LOCATOR_FIT_CITIES and not (
+            window[0] + margin <= x
+            and x + label_deg <= window[1] - margin
+            and window[2] + margin <= y <= window[3] - margin
+        ):
+            continue
+        shown += 1
         inset.plot(
             city.geometry.x,
             city.geometry.y,
@@ -2360,33 +2554,40 @@ def _add_locator_inset(ax, extent, basin, corner, box=None):
             path_effects=halo,
         )
 
-    # The basin's OWN outline, filled, rather than a mark standing in for it.
-    # It is small at this window — the fixture spans 0.24 deg in a 16 deg
-    # frame — but its footprint, elongation and orientation are real information
-    # a centroid dot cannot carry, and the filled shape stays findable at the
-    # size the edge alone would not.
-    basin.plot(
-        ax=inset,
-        facecolor=COLOR_LOCATOR_BASIN,
-        edgecolor=COLOR_LOCATOR_BASIN_EDGE,
-        linewidth=WIDTH_LOCATOR_BASIN,
-        zorder=Z_FURNITURE,
-        # A halo, for the same reason the scale bar's numbers carry one: the
-        # basin is a few points across and lands wherever it lands — on land, on
-        # a border, or under the label of the city it sits next to, which is the
-        # commonest case because basins and cities share rivers. The white ring
-        # is what separates it from all three without enlarging it.
-        path_effects=[
-            pe.withStroke(linewidth=HALO_WIDTH_LOCATOR_BASIN, foreground=COLOR_HALO)
-        ],
-    )
-
+    if LOCATOR_MARK == "basin":
+        # The basin's own outline, filled: its footprint, elongation and
+        # orientation are information a centroid dot cannot carry.
+        basin.plot(
+            ax=inset,
+            facecolor=COLOR_LOCATOR_BASIN,
+            edgecolor=COLOR_LOCATOR_BASIN_EDGE,
+            linewidth=WIDTH_LOCATOR_BASIN,
+            zorder=Z_FURNITURE,
+            path_effects=[
+                pe.withStroke(linewidth=HALO_WIDTH_LOCATOR_BASIN, foreground=COLOR_HALO)
+            ],
+        )
+    # The main map's frame, outlined: what the reader is looking at, on the
+    # regional map. Drawn over everything so a small basin still reads.
+    if LOCATOR_MARK == "extent_box":
+        inset.add_patch(
+            mpatches.Rectangle(
+                (extent[0], extent[2]),
+                extent[1] - extent[0],
+                extent[3] - extent[2],
+                fill=False,
+                edgecolor=COLOR_LOCATOR_BASIN,
+                linewidth=WIDTH_LOCATOR_EXTENT_BOX,
+                transform=ccrs.PlateCarree(),
+                zorder=Z_FURNITURE + 1,
+            )
+        )
     inset.spines["geo"].set_linewidth(WIDTH_LOCATOR_FRAME)
     inset.spines["geo"].set_edgecolor(COLOR_BASIN_OUTLINE)
     return inset
 
 
-def _add_north_arrow(ax):
+def _add_north_arrow(ax, locator_corner=None):
     """A north arrow — exactly vertical, which PlateCarree guarantees.
 
     Sits top-left, on the same vertical as the scale bar below it. The legend
@@ -2396,6 +2597,9 @@ def _add_north_arrow(ax):
     tip_y, tail_y = _NORTH_ARROW_POSITION
     # Shared with the scale bar; see _FURNITURE_INSET_X.
     x_fraction = _FURNITURE_INSET_X
+    if locator_corner == "upper left":
+        # The inset holds the top-left corner, so the arrow mirrors to the right.
+        x_fraction = 1.0 - _FURNITURE_INSET_X
     ax.annotate(
         "N",
         xy=(x_fraction, tip_y),
@@ -2452,16 +2656,10 @@ def _divide_linework(subbasins):
 
 
 def _river_linewidths(gdf_riv, column=RIVER_ORDER_COLUMN):
-    """Stream order rescaled to publication line weights.
-
-    ``strord / 2`` was tuned to a 10x8-inch canvas; at 180 mm it draws an
-    8th-order river as a 4 pt band that swallows the basin.
+    """Stream order rescaled linearly between ``RIVER_WIDTH_MIN`` and ``_MAX``.
 
     A river layer from outside wflow may carry no order column at all, so a
-    missing (or ``None``) ``column`` falls back to one uniform weight rather
-    than raising: a network drawn at a single width is a legitimate map, and
-    refusing to plot it would be the wrong answer for the commonest
-    non-wflow input.
+    missing column falls back to one uniform weight rather than raising.
     """
     if column is None or column not in gdf_riv.columns:
         return RIVER_WIDTH_UNIFORM
@@ -2471,6 +2669,29 @@ def _river_linewidths(gdf_riv, column=RIVER_ORDER_COLUMN):
         return np.full(order.shape, RIVER_WIDTH_UNIFORM)
     span = RIVER_WIDTH_MAX - RIVER_WIDTH_MIN
     return RIVER_WIDTH_MIN + span * (order - lowest) / (highest - lowest)
+
+
+def _river_style(gdf_riv, column=RIVER_ORDER_COLUMN):
+    """``(linewidths, colours)`` for each reach, stepped by stream order.
+
+    A river layer from outside wflow may carry no order column at all, so a
+    missing column falls back to one uniform weight and colour rather than
+    raising: a network drawn at a single width is a legitimate map.
+    """
+    columns = (column,) if isinstance(column, str) else tuple(column or ())
+    found = next((name for name in columns if name in gdf_riv.columns), None)
+    if RIVER_STYLE != "order_steps":
+        return _river_linewidths(gdf_riv, found), COLOR_RIVER
+    if found is None:
+        return RIVER_WIDTH_UNIFORM, COLOR_RIVER
+    order = gdf_riv[found].astype(float).to_numpy()
+    if not np.isfinite(order).any():
+        return RIVER_WIDTH_UNIFORM, COLOR_RIVER
+    rank = np.nan_to_num(order - np.nanmin(order), nan=0.0).astype(int)
+    rank = np.clip(rank, 0, len(RIVER_ORDER_STEPS) - 1)
+    widths = np.array([RIVER_ORDER_STEPS[r][0] for r in rank])
+    colours = [RIVER_ORDER_STEPS[r][1] for r in rank]
+    return widths, colours
 
 
 def _wrap_label(fig, text, max_width_inches, fontsize):
@@ -2670,11 +2891,16 @@ def _draw_raster(
     ``DEM_INTERPOLATION`` resamples it.
     """
     levels = _class_levels(raster, style)
-    extend = _colorbar_extend(raster, levels)
+    if COLORBAR_EXTEND_ARROWS:
+        extend = _colorbar_extend(raster, levels)
+    else:
+        # No triangular ends: values beyond the outer breaks are clipped into
+        # the end classes, so every key in a set looks alike.
+        extend = "neither"
     # BoundaryNorm wants one colour per class, PLUS one per extended end — the
     # arrow is a colour, not a decoration, so the ramp has to carry it.
     cmap = _classified_colormap(style, levels, extend)
-    norm = colors.BoundaryNorm(levels, cmap.N, extend=extend)
+    norm = colors.BoundaryNorm(levels, cmap.N, extend=extend, clip=extend == "neither")
     x_dim, y_dim = spatial_dim_names(raster)
     field = (
         _shaded_relief(raster, cmap, norm, centre_latitude) if style.relief else raster
@@ -2733,11 +2959,14 @@ def _draw_raster(
         colorbar_axes.set_title(
             label,
             fontsize=FONT_SIZE_COLORBAR_LABEL,
+            fontweight=KEY_TITLE_WEIGHT,
             pad=_COLORBAR_TITLE_PAD,
             loc="left",
         )
     else:
-        colorbar.set_label(label, fontsize=FONT_SIZE_COLORBAR_LABEL)
+        colorbar.set_label(
+            label, fontsize=FONT_SIZE_COLORBAR_LABEL, fontweight=KEY_TITLE_WEIGHT
+        )
     colorbar.outline.set_linewidth(_COLORBAR_OUTLINE_WIDTH)
     colorbar_axes.tick_params(
         labelsize=FONT_SIZE_COLORBAR_TICK, length=TICK_LENGTH, pad=TICK_PAD
@@ -2774,10 +3003,7 @@ def category_entries(raster, style):
             RuntimeWarning,
             stacklevel=2,
         )
-        listed = ", ".join(str(code) for code in unlisted)
-        entries.append(
-            (unlisted, COLOR_UNCLASSIFIED, f"{LABEL_UNCLASSIFIED} ({listed})")
-        )
+        entries.append((unlisted, COLOR_UNCLASSIFIED, LABEL_UNCLASSIFIED))
     return entries
 
 
@@ -2804,7 +3030,7 @@ def _category_handles(entries):
     ]
 
 
-def _draw_categorical_raster(ax, raster, entries):
+def _draw_categorical_raster(ax, raster, entries, alpha=1.0):
     """Paint a nominal raster from its class table — no ramp, no colourbar.
 
     The codes are remapped onto contiguous indices before drawing. Handing the
@@ -2836,6 +3062,7 @@ def _draw_categorical_raster(ax, raster, entries):
         # codes that do not exist, and the invented ones land on whatever class
         # sits between them in the index table.
         interpolation="none",
+        alpha=alpha,
         cmap=cmap,
         norm=norm,
         add_colorbar=False,
@@ -2992,7 +3219,11 @@ def _legend_handles(styles, *, rivers, basin, subbasins, outlets, gauges, waterb
 def _layer_styles():
     """The style dicts the map artists and their legend handles both use."""
     return {
-        "river": dict(color=COLOR_RIVER, linewidth=RIVER_WIDTH_MAX),
+        "river": (
+            dict(color=RIVER_ORDER_STEPS[3][1], linewidth=RIVER_ORDER_STEPS[3][0])
+            if RIVER_STYLE == "order_steps"
+            else dict(color=COLOR_RIVER, linewidth=RIVER_WIDTH_MAX)
+        ),
         "basin": dict(color=COLOR_BASIN_OUTLINE, linewidth=WIDTH_BASIN_OUTLINE),
         "divide": dict(
             color=COLOR_SUBCATCHMENT,
@@ -3002,16 +3233,37 @@ def _layer_styles():
     }
 
 
-def _add_legend(ax, handles):
+#: Legend labels wrap at this many characters, onto at most two lines, so a
+#: long class name makes the legend taller rather than wider.
+_LEGEND_WRAP = None
+
+
+def _wrap_legend_label(label):
+    import textwrap
+
+    if not _LEGEND_WRAP:
+        return label
+    lines = textwrap.wrap(label.replace("\n", " "), _LEGEND_WRAP)
+    return (
+        "\n".join([lines[0], " ".join(lines[1:])])
+        if len(lines) > 2
+        else "\n".join(lines)
+    )
+
+
+def _add_legend(ax, handles, title=_LEGEND_TITLE):
     """The legend, at its final anchor — the panel's lower-left corner.
 
     Created BEFORE the map is drawn, because its measured size is what places
     the colourbar and sizes the locator inset. Its own position depends on
     nothing else, so building it first costs nothing.
     """
+    for handle in handles:
+        handle.set_label(_wrap_legend_label(handle.get_label()))
     legend = ax.legend(
         handles=handles,
-        title=_LEGEND_TITLE,
+        title=title,
+        title_fontproperties={"weight": KEY_TITLE_WEIGHT, "size": FONT_SIZE_LEGEND},
         # Anchored by its LOWER left to the panel's floor: the legend grows
         # upward toward the colourbar, so a long one cannot run off the bottom
         # of the figure.
@@ -3019,14 +3271,15 @@ def _add_legend(ax, handles):
         bbox_to_anchor=(_PANEL_LEFT, 0.0),
         borderaxespad=0.0,
         alignment="left",
-        frameon=True,
+        frameon=_LEGEND_FRAME,
         framealpha=_LEGEND_FRAME_ALPHA,
         edgecolor=COLOR_BASIN_OUTLINE,
         facecolor="white",
         borderpad=_LEGEND_BORDER_PAD,
         handlelength=_LEGEND_HANDLE_LENGTH,
     )
-    legend.get_frame().set_linewidth(_LEGEND_FRAME_WIDTH)
+    if _LEGEND_FRAME:
+        legend.get_frame().set_linewidth(_LEGEND_FRAME_WIDTH)
     # The panel's room is reserved by the layout engine's ``rect``, so letting
     # the engine also see the legend costs the map size.
     legend.set_in_layout(False)
@@ -3104,7 +3357,125 @@ def _absorb_right_margin(fig, panel_items, passes=6):
         fig.draw_without_rendering()
 
 
-def plot_raster_map(
+def _measure_key_inches(style, categories):
+    """``(width, height)`` in inches of the on-map key, without the bar itself.
+
+    Rendered once in a throwaway figure with the publication fonts, so the
+    corner it is placed in is tested against its real size. For a colourbar the
+    bar's own length is added by the caller, since it scales with the map.
+    """
+    with rc_context(_publication_rc()):
+        scratch = plt.figure(figsize=(4, 4))
+        try:
+            ax = scratch.add_subplot()
+            if categories:
+                artist = _add_legend(
+                    ax, list(_category_handles(categories)), style.label
+                )
+                artist.set_loc("upper left")
+            else:
+                label = _wrap_label(
+                    scratch, style.label, _KEY_WRAP_IN, FONT_SIZE_COLORBAR_LABEL
+                )
+                artist = ax.text(0, 0, label, fontsize=FONT_SIZE_COLORBAR_LABEL)
+            scratch.draw_without_rendering()
+            bbox = artist.get_window_extent(scratch.canvas.get_renderer())
+            width, height = bbox.width / scratch.dpi, bbox.height / scratch.dpi
+        finally:
+            plt.close(scratch)
+    if categories:
+        return width, height
+    bar_in = _KEY_BAR_WIDTH * _map_width_inches() + _KEY_TICK_LABEL_IN
+    return max(width, bar_in), height + _COLORBAR_TITLE_PAD / 72.0
+
+
+#: Named style profiles: module settings a figure family opts into for one
+#: call (``plot_raster_map(..., profile="spatial")``). The module defaults are
+#: what every other figure draws with, so a profile changes only its callers.
+PROFILES = {
+    #: Rule 1.11's spatial map set (the elevation map and the thematic maps).
+    "spatial": {
+        "_FURNITURE_AVOIDS_BASIN": True,
+        "_SCALE_BAR_PREFERENCE": ("lower left", "lower right"),
+        "_LOCATOR_PLACEMENT": "map",
+        "_LOCATOR_WIDTH": 0.32,
+        "_LOCATOR_MIN_WIDTH": 0.28,
+        "_LOCATOR_MARGIN": 0.0,
+        "_LOCATOR_TARGET_BASIN_FRACTION": 0.12,
+        "_LOCATOR_SPAN_LADDER": (3.0, 4.0, 5.0, 6.0, 8.0, 10.0, 12.0, 15.0, 20.0),
+        "_LOCATOR_CITY_MAX_SCALERANK": 4,
+        "_LOCATOR_MAX_CITIES": 8,
+        "_LOCATOR_FIT_CITIES": True,
+        "LOCATOR_MARK": "extent_box",
+        "_COLORBAR_HEIGHT": 0.40,
+        "_COLORBAR_ANCHOR": "bottom",
+        "COLORBAR_EXTEND_ARROWS": False,
+        "KEY_TITLE_WEIGHT": "bold",
+        "_LEGEND_FRAME": False,
+        "_LEGEND_WRAP": 22,
+        "RIVER_STYLE": "order_steps",
+        "RIVER_ORDER_COLUMN": ("strord", "order"),
+        "COLOR_GAUGE": "#6a3d9a",
+        "MARKER_SHAPE_GAUGE": "D",
+    },
+}
+
+
+class _Overrides:
+    """Temporarily rebind module constants (fonts, layout) for one figure."""
+
+    def __init__(self, **values):
+        self.values = values
+        self.saved = {}
+
+    def __enter__(self):
+        module = globals()
+        for name, value in self.values.items():
+            self.saved[name] = module[name]
+            module[name] = value
+
+    def __exit__(self, *exc):
+        globals().update(self.saved)
+
+
+def plot_raster_map(*args, profile=None, key_on_map=False, **kwargs):
+    """Draw a raster map; see :func:`_plot_raster_map` for the arguments.
+
+    ``profile`` names an entry of ``PROFILES`` applied for this call only.
+    ``key_on_map`` drops the side panel (the map takes its width), scales text
+    by the map-width ratio, shrinks the key by ``_KEY_SCALE``, and places the
+    colourbar or class legend in the first clear upper corner of the map.
+    """
+    if profile is not None:
+        with _Overrides(**PROFILES[profile]):
+            return plot_raster_map(*args, key_on_map=key_on_map, **kwargs)
+    if not key_on_map:
+        return _plot_raster_map(*args, **kwargs)
+    # Same published width, but the map no longer shares it with a side panel,
+    # so it is ~1.3x larger. Scale every text size by that ratio so text reads
+    # at the same size relative to the map as on the side-panel figures.
+    page_in = FIGURE_WIDTH_MM / MM_PER_INCH
+    text = (page_in * (1.0 - _RIGHT_MARGIN) - _TICK_LABEL_WIDTH_IN) / (
+        page_in * _LAYOUT_RIGHT - _TICK_LABEL_WIDTH_IN
+    )
+    key = text * _KEY_SCALE
+    with _Overrides(
+        _LAYOUT_RIGHT=1.0 - _RIGHT_MARGIN,
+        FONT_SIZE_BASE=FONT_SIZE_BASE * text,
+        FONT_SIZE_TICK=FONT_SIZE_TICK * text,
+        FONT_SIZE_GAUGE_LABEL=FONT_SIZE_GAUGE_LABEL * text,
+        FONT_SIZE_SCALE_BAR=FONT_SIZE_SCALE_BAR * text,
+        FONT_SIZE_NORTH_ARROW=FONT_SIZE_NORTH_ARROW * text,
+        FONT_SIZE_LOCATOR_CITY=FONT_SIZE_LOCATOR_CITY * text,
+        FONT_SIZE_CAVEAT=FONT_SIZE_CAVEAT * text,
+        FONT_SIZE_LEGEND=FONT_SIZE_LEGEND * key,
+        FONT_SIZE_COLORBAR_LABEL=FONT_SIZE_COLORBAR_LABEL * key,
+        FONT_SIZE_COLORBAR_TICK=FONT_SIZE_COLORBAR_TICK * key,
+    ):
+        return _plot_raster_map(*args, key_on_map=True, **kwargs)
+
+
+def _plot_raster_map(
     raster,
     rivers=None,
     basin=None,
@@ -3117,7 +3488,10 @@ def plot_raster_map(
     glaciers=None,
     extent=None,
     gauge_label_column=GAUGE_LABEL_COLUMN,
-    river_order_column=RIVER_ORDER_COLUMN,
+    river_order_column=None,
+    locator=True,
+    key_on_map=False,
+    show_key=True,
     style=None,
     title=None,
     caveat=None,
@@ -3183,12 +3557,10 @@ def plot_raster_map(
         legend entries. The layers are drawn either way; this governs only
         whether they are explained.
 
-        ``False`` is for a SET of figures over one basin, where the overlay is
-        identical on every sheet and one figure in the set already carries the
-        key. Repeating four entries on thirteen maps costs panel height that a
-        land-cover legend needs and teaches the reader nothing after the first
-        sheet. A raster's own classes are never suppressed by this — they are
-        the figure's subject, not its furniture.
+        ``False`` is for a figure whose overlay styling needs no key, as in the
+        spatial map set, where the panel height goes to the colourbar instead.
+        A raster's own classes are never suppressed by this; they are the
+        figure's subject, not its furniture.
 
     Returns
     -------
@@ -3228,12 +3600,44 @@ def plot_raster_map(
         # An extent the CALLER chose can be far smaller than the raster — the
         # source-grid climate framed on the basin is. Classify what is shown.
         raster = _raster_within(raster, extent)
+    # The scale bar is placed BEFORE the figure is sized: its fallback extends
+    # the extent, and the extent sets the figure's aspect.
+    # Gauges count as obstacles too: an outlet gauge can sit just outside the
+    # basin polygon, and its label with it.
+    bar_subject = basin if _present(basin) else _extent_frame(extent)
+    obstacles = bar_subject.union_all()
+    if _present(gauges):
+        obstacles = obstacles.union(gauges.union_all())
+    key_categories = (
+        category_entries(raster, style)
+        if key_on_map and show_key and style.categories
+        else []
+    )
+    key_size_in = None
+    if key_on_map and show_key:
+        key_size_in = _measure_key_inches(style, key_categories)
+        if not key_categories:
+            # The bar's length scales with the map; take it at the unpadded
+            # extent, which is what the corner test sees first.
+            key_size_in = (
+                key_size_in[0],
+                key_size_in[1] + _KEY_BAR_HEIGHT * _map_height_inches(extent),
+            )
+    locator_box, locator_corner, bar_corner, extent, notes = place_furniture(
+        obstacles,
+        extent,
+        locator=locator and key_size_in is None,
+        key_size_in=key_size_in,
+    )
+    for note in dict.fromkeys(notes):
+        print(f"note: {note}")
     proj = ccrs.PlateCarree()
     centre_latitude = 0.5 * float(extent[2] + extent[3])
 
     with rc_context(_publication_rc()):
         fig = plt.figure(figsize=_figure_size(extent), layout="constrained")
         fig.get_layout_engine().set(rect=(0.0, 0.0, _LAYOUT_RIGHT, 1.0))
+        key_box = locator_box if key_size_in is not None else None
         ax = fig.add_subplot(projection=proj)
         ax.set_extent(extent, crs=proj)
 
@@ -3257,7 +3661,7 @@ def plot_raster_map(
         # against. Nine land-cover classes make a legend twice the height of the
         # vector-only one, and the layout has to see that.
         categories = category_entries(raster, style) if style.categories else []
-        handles = list(_category_handles(categories))
+        handles = list(_category_handles(categories)) if show_key else []
         if vector_legend:
             handles += _legend_handles(
                 styles,
@@ -3272,7 +3676,17 @@ def plot_raster_map(
         # suppressed — means NO legend, not an empty one. matplotlib draws the
         # frame and the title for a legend with nothing in it, so the panel
         # would carry a blank box under the colourbar.
-        legend = _add_legend(ax, handles) if handles else None
+        # A nominal raster's legend is ITS key, titled with the quantity;
+        # otherwise the legend explains the overlay linework.
+        legend_title = style.label if categories else _LEGEND_TITLE
+        legend = _add_legend(ax, handles, legend_title) if handles else None
+        if legend is not None and key_box is not None:
+            right = locator_corner.endswith("right")
+            legend.set_loc("upper right" if right else "upper left")
+            legend.set_bbox_to_anchor(
+                (key_box[0] + (key_box[2] if right else 0.0), key_box[1] + key_box[3]),
+                transform=ax.transAxes,
+            )
 
         measured = _measure_legend(fig, legend, extent) if legend else (0.0, 0.0)
         if measured is None:
@@ -3291,13 +3705,25 @@ def plot_raster_map(
         )
         label_lines = wrapped_label.count("\n") + 1
         layout = _panel_layout(extent, label_lines, measured)
+        if key_box is not None:
+            # The bar sits at the key box's left edge, under its title.
+            bar_height = _KEY_BAR_HEIGHT
+            layout["colorbar"] = (
+                key_box[0],
+                key_box[1],
+                _KEY_BAR_WIDTH,
+                bar_height,
+            )
+            panel_width_in = _KEY_WRAP_IN
 
         # --- the raster ------------------------------------------------------
         # Two encodings, one figure. A nominal raster took its whole legend
         # above and needs no colourbar; everything else takes the classified
         # ramp and the side panel's bar.
         if categories:
-            _draw_categorical_raster(ax, raster, categories)
+            _draw_categorical_raster(
+                ax, raster, categories, alpha=getattr(style, "alpha", 1.0)
+            )
         else:
             _draw_raster(
                 fig,
@@ -3312,12 +3738,32 @@ def plot_raster_map(
 
         # --- hydrography ------------------------------------------------------
         if _present(rivers):
-            rivers.plot(
-                ax=ax,
-                linewidth=_river_linewidths(rivers, river_order_column),
-                color=COLOR_RIVER,
-                zorder=Z_RIVER,
+            # The order column is resolved here, not in the signature, so a
+            # profile's RIVER_ORDER_COLUMN applies.
+            widths, colours = _river_style(
+                rivers,
+                RIVER_ORDER_COLUMN
+                if river_order_column is None
+                else river_order_column,
             )
+            if RIVER_STYLE == "order_steps" and np.ndim(widths):
+                # Thin reaches first, so a trunk is never overdrawn by a
+                # tributary; round caps and joins hide the seam wide reaches
+                # built from short segments show at every vertex.
+                draw_order = np.argsort(widths, kind="stable")
+                rivers = rivers.iloc[draw_order]
+                widths = widths[draw_order]
+                colours = [colours[k] for k in draw_order]
+                rivers.plot(
+                    ax=ax,
+                    linewidth=widths,
+                    color=colours,
+                    capstyle="round",
+                    joinstyle="round",
+                    zorder=Z_RIVER,
+                )
+            else:
+                rivers.plot(ax=ax, linewidth=widths, color=colours, zorder=Z_RIVER)
         # Subcatchment divides first and lighter, then the outline over them, so
         # the two are never confusable at the same weight.
         if _present(subbasins):
@@ -3347,37 +3793,22 @@ def plot_raster_map(
         _draw_waterbodies(ax, waterbodies)
 
         # --- cartographic furniture -------------------------------------------
-        # The legend sits in the side panel, so it no longer competes for a map
-        # corner. The scale bar is placed against the basin's ACTUAL footprint,
-        # so it does not land on a basin that reaches into a bottom corner.
-        # Every vector layer is optional — the raster alone is a map. Without a
-        # basin the locator falls back to the raster's own extent, and the
-        # corner budget to the extent box, so the furniture still places.
+        # Furniture corners were settled before the figure was sized (see
+        # ``place_furniture``). Without a basin the locator falls back to the
+        # raster's own extent.
         subject = basin if _present(basin) else _extent_frame(extent)
-        footprint = subject.union_all()
-        # Corners are budgeted in one place, in priority order: the arrow's is
-        # fixed, then the locator's, then the bar's. Each of the three may be
-        # pinned to a named corner or left on "auto", in which case it takes the
-        # emptiest corner none of its predecessors claimed. Pinned by default
-        # now — furniture that moves between two basins of one study is harder
-        # to compare than furniture that occasionally sits on a river.
-        locator_corner = _locator_corner(footprint, extent)
-        bar_corner = (
-            _SCALE_BAR_CORNER
-            if _SCALE_BAR_CORNER != "auto"
-            else _scale_bar_corner(
-                footprint, extent, {_NORTH_ARROW_CORNER, locator_corner}
-            )
-        )
         _add_graticule(ax, extent)
         _add_scale_bar(ax, extent, bar_corner)
-        _add_north_arrow(ax)
+        _add_north_arrow(ax, locator_corner)
+        if key_size_in is not None:
+            # The key took the corner; there is no inset on this figure.
+            locator_corner = None
         # Sized to the legend's measured width, so the panel's top and bottom
         # blocks share a right edge as well as a left one.
         # Kept, not discarded: it is the panel's widest item, so it is what the
         # source footnote is right-aligned to.
         locator_axes = _add_locator_inset(
-            ax, extent, subject, locator_corner, layout["locator"]
+            ax, extent, subject, locator_corner, layout["locator"] or locator_box
         )
         ax.set_title("")
         # Title and footnote go through the FIGURE-level artists that
@@ -3410,7 +3841,8 @@ def plot_raster_map(
         # The locator and the legend, which are the panel's WIDEST items. The
         # colourbar is narrower and sits between them, so it cannot set the
         # right edge -- and it is local to `_draw_raster` anyway.
-        _absorb_right_margin(fig, (locator_axes, legend))
+        if not key_on_map:
+            _absorb_right_margin(fig, (locator_axes, legend))
         # Flush to the MAP AXES' left edge, not the sheet's -- one rule for
         # every figure family (`plot_style.align_caveat_to_plot_area`).
         align_caveat_to_plot_area(fig, ax)

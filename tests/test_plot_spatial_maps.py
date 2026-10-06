@@ -79,12 +79,13 @@ def test_declared_order_is_kept_not_the_order_the_codes_appear_in():
 def test_an_undeclared_code_is_drawn_and_warned_about_never_dropped():
     """Dropping it would render real ground transparent -- i.e. as nodata."""
     style = RasterStyle(label="x", palette=None, categories=_THREE_CLASSES)
-    with pytest.warns(RuntimeWarning, match="does not declare"):
+    # The codes are named in the warning; the legend label stays short.
+    with pytest.warns(RuntimeWarning, match=r"does not declare: \[99\]"):
         entries = category_entries(_codes([10, 10, 99, 99]), style)
     codes, colour, label = entries[-1]
     assert codes == (99,)
     assert colour == COLOR_UNCLASSIFIED
-    assert LABEL_UNCLASSIFIED in label and "99" in label
+    assert label == LABEL_UNCLASSIFIED
 
 
 def test_several_undeclared_codes_collapse_into_one_legend_entry():

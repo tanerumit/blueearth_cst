@@ -266,6 +266,9 @@ def plot_basin_map_from_spatial(spatial_dir, plot_dir=None):
         subbasins=layers.get("subbasins"),
         gauges=layers.get("gauges"),
         caveat=source_caveat(elevation),
+        # The rule 1.11 style, shared with the thematic maps in this folder.
+        profile="spatial",
+        vector_legend=False,
     )
     # PNG only since 2026-08-10 (owner's call). The PDF was the vector,
     # embedded-font deliverable and nothing in the toolbox or the platform read

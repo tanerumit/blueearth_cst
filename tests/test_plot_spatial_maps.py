@@ -410,12 +410,20 @@ def test_subbasin_classes_are_derived_from_the_raster_not_declared():
     ]
 
 
-def test_subbasin_colours_cycle_rather_than_run_out():
-    """A 30-subbasin project still renders; the divides keep them apart."""
-    codes = list(range(101, 101 + len(family._QUALITATIVE_COLORS) + 2))
+def test_subbasin_colours_reuse_rather_than_run_out():
+    """More subbasins than palette colours still renders, every unit coloured."""
+    codes = list(range(101, 101 + len(family.SUBBASIN_COLORS) + 2))
     classes = family.subbasin_classes(_codes(codes, nx=1))
     assert len(classes) == len(codes)
-    assert classes[0][1] == classes[len(family._QUALITATIVE_COLORS)][1]
+    assert {colour for _, colour, _ in classes} <= set(family.SUBBASIN_COLORS)
+
+
+def test_touching_subbasins_never_share_a_colour():
+    """A row of units: each touches its neighbours, so adjacent colours differ."""
+    codes = list(range(101, 101 + 3 * len(family.SUBBASIN_COLORS)))
+    classes = family.subbasin_classes(_codes(codes, nx=1))
+    colour = {code: c for code, c, _ in classes}
+    assert all(colour[a] != colour[b] for a, b in zip(codes, codes[1:]))
 
 
 def test_an_unknown_variable_is_refused_rather_than_drawn_on_a_default_ramp(tmp_path):

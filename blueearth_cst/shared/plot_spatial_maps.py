@@ -241,19 +241,27 @@ def land_cover_classes(layer):
     return ((-1, "#000000", None),)
 
 
-#: Okabe-Ito, the qualitative set designed to stay separable under all three
-#: dichromacies (Okabe & Ito 2008). Used for NOMINAL identifiers — subbasins —
-#: where the numbering carries no order and a sequential ramp would invent one.
-#: Black is left out: it is the basin outline's colour on every figure here.
-_QUALITATIVE_COLORS = (
-    "#e69f00",
-    "#56b4e9",
-    "#009e73",
-    "#f0e442",
-    "#0072b2",
-    "#d55e00",
-    "#cc79a7",
+#: Legend titles for the nominal figures, by figure stem.
+LEGEND_TITLES = {"land_cover": "Land cover", "subbasin_delineation": "Subbasins"}
+
+#: Subbasin fills: ColorBrewer Set3 without its grey, a light qualitative set
+#: that keeps rivers and divides readable over it, drawn at ``SUBBASIN_ALPHA``.
+#: Colours are assigned so touching subbasins never share one
+#: (``_neighbour_aware_colours``).
+SUBBASIN_COLORS = (
+    "#8dd3c7",
+    "#ffffb3",
+    "#bebada",
+    "#fb8072",
+    "#80b1d3",
+    "#fdb462",
+    "#b3de69",
+    "#fccde5",
+    "#bc80bd",
+    "#ccebc5",
+    "#ffed6f",
 )
+SUBBASIN_ALPHA = 0.6
 
 #: How many subbasins still get a legend entry each. The side panel is about
 #: 40 mm wide and its legend is anchored at the map's floor and grows upward, so
@@ -291,14 +299,39 @@ def subbasin_classes(raster):
             f"note: {len(codes)} subbasins is more than a legend can carry; "
             "drawing the delineation without a class key"
         )
+    colour_of = _neighbour_aware_colours(values, codes, SUBBASIN_COLORS)
     return tuple(
-        (
-            code,
-            _QUALITATIVE_COLORS[index % len(_QUALITATIVE_COLORS)],
-            f"Subbasin {code}" if labelled else None,
-        )
-        for index, code in enumerate(codes)
+        (code, colour_of[code], f"Subbasin {code}" if labelled else None)
+        for code in codes
     )
+
+
+def _neighbour_aware_colours(values, codes, palette):
+    """``{code: colour}`` so that no two touching units share a colour.
+
+    Adjacency is read off the raster (cells sharing an edge). Units are coloured
+    greedily, most-connected first, each taking the least-used palette colour
+    none of its neighbours holds; the fallback (reuse the least-used colour)
+    only fires for a unit touching more units than the palette has colours.
+    """
+    import numpy as np
+
+    neighbours = {code: set() for code in codes}
+    for a, b in ((values[:, :-1], values[:, 1:]), (values[:-1, :], values[1:, :])):
+        mask = np.isfinite(a) & np.isfinite(b) & (a != b)
+        for x, y in set(zip(a[mask].astype(int), b[mask].astype(int))):
+            if x in neighbours and y in neighbours:
+                neighbours[x].add(y)
+                neighbours[y].add(x)
+    used = dict.fromkeys(palette, 0)
+    colour_of = {}
+    for code in sorted(codes, key=lambda c: (-len(neighbours[c]), c)):
+        taken = {colour_of[n] for n in neighbours[code] if n in colour_of}
+        free = [c for c in palette if c not in taken] or list(palette)
+        choice = min(free, key=lambda c: (used[c], palette.index(c)))
+        colour_of[code] = choice
+        used[choice] += 1
+    return colour_of
 
 
 # ---------------------------------------------------------------------------
@@ -316,7 +349,10 @@ def subbasin_classes(raster):
 
 #: Vegetation density. Green is the one hue a reader will not misread here.
 LEAF_AREA_INDEX_STYLE = RasterStyle(
-    label="Leaf area index (m$^2$ m$^{-2}$)",
+    label="Mean leaf area index (m$^2$ m$^{-2}$)",
+    # Fixed 1-unit classes, 0-6: LAI has a physical scale (bare ground ~0, dense
+    # tropical forest ~6), so equal steps read the same on every basin.
+    levels=(0, 1, 2, 3, 4, 5, 6),
     palette="YlGn",
     zero_baseline=True,
 )
@@ -756,7 +792,13 @@ def plot_spatial_maps(
             # The label is unused on a nominal figure — there is no colourbar to
             # put it on — but it is what ``check_geographic_inputs`` names when
             # the units disagree, so it stays the quantity rather than empty.
-            style = RasterStyle(label=figure.stem, palette=None, categories=classes)
+            style = RasterStyle(
+                label=LEGEND_TITLES.get(figure.stem, figure.stem),
+                palette=None,
+                categories=classes,
+            )
+            if figure.stem == "subbasin_delineation":
+                style.alpha = SUBBASIN_ALPHA
 
         fig, _ = plot_raster_map(
             layer,
@@ -771,11 +813,16 @@ def plot_spatial_maps(
             # a catalog change cannot leave a figure crediting the wrong product.
             caveat=source_caveat(layer),
             # No title: the filename names the figure (see SpatialFigure.stem).
-            # No overlay key either — the layers are still DRAWN, tying the set
-            # to one basin, but ``basin_area`` in this same folder carries the
-            # legend that explains them, and repeating four entries on ten maps
-            # spends the panel height a land-cover legend needs.
+            # No overlay key: the layers are still DRAWN, tying the set to one
+            # basin, and their styling reads without one.
             vector_legend=False,
+            # The rule 1.11 style (cartographic_map.PROFILES["spatial"]). Every
+            # family map takes the full-width layout; subbasins show no key and
+            # keep the locator, the thematic maps carry their key in a corner.
+            profile="spatial",
+            key_on_map=True,
+            show_key=figure.stem != "subbasin_delineation",
+            locator=figure.stem == "subbasin_delineation",
         )
         for extension in formats:
             path = os.path.join(str(plot_dir), f"{figure.stem}.{extension}")

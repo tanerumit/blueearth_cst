@@ -350,12 +350,12 @@ _RULE_WIDTH = 80
 _RULE = "=" * _RULE_WIDTH
 
 #: The sequence rail: a node per workflow threaded on a vertical line. Filled
-#: for a workflow this run will invoke, hollow for one it will not, so the
-#: distinction is legible before any of the text is read. Three characters,
+#: for a workflow that has completed, hollow for one that is not done (yet, or
+#: at all), so the state is legible before any of the text is read. Three characters,
 #: deliberately -- the rail replaced a framed box per workflow, which spent
 #: three lines and forty columns to say what a node says in one.
-_NODE_ON = "●"  # ● -- will be invoked
-_NODE_OFF = "○"  # ○ -- disabled, shown in place
+_NODE_ON = "●"  # ● -- completed
+_NODE_OFF = "○"  # ○ -- not done: pending, failed or disabled
 _RAIL = "│"  # │ -- the thread between them
 
 
@@ -487,6 +487,9 @@ def _console_block(
     lines = _banner(head)
     for label, rows in groups:
         lines.extend(["", f"  {label}"])
+        if rows and not any(isinstance(row, tuple) for row in rows):
+            # A diagram, not key/value rows: a blank line parts it from its label.
+            lines.append("")
         for row in rows:
             if isinstance(row, tuple):
                 key, value = row
@@ -498,7 +501,9 @@ def _console_block(
     return "\n".join(lines)
 
 
-def _sequence_lines(flags: Mapping[str, bool]) -> list[str]:
+def _sequence_lines(
+    flags: Mapping[str, bool], done: frozenset[str] = frozenset()
+) -> list[str]:
     """The enabled/disabled pipeline as a rail of nodes, in WORKFLOW_ORDER.
 
     Every workflow appears, enabled or not, because the question this answers is
@@ -512,8 +517,9 @@ def _sequence_lines(flags: Mapping[str, bool]) -> list[str]:
     point and which the bare list before them failed at -- but they drew it at
     three lines and forty columns per workflow, and at five workflows the frame
     was most of the ink. A node on a line says the same three things in one
-    character each: `●` that this is a step, filled against hollow that this one
-    runs, and the `│` between them that they are ordered. The box width was also
+    character each: `●` that this is a step, filled against hollow that it has
+    completed (`done`; the opening block passes none, since nothing has run),
+    and the `│` between them that they are ordered. The box width was also
     set by whichever DISABLED row was longest, so a run that skipped nothing
     still paid for the widest `(disabled, not invoked)` label the config could
     produce.
@@ -535,7 +541,8 @@ def _sequence_lines(flags: Mapping[str, bool]) -> list[str]:
         if flags[name]:
             position += 1
             mark = f"[{position}/{total}]".ljust(mark_width)
-            lines.append(f"{_NODE_ON}  {mark}  {_label(name)}")
+            node = _NODE_ON if name in done else _NODE_OFF
+            lines.append(f"{node}  {mark}  {_label(name)}")
         else:
             mark = "-".center(mark_width)
             lines.append(f"{_NODE_OFF}  {mark}  {_label(name)}  disabled")

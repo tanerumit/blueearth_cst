@@ -570,8 +570,10 @@ def test_the_sequence_is_drawn_as_a_rail_of_nodes(tmp_path, capture_runs, capsys
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
     lines = [line.strip() for line in out.splitlines()]
 
+    # Nothing has run when the opening block prints, so every node is hollow.
     enabled = lines.index(next(ln for ln in lines if "[1/4]  wf0" in ln))
-    assert lines[enabled].startswith(rw._NODE_ON)
+    assert lines[enabled].startswith(rw._NODE_OFF)
+    assert lines[lines.index("sequence") + 1] == ""
 
     disabled = lines.index(next(ln for ln in lines if "wf2 analyze_projections" in ln))
     assert lines[disabled].startswith(rw._NODE_OFF)
@@ -971,7 +973,6 @@ def test_the_console_is_ascii_but_for_the_three_rail_glyphs(
     _, out, _ = _run_and_capture(tmp_path, capsys, flags)
     out.encode("utf-8")
     assert set(out) - set(map(chr, range(128))) == {
-        rw._NODE_ON,
         rw._NODE_OFF,
         rw._RAIL,
     }

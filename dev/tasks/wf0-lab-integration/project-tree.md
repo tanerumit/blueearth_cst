@@ -4,6 +4,10 @@ Status: Gate 1 proposal, 2026-10-06. Implementation has not started.
 Only changing folders and files are shown. The governing contract is
 [design.md](design.md), decisions D1–D6.
 
+This is the task's maintained layout view. Update it alongside every design or
+implementation revision affecting paths, names, formats, counts or conditional
+outputs; keep proposed and implemented paths explicitly distinguished.
+
 `[new]` and `[edit]` below describe the proposed implementation. `[present]`
 identifies the design artifacts already created on the task branch. Proposed
 test filenames are implementation planning names, not existing files.
@@ -73,7 +77,7 @@ store specification; it is not constructed by the new diagnostic code.
             │       ├── tables/       shared table set detailed below
             │       │   └── daily_basin.csv    source-only addition to shared set
             │       └── figures/      source figure set detailed below
-            │           └── captioned/        optional PNG/PDF copies
+            │           └── captioned/        optional PNG copies
             └── comparison/           multisource runs only
                 └── diagnostics/      [new] comparison diagnostics root D_c
                     ├── diagnostics.json
@@ -83,7 +87,7 @@ store specification; it is not constructed by the new diagnostic code.
                     │   ├── agreement.csv     comparison-only addition
                     │   └── agreement.md      comparison-only addition
                     └── figures/      comparison figure set detailed below
-                        └── captioned/        optional PNG/PDF copies
+                        └── captioned/        optional PNG copies
 ```
 
 ### Shared table subtree
@@ -117,44 +121,59 @@ roots additionally contain `agreement.csv` and `agreement.md`.
 
 Unavailable table products retain their headers and have reasons in metadata.
 
+### User-facing changes in this revision
+
+- New diagnostic figures use PNG only, including optional captioned copies.
+  No PDF files are created by the proposed diagnostic rules.
+- Proposed contexts are shortened: `monthly_coverage`, `annual_timing`,
+  `monthly_anomaly`, `monthly_spi`, `spi_events`, `dry_spell_exceedance`,
+  `seasonal_anomaly`, `monthly_spi_fit`, and `annual_trend_sensitivity`.
+- The four-field grammar, canonical variables, `comparison` token and
+  `basin_avg` scope are retained. Contexts identify the diagnostic; their
+  registered definitions, titles and captions specify the visual form. This
+  revises the requirement to include plot form in every context for the new
+  family and requires a controlled-vocabulary documentation update.
+- These are proposed new outputs, so no existing figure paths are renamed and
+  no migration is required. Existing producers retain their output contracts.
+
 ### Figure subtree
 
-Every `{png,pdf}` entry represents two explicitly declared files. `<dataset>`
+Every `.png` entry represents one explicitly declared file. `<dataset>`
 is the source ID for a source figure and `comparison` for a multisource figure.
 Each optional captioned copy uses the identical basename under `captioned/`.
 
 ```text
 <diagnostics-root>/
 └── figures/
-    ├── <dataset>_precip_monthly_coverage_calendar_basin_avg.{png,pdf}
-    ├── <dataset>_precip_monthly_clim_band_basin_avg.{png,pdf}
-    ├── <dataset>_temp_monthly_clim_band_basin_avg.{png,pdf}             conditional
-    ├── <dataset>_precip_annual_timing_interval_basin_avg.{png,pdf}
-    ├── <dataset>_precip_monthly_anomaly_calendar_basin_avg.{png,pdf}
-    ├── <dataset>_precip_monthly_spi_calendar_basin_avg.{png,pdf}
-    ├── <dataset>_precip_spi_drought_event_scatter_basin_avg.{png,pdf}
-    ├── <dataset>_precip_annual_rx1day_ts_basin_avg.{png,pdf}
-    ├── <dataset>_precip_annual_rx5day_ts_basin_avg.{png,pdf}
-    ├── <dataset>_precip_annual_sdii_ts_basin_avg.{png,pdf}
-    ├── <dataset>_precip_annual_wet_days_ts_basin_avg.{png,pdf}
-    ├── <dataset>_precip_daily_dry_spell_exceedance_basin_avg.{png,pdf}
-    ├── <dataset>_precip_monthly_anomaly_acf_basin_avg.{png,pdf}
-    ├── <dataset>_precip_annual_trend_interval_basin_avg.{png,pdf}
-    ├── <dataset>_precip_annual_trend_ts_basin_avg.{png,pdf}
-    ├── <dataset>_precip_temp_seasonal_anomaly_scatter_basin_avg.{png,pdf} conditional
-    ├── <dataset>_precip_monthly_spi_fit_heatmap_basin_avg.{png,pdf}
-    ├── <dataset>_precip_annual_trend_start_year_line_basin_avg.{png,pdf}
+    ├── <dataset>_precip_monthly_coverage_basin_avg.png
+    ├── <dataset>_precip_monthly_clim_band_basin_avg.png
+    ├── <dataset>_temp_monthly_clim_band_basin_avg.png             conditional
+    ├── <dataset>_precip_annual_timing_basin_avg.png
+    ├── <dataset>_precip_monthly_anomaly_basin_avg.png
+    ├── <dataset>_precip_monthly_spi_basin_avg.png
+    ├── <dataset>_precip_spi_events_basin_avg.png
+    ├── <dataset>_precip_annual_rx1day_ts_basin_avg.png
+    ├── <dataset>_precip_annual_rx5day_ts_basin_avg.png
+    ├── <dataset>_precip_annual_sdii_ts_basin_avg.png
+    ├── <dataset>_precip_annual_wet_days_ts_basin_avg.png
+    ├── <dataset>_precip_dry_spell_exceedance_basin_avg.png
+    ├── <dataset>_precip_monthly_anomaly_acf_basin_avg.png
+    ├── <dataset>_precip_annual_trend_interval_basin_avg.png
+    ├── <dataset>_precip_annual_trend_ts_basin_avg.png
+    ├── <dataset>_precip_temp_seasonal_anomaly_basin_avg.png conditional
+    ├── <dataset>_precip_monthly_spi_fit_basin_avg.png
+    ├── <dataset>_precip_annual_trend_sensitivity_basin_avg.png
     └── captioned/                    optional; mirrors the selected basenames above
 ```
 
 For ERA5 + CHIRPS, the new figure sets are:
 
-| Root | Forms | PNG/PDF files | Temperature behavior |
+| Root | Forms | PNG files | Temperature behavior |
 |---|---:|---:|---|
-| ERA5 source | 18 | 36 | Own temperature and own P–T |
-| CHIRPS source | 16 | 32 | No temperature or own P–T figure |
-| Comparison | 17 | 34 | No single-carrier temperature comparison; explicit P–T pairs use ERA5 temperature |
-| Total | 51 | 102 | Optional captioned copies add another 102 files |
+| ERA5 source | 18 | 18 | Own temperature and own P–T |
+| CHIRPS source | 16 | 16 | No temperature or own P–T figure |
+| Comparison | 17 | 17 | No single-carrier temperature comparison; explicit P–T pairs use ERA5 temperature |
+| Total | 51 | 51 | Optional captioned copies add another 51 files |
 
 A single-source run creates only its source diagnostic subtree. Runtime data
 insufficiency produces labelled unavailable panels for declared figures.

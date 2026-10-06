@@ -156,26 +156,26 @@ The variable tokens remain `precip`, `temp`, and combined `precip_temp`.
 
 Every row below adds a new diagnostic view. **None is an existing exact
 equivalent.** Rows 2, 3 and 15 retain the related old view alongside the new one.
-Each name shown as `.png` also has a declared `.pdf` twin.
+New diagnostic figures are PNG-only; no PDF twins are declared.
 
 | # | Lab accepted form | Existing 0.04 / 0.05 relationship | New comparison basename / source behavior | Input table |
 |---|---|---|---|---|
-| 1 | coverage | absent | `comparison_precip_monthly_coverage_calendar_basin_avg.png`; also S | coverage |
+| 1 | coverage | absent | `comparison_precip_monthly_coverage_basin_avg.png`; also S | coverage |
 | 2 | seasonal | monthly boxes / mean-only line; no equivalent band | `comparison_precip_monthly_clim_band_basin_avg.png`; also S | precip_climatology |
 | 3 | temperature | temp boxes; comparison unavailable for ERA5/CHIRPS | `S_temp_monthly_clim_band_basin_avg.png`; only genuine temp carriers | temp_climatology |
-| 4 | timing | absent | `comparison_precip_annual_timing_interval_basin_avg.png`; also S | rainfall_timing |
-| 5 | anomaly | absent | `comparison_precip_monthly_anomaly_calendar_basin_avg.png`; also S | monthly_values |
-| 6 | spi | absent | `comparison_precip_monthly_spi_calendar_basin_avg.png`; also S | spi |
-| 7 | drought-events | absent | `comparison_precip_spi_drought_event_scatter_basin_avg.png`; also S | drought_events |
+| 4 | timing | absent | `comparison_precip_annual_timing_basin_avg.png`; also S | rainfall_timing |
+| 5 | anomaly | absent | `comparison_precip_monthly_anomaly_basin_avg.png`; also S | monthly_values |
+| 6 | spi | absent | `comparison_precip_monthly_spi_basin_avg.png`; also S | spi |
+| 7 | drought-events | absent | `comparison_precip_spi_events_basin_avg.png`; also S | drought_events |
 | 8 | extreme-Rx1day | absent | `comparison_precip_annual_rx1day_ts_basin_avg.png`; also S | annual_indices |
 | 9 | extreme-Rx5day | absent | `comparison_precip_annual_rx5day_ts_basin_avg.png`; also S | annual_indices |
 | 10 | extreme-SDII | absent | `comparison_precip_annual_sdii_ts_basin_avg.png`; also S | annual_indices |
 | 11 | extreme-Wet days | absent | `comparison_precip_annual_wet_days_ts_basin_avg.png`; also S | annual_indices |
-| 12 | spell | absent | `comparison_precip_daily_dry_spell_exceedance_basin_avg.png`; also S | dry_spell_exceedance |
+| 12 | spell | absent | `comparison_precip_dry_spell_exceedance_basin_avg.png`; also S | dry_spell_exceedance |
 | 13 | acf | absent | `comparison_precip_monthly_anomaly_acf_basin_avg.png`; also S | anomaly_acf |
 | 14 | slopes | absent | `comparison_precip_annual_trend_interval_basin_avg.png`; also S; panels identify total/wet days/Rx1day | trends |
 | 15 | series | existing annual series lacks completeness/Sen overlay | `comparison_precip_annual_trend_ts_basin_avg.png`; also S | annual_indices + trends |
-| 16 | pt | absent; CHIRPS own temperature/P–T unavailable | `comparison_precip_temp_seasonal_anomaly_scatter_basin_avg.png`; source-only form for genuine own P+T | pt_anomalies |
+| 16 | pt | absent; CHIRPS own temperature/P–T unavailable | `comparison_precip_temp_seasonal_anomaly_basin_avg.png`; source-only form for genuine own P+T | pt_anomalies |
 
 Two additional diagnostic figure forms expose important methods already in
 the lab, beyond the accepted 16 PNG inventory: fit checks and start-year
@@ -185,8 +185,8 @@ accepted visual references:
 
 | Form | New basename (comparison or S) | Input |
 |---|---|---|
-| Gamma/Pearson III fit checks | `comparison_precip_monthly_spi_fit_heatmap_basin_avg.png` | spi_fit_checks |
-| Total/Rx1day start-year sensitivity | `comparison_precip_annual_trend_start_year_line_basin_avg.png` | trend_sensitivity |
+| Gamma/Pearson III fit checks | `comparison_precip_monthly_spi_fit_basin_avg.png` | spi_fit_checks |
+| Total/Rx1day start-year sensitivity | `comparison_precip_annual_trend_sensitivity_basin_avg.png` | trend_sensitivity |
 
 Extend `figure_naming.PLOT_CONTEXTS` with exactly the contexts in these tables;
 keep `annual_ts`, `monthly_box`, `monthly_clim_line`, maps and all old names.
@@ -259,7 +259,7 @@ Ntoum exercise and qualification status are separate fields, never inferred
 from run success. Include the scientific limitations below.
 
 `figure_captions.json` has schema_version 1 and entries keyed by relative
-standard PNG basename/path, with PDF and optional captioned paths, unnumbered
+standard PNG basename/path, with optional captioned PNG paths, unnumbered
 caption text, contributing source IDs, period, reference, support, encoding,
 method details, availability and caveats. Markdown exposes the same text for a
 report author, with filename headings. `diagnostic_captions.py` is the sole
@@ -294,9 +294,9 @@ Tests assert exact recursive output-file equality and rule declaration equality.
 |---|---|---|
 | 0.04 `plot_climate_datasets_<source>` | current SourcePlotRule inputs | existing plots/subbasins only; current writer |
 | 0.04b `compute_climate_diagnostics_<source>` | own extracted climate_nc + basin_cells; settings in params | daily_basin + 17 plot-ready CSVs + diagnostics.json; compute script |
-| 0.04c `plot_climate_diagnostics_<source>` | own 0.04b table/metadata outputs; all candidates' monthly_values/metadata for pooled anomaly bounds | capability-selected source PNG/PDFs + both caption files + optional captioned PNG/PDFs; plot script |
+| 0.04c `plot_climate_diagnostics_<source>` | own 0.04b table/metadata outputs; all candidates' monthly_values/metadata for pooled anomaly bounds | capability-selected source PNGs + both caption files + optional captioned PNGs; plot script |
 | 0.05 `compare_climate_datasets` | current extracted stores/cells/subbasins | current comparison files/subbasins only; current writer |
-| 0.05b `compare_climate_diagnostics` | each source's daily_basin + diagnostics.json (full native series/lineage) | 17 common-period plot-ready CSVs + agreement.csv/.md + diagnostics.json + selected comparison PNG/PDFs + captions/optional variants; compare script |
+| 0.05b `compare_climate_diagnostics` | each source's daily_basin + diagnostics.json (full native series/lineage) | 17 common-period plot-ready CSVs + agreement.csv/.md + diagnostics.json + selected comparison PNGs + captions/optional variants; compare script |
 
 0.05b recomputes **period-dependent** climatologies, trends, sensitivity, ACF,
 spells and event tables using the same pure computation functions; it does not
@@ -316,21 +316,21 @@ No one-source comparison directory/job or agreement table is introduced.
 
 Capability absence known at parse time omits its figure (CHIRPS temp/own P–T)
 and records the reason. Data insufficiency known only at execution produces
-a clearly labelled unavailable panel for every declared PNG/PDF, with identical
+a clearly labelled unavailable panel for every declared PNG, with identical
 availability notices in captions/JSON. No common valid years means no numerical
 agreement claim; no temporal overlap means unavailable comparison panels, not
 an own-period overlay. Empty events mean "no events", distinct from failed SPI.
 
-For default ERA5/CHIRPS this declares 51 new standard forms, 102 PNG/PDF files;
-captioned_figures=true adds another 102 files. Source compute: 19 files/source;
+For default ERA5/CHIRPS this declares 51 new standard forms, 51 PNG files;
+captioned_figures=true adds another 51 files. Source compute: 19 files/source;
 source render: 2 caption files plus selected images. Comparison: 20 table/
 metadata files, 2 caption files plus selected images. Counts are verification
 consequences of the inventory, not hardcoded caps.
 
 ### D6. Visual contract
 
-Use local `rc_context`, retain the shared unit conversion/600-DPI PNG export and
-PDF font type 42. Shared typography currently starts at 8 pt/7 pt ticks/6.5 pt
+Use local `rc_context`, retain the shared unit conversion/600-DPI PNG export.
+Shared typography currently starts at 8 pt/7 pt ticks/6.5 pt
 legend; the new family deliberately uses the accepted 7 pt axes/titles and
 6 pt ticks/legends/captions. No shared rcParams or style constant changes.
 
@@ -367,7 +367,7 @@ Sensitivity has panel letters (the lab function's older titles lack them).
 Positive: WF0 has auditable six-family source diagnostics, genuine comparisons,
 recoverable captions, and independent figure reruns from retained tables.
 
-Negative: additive plots overlap some older views, produce 102 additional
+Negative: additive plots overlap some older views, produce 51 additional
 default images for ERA5/CHIRPS, and add compute/storage even in a single-source
 WF0 run. Comparison recomputation repeats some fits. New exports remain
 exploratory scientific products.
@@ -391,7 +391,7 @@ WF0 T2 settings, rule wiring and docs require focused verification.
    rejected because a single-source WF0 must retain useful diagnostics.
 4. Only metadata captions, no captioned export option. Lower artifact count;
    preferable for a single established report pipeline. Optional captioned
-   PNG/PDFs are proposed because the reviewed lab supports standalone sharing.
+   PNGs are proposed because the reviewed lab supports standalone sharing.
 
 ## Validation and acceptance after Gate 1
 
@@ -412,7 +412,7 @@ WF0 T2 settings, rule wiring and docs require focused verification.
    PNG set displays 1991–2020: do not confuse it with the 1990 trend regression.
 4. Value-neutral check uses matched fresh rapid cases and existing numerical
    products, without the stale baseline manifest. Render agreed new source/
-   comparison PNG/PDFs and approved captioned variants, inspect intended size,
+   comparison PNGs and approved captioned variants, inspect intended size,
    unavailable cases, margins and bar placement. Expose local PNG artifacts for
    owner inspection; do not publish them externally. Report paths against the
    declaration. Document every difference from lab values/layout/availability
@@ -459,7 +459,7 @@ Toolbox docs must carry the following lab section unchanged:
 ## Gate 1 decision requested
 
 Approve D1–D6, including the complete 16-form reconciliation, two additional
-fit/sensitivity views, additive paths and table schemas, PNG/PDF plus optional
+fit/sensitivity views, additive paths and table schemas, PNG plus optional
 captioned output contract, WF0-owned T2 configuration, explicit common-period
 and P–T source binding, unavailable-panel behavior, and local visual style.
 There are no proposed existing-output renames/content changes, project climate
@@ -479,3 +479,17 @@ the record format; the pause is required by the user-invoked integration brief.
 - `dev/reference/wf0-figure-filename-rule.md`; `dev/reference/workflows/rule-index.md`
 - `dev/records/decisions/0006-retire-subcatchment-climate-plots.md`
 - `AGENTS.md`, validation ladder and task-lane rules
+
+### Owner-directed output revision
+
+The proposed new diagnostic family uses PNG only, including captioned copies.
+Shortened contexts match [project-tree.md](project-tree.md). The four-field
+grammar and existing output paths are preserved; new contexts identify the
+diagnostic while registered definitions and captions specify its visual form.
+Update the controlled vocabulary and its plot-form requirement for this new
+family at implementation. Gate 1 approval of the full design remains pending.
+
+Keep [project-tree.md](project-tree.md) current whenever this task changes file
+placement, output names, formats, counts or conditional availability. Update it
+in the same revision as the design or implementation, distinguishing proposed
+paths from implemented paths so the owner can inspect the current layout quickly.

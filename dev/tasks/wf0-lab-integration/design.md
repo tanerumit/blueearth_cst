@@ -226,46 +226,44 @@ authoritative layout view for this task.
 ### 6.1. Repository changes
 
 ```text
-blueearth_cst/                         repository root
-├── analyze_climate.smk                [edit] replace 0.04/0.05; add 0.04b and canonical targets
+blueearth_cst/                                    repository root
+├── analyze_climate.smk                           [edit] replace 0.04/0.05; add 0.04b and canonical targets
 ├── blueearth_cst/
 │   └── climate_analysis/
-│       ├── figure_naming.py           [edit] register new controlled plot contexts
-│       ├── diagnostics.py             [new] pure diagnostic calculations
-│       ├── diagnostic_settings.py     [new] WF0 settings validation and defaults
-│       ├── diagnostic_outputs.py      [new] shared declaration/writer output inventory
-│       ├── diagnostic_tables.py       [new] basin series, period calculations, table I/O
-│       ├── diagnostic_figures.py      [new] render from plot-ready tables
-│       ├── diagnostic_maps.py         [new] native-grid map fields and lab-derived map layout
-│       ├── diagnostic_captions.py     [new] reusable scientific captions
-│       ├── compute_climate_diagnostics.py  [new] rule 0.04 adapter
-│       ├── plot_climate_diagnostics.py     [new] rule 0.04b adapter
-│       └── compare_climate_diagnostics.py  [new] rule 0.05 adapter
+│       ├── figure_naming.py                      [edit] register new controlled plot contexts
+│       ├── diagnostics.py                        [new] pure diagnostic calculations
+│       ├── diagnostic_settings.py                [new] WF0 settings validation and defaults
+│       ├── diagnostic_outputs.py                 [new] shared declaration/writer output inventory
+│       ├── diagnostic_tables.py                  [new] basin series, period calculations, table I/O
+│       ├── diagnostic_figures.py                 [new] render from plot-ready tables
+│       ├── diagnostic_maps.py                    [new] native-grid map fields and lab-derived map layout
+│       ├── diagnostic_captions.py                [new] reusable scientific captions
+│       ├── compute_climate_diagnostics.py        [new] rule 0.04 adapter
+│       ├── plot_climate_diagnostics.py           [new] rule 0.04b adapter
+│       └── compare_climate_diagnostics.py        [new] rule 0.05 adapter
 ├── test_case/
-│   └── project_config_rapid_analyze_climate.yml
-│                                      [edit] diagnostics settings; subbasin_figures defaults to false
+│   └── project_config_rapid_analyze_climate.yml  [edit] diagnostics settings; subbasin_figures defaults to false
 ├── tests/
-│   ├── test_climate_source_plot_contract.py [edit] canonical WF0 wiring; retain WF1 compatibility
-│   ├── test_climate_diagnostic_maps.py [new] map aggregation, support, layout and PET caveat
-│   ├── test_figure_naming.py           [edit] new controlled contexts
-│   ├── test_climate_diagnostics.py     [new] ported numerical known-answer tests
-│   ├── test_climate_diagnostic_tables.py   [new] inputs, periods, units, availability
-│   ├── test_climate_diagnostic_figures.py  [new] render/output/caption contracts
-│   └── test_climate_diagnostic_rules.py    [new] source/comparison DAG declarations
+│   ├── test_climate_source_plot_contract.py      [edit] canonical WF0 wiring; retain WF1 compatibility
+│   ├── test_climate_diagnostic_maps.py           [new] map aggregation, support, layout and PET caveat
+│   ├── test_figure_naming.py                     [edit] new controlled contexts
+│   ├── test_climate_diagnostics.py               [new] ported numerical known-answer tests
+│   ├── test_climate_diagnostic_tables.py         [new] inputs, periods, units, availability
+│   ├── test_climate_diagnostic_figures.py        [new] render/output/caption contracts
+│   └── test_climate_diagnostic_rules.py          [new] source/comparison DAG declarations
 ├── docs/
 │   └── site/
 │       └── toolbox-reference/
-│           └── workflow-analyze-climate.qmd
-│                                      [edit] outputs, settings, methods, captions, limits
+│           └── workflow-analyze-climate.qmd      [edit] outputs, settings, methods, captions, limits
 └── dev/
     ├── reference/
-    │   ├── wf0-figure-filename-rule.md [edit] new controlled contexts
+    │   ├── wf0-figure-filename-rule.md           [edit] new controlled contexts
     │   └── workflows/
-    │       └── rule-index.md          [edit] new letter-suffixed WF0 rules
+    │       └── rule-index.md                     [edit] new letter-suffixed WF0 rules
     └── tasks/
         └── wf0-lab-integration/
-            ├── design.md             [present] proposal and maintained tree
-            └── design-reference.md   [present] technical contracts and decision record
+            ├── design.md                         [present] proposal and maintained tree
+            └── design-reference.md               [present] technical contracts and decision record
 ```
 
 WF0's legacy source/comparison plot producers are replaced. WF1 retains its
@@ -283,32 +281,32 @@ store specification; it is not constructed by the new diagnostic code.
 └── data/
     └── climate/
         └── historical/
-            ├── <store-key>/           one existing store per declared source
-            │   └── diagnostics/      [new] source diagnostics root D_s
-            │       ├── _engine/      retained machine-readable records
+            ├── <store-key>/                       one existing store per declared source
+            │   └── diagnostics/                   [new] source diagnostics root D_s
+            │       ├── _engine/                   retained machine-readable records
             │       │   ├── diagnostics.json
             │       │   └── figure_captions.json
             │       ├── figure_captions.md
-            │       ├── tables/       shared table set detailed below
-            │       │   ├── daily_basin.csv    source-only addition to shared set
-            │       │   ├── annual_climatology.nc source-only map fields
-            │       │   └── subbasins/     optional canonical subbasin tables
-            │       └── figures/      source figure set detailed below
-            │           ├── subbasins/        optional canonical subbasin PNGs
-            │           └── captioned/        optional PNG copies, including subbasins/
-            └── comparison/           multisource runs only
-                └── diagnostics/      [new] comparison diagnostics root D_c
-                    ├── _engine/      retained machine-readable records
+            │       ├── tables/                    shared table set detailed below
+            │       │   ├── daily_basin.csv        source-only addition to shared set
+            │       │   ├── annual_climatology.nc  source-only map fields
+            │       │   └── subbasins/             optional canonical subbasin tables
+            │       └── figures/                   source figure set detailed below
+            │           ├── subbasins/             optional canonical subbasin PNGs
+            │           └── captioned/             optional PNG copies, including subbasins/
+            └── comparison/                        multisource runs only
+                └── diagnostics/                   [new] comparison diagnostics root D_c
+                    ├── _engine/                   retained machine-readable records
                     │   ├── diagnostics.json
                     │   └── figure_captions.json
                     ├── figure_captions.md
-                    ├── tables/       shared table set detailed below
-                    │   ├── agreement.csv     comparison-only addition
-                    │   ├── agreement.md      comparison-only addition
-                    │   └── subbasins/     optional canonical subbasin tables
-                    └── figures/      comparison figure set detailed below
-                        ├── subbasins/        optional canonical subbasin PNGs
-                        └── captioned/        optional PNG copies, including subbasins/
+                    ├── tables/                    shared table set detailed below
+                    │   ├── agreement.csv          comparison-only addition
+                    │   ├── agreement.md           comparison-only addition
+                    │   └── subbasins/             optional canonical subbasin tables
+                    └── figures/                   comparison figure set detailed below
+                        ├── subbasins/             optional canonical subbasin PNGs
+                        └── captioned/             optional PNG copies, including subbasins/
 ```
 
 #### 6.2.1. Diagnostic tables
@@ -381,12 +379,12 @@ Each optional captioned copy uses the identical basename under `captioned/`.
 ```text
 <diagnostics-root>/
 └── figures/
-    ├── <dataset>_precip_annual_clim_map_basin_ext.png    source only
-    ├── <dataset>_temp_annual_clim_map_basin_ext.png      source only, conditional
-    ├── <dataset>_pet_annual_clim_map_basin_ext.png       source only, conditional
+    ├── <dataset>_precip_annual_clim_map_basin_ext.png           source only
+    ├── <dataset>_temp_annual_clim_map_basin_ext.png             source only, conditional
+    ├── <dataset>_pet_annual_clim_map_basin_ext.png              source only, conditional
     ├── <dataset>_precip_monthly_coverage_basin_avg.png
     ├── <dataset>_precip_monthly_clim_band_basin_avg.png
-    ├── <dataset>_temp_monthly_clim_band_basin_avg.png             conditional
+    ├── <dataset>_temp_monthly_clim_band_basin_avg.png           conditional
     ├── <dataset>_precip_annual_timing_basin_avg.png
     ├── <dataset>_precip_monthly_anomaly_basin_avg.png
     ├── <dataset>_precip_monthly_spi_basin_avg.png
@@ -399,11 +397,11 @@ Each optional captioned copy uses the identical basename under `captioned/`.
     ├── <dataset>_precip_monthly_anomaly_acf_basin_avg.png
     ├── <dataset>_precip_annual_trend_interval_basin_avg.png
     ├── <dataset>_precip_annual_trend_ts_basin_avg.png
-    ├── <dataset>_precip_temp_seasonal_anomaly_basin_avg.png conditional
+    ├── <dataset>_precip_temp_seasonal_anomaly_basin_avg.png     conditional
     ├── <dataset>_precip_monthly_spi_fit_basin_avg.png
     ├── <dataset>_precip_annual_trend_sensitivity_basin_avg.png
-    ├── subbasins/                    optional canonical temporal views
-    └── captioned/                    optional; mirrors the selected basenames above
+    ├── subbasins/                                               optional canonical temporal views
+    └── captioned/                                               optional; mirrors the selected basenames above
 ```
 
 For ERA5 + CHIRPS, the new figure sets are:

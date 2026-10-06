@@ -298,7 +298,6 @@ PNG-only; no PDF twins are declared.
   own P+T
 - **Input table:** pt_anomalies
 
-
 Two additional diagnostic figure forms expose important methods already in the lab,
 beyond the accepted 16 PNG inventory: fit checks and start-year sensitivity.
 `spi_checks` and `sensitivity` functions exist in the lab but are not in its current
@@ -478,7 +477,6 @@ table is `temp()`.
   support and qualification caveats
 - **Source / comparison:** comparison only
 
-
 `diagnostics.json` has schema_version 1; resolved settings; input paths and content
 hashes; source IDs/labels; extraction span and catalogue lineage; reported/effective
 units; basin cell counts; reporting/calendar conventions; requested/actual
@@ -553,7 +551,6 @@ All new modules live under `blueearth_cst/climate_analysis/`:
 
 - **Responsibility:** 0.05 script glue and common-period table/figure production
 
-
 Use `diagnostic_source_outputs(store_dir, source, settings)` and
 `diagnostic_comparison_outputs(comparison_dir, sources, settings)` returning named
 compute/render path sets. Derive every figure basename through `figure_filename`.
@@ -581,7 +578,6 @@ output-file equality and rule declaration equality.
 - **Declared outputs / writer:** 17 common-period plot-ready CSVs + agreement.csv/.md +
   diagnostics.json + selected comparison PNGs + captions/optional variants; compare
   script
-
 
 0.05 recomputes **period-dependent** climatologies, trends, sensitivity, ACF, spells and
 event tables using the same pure computation functions; it does not filter full-record
@@ -890,7 +886,6 @@ revisions above.
 - **Consequence / superseded proposal:** Surface replacement scope, artifact
   audience/placement, naming/formats/defaults and execution/rule changes early; keep
   review surfaces synchronized and preserve decision rationale/status.
-
 
 The initial proposal assumed additive preservation of old WF0 figure contracts. The
 owner later explicitly authorized their replacement. This material scope change belongs

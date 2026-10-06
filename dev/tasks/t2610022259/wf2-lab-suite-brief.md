@@ -185,7 +185,7 @@ workflows.
 
 ### Required changes (checklist)
 
-- [ ] Ask the owner for `<WF2_ENSEMBLE_PROJECT_DIR>` if it is not given.
+- [x] Owner set `<WF2_ENSEMBLE_PROJECT_DIR>` = `C:/data/cmip6/gabon-ntoum-dev-ensemble` (2026-10-06).
 - [ ] Select at least 12 models from at least 10 institutions, at most two per institution. Each must
       publish `r1i1p1f1` (or a single recorded alternative) for historical and all of SSP1-2.6, SSP2-4.5,
       SSP3-7.0 and SSP5-8.5.

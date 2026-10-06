@@ -205,20 +205,20 @@ blueearth_cst/                                           repository root
 ├── README.md                                            [edit] canonical WF0 outputs and WF1 distinction
 ├── blueearth_cst/
 │   ├── climate_analysis/
-│       ├── figure_naming.py                             [edit] register new controlled contexts
-│       ├── diagnostics.py                               [new] pure diagnostic calculations
-│       ├── diagnostic_settings.py                       [new] WF0 settings and defaults
-│       ├── diagnostic_outputs.py                        [new] shared declaration/writer inventory
-│       ├── diagnostic_tables.py                         [new] basin series, calculations and table I/O
-│       ├── diagnostic_figures.py                        [new] artists using retained results
-│       ├── diagnostic_render.py                         [new] rendering and export orchestration
-│       ├── diagnostic_maps.py                           [new] native-grid map fields and layout
-│       ├── diagnostic_captions.py                       [new] reusable scientific captions
-│       ├── diagnostic_subbasins.py                      [new] optional subbasin products
-│       ├── compute_climate_diagnostics.py               [new] rule 0.04 adapter
-│       ├── plot_climate_diagnostics.py                  [new] rule 0.04b adapter
-│       ├── compare_climate_diagnostics.py               [new] rule 0.05 adapter
-│       └── compare_sources.py                           [remove] retired comparison producer
+│   │   ├── figure_naming.py                             [edit] register new controlled contexts
+│   │   ├── diagnostics.py                               [new] pure diagnostic calculations
+│   │   ├── diagnostic_settings.py                       [new] WF0 settings and defaults
+│   │   ├── diagnostic_outputs.py                        [new] shared declaration/writer inventory
+│   │   ├── diagnostic_tables.py                         [new] basin series, calculations and table I/O
+│   │   ├── diagnostic_figures.py                        [new] artists using retained results
+│   │   ├── diagnostic_render.py                         [new] rendering and export orchestration
+│   │   ├── diagnostic_maps.py                           [new] native-grid map fields and layout
+│   │   ├── diagnostic_captions.py                       [new] reusable scientific captions
+│   │   ├── diagnostic_subbasins.py                      [new] optional subbasin products
+│   │   ├── compute_climate_diagnostics.py               [new] rule 0.04 adapter
+│   │   ├── plot_climate_diagnostics.py                  [new] rule 0.04b adapter
+│   │   ├── compare_climate_diagnostics.py               [new] rule 0.05 adapter
+│   │   └── compare_sources.py                           [remove] retired comparison producer
 │   └── shared/
 │       └── variable_registry.py                         [edit] remove obsolete producer reference in comment
 ├── test_case/

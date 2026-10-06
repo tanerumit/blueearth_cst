@@ -1,8 +1,7 @@
 # WF0 figure filename rule
 
-> **Status:** Agreed working rule, 2026-08-17. Apply to WF0 first; consider
-> extending the grammar to other workflows after the WF0 implementation is
-> established.
+> **Status:** Four-field grammar retained; canonical WF0 diagnostic contexts updated
+> following Gate 1 approval, 2026-10-06. WF1 retains its existing plotting contract.
 
 ## Rule
 
@@ -17,8 +16,8 @@ The fields mean:
 - `dataset_scope`: the dataset ID for a single-source figure, such as `era5`
   or `chirps`; use `comparison` for a figure containing multiple datasets.
 - `variable`: the canonical, unabridged scientific variable name, such as
-  `precip`, `temp`, or `pet`.
-- `plot_context`: the temporal interpretation and plot form, expressed with
+  `precip`, `temp`, `pet`, or `precip_temp` for a paired diagnostic.
+- `plot_context`: the diagnostic meaning and, where needed, plot form, expressed with
   the controlled vocabulary below.
 - `spatial_scope`: the spatial aggregation or coverage represented by the
   figure.
@@ -42,14 +41,34 @@ Use these abbreviations consistently:
 | extent | `ext` |
 | distribution box plot | `box` |
 
-Recommended plot-context tokens:
+Canonical WF0 plot-context tokens:
 
 ```text
-annual_ts
-monthly_box
 annual_clim_map
-monthly_clim_line
+monthly_coverage
+monthly_clim_band
+annual_timing
+monthly_anomaly
+monthly_spi
+spi_events
+annual_rx1day_ts
+annual_rx5day_ts
+annual_sdii_ts
+annual_wet_days_ts
+dry_spell_exceedance
+monthly_anomaly_acf
+annual_trend_interval
+annual_trend_ts
+seasonal_anomaly
+monthly_spi_fit
+annual_trend_sensitivity
 ```
+
+The machine vocabulary and descriptions live in
+`blueearth_cst/climate_analysis/figure_naming.py`. Legacy `annual_ts`,
+`monthly_box` and `monthly_clim_line` remain registered for WF1's source producer;
+WF0 no longer emits them. WF0 emits PNGs only. Optional captioned copies use the
+same filename under `figures/captioned/`; captions never add a fifth field.
 
 Recommended spatial-scope tokens:
 
@@ -93,10 +112,10 @@ rather than introduced ad hoc in individual plotting modules.
 ## Examples
 
 ```text
-era5_precip_annual_ts_basin_avg.png
+era5_precip_annual_trend_ts_basin_avg.png
 era5_temp_annual_clim_map_basin_ext.png
-chirps_precip_monthly_box_basin_avg.png
-era5_precip_annual_ts_subbasin_101_avg.png
-comparison_precip_annual_ts_basin_avg.png
-comparison_temp_monthly_box_basin_avg.png
+chirps_precip_monthly_clim_band_basin_avg.png
+era5_precip_annual_trend_ts_subbasin_101_avg.png
+comparison_precip_annual_rx1day_ts_basin_avg.png
+comparison_precip_temp_seasonal_anomaly_basin_avg.png
 ```

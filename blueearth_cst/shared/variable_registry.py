@@ -102,10 +102,8 @@ class Variable(NamedTuple):
 
 
 #: The registry. **Insertion order is load-bearing** — ``plot_map_forcing``
-#: selects the canonical climate set with ``list(CLIMATE_VARS)`` and
-#: ``compare_sources`` documents its own panel order as "ordered as
-#: CLIMATE_VARS is" — so a new variable goes at the END unless the figure order
-#: is meant to change with it.
+#: selects the canonical climate set with ``list(CLIMATE_VARS)``. Add a new
+#: variable at the END unless the figure order is meant to change with it.
 VARIABLES: dict[str, Variable] = {
     "precip": Variable(
         presentation=Presentation(

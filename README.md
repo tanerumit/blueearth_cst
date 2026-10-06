@@ -149,24 +149,21 @@ only. When CHIRPS is the selected pipeline source, the shared store is instead
 enriched with ERA5 temperature, radiation and pressure plus orography because
 WF1 and WF3 require the complete forcing contract.
 
-The existing `comparison/dataset_comparison.csv` records `wg1_status` and the
-full `wg1_diffs`; its Markdown twin lists readiness beneath the compact table.
-These describe the extracted store against the full WG-1 contract, so a
-precipitation-only candidate is reported as not ready while its precipitation
-comparison still runs. Provenance comes from the store's extraction attributes.
-`ready` means structural and metadata conformance; record length, missing values
-and scientific suitability still require their own checks.
-Per-source plot logs also report WG-1 readiness and every divergence, including
-when WF0 has only one source and produces no comparison table.
+WF0 retains coverage, extreme indices, SPI, trends and diagnostic tables under
+each source store's `diagnostics/`. Multiple sources also produce
+`comparison/diagnostics/`, with agreement tables and common-period figures.
+Machine-readable diagnostics and captions live in `_engine/`; readable captions
+live in `figure_captions.md`. Agreement does not establish accuracy or forcing
+suitability. A single-source run keeps its diagnostics without a comparison.
 CHIRPS daily precipitation labelled `mm` is now labelled `mm d**-1` without
 rescaling values. Retained CHIRPS stores need regeneration to receive the label.
 
-WF0 and WF1 share one canonical source-plot producer. Figures under each
-historical store's `plots/` use source-local scales and are reused when switching
-workflows with unchanged inputs and settings. WF0's `comparison/` figures put
-sources on common axes. The former `shared_plot_scales.json` is no longer used;
-existing figures may refresh once after this change, then subsequent runs reuse
-them. Existing run files are not automatically deleted.
+WF0's canonical plots are PNGs in `diagnostics/figures/`. They replace WF0's
+former monthly boxes, plain annual series and comparison lines. Subbasin plots
+and captioned copies are off by default. WF1 retains its existing `plots/`
+producer and contracts. Existing run files are not automatically deleted.
+See the [WF0 guide](docs/site/toolbox-reference/workflow-analyze-climate.qmd)
+for settings, outputs and scientific limitations.
 
 ### Configuration
 

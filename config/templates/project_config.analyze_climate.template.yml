@@ -1,13 +1,14 @@
-# =============================================================================
-#  analyze_climate (wf0) -- the basin's historical climate, no model needed
-# =============================================================================
-#
-# This workflow has no settings of its own. It reads the project file:
-#
-#   basin.region       where
-#   climate.sources    which datasets to compare
-#   climate.selected   which one leads the figures (may be empty for this workflow)
-#   climate.window     which years
-#
-# The file is empty on purpose, so you can see nothing is missing. Keep it
-# next to the project file, or delete it together with its `config_path` line.
+# WF0 diagnostics; shared sources/window belong in the project file.
+# Subbasin plots are optional. Basin maps still show subbasin boundaries.
+subbasin_figures: false
+
+# Optional settings (omitted periods use climate.window):
+# diagnostics:
+#   reference_period: {start: 1991, end: 2020}
+#   comparison_period: {start: 1991, end: 2020}
+#   max_missing_days_month: 3
+#   max_missing_days_year: 15
+#   wet_day_threshold_mm: 1.0
+#   spi_distribution: gamma
+#   captioned_figures: false
+#   pt_temperature_source: era5

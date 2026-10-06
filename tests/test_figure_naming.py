@@ -22,7 +22,10 @@ from blueearth_cst.climate_analysis.climate_figures import (
     source_climate_vars,
     source_figure_names,
 )
-from blueearth_cst.climate_analysis.compare_sources import comparison_figure_names
+from blueearth_cst.climate_analysis.diagnostic_outputs import (
+    diagnostic_comparison_outputs,
+)
+from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
 from blueearth_cst.climate_analysis.figure_naming import (
     COMPARISON_SCOPE,
     FIXED_SPATIAL_SCOPES,
@@ -129,12 +132,15 @@ def test_a_precipitation_only_source_is_named_for_precipitation_only():
     assert all(name.startswith("chirps_") for name in names)
 
 
-def test_the_two_families_use_different_plot_contexts_for_monthly():
-    """A box plot and a line are different figures, so they are named apart."""
-    per_source = [n for n in source_figure_names("era5") if "monthly" in n]
-    comparison = [n for n in comparison_figure_names(["precip"]) if "monthly" in n]
-    assert all("monthly_box" in n for n in per_source)
-    assert all("monthly_clim_line" in n for n in comparison)
+def test_wf0_comparison_uses_canonical_monthly_band_context():
+    settings = parse_settings(None, {"start": 1991, "end": 2020}, ["era5", "chirps"])
+    figures = diagnostic_comparison_outputs("comparison", ["era5", "chirps"], settings)[
+        "figures"
+    ]
+    assert "comparison_precip_monthly_clim_band_basin_avg.png" in figures["seasonal"]
+    assert not any(
+        "monthly_box" in p or "monthly_clim_line" in p for p in figures.values()
+    )
 
 
 def test_the_declared_source_set_grows_with_the_spatial_scopes():

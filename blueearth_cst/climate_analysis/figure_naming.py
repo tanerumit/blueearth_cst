@@ -53,6 +53,23 @@ COMPARISON_SCOPE = "comparison"
 #: climatology, ``box`` distribution box plot -- so a reader who knows four
 #: tokens can read every name.
 PLOT_CONTEXTS = {
+    "monthly_coverage": "reporting-year monthly completeness calendar",
+    "monthly_clim_band": "monthly climatology and 10th–90th percentile band",
+    "annual_timing": "cumulative annual precipitation timing",
+    "monthly_anomaly": "monthly departure calendar",
+    "monthly_spi": "multiscale SPI calendar",
+    "spi_events": "SPI drought duration and severity",
+    "annual_rx1day_ts": "annual maximum one-day precipitation",
+    "annual_rx5day_ts": "annual maximum five-day precipitation",
+    "annual_sdii_ts": "annual observed wet-day intensity",
+    "annual_wet_days_ts": "annual scaled wet-day count",
+    "dry_spell_exceedance": "complete dry-spell exceedance",
+    "monthly_anomaly_acf": "monthly anomaly autocorrelation",
+    "annual_trend_interval": "annual Theil–Sen trends with intervals",
+    "annual_trend_ts": "annual precipitation with Theil–Sen trend",
+    "seasonal_anomaly": "seasonal precipitation–temperature anomaly scatter",
+    "monthly_spi_fit": "calendar-month SPI distribution checks",
+    "annual_trend_sensitivity": "start-year trend sensitivity",
     "annual_ts": "one value per year, as a time series",
     "annual_clim_map": "per-year aggregate averaged over years, as a map",
     "monthly_box": "per-calendar-month distribution across years, as boxes",

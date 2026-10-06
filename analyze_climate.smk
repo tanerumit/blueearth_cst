@@ -14,11 +14,8 @@ from blueearth_cst.shared.console_style import install_console_style, open_run_h
 from blueearth_cst.shared.config_composition import compose_config
 from blueearth_cst.shared.workflow_archive_launch import captured_projection, require_capture
 from blueearth_cst.spatial.config import parse_spatial_config
-# One source-plot definition for WF0 and WF1, including the filename registry.
-from blueearth_cst.climate_analysis.source_plot_rule import source_plot_rule
-# The cross-source comparison set (rule 0.05). Imported for the same reason:
-# the module that WRITES the table and the figures is the one that names them.
-from blueearth_cst.climate_analysis.compare_sources import comparison_outputs
+from blueearth_cst.climate_analysis.diagnostic_outputs import diagnostic_source_outputs, diagnostic_comparison_outputs
+from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
 
 # --- figure filenames ---------------------------------------------------------
 # WF0's figures follow `dev/reference/wf0-figure-filename-rule.md`:
@@ -26,16 +23,10 @@ from blueearth_cst.climate_analysis.compare_sources import comparison_outputs
 # built by `climate_analysis.figure_naming`, never spelled here. The wflow
 # FORCING family (rule 1.12) keeps its own names -- the rule stages WF0 first.
 #
-# ONE spatial scope is declarable: `basin_avg`. The per-subbasin figures are
-# named `..._subbasin_<id>_avg.png`, and the ids come from the DELINEATION --
-# rule 0.02's `subbasins.geojson`, which need not exist when this file is
-# parsed. Their count is therefore unknowable at DAG-construction time, exactly
-# as rule 1.15's per-station figures are (see the O-24 note in build_model.smk).
-# They land in a `subbasins/` bin declared as a `directory()`, which keeps
-# `--delete-all-output` complete without the checkpoint that rule shape would
-# otherwise need. Rule 1.15 took the same device on 2026-08-18 for the same
-# reason (t2608071206), so `stations/` there and `subbasins/` here are one
-# pattern rather than two coincidences.
+# Basin temporal figures use `basin_avg`; source maps use `basin_ext`.
+# Optional `..._subbasin_<id>_avg.png` figures use IDs from rule 0.02's
+# `subbasins.geojson`, which need not exist at DAG parse time. Their runtime
+# inventory is covered by declared `directory()` outputs when enabled.
 SUBBASIN_PLOT_DIRNAME = "subbasins"
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
@@ -303,61 +294,36 @@ LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("0.01", "delineate_region")
 DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("0.02", "delineate_subbasins_and_rivers")
 EXTRACT_CLIMATE_DATASETS = RULES.logged("0.03", "extract_climate_datasets", summary="clip global climate to the basin")
-PLOT_CLIMATE_DATASETS = RULES.logged("0.04", "plot_climate_datasets")
+COMPUTE_DIAGNOSTICS = RULES.logged("0.04", "compute_climate_diagnostics")
+PLOT_DIAGNOSTICS = RULES.logged("0.04b", "plot_climate_diagnostics")
 
 # Rule 0.05 exists only when there is more than one source to compare, so it
 # is registered -- and its label enters LOG_RULES -- only then.
 if len(CANDIDATE_SOURCES) > 1:
-    COMPARE_CLIMATE_DATASETS = RULES.logged("0.05", "compare_climate_datasets", summary="compare the candidate climate datasets")
+    COMPARE_DIAGNOSTICS = RULES.logged("0.05", "compare_climate_diagnostics", summary="compare the candidate climate datasets")
 GATHER_BENCHMARKS = RULES.banner_only("0.06", "gather_benchmarks")
 GATHER_LOGS = RULES.banner_only("0.07", "gather_logs")
 
 
-SOURCE_PLOTS = {
-    source: source_plot_rule(
-        CLIMATE_STORES[source], SPATIAL_UNITS, source, DATA_SOURCES, WATER_YEAR_START,
-    )
-    for source in CANDIDATE_SOURCES
-}
-
-
-# --- the cross-source comparison (rule 0.05) ----------------------------------
-# ONE directory beside the per-source stores, not inside any of them: it belongs
-# to no single source, and `data/climate/historical/` is already the root this
-# workflow tokenizes its paths against (see declare_path_tokens above).
-#
-# DECLARED ONLY FOR A MULTI-SOURCE RUN. With no `candidate_sources` this
-# workflow draws exactly what WF1 already draws and adds no cost -- the property
-# AGENTS.md names as the reason wf0 is safe to run on any project -- and a
-# "comparison" of one dataset would break it for a table with one row. The
-# outputs come from `compare_sources.comparison_outputs`, so the module that
-# writes the files is the one that names them, and the figure set narrows itself
-# to the variables more than one source carries.
+DIAGNOSTIC_SETTINGS = parse_settings(my_cfg.get("diagnostics"), historical_window, CANDIDATE_SOURCES)
+_subbasin_figures = my_cfg.get("subbasin_figures", False)
+if type(_subbasin_figures) is not bool:
+    raise ValueError("subbasin_figures must be a boolean")
+DIAGNOSTIC_SETTINGS["subbasin_figures"] = _subbasin_figures
+from blueearth_cst.shared.wf3_science import water_year_start_number
+DIAGNOSTIC_M0 = water_year_start_number(WATER_YEAR_START)
+SOURCE_DIAGNOSTICS = {s: diagnostic_source_outputs(CLIMATE_STORES[s].store_dir, s, DIAGNOSTIC_SETTINGS) for s in CANDIDATE_SOURCES}
+POOLED_ROOTS = [SOURCE_DIAGNOSTICS[s]["root"] for s in CANDIDATE_SOURCES]
 COMPARISON_DIR = f"{project_dir}/data/climate/historical/comparison"
-COMPARISON_SUBBASIN_DIR = f"{COMPARISON_DIR}/{SUBBASIN_PLOT_DIRNAME}"
-COMPARISON_OUTPUTS = (
-    [f"{COMPARISON_DIR}/{name}" for name in comparison_outputs(CANDIDATE_SOURCES)]
-    if len(CANDIDATE_SOURCES) > 1
-    else []
-)
-
-# WF0_TERMINALS — the artifacts with no WF0 consumer. Every producing rule is
-# upstream of them and none feeds another rule, which is exactly the input set
-# the two gather rules need and what schedules each of them LAST.
-#
-# ONE representative figure per source is enough: rule 0.04 writes its whole set
-# as a single job, so requesting one schedules the rest. The map is the
-# representative because every source draws one, precipitation-only included.
-WF0_TERMINALS = [
-    *[SOURCE_PLOTS[s].figures[0] for s in CANDIDATE_SOURCES],
-    # Empty on a single-source run, where rule 0.05 is not declared either.
-    *COMPARISON_OUTPUTS,
-    # The vector foundation is a LEAF here -- nothing in this workflow consumes
-    # `basins.geojson` downstream of the figures -- so without this edge rule
-    # 0.02 could run in parallel with the merge and strand its log part under
-    # `_parts/`. That is the defect WF1, WF2 and WF3 each recorded in turn.
-    SPATIAL_UNITS.outputs["basins"],
-]
+COMPARISON_DIAGNOSTICS = diagnostic_comparison_outputs(COMPARISON_DIR, CANDIDATE_SOURCES, DIAGNOSTIC_SETTINGS) if len(CANDIDATE_SOURCES) > 1 else None
+WF0_TERMINALS = [p for spec in SOURCE_DIAGNOSTICS.values() for p in spec["render"].values()]
+if COMPARISON_DIAGNOSTICS:
+    WF0_TERMINALS += list(COMPARISON_DIAGNOSTICS["compute"].values()) + list(COMPARISON_DIAGNOSTICS["render"].values()) + list(COMPARISON_DIAGNOSTICS["source_summary"].values())
+if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
+    WF0_TERMINALS += [f"{spec['root']}/figures/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
+    if COMPARISON_DIAGNOSTICS:
+        WF0_TERMINALS.append(f"{COMPARISON_DIAGNOSTICS['root']}/figures/subbasins")
+WF0_TERMINALS.append(SPATIAL_UNITS.outputs["basins"])
 
 WF0_TARGETS = [
     *WF0_TERMINALS,
@@ -448,67 +414,77 @@ for _source in CANDIDATE_SOURCES:
         script:
             _spec.script
 
-    _plot = SOURCE_PLOTS[_source]
+    _diag = SOURCE_DIAGNOSTICS[_source]
+    _compute_inputs = {"climate_nc": _spec.outputs["climate_nc"], "basin_cells": _spec.outputs["basin_cells"]}
+    if "oro_nc" in _spec.outputs:
+        _compute_inputs["oro_nc"] = _spec.outputs["oro_nc"]
+    _compute_outputs = dict(_diag["compute"])
+    if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
+        _compute_inputs["subbasins"] = SPATIAL_UNITS.outputs["subbasins"]
+        _compute_outputs["subbasin_tables"] = directory(f"{_diag['root']}/tables/subbasins")
 
     rule:
-        name: PLOT_CLIMATE_DATASETS.job_name(_source)
-        message: PLOT_CLIMATE_DATASETS.banner(part=_source)
-        input:
-            **_plot.inputs,
-        output:
-            _plot.figures,
-            directory(_plot.subbasin_dir),
+        name: COMPUTE_DIAGNOSTICS.job_name(_source)
+        message: COMPUTE_DIAGNOSTICS.banner(part=_source)
+        input: **_compute_inputs,
+        output: **_compute_outputs,
         params:
-            **_plot.params,
-        log:
-            PLOT_CLIMATE_DATASETS.log(_source),
-        benchmark:
-            PLOT_CLIMATE_DATASETS.benchmark(_source),
-        script: _plot.script
+            settings=DIAGNOSTIC_SETTINGS, source=_source, store_dir=_spec.store_dir,
+            m0=DIAGNOSTIC_M0, data_sources=DATA_SOURCES,
+        log: COMPUTE_DIAGNOSTICS.log(_source),
+        benchmark: COMPUTE_DIAGNOSTICS.benchmark(_source),
+        script: "blueearth_cst/climate_analysis/compute_climate_diagnostics.py"
 
+    _render_outputs = dict(_diag["render"])
+    _render_inputs = {"tables": list(_diag["compute"].values()),
+        "pooled": [p for spec in SOURCE_DIAGNOSTICS.values() for key, p in spec["compute"].items() if key in {"monthly_values", "metadata", "maps"}],
+        **{key: SPATIAL_UNITS.outputs[key] for key in ("basins", "subbasins", "rivers", "locations")}}
+    if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
+        _render_inputs["subbasin_tables"] = f"{_diag['root']}/tables/subbasins"
+        _render_outputs["subbasin_figures"] = directory(f"{_diag['root']}/figures/subbasins")
+        if DIAGNOSTIC_SETTINGS["captioned_figures"]:
+            _render_outputs["captioned_subbasins"] = directory(f"{_diag['root']}/figures/captioned/subbasins")
 
-# 0.05  compare_climate_datasets — every candidate on ONE axis, plus the table.
-#
-# Canonical source figures use source-local scales in both WF0 and WF1.
-# This separate product places every candidate on common axes for comparison.
-#
-# One job, not a fan-out -- so its log part is a flat file, matching the label
-# appended to LOG_RULES above.
-if len(CANDIDATE_SOURCES) > 1:
-
-    rule compare_climate_datasets:
-        message: COMPARE_CLIMATE_DATASETS.banner()
-        input:
-            climate_ncs = [CLIMATE_STORES[s].outputs["climate_nc"] for s in CANDIDATE_SOURCES],
-            # The DOMAIN the figures average over: the cells each source's own
-            # grid contributes to the basin. Without it the means are taken over
-            # each store's buffered bbox, and the buffer is counted in CELLS --
-            # so a coarse grid reaches physically further out and the comparison
-            # is partly of neighbouring climate. Rule 0.03 already writes this,
-            # and weathergenr already averages over it.
-            basin_cells = [CLIMATE_STORES[s].outputs["basin_cells"] for s in CANDIDATE_SOURCES],
-            # The subbasin polygons the per-subbasin comparison figures reduce
-            # over -- rule 0.02's shared foundation, the same layer rule 0.04
-            # takes its subbasin set from, so both families cover the same
-            # areas under the same ids.
-            subbasins = SPATIAL_UNITS.outputs["subbasins"],
+    rule:
+        name: PLOT_DIAGNOSTICS.job_name(_source)
+        message: PLOT_DIAGNOSTICS.banner(part=_source)
+        input: **_render_inputs,
+        output: **_render_outputs,
         params:
-            sources = CANDIDATE_SOURCES,
-            out_dir = COMPARISON_DIR,
-            subbasin_plot_dir = COMPARISON_SUBBASIN_DIR,
-            geoms_dir = SPATIAL_UNITS.spatial_dir + "/geoms",
-            water_year_start = WATER_YEAR_START,
-        output:
-            COMPARISON_OUTPUTS,
-            # As in rule 0.04: the per-subbasin figures are named for
-            # delineation ids, so their count is a runtime fact.
-            directory(COMPARISON_SUBBASIN_DIR),
-        log:
-            COMPARE_CLIMATE_DATASETS.log(),
-        benchmark:
-            COMPARE_CLIMATE_DATASETS.benchmark(),
-        script:
-            "blueearth_cst/climate_analysis/compare_sources.py"
+            settings=DIAGNOSTIC_SETTINGS, source=_source, store_dir=_spec.store_dir,
+            m0=DIAGNOSTIC_M0, pooled_roots=POOLED_ROOTS,
+            subbasin_table_dirs=[f"{_diag['root']}/tables/subbasins"],
+        log: PLOT_DIAGNOSTICS.log(_source),
+        benchmark: PLOT_DIAGNOSTICS.benchmark(_source),
+        script: "blueearth_cst/climate_analysis/plot_climate_diagnostics.py"
+
+if COMPARISON_DIAGNOSTICS:
+    _comparison_outputs = {**COMPARISON_DIAGNOSTICS["compute"], **COMPARISON_DIAGNOSTICS["render"], **COMPARISON_DIAGNOSTICS["source_summary"]}
+    _comparison_inputs = {
+        "source_stores": [CLIMATE_STORES[s].outputs["climate_nc"] for s in CANDIDATE_SOURCES],
+        "daily": [SOURCE_DIAGNOSTICS[s]["compute"]["daily"] for s in CANDIDATE_SOURCES],
+        "metadata": [SOURCE_DIAGNOSTICS[s]["compute"]["metadata"] for s in CANDIDATE_SOURCES],
+        "pooled": [SOURCE_DIAGNOSTICS[s]["compute"]["monthly_values"] for s in CANDIDATE_SOURCES],
+    }
+    if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
+        _comparison_outputs["subbasin_figures"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/figures/subbasins")
+        _comparison_outputs["subbasin_tables"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/tables/subbasins")
+        if DIAGNOSTIC_SETTINGS["captioned_figures"]:
+            _comparison_outputs["captioned_subbasins"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/figures/captioned/subbasins")
+        _comparison_inputs["subbasin_tables"] = [f"{spec['root']}/tables/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
+
+    rule compare_climate_diagnostics:
+        message: COMPARE_DIAGNOSTICS.banner()
+        input: **_comparison_inputs,
+        output: **_comparison_outputs,
+        params:
+            settings=DIAGNOSTIC_SETTINGS, sources=CANDIDATE_SOURCES,
+            comparison_dir=COMPARISON_DIR, m0=DIAGNOSTIC_M0,
+            pooled_roots=POOLED_ROOTS,
+            subbasin_table_dirs=[f"{spec['root']}/tables/subbasins" for spec in SOURCE_DIAGNOSTICS.values()],
+        log: COMPARE_DIAGNOSTICS.log(),
+        benchmark: COMPARE_DIAGNOSTICS.benchmark(),
+        script: "blueearth_cst/climate_analysis/compare_climate_diagnostics.py"
 
 
 # --- benchmark gather ---------------------------------------------------------

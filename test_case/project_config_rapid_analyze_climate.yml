@@ -1,5 +1,5 @@
-# analyze_climate (wf0) has no settings of its own; it reads the project file.
-# With era5 and chirps both in `climate.sources`, it compares the two. chirps
-# is precipitation only: temperature, radiation and pressure are taken from
-# era5 and corrected onto the chirps grid.
-{}
+# Sources and analysis years are shared project settings.
+# Canonical WF0 PNGs cover the basin; subbasin plots are opt-in.
+subbasin_figures: false
+# diagnostics:
+#   captioned_figures: false

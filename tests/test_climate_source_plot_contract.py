@@ -26,24 +26,18 @@ def _differences(left, right):
 
 
 @pytest.mark.parametrize("source", ["era5", "chirps", "chirps_global"])
-def test_selected_source_plot_declarations_are_identical(tmp_path, source):
-    """Single and multi-source WF0 runs reuse WF1's complete figure contract."""
+def test_wf0_owns_diagnostics_and_wf1_retains_source_plots(tmp_path, source):
     cfg = load_composed_config(CONFIG_FN)
     cfg["climate"]["selected"] = source
     cfg["climate"]["sources"] = [source]
-    single = write_config(tmp_path / "single", cfg)
-    wf1 = _parse_workflow("build_model.smk", single)
-    reference = (wf1, wf1.get_rule("plot_climate_datasets"))
-    for sources in ([source], list(dict.fromkeys([source, "era5", "chirps"]))):
-        cfg["climate"]["sources"] = sources
-        path = write_config(tmp_path / f"sources_{len(sources)}", cfg)
-        wf0 = _parse_workflow("analyze_climate.smk", path)
-        rule = wf0.get_rule(f"plot_climate_datasets_{source}")
-        assert not _differences((wf0, rule), reference)
-        assert "scales_json" not in rule.input.keys()
-        assert {str(p) for p in rule.output if p.is_directory} == {
-            str(p) for p in reference[1].output if p.is_directory
-        }
+    path = write_config(tmp_path, cfg)
+    wf0 = _parse_workflow("analyze_climate.smk", path)
+    wf1 = _parse_workflow("build_model.smk", path)
+    canonical = wf0.get_rule(f"plot_climate_diagnostics_{source}")
+    previous = wf1.get_rule("plot_climate_datasets")
+    assert set(map(str, canonical.output)).isdisjoint(map(str, previous.output))
+    assert all("/diagnostics/" in str(p).replace("\\", "/") for p in canonical.output)
+    assert not any(p.is_directory for p in canonical.output)
 
 
 def test_all_shared_outputs_have_equivalent_producers():
@@ -64,7 +58,7 @@ def test_all_shared_outputs_have_equivalent_producers():
             for output in rule.output:
                 owners[str(output)].append((workflow, rule))
     shared = {path: entries for path, entries in owners.items() if len(entries) > 1}
-    assert any(path.endswith(".png") for path in shared)
+    assert any(path.endswith("extract_historical.nc") for path in shared)
     failures = []
     for path, entries in shared.items():
         for left, right in combinations(entries, 2):
@@ -74,8 +68,8 @@ def test_all_shared_outputs_have_equivalent_producers():
     assert not failures, failures
 
 
-def test_alternating_workflows_preserves_provenance_but_detects_changes(tmp_path):
-    """Exercise Snakemake's saved metadata through WF0 → WF1 → WF0."""
+def test_repeated_wf1_source_plots_preserve_provenance_but_detect_changes(tmp_path):
+    """Repeated source plotting preserves metadata; changed presentation invalidates."""
     from snakemake.api import DAGSettings, ExecutionSettings
     from snakemake.io import IOCache
     from snakemake.jobs import Job
@@ -87,7 +81,7 @@ def test_alternating_workflows_preserves_provenance_but_detects_changes(tmp_path
     path = write_config(tmp_path, cfg)
     jobs = []
     for snakefile, name in (
-        ("analyze_climate.smk", "plot_climate_datasets_era5"),
+        ("build_model.smk", "plot_climate_datasets"),
         ("build_model.smk", "plot_climate_datasets"),
     ):
         workflow = _parse_workflow(snakefile, path)

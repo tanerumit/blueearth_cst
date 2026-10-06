@@ -127,12 +127,11 @@ def test_the_figure_unit_and_the_canonical_units_are_not_the_same_fact():
 
 
 def test_climate_vars_is_unchanged_in_value_and_in_order():
-    """22 call sites keep working, and two of them depend on the ORDER.
+    """Existing consumers keep working, including their display order.
 
     `plot_map_forcing` selects the canonical climate set with
-    `list(CLIMATE_VARS)` and `compare_sources` documents its panel order as
-    "ordered as CLIMATE_VARS is", so a dict that merely holds the same entries
-    is not sufficient.
+    `list(CLIMATE_VARS)`, so a dict that merely holds the same entries is not
+    sufficient.
     """
     assert list(CLIMATE_VARS) == ["precip", "temp", "pet"]
     assert CLIMATE_VARS["precip"] == {

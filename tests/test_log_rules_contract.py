@@ -79,18 +79,10 @@ _LABEL_PREFIX = re.compile(r"^\d+\.\d+[a-z]?_")
 def _declared_log_rules(workflow, snakefile: str) -> list[str]:
     """``LOG_RULES`` as the parsed workflow actually holds it.
 
-    Read from ``workflow.globals`` rather than from the source text, and the
-    difference is not stylistic. ``analyze_climate.smk`` APPENDS
-    ``0.06_compare_climate_datasets`` at parse time when a run has candidate
-    sources, so the list literal is five entries while a multi-source run merges
-    six. A source-text parser cannot see that by construction: it reads the
-    literal, and the append is a statement.
-
-    That blindness is what forced a SECOND parser into existence --
-    ``test_compare_climate_sources`` matched the ``.append(...)`` call with its
-    own regex, exactly the duplication this module's docstring forbids. Reading
-    the executed globals lets one parser cover both halves, so that regex is
-    gone and the rule stated above holds again.
+    Read from ``workflow.globals`` because the executed registry depends on
+    configuration. WF0 registers ``0.05_compare_climate_diagnostics`` only for
+    multiple sources. A source-text parser cannot reliably reconstruct that
+    conditional registration; parsed globals cover source and comparison jobs.
 
     It also makes both sides of every comparison below describe the SAME
     configuration. Previously the declared side came from source text and the

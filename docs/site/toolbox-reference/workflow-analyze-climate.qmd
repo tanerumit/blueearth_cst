@@ -2,7 +2,9 @@
 title: "WF0 — Analyze climate"
 ---
 
-`analyze_climate.smk` characterizes candidate historical climate sources without a hydrological model. It is optional. Run it alone when selecting a forcing source, because WF0 shares region and climate products with other workflows.
+`analyze_climate.smk` characterizes candidate historical climate sources without a hydrological model. It is
+optional. Run it alone when selecting a forcing source, because WF0 shares region and climate products with
+other workflows.
 
 ## Rules
 
@@ -12,12 +14,14 @@ title: "WF0 — Analyze climate"
 | 0.01 `delineate_region` | Define the shared basin region. |
 | 0.02 `delineate_subbasins_and_rivers` | Define shared basin, subbasin, river, and location vectors. |
 | 0.03 `extract_climate_datasets_<source>` | Extract each configured historical source to its basin store. |
-| 0.04 `plot_climate_datasets_<source>` | Render figures for each source. |
-| 0.05 `compare_climate_datasets` | Compare sources when more than one is configured. |
+| 0.04 `compute_climate_diagnostics_<source>` | Retain diagnostics and map fields. |
+| 0.04b `plot_climate_diagnostics_<source>` | Render source PNGs and captions. |
+| 0.05 `compare_climate_diagnostics` | Compute and render the common-period comparison. |
 | 0.06 `gather_benchmarks` | Merge benchmark parts. |
 | 0.07 `gather_logs` | Merge log parts. |
 
-The `all` target collects the products. Rules 0.03 and 0.04 fan out by source; comparison is conditional. The runner publishes a configuration archive before Snakemake parses the workflow.
+The `all` target collects the products. Extraction, computation and rendering fan out by source; comparison is
+conditional. The runner publishes a configuration archive before Snakemake parses the workflow.
 
 ## Rule flow
 
@@ -25,29 +29,126 @@ The `all` target collects the products. Rules 0.03 and 0.04 fan out by source; c
 flowchart LR
   A["0.01 Region"] --> B["0.02 Subbasins and rivers"]
   A --> C["0.03 Extract each source"]
-  B --> D["0.04 Plot each source"]
-  C --> D
-  D --> E["0.05 Compare sources · if multiple"]
-  D --> F["0.06–0.07 Records"]
+  C --> D["0.04 Compute each source"]
+  D --> P["0.04b Render source PNGs"]
+  B --> P
+  D --> E["0.05 Compute and render comparison · if multiple"]
+  P --> F["0.06–0.07 Records"]
   E --> F
 ```
 
-The source branches fan out for every configured dataset. The comparison branch exists only when more than one source is configured.
+The source branches fan out for every configured dataset. The comparison branch exists only when more than one
+source is configured.
 
 ## Configuration
 
-The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`, `basin.region`, `basin.resolution`, `climate.sources`, `climate.selected`, and `climate.window`. Its `workflows.analyze_climate` stanza enables the workflow and resolves `config_path` relative to the project file. The selected source leads the figures; comparing sources does not change that selection.
+The project file, for example `test_case/project_config_rapid.yml`, supplies `project.catalog`,
+`basin.region`, `basin.resolution`, `climate.sources`, `climate.selected`, and `climate.window`. Its
+`workflows.analyze_climate` stanza enables the workflow and resolves `config_path` relative to the project
+file. The selected source leads the figures; comparing sources does not change that selection.
 
-The workflow file, `test_case/project_config_rapid_analyze_climate.yml`, is deliberately `{}`. Its template, `config/templates/project_config.analyze_climate.template.yml`, defines no workflow-specific keys. Candidate sources and the analysis years belong in the project file, where other workflows can share them.
+The workflow file owns the optional diagnostic settings below. Candidate sources and analysis years remain in
+the project file. Start from `config/templates/project_config.analyze_climate.template.yml`.
 
 ```yaml
-{} # WF0 has no workflow-specific settings
+subbasin_figures: false
+diagnostics:
+  captioned_figures: false
+  # Optional overrides; omitted periods resolve from climate.window.
+  # reference_period: {start: 1991, end: 2020}
+  # comparison_period: {start: 1991, end: 2020}
+  max_missing_days_month: 3
+  max_missing_days_year: 15
+  wet_day_threshold_mm: 1.0
+  spi_distribution: gamma
+  pt_temperature_source: era5
 ```
 
 ## Inputs
 
-Inputs are the basin definition, candidate historical climate datasets, and their catalog entries. The workflow does not consume a Wflow model or CMIP6 projections.
+Inputs are the basin definition, candidate historical climate datasets, and their catalog entries. The
+workflow does not consume a Wflow model or CMIP6 projections.
 
 ## Outputs
 
-WF0 writes shared basin geometry and a historical climate store beneath `project_dir`, plus per-source climate figures. With multiple sources it also writes comparison products. Merged logs and benchmarks document the run. The selected source for subsequent workflows is set by `climate.selected` in the project file; a WF0 comparison does not silently change it.
+WF0 writes shared basin geometry and historical climate stores beneath `project_dir`.
+Each source gets a `diagnostics/` root inside its store. With multiple sources,
+`data/climate/historical/comparison/diagnostics/` contains the comparison products.
+There is no one-source comparison.
+
+```text
+diagnostics/
+├── _engine/
+│   ├── diagnostics.json       # machine-readable methods, availability and provenance
+│   └── figure_captions.json   # captions indexed by figure path
+├── figure_captions.md         # readable captions and caveats
+├── tables/                   # coverage, indices, SPI/events, trends and checks
+└── figures/                  # standard PNGs
+```
+
+Source tables also retain `daily_basin.csv` and `annual_climatology.nc`. Comparison
+tables add `agreement.csv` and `agreement.md`. Maps use native grid cells with basin,
+subbasin, river and location overlays; they cover precipitation and genuine temperature,
+plus PET where available. Temporal figures cover coverage, seasonal timing, anomalies,
+SPI and drought events, extremes, dry spells, persistence, trends and fit/sensitivity checks.
+
+PNG is the only figure format. Names follow
+`<dataset>_<variable>_<context>_<spatial_scope>.png`, for example
+`comparison_precip_annual_rx1day_ts_basin_avg.png`.
+Captioned copies are optional under `figures/captioned/`, with identical filenames.
+Enabling `subbasin_figures` adds `tables/subbasins/` and `figures/subbasins/`;
+these directories are not created when disabled. Existing optional products are retained.
+Subbasin outlines on basin maps remain visible.
+
+For the ERA5–CHIRPS configuration, the standard inventory is 55 PNGs: 21 ERA5,
+17 CHIRPS and 17 comparison figures. Captioned copies double that count when enabled.
+Precipitation-only sources do not acquire borrowed temperature identities; paired
+precipitation–temperature figures identify their temperature carrier explicitly.
+
+These figures replace WF0's former monthly box plots, plain annual time series and
+comparison lines. WF1 retains its existing plot producer and paths. Old products in
+existing run roots are not automatically deleted.
+
+## Interpretation
+
+Daily basin series use equal weights over the toolbox's retained `basin_cells`.
+Missing dates remain gaps. Completeness tolerances govern valid months and reporting years;
+amounts may be infilled with the month's observed mean, while extremes use observed days.
+SPI uses zero-aware calendar-month fits at 3, 6 and 12 months. Trend figures report Sen
+slopes and Yue–Wang corrected Mann–Kendall tests. Homogeneity checks are diagnostics,
+not proof that an input series is homogeneous.
+
+Source diagnostics retain each source's full period. Comparison statistics use the common
+display period; SPI fits retain their reference-period samples before display clipping.
+Read the caption and coverage tables before interpreting a trend or drought event.
+
+The Ntoum reference results were exercised on real data but are **not scientifically
+qualified**. Source agreement is not accuracy. These engineering checks do not select a
+forcing source: subsequent workflows use `climate.selected` from the project file.
+
+## Remaining scientific limitations
+
+- Input homogeneity is unverified. CHIRPS gauge density and ERA5's assimilated observations change over time,
+  which can create spurious trends in extremes. The Rx1day increase of about 7–10 mm/decade over 1990–2020 in
+  both
+  products survives start-year, leave-one-out and multiple-testing checks, but the products disagree on which
+  years are extreme (r = 0.29). Treat it as provisional until compared with a homogeneous station record or
+  other
+  products (MSWEP, GPCC).
+- Relative homogeneity (`pettitt`, `snht` on ERA5 − CHIRPS differences, 1990–2020) finds no break in annual P,
+  wet
+  days, SDII, Rx1day or Rx5day (p = 0.26–0.73). The test is weak here: the Rx1day difference has an SD of 35
+  mm, so
+  a step equal to the whole trend (about 22 mm) is detected only about 26% of the time (80% power needs about
+  45–50 mm). The absence of a break therefore does not rule out an artefact of trend size. Each product alone
+  shows
+  an Rx1day change point near 2005–2006 (Pettitt p = 0.035 ERA5, 0.008 CHIRPS); two differently built products
+  agreeing on its timing weakly supports a real change, but does not separate a step from a gradual trend.
+- No station data are available, and the toolbox catalog has no other daily precipitation product for this
+  region
+  (SM2RAIN-ASCAT is monthly, 2007–2020). An independent check needs an approved download (IMERG from 2000,
+  MSWEP
+  from 1979).
+- ERA5 short-scale SPI misfit (negative skew) overstates dry extremes in flagged months.
+- CHIRPS is staged only from 1990; a 1981–2020 window needs a wider clip.
+- Source agreement is not accuracy; no independent observations were used.

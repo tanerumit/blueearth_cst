@@ -1,6 +1,6 @@
 # Proposed WF0 climate diagnostics and figures
 
-- **Status:** Gate 1 approved; implementation in progress.
+- **Status:** Gate 1 approved; implemented and locally validated.
 - **Date:** 2026-10-06
 - **Decision owner:** Ümit Taner
 
@@ -155,7 +155,9 @@ example:
 ```text
 era5_precip_monthly_spi_basin_avg.png
 comparison_precip_annual_trend_ts_basin_avg.png
-``` **Why:** shorter names are easier to scan while retaining source, variable, diagnostic and spatial meaning.
+```
+
+**Why:** shorter names are easier to scan while retaining source, variable, diagnostic and spatial meaning.
 PNG is the only required format for current use.
 
 ### 4.3. Readable files and machine records
@@ -166,7 +168,9 @@ Each diagnostic root contains:
 - `tables/`: retained results that can be inspected or reused.
 - `figures/`: the PNGs, with optional captioned copies.
 - `_engine/diagnostics.json`: settings, provenance and scientific status.
-- `_engine/figure_captions.json`: caption records for automation. **Why:** users can interpret and reuse results without opening JSON. The two JSON files remain retained
+- `_engine/figure_captions.json`: caption records for automation.
+
+**Why:** users can interpret and reuse results without opening JSON. The two JSON files remain retained
 workflow records. The Markdown captions and optional caption bands are generated from the same records.
 
 ### 4.4. Settings and defaults
@@ -186,9 +190,9 @@ reasons in the captions and metadata.
 
 ## 5. Proposed tree
 
-Only affected files and folders are shown. `[new]` and `[edit]` describe planned implementation; `[present]`
-identifies the design documents already created. The generated paths are proposals, not evidence of completed
-runs.
+Only affected files and folders are shown. `[new]`, `[edit]` and `[remove]` identify this implementation's
+changes; `[present]` identifies its design records. Generated paths describe the output contract. Validation
+results are listed in section 7.
 
 Maintain this tree as the design and implementation change. It is the only authoritative layout view for this
 task.
@@ -196,44 +200,53 @@ task.
 ### 5.1. Repository changes
 
 ```text
-blueearth_cst/                                    repository root
-├── analyze_climate.smk                           [edit] replace 0.04/0.05; add 0.04b and canonical targets
+blueearth_cst/                                           repository root
+├── analyze_climate.smk                                  [edit] replace 0.04/0.05; add 0.04b and canonical targets
+├── README.md                                            [edit] canonical WF0 outputs and WF1 distinction
 ├── blueearth_cst/
-│   └── climate_analysis/
-│       ├── figure_naming.py                      [edit] register new controlled plot contexts
-│       ├── diagnostics.py                        [new] pure diagnostic calculations
-│       ├── diagnostic_settings.py                [new] WF0 settings validation and defaults
-│       ├── diagnostic_outputs.py                 [new] shared declaration/writer output inventory
-│       ├── diagnostic_tables.py                  [new] basin series, period calculations, table I/O
-│       ├── diagnostic_figures.py                 [new] render from plot-ready tables
-│       ├── diagnostic_maps.py                    [new] native-grid map fields and lab-derived map layout
-│       ├── diagnostic_captions.py                [new] reusable scientific captions
-│       ├── compute_climate_diagnostics.py        [new] rule 0.04 adapter
-│       ├── plot_climate_diagnostics.py           [new] rule 0.04b adapter
-│       └── compare_climate_diagnostics.py        [new] rule 0.05 adapter
+│   ├── climate_analysis/
+│       ├── figure_naming.py                             [edit] register new controlled contexts
+│       ├── diagnostics.py                               [new] pure diagnostic calculations
+│       ├── diagnostic_settings.py                       [new] WF0 settings and defaults
+│       ├── diagnostic_outputs.py                        [new] shared declaration/writer inventory
+│       ├── diagnostic_tables.py                         [new] basin series, calculations and table I/O
+│       ├── diagnostic_figures.py                        [new] artists using retained results
+│       ├── diagnostic_render.py                         [new] rendering and export orchestration
+│       ├── diagnostic_maps.py                           [new] native-grid map fields and layout
+│       ├── diagnostic_captions.py                       [new] reusable scientific captions
+│       ├── diagnostic_subbasins.py                      [new] optional subbasin products
+│       ├── compute_climate_diagnostics.py               [new] rule 0.04 adapter
+│       ├── plot_climate_diagnostics.py                  [new] rule 0.04b adapter
+│       ├── compare_climate_diagnostics.py               [new] rule 0.05 adapter
+│       └── compare_sources.py                           [remove] retired comparison producer
+│   └── shared/
+│       └── variable_registry.py                         [edit] remove obsolete producer reference in comment
 ├── test_case/
-│   └── project_config_rapid_analyze_climate.yml  [edit] diagnostics settings; subbasin_figures defaults to false
+│   └── project_config_rapid_analyze_climate.yml         [edit] subbasin plots off by default
+├── config/
+│   └── templates/
+│       └── project_config.analyze_climate.template.yml  [edit] optional settings and defaults
 ├── tests/
-│   ├── test_climate_source_plot_contract.py      [edit] canonical WF0 wiring; retain WF1 compatibility
-│   ├── test_climate_diagnostic_maps.py           [new] map aggregation, support, layout and PET caveat
-│   ├── test_figure_naming.py                     [edit] new controlled contexts
-│   ├── test_climate_diagnostics.py               [new] ported numerical known-answer tests
-│   ├── test_climate_diagnostic_tables.py         [new] inputs, periods, units, availability
-│   ├── test_climate_diagnostic_figures.py        [new] render/output/caption contracts
-│   └── test_climate_diagnostic_rules.py          [new] source/comparison DAG declarations
+│   ├── test_climate_source_plot_contract.py             [edit] WF0 wiring and WF1 compatibility
+│   ├── test_figure_naming.py                            [edit] new controlled contexts
+│   ├── test_log_rules_contract.py                       [edit] current conditional comparison-rule description
+│   ├── test_variable_registry.py                        [edit] current consumer description
+│   ├── test_wf0_diagnostics.py                          [new] numerical known-answer tests
+│   ├── test_wf0_diagnostic_contracts.py                 [new] adapters, maps and output contracts
+│   └── test_compare_climate_sources.py                  [remove] retired producer tests
 ├── docs/
 │   └── site/
 │       └── toolbox-reference/
-│           └── workflow-analyze-climate.qmd      [edit] outputs, settings, methods, captions, limits
+│           └── workflow-analyze-climate.qmd             [edit] user guide, outputs and limitations
 └── dev/
     ├── reference/
-    │   ├── wf0-figure-filename-rule.md           [edit] new controlled contexts
+    │   ├── wf0-figure-filename-rule.md                  [edit] canonical contexts
     │   └── workflows/
-    │       └── rule-index.md                     [edit] new letter-suffixed WF0 rules
+    │       └── rule-index.md                            [edit] new WF0 rules
     └── tasks/
         └── wf0-lab-integration/
-            ├── design.md                         [present] proposal and maintained tree
-            └── design-reference.md               [present] technical contracts and decision record
+            ├── design.md                                [present] proposal and maintained tree
+            └── design-reference.md                      [present] contracts and decisions
 ```
 
 WF0's legacy source/comparison plot producers are replaced. WF1 retains its existing shared source producer.
@@ -397,16 +410,31 @@ No new dependency is expected. Detailed scientific and implementation contracts 
 
 ## 7. Validation and scientific limits
 
-Before accepting the integration, we will:
+The integration was checked against the approved plan:
 
-1. Check numerical methods against known-answer tests and the lab's Ntoum calculations using matched inputs
+1. Numerical methods against known-answer tests and the lab's Ntoum calculations using matched inputs
    and settings.
-2. Check that declared outputs match written outputs, including single-source, missing-variable,
+2. Declared outputs against written outputs, including single-source, missing-variable,
    unavailable-data and subbasin opt-in cases.
-3. Render and inspect the source, comparison and map figures at their intended size, including optional
+3. Rendered source, comparison and map figures, including optional
    captioned variants.
-4. Verify that WF1 behavior and the extracted climate data are unchanged.
-5. Run the repository's required validation gates from the BlueEarth lane.
+4. Shared extraction/WF1 contracts and matched retained climate data.
+5. The repository's required commit gates from this BlueEarth lane.
+
+| Check | Result |
+| --- | --- |
+| Focused numerical and contract tests | 85 passed; final adapter rerun: 7 passed |
+| CLI checks | 20 passed |
+| Lint, formatting and documentation links | Passed |
+| Ntoum numerical regression | Matched within the approved tolerances |
+| New diagnostic jobs through Snakemake | All five passed with defaults and opt-in settings |
+| Output inventory | 55 standard PNGs; opt-in case: 83 standard plus 83 captioned |
+
+The opt-in case includes four subbasins. All recorded rendered paths exist; no PDFs were produced.
+Fresh shared delineation was stopped during a slow P-drive index read. Diagnostic execution used retained
+spatial and climate prerequisites, so it does not prove a fresh full-workflow run. Combined batch gates remain
+due at an approved landing. Commands, numerical comparisons and results deltas are retained in the
+[technical reference](design-reference.md#implementation-validation--2026-10-06).
 
 Source agreement is not evidence of accuracy. Input homogeneity is unverified, no independent station
 observations were used, and some SPI fits are unreliable. Trend results remain provisional. The detailed
@@ -430,6 +458,7 @@ remain separate decisions and are not authorized.
 
 ## 9. Revision record
 
+- 2026-10-06: Implemented the approved canonical system; updated the tree and retained validation results.
 - 2026-10-06: Gate 1 approved by Ümit Taner; toolbox-native implementation started.
 - 2026-10-06: Proposed the lab integration and revised its scope with the owner.
 - 2026-10-06: Rewrote this document for user review. Kept the proposed tree here; moved exact contracts,

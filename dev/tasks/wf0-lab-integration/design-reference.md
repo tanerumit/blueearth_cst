@@ -1,6 +1,6 @@
 # WF0 design reference
 
-Status: Gate 1 approved; implementation in progress. Approval covers design revision
+Status: Gate 1 approved; implemented and locally validated. Approval covers design revision
 `9bed3e05`; see [the gate record](design.md#8-gate-1-review).
 
 This companion serves implementers and reviewers who need exact scientific
@@ -16,6 +16,7 @@ end record how the proposal developed; they are not additional instructions.
 - [Scientific limitations](#scientific-status-and-required-limitations)
 - [Decision history](#session-decision-process-record--2026-10-06)
 - [Inspection evidence](#inspection-evidence)
+- [Implementation validation](#implementation-validation--2026-10-06)
 
 ## Technical decisions
 
@@ -264,7 +265,7 @@ CHARTS export set. These are proposed additions, not claimed accepted visual ref
 | Form | New basename (comparison or S) | Input |
 |---|---|---|
 | Gamma/Pearson III fit checks | `comparison_precip_monthly_spi_fit_basin_avg.png` | spi_fit_checks |
-| Total/Rx1day start-year sensitivity | `comparison_precip_annual_trend_sensitivity_basin_avg.png` | trend_sensitivity |
+| Trend sensitivity | `comparison_precip_annual_trend_sensitivity_basin_avg.png` | trend_sensitivity |
 
 Extend `figure_naming.PLOT_CONTEXTS` with exactly the contexts in these tables; keep
 `annual_ts`, `monthly_box`, `monthly_clim_line`, maps and all old names. No new spatial
@@ -440,7 +441,10 @@ hashes; source IDs/labels; extraction span and catalogue lineage; reported/effec
 units; basin cell counts; reporting/calendar conventions; requested/actual
 display/reference periods; exact valid/common years; reference fit counts; qualification
 notices; unavailable products/reasons; spell/event censoring counts; anomaly colour
-bounds; and every produced relative path. Its six families start as prototype-tested
+bounds; and computed produced paths alongside the declared rendering inventory. Actual
+rendered paths and colour bounds are recorded in `figure_captions.json`, which the
+renderer owns. Keeping one writer per file avoids making rule 0.04b rewrite an input
+of rule 0.05 and causing unnecessary comparison reruns. Its six families start as prototype-tested
 only after ported tests pass; Ntoum exercise and qualification status are separate
 fields, never inferred from run success. Include the scientific limitations below.
 
@@ -836,6 +840,130 @@ annual time series and comparison climatology lines are retired from WF0 targets
 newer percentile-band and trend-series views supersede them. Existing source maps are
 replaced by the lab spatial-map structure.
 
+
+## Implementation validation — 2026-10-06
+
+### Matched Ntoum numerical regression
+
+Toolbox basin reduction was checked against retained 2000–2016 extracts and the lab's
+retained annual tables. Long-record extremes used the staged native sources, the same
+basin cells, January reporting years, 3/15-day tolerances and 1 mm wet-day threshold.
+The CHIRPS catalogue shift was applied once to the raw staged input; extracted stores
+were not shifted again. Coordinate differences were bounded before selecting native
+cells (ERA5 exact; CHIRPS maximum 4.46e-7 degrees).
+
+| Check | ERA5 | CHIRPS |
+| --- | --- | --- |
+| 2000–2016 mean annual P (mm) | 2721.9038 | 2524.8389 |
+| Lab mean from rounded CSV (mm) | 2721.9035 | 2524.8388 |
+| Maximum annual delta from rounded CSV (mm) | 0.00511 | 0.00467 |
+| Maximum daily extract/raw delta (mm/day) | 0 | 0.0000153 |
+| 1990–2020 Rx1day slope (mm/decade) | 7.11250 | 9.96412 |
+| 1990–2020 corrected p | 0.005898 | 0.002483 |
+| Valid trend years | 31 | 31 |
+
+The rounded handoff references (+7.1/.006 and +10.0/.002) pass the approved slope
+tolerance of 0.1 mm/decade and p tolerance of 0.001. Daily differences are below the
+stated float32 tolerance of approximately 1e-4 mm/day. Annual differences reflect
+the lab CSV's six-significant-digit export plus float32 reduction; they are not a
+new change to extraction or aggregation. The 1991–2020 comparison PNG display period
+is distinct from this 1990–2020 regression.
+
+The first CHIRPS probe started at the first shifted observation (2 January 1990),
+which omitted the partial leading reporting year. Reindexing to the matched requested
+daily calendar retained 1 January as missing; the accepted completeness tolerance then
+kept 1990. This reproduced the lab's 31-year result. No observations were invented.
+
+These are engineering regression checks. Ntoum was exercised on real data and remains
+not scientifically qualified. Local probe logs and JSON are disposable scratch evidence;
+the numerical outcomes above are the retained record.
+
+### Results delta from the lab references
+
+- Four-field toolbox names replace the lab's three-field visual-example names; multi-source
+  figures use `comparison`. No PDF or HTML report is produced by the new WF0 system.
+- Source-only CHIRPS omits temperature and its own P–T plot. Comparison P–T identifies ERA5
+  as the temperature carrier; genuine source temperature remains separate.
+- The default inventory adds SPI fit and trend sensitivity figures. Source maps retain the
+  accepted native-cell layout; PET extends it using the existing source-grid derivation.
+- The execution fixture covers 2000–2016. Its periods, colour bounds and complete-year counts
+  differ from the lab's 1991–2020 comparison and 1970–2020 ERA5 source maps. Geometry follows
+  the toolbox's retained delineation, rather than substituting the lab's separate map fixture.
+- Map labels and overlays have white halos for contrast on darker pooled colour classes.
+  The source and period appear at the bottom; map support is native grid at basin extent,
+  while temporal captions describe equally weighted basin cells.
+- Computed provenance and declared rendering inventory are owned by rule 0.04. Actual PNG
+  paths, captioned paths and colour bounds are owned by the caption record in rule 0.04b;
+  rule 0.05 owns both records for comparisons. Each declared file has one writer.
+- Legacy source plotting remains available to WF1. The unused WF0 `compare_sources.py`
+  producer and `tests/test_compare_climate_sources.py` were removed; their active contracts
+  are covered by the new diagnostics tests. Existing generated run files were not deleted.
+
+### Completed checks and execution coverage
+
+| Check | Result |
+| --- | --- |
+| Focused method, inventory and workflow contracts | 85 passed in 58.94 s |
+| Final adapter/render contracts after corrections | 7 passed in 32.87 s |
+| `tests/test_cli.py` | 20 passed in 96.08 s |
+| `tests/test_activation_links.py` | 6 passed |
+| `pixi run lint` | Passed |
+| `pixi run format-check` | Passed; 418 files formatted |
+| `git diff --check`; Markdown width check | Passed |
+| Revised rapid DAG dry-run | Passed |
+| Five changed diagnostic jobs, defaults | Passed in 48 s |
+| Five changed diagnostic jobs, opt-in | Passed in 2:13; final refresh passed in 1:43 |
+| Declared/produced path audit | All recorded paths exist; all PNGs have captions; no PDFs |
+
+The focused command was:
+
+```powershell
+pixi run python -m pytest tests/test_wf0_diagnostics.py tests/test_wf0_diagnostic_contracts.py tests/test_figure_naming.py tests/test_climate_source_plot_contract.py tests/test_log_rules_contract.py -q -x
+```
+
+The final adapter rerun used `tests/test_wf0_diagnostic_contracts.py`; CLI and link checks
+used their named test files. Pytest temporary output was directed to worktree scratch
+when needed. The locked Pixi environment was repaired with `pixi install --locked` after
+missing native libraries and sandbox activation/cache failures; no dependency or lock
+change was made. Passing checks used the project environment, not the global interpreter.
+
+The owned `scripts/run_workflow.py` launcher ran the diagnostic subgraph from this
+toolbox lane. Its recorded Snakemake command for the final opt-in run was:
+
+```powershell
+snakemake plot_climate_diagnostics_era5 plot_climate_diagnostics_chirps compare_climate_diagnostics -c 3 -s analyze_climate.smk --configfile .tmp/scratchpad/wf0-opt-in-config/project_config_opt_in.yml --allowed-rules compute_climate_diagnostics_era5 compute_climate_diagnostics_chirps plot_climate_diagnostics_era5 plot_climate_diagnostics_chirps compare_climate_diagnostics
+```
+
+The scratch config retained rapid project settings and enabled only the approved
+captioned/subbasin options. Prerequisite climate stores and spatial vectors were retained
+fixtures. The initial full rapid run was stopped gracefully while reading the P-drive
+hydrography index; fresh foundation and extraction execution were **not completed**.
+This is an explicit narrowing of execution coverage, not a fresh full-workflow pass.
+Shared extraction/WF1 producer contracts and matched raw/extracted series were checked
+separately. The stale numerical baseline was not used. Batch landing gates remain due
+only after separate landing approval under the repository's validation ladder.
+
+The default declared inventory remains 21 ERA5 + 17 CHIRPS + 17 comparison PNGs. The
+four-subbasin opt-in fixture produced:
+
+| Scope | Standard basin | Standard subbasin | Captioned total | Subbasin CSVs |
+| --- | --- | --- | --- | --- |
+| ERA5 | 21 | 12 | 33 | 20 |
+| CHIRPS | 17 | 8 | 25 | 20 |
+| Comparison | 17 | 8 | 25 | 16 |
+| Total | 55 | 28 | 83 | 56 |
+
+All 83 standard and 83 captioned PNGs were catalogued. The audit verified all 172
+render-produced paths, including six caption files, and every metadata-declared path.
+Source subbasin folders retain daily data plus four canonical tables per ID; comparison
+subbasin folders retain four recomputed tables per ID. No PDFs were produced.
+
+Visual inspection covered source SPI, extreme series, timing, trend intervals, fit and
+sensitivity figures, P–T panels, actual source maps, comparison anomaly calendars,
+captioned PET maps and source/comparison captioned subbasin figures. Contrast and
+clipped-title problems in the first maps were corrected and rerendered. All newly
+declared PNGs were rendered; the list above states the inspection coverage explicitly.
+Local outputs remain under the ignored rapid project tree for owner inspection.
 
 ## Related
 

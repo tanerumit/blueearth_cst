@@ -15,6 +15,29 @@ necessary to review the complete output inventory, source attribution, and
 declaration/writer mapping together. No existing ADR covers this diagnostic integration;
 ADR 0006 governs the existing shared source figure family.
 
+## Contents
+
+- [Context](#context)
+- [Decision](#decision)
+  - [Proposed tree/layout](#proposed-treelayout)
+  - [D1. Periods, inputs and scientific conventions](#d1-periods-inputs-and-scientific-conventions)
+  - [D2. Configuration proposed for approval](#d2-configuration-proposed-for-approval)
+  - [D3. Accepted figure inventory and exact proposed names](#d3-accepted-figure-inventory-and-exact-proposed-names)
+  - [Canonical spatial maps](#canonical-spatial-maps)
+  - [D4. Table, metadata, figure and caption output contracts](#d4-table-metadata-figure-and-caption-output-contracts)
+  - [D5. Single declaration source and Snakemake mapping](#d5-single-declaration-source-and-snakemake-mapping)
+  - [D6. Visual contract](#d6-visual-contract)
+- [Consequences](#consequences)
+- [Alternatives considered](#alternatives-considered)
+- [Validation and acceptance after Gate 1](#validation-and-acceptance-after-gate-1)
+- [Scientific status and required limitations](#scientific-status-and-required-limitations)
+- [Gate 1 decision requested](#gate-1-decision-requested)
+- [Related](#related)
+  - [Owner-directed output revision](#owner-directed-output-revision)
+  - [Owner-directed optional subbasin figures](#owner-directed-optional-subbasin-figures)
+  - [Owner-directed canonical replacement revision](#owner-directed-canonical-replacement-revision)
+- [Session decision-process record — 2026-10-06](#session-decision-process-record--2026-10-06)
+
 ## Context
 
 The reference is `C:/Users/taner/workspace/wf0-lab` **working tree**, inspected

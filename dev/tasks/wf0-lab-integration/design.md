@@ -443,8 +443,8 @@ Fresh WF0 execution passed with local Ntoum input subsets, including delineation
 all diagnostic jobs. The default inventory passed again. Delineation used about 341 MB peak RAM; the
 largest individual job used about 532 MB. The earlier P-drive delay remains unresolved: local staged inputs
 change both access location and spatial extent, so this does not isolate network latency from global-raster
-processing. The local catalog switch is temporary; shipped defaults are unchanged. Combined batch gates
-remain due at an approved landing. Commands, numerical comparisons and results deltas are retained in the
+processing. The local catalog switch is temporary; shipped defaults are unchanged. Landing validation
+passed: test-fast (3,925 passed), test-full (4,004 passed), and test-e2e (all five workflows passed). Commands, numerical comparisons and results deltas are retained in the
 [technical reference](design-reference.md#implementation-validation--2026-10-06).
 
 Source agreement is not evidence of accuracy. Input homogeneity is unverified, no independent station
@@ -464,10 +464,12 @@ revision is `9bed3e05`. Gate 1 covered:
 - Scientific conventions, comparison periods, source attribution and limits.
 - Validation and migration of consumers to the new paths.
 
-Implementation is authorized on the current task branch. Landing, pushing and publication
-remain separate decisions and are not authorized.
+Implementation is complete. Local landing into main is approved and validation has passed.
+Pushing and publication remain unauthorized.
 
 ## 9. Revision record
+
+- 2026-10-06: Local landing approved; full, fast and all-five-workflow validation passed.
 
 - 2026-10-06: Matched fresh products verified; restored the two source-summary files and their declarations.
 - 2026-10-06: Fresh WF0 passed with local staged Ntoum inputs; retained memory and output-inventory evidence.

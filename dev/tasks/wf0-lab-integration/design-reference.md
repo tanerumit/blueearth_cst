@@ -1060,3 +1060,21 @@ Local outputs remain under the ignored rapid project tree for owner inspection.
 - `dev/records/decisions/0006-retire-subcatchment-climate-plots.md`
 - `AGENTS.md`, validation ladder and task-lane rules
 
+
+## Local landing validation — 2026-10-06
+
+Local landing is explicitly approved. No push or publication is authorized.
+
+- `pixi run test-fast`: 3,925 passed, 6 skipped, 1 expected failure.
+- `pixi run test-full`: 4,004 passed, 6 skipped, 1 expected failure.
+- `pixi run test-e2e`: 1 passed, 4,010 deselected; all five workflows executed, no skip.
+- Final fast suite after rebasing onto concurrent main console changes: 3,925 passed.
+
+The full and end-to-end gates used local staged Ntoum data. Two failed input attempts were repaired
+by staging the existing GlobCover subset and preserving the catalog root for the other datasets.
+Shipped configurations were unchanged. Final main changes only alter two console formatting functions;
+AST comparison confirmed unchanged workflow execution logic. Reviewed runner and test blobs are pinned
+in the executable landing verifier, which rejects further code changes.
+
+The six skips cover Linux-specific controls and the separately invoked integration test. The expected
+failure is the existing HydroMT catalog round-trip issue. Ntoum remains not scientifically qualified.

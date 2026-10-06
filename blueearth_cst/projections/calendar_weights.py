@@ -44,8 +44,34 @@ SUPPORTED_CALENDARS = frozenset(
 )
 
 
+#: One calendar under two CF names (CF conventions §4.4.1): `gregorian` is the
+#: deprecated spelling of `standard`, `365_day` of `noleap`, `366_day` of
+#: `all_leap`. A store may label its historical and scenario runs differently.
+_CF_ALIASES = {"gregorian": "standard", "365_day": "noleap", "366_day": "all_leap"}
+
+#: The last month in which `standard` and `proleptic_gregorian` differ: the
+#: Gregorian reform dropped ten days from October 1582.
+_GREGORIAN_REFORM = (1582, 10)
+
+
 class CalendarError(ValueError):
     """A series whose annual aggregate cannot be honestly weighted."""
+
+
+def same_month_lengths(first, second, earliest):
+    """Whether two calendars give every month from ``earliest`` the same length.
+
+    ``earliest`` is the first ``(year, month)`` compared. Aliases always agree;
+    `standard` and `proleptic_gregorian` agree for any month after the 1582
+    reform, which covers every CMIP6 acquisition window (1950 on). Any other
+    pair differs and is refused by the caller.
+    """
+    a, b = (_CF_ALIASES.get(str(c), str(c)) for c in (first, second))
+    if a == b:
+        return True
+    return {a, b} == {"standard", "proleptic_gregorian"} and (
+        tuple(earliest) > _GREGORIAN_REFORM
+    )
 
 
 def assert_weightable(calendar, source=""):

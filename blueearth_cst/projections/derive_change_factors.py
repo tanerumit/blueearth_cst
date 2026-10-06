@@ -39,7 +39,11 @@ import xarray as xr
 from blueearth_cst.projections import provenance as _prov
 from blueearth_cst.projections import reference_window, series_identity
 from blueearth_cst.projections import report as _report
-from blueearth_cst.projections.calendar_weights import CalendarError, assert_weightable
+from blueearth_cst.projections.calendar_weights import (
+    CalendarError,
+    assert_weightable,
+    same_month_lengths,
+)
 from blueearth_cst.projections.change_factor_table import (
     TABLE_COLUMNS_ANNUAL,
     TABLE_COLUMNS_MONTHLY,
@@ -195,16 +199,23 @@ def derive_point_datasets(
     # the series (propagated there from the raw slice, which got it from the store
     # -- the axis itself cannot say, having been converted to datetime64 upstream).
     # Both series must agree: a change factor differencing two calendars would be
-    # comparing incomparable annual aggregates.
+    # comparing incomparable annual aggregates. Agreement is on month LENGTHS, not
+    # names -- MIROC6 labels its historical run `proleptic_gregorian` and its
+    # scenarios `gregorian`, which are the same months from 1582 on.
     calendar = str(ds_hist_time.attrs.get("cst_calendar", "") or "")
     clim_calendar = str(ds_clim_time.attrs.get("cst_calendar", "") or "")
-    if calendar != clim_calendar:
+    earliest = min(
+        (t.year, t.month)
+        for t in (ds_hist_time.indexes["time"][0], ds_clim_time.indexes["time"][0])
+    )
+    if not same_month_lengths(calendar, clim_calendar, earliest):
         raise CalendarError(
             f"{name_model} {name_scenario}: reference and scenario series carry "
             f"different calendars ({calendar!r} vs {clim_calendar!r}). Their annual "
             "aggregates are not comparable."
         )
     assert_weightable(calendar, source=f"{name_model} {name_scenario}")
+    assert_weightable(clim_calendar, source=f"{name_model} {name_scenario}")
 
     # The cache is bound to one validated historical series and analysis
     # configuration, never to a future horizon or scenario.

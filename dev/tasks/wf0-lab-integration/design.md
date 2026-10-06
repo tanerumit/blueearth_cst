@@ -292,10 +292,10 @@ Tests assert exact recursive output-file equality and rule declaration equality.
 
 | Rule number/name | Declared inputs | Declared outputs / writer |
 |---|---|---|
-| 0.04 `plot_climate_datasets_<source>` | current SourcePlotRule inputs | existing plots/subbasins only; current writer |
+| 0.04 `plot_climate_datasets_<source>` | current SourcePlotRule inputs; subbasin plotting enabled by WF0 setting | existing basin plots; existing subbasin paths only when enabled; current writer |
 | 0.04b `compute_climate_diagnostics_<source>` | own extracted climate_nc + basin_cells; settings in params | daily_basin + 17 plot-ready CSVs + diagnostics.json; compute script |
 | 0.04c `plot_climate_diagnostics_<source>` | own 0.04b table/metadata outputs; all candidates' monthly_values/metadata for pooled anomaly bounds | capability-selected source PNGs + both caption files + optional captioned PNGs; plot script |
-| 0.05 `compare_climate_datasets` | current extracted stores/cells/subbasins | current comparison files/subbasins only; current writer |
+| 0.05 `compare_climate_datasets` | current extracted stores/cells; subbasins for plotting only when enabled | current basin comparison files; existing subbasin paths only when enabled; current writer |
 | 0.05b `compare_climate_diagnostics` | each source's daily_basin + diagnostics.json (full native series/lineage) | 17 common-period plot-ready CSVs + agreement.csv/.md + diagnostics.json + selected comparison PNGs + captions/optional variants; compare script |
 
 0.05b recomputes **period-dependent** climatologies, trends, sensitivity, ACF,
@@ -493,3 +493,25 @@ Keep [project-tree.md](project-tree.md) current whenever this task changes file
 placement, output names, formats, counts or conditional availability. Update it
 in the same revision as the design or implementation, distinguishing proposed
 paths from implemented paths so the owner can inspect the current layout quickly.
+
+### Owner-directed optional subbasin figures
+
+Add the WF0-owned T2 boolean `subbasin_figures`, default `false`, to the
+`analyze_climate` workflow settings file. It controls the existing source
+(0.04) and multisource comparison (0.05) subbasin figure families together.
+Basin figures and the new basin diagnostics remain enabled. Enabling it retains
+the existing `plots/subbasins/` and comparison `subbasins/` paths and basenames.
+No new subbasin diagnostic family is introduced.
+
+With the option off, omit subbasin figure directories from declared outputs and
+terminal targets, and skip their rendering; do not create empty placeholder
+directories. Existing subbasin vector products remain governed by their current
+spatial-foundation contract. Previously generated subbasin plots are not deleted;
+they are not current declared outputs while the option is off.
+
+The source producer is shared with WF1: adapt its declaration and writer
+interfaces to support this choice while retaining WF1's existing behavior by
+default. Document this intentional WF0 default-output change and opt-in setting.
+Focused validation must cover false/default and true declarations and renders,
+single-source behavior, and unchanged WF1 source-plot behavior. Gate 1 approval
+of implementation remains pending.

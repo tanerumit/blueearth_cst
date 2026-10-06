@@ -19,6 +19,9 @@ blueearth_cst/                         repository root
 ├── analyze_climate.smk                [edit] add 0.04b, 0.04c, 0.05b and terminal outputs
 ├── blueearth_cst/
 │   └── climate_analysis/
+│       ├── source_plot_rule.py        [edit] optional WF0 subbasin declarations; retain WF1 default
+│       ├── plot_climate_source.py     [edit] skip subbasin rendering when disabled
+│       ├── compare_sources.py         [edit] optional subbasin comparison rendering
 │       ├── figure_naming.py           [edit] register new controlled plot contexts
 │       ├── diagnostics.py             [new] pure diagnostic calculations
 │       ├── diagnostic_settings.py     [new] WF0 settings validation and defaults
@@ -31,8 +34,11 @@ blueearth_cst/                         repository root
 │       └── compare_climate_diagnostics.py  [new] rule 0.05b adapter
 ├── test_case/
 │   └── project_config_rapid_analyze_climate.yml
-│                                      [edit] optional commented diagnostics settings
+│                                      [edit] diagnostics settings; subbasin_figures defaults to false
 ├── tests/
+│   ├── test_climate_source_plot_contract.py [edit] optional WF0 outputs; WF1 compatibility
+│   ├── test_plot_climate_source.py     [edit] subbasin rendering switch
+│   ├── test_compare_climate_sources.py [edit] optional subbasin comparison
 │   ├── test_figure_naming.py           [edit] new controlled contexts
 │   ├── test_climate_diagnostics.py     [new] ported numerical known-answer tests
 │   ├── test_climate_diagnostic_tables.py   [new] inputs, periods, units, availability
@@ -55,8 +61,9 @@ blueearth_cst/                         repository root
 ```
 
 Existing source/comparison figure producers and their outputs retain their
-contracts. Other WF0 seed configs may receive the same optional commented
-settings if relevant; no additional seed is required by this proposal.
+basin contracts. Subbasin figure outputs become opt-in for WF0, retaining their
+paths when enabled. Other WF0 seed configs receive the same documented default
+where relevant; no additional seed is required by this proposal.
 
 ## Generated project outputs
 
@@ -70,6 +77,8 @@ store specification; it is not constructed by the new diagnostic code.
     └── climate/
         └── historical/
             ├── <store-key>/           one existing store per declared source
+            │   ├── plots/
+            │   │   └── subbasins/     existing figure family; only if subbasin_figures: true
             │   └── diagnostics/      [new] source diagnostics root D_s
             │       ├── diagnostics.json
             │       ├── figure_captions.json
@@ -79,6 +88,7 @@ store specification; it is not constructed by the new diagnostic code.
             │       └── figures/      source figure set detailed below
             │           └── captioned/        optional PNG copies
             └── comparison/           multisource runs only
+                ├── subbasins/        existing figure family; only if subbasin_figures: true
                 └── diagnostics/      [new] comparison diagnostics root D_c
                     ├── diagnostics.json
                     ├── figure_captions.json
@@ -125,6 +135,11 @@ Unavailable table products retain their headers and have reasons in metadata.
 
 - New diagnostic figures use PNG only, including optional captioned copies.
   No PDF files are created by the proposed diagnostic rules.
+- WF0 `subbasin_figures` defaults to `false`. Set it to `true` in the
+  `analyze_climate` workflow settings file to render existing source and
+  multisource comparison subbasin figures. Basin plots and new diagnostics
+  remain enabled; WF1 retains its current default. Disabled subbasin figure
+  directories are not declared or created. Earlier files are not deleted.
 - Proposed contexts are shortened: `monthly_coverage`, `annual_timing`,
   `monthly_anomaly`, `monthly_spi`, `spi_events`, `dry_spell_exceedance`,
   `seasonal_anomaly`, `monthly_spi_fit`, and `annual_trend_sensitivity`.
@@ -134,7 +149,8 @@ Unavailable table products retain their headers and have reasons in metadata.
   revises the requirement to include plot form in every context for the new
   family and requires a controlled-vocabulary documentation update.
 - These are proposed new outputs, so no existing figure paths are renamed and
-  no migration is required. Existing producers retain their output contracts.
+  no path migration is required. Existing basin output contracts are retained;
+  restoring previous WF0 subbasin output coverage requires the explicit opt-in.
 
 ### Figure subtree
 

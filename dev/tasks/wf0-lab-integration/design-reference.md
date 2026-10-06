@@ -670,13 +670,13 @@ carry the following lab section unchanged:
 ### Owner-directed output revision
 
 The proposed new diagnostic family uses PNG only, including captioned copies. Shortened
-contexts match the [proposed tree/layout](design.md#proposed-tree). The four-field grammar is preserved;
+contexts match the [proposed tree/layout](design.md#6-proposed-tree). The four-field grammar is preserved;
 existing WF0 plot outputs are retired; new contexts identify the diagnostic while
 registered definitions and captions specify its visual form. Update the controlled
 vocabulary and its plot-form requirement for this new family at implementation. Gate 1
 approval of the full design remains pending.
 
-Keep the [proposed tree/layout](design.md#proposed-tree) current whenever this task changes file
+Keep the [proposed tree/layout](design.md#6-proposed-tree) current whenever this task changes file
 placement, output names, formats, counts or conditional availability. Update it in the
 same revision as the design or implementation, distinguishing proposed paths from
 implemented paths so the owner can inspect the current layout quickly.
@@ -800,7 +800,7 @@ qualification or approve the complete design.
 
 ### Owner-directed single-document layout revision
 
-The proposed tree is embedded in [design.md](design.md#proposed-tree). The separate
+The proposed tree is embedded in [design.md](design.md#6-proposed-tree). The separate
 `project-tree.md` is removed; maintain that section with the design.
 This supersedes the earlier separate-tree decision, retaining its quick-review
 purpose and all proposed layout/output details.

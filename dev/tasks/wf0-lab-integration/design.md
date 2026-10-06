@@ -4,7 +4,7 @@
 - **Date:** 2026-10-06
 - **Decision owner:** Ümit Taner
 
-## Big picture
+## 1. Overview
 
 **Proposal:** replace WF0's existing plots with one climate-diagnostic system
 based on the WF0 lab. It uses BlueEarth's extracted climate data and produces
@@ -31,7 +31,7 @@ comparison over a common display period, with agreement based on common valid
 years. The new system replaces the old WF0 plot jobs. WF1 keeps its current
 plotting system.
 
-### What you will receive
+### 1.1. What you will receive
 
 - **Figures:** source climatology maps and temporal diagnostic PNGs. The default
   ERA5/CHIRPS set contains 55 figures. No PDFs.
@@ -45,7 +45,7 @@ plotting system.
   not need to open these to interpret the figures.
 
 The files live under each source's `diagnostics/` folder and, for multisource
-runs, `comparison/diagnostics/`. The [proposed tree](#proposed-tree) shows the
+runs, `comparison/diagnostics/`. The [proposed tree](#6-proposed-tree) shows the
 exact structure.
 
 **Scientific status:** the lab was exercised on real Ntoum data, but its
@@ -53,29 +53,32 @@ results are not scientifically qualified. Integration does not change that.
 
 ## Contents
 
-- [Big picture](#big-picture)
-  - [What you will receive](#what-you-will-receive)
-- [Purpose](#purpose)
-- [Planned changes](#planned-changes)
-- [Workflow architecture](#workflow-architecture)
-  - [Rule 0.04 — Compute source diagnostics](#rule-004--compute-source-diagnostics)
-  - [Rule 0.04b — Render source figures](#rule-004b--render-source-figures)
-  - [Rule 0.05 — Compare sources](#rule-005--compare-sources)
-  - [Rules being replaced](#rules-being-replaced)
-- [Figure and output choices](#figure-and-output-choices)
-  - [Source and comparison figures](#source-and-comparison-figures)
-  - [Names and formats](#names-and-formats)
-  - [Readable files and machine records](#readable-files-and-machine-records)
-  - [Settings and defaults](#settings-and-defaults)
-- [Proposed tree](#proposed-tree)
-  - [Repository changes](#repository-changes)
-  - [Generated outputs](#generated-outputs)
-- [Tradeoffs and alternatives](#tradeoffs-and-alternatives)
-- [Validation and scientific limits](#validation-and-scientific-limits)
-- [Gate 1 review](#gate-1-review)
-- [Revision record](#revision-record)
+- [1. Overview](#1-overview)
+  - [1.1. What you will receive](#11-what-you-will-receive)
+- [2. Purpose](#2-purpose)
+- [3. Planned changes](#3-planned-changes)
+- [4. Workflow architecture](#4-workflow-architecture)
+  - [4.1. Rule 0.04 — Compute source diagnostics](#41-rule-004--compute-source-diagnostics)
+  - [4.2. Rule 0.04b — Render source figures](#42-rule-004b--render-source-figures)
+  - [4.3. Rule 0.05 — Compare sources](#43-rule-005--compare-sources)
+  - [4.4. Rules being replaced](#44-rules-being-replaced)
+- [5. Figure and output choices](#5-figure-and-output-choices)
+  - [5.1. Source and comparison figures](#51-source-and-comparison-figures)
+  - [5.2. Names and formats](#52-names-and-formats)
+  - [5.3. Readable files and machine records](#53-readable-files-and-machine-records)
+  - [5.4. Settings and defaults](#54-settings-and-defaults)
+- [6. Proposed tree](#6-proposed-tree)
+  - [6.1. Repository changes](#61-repository-changes)
+  - [6.2. Generated outputs](#62-generated-outputs)
+    - [6.2.1. Diagnostic tables](#621-diagnostic-tables)
+    - [6.2.2. Output and naming choices](#622-output-and-naming-choices)
+    - [6.2.3. Figure inventory](#623-figure-inventory)
+- [7. Tradeoffs and alternatives](#7-tradeoffs-and-alternatives)
+- [8. Validation and scientific limits](#8-validation-and-scientific-limits)
+- [9. Gate 1 review](#9-gate-1-review)
+- [10. Revision record](#10-revision-record)
 
-## Purpose
+## 2. Purpose
 
 WF0 helps assess historical climate and choose climate forcing for a basin.
 The WF0 lab provides clearer figures and deeper diagnostics for this purpose.
@@ -84,7 +87,7 @@ This proposal makes that plotting system the only plotting system in WF0.
 The lab was exercised on real Ntoum data. Its results are **not scientifically
 qualified**. Moving the methods into BlueEarth does not change that status.
 
-## Planned changes
+## 3. Planned changes
 
 - Replace the current WF0 figures with the lab-derived figures.
 - Replace source climatology maps with the lab's native-grid map layout.
@@ -99,13 +102,13 @@ WF1 keeps its current plotting behavior. Climate extraction, WF2–WF4 and the
 shared plotting style remain unchanged. Previously generated WF0 plots are
 not deleted automatically, but are no longer outputs of the revised workflow.
 
-## Workflow architecture
+## 4. Workflow architecture
 
 Three rules implement the flow above. Source calculations and rendering are
 separate, so source figures can be restyled without recalculation. Comparisons
 use retained daily source series and calculate their own matched-period results.
 
-### Rule 0.04 — Compute source diagnostics
+### 4.1. Rule 0.04 — Compute source diagnostics
 
 Run once per source. Calculate the basin series, coverage, climatology,
 extremes, SPI, drought events, trends and method checks. Retain the tables and
@@ -114,7 +117,7 @@ native-grid annual climatology fields.
 **Why:** retained numerical results can be inspected and reused. Figure
 styling changes do not require repeating source calculations.
 
-### Rule 0.04b — Render source figures
+### 4.2. Rule 0.04b — Render source figures
 
 Render maps and temporal figures from the retained results. Write captions
 with the same periods, methods and availability information as the figures.
@@ -123,7 +126,7 @@ Use shared colour bounds where figures need to be visually comparable.
 **Why:** one declared inventory keeps the filenames, writers and captions
 consistent. A single-source run still produces a useful assessment.
 
-### Rule 0.05 — Compare sources
+### 4.3. Rule 0.05 — Compare sources
 
 Run only when more than one source is configured. Recalculate period-dependent
 diagnostics for the comparison period. Write comparison tables, figures,
@@ -134,15 +137,15 @@ Retained daily series allow the comparison to use matched periods correctly.
 This rule combines calculation and rendering to keep the workflow compact;
 changing comparison styling therefore repeats its calculations.
 
-### Rules being replaced
+### 4.4. Rules being replaced
 
 The existing 0.04 source plot jobs and 0.05 comparison plot job are replaced
 by these rules. They do not run alongside the new system. No one-source
 comparison job or folder is created.
 
-## Figure and output choices
+## 5. Figure and output choices
 
-### Source and comparison figures
+### 5.1. Source and comparison figures
 
 Temporal figures cover coverage, seasonal climate, rainfall timing, anomalies,
 SPI, drought events, rainfall extremes, dry spells, persistence and trends.
@@ -161,7 +164,7 @@ For ERA5 plus CHIRPS, the default set contains **55 PNGs**: 21 ERA5 source
 figures, 17 CHIRPS source figures and 17 comparison figures. Optional captioned
 copies add another 55 files. Subbasin opt-in adds further products.
 
-### Names and formats
+### 5.2. Names and formats
 
 Keep BlueEarth's four-field filename grammar:
 
@@ -181,7 +184,7 @@ comparison_precip_annual_trend_ts_basin_avg.png
 **Why:** shorter names are easier to scan while retaining source, variable,
 diagnostic and spatial meaning. PNG is the only required format for current use.
 
-### Readable files and machine records
+### 5.3. Readable files and machine records
 
 Each diagnostic root contains:
 
@@ -195,7 +198,7 @@ Each diagnostic root contains:
 JSON files remain retained workflow records. The Markdown captions and optional
 caption bands are generated from the same records.
 
-### Settings and defaults
+### 5.4. Settings and defaults
 
 Settings belong in the WF0 workflow configuration file.
 
@@ -211,7 +214,7 @@ Settings belong in the WF0 workflow configuration file.
 Missing variables omit unsupported figures. Insufficient observations produce
 labelled unavailable panels and reasons in the captions and metadata.
 
-## Proposed tree
+## 6. Proposed tree
 
 Only affected files and folders are shown. `[new]` and `[edit]` describe planned
 implementation; `[present]` identifies the design documents already created.
@@ -220,7 +223,7 @@ The generated paths are proposals, not evidence of completed runs.
 Maintain this tree as the design and implementation change. It is the only
 authoritative layout view for this task.
 
-### Repository changes
+### 6.1. Repository changes
 
 ```text
 blueearth_cst/                         repository root
@@ -269,7 +272,7 @@ WF0's legacy source/comparison plot producers are replaced. WF1 retains its
 existing shared source producer. Other WF0 seed configs receive the documented
 settings where relevant; no additional seed is required.
 
-### Generated outputs
+### 6.2. Generated outputs
 
 These files are generated under the user's `project_dir`, outside the toolbox
 repository in production. `<store-key>` is resolved from the existing climate
@@ -308,7 +311,7 @@ store specification; it is not constructed by the new diagnostic code.
                         └── captioned/        optional PNG copies, including subbasins/
 ```
 
-#### Diagnostic tables
+#### 6.2.1. Diagnostic tables
 
 Both diagnostic roots contain these 17 plot-ready tables. Source tables cover
 the source analysis period; comparison tables are recomputed for the comparison
@@ -339,7 +342,7 @@ roots additionally contain `agreement.csv` and `agreement.md`.
 
 Unavailable table products retain their headers and have reasons in metadata.
 
-#### Output and naming choices
+#### 6.2.2. Output and naming choices
 
 - Both JSON records live under each diagnostic root's `_engine/` folder.
   `figure_captions.md` remains at the root as the readable caption and
@@ -369,7 +372,7 @@ Unavailable table products retain their headers and have reasons in metadata.
   registered definitions, titles and captions specify the visual form. This
   revises the requirement to include plot form in every context for the new
   family and requires a controlled-vocabulary documentation update.
-#### Figure inventory
+#### 6.2.3. Figure inventory
 
 Every `.png` entry represents one explicitly declared file. `<dataset>`
 is the source ID for a source figure and `comparison` for a multisource figure.
@@ -416,7 +419,7 @@ A single-source run creates only its source diagnostic subtree. Runtime data
 insufficiency produces labelled unavailable panels for declared figures.
 Ntoum results remain real-data exercised and **not scientifically qualified**.
 
-## Tradeoffs and alternatives
+## 7. Tradeoffs and alternatives
 
 - **Replace rather than supplement the old plots.** One canonical system
   avoids duplicate views. Consumers of old WF0 plot paths must adopt the new
@@ -434,7 +437,7 @@ Ntoum results remain real-data exercised and **not scientifically qualified**.
 No new dependency is expected. Detailed scientific and implementation contracts
 are in [design-reference.md](design-reference.md), decisions D1–D6.
 
-## Validation and scientific limits
+## 8. Validation and scientific limits
 
 Before accepting the integration, we will:
 
@@ -452,7 +455,7 @@ no independent station observations were used, and some SPI fits are unreliable.
 Trend results remain provisional. The detailed scientific limitations and
 acceptance checks are retained in the [technical reference](design-reference.md).
 
-## Gate 1 review
+## 9. Gate 1 review
 
 The complete revised proposal still awaits approval. Gate 1 reviews:
 
@@ -467,7 +470,7 @@ The complete revised proposal still awaits approval. Gate 1 reviews:
 Agreement on earlier individual choices does not approve the complete design.
 Implementation starts after this gate. No pushing or publication is authorized.
 
-## Revision record
+## 10. Revision record
 
 - 2026-10-06: Proposed the lab integration and revised its scope with the owner.
 - 2026-10-06: Rewrote this document for user review. Kept the proposed tree here;

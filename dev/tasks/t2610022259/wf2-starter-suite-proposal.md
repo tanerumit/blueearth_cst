@@ -16,8 +16,9 @@ Parent: [Scope conceptual workflow improvements](../t2610022259-conceptual-workf
 Candidate inventory: [WF2 climate projections ideas](wf2-climate-projections-ideas.md). Precedent: [WF0
 starter suite proposal](wf0-starter-suite-proposal.md) and the closed `C:/Users/taner/workspace/wf0-lab`.
 
-This is an initial recommendation, not an approved implementation specification. Saving it does not approve
-methods, configuration changes, data downloads or implementation work.
+The owner accepted the suite and settled all six decisions below on 2026-10-06. This is still not an
+implementation specification: lab work and later toolbox integration each need their own brief, and toolbox
+configuration or output-contract changes remain gated at integration.
 
 ## Current WF2 foundation
 
@@ -166,24 +167,26 @@ figures are additions, declared through `figure_relative_paths` so the rule outp
 - **Later research capabilities.** Uncertainty partitioning, performance/independence weighting, time of
   emergence, physical storylines, bias adjustment and the CST exposure-space overlay.
 
-## Owner decisions
+## Owner decisions (settled 2026-10-06)
 
-1. **Analysis windows.** Add a 30-year pair (reference 1985–2014; 30 years centred on each horizon, for
-   example 2036–2065 for `mid`) beside the simulation-aligned view. *Recommended:* yes. C4 is not honest
-   without it, and C1/C2 become far less noisy. The aligned view remains the stress-test overlay input.
-2. **Lab development ensemble.** An approval-gated download; the fetch cost is unknown. *Recommended:* about
-   12 models from at least 10 institutions × SSP1-2.6/2-4.5/3-7.0/5-8.5, plus three models with five or more
-   members to expose within-model spread.
-3. **Seasons.** *Recommended:* DJF/MAM/JJA/SON first; basin-defined wet/dry seasons as a configurable
-   follow-up.
-4. **Where to develop.** (a) A new sibling `wf2-lab`; (b) a `wf2_lab/` package in the existing wf0-lab.
-   *Recommended:* (b), reusing the environment, figure tokens, caption mechanism and status ladder so WF0 and
-   WF2 share one visual language.
-5. **Caption convention.** WF2 draws its caveat beneath the plot (`supxlabel`, toolbox-wide ruling of
-   2026-08-11); the accepted lab rule defaults to caption-off with recoverable captions. *Recommended:* decide
-   once for both workflows during WF0 integration; build the WF2 lab to the lab rule meanwhile.
-6. **Output-path grammar.** WF2 uses `overview/…` and `windows/<horizon>/…`; WF0 uses a four-field grammar.
-   *Recommended:* keep WF2's grammar for now and decide alignment at integration.
+The owner accepted the recommendation on every item.
+
+1. **Analysis windows: adopted.** Add a 30-year analysis pair beside the simulation-aligned view: reference
+   1985–2014, and 30 years centred on each horizon (2036–2065 for `mid` 2046–2054). C4 uses the analysis pair
+   only; C1, C2, C5 and C6 report both window kinds. The aligned view remains the stress-test overlay input.
+2. **Lab development ensemble: adopted.** About 12 models from at least 10 institutions ×
+   SSP1-2.6/2-4.5/3-7.0/5-8.5, plus three models with five or more members to expose within-model spread.
+   The lab picks the concrete list from the catalog against these criteria and records it, along with the
+   fetch volume, before analysis begins.
+3. **Seasons: adopted.** DJF/MAM/JJA/SON first; basin-defined wet/dry seasons as a configurable follow-up.
+4. **Development home: option (b).** A `wf2_lab/` package in the existing wf0-lab, reusing its environment,
+   figure tokens, caption mechanism and status ladder, so WF0 and WF2 share one visual language. A new sibling
+   `wf2-lab` was not chosen.
+5. **Captions: deferred to WF0 integration.** Decide once for both workflows there. Meanwhile the WF2 lab
+   follows the accepted lab rule (caption-off by default, recoverable captions); existing WF2 figures keep
+   their `supxlabel` caveat.
+6. **Output paths: keep WF2's grammar.** New figures extend `overview/…` and `windows/<horizon>/…` through
+   `figure_relative_paths`; alignment with WF0's four-field grammar is decided at integration.
 
 ## Evidence and status
 

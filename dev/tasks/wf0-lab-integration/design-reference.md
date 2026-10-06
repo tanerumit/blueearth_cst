@@ -1,6 +1,7 @@
 # WF0 design reference
 
-Status: proposed; complete Gate 1 approval pending.
+Status: Gate 1 approved; implementation in progress. Approval covers design revision
+`9bed3e05`; see [the gate record](design.md#8-gate-1-review).
 
 This companion serves implementers and reviewers who need exact scientific
 conventions, schemas, rule contracts and validation details. The user-facing
@@ -674,7 +675,7 @@ contexts match the [proposed tree/layout](design.md#5-proposed-tree). The four-f
 existing WF0 plot outputs are retired; new contexts identify the diagnostic while
 registered definitions and captions specify its visual form. Update the controlled
 vocabulary and its plot-form requirement for this new family at implementation. Gate 1
-approval of the full design remains pending.
+approval of the full design was recorded after these revisions; see the gate record.
 
 Keep the [proposed tree/layout](design.md#5-proposed-tree) current whenever this task changes file
 placement, output names, formats, counts or conditional availability. Update it in the
@@ -704,7 +705,7 @@ WF1 source-plot behavior.
 The owner superseded the additive design: only the new system plots WF0. The lab spatial
 references were inspected read-only; lab `git status --short` was clean at this
 inspection (no lab commit is cited). The complete revised design and output inventory
-still require Gate 1 approval before implementation.
+received Gate 1 approval after these revisions; implementation is now authorized.
 
 ## Session decision-process record — 2026-10-06
 

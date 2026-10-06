@@ -1,6 +1,6 @@
 # Proposed WF0 climate diagnostics and figures
 
-- **Status:** Proposed; Gate 1 approval pending.
+- **Status:** Gate 1 approved; implementation in progress.
 - **Date:** 2026-10-06
 - **Decision owner:** Ümit Taner
 
@@ -414,7 +414,8 @@ scientific limitations and acceptance checks are retained in the [technical refe
 
 ## 8. Gate 1 review
 
-The complete revised proposal still awaits approval. Gate 1 reviews:
+Ümit Taner approved the complete revised proposal in this session. The approved design
+revision is `9bed3e05`. Gate 1 covered:
 
 - Replacement scope and retirement of the old WF0 figure producers.
 - Rule organization and the calculation/rendering tradeoffs.
@@ -424,11 +425,12 @@ The complete revised proposal still awaits approval. Gate 1 reviews:
 - Scientific conventions, comparison periods, source attribution and limits.
 - Validation and migration of consumers to the new paths.
 
-Agreement on earlier individual choices does not approve the complete design. Implementation starts after this
-gate. No pushing or publication is authorized.
+Implementation is authorized on the current task branch. Landing, pushing and publication
+remain separate decisions and are not authorized.
 
 ## 9. Revision record
 
+- 2026-10-06: Gate 1 approved by Ümit Taner; toolbox-native implementation started.
 - 2026-10-06: Proposed the lab integration and revised its scope with the owner.
 - 2026-10-06: Rewrote this document for user review. Kept the proposed tree here; moved exact contracts,
   inspection evidence and the session decision record to `design-reference.md`.

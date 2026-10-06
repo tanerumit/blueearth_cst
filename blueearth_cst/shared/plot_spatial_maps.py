@@ -181,6 +181,66 @@ LAND_COVER_CLASSES = (
     (200, "#000080", "Open sea"),
 )
 
+#: The GlobCover 2009 (ESA / UCLouvain) legend: codes and OFFICIAL colours,
+#: labels shortened from the product's definitions and wrapped like the table
+#: above. GlobCover reuses code numbers Copernicus gives other meanings — 40 is
+#: broadleaved evergreen forest here and cropland there — so a GlobCover raster
+#: drawn with the Copernicus table mislabels most of a tropical basin.
+GLOBCOVER_CLASSES = (
+    (11, "#aaf0f0", "Irrigated cropland"),
+    (14, "#ffff64", "Rainfed cropland"),
+    (20, "#dcf064", "Mosaic cropland /\nvegetation"),
+    (30, "#cdcd66", "Mosaic vegetation /\ncropland"),
+    (40, "#006400", "Broadleaved evergreen\nforest"),
+    (50, "#00a000", "Closed broadleaved\ndeciduous forest"),
+    (60, "#aac800", "Open broadleaved\ndeciduous forest"),
+    (70, "#003c00", "Closed needleleaved\nevergreen forest"),
+    (90, "#286400", "Open needleleaved\nforest"),
+    (100, "#788200", "Mixed broadleaved /\nneedleleaved forest"),
+    (110, "#8ca000", "Mosaic forest-shrubland /\ngrassland"),
+    (120, "#be9600", "Mosaic grassland /\nforest-shrubland"),
+    (130, "#966400", "Shrubland"),
+    (140, "#ffb432", "Herbaceous vegetation"),
+    (150, "#ffebaf", "Sparse vegetation"),
+    (160, "#00785a", "Flooded forest,\nfresh water"),
+    (170, "#009678", "Flooded forest,\nsaline water"),
+    (180, "#00dc82", "Flooded grassland /\nwoody vegetation"),
+    (190, "#c31400", "Artificial surfaces"),
+    (200, "#fff5d7", "Bare areas"),
+    (210, "#0046c8", "Water bodies"),
+    (220, "#ffffff", "Permanent snow and ice"),
+    (230, "#000000", "No data"),
+)
+
+#: Class table per land-cover product, keyed by the catalog source-name prefix
+#: (``globcover``, ``globcover_2009_v2.3``; ``vito``, ``vito_2019_v3.0.1``).
+_LAND_COVER_TABLES = (("globcover", GLOBCOVER_CLASSES), ("vito", LAND_COVER_CLASSES))
+
+
+def land_cover_classes(layer):
+    """The class table of the product the layer came from, read from ``source``.
+
+    The table must follow the data: products share code numbers with different
+    meanings. An unrecognised source gets NO table, with a warning, so its cells
+    draw as unclassified rather than under another product's labels.
+    """
+    import warnings
+
+    source = str(layer.attrs.get("source", "")).lower()
+    for prefix, table in _LAND_COVER_TABLES:
+        if source.startswith(prefix):
+            return table
+    warnings.warn(
+        f"no land-cover class table for source {source!r}; drawn unclassified",
+        RuntimeWarning,
+        stacklevel=2,
+    )
+    # Not ``()``: an empty table reads as "not nominal" and would draw the codes
+    # on a continuous ramp. One never-present code keeps the layer nominal, and
+    # ``category_entries`` sends every real code to its unclassified entry.
+    return ((-1, "#000000", None),)
+
+
 #: Okabe-Ito, the qualitative set designed to stay separable under all three
 #: dichromacies (Okabe & Ito 2008). Used for NOMINAL identifiers — subbasins —
 #: where the numbering carries no order and a sequential ramp would invent one.
@@ -428,7 +488,7 @@ SPATIAL_MAP_FIGURES = (
         mask_to_basin=False,
         expected_units=("1",),
     ),
-    SpatialFigure("land_cover", "land_cover", classes=LAND_COVER_CLASSES),
+    SpatialFigure("land_cover", "land_cover", classes=land_cover_classes),
     SpatialFigure(
         "leaf_area_index", "leaf_area_index_annual_mean", LEAF_AREA_INDEX_STYLE
     ),

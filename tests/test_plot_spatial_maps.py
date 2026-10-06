@@ -255,8 +255,43 @@ def test_the_land_cover_table_is_the_products_own_legend():
 
 
 def test_the_land_cover_codes_are_unique_and_ordered():
-    codes = [code for code, _, _ in family.LAND_COVER_CLASSES]
-    assert codes == sorted(set(codes))
+    for table in (family.LAND_COVER_CLASSES, family.GLOBCOVER_CLASSES):
+        codes = [code for code, _, _ in table]
+        assert codes == sorted(set(codes))
+
+
+def test_the_globcover_table_is_the_products_own_legend():
+    table = {code: colour for code, colour, _ in family.GLOBCOVER_CLASSES}
+    assert table[40] == "#006400"  # broadleaved evergreen forest
+    assert table[210] == "#0046c8"  # water bodies
+    assert len(family.GLOBCOVER_CLASSES) == 23
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        ("globcover", "GLOBCOVER_CLASSES"),
+        ("globcover_2009_v2.3", "GLOBCOVER_CLASSES"),
+        ("vito", "LAND_COVER_CLASSES"),
+        ("vito_2019_v3.0.1", "LAND_COVER_CLASSES"),
+    ],
+)
+def test_the_land_cover_table_follows_the_layer_source(source, expected):
+    assert family.land_cover_classes(_layer(source)) is getattr(family, expected)
+
+
+def test_globcover_code_40_is_forest_not_cropland():
+    """The defect this table exists for: GlobCover drawn with Copernicus codes."""
+    labels = {
+        code: label for code, _, label in family.land_cover_classes(_layer("globcover"))
+    }
+    assert "evergreen" in labels[40] and "Cropland" not in labels[40]
+
+
+def test_an_unknown_land_cover_source_is_drawn_unclassified_with_a_warning():
+    with pytest.warns(RuntimeWarning, match="no land-cover class table"):
+        table = family.land_cover_classes(_layer("esa_worldcover"))
+    assert [code for code, _, _ in table] == [-1]
 
 
 # --- the source footnote ------------------------------------------------------

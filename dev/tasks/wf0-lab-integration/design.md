@@ -6,6 +6,7 @@ Decider: Ümit Taner
 Lifecycle: maintained-current body; append-only revision log
 Revisions:
 - 2026-10-06: Phase 1 inventory and proposed contracts from the lab working tree; read-only cst-architect contract review reconciled.
+- 2026-10-06: Owner-directed revisions below replace the additive plotting proposal; complete Gate 1 approval remains pending.
 
 This task-owned decision record governs implementation after Gate 1. Its extra
 length is necessary to review the complete output inventory, source attribution,
@@ -546,3 +547,28 @@ The owner superseded the additive design: only the new system plots WF0.
 The lab spatial references were inspected read-only; lab `git status --short`
 was clean at this inspection (no lab commit is cited). The complete revised
 design and output inventory still require Gate 1 approval before implementation.
+
+## Session decision-process record — 2026-10-06
+
+This sequence records owner direction and its consequences, not approval of
+the complete implementation. The current normative contracts are D1–D6 and
+the owner-directed revisions above.
+
+| Sequence | Decision and reason | Consequence / superseded proposal |
+|---|---|---|
+| 1 | Provide a static affected project tree for quick inspection. | Added `project-tree.md`; layout becomes a concrete review surface beside the prose design. |
+| 2 | Make layout/tree and explicit user-facing changes part of generic Gate 1. | Canonical design guidance now requires annotated paths, new artifacts, naming and compatibility changes, and the owner's recorded review. |
+| 3 | Shorten verbose figure contexts while preserving the toolbox's four-field syntax. | Replace descriptive context stems with controlled diagnostic names; retain canonical variable names, `comparison`, and spatial scope. Register visual meaning in definitions and captions. |
+| 4 | Produce PNG only; PDF is unnecessary for current use. | Remove PDF declarations and caption paths, recalculate output counts, and align tree and design. |
+| 5 | Keep the tree continuously updated. | Treat it as the current inspection view; update it with relevant design/implementation revisions and distinguish proposed from implemented paths. |
+| 6 | Make subbasin figure fan-out optional, off by default. | Add WF0 opt-in setting and conditional declarations. After canonical replacement, the opt-in renders new views; it does not revive the old system. Map boundary overlays remain independent. |
+| 7 | Explain the three metadata/caption files before settling placement. | Establish contents, consumers and purpose: diagnostic provenance/status, machine caption records, and readable report captions. |
+| 8 | Review `_engine/` precedents and place both JSON files there. Users find JSON harder to use. | Retain machine records under each diagnostic root's `_engine/`; keep `figure_captions.md` at the root with interpretation and scientific caveats. This supersedes root-level JSON placement. |
+| 9 | Explain the proposed rules and inventory existing 0.04 plots. | Exposed the additive proposal's duplicate old/new plotting families and its execution organization. Source compute/render separation supports rerendering; comparison remains combined. |
+| 10 | Make the new system WF0's only plotting system; adopt the lab spatial map structure. | Retire old WF0 plotting producers, monthly boxes and plain annual/comparison lines. Replace source maps; preserve WF1's separate contracts. Revised proposal uses 0.04 compute, 0.04b render, 0.05 comparison and 55 default PNGs. PET map styling is a proposed extension, not a lab-qualified reference. |
+| 11 | Improve generic design-scoping and design-document from this process. | Surface replacement scope, artifact audience/placement, naming/formats/defaults and execution/rule changes early; keep review surfaces synchronized and preserve decision rationale/status. |
+
+The initial proposal assumed additive preservation of old WF0 figure contracts.
+The owner later explicitly authorized their replacement. This material scope
+change belongs in the revised Gate 1 framing; agreement on its components does
+not establish scientific qualification or approve the complete design.

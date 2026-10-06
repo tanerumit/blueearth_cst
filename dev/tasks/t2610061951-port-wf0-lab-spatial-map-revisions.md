@@ -23,8 +23,9 @@ Brief: [task-brief.md](t2610061951/task-brief.md).
 - [x] Placement, inset, keys and styling as `cartographic_map.PROFILES["spatial"]` (`5fa3909c`); default-path renders pixel-identical to main.
 - [x] Rule 1.11 figures opt into the profile; subbasin palette, LAI classes, legend titles (`5684e04c`); Liberia renders match the lab set.
 - [x] Rename rule 1.11 outputs to `<variable>_basin` with a migration note (`1a2bf137`).
-- [ ] Merge gates on `feat/wf0-spatial-map-improvements` (session-3): test-fast, test-full, test-e2e.
-- [ ] Land on main (owner approval).
+- [x] Rebased on main; test-fast (3925) and test-full (4004) passed on the combined tree.
+- [x] Landed on main as `c8c31103` with the owner's approval (2026-10-06); not pushed.
+- [ ] test-e2e: blocked by the P: drive dropping mid-run (WF0 read `30sec_elevtn.tif` failed). Re-run when P: is reachable; rule 1.11 has not yet run end to end under the new names.
 
 ## Decisions
 

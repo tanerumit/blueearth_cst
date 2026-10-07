@@ -139,7 +139,7 @@ WF0 retains coverage, extreme indices, SPI, trends and diagnostic tables under
 each source store's `tables/`. Multiple sources also produce
 `comparison/tables/` and `comparison/figures/`, with agreement tables and common-period figures.
 Machine-readable diagnostics and captions live in `_engine/`; readable captions
-live in `figure_captions.md`. Agreement does not establish accuracy or forcing
+live in `figures/figure_captions.md`. Agreement does not establish accuracy or forcing
 suitability. A single-source run keeps its diagnostics without a comparison.
 CHIRPS daily precipitation labelled `mm` is now labelled `mm d**-1` without
 rescaling values. Retained CHIRPS stores need regeneration to receive the label.

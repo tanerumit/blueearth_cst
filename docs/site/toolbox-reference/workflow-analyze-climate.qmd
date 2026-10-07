@@ -85,9 +85,9 @@ the diagnostic agreement summary; readiness does not establish scientific suitab
 ├── _engine/
 │   ├── diagnostics.json       # machine-readable methods, availability and provenance
 │   └── figure_captions.json   # captions indexed by figure path
-├── figure_captions.md         # readable captions and caveats
 ├── tables/                   # coverage, indices, SPI/events, trends and checks
 └── figures/                  # standard PNGs
+    └── figure_captions.md     # readable captions and caveats
 ```
 
 WF0 exclusively owns these source diagnostics. WF1 does not produce source figures.

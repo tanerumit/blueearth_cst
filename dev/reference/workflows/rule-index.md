@@ -248,7 +248,7 @@ sensitivity, paired anomalies and homogeneity tables. Writes fixed-schema CSVs,
 
 Renders the canonical WF0 source figures from retained diagnostics, with geometry
 overlays for maps. Writes individual PNGs in `<store_dir>/figures/`, machine captions
-in `_engine/figure_captions.json` and readable `figure_captions.md` at the root.
+in `_engine/figure_captions.json` and readable captions in `figures/figure_captions.md`.
 Captioned copies and subbasin products are opt-in. Unknown subbasin IDs are covered
 by declared directories; disabled options create no placeholder directories.
 

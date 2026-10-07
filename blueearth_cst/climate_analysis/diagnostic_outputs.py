@@ -80,7 +80,7 @@ def inventory(root, sources, settings, comparison=False):
         compute["maps"] = str(root / "tables" / "annual_climatology.nc")
     render = {
         "captions_json": str(root / "_engine" / "figure_captions.json"),
-        "captions_md": str(root / "figure_captions.md"),
+        "captions_md": str(root / "figures" / "figure_captions.md"),
     }
     render.update({f"figure_{k}": v for k, v in figures.items()})
     if settings["captioned_figures"]:

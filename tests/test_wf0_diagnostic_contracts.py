@@ -86,6 +86,10 @@ def test_canonical_inventory_and_one_source_refusal():
         )
         assert Path(paths["compute"]["coverage"]).parent == Path(name) / "tables"
         assert Path(paths["compute"]["metadata"]).parent == Path(name) / "_engine"
+        assert (
+            Path(paths["render"]["captions_md"])
+            == Path(name) / "figures" / "figure_captions.md"
+        )
     assert comparison["source_summary"] == {
         "dataset_comparison_csv": str(Path("comparison/dataset_comparison.csv")),
         "dataset_comparison_md": str(Path("comparison/dataset_comparison.md")),
@@ -186,6 +190,8 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
             output=output,
         )
         render_subbasins(sm, settings, sources)
+        assert (root / "figures" / "figure_captions.md").is_file()
+        assert not (root / "figure_captions.md").exists()
         records = json.loads((root / "_engine" / "figure_captions.json").read_text())[
             "figures"
         ]

@@ -258,7 +258,7 @@ def render(
             "anomaly_bounds": bounds,
             "produced_paths": list(records)
             + [r["captioned_path"] for r in records.values() if r["captioned_path"]]
-            + ["_engine/figure_captions.json", "figure_captions.md"],
+            + ["_engine/figure_captions.json", "figures/figure_captions.md"],
         },
     )
     Path(paths["render"]["captions_md"]).write_text(

@@ -70,6 +70,7 @@ def test_wf3_code_closure_ignores_wf4_only_source_bytes(tmp_path):
                 "impose_climate_change.R",
                 "global.R",
                 "read_member_grid.R",
+                "member_helpers.R",
             )
         ),
     ]

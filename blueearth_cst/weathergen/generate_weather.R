@@ -1,5 +1,7 @@
 # General R settings and prerequisites
 source("./blueearth_cst/weathergen/global.R")
+# The pure decisions on our side of the seam (output split, basin subset).
+source("./blueearth_cst/weathergen/member_helpers.R")
 
 # weathergenr is assumed to be installed in R-environment.
 # See dev/scripts/install_weathergenr.R for the install path.
@@ -62,81 +64,25 @@ if (length(root_run_ids) != historical_realizations_num) {
 # date CSVs into a single out_dir; the R07 layout separates products from
 # figures, so the split is done here -- on our side of the seam -- rather than
 # by asking upstream for two output directories.
-weathergen_root <- gw$out_dir
-# No trailing slash on either: weathergenr joins with file.path(), so a slash
-# here landed as `output//rlz_1_st_0.nc` on every path row it printed.
-weathergen_root <- sub("/+$", "", weathergen_root)
-weathergen_output_path <- file.path(weathergen_root, "output")
-weathergen_plots_path <- file.path(weathergen_root, "evaluation", "plots")
+weathergen_paths_ <- weathergen_paths(gw$out_dir)
+weathergen_output_path <- weathergen_paths_$output
+weathergen_plots_path <- weathergen_paths_$plots
 
 # Step 1) Read weather data from the netcdf file
 log_row("Reading weather netcdf: ", climate_nc_path)
 ncdata <- weathergenr::read_netcdf(climate_nc_path)
 
-# Step 1b) Restrict the RESAMPLING to the cells the basin touches.
-#
-# weathergenr picks which years to resample from a spatial mean of every cell it
-# is handed (`compute_area_averages`: sum over n_grids, divided by n_grids -- no
-# mask, no weights). The store is a bbox read plus a buffer, so those cells
-# include neighbouring climate the basin never sees. On gabon_1008 the basin
-# spans 0.80 x 0.53 ERA5 cells and touches 2 of the store's cells, so most of
-# the signal steering that stress test came from outside the basin.
-#
-# The mask is a FILTER, not a weighting (owner ruling 2026-08-10): a cell either
-# touches the basin or it does not, and the ones that do count equally. That is
-# exactly what weathergenr's own unweighted mean computes -- once it is given
-# the right subset -- so nothing upstream needs changing, which matters because
-# weathergenr is a vendored package we do not patch.
-#
-# Coordinates are matched, never indices: both sides enumerate the grid their
-# own way and an index convention would break silently.
-basin_cells <- utils::read.csv(basin_cells_path)
-grid_key <- paste(round(ncdata$grid$y, 6), round(ncdata$grid$x, 6))
-mask_key <- paste(round(basin_cells$latitude, 6), round(basin_cells$longitude, 6))
-keep <- which(grid_key %in% mask_key)
-if (length(keep) == 0L) {
-  stop("basin_cells.csv matched no cell in ", climate_nc_path,
-       " -- the mask and the store disagree about the grid")
-}
-log_row("Resampling on ", length(keep), " basin cell(s) of ",
+# Step 1b) Restrict the RESAMPLING to the cells the basin touches, with the
+# subset's ids renumbered to index its data list. The why -- an unweighted
+# spatial mean upstream, and the rule 3.11 id mismatch -- is on
+# subset_basin_cells in member_helpers.R.
+basin <- subset_basin_cells(
+  ncdata, utils::read.csv(basin_cells_path), source_label = climate_nc_path
+)
+log_row("Resampling on ", length(basin$keep), " basin cell(s) of ",
         length(ncdata$data), " in the store")
-obs_data_basin <- ncdata$data[keep]
-obs_grid_basin <- ncdata$grid[keep, , drop = FALSE]
-
-# Renumber the subset's cell ids to 1..n, matching the data list handed over
-# with it.
-#
-# `read_netcdf` stamps `id = seq_len(nrow(grid))` across the FULL store grid, so
-# a row subset keeps the ORIGINAL ids -- cells 7 and 12 of 20 stay 7 and 12 --
-# while `ncdata$data[keep]` is renumbered 1..2 by the subset itself. The two
-# then disagree.
-#
-# It went unnoticed until the 2026-08-13 swap to `run_weather_generator`:
-# `generate_weather` never reads `grid$id` (it assigns its own when absent), but
-# the wrapper's evaluation pass derives `grid_ids` from that column and requires
-# them to index `obs_data`. Rule 3.11 failed with "'grid_ids' must match names
-# or indices of obs_data" on any basin that is not the whole store -- i.e. every
-# real basin. Reproduced and fixed against a 20-cell grid subset to 2.
-if ("id" %in% names(obs_grid_basin)) {
-  obs_grid_basin$id <- seq_len(nrow(obs_grid_basin))
-}
-
-# Assert the contract the renumbering above exists to hold: the grid describes
-# exactly the cells in the data list, in the same order. weathergenr states this
-# only as a downstream failure -- "'grid_ids' must match names or indices of
-# obs_data" -- raised deep inside the evaluation pass, AFTER ~54 seconds of
-# generation, with nothing naming the subset as the cause. Checking it here
-# costs nothing and fails at the point the mistake is made.
-if (nrow(obs_grid_basin) != length(obs_data_basin)) {
-  stop("basin subset is inconsistent: ", nrow(obs_grid_basin),
-       " grid rows vs ", length(obs_data_basin), " data cells")
-}
-if ("id" %in% names(obs_grid_basin) &&
-    !identical(as.integer(obs_grid_basin$id), seq_along(obs_data_basin))) {
-  stop("basin subset grid ids do not index its data list: ids are ",
-       paste(utils::head(obs_grid_basin$id, 5), collapse = ", "),
-       " for ", length(obs_data_basin), " cells")
-}
+obs_data_basin <- basin$data
+obs_grid_basin <- basin$grid
 
 # Step 2) Generate new weather realizations
 log_row("Generating ", historical_realizations_num,

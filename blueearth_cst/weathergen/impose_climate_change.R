@@ -7,6 +7,8 @@ source("./blueearth_cst/weathergen/global.R")
 # The R side of WG-2: one member's twelve monthly rows, carrying the
 # postcondition that makes a mis-keyed slice loud instead of silently short.
 source("./blueearth_cst/weathergen/read_member_grid.R")
+# Identity rows, percent -> factor, output-name split, the perturbation row.
+source("./blueearth_cst/weathergen/member_helpers.R")
 
 # Bind positional CLI args to named locals with an arity check (see
 # generate_weather.R). Placed after source(global.R) so the arity stop() is the
@@ -48,10 +50,7 @@ rlz_input <- weathergenr::read_netcdf(rlz_path, keep_leap_day = FALSE)
 # the grid's own identity member by a processing step (low-flow metrics moved
 # by -70% to +128%), not only by a perturbation.
 if (identical(st_id_token, "identity")) {
-  cst_data <- data.frame(
-    month = 1:12, temp_change = 0, precip_change = 0,
-    precip_variance_change = 0
-  )
+  cst_data <- identity_member_grid()
 } else {
   cst_data <- read_member_grid(lookup_csv_path, st_id_token)
 }
@@ -70,8 +69,8 @@ if (identical(st_id_token, "identity")) {
 # -- but it is within one float64 ulp for every multiplier >= 0.5, which the
 # producer refuses to go below (D35), and bit-identical on every level of every
 # shipped config.
-precip_mean_factor     <- 1 + cst_data$precip_change / 100
-precip_variance_factor <- 1 + cst_data$precip_variance_change / 100
+precip_mean_factor     <- percent_to_factor(cst_data$precip_change)
+precip_variance_factor <- percent_to_factor(cst_data$precip_variance_change)
 # temp_change is additive degC and crosses unconverted in both directions, so
 # there is nothing to reconstruct and nothing that can be out of bound.
 
@@ -84,13 +83,10 @@ precip_variance_factor <- 1 + cst_data$precip_variance_change / 100
 # correctly, which R11 P2's member-token rename then demonstrated -- it changed
 # the declared name and touched nothing here.
 output_path    <- dirname(output_nc_path)
-output_stem    <- sub("\\.nc$", "", basename(output_nc_path))
-if (!grepl("_", output_stem, fixed = TRUE)) {
-  stop("cannot split '", output_stem, "' into weathergenr's <prefix>_<suffix>: ",
-       "the declared output name carries no underscore")
-}
-nc_file_prefix <- sub("_[^_]+$", "", output_stem)
-nc_file_suffix <- sub("^.*_", "", output_stem)
+output_name    <- split_output_stem(output_nc_path)
+output_stem    <- output_name$stem
+nc_file_prefix <- output_name$prefix
+nc_file_suffix <- output_name$suffix
 
 # temp_change_type / precip_change_type [boolean]
 temp_change_transient   <- yaml$temp$transient_change
@@ -123,32 +119,8 @@ wnc <- yaml$write_netcdf
 #
 # `output_stem` rather than a re-derived id: it is the declared output name,
 # this script's one source of truth for the member (see the derivation above).
-#
-# Summarized across the twelve monthly rows. Every shipped grid holds one value
-# for all twelve, so the summary is normally a single number -- but the lookup
-# schema permits monthly variation, and printing `[1]` of a varying vector would
-# be a confidently wrong row, so a varying factor prints its range instead.
-fmt_change <- function(values, unit) {
-  lo <- min(values)
-  hi <- max(values)
-  if (isTRUE(all.equal(lo, hi))) {
-    sprintf("%+.1f%s", lo, unit)
-  } else {
-    sprintf("%+.1f..%+.1f%s", lo, hi, unit)
-  }
-}
-perturbation <- paste0(
-  "temp ", fmt_change(cst_data$temp_change, " degC"),
-  ", precip ", fmt_change(cst_data$precip_change, "%")
-)
-# Variance is flat at 0.0 percent on every shipped config, so naming it there
-# would be a constant column; it appears only where it actually varies the run.
-if (any(cst_data$precip_variance_change != 0)) {
-  perturbation <- paste0(
-    perturbation, ", precip var ",
-    fmt_change(cst_data$precip_variance_change, "%")
-  )
-}
+# The summary's own rules are on format_perturbation in member_helpers.R.
+perturbation <- format_perturbation(cst_data)
 log_row(output_stem, " applying perturbations (", perturbation, ")")
 rlz_future <- weathergenr::apply_climate_perturbations(
    data               = rlz_input$data,

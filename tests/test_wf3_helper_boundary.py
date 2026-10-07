@@ -31,6 +31,7 @@ GENERATION_INVENTORY = {
     "blueearth_cst/weathergen/global.R",
     "blueearth_cst/weathergen/impose_climate_change.R",
     "blueearth_cst/weathergen/read_member_grid.R",
+    "blueearth_cst/weathergen/member_helpers.R",
 }
 
 

@@ -31,6 +31,8 @@ basin:
   region: "{'subbasin': [9.666, 0.4476], 'uparea': 100}"
   resolution: 0.00833
   output_locations:
+  sources:
+    rivers: hydro_rivers_lin
   delineation:
     max_subbasins: 11
 

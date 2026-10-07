@@ -1,13 +1,4 @@
-"""Tests for get_change_climate_proj_summary.py (workflow-2 summary helper).
-
-Covers:
-- ``preprocess_coords`` unit behaviour (drops ``height``, leaves others).
-- Row D of the R4 §7 audit-evidence matrix: the dummy-skip merge path of
-  ``summary_climate_proj`` excludes empty netCDFs and keeps non-empty ones.
-
-Heavy deps (``open_mfdataset``, seaborn ``JointGrid``/``savefig``) run in the
-real pixi env per the M02c discipline (dask cannot be stubbed at module level).
-"""
+"""Coordinate preprocessing and complete aligned-dataset merge regressions."""
 
 from os.path import dirname, join, realpath
 

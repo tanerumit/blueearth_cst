@@ -14,6 +14,7 @@ from blueearth_cst.projections.calendar_weights import (
     assert_weightable,
     days_in_month,
     month_length_weights,
+    same_month_lengths,
 )
 from blueearth_cst.projections.series_identity import CALENDAR_UNKNOWN
 
@@ -183,3 +184,44 @@ def test_G6_weighting_brings_two_calendars_closer_for_the_same_climate():
     spiky_jan = np.full(12, 10.0)
     spiky_jan[0] = 100.0  # January, 31 days
     assert np.average(spiky_jan, weights=wnl) > spiky_jan.mean()
+
+
+# --- calendar agreement between a reference and a scenario series -------------
+
+
+@pytest.mark.parametrize(
+    "first, second",
+    [
+        ("gregorian", "standard"),
+        ("365_day", "noleap"),
+        ("366_day", "all_leap"),
+        ("noleap", "noleap"),
+    ],
+)
+def test_cf_aliases_name_one_calendar(first, second):
+    assert same_month_lengths(first, second, (1950, 1))
+
+
+def test_proleptic_and_standard_agree_after_the_reform_only():
+    """MIROC6: `proleptic_gregorian` historical, `gregorian` scenarios."""
+    assert same_month_lengths("proleptic_gregorian", "gregorian", (1950, 1))
+    assert same_month_lengths("proleptic_gregorian", "standard", (1582, 11))
+    assert not same_month_lengths("proleptic_gregorian", "standard", (1582, 10))
+
+
+def test_the_agreement_matches_the_month_lengths_it_claims():
+    """Falsifier for the rule itself: every month of a CMIP6 acquisition span has
+    one length under both names."""
+    for year in range(1950, 2101):
+        for month in range(1, 13):
+            assert days_in_month(year, month, "proleptic_gregorian") == days_in_month(
+                year, month, "gregorian"
+            )
+
+
+@pytest.mark.parametrize(
+    "first, second",
+    [("noleap", "standard"), ("360_day", "noleap"), ("julian", "standard")],
+)
+def test_different_calendars_still_disagree(first, second):
+    assert not same_month_lengths(first, second, (1950, 1))

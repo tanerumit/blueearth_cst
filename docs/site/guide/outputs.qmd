@@ -72,6 +72,23 @@ The runners record each attempt under `config/runs/_engine/invocations/`,
 including failed runs and dry runs. These records help diagnose a run; they do
 not establish that its results are complete.
 
+## Reading projection diagnostics
+
+WF2 writes under `data/climate/projections/<ensemble>/`. Its `summary/` directory holds
+the aligned annual and monthly change-factor CSVs. The separate `analysis/` directory
+holds analysis-window tables, `coverage.csv`, `availability.csv`, and `analysis_record.json`.
+Read the record for requested and used windows, exclusions, and numerical methods.
+
+The figure suite lives in `plots/full-period/` and `plots/period-<a>-<b>/`, where `<a>-<b>`
+identifies the actual analysis water years. Horizons sharing those years share a folder.
+`plots/figure_captions.md` explains each written figure and unavailable products;
+`plots/_engine/figure_captions.json` inventories written PNGs. Optional captioned copies
+live under `plots/captioned/`. Missing eligible support produces a recorded reason, not
+a placeholder PNG.
+
+The former `plots/overview/` and `plots/windows/` figure paths are retired. Existing
+files at those paths are not current suite outputs and are not deleted automatically.
+
 ## Reading a metric set
 
 Read `experiments/<name>/_engine/metric_sets/<id>/metrics.json` before

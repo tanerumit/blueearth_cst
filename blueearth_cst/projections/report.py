@@ -144,7 +144,7 @@ def disclaimer_block(provenance, thresholds=None, max_flagged_months=None) -> li
     return lines
 
 
-def build(provenance, *, thresholds=None, max_flagged_months=None, figures=None) -> str:
+def build(provenance, *, thresholds=None, max_flagged_months=None) -> str:
     """The whole report."""
     composition = dict(provenance.get("composition", {}))
     lines = [
@@ -152,18 +152,18 @@ def build(provenance, *, thresholds=None, max_flagged_months=None, figures=None)
         "",
         f"{composition.get('resolved', '?')} data points from "
         f"{composition.get('models', '?')} model(s). Each "
-        "`(model, scenario, member)` is one data point; nothing here is averaged "
-        "across models, members or scenarios.",
+        "`(model, scenario, member)` is one data point. The aligned change-factor "
+        "CSVs are not averaged across models, members or scenarios; the analysis "
+        "suite provides separately documented ensemble summaries.",
         "",
     ]
     lines += disclaimer_block(provenance, thresholds, max_flagged_months)
 
     lines += ["## Figures", ""]
-    # Figure names are paths RELATIVE to plots/: the overviews and the cloud(s)
-    # stay shallow, while each configured horizon owns its monthly figure under
-    # windows/<name>-<start>-<end>/.
-    for relative_path in figures or []:
-        lines.append(f"- `plots/{relative_path}`")
+    lines.append(
+        "See [figure captions](plots/figure_captions.md) for the produced suite, "
+        "analysis windows, methods, and products not produced with their reasons."
+    )
     lines.append("")
 
     # S8-04/05/06: every result artifact now lives under summary/, and the tables
@@ -187,7 +187,10 @@ def build(provenance, *, thresholds=None, max_flagged_months=None, figures=None)
         "- `summary/provenance.json` — sources, digests, windows and settings for "
         "this run.",
         "",
-        "Precipitation is reported in **mm/day** in every artifact, figures included.",
+        "Aligned precipitation levels use **mm/day**; relative changes use **%**. "
+        "Suite captions state each figure's units: precipitation cycles and absolute "
+        "changes use rates, annual overviews use annual integrals (mm/year), and "
+        "anomalies use %. Precipitation CV uses period integrals and its ratio is dimensionless.",
         "",
     ]
     return "\n".join(lines) + "\n"

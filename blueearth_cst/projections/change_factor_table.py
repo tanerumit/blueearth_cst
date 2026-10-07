@@ -95,7 +95,15 @@ def _sort_key(columns):
     return columns[:n]
 
 
-def tidy_rows(ds, *, month=None, window_facts=None, row_facts=None, variable_spec=None):
+def tidy_rows(
+    ds,
+    *,
+    month=None,
+    window_facts=None,
+    row_facts=None,
+    variable_spec=None,
+    combinations=None,
+):
     """Long-format rows from the wide change-factor dataset stage B produces.
 
     ``ds`` carries data variables per climate variable (`precip`, `temp`) over
@@ -121,8 +129,16 @@ def tidy_rows(ds, *, month=None, window_facts=None, row_facts=None, variable_spe
     ``variable_spec`` maps variable name to a spec exposing ``.units`` and
     ``.change``. It is what decides whether ``relative_value`` is a percent or a
     difference — never the variable's name.
+
+    ``combinations`` is the set of `(model, scenario, member)` identities the run
+    resolved, `model` in its `institution/source_id` form. Stage B merges its
+    points with an outer join, so models whose member labels differ (CanESM5
+    `r11i1p1f1` beside AWI `r1i1p1f1`) span a grid holding cells no series
+    produced. Those cells are padding, not data: given the set, only its members
+    become rows. ``None`` keeps every cell, for a dataset with no padding.
     """
     columns = TABLE_COLUMNS_ANNUAL if month is None else TABLE_COLUMNS_MONTHLY
+    keep = None if combinations is None else set(combinations)
     facts = dict(window_facts or {})
     per_row = dict(row_facts or {})
     spec = dict(variable_spec or {})
@@ -138,13 +154,25 @@ def tidy_rows(ds, *, month=None, window_facts=None, row_facts=None, variable_spe
         level_da = ds.get(f"{variable}{COMPANION_SEP}level")
         reference_da = ds.get(f"{variable}{COMPANION_SEP}reference")
         flagged_da = ds.get(f"{variable}{COMPANION_SEP}flagged")
-        stacked = da.stack(_row=[d for d in da.dims])
+        # Companions are read by row POSITION below, so each is stacked in the
+        # variable's own dimension order. Stage B builds `__flagged` from the
+        # reference statistic, whose dimensions merge in a different order
+        # (`scenario` first); stacking it in its own order put each flag on
+        # another combination's row.
+        # Historical flags may omit scenario entirely: the same reference
+        # verdict applies to every future scenario. Broadcast before stacking.
+        order = list(da.dims)
+        stacked = da.stack(_row=order)
         if level_da is not None:
-            level_da = level_da.stack(_row=[d for d in level_da.dims])
+            level_da = level_da.broadcast_like(da).transpose(*order).stack(_row=order)
         if reference_da is not None:
-            reference_da = reference_da.stack(_row=[d for d in reference_da.dims])
+            reference_da = (
+                reference_da.broadcast_like(da).transpose(*order).stack(_row=order)
+            )
         if flagged_da is not None:
-            flagged_da = flagged_da.stack(_row=[d for d in flagged_da.dims])
+            flagged_da = (
+                flagged_da.broadcast_like(da).transpose(*order).stack(_row=order)
+            )
 
         entry = spec.get(variable)
         units = getattr(entry, "units", "") if entry is not None else ""
@@ -164,6 +192,8 @@ def tidy_rows(ds, *, month=None, window_facts=None, row_facts=None, variable_spe
             scenario = str(coords.get("scenario", ""))
             member = str(coords.get("member", ""))
             horizon = str(coords.get("horizon", ""))
+            if keep is not None and (dataset, scenario, member) not in keep:
+                continue
 
             row = dict.fromkeys(columns, "")
             row.update(

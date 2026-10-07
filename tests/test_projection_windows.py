@@ -1,0 +1,188 @@
+"""Analysis-window placement, joins, seasons and OLS known answers."""
+
+import numpy as np
+import pandas as pd
+import pytest
+import xarray as xr
+
+from blueearth_cst.projections import get_change_climate_proj as change
+
+
+def _series(start, end, calendar="standard", scenario="ssp245"):
+    time = pd.date_range(start, end, freq="MS")
+    values = np.where(time.month == 12, 1.0, np.where(time.month == 2, 3.0, 2.0))
+    return xr.Dataset(
+        {"temp": ("time", values), "precip": ("time", values)},
+        coords={"time": time, "scenario": scenario, "member": "r1"},
+        attrs={"cst_calendar": calendar},
+    )
+
+
+@pytest.mark.parametrize(
+    "month,horizon,used,shifted,joined",
+    [
+        ("Jan", (2046, 2054), (2036, 2065), False, False),
+        ("Jan", (2081, 2100), (2071, 2100), True, False),
+        ("Oct", (2081, 2100), (2070, 2099), True, False),
+        ("Jan", (2015, 2030), (2008, 2037), False, True),
+        ("Jan", (1950, 1950), (1950, 1979), True, True),
+    ],
+)
+def test_analysis_windows_keep_complete_acquisition_years(
+    month, horizon, used, shifted, joined
+):
+    record = change.analysis_windows({"future": horizon}, month, (1985, 2014))["future"]
+    assert record["used"] == used
+    assert record["window_id"] == f"{used[0]}-{used[1]}"
+    assert record["shifted"] is shifted
+    assert record["joined"] is joined
+    assert record["available"] is True
+    if month == "Jan":
+        assert record["reference"] == (1985, 2014)
+    else:
+        assert record["reference"] == (1984, 2013)
+        assert record["reference_rule"] == "fallback_last_30"
+        assert change.analysis_windows({"f": horizon}, "Oct", (1970, 2014))["f"][
+            "reference"
+        ] == (1984, 2013)
+        assert change.analysis_windows({"f": horizon}, "Oct", (2014, 2014))["f"][
+            "reference"
+        ] == (1984, 2013)
+    long_reference = change.analysis_windows({}, "Jan", (1970, 2014))
+    assert long_reference == {}
+    assert change.analysis_windows({"f": horizon}, "Jan", (1970, 2014))["f"][
+        "reference"
+    ] == (1985, 2014)
+    assert change.analysis_windows({"f": horizon}, "Jan", (2000, 2014))["f"][
+        "reference"
+    ] == (1985, 2014)
+
+
+def test_analysis_slice_joins_same_member_and_refuses_unavailable_span():
+    historical = _series(
+        "2000-01-01", "2014-12-01", scenario="historical"
+    ).assign_attrs(cst_series_digest="historical-digest")
+    future = _series("2015-01-01", "2040-12-01").assign_attrs(
+        cst_series_digest="future-digest"
+    )
+    joined = change.analysis_slice(future, (2008, 2037), historical=historical)
+    assert joined.sizes["time"] == 360
+    assert joined.scenario.item() == "ssp245"
+    assert joined.member.item() == "r1"
+    assert joined.attrs == future.attrs
+    with pytest.raises(change.AnalysisWindowUnavailable, match="historical"):
+        change.analysis_slice(future, (2008, 2037))
+    with pytest.raises(change.AnalysisWindowUnavailable, match="cover"):
+        change.analysis_slice(future, (2030, 2059))
+    with pytest.raises(ValueError, match="different calendars"):
+        change.analysis_slice(
+            future,
+            (2008, 2037),
+            historical=historical.assign_attrs(cst_calendar="360_day"),
+        )
+    with pytest.raises(ValueError, match="member") as corrupt:
+        change.analysis_slice(
+            future, (2008, 2037), historical=historical.assign_coords(member="r2")
+        )
+    assert not isinstance(corrupt.value, change.AnalysisWindowUnavailable)
+    with pytest.raises(ValueError, match="asymmetric"):
+        change.get_change_seasonal_clim_proj(historical.drop_vars("temp"), future)
+
+
+@pytest.mark.parametrize(
+    "month,window,calendar,djf_years,son_years,expected",
+    [
+        ("Jan", (2001, 2003), "standard", [2002, 2003], [2001, 2002, 2003], 177 / 90),
+        ("Oct", (2001, 2003), "standard", [2002, 2003, 2004], [2002, 2003], 177 / 90),
+        ("Jan", (2001, 2003), "360_day", [2002, 2003], [2001, 2002, 2003], 2.0),
+        ("Jan", (2001, 2003), "noleap", [2002, 2003], [2001, 2002, 2003], 177 / 90),
+    ],
+)
+def test_seasons_own_only_complete_in_window_months(
+    month, window, calendar, djf_years, son_years, expected
+):
+    source = _series("2000-01-01", "2005-12-01", calendar)
+    sliced = change.analysis_slice(source, window, month)
+    rows = change.get_change_seasonal_clim_proj(sliced, sliced, min_season_years=1)
+    djf = next(
+        row
+        for row in rows
+        if row["variable"] == "temp"
+        and row["season"] == "DJF"
+        and row["statistic"] == "mean"
+    )
+    son = next(
+        row
+        for row in rows
+        if row["variable"] == "temp"
+        and row["season"] == "SON"
+        and row["statistic"] == "mean"
+    )
+    assert djf["reference_years"].tolist() == djf_years
+    assert son["reference_years"].tolist() == son_years
+    assert djf["reference_values"][0] == pytest.approx(expected)
+    if month == "Oct" and calendar == "standard":
+        assert djf["reference_values"][-1] == pytest.approx(180 / 91)
+    assert djf["n_reference"] == len(djf_years)
+    assert djf["absolute"] == 0
+    # Equal rates in nonleap vs leap DJF: rate change is zero, while the lab's
+    # integral percentage changes by 100/90 %. Owner chose the rate convention.
+    reference = _series("2002-12-01", "2003-02-01", calendar)
+    future = _series("2003-12-01", "2004-02-01", calendar)
+    reference["precip"][:] = 2
+    future["precip"][:] = 2
+    rate_rows = change.get_change_seasonal_clim_proj(
+        reference, future, min_season_years=1
+    )
+    rate = next(
+        row
+        for row in rate_rows
+        if row["variable"] == "precip"
+        and row["season"] == "DJF"
+        and row["statistic"] == "mean"
+    )
+    assert rate["relative"] == 0
+    if calendar == "standard":
+        assert (
+            rate["future_integrals"][0] / rate["reference_integrals"][0] - 1
+        ) * 100 == pytest.approx(100 / 90)
+    # A missing in-window month drops its whole instance, not just that month.
+    missing = sliced.drop_sel(time="2002-01-01")
+    dropped = change.get_change_seasonal_clim_proj(missing, sliced, min_season_years=1)
+    row = next(
+        row
+        for row in dropped
+        if row["variable"] == "temp"
+        and row["season"] == "DJF"
+        and row["statistic"] == "mean"
+    )
+    assert row["reference_years"].tolist() == [
+        year for year in djf_years if year != 2002
+    ]
+    # Altering months beyond the owned slice cannot affect any season value.
+    source["temp"] = source.temp.where(source.time.isin(sliced.time), 100000)
+    outside = change.get_change_seasonal_clim_proj(
+        change.analysis_slice(source, window, month), sliced, min_season_years=1
+    )
+    assert (
+        next(
+            row
+            for row in outside
+            if row["variable"] == "temp"
+            and row["season"] == "DJF"
+            and row["statistic"] == "mean"
+        )["reference"]
+        == djf["reference"]
+    )
+
+
+def test_detrended_std_uses_retained_years_and_population_denominator():
+    # Residuals are orthogonal to both a constant and these uneven year coordinates.
+    years = np.array([2000, 2001, 2003, 2006])
+    residual = np.array([2.0, -3.0, 1.0, 0.0])
+    values = 10 + 4 * (years - 2000) + residual
+    assert change.detrended_std(values, years) == pytest.approx(np.sqrt(14 / 4))
+    assert not np.isclose(values.std(), np.sqrt(14 / 4))
+    assert np.isnan(change.detrended_std([1, 2], [2000, 2001]))
+    with pytest.raises(ValueError, match="same"):
+        change.detrended_std([1, 2, 3], [2000, 2001])

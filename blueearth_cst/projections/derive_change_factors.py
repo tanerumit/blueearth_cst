@@ -8,12 +8,12 @@ expanded series list.
 
 **This step is value-neutral by construction.** The arithmetic is not reimplemented
 here: `get_change_annual_clim_proj` and
-`summary_climate_proj` are imported from the two modules that already held them,
+the existing coordinate-safe merge are imported from their owning modules,
 unchanged. Only the orchestration moves. A non-zero characterized diff on the
 summary artifacts is therefore a defect in this file, not a judgement call — which
 is the whole reason the functions were left where they were.
 
-Per-point annual/monthly results remain in memory through the merge, figures,
+Per-point annual/monthly results remain in memory through the merge
 and tidy tables. Each validated scalar series is loaded and closed once per job.
 The file-writing helpers remain available for direct callers.
 
@@ -39,7 +39,6 @@ import xarray as xr
 from blueearth_cst.projections import provenance as _prov
 from blueearth_cst.projections import reference_window, series_identity
 from blueearth_cst.projections import report as _report
-from blueearth_cst.projections.calendar_weights import CalendarError, assert_weightable
 from blueearth_cst.projections.change_factor_table import (
     TABLE_COLUMNS_ANNUAL,
     TABLE_COLUMNS_MONTHLY,
@@ -54,9 +53,10 @@ from blueearth_cst.projections.get_change_climate_proj import (
     get_change_monthly_clim_proj,
     hydrological_year_bounds,
 )
-from blueearth_cst.projections.get_change_climate_proj_summary import (
-    combine_changes,
-    plot_change_summary,
+from blueearth_cst.projections.get_change_climate_proj_summary import combine_changes
+from blueearth_cst.projections.series_checks import (
+    assert_calendar_agreement,
+    load_checked_series,
 )
 from blueearth_cst.projections.variable_spec import VariableSpec
 from blueearth_cst.shared.snake_utils import log_row, plural, tee_to_log
@@ -143,15 +143,10 @@ def derive_point_datasets(
         ("historical", series_path_hist, dict(digest_components_hist)),
         (name_scenario, series_path, dict(digest_components_fut)),
     ):
-        digest = series_identity.series_digest(components, region_fp)
-        key = (os.path.abspath(str(path)), digest)
-        if key not in series_cache:
-            with xr.open_dataset(path) as source:
-                series_identity.assert_series_identity(
-                    path, digest, f"{name_model} {label}", observed_attrs=source.attrs
-                )
-                series_cache[key] = source.load()
-        datasets.append(series_cache[key])
+        dataset, digest = load_checked_series(
+            path, components, region_fp, f"{name_model} {label}", series_cache
+        )
+        datasets.append(dataset)
         expected.append(digest)
     ds_hist_time, ds_clim_time = datasets
 
@@ -195,16 +190,12 @@ def derive_point_datasets(
     # the series (propagated there from the raw slice, which got it from the store
     # -- the axis itself cannot say, having been converted to datetime64 upstream).
     # Both series must agree: a change factor differencing two calendars would be
-    # comparing incomparable annual aggregates.
-    calendar = str(ds_hist_time.attrs.get("cst_calendar", "") or "")
-    clim_calendar = str(ds_clim_time.attrs.get("cst_calendar", "") or "")
-    if calendar != clim_calendar:
-        raise CalendarError(
-            f"{name_model} {name_scenario}: reference and scenario series carry "
-            f"different calendars ({calendar!r} vs {clim_calendar!r}). Their annual "
-            "aggregates are not comparable."
-        )
-    assert_weightable(calendar, source=f"{name_model} {name_scenario}")
+    # comparing incomparable annual aggregates. Agreement is on month LENGTHS, not
+    # names -- MIROC6 labels its historical run `proleptic_gregorian` and its
+    # scenarios `gregorian`, which are the same months from 1582 on.
+    calendar = assert_calendar_agreement(
+        ds_hist_time, ds_clim_time, f"{name_model} {name_scenario}"
+    )
 
     # The cache is bound to one validated historical series and analysis
     # configuration, never to a future horizon or scenario.
@@ -513,10 +504,17 @@ if "snakemake" in globals():
             join="outer",
             combine_attrs="override",
         )
-        plot_change_summary(merged, clim_project_dir, horizons)
+        # The outer join spans model x scenario x member, so models with differing
+        # member labels leave cells no series produced. Every consumer of the
+        # merge reads only the combinations that were actually derived.
+        derived = {
+            (p["model"], p["scenario"], p["member"])
+            for p in points
+            if p["point_key"] in resolved_facts
+        }
 
         # --- step 6a-i: the tidy annual change-factor table (design §5.9) ----
-        # The cloud and tidy tables consume the same merged dataset.
+        # The tidy tables consume the same merged dataset.
         #
         # S8-04: two facts, both varying. Everything else this dict used to carry
         # was constant across every row (the nominal windows, n_years), hardcoded
@@ -560,6 +558,7 @@ if "snakemake" in globals():
             window_facts=window_facts,
             row_facts=row_facts,
             variable_spec=VARIABLE_SPEC,
+            combinations=derived,
         )
         write_table(
             str(sm.output.change_factors_annual), rows, columns=TABLE_COLUMNS_ANNUAL
@@ -574,6 +573,7 @@ if "snakemake" in globals():
                     window_facts=window_facts,
                     row_facts=row_facts,
                     variable_spec=VARIABLE_SPEC,
+                    combinations=derived,
                 )
             )
         write_table(
@@ -673,7 +673,6 @@ if "snakemake" in globals():
                 document,
                 thresholds=sm.params.min_reference,
                 max_flagged_months=sm.params.max_flagged_months,
-                figures=list(sm.params.figure_names),
             ),
         )
         log_row(

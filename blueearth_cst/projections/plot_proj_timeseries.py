@@ -1,245 +1,302 @@
-# -*- coding: utf-8 -*-
-"""Rule 2.06 — the WF2 annual overviews and the per-horizon monthly figures.
+"""Render WF2 suite products from durable analysis tables.
 
-Reads the durable `scalar/*.nc` series and the authoritative monthly
-change-factor table, and draws the figure set declared by
-`projections/projection_figures.py` through the drawing functions in
-`projections/projection_plots.py`.
-
-**Two sources, and the split is the whole point of this module's design.** The
-monthly change factors are READ from `{clim_project}_change_factors_monthly.csv`
-rather than recomputed; the annual overviews are computed from the series,
-because they are per-YEAR traces and no table carries a time series. What this
-module used to do instead, and why that was wrong, is in the header comment over
-the figure-input functions below.
-
-Superseded on 2026-08-17 (owner ruling, board item `t2608091006`): the eight
-independently styled figures this drew — `{proj}_{variable}_{view}_{quantity}.png`
-— became two annual overviews plus one monthly figure per configured horizon,
-on the shared WF1 page contract. The change-factor cloud is drawn by rule 2.05,
-from the stage-B merge, and is not duplicated here.
+NOTE: Snakemake ``script:`` module; inputs, outputs and settings come from
+``snakemake.input/output/params``. No standalone CLI or future-import preamble.
 """
 
-import os
+import json
 from pathlib import Path
 
+import matplotlib
+
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
-import xarray as xr
 
-from blueearth_cst.projections import projection_figures, projection_plots
-from blueearth_cst.shared.snake_utils import log_row
-
-# ===========================================================================
-# THE FIGURE INPUTS
-#
-# Two sources, and the split is the point.
-#
-# * The MONTHLY change factors are READ from
-#   `{clim_project}_change_factors_monthly.csv`, never recomputed here. That
-#   table is the authoritative product of `get_change_climate_proj.py`, and it
-#   is what WF3 and every downstream reader consume. A figure that recomputed
-#   the same quantity would be a second definition of it, free to disagree --
-#   and it did: the shipped figures differenced a future month against the
-#   historical ANNUAL mean, over the full 2015-2100 series rather than the
-#   horizon, so the picture and the table described different quantities under
-#   one name. Reading the table makes that class of disagreement structurally
-#   impossible rather than merely fixed.
-#
-# * The ANNUAL OVERVIEWS are computed from `scalar/*.nc`, because they are
-#   per-YEAR traces and no table carries a time series. The only arithmetic
-#   here is the anomaly against the reference window, and it is differenced
-#   against each model's OWN historical run so a future trace is continuous
-#   with the historical one it follows.
-# ===========================================================================
+from blueearth_cst.climate_analysis.diagnostic_figures import STYLE, add_caption
+from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
+from blueearth_cst.projections.projection_captions import caption
+from blueearth_cst.projections.projection_figures import SUITE_PRODUCTS
+from blueearth_cst.projections.projection_suite_figures import render_product
+from blueearth_cst.shared.snake_utils import (
+    listed,
+    log_row,
+    plural,
+    save_figure,
+    tee_to_log,
+)
 
 
-def normalise_model(name):
-    """Drop the institute prefix from a model coordinate.
-
-    ``scalar/*.nc`` carries ``NOAA-GFDL/GFDL-ESM4``; the change-factor tables
-    carry ``GFDL-ESM4``. Without this, every join between series-derived and
-    table-derived values matches nothing -- and an empty join reads as a broken
-    calculation rather than as a spelling difference, which is the expensive
-    kind of failure.
-    """
-    return str(name).split("/")[-1]
-
-
-def parse_window(text):
-    """``"2000-01-01 / 2014-12-01"`` into inclusive ``(start_year, end_year)``.
-
-    The window is read off the artifact that states it rather than recomputed
-    from config: the table records what was ACTUALLY differenced, including any
-    effective-window override, and that is the only definition the figures can
-    be held to.
-    """
-    try:
-        start, end = str(text).split("/")
-    except ValueError as exc:
-        raise ValueError(f"malformed window {text!r}; expected 'START / END'") from exc
-    return int(start.strip()[:4]), int(end.strip()[:4])
-
-
-def load_scalar_series(paths):
-    """Every ``scalar/*.nc`` as one long frame.
-
-    Columns: ``model, scenario, member, year, month, precip, temp``.
-
-    Year and month are read off the time index element-wise rather than through
-    a datetime coercion: these series are monthly and declare a ``noleap``
-    calendar (``cst_calendar``), so they decode to ``cftime`` objects on which
-    ``.resample`` and ``.dt`` behave differently than on a ``DatetimeIndex``.
-    Both object types answer ``.year`` and ``.month``, which is all this needs.
-    """
-    frames = []
-    for path in sorted(str(p) for p in paths):
-        with xr.open_dataset(path) as ds:
-            times = ds.indexes["time"]
-            frame = pd.DataFrame(
-                {
-                    "year": [t.year for t in times],
-                    "month": [t.month for t in times],
-                    "precip": ds["precip"].squeeze(drop=True).values,
-                    "temp": ds["temp"].squeeze(drop=True).values,
-                }
+def figure_counts(filename, tables, window_id=""):
+    """Count plotted support, rather than claiming the full resolved ensemble."""
+    name = "model_changes"
+    if filename.startswith(("trajectory-", "annual-")):
+        name = "member_anomalies"
+    elif filename.startswith("variability-ratio-"):
+        name = "variability_model_ratios"
+    elif filename == "variability-member-ratios.png":
+        name = "variability_member_ratios"
+    elif filename == "availability.png":
+        name = "coverage"
+    elif filename.startswith("seasonal-cycle-"):
+        name = "climatology"
+    data = tables[name]
+    if window_id and "window_id" in data:
+        data = data.loc[data.window_id == window_id]
+    if "temperature" in filename or "precipitation" in filename:
+        data = data.loc[
+            data.variable == ("temp" if "temperature" in filename else "precip")
+        ]
+    if filename.startswith("change-") and "cloud" not in filename:
+        data = data.loc[
+            (data.statistic == "mean")
+            & (data.quantity == ("change_pct" if "-pct" in filename else "change"))
+            & data.period.isin(PERIODS[:5])
+        ]
+    elif "cloud" in filename:
+        data = data.loc[(data.statistic == "mean") & (data.period == "annual")]
+        keys = ["model", "scenario", "window_id"]
+        temp = data.loc[
+            (data.variable == "temp")
+            & (data.quantity == "change")
+            & np.isfinite(data.value),
+            keys,
+        ]
+        precip = data.loc[
+            (data.variable == "precip")
+            & (data.quantity == "change_pct")
+            & np.isfinite(data.value),
+            keys,
+        ]
+        data = temp.merge(precip, on=keys).drop_duplicates()
+    elif filename == "sign-agreement.png":
+        data = data.loc[
+            (data.statistic == "mean")
+            & data.period.isin(("annual", *MONTHS))
+            & (
+                (data.variable.eq("temp") & data.quantity.eq("change"))
+                | (
+                    data.variable.eq("precip")
+                    & data.quantity.isin(("change", "change_pct"))
+                )
             )
-            frame["model"] = normalise_model(ds["model"].values.item())
-            frame["scenario"] = str(ds["scenario"].values.item())
-            frame["member"] = str(ds["member"].values.item())
-        frames.append(frame)
-    if not frames:
-        raise ValueError("no scalar series given; WF2 cannot draw its overviews")
-    return pd.concat(frames, ignore_index=True)
+        ]
+    elif filename.startswith("variability-ratio-"):
+        data = data.loc[
+            (
+                data.statistic
+                == ("std_detrended" if "temperature" in filename else "cv_detrended")
+            )
+            & data.period.isin(PERIODS[:5])
+        ]
+    elif filename == "variability-member-ratios.png":
+        data = data.loc[
+            data.period.eq("annual")
+            & (
+                (data.variable.eq("temp") & data.statistic.eq("std_detrended"))
+                | (data.variable.eq("precip") & data.statistic.eq("cv_detrended"))
+            )
+        ]
+    column = (
+        "anomaly"
+        if filename.startswith("trajectory-")
+        else "value"
+        if filename.startswith("annual-")
+        else "ratio"
+        if name == "variability_member_ratios"
+        else "value"
+        if "value" in data
+        else None
+    )
+    used = data.loc[np.isfinite(data[column].astype(float))] if column else data
+    if "available" in used:
+        used = used.loc[used.available]
+    if "variability_eligible" in used:
+        used = used.loc[used.variability_eligible & used.ratio.gt(0)]
+    if "reference" in used and "future" in used:
+        used = used.loc[np.isfinite(used.reference) & np.isfinite(used.future)]
+    return {
+        "n_models": used.model.nunique(),
+        "by_scenario": used.groupby("scenario").model.nunique().to_dict(),
+        "n_excluded": int((~data.variability_eligible).sum())
+        if "variability_eligible" in data
+        else int(data.n_excluded.sum())
+        if "n_excluded" in data
+        else 0,
+        "n_zero_future": int(data.status.eq("zero_future_variability").sum())
+        if "status" in data
+        else int(data.n_zero_future.sum())
+        if "n_zero_future" in data
+        else 0,
+    }
 
 
-def annual_reference(series, reference):
-    """Historical mean per ``(model, member)`` over the reference window."""
-    hist = series[
-        (series["scenario"] == "historical") & series["year"].between(*reference)
+def render_suite(
+    tables, record, plots_root, *, captioned_figures=False, scenarios=None
+):
+    """Assert ordinary keys and optional captioned_path metadata bijections.
+
+    Manifest keys identify ordinary figures. Optional copies are identified by
+    each entry's captioned_path, relative to plots_root, rather than extra keys.
+    """
+    if not isinstance(captioned_figures, bool):
+        raise TypeError("captioned_figures must be bool")
+    root = Path(plots_root)
+    log_row(
+        "Windows used: "
+        + listed(
+            [
+                f"{w['window_id']} (reference {w['reference'][0]}–{w['reference'][1]})"
+                for w in record["windows"]
+            ]
+        ),
+        module="plot_proj_timeseries",
+    )
+    folders = [
+        "full-period",
+        *dict.fromkeys(f"period-{w['window_id']}" for w in record["windows"]),
     ]
-    if hist.empty:
+    for folder in folders:
+        (root / folder).mkdir(parents=True, exist_ok=True)
+    if captioned_figures:
+        (root / "captioned").mkdir(parents=True, exist_ok=True)
+    available = tables["availability"]
+    expected = {
+        (folder, filename)
+        for product in SUITE_PRODUCTS.values()
+        for folder in folders
+        if (folder == "full-period") == (product["folder_kind"] == "full-period")
+        for filename in product["filenames"]
+    }
+    actual = set(zip(available.folder, available.filename))
+    if actual != expected or available.duplicated(["folder", "filename"]).any():
         raise ValueError(
-            f"no historical years inside the reference window {reference}; "
-            "the overviews would have nothing to difference against"
+            f"availability product contract differs: missing={expected - actual}, extra={actual - expected}"
         )
-    return hist.groupby(["model", "member"], as_index=False)[["precip", "temp"]].mean()
-
-
-def annual_series(series, reference):
-    """Annual means per combination per year, plus the anomaly against ``reference``.
-
-    Every trace on both annual overviews comes from here -- historical and
-    future alike, each differenced against its OWN model's historical reference
-    window, which is what makes a future trace continuous with the historical
-    one it follows rather than offset from it by a cross-model mean.
-    """
-    annual = series.groupby(["model", "scenario", "member", "year"], as_index=False)[
-        ["precip", "temp"]
-    ].mean()
-    merged = annual.merge(
-        annual_reference(series, reference),
-        on=["model", "member"],
-        suffixes=("", "_ref"),
-    )
-    merged["precip_anomaly"] = (
-        (merged["precip"] - merged["precip_ref"]) / merged["precip_ref"] * 100.0
-    )
-    merged["temp_anomaly"] = merged["temp"] - merged["temp_ref"]
-    return merged
-
-
-def monthly_change_from_table(table, horizon, statistic="mean"):
-    """The monthly change factors for one horizon, READ from the table.
-
-    Returns ``model, scenario, member, month, precip_change, temp_change`` --
-    the table's own ``relative_value``, pivoted per variable and not touched by
-    any arithmetic here. ``relative_units`` is ``%`` for precipitation and
-    ``degC`` for temperature, which is what the figure's y-labels state.
-
-    Rows whose ``status`` is not ``ok`` are DROPPED rather than plotted or
-    backfilled: a flagged month is one where the near-zero reference made the
-    ratio meaningless, and drawing it would put a number on the page that the
-    table itself declines to publish.
-
-    Both statistics the table carries beside ``mean`` are available, but the
-    figure asks for one: an unfiltered table has three rows per combination and
-    a naive read triples every trace.
-    """
-    wanted = table[
-        (table["horizon"] == horizon) & (table["statistic"] == statistic)
-    ].copy()
-    if wanted.empty:
-        raise ValueError(
-            f"change-factor table carries no {statistic!r} rows for horizon "
-            f"{horizon!r}; have {sorted(table['horizon'].unique())}"
-        )
-    wanted = wanted[wanted["status"] == "ok"]
-    keys = ["model", "scenario", "member", "month"]
-    wide = wanted.pivot_table(
-        index=keys, columns="variable", values="relative_value", aggfunc="first"
-    ).reset_index()
-    wide.columns.name = None
-    return wide.rename(columns={"precip": "precip_change", "temp": "temp_change"})
-
-
-if __name__ == "__main__":
-    if "snakemake" in globals():
-        sm = globals()["snakemake"]
-        from blueearth_cst.shared.snake_utils import tee_to_log
-
-        with tee_to_log(sm.log[0]):
-            clim_project_dir = Path(sm.params.clim_project_dir)
-            horizons = dict(sm.params.horizons)
-            plots_dir = clim_project_dir / "plots"
-
-            # The monthly table first: it is both an input to the monthly
-            # figures and the artifact that STATES the reference window, which
-            # the annual overviews difference against. Reading the window off
-            # the table rather than off config is deliberate -- the table
-            # records what was ACTUALLY differenced, including any per-model
-            # effective-window override, and a figure captioned with a window
-            # the arithmetic did not use is worse than one with no caption.
-            log_row("Reading monthly change-factor table", module="plot")
-            monthly_table = pd.read_csv(sm.input.change_factors_monthly)
-            windows = monthly_table["reference_window"].unique()
-            if len(windows) != 1:
-                raise ValueError(
-                    "change-factor table carries more than one reference window "
-                    f"({sorted(windows)}); the overviews cannot be captioned with one"
-                )
-            reference = parse_window(windows[0])
-
-            log_row("Opening scalar gcm timeseries", module="plot")
-            series = load_scalar_series(
-                list(sm.input.stats_time_nc_hist) + list(sm.input.stats_time_nc)
+    manifest, skipped = {}, []
+    for row in available.to_dict("records"):
+        relative = f"{row['folder']}/{row['filename']}"
+        if not isinstance(row["available"], bool):
+            raise ValueError("availability flags must be booleans")
+        if not row["available"]:
+            skipped.append({"path": relative, "reason": row["reason"]})
+            continue
+        window_id = row.get("window_id") or ""
+        counts = figure_counts(row["filename"], tables, window_id)
+        text = caption(row["filename"], record, window_id, counts)
+        with plt.rc_context(STYLE):
+            fig = render_product(
+                row["filename"],
+                tables,
+                record,
+                window_id=window_id,
+                scenarios=scenarios,
             )
-            annual = annual_series(series, reference)
-
-            os.makedirs(plots_dir, exist_ok=True)
-
-            # The two annual overviews. `figure_relative_paths` is the single
-            # definition of the set, so the names here cannot drift from the
-            # ones the Snakefile declares as outputs.
-            for variable, relative in (
-                ("precip", "overview/annual-precipitation.png"),
-                ("temp", "overview/annual-temperature.png"),
-            ):
-                out_path = plots_dir / relative
-                out_path.parent.mkdir(parents=True, exist_ok=True)
-                projection_plots.draw_annual_overview(
-                    annual, variable, reference, out_path
+            try:
+                save_figure(
+                    root / relative,
+                    module="plot_proj_timeseries",
+                    fig=fig,
+                    dpi=600,
+                    facecolor="white",
                 )
+                if captioned_figures:
+                    add_caption(fig, text)
+                    save_figure(
+                        root / "captioned" / relative,
+                        module="plot_proj_timeseries",
+                        fig=fig,
+                        dpi=600,
+                        facecolor="white",
+                    )
+            finally:
+                plt.close(fig)
+        manifest[relative] = {
+            "caption": text,
+            "window_id": window_id,
+            "counts": counts,
+            "horizons": [
+                h
+                for w in record["windows"]
+                if w["window_id"] == window_id
+                for h in w.get("horizons", [])
+            ],
+        }
+        if captioned_figures:
+            manifest[relative]["captioned_path"] = f"captioned/{relative}"
+    pngs = {
+        str(path.relative_to(root)).replace("\\", "/")
+        for folder in folders
+        for path in (root / folder).rglob("*.png")
+    }
+    if pngs != set(manifest):
+        raise RuntimeError(
+            f"owned PNGs differ from caption manifest: extra={pngs - set(manifest)}, missing={set(manifest) - pngs}"
+        )
+    if captioned_figures:
+        copies = {
+            str(path.relative_to(root)).replace("\\", "/")
+            for path in (root / "captioned").rglob("*.png")
+        }
+        declared_copies = {entry["captioned_path"] for entry in manifest.values()}
+        if copies != declared_copies:
+            raise RuntimeError(
+                f"captioned PNGs differ from caption metadata: extra={copies - declared_copies}, missing={declared_copies - copies}"
+            )
+    engine = root / "_engine"
+    engine.mkdir(parents=True, exist_ok=True)
+    (engine / "figure_captions.json").write_text(
+        json.dumps(manifest, indent=2), encoding="utf-8"
+    )
+    markdown = [
+        "# Projection figure captions",
+        "",
+        "Manifest keys identify ordinary figures; captioned_path metadata identifies optional captioned copies.",
+        "",
+    ]
+    for relative, item in manifest.items():
+        markdown.extend([f"## {relative}", "", item["caption"], ""])
+    markdown.extend(["## Not produced", ""])
+    markdown.extend(f"- {item['path']}: {item['reason']}" for item in skipped)
+    markdown.extend(
+        [
+            "",
+            "## Retired paths",
+            "",
+            "Previous overview/ and windows/ figures are retired in this version; safe to delete.",
+            "",
+        ]
+    )
+    (root / "figure_captions.md").write_text("\n".join(markdown), encoding="utf-8")
+    log_row(
+        f"{plural(len(manifest), 'figure')} written; {plural(len(skipped), 'product')} unavailable",
+        module="plot_proj_timeseries",
+    )
+    return manifest, skipped
 
-            # One monthly figure per configured horizon, each rendering the
-            # table's own numbers for that horizon.
-            monthly_paths = projection_figures.monthly_figure_paths(horizons)
-            for name, relative in monthly_paths.items():
-                period = projection_figures.parse_horizon_period(horizons[name])
-                changes = monthly_change_from_table(monthly_table, name)
-                out_path = plots_dir / relative
-                out_path.parent.mkdir(parents=True, exist_ok=True)
-                projection_plots.draw_monthly_change(
-                    changes, name, period, reference, out_path
-                )
-    else:
-        raise RuntimeError("plot_proj_timeseries.py runs only as a Snakemake script:")
+
+def run(sm):
+    tables = {Path(path).stem: pd.read_csv(path) for path in sm.input.tables}
+    record = json.loads(Path(sm.input.record).read_text(encoding="utf-8"))
+    root = Path(sm.output.captions_md).parent
+    expected_folders = {
+        root / "full-period",
+        *(root / f"period-{w['window_id']}" for w in record["windows"]),
+    }
+    if {Path(path) for path in sm.output.folders} != expected_folders:
+        raise ValueError("declared suite folders differ from analysis record")
+    tables["availability"]["window_id"] = tables["availability"].window_id.fillna("")
+    render_suite(
+        tables,
+        record,
+        root,
+        captioned_figures=sm.params.captioned_figures,
+        scenarios=getattr(sm.params, "scenarios", None),
+    )
+
+
+if "snakemake" in globals():
+    sm = globals()["snakemake"]
+    with tee_to_log(sm.log[0]):
+        run(sm)

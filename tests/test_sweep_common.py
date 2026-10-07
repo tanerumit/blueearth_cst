@@ -111,29 +111,37 @@ def test_an_uncovered_hit_is_a_defect_never_a_warning():
 # --- iter_lines --------------------------------------------------------------
 
 
-def test_a_file_matched_by_two_globs_is_visited_once(tmp_path):
+def test_a_file_matched_by_two_globs_is_visited_once(tmp_path, monkeypatch):
     """A sweep's SEARCHED tuple overlaps on purpose — `config/migrations/*.yml`
     sits inside `config/**/*.yml` — and double-reporting one line as two
     findings would be a defect count nobody can act on."""
     (tmp_path / "a.py").write_text("one\ntwo\n", encoding="utf-8")
-    lines = list(iter_lines(("*.py", "a.py"), tmp_path))
+    monkeypatch.chdir(tmp_path)
+    lines = list(iter_lines(("*.py", "a.py"), Path(".")))
     assert [text for _p, _n, text in lines] == ["one", "two"]
 
 
 @pytest.mark.parametrize("excluded", EXCLUDED_DIRS)
-def test_the_excluded_directories_are_never_walked(tmp_path, excluded):
+def test_the_excluded_directories_are_never_walked(tmp_path, excluded, monkeypatch):
     """Generated output, the environment and scratch. `.tmp` is the one that
     bites: a fixture written there is invisible to every sweep."""
     target = tmp_path / excluded / "a.py"
     target.parent.mkdir(parents=True)
     target.write_text("x\n", encoding="utf-8")
-    assert list(iter_lines(("**/*.py",), tmp_path)) == []
+    (tmp_path / "visible.py").write_text("visible\n", encoding="utf-8")
+    monkeypatch.chdir(tmp_path)
+    assert list(iter_lines(("**/*.py",), Path("."))) == [
+        (Path("visible.py"), 1, "visible")
+    ]
 
 
-def test_an_unreadable_file_is_skipped_rather_than_ending_the_walk(tmp_path):
+def test_an_unreadable_file_is_skipped_rather_than_ending_the_walk(
+    tmp_path, monkeypatch
+):
     """A sweep that stopped at the first undecodable byte would go quiet on
     everything after it, which is a smaller version of failing open."""
     (tmp_path / "bad.py").write_bytes(b"\xff\xfe\x00binary")
     (tmp_path / "good.py").write_text("ok\n", encoding="utf-8")
-    seen = [Path(p).name for p, _n, _t in iter_lines(("*.py",), tmp_path)]
+    monkeypatch.chdir(tmp_path)
+    seen = [Path(p).name for p, _n, _t in iter_lines(("*.py",), Path("."))]
     assert seen == ["good.py"]

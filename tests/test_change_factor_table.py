@@ -382,3 +382,116 @@ def test_written_cells_carry_no_long_float(wide, tmp_path):
         assert "e" not in cell.lower() or not re.match(r"^[+-]?[\d.]+e", cell, re.I)
         if re.match(r"^[+-]?\d+\.\d+$", cell):
             assert len(cell.split(".")[1]) <= 3, cell
+
+
+# --- mixed member labels: outer-join padding is not data -----------------------
+
+
+def _point(model, member, value):
+    """One stage-B point: a single (model, member) slice, as one job derives it."""
+    coords = {
+        "clim_project": ["cmip6"],
+        "model": [model],
+        "scenario": ["ssp245"],
+        "horizon": ["far"],
+        "member": [member],
+        "stats": ["mean"],
+    }
+    shape = (1,) * len(coords)
+    return xr.Dataset(
+        {
+            "precip": (tuple(coords), np.full(shape, value)),
+            "temp": (tuple(coords), np.full(shape, value / 10)),
+            "precip__flagged": (tuple(coords), np.zeros(shape, dtype=bool)),
+        },
+        coords=coords,
+    )
+
+
+DERIVED = {
+    ("AWI/AWI-CM-1-1-MR", "ssp245", "r1i1p1f1"),
+    ("CCCma/CanESM5", "ssp245", "r11i1p1f1"),
+}
+
+
+@pytest.fixture
+def padded():
+    """Two models whose member labels differ, merged the way stage B merges."""
+    from blueearth_cst.projections.get_change_climate_proj_summary import (
+        combine_changes,
+    )
+
+    return combine_changes(
+        [
+            _point("AWI/AWI-CM-1-1-MR", "r1i1p1f1", 1.0),
+            _point("CCCma/CanESM5", "r11i1p1f1", 2.0),
+        ]
+    )
+
+
+def test_the_outer_join_pads_differing_member_labels(padded):
+    """The defect's precondition: a 2 x 2 grid from two series, two cells padding.
+    A padding cell's NaN `__flagged` reads as True, so without the derived set it
+    would surface as a dry month of a combination that does not exist."""
+    rows = [r for r in _rows(padded) if r["variable"] == "precip"]
+    assert len(rows) == 4
+    assert sum(np.isnan(r["relative_value"]) for r in rows) == 2
+
+
+def test_only_derived_combinations_become_rows(padded):
+    rows = _rows(padded, combinations=DERIVED)
+    precip = {
+        (r["model"], r["member"]): r["relative_value"]
+        for r in rows
+        if r["variable"] == "precip"
+    }
+    assert precip == {("AWI-CM-1-1-MR", "r1i1p1f1"): 1.0, ("CanESM5", "r11i1p1f1"): 2.0}
+    assert len(rows) == 4  # two combinations x two variables
+    assert all(r["status"] == "ok" for r in rows)
+
+
+def test_companions_follow_coordinates_not_dimension_order(wide):
+    """Stage B's `__flagged` merges with `scenario` first. Rows are paired by
+    position after stacking, so a companion stacked in its own order put each
+    flag on another combination's row (2026-10-07, 1,764 false flags)."""
+    from blueearth_cst.projections.dry_month import FLAGGED_STATUS
+
+    ds = wide.copy()
+    flagged = xr.zeros_like(ds["precip"]).astype("int8")
+    flagged.loc[{"model": "INM/INM-CM4-8", "scenario": "ssp585"}] = 1
+    ds["precip__flagged"] = flagged.transpose("scenario", ...)
+    ds["precip__level"] = ds["precip__level"].transpose("member", "model", ...)
+
+    precip = [r for r in _rows(ds) if r["variable"] == "precip"]
+    flagged_rows = {
+        (r["model"], r["scenario"]) for r in precip if r["status"] == FLAGGED_STATUS
+    }
+    assert flagged_rows == {("INM-CM4-8", "ssp585")}
+    expected = wide["precip__level"]
+    for r in precip:
+        model = {"INM-CM4-8": "INM/INM-CM4-8", "GFDL-ESM4": "NOAA-GFDL/GFDL-ESM4"}[
+            r["model"]
+        ]
+        cell = expected.sel(
+            model=model, scenario=r["scenario"], stats=r["statistic"]
+        ).squeeze()
+        assert r["absolute_value"] == pytest.approx(float(cell))
+
+
+def test_reference_flags_broadcast_across_scenarios(wide):
+    """Historical dry flags are shared across futures and may have no scenario dimension."""
+    from blueearth_cst.projections.dry_month import FLAGGED_STATUS
+
+    ds = wide.copy()
+    flagged = xr.zeros_like(ds["precip"].isel(scenario=0, drop=True)).astype("int8")
+    flagged.loc[{"model": "INM/INM-CM4-8"}] = 1
+    ds["precip__flagged"] = flagged
+
+    rows = [row for row in _rows(ds) if row["variable"] == "precip"]
+    assert {row["model"] for row in rows if row["status"] == FLAGGED_STATUS} == {
+        "INM-CM4-8"
+    }
+    assert {row["scenario"] for row in rows if row["status"] == FLAGGED_STATUS} == set(
+        str(scenario) for scenario in ds.scenario.values
+    )
+    assert all(row["status"] == "ok" for row in rows if row["model"] == "GFDL-ESM4")

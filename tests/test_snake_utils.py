@@ -298,13 +298,22 @@ def _figure(tmp_path, name, subdir="plots"):
     return out
 
 
+def _figure_console_path(path):
+    """Use the row formatter's path contract for any pytest temp location."""
+    return _relativize_paths(
+        str(path),
+        os.environ.get(log_core._PROJECT_ROOT_ENV, ""),
+        log_core._path_tokens(),
+    )
+
+
 def test_save_figure_writes_creates_parent_and_announces(tmp_path, capsys):
     su._FIGURE_BUNDLES.clear()
     out = _figure(tmp_path, "elevation_basin.png")  # parent does not exist yet
     assert out.exists()
     su.flush_figure_bundles()
     printed = capsys.readouterr().out.strip()
-    assert printed.endswith(f"- plot - {out}"), printed
+    assert printed.endswith(f"- plot - {_figure_console_path(out)}"), printed
 
 
 def test_save_figure_bundles_one_directory_into_one_row(tmp_path, capsys):
@@ -316,7 +325,7 @@ def test_save_figure_bundles_one_directory_into_one_row(tmp_path, capsys):
     assert capsys.readouterr().out == ""  # nothing announced until the flush
     su.flush_figure_bundles()
     rows = [line.split(" - ", 2)[2] for line in capsys.readouterr().out.splitlines()]
-    assert rows == [f"3 figures -> {os.path.dirname(str(first))}"], rows
+    assert rows == [f"3 figures -> {_figure_console_path(first.parent)}"], rows
 
 
 def test_save_figure_bundles_alternating_directories_separately(tmp_path, capsys):
@@ -331,8 +340,8 @@ def test_save_figure_bundles_alternating_directories_separately(tmp_path, capsys
     # Two rows, in the order the directories were FIRST written to -- not four,
     # and not one per alternation.
     assert rows == [
-        f"2 figures -> {tmp_path / 'plots'}",
-        f"2 figures -> {tmp_path / 'maps'}",
+        f"2 figures -> {_figure_console_path(tmp_path / 'plots')}",
+        f"2 figures -> {_figure_console_path(tmp_path / 'maps')}",
     ], rows
 
 
@@ -344,7 +353,7 @@ def test_an_ordinary_row_flushes_the_bundle_first(tmp_path, capsys):
     log_row("Wrote 2 canonical climate figures", module="plot")
     rows = [line.split(" - ", 2)[2] for line in capsys.readouterr().out.splitlines()]
     assert rows == [
-        f"2 figures -> {tmp_path / 'plots'}",
+        f"2 figures -> {_figure_console_path(tmp_path / 'plots')}",
         "Wrote 2 canonical climate figures",
     ], rows
 

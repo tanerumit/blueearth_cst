@@ -33,8 +33,11 @@ def test_provenance_reports_branch_commit_and_dirtiness():
     assert isinstance(prov["dirty"], bool)
 
 
-def test_provenance_is_best_effort_outside_a_repository(tmp_path):
+def test_provenance_is_best_effort_outside_a_repository(tmp_path, monkeypatch):
     """It must never be the reason a baseline command fails."""
+    # Keep real git discovery, but prevent a scratch fixture from discovering
+    # the hosting checkout above it. This directory itself has no repository.
+    monkeypatch.setenv("GIT_CEILING_DIRECTORIES", str(tmp_path.parent))
     assert cb.git_provenance(tmp_path) is None
 
 

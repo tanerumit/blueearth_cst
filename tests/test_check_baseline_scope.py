@@ -177,7 +177,7 @@ def _check_ns(
 
 @pytest.fixture
 def project(tmp_path):
-    """A synthetic project dir with all 11 targets present + a recorded manifest.
+    """A synthetic project dir with all 10 targets present + a recorded manifest.
 
     Returns (project_dir, manifest_path). Both point under tmp_path.
     """
@@ -195,7 +195,7 @@ def project(tmp_path):
 
 
 def test_targets_tagged_with_expected_cardinality():
-    """The shipping TARGETS carry the 4/6/1 workflow tags the count math relies on.
+    """The shipping TARGETS carry the 4/5/1 workflow tags the count math relies on.
 
     `build_model` gained the beyond-`rule all` discharge target, then dropped
     one again on 2026-08-10: the evaluation hydrograph is keyed by `wflow_id`
@@ -213,7 +213,7 @@ def test_targets_tagged_with_expected_cardinality():
     counts = Counter(workflow for workflow, _kind, _template in cb.TARGETS)
     assert counts == {
         "build_model": 4,
-        "analyze_projections": 6,
+        "analyze_projections": 5,
         "simulate_system": 1,
     }
 
@@ -240,8 +240,8 @@ def test_simulation_json_is_never_a_target():
 
 
 def test_scoped_count_is_selected_not_full(project, capsys):
-    """`--workflow build_model --workflow analyze_projections` reports 11
-    of the 11 targets, not the full set."""
+    """`--workflow build_model --workflow analyze_projections` reports nine
+    of the ten targets, not the full set."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(
@@ -253,7 +253,7 @@ def test_scoped_count_is_selected_not_full(project, capsys):
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 10 target(s)" in out
+    assert "OK - 9 target(s)" in out
 
 
 def test_selected_missing_target_fails(project, capsys):
@@ -280,7 +280,7 @@ def test_selected_missing_target_fails(project, capsys):
 
 def test_unselected_missing_target_ignored(project, capsys):
     """An unselected (workflow-3) target missing on disk is ignored by a scoped
-    check -> returns 0, count stays 11."""
+    check -> returns 0, count stays nine."""
     project_dir, manifest_path = project
     victim = cb.resolve("{metric_set_dir}/q_indicators.csv", project_dir)
     Path(victim).unlink()
@@ -295,14 +295,14 @@ def test_unselected_missing_target_ignored(project, capsys):
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 10 target(s)" in out
+    assert "OK - 9 target(s)" in out
 
 
 def test_unscoped_record_writes_all_targets(project):
-    """An unscoped record with --include-figures writes all 12 (overwrite)."""
+    """An unscoped record with --include-figures writes all ten (overwrite)."""
     project_dir, manifest_path = project
     written = json.loads(Path(manifest_path).read_text())
-    assert len(written["targets"]) == 11
+    assert len(written["targets"]) == 10
     assert written["version"] == cb.MANIFEST_VERSION
 
 
@@ -336,7 +336,7 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
     assert rc == 0
     after = json.loads(Path(manifest_path).read_text())["targets"]
 
-    assert len(after) == 11  # nothing dropped
+    assert len(after) == 10  # nothing dropped
     assert after[cp_path] == cp_before  # wf2 row preserved verbatim
     assert after[exp_path] == exp_before  # wf3 row preserved verbatim
     # wf1 discharge row re-recorded against the mutated series.
@@ -345,14 +345,14 @@ def test_record_workflow_merges_and_preserves_other_slices(project):
 
 
 def test_unscoped_check_spans_all_targets(project, capsys):
-    """`check --include-figures` with no `--workflow` spans all 11 targets."""
+    """`check --include-figures` with no `--workflow` spans all 10 targets."""
     project_dir, manifest_path = project
     rc = cb.cmd_check(
         _check_ns(project_dir, manifest_path, workflow=None, include_figures=True)
     )
     out = capsys.readouterr().out
     assert rc == 0
-    assert "OK - 11 target(s)" in out
+    assert "OK - 10 target(s)" in out
 
 
 # --- figure targets are excluded by default (2026-08-03) ----------------------
@@ -372,6 +372,62 @@ def test_figure_targets_are_excluded_by_default():
 
 def test_include_figures_restores_the_full_universe():
     assert cb.active_targets(include_figures=True) == cb.TARGETS
+
+
+def test_projection_figure_targets_match_baseline_analysis_window():
+    import yaml
+
+    from blueearth_cst.projections.get_change_climate_proj import analysis_windows
+
+    root = Path(__file__).resolve().parents[1]
+    config = yaml.safe_load(
+        (root / "test_case/project_config_baseline_analyze_projections.yml").read_text()
+    )
+    horizon = config["future_windows"][0]
+    window = analysis_windows({horizon["name"]: (horizon["start"], horizon["end"])})[
+        horizon["name"]
+    ]["window_id"]
+    figures = {
+        template
+        for workflow, kind, template in cb.TARGETS
+        if workflow == "analyze_projections" and kind in cb.FIGURE_KINDS
+    }
+    assert figures == {
+        "{clim_project_dir}/plots/full-period/annual-precipitation.png",
+        f"{{clim_project_dir}}/plots/period-{window}/change-factor-cloud.png",
+    }
+    assert [kind for _, kind, _ in cb.active_targets({"analyze_projections"})] == [
+        "csv",
+        "csv",
+        "run_record",
+    ]
+
+
+def test_projection_console_example_uses_suite_contract(monkeypatch):
+    from console_sample_specs import WF2
+    from render_console_sample import render
+
+    from blueearth_cst.shared import console_style as cs
+    from blueearth_cst.shared import snake_utils as su
+
+    # The standalone renderer stages process-wide console state. Keep this
+    # inspection local so later handler tests cannot inherit its workflow.
+    monkeypatch.setattr(cs, "_RUN_HEADER", None)
+    monkeypatch.setattr(cs, "_RULE_NUMBERS", {})
+    monkeypatch.setattr(cs, "_RULE_SUMMARIES", {})
+    monkeypatch.setenv(su._PATH_TOKENS_ENV, "")
+    assert any(
+        rule.number == "2.05b" and rule.name == "prepare_projection_analysis"
+        for rule in WF2.rules
+    )
+    assert any(job.rule == "prepare_projection_analysis" for job in WF2.jobs)
+    assert any(path.endswith("plots/figure_captions.md") for path in WF2.targets)
+    assert any(
+        path.endswith("plots/_engine/figure_captions.json") for path in WF2.targets
+    )
+    transcript = render(WF2)
+    assert "14 figures written" in transcript
+    assert "climate_projections/figures" not in transcript
 
 
 def test_the_workflow_and_figure_filters_compose():

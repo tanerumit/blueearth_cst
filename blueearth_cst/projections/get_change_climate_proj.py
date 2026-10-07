@@ -5,16 +5,9 @@ Created on Tue Feb  1 14:34:58 2022
 @author: bouaziz
 """
 
-# `import hydromt` is GONE, not deferred: its comment claimed a `.raster.vars`
-# "below", and this file contains no `.raster` access at all. What it actually
-# registered the accessor for is `derive_change_factors`, which does read
-# `.raster.vars` and imports this module -- a side effect travelling through an
-# import chain rather than being asked for. That module also imports
-# `get_change_climate_proj_summary`, which imports hydromt at module scope with
-# its own `.raster.vars` use, so the accessor is still registered before
-# anything in the chain runs; a fresh-process probe confirms it. Making
-# `derive_change_factors` ask for it itself is filed separately -- this file has
-# no `.raster` access to guarantee anything for.
+# This module has no `.raster` access and does not import hydromt. The actual
+# accessor caller, get_stats_climate_proj, imports hydromt explicitly before
+# its `.raster.vars` use; registration no longer relies on a plotting import.
 #
 # pandas and xarray are DEFERRED into the three functions that use them.
 # `analyze_projections.smk` imports this module at PARSE time so `STAGE_B_KERNEL`

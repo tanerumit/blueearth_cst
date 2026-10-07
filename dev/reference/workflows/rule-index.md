@@ -756,42 +756,23 @@ stress-test run.**
 No model anywhere in this workflow — it is data end to end.
 
 ```
-STAGE 1 — DATA
-──────────────────────────────────────────────────────────────────
-                        config + catalogs
-                                │
-         pre-parse archive ──────┤
-                                ▼
-                      2.01 delineate_region
-                                │  region.geojson
-              ┌─────────────────┼─────────────────┬──────────────────┐
-              │                 │                 │                  │
-  CMIP6 store │ (gs://cmip6)    │                 │                  ▼
-              ▼                 │                 │      2.02 delineate_spatial
-    2.03 fetch_cmip6_projections        │                 │           _units
-    (one raw slice per member;  │                 │      (SHARED, = 1.02/3.04.
-     the ONLY remote read)      │                 │       A LEAF here: nothing
-              │                 │                 │       in WF2 consumes it yet)
-              ▼                 │                 │                  │
-    2.04 reduce_to_basin_averages ◄────┘                 │                  │
-    (one job per series key, full fan-out)        │                  │
-              │                                   │                  │
-STAGE 2 — PRODUCT                                 │                  │
-──────────────────────────────────────────────────────────────────   │
-              ▼                                   │                  │
-    2.05 derive_change_factors ◄──────────────────┘                  │
-    (ONE job — the workflow's answer)                                │
-              │                                                      │
-              ├──► summary/*_change_factors_{annual,monthly}.csv     │
-              │    composition.csv · provenance.json · report.md     │
-              │    plots/overview/change-factor-cloud[-combined].png │
-              ▼                                                      │
-STAGE 3 — FIGURES + RECORDS                                          │
-──────────────────────────────────────────────────────────────────   │
-    2.06 plot_climate_projections   (reads 2.04's series, not 2.05)       │
-              │                                                      │
-              ▼                                                      ▼
-    2.07 gather_benchmarks · 2.08 gather_logs ◄───────────────────────
+config + catalogs → pre-parse archive → 2.01 delineate_region
+                                          │ region.geojson
+CMIP6 store → 2.03 fetch_cmip6_projections ←┤
+                      │ raw slices        ├→ 2.02 delineate_subbasins_and_rivers
+                      ▼                   │             │ (leaf)
+          2.04 reduce_to_basin_averages ←───┤             │
+                      │ scalar series     │             │
+           ┌──────────┴──────────┐         │             │
+           ▼                     ▼        │             │
+2.05 derive_change_factors  2.05b prepare_projection_analysis
+           │                     │ analysis tables + record
+           │                     ▼                      │
+           │           2.06 plot_climate_projections     │
+           │                     │ suite + captions     │
+           └─────────────────────┴──────────────────────┘
+                                 ▼
+                  2.07 gather_benchmarks · 2.08 gather_logs
 ```
 
 Rule 2.05b branches independently from 2.04 into `analysis/*.csv` and `analysis_record.json`.
@@ -799,8 +780,7 @@ Both gather rules wait for its record. It has no dependency on any 2.05 output.
 
 The region polygon feeds **five** rules — 2.02, 2.03, 2.04, 2.05 and 2.05b all declare
 it — because stage B recomputes every expected digest, including the polygon
-fingerprint. 2.06's edge from 2.05 is an **ordering edge only**; it plots the
-per-member series from 2.04 and never opens the change-factor table.
+fingerprint. Rule 2.06 reads only 2.05b's analysis tables and record; it has no edge from 2.05.
 
 **2.02 is a leaf, and both gather rules declare it explicitly.** Nothing in WF2
 consumes the vector layers yet (ADR 0003 §10 leaves the consuming rules
@@ -819,7 +799,7 @@ reachable at all: an undeclared leaf is simply never scheduled.
 | 2.04 | `reduce_to_basin_averages` | Stage A: one local slice → one monthly series. |
 | 2.05 | `derive_change_factors` | Stage B, one job. WF2's terminal product. |
 | 2.05b | `prepare_projection_analysis` | Independent analysis-window diagnostic tables. |
-| 2.06 | `plot_climate_projections` | The eight projection figures. |
+| 2.06 | `plot_climate_projections` | Availability-driven analysis figure suite and captions. |
 | 2.07 | `gather_benchmarks` | Merges the timing parts. |
 | 2.08 | `gather_logs` | Merges the log parts. |
 
@@ -888,16 +868,12 @@ reason as 2.03.
 factors per model, scenario and horizon. Asserts that the set of series it opens
 equals its declared input list, so a model dropped from the config cannot rejoin
 through a leftover file, and recomputes every expected digest including the
-polygon fingerprint. WF2's terminal product — and, despite the `derive_` name, it
-also renders one figure and writes the run's provenance and human-readable
-report. Kept as one rule deliberately: the design gives stage B no fan-out.
+polygon fingerprint. Writes the aligned change factors, provenance and human-readable report, with no
+figure rendering. Kept as one rule deliberately: stage B has no fan-out.
 
 **Writes.** `<proj>/summary/<ensemble>_change_factors_annual.csv` ·
 `_monthly.csv` · `<proj>/summary/composition.csv` ·
-`<proj>/summary/provenance.json` · `<proj>/report.md` ·
-`<proj>/plots/overview/change-factor-cloud.png`, plus
-`overview/change-factor-cloud-combined.png` when more than one horizon is
-configured (a single horizon has no cloud travel to show).
+`<proj>/summary/provenance.json` · `<proj>/report.md`.
 
 #### 2.05b · `prepare_projection_analysis`
 
@@ -916,15 +892,17 @@ lab-parity exception; CV uses integrals. Analysis-only float64 promotion preserv
 
 #### 2.06 · `plot_climate_projections`
 
-**Does.** Draws the two annual overviews (absolute and anomaly panels) from the
-per-member series of 2.04, and one monthly change-factor figure per configured
-horizon. Since 2026-08-17 the monthly figures RENDER
-`summary/*_change_factors_monthly.csv` rather than recomputing it: that table is
-a real input, opened and read. The annual table stays an **ordering edge only**.
+**Does.** Pure table rendering from 2.05b. Five full-period products show coverage, member annual
+absolute values/anomalies and equal-model anomaly trajectories. Ten products per distinct analysis
+window show change strips, monthly cycles, variability ratios, sign agreement and a paired cloud.
+Availability controls the PNG set; unavailable products have reasons, never placeholders. A combined
+cloud needs at least two distinct windows with paired changes. No scalar inputs or numerical reductions.
 
-**Writes.** Eight PNGs under `<proj>/plots/`, named
-`<ensemble>_{precip,temp}_{annual,monthly}_{absolute,change}.png`. All eight
-are declared, so none is invisible to Snakemake.
+**Writes.** Owned directories `<proj>/plots/full-period/` and `period-<start>-<end>/`, plus
+`figure_captions.md` and `_engine/figure_captions.json`. Ordinary PNG paths and manifest keys form a
+bijection. Optional `captioned_figures: true` adds owned `captioned/` copies, identified by manifest
+`captioned_path` metadata. Predecessor `overview/` and `windows/` products are retired; existing files
+are retained but untargeted and listed in the captions.
 
 #### 2.07 · `gather_benchmarks`
 

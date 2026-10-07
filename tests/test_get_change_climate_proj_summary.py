@@ -1,13 +1,4 @@
-"""Tests for get_change_climate_proj_summary.py (workflow-2 summary helper).
-
-Covers:
-- ``preprocess_coords`` unit behaviour (drops ``height``, leaves others).
-- Row D of the R4 §7 audit-evidence matrix: the dummy-skip merge path of
-  ``summary_climate_proj`` excludes empty netCDFs and keeps non-empty ones.
-
-Heavy deps (``open_mfdataset``, seaborn ``JointGrid``/``savefig``) run in the
-real pixi env per the M02c discipline (dask cannot be stubbed at module level).
-"""
+"""Coordinate preprocessing and complete aligned-dataset merge regressions."""
 
 from os.path import dirname, join, realpath
 
@@ -122,55 +113,3 @@ def test_merge_consumes_every_file_it_is_given(tmp_path):
         [str(a), str(b)], coords="minimal", preprocess=preprocess_coords
     )
     assert sorted(str(m) for m in ds.model.values) == ["A", "B"]
-
-
-def test_the_cloud_draws_only_derived_combinations(tmp_path, monkeypatch):
-    """Models with differing member labels pad the outer-joined merge; a padding
-    cell must not become a cloud point (or a model-name annotation)."""
-    from blueearth_cst.projections import get_change_climate_proj_summary as summary
-    from blueearth_cst.projections import projection_plots
-
-    def point(model, member, value):
-        coords = {
-            "model": [model],
-            "scenario": ["ssp245"],
-            "horizon": ["far"],
-            "member": [member],
-            "stats": ["mean"],
-        }
-        shape = (1,) * len(coords)
-        return xr.Dataset(
-            {
-                "precip": (tuple(coords), np.full(shape, value)),
-                "temp": (tuple(coords), np.full(shape, value / 10)),
-            },
-            coords=coords,
-        )
-
-    merged = summary.combine_changes(
-        [
-            point("AWI/AWI-CM-1-1-MR", "r1i1p1f1", 1.0),
-            point("CCCma/CanESM5", "r11i1p1f1", 2.0),
-        ]
-    )
-    drawn = {}
-    monkeypatch.setattr(
-        projection_plots,
-        "draw_cloud_faceted",
-        lambda changes, periods, path: drawn.update(changes),
-    )
-    summary.plot_change_summary(
-        merged,
-        tmp_path,
-        {"far": [2070, 2090]},
-        combinations={
-            ("AWI/AWI-CM-1-1-MR", "ssp245", "r1i1p1f1"),
-            ("CCCma/CanESM5", "ssp245", "r11i1p1f1"),
-        },
-    )
-    frame = drawn["far"]
-    assert sorted(zip(frame["model"], frame["member"])) == [
-        ("AWI/AWI-CM-1-1-MR", "r1i1p1f1"),
-        ("CCCma/CanESM5", "r11i1p1f1"),
-    ]
-    assert frame["precip_change"].notna().all()

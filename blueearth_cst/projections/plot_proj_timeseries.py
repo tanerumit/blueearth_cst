@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from blueearth_cst.climate_analysis.diagnostic_figures import STYLE, add_caption
+from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
 from blueearth_cst.projections.projection_captions import caption
 from blueearth_cst.projections.projection_figures import SUITE_PRODUCTS
 from blueearth_cst.projections.projection_suite_figures import render_product
@@ -51,6 +52,7 @@ def figure_counts(filename, tables, window_id=""):
         data = data.loc[
             (data.statistic == "mean")
             & (data.quantity == ("change_pct" if "-pct" in filename else "change"))
+            & data.period.isin(PERIODS[:5])
         ]
     elif "cloud" in filename:
         data = data.loc[(data.statistic == "mean") & (data.period == "annual")]
@@ -69,16 +71,37 @@ def figure_counts(filename, tables, window_id=""):
         ]
         data = temp.merge(precip, on=keys).drop_duplicates()
     elif filename == "sign-agreement.png":
-        data = data.loc[data.statistic == "mean"]
+        data = data.loc[
+            (data.statistic == "mean")
+            & data.period.isin(("annual", *MONTHS))
+            & (
+                (data.variable.eq("temp") & data.quantity.eq("change"))
+                | (
+                    data.variable.eq("precip")
+                    & data.quantity.isin(("change", "change_pct"))
+                )
+            )
+        ]
     elif filename.startswith("variability-ratio-"):
         data = data.loc[
-            data.statistic
-            == ("std_detrended" if "temperature" in filename else "cv_detrended")
+            (
+                data.statistic
+                == ("std_detrended" if "temperature" in filename else "cv_detrended")
+            )
+            & data.period.isin(PERIODS[:5])
+        ]
+    elif filename == "variability-member-ratios.png":
+        data = data.loc[
+            data.period.eq("annual")
+            & (
+                (data.variable.eq("temp") & data.statistic.eq("std_detrended"))
+                | (data.variable.eq("precip") & data.statistic.eq("cv_detrended"))
+            )
         ]
     column = (
         "anomaly"
         if filename.startswith("trajectory-")
-        else "annual_rate"
+        else "value"
         if filename.startswith("annual-")
         else "ratio"
         if name == "variability_member_ratios"

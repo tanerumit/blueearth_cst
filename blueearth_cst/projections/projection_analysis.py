@@ -1154,7 +1154,11 @@ def product_availability(tables, windows=None):
             ("precip", "change_pct", "precipitation-pct"),
             ("precip", "change", "precipitation-abs"),
         ):
-            sub = mean.loc[(mean.variable == variable) & (mean.quantity == quantity)]
+            sub = mean.loc[
+                (mean.variable == variable)
+                & (mean.quantity == quantity)
+                & mean.period.isin(PERIODS[:5])
+            ]
             add(
                 f"change-{label}.png",
                 f"period-{window_id}",
@@ -1187,7 +1191,9 @@ def product_availability(tables, windows=None):
             ("precip", "cv_detrended", "precipitation-cv"),
         ):
             sub = ratios.loc[
-                (ratios.variable == variable) & (ratios.statistic == statistic)
+                (ratios.variable == variable)
+                & (ratios.statistic == statistic)
+                & ratios.period.isin(PERIODS[:5])
             ]
             add(
                 f"variability-ratio-{label}.png",
@@ -1203,6 +1209,11 @@ def product_availability(tables, windows=None):
             members.variability_eligible.eq(True)
             & np.isfinite(members.ratio.astype(float))
             & members.ratio.gt(0)
+            & members.period.eq("annual")
+            & (
+                (members.variable.eq("temp") & members.statistic.eq("std_detrended"))
+                | (members.variable.eq("precip") & members.statistic.eq("cv_detrended"))
+            )
         ]
         spread = any(
             group.member.nunique() >= 2
@@ -1235,9 +1246,19 @@ def product_availability(tables, windows=None):
             cloud,
             "no paired annual temperature and precipitation model changes",
         )
+        agreement_cells = mean.loc[
+            mean.period.isin(("annual", *MONTHS))
+            & (
+                (mean.variable.eq("temp") & mean.quantity.eq("change"))
+                | (
+                    mean.variable.eq("precip")
+                    & mean.quantity.isin(("change", "change_pct"))
+                )
+            )
+        ]
         agreement = any(
             group.model.nunique() >= 2
-            for _, group in mean.groupby(
+            for _, group in agreement_cells.groupby(
                 ["scenario", "period", "variable", "statistic", "quantity"]
             )
         )

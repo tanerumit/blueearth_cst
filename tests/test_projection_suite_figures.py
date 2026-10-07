@@ -11,7 +11,7 @@ import xarray as xr
 from blueearth_cst.projections import projection_analysis as analysis
 from blueearth_cst.projections import projection_figures as contract
 from blueearth_cst.projections import projection_trajectories as trajectories
-from blueearth_cst.projections.plot_proj_timeseries import render_suite
+from blueearth_cst.projections.plot_proj_timeseries import figure_counts, render_suite
 from blueearth_cst.projections.projection_captions import caption
 from blueearth_cst.projections.projection_suite_figures import render_product
 
@@ -295,3 +295,84 @@ def test_cloud_pairs_derived_models_independent_of_member_labels(suite):
     assert len(fig.axes[0].collections[0].get_offsets()) == 2
     assert not fig.axes[0].texts
     plt.close(fig)
+
+
+def test_caption_counts_exclude_unplotted_variability_and_monthly_strips():
+    rows = pd.DataFrame(
+        [
+            dict(
+                model="TEST/A",
+                scenario="ssp245",
+                window_id="2036-2065",
+                period="Jan",
+                variable="temp",
+                statistic="std_detrended",
+                quantity="change",
+                value=2.0,
+                ratio=2.0,
+                variability_eligible=True,
+            ),
+            dict(
+                model="TEST/B",
+                scenario="ssp245",
+                window_id="2036-2065",
+                period="annual",
+                variable="precip",
+                statistic="std_detrended",
+                quantity="change",
+                value=2.0,
+                ratio=2.0,
+                variability_eligible=True,
+            ),
+        ]
+    )
+    tables = {
+        "variability_member_ratios": rows,
+        "variability_model_ratios": rows,
+        "model_changes": rows.assign(statistic="mean"),
+    }
+    for filename in (
+        "variability-member-ratios.png",
+        "variability-ratio-temperature-sd.png",
+        "change-temperature.png",
+    ):
+        assert figure_counts(filename, tables, "2036-2065")["n_models"] == 0
+    tables["variability_member_ratios"] = rows.assign(period="annual")
+    assert (
+        figure_counts("variability-member-ratios.png", tables, "2036-2065")["n_models"]
+        == 1
+    )
+
+
+@pytest.mark.parametrize(
+    "period,variable,quantity",
+    [
+        ("DJF", "temp", "change"),
+        ("annual", "kin", "change"),
+        ("annual", "temp", "change_pct"),
+    ],
+)
+def test_agreement_requires_a_plotted_cell(period, variable, quantity):
+    rows = pd.DataFrame(
+        [
+            dict(
+                model=model,
+                scenario="ssp245",
+                window_id="2036-2065",
+                period=period,
+                variable=variable,
+                quantity=quantity,
+                statistic="mean",
+                value=2.0,
+            )
+            for model in ("TEST/A", "TEST/B")
+        ]
+    )
+    available = analysis.product_availability({"models": rows}, ["2036-2065"])
+    assert not available.set_index("filename").loc["sign-agreement.png", "available"]
+    assert (
+        figure_counts("sign-agreement.png", {"model_changes": rows}, "2036-2065")[
+            "n_models"
+        ]
+        == 0
+    )

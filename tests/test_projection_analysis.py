@@ -184,3 +184,40 @@ def test_model_weights_family_votes_and_zero_future_exclusion():
     assert (agreed.k, agreed.n, agreed.k_fam, agreed.n_fam) == (3, 4, 1, 2)
     assert not agreed.small_change
     assert not analysis.ensemble_summary(models).iloc[0].iqr_shown
+
+
+@pytest.mark.parametrize(
+    "period,variable,statistic",
+    [("Jan", "temp", "std_detrended"), ("annual", "precip", "std_detrended")],
+)
+def test_availability_requires_plotted_period_and_statistic(
+    period, variable, statistic
+):
+    base = dict(
+        window_id="2036-2065",
+        scenario="ssp245",
+        period=period,
+        variable=variable,
+        statistic=statistic,
+        quantity="change",
+        value=2.0,
+        ratio=2.0,
+        variability_eligible=True,
+    )
+    members = pd.DataFrame(
+        [dict(base, model="TEST/A", member=f"r{i}") for i in range(2)]
+    )
+    models = members.drop_duplicates("model")
+    result = analysis.product_availability(
+        {"models": models, "model_ratios": models, "member_ratios": members},
+        ["2036-2065"],
+    ).set_index("filename")
+    assert not result.loc["variability-member-ratios.png", "available"]
+    if period == "Jan":
+        assert not result.loc["variability-ratio-temperature-sd.png", "available"]
+        means = models.assign(statistic="mean")
+        result = analysis.product_availability(
+            {"models": means}, ["2036-2065"]
+        ).set_index("filename")
+        assert not result.loc["change-temperature.png", "available"]
+    assert members.variability_eligible.all()

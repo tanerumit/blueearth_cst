@@ -3,8 +3,8 @@
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
-**State:** Units 1–4 committed; unit 5a figure suite reviewed against cached P0.
-**Next action:** Commit unit 5a, then retire predecessor plotting code and callers in unit 5b.
+**State:** Cached-input implementation complete through unit 5b; final checks passed.
+**Next action:** Restore the current data mirror for fresh gates; batch landing remains owner-controlled.
 **Blocker:** Fresh-run gates remain pending: P-drive mirror unavailable; old rapid archive incompatible.
 
 ## Current contract and execution
@@ -60,6 +60,25 @@
   format-check passed. CLI: 20 passed; updated rapid dry-run: 16 jobs. Fresh gates remain pending.
 - Root final figure/producer batch passed all 12 tests. A sandbox-only run had four setup errors from
   the denied legacy pytest temporary root; the host-access rerun passed, with the known cache warning.
+- Unit 5b removes predecessor plotting helpers, declarations and tests together. Rule 2.05 emits no
+  figures; rule 2.06 and both gathers use the new caption manifest. The report links those captions and
+  distinguishes aligned rates from suite annual integrals and percentages. Live docs and inventory
+  fixtures use the new suite paths; sealed milestone records remain unchanged.
+- Retirement checks passed 187 CLI/output-inventory tests and the 16-job rapid DAG dry-run. Current
+  Stage B over isolated archived rapid and P0 values reproduces both before-images byte for byte.
+  Stage B/reducer hashes and WF3/WF4 inventories are identical; surviving coordinate/merge ASTs match.
+- Unit 5b's affected numerical/report/figure batch passed 101 tests; four final count/agreement
+  falsifiers passed after root review. Availability and caption counts now use the artist's actual
+  periods, variables, statistics and quantities. Repository lint and format-check passed.
+- Final cached P0 render passed with host access: 15 ordinary PNGs and manifest keys, one unavailable
+  combined cloud. A sandbox repeat exposed native Windows DLL exception `0xc06d007f` in Matplotlib;
+  this was not a Python assertion failure. The successful host render is recorded separately and does
+  not replace any deferred fresh-run gate.
+- Deleted `blueearth_cst/projections/projection_plots.py`, `tests/test_projection_plots.py`, and
+  `tests/test_plot_proj_timeseries.py`. Their cloud-pair regression lives in the new suite artist tests.
+- The design's precautionary HydroMT import premise was stale: derive/summary have no raster-accessor
+  callers. `get_stats_climate_proj.py` already imports HydroMT explicitly where it uses the accessor.
+  Corrected the obsolete comment without adding an unused import or changing protected arithmetic.
 - Cached P0 producer executed all 100 points into 14 CSV tables and a record: 18,700 change rows,
   30,200 annual member rows, 5,100 member ratios and 40 exact-mask panel benchmarks. It used isolated
   test identities on archived values, not current production-cache recipes or a fresh workflow run.
@@ -107,8 +126,8 @@ at a time; failed falsifiers or changed contracts reopen only the affected unit.
 | 2 coverage/families | Done | `7683ddb6`; 5 focused tests | — |
 | 3 reductions/variability | Done | `c606bcdd`; 16 tests, P0 parity, identities | — |
 | 4 analysis rule/tables | Done | `5b5b219e`; producer/inventory, CLI, DAG and cached P0 | — |
-| 5a figures/captions | Verified | Artist tests, 15 cached P0 figures and manifest, synthetic copies | Commit separately |
-| 5b retirement | Not started | Design § 10 | Remove retired callers together |
+| 5a figures/captions | Done | `a9d69d47`; 12 tests, 15 cached P0 figures, synthetic copies | — |
+| 5b retirement | Done | Focused tests, CLI/inventory, DAG, byte parity, identities | — |
 | 6 batch gates | Pending | Fresh execution unavailable | Run at approved landing |
 
 ## Historical branch record (retained)

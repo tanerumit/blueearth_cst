@@ -8,12 +8,12 @@ expanded series list.
 
 **This step is value-neutral by construction.** The arithmetic is not reimplemented
 here: `get_change_annual_clim_proj` and
-`summary_climate_proj` are imported from the two modules that already held them,
+the existing coordinate-safe merge are imported from their owning modules,
 unchanged. Only the orchestration moves. A non-zero characterized diff on the
 summary artifacts is therefore a defect in this file, not a judgement call — which
 is the whole reason the functions were left where they were.
 
-Per-point annual/monthly results remain in memory through the merge, figures,
+Per-point annual/monthly results remain in memory through the merge
 and tidy tables. Each validated scalar series is loaded and closed once per job.
 The file-writing helpers remain available for direct callers.
 
@@ -53,10 +53,7 @@ from blueearth_cst.projections.get_change_climate_proj import (
     get_change_monthly_clim_proj,
     hydrological_year_bounds,
 )
-from blueearth_cst.projections.get_change_climate_proj_summary import (
-    combine_changes,
-    plot_change_summary,
-)
+from blueearth_cst.projections.get_change_climate_proj_summary import combine_changes
 from blueearth_cst.projections.series_checks import (
     assert_calendar_agreement,
     load_checked_series,
@@ -515,10 +512,9 @@ if "snakemake" in globals():
             for p in points
             if p["point_key"] in resolved_facts
         }
-        plot_change_summary(merged, clim_project_dir, horizons, combinations=derived)
 
         # --- step 6a-i: the tidy annual change-factor table (design §5.9) ----
-        # The cloud and tidy tables consume the same merged dataset.
+        # The tidy tables consume the same merged dataset.
         #
         # S8-04: two facts, both varying. Everything else this dict used to carry
         # was constant across every row (the nominal windows, n_years), hardcoded
@@ -677,7 +673,6 @@ if "snakemake" in globals():
                 document,
                 thresholds=sm.params.min_reference,
                 max_flagged_months=sm.params.max_flagged_months,
-                figures=list(sm.params.figure_names),
             ),
         )
         log_row(

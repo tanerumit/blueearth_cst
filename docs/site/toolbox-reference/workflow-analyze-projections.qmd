@@ -29,7 +29,7 @@ flowchart LR
   B["2.03 Fetch CMIP6 slices"] --> C
   C --> D["2.05 Change factors"]
   C --> G["2.05b Analysis tables"]
-  D --> E["2.06 Projection figures"]
+  G --> E["2.06 Projection figures"]
   D --> F["2.07–2.08 Records"]
   E --> F
   G --> F
@@ -72,3 +72,16 @@ WY 1984–2013). These windows are separate from the configured windows of the o
 availability. Seasonal precipitation changes use weighted mean rates; this differs from the lab's
 total-based percentages. Precipitation CV uses period integrals. Analysis arithmetic uses float64 inputs;
 the aligned change-factor arithmetic retains its existing precision and dry-reference rule.
+
+Rule 2.06 reads only the analysis tables and record. Figures live in `plots/full-period/` and one
+`plots/period-<start>-<end>/` folder per distinct analysis window. Availability determines the PNGs:
+coverage, annual member overviews and anomaly trajectories, annual/seasonal change and variability
+strips, monthly cycles, sign agreement and change-factor clouds. A combined cloud is written only when
+at least two distinct windows have paired changes. Missing products carry reasons rather than blank PNGs.
+
+`plots/figure_captions.md` describes every produced figure and lists unavailable and retired products;
+`plots/_engine/figure_captions.json` maps ordinary PNG paths to captions and counts. Set
+`captioned_figures: true` in the workflow YAML for copies under `plots/captioned/`, recorded by each
+manifest entry's `captioned_path`. Spread describes the ensemble, not a confidence interval; sign
+counts are diagnostic agreement, not likelihood. The predecessor `plots/overview/` and `plots/windows/`
+products are retired. Existing files there are left in place but no longer targeted.

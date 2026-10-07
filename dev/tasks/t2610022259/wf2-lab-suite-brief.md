@@ -262,8 +262,9 @@ reference window 2000–2014, horizon `mid` 2046–2054 and variables are unchan
   1.5 h wall-clock including two scheduler stalls.
 - **Excluded at selection:** ACCESS-CM2 and EC-Earth3, whose `{grid}/{version}` pins are ambiguous (WF2
   refuses them at parse). MRI-ESM2-0 has a clean pin only for r1.
-- **Dry months:** 1,764 monthly rows are `reference_below_threshold`, and 49 of 100 combinations have more
-  than three flagged months. P2's dry-reference guard will be exercised on real data.
+- **Dry months:** none. *Correction 2026-10-07:* the 1,764 flagged rows first reported here were false
+  flags from a WF2 bug (`tidy_rows` read `__flagged` in another dimension order), fixed in `8f47e405`.
+  After rerunning 2.05, all 7,200 monthly rows are `ok`.
 - **Existing WF2 figures at this size:** the cloud's model-name annotations collide badly at 100 points,
   and SSP3-7.0 and SSP5-8.5 are hard to tell apart. This is evidence for C1's dot strips; the figures were
   not changed.

@@ -31,6 +31,7 @@ cssclasses: [todo-board]
 | [t2608071222][]          | 22     | R code has no tests                                          | testing   | backlog    |
 | [t2608071221][]          | 23     | Docker and Linux end-to-end runs untested                    | platform  | backlog    |
 | [t2608071201][]          | 24     | WF1 rebuild always trips WF3 drift guard                     | wf1       | backlog    |
+| [t2610070255][]          |        | WF2 monthly change factors ignore the configured water year  | wf2       | backlog    |
 | [t2610062309][]          |        | Snakemake scheduler stalls mid-run on long WF2 fetch batches | wf2       | backlog    |
 
 [t2609281102]: tasks/t2609281102-complete-reviewed-expert-wflow-model-revisions-design.md
@@ -57,4 +58,5 @@ cssclasses: [todo-board]
 [t2608071222]: tasks/t2608071222-r-testthat-coverage.md
 [t2608071221]: tasks/t2608071221-r7-17.md
 [t2608071201]: tasks/t2608071201-r10-12.md
+[t2610070255]: tasks/t2610070255-wf2-monthly-change-factors-ignore-the-configured-water-year.md
 [t2610062309]: tasks/t2610062309-snakemake-scheduler-stalls-mid-run-on-long-wf2-fetch-batches.md

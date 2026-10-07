@@ -577,3 +577,337 @@ def _to_str_tuple(value):
 # dead: it was a second copy of the per-point procedure, and two copies of the
 # same arithmetic is how they drift apart. The functions stay here — they are the
 # tested surface (tests/test_get_change_climate_proj*.py).
+
+
+# Analysis-only constants: none is referenced by a Stage B kernel root.
+ANALYSIS_LENGTH = 30
+ANALYSIS_REFERENCE = (1985, 2014)  # calendar span; last 30 complete WY are used
+MIN_SEASON_YEARS = 27
+
+
+class AnalysisWindowUnavailable(ValueError):
+    """A valid member series cannot supply the fixed analysis-window span."""
+
+
+def _analysis_month_number(water_year_start):
+    """Resolve the configured month abbreviation without changing kernel helpers."""
+    import calendar
+
+    names = list(calendar.month_abbr)
+    name = str(water_year_start)[:3].title()
+    if name not in names[1:]:
+        raise ValueError(f"invalid water_year_start: {water_year_start!r}")
+    return names.index(name)
+
+
+def analysis_windows(
+    horizons, water_year_start="Jan", reference_window=ANALYSIS_REFERENCE
+):
+    """Place 30-WY analysis windows inside the declared acquisition spans.
+
+    Return horizon-keyed plain records. ``requested`` and ``used`` are WY start
+    labels; ``configured`` retains calendar-year bounds. The reference uses the
+    last 30 complete WY of a sufficiently long configured calendar span, else
+    the last 30 complete WY ending inside 1985–2014. Thus October fallback is
+    WY1984–2013 (owner ruling 2026-10-07), without joining a reference scenario.
+    No individual member's data can move these parse-time windows.
+    """
+    import pandas as pd
+
+    from blueearth_cst.projections.projection_figures import parse_horizon_period
+    from blueearth_cst.projections.series_identity import ACQUISITION_WINDOWS
+
+    month = _analysis_month_number(water_year_start)
+
+    def complete_years(span):
+        time = pd.date_range(str(span[0]), str(span[1]), freq="MS")
+        start, end, count = hydrological_year_bounds(
+            {"time": pd.Series(time), "time.year": pd.Series(time.year)},
+            water_year_start,
+        )
+        return start.year, end.year - (end.month < month), count
+
+    first, last, count = complete_years(
+        (ACQUISITION_WINDOWS["historical"][0], ACQUISITION_WINDOWS["_scenario"][1])
+    )
+    scenario_first, _, _ = complete_years(ACQUISITION_WINDOWS["_scenario"])
+    ref_configured = parse_horizon_period(reference_window)
+    ref_last = min(ref_configured[1], int(ACQUISITION_WINDOWS["historical"][1][:4]))
+    ref_first = max(ref_configured[0], int(ACQUISITION_WINDOWS["historical"][0][:4]))
+    ref_count = max(0, ref_last - ref_first + (month == 1))
+    if ref_count:
+        _, ref_last, ref_count = complete_years(
+            (f"{ref_first}-01-01", f"{ref_last}-12-31")
+        )
+    reference_rule = "configured_last_30"
+    if ref_count < ANALYSIS_LENGTH:
+        reference_rule = "fallback_last_30"
+        _, ref_last, _ = complete_years(
+            (f"{ANALYSIS_REFERENCE[0]}-01-01", f"{ANALYSIS_REFERENCE[1]}-12-31")
+        )
+    reference = (ref_last - ANALYSIS_LENGTH + 1, ref_last)
+    records = {}
+    for name, horizon in horizons.items():
+        configured = parse_horizon_period(horizon)
+        centre = sum(configured) // 2
+        requested = (centre - 14, centre + 15)
+        start = max(first, min(requested[0], last - ANALYSIS_LENGTH + 1))
+        used = (start, start + ANALYSIS_LENGTH - 1)
+        records[name] = {
+            "configured": {"reference": ref_configured, "future": configured},
+            "reference": reference,
+            "reference_rule": reference_rule,
+            "requested": requested,
+            "used": used,
+            "window_id": f"{used[0]}-{used[1]}",
+            "shifted": used != requested,
+            "joined": used[0] < scenario_first,
+            "available": count >= ANALYSIS_LENGTH,
+            "reason": ""
+            if count >= ANALYSIS_LENGTH
+            else "fewer than 30 complete acquisition water years",
+        }
+    return records
+
+
+def analysis_slice(series, window, water_year_start="Jan", *, historical=None):
+    """Slice exact WY labels, joining the same member's historical run if needed.
+
+    Missing endpoint coverage raises ``AnalysisWindowUnavailable``; internal missing
+    months stay missing for seasonal completeness checks. An incompatible join
+    raises rather than treating corrupted input as an unavailable member.
+    """
+    import numpy as np
+    import xarray as xr
+
+    from blueearth_cst.projections.projection_figures import parse_horizon_period
+    from blueearth_cst.projections.series_checks import assert_calendar_agreement
+
+    first, last = parse_horizon_period(window)
+    month = _analysis_month_number(water_year_start)
+    begin = first * 12 + month - 1
+    end = (last + 1) * 12 + month - 2
+
+    def month_keys(dataset):
+        if "time" not in dataset.coords or not dataset.sizes.get("time", 0):
+            raise ValueError("analysis series has no time observations")
+        keys = dataset.time.dt.year.values * 12 + dataset.time.dt.month.values - 1
+        if np.any(np.diff(keys) <= 0):
+            raise ValueError("analysis series time must contain ordered, unique months")
+        return keys
+
+    keys = month_keys(series)
+    original_attrs = dict(series.attrs)
+    if keys[0] > begin:
+        if historical is None:
+            raise AnalysisWindowUnavailable(
+                "analysis window needs its member's historical series"
+            )
+        assert_calendar_agreement(historical, series, "analysis join")
+        for coord in ("model", "member", "clim_project"):
+            if coord in historical.coords or coord in series.coords:
+                if (
+                    coord not in historical.coords
+                    or coord not in series.coords
+                    or not np.array_equal(
+                        historical[coord].values, series[coord].values
+                    )
+                ):
+                    raise ValueError(f"analysis join has different {coord} coordinates")
+        if set(historical.data_vars) != set(series.data_vars):
+            raise ValueError("analysis join has different variables")
+        hist_keys = month_keys(historical)
+        preceding = historical.isel(time=np.flatnonzero(hist_keys < keys[0]))
+        if "scenario" in series.coords:
+            preceding = preceding.assign_coords(scenario=series.scenario)
+        series = xr.concat(
+            [preceding, series],
+            dim="time",
+            join="exact",
+            compat="equals",
+            data_vars="minimal",
+            coords="minimal",
+            combine_attrs="override",
+        )
+        series.attrs = original_attrs
+        keys = month_keys(series)
+    if keys[0] > begin or keys[-1] < end:
+        raise AnalysisWindowUnavailable(
+            f"analysis series does not cover WY {first}-{last}"
+        )
+    return series.isel(time=np.flatnonzero((keys >= begin) & (keys <= end)))
+
+
+def detrended_std(values, years):
+    """Population SD of OLS residuals against actual retained year coordinates.
+
+    Nonfinite value/year pairs are excluded explicitly. Fewer than three valid
+    pairs returns NaN; repeated or unordered year labels and shape errors raise.
+    """
+    import numpy as np
+
+    values, years = np.asarray(values, dtype=float), np.asarray(years, dtype=float)
+    if values.ndim != 1 or years.ndim != 1 or values.shape != years.shape:
+        raise ValueError("values and years must be one-dimensional with the same shape")
+    valid = np.isfinite(values) & np.isfinite(years)
+    values, years = values[valid], years[valid]
+    if values.size < 3:
+        return float("nan")
+    if np.any(np.diff(years) <= 0):
+        raise ValueError("years must be strictly increasing and unique")
+    x = years - years.mean()
+    centred = values - values.mean()
+    slope = np.dot(x, centred) / np.dot(x, x)
+    residual = centred - slope * x
+    return float(np.sqrt(np.mean(residual**2)))
+
+
+def _analysis_season_values(dataset, variable, season, calendar):
+    """Retained season-year labels, mean rates and duration integrals."""
+    import numpy as np
+
+    months_by_season = {
+        "DJF": (12, 1, 2),
+        "MAM": (3, 4, 5),
+        "JJA": (6, 7, 8),
+        "SON": (9, 10, 11),
+    }
+    da = dataset[variable]
+    extra = [dim for dim in da.dims if dim != "time"]
+    if any(da.sizes[dim] != 1 for dim in extra):
+        raise ValueError(
+            f"seasonal analysis needs one member series: {variable} has {da.sizes}"
+        )
+    values = da.squeeze(extra, drop=True).transpose("time").values.astype(float)
+    months, years = dataset.time.dt.month.values, dataset.time.dt.year.values
+    labels = years + (months == 12)
+    weights = month_length_weights(dataset, calendar)
+    selected = np.isin(months, months_by_season[season])
+    kept_years, levels, totals = [], [], []
+    for year in np.unique(labels[selected]):
+        mask = selected & (labels == year)
+        if (
+            mask.sum() != 3
+            or set(months[mask]) != set(months_by_season[season])
+            or not np.isfinite(values[mask]).all()
+        ):
+            continue
+        total = float(np.dot(values[mask], weights[mask]))
+        kept_years.append(int(year))
+        levels.append(total / weights[mask].sum())
+        totals.append(total)
+    return np.asarray(kept_years, dtype=int), np.asarray(levels), np.asarray(totals)
+
+
+def get_change_seasonal_clim_proj(
+    ds_hist_time,
+    ds_clim_time,
+    stats=None,
+    calendar=None,
+    variable_spec=None,
+    *,
+    min_season_years=MIN_SEASON_YEARS,
+):
+    """Seasonal change rows from already-owned analysis slices, never outside them.
+
+    Seasons use their middle month's calendar-year label and three complete,
+    finite months. Both variables' levels are calendar-weighted mean rates.
+    Rows retain year coordinates, rates and integrals for variability calculations
+    and exact null-band masks. Dry-reference post-processing belongs to the
+    analysis-table consumer; it does not change these reference/future values.
+    Seasonal mean/std/detrended percentage changes use rates consistently
+    (owner ruling 2026-10-07). The lab instead uses integrals for precipitation
+    percentages, so those rows are excluded from lab parity when season lengths
+    differ. Precipitation CV continues to use the period integrals.
+    """
+    import numpy as np
+
+    from blueearth_cst.projections.series_checks import assert_calendar_agreement
+
+    if set(ds_hist_time.data_vars) != set(ds_clim_time.data_vars):
+        raise ValueError("seasonal analysis has asymmetric reference/future variables")
+    carried_calendar = assert_calendar_agreement(
+        ds_hist_time, ds_clim_time, "seasonal analysis"
+    )
+    if calendar is not None and calendar != carried_calendar:
+        from blueearth_cst.projections.calendar_weights import same_month_lengths
+
+        earliest = (
+            int(ds_hist_time.time.dt.year.values[0]),
+            int(ds_hist_time.time.dt.month.values[0]),
+        )
+        if not same_month_lengths(calendar, carried_calendar, earliest):
+            raise ValueError("seasonal calendar disagrees with series calendar")
+    calendar = carried_calendar
+    stats = ("mean", "std") if stats is None else tuple(stats)
+    unknown = set(stats) - {"mean", "std", "std_detrended", "cv_detrended"}
+    if unknown:
+        raise ValueError(f"unsupported seasonal statistics: {sorted(unknown)}")
+    if min_season_years < 1:
+        raise ValueError("min_season_years must be positive")
+    rows = []
+    for variable in ds_hist_time.data_vars:
+        for season in ("DJF", "MAM", "JJA", "SON"):
+            ref_years, ref_values, ref_integrals = _analysis_season_values(
+                ds_hist_time, variable, season, calendar
+            )
+            fut_years, fut_values, fut_integrals = _analysis_season_values(
+                ds_clim_time, variable, season, calendar
+            )
+            enough = min(len(ref_years), len(fut_years)) >= min_season_years
+
+            def statistic(values, integrals, years, name):
+                if not values.size:
+                    return float("nan")
+                if name == "mean":
+                    return float(values.mean())
+                if name == "std":
+                    return float(values.std(ddof=0))
+                if name == "std_detrended":
+                    return detrended_std(values, years)
+                # Precipitation CV is computed on period integrals, as in the lab.
+                data = (
+                    integrals
+                    if canonical_kind(variable_spec, variable) == "rate"
+                    else values
+                )
+                mean = float(data.mean())
+                return detrended_std(data, years) / mean if mean else float("nan")
+
+            for stat in stats:
+                reference = statistic(ref_values, ref_integrals, ref_years, stat)
+                future = statistic(fut_values, fut_integrals, fut_years, stat)
+                absolute = future - reference
+                relative = (
+                    absolute / reference * 100
+                    if reference and np.isfinite(reference)
+                    else float("nan")
+                )
+                rows.append(
+                    {
+                        "variable": variable,
+                        "season": season,
+                        "statistic": stat,
+                        "reference": reference,
+                        "future": future,
+                        "absolute": absolute if enough else float("nan"),
+                        "relative": relative if enough else float("nan"),
+                        "change": (
+                            relative
+                            if change_kind(variable_spec, variable) == "relative"
+                            else absolute
+                        )
+                        if enough
+                        else float("nan"),
+                        "n_reference": len(ref_years),
+                        "n_future": len(fut_years),
+                        "status": "ok" if enough else "insufficient_observations",
+                        "reference_years": ref_years,
+                        "future_years": fut_years,
+                        "reference_values": ref_values,
+                        "future_values": fut_values,
+                        "reference_integrals": ref_integrals,
+                        "future_integrals": fut_integrals,
+                    }
+                )
+    return rows

@@ -3,8 +3,8 @@
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
-**State:** G2 approved 2026-10-07. Unit 1 implementation started; no implementation commit yet.
-**Next action:** Verify unit 1 using cached-input before/after comparisons and focused invariants.
+**State:** G2 approved 2026-10-07. Unit 1 numerical helpers and extracted checks are verified.
+**Next action:** Implement unit 2 coverage and model-family fallback after checking the source licence.
 **Blocker:** Fresh-run gates remain pending: P-drive mirror unavailable; old rapid archive incompatible.
 
 ## Current contract and execution
@@ -36,7 +36,8 @@
 - The equivalent execution against `test_rapid` failed before jobs: incompatible existing run archive.
 - Fresh-root execution with a matching scratch config reached rule 2.01 and failed opening the P-drive catalog:
   HydroMT reported `None of the specified roots were found`. No fresh CSV before-image was produced.
-- Unit 1 focused checks remain in progress. Full batch gates run at approved landing, per repository policy.
+- Unit 1 passed 42 focused tests, 20 CLI tests, and 11 tests after the review corrections. Repository lint,
+  format-check, compilation and whitespace checks passed. Full batch gates run at approved landing.
 - Cached-value probing exposed a predecessor CSV defect: historical flags with no scenario dimension
   failed serialization. Companion broadcasting fixes it without changing the arithmetic kernels.
   The new regression failed before the fix; all 37 `test_change_factor_table.py` tests passed afterwards.
@@ -45,6 +46,27 @@
   original cached NetCDFs are untouched. This tests numerical/serialization parity, not cache validity.
   SHA256 annual: `e9efb6aaa3ebd52508459e18470a92f7827cdf8e755f092785e3efd9b8e24680`;
   monthly: `74a70975fe2687cb2db2029949f9007b025924154947fc949262d56af55cd9e5`.
+- After extraction, the archived-input CSV hashes above match exactly. Stage B hash remains
+  `a11fc4fbe4b92c37a623154a7a2f657c6f53790d14a8c1b577e153acc4a87fce`; reducer hash remains
+  `942fa42db363742b5f3258cc386b7de7c7a1577973ec7a4a5936e8a6e3d7e71e`.
+  WF3/WF4 repository inventories also match the pre-edit capture.
+
+## Integration plan state
+
+Follow accepted design section 10. Numerical implementation uses one `python-engineer` thread, inherited
+model/effort, with root responsible for reconciliation and scoped commits. Worker scope is one design unit
+at a time; failed falsifiers or changed contracts reopen only the affected unit. No nested delegation.
+
+| Unit | State | Evidence | Next action |
+|---|---|---|---|
+| 0 snapshots | Fresh gates deferred | Cached probe hashes above; P0/lab snapshots | Restore mirror before landing |
+| 1 numerical helpers/checks | Verified | Focused tests, cached hashes and inventories above | Commit scoped files |
+| 2 coverage/families | Not started | Design § 6 | Verify licence; implement fallback |
+| 3 reductions/variability | Not started | Design § 5, § 9 | Known-answer and null-band tests |
+| 4 analysis rule/tables | Not started | Design § 3 | Wire and run using cached fixtures |
+| 5a figures/captions | Not started | Design § 4 | Render and verify manifest |
+| 5b retirement | Not started | Design § 10 | Remove retired callers together |
+| 6 batch gates | Pending | Fresh execution unavailable | Run at approved landing |
 
 ## Historical branch record (retained)
 

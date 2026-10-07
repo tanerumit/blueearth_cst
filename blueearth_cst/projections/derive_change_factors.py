@@ -39,11 +39,6 @@ import xarray as xr
 from blueearth_cst.projections import provenance as _prov
 from blueearth_cst.projections import reference_window, series_identity
 from blueearth_cst.projections import report as _report
-from blueearth_cst.projections.calendar_weights import (
-    CalendarError,
-    assert_weightable,
-    same_month_lengths,
-)
 from blueearth_cst.projections.change_factor_table import (
     TABLE_COLUMNS_ANNUAL,
     TABLE_COLUMNS_MONTHLY,
@@ -61,6 +56,10 @@ from blueearth_cst.projections.get_change_climate_proj import (
 from blueearth_cst.projections.get_change_climate_proj_summary import (
     combine_changes,
     plot_change_summary,
+)
+from blueearth_cst.projections.series_checks import (
+    assert_calendar_agreement,
+    load_checked_series,
 )
 from blueearth_cst.projections.variable_spec import VariableSpec
 from blueearth_cst.shared.snake_utils import log_row, plural, tee_to_log
@@ -147,15 +146,10 @@ def derive_point_datasets(
         ("historical", series_path_hist, dict(digest_components_hist)),
         (name_scenario, series_path, dict(digest_components_fut)),
     ):
-        digest = series_identity.series_digest(components, region_fp)
-        key = (os.path.abspath(str(path)), digest)
-        if key not in series_cache:
-            with xr.open_dataset(path) as source:
-                series_identity.assert_series_identity(
-                    path, digest, f"{name_model} {label}", observed_attrs=source.attrs
-                )
-                series_cache[key] = source.load()
-        datasets.append(series_cache[key])
+        dataset, digest = load_checked_series(
+            path, components, region_fp, f"{name_model} {label}", series_cache
+        )
+        datasets.append(dataset)
         expected.append(digest)
     ds_hist_time, ds_clim_time = datasets
 
@@ -202,20 +196,9 @@ def derive_point_datasets(
     # comparing incomparable annual aggregates. Agreement is on month LENGTHS, not
     # names -- MIROC6 labels its historical run `proleptic_gregorian` and its
     # scenarios `gregorian`, which are the same months from 1582 on.
-    calendar = str(ds_hist_time.attrs.get("cst_calendar", "") or "")
-    clim_calendar = str(ds_clim_time.attrs.get("cst_calendar", "") or "")
-    earliest = min(
-        (t.year, t.month)
-        for t in (ds_hist_time.indexes["time"][0], ds_clim_time.indexes["time"][0])
+    calendar = assert_calendar_agreement(
+        ds_hist_time, ds_clim_time, f"{name_model} {name_scenario}"
     )
-    if not same_month_lengths(calendar, clim_calendar, earliest):
-        raise CalendarError(
-            f"{name_model} {name_scenario}: reference and scenario series carry "
-            f"different calendars ({calendar!r} vs {clim_calendar!r}). Their annual "
-            "aggregates are not comparable."
-        )
-    assert_weightable(calendar, source=f"{name_model} {name_scenario}")
-    assert_weightable(clim_calendar, source=f"{name_model} {name_scenario}")
 
     # The cache is bound to one validated historical series and analysis
     # configuration, never to a future horizon or scenario.

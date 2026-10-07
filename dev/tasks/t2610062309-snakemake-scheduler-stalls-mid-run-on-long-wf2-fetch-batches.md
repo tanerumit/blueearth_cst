@@ -1,13 +1,14 @@
 ---
 title: Snakemake scheduler stalls mid-run on long WF2 fetch batches
 type: todo-item
-status: backlog
+status: active
 effort: 1
 area: wf2
 origin: t2610022259 P0 (2026-10-06)
 queue:
+doc: dev/tasks/t2610062309/diagnosis.md
 created: 2026-10-06
-updated: 2026-10-06
+updated: 2026-10-07
 ---
 
 > [!note] Overview
@@ -17,9 +18,14 @@ updated: 2026-10-06
 
 ## Progress
 
-- [ ] Reproduce on a long WF2 batch with a stack dump of the stalled scheduler (py-spy needs approval as a
-      new dependency; `faulthandler` is the no-dependency alternative).
-- [ ] Bisect: `--cores 1`, benchmarks off, heartbeat off.
+- [x] Review original stalls and recent verification: the third stall also affected cached inputs.
+- [x] Run two local 251-job, three-core probes with benchmarks and console hooks; both passed.
+- [x] Validate main-first stack capture, including more than 100 threads and the owned launcher.
+- [ ] Capture scheduler and worker stacks during a real cached-input recurrence; root cause is unconfirmed.
+- [ ] Bisect one factor at a time after locating the blocking frame: cores, benchmarks, heartbeat.
+
+Diagnosis and the opt-in capture recipe: [current evidence](t2610062309/diagnosis.md).
+No production workaround or concurrency default was changed; serial recovery is not a verified fix.
 
 ## Evidence
 

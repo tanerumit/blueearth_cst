@@ -476,3 +476,22 @@ def test_companions_follow_coordinates_not_dimension_order(wide):
             model=model, scenario=r["scenario"], stats=r["statistic"]
         ).squeeze()
         assert r["absolute_value"] == pytest.approx(float(cell))
+
+
+def test_reference_flags_broadcast_across_scenarios(wide):
+    """Historical dry flags are shared across futures and may have no scenario dimension."""
+    from blueearth_cst.projections.dry_month import FLAGGED_STATUS
+
+    ds = wide.copy()
+    flagged = xr.zeros_like(ds["precip"].isel(scenario=0, drop=True)).astype("int8")
+    flagged.loc[{"model": "INM/INM-CM4-8"}] = 1
+    ds["precip__flagged"] = flagged
+
+    rows = [row for row in _rows(ds) if row["variable"] == "precip"]
+    assert {row["model"] for row in rows if row["status"] == FLAGGED_STATUS} == {
+        "INM-CM4-8"
+    }
+    assert {row["scenario"] for row in rows if row["status"] == FLAGGED_STATUS} == set(
+        str(scenario) for scenario in ds.scenario.values
+    )
+    assert all(row["status"] == "ok" for row in rows if row["model"] == "GFDL-ESM4")

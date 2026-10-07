@@ -159,14 +159,20 @@ def tidy_rows(
         # reference statistic, whose dimensions merge in a different order
         # (`scenario` first); stacking it in its own order put each flag on
         # another combination's row.
+        # Historical flags may omit scenario entirely: the same reference
+        # verdict applies to every future scenario. Broadcast before stacking.
         order = list(da.dims)
         stacked = da.stack(_row=order)
         if level_da is not None:
-            level_da = level_da.transpose(*order).stack(_row=order)
+            level_da = level_da.broadcast_like(da).transpose(*order).stack(_row=order)
         if reference_da is not None:
-            reference_da = reference_da.transpose(*order).stack(_row=order)
+            reference_da = (
+                reference_da.broadcast_like(da).transpose(*order).stack(_row=order)
+            )
         if flagged_da is not None:
-            flagged_da = flagged_da.transpose(*order).stack(_row=order)
+            flagged_da = (
+                flagged_da.broadcast_like(da).transpose(*order).stack(_row=order)
+            )
 
         entry = spec.get(variable)
         units = getattr(entry, "units", "") if entry is not None else ""

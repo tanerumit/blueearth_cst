@@ -1,4 +1,54 @@
-# DEVLOG: feat/wf1-spatial-decoupling
+# DEVLOG: feat/wf2-cmip6-improvements
+
+## Resume here
+
+**Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
+**State:** G2 approved 2026-10-07. Unit 1 implementation started; no implementation commit yet.
+**Next action:** Verify unit 1 using cached-input before/after comparisons and focused invariants.
+**Blocker:** Fresh-run gates remain pending: P-drive mirror unavailable; old rapid archive incompatible.
+
+## Current contract and execution
+
+- Accepted design: `dev/00-current-board-main/tasks/t2610071652/wf2-suite-integration-design.md`.
+  The primary checkout has uncommitted finalization artifacts; preserve them and coordinate with its writer.
+- Execute design section 10 in order, with one verified commit per unit. Keep this branch; landing and pushing
+  require separate user instructions.
+- Unit 1 owns additive analysis-window, slicing, seasonal and detrended helpers, extracted series checks,
+  and their focused tests. Preserve Stage B/reducer hashes, workflow inventories and aligned CSV bytes.
+- Owner ruling 2026-10-07: the October fallback reference uses WY labels `1984–2013`, matching the lab.
+  Use 30 complete historical water years ending at the last complete WY of the fallback calendar span;
+  do not join scenario data into the reference. Preserve all other accepted numerical contracts.
+- Prior P0 change-factor and lab snapshots exist in `.tmp/scratchpad/t2610071652-snapshots/`.
+  Its rapid snapshot dates from before this branch's WF2 fixes and does not satisfy the before-image gate.
+- Owner ruling 2026-10-07: proceed with cached CMIP6 inputs; leave fresh-run gates pending.
+  Cached-input comparisons must be labelled as such and do not count as fresh end-to-end passes.
+- Owner ruling 2026-10-07: seasonal precipitation percentages use rates consistently. Document the lab's
+  total-based percentage calculation as a parity exception; precipitation CV still uses integrals.
+- Scratch logs/configs for a fresh rapid run are in `.tmp/scratchpad/wf2-suite-evidence/`.
+  The scratch project config preserves rapid settings and points to a fresh matching project root.
+- A local data tree exists, but it lacks the current catalog's `rivers_ge30m.fgb` and MERIT VRTs.
+  Substituting its older catalog would change the evidence basis and has not been authorized.
+
+## Current validation
+
+- `pixi run python scripts/run_workflow.py analyze_projections --config test_case/project_config_rapid.yml
+  --project-dir test_case/test_rapid --cores 3 --dry-run` — passed with host access; 15 jobs.
+- The equivalent execution against `test_rapid` failed before jobs: incompatible existing run archive.
+- Fresh-root execution with a matching scratch config reached rule 2.01 and failed opening the P-drive catalog:
+  HydroMT reported `None of the specified roots were found`. No fresh CSV before-image was produced.
+- Unit 1 focused checks remain in progress. Full batch gates run at approved landing, per repository policy.
+- Cached-value probing exposed a predecessor CSV defect: historical flags with no scenario dimension
+  failed serialization. Companion broadcasting fixes it without changing the arithmetic kernels.
+  The new regression failed before the fix; all 37 `test_change_factor_table.py` tests passed afterwards.
+- Isolated archived-rapid before-image: 8 annual and 96 monthly rows, computed from committed Stage B source.
+  Disposable copies use explicitly synthetic test identities because archived reducer metadata is stale;
+  original cached NetCDFs are untouched. This tests numerical/serialization parity, not cache validity.
+  SHA256 annual: `e9efb6aaa3ebd52508459e18470a92f7827cdf8e755f092785e3efd9b8e24680`;
+  monthly: `74a70975fe2687cb2db2029949f9007b025924154947fc949262d56af55cd9e5`.
+
+## Historical branch record (retained)
+
+The record below predates this branch's WF2 work.
 
 **Timeline:**
 - 2026-08-02 01:11 → Started

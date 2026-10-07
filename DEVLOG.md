@@ -3,8 +3,8 @@
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
-**State:** Unit 1 committed as `1672686c`; unit 2 coverage/family metadata is verified.
-**Next action:** Implement unit 3 reductions, variability and trajectories with known-answer tests.
+**State:** Units 1/2 committed; unit 3 verified; unit 4 producer wiring is underway.
+**Next action:** Commit unit 3 separately, then verify the rule 2.05b producer and tree inventory.
 **Blocker:** Fresh-run gates remain pending: P-drive mirror unavailable; old rapid archive incompatible.
 
 ## Current contract and execution
@@ -44,18 +44,34 @@
 - Unit 1 passed 42 focused tests, 20 CLI tests, and 11 tests after the review corrections. Repository lint,
   format-check, compilation and whitespace checks passed. Full batch gates run at approved landing.
 - Unit 2 passed all 5 focused tests, repository lint/format-check, compilation and whitespace checks.
+- Unit 3 passed 16 focused tests, scoped lint/format/compilation and unchanged protected inventories.
+  Root repository lint and format-check passed after formatting the concurrent unit 4 edits.
 - Cached-value probing exposed a predecessor CSV defect: historical flags with no scenario dimension
   failed serialization. Companion broadcasting fixes it without changing the arithmetic kernels.
   The new regression failed before the fix; all 37 `test_change_factor_table.py` tests passed afterwards.
 - Isolated archived-rapid before-image: 8 annual and 96 monthly rows, computed from committed Stage B source.
   Disposable copies use explicitly synthetic test identities because archived reducer metadata is stale;
   original cached NetCDFs are untouched. This tests numerical/serialization parity, not cache validity.
-  SHA256 annual: `e9efb6aaa3ebd52508459e18470a92f7827cdf8e755f092785e3efd9b8e24680`;
-  monthly: `74a70975fe2687cb2db2029949f9007b025924154947fc949262d56af55cd9e5`.
+  Raw-byte SHA256 annual: `4984466e5f1ebd14f48e075f9573e83cf9567cc0d2c9f696e3c8ecff41a6f62a`;
+  monthly: `706ab4593a9fd48ce4f793c51ba6147e1e6bdeb47abb7dc4289abcebab3f6864`.
+  These replace the initial line-ending-normalized hashes produced by the environment hash helper.
 - After extraction, the archived-input CSV hashes above match exactly. Stage B hash remains
   `a11fc4fbe4b92c37a623154a7a2f657c6f53790d14a8c1b577e153acc4a87fce`; reducer hash remains
   `942fa42db363742b5f3258cc386b7de7c7a1577973ec7a4a5936e8a6e3d7e71e`.
   WF3/WF4 repository inventories also match the pre-edit capture.
+- Cached P0 comparison also passed: original and extracted Stage B reproduce the captured 600 annual
+  and 7,200 monthly rows byte for byte. Raw SHA256 annual:
+  `360d2512fce5f62a06b13f272c7e001f7e914b2b55701eacc38d6ddb6e11eea8`; monthly:
+  `d41e232d6a5d80d8bfbce79b2f268d584ac9abaaf675effabc1fb432b97c0a9f`.
+  Test-only copies have distinct per-series identities to keep reference caches isolated across models.
+- Initial analysis-table comparison covers 11,900 absolute and 5,200 nonseasonal relative rows. Keys,
+  counts and statuses match the lab; monthly mean/SD values exceed tolerance because archived scalar
+  inputs are float32 while the lab reduces float64. Promote analysis slices only before kernel calls;
+  keep the aligned arithmetic path unchanged. After correction all compared values match at the accepted
+  tolerance (max absolute change difference 1.42e-14; relative difference 7.11e-14). The ruled seasonal
+  precipitation percentage exception is excluded from this parity claim.
+- Review found raw SD rows must use raw SD for zero-variability status: a linear trend has positive raw
+  SD but zero detrended SD. Ratio rows use their own detrended rate/integral SD; a falsifier covers both.
 
 ## Integration plan state
 
@@ -67,9 +83,9 @@ at a time; failed falsifiers or changed contracts reopen only the affected unit.
 |---|---|---|---|
 | 0 snapshots | Fresh gates deferred | Cached probe hashes above; P0/lab snapshots | Restore mirror before landing |
 | 1 numerical helpers/checks | Done | `1672686c`; focused checks and invariants above | — |
-| 2 coverage/families | Verified | 5 focused tests; licence-gated fallback | Commit scoped files |
-| 3 reductions/variability | Not started | Design § 5, § 9 | Known-answer and null-band tests |
-| 4 analysis rule/tables | Not started | Design § 3 | Wire and run using cached fixtures |
+| 2 coverage/families | Done | `7683ddb6`; 5 focused tests | — |
+| 3 reductions/variability | Verified | 16 focused tests; P0 parity and identities | Commit separately |
+| 4 analysis rule/tables | In progress | Independent inputs and table producer | Focused producer/CLI/DAG checks |
 | 5a figures/captions | Not started | Design § 4 | Render and verify manifest |
 | 5b retirement | Not started | Design § 10 | Remove retired callers together |
 | 6 batch gates | Pending | Fresh execution unavailable | Run at approved landing |

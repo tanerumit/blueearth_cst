@@ -41,6 +41,7 @@ both legs, so an import-time error fails the suite.
 | [`check_env.py`](check_env.py) | Whether a checkout can actually run the workflows (weathergenr, Julia, activation). |
 | [`inspect_weathergenr.R`](inspect_weathergenr.R) | The installed weathergenr's exports and the signatures the workflow calls; run after an upgrade. |
 | [`pixi_activate.bat`](pixi_activate.bat) | Activate the pixi env in a cmd shell. |
+| [`setup-board-view.ps1`](setup-board-view.ps1) | Give a session worktree an Explorer path to the canonical board on `main`; run by the post-checkout and post-merge hooks. |
 | [`check_activation.py`](check_activation.py) | Drift between `dev/reference/agent-activation.md` and the untracked agent manifest. |
 
 ## Data staging and catalogs
@@ -52,7 +53,6 @@ both legs, so an import-time error fails the suite.
 | [`generate_cmip6_catalog.py`](generate_cmip6_catalog.py) | Regenerate `config/catalogs/cmip6_data.yml` from a live crawl of gs://cmip6. |
 | [`probe_cmip6_grids.py`](probe_cmip6_grids.py) | Which CMIP6 models hydromt's raster accessor refuses (non-uniform grids). |
 | [`list_era5_vars.py`](list_era5_vars.py) | Variables in the staged ERA5 zarr (metadata only). |
-| [`sample_bundle.yml`](sample_bundle.yml) | Parameters for the planned sample-dataset bundle; input to a builder not yet written. |
 
 ## Project inspection and cleanup
 

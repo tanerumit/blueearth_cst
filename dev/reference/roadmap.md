@@ -585,7 +585,7 @@ config rather than by user discipline.
    should be settled here.
 5. Output layout under `project_dir/` already mostly clean — leave
    alone unless a concrete pain point emerges.
-6. Remaining top-level runners (`run_snake_test.cmd`,
+6. Remaining top-level runners (`run_snake_test.cmd`, since removed;
    `run_snake_docker.sh`) folded into `dev/scripts/` (consistent
    with the pre-M1 move of `open_shell.bat`) or split into a new
    top-level `scripts/` if you decide production runners deserve a

@@ -37,7 +37,7 @@ Four bins plus `advanced_settings.yml`.
 
 ## scripts/
 
-User-facing runners.
+User-facing runners, indexed in `scripts/README.md`.
 
 `suggest_experiment_name.py` pins a deliberate `experiment_name` into a config. It edits the config as text, never via `yaml.safe_dump`, which would strip every comment.
 

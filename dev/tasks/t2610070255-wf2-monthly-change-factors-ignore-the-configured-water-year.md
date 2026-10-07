@@ -17,4 +17,5 @@ updated: 2026-10-07
 
 ## Progress
 
-- [ ] <first step>
+- [ ] Thread `water_year_start` into `get_change_monthly_clim_proj` and slice the same complete water years as the annual path.
+- [ ] Known-answer test with an October water year; confirm January configs stay byte-identical.

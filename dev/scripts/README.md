@@ -52,7 +52,6 @@ both legs, so an import-time error fails the suite.
 | [`stage_cmip6.py`](stage_cmip6.py) + [`stage_cmip6.yml`](stage_cmip6.yml) | Stage CMIP6 slices for one region, digest-stamped so WF2's rule 2.04 hits its cache. |
 | [`generate_cmip6_catalog.py`](generate_cmip6_catalog.py) | Regenerate `config/catalogs/cmip6_data.yml` from a live crawl of gs://cmip6. |
 | [`probe_cmip6_grids.py`](probe_cmip6_grids.py) | Which CMIP6 models hydromt's raster accessor refuses (non-uniform grids). |
-| [`list_era5_vars.py`](list_era5_vars.py) | Variables in the staged ERA5 zarr (metadata only). |
 
 ## Project inspection and cleanup
 

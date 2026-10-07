@@ -403,10 +403,19 @@ def test_projection_figure_targets_match_baseline_analysis_window():
     ]
 
 
-def test_projection_console_example_uses_suite_contract():
+def test_projection_console_example_uses_suite_contract(monkeypatch):
     from console_sample_specs import WF2
     from render_console_sample import render
 
+    from blueearth_cst.shared import console_style as cs
+    from blueearth_cst.shared import snake_utils as su
+
+    # The standalone renderer stages process-wide console state. Keep this
+    # inspection local so later handler tests cannot inherit its workflow.
+    monkeypatch.setattr(cs, "_RUN_HEADER", None)
+    monkeypatch.setattr(cs, "_RULE_NUMBERS", {})
+    monkeypatch.setattr(cs, "_RULE_SUMMARIES", {})
+    monkeypatch.setenv(su._PATH_TOKENS_ENV, "")
     assert any(
         rule.number == "2.05b" and rule.name == "prepare_projection_analysis"
         for rule in WF2.rules

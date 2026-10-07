@@ -377,7 +377,7 @@ rule delineate_subbasins_and_rivers:
 
 
 # 0.03  extract_climate_datasets — ONE rule per candidate source.
-# 0.04  plot_climate_datasets        — the canonical figure set for that source.
+# 0.04 / 0.04b — compute and render source-owned diagnostics.
 #
 # GENERATED IN A LOOP RATHER THAN WILDCARDED, and the reason is the store's
 # output SET, not style: `climate_store_rule` returns `oro_nc` for a selected

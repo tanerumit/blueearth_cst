@@ -79,6 +79,13 @@ def test_canonical_inventory_and_one_source_refusal():
     comparison = diagnostic_comparison_outputs(
         "comparison", ["era5", "chirps"], settings
     )
+    for name, paths in (("era5", era5), ("chirps", chirps), ("comparison", comparison)):
+        assert Path(paths["root"]) == Path(name)
+        assert all(
+            Path(p).parent == Path(name) / "figures" for p in paths["figures"].values()
+        )
+        assert Path(paths["compute"]["coverage"]).parent == Path(name) / "tables"
+        assert Path(paths["compute"]["metadata"]).parent == Path(name) / "_engine"
     assert comparison["source_summary"] == {
         "dataset_comparison_csv": str(Path("comparison/dataset_comparison.csv")),
         "dataset_comparison_md": str(Path("comparison/dataset_comparison.md")),

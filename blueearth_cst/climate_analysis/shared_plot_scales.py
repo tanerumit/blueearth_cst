@@ -1,8 +1,8 @@
 """One plotting scale per variable per figure kind, shared across sources.
 
 Optional utilities for explicitly scaled comparison products. The former WF0
-rule 0.04b is retired: canonical source plots now use source-local scales in
-both WF0 and WF1, while WF0's combined comparison figures share their own axes.
+rule for these scales is retired: WF0 diagnostics use their own renderers,
+while WF1 produces only model-forcing and evaluation figures.
 Direct callers can still pool candidate values here and pass the resulting
 boundaries to a separately named plot product.
 

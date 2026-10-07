@@ -136,18 +136,19 @@ enriched with ERA5 temperature, radiation and pressure plus orography because
 WF1 and WF3 require the complete forcing contract.
 
 WF0 retains coverage, extreme indices, SPI, trends and diagnostic tables under
-each source store's `diagnostics/`. Multiple sources also produce
-`comparison/diagnostics/`, with agreement tables and common-period figures.
+each source store's `tables/`. Multiple sources also produce
+`comparison/tables/` and `comparison/figures/`, with agreement tables and common-period figures.
 Machine-readable diagnostics and captions live in `_engine/`; readable captions
 live in `figure_captions.md`. Agreement does not establish accuracy or forcing
 suitability. A single-source run keeps its diagnostics without a comparison.
 CHIRPS daily precipitation labelled `mm` is now labelled `mm d**-1` without
 rescaling values. Retained CHIRPS stores need regeneration to receive the label.
 
-WF0's canonical plots are PNGs in `diagnostics/figures/`. They replace WF0's
+WF0's canonical plots are PNGs in each store's `figures/`. They replace WF0's
 former monthly boxes, plain annual series and comparison lines. Subbasin plots
-and captioned copies are off by default. WF1 retains its existing `plots/`
-producer and contracts. Existing run files are not automatically deleted.
+and captioned copies are off by default. WF0 exclusively owns source diagnostics;
+WF1 produces model-forcing and evaluation figures only. Existing `plots/` and
+`diagnostics/` outputs are no longer targeted and are not automatically deleted.
 See the [WF0 guide](docs/site/toolbox-reference/workflow-analyze-climate.qmd)
 for settings, outputs and scientific limitations.
 

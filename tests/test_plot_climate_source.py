@@ -1,4 +1,4 @@
-"""R07 B4 / P4: the climate figures come from the store, model-free.
+"""WF0 source diagnostics build model-free and retain source-grid PET behavior.
 
 Two properties, deliberately separate:
 
@@ -163,25 +163,6 @@ def test_source_grid_pet_uses_the_source_orography():
     assert not np.allclose(low.values, high.values)
 
 
-def test_missing_parity_variable_raises(tmp_path, capsys):
-    """A short extraction fails loud, not with an opaque MissingOutputException."""
-    from blueearth_cst.climate_analysis.plot_climate_source import plot_climate_source
-
-    ds = _extraction().drop_vars("kout")
-    nc = tmp_path / "extract_historical.nc"
-    ds.to_netcdf(nc)
-    with pytest.raises(ValueError, match="kout"):
-        plot_climate_source(nc, tmp_path / "plots", data_sources=None)
-    report = capsys.readouterr().out
-    assert "WG-1 not ready: era5" in report
-    assert "expected data variable 'kout' absent" in report
-
-
-# --------------------------------------------------------------------------- #
-# The P4 assertion — a real Snakemake DAG dry-run
-# --------------------------------------------------------------------------- #
-
-
 @pytest.fixture()
 def modelfree_project(tmp_path):
     """A model-free project config plus a deliberately absent build template.
@@ -203,6 +184,7 @@ def modelfree_project(tmp_path):
     cfg["project"]["catalog"] = catalog.as_posix()  # `C-40`
     # `C-70`: INCLUSIVE YEARS. `_START`/`_END` are ISO dates, so the year is
     # taken from each rather than the timestamp being rebuilt.
+    cfg["climate"]["sources"] = ["era5"]
     cfg["climate"]["window"] = {
         "start": int(str(_START)[:4]),
         "end": int(str(_END)[:4]),
@@ -233,10 +215,10 @@ def modelfree_project(tmp_path):
 
 
 def _snakemake(args, cfg_path):
-    """Invoke snakemake on wf1 with the repo workflow profile disabled."""
+    """Invoke snakemake on WF0 with the repo workflow profile disabled."""
     cmd = (
         f"snakemake {args} --workflow-profile none -c 1 "
-        f'-s build_model.smk --configfile "{cfg_path}"'
+        f'-s analyze_climate.smk --configfile "{cfg_path}"'
     )
     return subprocess.run(
         cmd, shell=True, capture_output=True, text=True, cwd=str(SNAKEDIR)
@@ -248,19 +230,24 @@ def _snakemake(args, cfg_path):
 def test_source_figures_build_without_a_model(modelfree_project):
     """P4: source figures schedule without the model-build subgraph."""
     cfg_path, project_dir, store, absent_template = modelfree_project
-    from blueearth_cst.climate_analysis.climate_figures import source_figure_names
+    from blueearth_cst.climate_analysis.diagnostic_outputs import (
+        diagnostic_source_outputs,
+    )
+    from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
 
-    # The WF0 filename grammar -- the same names rule 1.05 declares. Asking for
-    # the legacy `source_<var>_<kind>.png` spelling here would dry-run clean
-    # against no rule at all and assert nothing.
-    targets = [store / "plots" / name for name in source_figure_names("era5")]
+    cfg = load_composed_config(cfg_path)
+    settings = parse_settings(None, cfg["climate"]["window"], ["era5"])
+    targets = [
+        Path(p)
+        for p in diagnostic_source_outputs(store, "era5", settings)["figures"].values()
+    ]
     quoted = " ".join(f'"{t.as_posix()}"' for t in targets)
     result = _snakemake(f"--dry-run {quoted}", cfg_path)
     combined = (result.stdout or "") + (result.stderr or "")
     assert result.returncode == 0, combined[-4000:]
 
     assert "extract_climate_datasets" in combined
-    assert "plot_climate_datasets" in combined
+    assert "plot_climate_diagnostics_era5" in combined
     assert "prepare_land_and_soil_maps" not in combined
     assert "build_wflow_model" not in combined
     assert absent_template.as_posix() not in combined.replace("\\", "/")

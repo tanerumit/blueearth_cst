@@ -586,7 +586,7 @@ degenerate) produces the remaining products and the listed one.
 
 ## 9. Validation plan
 
-**Pre-change snapshots (before commit 1)**, digests under `dev/tasks/t2610071652/evidence/`, data copies in
+**Pre-change snapshots (before commit 1)**, digests under `dev/records/reviews/wf2-suite-integration/implementation-validation.md`, data copies in
 the worktree `.tmp/scratchpad/`: change-factor CSVs from rapid (re-run at the lane head; the 2026-09-16 copy
 predates the lane's WF2 fixes) and P0 (+ sha256, already taken); lab `results/*.csv` at lab `7560e71`;
 `STAGE_B_HASH`, `REDUCER_HASH`, WF3/WF4 inventory digests for rapid.

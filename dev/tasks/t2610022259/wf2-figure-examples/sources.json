@@ -1,0 +1,144 @@
+{
+  "bannister": {
+    "citation": "Bannister et al. (2021), Improving the visual communication of environmental model projections, Scientific Reports 11, 19157.",
+    "doi": "10.1038/s41598-021-98290-4",
+    "url": "https://www.nature.com/articles/s41598-021-98290-4",
+    "guide": "R05",
+    "rights": "CC BY 4.0"
+  },
+  "muller": {
+    "citation": "Müller and Döll (2024), Quantifying and communicating uncertain climate change hazards in participatory climate change adaptation processes, Geoscience Communication 7, 121–144.",
+    "doi": "10.5194/gc-7-121-2024",
+    "url": "https://gc.copernicus.org/articles/7/121/2024/",
+    "guide": "R08",
+    "rights": "CC BY 4.0; retain third-party credits shown in the article, including the source diagram and logos in Figure 3."
+  },
+  "milinski": {
+    "citation": "Milinski, Maher and Olonscheck (2020), How large does a large ensemble need to be?, Earth System Dynamics 11, 885–901.",
+    "doi": "10.5194/esd-11-885-2020",
+    "url": "https://esd.copernicus.org/articles/11/885/2020/",
+    "guide": "R12",
+    "rights": "CC BY 4.0"
+  },
+  "maher": {
+    "citation": "Maher et al. (2025), The updated Multi-Model Large Ensemble Archive and the Climate Variability Diagnostics Package: new tools for the study of climate variability and change, Geoscientific Model Development 18, 6341–6365.",
+    "doi": "10.5194/gmd-18-6341-2025",
+    "url": "https://gmd.copernicus.org/articles/18/6341/2025/",
+    "guide": "R11",
+    "rights": "CC BY 4.0"
+  },
+  "brunner": {
+    "citation": "Brunner et al. (2020), Reduced global warming from CMIP6 projections when weighting models by performance and independence, Earth System Dynamics 11, 995–1012.",
+    "doi": "10.5194/esd-11-995-2020",
+    "url": "https://esd.copernicus.org/articles/11/995/2020/",
+    "guide": "R15",
+    "rights": "CC BY 4.0"
+  },
+  "catchment": {
+    "citation": "Perra, Piras, Deidda, Paniconi, Mascaro, Vivoni, Cau, Marras, Ludwig and Meyer (2018), Multimodel assessment of climate change-induced hydrologic impacts for a Mediterranean catchment, Hydrology and Earth System Sciences 22, 4125–4143.",
+    "doi": "10.5194/hess-22-4125-2018",
+    "url": "https://hess.copernicus.org/articles/22/4125/2018/",
+    "guide": "Additional exemplar",
+    "rights": "CC BY 4.0"
+  },
+  "alpine": {
+    "citation": "Hanus, Hrachowitz, Zekollari, Schoups, Vizcaino and Kaitna (2021), Future changes in annual, seasonal and monthly runoff signatures in contrasting Alpine catchments in Austria, Hydrology and Earth System Sciences 25, 3429–3453.",
+    "doi": "10.5194/hess-25-3429-2021",
+    "url": "https://hess.copernicus.org/articles/25/3429/2021/",
+    "guide": "Additional exemplar",
+    "rights": "CC BY 4.0"
+  },
+  "lehner": {
+    "citation": "Lehner et al. (2020), Partitioning climate projection uncertainty with multiple large ensembles and CMIP5/6, Earth System Dynamics 11, 491–508.",
+    "doi": "10.5194/esd-11-491-2020",
+    "url": "https://esd.copernicus.org/articles/11/491/2020/",
+    "guide": "R09",
+    "rights": "CC BY 4.0"
+  },
+  "suarez": {
+    "citation": "Suarez-Gutierrez and Maher (2026), Temperature variability projections remain uncertain after constraining them to best performing Large Ensembles of individual Climate Models, Nature Communications 17, 314.",
+    "doi": "10.1038/s41467-025-67005-y",
+    "url": "https://www.nature.com/articles/s41467-025-67005-y",
+    "guide": "R18",
+    "rights": "CC BY 4.0"
+  },
+  "yin": {
+    "citation": "Gu, Chen, Yin, Sullivan, Wang, Guo, Zhang and Kim (2020), Projected increases in magnitude and socioeconomic exposure of global droughts in 1.5 and 2 °C warmer climates, Hydrology and Earth System Sciences 24, 451–472.",
+    "doi": "10.5194/hess-24-451-2020",
+    "url": "https://hess.copernicus.org/articles/24/451/2020/",
+    "guide": "Additional exemplar",
+    "rights": "CC BY 4.0",
+    "filename_author": "gu"
+  },
+  "baltic": {
+    "citation": "Christensen, Kjellström, Dieterich, Gröger and Meier (2022), Atmospheric regional climate projections for the Baltic Sea region until 2100, Earth System Dynamics 13, 133–157.",
+    "doi": "10.5194/esd-13-133-2022",
+    "url": "https://esd.copernicus.org/articles/13/133/2022/",
+    "guide": "Additional exemplar",
+    "rights": "CC BY 4.0",
+    "filename_author": "christensen"
+  },
+  "roldan": {
+    "citation": "Roldán-Gómez, De Luca, Bernardello and Donat (2025), Regional irreversibility of mean and extreme surface air temperature and precipitation in CMIP6 overshoot scenarios associated with interhemispheric temperature asymmetries, Earth System Dynamics 16, 1–27.",
+    "doi": "10.5194/esd-16-1-2025",
+    "url": "https://esd.copernicus.org/articles/16/1/2025/",
+    "guide": "R33",
+    "rights": "CC BY 4.0"
+  },
+  "atlas": {
+    "citation": "IPCC (2021), Climate Change 2021: The Physical Science Basis, Working Group I contribution to the Sixth Assessment Report, Atlas, Figure Atlas.9, Cambridge University Press.",
+    "doi": "",
+    "url": "https://www.ipcc.ch/report/ar6/wg1/chapter/atlas/",
+    "guide": "R02",
+    "rights": "IPCC copyright; unmodified limited reproduction for personal non-commercial use with full attribution. Do not redistribute or adapt this image under CC BY. See https://www.ipcc.ch/copyright/."
+  },
+  "toa": {
+    "citation": "de Vries, Sippel, Pendergrass and Knutti (2023), Robust global detection of forced changes in mean and extreme precipitation despite observational disagreement on the magnitude of change, Earth System Dynamics 14, 81–100.",
+    "doi": "10.5194/esd-14-81-2023",
+    "url": "https://esd.copernicus.org/articles/14/81/2023/",
+    "guide": "Additional exemplar",
+    "rights": "CC BY 4.0"
+  },
+  "response": {
+    "citation": "Lachaut and Tilmant (2021), Possibilistic response surfaces: incorporating fuzzy thresholds into bottom-up flood vulnerability analysis, Hydrology and Earth System Sciences 25, 6421–6435.",
+    "doi": "10.5194/hess-25-6421-2021",
+    "url": "https://hess.copernicus.org/articles/25/6421/2021/",
+    "guide": "Additional exemplar",
+    "rights": "CC BY 4.0"
+  },
+  "bevacqua": {
+    "citation": "Bevacqua, Fischer, Sillmann and Zscheischler (2026), Moderate global warming does not rule out extreme global climate outcomes, Nature.",
+    "doi": "10.1038/s41586-026-10237-9",
+    "url": "https://www.nature.com/articles/s41586-026-10237-9",
+    "guide": "R34",
+    "rights": "CC BY 4.0"
+  },
+  "shepherd": {
+    "citation": "Shepherd et al. (2018), Storylines: an alternative approach to representing uncertainty in physical aspects of climate change, Climatic Change 151, 555–571.",
+    "doi": "10.1007/s10584-018-2317-9",
+    "url": "https://link.springer.com/article/10.1007/s10584-018-2317-9",
+    "guide": "R35",
+    "rights": "Article: CC BY 4.0. Figure 1 includes separately credited photographs: panel c, Bern cantonal police, used with permission; panel d, a credited external website. Do not assume those photographs can be redistributed under the article license. Saved whole and unchanged for personal research reference."
+  },
+  "dunning": {
+    "citation": "Dunning, Black and Allan (2018), Later wet seasons with more intense rainfall over Africa under future climate change, Journal of Climate 31, 9719–9738.",
+    "doi": "10.1175/JCLI-D-18-0102.1",
+    "url": "https://journals.ametsoc.org/view/journals/clim/31/23/jcli-d-18-0102.1.xml",
+    "guide": "R27",
+    "rights": "© 2018 American Meteorological Society. Open access is stated, but the publisher page does not grant a CC license. Saved for personal research reference; redistribution/adaptation permission has not been verified. Publisher reuse-policy page was blocked."
+  },
+  "lange": {
+    "citation": "Lange (2019), Trend-preserving bias adjustment and statistical downscaling with ISIMIP3BASD (v1.0), Geoscientific Model Development 12, 3055–3070.",
+    "doi": "10.5194/gmd-12-3055-2019",
+    "url": "https://gmd.copernicus.org/articles/12/3055/2019/",
+    "guide": "R31",
+    "rights": "CC BY 4.0"
+  },
+  "crameri": {
+    "citation": "Crameri, Shephard and Heron (2020), The misuse of colour in science communication, Nature Communications 11, 5444.",
+    "doi": "10.1038/s41467-020-19160-7",
+    "url": "https://www.nature.com/articles/s41467-020-19160-7",
+    "guide": "R41",
+    "rights": "CC BY 4.0"
+  }
+}

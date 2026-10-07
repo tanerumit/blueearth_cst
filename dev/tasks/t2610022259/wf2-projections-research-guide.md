@@ -19,6 +19,10 @@ including ideas deferred from the accepted [starter suite](wf2-starter-suite-pro
 [lab brief](wf2-lab-suite-brief.md) remains the implementation authority. Recommendations here do not change
 its approved windows, seasons, ensemble, phase boundaries or exclusions.
 
+The [published figure collection](wf2-figure-examples/README.md) saves 47 figure/table images from 20
+publications in folders following this guide's section numbers, with an offline gallery, citations,
+regional adaptation notes and reuse terms. Its visual audit and coverage qualifications supplement §10.1.
+
 ## 1. Evidence, scope and reading route
 
 **Research date: 7 October 2026.** This is a targeted research synthesis, not a systematic review or a

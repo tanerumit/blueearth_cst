@@ -12,6 +12,9 @@ Research note for [Scope conceptual workflow improvements](../t2610022259-concep
 Expanded methods, published figure examples, communication guidance and references through 2026:
 [Regional climate projections research guide](wf2-projections-research-guide.md), prepared 2026-10-07.
 
+[Published figure collection](wf2-figure-examples/README.md): 47 saved figure/table images, grouped by research-guide
+section numbers, with an offline gallery, source citations and regional adaptation notes.
+
 Status: candidate scientific methods and visualizations, not an approved design or implementation assignment. Recommendations below are a synthesis of the cited literature and repository inspection. No projection run or numerical evaluation was performed. Promote retained conclusions before closing the parent task.
 
 ## 1. Purpose and recommendation

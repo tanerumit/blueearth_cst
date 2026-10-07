@@ -3,9 +3,9 @@
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
-**State:** Cached-input implementation complete through unit 5b; final checks passed.
-**Next action:** Restore the current data mirror for fresh gates; batch landing remains owner-controlled.
-**Blocker:** Fresh-run gates remain pending: P-drive mirror unavailable; old rapid archive incompatible.
+**State:** All technical fresh-run and batch gates passed; owner visual review and landing remain.
+**Next action:** Owner reviews the P0 figure suite and decides whether to land this branch.
+**Blocker:** None; host access was required for the restored P-drive.
 
 ## Current contract and execution
 
@@ -33,6 +33,75 @@
   The scratch project config preserves rapid settings and points to a fresh matching project root.
 - A local data tree exists, but it lacks the current catalog's `rivers_ge30m.fgb` and MERIT VRTs.
   Substituting its older catalog would change the evidence basis and has not been authorized.
+- Owner ruling 2026-10-07: P-drive restored; resume fresh-run gates. Host checks confirm both the mapped
+  catalog root and its UNC target exist. Fresh rapid completed in 4m36s, with all 14 expected PNGs.
+- Gate audit caught omitted retirement updates to baseline figure targets, console examples and the
+  output guide. They now use suite paths; the stale baseline manifest remains unchanged. Baseline scope,
+  provenance and activation checks passed 49 tests, then the corrected console example passed its recheck.
+- Added the specified optional local parity test covering all design §9.1 table categories. Cached P0
+  passed 11 tests; missing local inputs skip with named paths. Fresh P0 will use explicit input overrides.
+- Fresh single-model WF2 passed after selecting `hydro_rivers_lin` in its P-drive seed config. Rapid and
+  single-model availability, PNG and caption inventories are bijective (14 and 13 products).
+- Ancillary final checks passed 51 tests (baseline scope and CLI). Fresh spatial parity passed all 19 tests,
+  including both fixture checks, using `CST_SPATIAL_PARITY_PROJECT`; the standing baseline was not altered.
+- First batch fast gate: 3963 passed, 12 failed, 17 skipped, 1 xfailed. Ten failures assumed pytest scratch
+  was outside the checkout; one used the stale spatial fixture and one raced the console example edit.
+  Test portability corrections and a frozen-tree rerun are pending; this result is not a passing gate.
+- Corrected batch fast gate passed: 3975 passed, 17 skipped, 1 upstream xfailed (5m15s). The 11 local lab
+  checks skipped in that generic invocation but passed separately against cached P0 with explicit paths.
+  Six-file portability checks passed 454 tests; strengthened sweep checks passed another 19.
+- Protected Stage B/reducer hashes and WF3/WF4 inventories remain identical to the before-image.
+- P0 scheduler stalled after job 179 with three scalar outputs written and no CPU progress for over eight
+  minutes. Preserved logs/output, stopped only that run and resumed with one core and `--rerun-incomplete`.
+  The resume uses `--nolock` because other isolated fresh roots are active; clean stale locks afterward.
+- `pixi run test-e2e` (task includes `--run-integration`) passed its one all-five-workflow test
+  (4060 deselected, 47m39s); no integration skip. Fresh root is the scratch `e2e-pytest/.../project`.
+- Synthetic dry-reference original/current Stage B and serializer comparison passed both raw-byte checks:
+  annual 4 rows SHA256 `640f022494ed14f0e04f065073d5932ebd910161af8eb7073deb49c8471ae953`;
+  monthly 48 rows SHA256 `a0a0f003af7e5fcd0ecc3af3a25c0a6788217df35e8f899af352d54d8132127d`.
+  This deliberately synthetic fixture exercises aligned monthly `reference_below_threshold` flags; its
+  disposable identities are not used by any fresh production run.
+- Fresh rapid annual/monthly CSVs match the original Stage B oracle on the same validated fresh scalar
+  inputs, raw byte for byte (12 and 144 rows). SHA256 annual
+  `27c6916dd90204fbd5f433ded5e2dc1c5d4997c7872de476e54b8da66673ff2e`, monthly
+  `5504fb8ecea0116535d0549011b6b028f4df42e845dd764f310574195c9a1b54`.
+  This is an original-source oracle comparison, not a pre-edit fresh workflow execution.
+- Fresh P0 completed after its serial recovery; all 125 raw inputs were validated and reused, all 125
+  basin scalar series and downstream products rebuilt. This is a retained-raw fresh downstream run,
+  not a claim of 125 new remote acquisitions. The original P0 archive was not changed.
+- Fresh P0 lab parity passed all 11 tests, with the owner-approved seasonal precipitation rate exception.
+  Its 600 annual / 7200 monthly aligned CSV rows match the original snapshot raw bytes: annual SHA256
+  `360d2512fce5f62a06b13f272c7e001f7e914b2b55701eacc38d6ddb6e11eea8`, monthly
+  `d41e232d6a5d80d8bfbce79b2f268d584ac9abaaf675effabc1fb432b97c0a9f`.
+- P0 availability / written PNG / caption inventory is bijective: 15 products. Rule benchmarks are
+  2.05b = 239.79 s, 2.06 = 18.78 s, combined 258.57 s (4m19s), below the 5-minute design budget.
+  Fresh cloud and member-ratio figures were visually inspected; earlier cached P0 inspection covered all 15.
+- Removed the two stale P0 Snakemake lock files only after the recovered run completed, verifying their
+  output ownership first. All fresh-run gates are complete. The original-source P0 oracle also passed
+  on the same validated fresh scalar inputs: both aligned CSVs match the original implementation bytes.
+- First full gate: 4032 passed, 22 failed, 17 skipped, 1 upstream xfailed (24m28s). All 22 failures were
+  console handler assertions after the new standalone-console inspection left `_RUN_HEADER` staged.
+  Isolated that inspection's header, rule registries and token environment; the same file sequence then
+  passed 384 tests. Lint/format passed and fix committed; full frozen-tree rerun is in progress.
+- Final full gate passed: 4054 passed, 17 skipped, 1 upstream xfailed (13m54s). The 17 skips are five Linux
+  tolerance controls on Windows, 11 default-path lab tests and the separately invoked integration test.
+  All 11 lab tests passed with fresh P0 overrides; the all-five integration gate passed independently.
+  Lint and format-check passed. All implementation and test corrections are committed on this branch.
+- Final gate commands (each redirected to its named log under `wf2-suite-evidence`):
+
+  ```powershell
+  pixi run test-fast -p no:cacheprovider --basetemp .tmp/scratchpad/wf2-suite-evidence/fast-pytest-final
+  pixi run test-full -p no:cacheprovider --basetemp .tmp/scratchpad/wf2-suite-evidence/full-pytest-final
+  pixi run test-e2e -p no:cacheprovider --basetemp .tmp/scratchpad/wf2-suite-evidence/e2e-pytest
+  ```
+
+  Fast/full used `CST_SPATIAL_PARITY_PROJECT` pointing to the fresh all-five project. Their logs are
+  `test-fast-final.log`, `test-full-final.log`; integration is `fresh-e2e-gate.log`. Numerical evidence is
+  `fresh-rapid-byte-parity.log`, `fresh-p0-byte-parity.log`, `fresh-p0-inventory-snapshot-parity.log`,
+  `fresh-p0-lab-parity.log`, `synthetic-dry-byte-parity.log` and `protected-identities-final.log`.
+- Owner visual acceptance in accepted design §9.2 remains a human check. P0 captions and all 15 PNGs are
+  at `.tmp/scratchpad/wf2-suite-evidence/p0-fresh/data/climate/projections/cmip6/plots/`.
+  Landing and pushing are not authorized by completing these gates; the occupied lane remains pinned.
 
 ## Current validation
 
@@ -121,14 +190,14 @@ at a time; failed falsifiers or changed contracts reopen only the affected unit.
 
 | Unit | State | Evidence | Next action |
 |---|---|---|---|
-| 0 snapshots | Fresh gates deferred | Cached probe hashes above; P0/lab snapshots | Restore mirror before landing |
+| 0 snapshots | Done | P0/lab snapshots; fresh-input original-source byte oracles | — |
 | 1 numerical helpers/checks | Done | `1672686c`; focused checks and invariants above | — |
 | 2 coverage/families | Done | `7683ddb6`; 5 focused tests | — |
 | 3 reductions/variability | Done | `c606bcdd`; 16 tests, P0 parity, identities | — |
 | 4 analysis rule/tables | Done | `5b5b219e`; producer/inventory, CLI, DAG and cached P0 | — |
 | 5a figures/captions | Done | `a9d69d47`; 12 tests, 15 cached P0 figures, synthetic copies | — |
 | 5b retirement | Done | Focused tests, CLI/inventory, DAG, byte parity, identities | — |
-| 6 batch gates | Pending | Fresh execution unavailable | Run at approved landing |
+| 6 batch gates | Done | Fresh, parity, identities, timing, fast, full and e2e passed | Owner review |
 
 ## Historical branch record (retained)
 

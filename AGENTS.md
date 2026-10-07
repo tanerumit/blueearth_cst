@@ -92,13 +92,29 @@ At a new session's entry, rebase a clean, local, unpushed lane branch onto curre
 
 Complete each task with focused checks and a separate commit. Run the combined batch gates below after synchronizing with `main` at approved landing, rather than repeating them per task. Task completion does not authorize landing or pushing. After a verified merge, prove branch ancestry, detach and free the lane, then delete the merged branch. A failed gate or merge retains the lane and branch for recovery; pushing remains a separate explicit decision.
 
+Plan verification by acceptance claim, not by gate label. New and revised task designs must use
+`dev/reference/validation-ladder.md` § Planning and reusing verification and map each claim to a check,
+input case and reusable output root. A passing `test-full` satisfies `test-fast` on the same candidate
+and environment; do not require both as final gates. When `test-e2e` is owed, inspect its fresh rapid
+outputs for compatible inventory, caption, visual and numerical claims instead of requiring another
+standalone fresh rapid execution. Keep single-model, P0/lab, optional-product and synthetic cases only
+for the distinct coverage they add. Execution success never replaces numerical or visual acceptance.
+
+Record the tested commit, commands, results, environment, input/config identity and output root in the
+existing task evidence. Synchronize and finish executable edits before final gates. Reuse passes on
+an equivalent candidate; otherwise classify all intervening paths and rerun affected coverage,
+including checks reading documentation or transitive inputs. An executable `task-land --verify` may
+validate passing evidence and candidate equivalence instead of repeating expensive gates; it must
+reject missing evidence, failed/skipped required checks and unclassified changes. An equivalent merge
+needs tree-equality and ancestry proofs, not another suite. Push retains its delta and CI checks below.
+
 A task branch is isolated from `main` and cheap to revert, so spend validation time by blast radius. **Re-running the full suite after each incremental edit is the failure mode to avoid.** Measured costs and rationale: `dev/reference/validation-ladder.md`.
 
 | When | Run |
 |---|---|
 | While iterating | Only the tests covering the file you changed. Nothing else. |
 | Before a commit | `pytest tests/test_cli.py` if a Snakefile, a `script:` signature, or a rule's declared input changed — the only place a malformed `config/defaults/*.yml` surfaces. If you wrote Python, `pixi run lint` and `pixi run format-check`. |
-| Before merging the branch | `pixi run test-fast` once. Skip it when the branch diff touches only push-exempt paths (below). |
+| Before merging the branch | `pixi run test-fast` once, unless a passing `test-full` already covers the candidate. Skip it when the branch diff touches only push-exempt paths (below). |
 | **Before pushing to `origin`** | Gate only the unpushed delta, `git diff --name-only origin/main..main`, and only while the last CI run on `origin/main` is read and green; when it is red or unread, run `test-fast`. Run nothing more when `test-fast` already passed on a commit whose diff to `main` is empty or push-exempt only — the `task-land --verify` candidate you just merged, plus any board-closure commits after it (`git diff --name-only <tested> main`). Rely on the ruff pre-push hook alone when the delta touches only push-exempt paths. Otherwise run `pixi run test-fast`, not `test-full`: CI runs the whole suite on both platforms from the push, so `test-full` here re-proves what CI is about to check, at roughly ten times the wall-clock. |
 | **After a push** | **Read the latest run.** A later push cancels and supersedes an in-flight run, and the latest one covers the whole tree. This is what makes the line above safe, and a green local suite is no evidence about the ubuntu leg. |
 | Before merging a batch that touched `shared/` or a `script:` signature, or before a milestone seal | `pixi run test-full` — the `workflow_contract` and `process_isolation` tiers, which are the ones you would rather not first meet on two platforms at once. |

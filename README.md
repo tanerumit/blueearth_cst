@@ -108,23 +108,9 @@ pixi shell
 
 ### Docker
 
-> [!WARNING]
-> **Not supported in v0.2.0-alpha.** Docker / Linux end-to-end validation is
-> **deferred** in this fork — see "Deferred: Linux replication" in
-> `dev/reference/roadmap.md`. The `Dockerfile` builds against the pixi env but is not
-> exercised in CI. Docker support will be re-introduced in a later Phase 2
-> milestone.
->
-> The instructions below describe the **v0.1.0-alpha** (upstream conda-based)
-> Docker workflow and remain valid for users of that release. They do **not**
-> apply to v0.2.0-alpha or later pixi-based releases.
-
-A pre-built image of the v0.1.0-alpha conda-based stack remains available at
-`containers.deltares.nl/CST/cst_workflows:0.1.0`:
-
-```console
-docker pull containers.deltares.nl/CST/cst_workflows:0.1.0
-```
+Not supported. The pixi-based toolbox ships no Docker image; Docker returns with the deferred Linux
+replication work (see `dev/reference/roadmap.md`). The v0.1.0-alpha conda-based image remains at
+`containers.deltares.nl/CST/cst_workflows:0.1.0`.
 
 ## Running
 
@@ -362,34 +348,6 @@ Fork-specific (development):
 - `dev/tasks/` — the open backlog, with closed items retained and dated.
 - `CHANGELOG.md` — release history (release-level; milestone detail lives in
   `dev/reference/roadmap.md`).
-
-## Publishing
-
-### Docker
-
-> [!WARNING]
-> **v0.1.0-alpha only.** The build / tag / push instructions below describe the
-> upstream Deltares container registry workflow for the conda-based stack.
-> Docker publishing is **still deferred** in the pixi-based fork — see
-> "Deferred: Linux replication" in `dev/reference/roadmap.md`. It was *not* re-introduced
-> during Phase 2 or 3, and is not currently scheduled. It remains blocked on the
-> same thing as Linux replication (no Linux machine), though CI's green
-> `ubuntu-latest` leg now shows the linux-64 half of `pixi.lock` resolves and
-> installs, which removes the largest unknown.
-
-The entire workflow is contained in one Docker image. Build it:
-
-```console
-docker build -t cst-workflow:0.0.1 .
-```
-
-Tag and push it under a new `<<Tag>>`:
-
-```console
-docker login -u <<deltares_email>> -p <<cli_secret>> https://containers.deltares.nl
-docker tag cst-workflow:0.0.1 containers.deltares.nl/CST/cst_workflows:<<Tag>>
-docker push containers.deltares.nl/CST/cst_workflows:<<Tag>>
-```
 
 ## License
 

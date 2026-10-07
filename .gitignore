@@ -171,8 +171,8 @@ tests/test_project
 .codex
 .github/agents
 
-# Baked toolbox commit, written by the Dockerfile from ARG TOOLBOX_COMMIT.
-# The image carries no .git, so this file is how a deployed run learns its own
+# Baked toolbox commit, written by a git-less deployment (none ships today).
+# Such an image carries no .git, so this file is how a deployed run learns its own
 # revision. It must be ABSENT in a normal checkout: provenance.toolbox_identity()
 # resolves git first and falls back to this file, so a committed copy would let
 # a stale sha outrank the live one.

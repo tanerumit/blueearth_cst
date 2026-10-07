@@ -124,7 +124,7 @@ Different file classes follow different conventions; this guide does not unify t
 | Python modules / R scripts | snake_case | `prepare_climate_data_catalog.py`, `generate_weather.R` |
 | Snakemake entry points | `<verb>_<noun>.smk` | `build_model.smk`, `analyze_climate.smk` |
 | Markdown planning docs under `dev/` | kebab-case | `naming-conventions-design.md` |
-| Standard root-level files | upstream | `CLAUDE.md`, `README.md`, `Dockerfile`, `LICENSE` |
+| Standard root-level files | upstream | `CLAUDE.md`, `README.md`, `LICENSE` |
 | Config / data / catalog YAML | tool contract | `project_config_rapid.yml`, `deltares_data.yml` |
 | Generated outputs under `project_dir/` | lowercase `snake_case`, two exemptions below | `q_indicators.csv`, `basin_indicators.csv`, `inmaps_rlz_1_st_2.nc` |
 

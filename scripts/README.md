@@ -11,7 +11,6 @@ repository inspection and maintenance tools live in `dev/scripts/` and are never
 | [`run_workflow.py`](run_workflow.py) | Run one of the five workflows through its owned runner. |
 | [`generate_scenarios.py`](generate_scenarios.py) | Owned two-phase WF3 launcher: prepare sources, freeze a plan, then generate. |
 | [`simulate_system.py`](simulate_system.py) | WF4 runner: validates the operation and targets, then starts one Snakemake call. |
-| [`run_snake_docker.sh`](run_snake_docker.sh) | `run_workflows.py` inside the `cst-workflow` Docker image, Linux baseline config. |
 
 ## Case setup
 

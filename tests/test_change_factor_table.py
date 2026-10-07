@@ -448,3 +448,31 @@ def test_only_derived_combinations_become_rows(padded):
     assert precip == {("AWI-CM-1-1-MR", "r1i1p1f1"): 1.0, ("CanESM5", "r11i1p1f1"): 2.0}
     assert len(rows) == 4  # two combinations x two variables
     assert all(r["status"] == "ok" for r in rows)
+
+
+def test_companions_follow_coordinates_not_dimension_order(wide):
+    """Stage B's `__flagged` merges with `scenario` first. Rows are paired by
+    position after stacking, so a companion stacked in its own order put each
+    flag on another combination's row (2026-10-07, 1,764 false flags)."""
+    from blueearth_cst.projections.dry_month import FLAGGED_STATUS
+
+    ds = wide.copy()
+    flagged = xr.zeros_like(ds["precip"]).astype("int8")
+    flagged.loc[{"model": "INM/INM-CM4-8", "scenario": "ssp585"}] = 1
+    ds["precip__flagged"] = flagged.transpose("scenario", ...)
+    ds["precip__level"] = ds["precip__level"].transpose("member", "model", ...)
+
+    precip = [r for r in _rows(ds) if r["variable"] == "precip"]
+    flagged_rows = {
+        (r["model"], r["scenario"]) for r in precip if r["status"] == FLAGGED_STATUS
+    }
+    assert flagged_rows == {("INM-CM4-8", "ssp585")}
+    expected = wide["precip__level"]
+    for r in precip:
+        model = {"INM-CM4-8": "INM/INM-CM4-8", "GFDL-ESM4": "NOAA-GFDL/GFDL-ESM4"}[
+            r["model"]
+        ]
+        cell = expected.sel(
+            model=model, scenario=r["scenario"], stats=r["statistic"]
+        ).squeeze()
+        assert r["absolute_value"] == pytest.approx(float(cell))

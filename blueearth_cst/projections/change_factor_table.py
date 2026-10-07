@@ -154,13 +154,19 @@ def tidy_rows(
         level_da = ds.get(f"{variable}{COMPANION_SEP}level")
         reference_da = ds.get(f"{variable}{COMPANION_SEP}reference")
         flagged_da = ds.get(f"{variable}{COMPANION_SEP}flagged")
-        stacked = da.stack(_row=[d for d in da.dims])
+        # Companions are read by row POSITION below, so each is stacked in the
+        # variable's own dimension order. Stage B builds `__flagged` from the
+        # reference statistic, whose dimensions merge in a different order
+        # (`scenario` first); stacking it in its own order put each flag on
+        # another combination's row.
+        order = list(da.dims)
+        stacked = da.stack(_row=order)
         if level_da is not None:
-            level_da = level_da.stack(_row=[d for d in level_da.dims])
+            level_da = level_da.transpose(*order).stack(_row=order)
         if reference_da is not None:
-            reference_da = reference_da.stack(_row=[d for d in reference_da.dims])
+            reference_da = reference_da.transpose(*order).stack(_row=order)
         if flagged_da is not None:
-            flagged_da = flagged_da.stack(_row=[d for d in flagged_da.dims])
+            flagged_da = flagged_da.transpose(*order).stack(_row=order)
 
         entry = spec.get(variable)
         units = getattr(entry, "units", "") if entry is not None else ""

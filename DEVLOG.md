@@ -3,8 +3,8 @@
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
-**State:** G2 approved 2026-10-07. Unit 1 numerical helpers and extracted checks are verified.
-**Next action:** Implement unit 2 coverage and model-family fallback after checking the source licence.
+**State:** Unit 1 committed as `1672686c`; unit 2 coverage/family metadata is verified.
+**Next action:** Implement unit 3 reductions, variability and trajectories with known-answer tests.
 **Blocker:** Fresh-run gates remain pending: P-drive mirror unavailable; old rapid archive incompatible.
 
 ## Current contract and execution
@@ -24,6 +24,11 @@
   Cached-input comparisons must be labelled as such and do not count as fresh end-to-end passes.
 - Owner ruling 2026-10-07: seasonal precipitation percentages use rates consistently. Document the lab's
   total-based percentage calculation as a parity exception; precipitation CV still uses integrals.
+- Unit 2 uses the approved 13-model family/country constants. Exact cited Zenodo 7920408 licence could
+  not be verified; no CSV is redistributed or substituted from another record. Metadata matches the lab.
+  Unlisted models use a flagged single-family institution match, otherwise their own family.
+- Coverage accepts resolver COMBINATIONS directly to preserve exclusions. With resolved POINTS alone,
+  requested counts remain unknown; absence is not mislabelled as an unrequested run.
 - Scratch logs/configs for a fresh rapid run are in `.tmp/scratchpad/wf2-suite-evidence/`.
   The scratch project config preserves rapid settings and points to a fresh matching project root.
 - A local data tree exists, but it lacks the current catalog's `rivers_ge30m.fgb` and MERIT VRTs.
@@ -38,6 +43,7 @@
   HydroMT reported `None of the specified roots were found`. No fresh CSV before-image was produced.
 - Unit 1 passed 42 focused tests, 20 CLI tests, and 11 tests after the review corrections. Repository lint,
   format-check, compilation and whitespace checks passed. Full batch gates run at approved landing.
+- Unit 2 passed all 5 focused tests, repository lint/format-check, compilation and whitespace checks.
 - Cached-value probing exposed a predecessor CSV defect: historical flags with no scenario dimension
   failed serialization. Companion broadcasting fixes it without changing the arithmetic kernels.
   The new regression failed before the fix; all 37 `test_change_factor_table.py` tests passed afterwards.
@@ -60,8 +66,8 @@ at a time; failed falsifiers or changed contracts reopen only the affected unit.
 | Unit | State | Evidence | Next action |
 |---|---|---|---|
 | 0 snapshots | Fresh gates deferred | Cached probe hashes above; P0/lab snapshots | Restore mirror before landing |
-| 1 numerical helpers/checks | Verified | Focused tests, cached hashes and inventories above | Commit scoped files |
-| 2 coverage/families | Not started | Design § 6 | Verify licence; implement fallback |
+| 1 numerical helpers/checks | Done | `1672686c`; focused checks and invariants above | — |
+| 2 coverage/families | Verified | 5 focused tests; licence-gated fallback | Commit scoped files |
 | 3 reductions/variability | Not started | Design § 5, § 9 | Known-answer and null-band tests |
 | 4 analysis rule/tables | Not started | Design § 3 | Wire and run using cached fixtures |
 | 5a figures/captions | Not started | Design § 4 | Render and verify manifest |

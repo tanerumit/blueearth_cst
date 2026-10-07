@@ -3,13 +3,14 @@
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
-**State:** All technical fresh-run and batch gates passed; owner visual review and landing remain.
-**Next action:** Owner reviews the P0 figure suite and decides whether to land this branch.
+**State:** Technical gates passed; owner authorized local landing before visual review.
+**Next action:** Land with candidate verification, preserve task records and close the board item.
 **Blocker:** None; host access was required for the restored P-drive.
 
 ## Current contract and execution
 
-- Accepted design: `dev/00-current-board-main/tasks/t2610071652/wf2-suite-integration-design.md`.
+- Accepted design: `dev/records/reviews/wf2-suite-integration/wf2-suite-integration-design.md`.
+  Records move to that durable home during the authorized post-landing board closure.
   The primary checkout has uncommitted finalization artifacts; preserve them and coordinate with its writer.
 - Execute design section 10 in order, with one verified commit per unit. Keep this branch; landing and pushing
   require separate user instructions.
@@ -102,6 +103,9 @@
 - Owner visual acceptance in accepted design §9.2 remains a human check. P0 captions and all 15 PNGs are
   at `.tmp/scratchpad/wf2-suite-evidence/p0-fresh/data/climate/projections/cmip6/plots/`.
   Landing and pushing are not authorized by completing these gates; the occupied lane remains pinned.
+- Owner ruling: land locally first. Preserve accepted design/review history and implementation evidence
+  under `dev/records/reviews/wf2-suite-integration/`, then close `t2610071652` on the canonical main board.
+  Visual review remains separate; no push is authorized.
 
 ## Current validation
 

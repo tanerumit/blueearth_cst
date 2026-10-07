@@ -904,6 +904,10 @@ bijection. Optional `captioned_figures: true` adds owned `captioned/` copies, id
 `captioned_path` metadata. Predecessor `overview/` and `windows/` products are retired; existing files
 are retained but untargeted and listed in the captions.
 
+The optional baseline figure targets now select the annual precipitation overview and the baseline's
+analysis-window cloud. Their fingerprints remain unrecorded until the pending baseline regeneration;
+the default numeric baseline gate is unchanged.
+
 #### 2.07 · `gather_benchmarks`
 
 **Does.** As WF1 1.17, for WF2.

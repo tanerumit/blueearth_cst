@@ -292,8 +292,7 @@ TARGETS: list[tuple[str, str, str]] = [
         "discharge",
         "{project_dir}/models/hydrology/wflow/run_default/output.csv",
     ),
-    # analyze_projections.smk -- B3 (commit 9) tiers ONLY the three
-    # summary files; the three PNGs deliberately stay put (arch-10).
+    # analyze_projections.smk -- aligned numeric summary tables.
     # S8-05: a SWAP, not a subtraction. The three wide
     # `annual_change_scalar_stats_summary*` files were retired, and dropping them
     # without replacement would have taken coverage from 15 targets to 12 and left
@@ -310,27 +309,20 @@ TARGETS: list[tuple[str, str, str]] = [
         "csv",
         "{clim_project_dir}/summary/{clim_project}_change_factors_monthly.csv",
     ),
-    # 2026-08-17: the WF2 figure set collapsed the former absolute/change pairs
-    # into one overview per variable and moved every path under
-    # `plots/overview/` and `plots/windows/`. All three are FIGURE_KINDS
-    # targets, so they sit outside the gate by default anyway -- a figure is
-    # fingerprinted by byte size, and a cosmetic edit fails that without
-    # indicating a defect. They are listed so `--include-figures` still has
-    # something current to compare.
+    # Suite figures remain outside the default numeric gate. The baseline's
+    # configured mid 2046-2054 horizon resolves to analysis WY2036-2065 (Jan).
+    # Like CLIM_PROJECT, this pins the seed config, not an arbitrary run.
+    # The stale manifest is not re-recorded here: --include-figures reports
+    # these replacements as unrecorded until baseline regeneration.
     (
         "analyze_projections",
         "png",
-        "{clim_project_dir}/plots/overview/change-factor-cloud.png",
+        "{clim_project_dir}/plots/period-2036-2065/change-factor-cloud.png",
     ),
     (
         "analyze_projections",
         "png",
-        "{clim_project_dir}/plots/overview/annual-precipitation.png",
-    ),
-    (
-        "analyze_projections",
-        "png",
-        "{clim_project_dir}/plots/overview/annual-temperature.png",
+        "{clim_project_dir}/plots/full-period/annual-precipitation.png",
     ),
     (
         "analyze_projections",

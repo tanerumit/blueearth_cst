@@ -272,6 +272,11 @@ WF2 = Workflow(
             "derive_change_factors",
             summary="compare each horizon against the reference period",
         ),
+        Rule(
+            "2.05b",
+            "prepare_projection_analysis",
+            summary="prepare analysis-window diagnostics",
+        ),
         Rule("2.06", "plot_climate_projections"),
         Rule("2.07", "gather_benchmarks"),
         Rule("2.08", "gather_logs"),
@@ -283,17 +288,20 @@ all                           1
 fetch_cmip6_projections               4
 reduce_to_basin_averages             4
 derive_change_factors         1
+prepare_projection_analysis  1
 plot_climate_projections           1
 gather_benchmarks             1
 gather_logs                   1
-total                        13
+total                        14
 """,
     targets=[
-        f"{PROJECT}/climate_projections/summary/rapid_change_factors_annual.csv",
-        f"{PROJECT}/climate_projections/summary/rapid_change_factors_monthly.csv",
-        f"{PROJECT}/climate_projections/summary/composition.csv",
-        f"{PROJECT}/climate_projections/figures/windows/mid-2046-2054/monthly-change-factors.png",
-        f"{PROJECT}/climate_projections/figures/gcm-timeseries.png",
+        f"{PROJECT}/data/climate/projections/cmip6/summary/cmip6_change_factors_annual.csv",
+        f"{PROJECT}/data/climate/projections/cmip6/summary/cmip6_change_factors_monthly.csv",
+        f"{PROJECT}/data/climate/projections/cmip6/analysis/analysis_record.json",
+        f"{PROJECT}/data/climate/projections/cmip6/plots/full-period",
+        f"{PROJECT}/data/climate/projections/cmip6/plots/period-2036-2065",
+        f"{PROJECT}/data/climate/projections/cmip6/plots/figure_captions.md",
+        f"{PROJECT}/data/climate/projections/cmip6/plots/_engine/figure_captions.json",
         f"{PROJECT}/logs/wf2_analyze_projections.log",
         f"{PROJECT}/benchmarks/wf2_analyze_projections.csv",
     ],
@@ -368,7 +376,7 @@ total                        13
             "derive_change_factors",
             seconds=1,
             body=(
-                ("change", "Deriving change factors for 1 point(s) x 2 horizon(s)", 1),
+                ("change", "Deriving change factors for 2 points x 1 horizon", 1),
                 (
                     "change",
                     "reference_window reference_window_clipped=False "
@@ -379,26 +387,41 @@ total                        13
                 ),
                 (
                     "change",
-                    "Tidy monthly change-factor table: 96 rows "
-                    "-> rapid_change_factors_monthly.csv",
+                    "Tidy monthly change-factor table: 144 rows "
+                    "-> cmip6_change_factors_monthly.csv",
                     2,
                 ),
                 (
                     "change",
-                    "Tidy annual change-factor table: 8 rows "
-                    "-> rapid_change_factors_annual.csv",
+                    "Tidy annual change-factor table: 12 rows "
+                    "-> cmip6_change_factors_annual.csv",
                     1,
                 ),
             ),
         ),
-        # plot_proj_timeseries.py:202, :212; bundle row snake_utils.py:4055
+        Job(
+            "prepare_projection_analysis",
+            seconds=2,
+            body=(
+                ("analysis", "Used 1 window: 2036-2065", 1),
+                ("analysis", "Available 14 products; not produced 2", 1),
+            ),
+        ),
+        # plot_proj_timeseries.py:render_suite
         Job(
             "plot_climate_projections",
             seconds=4,
             body=(
-                ("plot", "Reading the monthly change-factor table", 1),
-                ("plot", "Opening the scalar gcm timeseries", 1),
-                ("plot", "2 figures -> climate_projections/figures", 3),
+                (
+                    "plot_proj_timeseries",
+                    "Windows used: 2036-2065 (reference 2000–2014)",
+                    1,
+                ),
+                (
+                    "plot_proj_timeseries",
+                    "14 figures written; 2 products unavailable",
+                    3,
+                ),
             ),
         ),
         Job("gather_benchmarks", seconds=1),

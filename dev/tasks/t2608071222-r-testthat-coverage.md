@@ -1,12 +1,12 @@
 ---
 title: "R code has no tests"
 type: todo-item
-status: backlog
+status: active
 effort: 1
 area: testing
 queue: 22
 created: 2026-08-07
-updated: 2026-10-05
+updated: 2026-10-07
 ---
 
 > [!note] Overview
@@ -16,7 +16,14 @@ updated: 2026-10-05
 
 ## Progress
 
-- [ ] Check whether the condition in What it takes has happened
+- [x] Check whether the condition in What it takes has happened — yes (2026-10-07): three R-side bugs
+  shipped and were caught only by WF3 runs (`19283626`, `cfadee4c`, `a39c024b`). The entry was also
+  stale: `test_r_scripts.py` (parse), `test_r_log_row.py` and `test_read_member_grid.py` already
+  existed, on a pytest + `Rscript -e` pattern needing neither weathergenr nor testthat.
+- [x] Extract the weathergen rules' inline decisions into `blueearth_cst/weathergen/member_helpers.R`
+  and test them in `tests/test_weathergen_member_helpers.py` — `27c42da0` on `chore/maintainance`.
+  Changes WF3 generation ids (the R files are in the generation identity); accepted by the owner.
+- [ ] Land the branch after `pixi run test-e2e` (it changes what WF3 runs), then close this item
 
 ## Refs
 

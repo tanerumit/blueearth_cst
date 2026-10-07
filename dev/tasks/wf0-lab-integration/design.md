@@ -4,6 +4,11 @@
 - **Date:** 2026-10-06
 - **Decision owner:** Ümit Taner
 
+> Verification procedure update (2026-10-07): future follow-ups use
+> [the live validation guidance](../../reference/validation-ladder.md#planning-and-reusing-verification).
+> A passing full suite covers fast; fresh execution outputs serve all compatible acceptance checks.
+> The gate results below retain the completed task's historical evidence.
+
 ## 1. Overview
 
 **Proposal:** replace WF0's existing plots with one climate-diagnostic system based on the WF0 lab. It uses

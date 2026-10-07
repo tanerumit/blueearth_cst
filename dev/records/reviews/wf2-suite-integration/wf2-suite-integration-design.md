@@ -1,5 +1,10 @@
 # WF2 suite integration — design
 
+> Verification procedure update (2026-10-07): future follow-ups use
+> [the live validation guidance](../../../reference/validation-ladder.md#planning-and-reusing-verification).
+> A passing full suite covers fast. Reuse the all-five fresh rapid outputs for WF2 acceptance checks;
+> single-model and P0 cases remain distinct coverage. Historical acceptance and review text is retained.
+
 - **Status:** ACCEPTED 2026-10-07 (G2; review loop wf2-suite-integration: 4 internal lenses, 2 external rounds + 1 scoped pass, owner arbitration of ext3-1/ext3-2)
 - **Genre:** decision record, milestone style (goal, what changes, alternatives, commit plan)
 - **Task:** `t2610071652` · lane `feat/wf2-cmip6-improvements` (session-1) · **Date:** 2026-10-07

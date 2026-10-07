@@ -2,12 +2,49 @@
 
 The ladder table lives in `AGENTS.md` § Validation ladder. This file holds what does not fit there: how the tiers are drawn, which config a run takes, and how to read CI.
 
+## Planning and reusing verification
+
+For every new or revised task design, map each acceptance claim to a check and its input case before
+scheduling runs. Reference the live ladder instead of copying a fixed list of gate commands into the
+design. Record the tested commit, command, result, environment, input/config identity and output root in
+the existing task evidence. A command's successful exit does not discharge claims it never checked.
+
+- A passing `test-full` satisfies `test-fast` on the same candidate and environment. Do not schedule
+  both as final gates. A fast run before full is optional early feedback, not another acceptance duty.
+- When all-five `test-e2e` is owed, use its fresh rapid output root for affected-workflow inventory,
+  caption, visual and numerical checks. Do not also require a standalone fresh rapid run with the same
+  inputs and behavior. A development smoke run remains useful for diagnosis.
+- Keep additional cases only for distinct claims: single-model availability, optional products,
+  P0/lab parity, baseline numerical checks and synthetic edge cases. State the coverage added by each.
+  An execution pass does not replace a numerical oracle or visual inspection.
+- Complete synchronization and executable edits before final gates. Reuse earlier passes only after
+  comparing the tested candidate with the final candidate. Exact tree equivalence permits reuse;
+  otherwise classify every changed path, including test-read documentation and transitive inputs.
+  Recheck the affected coverage. Environment or input changes invalidate dependent evidence.
+- At landing, an executable `task-land --verify` may verify recorded passing evidence and candidate
+  equivalence instead of rerunning expensive gates. It must fail for missing evidence, failed/skipped
+  required checks, or unclassified changes. After an equivalent merge, prove tree equality and ancestry;
+  do not repeat gates. Push retains the CI and delta checks in `AGENTS.md`.
+
+Use a compact table in task designs:
+
+| Claim | Check | Input case / output root | Extra coverage or reuse |
+|---|---|---|---|
+| Workflow execution | Applicable live-ladder gate | Fresh rapid root | Supplies shared outputs |
+| Product completeness | Inventory/caption checks | Same fresh root | No second execution |
+| Numerical equivalence | Independent oracle | Same inputs or named reference | Distinct scientific claim |
+| Conditional behavior | Focused test or execution | Named alternate case | State what rapid misses |
+
+Completed design and review records describe the gates actually used. Their historical command lists
+do not prescribe future work; new tasks use this maintained guidance and the live `AGENTS.md` ladder.
+
 ## Tiering
 
 `test-fast` deselects the `workflow_contract` and `process_isolation` markers. Those tests each spawn a fresh Python process and build a Snakemake DAG, so they cost around fifty times what an ordinary test costs: they are roughly 2% of the suite and the large majority of its runtime. Count them with
 `pytest tests/ -m "workflow_contract or process_isolation" --collect-only -q` rather than trusting a number written here — it drifts every time a rule gains a contract test.
 
-Run the whole cheap tier rather than hand-picking relevant files: selecting by judgment saves little and misses cross-module regressions.
+When the fast gate is owed, run the whole cheap tier rather than hand-picking relevant files. A passing
+full suite covers that tier too; do not rerun fast merely to satisfy a second gate label.
 
 `test-fast` runs its workers in parallel (`-n auto --dist loadfile`). Keep `loadfile`: it puts every test in a file on one worker, which is what contains module-level state — a test that stubs a library process-globally stays confined to its own file. `--dist load` distributes per test and would break that. The floor is the per-worker import cost, so adding cores past a point buys nothing.
 

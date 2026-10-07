@@ -92,18 +92,42 @@ At a new session's entry, rebase a clean, local, unpushed lane branch onto curre
 
 Complete each task with focused checks and a separate commit. Run the combined batch gates below after synchronizing with `main` at approved landing, rather than repeating them per task. Task completion does not authorize landing or pushing. After a verified merge, prove branch ancestry, detach and free the lane, then delete the merged branch. A failed gate or merge retains the lane and branch for recovery; pushing remains a separate explicit decision.
 
+Plan verification by acceptance claim, not by gate label. New and revised task designs must use
+`dev/reference/validation-ladder.md` § Planning and reusing verification and map each claim to a check,
+input case and reusable output root. A passing `test-full` satisfies `test-fast` on the same candidate
+and environment; do not require both as final gates. When `test-e2e` is owed, inspect its fresh rapid
+outputs for compatible inventory, caption, visual and numerical claims instead of requiring another
+standalone fresh rapid execution. Keep single-model, P0/lab, optional-product and synthetic cases only
+for the distinct coverage they add. Execution success never replaces numerical or visual acceptance.
+
+Record the tested commit, commands, results, environment, input/config identity and output root in the
+existing task evidence. Synchronize and finish executable edits before final gates. Reuse passes on
+an equivalent candidate; otherwise classify all intervening paths and rerun affected coverage,
+including checks reading documentation or transitive inputs. Use `dev/scripts/verify_landing.py` for
+recorded gate evidence. An executable `task-land --verify` may
+validate passing evidence and candidate equivalence instead of repeating expensive gates; it must
+reject missing evidence, failed/skipped required checks and unclassified changes. An equivalent merge
+needs tree-equality and ancestry proofs, not another suite. Push retains its delta and CI checks below.
+
 A task branch is isolated from `main` and cheap to revert, so spend validation time by blast radius. **Re-running the full suite after each incremental edit is the failure mode to avoid.** Measured costs and rationale: `dev/reference/validation-ladder.md`.
 
 | When | Run |
 |---|---|
 | While iterating | Only the tests covering the file you changed. Nothing else. |
-| Before a commit | `pytest tests/test_cli.py` if a Snakefile, a `script:` signature, or a rule's declared input changed — the only place a malformed `config/defaults/*.yml` surfaces. If you wrote Python, `pixi run lint` and `pixi run format-check`. |
-| Before merging the branch | `pixi run test-fast` once. Skip it when the branch diff touches only push-exempt paths (below). |
+| Before a commit | `pytest tests/test_cli.py` if a Snakefile, a `script:` signature, or a rule's declared input changed — the only place a malformed `config/defaults/*.yml` surfaces. If you wrote Python, run Ruff lint and format checks on touched Python files only. |
+| Final Python batch | `pixi run lint` and `pixi run format-check` once on the final candidate. |
+| Before merging the branch | `pixi run test-fast` once, unless a passing `test-full` already covers the candidate. Skip it when the branch diff touches only push-exempt paths (below). |
 | **Before pushing to `origin`** | Gate only the unpushed delta, `git diff --name-only origin/main..main`, and only while the last CI run on `origin/main` is read and green; when it is red or unread, run `test-fast`. Run nothing more when `test-fast` already passed on a commit whose diff to `main` is empty or push-exempt only — the `task-land --verify` candidate you just merged, plus any board-closure commits after it (`git diff --name-only <tested> main`). Rely on the ruff pre-push hook alone when the delta touches only push-exempt paths. Otherwise run `pixi run test-fast`, not `test-full`: CI runs the whole suite on both platforms from the push, so `test-full` here re-proves what CI is about to check, at roughly ten times the wall-clock. |
 | **After a push** | **Read the latest run.** A later push cancels and supersedes an in-flight run, and the latest one covers the whole tree. This is what makes the line above safe, and a green local suite is no evidence about the ubuntu leg. |
-| Before merging a batch that touched `shared/` or a `script:` signature, or before a milestone seal | `pixi run test-full` — the `workflow_contract` and `process_isolation` tiers, which are the ones you would rather not first meet on two platforms at once. |
-| Before merging a batch that changed what a workflow RUNS (a rule, a `script:` module's behaviour, a runner), before a release, and before a milestone seal | `pixi run test-e2e` — all five workflows through `scripts/run_workflows.py` from a fresh root. Local only: CI has no data mirror, Julia or weathergenr. A skip is not a pass; read its reason. |
+| Before merging a batch that changed shared runtime/configuration contracts or a `script:` signature, or before a milestone seal | `pixi run test-full` — the `workflow_contract` and `process_isolation` tiers, which are the ones you would rather not first meet on two platforms at once. |
+| Cross-workflow changes, release or milestone | Fresh all-five `pixi run test-e2e`; no required skips. |
+| Confined workflow behavior | Execute affected workflow and consumers; figures use render/inspection. |
 | Before a milestone seal / after touching numeric outputs | `check_baseline.py check`, plus `semantic_tree_diff.py` if the tree shape moved. |
+
+The cross-workflow execution gate applies to shared runtime/configuration, orchestration and
+cross-workflow interfaces. For confined changes, search callers and output consumers, use rapid
+inputs, and state the affected consumers and omitted workflows. Shared figure-only helpers require
+all affected renders; runtime contracts and non-figure consumers trigger the broader gates.
 
 **Push-exempt paths** are edits to `dev/tasks/**`, `dev/TODO.md`, `dev/LOG.md`, `AGENTS.md` and the root `README.md`, which no test reads. Classify the files in the diff, not the commit's label: a "dev/" chore can still touch `ci.yml` or `test_case/`. A rename or deletion is never exempt, because `test_activation_links.py` resolves every link under `dev/reference/` against the whole tree. `dev/scripts/`, `dev/records/`, `dev/reference/`, `config/templates/` and `docs/notebooks/` are all read by tests and stay gated. Add a path only after grepping `tests/` for a reader. The `test-full` and `test-e2e` rows follow the same rule: they fire on what the batch's own diff touches, so a follow-up batch that leaves `shared/` alone does not re-run them because an earlier, pushed batch touched it.
 
@@ -121,7 +145,7 @@ A task branch is isolated from `main` and cheap to revert, so spend validation t
 
 **Run WF1 with `--notemp` when the run feeds `check_baseline.py`.** Rule 1.13 declares wflow's `run_default/output.csv` as `temp()`, and that file is the manifest's wf1 discharge target, so without the flag the gate fails "target missing" and reads as a defect. The rounded `output_q.csv` is not a substitute.
 
-**Figures are terminal artifacts** — no rule consumes a `.png`/`.pdf`, so verify a figure-only change by rendering it and publishing the PNG as an Artifact for visual inspection, never with the baseline, the full suite, or a byte comparison of the render. But a shared helper edited in service of a plot (`shared/plot_style.py`, `shared/cartographic_map.py`, which rules 1.11 and 1.12 both draw through) is *a contract surface with other callers* and takes the normal ladder above.
+**Figures are terminal artifacts** — no rule consumes a `.png`/`.pdf`, so verify a figure-only change by rendering it and publishing the PNG as an Artifact for visual inspection, never with the baseline, the full suite, or a byte comparison of the render. For a shared plotting helper, search all callers and render the affected figures. Escalate to the shared-contract gates only if it also changes runtime/configuration contracts or non-figure consumers.
 
 ## Hard Constraints
 

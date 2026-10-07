@@ -1,0 +1,297 @@
+"""Synthetic suite render and recoverable-caption contract falsifiers."""
+
+import json
+
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import pytest
+import xarray as xr
+
+from blueearth_cst.projections import projection_analysis as analysis
+from blueearth_cst.projections import projection_figures as contract
+from blueearth_cst.projections import projection_trajectories as trajectories
+from blueearth_cst.projections.plot_proj_timeseries import render_suite
+from blueearth_cst.projections.projection_captions import caption
+from blueearth_cst.projections.projection_suite_figures import render_product
+
+
+@pytest.fixture
+def suite():
+    def series(start, scenario, offset):
+        time = pd.date_range(f"{start}-01-01", periods=360, freq="MS")
+        wave = np.repeat(np.sin(np.arange(30)), 12)
+        return xr.Dataset(
+            {
+                "temp": ("time", 10 + offset + wave, {"units": "degC"}),
+                "precip": ("time", 2 + offset / 10 + wave / 10, {"units": "mm/day"}),
+            },
+            coords={"time": time},
+            attrs={"cst_calendar": "360_day"},
+        ).expand_dims(
+            model=["TEST/A"], scenario=[scenario], member=["r1"], clim_project=["cmip6"]
+        )
+
+    hist, future = series(1985, "historical", 0), series(2036, "ssp245", 2)
+    identity = {"model": "TEST/A", "scenario": "ssp245", "member": "r1"}
+    change = analysis.analysis_change_table(
+        hist,
+        future,
+        identity=identity,
+        window_id="2036-2065",
+        reference_window=(1985, 2014),
+        future_window=(2036, 2065),
+    )
+    changes = pd.concat(
+        [
+            change.assign(model=model, member=member)
+            for model in ("TEST/A", "TEST/B")
+            for member in ("r1", "r2")
+        ],
+        ignore_index=True,
+    )
+    models = analysis.model_changes(changes, statistic=None)
+    ratios = analysis.member_null_bands(analysis.member_ratios(changes))
+    anomalies = trajectories.member_anomalies(
+        hist, future, identity=identity, reference_window=(1985, 2014)
+    )
+    tables = {
+        "coverage": pd.DataFrame(
+            [
+                dict(model=model, scenario="ssp245", member=member, available=True)
+                for model in ("TEST/A", "TEST/B")
+                for member in ("r1", "r2")
+            ]
+        ),
+        "model_changes": models,
+        "change_summary": analysis.ensemble_summary(models),
+        "sign_agreement": analysis.sign_agreement(models),
+        "climatology": analysis.climatology(changes),
+        "climatology_summary": analysis.climatology_summary(
+            analysis.climatology(changes)
+        ),
+        "variability_member_ratios": ratios,
+        "variability_model_ratios": analysis.model_ratios(ratios, include_null=False),
+        "variability_summary": analysis.ratio_summary(ratios),
+        "member_anomalies": anomalies,
+        "trajectory_range": trajectories.trajectory_range(
+            trajectories.model_trajectories(anomalies)
+        ),
+    }
+    tables["availability"] = analysis.product_availability(
+        {
+            "coverage": tables["coverage"],
+            "trajectories": anomalies,
+            "models": models,
+            "climatology": tables["climatology"],
+            "member_ratios": ratios,
+            "model_ratios": tables["variability_model_ratios"],
+        }
+    )
+    record = {
+        "models": [{"model": "TEST/A"}, {"model": "TEST/B"}],
+        "reference": [1985, 2014],
+        "windows": [
+            {
+                "window_id": "2036-2065",
+                "used": [2036, 2065],
+                "reference": [1985, 2014],
+                "configured": {
+                    "mid": {"reference": [1990, 2010], "future": [2046, 2054]}
+                },
+                "horizons": ["mid"],
+                "requested": [2036, 2065],
+                "shifted": False,
+                "joined": False,
+            }
+        ],
+    }
+    logs = tables["variability_model_ratios"].copy()
+    logs["value"] = logs.log_value
+    summary = analysis.ensemble_summary(logs)
+    for column in ("median", "min", "max", "q25", "q75"):
+        summary[column] = np.exp(summary[column])
+    record["variability_model_summary"] = summary.to_dict("records")
+    return tables, record
+
+
+def test_each_artist_renders_without_titles_or_cloud_labels(suite):
+    tables, record = suite
+    for row in tables["availability"].to_dict("records"):
+        if not row["available"]:
+            continue
+        fig = render_product(
+            row["filename"], tables, record, window_id=row["window_id"]
+        )
+        fig.canvas.draw()
+        assert all(not ax.get_title() for ax in fig.axes)
+        if row["filename"] == "change-factor-cloud.png":
+            assert all(not ax.texts for ax in fig.axes)
+            assert fig.axes[0].get_box_aspect() == 1
+        plt.close(fig)
+
+
+@pytest.mark.parametrize(
+    "extra_path, message",
+    [
+        ("full-period/stale.png", "owned PNGs differ"),
+        ("captioned/full-period/stale.png", "captioned PNGs differ"),
+    ],
+)
+def test_manifest_bijection_unavailable_and_captioned_copy(
+    suite, tmp_path, extra_path, message
+):
+    tables, record = suite
+    # Keep one real available product to exercise 600dpi and caption copies.
+    tables["availability"].loc[
+        tables["availability"].filename != "change-temperature.png", "available"
+    ] = False
+    tables["availability"].loc[~tables["availability"].available, "reason"] = (
+        "synthetic unavailable product"
+    )
+    manifest, skipped = render_suite(tables, record, tmp_path, captioned_figures=True)
+    assert len(manifest) == 1 and len(skipped) == 15
+    assert set(manifest) == {"period-2036-2065/change-temperature.png"}
+    assert (tmp_path / "captioned" / next(iter(manifest))).is_file()
+    assert (
+        manifest[next(iter(manifest))]["captioned_path"]
+        == "captioned/period-2036-2065/change-temperature.png"
+    )
+    assert (
+        json.loads((tmp_path / "_engine/figure_captions.json").read_text()) == manifest
+    )
+    assert "Not produced" in (tmp_path / "figure_captions.md").read_text()
+    stale = tmp_path / extra_path
+    stale.parent.mkdir(parents=True, exist_ok=True)
+    stale.write_bytes(b"stale")
+    with pytest.raises(RuntimeError, match=message):
+        render_suite(tables, record, tmp_path, captioned_figures=True)
+
+
+def test_captions_and_distinct_folder_contract(suite):
+    _, record = suite
+    text = caption(
+        "variability-member-ratios.png", record, "2036-2065", {"n_excluded": 3}
+    )
+    for phrase in (
+        "2046–2054",
+        "1990–2010",
+        "2036–2065",
+        "1985–2014",
+        "configured windows",
+        "white noise",
+        "autocorrelation",
+        "no band",
+        "1/eligible",
+        "Excluded degenerate ratios: 3",
+    ):
+        assert phrase in text
+    horizons = {"far": [2071, 2100], "later": [2081, 2100]}
+    assert contract.suite_folders(horizons) == ["full-period", "period-2071-2100"]
+    assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 16
+
+
+def test_unplotted_statistics_do_not_enable_mean_figures(suite):
+    tables, _ = suite
+    models = tables["model_changes"].loc[tables["model_changes"].statistic != "mean"]
+    result = analysis.product_availability({"models": models}, ["2036-2065"])
+    mean_products = result.loc[
+        result.filename.isin(
+            [
+                "change-temperature.png",
+                "change-precipitation-pct.png",
+                "change-precipitation-abs.png",
+                "sign-agreement.png",
+                "change-factor-cloud.png",
+            ]
+        )
+    ]
+    assert not mean_products.available.any()
+
+
+def test_driver_csv_roundtrip_normalizes_full_period_window(
+    suite, tmp_path, monkeypatch
+):
+    from types import SimpleNamespace
+
+    from blueearth_cst.projections import plot_proj_timeseries as driver
+
+    tables, record = suite
+    files = []
+    for name, table in tables.items():
+        path = tmp_path / f"{name}.csv"
+        table.to_csv(path, index=False)
+        files.append(str(path))
+    record_path = tmp_path / "analysis_record.json"
+    record_path.write_text(json.dumps(record), encoding="utf-8")
+    plots = tmp_path / "plots"
+    captured = {}
+    monkeypatch.setattr(
+        driver,
+        "render_suite",
+        lambda tables, *args, **kwargs: captured.update(tables=tables),
+    )
+    driver.run(
+        SimpleNamespace(
+            input=SimpleNamespace(tables=files, record=str(record_path)),
+            output=SimpleNamespace(
+                captions_md=str(plots / "figure_captions.md"),
+                folders=[str(plots / "full-period"), str(plots / "period-2036-2065")],
+            ),
+            params=SimpleNamespace(captioned_figures=False),
+        )
+    )
+    available = captured["tables"]["availability"]
+    assert available.loc[available.folder == "full-period", "window_id"].eq("").all()
+    assert available.available.dtype == bool
+
+
+def test_precipitation_cycle_percentage_and_two_row_annual_content(suite):
+    tables, record = suite
+    cycle = render_product(
+        "seasonal-cycle-precipitation.png", tables, record, window_id="2036-2065"
+    )
+    change = (
+        tables["change_summary"]
+        .loc[
+            (tables["change_summary"].variable == "precip")
+            & (tables["change_summary"].statistic == "mean")
+            & (tables["change_summary"].quantity == "change_pct")
+        ]
+        .set_index("period")
+    )
+    assert cycle.axes[1].get_ylabel() == "Change (%)"
+    np.testing.assert_allclose(
+        cycle.axes[1].lines[0].get_ydata(), change.loc[list(analysis.MONTHS), "median"]
+    )
+    plt.close(cycle)
+    annual = render_product("annual-precipitation.png", tables, record)
+    assert len(annual.axes) == 2
+    assert "mm yr" in annual.axes[0].get_ylabel()
+    assert "Anomaly (%" in annual.axes[1].get_ylabel()
+    assert all(
+        any(p.get_gid() == "window:2036-2065" for p in ax.patches) for ax in annual.axes
+    )
+    assert all(
+        any(line.get_gid() == "scenario-handover" for line in ax.lines)
+        for ax in annual.axes
+    )
+    assert any(line.get_gid() == "historical-median" for line in annual.axes[0].lines)
+    plt.close(annual)
+
+
+def test_cloud_pairs_derived_models_independent_of_member_labels(suite):
+    tables, record = suite
+    models = tables["model_changes"].copy()
+    models.loc[models.model == "TEST/A", "members"] = "r1"
+    models.loc[models.model == "TEST/B", "members"] = "r9 r10"
+    unpaired = models.loc[
+        (models.model == "TEST/A") & (models.variable == "temp")
+    ].assign(model="TEST/unpaired")
+    tables["model_changes"] = pd.concat([models, unpaired], ignore_index=True)
+    fig = render_product(
+        "change-factor-cloud.png", tables, record, window_id="2036-2065"
+    )
+    assert len(fig.axes[0].collections[0].get_offsets()) == 2
+    assert not fig.axes[0].texts
+    plt.close(fig)

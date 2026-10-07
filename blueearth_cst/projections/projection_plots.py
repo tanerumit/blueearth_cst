@@ -37,6 +37,8 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from matplotlib.ticker import MaxNLocator
 
+from blueearth_cst.projections.projection_figures import SCENARIO_COLORS
+
 # `save_figure`: every figure in the toolbox is written and announced through
 # ONE function, so WF0/WF1's `N figures -> <dir>` bundle row is what WF2 prints
 # too. The four writes below used to call `fig.savefig` directly and let each
@@ -49,12 +51,6 @@ from blueearth_cst.shared.snake_utils import save_figure
 #: Scenario ink. Carried over from the producers this design replaces, verbatim:
 #: the set is judged on layout and semantics, not on a palette change nobody
 #: asked for. Scenario is the ONLY visual encoding in the whole family.
-SCENARIO_COLORS = {
-    "ssp126": "#003466",
-    "ssp245": "#f69320",
-    "ssp370": "#df0000",
-    "ssp585": "#980002",
-}
 SCENARIO_LABELS = {
     "ssp126": "SSP1-2.6",
     "ssp245": "SSP2-4.5",

@@ -9,6 +9,7 @@ import pytest
 import xarray as xr
 
 from blueearth_cst.projections import prepare_projection_analysis as producer
+from blueearth_cst.projections import projection_analysis as analysis
 from blueearth_cst.projections import series_identity
 from blueearth_cst.projections.get_change_climate_proj import analysis_windows
 
@@ -119,3 +120,18 @@ def test_display_bands_preserve_masks_and_equal_model_reference_cv():
     assert all(band["reference_cv"] == pytest.approx(0.5) for band in bands)
     assert all(band["n_mask_strata"] == 2 for band in bands)
     assert all(band["n_valid"] + band["n_invalid"] == 20_000 for band in bands)
+
+
+def test_model_ratio_summary_uses_log_middle_pair():
+    common = dict.fromkeys(analysis.CELL, "test")
+    models = pd.DataFrame(
+        [
+            {**common, "model": "A", "value": 0.5, "n_members": 1},
+            {**common, "model": "B", "value": 2.0, "n_members": 1},
+        ]
+    )
+    summary = producer._model_ratio_summary(models).iloc[0]
+    assert summary["median"] == pytest.approx(1.0)
+    assert summary["median"] != pytest.approx(1.25)
+    assert (summary["min"], summary["max"]) == pytest.approx((0.5, 2.0))
+    assert not summary.iqr_shown

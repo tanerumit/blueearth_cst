@@ -48,6 +48,66 @@ from __future__ import annotations
 import re
 from collections.abc import Mapping, Sequence
 
+SCENARIO_COLORS = {
+    "ssp126": "#003466",
+    "ssp245": "#f69320",
+    "ssp370": "#df0000",
+    "ssp585": "#980002",
+}
+
+SUITE_PRODUCTS = {
+    "F3.1": {"folder_kind": "full-period", "filenames": ("availability.png",)},
+    "F3.4": {
+        "folder_kind": "full-period",
+        "filenames": ("trajectory-temperature.png", "trajectory-precipitation.png"),
+    },
+    "F3.4b": {
+        "folder_kind": "full-period",
+        "filenames": ("annual-temperature.png", "annual-precipitation.png"),
+    },
+    "F3.2": {
+        "folder_kind": "period",
+        "filenames": (
+            "change-temperature.png",
+            "change-precipitation-pct.png",
+            "change-precipitation-abs.png",
+        ),
+    },
+    "F3.3": {
+        "folder_kind": "period",
+        "filenames": (
+            "seasonal-cycle-temperature.png",
+            "seasonal-cycle-precipitation.png",
+        ),
+    },
+    "F3.5a": {
+        "folder_kind": "period",
+        "filenames": (
+            "variability-ratio-temperature-sd.png",
+            "variability-ratio-precipitation-cv.png",
+        ),
+    },
+    "F3.5c": {"folder_kind": "period", "filenames": ("variability-member-ratios.png",)},
+    "F3.6b": {"folder_kind": "period", "filenames": ("change-factor-cloud.png",)},
+    "F5.1": {"folder_kind": "period", "filenames": ("sign-agreement.png",)},
+    "combined-cloud": {
+        "folder_kind": "full-period",
+        "filenames": ("change-factor-cloud-combined.png",),
+    },
+}
+
+
+def suite_folders(horizons, water_year_start="Jan", reference_window=(1985, 2014)):
+    """One owned folder for each distinct resolved analysis window."""
+    from blueearth_cst.projections.get_change_climate_proj import analysis_windows
+
+    records = analysis_windows(horizons, water_year_start, reference_window)
+    return [
+        "full-period",
+        *dict.fromkeys(f"period-{r['window_id']}" for r in records.values()),
+    ]
+
+
 #: The two full-period overviews, in the order they appear in the set.
 _OVERVIEW_PATHS = (
     "overview/annual-precipitation.png",

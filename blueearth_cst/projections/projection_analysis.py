@@ -1154,9 +1154,7 @@ def product_availability(tables, windows=None):
             ("precip", "change_pct", "precipitation-pct"),
             ("precip", "change", "precipitation-abs"),
         ):
-            sub = finite.loc[
-                (finite.variable == variable) & (finite.quantity == quantity)
-            ]
+            sub = mean.loc[(mean.variable == variable) & (mean.quantity == quantity)]
             add(
                 f"change-{label}.png",
                 f"period-{window_id}",
@@ -1239,7 +1237,7 @@ def product_availability(tables, windows=None):
         )
         agreement = any(
             group.model.nunique() >= 2
-            for _, group in finite.groupby(
+            for _, group in mean.groupby(
                 ["scenario", "period", "variable", "statistic", "quantity"]
             )
         )

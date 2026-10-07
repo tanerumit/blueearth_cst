@@ -8,6 +8,7 @@ import json
 import os
 from pathlib import Path
 
+import numpy as np
 import pandas as pd
 
 from blueearth_cst.projections import projection_analysis as analysis
@@ -97,6 +98,15 @@ def display_null_bands(ratios):
                 }
             )
     return records
+
+
+def _model_ratio_summary(models):
+    """Equal-model log quantiles, preserving the lab's even-count median."""
+    logged = models.assign(value=np.log(models.value.where(models.value > 0)))
+    result = analysis.ensemble_summary(logged)
+    columns = ["median", "min", "max", "q25", "q75"]
+    result[columns] = np.exp(result[columns])
+    return result
 
 
 def prepare_tables(
@@ -279,6 +289,9 @@ def prepare_tables(
         "unavailable_members": json.loads(unavailable.to_json(orient="records")),
         "availability": json.loads(tables["availability"].to_json(orient="records")),
         "display_null_bands": display_null_bands(ratios),
+        "variability_model_summary": json.loads(
+            _model_ratio_summary(model_ratios).to_json(orient="records")
+        ),
     }
     return tables, record
 

@@ -3,8 +3,8 @@
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
-**State:** Units 1–3 committed (`c606bcdd` numerical unit); unit 4 producer wiring verified.
-**Next action:** Commit unit 4 separately; reconcile suite artists and wire rule 2.06.
+**State:** Units 1–4 committed; unit 5a figure suite reviewed against cached P0.
+**Next action:** Commit unit 5a, then retire predecessor plotting code and callers in unit 5b.
 **Blocker:** Fresh-run gates remain pending: P-drive mirror unavailable; old rapid archive incompatible.
 
 ## Current contract and execution
@@ -49,6 +49,17 @@
 - Unit 4 passed 167 producer/inventory tests, then 3 producer tests after benchmark metadata changes
   and 1 shared-window test after retaining both horizons' requested windows. CLI: 20 passed; rapid dry-run:
   16 jobs including 2.05b. Repository lint and format-check passed.
+- Unit 5a wires 2.06 to the 14 analysis tables and record, with availability-driven owned folders,
+  ordinary PNG caption keys and an explicit optional-captioned-copy bijection. The renderer never reads
+  scalar NetCDFs or recomputes the analysis. Log-space model summaries are supplied in the record.
+- Cached P0 final rendering passed: 15 ordinary PNGs and 15 manifest keys, one correctly unavailable
+  combined-cloud product for the single analysis window. All ordinary products were visually inspected;
+  synthetic rendering also produced 15 ordinary, 15 captioned and one combined-cloud PNG without warnings.
+  Annual overviews retain absolute/integral and anomaly rows; precipitation cycles use percentage changes.
+- Unit 5a artist checks passed (7 focused tests, then 2 optional-copy falsifiers); repository lint and
+  format-check passed. CLI: 20 passed; updated rapid dry-run: 16 jobs. Fresh gates remain pending.
+- Root final figure/producer batch passed all 12 tests. A sandbox-only run had four setup errors from
+  the denied legacy pytest temporary root; the host-access rerun passed, with the known cache warning.
 - Cached P0 producer executed all 100 points into 14 CSV tables and a record: 18,700 change rows,
   30,200 annual member rows, 5,100 member ratios and 40 exact-mask panel benchmarks. It used isolated
   test identities on archived values, not current production-cache recipes or a fresh workflow run.
@@ -95,8 +106,8 @@ at a time; failed falsifiers or changed contracts reopen only the affected unit.
 | 1 numerical helpers/checks | Done | `1672686c`; focused checks and invariants above | — |
 | 2 coverage/families | Done | `7683ddb6`; 5 focused tests | — |
 | 3 reductions/variability | Done | `c606bcdd`; 16 tests, P0 parity, identities | — |
-| 4 analysis rule/tables | Verified | Producer/inventory, CLI, DAG and cached P0 | Commit separately |
-| 5a figures/captions | In progress | Artist/caption implementation | Wire, render and verify manifest |
+| 4 analysis rule/tables | Done | `5b5b219e`; producer/inventory, CLI, DAG and cached P0 | — |
+| 5a figures/captions | Verified | Artist tests, 15 cached P0 figures and manifest, synthetic copies | Commit separately |
 | 5b retirement | Not started | Design § 10 | Remove retired callers together |
 | 6 batch gates | Pending | Fresh execution unavailable | Run at approved landing |
 

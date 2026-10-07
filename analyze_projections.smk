@@ -70,6 +70,9 @@ project_cfg = config["project"]
 # is where the v1 `shared_cfg` indirection was buying nothing.
 climate_cfg = config.get("climate") or {}
 my_cfg = config["workflows"]["analyze_projections"]
+captioned_figures = get_config(my_cfg, "captioned_figures", False, optional=True)
+if not isinstance(captioned_figures, bool):
+    raise WorkflowError("workflows.analyze_projections.captioned_figures must be bool")
 
 project_dir = get_config(project_cfg, "project_dir", optional=False)
 # O-22: make the two-tier project_dir rule mechanical rather than
@@ -893,6 +896,12 @@ ANALYSIS_OUTPUTS = {
     name: f"{clim_project_dir}/analysis/{name}.csv" for name in ANALYSIS_TABLE_NAMES
 }
 ANALYSIS_OUTPUTS["analysis_record"] = f"{clim_project_dir}/analysis/analysis_record.json"
+WF2_SUITE_PATHS = {
+    folder: f"{clim_project_dir}/plots/{folder}"
+    for folder in projection_figures.suite_folders(future_horizons, water_year_start, time_horizon_hist)
+}
+FIGURE_CAPTIONS_MD = f"{clim_project_dir}/plots/figure_captions.md"
+FIGURE_CAPTIONS_JSON = f"{clim_project_dir}/plots/_engine/figure_captions.json"
 
 WF2_TARGETS = {
     **{f"analysis_{name}": path for name, path in ANALYSIS_OUTPUTS.items()},
@@ -903,18 +912,11 @@ WF2_TARGETS = {
     # R5 deliverable 3 — demanded explicitly, not left as an incidental
     # by-product of derive_change_factors' other outputs.
     "composition": (clim_project_dir + "/summary/composition.csv"),
-    # The whole figure set, so `rule all` demands every figure rather than the
-    # three that happened to be named. `--delete-all-output` reaches them for
-    # the same reason.
-    #
-    # Keyed by the figure's own relative path, NOT by position: an ordinal key
-    # would silently re-point when a horizon is added to the config, which is
-    # the "gain a name, which changes nothing" property the comment above this
-    # dict describes. `windows/far-2070-2090/monthly-change-factors.png` names
-    # the same artifact whatever else the config declares.
-    **{
-        f"figure_{relative}": path for relative, path in WF2_FIGURE_PATHS.items()
-    },
+    # Runtime availability decides which PNGs exist within these owned folders.
+    **{f"figure_folder_{folder}": path for folder, path in WF2_SUITE_PATHS.items()},
+    "figure_captions": FIGURE_CAPTIONS_MD,
+    "figure_manifest": FIGURE_CAPTIONS_JSON,
+    **({"captioned_figures": f"{clim_project_dir}/plots/captioned"} if captioned_figures else {}),
     # ADR 0003 §8. The vector rule has NO WF2 consumer yet (§10), so a target
     # entry is what makes it reachable at all — an undeclared leaf is simply
     # never scheduled. One representative schedules the whole multi-output rule,
@@ -1313,45 +1315,21 @@ rule prepare_projection_analysis:
         PREPARE_PROJECTION_ANALYSIS.benchmark(),
     script: "blueearth_cst/projections/prepare_projection_analysis.py"
 
-# 2.06  plot_climate_projections — plot projected anomaly time series
+# 2.06 is a pure renderer of analysis tables; its owned directories contain only
+# products marked available, and the manifest names the PNGs actually written.
 rule plot_climate_projections:
     message: PLOT_CLIMATE_PROJECTIONS.banner()
     input:
-        # Ordering edge only -- 2.06 never opens this. Repointed at S8-05 from the
-        # retired wide summary to the tidy annual table, which is the stage-B
-        # artifact that now plays the same "stage B finished" role.
-        stats_change_summary = (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
-        # READ, not an ordering edge. The monthly figures render this table's own
-        # numbers rather than recomputing them, which is what stops the picture
-        # and the table describing different quantities under one name -- the
-        # defect this rule shipped until 2026-08-17. It also states the reference
-        # window the annual overviews are captioned with.
-        change_factors_monthly = (clim_project_dir + f"/summary/{clim_project}_change_factors_monthly.csv"),
-        stats_time_nc_hist = sorted({series_file(m, "historical", mem) for (m, _sc, mem) in POINTS}),
-        stats_time_nc = sorted({series_file(m, sc, mem) for (m, sc, mem) in POINTS}),
+        tables = [ANALYSIS_OUTPUTS[name] for name in ANALYSIS_TABLE_NAMES],
+        record = ANALYSIS_OUTPUTS["analysis_record"],
     params:
-        clim_project_dir = f"{clim_project_dir}",
         scenarios = scenarios,
-        horizons = future_horizons,
+        captioned_figures = captioned_figures,
     output:
-        # The compact figure contract: two full-period overviews plus one monthly
-        # change-factor figure per configured horizon. Both cloud views are rule
-        # 2.05's outputs -- they come off its stage-B merge -- so they are not
-        # duplicated here.
-        #
-        # Every path comes from `figure_relative_paths`, so what is declared and
-        # what is written cannot drift. The predecessor declared three of the
-        # eight it wrote; the five undeclared ones were not cleaned on failure,
-        # not remade when deleted, and unusable as a dependency.
-        annual_precipitation = ANNUAL_PRECIPITATION_PLOT,
-        annual_temperature = ANNUAL_TEMPERATURE_PLOT,
-        monthly_change_factors = MONTHLY_CHANGE_FACTOR_PLOTS,
-        # S8-02: `timeseries/gcm_timeseries.nc` is GONE. It merged the nine series
-        # into one cube that nothing read -- not `all`, not WF3, not any script --
-        # while rounding to 2 dp (the quantisation step 5c removed from the series)
-        # and stripping every `cst_*` attr, so it was a lossier, untraceable copy
-        # of the tier it duplicated. The durable timeseries tier is `scalar/`;
-        # `summary/*_change_factors_*.csv` is the analysis-ready form.
+        folders = [directory(path) for path in WF2_SUITE_PATHS.values()],
+        captions_md = FIGURE_CAPTIONS_MD,
+        captions_json = FIGURE_CAPTIONS_JSON,
+        captioned = [directory(f"{clim_project_dir}/plots/captioned")] if captioned_figures else [],
     threads: 1
     resources:
         mem_mb = 1024,
@@ -1392,7 +1370,7 @@ rule gather_logs:
     input:
         (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
         CHANGE_FACTOR_CLOUD_PLOT,
-        ANNUAL_PRECIPITATION_PLOT,
+        FIGURE_CAPTIONS_JSON,
         ANALYSIS_OUTPUTS["analysis_record"],
         # ADR 0003 §8: rule 2.02 is a LEAF here — nothing in WF2 consumes the
         # vector layers yet (§10) — so it is not upstream of the three terminals
@@ -1416,7 +1394,7 @@ rule gather_benchmarks:
     input:
         (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
         CHANGE_FACTOR_CLOUD_PLOT,
-        ANNUAL_PRECIPITATION_PLOT,
+        FIGURE_CAPTIONS_JSON,
         ANALYSIS_OUTPUTS["analysis_record"],
         # Same reason as gather_logs above: 2.02 is a leaf, and the benchmark
         # gather has to wait for it or its `_parts/` row misses this run.

@@ -317,6 +317,7 @@ def test_predicate_says_recoverable_only_when_tracked_and_clean(monkeypatch):
 
 def test_a_file_outside_the_checkout_is_never_recoverable(monkeypatch, tmp_path):
     """Even with every git query succeeding, an outside path cannot be tracked."""
+    monkeypatch.setattr(ccf, "_REPO_ROOT", tmp_path / "checkout")
     monkeypatch.setattr(ccf, "_git_query", _fake_git())
     outside = tmp_path / "site_specific_catalog.yml"
     outside.write_text("meta: {}\n", encoding="utf-8")

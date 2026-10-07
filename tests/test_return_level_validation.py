@@ -237,7 +237,10 @@ def test_loader_works_from_a_relocated_copy(tmp_path):
     payload = json.loads(result.stdout.strip().splitlines()[-1])
     assert payload["digest"] == rlv.report_digest(rlv.load_report_bytes())
     assert payload["policy"] == "gf15-accuracy-8x-v1"
-    assert str(REPO) not in payload["file"], "the relocated probe imported the checkout"
+    assert (
+        Path(payload["file"]).resolve()
+        == (root / "blueearth_cst/experiment/return_level_validation.py").resolve()
+    ), "the relocated probe imported a different copy"
 
 
 def test_relocated_copy_without_the_asset_fails(tmp_path):

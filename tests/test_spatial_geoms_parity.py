@@ -13,6 +13,9 @@ Two layers, deliberately:
   They skip without the fixture, and AGENTS.md records that a worktree lacking
   `test_case/` downgrades rather than fails, so a green run here is not
   evidence the fixture leg ran at all.
+
+Set CST_SPATIAL_PARITY_PROJECT to validate a fresh run without replacing the
+standing baseline fixture.
 """
 
 import os
@@ -37,7 +40,12 @@ from blueearth_cst.shared.spatial_geoms_parity import (  # noqa: E402
 gpd = pytest.importorskip("geopandas")
 shapely = pytest.importorskip("shapely.geometry")
 
-FIXTURE = Path(__file__).resolve().parents[1] / "test_case" / "test_local"
+FIXTURE = Path(
+    os.environ.get(
+        "CST_SPATIAL_PARITY_PROJECT",
+        Path(__file__).resolve().parents[1] / "test_case" / "test_local",
+    )
+)
 OURS_DIR = FIXTURE / "data" / "spatial" / "geoms"
 THEIRS_DIR = FIXTURE / "models" / "hydrology" / "wflow" / "staticgeoms"
 

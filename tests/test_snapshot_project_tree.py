@@ -127,13 +127,16 @@ def test_empty_directories_are_not_paths(tmp_path):
     assert spt.list_tree(tmp_path) == ["a.csv"]
 
 
-def test_relative_project_dir_resolves_against_the_cwd_not_the_tool_repo(tmp_path):
+def test_relative_project_dir_resolves_against_the_cwd_not_the_tool_repo(
+    tmp_path, monkeypatch
+):
     """The cross-checkout trap the runbook walks into by design.
 
     The workflows run from the PRIMARY checkout while the comparator lives in a
     task worktree, so the tool's own repo root is the wrong base: it would look
     for the tree beside the tool instead of beside the run.
     """
+    monkeypatch.setattr(spt, "REPO", tmp_path / "tool-checkout")
     resolved = spt.resolve_project_dir("test_case/test_local", base=tmp_path)
     assert resolved == tmp_path / "test_case" / "test_local"
     assert spt.REPO not in resolved.parents

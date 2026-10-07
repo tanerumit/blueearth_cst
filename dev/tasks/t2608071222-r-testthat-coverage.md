@@ -23,7 +23,11 @@ updated: 2026-10-07
 - [x] Extract the weathergen rules' inline decisions into `blueearth_cst/weathergen/member_helpers.R`
   and test them in `tests/test_weathergen_member_helpers.py` — `27c42da0` on `chore/maintainance`.
   Changes WF3 generation ids (the R files are in the generation identity); accepted by the owner.
-- [ ] Land the branch after `pixi run test-e2e` (it changes what WF3 runs), then close this item
+- [x] Land — `f3a63dd5` on `main` (2026-10-07). `test-e2e` SKIPPED (P: mirror unreachable), so the
+  owner accepted a narrower check instead: both scripts run from `main` and from the branch on the same
+  `test_rapid` inputs and seed with real weathergenr 2.0.1, all four output netCDFs xarray-identical.
+  `test-fast` green apart from a timing flake in `test_run_workflows.py` (passes alone). Re-run
+  `test-e2e` the next time P: is mounted.
 
 ## Refs
 

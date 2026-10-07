@@ -3,8 +3,8 @@
 ## Resume here
 
 **Objective:** Implement the G2-approved WF2 starter-suite integration, task `t2610071652`.
-**State:** Units 1/2 committed; unit 3 verified; unit 4 producer wiring is underway.
-**Next action:** Commit unit 3 separately, then verify the rule 2.05b producer and tree inventory.
+**State:** Units 1–3 committed (`c606bcdd` numerical unit); unit 4 producer wiring verified.
+**Next action:** Commit unit 4 separately; reconcile suite artists and wire rule 2.06.
 **Blocker:** Fresh-run gates remain pending: P-drive mirror unavailable; old rapid archive incompatible.
 
 ## Current contract and execution
@@ -46,6 +46,16 @@
 - Unit 2 passed all 5 focused tests, repository lint/format-check, compilation and whitespace checks.
 - Unit 3 passed 16 focused tests, scoped lint/format/compilation and unchanged protected inventories.
   Root repository lint and format-check passed after formatting the concurrent unit 4 edits.
+- Unit 4 passed 167 producer/inventory tests, then 3 producer tests after benchmark metadata changes
+  and 1 shared-window test after retaining both horizons' requested windows. CLI: 20 passed; rapid dry-run:
+  16 jobs including 2.05b. Repository lint and format-check passed.
+- Cached P0 producer executed all 100 points into 14 CSV tables and a record: 18,700 change rows,
+  30,200 annual member rows, 5,100 member ratios and 40 exact-mask panel benchmarks. It used isolated
+  test identities on archived values, not current production-cache recipes or a fresh workflow run.
+- Lab reduction parity passed for all unchanged fields of 2,444 model rows and 188 summary/agreement
+  rows; no missing keys, value or count mismatches. Additional statistic rows are separately reported.
+- Panel precipitation benchmarks use the median of model-mean eligible reference CVs. Every retained
+  reference/future mask pair gets its own band; heterogeneous masks are not replaced by counts.
 - Cached-value probing exposed a predecessor CSV defect: historical flags with no scenario dimension
   failed serialization. Companion broadcasting fixes it without changing the arithmetic kernels.
   The new regression failed before the fix; all 37 `test_change_factor_table.py` tests passed afterwards.
@@ -84,9 +94,9 @@ at a time; failed falsifiers or changed contracts reopen only the affected unit.
 | 0 snapshots | Fresh gates deferred | Cached probe hashes above; P0/lab snapshots | Restore mirror before landing |
 | 1 numerical helpers/checks | Done | `1672686c`; focused checks and invariants above | — |
 | 2 coverage/families | Done | `7683ddb6`; 5 focused tests | — |
-| 3 reductions/variability | Verified | 16 focused tests; P0 parity and identities | Commit separately |
-| 4 analysis rule/tables | In progress | Independent inputs and table producer | Focused producer/CLI/DAG checks |
-| 5a figures/captions | Not started | Design § 4 | Render and verify manifest |
+| 3 reductions/variability | Done | `c606bcdd`; 16 tests, P0 parity, identities | — |
+| 4 analysis rule/tables | Verified | Producer/inventory, CLI, DAG and cached P0 | Commit separately |
+| 5a figures/captions | In progress | Artist/caption implementation | Wire, render and verify manifest |
 | 5b retirement | Not started | Design § 10 | Remove retired callers together |
 | 6 batch gates | Pending | Fresh execution unavailable | Run at approved landing |
 

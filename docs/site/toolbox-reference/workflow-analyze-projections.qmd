@@ -14,6 +14,7 @@ title: "WF2 — Analyze projections"
 | 2.03 `fetch_cmip6_projections` | Fetch raw slices for configured model, scenario, member, and variable keys. |
 | 2.04 `reduce_to_basin_averages` | Reduce each local slice to a monthly basin series. |
 | 2.05 `derive_change_factors` | Compare future and reference windows and write tables and report. |
+| 2.05b `prepare_projection_analysis` | Compute analysis-window diagnostic tables and availability. |
 | 2.06 `plot_climate_projections` | Render projection figures. |
 | 2.07 `gather_benchmarks` | Merge benchmark parts. |
 | 2.08 `gather_logs` | Merge log parts. |
@@ -27,9 +28,11 @@ flowchart LR
   A["2.01–2.02 Region and vectors"] --> C["2.04 Basin monthly series"]
   B["2.03 Fetch CMIP6 slices"] --> C
   C --> D["2.05 Change factors"]
+  C --> G["2.05b Analysis tables"]
   D --> E["2.06 Projection figures"]
   D --> F["2.07–2.08 Records"]
   E --> F
+  G --> F
 ```
 
 Fetching fans out by configured model, scenario, member, and variable before monthly reduction.
@@ -61,3 +64,11 @@ Inputs are the basin polygon, cataloged CMIP6 data, and the selected model/scena
 ## Outputs
 
 WF2 retains the acquired slices and basin monthly series, a change-factor product by model, scenario, and horizon, projection figures, and merged logs and benchmarks. Interpret these as plausibility context alongside the response surface, not as forcing for its simulations.
+
+The `analysis/` tables use 30 complete water years around each configured future horizon. The reference is
+the last 30 complete configured water years, or the historical fallback (January: WY 1985–2014; October:
+WY 1984–2013). These windows are separate from the configured windows of the overlay CSVs. The
+`analysis_record.json` records shifts, historical joins, eligibility, equal-model reductions and product
+availability. Seasonal precipitation changes use weighted mean rates; this differs from the lab's
+total-based percentages. Precipitation CV uses period integrals. Analysis arithmetic uses float64 inputs;
+the aligned change-factor arithmetic retains its existing precision and dry-reference rule.

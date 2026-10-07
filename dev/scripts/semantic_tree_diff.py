@@ -446,7 +446,7 @@ def build_project_tree_rules(
         rf"data/climate/ancillary/[a-z][a-z0-9_]*/{_hex}/"
         r"[a-zA-Z0-9][a-zA-Z0-9_.-]*\.nc"
     )
-    for tier in ("raw", "scalar", "summary", "plots"):
+    for tier in ("raw", "scalar", "summary", "analysis", "plots"):
         same(f"data/climate/projections/{clim_project}/{tier}/")
     same(f"data/climate/projections/{clim_project}/report.md")
     same(f"data/climate/projections/{clim_project}/_engine/stage_b_settings.json")

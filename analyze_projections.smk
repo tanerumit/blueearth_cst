@@ -27,6 +27,7 @@ from blueearth_cst.projections.gridded_outputs import RemovedGriddedOutputsError
 # performs -- stays as cheap as it is today; the drawing lives in
 # `projection_plots` and is imported by the producers, never here.
 from blueearth_cst.projections import projection_figures
+from blueearth_cst.projections.get_change_climate_proj import analysis_windows
 
 # Windows: make Snakemake's benchmark memory/IO/CPU metrics work (else all NA).
 patch_psutil_windows_benchmark()
@@ -869,6 +870,7 @@ DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("2.02", "delineate_subbasins_and_r
 FETCH_CMIP6_PROJECTIONS = RULES.logged("2.03", "fetch_cmip6_projections", summary="download one CMIP6 slice")
 REDUCE_TO_BASIN_AVERAGES = RULES.logged("2.04", "reduce_to_basin_averages", summary="reduce the slice to a basin-average series")
 DERIVE_CHANGE_FACTORS = RULES.logged("2.05", "derive_change_factors", summary="compare each horizon against the reference period")
+PREPARE_PROJECTION_ANALYSIS = RULES.logged("2.05b", "prepare_projection_analysis", summary="prepare analysis-window diagnostics")
 PLOT_CLIMATE_PROJECTIONS = RULES.logged("2.06", "plot_climate_projections")
 GATHER_BENCHMARKS = RULES.banner_only("2.07", "gather_benchmarks")
 GATHER_LOGS = RULES.banner_only("2.08", "gather_logs")
@@ -880,7 +882,20 @@ GATHER_LOGS = RULES.banner_only("2.08", "gather_logs")
 # NAMED inputs and the names document what each file is; `**` splats them back
 # as the same keyword arguments. The three that were positional gain a name,
 # which changes nothing -- no script reads `rule all`'s inputs, by name or index.
+ANALYSIS_WINDOWS = analysis_windows(future_horizons, water_year_start, time_horizon_hist)
+ANALYSIS_TABLE_NAMES = (
+    "coverage", "availability", "changes", "model_changes", "change_summary",
+    "sign_agreement", "climatology", "climatology_summary", "monthly_change_summary",
+    "member_anomalies", "trajectory_range", "variability_member_ratios",
+    "variability_model_ratios", "variability_summary",
+)
+ANALYSIS_OUTPUTS = {
+    name: f"{clim_project_dir}/analysis/{name}.csv" for name in ANALYSIS_TABLE_NAMES
+}
+ANALYSIS_OUTPUTS["analysis_record"] = f"{clim_project_dir}/analysis/analysis_record.json"
+
 WF2_TARGETS = {
+    **{f"analysis_{name}": path for name, path in ANALYSIS_OUTPUTS.items()},
     # S8-04/05: the tidy tables are the result surface now; the three wide
     # `annual_change_scalar_stats_summary*` files they replaced are gone.
     "change_factors_annual": (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
@@ -1247,6 +1262,57 @@ rule derive_change_factors:
         DERIVE_CHANGE_FACTORS.benchmark(),
     script: "blueearth_cst/projections/derive_change_factors.py"
 
+# 2.05b reads the resolved scalar inputs independently of aligned change factors.
+# The polygon is needed to assert identities against today's region fingerprint.
+rule prepare_projection_analysis:
+    message: PREPARE_PROJECTION_ANALYSIS.banner()
+    input:
+        series_nc = sorted(
+            {series_file(m, "historical", mem) for (m, sc, mem) in POINTS}
+            | {series_file(m, sc, mem) for (m, sc, mem) in POINTS}
+        ),
+        region_path = region_path,
+        stage_b_settings = _STAGE_B_STAMP,
+    output:
+        **ANALYSIS_OUTPUTS,
+    params:
+        horizons = future_horizons,
+        water_year_start = water_year_start,
+        reference_window = time_horizon_hist,
+        variable_spec = {k: list(v) for k, v in VARIABLE_SPEC.items()},
+        min_reference = MIN_REFERENCE,
+        windows = ANALYSIS_WINDOWS,
+        table_names = ANALYSIS_TABLE_NAMES,
+        combinations = [
+            {
+                "dataset": c.dataset, "institution": c.institution,
+                "source_id": c.source_id, "scenario": c.scenario,
+                "member": c.member, "status": c.status, "detail": c.detail,
+            }
+            for c in COMBINATIONS
+        ],
+        points = [
+            {
+                "point_key": key, "model": model, "scenario": scenario,
+                "member": member,
+                "series_path_hist": series_file(model, "historical", member),
+                "series_path": series_file(model, scenario, member),
+                "digest_components_hist": series_digest_components(model, "historical", member),
+                "digest_components_fut": series_digest_components(model, scenario, member),
+                "series_key": f"{clim_project}_{model.replace('/', '_')}_{scenario}_{member}",
+                "reference_series_key": f"{clim_project}_{model.replace('/', '_')}_historical_{member}",
+            }
+            for key, (model, scenario, member) in POINT_KEYS.items()
+        ],
+    threads: 1
+    resources:
+        mem_mb = 1024,
+    log:
+        PREPARE_PROJECTION_ANALYSIS.log(),
+    benchmark:
+        PREPARE_PROJECTION_ANALYSIS.benchmark(),
+    script: "blueearth_cst/projections/prepare_projection_analysis.py"
+
 # 2.06  plot_climate_projections — plot projected anomaly time series
 rule plot_climate_projections:
     message: PLOT_CLIMATE_PROJECTIONS.banner()
@@ -1327,6 +1393,7 @@ rule gather_logs:
         (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
         CHANGE_FACTOR_CLOUD_PLOT,
         ANNUAL_PRECIPITATION_PLOT,
+        ANALYSIS_OUTPUTS["analysis_record"],
         # ADR 0003 §8: rule 2.02 is a LEAF here — nothing in WF2 consumes the
         # vector layers yet (§10) — so it is not upstream of the three terminals
         # above the way 2.01 is. Without this edge it would run in parallel
@@ -1350,6 +1417,7 @@ rule gather_benchmarks:
         (clim_project_dir + f"/summary/{clim_project}_change_factors_annual.csv"),
         CHANGE_FACTOR_CLOUD_PLOT,
         ANNUAL_PRECIPITATION_PLOT,
+        ANALYSIS_OUTPUTS["analysis_record"],
         # Same reason as gather_logs above: 2.02 is a leaf, and the benchmark
         # gather has to wait for it or its `_parts/` row misses this run.
         SPATIAL_UNITS.outputs["basins"],

@@ -128,6 +128,8 @@ COVERED: dict[str, list[str]] = {
         f"data/climate/projections/{CP}/scalar/cmip6_INM_INM-CM4-8_ssp245_r1i1p1f1.nc",
         f"data/climate/projections/{CP}/summary/cmip6_change_factors_annual.csv",
         f"data/climate/projections/{CP}/summary/provenance.json",
+        f"data/climate/projections/{CP}/analysis/changes.csv",
+        f"data/climate/projections/{CP}/analysis/analysis_record.json",
         f"data/climate/projections/{CP}/plots/overview/change-factor-cloud.png",
         f"data/climate/projections/{CP}/plots/overview/annual-precipitation.png",
         f"data/climate/projections/{CP}/plots/overview/annual-temperature.png",

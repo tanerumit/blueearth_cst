@@ -794,7 +794,10 @@ STAGE 3 — FIGURES + RECORDS                                          │
     2.07 gather_benchmarks · 2.08 gather_logs ◄───────────────────────
 ```
 
-The region polygon feeds **four** rules — 2.02, 2.03, 2.04 and 2.05 all declare
+Rule 2.05b branches independently from 2.04 into `analysis/*.csv` and `analysis_record.json`.
+Both gather rules wait for its record. It has no dependency on any 2.05 output.
+
+The region polygon feeds **five** rules — 2.02, 2.03, 2.04, 2.05 and 2.05b all declare
 it — because stage B recomputes every expected digest, including the polygon
 fingerprint. 2.06's edge from 2.05 is an **ordering edge only**; it plots the
 per-member series from 2.04 and never opens the change-factor table.
@@ -815,6 +818,7 @@ reachable at all: an undeclared leaf is simply never scheduled.
 | 2.03 | `fetch_cmip6_projections` | Acquires one raw CMIP6 slice. The only remote read. |
 | 2.04 | `reduce_to_basin_averages` | Stage A: one local slice → one monthly series. |
 | 2.05 | `derive_change_factors` | Stage B, one job. WF2's terminal product. |
+| 2.05b | `prepare_projection_analysis` | Independent analysis-window diagnostic tables. |
 | 2.06 | `plot_climate_projections` | The eight projection figures. |
 | 2.07 | `gather_benchmarks` | Merges the timing parts. |
 | 2.08 | `gather_logs` | Merges the log parts. |
@@ -894,6 +898,21 @@ report. Kept as one rule deliberately: the design gives stage B no fan-out.
 `<proj>/plots/overview/change-factor-cloud.png`, plus
 `overview/change-factor-cloud-combined.png` when more than one horizon is
 configured (a single horizon has no cloud travel to show).
+
+#### 2.05b · `prepare_projection_analysis`
+
+**Does.** Computes 30-WY analysis diagnostics from the same declared scalar series as 2.05, asserting
+their identities against the current polygon. Future windows are centred, shifted at acquisition ends,
+and joined with the same member's historical series when necessary. The reference uses the last 30
+complete configured WY, otherwise January WY 1985–2014 or October WY 1984–2013. Each distinct future
+window is computed once. Reductions give each model equal weight; retained year coordinates feed the
+seeded white-noise variability benchmark. Unavailable products carry reasons rather than placeholders.
+
+**Writes.** `<proj>/analysis/*.csv` and `analysis_record.json`: coverage, changes, equal-model summaries,
+family sign agreement, climatology, annual anomalies, variability ratios and final product availability.
+The record distinguishes these analysis windows and the mean-keyed dry rule from the aligned CSVs'
+configured windows and per-statistic dry rule. Seasonal precipitation percentages use rates, a documented
+lab-parity exception; CV uses integrals. Analysis-only float64 promotion preserves the aligned kernels.
 
 #### 2.06 · `plot_climate_projections`
 

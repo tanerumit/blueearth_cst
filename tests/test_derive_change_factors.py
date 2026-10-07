@@ -10,16 +10,85 @@ columns populated only when the point actually resolved.
 import csv
 
 import numpy as np
+import pandas as pd
+import pytest
 import xarray as xr
 
+from blueearth_cst.projections import series_identity as si
 from blueearth_cst.projections.change_factor_table import tidy_rows
 from blueearth_cst.projections.derive_change_factors import (
     COMPOSITION_CSV_COLUMNS,
     COMPOSITION_FIELDS,
     _flagged_months,
     composition_rows,
+    derive_point_datasets,
     write_composition,
 )
+from blueearth_cst.projections.get_change_climate_proj import (
+    get_change_monthly_clim_proj,
+)
+
+
+@pytest.mark.parametrize(
+    "start_month, reference, level, n_years",
+    [("Oct", 10.0, 20.0, 2), ("Jan", 50 / 3, 140 / 3, 3)],
+)
+def test_monthly_factors_use_the_reported_complete_water_years(
+    tmp_path, start_month, reference, level, n_years
+):
+    """Partial October years carry outliers that January must retain."""
+    paths, components = [], []
+    for scenario, first_year, value, edge in [
+        ("historical", 2000, 10.0, 30.0),
+        ("ssp245", 2004, 20.0, 100.0),
+    ]:
+        time = pd.date_range(f"{first_year}-01-01", periods=36, freq="MS")
+        values = np.full(36, value)
+        values[:9] = edge
+        values[-3:] = edge
+        identity = {"scenario": scenario}
+        ds = xr.Dataset({"precip": ("time", values)}, coords={"time": time})
+        ds = ds.expand_dims(
+            scenario=[scenario], member=["r1"], model=["model"], clim_project=["cmip6"]
+        )
+        ds.attrs.update(
+            cst_calendar="noleap",
+            cst_schema_version=si.SCHEMA_VERSION,
+            cst_series_digest=si.series_digest(identity, "region"),
+        )
+        path = tmp_path / f"{scenario}.nc"
+        ds.to_netcdf(path)
+        paths.append(path)
+        components.append(identity)
+    _, monthly, facts = derive_point_datasets(
+        series_path_hist=paths[0],
+        series_path=paths[1],
+        time_tuple_hist=("2000", "2002"),
+        time_tuple_fut=("2004", "2006"),
+        name_horizon="near",
+        name_model="model",
+        name_scenario="ssp245",
+        region_fp="region",
+        digest_components_hist=components[0],
+        digest_components_fut=components[1],
+        stats=["mean", "q_90"],
+        water_year_start=start_month,
+    )
+    assert facts[2] == n_years
+    assert f"q_90[n={n_years}]" in monthly.stats
+    np.testing.assert_allclose(monthly.precip__reference.sel(stats="mean"), reference)
+    np.testing.assert_allclose(monthly.precip__level.sel(stats="mean"), level)
+    np.testing.assert_allclose(
+        monthly.precip.sel(stats="mean"), (level - reference) / reference * 100
+    )
+    if start_month == "Jan":
+        with xr.open_dataset(paths[0]) as hist, xr.open_dataset(paths[1]) as future:
+            legacy = (
+                get_change_monthly_clim_proj(hist, future, stats=["mean", "q_90"])
+                .assign_coords(horizon="near")
+                .expand_dims("horizon")
+            )
+            assert monthly.to_netcdf(engine="scipy") == legacy.to_netcdf(engine="scipy")
 
 
 def test_flagged_months_uses_tidy_model_identity_and_counts_distinct_months():

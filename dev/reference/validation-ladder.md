@@ -54,7 +54,7 @@ full suite covers that tier too; do not rerun fast merely to satisfy a second ga
 
 **A push gates the unpushed delta, not the session.** `origin/main` passed `test-fast` before it was pushed and CI ran on it, so `origin/main..main` is the only untested surface. That is why the push row skips work in two cases. The first is a merge-then-push: `task-land --verify` already ran `test-fast` on the candidate and proved `main` has the same tree. Board-closure commits after it add only exempt paths, so a second run re-tests content already covered: the `8508645b` push differed from its tested candidate `1cb444a9` by one `dev/tasks/` note. The second is a delta of push-exempt paths, where the ruff hook is enough. Both shortcuts assume `origin/main` is green: a red or unread CI run voids them. The exempt list in `AGENTS.md` was drawn from the test tree on 2026-10-05: `dev/scripts/` and `dev/records/` are imported or read by tests, `test_activation_links.py` resolves every link under `dev/reference/`, and `config/templates/` and `docs/notebooks/` are read directly. Re-derive it by grepping `tests/` before widening it. A label-based rule would have been wrong the same day: `74ad4310`, a "conform `dev/`" chore landed after the `8508645b` push, also changed `.github/workflows/ci.yml`, `README.md` and `test_case/project_config_baseline_linux.yml`.
 
-Run `test-full` at batch landing when the combined diff touched `blueearth_cst/shared/` or a `script:` signature, and before a milestone seal. Individual tasks use focused checks and separate commits; do not repeat the full gate per task. Those are the cases where meeting a failure on two platforms at once costs more than the wait.
+Run `test-full` at batch landing when the combined diff changed shared runtime/configuration contracts or a `script:` signature, and before a milestone seal. Individual tasks use focused checks and separate commits; do not repeat the full gate per task. Those are the cases where meeting a failure on two platforms at once costs more than the wait.
 
 Between merges and the next push, a `workflow_contract` regression can sit on local `main` across several branches, so bisect across all of them. Reading the CI run after each push is what bounds that window. `ci.yml` cancels an in-flight run when the same ref is pushed again, so after quick successive pushes the latest run is the one to read; it covers the whole tree.
 
@@ -62,9 +62,65 @@ State gate costs as orders of magnitude, never in seconds. The marker names and 
 
 `.testing-policy.yml` pins `scope: rapid`, and `auto_push: false` keeps the push a deliberate decision.
 
+## Recording gates and verifying landing
+
+Use `dev/scripts/verify_landing.py` instead of writing a task-specific landing verifier. Its `record`
+command executes one explicit gate, captures a fresh log and records the committed tree, Python
+executable/version/platform, lock-file identity and named input-file hashes. Run it on a clean
+candidate after committing executable changes. Evidence and logs belong in project scratch; retain
+only needed evidence in the existing task home before scratch cleanup.
+
+```powershell
+pixi run python dev/scripts/verify_landing.py record --evidence .tmp/scratchpad/gates.json --gate test-fast --log .tmp/scratchpad/fast.log -- pixi run test-fast
+pixi run python dev/scripts/verify_landing.py verify --evidence .tmp/scratchpad/gates.json --require-gate test-fast
+```
+
+Use the verify command as `task-land --verify`; it runs no recorded gate commands. Repeat
+`--require-gate` for every required gate and `--input` during recording for external config/input files
+whose identity matters. A passing `test-full` satisfies a required `test-fast`. Required execution or
+numerical gates remain separate names. Recording another gate must preserve candidate, environment
+and input identities; use a new evidence file after a meaningful change.
+
+The helper rejects failed/skipped required gates, missing or altered logs, changed named inputs,
+changed recorded environment and unclassified tree differences. It measures Python and lock-file
+identity, not every installed binary, upstream service or dataset: name additional input/version
+files with `--input` and invalidate evidence if unrecorded dependencies change. Hashing a catalog file
+does not hash the data it points to. Select required gates from the live ladder before verification;
+the helper does not infer blast radius or schedule coverage.
+
+Only after reviewing each changed path may `--allow-path exact/path.md` permit an intervening
+Markdown change. Do not allow test-read documentation without rechecking the affected coverage.
+Code changes require fresh evidence. No wildcard exclusions are supported.
+
+A zero exit records command success, not scientific acceptance or proof that every required test ran.
+Inspect the log for required skips and use `--skipped` when a required check did not execute; never
+reuse that gate as passed. Keep visual acceptance and numerical difference classification in the task
+record. Human attestation remains necessary for those claims.
+
+## Choosing execution coverage
+
+Use one final software gate: fast normally, full when the live ladder escalates it. For Python edits,
+run scoped lint/format checks before each commit and repository-wide lint/format once before final
+batch verification. A later Python edit invalidates the relevant final check; a commit or gate label
+alone does not. Focused tests remain the development loop.
+
+All-five execution is required for shared runtime/configuration, orchestration, cross-workflow
+interfaces, releases and milestone seals. Classify by behavior and callers, not merely directory:
+shared plotting changes that affect only terminal figures remain render/inspection work. A shared
+runtime helper or configuration change affecting several workflows takes the all-five gate.
+
+For behavior confined to one workflow, search callers and output consumers, then execute that workflow
+and the consumers affected by the changed contract with rapid inputs. State the coverage and omitted
+workflows in the task evidence. Preserve owned wrappers: WF3 uses a WF3-only project configuration with
+`run_workflows.py`; WF4 uses `simulate_system.py` or the all-workflow runner. For figure-only changes,
+render and inspect affected figures. Changes to calculations still require numerical acceptance.
+
+This reduces routine integration coverage; the all-five release and milestone gates retain the whole
+pipeline check. Escalate a confined change when focused verification exposes wider breakage.
+
 ## The end-to-end run (`test-e2e`)
 
-`pixi run test-e2e` is the only check that runs the workflows for real: all five,
+`pixi run test-e2e` is the automated all-five execution check:
 through `scripts/run_workflows.py`, on the rapid config, in a fresh temporary
 project root. It needs what CI cannot provide (the data mirror, juliaup Julia,
 `weathergenr`, network for WF2), so it is a local gate, and the ladder in

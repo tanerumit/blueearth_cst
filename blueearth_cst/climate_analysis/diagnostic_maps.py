@@ -10,6 +10,7 @@ import pandas as pd
 import xarray as xr
 from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap
 from matplotlib.patheffects import Normal, Stroke
+from matplotlib.ticker import FuncFormatter
 
 from blueearth_cst.climate_analysis import diagnostics as dg
 from blueearth_cst.climate_analysis.diagnostic_figures import STYLE
@@ -134,6 +135,8 @@ def draw_map(field, variable, source, overlays, limits, counts):
             cmap=cmap,
             norm=BoundaryNorm(levels, cmap.N),
             shading="flat",
+            edgecolors=(0.25, 0.25, 0.25, 0.18),
+            linewidth=0.25,
         )
         layers = {
             key: json.loads(Path(path).read_text(encoding="utf-8"))["features"]
@@ -205,8 +208,22 @@ def draw_map(field, variable, source, overlays, limits, counts):
             ax.set_ylim(lo[1] - pad[1], hi[1] + pad[1])
         lat = float(field.latitude.mean())
         ax.set_aspect(1 / math.cos(math.radians(lat)))
-        ax.set_xlabel("Longitude (°E/°W)")
-        ax.set_ylabel("Latitude (°N/°S)")
+        ax.set_xlabel("Longitude")
+        ax.set_ylabel("Latitude")
+        ax.xaxis.set_major_formatter(
+            FuncFormatter(
+                lambda value, _: (
+                    f"{abs(value):g}°{'W' if value < 0 else 'E' if value > 0 else ''}"
+                )
+            )
+        )
+        ax.yaxis.set_major_formatter(
+            FuncFormatter(
+                lambda value, _: (
+                    f"{abs(value):g}°{'S' if value < 0 else 'N' if value > 0 else ''}"
+                )
+            )
+        )
         cb = fig.colorbar(
             mesh, ax=ax, shrink=0.48, pad=0.03, anchor=(0, 0), ticks=levels
         )

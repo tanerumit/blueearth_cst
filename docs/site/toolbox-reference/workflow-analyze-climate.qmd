@@ -100,6 +100,12 @@ subbasin, river and location overlays; they cover precipitation and genuine temp
 plus PET where available. Temporal figures cover coverage, seasonal timing, anomalies,
 SPI and drought events, extremes, dry spells, persistence, trends and fit/sensitivity checks.
 
+Spatial PNGs trim unused canvas space and retain a 2 mm white border around the map,
+axes, colourbar and annotations. Coordinate ticks include degrees and hemispheres;
+the axis titles are `Longitude` and `Latitude`. Map export dimensions follow the visible
+content rather than the fixed canvas used for temporal charts.
+Faint raster-cell outlines follow each dataset's native grid boundaries.
+
 PNG is the only figure format. Names follow
 `<dataset>_<variable>_<context>_<spatial_scope>.png`, for example
 `comparison_precip_annual_rx1day_ts_basin_avg.png`.

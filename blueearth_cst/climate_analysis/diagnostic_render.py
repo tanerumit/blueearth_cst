@@ -217,12 +217,26 @@ def render(
             if availability != "available":
                 text += f" Availability: {availability}."
             Path(filename).parent.mkdir(parents=True, exist_ok=True)
-            fig.savefig(filename, dpi=600, facecolor="white")
+            # Fixed-aspect maps can leave a wide unused strip on the canvas.
+            # Trim to all visible artists, retaining a 2 mm border on every side.
+            map_export = (
+                {"bbox_inches": "tight", "pad_inches": 2 / 25.4}
+                if form.startswith("map-")
+                else {}
+            )
+            fig.savefig(filename, dpi=600, facecolor="white", **map_export)
             captioned = paths["render"].get(f"captioned_{form}")
             if captioned:
                 Path(captioned).parent.mkdir(parents=True, exist_ok=True)
+                if map_export:
+                    # Wrap captions to the visible map width, not its unused canvas.
+                    fig.canvas.draw()
+                    map_bounds = fig.get_tightbbox(fig.canvas.get_renderer())
+                    fig.set_size_inches(
+                        map_bounds.width + 4 / 25.4, fig.get_figheight()
+                    )
                 artists.add_caption(fig, text)
-                fig.savefig(captioned, dpi=600, facecolor="white")
+                fig.savefig(captioned, dpi=600, facecolor="white", **map_export)
             plt.close(fig)
             relative = str(Path(filename).relative_to(root)).replace("\\", "/")
             contributing = (

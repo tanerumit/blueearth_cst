@@ -2,12 +2,15 @@
 title: WF2 climate projections analysis and uncertainty ideas
 lifecycle: temporary
 created: 2026-10-02
-updated: 2026-10-02
+updated: 2026-10-07
 ---
 
 # WF2 climate projections analysis and uncertainty ideas
 
 Research note for [Scope conceptual workflow improvements](../t2610022259-conceptual-workflow-improvements.md), prepared 2026-10-02. Companion: [WF0 climate analysis ideas](wf0-climate-analysis-ideas.md).
+
+Expanded methods, published figure examples, communication guidance and references through 2026:
+[Regional climate projections research guide](wf2-projections-research-guide.md), prepared 2026-10-07.
 
 Status: candidate scientific methods and visualizations, not an approved design or implementation assignment. Recommendations below are a synthesis of the cited literature and repository inspection. No projection run or numerical evaluation was performed. Promote retained conclusions before closing the parent task.
 

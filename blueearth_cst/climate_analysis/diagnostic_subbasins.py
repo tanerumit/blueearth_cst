@@ -94,7 +94,7 @@ def render_subbasins(sm, settings, sources):
         view = artists.View(
             sources,
             {
-                s: "CHIRPS v2.0" if s in {"chirps", "chirps_global"} else s.upper()
+                s: "CHIRPS" if s in {"chirps", "chirps_global"} else s.upper()
                 for s in sources
             },
             artists.source_styles(sources),

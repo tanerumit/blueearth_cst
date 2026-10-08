@@ -526,6 +526,11 @@ def inside_legend(
             path = line.get_transform().transform_path(line.get_path())
             if path.intersects_bbox(box, filled=False):
                 overlap += points.shape[0]
+        for collection in ax.collections:
+            offsets = collection.get_offsets()
+            if offsets.size:
+                positions = collection.get_offset_transform().transform(offsets)
+                overlap += sum(box.contains(x, y) for x, y in positions) * points.shape[0]
         scores.append((overlap, location))
     legend.set_loc(min(scores, key=lambda item: item[0])[1])
 
@@ -1160,17 +1165,19 @@ def pt_scatter(v: View) -> Figure | str:
         max(float(np.nanmax(np.abs(v.results[s]["pt"]["t_anom"]))) for s in have) * 1.08
     )
     for i, (ax, season) in enumerate(zip(axs.flat, ("DJF", "MAM", "JJA", "SON"))):
+        ax.set_box_aspect(1)
         for s in have:
             d = v.results[s]["pt"]
             d = d[d["season"] == season]
             ax.scatter(
                 d["t_anom"],
                 d["p_anom_pct"],
-                s=S_SCATTER,
+                s=S_SCATTER * 2.25,
+                alpha=0.7,
                 marker=v.marker(s),
                 color=v.color(s),
-                edgecolor="white",
-                linewidth=0.5,
+                edgecolor=to_hex(0.65 * np.array(to_rgb(v.color(s)))),
+                linewidth=0.7,
                 zorder=3,
             )
         ax.axhline(0, color=MUTED, lw=LW_REF)
@@ -1178,11 +1185,13 @@ def pt_scatter(v: View) -> Figure | str:
         ax.set_xlim(-xlim, xlim)
         ax.set_title(f"{chr(97 + i)}) {season}")
         ax.grid()
+        ax.tick_params(axis="both", length=3)
     for ax in axs[-1]:
         ax.set_xlabel(f"Temperature anomaly ({UNITS['degc']})")
     fig.supylabel("Precipitation anomaly (%)", fontsize=FS_LABEL, color=INK)
-    top_legend(
-        fig, identity_row(v, have, line=False, label=lambda s: f"P: {v.labels[s]}")
+    inside_legend(
+        fig, axs[0, 0],
+        identity_row(v, have, line=False, label=lambda s: f"Precip.: {v.labels[s]}"),
     )
     return fig
 

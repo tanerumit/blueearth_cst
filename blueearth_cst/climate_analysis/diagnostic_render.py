@@ -118,7 +118,7 @@ def render(
     view = artists.View(
         sources=sources,
         labels={
-            s: "CHIRPS v2.0" if s in {"chirps", "chirps_global"} else s.upper()
+            s: "CHIRPS" if s in {"chirps", "chirps_global"} else s.upper()
             for s in sources
         },
         styles=artists.source_styles(sources),

@@ -6,6 +6,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
+from datetime import date
 from matplotlib.lines import Line2D
 
 from blueearth_cst.climate_analysis.diagnostic_figures import (
@@ -209,24 +210,52 @@ def seasonal_figure(climatology, changes, summary, *, variable, scenarios=None):
     return fig
 
 
-def ipcc_trajectory(envelope, *, variable, scenarios=None):
-    """Supplied annual equal-model means and model ranges, unsmoothed."""
+def ipcc_trajectory(envelope, *, variable, scenarios=None, members=None, windows=(), current_year=None):
+    """Prepared annual model medians and ranges, with distinct historical traces."""
     data = envelope.loc[envelope.variable == variable]
     fig, axes = new_fig(H_SINGLE, width_mm=W_MID)
     ax = axes[0, 0]
     scen = _scenarios(data, scenarios)
+    handles = []
+    if members is not None:
+        traces = members.loc[members.variable == variable]
+        historical = traces.loc[traces.year <= 2014].drop_duplicates(["model", "member", "year"])
+        historical_models = historical.groupby(["model", "year"]).anomaly.mean()
+        historical_range = historical_models.groupby("year").agg(["median", "min", "max"])
+        years = np.arange(int(data.year.min()), 2015)
+        historical_range = historical_range.reindex(years)
+        ax.fill_between(years, historical_range["min"], historical_range["max"], color=MUTED, alpha=0.12, lw=0)
+        ax.plot(years, historical_range["median"], color=INK, lw=1.8)
+        handles.append(Line2D([], [], color=INK, lw=1.4, label="Historical"))
+        for _, member in historical.groupby(["model", "member"]):
+            member = member.set_index("year").sort_index()
+            years = np.arange(member.index.min(), member.index.max() + 1)
+            ax.plot(years, member.reindex(years).anomaly, color=MUTED, lw=0.5, alpha=0.13, zorder=0.5)
+        for (scenario, _, _), member in traces.loc[traces.year >= 2014].groupby(["scenario", "model", "member"]):
+            member = member.set_index("year").sort_index()
+            years = np.arange(member.index.min(), member.index.max() + 1)
+            ax.plot(years, member.reindex(years).anomaly, color=_color(scenario), lw=0.5, alpha=0.13, zorder=0.5)
     for s in scen:
         sub = data.loc[data.scenario == s].sort_values("year")
+        if members is not None:
+            sub = sub.loc[sub.year >= 2014]
         years = np.arange(sub.year.min(), sub.year.max() + 1)
         sub = sub.set_index("year").reindex(years)
-        ax.plot(years, sub["mean"], color=_color(s))
+        ax.plot(years, sub["median"], color=_color(s), lw=1.8)
+        handles.append(Line2D([], [], color=_color(s), lw=1.4, label=_label(s)))
         ax.fill_between(
             years,
             sub["min"].astype(float),
             sub["max"].astype(float),
             color=_color(s),
-            alpha=0.15,
+            alpha=0.12,
+            lw=0,
         )
+    for window in windows:
+        a, b = window["used"]
+        ax.axvspan(a - 0.5, b + 0.5, color="#d9d6d4", lw=0, zorder=0)
+    if current_year is not None:
+        ax.axvline(current_year, color=INK, lw=LW_REF, ls="--")
     ax.axhline(0, color=MUTED, lw=LW_REF)
     ax.set(
         xlabel="Year",
@@ -241,7 +270,7 @@ def ipcc_trajectory(envelope, *, variable, scenarios=None):
     ygrid(ax)
     inside_legend(
         fig, ax,
-        handles=[Line2D([], [], color=_color(s), label=_label(s)) for s in scen],
+        handles=handles,
         bands=ax.collections, lines=ax.lines,
     )
     return fig
@@ -272,7 +301,7 @@ def annual_overview(
             axes[2 * (j // ncols) + r, j % ncols].set_visible(False)
     hist = data.loc[data.year <= 2014].drop_duplicates(["model", "member", "year"])
     future = data.loc[data.year >= 2014]
-    historical_alpha = max(0.06, min(0.3, 0.6 / np.sqrt(max(1, hist.groupby(["model", "member"]).ngroups))))
+    historical_alpha = 0.13
     labels = (
         "mm yr⁻¹"
         if variable == "precip"
@@ -299,7 +328,7 @@ def annual_overview(
                     gid="historical-median",
                 )
             sub = future.loc[future.scenario == s]
-            member_alpha = max(0.05, min(0.25, 0.5 / np.sqrt(max(1, sub.groupby(["model", "member"]).ngroups))))
+            member_alpha = 0.13
             for _, member in sub.groupby(["model", "member"]):
                 member = member.set_index("year").sort_index()
                 years = np.arange(member.index.min(), member.index.max() + 1)
@@ -308,14 +337,14 @@ def annual_overview(
                     member.reindex(years)[column],
                     color=_color(s),
                     alpha=member_alpha,
-                    lw=0.3,
+                    lw=0.25,
                 )
             env = sub.groupby("year")[column].agg(["min", "max", "median"])
             if not env.empty:
                 years = np.arange(env.index.min(), env.index.max() + 1)
                 env = env.reindex(years)
                 ax.fill_between(
-                    years, env["min"], env["max"], color=_color(s), alpha=0.15
+                    years, env["min"], env["max"], color=_color(s), alpha=0.25, lw=0
                 )
                 ax.plot(years, env["median"], color=_color(s), lw=1.2)
             ax.axvline(2014.5, color=MUTED, lw=LW_REF, ls="--", gid="scenario-handover")
@@ -324,14 +353,14 @@ def annual_overview(
                 ax.axvspan(
                     a - 0.5,
                     b + 0.5,
-                    color=".9",
+                    color="#d9d6d4",
                     zorder=0,
                     gid=f"window:{window['window_id']}",
                 )
             ax.text(
                 0.0,
                 1.02,
-                f"{chr(97 + r * len(scen) + j)}) {_label(s)} · {'Anomaly' if r else 'Annual'}",
+                f"{chr(97 + 2 * (j // ncols) * ncols + r * ncols + j % ncols)}) {_label(s)} · {'Anomaly' if r else 'Annual'}",
                 transform=ax.transAxes,
                 ha="left",
                 va="bottom",
@@ -673,7 +702,8 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
         variable = "temp" if "temperature" in filename else "precip"
         if filename.startswith("trajectory-"):
             return ipcc_trajectory(
-                table("trajectory_range"), variable=variable, scenarios=scenarios
+                table("trajectory_range"), variable=variable, scenarios=scenarios,
+                members=table("member_anomalies"), windows=record["windows"], current_year=date.today().year,
             )
         if filename.startswith("annual-"):
             return annual_overview(

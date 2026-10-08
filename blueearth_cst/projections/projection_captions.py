@@ -63,7 +63,12 @@ def caption(filename, record, window_id="", counts=None):
         )
     if filename.startswith("trajectory-"):
         text.append(
-            f"Range across {plural(models, 'model')} of annual anomalies (each the mean of its members); includes year-to-year variability, so it is wider than the spread of the forced response. Each member uses its own analysis-reference mean."
+            f"Bold lines show the median across {plural(models, 'model')}, with members averaged first; "
+            "ribbons span the model range. Black denotes the historical run and scenario colors the future "
+            "runs; faint traces are individual members. Annual values are unsmoothed, so the range includes "
+            "year-to-year variability and is not a confidence interval. Each member uses its own "
+            f"{record['reference'][0]}–{record['reference'][1]} reference mean. Pale shading marks the future "
+            "analysis windows; the dashed line marks the current year."
         )
     if filename.startswith("annual-"):
         text.append(

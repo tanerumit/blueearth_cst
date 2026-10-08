@@ -63,6 +63,7 @@ the underlying calculation or statistical interpretation.
 | Map coordinates | Axis titles include degrees; tick labels are numeric, signed, without N/S/E/W. |
 | Annual series | Trend line and slope annotation on every applicable series; y-axis shows units only. |
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |
+| WF2 trajectories | Model median and range; distinct historical trace; stacked inside scenario legend. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
 | Cumulative timing | Bottom month axis; no top-axis title; y-axis `Cumulative (%)`, numeric ticks. |
 | Timing boxes | Enlarged unfilled horizontal boxes, thin outlines, no mean dot. |
@@ -125,5 +126,6 @@ in this visual review.
 - WF0 rendering and captions: `diagnostic_render.py` and `diagnostic_captions.py` in the same package.
 - WF2 artists: `blueearth_cst/projections/projection_suite_figures.py`.
 
-These defaults record approved visual intent. WF2 has not yet undergone this review; inspect its figures
-before assuming that every default is already implemented there.
+WF2 review uses the newer artists and retained tables in the `wf0-lab` ensemble outputs as its visual
+baseline. Annual overviews and trajectories have been reviewed; inspect other forms before assuming that
+every default is already implemented there. Trajectories use the prepared model median, not the model mean.

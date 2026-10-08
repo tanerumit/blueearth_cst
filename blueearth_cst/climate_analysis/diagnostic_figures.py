@@ -456,11 +456,20 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
     ax = axs[0, 0]
     x = np.arange(12)
     top = 0.0
+    bands = []
+    lines = []
     for s in have:
         c = v.results[s][key]
-        ax.fill_between(x, c["p10"], c["p90"], color=v.color(s), alpha=BAND_ALPHA, lw=0)
-        ax.plot(
-            x, c["mean"], color=v.color(s), lw=LW_MEAN, marker=v.marker(s), ms=MS_LINE
+        bands.append(
+            ax.fill_between(
+                x, c["p10"], c["p90"], color=v.color(s), alpha=BAND_ALPHA, lw=0
+            )
+        )
+        lines.extend(
+            ax.plot(
+                x, c["mean"], color=v.color(s), lw=LW_MEAN,
+                marker=v.marker(s), ms=MS_LINE,
+            )
         )
         top = max(top, float(np.nanmax(c["p90"])))
     month_axis(ax, v.m0)
@@ -472,19 +481,54 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
     ygrid(ax)
     spread = Patch(facecolor=MUTED, alpha=BAND_ALPHA, edgecolor="none")
     spread.set_label("10–90th percentile")
-    mean = Line2D([], [], color=MUTED, lw=LW_MEAN, marker="o", ms=MS_LINE, label="Mean")
-    top_legend(fig, identity_row(v, have), [mean, spread] if key == "tclim" else [])
+    legend = ax.legend(
+        handles=[*id_handles(v, have), spread],
+        loc="upper right",
+        ncols=1,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
+        borderpad=0.6,
+        labelspacing=0.5,
+        handletextpad=0.5,
+    )
+    _place_climatology_legend(fig, legend, bands, lines)
     return fig
 
 
+def _place_climatology_legend(fig: Figure, legend, bands: list, lines: list) -> None:
+    """Choose the top corner with least overlap with bands and mean lines."""
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    scores = []
+    for location in ("upper right", "upper left"):
+        legend.set_loc(location)
+        box = legend.get_window_extent(renderer)
+        xx, yy = np.meshgrid(
+            np.linspace(box.x0, box.x1, 30), np.linspace(box.y0, box.y1, 20)
+        )
+        points = np.column_stack((xx.ravel(), yy.ravel()))
+        overlap = 0
+        for band in bands:
+            for path in band.get_paths():
+                overlap += path.contains_points(points, band.get_transform()).sum()
+        for line in lines:
+            path = line.get_transform().transform_path(line.get_path())
+            if path.intersects_bbox(box, filled=False):
+                overlap += points.shape[0]
+        scores.append((overlap, location))
+    legend.set_loc(min(scores, key=lambda item: item[0])[1])
+
+
 def seasonal(v: View) -> Figure:
-    return _climatology(v, "clim", f"Precipitation ({UNITS['mm_month']})", zero=True)
+    return _climatology(v, "clim", UNITS["mm_month"], zero=True)
 
 
 def temperature(v: View) -> Figure | str:
     if not any(v.results[s]["tclim"] is not None for s in v.sources):
         return notice("No temperature variable is declared for the selected source(s).")
-    return _climatology(v, "tclim", f"Temperature ({UNITS['degc']})", zero=False)
+    return _climatology(v, "tclim", UNITS["degc"], zero=False)
 
 
 def timing(v: View) -> Figure:

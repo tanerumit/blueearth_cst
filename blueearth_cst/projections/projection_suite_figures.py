@@ -21,6 +21,7 @@ from blueearth_cst.climate_analysis.diagnostic_figures import (
     STYLE,
     W_FULL,
     W_MID,
+    inside_legend,
     new_fig,
     year_ticks,
     ygrid,
@@ -228,11 +229,21 @@ def ipcc_trajectory(envelope, *, variable, scenarios=None):
         )
     ax.axhline(0, color=MUTED, lw=LW_REF)
     ax.set(
-        xlabel="Water-year label",
-        ylabel="Anomaly (%)" if variable == "precip" else "Anomaly (°C)",
+        xlabel="Year",
+        ylabel="%" if variable == "precip" else "°C",
     )
+    year_ticks(ax, np.arange(int(data.year.min()), int(data.year.max()) + 1))
+    if data.year.max() - data.year.min() > 100:
+        ax.set_xticks(np.arange(int(data.year.min()) // 20 * 20 + 20, int(data.year.max()) + 1, 20))
+        ax.set_xticks(np.arange(int(data.year.min()) // 5 * 5, int(data.year.max()) + 1, 5), minor=True)
+        ax.set_xlim(data.year.min() - 0.5, data.year.max() + 0.5)
+    ax.tick_params(axis="y", length=3)
     ygrid(ax)
-    _legend(fig, scen)
+    inside_legend(
+        fig, ax,
+        handles=[Line2D([], [], color=_color(s), label=_label(s)) for s in scen],
+        bands=ax.collections, lines=ax.lines,
+    )
     return fig
 
 
@@ -332,6 +343,8 @@ def annual_overview(
             year_ticks(ax, np.arange(int(data.year.min()), int(data.year.max()) + 1))
             if data.year.max() - data.year.min() > 100:
                 ax.set_xticks(np.arange(int(data.year.min()) // 20 * 20 + 20, int(data.year.max()) + 1, 20))
+                ax.set_xticks(np.arange(int(data.year.min()) // 5 * 5, int(data.year.max()) + 1, 5), minor=True)
+                ax.set_xlim(data.year.min() - 0.5, data.year.max() + 0.5)
             ax.tick_params(axis="y", length=3)
             ax.tick_params(axis="x", labelbottom=bool(r))
             if j % ncols == 0:

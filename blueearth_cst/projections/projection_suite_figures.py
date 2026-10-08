@@ -784,7 +784,9 @@ def agreement_matrix(agreement, scenarios=None):
     positive = ("#eef3f8", "#c6d6e8", "#8fb0d3", "#3d6fa5")
     negative = ("#f8eeee", "#ecc9c9", "#d98f8f", "#a8403f")
     fig, axes = new_fig(
-        34 + 4.2 * len(periods), ncols=2, width_mm=20 + 2 * (13 * len(scen) + 5)
+        34 + 4.2 * len(periods),
+        ncols=2,
+        width_mm=max(90, 20 + 2 * (13 * len(scen) + 5)),
     )
     ys = [
         i + (0.45 if i and periods[0] == "annual" else 0) for i in range(len(periods))

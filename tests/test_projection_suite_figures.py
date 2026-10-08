@@ -136,6 +136,12 @@ def test_each_artist_renders_with_units_and_without_cloud_labels(suite):
         )
         fig.canvas.draw()
         assert all(not ax.get_title(loc="center") for ax in fig.axes)
+        if (
+            row["filename"]
+            == "cmip6_precip_temp_annual_monthly_sign_agreement_basin_avg.png"
+        ):
+            legend = fig.legends[0].get_window_extent(fig.canvas.get_renderer())
+            assert legend.x0 >= 0 and legend.x1 <= fig.bbox.width
         if row["filename"] == "cmip6_precip_temp_annual_change_cloud_basin_avg.png":
             assert all(not ax.texts for ax in fig.axes)
             assert fig.axes[0].get_box_aspect() == 1

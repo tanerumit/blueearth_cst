@@ -90,6 +90,12 @@ horizontal month labels, reference-period axis titles, capped ranges, outline IQ
 bars. Review climatology and monthly changes as separate groups in the HTML page.
 
 WF2 interannual variability shows temperature SD, precipitation SD and precipitation CV in separate figures.
+The annual member-ratio comparison shows all three metrics together. Its boxes, medians and capped
+ranges summarize model ratios after geometric averaging of members within each model, with equal model
+weight. Faint points retain individual members; their density does not set the weight of the summary.
+Captions distinguish descriptive model spread from confidence intervals and note member dependence.
+Begin each new plot-group review with scientific, methodological and publication-readability suggestions
+before applying changes; distinguish visual revisions from changes to calculations.
 Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
 Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
 them or significance fills in this figure.

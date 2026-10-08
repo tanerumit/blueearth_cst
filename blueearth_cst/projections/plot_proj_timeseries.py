@@ -98,7 +98,7 @@ def figure_counts(filename, tables, window_id=""):
             data.period.eq("annual")
             & (
                 (data.variable.eq("temp") & data.statistic.eq("std_detrended"))
-                | (data.variable.eq("precip") & data.statistic.eq("cv_detrended"))
+                | (data.variable.eq("precip") & data.statistic.isin(["std_detrended", "cv_detrended"]))
             )
         ]
     column = (

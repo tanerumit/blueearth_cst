@@ -436,83 +436,58 @@ def ratio_strip(models, *, variable, statistic, bands=(), summary=None, scenario
 
 
 def pooled_ratio_figure(members, summary, scenarios=None):
-    """Eligible annual member ratios and prepared equal-model log quantiles."""
-    fig, axes = new_fig(H_SIDE2, ncols=2, width_mm=W_FULL)
-    data = members.loc[members.period == "annual"]
+    """Member points with prepared geometric-member, equal-model summaries."""
+    metrics = (("temp", "std_detrended", "Temp. SD"),
+               ("precip", "std_detrended", "Precip. SD"),
+               ("precip", "cv_detrended", "Precip. CV"))
+    data = members.loc[(members.period == "annual") & np.isfinite(members.ratio)]
+    if "variability_eligible" in data:
+        data = data.loc[data.variability_eligible]
     scen = _scenarios(data, scenarios)
-    for ax, (variable, statistic) in zip(
-        axes.flat, (("temp", "std_detrended"), ("precip", "cv_detrended")), strict=True
-    ):
+    fig, axes = new_fig(H_SINGLE, ncols=3, width_mm=W_FULL, sharey=True)
+    shown = data.loc[
+        ((data.variable == "temp") & (data.statistic == "std_detrended"))
+        | ((data.variable == "precip") & data.statistic.isin(["std_detrended", "cv_detrended"]))
+    ]
+    values = np.r_[1.0, shown.ratio.to_numpy(float)]
+    low, high = values.min(), values.max()
+    pad = .06 * (high - low or 1)
+    for i, (ax, (variable, statistic, title)) in enumerate(zip(axes.flat, metrics, strict=True)):
+        ax.set_title(f"{chr(97+i)}) {title}", loc="left")
+        ax.set_ylim(low-pad, high+pad)
         ax.axhline(1, color=MUTED, lw=LW_REF)
-        for j, s in enumerate(scen):
-            sub = data.loc[
-                (data.variable == variable)
-                & (data.statistic == statistic)
-                & (data.scenario == s)
-                & data.variability_eligible
-                & data.ratio.gt(0)
-            ]
-            for offset, (_, row) in zip(
-                np.linspace(-0.16, 0.16, len(sub)), sub.iterrows(), strict=True
-            ):
-                outside = row.get("null_status") == "ok" and (
-                    row.ratio < row.get("null_lo", np.nan)
-                    or row.ratio > row.get("null_hi", np.nan)
-                )
-                if row.get("null_status") == "ok":
-                    ax.plot(
-                        [j + offset] * 2,
-                        [row.null_lo, row.null_hi],
-                        color=_color(s),
-                        alpha=0.2,
-                        lw=LW_RANGE,
-                    )
-                ax.scatter(
-                    j + offset,
-                    row.ratio,
-                    s=12,
-                    edgecolor=_color(s),
-                    facecolor=_color(s) if outside else "white",
-                    alpha=0.65,
-                )
-            sums = summary.loc[
-                (summary.period == "annual")
-                & (summary.variable == variable)
-                & (summary.statistic == statistic)
-                & (summary.scenario == s)
-            ]
-            if not sums.empty:
-                row = sums.iloc[0]
-                ax.plot(
-                    [j + 0.24] * 2,
-                    [row["min"], row["max"]],
-                    color=_color(s),
-                    lw=LW_RANGE,
-                )
-                if row.iqr_shown:
-                    ax.plot(
-                        [j + 0.24] * 2, [row.q25, row.q75], color=_color(s), lw=LW_IQR
-                    )
-                ax.plot([j + 0.18, j + 0.30], [row["median"]] * 2, color=INK)
-        ax.set(
-            xlabel="Temperature SD" if variable == "temp" else "Precipitation CV",
-            ylabel="Variability ratio (log scale)",
-            yscale="log",
-        )
-        ax.set_xticks(
-            range(len(scen)), [s.replace("ssp", "") for s in scen], rotation=45
-        )
+        ax.tick_params(axis="both", length=3)
         ygrid(ax)
-        ax.set_xlim(-0.5, len(scen) - 0.5)
-    _ratio_limits(
-        fig.axes,
-        [
-            *data.ratio,
-            *(data.null_lo if "null_lo" in data else []),
-            *(data.null_hi if "null_hi" in data else []),
-        ],
-    )
-    _legend(fig, scen)
+        for j, scenario in enumerate(scen):
+            color = _color(scenario)
+            vals = np.sort(data.loc[
+                (data.variable == variable) & (data.statistic == statistic)
+                & (data.scenario == scenario), "ratio"].to_numpy(float))
+            rng = np.random.default_rng(zlib.crc32(f"pooled:{variable}:{statistic}:{scenario}".encode()))
+            jitter = rng.choice([-1., 1.], len(vals)) * rng.uniform(.09, .2, len(vals))
+            ax.scatter(j+jitter, vals, s=10, color=tuple(.65*c for c in to_rgb(color)),
+                       edgecolor="white", linewidth=.4, alpha=.4, zorder=5)
+            rows = summary.loc[(summary.period == "annual") & (summary.variable == variable)
+                               & (summary.statistic == statistic) & (summary.scenario == scenario)]
+            if rows.empty:
+                continue
+            row = rows.iloc[0]
+            ax.plot([j, j], [row["min"], row["max"]], color=color, lw=LW_RANGE, zorder=2)
+            for end in (row["min"], row["max"]):
+                ax.plot([j-.07, j+.07], [end, end], color=color, lw=LW_RANGE,
+                        solid_capstyle="butt", zorder=2)
+            if row.iqr_shown:
+                ax.add_patch(Rectangle((j-.25, row.q25), .5, row.q75-row.q25,
+                                       facecolor="white", edgecolor=color, lw=.9, zorder=3))
+            ax.plot([j-.25, j+.25], [row["median"]]*2, color=color, lw=1.5, zorder=4)
+        ax.set_xticks(range(len(scen)), [""]*len(scen))
+        ax.set_xlim(-.6, len(scen)-.4)
+    axes.flat[0].set_ylabel("Future / reference")
+    legend = fig.legend(handles=[Line2D([], [], color=_color(s), label=_label(s)) for s in scen],
+                        loc="upper right", bbox_to_anchor=(.98, .99), ncols=max(1, len(scen)),
+                        frameon=False, borderaxespad=0)
+    legend.set_in_layout(False)
+    fig.get_layout_engine().set(rect=(0, 0, 1, .94))
     return fig
 
 
@@ -721,7 +696,10 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
         if filename == "variability-member-ratios.png":
             return pooled_ratio_figure(
                 table("variability_member_ratios"),
-                table("variability_summary"),
+                pd.DataFrame([
+                    row for row in record["variability_model_summary"]
+                    if row["window_id"] == window_id
+                ]),
                 scenarios,
             )
         if filename == "sign-agreement.png":
@@ -742,3 +720,4 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 reference=next((w["reference"] for w in record["windows"] if w["window_id"] == window_id), record["reference"]),
             )
     raise ValueError(f"unknown suite product: {filename}")
+

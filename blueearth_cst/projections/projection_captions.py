@@ -19,6 +19,23 @@ def _mask(years):
 def caption(filename, record, window_id="", counts=None):
     """State windows, weighting, benchmark assumptions and exclusions explicitly."""
     counts = counts or {}
+    if filename == "variability-member-ratios.png":
+        window = next(w for w in record["windows"] if w["window_id"] == window_id)
+        return (
+            f"Annual interannual variability ratios for {window['used'][0]}–{window['used'][1]} "
+            f"relative to {window['reference'][0]}–{window['reference'][1]}: a) temperature SD, "
+            "b) precipitation SD, and c) precipitation CV. Members are detrended separately within "
+            "each window. Faint points show individual members; capped lines span the model range, "
+            "outline boxes show the model interquartile range where at least 10 models contribute, "
+            "and thick bars show the model median. Member ratios are averaged geometrically within "
+            "each model before summarizing across equally weighted models. Members from one model "
+            "are dependent; model spread is descriptive and is not a confidence interval. A ratio "
+            "of 1 indicates no change. Precipitation SD uses annual mean daily rates; CV uses "
+            "detrended SD of annual totals divided by their original mean. These aggregations can "
+            "differ when year lengths vary. Dry reference or future means are excluded from CV. "
+            f"Excluded degenerate ratios: {counts.get('n_excluded', 0)}; "
+            f"zero-future ratios: {counts.get('n_zero_future', 0)}."
+        )
     models = counts.get("n_models", len(record.get("models", [])))
     text = [f"CMIP6 projections: {filename.removesuffix('.png').replace('-', ' ')}."]
     if filename.startswith(("seasonal-cycle-", "monthly-change-")):

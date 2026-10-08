@@ -4,9 +4,10 @@ from blueearth_cst.climate_analysis.diagnostic_figures import View
 
 DESCRIPTIONS = {
     "coverage": (
-        "Monthly data coverage. Each cell is a reporting-year month: source colour is complete, "
-        "a lighter tint has tolerated gaps, and gray is missing or unusable. Annual diagnostics use "
-        "only years meeting the completeness rule."
+        "Monthly data coverage by dataset. Each timeline cell represents one month in reporting-year "
+        "order. Pale cells have complete records, darker cells have usable totals with gaps, and gray "
+        "cells are missing or unusable. Annual diagnostics use years meeting the specified data "
+        "completeness threshold."
     ),
     "seasonal": (
         "Monthly precipitation climatology. Lines show the mean monthly total; bands span the "

@@ -414,42 +414,53 @@ def notice(text: str) -> str:
 
 def coverage(v: View) -> Figure:
     n = len(v.sources)
-    height = H_SINGLE if n == 1 else H_STACK2 if n == 2 else H_STACK2 + 48 * (n - 2)
-    fig, axs = new_fig(height, n, 1, width_mm=W_FULL if n > 1 else W_MID, sharex=True)
-    for i, (ax, s) in enumerate(zip(axs[:, 0], v.sources)):
+    fig, axs = new_fig(24 + 8 * n, width_mm=W_FULL if n > 1 else W_MID)
+    ax = axs[0, 0]
+    ax.set_facecolor(MISSING)
+    edges = np.arange(len(v.years) * 12 + 1) / 12 + v.years[0]
+    for i, s in enumerate(v.sources):
         cls = (
             v.results[s]["coverage"]
-            .reindex(columns=v.years)
+            .reindex(index=month_order(v.m0), columns=v.years)
             .to_numpy(dtype=float, copy=True)
         )
         cls[cls == 0] = np.nan
-        ax.set_facecolor(MISSING)
+        pale = to_hex(0.3 * np.array(to_rgb(v.color(s))) + 0.7)
+        gap_color = to_hex(0.7 * np.array(to_rgb(v.color(s))))
         ax.pcolormesh(
-            v.years,
-            np.arange(1, 13),
-            cls,
-            cmap=ListedColormap([tint(v.color(s)), v.color(s)]),
+            edges,
+            [i - 0.5, i + 0.5],
+            cls.T.reshape(1, -1),
+            cmap=ListedColormap([gap_color, pale]),
             vmin=0.5,
             vmax=2.5,
-            edgecolors="white",
-            linewidth=0.25,
+            edgecolors=(*to_rgb(GRID), 0.3),
+            linewidth=0.15,
             rasterized=True,
         )
-        heatmap_months(ax, v.m0)
-        ax.tick_params(axis="y", labelsize=FS_NOTE)
-        ax.set_title(f"{chr(97 + i)}) {v.labels[s]}" if n > 1 else "Coverage")
-        heatmap_frame(ax)
-    five_year_ticks(axs[-1, 0], v.years)
-    full = tuple(Patch(facecolor=v.color(s), label="") for s in v.sources)
-    part = tuple(Patch(facecolor=tint(v.color(s)), label="") for s in v.sources)
+    ax.set_yticks(range(n), [v.labels[s] for s in v.sources])
+    ax.set_ylim(n - 0.5, -0.5)
+    ax.set_xlim(edges[0], edges[-1])
+    year_ticks(ax, v.years, continuous=True)
+    ax.tick_params(axis="y", length=3)
+    full = tuple(Patch(facecolor=to_hex(0.3 * np.array(to_rgb(v.color(s))) + 0.7)) for s in v.sources)
+    part = tuple(Patch(facecolor=to_hex(0.7 * np.array(to_rgb(v.color(s))))) for s in v.sources)
     tup = HandlerTuple(ndivide=None, pad=0)
-    fig.legend(
+    legend = fig.legend(
         handles=[full, part, MISSING_KEY],
-        labels=["Complete month", "Usable, tolerated gaps", "Missing or unusable"],
-        loc="outside upper left",
-        ncols=3,
+        labels=["Complete", "Usable with gaps", "Missing or unusable"],
+        loc="outside right upper",
+        ncols=1,
         handler_map={tuple: tup},
+        frameon=True, facecolor="white", edgecolor="none", framealpha=0.88,
     )
+    fig.canvas.draw()
+    legend_width = legend.get_window_extent().width / fig.bbox.width
+    legend.set_loc("upper right")
+    legend.borderaxespad = 0
+    fig.get_layout_engine().set(rect=(0, 0, 1 - legend_width - 0.02, 1))
+    fig.canvas.draw()
+    legend.set_bbox_to_anchor((1, ax.get_position().y1), transform=fig.transFigure)
     return fig
 
 

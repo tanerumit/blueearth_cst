@@ -29,7 +29,7 @@ def render_subbasins(sm, settings, sources):
     target = Path(sm.output.subbasin_figures)
     target.mkdir(parents=True, exist_ok=True)
     root = target.parent.parent
-    captions_path = root / "_engine" / "figure_captions.json"
+    captions_path = root / "plots" / "_engine" / "figure_captions.json"
     inventory = json.loads(captions_path.read_text(encoding="utf-8"))
     declared_ids = set.union(
         *[
@@ -94,7 +94,7 @@ def render_subbasins(sm, settings, sources):
         view = artists.View(
             sources,
             {
-                s: "CHIRPS v2.0" if s in {"chirps", "chirps_global"} else s.upper()
+                s: "CHIRPS" if s in {"chirps", "chirps_global"} else s.upper()
                 for s in sources
             },
             artists.source_styles(sources),
@@ -131,9 +131,9 @@ def render_subbasins(sm, settings, sources):
                     folder.mkdir(parents=True, exist_ok=True)
                     artists.add_caption(fig, text)
                     fig.savefig(folder / name, dpi=600)
-                    captioned = f"figures/captioned/subbasins/{name}"
+                    captioned = f"plots/captioned/subbasins/{name}"
                 plt.close(fig)
-            inventory["figures"][f"figures/subbasins/{name}"] = {
+            inventory["figures"][f"plots/subbasins/{name}"] = {
                 "caption": text,
                 "sources": carriers if variable == "temp" else sources,
                 "period": period,
@@ -155,10 +155,10 @@ def render_subbasins(sm, settings, sources):
             for record in inventory["figures"].values()
             if record["captioned_path"]
         ]
-        + ["_engine/figure_captions.json", "figures/figure_captions.md"]
+        + ["plots/_engine/figure_captions.json", "plots/figure_captions.md"]
     )
     write_json(captions_path, inventory)
-    (root / "figures" / "figure_captions.md").write_text(
+    (root / "plots" / "figure_captions.md").write_text(
         "# Figure captions\n\n"
         + "\n\n".join(
             f"## {key}\n\n{record['caption']}"

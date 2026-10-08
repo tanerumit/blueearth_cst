@@ -163,6 +163,37 @@ def test_copy_reports_differing_column_values():
     assert any("subbasin_code" in r and "values differ" in r for r in report)
 
 
+@pytest.mark.parametrize("column", ["snapped_x", "snapped_y"])
+@pytest.mark.parametrize("delta", [7.1e-15, 5e-13])
+def test_copy_tolerates_snapped_coordinate_rounding(column, delta):
+    ours = _frame([shapely.Point(0, 0)], **{column: [0.4]})
+    theirs = _frame([shapely.Point(0, 0)], **{column: [0.4 + delta]})
+    assert validate_copied_layer(ours, theirs, "locations") == []
+
+
+@pytest.mark.parametrize("column", ["snapped_x", "snapped_y"])
+@pytest.mark.parametrize("value", [0.4 + 2e-12, float("nan"), float("inf")])
+def test_copy_rejects_snapped_coordinate_drift_or_missingness(column, value):
+    ours = _frame([shapely.Point(0, 0)], **{column: [0.4]})
+    theirs = _frame([shapely.Point(0, 0)], **{column: [value]})
+    assert validate_copied_layer(ours, theirs, "locations") == [
+        f"locations: column {column!r} values differ"
+    ]
+
+
+def test_copy_keeps_other_numeric_attributes_exact():
+    ours = _frame([shapely.Point(0, 0)], value=[0.4])
+    theirs = _frame([shapely.Point(0, 0)], value=[0.4 + 7.1e-15])
+    assert validate_copied_layer(ours, theirs, "locations") == [
+        "locations: column 'value' values differ"
+    ]
+
+
+def test_copy_preserves_matching_missing_snapped_coordinates():
+    ours = _frame([shapely.Point(0, 0)], snapped_y=[float("nan")])
+    assert validate_copied_layer(ours, ours.copy(), "locations") == []
+
+
 def test_copy_reports_a_feature_count_difference_and_stops():
     ours = _frame([_box(0, 0, 1, 1), _box(2, 2, 3, 3)])
     theirs = _frame([_box(0, 0, 1, 1)])

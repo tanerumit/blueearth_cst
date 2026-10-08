@@ -72,11 +72,12 @@ def test_shared_windows_compute_once_with_identity_checks(tmp_path):
     assert tables["changes"].window_id.unique().tolist() == ["2071-2100"]
     assert tables["member_anomalies"].year.min() == 1950
     assert tables["member_anomalies"].year.max() == 2100
-    assert len(tables["availability"]) == 16
+    assert len(tables["availability"]) == 19
     assert (
         not tables["availability"]
         .loc[
-            tables["availability"].filename == "variability-member-ratios.png",
+            tables["availability"].filename
+            == "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png",
             "available",
         ]
         .any()

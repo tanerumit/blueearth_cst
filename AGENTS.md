@@ -156,6 +156,8 @@ all affected renders; runtime contracts and non-figure consumers trigger the bro
 
 ## References
 
+- `dev/reference/plot-style.md` — read before revising scientific plots or their interactive review page;
+  preserve the agreed defaults and figure-specific exceptions, and update it when new styles are approved.
 - `dev/reference/versioning.md` — read before release preparation or version classification: manual SemVer, authoritative Git release tags, compatibility rules, and separate release approvals.
 - `README.md` — the pipeline and how the five workflows fit together; start here.
 - `docs/references/cst-toolbox-technical-note-2025.md` — the original 2025 note; read for method background and design rationale before changing *what* a workflow computes. Its only edit since is a two-line path sweep, so the method framing still holds, but pipeline details, paths and artifact names in it are often superseded — trust the code and `dev/reference/` where they disagree.

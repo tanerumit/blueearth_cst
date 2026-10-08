@@ -43,12 +43,12 @@ def test_wf0_exclusively_owns_source_diagnostics_at_store_root(tmp_path, source)
         "diagnostics" in Path(p).relative_to(store).parts for p in canonical.output
     )
     assert all(
-        Path(p).parent == store / "figures"
+        Path(p).parent == store / "plots"
         for p in canonical.output
         if str(p).endswith(".png")
     )
     assert not any(
-        Path(p).is_relative_to(store / "figures")
+        Path(p).is_relative_to(store / "plots")
         for rule in wf1.rules
         for p in rule.output
     )

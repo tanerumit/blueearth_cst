@@ -247,8 +247,8 @@ sensitivity, paired anomalies and homogeneity tables. Writes fixed-schema CSVs,
 #### 0.04b · `plot_climate_diagnostics_<source>`
 
 Renders the canonical WF0 source figures from retained diagnostics, with geometry
-overlays for maps. Writes individual PNGs in `<store_dir>/figures/`, machine captions
-in `_engine/figure_captions.json` and readable captions in `figures/figure_captions.md`.
+overlays for maps. Writes individual PNGs in `<store_dir>/plots/`, machine captions
+in `plots/_engine/figure_captions.json` and readable captions in `plots/figure_captions.md`.
 Captioned copies and subbasin products are opt-in. Unknown subbasin IDs are covered
 by declared directories; disabled options create no placeholder directories.
 
@@ -766,7 +766,7 @@ CMIP6 store → 2.03 fetch_cmip6_projections ←┤
                   2.07 gather_benchmarks · 2.08 gather_logs
 ```
 
-Rule 2.05b branches independently from 2.04 into `analysis/*.csv` and `analysis_record.json`.
+Rule 2.05b branches independently from 2.04 into `analysis/*.csv` and `analysis/_engine/analysis_record.json`.
 Both gather rules wait for its record. It has no dependency on any 2.05 output.
 
 The region polygon feeds **five** rules — 2.02, 2.03, 2.04, 2.05 and 2.05b all declare
@@ -875,7 +875,7 @@ complete configured WY, otherwise January WY 1985–2014 or October WY 1984–20
 window is computed once. Reductions give each model equal weight; retained year coordinates feed the
 seeded white-noise variability benchmark. Unavailable products carry reasons rather than placeholders.
 
-**Writes.** `<proj>/analysis/*.csv` and `analysis_record.json`: coverage, changes, equal-model summaries,
+**Writes.** `<proj>/analysis/*.csv` and `_engine/analysis_record.json`: coverage, changes, equal-model summaries,
 family sign agreement, climatology, annual anomalies, variability ratios and final product availability.
 The record distinguishes these analysis windows and the mean-keyed dry rule from the aligned CSVs'
 configured windows and per-statistic dry rule. Seasonal precipitation percentages use rates, a documented
@@ -883,13 +883,15 @@ lab-parity exception; CV uses integrals. Analysis-only float64 promotion preserv
 
 #### 2.06 · `plot_climate_projections`
 
-**Does.** Pure table rendering from 2.05b. Five full-period products show coverage, member annual
-absolute values/anomalies and equal-model anomaly trajectories. Ten products per distinct analysis
-window show change strips, monthly cycles, variability ratios, sign agreement and a paired cloud.
+**Does.** Pure table rendering from 2.05b. Five full_period products show coverage, member annual
+absolute values/anomalies and equal-model anomaly trajectories. Thirteen products per distinct analysis
+window show change strips, monthly climatologies, separate monthly-change boxes, variability ratios,
+sign agreement and a paired cloud. `cmip6_*_monthly_clim_basin_avg.png` contains climatology only;
+`cmip6_*_monthly_change*_box_basin_avg.png` contains the scenario panels formerly combined with it.
 Availability controls the PNG set; unavailable products have reasons, never placeholders. A combined
 cloud needs at least two distinct windows with paired changes. No scalar inputs or numerical reductions.
 
-**Writes.** Owned directories `<proj>/plots/full-period/` and `period-<start>-<end>/`, plus
+**Writes.** Owned directories `<proj>/plots/full_period/` and `period_<start>_<end>/`, plus
 `figure_captions.md` and `_engine/figure_captions.json`. Ordinary PNG paths and manifest keys form a
 bijection. Optional `captioned_figures: true` adds owned `captioned/` copies, identified by manifest
 `captioned_path` metadata. Predecessor `overview/` and `windows/` products are retired; existing files

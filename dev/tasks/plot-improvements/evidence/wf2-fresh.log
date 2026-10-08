@@ -1,0 +1,119 @@
+Using workflow specific profile profiles\default for setting default command line arguments.
+19:55:52 - config - WARNING - project_dir is inside the repo tree ('.tmp/scratchpad/plot-verification/rapid'); write run artifacts outside the source
+19:55:52 - reference_window - WARNING - Short reference window: 14 years (2000-2014); the design length is 20
+Assuming unrestricted shared filesystem usage.
+host: WSU-5CG4013KNZ
+Building DAG of jobs...
+Provided cores: 3
+Rules claiming more threads will be scaled down.
+
+wf2 analyze_projections
+
+   2.01   delineate_region
+   2.02   delineate_subbasins_and_rivers
+>  2.03   fetch_cmip6_projections         4
+>  2.04   reduce_to_basin_averages        4
+>  2.05   derive_change_factors           1
+>  2.05b  prepare_projection_analysis     1
+>  2.06   plot_climate_projections        1
+>  2.07   gather_benchmarks               1
+>  2.08   gather_logs                     1
+7 of 9 rules to run  |  2 up to date  |  13 jobs
+
+<project>      <repo>/.tmp/scratchpad/plot-verification/rapid
+config         <project>/config/runs/_engine/execution-configs/analyze_projections/bdd204f33b9d/project.yml
+<data>         p:/wflow_global/hydromt
+<projections>  <project>/data/climate/projections/cmip6
+
+
+19:55:57 - RUN  Rule 2.03: fetch_cmip6_projections - download one CMIP6 slice  [GFDL-ESM4 historical r1i1p1f1]
+19:55:57 - RUN  Rule 2.03: fetch_cmip6_projections  [INM-CM4-8 historical r1i1p1f1]
+19:55:58 - RUN  Rule 2.03: fetch_cmip6_projections  [GFDL-ESM4 ssp245 r1i1p1f1]
+19:56:07 - fetch - Fetching cmip6_INM/INM-CM4-8_historical_r1i1p1f1
+19:56:16 - fetch - Pinned gr1/v20190530, no bucket listing
+19:57:01 - fetch - Store calendar=noleap (tas)
+19:56:07 - fetch - Fetching cmip6_NOAA-GFDL/GFDL-ESM4_historical_r1i1p1f1
+19:56:16 - fetch - Pinned gr1/v20190726, no bucket listing
+19:57:02 - fetch - Store calendar=noleap (tas)
+19:57:02 - DONE Rule 2.03: fetch_cmip6_projections  [series cmip6_INM_INM-CM4-8_historical_r1i1p1f1]  0:01:04  [job 1/13]
+19:57:02 - RUN  Rule 2.04: reduce_to_basin_averages - reduce the slice to a basin-average series  [INM-CM4-8 historical r1i1p1f1]
+19:57:03 - DONE Rule 2.03: fetch_cmip6_projections  [series cmip6_NOAA-GFDL_GFDL-ESM4_historical_r1i1p1f1]  0:01:05  [job 2/13]
+19:57:03 - RUN  Rule 2.04: reduce_to_basin_averages  [GFDL-ESM4 historical r1i1p1f1]
+19:56:07 - fetch - Fetching cmip6_NOAA-GFDL/GFDL-ESM4_ssp245_r1i1p1f1
+19:56:16 - fetch - Pinned gr1/v20180701, no bucket listing
+19:57:09 - fetch - Store calendar=noleap (tas)
+19:57:09 - DONE Rule 2.03: fetch_cmip6_projections  [series cmip6_NOAA-GFDL_GFDL-ESM4_ssp245_r1i1p1f1]  0:01:11  [job 3/13]
+19:57:09 - RUN  Rule 2.04: reduce_to_basin_averages  [GFDL-ESM4 ssp245 r1i1p1f1]
+19:57:15 - stats - INM/INM-CM4-8 historical r1i1p1f1 reducing raw -> series
+19:57:15 - stats - NOAA-GFDL/GFDL-ESM4 historical r1i1p1f1 reducing raw -> series
+19:57:17 - DONE Rule 2.04: reduce_to_basin_averages  [series cmip6_INM_INM-CM4-8_historical_r1i1p1f1]  0:00:14  [job 4/13]
+19:57:17 - RUN  Rule 2.03: fetch_cmip6_projections  [INM-CM4-8 ssp245 r1i1p1f1]
+19:57:17 - DONE Rule 2.04: reduce_to_basin_averages  [series cmip6_NOAA-GFDL_GFDL-ESM4_historical_r1i1p1f1]  0:00:14  [job 5/13]
+19:57:21 - stats - NOAA-GFDL/GFDL-ESM4 ssp245 r1i1p1f1 reducing raw -> series
+19:57:23 - DONE Rule 2.04: reduce_to_basin_averages  [series cmip6_NOAA-GFDL_GFDL-ESM4_ssp245_r1i1p1f1]  0:00:13  [job 6/13]
+19:57:21 - fetch - Fetching cmip6_INM/INM-CM4-8_ssp245_r1i1p1f1
+19:57:29 - fetch - Pinned gr1/v20190603, no bucket listing
+19:58:22 - fetch - Store calendar=noleap (tas)
+19:58:22 - DONE Rule 2.03: fetch_cmip6_projections  [series cmip6_INM_INM-CM4-8_ssp245_r1i1p1f1]  0:01:05  [job 7/13]
+19:58:22 - RUN  Rule 2.04: reduce_to_basin_averages  [INM-CM4-8 ssp245 r1i1p1f1]
+19:58:45 - stats - INM/INM-CM4-8 ssp245 r1i1p1f1 reducing raw -> series
+19:58:51 - DONE Rule 2.04: reduce_to_basin_averages  [series cmip6_INM_INM-CM4-8_ssp245_r1i1p1f1]  0:00:28  [job 8/13]
+19:58:51 - RUN  Rule 2.05b: prepare_projection_analysis - prepare analysis-window diagnostics
+19:58:51 - RUN  Rule 2.05: derive_change_factors - compare each horizon against the reference period
+19:58:57 - change - Deriving change factors for 2 points x 1 horizon
+19:58:57 - change - Reference period 2000-2014 (14 years)
+19:58:57 - change - Reference period differs from the observed historical window 2000-2016
+19:59:12 - change - Tidy monthly change-factor table: 144 rows -> cmip6_change_factors_monthly.csv
+19:59:12 - change - Tidy annual change-factor table: 12 rows -> cmip6_change_factors_annual.csv
+19:59:12 - change - Report -> report.md
+19:59:12 - change - Provenance: 4 sources, 2/2 resolved -> provenance.json
+19:59:12 - change - Composition record: 2 requested, 2 resolved -> composition.csv
+19:59:13 - DONE Rule 2.05: derive_change_factors  0:00:21  [job 9/13]
+19:59:37 - analysis - Used 1 window: 2036-2065
+19:59:37 - analysis - Available 17 products; not produced 2
+19:59:37 - analysis - Not produced: cmip6_precip_temp_annual_member_ratio_box_basin_avg.png, cmip6_precip_temp_annual_multi_period_change_cloud_basin_avg.png; see analysis_record.json
+19:59:38 - DONE Rule 2.05b: prepare_projection_analysis  0:00:46  [job 10/13]
+19:59:38 - RUN  Rule 2.06: plot_climate_projections
+19:59:45 - plot_proj_timeseries - Windows used: 2036-2065 (reference 1985�2014)
+20:00:27 - plot_proj_timeseries - 5 figures -> <projections>/plots/full_period
+20:00:27 - plot_proj_timeseries - 5 figures -> <projections>/plots/captioned/full_period
+20:00:27 - plot_proj_timeseries - 12 figures -> <projections>/plots/period_2036_2065
+20:00:27 - plot_proj_timeseries - 12 figures -> <projections>/plots/captioned/period_2036_2065
+20:00:27 - plot_proj_timeseries - 17 figures written; 2 products unavailable
+20:00:28 - DONE Rule 2.06: plot_climate_projections  0:00:49  [job 11/13]
+20:00:28 - RUN  Rule 2.07: gather_benchmarks
+20:00:28 - RUN  Rule 2.08: gather_logs
+20:00:29 - DONE Rule 2.08: gather_logs  0:00:01  [job 12/13]
+20:00:36 - DONE Rule 2.07: gather_benchmarks  0:00:08  [job 13/13]
+20:00:36 - RUN  Target: all  [<repo>/.tmp/scratchpad/plot-verification/rapid]
+    <projections>/analysis/coverage.csv
+    <projections>/analysis/availability.csv
+    <projections>/analysis/changes.csv
+    <projections>/analysis/model_changes.csv
+    <projections>/analysis/change_summary.csv
+    <projections>/analysis/sign_agreement.csv
+    <projections>/analysis/climatology.csv
+    <projections>/analysis/climatology_summary.csv
+    <projections>/analysis/monthly_change_summary.csv
+    <projections>/analysis/member_anomalies.csv
+    <projections>/analysis/trajectory_range.csv
+    <projections>/analysis/variability_member_ratios.csv
+    <projections>/analysis/variability_model_ratios.csv
+    <projections>/analysis/variability_summary.csv
+    <projections>/analysis/_engine/analysis_record.json
+    <projections>/summary/cmip6_change_factors_annual.csv
+    <projections>/summary/cmip6_change_factors_monthly.csv
+    <projections>/summary/composition.csv
+    <projections>/plots/full_period
+    <projections>/plots/period_2036_2065
+    <projections>/plots/figure_captions.md
+    <projections>/plots/_engine/figure_captions.json
+    <projections>/plots/captioned
+    data/spatial/geoms/basins.geojson
+    config/runs/analyze_projections/run_record.yml
+    logs/wf2_analyze_projections.log
+    benchmarks/wf2_benchmarks.md
+20:00:36 - DONE all
+Complete log(s): <repo>/.snakemake/log/2026-10-08T195557.700324.snakemake.log
+
+wf2 analyze_projections done in 0:04:38

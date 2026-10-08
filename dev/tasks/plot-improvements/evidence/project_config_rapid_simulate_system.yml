@@ -1,0 +1,4 @@
+# simulate_system (wf4) -- rapid set
+
+experiment_name: experiment_rapid
+operation: simulate-and-metrics

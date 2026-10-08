@@ -58,9 +58,6 @@ MISSING = "#a0a0a0"
 QA = "#882255"
 
 
-QA_RAMP = ("#882255", "#d6a5bf", "#e8f2f3")
-
-
 SOURCE_STYLE = {"era5": ("#236b8e", "o"), "chirps": ("#bf6a3c", "o")}
 
 
@@ -86,6 +83,8 @@ MS_LINE, MS_POINT, S_SCATTER = 3.0, 4.5, 16
 
 BAND_ALPHA = 0.18
 
+LABEL_BOX = {"facecolor": "white", "edgecolor": "none", "alpha": 0.88, "pad": 1.2}
+
 
 TREND_DASH = (0, (5, 2.5))
 
@@ -96,7 +95,7 @@ DODGE = 0.2
 DIVERGING_CLASSES = 7
 
 
-SPI_BOUNDS = [-2, -1.5, -1, 1, 1.5, 2]
+SPI_BOUNDS = [-3, -2, -1, 1, 2, 3]
 
 
 LADDER = (1, 1.5, 2, 3, 4, 5, 6, 8)
@@ -275,13 +274,19 @@ def ygrid(ax: plt.Axes) -> None:
 
 
 def year_ticks(ax: plt.Axes, years: np.ndarray, continuous: bool = False) -> None:
-    """Display-period limits (never source availability) and a 2/5/10-year step."""
+    """Sparse year labels with finer ticks, thinning ticks for long records."""
     if continuous:
         ax.set_xlim(years[0], years[-1] + 1)
     else:
         ax.set_xlim(years[0] - 0.5, years[-1] + 0.5)
     step = 10 if years.size > 35 else 5 if years.size > 12 else 2
-    ax.set_xticks(np.arange(years[0] + (-years[0]) % step, years[-1] + 1, step))
+    major = np.arange(years[0] + (-years[0]) % step, years[-1] + 1, step)
+    ax.set_xticks(major)
+    tick_step = max(1, int(np.ceil((years[-1] - years[0]) / 60)))
+    ticks = np.arange(years[0] + (-years[0]) % tick_step, years[-1] + 1, tick_step)
+    ax.set_xticks(np.setdiff1d(ticks, major), minor=True)
+    ax.tick_params(axis="x", which="major", length=3, width=LW_EDGE, color=AXIS)
+    ax.tick_params(axis="x", which="minor", length=2, width=LW_EDGE, color=AXIS)
 
 
 def month_axis(ax: plt.Axes, m0: int) -> None:
@@ -363,19 +368,26 @@ def identity_row(v: View, sources: Sequence[str] | None = None, **kw) -> list:
 
 
 def colourbar(
-    fig: Figure, mesh, axes: list, label: str, ticks: Sequence[float], stack_mm: float
+    fig: Figure,
+    mesh,
+    axes: list,
+    label: str,
+    ticks: Sequence[float],
+    stack_mm: float,
+    shrink: float = 0.68,
 ) -> None:
     cb = fig.colorbar(
         mesh,
         ax=axes,
         ticks=ticks,
         spacing="uniform",
+        extendrect=True,
         pad=0.02,
-        shrink=0.68,
+        shrink=shrink,
         anchor=(0.0, 0.0),
         aspect=max(stack_mm / 3.0, 8),
     )
-    cb.ax.set_title(label, color=INK, fontsize=FS_TICK, pad=4)
+    cb.ax.set_title(label, color=INK, fontsize=FS_TICK, pad=10)
     cb.outline.set_edgecolor(AXIS)
     cb.outline.set_linewidth(LW_EDGE)
     cb.ax.tick_params(
@@ -405,42 +417,61 @@ def notice(text: str) -> str:
 
 def coverage(v: View) -> Figure:
     n = len(v.sources)
-    height = H_SINGLE if n == 1 else H_STACK2 if n == 2 else H_STACK2 + 48 * (n - 2)
-    fig, axs = new_fig(height, n, 1, width_mm=W_FULL if n > 1 else W_MID, sharex=True)
-    for i, (ax, s) in enumerate(zip(axs[:, 0], v.sources)):
+    fig, axs = new_fig(24 + 8 * n, width_mm=W_FULL if n > 1 else W_MID)
+    ax = axs[0, 0]
+    ax.set_facecolor(MISSING)
+    edges = np.arange(len(v.years) * 12 + 1) / 12 + v.years[0]
+    for i, s in enumerate(v.sources):
         cls = (
             v.results[s]["coverage"]
-            .reindex(columns=v.years)
+            .reindex(index=month_order(v.m0), columns=v.years)
             .to_numpy(dtype=float, copy=True)
         )
         cls[cls == 0] = np.nan
-        ax.set_facecolor(MISSING)
+        pale = to_hex(0.3 * np.array(to_rgb(v.color(s))) + 0.7)
+        gap_color = to_hex(0.7 * np.array(to_rgb(v.color(s))))
         ax.pcolormesh(
-            v.years,
-            np.arange(1, 13),
-            cls,
-            cmap=ListedColormap([tint(v.color(s)), v.color(s)]),
+            edges,
+            [i - 0.5, i + 0.5],
+            cls.T.reshape(1, -1),
+            cmap=ListedColormap([gap_color, pale]),
             vmin=0.5,
             vmax=2.5,
-            edgecolors="white",
-            linewidth=0.25,
+            edgecolors=(*to_rgb(GRID), 0.3),
+            linewidth=0.15,
             rasterized=True,
         )
-        heatmap_months(ax, v.m0)
-        ax.tick_params(axis="y", labelsize=FS_NOTE)
-        ax.set_title(f"{chr(97 + i)}) {v.labels[s]}" if n > 1 else "Coverage")
-        heatmap_frame(ax)
-    five_year_ticks(axs[-1, 0], v.years)
-    full = tuple(Patch(facecolor=v.color(s), label="") for s in v.sources)
-    part = tuple(Patch(facecolor=tint(v.color(s)), label="") for s in v.sources)
-    tup = HandlerTuple(ndivide=None, pad=0)
-    fig.legend(
-        handles=[full, part, MISSING_KEY],
-        labels=["Complete month", "Usable, tolerated gaps", "Missing or unusable"],
-        loc="outside upper left",
-        ncols=3,
-        handler_map={tuple: tup},
+    ax.set_yticks(range(n), [v.labels[s] for s in v.sources])
+    ax.set_ylim(n - 0.5, -0.5)
+    ax.set_xlim(edges[0], edges[-1])
+    year_ticks(ax, v.years, continuous=True)
+    ax.tick_params(axis="y", length=3)
+    full = tuple(
+        Patch(facecolor=to_hex(0.3 * np.array(to_rgb(v.color(s))) + 0.7))
+        for s in v.sources
     )
+    part = tuple(
+        Patch(facecolor=to_hex(0.7 * np.array(to_rgb(v.color(s))))) for s in v.sources
+    )
+    tup = HandlerTuple(ndivide=None, pad=0)
+    legend = fig.legend(
+        handles=[full, part, MISSING_KEY],
+        labels=["Complete", "Usable with gaps", "Missing or unusable"],
+        loc="outside right upper",
+        ncols=1,
+        handler_map={tuple: tup},
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
+    )
+    fig.canvas.draw()
+    legend_width = legend.get_window_extent().width / fig.bbox.width
+    legend.set_loc("upper right")
+    legend.borderaxespad = 0
+    fig.get_layout_engine().set(rect=(0, 0, 1 - legend_width - 0.02, 1))
+    fig.canvas.draw()
+    legend.set_bbox_to_anchor((1, ax.get_position().y1), transform=fig.transFigure)
     return fig
 
 
@@ -450,11 +481,24 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
     ax = axs[0, 0]
     x = np.arange(12)
     top = 0.0
+    bands = []
+    lines = []
     for s in have:
         c = v.results[s][key]
-        ax.fill_between(x, c["p10"], c["p90"], color=v.color(s), alpha=BAND_ALPHA, lw=0)
-        ax.plot(
-            x, c["mean"], color=v.color(s), lw=LW_MEAN, marker=v.marker(s), ms=MS_LINE
+        bands.append(
+            ax.fill_between(
+                x, c["p10"], c["p90"], color=v.color(s), alpha=BAND_ALPHA, lw=0
+            )
+        )
+        lines.extend(
+            ax.plot(
+                x,
+                c["mean"],
+                color=v.color(s),
+                lw=LW_MEAN,
+                marker=v.marker(s),
+                ms=MS_LINE,
+            )
         )
         top = max(top, float(np.nanmax(c["p90"])))
     month_axis(ax, v.m0)
@@ -466,19 +510,69 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
     ygrid(ax)
     spread = Patch(facecolor=MUTED, alpha=BAND_ALPHA, edgecolor="none")
     spread.set_label("10–90th percentile")
-    mean = Line2D([], [], color=MUTED, lw=LW_MEAN, marker="o", ms=MS_LINE, label="Mean")
-    top_legend(fig, identity_row(v, have), [mean, spread] if key == "tclim" else [])
+    inside_legend(fig, ax, [*id_handles(v, have), spread], bands, lines)
     return fig
 
 
+def inside_legend(
+    fig: Figure,
+    ax: plt.Axes,
+    handles: list,
+    bands: Sequence = (),
+    lines: Sequence = (),
+) -> None:
+    """Stack legend entries on translucent white in the less occupied top corner."""
+    if not handles:
+        return
+    legend = ax.legend(
+        handles=handles,
+        loc="upper right",
+        ncols=1,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
+        borderpad=0.6,
+        labelspacing=0.5,
+        handletextpad=0.5,
+    )
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    scores = []
+    for location in ("upper right", "upper left"):
+        legend.set_loc(location)
+        box = legend.get_window_extent(renderer)
+        xx, yy = np.meshgrid(
+            np.linspace(box.x0, box.x1, 30), np.linspace(box.y0, box.y1, 20)
+        )
+        points = np.column_stack((xx.ravel(), yy.ravel()))
+        overlap = 0
+        for band in bands:
+            for path in band.get_paths():
+                overlap += path.contains_points(points, band.get_transform()).sum()
+        for line in lines:
+            path = line.get_transform().transform_path(line.get_path())
+            if path.intersects_bbox(box, filled=False):
+                overlap += points.shape[0]
+        for collection in ax.collections:
+            offsets = collection.get_offsets()
+            if offsets.size:
+                positions = collection.get_offset_transform().transform(offsets)
+                overlap += (
+                    sum(box.contains(x, y) for x, y in positions) * points.shape[0]
+                )
+        scores.append((overlap, location))
+    legend.set_loc(min(scores, key=lambda item: item[0])[1])
+
+
 def seasonal(v: View) -> Figure:
-    return _climatology(v, "clim", f"Precipitation ({UNITS['mm_month']})", zero=True)
+    return _climatology(v, "clim", UNITS["mm_month"], zero=True)
 
 
 def temperature(v: View) -> Figure | str:
     if not any(v.results[s]["tclim"] is not None for s in v.sources):
         return notice("No temperature variable is declared for the selected source(s).")
-    return _climatology(v, "tclim", f"Temperature ({UNITS['degc']})", zero=False)
+    return _climatology(v, "tclim", UNITS["degc"], zero=False)
 
 
 def timing(v: View) -> Figure:
@@ -495,20 +589,24 @@ def timing(v: View) -> Figure:
             y = k + dodge(j, n)
             lo, med, hi = np.percentile(d, [25, 50, 75])
             mean = float(d.mean())
-            ax.plot([d.min(), d.max()], [y, y], color=v.color(s), lw=LW_RANGE)
-            ax.plot(
-                [lo, hi], [y, y], color=v.color(s), lw=LW_IQR, solid_capstyle="butt"
+            half_height = 0.06
+            ax.plot([d.min(), lo], [y, y], color=v.color(s), lw=0.6)
+            ax.plot([hi, d.max()], [y, y], color=v.color(s), lw=0.6)
+            ax.add_patch(
+                plt.Rectangle(
+                    (lo, y - half_height),
+                    hi - lo,
+                    2 * half_height,
+                    facecolor="none",
+                    edgecolor=v.color(s),
+                    lw=0.6,
+                )
             )
-            ax.plot(med, y, marker="|", color="white", ms=LW_IQR, mew=1.0)
             ax.plot(
-                mean,
-                y,
-                marker="o",
+                [med, med],
+                [y - half_height, y + half_height],
                 color=v.color(s),
-                markeredgecolor="white",
-                markeredgewidth=0.5,
-                ms=MS_POINT,
-                zorder=3,
+                lw=0.6,
             )
             label_offset = 5 if j == 0 else -5
             ax.annotate(
@@ -520,6 +618,7 @@ def timing(v: View) -> Figure:
                 va="bottom" if j == 0 else "top",
                 fontsize=FS_NOTE,
                 color=v.color(s),
+                bbox=LABEL_BOX,
             )
     start = date(2001, v.m0, 1)
     starts = [
@@ -534,12 +633,12 @@ def timing(v: View) -> Figure:
     top.set_xticks([1, 91, 182, 274, 366])
     top.tick_params(labelsize=FS_TICK, labelcolor=MUTED, color=AXIS)
     top.spines["top"].set_color(AXIS)
-    ax.set_yticks(range(3), ["25 %", "50 %", "75 %"])
+    ax.set_yticks(range(3), ["25", "50", "75"])
     ax.set_ylim(2.6, -0.6)
-    ax.set_xlabel("Serial date reached")
-    ax.set_ylabel("Annual share")
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Cumulative (%)")
     ax.grid(axis="x")
-    ax.tick_params(axis="y", length=0)
+    ax.tick_params(axis="y", length=3)
     identities = (
         [
             Line2D(
@@ -556,7 +655,7 @@ def timing(v: View) -> Figure:
         if n > 1
         else []
     )
-    top_legend(fig, identities)
+    inside_legend(fig, ax, identities, lines=ax.lines)
     return fig
 
 
@@ -591,15 +690,17 @@ def anomaly(v: View) -> Figure:
             ax.set_title(f"{chr(97 + i)}) {v.labels[s]}")
     axs[-1, 0].set_xlim(v.years[0] - 0.5, v.years[-1] + 0.5)
     five_year_ticks(axs[-1, 0], v.years)
-    colourbar(fig, mesh, axs[:, 0].tolist(), "Precipitation\n(mm)", bounds, stack)
+    colourbar(fig, mesh, axs[:, 0].tolist(), "Precip.\n(mm)", bounds, stack)
     fig.get_layout_engine().set(rect=(0, 0, 0.94, 1))
-    fig.legend(handles=[MISSING_KEY], loc="outside upper left")
     return fig
 
 
 def spi(v: View) -> Figure:
-    norm = BoundaryNorm(SPI_BOUNDS, DIVERGING_CLASSES, extend="both")
+    cmap = plt.get_cmap("RdBu", len(SPI_BOUNDS) + 1)
+    norm = BoundaryNorm(SPI_BOUNDS, cmap.N, extend="both")
     fig, axs, stack = _stack(v)
+    stack *= 0.56
+    fig.set_size_inches(fig.get_figwidth(), stack * MM)
     mesh = None
     for i, (ax, s) in enumerate(zip(axs[:, 0], v.sources)):
         ax.set_facecolor(MISSING)
@@ -616,7 +717,7 @@ def spi(v: View) -> Figure:
                 edges,
                 [row - 0.5, row + 0.5],
                 ser.to_numpy()[None, :],
-                cmap=diverging_cmap(),
+                cmap=cmap,
                 norm=norm,
                 rasterized=True,
             )
@@ -629,7 +730,15 @@ def spi(v: View) -> Figure:
             ax.set_title(f"{chr(97 + i)}) {v.labels[s]}")
     axs[-1, 0].set_xlim(v.years[0], v.years[-1] + 1)
     five_year_ticks(axs[-1, 0], v.years, rotation=0)
-    colourbar(fig, mesh, axs[:, 0].tolist(), "SPI", SPI_BOUNDS, stack)
+    colourbar(
+        fig,
+        mesh,
+        axs[:, 0].tolist(),
+        "SPI",
+        SPI_BOUNDS,
+        stack,
+        shrink=0.8,
+    )
     return fig
 
 
@@ -648,24 +757,29 @@ def drought_events(v: View) -> Figure:
                 ev[~ev["censored"].astype(bool)],
                 ev[ev["censored"].astype(bool)],
             )
+            edge = to_hex(0.65 * np.array(to_rgb(v.color(s))))
             ax.scatter(
                 done["duration"],
                 done["severity"],
                 marker=v.marker(s),
-                s=S_SCATTER,
+                s=S_SCATTER * 2.25,
+                alpha=0.7,
                 facecolor=v.color(s),
-                edgecolor="white",
-                linewidth=0.5,
+                edgecolor=edge,
+                linewidth=0.7,
                 zorder=3,
             )
             ax.scatter(
                 cens["duration"],
                 cens["severity"],
                 marker=v.marker(s),
-                s=S_SCATTER,
+                s=S_SCATTER * 2.25,
+                alpha=0.7,
                 facecolor=tint(v.color(s)),
-                edgecolor=v.color(s),
-                linewidth=1.0,
+                edgecolor=edge,
+                linewidth=0.9,
+                hatch="////////",
+                hatch_linewidth=0.5,
                 zorder=3,
             )
         if not drawn:
@@ -685,23 +799,51 @@ def drought_events(v: View) -> Figure:
         ax.set_ylim(bottom=0)
         ax.grid()
     axs[0, 0].set_ylabel("Severity (dimensionless)")
-    top_legend(fig, identity_row(v, line=False))
+    event_handles = [
+        Line2D(
+            [],
+            [],
+            color=MUTED,
+            linewidth=1.4,
+            alpha=0.7,
+            label="Complete",
+        ),
+        Patch(
+            facecolor=tint(MUTED),
+            edgecolor=MUTED,
+            hatch="////////",
+            hatch_linewidth=0.5,
+            linewidth=0.7,
+            alpha=0.7,
+            label="Truncated",
+        ),
+    ]
+    inside_legend(fig, axs[0, 0], [*identity_row(v, line=False), *event_handles])
+    axs[0, 0].get_legend().set_loc("upper left")
     return fig
 
 
 def spi_checks(v: View) -> Figure:
     """Shapiro-Wilk p-values of reference SPI per calendar month and scale, gamma vs Pearson III."""
-    cmap = ListedColormap(list(QA_RAMP))
-    norm = BoundaryNorm([0, 0.01, 0.05, 1], cmap.N)
+    ramps = {
+        s: [
+            to_hex(0.65 * np.array(to_rgb(v.color(s)))),
+            tint(v.color(s)),
+            to_hex(0.1 * np.array(to_rgb(v.color(s))) + 0.9),
+        ]
+        for s in v.sources
+    }
+    norm = BoundaryNorm([0, 0.01, 0.05, 1], 3)
     rows = [(s, d) for s in v.sources for d in ("gamma", "pearson3")]
     fig, axs = new_fig(
-        14 + 30 * len(rows),
+        14 + 24 * len(rows),
         len(rows),
         1,
         width_mm=W_MID if len(rows) == 2 else W_FULL,
         sharex=True,
     )
-    for ax, (s, d) in zip(axs[:, 0], rows):
+    for i, (ax, (s, d)) in enumerate(zip(axs[:, 0], rows)):
+        cmap = ListedColormap(ramps[s])
         tab = np.array(
             [v.results[s]["spi_checks"][k][f"sw_{d}"].to_numpy() for k in SPI_SCALES],
             dtype=float,
@@ -713,8 +855,8 @@ def spi_checks(v: View) -> Figure:
             tab,
             cmap=cmap,
             norm=norm,
-            edgecolors="white",
-            linewidth=0.8,
+            edgecolors=(*to_rgb(GRID), 0.5),
+            linewidth=0.4,
         )
         for (r, c), val in np.ndenumerate(tab):
             if np.isfinite(val):
@@ -725,36 +867,45 @@ def spi_checks(v: View) -> Figure:
                     ha="center",
                     va="center",
                     fontsize=FS_NOTE,
-                    color="white" if val < 0.01 else INK,
+                    color=INK,
+                    bbox=LABEL_BOX,
                 )
         ax.set_ylim(2.5, -0.5)
         ax.set_yticks(range(3), [f"SPI-{k}" for k in SPI_SCALES])
-        n_fail = int((tab < 0.05).sum())
-        extra = ""
-        if d == "pearson3":
-            hits = sum(
-                int(v.results[s]["spi_checks"][k]["p3_bound_hits"].sum())
-                for k in SPI_SCALES
-            )
-            extra = f" · {plural(hits, 'month')} beyond fit bounds"
         name = "gamma" if d == "gamma" else "Pearson III"
-        ax.set_title(f"{v.labels[s]} · {name} · {n_fail}/36 with $p$ < 0.05{extra}")
+        ax.set_title(f"{chr(97 + i)}) {v.labels[s]} · {name}")
         heatmap_frame(ax)
+        ax.tick_params(axis="both", length=3)
     month_axis(axs[-1, 0], v.m0)
-    keys = [
-        Patch(facecolor=QA_RAMP[0], label="$p$ < 0.01"),
-        Patch(facecolor=QA_RAMP[1], label="0.01 ≤ $p$ < 0.05"),
-        Patch(facecolor=QA_RAMP[2], label="$p$ ≥ 0.05 (no evidence of misfit)"),
-    ]
-    top_legend(fig, keys)
+    keys = [tuple(Patch(facecolor=ramps[s][i]) for s in v.sources) for i in range(3)]
+    legend = fig.legend(
+        handles=keys,
+        labels=["$p$ < 0.01", "0.01 ≤ $p$ < 0.05", "$p$ ≥ 0.05"],
+        handler_map={tuple: HandlerTuple(ndivide=None, pad=0.2)},
+        loc="outside right upper",
+        ncols=1,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
+        borderpad=0.4,
+        labelspacing=0.5,
+        handletextpad=0.5,
+    )
+    legend.set_loc("upper right")
+    legend.borderaxespad = 0
+    fig.get_layout_engine().set(rect=(0, 0, 0.84, 1))
+    fig.canvas.draw()
+    top = axs[0, 0].get_position().y1
+    legend.set_bbox_to_anchor((1, top), transform=fig.transFigure)
     return fig
 
 
 EXTREME_LABELS = {
-    "Rx1day": "Rx1day (mm)",
-    "Rx5day": "Rx5day (mm)",
-    "SDII": f"SDII ({UNITS['mm_day']})",
-    "Wet days": f"Wet days ({UNITS['days_year']})",
+    "Rx1day": "mm",
+    "Rx5day": "mm",
+    "SDII": UNITS["mm_day"],
+    "Wet days": UNITS["days_year"],
 }
 
 
@@ -769,6 +920,23 @@ def extremes(metric: str) -> Callable[[View], Figure]:
             )  # NaN breaks the line
         ax.set_ylabel(EXTREME_LABELS[metric])
         ax.margins(y=0.08)
+        trend_key = {"SDII": "sdii", "Wet days": "wet_days"}.get(metric, metric)
+        unit = (
+            "mm d⁻¹ decade⁻¹"
+            if metric == "SDII"
+            else UNITS["days_decade"]
+            if metric == "Wet days"
+            else UNITS["mm_decade"]
+        )
+        _annual_trends(
+            ax,
+            v,
+            "extremes",
+            metric,
+            trend_key,
+            unit,
+            digits=2 if metric == "SDII" else 1,
+        )
         year_ticks(ax, v.years)
         ygrid(ax)
         top_legend(fig, identity_row(v))
@@ -778,8 +946,9 @@ def extremes(metric: str) -> Callable[[View], Figure]:
 
 
 def spell(v: View) -> Figure:
-    fig, axs = new_fig(H_SINGLE)
+    fig, axs = new_fig(H_SINGLE, width_mm=W_COL1)
     ax = axs[0, 0]
+    ax.set_box_aspect(1)
     xmax = 2
     for s in v.sources:
         ex = v.results[s]["spells"]
@@ -803,9 +972,9 @@ def spell(v: View) -> Figure:
     ax.set_ylim(0.0015, 1.2)
     ax.set_xlim(0.5, xmax + 0.5)
     ax.set_xlabel("Dry-spell length (days)")
-    ax.set_ylabel("Exceedance P (log)")
+    ax.set_ylabel("Exceedance Pr. (log)")
     ax.grid()
-    top_legend(fig, identity_row(v))
+    inside_legend(fig, ax, identity_row(v), lines=ax.lines)
     return fig
 
 
@@ -814,14 +983,40 @@ def acf(v: View) -> Figure:
     ax = axs[0, 0]
     n = len(v.sources)
     rmax = 0.0
+    bands = []
     for j, s in enumerate(v.sources):
         a = v.results[s]["acf"]
         lags = a.index.to_numpy() + dodge(j, n)
+        bound = 1.96 / np.sqrt(a["pairs"].where(a["pairs"] > 0))
+        bands.append(
+            ax.fill_between(
+                a.index.to_numpy(),
+                -bound,
+                bound,
+                color=v.color(s),
+                alpha=BAND_ALPHA,
+                linewidth=0,
+                zorder=1,
+            )
+        )
         ax.vlines(lags, 0, a["r"], color=v.color(s), lw=LW_STEM)
-        ax.plot(lags, a["r"], lw=0, marker=v.marker(s), color=v.color(s), ms=MS_LINE)
+        edge = to_hex(0.65 * np.array(to_rgb(v.color(s))))
+        ax.plot(
+            lags,
+            a["r"],
+            lw=0,
+            marker=v.marker(s),
+            color=v.color(s),
+            ms=MS_LINE,
+            markeredgecolor=edge,
+            markeredgewidth=0.7,
+        )
         finite = a["r"].dropna()
         if not finite.empty:
             rmax = max(rmax, float(np.abs(finite).max()))
+        finite_bounds = bound.loc[np.isfinite(bound)]
+        if not finite_bounds.empty:
+            rmax = max(rmax, float(finite_bounds.max()))
     lim = max(0.5, np.ceil(rmax * 10) / 10)
     ax.axhline(0, color=MUTED, lw=LW_REF)
     ax.set_xticks(range(1, 13))
@@ -831,8 +1026,13 @@ def acf(v: View) -> Figure:
     ax.set_ylabel("Autocorrelation (r)")
     ygrid(ax)
 
-    if n > 1:
-        top_legend(fig, identity_row(v, line=False))
+    confidence = Patch(
+        facecolor=MUTED,
+        alpha=BAND_ALPHA,
+        edgecolor="none",
+        label="95% confidence limits",
+    )
+    inside_legend(fig, ax, [*identity_row(v, line=False), confidence], bands)
     return fig
 
 
@@ -845,7 +1045,8 @@ TREND_METRICS = (
 
 def slopes(v: View) -> Figure:
     n = len(v.sources)
-    fig, axs = new_fig(H_ROW3, 1, 3, width_mm=W_FULL)
+    fig, axs = new_fig(48 + 8 * max(0, n - 2), 1, 3, width_mm=W_FULL)
+    fig.get_layout_engine().set(w_pad=1.5 * MM, wspace=0.02)
     for i, (ax, (key, title, unit)) in enumerate(zip(axs[0], TREND_METRICS)):
         span = 0.0
         for k, s in enumerate(v.sources):
@@ -855,7 +1056,7 @@ def slopes(v: View) -> Figure:
             sig = t["p"] < 0.05
             ax.errorbar(
                 t["slope"],
-                k,
+                k * 0.6,
                 xerr=[[t["slope"] - t["lo"]], [t["hi"] - t["slope"]]],
                 fmt=v.marker(s),
                 color=v.color(s),
@@ -863,26 +1064,60 @@ def slopes(v: View) -> Figure:
                 mec=v.color(s),
                 mew=1.0,
                 ms=MS_POINT,
-                lw=LW_LINE,
-                capsize=2,
+                lw=LW_LINE * 1.5,
+                capsize=3,
+                capthick=1.2,
                 zorder=3,
             )
             span = max(span, abs(t["lo"]), abs(t["hi"]))
         ax.axvline(0, color=MUTED, lw=LW_REF, zorder=1)
         span = span * 1.15 or 1
         ax.set_xlim(-span, span)
-        ax.set_ylim(n - 0.4, -0.75)
+        ax.set_ylim((n - 1) * 0.6 + 0.6, -0.6)
         ax.set_yticks([])
         ax.set_title(f"{chr(97 + i)}) {title}")
-        ax.set_xlabel(f"Trend ({unit})")
+        ax.set_xlabel(unit)
         ax.locator_params(axis="x", nbins=6)
         ax.grid(axis="x", alpha=0.5)
         for spine in ax.spines.values():
             spine.set_visible(True)
             spine.set_color(BOUNDARY)
             spine.set_linewidth(LW_BOUNDARY)
-        ax.tick_params(axis="y", length=0)
-    top_legend(fig, identity_row(v, line=False))
+        ax.tick_params(axis="y", length=3)
+    significance = [
+        Line2D(
+            [],
+            [],
+            linestyle="none",
+            marker="o",
+            color=MUTED,
+            markerfacecolor=MUTED,
+            markersize=MS_POINT,
+            label="p < 0.05",
+        ),
+        Line2D(
+            [],
+            [],
+            linestyle="none",
+            marker="o",
+            color=MUTED,
+            markerfacecolor="white",
+            markersize=MS_POINT,
+            label="p ≥ 0.05",
+        ),
+    ]
+    fig.legend(
+        handles=[*identity_row(v, line=False), *significance],
+        loc="outside right upper",
+        ncols=1,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
+        borderpad=0.4,
+        labelspacing=0.5,
+        handletextpad=0.5,
+    )
     for ax in axs[0]:
         ax.title.set_fontsize(FS_NOTE)
         ax.xaxis.label.set_fontsize(FS_NOTE)
@@ -892,22 +1127,46 @@ def slopes(v: View) -> Figure:
 def series(v: View) -> Figure:
     fig, axs = new_fig(H_SINGLE)
     ax = axs[0, 0]
-    labels = []
     for s in v.sources:
         y = v.results[s]["annual"]["total"].reindex(v.years)
         ax.plot(
             v.years, y, color=v.color(s), lw=LW_LINE, marker=v.marker(s), ms=MS_LINE
         )
-        t = v.results[s]["trends"]["total"]
+    year_ticks(ax, v.years)
+    ax.margins(y=0.08)
+    _annual_trends(ax, v, "annual", "total", "total", UNITS["mm_decade"])
+    ax.set_ylabel(UNITS["mm_year"])
+    top_legend(fig, identity_row(v))
+    ygrid(ax)
+    return fig
+
+
+def _annual_trends(
+    ax: plt.Axes,
+    v: View,
+    table: str,
+    column: str,
+    metric: str,
+    unit: str,
+    digits: int = 0,
+) -> None:
+    """Draw retained Sen estimates with separated, source-colored slope labels."""
+    labels = []
+    for s in v.sources:
+        y = v.results[s][table][column].reindex(v.years)
+        t = v.results[s]["trends"][metric]
         ok = y.dropna().index.to_numpy()
         if np.isfinite(t["slope"]) and ok.size:
             span = np.array([ok[0], ok[-1]], dtype=float)
             line = t["intercept"] + t["slope"] / 10 * span
             ax.plot(span, line, color=v.color(s), lw=LW_REF, ls=TREND_DASH, alpha=0.6)
             labels.append(
-                [line[-1], f"{fmt_signed(t['slope'])} {UNITS['mm_decade']}", v.color(s)]
+                [
+                    line[-1],
+                    f"{fmt_signed(t['slope'], digits)} {unit}",
+                    v.color(s),
+                ]
             )
-    year_ticks(ax, v.years)
     ax.margins(y=0.08)
     lo, hi = ax.get_ylim()
     gap = (hi - lo) * 0.07  # keep end labels from overlapping
@@ -918,18 +1177,14 @@ def series(v: View) -> Figure:
         ax.annotate(
             text,
             (v.years[-1] - 0.4, y),
-            xytext=(-3, 0),
+            xytext=(-3, 8),
             textcoords="offset points",
             ha="right",
-            va="center",
+            va="bottom",
             fontsize=FS_TICK,
             color=color,
-            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.88, "pad": 1.2},
+            bbox=LABEL_BOX,
         )
-    ax.set_ylabel(f"Annual precipitation ({UNITS['mm_year']})")
-    top_legend(fig, identity_row(v))
-    ygrid(ax)
-    return fig
 
 
 def sensitivity(v: View) -> Figure:
@@ -938,39 +1193,43 @@ def sensitivity(v: View) -> Figure:
     for i, (ax, (key, title)) in enumerate(
         zip(axs[0], (("total", "Annual precipitation"), ("Rx1day", "Rx1day")))
     ):
-        for s in v.sources:
+        starts = set()
+        for j, s in enumerate(v.sources):
             t = v.results[s]["sensitivity"][key]
             if t.empty:
                 continue
-            x = t.index.to_numpy()
+            starts.update(t.index)
+            x = t.index.to_numpy() + dodge(j, len(v.sources))
             c = v.color(s)
-            ax.plot(x, t["lo"], color=c, lw=LW_EDGE)
-            ax.plot(x, t["hi"], color=c, lw=LW_EDGE)
-            ax.plot(x, t["slope"], color=c, lw=LW_LINE)
+            edge = to_hex(0.65 * np.array(to_rgb(c)))
             sig = (t["p"] < 0.05).to_numpy()
-            ax.plot(
-                x[sig],
-                t["slope"][sig],
-                lw=0,
-                marker=v.marker(s),
-                ms=MS_LINE,
-                color=c,
-                zorder=3,
-            )
-            ax.plot(
-                x[~sig],
-                t["slope"][~sig],
-                lw=0,
-                marker=v.marker(s),
-                ms=MS_LINE,
-                mfc="white",
-                mec=c,
-                mew=1.0,
-                zorder=3,
-            )
+            for selected, fill_color in ((sig, c), (~sig, "white")):
+                values = t.loc[selected]
+                ax.errorbar(
+                    x[selected],
+                    values["slope"],
+                    yerr=[
+                        values["slope"] - values["lo"],
+                        values["hi"] - values["slope"],
+                    ],
+                    fmt=v.marker(s),
+                    linestyle="none",
+                    color=c,
+                    mfc=fill_color,
+                    mec=edge,
+                    mew=0.7,
+                    ms=MS_POINT,
+                    elinewidth=LW_LINE * 1.5,
+                    capsize=3,
+                    capthick=1.2,
+                    zorder=3,
+                )
+        ax.set_xticks(sorted(starts))
+        if starts:
+            ax.set_xlim(min(starts) - 0.5, max(starts) + 0.5)
         ax.axhline(0, color=MUTED, lw=LW_REF)
         ax.set_title(f"{chr(97 + i)}) {title}")
-        ax.set_ylabel(f"Trend ({UNITS['mm_decade']})")
+        ax.set_ylabel(UNITS["mm_decade"])
         ax.set_xlabel(f"Start year (end {v.years[-1]})")
         ygrid(ax)
     sig = [
@@ -989,8 +1248,23 @@ def sensitivity(v: View) -> Figure:
             label="$p$ ≥ 0.05",
         ),
     ]
-    edge = Line2D([], [], color=MUTED, lw=LW_EDGE, label="95 % interval")
-    top_legend(fig, identity_row(v), sig + [edge])
+    edge = Line2D([], [], color=MUTED, lw=LW_LINE * 1.5, label="95% interval")
+    legend = fig.legend(
+        handles=[*identity_row(v, line=False), *sig, edge],
+        loc="outside right upper",
+        ncols=1,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
+    )
+    legend.set_loc("upper right")
+    legend.borderaxespad = 0
+    fig.get_layout_engine().set(rect=(0, 0, 0.84, 1))
+    fig.canvas.draw()
+    legend.set_bbox_to_anchor(
+        (1, axs[0, 0].get_position().y1), transform=fig.transFigure
+    )
     return fig
 
 
@@ -1011,17 +1285,19 @@ def pt_scatter(v: View) -> Figure | str:
         max(float(np.nanmax(np.abs(v.results[s]["pt"]["t_anom"]))) for s in have) * 1.08
     )
     for i, (ax, season) in enumerate(zip(axs.flat, ("DJF", "MAM", "JJA", "SON"))):
+        ax.set_box_aspect(1)
         for s in have:
             d = v.results[s]["pt"]
             d = d[d["season"] == season]
             ax.scatter(
                 d["t_anom"],
                 d["p_anom_pct"],
-                s=S_SCATTER,
+                s=S_SCATTER * 2.25,
+                alpha=0.7,
                 marker=v.marker(s),
                 color=v.color(s),
-                edgecolor="white",
-                linewidth=0.5,
+                edgecolor=to_hex(0.65 * np.array(to_rgb(v.color(s)))),
+                linewidth=0.7,
                 zorder=3,
             )
         ax.axhline(0, color=MUTED, lw=LW_REF)
@@ -1029,11 +1305,14 @@ def pt_scatter(v: View) -> Figure | str:
         ax.set_xlim(-xlim, xlim)
         ax.set_title(f"{chr(97 + i)}) {season}")
         ax.grid()
+        ax.tick_params(axis="both", length=3)
     for ax in axs[-1]:
         ax.set_xlabel(f"Temperature anomaly ({UNITS['degc']})")
     fig.supylabel("Precipitation anomaly (%)", fontsize=FS_LABEL, color=INK)
-    top_legend(
-        fig, identity_row(v, have, line=False, label=lambda s: f"P: {v.labels[s]}")
+    inside_legend(
+        fig,
+        axs[0, 0],
+        identity_row(v, have, line=False, label=lambda s: f"Precip.: {v.labels[s]}"),
     )
     return fig
 

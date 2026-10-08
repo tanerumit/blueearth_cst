@@ -60,14 +60,14 @@ def inventory(root, sources, settings, comparison=False):
     ):
         forms.pop("pt")
     figures = {
-        k: str(root / "figures" / figure_filename(scope, *v, "basin_avg"))
+        k: str(root / "plots" / figure_filename(scope, *v, "basin_avg"))
         for k, v in forms.items()
     }
     if not comparison:
         for variable in ("precip", "temp", "pet") if temp else ("precip",):
             figures[f"map-{variable}"] = str(
                 root
-                / "figures"
+                / "plots"
                 / figure_filename(scope, variable, "annual_clim_map", "basin_ext")
             )
     compute = {k: str(root / "tables" / f"{k}.csv") for k in TABLES}
@@ -79,8 +79,8 @@ def inventory(root, sources, settings, comparison=False):
         compute["daily"] = str(root / "tables" / "daily_basin.csv")
         compute["maps"] = str(root / "tables" / "annual_climatology.nc")
     render = {
-        "captions_json": str(root / "_engine" / "figure_captions.json"),
-        "captions_md": str(root / "figures" / "figure_captions.md"),
+        "captions_json": str(root / "plots" / "_engine" / "figure_captions.json"),
+        "captions_md": str(root / "plots" / "figure_captions.md"),
     }
     render.update({f"figure_{k}": v for k, v in figures.items()})
     if settings["captioned_figures"]:

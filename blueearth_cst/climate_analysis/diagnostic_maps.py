@@ -8,9 +8,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap
+from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap, ListedColormap
 from matplotlib.patheffects import Normal, Stroke
 from matplotlib.ticker import FuncFormatter
+from matplotlib.transforms import Bbox
 
 from blueearth_cst.climate_analysis import diagnostics as dg
 from blueearth_cst.climate_analysis.diagnostic_figures import STYLE
@@ -124,18 +125,26 @@ def draw_map(field, variable, source, overlays, limits, counts):
                 "#08519c",
             )
         )
-        cmap = LinearSegmentedColormap.from_list(f"wf0-{variable}", ramp).resampled(
-            len(levels) - 1
+        classes = len(levels) - 1
+        # A one-class resampling otherwise selects the pale start of the ramp.
+        cmap = (
+            ListedColormap([ramp[-1]], name=f"wf0-{variable}")
+            if classes == 1
+            else LinearSegmentedColormap.from_list(f"wf0-{variable}", ramp).resampled(
+                classes
+            )
         )
         cmap.set_bad("#a0a0a0")
+        xedges = _edges(field.longitude, field.attrs.get("longitude_resolution"))
+        yedges = _edges(field.latitude, field.attrs.get("latitude_resolution"))
         mesh = ax.pcolormesh(
-            _edges(field.longitude, field.attrs.get("longitude_resolution")),
-            _edges(field.latitude, field.attrs.get("latitude_resolution")),
+            xedges,
+            yedges,
             np.ma.masked_invalid(field.values),
             cmap=cmap,
             norm=BoundaryNorm(levels, cmap.N),
             shading="flat",
-            edgecolors=(0.25, 0.25, 0.25, 0.18),
+            edgecolors=(0.25, 0.25, 0.25, 0.12),
             linewidth=0.25,
         )
         layers = {
@@ -143,7 +152,8 @@ def draw_map(field, variable, source, overlays, limits, counts):
             for key, path in overlays.items()
             if Path(path).is_file()
         }
-        extent = []
+        labels = []
+        marker_color = "#007c83" if variable == "temp" else "#c51b7d"
 
         def lines(geom):
             kind, coordinates = geom["type"], geom["coordinates"]
@@ -162,24 +172,23 @@ def draw_map(field, variable, source, overlays, limits, counts):
                 geom = feature["geometry"]
                 if geom["type"] == "Point":
                     x, y = geom["coordinates"][:2]
-                    ax.plot(x, y, "o", color="#17303c", mec="white", ms=5)
+                    ax.plot(
+                        x,
+                        y,
+                        "o",
+                        color=marker_color,
+                        mec="white",
+                        mew=0.9,
+                        ms=5.5,
+                        zorder=5,
+                    )
                     props = feature["properties"]
                     label = props.get(
                         "wflow_id",
                         props.get("station_name", props.get("location_code", "")),
                     )
-                    text = ax.annotate(
-                        str(label),
-                        (x, y),
-                        xytext=(5, 5),
-                        textcoords="offset points",
-                        fontsize=7,
-                        fontweight="bold",
-                        color="black",
-                    )
-                    text.set_path_effects(
-                        [Stroke(linewidth=2.4, foreground="white"), Normal()]
-                    )
+                    if str(label):
+                        labels.append((x, y, str(label)))
                 for coords in lines(geom):
                     points = np.asarray(coords)
                     (artist,) = ax.plot(
@@ -198,51 +207,99 @@ def draw_map(field, variable, source, overlays, limits, counts):
                             Normal(),
                         ]
                     )
-                    if key == "basins":
-                        extent.extend(points[:, :2].tolist())
-        if extent:
-            points = np.asarray(extent)
-            lo, hi = points.min(axis=0), points.max(axis=0)
-            pad = np.maximum((hi - lo) * 0.08, 0.005)
-            ax.set_xlim(lo[0] - pad[0], hi[0] + pad[0])
-            ax.set_ylim(lo[1] - pad[1], hi[1] + pad[1])
+        # Cell edges, rather than padded basin bounds, fill the entire map frame.
+        ax.set_xlim(float(xedges.min()), float(xedges.max()))
+        ax.set_ylim(float(yedges.min()), float(yedges.max()))
         lat = float(field.latitude.mean())
         ax.set_aspect(1 / math.cos(math.radians(lat)))
-        ax.set_xlabel("Longitude")
-        ax.set_ylabel("Latitude")
-        ax.xaxis.set_major_formatter(
-            FuncFormatter(
-                lambda value, _: (
-                    f"{abs(value):g}°{'W' if value < 0 else 'E' if value > 0 else ''}"
-                )
-            )
-        )
-        ax.yaxis.set_major_formatter(
-            FuncFormatter(
-                lambda value, _: (
-                    f"{abs(value):g}°{'S' if value < 0 else 'N' if value > 0 else ''}"
-                )
-            )
-        )
+        ax.set_xlabel("Longitude (°)")
+        ax.set_ylabel("Latitude (°)")
+        formatter = FuncFormatter(lambda value, _: f"{value:g}".replace("-", "−"))
+        ax.xaxis.set_major_formatter(formatter)
+        ax.yaxis.set_major_formatter(formatter)
         cb = fig.colorbar(
             mesh, ax=ax, shrink=0.48, pad=0.03, anchor=(0, 0), ticks=levels
         )
+        variable_label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
         cb.ax.set_title(
-            f"{variable.capitalize()}\n({'°C' if variable == 'temp' else 'mm yr⁻¹'})",
+            f"{variable_label}\n({'°C' if variable == 'temp' else 'mm yr⁻¹'})",
             fontsize=6,
+            pad=10,
         )
-        supported = counts.values[counts.values > 0]
-        years = (
-            f"{int(supported.min())}–{int(supported.max())}" if supported.size else "0"
-        )
-        if supported.size and supported.min() == supported.max():
-            years = str(int(supported.max()))
-        ax.text(
-            0,
-            -0.11,
-            f"{source.upper()} · {field.attrs.get('period_start', '?')}–{field.attrs.get('period_end', '?')} · {years} complete years per cell",
-            transform=ax.transAxes,
-            fontsize=6,
-            va="top",
-        )
+        _place_point_labels(fig, ax, labels)
         return fig
+
+
+def _place_point_labels(fig, ax, labels):
+    """Choose readable offsets inside the map, avoiding labels and markers."""
+    fig.canvas.draw()
+    renderer = fig.canvas.get_renderer()
+    radius = 4 * fig.dpi / 72
+    occupied = []
+    for x, y, _ in labels:
+        px, py = ax.transData.transform((x, y))
+        occupied.append(
+            Bbox.from_extents(px - radius, py - radius, px + radius, py + radius)
+        )
+    candidates = (
+        (8, 8),
+        (-8, 8),
+        (8, -8),
+        (-8, -8),
+        (16, 0),
+        (-16, 0),
+        (0, 16),
+        (0, -16),
+        (24, 16),
+        (-24, 16),
+        (24, -16),
+        (-24, -16),
+    )
+    for x, y, label in labels:
+        if not ax.get_xlim()[0] <= x <= ax.get_xlim()[1] or not (
+            ax.get_ylim()[0] <= y <= ax.get_ylim()[1]
+        ):
+            continue
+        text = ax.annotate(
+            label,
+            (x, y),
+            xytext=(8, 8),
+            textcoords="offset points",
+            fontsize=7,
+            fontweight="bold",
+            color="#222222",
+            zorder=6,
+            bbox={
+                "boxstyle": "round,pad=0.18",
+                "fc": "white",
+                "ec": "#777777",
+                "lw": 0.35,
+                "alpha": 0.95,
+            },
+            arrowprops={
+                "arrowstyle": "-",
+                "color": "#444444",
+                "lw": 0.55,
+                "shrinkB": 4,
+            },
+        )
+        # Offsets fit inside the existing map; they must not move its layout.
+        text.set_in_layout(False)
+        options = []
+        for dx, dy in candidates:
+            text.set_position((dx, dy))
+            text.set_ha("left" if dx > 0 else "right" if dx < 0 else "center")
+            text.set_va("bottom" if dy > 0 else "top" if dy < 0 else "center")
+            text.update_positions(renderer)
+            text.update_bbox_position_size(renderer)
+            box = text.get_bbox_patch().get_window_extent(renderer).expanded(1.08, 1.15)
+            outside = not (
+                ax.bbox.contains(box.x0, box.y0) and ax.bbox.contains(box.x1, box.y1)
+            )
+            score = 1000 * outside + sum(box.overlaps(b) for b in occupied)
+            options.append((score, dx, dy, box))
+        _, dx, dy, box = min(options, key=lambda option: option[0])
+        text.set_position((dx, dy))
+        text.set_ha("left" if dx > 0 else "right" if dx < 0 else "center")
+        text.set_va("bottom" if dy > 0 else "top" if dy < 0 else "center")
+        occupied.append(box)

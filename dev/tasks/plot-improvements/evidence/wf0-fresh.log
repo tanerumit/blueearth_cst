@@ -1,0 +1,178 @@
+Using workflow specific profile profiles\default for setting default command line arguments.
+19:46:02 - config - WARNING - project_dir is inside the repo tree ('.tmp/scratchpad/plot-verification/rapid'); write run artifacts outside the source
+Assuming unrestricted shared filesystem usage.
+host: WSU-5CG4013KNZ
+Building DAG of jobs...
+Provided cores: 3
+Rules claiming more threads will be scaled down.
+
+wf0 analyze_climate
+
+0.01   delineate_region                1
+0.02   delineate_subbasins_and_rivers  1
+0.03   extract_climate_datasets        2
+0.04   compute_climate_diagnostics     2
+0.04b  plot_climate_diagnostics        2
+0.05   compare_climate_diagnostics     1
+0.06   gather_benchmarks               1
+0.07   gather_logs                     1
+8 rules  |  all to run  |  11 jobs
+
+<project>  <repo>/.tmp/scratchpad/plot-verification/rapid
+config     <project>/config/runs/_engine/execution-configs/analyze_climate/b0e932a2fa2c/project.yml
+<data>     p:/wflow_global/hydromt
+<climate>  <project>/data/climate/historical
+
+
+19:46:03 - RUN  Rule 0.01: delineate_region
+19:46:26 - data_catalog - WARNING - overwriting data source 'era5' with provider file and version _UNSPECIFIED_
+19:46:26 - spatial - Delineating region {'subbasin': [9.666, 0.4476], 'uparea': 100} on merit_hydro_ihu
+19:46:26 - data_source - Reading merit_hydro_ihu from <data>/topography/merit_hydro_ihu/30sec/*.tif
+19:46:29 - data_source - Reading merit_hydro_index from <data>/topography/merit_hydro/basin_index.fgb
+19:47:28 - basin_mask - subbasin bbox: [9.6583, 0.3500, 9.8583, 0.4833]
+19:47:28 - spatial - Wrote region: data/spatial/geoms/region.geojson
+19:47:29 - DONE Rule 0.01: delineate_region  0:01:26  [job 1/11]
+19:47:29 - RUN  Rule 0.03: extract_climate_datasets_era5 - clip global climate to the basin
+19:47:29 - RUN  Rule 0.02: delineate_subbasins_and_rivers
+19:47:29 - RUN  Rule 0.03: extract_climate_datasets_chirps - clip global climate to the basin
+19:47:44 - data_catalog - WARNING - overwriting data source 'era5' with provider file and version _UNSPECIFIED_
+19:47:44 - data_source - Reading merit_hydro_ihu from <data>/topography/merit_hydro_ihu/30sec/*.tif
+19:48:39 - spatial - WARNING - Output location coordinates adjusted: outlet (lon=9.662500000, lat=0.445833000) -> (lon=9.662500000, lat=0.445833333)
+19:48:39 - spatial - WARNING - Output location coordinates adjusted: mainstem_mid (lon=9.704167000, lat=0.420833000) -> (lon=9.704166666, lat=0.420833333)
+19:48:39 - spatial - WARNING - Output location coordinates adjusted: north_tributary (lon=9.762500000, lat=0.445833000) -> (lon=9.762500000, lat=0.445833333)
+19:48:39 - spatial - WARNING - Output location coordinates adjusted: south_tributary (lon=9.770833000, lat=0.395833000) -> (lon=9.770833333, lat=0.395833333)
+19:48:40 - data_source - Reading hydro_rivers_lin from <data>/hydrography/rivers_lin2019/rivers_ge30m.fgb
+19:48:41 - spatial - River network: 3 reaches at 32 km2, reaching all 4 locations
+19:48:41 - data_source - Reading hydro_reservoirs from <data>/hydrography/reservoirs/reservoir-db.fgb
+19:48:45 - data_source - Reading hydro_lakes from <data>/hydrography/lakes/lake-db.fgb
+19:48:46 - data_source - Reading <data>/hydrography/rgi/rgi.fgb
+19:48:51 - DONE Rule 0.02: delineate_subbasins_and_rivers  0:01:21  [job 2/11]
+19:47:44 - data_catalog - WARNING - overwriting data source 'era5' with provider file and version _UNSPECIFIED_
+19:47:45 - extract - Extracting historical climate grid
+19:47:45 - data_source - Reading era5 from <data>/meteo/era5_daily.zarr
+19:48:01 - extract - era5: 2000-01-01..2016-12-31 (~17 years)
+19:48:01 - extract - era5: saving to netCDF
+19:52:11 - era5 store  =========================  100.0%  0:04:09 elapsed      
+19:52:11 - extract - Basin touches 2 of 6 store cells -> basin_cells.csv
+19:52:12 - DONE Rule 0.03: extract_climate_datasets_era5  0:04:42  [job 3/11]
+19:52:12 - RUN  Rule 0.04: compute_climate_diagnostics_era5
+19:52:32 - data_catalog - WARNING - overwriting data source 'era5' with provider file and version _UNSPECIFIED_
+19:52:32 - data_source - Reading era5_orography from <data>/meteo/era5/meta/era5_orography_2018.nc
+19:52:34 - diagnostics - WARNING - Extraction labels temperature K but catalog-normalized values are Celsius; no second conversion
+19:52:34 - diagnostics - Wrote retained source tables and map fields for era5
+19:52:35 - DONE Rule 0.04: compute_climate_diagnostics_era5  0:00:22  [job 4/11]
+19:47:44 - data_catalog - WARNING - overwriting data source 'era5' with provider file and version _UNSPECIFIED_
+19:47:45 - extract - Extracting historical climate grid
+19:47:45 - extract - chirps only contains precipitation data. Keeping native precipitation for source comparison
+19:47:45 - data_source - Reading chirps from <data>/meteo/chirps_africa_daily_v2.0/CHIRPS_rainfall_{year}.nc
+19:48:01 - extract - chirps: 2000-01-01..2016-12-31 (~17 years)
+19:48:01 - extract - chirps: saving to netCDF
+19:54:37 - chirps store  =======================  100.0%  0:06:32 elapsed      
+19:54:37 - extract - Basin touches 15 of 30 store cells -> basin_cells.csv
+19:54:38 - DONE Rule 0.03: extract_climate_datasets_chirps  0:07:08  [job 5/11]
+19:54:38 - RUN  Rule 0.04: compute_climate_diagnostics_chirps
+19:54:52 - diagnostics - Wrote retained source tables and map fields for chirps
+19:54:53 - DONE Rule 0.04: compute_climate_diagnostics_chirps  0:00:14  [job 6/11]
+19:54:53 - RUN  Rule 0.04b: plot_climate_diagnostics_chirps
+19:54:53 - RUN  Rule 0.05: compare_climate_diagnostics - compare the candidate climate datasets
+19:54:53 - RUN  Rule 0.04b: plot_climate_diagnostics_era5
+19:55:14 - DONE Rule 0.04b: plot_climate_diagnostics_chirps  0:00:20  [job 7/11]
+19:55:17 - DONE Rule 0.04b: plot_climate_diagnostics_era5  0:00:24  [job 8/11]
+19:55:02 - compare - Table (2 sources) -> dataset_comparison.csv, dataset_comparison.md
+19:55:25 - DONE Rule 0.05: compare_climate_diagnostics  0:00:32  [job 9/11]
+19:55:25 - RUN  Rule 0.06: gather_benchmarks
+19:55:25 - RUN  Rule 0.07: gather_logs
+19:55:26 - DONE Rule 0.07: gather_logs  [job 10/11]
+19:55:30 - DONE Rule 0.06: gather_benchmarks  0:00:04  [job 11/11]
+19:55:30 - RUN  Target: all  [<repo>/.tmp/scratchpad/plot-verification/rapid]
+    <climate>/era5_20000101_20161231/plots/_engine/figure_captions.json
+    <climate>/era5_20000101_20161231/plots/figure_captions.md
+    <climate>/era5_20000101_20161231/plots/era5_precip_monthly_coverage_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_monthly_clim_band_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_temp_monthly_clim_band_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_timing_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_monthly_anomaly_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_monthly_spi_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_spi_events_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_rx1day_ts_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_rx5day_ts_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_sdii_ts_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_wet_days_ts_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_dry_spell_exceedance_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_monthly_anomaly_acf_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_trend_interval_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_trend_ts_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_temp_seasonal_anomaly_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_monthly_spi_fit_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_trend_sensitivity_basin_avg.png
+    <climate>/era5_20000101_20161231/plots/era5_precip_annual_clim_map_basin_ext.png
+    <climate>/era5_20000101_20161231/plots/era5_temp_annual_clim_map_basin_ext.png
+    <climate>/era5_20000101_20161231/plots/era5_pet_annual_clim_map_basin_ext.png
+    <climate>/chirps_20000101_20161231/plots/_engine/figure_captions.json
+    <climate>/chirps_20000101_20161231/plots/figure_captions.md
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_monthly_coverage_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_monthly_clim_band_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_timing_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_monthly_anomaly_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_monthly_spi_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_spi_events_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_rx1day_ts_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_rx5day_ts_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_sdii_ts_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_wet_days_ts_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_dry_spell_exceedance_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_monthly_anomaly_acf_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_trend_interval_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_trend_ts_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_monthly_spi_fit_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_trend_sensitivity_basin_avg.png
+    <climate>/chirps_20000101_20161231/plots/chirps_precip_annual_clim_map_basin_ext.png
+    <climate>/comparison/tables/coverage.csv
+    <climate>/comparison/tables/valid_years.csv
+    <climate>/comparison/tables/annual_indices.csv
+    <climate>/comparison/tables/monthly_values.csv
+    <climate>/comparison/tables/precip_climatology.csv
+    <climate>/comparison/tables/temp_climatology.csv
+    <climate>/comparison/tables/rainfall_timing.csv
+    <climate>/comparison/tables/spi.csv
+    <climate>/comparison/tables/spi_fit_checks.csv
+    <climate>/comparison/tables/drought_events.csv
+    <climate>/comparison/tables/dry_spells.csv
+    <climate>/comparison/tables/dry_spell_exceedance.csv
+    <climate>/comparison/tables/anomaly_acf.csv
+    <climate>/comparison/tables/trends.csv
+    <climate>/comparison/tables/trend_sensitivity.csv
+    <climate>/comparison/tables/pt_anomalies.csv
+    <climate>/comparison/tables/homogeneity.csv
+    <climate>/comparison/_engine/diagnostics.json
+    <climate>/comparison/tables/agreement.csv
+    <climate>/comparison/tables/agreement.md
+    <climate>/comparison/plots/_engine/figure_captions.json
+    <climate>/comparison/plots/figure_captions.md
+    <climate>/comparison/plots/comparison_precip_monthly_coverage_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_monthly_clim_band_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_annual_timing_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_monthly_anomaly_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_monthly_spi_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_spi_events_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_annual_rx1day_ts_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_annual_rx5day_ts_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_annual_sdii_ts_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_annual_wet_days_ts_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_dry_spell_exceedance_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_monthly_anomaly_acf_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_annual_trend_interval_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_annual_trend_ts_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_temp_seasonal_anomaly_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_monthly_spi_fit_basin_avg.png
+    <climate>/comparison/plots/comparison_precip_annual_trend_sensitivity_basin_avg.png
+    <climate>/comparison/dataset_comparison.csv
+    <climate>/comparison/dataset_comparison.md
+    data/spatial/geoms/basins.geojson
+    config/runs/analyze_climate/run_record.yml
+    logs/wf0_analyze_climate.log
+    benchmarks/wf0_benchmarks.md
+19:55:30 - DONE all
+Complete log(s): <repo>/.snakemake/log/2026-10-08T194602.706482.snakemake.log
+
+wf0 analyze_climate done in 0:09:27  |  5 warnings

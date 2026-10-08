@@ -68,13 +68,13 @@ WF2 retains the acquired slices and basin monthly series, a change-factor produc
 The `analysis/` tables use 30 complete water years around each configured future horizon. The reference is
 the last 30 complete configured water years, or the historical fallback (January: WY 1985–2014; October:
 WY 1984–2013). These windows are separate from the configured windows of the overlay CSVs. The
-`analysis_record.json` records shifts, historical joins, eligibility, equal-model reductions and product
-availability. Seasonal precipitation changes use weighted mean rates; this differs from the lab's
+`analysis/_engine/analysis_record.json` records shifts, historical joins, eligibility, equal-model reductions
+and product availability. Seasonal precipitation changes use weighted mean rates; this differs from the lab's
 total-based percentages. Precipitation CV uses period integrals. Analysis arithmetic uses float64 inputs;
 the aligned change-factor arithmetic retains its existing precision and dry-reference rule.
 
-Rule 2.06 reads only the analysis tables and record. Figures live in `plots/full-period/` and one
-`plots/period-<start>-<end>/` folder per distinct analysis window. Availability determines the PNGs:
+Rule 2.06 reads only the analysis tables and record. Figures live in `plots/full_period/` and one
+`plots/period_<start>_<end>/` folder per distinct analysis window. Availability determines the PNGs:
 coverage, annual member overviews and anomaly trajectories, annual/seasonal change and variability
 strips, monthly cycles, sign agreement and change-factor clouds. A combined cloud is written only when
 at least two distinct windows have paired changes. Missing products carry reasons rather than blank PNGs.

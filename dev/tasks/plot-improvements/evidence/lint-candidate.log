@@ -1,0 +1,2 @@
+✨ Pixi task (lint): ruff check .: (Lint the repo with the [tool.ruff] config in pyproject.toml)
+All checks passed!

@@ -320,9 +320,9 @@ WF0_TERMINALS = [p for spec in SOURCE_DIAGNOSTICS.values() for p in spec["render
 if COMPARISON_DIAGNOSTICS:
     WF0_TERMINALS += list(COMPARISON_DIAGNOSTICS["compute"].values()) + list(COMPARISON_DIAGNOSTICS["render"].values()) + list(COMPARISON_DIAGNOSTICS["source_summary"].values())
 if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
-    WF0_TERMINALS += [f"{spec['root']}/figures/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
+    WF0_TERMINALS += [f"{spec['root']}/plots/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
     if COMPARISON_DIAGNOSTICS:
-        WF0_TERMINALS.append(f"{COMPARISON_DIAGNOSTICS['root']}/figures/subbasins")
+        WF0_TERMINALS.append(f"{COMPARISON_DIAGNOSTICS['root']}/plots/subbasins")
 WF0_TERMINALS.append(SPATIAL_UNITS.outputs["basins"])
 
 WF0_TARGETS = [
@@ -441,9 +441,9 @@ for _source in CANDIDATE_SOURCES:
         **{key: SPATIAL_UNITS.outputs[key] for key in ("basins", "subbasins", "rivers", "locations")}}
     if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
         _render_inputs["subbasin_tables"] = f"{_diag['root']}/tables/subbasins"
-        _render_outputs["subbasin_figures"] = directory(f"{_diag['root']}/figures/subbasins")
+        _render_outputs["subbasin_figures"] = directory(f"{_diag['root']}/plots/subbasins")
         if DIAGNOSTIC_SETTINGS["captioned_figures"]:
-            _render_outputs["captioned_subbasins"] = directory(f"{_diag['root']}/figures/captioned/subbasins")
+            _render_outputs["captioned_subbasins"] = directory(f"{_diag['root']}/plots/captioned/subbasins")
 
     rule:
         name: PLOT_DIAGNOSTICS.job_name(_source)
@@ -467,10 +467,10 @@ if COMPARISON_DIAGNOSTICS:
         "pooled": [SOURCE_DIAGNOSTICS[s]["compute"]["monthly_values"] for s in CANDIDATE_SOURCES],
     }
     if DIAGNOSTIC_SETTINGS["subbasin_figures"]:
-        _comparison_outputs["subbasin_figures"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/figures/subbasins")
+        _comparison_outputs["subbasin_figures"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/plots/subbasins")
         _comparison_outputs["subbasin_tables"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/tables/subbasins")
         if DIAGNOSTIC_SETTINGS["captioned_figures"]:
-            _comparison_outputs["captioned_subbasins"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/figures/captioned/subbasins")
+            _comparison_outputs["captioned_subbasins"] = directory(f"{COMPARISON_DIAGNOSTICS['root']}/plots/captioned/subbasins")
         _comparison_inputs["subbasin_tables"] = [f"{spec['root']}/tables/subbasins" for spec in SOURCE_DIAGNOSTICS.values()]
 
     rule compare_climate_diagnostics:

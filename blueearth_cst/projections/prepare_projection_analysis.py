@@ -125,7 +125,7 @@ def prepare_tables(
         raise ValueError("projection analysis requires at least one future window")
     references = {tuple(window["reference"]) for window in windows}
     if len(references) != 1:
-        raise ValueError("full-period trajectories require one analysis reference")
+        raise ValueError("full_period trajectories require one analysis reference")
     reference = next(iter(references))
     cache, change_rows, anomaly_rows, inventory, coverage_points = {}, [], [], {}, []
     for point in points:
@@ -324,7 +324,9 @@ def run(sm):
         path = Path(sm.output[name])
         path.parent.mkdir(parents=True, exist_ok=True)
         table.to_csv(path, index=False, na_rep="")
-    Path(sm.output.analysis_record).write_text(
+    record_path = Path(sm.output.analysis_record)
+    record_path.parent.mkdir(parents=True, exist_ok=True)
+    record_path.write_text(
         json.dumps(record, indent=2, allow_nan=False) + "\n", encoding="utf-8"
     )
     log_row(

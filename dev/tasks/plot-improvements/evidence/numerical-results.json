@@ -1,0 +1,7 @@
+{
+  "rows": 187,
+  "max_absolute_delta": 0.0,
+  "equal_model_ratio_median": 1.7320508075688774,
+  "expected": 1.7320508075688772,
+  "member_weighting_rejected": true
+}

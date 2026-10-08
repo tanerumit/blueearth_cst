@@ -1,0 +1,17 @@
+{
+  "chirps_20000101_20161231": {
+    "all": 50,
+    "captioned": 25,
+    "subbasins": 16
+  },
+  "comparison": {
+    "all": 50,
+    "captioned": 25,
+    "subbasins": 16
+  },
+  "era5_20000101_20161231": {
+    "all": 66,
+    "captioned": 33,
+    "subbasins": 24
+  }
+}

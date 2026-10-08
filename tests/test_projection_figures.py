@@ -32,8 +32,8 @@ class TestSanitizeHorizonName:
         "name,expected",
         [
             ("far", "far"),
-            ("Far Future", "far-future"),
-            ("mid_century", "mid-century"),
+            ("Far Future", "far_future"),
+            ("mid_century", "mid_century"),
             ("2050s!!", "2050s"),
             ("  near  ", "near"),
         ],
@@ -50,5 +50,5 @@ class TestSanitizeHorizonName:
 class TestHorizonDirectory:
     def test_carries_the_years_not_only_the_label(self):
         """A redefined window must not overwrite the old figure in place."""
-        assert pf.horizon_directory("far", [2070, 2090]) == "far-2070-2090"
-        assert pf.horizon_directory("far", [2060, 2080]) == "far-2060-2080"
+        assert pf.horizon_directory("far", [2070, 2090]) == "far_2070_2090"
+        assert pf.horizon_directory("far", [2060, 2080]) == "far_2060_2080"

@@ -4,9 +4,10 @@ from blueearth_cst.climate_analysis.diagnostic_figures import View
 
 DESCRIPTIONS = {
     "coverage": (
-        "Monthly data coverage. Each cell is a reporting-year month: source colour is complete, "
-        "a lighter tint has tolerated gaps, and gray is missing or unusable. Annual diagnostics use "
-        "only years meeting the completeness rule."
+        "Monthly data coverage by dataset. Each timeline cell represents one month in reporting-year "
+        "order. Pale cells have complete records, darker cells have usable totals with gaps, and gray "
+        "cells are missing or unusable. Annual diagnostics use years meeting the specified data "
+        "completeness threshold."
     ),
     "seasonal": (
         "Monthly precipitation climatology. Lines show the mean monthly total; bands span the "
@@ -18,8 +19,8 @@ DESCRIPTIONS = {
     ),
     "timing": (
         "Timing of cumulative annual precipitation reaching 25%, 50% and 75% of each year's total. "
-        "Thick bars span the interquartile range, thin lines the observed range, white ticks the median, "
-        "and labelled dots the mean day of the reporting year."
+        "Unfilled boxes span the interquartile range, whiskers the observed range, vertical lines the median, "
+        "and numeric labels the mean day of the reporting year."
     ),
     "anomaly": (
         "Monthly precipitation departures from the calendar-month mean in the reference period. "
@@ -33,12 +34,13 @@ DESCRIPTIONS = {
     ),
     "drought-events": (
         "Drought-event duration and accumulated SPI deficit for SPI-3 and SPI-12. "
-        "Events are consecutive months below zero that reach SPI ≤ −1; lighter points touch "
-        "a data gap or record edge, so their full duration is unknown."
+        "Events are consecutive months below zero that reach SPI ≤ −1. Filled markers show complete "
+        "events; hatched markers show truncated events that touch a data gap or "
+        "record boundary, so their full duration and accumulated deficit are unknown."
     ),
     "extreme-Rx1day": (
-        "Annual maximum one-day precipitation (Rx1day). Each point represents a reporting "
-        "year meeting the completeness rule; gaps indicate years without a valid estimate."
+        "Annual maximum one-day precipitation (Rx1day). Points show annual values; "
+        "gaps indicate unavailable estimates."
     ),
     "extreme-Rx5day": (
         "Annual maximum five-day precipitation (Rx5day), calculated from complete five-day "
@@ -59,8 +61,9 @@ DESCRIPTIONS = {
     ),
     "acf": (
         "Autocorrelation of monthly precipitation anomalies at lags of 1–12 months. "
-        "Pearson correlations use only pairs with usable monthly totals; no significance "
-        "threshold is shown."
+        "Pearson correlations use only pairs with usable monthly totals. Shading shows approximate "
+        "pointwise 95% limits under no serial correlation (±1.96/√n, where n is the valid pair count "
+        "at each lag); these limits are not adjusted for multiple comparisons."
     ),
     "slopes": (
         "Theil–Sen trends in annual precipitation, wet days and Rx1day. Points are slope estimates "
@@ -87,13 +90,23 @@ def caption(name: str, view: View) -> str:
         else view.sources
     )
     sources = ", ".join(view.labels[s] for s in plotted)
-    identity = f"{sources}; " if len(view.sources) == 1 or name == "temperature" else ""
+    identity = f"{sources}; "
     period = f"{view.years[0]}–{view.years[-1]}"
-    context = f"{identity}{period}; {view.support}."
+    support = (
+        view.support.replace("_", " ")
+        .replace("avg", "average")
+        .replace("equal-weight cells", "equally weighted grid cells")
+    )
+    context = f"{identity}{period}; {support}."
     detail = DESCRIPTIONS[name]
+    if name.startswith("extreme-"):
+        detail += (
+            " Dashed lines show Theil–Sen trends; source-colored labels give slopes "
+            "per decade."
+        )
     if name == "anomaly" or name == "spi":
         if view.reference[0] == view.years[0] and view.reference[1] == view.years[-1]:
-            context = f"{identity}{period} (reference period); {view.support}."
+            context = f"{identity}{period} (reference period); {support}."
         else:
             detail += f" Reference: {view.reference[0]}–{view.reference[1]}."
     if name == "spi":
@@ -118,7 +131,7 @@ def caption(name: str, view: View) -> str:
         for s in view.sources:
             values = view.results[s]["acf"]["pairs"]
             pairs.append(f"{view.labels[s]} {values.min()}–{values.max()}")
-        detail += f" Pairs per lag: {', '.join(pairs)}."
+        detail += f" Valid monthly observation pairs per lag: {', '.join(pairs)}."
     if name == "pt":
         t_source = next(
             (

@@ -13,6 +13,7 @@ from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis.diagnostic_captions import caption
 from blueearth_cst.climate_analysis.diagnostic_maps import draw_map, visible_values
 from blueearth_cst.climate_analysis.diagnostic_tables import write_json
+from blueearth_cst.climate_analysis.diagnostics import sen_trend
 
 
 def load_result(root, source):
@@ -48,6 +49,11 @@ def load_result(root, source):
     metadata = json.loads(
         (Path(root) / "_engine" / "diagnostics.json").read_text(encoding="utf-8")
     )
+    trend_records = trends.to_dict(orient="index")
+    # These plots also show trends for metrics absent from the retained trend table.
+    for metric in ("Rx5day", "sdii"):
+        if metric not in trend_records:
+            trend_records[metric] = sen_trend(indices[metric])
     return {
         "coverage": coverage,
         "valid": valid.loc[valid.valid_precip, "reporting_year"].to_numpy(),
@@ -68,7 +74,7 @@ def load_result(root, source):
         "n_spells": len(read("dry_spells")),
         "acf": read("anomaly_acf").set_index("lag_months"),
         "annual": indices,
-        "trends": trends.to_dict(orient="index"),
+        "trends": trend_records,
         "sensitivity": {
             k: sensitivity[sensitivity.metric == k]
             .set_index("start_year")
@@ -112,7 +118,7 @@ def render(
     view = artists.View(
         sources=sources,
         labels={
-            s: "CHIRPS v2.0" if s in {"chirps", "chirps_global"} else s.upper()
+            s: "CHIRPS" if s in {"chirps", "chirps_global"} else s.upper()
             for s in sources
         },
         styles=artists.source_styles(sources),
@@ -133,7 +139,7 @@ def render(
     for form, filename in paths["figures"].items():
         availability = "available"
         support = (
-            "native source grid, basin extent"
+            "native source grid, full grid extent"
             if form.startswith("map-")
             else view.support
         )
@@ -145,16 +151,22 @@ def render(
                     counts = fields[f"{variable}_valid_years"].load()
                     field.attrs.update(period_start=period[0], period_end=period[1])
                 all_values = []
+                contributing_grids = 0
                 for p in pooled_roots:
                     with xr.open_dataset(
                         Path(p) / "tables" / "annual_climatology.nc"
                     ) as ds:
                         if variable in ds:
+                            contributing_grids += 1
                             all_values.extend(
                                 visible_values(ds[variable], overlays["basins"])
                                 if overlays and "basins" in overlays
                                 else ds[variable].values.ravel()
                             )
+                # Independent maps use all displayed cells; shared maps retain
+                # the pooled scale needed for direct source comparisons.
+                if contributing_grids <= 1:
+                    all_values = field.values.ravel()
                 values = np.asarray(all_values)
                 values = values[np.isfinite(values)]
                 limits = (
@@ -166,6 +178,13 @@ def render(
                     field, variable, sources[0], overlays or {}, limits, counts
                 )
                 text = f"{sources[0].upper()} native-grid annual {variable} climatology, {period[0]}–{period[1]}. Complete reporting-year {'means' if variable == 'temp' else 'totals'}; gray cells are unavailable. Basin boundary, dashed subbasin boundaries, rivers and gauges are shown where supplied. No interpolation."
+                supported = counts.values[counts.values > 0]
+                years = "0"
+                if supported.size:
+                    years = str(int(supported.min()))
+                    if supported.min() != supported.max():
+                        years += f"–{int(supported.max())}"
+                text += f" {years} complete reporting years per available cell."
                 if variable == "pet":
                     text += " PET is derived on the source grid with the existing de Bruin machinery and can differ from model PET."
                 if not np.isfinite(field.values).any():
@@ -208,12 +227,48 @@ def render(
                     caption(form, view)
                     if form not in {"spi-checks", "sensitivity"}
                     else (
-                        "Calendar-month reference SPI gamma/Pearson III fit checks; Shapiro–Wilk p-values are exploratory, not a qualification gate."
+                        "Shapiro–Wilk normality checks of reference-period SPI by calendar month and accumulation scale, "
+                        "comparing gamma and Pearson III fits. Cells show p-values; p < 0.05 indicates evidence of "
+                        "departure from normality, while p ≥ 0.05 indicates insufficient evidence of departure. "
+                        "Gray cells indicate unavailable estimates. Tests are exploratory and are not adjusted "
+                        "for multiple comparisons."
                         if form == "spi-checks"
-                        else "Start-year Theil–Sen slope sensitivity with dependence-adjusted 95% intervals; at least 15 valid years per fit."
+                        else "Sensitivity of Theil–Sen trends to the fitting period. Each point is a separate "
+                        "fit from the indicated start year to the fixed final year; vertical error bars show "
+                        "95% intervals adjusted for lag-1 serial dependence. Filled points indicate a two-sided "
+                        "Mann–Kendall p < 0.05 and hollow points p ≥ 0.05. Each fit requires at least 15 valid "
+                        "annual values. Dataset positions are offset slightly for readability."
                     )
                 )
-            text += f" Sources: {', '.join(view.labels.values())}. Support: {support}. Method implementation was exercised on Ntoum real data; this run is not scientifically qualified. Source agreement is not accuracy; input homogeneity is unverified."
+            if form.startswith("map-") or form in {"spi-checks", "sensitivity"}:
+                text += f" Sources: {', '.join(view.labels.values())}. {support}."
+            if form == "spi-checks":
+                details = []
+                for source in view.sources:
+                    checks = view.results[source]["spi_checks"]
+                    for distribution, name in (
+                        ("gamma", "gamma"),
+                        ("pearson3", "Pearson III"),
+                    ):
+                        values = np.concatenate(
+                            [
+                                checks[scale][f"sw_{distribution}"].to_numpy()
+                                for scale in artists.SPI_SCALES
+                            ]
+                        )
+                        details.append(
+                            f"{view.labels[source]} {name}: {int((values < 0.05).sum())}"
+                            f"/{int(np.isfinite(values).sum())} tests with p < 0.05"
+                        )
+                    hits = sum(
+                        int(checks[scale]["p3_bound_hits"].sum())
+                        for scale in artists.SPI_SCALES
+                    )
+                    details.append(
+                        f"{view.labels[source]} Pearson III: {hits} monthly values at fitted "
+                        "probability bounds, summed across accumulation scales"
+                    )
+                text += " " + "; ".join(details) + "."
             if availability != "available":
                 text += f" Availability: {availability}."
             Path(filename).parent.mkdir(parents=True, exist_ok=True)
@@ -272,7 +327,7 @@ def render(
             "anomaly_bounds": bounds,
             "produced_paths": list(records)
             + [r["captioned_path"] for r in records.values() if r["captioned_path"]]
-            + ["_engine/figure_captions.json", "figures/figure_captions.md"],
+            + ["plots/_engine/figure_captions.json", "plots/figure_captions.md"],
         },
     )
     Path(paths["render"]["captions_md"]).write_text(

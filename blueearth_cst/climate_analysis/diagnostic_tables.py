@@ -594,7 +594,7 @@ def write_tables(paths, tables_by_source, settings, m0, period, lineage):
             )
         )
     metadata["figure_encoding_record"] = (
-        "_engine/figure_captions.json (pooled anomaly bounds and rendered availability)"
+        "plots/_engine/figure_captions.json (pooled anomaly bounds and rendered availability)"
     )
     metadata["limitations"] = [
         "Input homogeneity unverified; assimilation and gauge density changes can create spurious trends",

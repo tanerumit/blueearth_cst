@@ -17,7 +17,11 @@ import pandas as pd
 from blueearth_cst.climate_analysis.diagnostic_figures import STYLE, add_caption
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
 from blueearth_cst.projections.projection_captions import caption
-from blueearth_cst.projections.projection_figures import SUITE_PRODUCTS
+from blueearth_cst.projections.projection_figures import (
+    SUITE_PRODUCTS,
+    figure_key,
+    period_folder,
+)
 from blueearth_cst.projections.projection_suite_figures import render_product
 from blueearth_cst.shared.snake_utils import (
     listed,
@@ -30,6 +34,7 @@ from blueearth_cst.shared.snake_utils import (
 
 def figure_counts(filename, tables, window_id=""):
     """Count plotted support, rather than claiming the full resolved ensemble."""
+    filename = figure_key(filename)
     name = "model_changes"
     if filename.startswith(("trajectory-", "annual-")):
         name = "member_anomalies"
@@ -53,6 +58,15 @@ def figure_counts(filename, tables, window_id=""):
             (data.statistic == "mean")
             & (data.quantity == ("change_pct" if "-pct" in filename else "change"))
             & data.period.isin(PERIODS[:5])
+        ]
+    elif filename.startswith("monthly-change-"):
+        data = data.loc[
+            (data.statistic == "mean")
+            & data.period.isin(MONTHS)
+            & (
+                data.quantity
+                == ("change_pct" if "precipitation" in filename else "change")
+            )
         ]
     elif "cloud" in filename:
         data = data.loc[(data.statistic == "mean") & (data.period == "annual")]
@@ -86,7 +100,7 @@ def figure_counts(filename, tables, window_id=""):
         data = data.loc[
             (
                 data.statistic
-                == ("std_detrended" if "temperature" in filename else "cv_detrended")
+                == ("std_detrended" if filename.endswith("-sd.png") else "cv_detrended")
             )
             & data.period.isin(PERIODS[:5])
         ]
@@ -95,7 +109,10 @@ def figure_counts(filename, tables, window_id=""):
             data.period.eq("annual")
             & (
                 (data.variable.eq("temp") & data.statistic.eq("std_detrended"))
-                | (data.variable.eq("precip") & data.statistic.eq("cv_detrended"))
+                | (
+                    data.variable.eq("precip")
+                    & data.statistic.isin(["std_detrended", "cv_detrended"])
+                )
             )
         ]
     column = (
@@ -154,8 +171,8 @@ def render_suite(
         module="plot_proj_timeseries",
     )
     folders = [
-        "full-period",
-        *dict.fromkeys(f"period-{w['window_id']}" for w in record["windows"]),
+        "full_period",
+        *dict.fromkeys(period_folder(w["window_id"]) for w in record["windows"]),
     ]
     for folder in folders:
         (root / folder).mkdir(parents=True, exist_ok=True)
@@ -166,7 +183,7 @@ def render_suite(
         (folder, filename)
         for product in SUITE_PRODUCTS.values()
         for folder in folders
-        if (folder == "full-period") == (product["folder_kind"] == "full-period")
+        if (folder == "full_period") == (product["folder_kind"] == "full_period")
         for filename in product["filenames"]
     }
     actual = set(zip(available.folder, available.filename))
@@ -264,7 +281,8 @@ def render_suite(
             "",
             "## Retired paths",
             "",
-            "Previous overview/ and windows/ figures are retired in this version; safe to delete.",
+            "Previous full-period/, period-<start>-<end>/, overview/ and windows/ paths are retired. "
+            "Existing outputs are retained; use the canonical snake_case paths for new renders.",
             "",
         ]
     )
@@ -281,8 +299,8 @@ def run(sm):
     record = json.loads(Path(sm.input.record).read_text(encoding="utf-8"))
     root = Path(sm.output.captions_md).parent
     expected_folders = {
-        root / "full-period",
-        *(root / f"period-{w['window_id']}" for w in record["windows"]),
+        root / "full_period",
+        *(root / period_folder(w["window_id"]) for w in record["windows"]),
     }
     if {Path(path) for path in sm.output.folders} != expected_folders:
         raise ValueError("declared suite folders differ from analysis record")

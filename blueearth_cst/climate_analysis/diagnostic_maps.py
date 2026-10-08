@@ -144,7 +144,7 @@ def draw_map(field, variable, source, overlays, limits, counts):
             cmap=cmap,
             norm=BoundaryNorm(levels, cmap.N),
             shading="flat",
-            edgecolors=(0.25, 0.25, 0.25, 0.18),
+            edgecolors=(0.25, 0.25, 0.25, 0.12),
             linewidth=0.25,
         )
         layers = {

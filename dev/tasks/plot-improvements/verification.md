@@ -182,3 +182,9 @@ one expected failure, no failures, in 154.56 seconds. `verify_landing.py record`
 the clean candidate and environment; `evidence/spatial-gates.json` retains that passing gate with
 its complete log. Lint and format checks passed. This supersedes the historical blocker above.
 The branch is ready for owner-approved landing; no landing or push has been performed.
+
+Post-gate changes contain only this record and its retained logs/JSON. The helper's `verify` adapter
+accepts only exact Markdown exceptions, so it cannot certify newly committed log/JSON evidence.
+The recorded pass remains valid for `d1a2ad02`; an explicit Git diff excluding this task record
+confirms no executable or other repository changes after that candidate. No check was rerun merely
+to absorb evidence files into the tested tree.

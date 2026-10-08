@@ -911,11 +911,23 @@ def acf(v: View) -> Figure:
     ax = axs[0, 0]
     n = len(v.sources)
     rmax = 0.0
+    bands = []
     for j, s in enumerate(v.sources):
         a = v.results[s]["acf"]
         lags = a.index.to_numpy() + dodge(j, n)
+        bound = 1.96 / np.sqrt(a["pairs"].where(a["pairs"] > 0))
+        bands.append(
+            ax.fill_between(
+                a.index.to_numpy(), -bound, bound,
+                color=v.color(s), alpha=BAND_ALPHA, linewidth=0, zorder=1,
+            )
+        )
         ax.vlines(lags, 0, a["r"], color=v.color(s), lw=LW_STEM)
-        ax.plot(lags, a["r"], lw=0, marker=v.marker(s), color=v.color(s), ms=MS_LINE)
+        edge = to_hex(0.65 * np.array(to_rgb(v.color(s))))
+        ax.plot(
+            lags, a["r"], lw=0, marker=v.marker(s), color=v.color(s), ms=MS_LINE,
+            markeredgecolor=edge, markeredgewidth=0.7,
+        )
         finite = a["r"].dropna()
         if not finite.empty:
             rmax = max(rmax, float(np.abs(finite).max()))
@@ -928,8 +940,11 @@ def acf(v: View) -> Figure:
     ax.set_ylabel("Autocorrelation (r)")
     ygrid(ax)
 
-    if n > 1:
-        top_legend(fig, identity_row(v, line=False))
+    confidence = Patch(
+        facecolor=MUTED, alpha=BAND_ALPHA, edgecolor="none",
+        label="95% confidence limits",
+    )
+    inside_legend(fig, ax, [*identity_row(v, line=False), confidence], bands)
     return fig
 
 

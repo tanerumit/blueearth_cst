@@ -60,8 +60,9 @@ DESCRIPTIONS = {
     ),
     "acf": (
         "Autocorrelation of monthly precipitation anomalies at lags of 1–12 months. "
-        "Pearson correlations use only pairs with usable monthly totals; no significance "
-        "threshold is shown."
+        "Pearson correlations use only pairs with usable monthly totals. Shading shows approximate "
+        "pointwise 95% limits under no serial correlation (±1.96/√n, where n is the valid pair count "
+        "at each lag); these limits are not adjusted for multiple comparisons."
     ),
     "slopes": (
         "Theil–Sen trends in annual precipitation, wet days and Rx1day. Points are slope estimates "
@@ -127,7 +128,7 @@ def caption(name: str, view: View) -> str:
         for s in view.sources:
             values = view.results[s]["acf"]["pairs"]
             pairs.append(f"{view.labels[s]} {values.min()}–{values.max()}")
-        detail += f" Pairs per lag: {', '.join(pairs)}."
+        detail += f" Valid monthly observation pairs per lag: {', '.join(pairs)}."
     if name == "pt":
         t_source = next(
             (

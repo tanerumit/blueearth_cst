@@ -19,6 +19,22 @@ def _mask(years):
 def caption(filename, record, window_id="", counts=None):
     """State windows, weighting, benchmark assumptions and exclusions explicitly."""
     counts = counts or {}
+    if filename.startswith("change-factor-cloud"):
+        windows = [w for w in record["windows"] if not window_id or w["window_id"] == window_id]
+        periods = "; ".join(
+            f"{w['used'][0]}–{w['used'][1]} relative to {w['reference'][0]}–{w['reference'][1]}"
+            for w in windows
+        )
+        return (
+            f"CMIP6 annual mean changes for {periods}. Each point pairs precipitation and "
+            "temperature changes from the same model and scenario, with members averaged within "
+            "each model first. Colors identify scenarios. Precipitation changes are percentages "
+            "of the reference mean; temperature changes are in °C. Zero reference lines indicate "
+            "no change. The cloud shows descriptive model spread, not probabilities or a confidence "
+            "region; models from the same code family may be dependent."
+            + (" Lines connect the same model and scenario across future periods."
+               if "combined" in filename else "")
+        )
     if filename == "variability-member-ratios.png":
         window = next(w for w in record["windows"] if w["window_id"] == window_id)
         return (

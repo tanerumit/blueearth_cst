@@ -96,6 +96,10 @@ weight. Faint points retain individual members; their density does not set the w
 Captions distinguish descriptive model spread from confidence intervals and note member dependence.
 Begin each new plot-group review with scientific, methodological and publication-readability suggestions
 before applying changes; distinguish visual revisions from changes to calculations.
+WF2 change clouds retain square plotting areas and circular points for all scenarios, distinguished by
+color, with darker edges and slight transparency. Stack the inset legend in the less occupied upper
+corner. Use “Mean precipitation change (%)” and “Mean temperature change (°C)” as axis titles; state
+reference and future periods in the caption, alongside paired-model aggregation and spread semantics.
 Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
 Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
 them or significance fills in this figure.

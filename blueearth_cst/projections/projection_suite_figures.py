@@ -492,48 +492,41 @@ def pooled_ratio_figure(members, summary, scenarios=None):
 
 
 def change_cloud(models, *, combined=False, scenarios=None):
-    """Paired annual mean changes, no model labels or model style channels."""
+    """Paired model mean changes; scenario colors share a circular marker."""
     data = models.loc[(models.period == "annual") & (models.statistic == "mean")]
     keys = ["model", "scenario", "window_id"]
-    temp = data.loc[
-        (data.variable == "temp") & (data.quantity == "change"), [*keys, "value"]
-    ]
-    precip = data.loc[
-        (data.variable == "precip") & (data.quantity == "change_pct"), [*keys, "value"]
-    ]
+    temp = data.loc[(data.variable == "temp") & (data.quantity == "change"), [*keys, "value"]]
+    precip = data.loc[(data.variable == "precip") & (data.quantity == "change_pct"), [*keys, "value"]]
     paired = temp.merge(precip, on=keys, suffixes=("_temp", "_precip")).dropna()
-    fig, axes = new_fig(H_SINGLE, width_mm=W_MID)
+    fig, axes = new_fig(120, width_mm=120)
     ax = axes[0, 0]
     scen = _scenarios(paired, scenarios)
+    handles = []
     for s in scen:
         sub = paired.loc[paired.scenario == s]
-        ax.scatter(
-            sub.value_temp,
-            sub.value_precip,
-            color=_color(s),
-            s=16,
-            alpha=0.65,
-            marker="o",
-        )
+        color = _color(s)
+        edge = tuple(.6*c for c in to_rgb(color))
+        ax.scatter(sub.value_precip, sub.value_temp, color=color, s=28, alpha=.75,
+                   marker="o", edgecolor=edge, linewidth=.55, zorder=3)
+        handles.append(Line2D([], [], linestyle="", marker="o", markersize=4,
+                              markerfacecolor=color, markeredgecolor=edge, alpha=.75, label=_label(s)))
         if combined:
             for _, group in sub.groupby("model"):
                 group = group.sort_values("window_id")
-                ax.plot(
-                    group.value_temp,
-                    group.value_precip,
-                    color=_color(s),
-                    alpha=0.25,
-                    lw=0.6,
-                )
-    ax.axhline(0, color=MUTED, lw=LW_REF)
-    ax.axvline(0, color=MUTED, lw=LW_REF)
-    ax.set(
-        xlabel="Temperature change (°C)",
-        ylabel="Precipitation change (%)",
-        box_aspect=1,
-    )
-    ygrid(ax)
-    _legend(fig, scen)
+                ax.plot(group.value_precip, group.value_temp, color=color, alpha=.25, lw=.6)
+    p = paired.value_precip.to_numpy(float)
+    t = paired.value_temp.to_numpy(float)
+    pad_x = max((p.max()-p.min())*.12, 1.)
+    pad_y = max((t.max()-t.min())*.12, .2)
+    ax.set(xlim=(min(p.min(), 0)-pad_x, max(p.max(), 0)+pad_x),
+           ylim=(min(t.min(), 0)-pad_y, max(t.max(), 0)+pad_y),
+           xlabel="Mean precipitation change (%)", ylabel="Mean temperature change (°C)",
+           box_aspect=1)
+    ax.axhline(0, color=MUTED, lw=LW_REF, zorder=1)
+    ax.axvline(0, color=MUTED, lw=LW_REF, zorder=1)
+    ax.grid(axis="both")
+    ax.tick_params(axis="both", length=3)
+    inside_legend(fig, ax, handles)
     return fig
 
 
@@ -720,4 +713,5 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 reference=next((w["reference"] for w in record["windows"] if w["window_id"] == window_id), record["reference"]),
             )
     raise ValueError(f"unknown suite product: {filename}")
+
 

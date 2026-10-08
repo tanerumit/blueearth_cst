@@ -5,7 +5,7 @@ status: backlog
 branch: feat/scope-shipped-sample-dataset
 effort: 2
 area: data
-queue: 19
+queue: 21
 created: 2026-08-19
 updated: 2026-10-05
 ---

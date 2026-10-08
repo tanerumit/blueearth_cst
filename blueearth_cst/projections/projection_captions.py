@@ -67,7 +67,16 @@ def caption(filename, record, window_id="", counts=None):
         )
     if filename.startswith("annual-"):
         text.append(
-            "Unsmoothed annual member traces: absolute values above, anomalies relative to each member's own analysis-reference mean below. Precipitation absolute values are annual integrals (mm/year). Historical traces appear once per member in gray with their black member median; scenario-colored envelopes show member medians and member ranges, not equal-model reductions. Dashed handover is 2014.5; gray shading marks the future analysis windows."
+            f"Absolute annual values are shown above and anomalies relative to each member's "
+            f"{record['reference'][0]}–{record['reference'][1]} mean below. "
+            + ("Precipitation totals are in mm yr⁻¹ and anomalies are percentages. "
+               if "precipitation" in filename else "Temperature and its anomalies are in °C. ")
+            + "Thin gray lines show individual historical members and thin scenario-colored lines "
+            "show individual future members. Thick black lines show historical member medians; "
+            "thick scenario-colored lines show future member medians. Colored envelopes span the "
+            "member range, not a confidence "
+            "interval or an equal-model reduction. The dashed line marks the historical–scenario "
+            "transition at 2014.5; pale shading marks the future analysis windows. Missing years remain gaps."
         )
     if filename.startswith("variability-"):
         null = record.get("methods", {}).get("null_band", {})

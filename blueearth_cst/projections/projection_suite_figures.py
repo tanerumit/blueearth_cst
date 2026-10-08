@@ -22,6 +22,7 @@ from blueearth_cst.climate_analysis.diagnostic_figures import (
     W_FULL,
     W_MID,
     new_fig,
+    year_ticks,
     ygrid,
 )
 from blueearth_cst.projections.projection_figures import SCENARIO_COLORS
@@ -238,7 +239,7 @@ def ipcc_trajectory(envelope, *, variable, scenarios=None):
 def annual_overview(
     members, *, variable, scenarios=None, reference=(1985, 2014), windows=()
 ):
-    """Unsmoothed absolute values and anomalies; scenarios are columns.
+    """Unsmoothed absolute values and anomalies; scenarios wrap in column pairs.
 
     Gray historical traces are deduplicated across scenarios, with their black
     member median. Scenario envelopes are member ranges and medians, never
@@ -246,25 +247,35 @@ def annual_overview(
     """
     data = members.loc[members.variable == variable]
     scen = _scenarios(data, scenarios)
+    ncols = min(2, len(scen))
+    blocks = (len(scen) + ncols - 1) // ncols
     fig, axes = new_fig(
-        H_STACK2, nrows=2, ncols=len(scen), width_mm=W_FULL, sharex=True, sharey="row"
+        H_STACK2 * blocks, nrows=2 * blocks, ncols=ncols,
+        width_mm=W_FULL, sharex=True, sharey="row"
     )
+    for block in range(1, blocks):
+        for r in range(2):
+            axes[2 * block + r, 0].sharey(axes[r, 0])
+    for j in range(len(scen), blocks * ncols):
+        for r in range(2):
+            axes[2 * (j // ncols) + r, j % ncols].set_visible(False)
     hist = data.loc[data.year <= 2014].drop_duplicates(["model", "member", "year"])
     future = data.loc[data.year >= 2014]
+    historical_alpha = max(0.06, min(0.3, 0.6 / np.sqrt(max(1, hist.groupby(["model", "member"]).ngroups))))
     labels = (
-        "Annual precipitation (mm yr⁻¹)"
+        "mm yr⁻¹"
         if variable == "precip"
-        else "Annual temperature (°C)",
-        f"Anomaly ({'%' if variable == 'precip' else '°C'}; reference {reference[0]}–{reference[1]})",
+        else "°C",
+        "%" if variable == "precip" else "°C",
     )
     for r, column in enumerate(("value", "anomaly")):
         for j, s in enumerate(scen):
-            ax = axes[r, j]
+            ax = axes[2 * (j // ncols) + r, j % ncols]
             for _, member in hist.groupby(["model", "member"]):
                 member = member.set_index("year").sort_index()
                 years = np.arange(member.index.min(), member.index.max() + 1)
                 ax.plot(
-                    years, member.reindex(years)[column], color=MUTED, lw=0.5, alpha=0.3
+                    years, member.reindex(years)[column], color=MUTED, lw=0.5, alpha=historical_alpha
                 )
             median = hist.groupby("year")[column].median()
             if len(median):
@@ -277,6 +288,7 @@ def annual_overview(
                     gid="historical-median",
                 )
             sub = future.loc[future.scenario == s]
+            member_alpha = max(0.05, min(0.25, 0.5 / np.sqrt(max(1, sub.groupby(["model", "member"]).ngroups))))
             for _, member in sub.groupby(["model", "member"]):
                 member = member.set_index("year").sort_index()
                 years = np.arange(member.index.min(), member.index.max() + 1)
@@ -284,7 +296,7 @@ def annual_overview(
                     years,
                     member.reindex(years)[column],
                     color=_color(s),
-                    alpha=0.25,
+                    alpha=member_alpha,
                     lw=0.3,
                 )
             env = sub.groupby("year")[column].agg(["min", "max", "median"])
@@ -306,19 +318,25 @@ def annual_overview(
                     gid=f"window:{window['window_id']}",
                 )
             ax.text(
-                0.02,
+                0.0,
                 1.02,
-                f"{chr(97 + r * len(scen) + j)})",
+                f"{chr(97 + r * len(scen) + j)}) {_label(s)} · {'Anomaly' if r else 'Annual'}",
                 transform=ax.transAxes,
+                ha="left",
                 va="bottom",
                 fontsize=FS_NOTE,
             )
             if r:
                 ax.axhline(0, color=MUTED, lw=LW_REF)
-                ax.set_xlabel(f"Water-year label; {_label(s)}")
+                ax.set_xlabel("Year")
+            year_ticks(ax, np.arange(int(data.year.min()), int(data.year.max()) + 1))
+            if data.year.max() - data.year.min() > 100:
+                ax.set_xticks(np.arange(int(data.year.min()) // 20 * 20 + 20, int(data.year.max()) + 1, 20))
+            ax.tick_params(axis="y", length=3)
+            ax.tick_params(axis="x", labelbottom=bool(r))
+            if j % ncols == 0:
+                ax.set_ylabel(labels[r])
             ygrid(ax)
-        axes[r, 0].set_ylabel(labels[r])
-    _legend(fig, scen)
     return fig
 
 

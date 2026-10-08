@@ -7,6 +7,10 @@ the underlying calculation or statistical interpretation.
 
 ## Typography, axes and layout
 
+- Design WF2 figures for 4–5 scenarios and 10–20+ models, potentially with multiple members per model.
+  Small retained examples do not establish that labels, legends or panels remain readable at that scale.
+  Wrap panels instead of indefinitely shrinking them; adapt trace opacity to member density and retain
+  clear summaries. Never silently omit models or scenarios to make a figure fit.
 - Keep font sizes consistent in physical units across different canvas sizes. Current scientific figures
   use 7 pt axis and panel titles, and 6 pt ticks and annotations. Scale every element together in previews,
   including captions, legends and labels; do not enlarge a compact figure to fill its HTML card.
@@ -19,6 +23,8 @@ the underlying calculation or statistical interpretation.
   and plot labels; retain version metadata in source records where relevant.
 - Keep grid lines subtle and partly transparent. Avoid competing with the data or annotations.
 - Use short panel titles prefixed `a)`, `b)`, etc.; explain methodological details in the caption.
+- Align panel labels and titles with the plotting pane's left border in all multi-panel figures.
+  For labels above a Matplotlib pane, use axes-relative x = 0 and left horizontal alignment.
 
 ## Legends, labels and points
 
@@ -56,6 +62,7 @@ the underlying calculation or statistical interpretation.
 | Climate maps | Extent exactly matches the gridded layer; no surrounding blank map area. |
 | Map coordinates | Axis titles include degrees; tick labels are numeric, signed, without N/S/E/W. |
 | Annual series | Trend line and slope annotation on every applicable series; y-axis shows units only. |
+| WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
 | Cumulative timing | Bottom month axis; no top-axis title; y-axis `Cumulative (%)`, numeric ticks. |
 | Timing boxes | Enlarged unfilled horizontal boxes, thin outlines, no mean dot. |

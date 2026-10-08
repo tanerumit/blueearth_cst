@@ -91,6 +91,9 @@ in this visual review.
 
 ## Interactive review process
 
+- Start from the tracked `dev/reference/figure-comparison.html` template. See
+  `dev/reference/figure-comparison.md` for setup and figure-record fields. Keep session data in scratch;
+  update the tracked template when improvements to the review interface are approved.
 - Keep the disposable HTML review under the worktree's `.tmp/scratchpad/`; it is not durable storage.
 - Show only the plot group currently under review, with existing and revised versions side by side.
   Preserve a baseline before revising the group.

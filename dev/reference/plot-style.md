@@ -86,7 +86,7 @@ For WF2 change strips, tighten the gap between the horizontal scenario legend an
 caps to the full-range lines, and make median bars slightly thicker than the box outlines.
 
 WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
-reference-period axis titles, capped ranges, outline IQR boxes and thicker median bars. Review climatology
+horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median bars. Review climatology
 and monthly changes as separate groups in the HTML page.
 
 For drought events, reserve colored dot legend symbols for datasets; use a line for complete events and

@@ -230,7 +230,7 @@ def monthly_change_figure(summary, *, variable, scenarios=None, reference=(1985,
                                        facecolor="white", edgecolor=color, lw=0.8))
             ax.plot([x - 0.275, x + 0.275], [row["median"]] * 2, color=color, lw=1.5)
         ax.set_title(f"{chr(97 + j)}) {_label(s)}", loc="left")
-        ax.set_xticks(range(12), MONTHS, rotation=45)
+        ax.set_xticks(range(12), MONTHS, rotation=0)
         ax.set_xlim(-0.6, 11.6)
         ax.tick_params(axis="both", length=3)
         ax.axhline(0, color=MUTED, lw=LW_REF)

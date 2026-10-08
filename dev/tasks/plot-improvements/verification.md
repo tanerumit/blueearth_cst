@@ -159,3 +159,21 @@ production/lab parity cases missing their production input tree, and one all-fiv
 requiring `--run-integration`. The xfail is the known HydroMT catalog preprocess round-trip defect.
 All-five execution/full tests are not required by this figure-only diff. Matched synthetic numerical
 parity is exact; it does not replace the missing real production/lab parity case.
+
+## Owner-authorized coordinate tolerance follow-up
+
+The owner approved treating snapped coordinate rounding as negligible on 2026-10-08.
+The validator now uses absolute tolerance `1e-12` degrees, relative tolerance zero, only for
+`snapped_x` and `snapped_y`. Other attributes remain exact; dtype, row identity and missingness must
+still agree. Geometry keeps its existing separate tolerance. No stored outputs were changed.
+
+Regression evidence: four rounding cases and the existing built fixture failed before the fix;
+all 31 spatial-parity tests passed after it. Tests reject `2e-12` degree drift, finite/missing and
+finite/infinite mismatches, and even tiny changes to other numeric attributes. Matching missing
+coordinates still pass. Commands: `pixi run pytest tests/test_spatial_geoms_parity.py -q`, touched
+Ruff lint/format checks, then `pixi run lint` and `pixi run format-check`.
+
+Caller search confirms the validator is used only by its tests; this changes verification tolerance,
+not shared workflow runtime/configuration or calculated outputs. Full/all-five execution is not
+invalidated. A final fast run on the committed correction will supersede the historical blocker
+above; its result is recorded after completion.

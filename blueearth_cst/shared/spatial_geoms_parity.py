@@ -56,6 +56,8 @@ Design invariants, mirroring ``interchange_contracts``:
 from __future__ import annotations
 
 from collections.abc import Mapping
+from math import isclose
+from numbers import Real
 from typing import Any
 
 #: Layers whose two versions are TRUE COPIES: identical geometry and identical
@@ -113,6 +115,28 @@ CONTAINMENT_RTOL = 1e-4
 #: point moves.
 GEOMETRY_ATOL_DEG = 1e-5
 
+#: Absolute slack for snapped coordinate attributes after GeoJSON round trips.
+#: The observed 7.1e-15 degree difference is floating-point formatting noise;
+#: 1e-12 degrees remains far below any meaningful displacement. No relative slack.
+COORDINATE_ATOL_DEG = 1e-12
+
+
+def _coordinate_values_equal(ours: Any, theirs: Any) -> bool:
+    """Tolerate numeric rounding while preserving dtype, index and missingness."""
+    missing = ours.isna()
+    if (
+        ours.dtype != theirs.dtype
+        or not ours.index.equals(theirs.index)
+        or not missing.equals(theirs.isna())
+    ):
+        return False
+    return all(
+        isinstance(a, Real)
+        and isinstance(b, Real)
+        and isclose(a, b, rel_tol=0, abs_tol=COORDINATE_ATOL_DEG)
+        for a, b in zip(ours[~missing], theirs[~missing], strict=True)
+    )
+
 
 def _union_area(gdf: Any) -> float:
     """Total area of a GeoDataFrame's geometry, as one unioned shape."""
@@ -124,7 +148,10 @@ def _columns(gdf: Any) -> list[str]:
 
 
 def validate_copied_layer(ours: Any, theirs: Any, layer: str) -> list[str]:
-    """Both sides must be the same layer: same schema, same geometry."""
+    """Same schema and attributes, with rounding slack only for snapped x/y.
+
+    Geometry retains its separate Hausdorff tolerance. Other attributes are exact.
+    """
     out: list[str] = []
     if str(ours.crs) != str(theirs.crs):
         out.append(f"{layer}: crs {ours.crs} vs {theirs.crs}")
@@ -137,6 +164,10 @@ def validate_copied_layer(ours: Any, theirs: Any, layer: str) -> list[str]:
     else:
         for col in our_cols:
             if not ours[col].equals(theirs[col]):
+                if col in ("snapped_x", "snapped_y") and _coordinate_values_equal(
+                    ours[col], theirs[col]
+                ):
+                    continue
                 out.append(f"{layer}: column {col!r} values differ")
     for i, (a, b) in enumerate(zip(ours.geometry, theirs.geometry)):
         if a is None or b is None:

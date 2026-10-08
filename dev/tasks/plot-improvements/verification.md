@@ -188,3 +188,11 @@ accepts only exact Markdown exceptions, so it cannot certify newly committed log
 The recorded pass remains valid for `d1a2ad02`; an explicit Git diff excluding this task record
 confirms no executable or other repository changes after that candidate. No check was rerun merely
 to absorb evidence files into the tested tree.
+
+## Owner-approved local landing — 2026-10-08
+
+`task-land feat/plot-improvements --target main --verify` ran the recorded fast gate on candidate
+`c7b47b34`: 4007 passed, 17 explained skips, one expected failure, in 184.97 seconds.
+Local main merged it at `566abca4`; committed-tree equality and candidate ancestry both passed.
+Session-1 is detached and EMPTY; the merged local branch was removed. No push occurred.
+The complete landing gate and lifecycle logs are retained in `evidence/`.

@@ -1,0 +1,25 @@
+{
+  "version": 1,
+  "commit": "c7b47b34a3c1b050158e7926f43f6483a82232d6",
+  "tree": "cd30cd5cf276f5b60a0d420ecb23ae15f86e668d",
+  "environment": {
+    "pixi_lock_sha256": "797afdad5a8f8c37dd62b2f1e2f88f3fea120c3fc53b7e7c792b860700a6782b",
+    "python_executable": "C:\\Users\\taner\\workspace\\.worktrees\\blueearth_cst\\session-1\\.pixi\\envs\\default\\python.exe",
+    "python_version": "3.12.13",
+    "platform": "Windows-11-10.0.26200-SP0"
+  },
+  "inputs": {},
+  "gates": {
+    "test-fast": {
+      "command": [
+        "pixi",
+        "run",
+        "test-fast"
+      ],
+      "exit_code": 0,
+      "status": "passed",
+      "log": "C:/Users/taner/workspace/blueearth_cst/dev/tasks/plot-improvements/evidence/landing-fast.log",
+      "log_sha256": "b1ceb8828abfa33fbbd379eea455fd420b4b9cc76802c775a26e07ecf22dd23e"
+    }
+  }
+}

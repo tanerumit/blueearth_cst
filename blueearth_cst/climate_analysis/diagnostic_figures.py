@@ -98,7 +98,7 @@ DODGE = 0.2
 DIVERGING_CLASSES = 7
 
 
-SPI_BOUNDS = [-2, -1.5, -1, 1, 1.5, 2]
+SPI_BOUNDS = [-3, -2, -1, 1, 2, 3]
 
 
 LADDER = (1, 1.5, 2, 3, 4, 5, 6, 8)
@@ -371,7 +371,8 @@ def identity_row(v: View, sources: Sequence[str] | None = None, **kw) -> list:
 
 
 def colourbar(
-    fig: Figure, mesh, axes: list, label: str, ticks: Sequence[float], stack_mm: float
+    fig: Figure, mesh, axes: list, label: str, ticks: Sequence[float], stack_mm: float,
+    shrink: float = 0.68,
 ) -> None:
     cb = fig.colorbar(
         mesh,
@@ -380,7 +381,7 @@ def colourbar(
         spacing="uniform",
         extendrect=True,
         pad=0.02,
-        shrink=0.68,
+        shrink=shrink,
         anchor=(0.0, 0.0),
         aspect=max(stack_mm / 3.0, 8),
     )
@@ -658,8 +659,11 @@ def anomaly(v: View) -> Figure:
 
 
 def spi(v: View) -> Figure:
-    norm = BoundaryNorm(SPI_BOUNDS, DIVERGING_CLASSES, extend="both")
+    cmap = plt.get_cmap("RdBu", len(SPI_BOUNDS) + 1)
+    norm = BoundaryNorm(SPI_BOUNDS, cmap.N, extend="both")
     fig, axs, stack = _stack(v)
+    stack *= 0.56
+    fig.set_size_inches(fig.get_figwidth(), stack * MM)
     mesh = None
     for i, (ax, s) in enumerate(zip(axs[:, 0], v.sources)):
         ax.set_facecolor(MISSING)
@@ -676,7 +680,7 @@ def spi(v: View) -> Figure:
                 edges,
                 [row - 0.5, row + 0.5],
                 ser.to_numpy()[None, :],
-                cmap=diverging_cmap(),
+                cmap=cmap,
                 norm=norm,
                 rasterized=True,
             )
@@ -689,7 +693,10 @@ def spi(v: View) -> Figure:
             ax.set_title(f"{chr(97 + i)}) {v.labels[s]}")
     axs[-1, 0].set_xlim(v.years[0], v.years[-1] + 1)
     five_year_ticks(axs[-1, 0], v.years, rotation=0)
-    colourbar(fig, mesh, axs[:, 0].tolist(), "SPI", SPI_BOUNDS, stack)
+    colourbar(
+        fig, mesh, axs[:, 0].tolist(), "SPI", SPI_BOUNDS, stack,
+        shrink=0.8,
+    )
     return fig
 
 

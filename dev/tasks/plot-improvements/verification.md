@@ -175,5 +175,10 @@ Ruff lint/format checks, then `pixi run lint` and `pixi run format-check`.
 
 Caller search confirms the validator is used only by its tests; this changes verification tolerance,
 not shared workflow runtime/configuration or calculated outputs. Full/all-five execution is not
-invalidated. A final fast run on the committed correction will supersede the historical blocker
-above; its result is recorded after completion.
+invalidated.
+
+Final executable candidate `d1a2ad02` passed `pixi run test-fast`: 4007 passed, 17 explained skips,
+one expected failure, no failures, in 154.56 seconds. `verify_landing.py record` successfully recorded
+the clean candidate and environment; `evidence/spatial-gates.json` retains that passing gate with
+its complete log. Lint and format checks passed. This supersedes the historical blocker above.
+The branch is ready for owner-approved landing; no landing or push has been performed.

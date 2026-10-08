@@ -1,0 +1,9 @@
+{
+  "spatial-tolerance-red.log": "0aed86a14e7c9055de15eaf506fb78a44cbbc4d8be4bfdc4a0f7d760da57281c",
+  "spatial-tolerance-green.log": "70c4599104acadee493dc4d42891aa0da0a2f1e8fa5c556805d96d2b94570c78",
+  "spatial-lint.log": "eaaf28741858b7d5c6d71bd50089f7eb62cc4ebb15dd5848b51d18bdf89a1b9d",
+  "spatial-format.log": "97d85b4b6c185a05396e2d09a3c304ff0f7cc77f8b7b7bb7989ec6cd875b3898",
+  "spatial-format-all.log": "cdb664c8a6da088888c3b4bd6b457da16a4eea0f46c7c076e1dfbd7aa8e78a2f",
+  "spatial-fast.log": "35ac91f730a291302ce612d5ae2c3e74defb83c45397ae76e640682a0b09849b",
+  "spatial-gates.json": "662180d4813275a818023e524424755d243c09712444d03aa49f1c31882746b7"
+}

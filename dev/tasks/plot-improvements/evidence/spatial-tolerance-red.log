@@ -1,0 +1,102 @@
+.............FFFF............F.                                          [100%]
+================================== FAILURES ===================================
+_____ test_copy_tolerates_snapped_coordinate_rounding[7.1e-15-snapped_x] ______
+
+column = 'snapped_x', delta = 7.1e-15
+
+    @pytest.mark.parametrize("column", ["snapped_x", "snapped_y"])
+    @pytest.mark.parametrize("delta", [7.1e-15, 5e-13])
+    def test_copy_tolerates_snapped_coordinate_rounding(column, delta):
+        ours = _frame([shapely.Point(0, 0)], **{column: [0.4]})
+        theirs = _frame([shapely.Point(0, 0)], **{column: [0.4 + delta]})
+>       assert validate_copied_layer(ours, theirs, "locations") == []
+E       assert ['locations: ...alues differ'] == []
+E         
+E         Left contains one more item: "locations: column 'snapped_x' values differ"
+E         Use -v to get more diff
+
+tests\test_spatial_geoms_parity.py:171: AssertionError
+_____ test_copy_tolerates_snapped_coordinate_rounding[7.1e-15-snapped_y] ______
+
+column = 'snapped_y', delta = 7.1e-15
+
+    @pytest.mark.parametrize("column", ["snapped_x", "snapped_y"])
+    @pytest.mark.parametrize("delta", [7.1e-15, 5e-13])
+    def test_copy_tolerates_snapped_coordinate_rounding(column, delta):
+        ours = _frame([shapely.Point(0, 0)], **{column: [0.4]})
+        theirs = _frame([shapely.Point(0, 0)], **{column: [0.4 + delta]})
+>       assert validate_copied_layer(ours, theirs, "locations") == []
+E       assert ['locations: ...alues differ'] == []
+E         
+E         Left contains one more item: "locations: column 'snapped_y' values differ"
+E         Use -v to get more diff
+
+tests\test_spatial_geoms_parity.py:171: AssertionError
+______ test_copy_tolerates_snapped_coordinate_rounding[5e-13-snapped_x] _______
+
+column = 'snapped_x', delta = 5e-13
+
+    @pytest.mark.parametrize("column", ["snapped_x", "snapped_y"])
+    @pytest.mark.parametrize("delta", [7.1e-15, 5e-13])
+    def test_copy_tolerates_snapped_coordinate_rounding(column, delta):
+        ours = _frame([shapely.Point(0, 0)], **{column: [0.4]})
+        theirs = _frame([shapely.Point(0, 0)], **{column: [0.4 + delta]})
+>       assert validate_copied_layer(ours, theirs, "locations") == []
+E       assert ['locations: ...alues differ'] == []
+E         
+E         Left contains one more item: "locations: column 'snapped_x' values differ"
+E         Use -v to get more diff
+
+tests\test_spatial_geoms_parity.py:171: AssertionError
+______ test_copy_tolerates_snapped_coordinate_rounding[5e-13-snapped_y] _______
+
+column = 'snapped_y', delta = 5e-13
+
+    @pytest.mark.parametrize("column", ["snapped_x", "snapped_y"])
+    @pytest.mark.parametrize("delta", [7.1e-15, 5e-13])
+    def test_copy_tolerates_snapped_coordinate_rounding(column, delta):
+        ours = _frame([shapely.Point(0, 0)], **{column: [0.4]})
+        theirs = _frame([shapely.Point(0, 0)], **{column: [0.4 + delta]})
+>       assert validate_copied_layer(ours, theirs, "locations") == []
+E       assert ['locations: ...alues differ'] == []
+E         
+E         Left contains one more item: "locations: column 'snapped_y' values differ"
+E         Use -v to get more diff
+
+tests\test_spatial_geoms_parity.py:171: AssertionError
+____________ test_the_relationships_hold_on_a_really_built_project ____________
+
+    @pytest.mark.skipif(
+        not (OURS_DIR.exists() and THEIRS_DIR.exists()),
+        reason="needs the built test_case/test_local fixture",
+    )
+    def test_the_relationships_hold_on_a_really_built_project():
+        """The hydromt watch (exposure 3 of R9-1).
+    
+        `ours <= theirs` for `region` holds because
+        `GridComponent._region_data` returns `box(*self.bounds)`
+        (hydromt/model/components/grid.py:269, hydromt 1.3.1) and the grid is built
+        to circumscribe the delineated basin.
+    
+        This notices an upgrade that changed that derivation only once the fixture
+        is REBUILT under the new hydromt -- the tree here is static, so the check
+        is armed at rebuild time rather than at upgrade time. That is still the
+        right place: a rebuild is exactly when the new derivation first lands on
+        disk, and before then nothing downstream has consumed it.
+        """
+        ours = {n: gpd.read_file(OURS_DIR / f"{n}.geojson") for n in SHARED_BASENAMES}
+        theirs = {n: gpd.read_file(THEIRS_DIR / f"{n}.geojson") for n in SHARED_BASENAMES}
+>       assert validate_spatial_geoms_parity(ours, theirs) == []
+E       assert ['locations: ...alues differ'] == []
+E         
+E         Left contains one more item: "locations: column 'snapped_y' values differ"
+E         Use -v to get more diff
+
+tests\test_spatial_geoms_parity.py:267: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_spatial_geoms_parity.py::test_copy_tolerates_snapped_coordinate_rounding[7.1e-15-snapped_x]
+FAILED tests/test_spatial_geoms_parity.py::test_copy_tolerates_snapped_coordinate_rounding[7.1e-15-snapped_y]
+FAILED tests/test_spatial_geoms_parity.py::test_copy_tolerates_snapped_coordinate_rounding[5e-13-snapped_x]
+FAILED tests/test_spatial_geoms_parity.py::test_copy_tolerates_snapped_coordinate_rounding[5e-13-snapped_y]
+FAILED tests/test_spatial_geoms_parity.py::test_the_relationships_hold_on_a_really_built_project
+5 failed, 26 passed in 4.08s

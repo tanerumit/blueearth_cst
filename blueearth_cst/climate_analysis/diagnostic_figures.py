@@ -957,7 +957,8 @@ TREND_METRICS = (
 
 def slopes(v: View) -> Figure:
     n = len(v.sources)
-    fig, axs = new_fig(H_ROW3, 1, 3, width_mm=W_FULL)
+    fig, axs = new_fig(48 + 8 * max(0, n - 2), 1, 3, width_mm=W_FULL)
+    fig.get_layout_engine().set(w_pad=1.5 * MM, wspace=0.02)
     for i, (ax, (key, title, unit)) in enumerate(zip(axs[0], TREND_METRICS)):
         span = 0.0
         for k, s in enumerate(v.sources):
@@ -967,7 +968,7 @@ def slopes(v: View) -> Figure:
             sig = t["p"] < 0.05
             ax.errorbar(
                 t["slope"],
-                k,
+                k * 0.6,
                 xerr=[[t["slope"] - t["lo"]], [t["hi"] - t["slope"]]],
                 fmt=v.marker(s),
                 color=v.color(s),
@@ -975,26 +976,42 @@ def slopes(v: View) -> Figure:
                 mec=v.color(s),
                 mew=1.0,
                 ms=MS_POINT,
-                lw=LW_LINE,
-                capsize=2,
+                lw=LW_LINE * 1.5,
+                capsize=3,
+                capthick=1.2,
                 zorder=3,
             )
             span = max(span, abs(t["lo"]), abs(t["hi"]))
         ax.axvline(0, color=MUTED, lw=LW_REF, zorder=1)
         span = span * 1.15 or 1
         ax.set_xlim(-span, span)
-        ax.set_ylim(n - 0.4, -0.75)
+        ax.set_ylim((n - 1) * 0.6 + 0.6, -0.6)
         ax.set_yticks([])
         ax.set_title(f"{chr(97 + i)}) {title}")
-        ax.set_xlabel(f"Trend ({unit})")
+        ax.set_xlabel(unit)
         ax.locator_params(axis="x", nbins=6)
         ax.grid(axis="x", alpha=0.5)
         for spine in ax.spines.values():
             spine.set_visible(True)
             spine.set_color(BOUNDARY)
             spine.set_linewidth(LW_BOUNDARY)
-        ax.tick_params(axis="y", length=0)
-    top_legend(fig, identity_row(v, line=False))
+        ax.tick_params(axis="y", length=3)
+    significance = [
+        Line2D(
+            [], [], linestyle="none", marker="o", color=MUTED,
+            markerfacecolor=MUTED, markersize=MS_POINT, label="p < 0.05",
+        ),
+        Line2D(
+            [], [], linestyle="none", marker="o", color=MUTED,
+            markerfacecolor="white", markersize=MS_POINT, label="p ≥ 0.05",
+        ),
+    ]
+    fig.legend(
+        handles=[*identity_row(v, line=False), *significance],
+        loc="outside right upper", ncols=1,
+        frameon=True, facecolor="white", edgecolor="none", framealpha=0.88,
+        borderpad=0.4, labelspacing=0.5, handletextpad=0.5,
+    )
     for ax in axs[0]:
         ax.title.set_fontsize(FS_NOTE)
         ax.xaxis.label.set_fontsize(FS_NOTE)

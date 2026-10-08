@@ -58,7 +58,6 @@ MISSING = "#a0a0a0"
 QA = "#882255"
 
 
-QA_RAMP = ("#882255", "#d6a5bf", "#e8f2f3")
 
 
 SOURCE_STYLE = {"era5": ("#236b8e", "o"), "chirps": ("#bf6a3c", "o")}
@@ -780,17 +779,25 @@ def drought_events(v: View) -> Figure:
 
 def spi_checks(v: View) -> Figure:
     """Shapiro-Wilk p-values of reference SPI per calendar month and scale, gamma vs Pearson III."""
-    cmap = ListedColormap(list(QA_RAMP))
-    norm = BoundaryNorm([0, 0.01, 0.05, 1], cmap.N)
+    ramps = {
+        s: [
+            to_hex(0.65 * np.array(to_rgb(v.color(s)))),
+            tint(v.color(s)),
+            to_hex(0.1 * np.array(to_rgb(v.color(s))) + 0.9),
+        ]
+        for s in v.sources
+    }
+    norm = BoundaryNorm([0, 0.01, 0.05, 1], 3)
     rows = [(s, d) for s in v.sources for d in ("gamma", "pearson3")]
     fig, axs = new_fig(
-        14 + 30 * len(rows),
+        14 + 24 * len(rows),
         len(rows),
         1,
         width_mm=W_MID if len(rows) == 2 else W_FULL,
         sharex=True,
     )
-    for ax, (s, d) in zip(axs[:, 0], rows):
+    for i, (ax, (s, d)) in enumerate(zip(axs[:, 0], rows)):
+        cmap = ListedColormap(ramps[s])
         tab = np.array(
             [v.results[s]["spi_checks"][k][f"sw_{d}"].to_numpy() for k in SPI_SCALES],
             dtype=float,
@@ -802,8 +809,8 @@ def spi_checks(v: View) -> Figure:
             tab,
             cmap=cmap,
             norm=norm,
-            edgecolors="white",
-            linewidth=0.8,
+            edgecolors=(*to_rgb(GRID), 0.5),
+            linewidth=0.4,
         )
         for (r, c), val in np.ndenumerate(tab):
             if np.isfinite(val):
@@ -814,28 +821,30 @@ def spi_checks(v: View) -> Figure:
                     ha="center",
                     va="center",
                     fontsize=FS_NOTE,
-                    color="white" if val < 0.01 else INK,
+                    color=INK,
+                    bbox=LABEL_BOX,
                 )
         ax.set_ylim(2.5, -0.5)
         ax.set_yticks(range(3), [f"SPI-{k}" for k in SPI_SCALES])
-        n_fail = int((tab < 0.05).sum())
-        extra = ""
-        if d == "pearson3":
-            hits = sum(
-                int(v.results[s]["spi_checks"][k]["p3_bound_hits"].sum())
-                for k in SPI_SCALES
-            )
-            extra = f" · {plural(hits, 'month')} beyond fit bounds"
         name = "gamma" if d == "gamma" else "Pearson III"
-        ax.set_title(f"{v.labels[s]} · {name} · {n_fail}/36 with $p$ < 0.05{extra}")
+        ax.set_title(f"{chr(97 + i)}) {v.labels[s]} · {name}")
         heatmap_frame(ax)
+        ax.tick_params(axis="both", length=3)
     month_axis(axs[-1, 0], v.m0)
-    keys = [
-        Patch(facecolor=QA_RAMP[0], label="$p$ < 0.01"),
-        Patch(facecolor=QA_RAMP[1], label="0.01 ≤ $p$ < 0.05"),
-        Patch(facecolor=QA_RAMP[2], label="$p$ ≥ 0.05 (no evidence of misfit)"),
-    ]
-    top_legend(fig, keys)
+    keys = [tuple(Patch(facecolor=ramps[s][i]) for s in v.sources) for i in range(3)]
+    legend = fig.legend(
+        handles=keys, labels=["$p$ < 0.01", "0.01 ≤ $p$ < 0.05", "$p$ ≥ 0.05"],
+        handler_map={tuple: HandlerTuple(ndivide=None, pad=0.2)},
+        loc="outside right upper", ncols=1,
+        frameon=True, facecolor="white", edgecolor="none", framealpha=0.88,
+        borderpad=0.4, labelspacing=0.5, handletextpad=0.5,
+    )
+    legend.set_loc("upper right")
+    legend.borderaxespad = 0
+    fig.get_layout_engine().set(rect=(0, 0, 0.84, 1))
+    fig.canvas.draw()
+    top = axs[0, 0].get_position().y1
+    legend.set_bbox_to_anchor((1, top), transform=fig.transFigure)
     return fig
 
 

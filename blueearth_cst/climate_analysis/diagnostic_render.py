@@ -227,13 +227,36 @@ def render(
                     caption(form, view)
                     if form not in {"spi-checks", "sensitivity"}
                     else (
-                        "Calendar-month reference SPI gamma/Pearson III fit checks; Shapiro–Wilk p-values are exploratory, not a qualification gate."
+                        "Shapiro–Wilk normality checks of reference-period SPI by calendar month and accumulation scale, "
+                        "comparing gamma and Pearson III fits. Cells show p-values; p < 0.05 indicates evidence of "
+                        "departure from normality, while p ≥ 0.05 indicates insufficient evidence of departure. "
+                        "Gray cells indicate unavailable estimates. Tests are exploratory and are not adjusted "
+                        "for multiple comparisons."
                         if form == "spi-checks"
                         else "Start-year Theil–Sen slope sensitivity with dependence-adjusted 95% intervals; at least 15 valid years per fit."
                     )
                 )
             if form.startswith("map-") or form in {"spi-checks", "sensitivity"}:
                 text += f" Sources: {', '.join(view.labels.values())}. {support}."
+            if form == "spi-checks":
+                details = []
+                for source in view.sources:
+                    checks = view.results[source]["spi_checks"]
+                    for distribution, name in (("gamma", "gamma"), ("pearson3", "Pearson III")):
+                        values = np.concatenate([
+                            checks[scale][f"sw_{distribution}"].to_numpy()
+                            for scale in artists.SPI_SCALES
+                        ])
+                        details.append(
+                            f"{view.labels[source]} {name}: {int((values < 0.05).sum())}"
+                            f"/{int(np.isfinite(values).sum())} tests with p < 0.05"
+                        )
+                    hits = sum(int(checks[scale]["p3_bound_hits"].sum()) for scale in artists.SPI_SCALES)
+                    details.append(
+                        f"{view.labels[source]} Pearson III: {hits} monthly values at fitted "
+                        "probability bounds, summed across accumulation scales"
+                    )
+                text += " " + "; ".join(details) + "."
             if availability != "available":
                 text += f" Availability: {availability}."
             Path(filename).parent.mkdir(parents=True, exist_ok=True)

@@ -33,8 +33,9 @@ DESCRIPTIONS = {
     ),
     "drought-events": (
         "Drought-event duration and accumulated SPI deficit for SPI-3 and SPI-12. "
-        "Events are consecutive months below zero that reach SPI ≤ −1; lighter points touch "
-        "a data gap or record edge, so their full duration is unknown."
+        "Events are consecutive months below zero that reach SPI ≤ −1. Filled markers show complete "
+        "events; hatched markers show truncated events that touch a data gap or "
+        "record boundary, so their full duration and accumulated deficit are unknown."
     ),
     "extreme-Rx1day": (
         "Annual maximum one-day precipitation (Rx1day). Points show annual values; "

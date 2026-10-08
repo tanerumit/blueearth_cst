@@ -715,24 +715,29 @@ def drought_events(v: View) -> Figure:
                 ev[~ev["censored"].astype(bool)],
                 ev[ev["censored"].astype(bool)],
             )
+            edge = to_hex(0.65 * np.array(to_rgb(v.color(s))))
             ax.scatter(
                 done["duration"],
                 done["severity"],
                 marker=v.marker(s),
-                s=S_SCATTER,
+                s=S_SCATTER * 2.25,
+                alpha=0.7,
                 facecolor=v.color(s),
-                edgecolor="white",
-                linewidth=0.5,
+                edgecolor=edge,
+                linewidth=0.7,
                 zorder=3,
             )
             ax.scatter(
                 cens["duration"],
                 cens["severity"],
                 marker=v.marker(s),
-                s=S_SCATTER,
+                s=S_SCATTER * 2.25,
+                alpha=0.7,
                 facecolor=tint(v.color(s)),
-                edgecolor=v.color(s),
-                linewidth=1.0,
+                edgecolor=edge,
+                linewidth=0.9,
+                hatch="////////",
+                hatch_linewidth=0.5,
                 zorder=3,
             )
         if not drawn:
@@ -752,7 +757,19 @@ def drought_events(v: View) -> Figure:
         ax.set_ylim(bottom=0)
         ax.grid()
     axs[0, 0].set_ylabel("Severity (dimensionless)")
-    top_legend(fig, identity_row(v, line=False))
+    event_handles = [
+        Line2D(
+            [], [], color=MUTED, linewidth=1.4,
+            alpha=0.7, label="Complete",
+        ),
+        Patch(
+            facecolor=tint(MUTED), edgecolor=MUTED, hatch="////////",
+            hatch_linewidth=0.5,
+            linewidth=0.7, alpha=0.7, label="Truncated",
+        ),
+    ]
+    inside_legend(fig, axs[0, 0], [*identity_row(v, line=False), *event_handles])
+    axs[0, 0].get_legend().set_loc("upper left")
     return fig
 
 

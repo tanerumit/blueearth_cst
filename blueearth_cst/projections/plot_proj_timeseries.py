@@ -17,7 +17,11 @@ import pandas as pd
 from blueearth_cst.climate_analysis.diagnostic_figures import STYLE, add_caption
 from blueearth_cst.projections.projection_analysis import MONTHS, PERIODS
 from blueearth_cst.projections.projection_captions import caption
-from blueearth_cst.projections.projection_figures import SUITE_PRODUCTS, figure_key, period_folder
+from blueearth_cst.projections.projection_figures import (
+    SUITE_PRODUCTS,
+    figure_key,
+    period_folder,
+)
 from blueearth_cst.projections.projection_suite_figures import render_product
 from blueearth_cst.shared.snake_utils import (
     listed,
@@ -56,8 +60,14 @@ def figure_counts(filename, tables, window_id=""):
             & data.period.isin(PERIODS[:5])
         ]
     elif filename.startswith("monthly-change-"):
-        data = data.loc[(data.statistic == "mean") & data.period.isin(MONTHS)
-                        & (data.quantity == ("change_pct" if "precipitation" in filename else "change"))]
+        data = data.loc[
+            (data.statistic == "mean")
+            & data.period.isin(MONTHS)
+            & (
+                data.quantity
+                == ("change_pct" if "precipitation" in filename else "change")
+            )
+        ]
     elif "cloud" in filename:
         data = data.loc[(data.statistic == "mean") & (data.period == "annual")]
         keys = ["model", "scenario", "window_id"]
@@ -99,7 +109,10 @@ def figure_counts(filename, tables, window_id=""):
             data.period.eq("annual")
             & (
                 (data.variable.eq("temp") & data.statistic.eq("std_detrended"))
-                | (data.variable.eq("precip") & data.statistic.isin(["std_detrended", "cv_detrended"]))
+                | (
+                    data.variable.eq("precip")
+                    & data.statistic.isin(["std_detrended", "cv_detrended"])
+                )
             )
         ]
     column = (

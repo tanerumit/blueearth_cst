@@ -87,9 +87,10 @@ user-facing data and provenance deliverables remain with their owning data produ
 
 ## Verification status
 
-Tests, lint, DAG checks and integration gates are deferred until the plotting session concludes,
-as requested. The final checks must cover WF0 source/comparison and optional subbasin paths, WF2
-availability-to-output mappings, caption manifests, and affected workflow declarations.
+Final integration verification is recorded in
+[`../tasks/plot-improvements/verification.md`](../tasks/plot-improvements/verification.md), including
+WF0 source/comparison and optional subbasin paths, WF2 availability-to-output mappings, caption manifests,
+and affected workflow declarations. Earlier deferral applied only to visual iteration.
 
 A change-cloud figure was rendered through canonical filename dispatch from the retained Gabon lab
 model-change table. Its PNG and caption manifest were written under the new `plots/period_2036_2065/`

@@ -92,8 +92,10 @@ def caption(name: str, view: View) -> str:
     sources = ", ".join(view.labels[s] for s in plotted)
     identity = f"{sources}; "
     period = f"{view.years[0]}–{view.years[-1]}"
-    support = view.support.replace("_", " ").replace("avg", "average").replace(
-        "equal-weight cells", "equally weighted grid cells"
+    support = (
+        view.support.replace("_", " ")
+        .replace("avg", "average")
+        .replace("equal-weight cells", "equally weighted grid cells")
     )
     context = f"{identity}{period}; {support}."
     detail = DESCRIPTIONS[name]

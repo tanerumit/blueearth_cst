@@ -51,6 +51,7 @@ def period_folder(window_id: str) -> str:
     """Canonical folder for a resolved start/end analysis-window identity."""
     return f"period_{window_id.replace('-', '_')}"
 
+
 _SUITE_PRODUCT_KEYS = {
     "F3.1": {"folder_kind": "full_period", "filenames": ("availability.png",)},
     "F3.4": {
@@ -96,7 +97,10 @@ _SUITE_PRODUCT_KEYS = {
 }
 
 SUITE_PRODUCTS = {
-    key: {**product, "filenames": tuple(FIGURE_FILENAMES[name] for name in product["filenames"])}
+    key: {
+        **product,
+        "filenames": tuple(FIGURE_FILENAMES[name] for name in product["filenames"]),
+    }
     for key, product in _SUITE_PRODUCT_KEYS.items()
 }
 

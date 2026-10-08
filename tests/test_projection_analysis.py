@@ -188,7 +188,7 @@ def test_model_weights_family_votes_and_zero_future_exclusion():
 
 @pytest.mark.parametrize(
     "period,variable,statistic",
-    [("Jan", "temp", "std_detrended"), ("annual", "precip", "std_detrended")],
+    [("Jan", "temp", "std_detrended"), ("annual", "precip", "mean")],
 )
 def test_availability_requires_plotted_period_and_statistic(
     period, variable, statistic
@@ -212,12 +212,43 @@ def test_availability_requires_plotted_period_and_statistic(
         {"models": models, "model_ratios": models, "member_ratios": members},
         ["2036-2065"],
     ).set_index("filename")
-    assert not result.loc["cmip6_precip_temp_annual_member_ratio_box_basin_avg.png", "available"]
+    assert not result.loc[
+        "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png", "available"
+    ]
     if period == "Jan":
-        assert not result.loc["cmip6_temp_annual_seasonal_sd_ratio_box_basin_avg.png", "available"]
+        assert not result.loc[
+            "cmip6_temp_annual_seasonal_sd_ratio_box_basin_avg.png", "available"
+        ]
         means = models.assign(statistic="mean")
         result = analysis.product_availability(
             {"models": means}, ["2036-2065"]
         ).set_index("filename")
-        assert not result.loc["cmip6_temp_annual_seasonal_change_box_basin_avg.png", "available"]
+        assert not result.loc[
+            "cmip6_temp_annual_seasonal_change_box_basin_avg.png", "available"
+        ]
     assert members.variability_eligible.all()
+
+
+def test_precipitation_sd_members_enable_member_ratio_comparison():
+    members = pd.DataFrame(
+        [
+            dict(
+                model="TEST/A",
+                scenario="ssp245",
+                member=f"r{i}",
+                window_id="2036-2065",
+                period="annual",
+                variable="precip",
+                statistic="std_detrended",
+                ratio=2.0,
+                variability_eligible=True,
+            )
+            for i in range(2)
+        ]
+    )
+    result = analysis.product_availability(
+        {"member_ratios": members}, ["2036-2065"]
+    ).set_index("filename")
+    assert result.loc[
+        "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png", "available"
+    ]

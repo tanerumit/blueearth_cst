@@ -722,4 +722,3 @@ def test_an_unscoped_record_clears_an_orphan(project, capsys):
         "targets"
     ]
     assert orphan not in targets
-

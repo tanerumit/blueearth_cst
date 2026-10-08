@@ -207,4 +207,5 @@ WF2 review uses the newer artists and retained tables in the `wf0-lab` ensemble 
 baseline. The annual overview, trajectories, change strips, split seasonal products, variability ratios,
 member-ratio comparison, change cloud, sign agreement and coverage table have been reviewed and their
 approved styles implemented in the toolbox. Trajectories use the prepared model median, not the model mean.
-Keep baseline selection separate from validation of the current toolbox; session-end checks remain owed.
+Keep baseline selection separate from validation of the current toolbox. Final integration evidence lives
+in [`../tasks/plot-improvements/verification.md`](../tasks/plot-improvements/verification.md).

@@ -47,7 +47,9 @@ def caption(filename, record, window_id="", counts=None):
             "not represent independent lines of evidence."
         )
     if filename.startswith("change-factor-cloud"):
-        windows = [w for w in record["windows"] if not window_id or w["window_id"] == window_id]
+        windows = [
+            w for w in record["windows"] if not window_id or w["window_id"] == window_id
+        ]
         periods = "; ".join(
             f"{w['used'][0]}–{w['used'][1]} relative to {w['reference'][0]}–{w['reference'][1]}"
             for w in windows
@@ -59,8 +61,11 @@ def caption(filename, record, window_id="", counts=None):
             "of the reference mean; temperature changes are in °C. Zero reference lines indicate "
             "no change. The cloud shows descriptive model spread, not probabilities or a confidence "
             "region; models from the same code family may be dependent."
-            + (" Lines connect the same model and scenario across future periods."
-               if "combined" in filename else "")
+            + (
+                " Lines connect the same model and scenario across future periods."
+                if "combined" in filename
+                else ""
+            )
         )
     if filename == "variability-member-ratios.png":
         window = next(w for w in record["windows"] if w["window_id"] == window_id)
@@ -83,18 +88,24 @@ def caption(filename, record, window_id="", counts=None):
     text = [f"CMIP6 projections: {filename.removesuffix('.png').replace('-', ' ')}."]
     if filename.startswith(("seasonal-cycle-", "monthly-change-")):
         window = next(w for w in record["windows"] if w["window_id"] == window_id)
-        text.append(f"Reference water years {window['reference'][0]}–{window['reference'][1]}; "
-                    f"future water years {window['used'][0]}–{window['used'][1]}.")
+        text.append(
+            f"Reference water years {window['reference'][0]}–{window['reference'][1]}; "
+            f"future water years {window['used'][0]}–{window['used'][1]}."
+        )
         if filename.startswith("seasonal-cycle-"):
-            text.append("Lines show the median monthly climatology across models, with members averaged first. "
-                        "Black denotes the historical reference and colors denote future scenarios. Gray shading "
-                        "spans the historical model range; future spread is shown in the companion monthly-change "
-                        "figure. The historical climatology uses the first displayed scenario's contributing models.")
+            text.append(
+                "Lines show the median monthly climatology across models, with members averaged first. "
+                "Black denotes the historical reference and colors denote future scenarios. Gray shading "
+                "spans the historical model range; future spread is shown in the companion monthly-change "
+                "figure. The historical climatology uses the first displayed scenario's contributing models."
+            )
         else:
-            text.append("Each panel shows one scenario's monthly changes. Capped lines span the model range, "
-                        "outline boxes show the interquartile range where at least 10 models contribute, and "
-                        "thick horizontal bars show the median. Members are averaged within each model first. "
-                        "Zero indicates no change; precipitation changes are percentages of the reference rate.")
+            text.append(
+                "Each panel shows one scenario's monthly changes. Capped lines span the model range, "
+                "outline boxes show the interquartile range where at least 10 models contribute, and "
+                "thick horizontal bars show the median. Members are averaged within each model first. "
+                "Zero indicates no change; precipitation changes are percentages of the reference rate."
+            )
         text.append("Model spread is descriptive and is not a confidence interval.")
         return " ".join(text)
     if window_id:
@@ -150,8 +161,11 @@ def caption(filename, record, window_id="", counts=None):
         text.append(
             f"Absolute annual values are shown above and anomalies relative to each member's "
             f"{record['reference'][0]}–{record['reference'][1]} mean below. "
-            + ("Precipitation totals are in mm yr⁻¹ and anomalies are percentages. "
-               if "precipitation" in filename else "Temperature and its anomalies are in °C. ")
+            + (
+                "Precipitation totals are in mm yr⁻¹ and anomalies are percentages. "
+                if "precipitation" in filename
+                else "Temperature and its anomalies are in °C. "
+            )
             + "Thin gray lines show individual historical members and thin scenario-colored lines "
             "show individual future members. Thick black lines show historical member medians; "
             "thick scenario-colored lines show future member medians. Colored envelopes span the "
@@ -169,23 +183,33 @@ def caption(filename, record, window_id="", counts=None):
     if filename.startswith("variability-"):
         if filename.startswith("variability-ratio-"):
             window = next(w for w in record["windows"] if w["window_id"] == window_id)
-            text = [f"CMIP6 interannual variability: {filename.removesuffix('.png').replace('-', ' ')}.",
-                    f"Future/reference ratios for {window['used'][0]}–{window['used'][1]} relative to "
-                    f"{window['reference'][0]}–{window['reference'][1]}. Model spread is descriptive, "
-                    "not a confidence interval."]
-            text.append("Ratios above 1 indicate increased interannual variability and ratios below 1 "
-                        "indicate decreased variability. Each member is detrended separately within each "
-                        "window; model ratios are geometric means of member ratios and models have equal weight.")
+            text = [
+                f"CMIP6 interannual variability: {filename.removesuffix('.png').replace('-', ' ')}.",
+                f"Future/reference ratios for {window['used'][0]}–{window['used'][1]} relative to "
+                f"{window['reference'][0]}–{window['reference'][1]}. Model spread is descriptive, "
+                "not a confidence interval.",
+            ]
+            text.append(
+                "Ratios above 1 indicate increased interannual variability and ratios below 1 "
+                "indicate decreased variability. Each member is detrended separately within each "
+                "window; model ratios are geometric means of member ratios and models have equal weight."
+            )
             if "precipitation" in filename:
-                text.append("Precipitation SD is calculated from period mean daily rates; precipitation CV "
-                            "uses detrended SD of period totals divided by their original mean. These "
-                            "aggregations can differ when period lengths vary. CV excludes periods with dry "
-                            "reference or future means.")
-            text.append("Outlined boxes show the model interquartile range where at least 10 models "
-                        "contribute, thick bars show the median, capped lines span the model range and "
-                        "faint points show models. Sampling benchmarks are not displayed in this figure.")
-            text.append(f"Excluded degenerate ratios: {counts.get('n_excluded', 0)}; "
-                        f"zero-future ratios: {counts.get('n_zero_future', 0)}.")
+                text.append(
+                    "Precipitation SD is calculated from period mean daily rates; precipitation CV "
+                    "uses detrended SD of period totals divided by their original mean. These "
+                    "aggregations can differ when period lengths vary. CV excludes periods with dry "
+                    "reference or future means."
+                )
+            text.append(
+                "Outlined boxes show the model interquartile range where at least 10 models "
+                "contribute, thick bars show the median, capped lines span the model range and "
+                "faint points show models. Sampling benchmarks are not displayed in this figure."
+            )
+            text.append(
+                f"Excluded degenerate ratios: {counts.get('n_excluded', 0)}; "
+                f"zero-future ratios: {counts.get('n_zero_future', 0)}."
+            )
             return " ".join(text)
         null = record.get("methods", {}).get("null_band", {})
         text.append(

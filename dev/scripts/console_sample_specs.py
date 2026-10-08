@@ -964,4 +964,3 @@ total                              20
 
 
 WORKFLOWS = {"wf2": WF2, "wf0": WF0, "wf1": WF1, "wf3": WF3, "wf4": WF4}
-

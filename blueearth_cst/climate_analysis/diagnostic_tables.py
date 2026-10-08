@@ -606,4 +606,3 @@ def write_tables(paths, tables_by_source, settings, m0, period, lineage):
     ]
     write_json(paths["compute"]["metadata"], metadata)
     return metadata
-

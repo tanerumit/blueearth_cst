@@ -58,8 +58,6 @@ MISSING = "#a0a0a0"
 QA = "#882255"
 
 
-
-
 SOURCE_STYLE = {"era5": ("#236b8e", "o"), "chirps": ("#bf6a3c", "o")}
 
 
@@ -370,7 +368,12 @@ def identity_row(v: View, sources: Sequence[str] | None = None, **kw) -> list:
 
 
 def colourbar(
-    fig: Figure, mesh, axes: list, label: str, ticks: Sequence[float], stack_mm: float,
+    fig: Figure,
+    mesh,
+    axes: list,
+    label: str,
+    ticks: Sequence[float],
+    stack_mm: float,
     shrink: float = 0.68,
 ) -> None:
     cb = fig.colorbar(
@@ -443,8 +446,13 @@ def coverage(v: View) -> Figure:
     ax.set_xlim(edges[0], edges[-1])
     year_ticks(ax, v.years, continuous=True)
     ax.tick_params(axis="y", length=3)
-    full = tuple(Patch(facecolor=to_hex(0.3 * np.array(to_rgb(v.color(s))) + 0.7)) for s in v.sources)
-    part = tuple(Patch(facecolor=to_hex(0.7 * np.array(to_rgb(v.color(s))))) for s in v.sources)
+    full = tuple(
+        Patch(facecolor=to_hex(0.3 * np.array(to_rgb(v.color(s))) + 0.7))
+        for s in v.sources
+    )
+    part = tuple(
+        Patch(facecolor=to_hex(0.7 * np.array(to_rgb(v.color(s))))) for s in v.sources
+    )
     tup = HandlerTuple(ndivide=None, pad=0)
     legend = fig.legend(
         handles=[full, part, MISSING_KEY],
@@ -452,7 +460,10 @@ def coverage(v: View) -> Figure:
         loc="outside right upper",
         ncols=1,
         handler_map={tuple: tup},
-        frameon=True, facecolor="white", edgecolor="none", framealpha=0.88,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
     )
     fig.canvas.draw()
     legend_width = legend.get_window_extent().width / fig.bbox.width
@@ -481,8 +492,12 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
         )
         lines.extend(
             ax.plot(
-                x, c["mean"], color=v.color(s), lw=LW_MEAN,
-                marker=v.marker(s), ms=MS_LINE,
+                x,
+                c["mean"],
+                color=v.color(s),
+                lw=LW_MEAN,
+                marker=v.marker(s),
+                ms=MS_LINE,
             )
         )
         top = max(top, float(np.nanmax(c["p90"])))
@@ -500,8 +515,11 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
 
 
 def inside_legend(
-    fig: Figure, ax: plt.Axes, handles: list,
-    bands: Sequence = (), lines: Sequence = (),
+    fig: Figure,
+    ax: plt.Axes,
+    handles: list,
+    bands: Sequence = (),
+    lines: Sequence = (),
 ) -> None:
     """Stack legend entries on translucent white in the less occupied top corner."""
     if not handles:
@@ -540,7 +558,9 @@ def inside_legend(
             offsets = collection.get_offsets()
             if offsets.size:
                 positions = collection.get_offset_transform().transform(offsets)
-                overlap += sum(box.contains(x, y) for x, y in positions) * points.shape[0]
+                overlap += (
+                    sum(box.contains(x, y) for x, y in positions) * points.shape[0]
+                )
         scores.append((overlap, location))
     legend.set_loc(min(scores, key=lambda item: item[0])[1])
 
@@ -583,8 +603,10 @@ def timing(v: View) -> Figure:
                 )
             )
             ax.plot(
-                [med, med], [y - half_height, y + half_height],
-                color=v.color(s), lw=0.6,
+                [med, med],
+                [y - half_height, y + half_height],
+                color=v.color(s),
+                lw=0.6,
             )
             label_offset = 5 if j == 0 else -5
             ax.annotate(
@@ -709,7 +731,12 @@ def spi(v: View) -> Figure:
     axs[-1, 0].set_xlim(v.years[0], v.years[-1] + 1)
     five_year_ticks(axs[-1, 0], v.years, rotation=0)
     colourbar(
-        fig, mesh, axs[:, 0].tolist(), "SPI", SPI_BOUNDS, stack,
+        fig,
+        mesh,
+        axs[:, 0].tolist(),
+        "SPI",
+        SPI_BOUNDS,
+        stack,
         shrink=0.8,
     )
     return fig
@@ -774,13 +801,21 @@ def drought_events(v: View) -> Figure:
     axs[0, 0].set_ylabel("Severity (dimensionless)")
     event_handles = [
         Line2D(
-            [], [], color=MUTED, linewidth=1.4,
-            alpha=0.7, label="Complete",
+            [],
+            [],
+            color=MUTED,
+            linewidth=1.4,
+            alpha=0.7,
+            label="Complete",
         ),
         Patch(
-            facecolor=tint(MUTED), edgecolor=MUTED, hatch="////////",
+            facecolor=tint(MUTED),
+            edgecolor=MUTED,
+            hatch="////////",
             hatch_linewidth=0.5,
-            linewidth=0.7, alpha=0.7, label="Truncated",
+            linewidth=0.7,
+            alpha=0.7,
+            label="Truncated",
         ),
     ]
     inside_legend(fig, axs[0, 0], [*identity_row(v, line=False), *event_handles])
@@ -844,11 +879,18 @@ def spi_checks(v: View) -> Figure:
     month_axis(axs[-1, 0], v.m0)
     keys = [tuple(Patch(facecolor=ramps[s][i]) for s in v.sources) for i in range(3)]
     legend = fig.legend(
-        handles=keys, labels=["$p$ < 0.01", "0.01 ≤ $p$ < 0.05", "$p$ ≥ 0.05"],
+        handles=keys,
+        labels=["$p$ < 0.01", "0.01 ≤ $p$ < 0.05", "$p$ ≥ 0.05"],
         handler_map={tuple: HandlerTuple(ndivide=None, pad=0.2)},
-        loc="outside right upper", ncols=1,
-        frameon=True, facecolor="white", edgecolor="none", framealpha=0.88,
-        borderpad=0.4, labelspacing=0.5, handletextpad=0.5,
+        loc="outside right upper",
+        ncols=1,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
+        borderpad=0.4,
+        labelspacing=0.5,
+        handletextpad=0.5,
     )
     legend.set_loc("upper right")
     legend.borderaxespad = 0
@@ -887,7 +929,12 @@ def extremes(metric: str) -> Callable[[View], Figure]:
             else UNITS["mm_decade"]
         )
         _annual_trends(
-            ax, v, "extremes", metric, trend_key, unit,
+            ax,
+            v,
+            "extremes",
+            metric,
+            trend_key,
+            unit,
             digits=2 if metric == "SDII" else 1,
         )
         year_ticks(ax, v.years)
@@ -943,19 +990,33 @@ def acf(v: View) -> Figure:
         bound = 1.96 / np.sqrt(a["pairs"].where(a["pairs"] > 0))
         bands.append(
             ax.fill_between(
-                a.index.to_numpy(), -bound, bound,
-                color=v.color(s), alpha=BAND_ALPHA, linewidth=0, zorder=1,
+                a.index.to_numpy(),
+                -bound,
+                bound,
+                color=v.color(s),
+                alpha=BAND_ALPHA,
+                linewidth=0,
+                zorder=1,
             )
         )
         ax.vlines(lags, 0, a["r"], color=v.color(s), lw=LW_STEM)
         edge = to_hex(0.65 * np.array(to_rgb(v.color(s))))
         ax.plot(
-            lags, a["r"], lw=0, marker=v.marker(s), color=v.color(s), ms=MS_LINE,
-            markeredgecolor=edge, markeredgewidth=0.7,
+            lags,
+            a["r"],
+            lw=0,
+            marker=v.marker(s),
+            color=v.color(s),
+            ms=MS_LINE,
+            markeredgecolor=edge,
+            markeredgewidth=0.7,
         )
         finite = a["r"].dropna()
         if not finite.empty:
             rmax = max(rmax, float(np.abs(finite).max()))
+        finite_bounds = bound.loc[np.isfinite(bound)]
+        if not finite_bounds.empty:
+            rmax = max(rmax, float(finite_bounds.max()))
     lim = max(0.5, np.ceil(rmax * 10) / 10)
     ax.axhline(0, color=MUTED, lw=LW_REF)
     ax.set_xticks(range(1, 13))
@@ -966,7 +1027,9 @@ def acf(v: View) -> Figure:
     ygrid(ax)
 
     confidence = Patch(
-        facecolor=MUTED, alpha=BAND_ALPHA, edgecolor="none",
+        facecolor=MUTED,
+        alpha=BAND_ALPHA,
+        edgecolor="none",
         label="95% confidence limits",
     )
     inside_legend(fig, ax, [*identity_row(v, line=False), confidence], bands)
@@ -1023,19 +1086,37 @@ def slopes(v: View) -> Figure:
         ax.tick_params(axis="y", length=3)
     significance = [
         Line2D(
-            [], [], linestyle="none", marker="o", color=MUTED,
-            markerfacecolor=MUTED, markersize=MS_POINT, label="p < 0.05",
+            [],
+            [],
+            linestyle="none",
+            marker="o",
+            color=MUTED,
+            markerfacecolor=MUTED,
+            markersize=MS_POINT,
+            label="p < 0.05",
         ),
         Line2D(
-            [], [], linestyle="none", marker="o", color=MUTED,
-            markerfacecolor="white", markersize=MS_POINT, label="p ≥ 0.05",
+            [],
+            [],
+            linestyle="none",
+            marker="o",
+            color=MUTED,
+            markerfacecolor="white",
+            markersize=MS_POINT,
+            label="p ≥ 0.05",
         ),
     ]
     fig.legend(
         handles=[*identity_row(v, line=False), *significance],
-        loc="outside right upper", ncols=1,
-        frameon=True, facecolor="white", edgecolor="none", framealpha=0.88,
-        borderpad=0.4, labelspacing=0.5, handletextpad=0.5,
+        loc="outside right upper",
+        ncols=1,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
+        borderpad=0.4,
+        labelspacing=0.5,
+        handletextpad=0.5,
     )
     for ax in axs[0]:
         ax.title.set_fontsize(FS_NOTE)
@@ -1125,11 +1206,23 @@ def sensitivity(v: View) -> Figure:
             for selected, fill_color in ((sig, c), (~sig, "white")):
                 values = t.loc[selected]
                 ax.errorbar(
-                    x[selected], values["slope"],
-                    yerr=[values["slope"] - values["lo"], values["hi"] - values["slope"]],
-                    fmt=v.marker(s), linestyle="none", color=c,
-                    mfc=fill_color, mec=edge, mew=0.7, ms=MS_POINT,
-                    elinewidth=LW_LINE * 1.5, capsize=3, capthick=1.2, zorder=3,
+                    x[selected],
+                    values["slope"],
+                    yerr=[
+                        values["slope"] - values["lo"],
+                        values["hi"] - values["slope"],
+                    ],
+                    fmt=v.marker(s),
+                    linestyle="none",
+                    color=c,
+                    mfc=fill_color,
+                    mec=edge,
+                    mew=0.7,
+                    ms=MS_POINT,
+                    elinewidth=LW_LINE * 1.5,
+                    capsize=3,
+                    capthick=1.2,
+                    zorder=3,
                 )
         ax.set_xticks(sorted(starts))
         if starts:
@@ -1158,14 +1251,20 @@ def sensitivity(v: View) -> Figure:
     edge = Line2D([], [], color=MUTED, lw=LW_LINE * 1.5, label="95% interval")
     legend = fig.legend(
         handles=[*identity_row(v, line=False), *sig, edge],
-        loc="outside right upper", ncols=1,
-        frameon=True, facecolor="white", edgecolor="none", framealpha=0.88,
+        loc="outside right upper",
+        ncols=1,
+        frameon=True,
+        facecolor="white",
+        edgecolor="none",
+        framealpha=0.88,
     )
     legend.set_loc("upper right")
     legend.borderaxespad = 0
     fig.get_layout_engine().set(rect=(0, 0, 0.84, 1))
     fig.canvas.draw()
-    legend.set_bbox_to_anchor((1, axs[0, 0].get_position().y1), transform=fig.transFigure)
+    legend.set_bbox_to_anchor(
+        (1, axs[0, 0].get_position().y1), transform=fig.transFigure
+    )
     return fig
 
 
@@ -1211,7 +1310,8 @@ def pt_scatter(v: View) -> Figure | str:
         ax.set_xlabel(f"Temperature anomaly ({UNITS['degc']})")
     fig.supylabel("Precipitation anomaly (%)", fontsize=FS_LABEL, color=INK)
     inside_legend(
-        fig, axs[0, 0],
+        fig,
+        axs[0, 0],
         identity_row(v, have, line=False, label=lambda s: f"Precip.: {v.labels[s]}"),
     )
     return fig

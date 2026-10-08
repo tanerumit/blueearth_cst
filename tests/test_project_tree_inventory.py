@@ -425,4 +425,3 @@ def test_rules_are_well_formed():
     for old, new in INVENTORY:
         assert isinstance(old, (str, re.Pattern))
         assert isinstance(new, str) and new
-

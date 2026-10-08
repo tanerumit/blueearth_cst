@@ -167,4 +167,3 @@ def render_subbasins(sm, settings, sources):
         + "\n",
         encoding="utf-8",
     )
-

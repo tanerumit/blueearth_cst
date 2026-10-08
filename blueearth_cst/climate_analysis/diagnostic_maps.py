@@ -222,8 +222,7 @@ def draw_map(field, variable, source, overlays, limits, counts):
         )
         variable_label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
         cb.ax.set_title(
-            f"{variable_label}\n"
-            f"({'°C' if variable == 'temp' else 'mm yr⁻¹'})",
+            f"{variable_label}\n({'°C' if variable == 'temp' else 'mm yr⁻¹'})",
             fontsize=6,
             pad=10,
         )

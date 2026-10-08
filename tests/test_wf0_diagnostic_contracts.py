@@ -16,6 +16,35 @@ from blueearth_cst.climate_analysis.diagnostic_settings import parse_settings
 from blueearth_cst.climate_analysis.diagnostic_tables import compute, write_tables
 
 
+def test_short_record_acf_confidence_limits_fit_inside_axes():
+    import matplotlib.pyplot as plt
+
+    from blueearth_cst.climate_analysis.diagnostic_figures import View, acf
+
+    view = View(
+        sources=["chirps"],
+        labels={"chirps": "CHIRPS"},
+        styles={"chirps": ("#bf6a3c", "o")},
+        results={
+            "chirps": {
+                "acf": pd.DataFrame(
+                    {"r": [0.0, np.nan], "pairs": [10, 0]}, index=[1, 2]
+                )
+            }
+        },
+        years=np.array([2000]),
+        m0=1,
+        reference=(2000, 2000),
+        wet_mm=1,
+        agreement=pd.DataFrame(),
+        common_years=np.array([2000]),
+    )
+    fig = acf(view)
+    low, high = fig.axes[0].get_ylim()
+    assert low <= -1.96 / np.sqrt(10) and high >= 1.96 / np.sqrt(10)
+    plt.close(fig)
+
+
 def test_source_summary_preserves_extracted_metadata_and_readiness(tmp_path):
     import xarray as xr
 
@@ -100,9 +129,9 @@ def test_canonical_inventory_and_one_source_refusal():
         for x in (era5, chirps, comparison)
         for p in x["figures"].values()
     )
-    assert "plots/_engine/figure_captions.json" in era5["render"]["captions_json"].replace(
-        "\\", "/"
-    )
+    assert "plots/_engine/figure_captions.json" in era5["render"][
+        "captions_json"
+    ].replace("\\", "/")
     with pytest.raises(ValueError, match="two sources"):
         diagnostic_comparison_outputs("comparison", ["era5"], settings)
     with pytest.raises(ValueError, match="registered"):
@@ -135,7 +164,7 @@ def test_unavailable_records_keep_table_headers_and_round_trip(tmp_path, kind):
         assert all((Path(paths["root"]) / p).is_file() for p in records)
         series = next(r for p, r in records.items() if "annual_trend_ts" in p)
         assert series["availability"].startswith("Unavailable")
-        assert "not scientifically qualified" in series["caption"]
+        assert "no usable data or reference fit" in series["caption"]
 
 
 def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
@@ -192,9 +221,9 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
         render_subbasins(sm, settings, sources)
         assert (root / "plots" / "figure_captions.md").is_file()
         assert not (root / "figure_captions.md").exists()
-        records = json.loads((root / "plots" / "_engine" / "figure_captions.json").read_text())[
-            "figures"
-        ]
+        records = json.loads(
+            (root / "plots" / "_engine" / "figure_captions.json").read_text()
+        )["figures"]
         assert len(records) == (3 if len(sources) == 1 else 2)
         assert all(
             (root / path).is_file() and (root / r["captioned_path"]).is_file()
@@ -234,4 +263,3 @@ def test_exact_basin_mask_and_unresolved_temperature_units(tmp_path):
     )
     with pytest.raises(ValueError, match="every declared cell"):
         daily_series(nc, cells, "era5")
-

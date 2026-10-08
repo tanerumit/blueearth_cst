@@ -246,16 +246,24 @@ def render(
                 details = []
                 for source in view.sources:
                     checks = view.results[source]["spi_checks"]
-                    for distribution, name in (("gamma", "gamma"), ("pearson3", "Pearson III")):
-                        values = np.concatenate([
-                            checks[scale][f"sw_{distribution}"].to_numpy()
-                            for scale in artists.SPI_SCALES
-                        ])
+                    for distribution, name in (
+                        ("gamma", "gamma"),
+                        ("pearson3", "Pearson III"),
+                    ):
+                        values = np.concatenate(
+                            [
+                                checks[scale][f"sw_{distribution}"].to_numpy()
+                                for scale in artists.SPI_SCALES
+                            ]
+                        )
                         details.append(
                             f"{view.labels[source]} {name}: {int((values < 0.05).sum())}"
                             f"/{int(np.isfinite(values).sum())} tests with p < 0.05"
                         )
-                    hits = sum(int(checks[scale]["p3_bound_hits"].sum()) for scale in artists.SPI_SCALES)
+                    hits = sum(
+                        int(checks[scale]["p3_bound_hits"].sum())
+                        for scale in artists.SPI_SCALES
+                    )
                     details.append(
                         f"{view.labels[source]} Pearson III: {hits} monthly values at fitted "
                         "probability bounds, summed across accumulation scales"
@@ -331,4 +339,3 @@ def render(
         encoding="utf-8",
     )
     return records
-

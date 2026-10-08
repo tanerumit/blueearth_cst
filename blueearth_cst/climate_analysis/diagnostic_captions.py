@@ -18,8 +18,8 @@ DESCRIPTIONS = {
     ),
     "timing": (
         "Timing of cumulative annual precipitation reaching 25%, 50% and 75% of each year's total. "
-        "Thick bars span the interquartile range, thin lines the observed range, white ticks the median, "
-        "and labelled dots the mean day of the reporting year."
+        "Unfilled boxes span the interquartile range, whiskers the observed range, vertical lines the median, "
+        "and numeric labels the mean day of the reporting year."
     ),
     "anomaly": (
         "Monthly precipitation departures from the calendar-month mean in the reference period. "

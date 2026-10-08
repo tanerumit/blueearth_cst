@@ -86,6 +86,8 @@ MS_LINE, MS_POINT, S_SCATTER = 3.0, 4.5, 16
 
 BAND_ALPHA = 0.18
 
+LABEL_BOX = {"facecolor": "white", "edgecolor": "none", "alpha": 0.88, "pad": 1.2}
+
 
 TREND_DASH = (0, (5, 2.5))
 
@@ -481,8 +483,19 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
     ygrid(ax)
     spread = Patch(facecolor=MUTED, alpha=BAND_ALPHA, edgecolor="none")
     spread.set_label("10–90th percentile")
+    inside_legend(fig, ax, [*id_handles(v, have), spread], bands, lines)
+    return fig
+
+
+def inside_legend(
+    fig: Figure, ax: plt.Axes, handles: list,
+    bands: Sequence = (), lines: Sequence = (),
+) -> None:
+    """Stack legend entries on translucent white in the less occupied top corner."""
+    if not handles:
+        return
     legend = ax.legend(
-        handles=[*id_handles(v, have), spread],
+        handles=handles,
         loc="upper right",
         ncols=1,
         frameon=True,
@@ -493,12 +506,6 @@ def _climatology(v: View, key: str, ylabel: str, zero: bool) -> Figure:
         labelspacing=0.5,
         handletextpad=0.5,
     )
-    _place_climatology_legend(fig, legend, bands, lines)
-    return fig
-
-
-def _place_climatology_legend(fig: Figure, legend, bands: list, lines: list) -> None:
-    """Choose the top corner with least overlap with bands and mean lines."""
     fig.canvas.draw()
     renderer = fig.canvas.get_renderer()
     scores = []
@@ -545,20 +552,22 @@ def timing(v: View) -> Figure:
             y = k + dodge(j, n)
             lo, med, hi = np.percentile(d, [25, 50, 75])
             mean = float(d.mean())
-            ax.plot([d.min(), d.max()], [y, y], color=v.color(s), lw=LW_RANGE)
-            ax.plot(
-                [lo, hi], [y, y], color=v.color(s), lw=LW_IQR, solid_capstyle="butt"
+            half_height = 0.06
+            ax.plot([d.min(), lo], [y, y], color=v.color(s), lw=0.6)
+            ax.plot([hi, d.max()], [y, y], color=v.color(s), lw=0.6)
+            ax.add_patch(
+                plt.Rectangle(
+                    (lo, y - half_height),
+                    hi - lo,
+                    2 * half_height,
+                    facecolor="none",
+                    edgecolor=v.color(s),
+                    lw=0.6,
+                )
             )
-            ax.plot(med, y, marker="|", color="white", ms=LW_IQR, mew=1.0)
             ax.plot(
-                mean,
-                y,
-                marker="o",
-                color=v.color(s),
-                markeredgecolor="white",
-                markeredgewidth=0.5,
-                ms=MS_POINT,
-                zorder=3,
+                [med, med], [y - half_height, y + half_height],
+                color=v.color(s), lw=0.6,
             )
             label_offset = 5 if j == 0 else -5
             ax.annotate(
@@ -570,6 +579,7 @@ def timing(v: View) -> Figure:
                 va="bottom" if j == 0 else "top",
                 fontsize=FS_NOTE,
                 color=v.color(s),
+                bbox=LABEL_BOX,
             )
     start = date(2001, v.m0, 1)
     starts = [
@@ -584,12 +594,12 @@ def timing(v: View) -> Figure:
     top.set_xticks([1, 91, 182, 274, 366])
     top.tick_params(labelsize=FS_TICK, labelcolor=MUTED, color=AXIS)
     top.spines["top"].set_color(AXIS)
-    ax.set_yticks(range(3), ["25 %", "50 %", "75 %"])
+    ax.set_yticks(range(3), ["25", "50", "75"])
     ax.set_ylim(2.6, -0.6)
-    ax.set_xlabel("Serial date reached")
-    ax.set_ylabel("Annual share")
+    ax.set_xlabel("Month")
+    ax.set_ylabel("Cumulative (%)")
     ax.grid(axis="x")
-    ax.tick_params(axis="y", length=0)
+    ax.tick_params(axis="y", length=3)
     identities = (
         [
             Line2D(
@@ -606,7 +616,7 @@ def timing(v: View) -> Figure:
         if n > 1
         else []
     )
-    top_legend(fig, identities)
+    inside_legend(fig, ax, identities, lines=ax.lines)
     return fig
 
 
@@ -1010,7 +1020,7 @@ def _annual_trends(
             va="bottom",
             fontsize=FS_TICK,
             color=color,
-            bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.88, "pad": 1.2},
+            bbox=LABEL_BOX,
         )
 
 

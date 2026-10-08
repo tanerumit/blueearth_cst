@@ -369,5 +369,5 @@ def test_coverage_and_product_support(parity_inputs):
     # source-availability matrix. P0 must expose all eligible product families;
     # only the combined cloud needs a second distinct window and is unavailable.
     assert availability.available.eq(
-        ~availability.filename.eq("change-factor-cloud-combined.png")
+        ~availability.filename.eq("cmip6_precip_temp_annual_multi_period_change_cloud_basin_avg.png")
     ).all()

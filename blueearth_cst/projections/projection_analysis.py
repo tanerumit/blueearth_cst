@@ -27,6 +27,7 @@ from blueearth_cst.projections.get_change_climate_proj import (
     get_change_seasonal_clim_proj,
 )
 from blueearth_cst.projections.projection_coverage import family_metadata
+from blueearth_cst.projections.projection_figures import FIGURE_FILENAMES, period_folder
 from blueearth_cst.projections.series_checks import assert_calendar_agreement
 from blueearth_cst.projections.variable_spec import VariableSpec
 
@@ -1112,7 +1113,7 @@ def product_availability(tables, windows=None):
     def add(filename, folder, window_id, available, predicate):
         rows.append(
             {
-                "filename": filename,
+                "filename": FIGURE_FILENAMES[filename],
                 "folder": folder,
                 "window_id": window_id,
                 "available": bool(available),
@@ -1122,7 +1123,7 @@ def product_availability(tables, windows=None):
 
     add(
         "availability.png",
-        "full-period",
+        "full_period",
         "",
         data["coverage"].available.eq(True).any(),
         "no resolved members",
@@ -1132,14 +1133,14 @@ def product_availability(tables, windows=None):
         sub = trajectory.loc[trajectory.variable == variable]
         add(
             f"trajectory-{label}.png",
-            "full-period",
+            "full_period",
             "",
             np.isfinite(sub.anomaly.astype(float)).any(),
             "no member with valid analysis reference",
         )
         add(
             f"annual-{label}.png",
-            "full-period",
+            "full_period",
             "",
             np.isfinite(sub.annual_rate.astype(float)).any(),
             "no finite annual values",
@@ -1161,7 +1162,7 @@ def product_availability(tables, windows=None):
             ]
             add(
                 f"change-{label}.png",
-                f"period-{window_id}",
+                period_folder(window_id),
                 window_id,
                 not sub.empty,
                 "no eligible model changes",
@@ -1180,7 +1181,7 @@ def product_availability(tables, windows=None):
             )
             add(
                 f"seasonal-cycle-{label}.png",
-                f"period-{window_id}",
+                period_folder(window_id),
                 window_id,
                 complete,
                 "no model with twelve reference and future months",
@@ -1188,7 +1189,7 @@ def product_availability(tables, windows=None):
             monthly = mean.loc[(mean.variable == variable)
                                & (mean.quantity == ("change_pct" if variable == "precip" else "change"))
                                & mean.period.isin(MONTHS)]
-            add(f"monthly-change-{label}.png", f"period-{window_id}", window_id,
+            add(f"monthly-change-{label}.png", period_folder(window_id), window_id,
                 not monthly.empty, "no eligible monthly model changes")
         ratios = data["model_ratios"].loc[data["model_ratios"].window_id == window_id]
         for variable, statistic, label in (
@@ -1203,7 +1204,7 @@ def product_availability(tables, windows=None):
             ]
             add(
                 f"variability-ratio-{label}.png",
-                f"period-{window_id}",
+                period_folder(window_id),
                 window_id,
                 (np.isfinite(sub.value.astype(float)) & sub.value.gt(0)).any(),
                 "no eligible model ratio",
@@ -1229,7 +1230,7 @@ def product_availability(tables, windows=None):
         )
         add(
             "variability-member-ratios.png",
-            f"period-{window_id}",
+            period_folder(window_id),
             window_id,
             spread,
             "no model with two eligible member ratios",
@@ -1247,7 +1248,7 @@ def product_availability(tables, windows=None):
         cloud_windows += int(cloud)
         add(
             "change-factor-cloud.png",
-            f"period-{window_id}",
+            period_folder(window_id),
             window_id,
             cloud,
             "no paired annual temperature and precipitation model changes",
@@ -1270,14 +1271,14 @@ def product_availability(tables, windows=None):
         )
         add(
             "sign-agreement.png",
-            f"period-{window_id}",
+            period_folder(window_id),
             window_id,
             agreement,
             "fewer than two eligible models per cell",
         )
     add(
         "change-factor-cloud-combined.png",
-        "full-period",
+        "full_period",
         "",
         cloud_windows >= 2,
         "fewer than two distinct cloud windows",

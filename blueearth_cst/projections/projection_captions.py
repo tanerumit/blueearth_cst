@@ -1,6 +1,7 @@
 """Recoverable captions for table-driven WF2 projection figures."""
 
 from blueearth_cst.climate_analysis.diagnostic_figures import plural
+from blueearth_cst.projections.projection_figures import figure_key
 
 
 def _mask(years):
@@ -18,6 +19,7 @@ def _mask(years):
 
 def caption(filename, record, window_id="", counts=None):
     """State windows, weighting, benchmark assumptions and exclusions explicitly."""
+    filename = figure_key(filename)
     counts = counts or {}
     if filename == "availability.png":
         return (

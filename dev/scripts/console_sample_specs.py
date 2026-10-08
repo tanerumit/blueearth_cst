@@ -297,9 +297,9 @@ total                        14
     targets=[
         f"{PROJECT}/data/climate/projections/cmip6/summary/cmip6_change_factors_annual.csv",
         f"{PROJECT}/data/climate/projections/cmip6/summary/cmip6_change_factors_monthly.csv",
-        f"{PROJECT}/data/climate/projections/cmip6/analysis/analysis_record.json",
-        f"{PROJECT}/data/climate/projections/cmip6/plots/full-period",
-        f"{PROJECT}/data/climate/projections/cmip6/plots/period-2036-2065",
+        f"{PROJECT}/data/climate/projections/cmip6/analysis/_engine/analysis_record.json",
+        f"{PROJECT}/data/climate/projections/cmip6/plots/full_period",
+        f"{PROJECT}/data/climate/projections/cmip6/plots/period_2036_2065",
         f"{PROJECT}/data/climate/projections/cmip6/plots/figure_captions.md",
         f"{PROJECT}/data/climate/projections/cmip6/plots/_engine/figure_captions.json",
         f"{PROJECT}/logs/wf2_analyze_projections.log",
@@ -964,3 +964,4 @@ total                              20
 
 
 WORKFLOWS = {"wf2": WF2, "wf0": WF0, "wf1": WF1, "wf3": WF3, "wf4": WF4}
+

@@ -212,12 +212,12 @@ def test_availability_requires_plotted_period_and_statistic(
         {"models": models, "model_ratios": models, "member_ratios": members},
         ["2036-2065"],
     ).set_index("filename")
-    assert not result.loc["variability-member-ratios.png", "available"]
+    assert not result.loc["cmip6_precip_temp_annual_member_ratio_box_basin_avg.png", "available"]
     if period == "Jan":
-        assert not result.loc["variability-ratio-temperature-sd.png", "available"]
+        assert not result.loc["cmip6_temp_annual_seasonal_sd_ratio_box_basin_avg.png", "available"]
         means = models.assign(statistic="mean")
         result = analysis.product_availability(
             {"models": means}, ["2036-2065"]
         ).set_index("filename")
-        assert not result.loc["change-temperature.png", "available"]
+        assert not result.loc["cmip6_temp_annual_seasonal_change_box_basin_avg.png", "available"]
     assert members.variability_eligible.all()

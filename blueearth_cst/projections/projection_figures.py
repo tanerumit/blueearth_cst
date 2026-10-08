@@ -17,14 +17,48 @@ SCENARIO_COLORS = {
     "ssp585": "#980002",
 }
 
-SUITE_PRODUCTS = {
-    "F3.1": {"folder_kind": "full-period", "filenames": ("availability.png",)},
+# Logical product keys remain independent of their public output filenames.
+FIGURE_FILENAMES = {
+    "availability.png": "cmip6_ensemble_coverage_basin_avg.png",
+    "trajectory-temperature.png": "cmip6_temp_annual_anomaly_ts_basin_avg.png",
+    "trajectory-precipitation.png": "cmip6_precip_annual_anomaly_ts_basin_avg.png",
+    "annual-temperature.png": "cmip6_temp_annual_overview_basin_avg.png",
+    "annual-precipitation.png": "cmip6_precip_annual_overview_basin_avg.png",
+    "change-temperature.png": "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
+    "change-precipitation-pct.png": "cmip6_precip_annual_seasonal_change_pct_box_basin_avg.png",
+    "change-precipitation-abs.png": "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
+    "seasonal-cycle-temperature.png": "cmip6_temp_monthly_clim_basin_avg.png",
+    "seasonal-cycle-precipitation.png": "cmip6_precip_monthly_clim_basin_avg.png",
+    "monthly-change-temperature.png": "cmip6_temp_monthly_change_box_basin_avg.png",
+    "monthly-change-precipitation.png": "cmip6_precip_monthly_change_pct_box_basin_avg.png",
+    "variability-ratio-temperature-sd.png": "cmip6_temp_annual_seasonal_sd_ratio_box_basin_avg.png",
+    "variability-ratio-precipitation-sd.png": "cmip6_precip_annual_seasonal_sd_ratio_box_basin_avg.png",
+    "variability-ratio-precipitation-cv.png": "cmip6_precip_annual_seasonal_cv_ratio_box_basin_avg.png",
+    "variability-member-ratios.png": "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png",
+    "change-factor-cloud.png": "cmip6_precip_temp_annual_change_cloud_basin_avg.png",
+    "sign-agreement.png": "cmip6_precip_temp_annual_monthly_sign_agreement_basin_avg.png",
+    "change-factor-cloud-combined.png": "cmip6_precip_temp_annual_multi_period_change_cloud_basin_avg.png",
+}
+FIGURE_KEYS = {filename: key for key, filename in FIGURE_FILENAMES.items()}
+
+
+def figure_key(filename: str) -> str:
+    """Resolve a canonical filename to the renderer's logical product key."""
+    return FIGURE_KEYS[filename]
+
+
+def period_folder(window_id: str) -> str:
+    """Canonical folder for a resolved start/end analysis-window identity."""
+    return f"period_{window_id.replace('-', '_')}"
+
+_SUITE_PRODUCT_KEYS = {
+    "F3.1": {"folder_kind": "full_period", "filenames": ("availability.png",)},
     "F3.4": {
-        "folder_kind": "full-period",
+        "folder_kind": "full_period",
         "filenames": ("trajectory-temperature.png", "trajectory-precipitation.png"),
     },
     "F3.4b": {
-        "folder_kind": "full-period",
+        "folder_kind": "full_period",
         "filenames": ("annual-temperature.png", "annual-precipitation.png"),
     },
     "F3.2": {
@@ -56,9 +90,14 @@ SUITE_PRODUCTS = {
     "F3.6b": {"folder_kind": "period", "filenames": ("change-factor-cloud.png",)},
     "F5.1": {"folder_kind": "period", "filenames": ("sign-agreement.png",)},
     "combined-cloud": {
-        "folder_kind": "full-period",
+        "folder_kind": "full_period",
         "filenames": ("change-factor-cloud-combined.png",),
     },
+}
+
+SUITE_PRODUCTS = {
+    key: {**product, "filenames": tuple(FIGURE_FILENAMES[name] for name in product["filenames"])}
+    for key, product in _SUITE_PRODUCT_KEYS.items()
 }
 
 
@@ -68,8 +107,8 @@ def suite_folders(horizons, water_year_start="Jan", reference_window=(1985, 2014
 
     records = analysis_windows(horizons, water_year_start, reference_window)
     return [
-        "full-period",
-        *dict.fromkeys(f"period-{r['window_id']}" for r in records.values()),
+        "full_period",
+        *dict.fromkeys(period_folder(r["window_id"]) for r in records.values()),
     ]
 
 
@@ -96,22 +135,22 @@ def sanitize_horizon_name(name: str) -> str:
     """Sanitize a configured horizon name into a portable directory name.
 
     A horizon name is free text in the config, and it reaches the filesystem
-    here. Anything outside ``[a-z0-9]`` collapses to a single hyphen, so a name
+    here. Anything outside ``[a-z0-9]`` collapses to a single underscore, so a name
     that would otherwise produce an unopenable path on win-64 is caught at parse
     time rather than at the moment a figure is written.
     """
-    slug = re.sub(r"[^a-z0-9]+", "-", str(name).lower()).strip("-")
+    slug = re.sub(r"[^a-z0-9]+", "_", str(name).lower()).strip("_")
     if not slug:
         raise ValueError(f"horizon name has no portable characters: {name!r}")
     return slug
 
 
 def horizon_directory(name: str, period: Sequence[int] | str) -> str:
-    """Return ``<sanitized-name>-<start>-<end>`` for one horizon.
+    """Return ``<sanitized_name>_<start>_<end>`` for one horizon.
 
     The years are in the directory name, not only the horizon's label, because
     a project that redefines ``far`` from 2070-2090 to 2060-2080 would otherwise
     overwrite the old figure in place and leave nothing saying the window moved.
     """
     start, end = parse_horizon_period(period)
-    return f"{sanitize_horizon_name(name)}-{start}-{end}"
+    return f"{sanitize_horizon_name(name)}_{start}_{end}"

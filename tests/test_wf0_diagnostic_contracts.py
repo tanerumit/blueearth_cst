@@ -82,13 +82,13 @@ def test_canonical_inventory_and_one_source_refusal():
     for name, paths in (("era5", era5), ("chirps", chirps), ("comparison", comparison)):
         assert Path(paths["root"]) == Path(name)
         assert all(
-            Path(p).parent == Path(name) / "figures" for p in paths["figures"].values()
+            Path(p).parent == Path(name) / "plots" for p in paths["figures"].values()
         )
         assert Path(paths["compute"]["coverage"]).parent == Path(name) / "tables"
         assert Path(paths["compute"]["metadata"]).parent == Path(name) / "_engine"
         assert (
             Path(paths["render"]["captions_md"])
-            == Path(name) / "figures" / "figure_captions.md"
+            == Path(name) / "plots" / "figure_captions.md"
         )
     assert comparison["source_summary"] == {
         "dataset_comparison_csv": str(Path("comparison/dataset_comparison.csv")),
@@ -100,7 +100,7 @@ def test_canonical_inventory_and_one_source_refusal():
         for x in (era5, chirps, comparison)
         for p in x["figures"].values()
     )
-    assert "_engine/figure_captions.json" in era5["render"]["captions_json"].replace(
+    assert "plots/_engine/figure_captions.json" in era5["render"]["captions_json"].replace(
         "\\", "/"
     )
     with pytest.raises(ValueError, match="two sources"):
@@ -177,12 +177,12 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
     for sources in (["era5"], ["era5", "chirps"]):
         root = tmp_path / ("era5" if len(sources) == 1 else "comparison")
         write_json(
-            root / "_engine" / "figure_captions.json",
+            root / "plots" / "_engine" / "figure_captions.json",
             {"schema_version": 1, "figures": {}},
         )
         output = SimpleNamespace(
-            subbasin_figures=str(root / "figures" / "subbasins"),
-            captioned_subbasins=str(root / "figures" / "captioned" / "subbasins"),
+            subbasin_figures=str(root / "plots" / "subbasins"),
+            captioned_subbasins=str(root / "plots" / "captioned" / "subbasins"),
             subbasin_tables=str(root / "tables" / "subbasins"),
         )
         sm = SimpleNamespace(
@@ -190,9 +190,9 @@ def test_opt_in_subbasin_tables_pngs_and_caption_inventory(tmp_path):
             output=output,
         )
         render_subbasins(sm, settings, sources)
-        assert (root / "figures" / "figure_captions.md").is_file()
+        assert (root / "plots" / "figure_captions.md").is_file()
         assert not (root / "figure_captions.md").exists()
-        records = json.loads((root / "_engine" / "figure_captions.json").read_text())[
+        records = json.loads((root / "plots" / "_engine" / "figure_captions.json").read_text())[
             "figures"
         ]
         assert len(records) == (3 if len(sources) == 1 else 2)
@@ -234,3 +234,4 @@ def test_exact_basin_mask_and_unresolved_temperature_units(tmp_path):
     )
     with pytest.raises(ValueError, match="every declared cell"):
         daily_series(nc, cells, "era5")
+

@@ -68,7 +68,7 @@ The machine vocabulary and descriptions live in
 `blueearth_cst/climate_analysis/figure_naming.py`. Legacy `annual_ts`,
 `monthly_box` and `monthly_clim_line` remain registered for WF1's source producer;
 WF0 no longer emits them. WF0 emits PNGs only. Optional captioned copies use the
-same filename under `figures/captioned/`; captions never add a fifth field.
+same filename under `plots/captioned/`; captions never add a fifth field.
 
 Recommended spatial-scope tokens:
 

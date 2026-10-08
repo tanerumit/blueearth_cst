@@ -21,7 +21,7 @@ Example record (image URLs resolve relative to the copied HTML file):
 ```javascript
 const items=[{
   "label": "CHIRPS · Spell",
-  "existing_path": "C:/project/data/climate/historical/chirps/figures/spell.png",
+  "existing_path": "C:/project/data/climate/historical/chirps/plots/spell.png",
   "before": "before/spell.png",
   "after": "revised/spell.png",
   "version": "revision-1",

@@ -868,7 +868,7 @@ ANALYSIS_TABLE_NAMES = (
 ANALYSIS_OUTPUTS = {
     name: f"{clim_project_dir}/analysis/{name}.csv" for name in ANALYSIS_TABLE_NAMES
 }
-ANALYSIS_OUTPUTS["analysis_record"] = f"{clim_project_dir}/analysis/analysis_record.json"
+ANALYSIS_OUTPUTS["analysis_record"] = f"{clim_project_dir}/analysis/_engine/analysis_record.json"
 WF2_SUITE_PATHS = {
     folder: f"{clim_project_dir}/plots/{folder}"
     for folder in projection_figures.suite_folders(future_horizons, water_year_start, time_horizon_hist)

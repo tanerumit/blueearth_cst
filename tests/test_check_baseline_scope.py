@@ -393,8 +393,10 @@ def test_projection_figure_targets_match_baseline_analysis_window():
         if workflow == "analyze_projections" and kind in cb.FIGURE_KINDS
     }
     assert figures == {
-        "{clim_project_dir}/plots/full-period/annual-precipitation.png",
-        f"{{clim_project_dir}}/plots/period-{window}/change-factor-cloud.png",
+        "{clim_project_dir}/plots/full_period/cmip6_precip_annual_overview_basin_avg.png",
+        "{clim_project_dir}/plots/period_"
+        + window.replace("-", "_")
+        + "/cmip6_precip_temp_annual_change_cloud_basin_avg.png",
     }
     assert [kind for _, kind, _ in cb.active_targets({"analyze_projections"})] == [
         "csv",
@@ -720,3 +722,4 @@ def test_an_unscoped_record_clears_an_orphan(project, capsys):
         "targets"
     ]
     assert orphan not in targets
+

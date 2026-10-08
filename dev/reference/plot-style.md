@@ -1,9 +1,18 @@
 # Scientific plot style and visual review
 
-This reference records the agreed WF0 styles and the defaults to carry into WF2 and subsequent figure
+This shared reference records the agreed WF0 and WF2 styles and defaults for subsequent figure
 revisions. Apply relevant defaults across plot types; preserve the explicit exceptions below. New visual
 decisions belong here, alongside changes to the plotting code. A style decision does not authorize changing
 the underlying calculation or statistical interpretation.
+
+## Output paths
+
+Use `plots/` for generated graphics throughout the toolbox. Keep readable captions in
+`plots/figure_captions.md` and machine plot manifests in `plots/_engine/figure_captions.json`.
+Internal analysis records belong to `analysis/_engine/`; JSON containing user-facing data stays with
+its owning data product. Generated filenames and directories use lowercase snake_case, including
+`full_period/` and `period_<start>_<end>/`. WF2 adopts the WF0 dataset/variable/context/spatial grammar,
+with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the rename mapping.
 
 ## Typography, axes and layout
 
@@ -18,6 +27,9 @@ the underlying calculation or statistical interpretation.
   excessive empty space. Square plotting areas mean equal physical axis lengths, not equal data scales.
 - Every labeled axis tick has a visible tick mark. Annual series have a tick for each year; reduce labeled
   year density on long records to avoid crowding. Retain annual minor ticks where appropriate.
+- Anchor major and minor year ticks to the same calendar-year grid; do not distribute ticks from the
+  record's first year or place them at inconsistent intervals near labels. Reviewed long WF2 records use
+  20-year major ticks and 5-year minor ticks. Compare equivalent panels on shared limits and tick positions.
 - Use units alone for axis titles unless a figure-specific exception needs the variable name.
 - Exception: WF2 reference-relative axes retain `Relative to [reference-period] (symbol)`, for example
   `Relative to 1985–2014 (°C)` or `Relative to 1985–2014 (%)`. Use the actual analysis reference period;
@@ -89,28 +101,51 @@ WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs),
 horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median
 bars. Review climatology and monthly changes as separate groups in the HTML page.
 
+Keep WF2 scenario summaries subordinate to the data: reviewed annual-overview median lines use 1.0 pt,
+trajectory median lines 1.5 pt. Retain annual values without smoothing and preserve gaps in missing years.
+
 WF2 interannual variability shows temperature SD, precipitation SD and precipitation CV in separate figures.
+Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
+Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
+them or significance fills in this figure.
+
 The annual member-ratio comparison shows all three metrics together. Its boxes, medians and capped
 ranges summarize model ratios after geometric averaging of members within each model, with equal model
 weight. Faint points retain individual members; their density does not set the weight of the summary.
 Captions distinguish descriptive model spread from confidence intervals and note member dependence.
-Begin each new plot-group review with scientific, methodological and publication-readability suggestions
-before applying changes; distinguish visual revisions from changes to calculations.
+
 WF2 change clouds retain square plotting areas and circular points for all scenarios, distinguished by
 color, with darker edges and slight transparency. Stack the inset legend in the less occupied upper
 corner. Use “Mean precipitation change (%)” and “Mean temperature change (°C)” as axis titles; state
 reference and future periods in the caption, alongside paired-model aggregation and spread semantics.
+
 WF2 sign-agreement matrices use temperature and precipitation percentage-change panels, four discrete
 agreement classes with paired blue/red swatches, and visible scenario and period ticks. Cell signs show
 the median direction and k/n shows model agreement; choose text color by fill luminance. Captions explain
 that directional agreement is neither probability nor significance and note shared model ancestry.
+
 WF2 ensemble coverage uses a compact table with consistent numeric member counts, a historical-reference
 column, family and institution metadata, and pale alternating rows. Historical counts deduplicate loaded
 reference series. Distinguish availability from analysis eligibility in captions, explain family
 provenance and provisional/unknown assignments, and avoid implying family independence.
-Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
-Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
-them or significance fills in this figure.
+
+## Scientific interpretation and methodological review
+
+- State what a plotted point represents: member, model, scenario summary or observation. Distinguish
+  within-model member variation from between-model spread and preserve paired variables from the same
+  model, scenario and analysis window.
+- For equal-model summaries, reduce members within models first; additional members must not increase
+  a model's weight. For variability ratios, retain the approved geometric member reduction. Individual
+  member points can coexist with model-summary boxes when their different meanings are explicit.
+- Ensemble ranges and IQR boxes are descriptive spread, not confidence intervals. Members of one model
+  are dependent; shared model ancestry can also limit independence between models.
+- Changes compare matched reference and future aggregations. Monthly changes use each month's own
+  reference, rather than a single annual reference. A historical change box collapses to zero by
+  construction; use the zero reference line, with absolute climatologies in a separate companion figure.
+- Use SD for temperature variability; Celsius CV depends on an arbitrary zero. For precipitation, SD
+  expresses absolute variability and CV relative variability; label their aggregation and dry-mean
+  exclusions. Do not imply SD/CV/mean ratio identities when they use different underlying series.
+
 The retained calculations use detrended period mean rates for precipitation SD and detrended period totals
 divided by their original mean for CV; keep this distinction explicit when comparing them. Unifying their
 aggregation would be a separate numerical-method change, not a styling decision.
@@ -137,6 +172,10 @@ in this visual review.
 
 ## Interactive review process
 
+- Begin each new plot-group review with scientific, methodological and publication-readability
+  suggestions before applying changes. Distinguish visual revisions from changes to calculations.
+- Confirm the authoritative baseline and its data provenance before revising. Use the newer WF2 lab
+  outputs and retained tables for this session; older production renders can carry superseded styles.
 - Start from the tracked `dev/reference/figure-comparison.html` template. See
   `dev/reference/figure-comparison.md` for setup and figure-record fields. Keep session data in scratch;
   update the tracked template when improvements to the review interface are approved.
@@ -165,5 +204,7 @@ in this visual review.
 - WF2 artists: `blueearth_cst/projections/projection_suite_figures.py`.
 
 WF2 review uses the newer artists and retained tables in the `wf0-lab` ensemble outputs as its visual
-baseline. Annual overviews and trajectories have been reviewed; inspect other forms before assuming that
-every default is already implemented there. Trajectories use the prepared model median, not the model mean.
+baseline. The annual overview, trajectories, change strips, split seasonal products, variability ratios,
+member-ratio comparison, change cloud, sign agreement and coverage table have been reviewed and their
+approved styles implemented in the toolbox. Trajectories use the prepared model median, not the model mean.
+Keep baseline selection separate from validation of the current toolbox; session-end checks remain owed.

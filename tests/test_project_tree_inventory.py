@@ -129,11 +129,11 @@ COVERED: dict[str, list[str]] = {
         f"data/climate/projections/{CP}/summary/cmip6_change_factors_annual.csv",
         f"data/climate/projections/{CP}/summary/provenance.json",
         f"data/climate/projections/{CP}/analysis/changes.csv",
-        f"data/climate/projections/{CP}/analysis/analysis_record.json",
-        f"data/climate/projections/{CP}/plots/full-period/availability.png",
-        f"data/climate/projections/{CP}/plots/full-period/annual-precipitation.png",
-        f"data/climate/projections/{CP}/plots/period-2070-2099/seasonal-cycle-temperature.png",
-        f"data/climate/projections/{CP}/plots/period-2070-2099/change-factor-cloud.png",
+        f"data/climate/projections/{CP}/analysis/_engine/analysis_record.json",
+        f"data/climate/projections/{CP}/plots/full_period/cmip6_ensemble_coverage_basin_avg.png",
+        f"data/climate/projections/{CP}/plots/full_period/cmip6_precip_annual_overview_basin_avg.png",
+        f"data/climate/projections/{CP}/plots/period_2070_2099/cmip6_temp_monthly_clim_basin_avg.png",
+        f"data/climate/projections/{CP}/plots/period_2070_2099/cmip6_precip_temp_annual_change_cloud_basin_avg.png",
         f"data/climate/projections/{CP}/plots/figure_captions.md",
         f"data/climate/projections/{CP}/plots/_engine/figure_captions.json",
         f"data/climate/projections/{CP}/report.md",
@@ -425,3 +425,4 @@ def test_rules_are_well_formed():
     for old, new in INVENTORY:
         assert isinstance(old, (str, re.Pattern))
         assert isinstance(new, str) and new
+

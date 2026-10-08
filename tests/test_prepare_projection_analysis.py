@@ -76,7 +76,7 @@ def test_shared_windows_compute_once_with_identity_checks(tmp_path):
     assert (
         not tables["availability"]
         .loc[
-            tables["availability"].filename == "variability-member-ratios.png",
+            tables["availability"].filename == "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png",
             "available",
         ]
         .any()

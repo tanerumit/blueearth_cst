@@ -72,7 +72,7 @@ workflow does not consume a Wflow model or CMIP6 projections.
 ## Outputs
 
 WF0 writes shared basin geometry and historical climate stores beneath `project_dir`.
-Each source gets `tables/` and `figures/` directly inside its store. With multiple sources,
+Each source gets `tables/` and `plots/` directly inside its store. With multiple sources,
 `data/climate/historical/comparison/` contains the comparison products in the same layout.
 There is no one-source comparison.
 
@@ -83,16 +83,17 @@ the diagnostic agreement summary; readiness does not establish scientific suitab
 ```text
 <source-store>/               # or comparison/
 ├── _engine/
-│   ├── diagnostics.json       # machine-readable methods, availability and provenance
-│   └── figure_captions.json   # captions indexed by figure path
+│   └── diagnostics.json      # machine-readable methods, availability and provenance
 ├── tables/                   # coverage, indices, SPI/events, trends and checks
-└── figures/                  # standard PNGs
-    └── figure_captions.md     # readable captions and caveats
+└── plots/                    # standard PNGs
+    ├── figure_captions.md    # readable captions and caveats
+    └── _engine/
+        └── figure_captions.json  # captions indexed by plot path
 ```
 
 WF0 exclusively owns these source diagnostics. WF1 does not produce source figures.
-The former `plots/` and `diagnostics/` directories are no longer targeted. Existing files are
-left in place; regenerate WF0 to populate the flattened layout before retiring old outputs.
+The former `figures/` and nested `diagnostics/` layouts are no longer targeted. Existing files are
+left in place; regenerate WF0 to populate the canonical layout before retiring old outputs.
 
 Source tables also retain `daily_basin.csv` and `annual_climatology.nc`. Comparison
 tables add `agreement.csv` and `agreement.md`. Maps use native grid cells with basin,
@@ -109,8 +110,8 @@ Faint raster-cell outlines follow each dataset's native grid boundaries.
 PNG is the only figure format. Names follow
 `<dataset>_<variable>_<context>_<spatial_scope>.png`, for example
 `comparison_precip_annual_rx1day_ts_basin_avg.png`.
-Captioned copies are optional under `figures/captioned/`, with identical filenames.
-Enabling `subbasin_figures` adds `tables/subbasins/` and `figures/subbasins/`;
+Captioned copies are optional under `plots/captioned/`, with identical filenames.
+Enabling `subbasin_figures` adds `tables/subbasins/` and `plots/subbasins/`;
 these directories are not created when disabled. Existing optional products are retained.
 Subbasin outlines on basin maps remain visible.
 

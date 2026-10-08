@@ -125,7 +125,7 @@ def test_each_artist_renders_without_titles_or_cloud_labels(suite):
         )
         fig.canvas.draw()
         assert all(not ax.get_title() for ax in fig.axes)
-        if row["filename"] == "change-factor-cloud.png":
+        if row["filename"] == "cmip6_precip_temp_annual_change_cloud_basin_avg.png":
             assert all(not ax.texts for ax in fig.axes)
             assert fig.axes[0].get_box_aspect() == 1
         plt.close(fig)
@@ -134,8 +134,8 @@ def test_each_artist_renders_without_titles_or_cloud_labels(suite):
 @pytest.mark.parametrize(
     "extra_path, message",
     [
-        ("full-period/stale.png", "owned PNGs differ"),
-        ("captioned/full-period/stale.png", "captioned PNGs differ"),
+        ("full_period/stale.png", "owned PNGs differ"),
+        ("captioned/full_period/stale.png", "captioned PNGs differ"),
     ],
 )
 def test_manifest_bijection_unavailable_and_captioned_copy(
@@ -144,18 +144,18 @@ def test_manifest_bijection_unavailable_and_captioned_copy(
     tables, record = suite
     # Keep one real available product to exercise 600dpi and caption copies.
     tables["availability"].loc[
-        tables["availability"].filename != "change-temperature.png", "available"
+        tables["availability"].filename != "cmip6_temp_annual_seasonal_change_box_basin_avg.png", "available"
     ] = False
     tables["availability"].loc[~tables["availability"].available, "reason"] = (
         "synthetic unavailable product"
     )
     manifest, skipped = render_suite(tables, record, tmp_path, captioned_figures=True)
     assert len(manifest) == 1 and len(skipped) == 15
-    assert set(manifest) == {"period-2036-2065/change-temperature.png"}
+    assert set(manifest) == {"period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"}
     assert (tmp_path / "captioned" / next(iter(manifest))).is_file()
     assert (
         manifest[next(iter(manifest))]["captioned_path"]
-        == "captioned/period-2036-2065/change-temperature.png"
+        == "captioned/period_2036_2065/cmip6_temp_annual_seasonal_change_box_basin_avg.png"
     )
     assert (
         json.loads((tmp_path / "_engine/figure_captions.json").read_text()) == manifest
@@ -171,7 +171,7 @@ def test_manifest_bijection_unavailable_and_captioned_copy(
 def test_captions_and_distinct_folder_contract(suite):
     _, record = suite
     text = caption(
-        "variability-member-ratios.png", record, "2036-2065", {"n_excluded": 3}
+        "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png", record, "2036-2065", {"n_excluded": 3}
     )
     for phrase in (
         "2046–2054",
@@ -187,7 +187,7 @@ def test_captions_and_distinct_folder_contract(suite):
     ):
         assert phrase in text
     horizons = {"far": [2071, 2100], "later": [2081, 2100]}
-    assert contract.suite_folders(horizons) == ["full-period", "period-2071-2100"]
+    assert contract.suite_folders(horizons) == ["full_period", "period_2071_2100"]
     assert sum(len(p["filenames"]) for p in contract.SUITE_PRODUCTS.values()) == 16
 
 
@@ -198,11 +198,11 @@ def test_unplotted_statistics_do_not_enable_mean_figures(suite):
     mean_products = result.loc[
         result.filename.isin(
             [
-                "change-temperature.png",
-                "change-precipitation-pct.png",
-                "change-precipitation-abs.png",
-                "sign-agreement.png",
-                "change-factor-cloud.png",
+                "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
+                "cmip6_precip_annual_seasonal_change_pct_box_basin_avg.png",
+                "cmip6_precip_annual_seasonal_change_abs_box_basin_avg.png",
+                "cmip6_precip_temp_annual_monthly_sign_agreement_basin_avg.png",
+                "cmip6_precip_temp_annual_change_cloud_basin_avg.png",
             ]
         )
     ]
@@ -236,20 +236,20 @@ def test_driver_csv_roundtrip_normalizes_full_period_window(
             input=SimpleNamespace(tables=files, record=str(record_path)),
             output=SimpleNamespace(
                 captions_md=str(plots / "figure_captions.md"),
-                folders=[str(plots / "full-period"), str(plots / "period-2036-2065")],
+                folders=[str(plots / "full_period"), str(plots / "period_2036_2065")],
             ),
             params=SimpleNamespace(captioned_figures=False),
         )
     )
     available = captured["tables"]["availability"]
-    assert available.loc[available.folder == "full-period", "window_id"].eq("").all()
+    assert available.loc[available.folder == "full_period", "window_id"].eq("").all()
     assert available.available.dtype == bool
 
 
 def test_precipitation_cycle_percentage_and_two_row_annual_content(suite):
     tables, record = suite
     cycle = render_product(
-        "seasonal-cycle-precipitation.png", tables, record, window_id="2036-2065"
+        "cmip6_precip_monthly_clim_basin_avg.png", tables, record, window_id="2036-2065"
     )
     change = (
         tables["change_summary"]
@@ -265,7 +265,7 @@ def test_precipitation_cycle_percentage_and_two_row_annual_content(suite):
         cycle.axes[1].lines[0].get_ydata(), change.loc[list(analysis.MONTHS), "median"]
     )
     plt.close(cycle)
-    annual = render_product("annual-precipitation.png", tables, record)
+    annual = render_product("cmip6_precip_annual_overview_basin_avg.png", tables, record)
     assert len(annual.axes) == 2
     assert "mm yr" in annual.axes[0].get_ylabel()
     assert "Anomaly (%" in annual.axes[1].get_ylabel()
@@ -290,7 +290,7 @@ def test_cloud_pairs_derived_models_independent_of_member_labels(suite):
     ].assign(model="TEST/unpaired")
     tables["model_changes"] = pd.concat([models, unpaired], ignore_index=True)
     fig = render_product(
-        "change-factor-cloud.png", tables, record, window_id="2036-2065"
+        "cmip6_precip_temp_annual_change_cloud_basin_avg.png", tables, record, window_id="2036-2065"
     )
     assert len(fig.axes[0].collections[0].get_offsets()) == 2
     assert not fig.axes[0].texts
@@ -332,14 +332,14 @@ def test_caption_counts_exclude_unplotted_variability_and_monthly_strips():
         "model_changes": rows.assign(statistic="mean"),
     }
     for filename in (
-        "variability-member-ratios.png",
-        "variability-ratio-temperature-sd.png",
-        "change-temperature.png",
+        "cmip6_precip_temp_annual_member_ratio_box_basin_avg.png",
+        "cmip6_temp_annual_seasonal_sd_ratio_box_basin_avg.png",
+        "cmip6_temp_annual_seasonal_change_box_basin_avg.png",
     ):
         assert figure_counts(filename, tables, "2036-2065")["n_models"] == 0
     tables["variability_member_ratios"] = rows.assign(period="annual")
     assert (
-        figure_counts("variability-member-ratios.png", tables, "2036-2065")["n_models"]
+        figure_counts("cmip6_precip_temp_annual_member_ratio_box_basin_avg.png", tables, "2036-2065")["n_models"]
         == 1
     )
 
@@ -369,9 +369,9 @@ def test_agreement_requires_a_plotted_cell(period, variable, quantity):
         ]
     )
     available = analysis.product_availability({"models": rows}, ["2036-2065"])
-    assert not available.set_index("filename").loc["sign-agreement.png", "available"]
+    assert not available.set_index("filename").loc["cmip6_precip_temp_annual_monthly_sign_agreement_basin_avg.png", "available"]
     assert (
-        figure_counts("sign-agreement.png", {"model_changes": rows}, "2036-2065")[
+        figure_counts("cmip6_precip_temp_annual_monthly_sign_agreement_basin_avg.png", {"model_changes": rows}, "2036-2065")[
             "n_models"
         ]
         == 0

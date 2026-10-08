@@ -31,7 +31,7 @@ from blueearth_cst.climate_analysis.diagnostic_figures import (
     year_ticks,
     ygrid,
 )
-from blueearth_cst.projections.projection_figures import SCENARIO_COLORS
+from blueearth_cst.projections.projection_figures import SCENARIO_COLORS, figure_key
 
 STRIP_PERIODS = ("annual", "DJF", "MAM", "JJA", "SON")
 MONTHS = (
@@ -618,6 +618,8 @@ def availability_matrix(coverage, scenarios=None):
 
 def render_product(filename, tables, record, *, window_id="", scenarios=None):
     """Dispatch one available product inside the shared WF0 style context."""
+
+    filename = figure_key(filename)
 
     def table(name):
         data = tables[name]

@@ -166,6 +166,13 @@ def render(
                     field, variable, sources[0], overlays or {}, limits, counts
                 )
                 text = f"{sources[0].upper()} native-grid annual {variable} climatology, {period[0]}–{period[1]}. Complete reporting-year {'means' if variable == 'temp' else 'totals'}; gray cells are unavailable. Basin boundary, dashed subbasin boundaries, rivers and gauges are shown where supplied. No interpolation."
+                supported = counts.values[counts.values > 0]
+                years = "0"
+                if supported.size:
+                    years = str(int(supported.min()))
+                    if supported.min() != supported.max():
+                        years += f"–{int(supported.max())}"
+                text += f" {years} complete reporting years per available cell."
                 if variable == "pet":
                     text += " PET is derived on the source grid with the existing de Bruin machinery and can differ from model PET."
                 if not np.isfinite(field.values).any():

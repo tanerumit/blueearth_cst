@@ -37,8 +37,8 @@ DESCRIPTIONS = {
         "a data gap or record edge, so their full duration is unknown."
     ),
     "extreme-Rx1day": (
-        "Annual maximum one-day precipitation (Rx1day). Each point represents a reporting "
-        "year meeting the completeness rule; gaps indicate years without a valid estimate."
+        "Annual maximum one-day precipitation (Rx1day). Points show annual values; "
+        "gaps indicate unavailable estimates."
     ),
     "extreme-Rx5day": (
         "Annual maximum five-day precipitation (Rx5day), calculated from complete five-day "
@@ -87,13 +87,21 @@ def caption(name: str, view: View) -> str:
         else view.sources
     )
     sources = ", ".join(view.labels[s] for s in plotted)
-    identity = f"{sources}; " if len(view.sources) == 1 or name == "temperature" else ""
+    identity = f"{sources}; "
     period = f"{view.years[0]}–{view.years[-1]}"
-    context = f"{identity}{period}; {view.support}."
+    support = view.support.replace("_", " ").replace("avg", "average").replace(
+        "equal-weight cells", "equally weighted grid cells"
+    )
+    context = f"{identity}{period}; {support}."
     detail = DESCRIPTIONS[name]
+    if name.startswith("extreme-"):
+        detail += (
+            " Dashed lines show Theil–Sen trends; source-colored labels give slopes "
+            "per decade."
+        )
     if name == "anomaly" or name == "spi":
         if view.reference[0] == view.years[0] and view.reference[1] == view.years[-1]:
-            context = f"{identity}{period} (reference period); {view.support}."
+            context = f"{identity}{period} (reference period); {support}."
         else:
             detail += f" Reference: {view.reference[0]}–{view.reference[1]}."
     if name == "spi":

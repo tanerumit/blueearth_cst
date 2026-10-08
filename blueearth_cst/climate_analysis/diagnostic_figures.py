@@ -275,13 +275,19 @@ def ygrid(ax: plt.Axes) -> None:
 
 
 def year_ticks(ax: plt.Axes, years: np.ndarray, continuous: bool = False) -> None:
-    """Display-period limits (never source availability) and a 2/5/10-year step."""
+    """Sparse year labels with finer ticks, thinning ticks for long records."""
     if continuous:
         ax.set_xlim(years[0], years[-1] + 1)
     else:
         ax.set_xlim(years[0] - 0.5, years[-1] + 0.5)
     step = 10 if years.size > 35 else 5 if years.size > 12 else 2
-    ax.set_xticks(np.arange(years[0] + (-years[0]) % step, years[-1] + 1, step))
+    major = np.arange(years[0] + (-years[0]) % step, years[-1] + 1, step)
+    ax.set_xticks(major)
+    tick_step = max(1, int(np.ceil((years[-1] - years[0]) / 60)))
+    ticks = np.arange(years[0] + (-years[0]) % tick_step, years[-1] + 1, tick_step)
+    ax.set_xticks(np.setdiff1d(ticks, major), minor=True)
+    ax.tick_params(axis="x", which="major", length=3, width=LW_EDGE, color=AXIS)
+    ax.tick_params(axis="x", which="minor", length=2, width=LW_EDGE, color=AXIS)
 
 
 def month_axis(ax: plt.Axes, m0: int) -> None:
@@ -751,10 +757,10 @@ def spi_checks(v: View) -> Figure:
 
 
 EXTREME_LABELS = {
-    "Rx1day": "Rx1day (mm)",
-    "Rx5day": "Rx5day (mm)",
-    "SDII": f"SDII ({UNITS['mm_day']})",
-    "Wet days": f"Wet days ({UNITS['days_year']})",
+    "Rx1day": "mm",
+    "Rx5day": "mm",
+    "SDII": UNITS["mm_day"],
+    "Wet days": UNITS["days_year"],
 }
 
 
@@ -769,6 +775,18 @@ def extremes(metric: str) -> Callable[[View], Figure]:
             )  # NaN breaks the line
         ax.set_ylabel(EXTREME_LABELS[metric])
         ax.margins(y=0.08)
+        trend_key = {"SDII": "sdii", "Wet days": "wet_days"}.get(metric, metric)
+        unit = (
+            "mm d⁻¹ decade⁻¹"
+            if metric == "SDII"
+            else UNITS["days_decade"]
+            if metric == "Wet days"
+            else UNITS["mm_decade"]
+        )
+        _annual_trends(
+            ax, v, "extremes", metric, trend_key, unit,
+            digits=2 if metric == "SDII" else 1,
+        )
         year_ticks(ax, v.years)
         ygrid(ax)
         top_legend(fig, identity_row(v))
@@ -892,22 +910,46 @@ def slopes(v: View) -> Figure:
 def series(v: View) -> Figure:
     fig, axs = new_fig(H_SINGLE)
     ax = axs[0, 0]
-    labels = []
     for s in v.sources:
         y = v.results[s]["annual"]["total"].reindex(v.years)
         ax.plot(
             v.years, y, color=v.color(s), lw=LW_LINE, marker=v.marker(s), ms=MS_LINE
         )
-        t = v.results[s]["trends"]["total"]
+    year_ticks(ax, v.years)
+    ax.margins(y=0.08)
+    _annual_trends(ax, v, "annual", "total", "total", UNITS["mm_decade"])
+    ax.set_ylabel(UNITS["mm_year"])
+    top_legend(fig, identity_row(v))
+    ygrid(ax)
+    return fig
+
+
+def _annual_trends(
+    ax: plt.Axes,
+    v: View,
+    table: str,
+    column: str,
+    metric: str,
+    unit: str,
+    digits: int = 0,
+) -> None:
+    """Draw retained Sen estimates with separated, source-colored slope labels."""
+    labels = []
+    for s in v.sources:
+        y = v.results[s][table][column].reindex(v.years)
+        t = v.results[s]["trends"][metric]
         ok = y.dropna().index.to_numpy()
         if np.isfinite(t["slope"]) and ok.size:
             span = np.array([ok[0], ok[-1]], dtype=float)
             line = t["intercept"] + t["slope"] / 10 * span
             ax.plot(span, line, color=v.color(s), lw=LW_REF, ls=TREND_DASH, alpha=0.6)
             labels.append(
-                [line[-1], f"{fmt_signed(t['slope'])} {UNITS['mm_decade']}", v.color(s)]
+                [
+                    line[-1],
+                    f"{fmt_signed(t['slope'], digits)} {unit}",
+                    v.color(s),
+                ]
             )
-    year_ticks(ax, v.years)
     ax.margins(y=0.08)
     lo, hi = ax.get_ylim()
     gap = (hi - lo) * 0.07  # keep end labels from overlapping
@@ -918,18 +960,14 @@ def series(v: View) -> Figure:
         ax.annotate(
             text,
             (v.years[-1] - 0.4, y),
-            xytext=(-3, 0),
+            xytext=(-3, 8),
             textcoords="offset points",
             ha="right",
-            va="center",
+            va="bottom",
             fontsize=FS_TICK,
             color=color,
             bbox={"facecolor": "white", "edgecolor": "none", "alpha": 0.88, "pad": 1.2},
         )
-    ax.set_ylabel(f"Annual precipitation ({UNITS['mm_year']})")
-    top_legend(fig, identity_row(v))
-    ygrid(ax)
-    return fig
 
 
 def sensitivity(v: View) -> Figure:

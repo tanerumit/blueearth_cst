@@ -13,6 +13,7 @@ from blueearth_cst.climate_analysis import diagnostic_figures as artists
 from blueearth_cst.climate_analysis.diagnostic_captions import caption
 from blueearth_cst.climate_analysis.diagnostic_maps import draw_map, visible_values
 from blueearth_cst.climate_analysis.diagnostic_tables import write_json
+from blueearth_cst.climate_analysis.diagnostics import sen_trend
 
 
 def load_result(root, source):
@@ -48,6 +49,11 @@ def load_result(root, source):
     metadata = json.loads(
         (Path(root) / "_engine" / "diagnostics.json").read_text(encoding="utf-8")
     )
+    trend_records = trends.to_dict(orient="index")
+    # These plots also show trends for metrics absent from the retained trend table.
+    for metric in ("Rx5day", "sdii"):
+        if metric not in trend_records:
+            trend_records[metric] = sen_trend(indices[metric])
     return {
         "coverage": coverage,
         "valid": valid.loc[valid.valid_precip, "reporting_year"].to_numpy(),
@@ -68,7 +74,7 @@ def load_result(root, source):
         "n_spells": len(read("dry_spells")),
         "acf": read("anomaly_acf").set_index("lag_months"),
         "annual": indices,
-        "trends": trends.to_dict(orient="index"),
+        "trends": trend_records,
         "sensitivity": {
             k: sensitivity[sensitivity.metric == k]
             .set_index("start_year")
@@ -226,7 +232,8 @@ def render(
                         else "Start-year Theil–Sen slope sensitivity with dependence-adjusted 95% intervals; at least 15 valid years per fit."
                     )
                 )
-            text += f" Sources: {', '.join(view.labels.values())}. Support: {support}. Method implementation was exercised on Ntoum real data; this run is not scientifically qualified. Source agreement is not accuracy; input homogeneity is unverified."
+            if form.startswith("map-") or form in {"spi-checks", "sensitivity"}:
+                text += f" Sources: {', '.join(view.labels.values())}. {support}."
             if availability != "available":
                 text += f" Availability: {availability}."
             Path(filename).parent.mkdir(parents=True, exist_ok=True)

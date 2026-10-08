@@ -106,7 +106,8 @@ def _ratio_limits(axes, values):
         ax.set_ylim(np.exp(low - pad), np.exp(high + pad))
 
 
-def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenarios=None, reference=(1985, 2014)):
+def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenarios=None,
+              reference=(1985, 2014), baseline=0.0, ylabel=None):
     """Prepared model points, model range/IQR/median, annual and seasons."""
     selected = models.loc[
         (models.variable == variable)
@@ -121,10 +122,10 @@ def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenario
     unit = "%" if quantity == "change_pct" else "°C" if variable == "temp" else "mm d⁻¹"
     fig, grid = new_fig(H_SINGLE, ncols=len(STRIP_PERIODS), width_mm=W_FULL, sharey=True)
     axes = list(grid.flat)
-    axes[0].set_ylabel(f"Relative to {reference[0]}–{reference[1]} ({unit})")
+    axes[0].set_ylabel(ylabel or f"Relative to {reference[0]}–{reference[1]} ({unit})")
     scen = _scenarios(selected, scenarios)
     values = selected.loc[selected.period.isin(STRIP_PERIODS), "value"].to_numpy(float)
-    values = np.r_[0, values[np.isfinite(values)]]
+    values = np.r_[baseline, values[np.isfinite(values)]]
     low, high = values.min(), values.max()
     pad = 0.06 * (high - low or 1)
     for i, (ax, period) in enumerate(zip(axes, STRIP_PERIODS, strict=True)):
@@ -132,7 +133,7 @@ def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenario
         ax.set_ylim(low - pad, high + pad)
         ax.tick_params(axis="both", length=3)
         ygrid(ax)
-        ax.axhline(0, color=MUTED, lw=LW_REF)
+        ax.axhline(baseline, color=MUTED, lw=LW_REF)
         for j, s in enumerate(scen):
             values = (
                 selected.loc[
@@ -415,85 +416,23 @@ def annual_overview(
 
 
 def ratio_strip(models, *, variable, statistic, bands=(), summary=None, scenarios=None):
-    """Model geometric ratios and supplied exact-mask single-member benchmarks."""
-    data = models.loc[(models.variable == variable) & (models.statistic == statistic)]
-    fig, axes = _panels(
-        STRIP_PERIODS, "Variability ratio (log scale; future/reference)"
-    )
-    scen = _scenarios(data, scenarios)
-    for ax, period in zip(axes, STRIP_PERIODS, strict=True):
-        ax.axhline(1, color=MUTED, lw=LW_REF)
-        for j, s in enumerate(scen):
-            for band in bands:
-                if (
-                    band.get("scenario") == s
-                    and band.get("period") == period
-                    and band.get("variable") == variable
-                    and band.get("statistic") == statistic
-                    and band.get("null_status", band.get("status")) == "ok"
-                ):
-                    ax.fill_between(
-                        [j - 0.35, j + 0.35],
-                        band["null_lo"],
-                        band["null_hi"],
-                        color=_color(s),
-                        alpha=0.12,
-                    )
-            sub = data.loc[
-                (data.period == period) & (data.scenario == s) & data.value.gt(0)
-            ].sort_values("model")
-            for offset, (_, row) in zip(
-                np.linspace(-0.13, 0.13, len(sub)), sub.iterrows(), strict=True
-            ):
-                ax.scatter(
-                    j + offset,
-                    row.value,
-                    edgecolor=_color(s),
-                    facecolor=_color(s) if row.outside_null else "white",
-                    s=16,
-                )
-            if summary is not None:
-                rows = summary.loc[
-                    (summary.period == period)
-                    & (summary.scenario == s)
-                    & (summary.variable == variable)
-                    & (summary.statistic == statistic)
-                ]
-                if not rows.empty:
-                    row = rows.iloc[0]
-                    ax.plot(
-                        [j + 0.22] * 2,
-                        [row["min"], row["max"]],
-                        color=_color(s),
-                        lw=LW_RANGE,
-                    )
-                    if row.iqr_shown:
-                        ax.plot(
-                            [j + 0.22] * 2,
-                            [row.q25, row.q75],
-                            color=_color(s),
-                            lw=LW_IQR,
-                        )
-                    ax.plot([j + 0.16, j + 0.28], [row["median"]] * 2, color=INK)
-        ax.set_xticks(
-            range(len(scen)), [s.replace("ssp", "") for s in scen], rotation=45
-        )
-        ax.set_yscale("log")
-        ax.set_xlim(-0.5, len(scen) - 0.5)
-    _ratio_limits(
-        fig.axes,
-        [
-            *data.value,
-            *(
-                b[k]
-                for b in bands
-                for k in ("null_lo", "null_hi")
-                if b.get("variable") == variable
-            ),
-        ],
-    )
-    _legend(fig, scen)
-    return fig
+    """Prepared model ratios with the reviewed outline boxes and model points.
+
+    Retained benchmark tables remain available separately; this descriptive
+    ensemble figure displays model spread without sampling bands.
+    """
+    data = models.loc[(models.variable == variable) & (models.statistic == statistic)].copy()
+    data["quantity"] = "ratio"
+    if summary is None:
+        summary = pd.DataFrame(columns=["variable", "statistic", "quantity", "period", "scenario",
+                                        "min", "max", "median", "q25", "q75", "iqr_shown"])
+    else:
+        summary = summary.copy()
+        summary["quantity"] = "ratio"
+    name = "Temperature" if variable == "temp" else "Precipitation"
+    metric = "SD" if statistic == "std_detrended" else "CV"
+    return dot_strip(data, summary, variable=variable, quantity="ratio", statistic=statistic,
+                     scenarios=scenarios, baseline=1.0, ylabel=f"{name} {metric} ratio")
 
 
 def pooled_ratio_figure(members, summary, scenarios=None):
@@ -766,7 +705,7 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
             return ratio_strip(
                 table("variability_model_ratios"),
                 variable=variable,
-                statistic="std_detrended" if variable == "temp" else "cv_detrended",
+                statistic="std_detrended" if filename.endswith("-sd.png") else "cv_detrended",
                 bands=bands,
                 summary=pd.DataFrame(
                     [

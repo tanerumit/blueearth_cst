@@ -48,6 +48,7 @@ SUITE_PRODUCTS = {
         "folder_kind": "period",
         "filenames": (
             "variability-ratio-temperature-sd.png",
+            "variability-ratio-precipitation-sd.png",
             "variability-ratio-precipitation-cv.png",
         ),
     },

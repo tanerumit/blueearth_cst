@@ -107,6 +107,26 @@ def caption(filename, record, window_id="", counts=None):
             "and horizontal jitter for legibility. Zero indicates no change."
         )
     if filename.startswith("variability-"):
+        if filename.startswith("variability-ratio-"):
+            window = next(w for w in record["windows"] if w["window_id"] == window_id)
+            text = [f"CMIP6 interannual variability: {filename.removesuffix('.png').replace('-', ' ')}.",
+                    f"Future/reference ratios for {window['used'][0]}–{window['used'][1]} relative to "
+                    f"{window['reference'][0]}–{window['reference'][1]}. Model spread is descriptive, "
+                    "not a confidence interval."]
+            text.append("Ratios above 1 indicate increased interannual variability and ratios below 1 "
+                        "indicate decreased variability. Each member is detrended separately within each "
+                        "window; model ratios are geometric means of member ratios and models have equal weight.")
+            if "precipitation" in filename:
+                text.append("Precipitation SD is calculated from period mean daily rates; precipitation CV "
+                            "uses detrended SD of period totals divided by their original mean. These "
+                            "aggregations can differ when period lengths vary. CV excludes periods with dry "
+                            "reference or future means.")
+            text.append("Outlined boxes show the model interquartile range where at least 10 models "
+                        "contribute, thick bars show the median, capped lines span the model range and "
+                        "faint points show models. Sampling benchmarks are not displayed in this figure.")
+            text.append(f"Excluded degenerate ratios: {counts.get('n_excluded', 0)}; "
+                        f"zero-future ratios: {counts.get('n_zero_future', 0)}.")
+            return " ".join(text)
         null = record.get("methods", {}).get("null_band", {})
         text.append(
             f"90 % range of this ratio expected from sampling alone if variability did not change, assuming year-to-year white noise; autocorrelation widens it. Separate OLS residual SD uses ddof=0 on actual retained years; CV divides integral SD by integral mean. Gaussian draws={null.get('simulations', 20000)}, seed={null.get('seed', 20261007)}; overlapping years share draws. Invalid CV draws with nonpositive means are counted; valid-draw bands are conditional on positive means."

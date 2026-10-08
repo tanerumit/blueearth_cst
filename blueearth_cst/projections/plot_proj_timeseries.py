@@ -89,7 +89,7 @@ def figure_counts(filename, tables, window_id=""):
         data = data.loc[
             (
                 data.statistic
-                == ("std_detrended" if "temperature" in filename else "cv_detrended")
+                == ("std_detrended" if filename.endswith("-sd.png") else "cv_detrended")
             )
             & data.period.isin(PERIODS[:5])
         ]

@@ -86,8 +86,16 @@ For WF2 change strips, tighten the gap between the horizontal scenario legend an
 caps to the full-range lines, and make median bars slightly thicker than the box outlines.
 
 WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
-horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median bars. Review climatology
-and monthly changes as separate groups in the HTML page.
+horizontal month labels, reference-period axis titles, capped ranges, outline IQR boxes and thicker median
+bars. Review climatology and monthly changes as separate groups in the HTML page.
+
+WF2 interannual variability shows temperature SD, precipitation SD and precipitation CV in separate figures.
+Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
+Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
+them or significance fills in this figure.
+The retained calculations use detrended period mean rates for precipitation SD and detrended period totals
+divided by their original mean for CV; keep this distinction explicit when comparing them. Unifying their
+aggregation would be a separate numerical-method change, not a styling decision.
 
 For drought events, reserve colored dot legend symbols for datasets; use a line for complete events and
 a hatched sample for truncated events. The final reviewed hatch is eight diagonal strokes in Matplotlib's

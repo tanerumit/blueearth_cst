@@ -1193,6 +1193,7 @@ def product_availability(tables, windows=None):
         ratios = data["model_ratios"].loc[data["model_ratios"].window_id == window_id]
         for variable, statistic, label in (
             ("temp", "std_detrended", "temperature-sd"),
+            ("precip", "std_detrended", "precipitation-sd"),
             ("precip", "cv_detrended", "precipitation-cv"),
         ):
             sub = ratios.loc[

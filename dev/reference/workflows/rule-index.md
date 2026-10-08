@@ -884,7 +884,7 @@ lab-parity exception; CV uses integrals. Analysis-only float64 promotion preserv
 #### 2.06 · `plot_climate_projections`
 
 **Does.** Pure table rendering from 2.05b. Five full-period products show coverage, member annual
-absolute values/anomalies and equal-model anomaly trajectories. Twelve products per distinct analysis
+absolute values/anomalies and equal-model anomaly trajectories. Thirteen products per distinct analysis
 window show change strips, monthly climatologies, separate monthly-change boxes, variability ratios,
 sign agreement and a paired cloud. `seasonal-cycle-*.png` contains climatology only;
 `monthly-change-*.png` contains the scenario panels formerly combined with it.

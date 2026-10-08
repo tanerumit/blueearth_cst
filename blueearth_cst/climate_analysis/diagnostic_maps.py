@@ -220,8 +220,10 @@ def draw_map(field, variable, source, overlays, limits, counts):
         cb = fig.colorbar(
             mesh, ax=ax, shrink=0.48, pad=0.03, anchor=(0, 0), ticks=levels
         )
+        variable_label = {"precip": "Precip.", "temp": "Temp.", "pet": "PET"}[variable]
         cb.ax.set_title(
-            f"{variable.capitalize()}\n({'°C' if variable == 'temp' else 'mm yr⁻¹'})",
+            f"{variable_label}\n"
+            f"({'°C' if variable == 'temp' else 'mm yr⁻¹'})",
             fontsize=6,
             pad=10,
         )

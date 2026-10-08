@@ -100,6 +100,10 @@ WF2 change clouds retain square plotting areas and circular points for all scena
 color, with darker edges and slight transparency. Stack the inset legend in the less occupied upper
 corner. Use “Mean precipitation change (%)” and “Mean temperature change (°C)” as axis titles; state
 reference and future periods in the caption, alongside paired-model aggregation and spread semantics.
+WF2 sign-agreement matrices use temperature and precipitation percentage-change panels, four discrete
+agreement classes with paired blue/red swatches, and visible scenario and period ticks. Cell signs show
+the median direction and k/n shows model agreement; choose text color by fill luminance. Captions explain
+that directional agreement is neither probability nor significance and note shared model ancestry.
 Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
 Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
 them or significance fills in this figure.

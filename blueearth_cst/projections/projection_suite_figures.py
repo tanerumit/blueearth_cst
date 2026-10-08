@@ -8,7 +8,8 @@ import numpy as np
 import pandas as pd
 from datetime import date
 import zlib
-from matplotlib.patches import Rectangle
+from matplotlib.patches import Rectangle, Patch
+from matplotlib.legend_handler import HandlerTuple
 from matplotlib.colors import to_rgb
 from matplotlib.lines import Line2D
 
@@ -531,61 +532,51 @@ def change_cloud(models, *, combined=False, scenarios=None):
 
 
 def agreement_matrix(agreement, scenarios=None):
-    """Model and code-family counts; neutral small-change cells."""
-    data = agreement.loc[agreement.statistic == "mean"].copy()
+    """Prepared model sign counts, with discrete direction/agreement encoding."""
+    data = agreement.loc[agreement.statistic == "mean"]
     scen = _scenarios(data, scenarios)
-    quantities = [("temp", "change"), ("precip", "change_pct"), ("precip", "change")]
+    quantities = (("temp", "change", "Temperature"), ("precip", "change_pct", "Precipitation"))
     periods = [p for p in ("annual", *MONTHS) if p in set(data.period)]
-    fig, axes = new_fig(max(H_SINGLE, 30 + 7 * len(periods)), ncols=3, width_mm=W_FULL)
-    for b, (ax, (variable, quantity)) in enumerate(
-        zip(axes.flat, quantities, strict=True)
-    ):
-        for i, period in enumerate(periods):
+    positive = ("#eef3f8", "#c6d6e8", "#8fb0d3", "#3d6fa5")
+    negative = ("#f8eeee", "#ecc9c9", "#d98f8f", "#a8403f")
+    fig, axes = new_fig(34+4.2*len(periods), ncols=2,
+                        width_mm=20+2*(13*len(scen)+5))
+    ys = [i+(.45 if i and periods[0] == "annual" else 0) for i in range(len(periods))]
+    for b, (ax, (variable, quantity, title)) in enumerate(zip(axes.flat, quantities, strict=True)):
+        for period, y in zip(periods, ys, strict=True):
             for j, s in enumerate(scen):
-                sub = data.loc[
-                    (data.variable == variable)
-                    & (data.quantity == quantity)
-                    & (data.period == period)
-                    & (data.scenario == s)
-                ]
-                if sub.empty:
+                rows = data.loc[(data.variable == variable) & (data.quantity == quantity)
+                                & (data.period == period) & (data.scenario == s)]
+                if rows.empty:
                     continue
-                row = sub.iloc[0]
-                color = (
-                    "#eeeeee"
-                    if row.small_change
-                    else plt.get_cmap("Blues" if row["median"] >= 0 else "Reds")(
-                        0.15 + 0.7 * row.fraction
-                    )
-                )
-                ax.add_patch(
-                    plt.Rectangle(
-                        (j - 0.5, i - 0.5), 1, 1, facecolor=color, edgecolor="white"
-                    )
-                )
-                ax.text(
-                    j,
-                    i,
-                    f"{row.k}/{row.n}\n{row.k_fam}/{row.n_fam}"
-                    + (" ·" if row.small_change else ""),
-                    ha="center",
-                    va="center",
-                    fontsize=FS_NOTE,
-                    color="white"
-                    if not row.small_change and row.fraction > 0.7
-                    else INK,
-                )
-        ax.set(
-            xticks=range(len(scen)),
-            xticklabels=scen,
-            yticks=range(len(periods)),
-            yticklabels=["Annual" if p == "annual" else p for p in periods]
-            if b == 0
-            else [],
-            xlim=(-0.5, len(scen) - 0.5),
-            ylim=(len(periods) - 0.5, -0.5),
-            xlabel=f"{variable} {'%' if quantity == 'change_pct' else '°C' if variable == 'temp' else 'mm d⁻¹'}",
-        )
+                row = rows.iloc[0]
+                median = row["median"]
+                sign = "+" if median > 0 else "−" if median < 0 else ""
+                k = int(np.clip(np.digitize(row.fraction, [0, .6, .8, .9, 1.0001])-1, 0, 3))
+                fill = (positive if sign == "+" else negative)[k] if sign and np.isfinite(row.fraction) else "#eeeeee"
+                ax.add_patch(Rectangle((j, y), 1, 1, facecolor=fill, edgecolor="white", lw=1))
+                rgb = to_rgb(fill)
+                linear = [c/12.92 if c <= .04045 else ((c+.055)/1.055)**2.4 for c in rgb]
+                luminance = sum(c*w for c, w in zip(linear, (.2126, .7152, .0722), strict=True))
+                ax.text(j+.5, y+.5, f"{sign} {int(row.k)}/{int(row.n)}".strip(),
+                        ha="center", va="center", fontsize=FS_NOTE,
+                        color="white" if luminance < .179 else "#173442")
+        ax.set(xlim=(0, len(scen)), ylim=(ys[-1]+1, 0))
+        ax.set_xticks(np.arange(len(scen))+.5, [_label(s) for s in scen])
+        ax.xaxis.tick_top()
+        ax.set_yticks(np.array(ys)+.5, ["Annual" if p == "annual" else p for p in periods] if b == 0 else [])
+        ax.tick_params(axis="x", length=3, width=.6)
+        ax.tick_params(axis="y", length=3 if b == 0 else 0, width=.6)
+        ax.set_title(f"{chr(97+b)}) {title}", loc="left")
+        ax.grid(False)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+    handles = [(Patch(facecolor=positive[k], edgecolor=MUTED if k == 0 else "none"),
+                Patch(facecolor=negative[k], edgecolor=MUTED if k == 0 else "none")) for k in range(4)]
+    fig.legend(handles, ["<60%", "60–80%", "80–90%", "≥90%"],
+               handler_map={tuple: HandlerTuple(ndivide=None, pad=.3)},
+               loc="outside upper left", ncols=4, frameon=False, alignment="left",
+               title="Models sharing median sign · blue: increase; red: decrease")
     return fig
 
 
@@ -713,5 +704,6 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 reference=next((w["reference"] for w in record["windows"] if w["window_id"] == window_id), record["reference"]),
             )
     raise ValueError(f"unknown suite product: {filename}")
+
 
 

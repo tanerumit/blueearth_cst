@@ -19,6 +19,19 @@ def _mask(years):
 def caption(filename, record, window_id="", counts=None):
     """State windows, weighting, benchmark assumptions and exclusions explicitly."""
     counts = counts or {}
+    if filename == "sign-agreement.png":
+        window = next(w for w in record["windows"] if w["window_id"] == window_id)
+        return (
+            f"CMIP6 sign agreement in annual and monthly mean changes for {window['used'][0]}–"
+            f"{window['used'][1]} relative to {window['reference'][0]}–{window['reference'][1]}. "
+            "Each model contributes once after averaging its members. Cell signs indicate the sign "
+            "of the median model change: + denotes increase and − decrease. Counts k/n give the "
+            "number of models sharing that sign out of the eligible models; darker fills indicate "
+            "stronger agreement. Blue denotes increase and red decrease. Agreement measures "
+            "consistency of direction, not change magnitude, a probability, or statistical "
+            "significance. Models sharing code ancestry are not independent, so model counts need "
+            "not represent independent lines of evidence."
+        )
     if filename.startswith("change-factor-cloud"):
         windows = [w for w in record["windows"] if not window_id or w["window_id"] == window_id]
         periods = "; ".join(
@@ -206,10 +219,6 @@ def caption(filename, record, window_id="", counts=None):
             text.append(
                 "Faint vertical intervals are each member's own exact-mask single-member null band; filled points fall outside it. Each eligible member has weight 1/eligible-members-of-its-model in pooled log quantiles. Pooled quantiles are ensemble spread and carry no band."
             )
-    if filename == "sign-agreement.png":
-        text.append(
-            "Sign agreement among models — a count, not a likelihood statement. Model k/n and code-family k_fam/n_fam are reported. Small-change markers use display heuristics: temperature ±0.5 °C, precipitation ±5 % or ±0.1 mm/day; these are not detection thresholds."
-        )
     if filename == "availability.png":
         family = record.get("models", [])
         text.append(

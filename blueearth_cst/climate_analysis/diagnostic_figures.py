@@ -874,8 +874,9 @@ def extremes(metric: str) -> Callable[[View], Figure]:
 
 
 def spell(v: View) -> Figure:
-    fig, axs = new_fig(H_SINGLE)
+    fig, axs = new_fig(H_SINGLE, width_mm=W_COL1)
     ax = axs[0, 0]
+    ax.set_box_aspect(1)
     xmax = 2
     for s in v.sources:
         ex = v.results[s]["spells"]
@@ -899,9 +900,9 @@ def spell(v: View) -> Figure:
     ax.set_ylim(0.0015, 1.2)
     ax.set_xlim(0.5, xmax + 0.5)
     ax.set_xlabel("Dry-spell length (days)")
-    ax.set_ylabel("Exceedance P (log)")
+    ax.set_ylabel("Exceedance Pr. (log)")
     ax.grid()
-    top_legend(fig, identity_row(v))
+    inside_legend(fig, ax, identity_row(v), lines=ax.lines)
     return fig
 
 

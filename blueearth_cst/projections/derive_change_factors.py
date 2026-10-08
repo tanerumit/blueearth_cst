@@ -233,6 +233,7 @@ def derive_point_datasets(
         stats=stats,
         variable_spec=variable_spec,
         min_reference=min_reference,
+        start_month_hyd_year=water_year_start,
         _reference_cache=cached_reference,
     )
     monthly_change = monthly_change.assign_coords(

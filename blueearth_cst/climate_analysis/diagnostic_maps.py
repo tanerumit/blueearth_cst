@@ -129,9 +129,11 @@ def draw_map(field, variable, source, overlays, limits, counts):
             len(levels) - 1
         )
         cmap.set_bad("#a0a0a0")
+        xedges = _edges(field.longitude, field.attrs.get("longitude_resolution"))
+        yedges = _edges(field.latitude, field.attrs.get("latitude_resolution"))
         mesh = ax.pcolormesh(
-            _edges(field.longitude, field.attrs.get("longitude_resolution")),
-            _edges(field.latitude, field.attrs.get("latitude_resolution")),
+            xedges,
+            yedges,
             np.ma.masked_invalid(field.values),
             cmap=cmap,
             norm=BoundaryNorm(levels, cmap.N),
@@ -144,7 +146,6 @@ def draw_map(field, variable, source, overlays, limits, counts):
             for key, path in overlays.items()
             if Path(path).is_file()
         }
-        extent = []
         labels = []
         marker_color = "#007c83" if variable == "temp" else "#c51b7d"
 
@@ -200,14 +201,9 @@ def draw_map(field, variable, source, overlays, limits, counts):
                             Normal(),
                         ]
                     )
-                    if key == "basins":
-                        extent.extend(points[:, :2].tolist())
-        if extent:
-            points = np.asarray(extent)
-            lo, hi = points.min(axis=0), points.max(axis=0)
-            pad = np.maximum((hi - lo) * 0.08, 0.005)
-            ax.set_xlim(lo[0] - pad[0], hi[0] + pad[0])
-            ax.set_ylim(lo[1] - pad[1], hi[1] + pad[1])
+        # Cell edges, rather than padded basin bounds, fill the entire map frame.
+        ax.set_xlim(float(xedges.min()), float(xedges.max()))
+        ax.set_ylim(float(yedges.min()), float(yedges.max()))
         lat = float(field.latitude.mean())
         ax.set_aspect(1 / math.cos(math.radians(lat)))
         ax.set_xlabel("Longitude (°)")

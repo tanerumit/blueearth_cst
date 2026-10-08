@@ -133,7 +133,7 @@ def render(
     for form, filename in paths["figures"].items():
         availability = "available"
         support = (
-            "native source grid, basin extent"
+            "native source grid, full grid extent"
             if form.startswith("map-")
             else view.support
         )

@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import xarray as xr
-from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap
+from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap, ListedColormap
 from matplotlib.patheffects import Normal, Stroke
 from matplotlib.ticker import FuncFormatter
 from matplotlib.transforms import Bbox
@@ -125,8 +125,14 @@ def draw_map(field, variable, source, overlays, limits, counts):
                 "#08519c",
             )
         )
-        cmap = LinearSegmentedColormap.from_list(f"wf0-{variable}", ramp).resampled(
-            len(levels) - 1
+        classes = len(levels) - 1
+        # A one-class resampling otherwise selects the pale start of the ramp.
+        cmap = (
+            ListedColormap([ramp[-1]], name=f"wf0-{variable}")
+            if classes == 1
+            else LinearSegmentedColormap.from_list(f"wf0-{variable}", ramp).resampled(
+                classes
+            )
         )
         cmap.set_bad("#a0a0a0")
         xedges = _edges(field.longitude, field.attrs.get("longitude_resolution"))

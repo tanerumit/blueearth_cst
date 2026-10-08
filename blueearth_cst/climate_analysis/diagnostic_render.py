@@ -145,16 +145,22 @@ def render(
                     counts = fields[f"{variable}_valid_years"].load()
                     field.attrs.update(period_start=period[0], period_end=period[1])
                 all_values = []
+                contributing_grids = 0
                 for p in pooled_roots:
                     with xr.open_dataset(
                         Path(p) / "tables" / "annual_climatology.nc"
                     ) as ds:
                         if variable in ds:
+                            contributing_grids += 1
                             all_values.extend(
                                 visible_values(ds[variable], overlays["basins"])
                                 if overlays and "basins" in overlays
                                 else ds[variable].values.ravel()
                             )
+                # Independent maps use all displayed cells; shared maps retain
+                # the pooled scale needed for direct source comparisons.
+                if contributing_grids <= 1:
+                    all_values = field.values.ravel()
                 values = np.asarray(all_values)
                 values = values[np.isfinite(values)]
                 limits = (

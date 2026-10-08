@@ -621,6 +621,14 @@ def _run_workflow_started(
     path: Path,
     record: dict[str, Any],
 ) -> int:
+    config_path = Path(project_config).resolve()
+    project = yaml.safe_load(config_path.read_text(encoding="utf-8"))
+    if project.get("workflows", {}).get(workflow, {}).get("enabled") is False:
+        raise ValueError(
+            f"Workflow {workflow} is disabled in {config_path}. "
+            f"Set workflows.{workflow}.enabled to true in that "
+            "project configuration file, then rerun the command."
+        )
     overrides, forwarded = (
         split_config_overrides(extra) if not dry_run else ({}, list(extra))
     )

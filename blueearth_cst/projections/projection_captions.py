@@ -83,6 +83,13 @@ def caption(filename, record, window_id="", counts=None):
             "interval or an equal-model reduction. The dashed line marks the historical–scenario "
             "transition at 2014.5; pale shading marks the future analysis windows. Missing years remain gaps."
         )
+    if filename.startswith("change-") and "cloud" not in filename:
+        text.append(
+            "Panels show annual and seasonal changes. Outlined boxes span the model interquartile range "
+            "where at least 10 models contribute; horizontal bars mark medians and capped vertical lines "
+            "span the full model range. Faint points show individual models, with members averaged first "
+            "and horizontal jitter for legibility. Zero indicates no change."
+        )
     if filename.startswith("variability-"):
         null = record.get("methods", {}).get("null_band", {})
         text.append(

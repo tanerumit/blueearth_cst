@@ -7,6 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from datetime import date
+import zlib
+from matplotlib.patches import Rectangle
+from matplotlib.colors import to_rgb
 from matplotlib.lines import Line2D
 
 from blueearth_cst.climate_analysis.diagnostic_figures import (
@@ -103,7 +106,7 @@ def _ratio_limits(axes, values):
         ax.set_ylim(np.exp(low - pad), np.exp(high + pad))
 
 
-def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenarios=None):
+def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenarios=None, reference=(1985, 2014)):
     """Prepared model points, model range/IQR/median, annual and seasons."""
     selected = models.loc[
         (models.variable == variable)
@@ -116,9 +119,19 @@ def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenario
         & (summary.statistic == statistic)
     ]
     unit = "%" if quantity == "change_pct" else "°C" if variable == "temp" else "mm d⁻¹"
-    fig, axes = _panels(STRIP_PERIODS, f"Change ({unit})")
+    fig, grid = new_fig(H_SINGLE, ncols=len(STRIP_PERIODS), width_mm=W_FULL, sharey=True)
+    axes = list(grid.flat)
+    axes[0].set_ylabel(f"Relative to {reference[0]}–{reference[1]} ({unit})")
     scen = _scenarios(selected, scenarios)
-    for ax, period in zip(axes, STRIP_PERIODS, strict=True):
+    values = selected.loc[selected.period.isin(STRIP_PERIODS), "value"].to_numpy(float)
+    values = np.r_[0, values[np.isfinite(values)]]
+    low, high = values.min(), values.max()
+    pad = 0.06 * (high - low or 1)
+    for i, (ax, period) in enumerate(zip(axes, STRIP_PERIODS, strict=True)):
+        ax.set_title(f"{chr(97 + i)}) {'Annual' if period == 'annual' else period}", loc="left")
+        ax.set_ylim(low - pad, high + pad)
+        ax.tick_params(axis="both", length=3)
+        ygrid(ax)
         ax.axhline(0, color=MUTED, lw=LW_REF)
         for j, s in enumerate(scen):
             values = (
@@ -128,32 +141,41 @@ def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenario
                 .dropna()
                 .to_numpy(float)
             )
+            values = np.sort(values)
+            rng = np.random.default_rng(zlib.crc32(f"{period}:{s}".encode()))
+            jitter = rng.choice([-1.0, 1.0], len(values)) * rng.uniform(0.09, 0.2, len(values))
+            color = _color(s)
             ax.scatter(
-                j + np.linspace(-0.13, 0.13, len(values)),
+                j + jitter,
                 values,
-                color=_color(s),
-                s=12,
-                alpha=0.65,
+                color=tuple(0.65 * c for c in to_rgb(color)),
+                edgecolors="white", linewidths=0.4,
+                s=10, alpha=0.4, zorder=5,
             )
             rows = sums.loc[(sums.period == period) & (sums.scenario == s)]
             if not rows.empty:
                 row = rows.iloc[0]
                 ax.plot(
-                    [j + 0.22] * 2,
+                    [j] * 2,
                     [row["min"], row["max"]],
                     color=_color(s),
                     lw=LW_RANGE,
                 )
+                for endpoint in (row["min"], row["max"]):
+                    ax.plot([j - 0.07, j + 0.07], [endpoint] * 2, color=color, lw=LW_RANGE,
+                            solid_capstyle="butt")
                 if row.iqr_shown:
-                    ax.plot(
-                        [j + 0.22] * 2, [row.q25, row.q75], color=_color(s), lw=LW_IQR
-                    )
-                ax.plot([j + 0.16, j + 0.28], [row["median"]] * 2, color=INK)
-        ax.set_xticks(
-            range(len(scen)), [s.replace("ssp", "") for s in scen], rotation=45
-        )
-        ax.set_xlim(-0.5, len(scen) - 0.5)
-    _legend(fig, scen)
+                    ax.add_patch(Rectangle((j - 0.25, row.q25), 0.5, row.q75 - row.q25,
+                                           facecolor="white", edgecolor=color, lw=0.9, zorder=3))
+                ax.plot([j - 0.25, j + 0.25], [row["median"]] * 2, color=color, lw=1.5, zorder=4)
+        ax.set_xticks(range(len(scen)), [])
+        ax.set_xlim(-0.6, len(scen) - 0.4)
+    legend = fig.legend(handles=[Line2D([], [], color=_color(s), lw=1.4, label=_label(s)) for s in scen],
+                        loc="upper right", ncols=max(1, len(scen)), frameon=False, borderaxespad=0,
+                        bbox_to_anchor=(0.98, 0.99))
+    legend.set_in_layout(False)
+    fig.get_layout_engine().set(rect=(0, 0, 1, 0.94), w_pad=1.8 / 25.4, h_pad=1.8 / 25.4,
+                                wspace=0, hspace=0)
     return fig
 
 
@@ -765,5 +787,6 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 variable=variable,
                 quantity="change_pct" if filename.endswith("-pct.png") else "change",
                 scenarios=scenarios,
+                reference=next((w["reference"] for w in record["windows"] if w["window_id"] == window_id), record["reference"]),
             )
     raise ValueError(f"unknown suite product: {filename}")

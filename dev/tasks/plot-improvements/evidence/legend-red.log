@@ -1,0 +1,30 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+________ test_each_artist_renders_with_units_and_without_cloud_labels _________
+
+suite = ({'availability':                                              filename  ...                                 reason
+0 ...'mid': {'future': [...], 'reference': [...]}}, 'horizons': ['mid'], 'joined': False, 'reference': [1985, 2014], ...}]})
+
+    def test_each_artist_renders_with_units_and_without_cloud_labels(suite):
+        tables, record = suite
+        for row in tables["availability"].to_dict("records"):
+            if not row["available"]:
+                continue
+            fig = render_product(
+                row["filename"], tables, record, window_id=row["window_id"]
+            )
+            fig.canvas.draw()
+            assert all(not ax.get_title(loc="center") for ax in fig.axes)
+            if row["filename"] == "cmip6_precip_temp_annual_monthly_sign_agreement_basin_avg.png":
+                legend = fig.legends[0].get_window_extent(fig.canvas.get_renderer())
+>               assert legend.x0 >= 0 and legend.x1 <= fig.bbox.width
+E               assert (np.float64(4.166666666666667) >= 0 and np.float64(268.16666666666663) <= np.float64(220.4724409448819))
+E                +  where np.float64(4.166666666666667) = Bbox([[4.166666666666667, 315.81499138779526], [268.16666666666663, 344.6522309711286]]).x0
+E                +  and   np.float64(268.16666666666663) = Bbox([[4.166666666666667, 315.81499138779526], [268.16666666666663, 344.6522309711286]]).x1
+E                +  and   np.float64(220.4724409448819) = <matplotlib.transforms.TransformedBbox object at 0x000001DF7519EF90>.width
+E                +    where <matplotlib.transforms.TransformedBbox object at 0x000001DF7519EF90> = <Figure size 220.472x348.819 with 2 Axes>.bbox
+
+tests\test_projection_suite_figures.py:141: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_projection_suite_figures.py::test_each_artist_renders_with_units_and_without_cloud_labels
+1 failed, 12 deselected in 25.92s

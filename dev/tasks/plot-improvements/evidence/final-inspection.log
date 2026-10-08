@@ -1,0 +1,4 @@
+main validator: ["locations: column 'snapped_y' values differ"]
+locations snapped_y: [0.44583333326605157, 0.4208333332660317, 0.44583333326605157, 0.3958333332660118] [0.44583333326604446, 0.42083333326602457, 0.44583333326604446, 0.39583333326600467]
+{'chirps_20000101_20161231': {'all': 50, 'captioned': 25, 'subbasins': 16}, 'comparison': {'all': 50, 'captioned': 25, 'subbasins': 16}, 'era5_20000101_20161231': {'all': 66, 'captioned': 33, 'subbasins': 24}}
+WF2 caption/availability/PNG bijection: 17 34

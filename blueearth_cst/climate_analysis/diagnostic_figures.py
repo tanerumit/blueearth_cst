@@ -378,12 +378,13 @@ def colourbar(
         ax=axes,
         ticks=ticks,
         spacing="uniform",
+        extendrect=True,
         pad=0.02,
         shrink=0.68,
         anchor=(0.0, 0.0),
         aspect=max(stack_mm / 3.0, 8),
     )
-    cb.ax.set_title(label, color=INK, fontsize=FS_TICK, pad=4)
+    cb.ax.set_title(label, color=INK, fontsize=FS_TICK, pad=10)
     cb.outline.set_edgecolor(AXIS)
     cb.outline.set_linewidth(LW_EDGE)
     cb.ax.tick_params(
@@ -651,9 +652,8 @@ def anomaly(v: View) -> Figure:
             ax.set_title(f"{chr(97 + i)}) {v.labels[s]}")
     axs[-1, 0].set_xlim(v.years[0] - 0.5, v.years[-1] + 0.5)
     five_year_ticks(axs[-1, 0], v.years)
-    colourbar(fig, mesh, axs[:, 0].tolist(), "Precipitation\n(mm)", bounds, stack)
+    colourbar(fig, mesh, axs[:, 0].tolist(), "Precip.\n(mm)", bounds, stack)
     fig.get_layout_engine().set(rect=(0, 0, 0.94, 1))
-    fig.legend(handles=[MISSING_KEY], loc="outside upper left")
     return fig
 
 

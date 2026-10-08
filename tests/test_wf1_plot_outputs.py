@@ -43,7 +43,6 @@ import pytest
 from blueearth_cst.climate_analysis.climate_figures import (
     figure_names as _figure_names,
 )
-from blueearth_cst.climate_analysis.climate_figures import source_figure_names
 from blueearth_cst.shared.config_composition import load_composed_config  # noqa: E402
 from tests.conftest import write_config  # noqa: E402
 
@@ -81,8 +80,6 @@ DECLARED_PLOT_OUTPUTS = (
 @pytest.fixture()
 def fabricated_project(tmp_path):
     """A project_dir pre-filled with every declared wf1 figure output."""
-    from blueearth_cst.shared.snake_utils import climate_store_rule
-
     cfg = load_composed_config(CONFIG_FN)
     project_dir = tmp_path / "proj"
     project_dir.mkdir()
@@ -91,20 +88,7 @@ def fabricated_project(tmp_path):
     # with cwd=SNAKEDIR.
     cfg_path = write_config(tmp_path, cfg, stem="project_config_fabricated")
 
-    spec = climate_store_rule(
-        project_dir=project_dir.as_posix(),
-        model_region=cfg["basin"]["region"],
-        clim_source=cfg["climate"]["selected"],
-        historical_window=cfg["climate"]["window"],
-        data_sources=cfg["project"]["catalog"],  # `C-40`
-    )
-    store_plots = Path(spec.store_dir, "plots")
     expected = [project_dir / rel for rel in DECLARED_PLOT_OUTPUTS]
-    # The SOURCE family follows the WF0 filename grammar; only the FORCING
-    # family still uses the legacy `<dataset>_<var>_<kind>.png` spelling.
-    expected += [
-        store_plots / name for name in source_figure_names(cfg["climate"]["selected"])
-    ]
     # A per-station sheet inside the directory() bin rule 1.15 declares. Named
     # for a wflow_id, which is why the FILE could never be declared and the BIN
     # is (t2608071206). It belongs in `expected` -- the point of the change is

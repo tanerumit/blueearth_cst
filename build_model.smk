@@ -17,7 +17,6 @@ from blueearth_cst.spatial.config import parse_spatial_config
 # for figure_names() ONLY, so every figure is declared from the same list the
 # plotter writes from and the two cannot drift.
 from blueearth_cst.climate_analysis.climate_figures import figure_names
-from blueearth_cst.climate_analysis.source_plot_rule import source_plot_rule
 
 # The thematic map family rule 1.11 draws beside elevation_basin. Same reason as
 # above: the output list comes from the registry the plotter iterates, so a
@@ -462,7 +461,6 @@ LOG_RULES = RULES.log_rules
 DELINEATE_REGION = RULES.logged("1.01", "delineate_region")
 DELINEATE_SUBBASINS_AND_RIVERS = RULES.logged("1.02", "delineate_subbasins_and_rivers")
 EXTRACT_CLIMATE_DATASETS = RULES.logged("1.03", "extract_climate_datasets", summary="clip the global climate dataset to the basin")
-PLOT_CLIMATE_DATASETS = RULES.logged("1.04", "plot_climate_datasets")
 PREPARE_LAND_AND_SOIL_MAPS = RULES.logged("1.05", "prepare_land_and_soil_maps")
 BUILD_WFLOW_MODEL = RULES.logged("1.06", "build_wflow_model", summary="parameterize Wflow-SBM from global data")
 ADD_RESERVOIRS_LAKES_GLACIERS = RULES.logged("1.07", "add_reservoirs_lakes_glaciers", summary="add waterbodies to the model")
@@ -480,18 +478,12 @@ GATHER_LOGS = RULES.banner_only("1.18", "gather_logs")
 
 # WF1_TERMINALS — the artifacts with no WF1 consumer: every producing rule is
 # upstream of them and none of them feeds another rule. That is exactly the
-# input set the two gather rules (1.17 benchmarks, 1.18 logs) need, which is
-# what schedules each one LAST; both restated these seven literals before, so a
-# new terminal had to be added in three places or a gather would run early and
-# merge an incomplete set of parts.
+# input set the two gather rules (1.17 benchmarks, 1.18 logs) need, which
+# schedules each one LAST without restating the targets in three places.
 #
 # NOT terminals, and so not in this list: the config snapshot (1.01 runs
 # independently of the build and needs no gather waiting on it) and the two
 # gather outputs themselves.
-SOURCE_PLOT = source_plot_rule(
-    CLIMATE_STORE, SPATIAL_UNITS, clim_source, DATA_SOURCES, WATER_YEAR_START,
-)
-
 WF1_TERMINALS = [
     # The evaluation rule's terminal is its METRICS TABLE, not one of its
     # figures: since 2026-08-10 the figures are keyed by wflow_id and none of
@@ -507,14 +499,8 @@ WF1_TERMINALS = [
     # discharge table schedules every other table with it.
     f"{basin_dir}/run_default/output_q.csv",
     f"{spatial_dir}/plots/elevation_basin.png",
-    # One representative of each canonical climate set: the rules produce their
-    # nine figures as a unit, so naming every one here would add no edge.
+    # One representative schedules the full model-forcing figure set.
     f"{FORCING_PLOTS_DIR}/forcing_precip_map.png",
-    # R07 B4: the source-grid climate figures are rule-`all` members by
-    # design — they are a product of the workflow, not an incidental
-    # by-product, and their subgraph needs no built model. The representative is
-    # the MAP, which every source draws, precipitation-only included.
-    SOURCE_PLOT.figures[0],
     f"{basin_dir}/staticgeoms/outlet_index.csv",
     # P1 spatial foundation. One representative output schedules the complete
     # multi-output rule and makes both gather rules wait for its log/benchmark.
@@ -530,8 +516,7 @@ WF1_TERMINALS = [
 #
 # Hoisted into a list so `message:` can print one target per line without
 # restating them. Snakemake flattens a list argument, so `input: WF1_TARGETS`
-# declares exactly the same ten files the literals did — the terminals, plus
-# the config snapshot and the two gathered artifacts.
+# declares the terminals, optional launcher record and two gathered artifacts.
 WF1_TARGETS = [
     *WF1_TERMINALS,
     *([RUN_RECORD] if os.environ.get("BLUEEARTH_WF012_CAPTURE_CONTEXT") else []),
@@ -1172,8 +1157,7 @@ rule plot_basin_map:
     script: "blueearth_cst/shared/plot_spatial_maps.py"
 
 # 1.12  plot_model_forcing — the canonical climate set for the wflow forcing
-# (parallel leaf). Same figures as rule 1.15 draws for the source grid, so the
-# two directories answer "what did the downscaling change?" side by side.
+# (parallel leaf). Source-grid diagnostics are owned separately by WF0.
 rule plot_model_forcing:
     message: PLOT_MODEL_FORCING.banner()
     input:
@@ -1181,17 +1165,9 @@ rule plot_model_forcing:
         # ADR 0004; see rule 1.13.
         model_final = ancient(f"{basin_dir}/.model_final"),
         **_locations_input,
-        # The SAME vector layers rule 1.04 draws, from rule 1.02's shared
-        # foundation. Both climate map families read one layer set so the two
-        # differ only in the raster underneath — which is what makes "what did
-        # downscaling change?" answerable by putting the two directories side
-        # by side. The model's own staticgeoms would reintroduce the divergence.
+        # Shared spatial context also used by WF0's source-grid diagnostics.
         **{name: SPATIAL_UNITS.outputs[name] for name in
            ("basins", "subbasins", "rivers", "locations")},
-        # No `shared_levels` edge since 2026-08-16. These figures used to adopt
-        # the colourbar rule 1.04 recorded, which is why that file was declared
-        # here; the two families now classify their own footprints and this rule
-        # no longer waits on 1.04 at all. See climate_figures.MAP_EXTENT.
     # R07 B10 + O-24: the forcing/model-input QA figures sit beside the forcing
     # they describe, and ALL of them are declared — variable x kind is a fixed
     # cross-product, so the list comes from climate_figures.figure_names()
@@ -1224,39 +1200,6 @@ rule gather_benchmarks:
         parts_dir = f"{project_dir}/benchmarks/_parts",
         workflow_num = 1,
     script: "blueearth_cst/shared/merge_benchmarks.py"
-
-# 1.04  plot_climate_datasets — source-grid climate figures from the shared store
-# (R07 B4 / P4). Declared HERE ONLY: unlike rule 1.03 this is a single
-# declaration, so none of B1's two-DAG symmetry machinery applies.
-#
-# The whole subgraph of these figures is rule 1.03 (whose sole input is the
-# tracked data catalog) plus this rule, so they build with NEITHER
-# models/hydrology/wflow/ NOR config/defaults/wflow_build_model.yml on disk — the P4
-# assertion, pinned by tests/test_plot_climate_source.py.
-#
-# The data catalog rides in `params`, not `input`: the era5 branch resolves
-# `era5_orography` through it, but the store's freshness boundary is rule 1.03's
-# catalog edge (ext2-01) and duplicating it here would re-plot on every catalog
-# touch without the extraction having changed.
-# What this source can honestly be drawn for. A precipitation-only source gets
-# the precip figures and nothing else — its temperature and PET fields in the
-# store are era5's, borrowed so the model can be forced, and drawing them under
-# this source's name would report another dataset's values as this one's.
-
-rule plot_climate_datasets:
-    message: PLOT_CLIMATE_DATASETS.banner()
-    input:
-        **SOURCE_PLOT.inputs,
-    output:
-        SOURCE_PLOT.figures,
-        directory(SOURCE_PLOT.subbasin_dir),
-    params:
-        **SOURCE_PLOT.params,
-    log:
-        PLOT_CLIMATE_DATASETS.log(),
-    benchmark:
-        PLOT_CLIMATE_DATASETS.benchmark(),
-    script: SOURCE_PLOT.script
 
 # 1.18  gather_logs — merge every WF1 log part into ONE workflow log.
 #

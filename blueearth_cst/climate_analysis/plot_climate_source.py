@@ -1,75 +1,11 @@
-"""Source-grid climate figures from the shared climate store (R07 B4 / P4).
-
-Rule ``plot_climate_datasets``'s script (``build_model.smk`` 1.15 — a
-single declaration; none of B1's two-DAG machinery applies). It answers *"what
-does the source climate look like?"* from the store alone, so its whole
-subgraph is the B1 producer (whose sole input is the tracked data catalog) plus
-itself: the three figures build with **neither** ``models/hydrology/wflow/``
-**nor**
-``config/defaults/wflow_build_model.yml`` on disk. That is the P4 assertion,
-pinned by ``tests/test_plot_climate_source.py``.
-
-Three climate-figure families coexist (design § B4). This module owns the first
-and rule 1.12 owns the second, and since 2026-08 BOTH are drawn by the same
-canonical set (``climate_figures``) so the two are directly comparable — every
-filename is prefixed by its dataset, because a bare ``pet.png`` copied into a
-report or picked up by a GUI collector loses its parent directory and the two
-are **deliberately different** values:
-
-================================  ======  ============================================
-Product                           Grid    Home
-================================  ======  ============================================
-source climate (this module)      source  ``data/climate/historical/<key>/plots/``
-forcing / model-input QA (1.13)   model   ``models/hydrology/wflow/forcing/plots/``
-model-parity climate (rule 1.10)  model   ``models/hydrology/wflow/evaluation/plots/``
-================================  ======  ============================================
-
-The third stays outside the canonical set: it is keyed by STATION rather than by
-grid and answers a different question (climate beside the discharge it drove).
-
-**Source-grid PET need not match the build's PET, by design.** These are
-approximate quick assessments computed on the extraction grid against the
-*source* orography; the build's PET is the refined model input, derived on the
-model grid. The figures say so on their face — which is exactly what the
-canonical set makes readable, since the same figure now exists on both sides.
-
-Plain matplotlib only: no cartopy basemap tiles, so the rule needs no network.
-"""
+"""Source-grid orography and PET derivation for WF0 diagnostics."""
 
 from pathlib import Path
 from typing import Optional, Union
 
 import xarray as xr
 
-from blueearth_cst.climate_analysis.climate_figures import (
-    load_spatial_overlays,
-    plot_climate_figures,
-    source_climate_vars,
-)
-from blueearth_cst.climate_analysis.figure_naming import subbasin_scope
-from blueearth_cst.climate_analysis.shared_plot_scales import read_plot_scales
 from blueearth_cst.shared.climate_parity import model_parity_climate
-from blueearth_cst.shared.grid_cells import cells_csv_mask, subbasin_masks
-from blueearth_cst.shared.snake_utils import (
-    DEFAULT_WATER_YEAR_ANCHOR,
-    log_row,
-    plural,
-    water_year_end_anchor,
-)
-
-#: Variables the parity/PET machinery needs off the extraction.
-PARITY_VARS = ("precip", "temp", "press_msl", "kin", "kout")
-
-#: Rendered on every figure, so the caveat survives the file being copied out
-#: of its directory (design risk-9).
-_CAVEAT = (
-    "Approximate quick assessment on the source extraction grid "
-    "(source orography); not the model's forcing."
-)
-_PET_CAVEAT = (
-    "Source-grid PET: differs from the model's PET input by design — that one "
-    "is derived on the model grid from the model DEM."
-)
 
 
 def _drop_nonspatial(dem: xr.DataArray) -> xr.DataArray:
@@ -113,8 +49,8 @@ def load_source_orography(
     """
     # Both branches end in ``.raster.reproject_like``, so the accessor is
     # needed here regardless of which one runs. Imported at the top of the
-    # function rather than at module scope: this is a ``script:`` module and
-    # hydromt is the heaviest thing it touches, so it stays off the import path
+    # function rather than at module scope: hydromt is the heaviest dependency,
+    # so it stays off the import path
     # of anything that merely imports the module (t2608202307).
     import hydromt  # noqa: F401 -- registers the xarray .raster accessor
 
@@ -124,7 +60,7 @@ def load_source_orography(
         if data_sources is None:
             raise ValueError(
                 "load_source_orography: the era5 branch needs a data catalog "
-                "(rule 1.15 params.data_sources) to resolve era5_orography"
+                "(WF0 params.data_sources) to resolve era5_orography"
             )
         data_catalog = hydromt.DataCatalog(data_libs=data_sources)
         dem = data_catalog.get_rasterdataset(
@@ -171,202 +107,3 @@ def source_grid_climate(
         dem_forcing=dem_source,
         pet_method=pet_method,
     )
-
-
-def area_masks_for(
-    ds: xr.Dataset,
-    basin_cells: Optional[Union[str, Path]] = None,
-    subbasins=None,
-) -> dict:
-    """``{spatial_scope: mask}`` for every area the series figures are drawn over.
-
-    The basin comes from the store's own ``basin_cells.csv`` and the subbasins
-    from the shared vector foundation, both through
-    :mod:`blueearth_cst.shared.grid_cells` — so one predicate decides every
-    domain, and rule 0.05's comparison of the same source lands on the same
-    number as this rule's own figure.
-
-    **The basin scope is always present, even with nothing to build it from**:
-    it then maps to ``None``, which draws the full extraction. Dropping it
-    instead would leave a source with no annual figure at all, and the rule
-    declares one.
-    """
-    masks = {"basin_avg": cells_csv_mask(ds, basin_cells)}
-    for subbasin_id, mask in subbasin_masks(ds, subbasins).items():
-        masks[subbasin_scope(subbasin_id)] = mask
-    return masks
-
-
-def plot_climate_source(
-    climate_nc: Union[str, Path],
-    plot_dir: Union[str, Path],
-    oro_nc: Optional[Union[str, Path]] = None,
-    data_sources: Optional[Union[str, Path]] = None,
-    clim_source: str = "era5",
-    geoms_dir: Optional[Union[str, Path]] = None,
-    anchor: str = DEFAULT_WATER_YEAR_ANCHOR,
-    scales_json: Optional[Union[str, Path]] = None,
-    basin_cells: Optional[Union[str, Path]] = None,
-    subbasin_dir: Optional[Union[str, Path]] = None,
-):
-    """Write the canonical climate figure set from the shared climate store.
-
-    Derives ``precip``/``temp``/``pet`` on the extraction grid, then hands them
-    to ``climate_figures.plot_climate_figures`` as dataset ``source``. The file
-    names are that module's to define (``climate_figures.figure_names``).
-
-    **A precipitation-only source draws precipitation only** (owner ruling
-    2026-08-16). A selected forcing store carries ERA5 companions, while a
-    wf0-only candidate omits them. Drawing borrowed fields here would put
-    ERA5's values under this source's name in the workflow whose whole job is
-    telling sources apart. The set comes from
-    ``climate_figures.source_climate_vars``; on that branch the PET derivation
-    and the orography read are skipped entirely rather than computed and
-    discarded, since both exist only to serve the temperature and PET figures.
-
-    Parameters
-    ----------
-    climate_nc : str | Path
-        ``data/climate/historical/<key>/extract_historical.nc`` — the store's
-        extraction (rule 0.03 / 1.03 / 3.08 ``extract_climate_datasets``).
-    plot_dir : str | Path
-        ``data/climate/historical/<key>/plots/``. Created if absent.
-    oro_nc : str | Path, optional
-        chirps / chirps_global only: the store's declared ``orography.nc``
-        sidecar. None on era5, where the orography comes from the catalog.
-    data_sources : str | Path, optional
-        hydromt data catalog(s). Required on the era5 branch (``era5_orography``).
-    clim_source : str
-        ``shared.clim_historical``; recorded in the log for traceability.
-    geoms_dir : str | Path, optional
-        ``data/spatial/geoms/`` — the ENGINE-NEUTRAL vector foundation from rule
-        1.02. Supplies the basin outline, subcatchment divides, river network
-        and points of interest the maps are drawn over. Optional, and
-        model-independent by construction: this rule runs off the climate store
-        and must not wait on a wflow build to plot the source climate.
-
-    Raises
-    ------
-    ValueError
-        If the extraction is missing any variable the PET workflow needs. This
-        is deliberately loud: the rule declares three outputs, so a silent skip
-        would surface as an opaque ``MissingOutputException`` instead.
-    """
-    log_row(f"Reading store ({clim_source}): {climate_nc}", module="plot")
-    ds_raw = xr.open_dataset(climate_nc)
-    from blueearth_cst.shared.interchange_contracts import validate_wg1
-
-    wg1_diffs = validate_wg1(ds_raw)
-    log_row(
-        f"WG-1 {'not ready' if wg1_diffs else 'ready'}: {clim_source}",
-        module="plot",
-        level="WARNING" if wg1_diffs else "INFO",
-    )
-    for diff in wg1_diffs:
-        log_row(diff, module="plot", level="WARNING")
-    variables = source_climate_vars(clim_source)
-
-    if variables == ("precip",):
-        # No PET derivation and no orography read: both exist only to produce
-        # the temperature and PET figures, which this source does not get.
-        # Checked against what is drawn rather than against PARITY_VARS. A
-        # candidate omits ERA5 companions; selected stores may carry them.
-        missing = [v for v in variables if v not in ds_raw]
-        if missing:
-            raise ValueError(
-                f"plot_climate_source: {climate_nc} is missing {missing}; "
-                f"{clim_source} is precipitation-only and needs {list(variables)}"
-            )
-        # The parenthetical explaining WHOSE temperature the store carries was
-        # the larger half of a 180-character row that wrapped to two console
-        # lines. It is a property of the store, not news about this run, and it
-        # is stated on the figures themselves (`_CAVEAT`) where a reader who
-        # needs it actually is.
-        log_row(
-            f"{clim_source} is precipitation-only: precip figures only, "
-            "no temperature or PET",
-            module="plot",
-        )
-        ds_src, caveat = ds_raw, _CAVEAT
-    else:
-        missing = [v for v in PARITY_VARS if v not in ds_raw]
-        if missing:
-            raise ValueError(
-                f"plot_climate_source: {climate_nc} is missing {missing}; the "
-                f"source-grid PET workflow needs {list(PARITY_VARS)}"
-            )
-
-        dem_source = load_source_orography(
-            ds_raw, oro_nc=oro_nc, data_sources=data_sources
-        )
-        # setup_time_horizon.py maps every source supported on this path
-        # (era5/chirps/chirps_global) to debruin; eobs is rejected at DAG-parse
-        # time.
-        ds_src = source_grid_climate(ds_raw, dem_source, pet_method="debruin")
-        # The PET caveat rides along on every figure rather than only on the pet
-        # ones -- one caveat block per figure, and a reader comparing precip
-        # across the two directories should also know the PET on this side is
-        # source-grid. It is dropped above, where no PET figure is drawn.
-        caveat = f"{_CAVEAT}\n{_PET_CAVEAT}"
-
-    overlays = load_spatial_overlays(geoms_dir)
-    # The areas the series figures reduce to. The MAP ignores them -- it draws
-    # the field, and cropping it per subbasin would be one raster shown N ways.
-    masks = area_masks_for(ds_src, basin_cells, overlays.get("subbasins"))
-    subbasins_drawn = [s for s in masks if s.startswith("subbasin_")]
-    log_row(
-        f"Aggregating over {plural(len(masks), 'area')}: basin"
-        + (f" + {plural(len(subbasins_drawn), 'subbasin')}" if subbasins_drawn else "")
-        + (
-            ""
-            if masks.get("basin_avg") is not None
-            else " (no basin cell mask available -- the full extraction is used)"
-        ),
-        module="plot",
-    )
-
-    # The canonical set (climate_figures) draws these; this module's job ends at
-    # producing the dataset. `variables` MUST be the same list the rule declared
-    # its outputs from, or the job ends in MissingOutputException.
-    return plot_climate_figures(
-        ds_src,
-        plot_dir,
-        "source",
-        caveat=caveat,
-        overlays=overlays,
-        variables=variables,
-        # Canonical WF0/WF1 plots use source-local scales. Explicit scales remain
-        # available to direct callers producing a separate comparison product.
-        levels=read_plot_scales(scales_json),
-        # Present ⇒ the WF0 filename grammar, with the source id as the
-        # dataset_scope (`era5_precip_annual_ts_basin_avg.png`).
-        clim_source=clim_source,
-        area_masks=masks,
-        subbasin_dir=subbasin_dir,
-    )
-
-
-if __name__ == "__main__":
-    if "snakemake" in globals():
-        sm = globals()["snakemake"]
-        from blueearth_cst.shared.snake_utils import tee_to_log
-
-        with tee_to_log(sm.log[0]):
-            plot_climate_source(
-                climate_nc=sm.input.climate_nc,
-                plot_dir=sm.params.plot_dir,
-                # declared only on the chirps/chirps_global branch, mirroring
-                # rule 1.10's input split
-                oro_nc=getattr(sm.input, "oro_nc", None),
-                data_sources=sm.params.data_sources,
-                clim_source=sm.params.clim_source,
-                geoms_dir=sm.params.geoms_dir,
-                anchor=water_year_end_anchor(sm.params.water_year_start),
-                # Optional for direct callers; canonical workflow rules omit it.
-                scales_json=getattr(sm.input, "scales_json", None),
-                # Rule 0.03's own output: the cells the basin touches, which is
-                # what the basin-average figures reduce over -- and the same
-                # file weathergenr averages over, so the two agree.
-                basin_cells=getattr(sm.input, "basin_cells", None),
-                subbasin_dir=getattr(sm.params, "subbasin_plot_dir", None),
-            )

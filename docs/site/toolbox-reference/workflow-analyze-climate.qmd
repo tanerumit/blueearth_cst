@@ -72,8 +72,8 @@ workflow does not consume a Wflow model or CMIP6 projections.
 ## Outputs
 
 WF0 writes shared basin geometry and historical climate stores beneath `project_dir`.
-Each source gets a `diagnostics/` root inside its store. With multiple sources,
-`data/climate/historical/comparison/diagnostics/` contains the comparison products.
+Each source gets `tables/` and `figures/` directly inside its store. With multiple sources,
+`data/climate/historical/comparison/` contains the comparison products in the same layout.
 There is no one-source comparison.
 
 Multisource runs also retain `comparison/dataset_comparison.csv` and `.md` at their existing paths. These
@@ -81,20 +81,30 @@ describe the extracted sources, their grids, periods and structural forcing read
 the diagnostic agreement summary; readiness does not establish scientific suitability.
 
 ```text
-diagnostics/
+<source-store>/               # or comparison/
 ├── _engine/
 │   ├── diagnostics.json       # machine-readable methods, availability and provenance
 │   └── figure_captions.json   # captions indexed by figure path
-├── figure_captions.md         # readable captions and caveats
 ├── tables/                   # coverage, indices, SPI/events, trends and checks
 └── figures/                  # standard PNGs
+    └── figure_captions.md     # readable captions and caveats
 ```
+
+WF0 exclusively owns these source diagnostics. WF1 does not produce source figures.
+The former `plots/` and `diagnostics/` directories are no longer targeted. Existing files are
+left in place; regenerate WF0 to populate the flattened layout before retiring old outputs.
 
 Source tables also retain `daily_basin.csv` and `annual_climatology.nc`. Comparison
 tables add `agreement.csv` and `agreement.md`. Maps use native grid cells with basin,
 subbasin, river and location overlays; they cover precipitation and genuine temperature,
 plus PET where available. Temporal figures cover coverage, seasonal timing, anomalies,
 SPI and drought events, extremes, dry spells, persistence, trends and fit/sensitivity checks.
+
+Spatial PNGs trim unused canvas space and retain a 2 mm white border around the map,
+axes, colourbar and annotations. Coordinate ticks include degrees and hemispheres;
+the axis titles are `Longitude` and `Latitude`. Map export dimensions follow the visible
+content rather than the fixed canvas used for temporal charts.
+Faint raster-cell outlines follow each dataset's native grid boundaries.
 
 PNG is the only figure format. Names follow
 `<dataset>_<variable>_<context>_<spatial_scope>.png`, for example

@@ -242,13 +242,13 @@ Reads the extracted store and retains coverage, valid years, annual indices,
 climatology, timing, SPI/fit checks/events, dry spells, persistence, trends,
 sensitivity, paired anomalies and homogeneity tables. Writes fixed-schema CSVs,
 `daily_basin.csv`, `annual_climatology.nc` and `_engine/diagnostics.json` beneath
-`<store_dir>/diagnostics/`. Empty results retain headers and availability records.
+`<store_dir>/`. Empty results retain headers and availability records.
 
 #### 0.04b · `plot_climate_diagnostics_<source>`
 
 Renders the canonical WF0 source figures from retained diagnostics, with geometry
-overlays for maps. Writes individual PNGs in `diagnostics/figures/`, machine captions
-in `_engine/figure_captions.json` and readable `figure_captions.md` at the root.
+overlays for maps. Writes individual PNGs in `<store_dir>/figures/`, machine captions
+in `_engine/figure_captions.json` and readable captions in `figures/figure_captions.md`.
 Captioned copies and subbasin products are opt-in. Unknown subbasin IDs are covered
 by declared directories; disabled options create no placeholder directories.
 
@@ -257,14 +257,15 @@ by declared directories; disabled options create no placeholder directories.
 Exists only with more than one configured source. Recomputes common-period diagnostics
 from retained daily basin series, retaining SPI reference fits before display clipping.
 Writes tables, `agreement.csv`, `agreement.md`, metadata, PNGs and captions beneath
-`data/climate/historical/comparison/diagnostics/`. Compared source IDs appear in legends,
+`data/climate/historical/comparison/`. Compared source IDs appear in legends,
 captions and provenance; filenames use the `comparison` token.
 
 Also retains `comparison/dataset_comparison.csv` and `.md`, describing extracted-source metadata
 and WG-1 readiness at their existing paths. Readiness is structural conformance, not scientific qualification.
 
 The canonical system replaces WF0's former source boxes/plain annual series and
-comparison lines. WF1's `source_plot_rule.py` producer and its `plots/` contract remain.
+comparison lines. Source diagnostics belong exclusively to WF0. WF1's former source-plot
+producer is retired; existing `plots/` and `diagnostics/` directories are left in place.
 Existing run products are not automatically removed. All new WF0 figures are PNGs.
 See `docs/site/toolbox-reference/workflow-analyze-climate.qmd` for configuration,
 the user-facing output tree and scientific limitations.
@@ -303,9 +304,9 @@ STAGE 1 — DATA   (no model exists yet)
               ▼                               ▼
     1.03 extract_climate_datasets   1.02 delineate_subbasins_and_rivers
       (SHARED store, = WF3 3.02)       (SHARED vectors, = 2.02:
-              │                         basins, subbasins, rivers,
-              ▼                         locations, the registry)
-    1.04 plot_climate_datasets                  │
+                                        basins, subbasins, rivers,
+                                        locations, the registry)
+                                              │
                                               ▼
                                     1.05 prepare_land_and_soil_maps
                                      (thematic rasters, WF1 only)
@@ -342,8 +343,8 @@ STAGE 4 — RUN RECORDS
       1.17 gather_benchmarks · 1.18 gather_logs   (last: every terminal)
 ```
 
-**Stages are a reading aid, not a barrier.** Stage 1's climate branch (1.03,
-1.04) runs concurrently with everything below it — a cold store extracts while
+**Stages are a reading aid, not a barrier.** Stage 1's climate branch (1.03)
+runs concurrently with everything below it — a cold store extracts while
 the model builds. Only the arrows constrain order.
 
 **Three rules hang off 1.09 through `ancient()`, and the diagram draws those
@@ -355,14 +356,14 @@ and not beside 1.06. 1.10 also reads `outlets.geojson` (1.06) and the registry
 (1.02), and 1.11 reads `staticmaps.nc` (1.06) — those are the edges the diagram
 omits to stay legible, and none of them contradicts the numbering.
 
-**The five leaves.** 1.04, 1.10, 1.11, 1.12 and 1.15 have no downstream rule.
+**The four leaves.** 1.10, 1.11, 1.12 and 1.15 have no downstream rule.
 All are members of `WF1_TERMINALS`, so all are `rule all` targets and inputs of
-the two gather rules — that is the edge the stage-4 line stands in for. Four are
+the two gather rules — that is the edge the stage-4 line stands in for. Three are
 figures, which are expected to terminate (no rule consumes a `.png`). **1.10 is
 the one data leaf**, and its real consumer sits outside the workflow: see its
 section below.
 
-`WF1_TERMINALS` has a **sixth** member that is not a leaf —
+`WF1_TERMINALS` also has a member that is not a leaf —
 `<spatial>/spatial_catalog.yml`, listed as one representative of 1.05's
 multi-output set so the gather rules wait for it. Its producer feeds 1.06, so it
 is a terminal in the target-set sense without being a graph leaf.
@@ -370,7 +371,7 @@ is a terminal in the target-set sense without being a graph leaf.
 **What is NOT a dependency, despite reading like one.** 1.09 does not consume the
 climate store: it reads source climate through the data catalog (`-d`), and its
 only declared input is 1.08's sentinel — it assembles the forcing recipe itself.
-The store reaches WF1's *figures* (1.04, 1.15), never its forcing.
+The store reaches WF1's evaluation (1.15), never its forcing.
 
 | # | rule | in one line |
 |---|---|---|
@@ -379,7 +380,6 @@ The store reaches WF1's *figures* (1.04, 1.15), never its forcing.
 | 1.01 | `delineate_region` | Delineates the one project extent. |
 | 1.02 | `delineate_subbasins_and_rivers` | The shared vector foundation, and where gauges enter the workflow. |
 | 1.03 | `extract_climate_datasets` | The shared historical-climate store (= WF3 3.02). |
-| 1.04 | `plot_climate_datasets` | Climate figures on the source grid. |
 | 1.05 | `prepare_land_and_soil_maps` | The thematic raster stack and the model-build interface. |
 | 1.06 | `build_wflow_model` | Parameterises Wflow-SBM, and where gauges enter the model. |
 | 1.07 | `add_reservoirs_lakes_glaciers` | Adds waterbodies. |
@@ -455,14 +455,6 @@ window, on the source grid, model-free. Its declared inputs are the data catalog
 chirps branches. The extraction records its own extent in netCDF attributes
 (`region_geojson_sha256`, `region_bbox`, `region_source`) rather than in a
 sidecar file.
-
-#### 1.04 · `plot_climate_datasets`
-
-**Does.** The canonical climate figure set on the **source** grid, straight from
-the shared store, before any regridding to the model. Its whole subgraph is 1.01
-+ 1.03 + this rule, so the figures build with no `<model>/` on disk at all.
-
-**Writes.** `<store>/plots/` — the `figure_names("source")` set.
 
 #### 1.05 · `prepare_land_and_soil_maps`
 
@@ -654,9 +646,8 @@ keep the locator inset. See `shared/plot_spatial_maps.py`.
 
 #### 1.12 · `plot_model_forcing`
 
-**Does.** Draws the canonical climate figure set for the model's own forcing —
-the same figures 1.04 draws for the source grid, so the two directories answer
-"what did the downscaling change?" side by side.
+**Does.** Draws the climate figure set for the model's own forcing.
+Source-grid diagnostics belong exclusively to WF0.
 
 **Writes.** `<model>/forcing/plots/` — the full variable × kind cross-product
 from `climate_figures.figure_names("forcing")`, all declared.

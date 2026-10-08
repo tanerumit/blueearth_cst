@@ -1,42 +1,12 @@
-"""ONE canonical climate figure set, applied to every gridded climate dataset.
+"""Climate figure primitives and the declared WF1 model-forcing figure set.
 
-WF1 holds two gridded climate products and until now each had its own plotting
-code and its own idea of what a climate figure is:
+WF1 writes model-grid forcing QA under
+``models/hydrology/wflow/forcing/plots/`` (rule 1.12). Source-grid diagnostic
+figures belong exclusively to WF0 and use ``diagnostic_render`` instead.
 
-=====================  =========================================  ==============
-Dataset (``dataset``)  Home                                       Producer
-=====================  =========================================  ==============
-``source``             ``data/climate/historical/<key>/plots/``   rule 1.15
-``forcing``            ``models/hydrology/wflow/forcing/plots/``  rule 1.12
-=====================  =========================================  ==============
-
-They are the SAME climate at two stages — raw on the extraction grid, and
-downscaled/corrected onto the model grid — so the useful question is what
-changed between them. That question is unanswerable while the two are drawn
-differently, which is why this module exists: identical figures, identical
-aggregation, identical layout, differing only in the data and the label. The
-redundancy is deliberate and cheap (these are aggregations of arrays already in
-memory).
-
-The set is a CROSS-PRODUCT, ``variable x kind``, and both axes are meant to
-grow. Adding a kind is one entry in ``FIGURE_KINDS`` plus its branch in
-``_render``; adding a variable is one entry in ``CLIMATE_VARS``. Because the
-product is config-invariant, ``figure_names()`` lets the Snakefile DECLARE every
-figure (O-24) instead of writing some of them invisibly — keep it that way when
-extending, or the new figures become undeclared outputs.
-
-Deliberately plain matplotlib: no cartopy basemap tiles, so neither rule needs
-NETWORK access. Rule 1.12 used ``cartopy.io.img_tiles.QuadtreeTiles`` before
-this module and therefore made a live tile request mid-workflow; the basin/river
-context it bought is available offline through ``overlays`` (drawn from the
-model's own geometries) and, at higher fidelity, from rule 1.11's
-``elevation_basin.png``.
-
-A third climate-figure family — the model-parity plots under
-``models/hydrology/wflow/evaluation/plots/`` (rule 1.10) — is NOT part of this
-set. It answers a different question (per-subcatchment climate as the model sees
-it, beside the discharge it produced) and is keyed by station rather than by
-grid.
+The variable-by-kind registry defines every forcing output declared by the
+Snakefile. The source naming and rendering helpers remain available to direct
+callers. All rendering uses offline spatial overlays and plain Matplotlib.
 """
 
 from __future__ import annotations
@@ -848,7 +818,7 @@ def plot_climate_figures(
         ``time`` + spatial grid. A PLAIN dataset on purpose: the raw side has no
         model to load and the forcing side has already loaded one, so the model
         coupling stays in the callers and this function stays testable without a
-        model (the P4 property ``tests/test_plot_climate_source.py`` pins).
+        model.
     plot_dir : str | Path
         Destination directory. Created if absent.
     dataset : str

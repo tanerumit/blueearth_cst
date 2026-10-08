@@ -155,10 +155,10 @@ def render_subbasins(sm, settings, sources):
             for record in inventory["figures"].values()
             if record["captioned_path"]
         ]
-        + ["_engine/figure_captions.json", "figure_captions.md"]
+        + ["_engine/figure_captions.json", "figures/figure_captions.md"]
     )
     write_json(captions_path, inventory)
-    (root / "figure_captions.md").write_text(
+    (root / "figures" / "figure_captions.md").write_text(
         "# Figure captions\n\n"
         + "\n\n".join(
             f"## {key}\n\n{record['caption']}"

@@ -210,7 +210,7 @@ def seasonal_figure(climatology, changes, summary, *, variable, scenarios=None):
     return fig
 
 
-def ipcc_trajectory(envelope, *, variable, scenarios=None, members=None, windows=(), current_year=None):
+def ipcc_trajectory(envelope, *, variable, scenarios=None, members=None, windows=(), current_year=None, reference=(1985, 2014)):
     """Prepared annual model medians and ranges, with distinct historical traces."""
     data = envelope.loc[envelope.variable == variable]
     fig, axes = new_fig(H_SINGLE, width_mm=W_MID)
@@ -241,7 +241,7 @@ def ipcc_trajectory(envelope, *, variable, scenarios=None, members=None, windows
             sub = sub.loc[sub.year >= 2014]
         years = np.arange(sub.year.min(), sub.year.max() + 1)
         sub = sub.set_index("year").reindex(years)
-        ax.plot(years, sub["median"], color=_color(s), lw=1.8)
+        ax.plot(years, sub["median"], color=_color(s), lw=1.5)
         handles.append(Line2D([], [], color=_color(s), lw=1.4, label=_label(s)))
         ax.fill_between(
             years,
@@ -259,7 +259,7 @@ def ipcc_trajectory(envelope, *, variable, scenarios=None, members=None, windows
     ax.axhline(0, color=MUTED, lw=LW_REF)
     ax.set(
         xlabel="Year",
-        ylabel="%" if variable == "precip" else "°C",
+        ylabel=f"Relative to {reference[0]}–{reference[1]} ({'%' if variable == 'precip' else '°C'})",
     )
     year_ticks(ax, np.arange(int(data.year.min()), int(data.year.max()) + 1))
     if data.year.max() - data.year.min() > 100:
@@ -306,7 +306,7 @@ def annual_overview(
         "mm yr⁻¹"
         if variable == "precip"
         else "°C",
-        "%" if variable == "precip" else "°C",
+        f"Relative to {reference[0]}–{reference[1]} ({'%' if variable == 'precip' else '°C'})",
     )
     for r, column in enumerate(("value", "anomaly")):
         for j, s in enumerate(scen):
@@ -346,7 +346,7 @@ def annual_overview(
                 ax.fill_between(
                     years, env["min"], env["max"], color=_color(s), alpha=0.25, lw=0
                 )
-                ax.plot(years, env["median"], color=_color(s), lw=1.2)
+                ax.plot(years, env["median"], color=_color(s), lw=1.0)
             ax.axvline(2014.5, color=MUTED, lw=LW_REF, ls="--", gid="scenario-handover")
             for window in windows:
                 a, b = window["used"]
@@ -704,6 +704,7 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
             return ipcc_trajectory(
                 table("trajectory_range"), variable=variable, scenarios=scenarios,
                 members=table("member_anomalies"), windows=record["windows"], current_year=date.today().year,
+                reference=record["reference"],
             )
         if filename.startswith("annual-"):
             return annual_overview(

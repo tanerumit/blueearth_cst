@@ -19,6 +19,9 @@ the underlying calculation or statistical interpretation.
 - Every labeled axis tick has a visible tick mark. Annual series have a tick for each year; reduce labeled
   year density on long records to avoid crowding. Retain annual minor ticks where appropriate.
 - Use units alone for axis titles unless a figure-specific exception needs the variable name.
+- Exception: WF2 reference-relative axes retain `Relative to [reference-period] (symbol)`, for example
+  `Relative to 1985–2014 (°C)` or `Relative to 1985–2014 (%)`. Use the actual analysis reference period;
+  absolute-value axes still show units alone.
 - Use `Precip.`, `Temp.` and `PET` when abbreviated variable names are needed. Display `CHIRPS` in legends
   and plot labels; retain version metadata in source records where relevant.
 - Keep grid lines subtle and partly transparent. Avoid competing with the data or annotations.

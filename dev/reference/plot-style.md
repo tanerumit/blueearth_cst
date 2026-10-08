@@ -68,6 +68,7 @@ the underlying calculation or statistical interpretation.
 | WF2 annual overview | No legend; explain member traces, medians and ranges in the caption. |
 | WF2 trajectories | Model median and range; distinct historical trace; stacked inside scenario legend. |
 | WF2 change strips | Retain the newer original scenario legend, unlabeled x-axis, box and point styling. |
+| WF2 seasonal cycle | Separate median climatology lines from monthly-change boxes; shade historical range only. |
 | Monthly climatology | Stacked inside legend in the less crowded upper corner. |
 | Cumulative timing | Bottom month axis; no top-axis title; y-axis `Cumulative (%)`, numeric ticks. |
 | Timing boxes | Enlarged unfilled horizontal boxes, thin outlines, no mean dot. |
@@ -83,6 +84,10 @@ the underlying calculation or statistical interpretation.
 
 For WF2 change strips, tighten the gap between the horizontal scenario legend and panel titles, add short
 caps to the full-range lines, and make median bars slightly thicker than the box outlines.
+
+WF2 monthly-change figures wrap scenarios in two columns (2 × 2 for four SSPs), with shared y-limits,
+reference-period axis titles, capped ranges, outline IQR boxes and thicker median bars. Review climatology
+and monthly changes as separate groups in the HTML page.
 
 For drought events, reserve colored dot legend symbols for datasets; use a line for complete events and
 a hatched sample for truncated events. The final reviewed hatch is eight diagonal strokes in Matplotlib's

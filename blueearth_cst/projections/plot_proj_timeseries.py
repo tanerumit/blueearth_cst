@@ -54,6 +54,9 @@ def figure_counts(filename, tables, window_id=""):
             & (data.quantity == ("change_pct" if "-pct" in filename else "change"))
             & data.period.isin(PERIODS[:5])
         ]
+    elif filename.startswith("monthly-change-"):
+        data = data.loc[(data.statistic == "mean") & data.period.isin(MONTHS)
+                        & (data.quantity == ("change_pct" if "precipitation" in filename else "change"))]
     elif "cloud" in filename:
         data = data.loc[(data.statistic == "mean") & (data.period == "annual")]
         keys = ["model", "scenario", "window_id"]

@@ -21,6 +21,22 @@ def caption(filename, record, window_id="", counts=None):
     counts = counts or {}
     models = counts.get("n_models", len(record.get("models", [])))
     text = [f"CMIP6 projections: {filename.removesuffix('.png').replace('-', ' ')}."]
+    if filename.startswith(("seasonal-cycle-", "monthly-change-")):
+        window = next(w for w in record["windows"] if w["window_id"] == window_id)
+        text.append(f"Reference water years {window['reference'][0]}–{window['reference'][1]}; "
+                    f"future water years {window['used'][0]}–{window['used'][1]}.")
+        if filename.startswith("seasonal-cycle-"):
+            text.append("Lines show the median monthly climatology across models, with members averaged first. "
+                        "Black denotes the historical reference and colors denote future scenarios. Gray shading "
+                        "spans the historical model range; future spread is shown in the companion monthly-change "
+                        "figure. The historical climatology uses the first displayed scenario's contributing models.")
+        else:
+            text.append("Each panel shows one scenario's monthly changes. Capped lines span the model range, "
+                        "outline boxes show the interquartile range where at least 10 models contribute, and "
+                        "thick horizontal bars show the median. Members are averaged within each model first. "
+                        "Zero indicates no change; precipitation changes are percentages of the reference rate.")
+        text.append("Model spread is descriptive and is not a confidence interval.")
+        return " ".join(text)
     if window_id:
         for window in record.get("windows", []):
             if window["window_id"] != window_id:

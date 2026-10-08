@@ -40,6 +40,8 @@ SUITE_PRODUCTS = {
         "filenames": (
             "seasonal-cycle-temperature.png",
             "seasonal-cycle-precipitation.png",
+            "monthly-change-temperature.png",
+            "monthly-change-precipitation.png",
         ),
     },
     "F3.5a": {

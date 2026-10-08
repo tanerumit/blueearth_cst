@@ -180,55 +180,65 @@ def dot_strip(models, summary, *, variable, quantity, statistic="mean", scenario
 
 
 def seasonal_figure(climatology, changes, summary, *, variable, scenarios=None):
-    """Monthly reference/future cycles and prepared monthly mean changes."""
+    """Monthly median climatologies, with only the historical model range shaded."""
     data = climatology.loc[climatology.variable == variable]
-    fig, axes = new_fig(H_SIDE2, ncols=2, width_mm=W_FULL)
+    fig, axes = new_fig(H_SINGLE, width_mm=W_MID)
+    ax = axes[0, 0]
     scen = _scenarios(data, scenarios)
     unit = "°C" if variable == "temp" else "mm d⁻¹"
-    for i, ax in enumerate(axes.flat):
-        ax.text(
-            0.02,
-            1.02,
-            f"{chr(97 + i)})",
-            transform=ax.transAxes,
-            va="bottom",
-            fontsize=FS_NOTE,
-        )
-        ax.set_xticks(range(12), MONTHS, rotation=45)
-        ygrid(ax)
+    historical = data.loc[(data.scenario == scen[0]) & (data.side == "reference")].set_index("period").reindex(MONTHS)
+    ax.fill_between(range(12), historical["min"], historical["max"], color=MUTED, alpha=0.18, lw=0)
+    ax.plot(range(12), historical["median"], color=INK, lw=1.5)
+    handles = [Line2D([], [], color=INK, lw=1.5, label="Historical")]
     for s in scen:
-        for side, linestyle in (("reference", "--"), ("future", "-")):
-            sub = (
-                data.loc[(data.scenario == s) & (data.side == side)]
-                .set_index("period")
-                .reindex(MONTHS)
-            )
-            axes[0, 0].plot(range(12), sub["median"], color=_color(s), ls=linestyle)
-        sub = (
-            summary.loc[
-                (summary.variable == variable)
-                & (summary.statistic == "mean")
-                & (
-                    summary.quantity
-                    == ("change_pct" if variable == "precip" else "change")
-                )
-                & (summary.scenario == s)
-            ]
-            .set_index("period")
-            .reindex(MONTHS)
-        )
-        axes[0, 1].plot(range(12), sub["median"], color=_color(s))
-        axes[0, 1].fill_between(
-            range(12),
-            sub["min"].astype(float),
-            sub["max"].astype(float),
-            color=_color(s),
-            alpha=0.15,
-        )
-    axes[0, 0].set_ylabel(f"Monthly mean ({unit}); dashed reference")
-    axes[0, 1].set_ylabel(f"Change ({'%' if variable == 'precip' else unit})")
-    axes[0, 1].axhline(0, color=MUTED, lw=LW_REF)
-    _legend(fig, scen)
+        future = data.loc[(data.scenario == s) & (data.side == "future")].set_index("period").reindex(MONTHS)
+        ax.plot(range(12), future["median"], color=_color(s), lw=1.0)
+        handles.append(Line2D([], [], color=_color(s), lw=1.0, label=_label(s)))
+    ax.set_xticks(range(12), MONTHS)
+    ax.set_xlim(-0.4, 11.4)
+    ax.set_ylabel(unit)
+    ax.tick_params(axis="both", length=3)
+    if variable == "precip":
+        ax.set_ylim(bottom=0)
+    ygrid(ax)
+    inside_legend(fig, ax, handles, bands=ax.collections, lines=ax.lines)
+    return fig
+
+
+def monthly_change_figure(summary, *, variable, scenarios=None, reference=(1985, 2014)):
+    """Monthly model-change ranges and outline boxes, with scenarios in column pairs."""
+    data = summary.loc[(summary.variable == variable) & (summary.statistic == "mean")
+                       & (summary.quantity == ("change_pct" if variable == "precip" else "change"))
+                       & summary.period.isin(MONTHS)]
+    scen = _scenarios(data, scenarios)
+    ncols = min(2, len(scen))
+    nrows = (len(scen) + ncols - 1) // ncols
+    fig, axes = new_fig(H_SINGLE * nrows, nrows=nrows, ncols=ncols, width_mm=W_FULL, sharey=True)
+    unit = "%" if variable == "precip" else "°C"
+    for j, s in enumerate(scen):
+        ax = axes.flat[j]
+        color = _color(s)
+        rows = data.loc[data.scenario == s].set_index("period").reindex(MONTHS)
+        for x, (_, row) in enumerate(rows.iterrows()):
+            if not np.isfinite(row["median"]):
+                continue
+            ax.plot([x] * 2, [row["min"], row["max"]], color=color, lw=LW_RANGE)
+            for endpoint in (row["min"], row["max"]):
+                ax.plot([x - 0.08, x + 0.08], [endpoint] * 2, color=color, lw=LW_RANGE)
+            if row.iqr_shown:
+                ax.add_patch(Rectangle((x - 0.275, row.q25), 0.55, row.q75 - row.q25,
+                                       facecolor="white", edgecolor=color, lw=0.8))
+            ax.plot([x - 0.275, x + 0.275], [row["median"]] * 2, color=color, lw=1.5)
+        ax.set_title(f"{chr(97 + j)}) {_label(s)}", loc="left")
+        ax.set_xticks(range(12), MONTHS, rotation=45)
+        ax.set_xlim(-0.6, 11.6)
+        ax.tick_params(axis="both", length=3)
+        ax.axhline(0, color=MUTED, lw=LW_REF)
+        if j % ncols == 0:
+            ax.set_ylabel(f"Relative to {reference[0]}–{reference[1]} ({unit})")
+        ygrid(ax)
+    for ax in list(axes.flat)[len(scen):]:
+        ax.set_visible(False)
     return fig
 
 
@@ -744,6 +754,9 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 variable=variable,
                 scenarios=scenarios,
             )
+        if filename.startswith("monthly-change-"):
+            return monthly_change_figure(table("change_summary"), variable=variable, scenarios=scenarios,
+                                         reference=next(w["reference"] for w in record["windows"] if w["window_id"] == window_id))
         if filename.startswith("variability-ratio-"):
             bands = [
                 b

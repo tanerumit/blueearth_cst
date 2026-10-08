@@ -1185,6 +1185,11 @@ def product_availability(tables, windows=None):
                 complete,
                 "no model with twelve reference and future months",
             )
+            monthly = mean.loc[(mean.variable == variable)
+                               & (mean.quantity == ("change_pct" if variable == "precip" else "change"))
+                               & mean.period.isin(MONTHS)]
+            add(f"monthly-change-{label}.png", f"period-{window_id}", window_id,
+                not monthly.empty, "no eligible monthly model changes")
         ratios = data["model_ratios"].loc[data["model_ratios"].window_id == window_id]
         for variable, statistic, label in (
             ("temp", "std_detrended", "temperature-sd"),

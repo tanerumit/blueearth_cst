@@ -1101,39 +1101,31 @@ def sensitivity(v: View) -> Figure:
     for i, (ax, (key, title)) in enumerate(
         zip(axs[0], (("total", "Annual precipitation"), ("Rx1day", "Rx1day")))
     ):
-        for s in v.sources:
+        starts = set()
+        for j, s in enumerate(v.sources):
             t = v.results[s]["sensitivity"][key]
             if t.empty:
                 continue
-            x = t.index.to_numpy()
+            starts.update(t.index)
+            x = t.index.to_numpy() + dodge(j, len(v.sources))
             c = v.color(s)
-            ax.plot(x, t["lo"], color=c, lw=LW_EDGE)
-            ax.plot(x, t["hi"], color=c, lw=LW_EDGE)
-            ax.plot(x, t["slope"], color=c, lw=LW_LINE)
+            edge = to_hex(0.65 * np.array(to_rgb(c)))
             sig = (t["p"] < 0.05).to_numpy()
-            ax.plot(
-                x[sig],
-                t["slope"][sig],
-                lw=0,
-                marker=v.marker(s),
-                ms=MS_LINE,
-                color=c,
-                zorder=3,
-            )
-            ax.plot(
-                x[~sig],
-                t["slope"][~sig],
-                lw=0,
-                marker=v.marker(s),
-                ms=MS_LINE,
-                mfc="white",
-                mec=c,
-                mew=1.0,
-                zorder=3,
-            )
+            for selected, fill_color in ((sig, c), (~sig, "white")):
+                values = t.loc[selected]
+                ax.errorbar(
+                    x[selected], values["slope"],
+                    yerr=[values["slope"] - values["lo"], values["hi"] - values["slope"]],
+                    fmt=v.marker(s), linestyle="none", color=c,
+                    mfc=fill_color, mec=edge, mew=0.7, ms=MS_POINT,
+                    elinewidth=LW_LINE * 1.5, capsize=3, capthick=1.2, zorder=3,
+                )
+        ax.set_xticks(sorted(starts))
+        if starts:
+            ax.set_xlim(min(starts) - 0.5, max(starts) + 0.5)
         ax.axhline(0, color=MUTED, lw=LW_REF)
         ax.set_title(f"{chr(97 + i)}) {title}")
-        ax.set_ylabel(f"Trend ({UNITS['mm_decade']})")
+        ax.set_ylabel(UNITS["mm_decade"])
         ax.set_xlabel(f"Start year (end {v.years[-1]})")
         ygrid(ax)
     sig = [
@@ -1152,8 +1144,17 @@ def sensitivity(v: View) -> Figure:
             label="$p$ ≥ 0.05",
         ),
     ]
-    edge = Line2D([], [], color=MUTED, lw=LW_EDGE, label="95 % interval")
-    top_legend(fig, identity_row(v), sig + [edge])
+    edge = Line2D([], [], color=MUTED, lw=LW_LINE * 1.5, label="95% interval")
+    legend = fig.legend(
+        handles=[*identity_row(v, line=False), *sig, edge],
+        loc="outside right upper", ncols=1,
+        frameon=True, facecolor="white", edgecolor="none", framealpha=0.88,
+    )
+    legend.set_loc("upper right")
+    legend.borderaxespad = 0
+    fig.get_layout_engine().set(rect=(0, 0, 0.84, 1))
+    fig.canvas.draw()
+    legend.set_bbox_to_anchor((1, axs[0, 0].get_position().y1), transform=fig.transFigure)
     return fig
 
 

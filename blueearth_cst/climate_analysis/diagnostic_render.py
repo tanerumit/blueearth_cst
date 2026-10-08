@@ -233,7 +233,11 @@ def render(
                         "Gray cells indicate unavailable estimates. Tests are exploratory and are not adjusted "
                         "for multiple comparisons."
                         if form == "spi-checks"
-                        else "Start-year Theil–Sen slope sensitivity with dependence-adjusted 95% intervals; at least 15 valid years per fit."
+                        else "Sensitivity of Theil–Sen trends to the fitting period. Each point is a separate "
+                        "fit from the indicated start year to the fixed final year; vertical error bars show "
+                        "95% intervals adjusted for lag-1 serial dependence. Filled points indicate a two-sided "
+                        "Mann–Kendall p < 0.05 and hollow points p ≥ 0.05. Each fit requires at least 15 valid "
+                        "annual values. Dataset positions are offset slightly for readability."
                     )
                 )
             if form.startswith("map-") or form in {"spi-checks", "sensitivity"}:

@@ -19,6 +19,18 @@ def _mask(years):
 def caption(filename, record, window_id="", counts=None):
     """State windows, weighting, benchmark assumptions and exclusions explicitly."""
     counts = counts or {}
+    if filename == "availability.png":
+        return (
+            "CMIP6 ensemble availability. Numbers give resolved member counts for each model and "
+            "scenario; historical counts give unique loaded reference series associated with resolved "
+            "scenario members. Zero indicates no resolved or loaded member in this ensemble, not "
+            "necessarily absence from the CMIP6 archive. Availability does not guarantee eligibility "
+            "for every variable, period, or analysis window. Families describe model code genealogy "
+            "using the mapping attributed to Kuma et al. (2023, doi:10.1029/2022MS003588; Zenodo "
+            "record 7920408). An asterisk marks a provisional family inferred from institution; "
+            "? marks an unknown family. Parentheses identify institution and country where known. "
+            "Family labels do not imply statistical independence within or between families."
+        )
     if filename == "sign-agreement.png":
         window = next(w for w in record["windows"] if w["window_id"] == window_id)
         return (
@@ -219,19 +231,4 @@ def caption(filename, record, window_id="", counts=None):
             text.append(
                 "Faint vertical intervals are each member's own exact-mask single-member null band; filled points fall outside it. Each eligible member has weight 1/eligible-members-of-its-model in pooled log quantiles. Pooled quantiles are ensemble spread and carry no band."
             )
-    if filename == "availability.png":
-        family = record.get("models", [])
-        text.append(
-            "Provisional families inferred from institution: "
-            + ", ".join(
-                str(m["model"])
-                for m in family
-                if m.get("family_source") == "provisional"
-            )
-            + ". Own families for unlisted models: "
-            + ", ".join(
-                str(m["model"]) for m in family if m.get("family_source") == "own"
-            )
-            + ". Listed mappings use the approved lab-constant fallback; redistribution of the exact cited dataset was unverified."
-        )
     return " ".join(text)

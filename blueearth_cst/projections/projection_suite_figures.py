@@ -580,38 +580,39 @@ def agreement_matrix(agreement, scenarios=None):
     return fig
 
 
-def availability_matrix(coverage):
-    """Resolved member counts by explicit model identity and scenario."""
-    models = sorted(coverage.model.unique())
-    scen = _scenarios(coverage)
-    fig, axes = new_fig(max(H_SINGLE, 5 * len(models)), width_mm=W_FULL)
+def availability_matrix(coverage, scenarios=None):
+    """Resolved scenario member counts and unique loaded historical references."""
+    identities = coverage[["model", "source_id", "institution", "family", "family_source", "country"]].drop_duplicates("model")
+    identities = identities.sort_values("source_id", key=lambda s: s.str.lower())
+    scen = _scenarios(coverage, scenarios)
+    runs = ["historical", *scen]
+    n = len(identities)
+    total = 25+23+14*len(runs)
+    fig, axes = new_fig(.9*(10+7*(n+1)), width_mm=total+8)
     ax = axes[0, 0]
-    for i, model in enumerate(models):
-        for j, s in enumerate(scen):
-            rows = coverage.loc[
-                (coverage.model == model)
-                & (coverage.scenario == s)
-                & coverage.available
-            ]
-            n = rows.member.nunique()
-            ax.add_patch(
-                plt.Rectangle(
-                    (j - 0.5, i - 0.5),
-                    1,
-                    1,
-                    facecolor="#dce9ed" if n else "#eeeeee",
-                    edgecolor="white",
-                )
-            )
-            ax.text(j, i, str(n), ha="center", va="center", fontsize=FS_NOTE)
-    ax.set(
-        xticks=range(len(scen)),
-        xticklabels=scen,
-        yticks=range(len(models)),
-        yticklabels=models,
-        xlim=(-0.5, len(scen) - 0.5),
-        ylim=(len(models) - 0.5, -0.5),
-    )
+    ax.set_axis_off()
+    ax.set(xlim=(0, total), ylim=(n+.5, -.5))
+    xs = [0, 25, *[48+14*j for j in range(len(runs))]]
+    for j, (x, title) in enumerate(zip(xs, ["Model", "Family", "Historical", *[_label(s) for s in scen]], strict=True)):
+        ax.text(x+(7 if j >= 2 else 0), 0, title, ha="center" if j >= 2 else "left",
+                va="center", fontsize=FS_NOTE, fontweight="bold", color=INK)
+    ax.axhline(.5, color=INK, lw=.8)
+    for i, row in enumerate(identities.itertuples(index=False), start=1):
+        if i % 2 == 0:
+            ax.axhspan(i-.5, i+.5, color="#f1f5f6", lw=0, zorder=0)
+        ax.text(0, i, row.source_id, ha="left", va="center", fontsize=FS_NOTE, color=INK)
+        family = row.family if row.family_source == "listed" else (
+            f"{row.family}*" if row.family_source == "provisional" else "?")
+        ax.text(25, i-.17, family, ha="left", va="center", fontsize=FS_NOTE, color=INK)
+        where = f"({row.institution}, {row.country})" if row.country else f"({row.institution})"
+        ax.text(25, i+.2, where, ha="left", va="center", fontsize=FS_NOTE-.5, color=INK)
+        available = coverage.loc[(coverage.model == row.model) & coverage.available]
+        counts = [available.reference_series_key.replace("", np.nan).nunique()]
+        counts.extend(available.loc[available.scenario == s, "member"].nunique() for s in scen)
+        for j, count in enumerate(counts):
+            ax.text(xs[j+2]+7, i, str(count), ha="center", va="center",
+                    fontsize=FS_NOTE, color=INK if count else MUTED)
+    ax.axhline(n+.5, color=INK, lw=.8)
     return fig
 
 
@@ -628,7 +629,7 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
 
     with plt.rc_context(STYLE):
         if filename == "availability.png":
-            return availability_matrix(table("coverage"))
+            return availability_matrix(table("coverage"), scenarios)
         variable = "temp" if "temperature" in filename else "precip"
         if filename.startswith("trajectory-"):
             return ipcc_trajectory(
@@ -704,6 +705,7 @@ def render_product(filename, tables, record, *, window_id="", scenarios=None):
                 reference=next((w["reference"] for w in record["windows"] if w["window_id"] == window_id), record["reference"]),
             )
     raise ValueError(f"unknown suite product: {filename}")
+
 
 
 

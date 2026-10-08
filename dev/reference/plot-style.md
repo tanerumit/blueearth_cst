@@ -104,6 +104,10 @@ WF2 sign-agreement matrices use temperature and precipitation percentage-change 
 agreement classes with paired blue/red swatches, and visible scenario and period ticks. Cell signs show
 the median direction and k/n shows model agreement; choose text color by fill luminance. Captions explain
 that directional agreement is neither probability nor significance and note shared model ancestry.
+WF2 ensemble coverage uses a compact table with consistent numeric member counts, a historical-reference
+column, family and institution metadata, and pale alternating rows. Historical counts deduplicate loaded
+reference series. Distinguish availability from analysis eligibility in captions, explain family
+provenance and provisional/unknown assignments, and avoid implying family independence.
 Use the reviewed change-strip box, point and horizontal legend style, with a reference line at ratio 1.
 Show descriptive model spread; retain numerical sampling-benchmark products separately without displaying
 them or significance fills in this figure.

@@ -1,0 +1,223 @@
+advanced_settings:
+  batching:
+    large_max_parallel: 1
+    large_threads: 4
+    max_parallel: auto
+    memory_per_batch_gb: 1.5
+    memory_per_cell_kb: 20.0
+    small_basin_cells: 5000
+    small_max_parallel: 2
+    small_threads: 1
+    threads: auto
+  constraints:
+    max_flagged_months: 3
+    min_historical_years: 16
+  defaults:
+    basin_index: merit_hydro_index
+    batch_disk_headroom_fraction: 0.25
+    change_factor_stats:
+    - mean
+    - median
+    - std
+    hydrography: merit_hydro_ihu
+    max_subbasins: 11
+    seed: 123
+    snap_tolerance_m: 10000.0
+    spell_factor:
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    - 1.0
+    water_year_start: Jan
+  runtime:
+    julia_threads: 4
+    julia_version: 1.11.7
+archive_id: f1c7faa22892d1328c92e75c641c547457a1ca27d7d5bb9736c91f639b5f99cf
+archive_schema_version: source-archive/1
+configuration_projection:
+  configuration_inputs_sha256: 70c7c665f47a97560f5f4b116863c4cd600f37449dc23218c63c0499dc8a7836
+  digest_schema_version: 2
+  effective_config_sha256: c085e2ee219a3c2929c3e528e13dae0e96b18cadfb1ed9dca8107cdfcaf47efe
+  paths:
+  - project
+  - basin
+  - climate
+  - model
+  - workflows.analyze_climate
+environment:
+  Manifest.toml: 62d6cd18c6d4f972af7e8784c81a4d386d4f1ec0f510ea1d1c2116d955c19072
+  pixi.lock: 43d11fc5297160152d0c728f9c9e4d4816c816b2876fc75cb3c3d210f437ffc6
+generated_inputs:
+- file:
+    path: config/runs/_engine/execution-configs/_shared/output_locations/f5ba4391580b/output_locations.csv
+    path_base: project_root
+    schema_version: artifact-reference/1
+    sha256: f5ba4391580b2d958ca69b889dda6322b046e8edba26adb24f05641021d11922
+    size_bytes: 142
+  role: execution_output_locations
+- file:
+    path: config/runs/_engine/execution-configs/_shared/project_catalog_0/4c72be38ad0a/project_catalog_0.yml
+    path_base: project_root
+    schema_version: artifact-reference/1
+    sha256: 4c72be38ad0a20688ff3fa4d48e4b2667cbeeaf8ea86076373f96998bfeb9517
+    size_bytes: 56869
+  role: execution_project_catalog_0
+- file:
+    path: config/runs/_engine/execution-configs/_shared/project_catalog_1/c3101fafcf92/project_catalog_1.yml
+    path_base: project_root
+    schema_version: artifact-reference/1
+    sha256: c3101fafcf925c36472b8f759fc50312b37de30ca03f74ae263e1f1e9fed1e69
+    size_bytes: 1811
+  role: execution_project_catalog_1
+- file:
+    path: config/runs/_engine/execution-configs/analyze_climate/5a22a3f61456/project.yml
+    path_base: project_root
+    schema_version: artifact-reference/1
+    sha256: f695ee8dd8c0cabb94832b529072f683c4a6b370c80a24d557fb670f1adb3d6f
+    size_bytes: 1361
+  role: execution_project_config
+- file:
+    path: config/runs/_engine/execution-configs/analyze_climate/5a22a3f61456/workflow.yml
+    path_base: project_root
+    schema_version: artifact-reference/1
+    sha256: ecf8b132cb9f4547218838190e0384247d85537efe9f51fc28b1a097c9e2cb62
+    size_bytes: 62
+  role: execution_workflow_config
+invocation:
+  command:
+  - snakemake
+  - all
+  - -c
+  - '3'
+  - -s
+  - analyze_climate.smk
+  - --configfile
+  - C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\.tmp\scratchpad\plot-verification\project_config_rapid.yml
+  entry_point: scripts/run_workflow.py
+  overrides: {}
+  targets:
+  - all
+  working_directory: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1
+invocation_id: d062c514227c47dd930ac887b6b74281
+loaded_config:
+  basin:
+    output_locations: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\.tmp\scratchpad\plot-verification\rapid\config\runs\_engine\execution-configs\_shared\output_locations\f5ba4391580b\output_locations.csv
+    region: '{''subbasin'': [9.666, 0.4476], ''uparea'': 100}'
+    resolution: 0.00833
+    sources:
+      lulc: globcover
+      rivers: hydro_rivers_lin
+  climate:
+    selected: era5
+    sources:
+    - era5
+    - chirps
+    window:
+      end: 2016
+      start: 2000
+  model:
+    outvars:
+    - river discharge
+    - actual evapotranspiration
+    - groundwater recharge
+  project:
+    catalog:
+    - C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\.tmp\scratchpad\plot-verification\rapid\config\runs\_engine\execution-configs\_shared\project_catalog_0\4c72be38ad0a\project_catalog_0.yml
+    - C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\.tmp\scratchpad\plot-verification\rapid\config\runs\_engine\execution-configs\_shared\project_catalog_1\c3101fafcf92\project_catalog_1.yml
+    project_dir: C:/Users/taner/workspace/.worktrees/blueearth_cst/session-1/.tmp/scratchpad/plot-verification/rapid
+  schema_version: 2
+  workflows:
+    analyze_climate:
+      diagnostics:
+        captioned_figures: true
+      enabled: true
+      subbasin_figures: true
+owner:
+  id: analyze_climate
+  kind: workflow
+referenced_inputs:
+- id: output_locations
+  original_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\test_case\test_data\output_locations.csv
+  role: output_locations
+  sha256: f5ba4391580b2d958ca69b889dda6322b046e8edba26adb24f05641021d11922
+  size_bytes: 142
+  source_id: output_locations
+- id: project_catalog_0
+  original_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\config\catalogs\deltares_data_pdrive.yml
+  role: data_catalog
+  sha256: 4c72be38ad0a20688ff3fa4d48e4b2667cbeeaf8ea86076373f96998bfeb9517
+  size_bytes: 56869
+  source_id: project_catalog_0
+- id: project_catalog_1
+  original_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\config\catalogs\deltares_era5_daily_zarr.yml
+  role: data_catalog
+  sha256: c3101fafcf925c36472b8f759fc50312b37de30ca03f74ae263e1f1e9fed1e69
+  size_bytes: 1811
+  source_id: project_catalog_1
+rerun:
+  adjustments: []
+  path_policy: captured-source-map/1
+  project_source: project
+  workflow: analyze_climate
+schema_version: run-record/2
+source_config: project
+source_files:
+- archived_path: sources/output_locations.csv
+  git_blob: null
+  id: output_locations
+  original_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\test_case\test_data\output_locations.csv
+  path_base: record_directory
+  recoverable: true
+  role: output_locations
+  sha256: f5ba4391580b2d958ca69b889dda6322b046e8edba26adb24f05641021d11922
+  size_bytes: 142
+- archived_path: sources/project_config_rapid.yml
+  git_blob: null
+  id: project
+  original_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\.tmp\scratchpad\plot-verification\project_config_rapid.yml
+  path_base: record_directory
+  recoverable: true
+  role: project_config
+  sha256: 61d7f7613f5d7be18d418943d92c0536b85bb07a95d556a98a2f5283488344d8
+  size_bytes: 1182
+- archived_path: sources/catalogs/deltares_data_pdrive.yml
+  git_blob: null
+  id: project_catalog_0
+  original_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\config\catalogs\deltares_data_pdrive.yml
+  path_base: record_directory
+  recoverable: true
+  role: data_catalog
+  sha256: 4c72be38ad0a20688ff3fa4d48e4b2667cbeeaf8ea86076373f96998bfeb9517
+  size_bytes: 56869
+- archived_path: sources/catalogs/deltares_era5_daily_zarr.yml
+  git_blob: null
+  id: project_catalog_1
+  original_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\config\catalogs\deltares_era5_daily_zarr.yml
+  path_base: record_directory
+  recoverable: true
+  role: data_catalog
+  sha256: c3101fafcf925c36472b8f759fc50312b37de30ca03f74ae263e1f1e9fed1e69
+  size_bytes: 1811
+- archived_path: sources/project_config_rapid_analyze_climate.yml
+  git_blob: null
+  id: workflow_analyze_climate
+  original_path: C:\Users\taner\workspace\.worktrees\blueearth_cst\session-1\.tmp\scratchpad\plot-verification\project_config_rapid_analyze_climate.yml
+  path_base: record_directory
+  recoverable: true
+  role: workflow_config_analyze_climate
+  sha256: 960ce2b47ac9d88ed358015501f90dc59b28968f48bf68c520019b952d4e4ace
+  size_bytes: 63
+toolbox:
+  commit: 8e254d354acd15da4d6fa511fd73bf9616bbe388
+  commit_source: git
+  dirty: false
+workflow: analyze_climate
+workflow_config: workflow_analyze_climate

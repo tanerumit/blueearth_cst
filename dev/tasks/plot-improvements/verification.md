@@ -87,5 +87,75 @@ Eleven opt-in P0/lab parity checks skipped because the expected retained product
 is absent. This is not a parity pass; matched synthetic main/candidate equality and the read-only Gabon
 render provide separate evidence. No stale baseline or PNG byte comparison was used.
 
-Final fast gate, WF2 execution, inventory totals, visual findings and candidate commit are recorded
-below after completion. Until then this record does not assert readiness for landing.
+## Final candidate and execution evidence
+
+Executable candidate: `001b958c`, after corrective commits `8e254d35` and `001b958c`. The latter adds
+a 90 mm minimum canvas width only to small-ensemble sign-agreement matrices: the one-SSP legend
+previously extended beyond the canvas. The regression failed before this fix and passed afterward
+(13 artist tests). Four-SSP approved canvas dimensions remain unchanged.
+
+Windows 11, Pixi local default environment, Python 3.12.13, pytest 9.0.3. Lock SHA-256:
+`797afdad5a8f8c37dd62b2f1e2f88f3fea120c3fc53b7e7c792b860700a6782b`.
+No dependency or lock changes were made.
+
+Workflow commands (logs under the scratch root):
+
+```powershell
+pixi run python scripts/run_workflow.py analyze_climate --config .tmp/scratchpad/plot-verification/project_config_rapid.yml --project-dir .tmp/scratchpad/plot-verification/rapid --cores 3
+pixi run python scripts/run_workflow.py analyze_projections --config .tmp/scratchpad/plot-verification/project_config_rapid.yml --project-dir .tmp/scratchpad/plot-verification/rapid --cores 3 --keep-going
+pixi run python scripts/run_workflow.py analyze_projections --config .tmp/scratchpad/plot-verification/project_config_rapid.yml --project-dir .tmp/scratchpad/plot-verification/rapid --cores 3 -- --forcerun plot_climate_projections
+pixi run pytest tests/test_projection_suite_figures.py -q
+pixi run pytest tests/test_cli.py -q
+pixi run lint
+pixi run format-check
+pixi run python dev/scripts/verify_landing.py record --evidence .tmp/scratchpad/plot-verification/gates-final.json --gate test-fast --log .tmp/scratchpad/plot-verification/test-fast-final.log --input .tmp/scratchpad/plot-verification/project_config_rapid.yml -- pixi run test-fast
+```
+
+WF0 fresh execution passed 11 jobs; WF2 passed 13 jobs. WF0 was then run with
+`subbasin_figures: true` and `diagnostics.captioned_figures: true` in its scratch config, passing
+in 2m43s while reusing the same climate inputs. Optional inventory: CHIRPS 25 ordinary + 25 captioned;
+comparison 25 + 25; ERA5 33 + 33. There are respectively 8, 8 and 12 ordinary subbasin products,
+each with a captioned copy. Caption paths exactly cover all 166 WF0 PNGs.
+
+WF2 inventory: 17 ordinary + 17 captioned PNGs. Analysis availability, captions and actual files agree.
+The two unavailable products have explicit reasons: one member per model and one future window.
+All generated graphics are under `plots/`; period folders and both `_engine` records are canonical.
+Gabon contributes 18 ordinary + 18 captioned products and the larger model/member case.
+
+Visual inspection covered all ordinary WF0/WF2/Gabon products, all optional WF0 contact sheets,
+the two-window paired cloud and the missing-year annual case. Source colors, units, captions,
+map overlays, subbasin products and annual ticks survive fresh execution. The final WF2 rule is
+explicitly forced because Snakemake does not detect an imported helper edit through its script path.
+Temporary HTML reviews were rebuilt from the tracked comparison template.
+
+## Remaining gate blocker
+
+The first fast gate on `8e254d35` returned 3994 passed, 17 skipped, one expected failure and one
+failure: `tests/test_spatial_geoms_parity.py::test_the_relationships_hold_on_a_really_built_project`.
+The existing `test_case/test_local` geometry fixture differs in `locations.snapped_y` by about
+7.1e-15 degrees between the exported geometry and Wflow static geometry. The test and validator
+have no branch diff; loading the `main` validator against the same read-only fixture reproduces
+`locations: column 'snapped_y' values differ`. This is unrelated to the plotting branch.
+
+The fixture, validator and assertion were preserved. Repairing/rebuilding existing outputs or
+revising this spatial contract is outside the authorized task. Landing readiness remains blocked
+until this failing gate is resolved under separately authorized scope. No landing or push occurred.
+
+The final run on executable candidate `001b958c` reproduced exactly the same totals and failure
+in 462.85 seconds. Its complete log and candidate/environment observation are retained in `evidence/`.
+The `verify_landing.py record` command ran the gate but refused its post-run JSON write because
+this verification document had been updated while the gate ran. No executable edits intervened;
+the evidence-only dirty diff is documented rather than rerunning an unchanged failing gate.
+The earlier helper-written failed gate record is also retained. Neither record authorizes landing.
+
+Final lint and format checks passed (432 files). The forced WF2 figure rule and its consumers passed
+in 1m51s; final captions/availability/PNG bijection passed for all 17 ordinary and 17 captioned files.
+Evidence-only additions after testing do not invalidate executable coverage. Disposable contact
+sheets and HTML remain in scratch; input/config hashes, complete check logs and numerical evidence
+are retained under this task record. No required skip was suppressed.
+
+The 17 skips are explained: five Linux-only fixed-tolerance controls on Windows, eleven opt-in
+production/lab parity cases missing their production input tree, and one all-five integration case
+requiring `--run-integration`. The xfail is the known HydroMT catalog preprocess round-trip defect.
+All-five execution/full tests are not required by this figure-only diff. Matched synthetic numerical
+parity is exact; it does not replace the missing real production/lab parity case.

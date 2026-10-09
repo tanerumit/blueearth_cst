@@ -95,7 +95,7 @@ Retain logs, probes and gate record through approved landing; the abandoned run 
 - Wrapper: infrastructure fallback, BRAIN_INFRA_ROOT override, missing-bundle hint and refusal
   of a bad explicit TODOBOARD_SKILL_DIR passed (`wrapper-probe.log`).
 - Final gates: `pixi run lint` passed; `pixi run format-check` passed (432 files formatted).
-  `pixi run test-fast` — 4013 passed, 17 skipped, 1 xfailed, 8645 warnings in 290.04s (0:04:50). 
+  `pixi run test-fast` — 4013 passed, 17 skipped, 1 xfailed, 8645 warnings in 290.04s (0:04:50).
   One run only, logged in `test-fast.log` and `gates.json`.
   `PYTEST_ADDOPTS=--basetemp=.tmp/scratchpad/worktree-coordination-r2/fast-fixtures` kept fixtures local.
   Skips: five Linux-only controls, eleven unavailable local P0/lab parity cases and one opt-in E2E

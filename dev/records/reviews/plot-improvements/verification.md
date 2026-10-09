@@ -196,3 +196,81 @@ to absorb evidence files into the tested tree.
 Local main merged it at `566abca4`; committed-tree equality and candidate ancestry both passed.
 Session-1 is detached and EMPTY; the merged local branch was removed. No push occurred.
 The complete landing gate and lifecycle logs are retained in `evidence/`.
+
+## WF1 forcing alignment — 2026-10-09
+
+Owner-approved follow-up: apply WF0's reviewed style and methodological choices to the nine model-grid
+forcing figures. Tested executable commit: `8a2ebccb`. Verification scope is focused, with numerical
+claims affected intentionally. This is separate from the earlier WF0/WF2 batch and its landing.
+
+WF1 now shares the reviewed map, annual-series and monthly-climatology artists. A chunked model adapter
+uses WF0 completeness, start-year reporting labels, Theil–Sen trends and mean/p10–p90 monthly summaries.
+It preserves the nine forcing filenames and adds declared Markdown/JSON caption outputs. The shared
+artists retain their WF0 defaults. Fine model-cell outlines are suppressed; outside-basin cells are
+white and unavailable values within the basin are gray. No dependencies or configuration keys changed.
+
+### Acceptance and inputs
+
+| Claim | Check / case | Result |
+|---|---|---|
+| WF0 method parity | Analytic masking/quantiles, Sen outlier, cellwise WF0 oracle | Three tests passed |
+| Workflow declarations | CLI and WF1 output/deletion contracts | Included in 51 passing focused tests |
+| Real forcing render | Retained Liberia model forcing and spatial overlays | Nine PNGs, nine caption records |
+| Shared caller safety | Retained ERA5/CHIRPS WF0 tables and maps | Six source figures and annual comparison |
+| Visual acceptance | Opened forcing figures and shared caller PNGs | Labels, palettes, legends and axes inspected |
+| Rapid DAG | WF1 plotting target with rapid project config | Passed; nine prerequisite jobs planned |
+| Python quality | Repository lint and format check | Passed; 434 files formatted |
+
+Environment: Windows 11, session-2 Pixi default, Python 3.12.13, Matplotlib 3.11.0, xarray 2026.4.0,
+hydromt_wflow 1.0.2. Lock SHA-256:
+`797afdad5a8f8c37dd62b2f1e2f88f3fea120c3fc53b7e7c792b860700a6782b`.
+
+Real input root: `C:/Users/taner/workspace/cst-cases/runs/sp2-liberia/active/`.
+Forcing: `models/hydrology/wflow/forcing/inmaps_historical.nc`; SHA-256:
+`56b1213999320c9968cd9e7ee6840d207380bcce3d1e6e0bc4950f8650a04e1d`.
+The grid is 231 × 223 cells, with 20,983 model-basin cells and 6,209 daily timestamps from
+2000-01-02 through 2016-12-31. WF0's full-year policy excludes partial 2000, leaving 2001–2016.
+This is an intended QA-method change, as are the revised trend estimator and monthly spread encoding;
+the underlying forcing and simulation calculations are unchanged. The forcing precipitation slope is
+now approximately −183 mm per decade rather than the older OLS figure's −151.
+
+Numerical discrimination includes an independent analytic quantile case and a nine-year temperature
+outlier case: Sen is 10 °C per decade while OLS exceeds 50. The old annual helper retains partial 2000
+on a January-2 input, violating the revised full-year expectation. The vectorized map calculation
+matches WF0's cellwise oracle with tolerated gaps, excessive monthly/yearly gaps and non-January years.
+
+### Commands and artifacts
+
+Commands run against the executable candidate:
+
+```text
+pixi run pytest tests/test_forcing_figures.py -q -o cache_dir=.tmp/scratchpad/wf1-forcing-style/pytest-cache -o addopts='' -p no:cacheprovider
+pixi run pytest tests/test_cli.py tests/test_wf1_plot_outputs.py tests/test_wf0_diagnostics.py tests/test_wf0_diagnostic_contracts.py -q
+pixi run snakemake plot_model_forcing --snakefile build_model.smk --configfile test_case/project_config_rapid.yml --dry-run --cores 1
+pixi run lint
+pixi run format-check
+pixi run python .tmp/scratchpad/wf1-forcing-style/render.py
+pixi run python .tmp/scratchpad/wf1-forcing-style/shared.py
+pixi run python .tmp/scratchpad/wf1-forcing-style/publish.py
+```
+
+The three-test command passed with one cache-option warning from disabling pytest's cache plugin.
+The 51-test command passed without failures or skips. Initial sandboxed checks encountered temporary
+fixture access errors and a blocked Snakemake subprocess; that process tree was terminated and the
+focused command passed outside the sandbox. An initial scratch inventory reader omitted UTF-8;
+the reader was corrected and the final rendering/inventory command passed.
+
+Rapid configuration identity: `test_case/project_config_rapid.yml`, SHA-256
+`ba8d72cbc0d178188b3309483e5fe1effc48b61e1343160848b5d63bc39013bd`.
+Full-suite, baseline and all-five execution gates were omitted for this terminal-figure task.
+No non-figure output consumer changed; no model construction or simulation was run.
+
+Output root: `.tmp/scratchpad/wf1-forcing-style/`. `revised/` holds the nine forcing PNGs and captions;
+`wf0-callers/plots/` holds the inspected shared-caller renders. `comparison.html` uses the tracked
+comparison template, with originals preserved under `before/`. Retain this scratch folder for the
+owner's visual review and recovery of the refreshed figures; earlier unrelated scratch was untouched.
+
+The nine approved PNGs and two caption records were copied into the actual Liberia forcing plot
+directory after inspection. Before replacing each PNG, its bytes were checked against the preserved
+original to reject concurrent edits. The forcing NetCDF size and modification time were unchanged
+across publication. No files were deleted. No branch landing or push occurred.

@@ -235,6 +235,14 @@ in this visual review.
   area, slightly smaller than axis text, in gray.
 - Include captions inside the preview canvas when enabled. Add space below the image without resizing
   the plotting area or changing its proportions. Keep caption-to-axis font proportions consistent.
+- `plotting.fundamentals.add_caption(fig, text)` finalizes an already drawn figure for its captioned
+  export. Set `savefig.dpi` to the intended export resolution first. It freezes the drawn axes and
+  decorations, adds a measured bottom band, and restores the original figure DPI. Do not resume layout
+  or resize the figure after this step. Caption wording and metadata remain workflow-owned.
+- Wrap embedded captions to the span of the drawn axes, using measured text width and the existing
+  note font. Keep 3 mm below the caption and 3 mm between its top and the original canvas bottom.
+  Tight-cropped maps retain their original geometry and 2 mm export border; do not resize the map
+  canvas to make room for a caption.
 
 ## Interactive review process
 

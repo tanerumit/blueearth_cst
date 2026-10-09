@@ -4,12 +4,13 @@ Backend selection belongs to callers; STYLE is a shared mutable dictionary.
 """
 
 from collections.abc import Sequence
-from textwrap import fill
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 from matplotlib.figure import Figure
 from matplotlib.lines import Line2D
+from matplotlib.transforms import Affine2D, Bbox
 
 W_COL1, W_PANEL, W_MID, W_FULL = 88.0, 120.0, 140.0, 180.0
 
@@ -227,15 +228,100 @@ def colourbar(
 
 
 def add_caption(fig: Figure, text: str) -> None:
-    """Reserve a small bottom band for a journal-style caption on a PNG copy."""
-    width = max(75, int(fig.get_figwidth() * 21))
-    wrapped = fill(text, width=width)
-    lines = wrapped.count("\n") + 1
-    extra_mm = 6 + 3.5 * lines
-    fig.set_size_inches(fig.get_figwidth(), fig.get_figheight() + extra_mm * MM)
-    fig.supxlabel(
-        wrapped, x=0.04, ha="left", fontsize=FS_NOTE, color=MUTED, linespacing=1.3
-    )
+    """Add a caption below finalized artists without changing their physical size.
+
+    Call after drawing the ordinary product and before its final captioned export.
+    Layout and axes locators are frozen at the configured save DPI: the caption
+    extends the canvas rather than asking constrained layout to resize the panels.
+    Export at that same DPI; further figure resizing or artist edits need a new
+    ordinary figure rather than rerunning layout on this finalized copy.
+    """
+    original_dpi = fig.dpi
+    try:
+        export_dpi = mpl.rcParams["savefig.dpi"]
+        if export_dpi != "figure":
+            fig.set_dpi(export_dpi)
+        fig.canvas.draw()
+        renderer = fig.canvas.get_renderer()
+        width, height = fig.get_size_inches()
+        axes = [(ax, ax.get_position().frozen()) for ax in fig.axes]
+        legends = [*fig.legends]
+        legends.extend(ax.get_legend() for ax in fig.axes if ax.get_legend())
+        anchors = [
+            (
+                legend,
+                legend.get_bbox_to_anchor()
+                .transformed(fig.dpi_scale_trans.inverted())
+                .frozen(),
+            )
+            for legend in legends
+        ]
+        left = min((box.x0 for _, box in axes), default=0.04)
+        right = max((box.x1 for _, box in axes), default=0.96)
+        caption = fig.text(
+            left,
+            0,
+            "",
+            ha="left",
+            va="bottom",
+            fontsize=FS_NOTE,
+            color=MUTED,
+            linespacing=1.3,
+        )
+        available = (right - left) * width * fig.dpi
+        lines, line = [], ""
+        for word in text.split():
+            trial = f"{line} {word}".strip()
+            caption.set_text(trial)
+            if caption.get_window_extent(renderer).width <= available:
+                line = trial
+                continue
+            if line:
+                lines.append(line)
+                line = ""
+            # Like textwrap.fill, break a token that cannot fit on its own line.
+            for character in word:
+                trial = line + character
+                caption.set_text(trial)
+                if line and caption.get_window_extent(renderer).width > available:
+                    lines.append(line.rstrip())
+                    line = character
+                else:
+                    line = trial
+        lines.append(line)
+        caption.set_text("\n".join(lines))
+        extra = caption.get_window_extent(renderer).height / fig.dpi + 6 * MM
+        fig.set_layout_engine("none")
+        fig.set_size_inches(width, height + extra)
+        mapping = (
+            Affine2D()
+            .scale(1, height / (height + extra))
+            .translate(0, extra / (height + extra))
+        )
+        for ax, box in axes:
+            ax.set_axes_locator(None)
+            ax.set_position(mapping.transform_bbox(box))
+        for legend, box in anchors:
+            legend.set_bbox_to_anchor(
+                Bbox.from_bounds(box.x0, box.y0 + extra, box.width, box.height),
+                fig.dpi_scale_trans,
+            )
+        for artist in fig.get_children():
+            if (
+                artist is caption
+                or artist in fig.axes
+                or artist in fig.legends
+                or artist is fig.patch
+            ):
+                continue
+            transform = artist.get_transform()
+            if transform.contains_branch(fig.transFigure):
+                artist.set_transform(
+                    transform - fig.transFigure + mapping + fig.transFigure
+                )
+        caption.set_position((left, 3 * MM / (height + extra)))
+    finally:
+        fig.set_dpi(original_dpi)
 
 
 def inside_legend(

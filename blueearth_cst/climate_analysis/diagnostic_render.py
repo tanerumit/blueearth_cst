@@ -284,13 +284,6 @@ def render(
             captioned = paths["render"].get(f"captioned_{form}")
             if captioned:
                 Path(captioned).parent.mkdir(parents=True, exist_ok=True)
-                if map_export:
-                    # Wrap captions to the visible map width, not its unused canvas.
-                    fig.canvas.draw()
-                    map_bounds = fig.get_tightbbox(fig.canvas.get_renderer())
-                    fig.set_size_inches(
-                        map_bounds.width + 4 / 25.4, fig.get_figheight()
-                    )
                 add_caption(fig, text)
                 fig.savefig(captioned, dpi=600, facecolor="white", **map_export)
             plt.close(fig)

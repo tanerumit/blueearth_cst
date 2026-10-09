@@ -17,6 +17,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO_ROOT / "dev" / "scripts"))
 import check_activation as ca  # noqa: E402
@@ -86,3 +88,65 @@ def test_a_broken_link_is_reported(tmp_path, monkeypatch):
     monkeypatch.setattr(ca, "REFERENCE_DIR", tmp_path)
     monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
     assert ca.check_links() == ["a.md: broken link -> ./nope.md"]
+
+
+@pytest.mark.parametrize(
+    ("home", "reason"),
+    [("tasks", "transient"), ("records/reviews", "prunable")],
+)
+@pytest.mark.parametrize("exists", [False, True])
+def test_reference_links_reject_unstable_homes(
+    tmp_path, monkeypatch, home, reason, exists
+):
+    reference = tmp_path / "dev/reference"
+    reference.mkdir(parents=True)
+    target = tmp_path / "dev" / home / "evidence.md"
+    if exists:
+        target.parent.mkdir(parents=True)
+        target.write_text("Evidence", encoding="utf-8")
+    (reference / "guide.md").write_text(
+        f"[evidence](../{home}/evidence.md)", encoding="utf-8"
+    )
+    monkeypatch.setattr(ca, "REFERENCE_DIR", reference)
+    monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
+    problems = ca.check_links()
+    assert len(problems) == 1
+    assert reason in problems[0]
+
+
+def test_retained_review_citations_still_require_their_target(tmp_path, monkeypatch):
+    reference = tmp_path / "dev/reference"
+    reference.mkdir(parents=True)
+    target = tmp_path / "dev/records/reviews/plot-improvements/verification.md"
+    target.parent.mkdir(parents=True)
+    target.write_text("Retained verification", encoding="utf-8")
+    for name in ("plot-style.md", "migration_plot_paths.md"):
+        (reference / name).write_text(
+            "[verification](../records/reviews/plot-improvements/verification.md)",
+            encoding="utf-8",
+        )
+    monkeypatch.setattr(ca, "REFERENCE_DIR", reference)
+    monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
+    assert ca.check_links() == []
+    target.unlink()
+    assert len(ca.check_links()) == 2
+    assert all("broken link" in problem for problem in ca.check_links())
+
+
+def test_durable_links_and_similarly_named_homes_are_allowed(tmp_path, monkeypatch):
+    reference = tmp_path / "dev/reference"
+    reference.mkdir(parents=True)
+    for home in ("records/decisions", "tasks-archive", "records/reviews-archive"):
+        target = tmp_path / "dev" / home / "evidence.md"
+        target.parent.mkdir(parents=True)
+        target.write_text("Durable evidence", encoding="utf-8")
+    (reference / "guide.md").write_text(
+        "[decision](../records/decisions/evidence.md#claim)\n"
+        "[archive](../tasks-archive/evidence.md)\n"
+        "[review archive](../records/reviews-archive/evidence.md)\n"
+        "[external](https://example.org/) [section](#claim)",
+        encoding="utf-8",
+    )
+    monkeypatch.setattr(ca, "REFERENCE_DIR", reference)
+    monkeypatch.setattr(ca, "REPO_ROOT", tmp_path)
+    assert ca.check_links() == []

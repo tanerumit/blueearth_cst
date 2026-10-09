@@ -53,6 +53,19 @@ for ownership and safe legacy junction removal with non-recursive `cmd /c rmdir`
 
 ## Data staging and catalogs
 
+`inspect_era5_zarr_geometry.py` reports ERA5 Zarr-v2 metadata, bounded chunk samples, and modeled read
+costs for fixed representative envelopes. It preserves the original probe's sampling and reports its
+limits; candidate compression is modeled, not measured in a rechunked store.
+
+```powershell
+pixi run python dev/scripts/inspect_era5_zarr_geometry.py --help
+pixi run python dev/scripts/inspect_era5_zarr_geometry.py --store <era5-zarr-directory>
+```
+
+The optional `--probe-current` performs a read-only 30-day Ntoum HydroMT read. The nine case-specific
+transfer probes remain historical measurement evidence, described by the
+[retained migration context](../records/reviews/legacy-development-migration-2026-10-09.md).
+
 | Script | What it does |
 |---|---|
 | [`stage_data.py`](stage_data.py) + [`stage_data.yml`](stage_data.yml) | Mirror a bbox subset of a remote data root to local disk. |

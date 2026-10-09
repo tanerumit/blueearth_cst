@@ -2,7 +2,10 @@
 
 Rules the code must obey, and the durable descriptions of how it is put together. Consulted while working; rewritten rarely and deliberately.
 
-This is the **stays-true** tier. What happened lives in `../records/milestones/`, `../records/decisions/`, and `../tasks/`; what is happening lives in `../TODO.md` and `../working/`; snapshots that decay live in `../records/reviews/`.
+This is the **stays-true** tier. Historical evidence lives in `../records/milestones/` and
+`../records/decisions/`; live task material is under `../tasks/`, indexed by `../TODO.md` on main.
+`../working/` contains only the explicitly held legacy sources. Dated review snapshots live in
+`../records/reviews/` and follow its retention rules.
 
 | Path | Holds |
 |---|---|

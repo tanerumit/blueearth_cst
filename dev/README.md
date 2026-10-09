@@ -17,7 +17,7 @@ it goes and when it may be deleted.
 | ↳ `origin:` | Which milestone the item fell out of, using `reference/roadmap.md`'s own IDs (`R10`, `P3-3`, `M02b`). Set it only from a **recorded** origin — the source item's ID, or the `followups.md` section it was migrated from. Leave it blank when the lineage would have to be inferred from prose, and say so in the note's `## Refs`: the Origin column is read when prioritising, so a guess there costs more than a gap |
 | `TODO.md` | **Generated** view of `tasks/` — `todoboard render` writes it and the banner says do-not-edit. Never hand-edit it; edit the note |
 | `LOG.md` | Closure ledger. One row per item the board has closed since 2026-08-07, **capped at three short sentences** — see the cap below |
-| `working/` | Legacy working notes awaiting classification and migration; do not add files or folders |
+| `working/` | Three held legacy sources; do not add files or folders |
 
 Do not create `dev/drafts/` or add to `dev/working/`. Put substantial task
 material in the owning live task's `tasks/<id>/` sidecar and link it from the
@@ -202,6 +202,10 @@ infrastructure checkout to check conformance.
 
 ## The promotion rule
 
+The [legacy migration record](records/reviews/legacy-development-migration-2026-10-09.md) retains the
+original Git context and per-file destinations for the 2026-10-09 cleanup. Use it to resolve historical
+citations after a legacy file moves; it is evidence navigation, not current workflow guidance.
+
 **A cited note is a record, not a draft.** Before deleting anything from
 `working/` at closure, grep the repo for its filename. If a test, module,
 config, or tracked document cites it, it is source-of-record: promote it to the
@@ -218,7 +222,7 @@ is gitignored and one `git clean -fdX` from gone.
 
 ## The retention rule
 
-Only `records/reviews/` is prunable. A process review or a post-milestone self-check is
+Among retained records, only `records/reviews/` is prunable. A process review or a post-milestone self-check is
 a snapshot of a system that keeps moving, so the folder would otherwise
 accumulate thousands of lines describing a repository that no longer exists.
 
@@ -283,9 +287,11 @@ failure this file already records. The other half of the safeguard: the item IDs
 are cited from code, tests and Snakefiles, so the archive keeps every ID rather
 than merging items away.
 
-Nothing outside `records/reviews/` is prunable. `records/decisions/` is permanent by
-construction, `records/milestones/` and `tasks/` are identity-indexed records, and
-`reference/` describes the current system.
+Do not prune retained records outside `records/reviews/`. `records/decisions/` and
+`records/milestones/` preserve decisions and milestone evidence; `reference/` is maintained as the current system.
+Live `tasks/` notes and sidecars follow the task-closure procedure above: promote needed material,
+then remove the eligible task files through the board workflow. Legacy `working/` files follow the promotion
+rule, with citations and owners migrated together. Neither procedure is routine record pruning.
 
 ### The cap on `LOG.md` rows — the same rule, applied before the fact
 

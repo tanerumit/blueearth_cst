@@ -16,6 +16,11 @@
 observations:
   river discharge: /path/to/observed_discharge.csv   # path | null
 
+# Basin-average annual and seasonal figures are standard. Enable individual
+# subbasin figures of both types under evaluation/plots/subbasins/ if needed.
+#evaluation:
+#  subbasin_plots: false
+
 
 # -----------------------------------------------------------------------------
 #  RUN PERIOD

@@ -196,3 +196,384 @@ to absorb evidence files into the tested tree.
 Local main merged it at `566abca4`; committed-tree equality and candidate ancestry both passed.
 Session-1 is detached and EMPTY; the merged local branch was removed. No push occurred.
 The complete landing gate and lifecycle logs are retained in `evidence/`.
+
+## WF1 forcing alignment — 2026-10-09
+
+Owner-approved follow-up: apply WF0's reviewed style and methodological choices to the nine model-grid
+forcing figures. Tested executable commit: `8a2ebccb`. Verification scope is focused, with numerical
+claims affected intentionally. This is separate from the earlier WF0/WF2 batch and its landing.
+
+WF1 now shares the reviewed map, annual-series and monthly-climatology artists. A chunked model adapter
+uses WF0 completeness, start-year reporting labels, Theil–Sen trends and mean/p10–p90 monthly summaries.
+It preserves the nine forcing filenames and adds declared Markdown/JSON caption outputs. The shared
+artists retain their WF0 defaults. Fine model-cell outlines are suppressed; outside-basin cells are
+white and unavailable values within the basin are gray. No dependencies or configuration keys changed.
+
+### Acceptance and inputs
+
+| Claim | Check / case | Result |
+|---|---|---|
+| WF0 method parity | Analytic masking/quantiles, Sen outlier, cellwise WF0 oracle | Three tests passed |
+| Workflow declarations | CLI and WF1 output/deletion contracts | Included in 51 passing focused tests |
+| Real forcing render | Retained Liberia model forcing and spatial overlays | Nine PNGs, nine caption records |
+| Shared caller safety | Retained ERA5/CHIRPS WF0 tables and maps | Six source figures and annual comparison |
+| Visual acceptance | Opened forcing figures and shared caller PNGs | Labels, palettes, legends and axes inspected |
+| Rapid DAG | WF1 plotting target with rapid project config | Passed; nine prerequisite jobs planned |
+| Python quality | Repository lint and format check | Passed; 434 files formatted |
+
+Environment: Windows 11, session-2 Pixi default, Python 3.12.13, Matplotlib 3.11.0, xarray 2026.4.0,
+hydromt_wflow 1.0.2. Lock SHA-256:
+`797afdad5a8f8c37dd62b2f1e2f88f3fea120c3fc53b7e7c792b860700a6782b`.
+
+Real input root: `C:/Users/taner/workspace/cst-cases/runs/sp2-liberia/active/`.
+Forcing: `models/hydrology/wflow/forcing/inmaps_historical.nc`; SHA-256:
+`56b1213999320c9968cd9e7ee6840d207380bcce3d1e6e0bc4950f8650a04e1d`.
+The grid is 231 × 223 cells, with 20,983 model-basin cells and 6,209 daily timestamps from
+2000-01-02 through 2016-12-31. WF0's full-year policy excludes partial 2000, leaving 2001–2016.
+This is an intended QA-method change, as are the revised trend estimator and monthly spread encoding;
+the underlying forcing and simulation calculations are unchanged. The forcing precipitation slope is
+now approximately −183 mm per decade rather than the older OLS figure's −151.
+
+Numerical discrimination includes an independent analytic quantile case and a nine-year temperature
+outlier case: Sen is 10 °C per decade while OLS exceeds 50. The old annual helper retains partial 2000
+on a January-2 input, violating the revised full-year expectation. The vectorized map calculation
+matches WF0's cellwise oracle with tolerated gaps, excessive monthly/yearly gaps and non-January years.
+
+### Commands and artifacts
+
+Commands run against the executable candidate:
+
+```text
+pixi run pytest tests/test_forcing_figures.py -q -o cache_dir=.tmp/scratchpad/wf1-forcing-style/pytest-cache -o addopts='' -p no:cacheprovider
+pixi run pytest tests/test_cli.py tests/test_wf1_plot_outputs.py tests/test_wf0_diagnostics.py tests/test_wf0_diagnostic_contracts.py -q
+pixi run snakemake plot_model_forcing --snakefile build_model.smk --configfile test_case/project_config_rapid.yml --dry-run --cores 1
+pixi run lint
+pixi run format-check
+pixi run python .tmp/scratchpad/wf1-forcing-style/render.py
+pixi run python .tmp/scratchpad/wf1-forcing-style/shared.py
+pixi run python .tmp/scratchpad/wf1-forcing-style/publish.py
+```
+
+The three-test command passed with one cache-option warning from disabling pytest's cache plugin.
+The 51-test command passed without failures or skips. Initial sandboxed checks encountered temporary
+fixture access errors and a blocked Snakemake subprocess; that process tree was terminated and the
+focused command passed outside the sandbox. An initial scratch inventory reader omitted UTF-8;
+the reader was corrected and the final rendering/inventory command passed.
+
+Rapid configuration identity: `test_case/project_config_rapid.yml`, SHA-256
+`ba8d72cbc0d178188b3309483e5fe1effc48b61e1343160848b5d63bc39013bd`.
+Full-suite, baseline and all-five execution gates were omitted for this terminal-figure task.
+No non-figure output consumer changed; no model construction or simulation was run.
+
+Output root: `.tmp/scratchpad/wf1-forcing-style/`. `revised/` holds the nine forcing PNGs and captions;
+`wf0-callers/plots/` holds the inspected shared-caller renders. `comparison.html` uses the tracked
+comparison template, with originals preserved under `before/`. Retain this scratch folder for the
+owner's visual review and recovery of the refreshed figures; earlier unrelated scratch was untouched.
+
+The nine approved PNGs and two caption records were copied into the actual Liberia forcing plot
+directory after inspection. Before replacing each PNG, its bytes were checked against the preserved
+original to reject concurrent edits. The forcing NetCDF size and modification time were unchanged
+across publication. No files were deleted. No branch landing or push occurred.
+
+## WF1 station hydrograph review — 2026-10-09 (approved)
+
+The owner requested plot-type iteration, methodology suggestions before revisions, and commits only
+on an explicit `commit` instruction. The hydrograph renderer now uses the common style, five titled
+panels and separate station captions. The owner subsequently authorized completeness-aware means,
+paired comparison dates, valid-value FDC ranks and explicit zero-flow handling. Panel b includes
+the preceding calendar-grid label (2000 for Liberia); preview captions use measured axes edges.
+
+The retained Liberia `models/hydrology/wflow/run_default/output_q.csv` supplies all eleven station
+series. The native `output.csv` was absent, so these read-only review renders use the retained
+five-decimal discharge export. Both versions use the same input and exclude the first simulation
+year as the production adapter does. The remaining daily span is 2001-01-02 through 2016-12-31.
+The new annual boundary policy excludes partial 2001, leaving 2002–2016; it also excludes January
+2001 from the monthly climatology. Other full months remain eligible independently of annual support.
+
+Analytical assertions passed for omitted leap dates, paired support, negative-value exclusion,
+monthly/yearly completeness, partial boundary periods, equal-weight monthly means, valid-day Weibull
+positions, zero-flow mass, an observed 1e-8 positive tail, all-zero flows and disjoint records.
+The former method retains the partial boundary year and hides that low tail, discriminating the
+revised cases from the predecessor. Numeric regression cases were added to the existing evaluation
+test module and passed through standalone invocation (see `regression-probe.log` in the review
+scratch folder), including rejection of sixteen distributed missing days in one year. Formal
+test/lint gates remain deferred during the active visual iteration.
+
+```text
+pixi run python .tmp/scratchpad/wf1-evaluation-style/probe_methods.py
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py before --all
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py after --all
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py before --synthetic
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py after --synthetic
+pixi run python .tmp/scratchpad/wf1-evaluation-style/render_hydrograph.py before --all --geometry-only
+pixi run python .tmp/scratchpad/wf1-evaluation-style/review.py
+```
+
+All render/probe commands passed. The same Pixi environment as the forcing task was used.
+The review page contains eleven real before/after pairs and a synthetic paired-series example with
+deliberate missing observations and omitted timestamps, explicitly identified as synthetic.
+Measured caption bounds are strictly inside the canvas for all eleven station renders. Exported
+outlet, upstream and synthetic figures were inspected for panel/legend readability; the updated
+outlet includes the requested 2000 tick, all positive flow tails and zero-flow frequency.
+
+Retain `.tmp/scratchpad/wf1-evaluation-style/` for the active owner's review, baseline recovery,
+numeric probe evidence and caption geometry. No production evaluation files were overwritten,
+no performance metrics or other evaluation figure methods changed, and no files were deleted.
+The owner approved committing this plot type. The work stays on the pinned session branch;
+landing and pushing remain separate decisions.
+
+### Commit checks
+
+```text
+pixi run pytest tests/test_plot_evaluation.py tests/test_func_plot_signature.py tests/test_wf1_plot_outputs.py -q
+pixi run ruff check blueearth_cst/shared/plot_evaluation.py tests/test_plot_evaluation.py
+pixi run ruff format --check blueearth_cst/shared/plot_evaluation.py tests/test_plot_evaluation.py
+git diff --check
+```
+
+All 49 focused tests passed in 37.84 seconds; touched-file lint, formatting and whitespace checks
+passed. The focused suite includes the three new numeric cases and the existing evaluation sheet,
+station identity, metric and declared-output contracts. Pytest ran outside the sandbox to permit
+its external temporary fixtures, as in the forcing task. Logs remain under the retained review root.
+The changed renderer has only the WF1 station-evaluation caller; other evaluation sheet methods
+were retained and checked by the focused suite. No Snakefile or public script signature changed.
+Full-suite, baseline and all-five gates are omitted for this confined terminal-figure change.
+
+Verified implementation commit: `c7ddb673` (`feat(plots): standardize Wflow evaluation hydrographs`).
+It contains the unchanged executable candidate covered by the checks above; the following evidence
+update changes this review record only. The worktree was clean immediately after that commit.
+
+## WF1 hydrological output figures — active owner review
+
+The owner approved two standard single-axis products per configured zonal hydrological variable:
+basin-average annual series and seasonal cycles. Individual subbasin versions of both products are
+optional through `evaluation.subbasin_plots` in the WF1 workflow YAML, defaulting to false.
+The native discharge station family and the forcing precipitation family retain their separate homes.
+
+The adapter excludes the first simulation year once, before both discharge and zonal summaries.
+The same WF0 calendar-completeness choices apply throughout: full boundary periods, three missing
+days per month and fifteen per year. Flux amounts use monthly mean gap adjustment and totals;
+rates and stored quantities use available-day means. Negative recharge is retained. Snow is native
+snowpack liquid-water depth and now uses means in mm. Annual trends use the WF0 Sen treatment;
+seasonal bands use the owner-approved 10th–90th percentiles of equally weighted eligible months.
+
+Daily basin values reconstruct Wflow's native mean reducer using the cell counts of the disjoint
+`subcatchment` raster. The Liberia zones contain 20,983 cells. Every zone must have finite daily
+support; weights never renormalize around missing zones. These are model-cell means, with no claim
+of physical-area weighting. Numeric probes cover unequal weights, absent zones, omitted leap dates,
+partial calendar boundaries, completeness thresholds, stock/rate means and caption-inventory refresh.
+
+The read-only Liberia AET/recharge exports produced four standard basin and 44 optional individual
+figures under `.tmp/scratchpad/wf1-evaluation-style/basavg/basin-after/`. Ten explicitly synthetic
+figures under `synthetic-all-variables/` cover all five zonal quantity types, including rate/state
+handling not represented in Liberia's configured outputs. The HTML review holds these 58 records;
+previous seasonal panel sheets serve as context, while new annual products have no predecessor.
+Captions use measured horizontal plotting bounds. All four standard Liberia renders and an
+individual recharge example were inspected. A synthetic near-constant rate exposed a y-axis offset
+overlapping the support title; absolute tick labels fixed it, and all affected drafts were rerendered.
+Final inventories contain 4 basin, 44 individual and 10 synthetic records. Production outputs and
+previous review renders remain
+intact; no files were deleted. Retain this scratch for the owner's active visual review.
+
+Focused checks in the session's default Pixi environment passed:
+
+```text
+pixi run pytest tests/test_wf1_plot_outputs.py tests/test_indicator_glossary.py tests/test_plot_evaluation.py -q
+pixi run pytest tests/test_func_plot_signature.py -q
+pixi run python .tmp/scratchpad/wf1-evaluation-style/basavg/probe_basin.py
+```
+
+The suites passed 55 and 16 tests respectively; the standalone probe passed six acceptance cases.
+Pytest required external temporary-fixture access, granted through the sandbox escalation mechanism.
+Touched-file Ruff lint and formatting checks passed. The full suite, numerical baseline and all-five
+execution are deferred under the confined figure validation policy. The owner approved committing
+this plot family after the caption and title revisions.
+
+The owner requested publication-style captions during review. The renderer now uses short prose
+covering quantity, spatial support, eligible period and visual encodings, with a brief warm-up note.
+Detailed aggregation, cell counts, completeness thresholds and exclusions remain in JSON methods
+metadata. Caption-only review refreshes regenerated all 58 records without rewriting the inspected
+PNGs; the HTML keeps the same measured caption bounds.
+
+The owner clarified that no titles should be displayed. Annual and seasonal basin/subbasin figures
+therefore have no titles, inside or above the axes; captions and review-page headings identify them.
+The temporary header padding was removed, restoring the canonical data limits and adaptive inside
+legend. All 58 review figures were rerendered and their caption geometry refreshed. Touched-file Ruff
+lint and formatting checks passed; the scientific calculations were unchanged. Render logs are
+`no-title-render.log` and `no-title-synthetic.log` in the active review scratch.
+
+### Commit checks
+
+```text
+pixi run pytest tests/test_cli.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py tests/test_wf1_plot_outputs.py tests/test_indicator_glossary.py -q
+pixi run ruff check blueearth_cst/model/plot_results.py blueearth_cst/shared/func_plot_signature.py blueearth_cst/shared/wflow_outputs.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py tests/test_wf1_plot_outputs.py
+pixi run ruff format --check blueearth_cst/model/plot_results.py blueearth_cst/shared/func_plot_signature.py blueearth_cst/shared/wflow_outputs.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py tests/test_wf1_plot_outputs.py
+git diff --check
+```
+
+All 91 focused tests passed; touched-file lint, formatting and whitespace checks passed. The CLI and
+declared-output checks cover the new optional WF1 setting, script parameter and annual/seasonal output
+inventory. The default Pixi environment and Liberia/synthetic review inputs described above were used.
+Logs remain under the retained review root. No production output files were modified or deleted.
+The work remains on the pinned session branch; landing and pushing require separate instructions.
+
+Verified implementation commit: `75183c20` (`feat(plots): standardize hydrological output summaries`).
+It contains the executable candidate covered by the focused checks and inspected renders above.
+
+## Performance sheet revision — 2026-10-09
+
+The active, uncommitted candidate revises WF1 performance scatter, cumulative volume and metrics
+tables. It applies canonical typography, colours, light frames and grids, inside legends, no displayed
+titles, and short external captions bounded by measured plotting edges. Daily scatter, sample counts,
+volume and exported metrics share concurrent finite, nonnegative daily discharge pairs. Monthly
+metrics use means over those same paired days. Missing days interrupt both cumulative curves without
+infilling; undefined scores remain NaN in CSV and appear as dashes in the figure. Squared Pearson
+correlation is identified as r². The existing 14-row metric export schema remains unchanged.
+
+Review inputs use the read-only Liberia `run_default/output_q.csv`, excluding its first year, and
+explicitly synthetic observations. No observed discharge record was supplied. The five-case review
+under `.tmp/scratchpad/wf1-evaluation-style/performance/comparison.html` covers a complete record,
+gaps/invalid values, a ten-day gap close-up, all-zero flows and non-overlapping dates. The complete
+case retains its original figure for comparison; edge cases carry honest unavailable-predecessor
+placeholders. All five revised cases were rendered; complete, zero and disjoint renders were inspected,
+and the gap close-up visibly breaks both volume curves on the same ten days. Retain this scratch for
+the owner's visual review. No production files were modified and no files were deleted.
+
+Validation in the session's default Pixi environment:
+
+```text
+pixi run pytest tests/test_func_plot_signature.py tests/test_plot_evaluation.py -q
+pixi run python .tmp/scratchpad/wf1-evaluation-style/performance/probe_clean_metrics.py
+pixi run python .tmp/scratchpad/wf1-evaluation-style/performance/render_revision.py
+pixi run ruff check blueearth_cst/shared/func_plot_signature.py blueearth_cst/shared/plot_evaluation.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py
+pixi run ruff format --check blueearth_cst/shared/func_plot_signature.py blueearth_cst/shared/plot_evaluation.py tests/test_func_plot_signature.py tests/test_plot_evaluation.py
+```
+
+The focused suite passed 46 tests. Two short-date locator warnings prompted a locator adjustment;
+five final affected cases then passed without warnings, including real PNG export of zero/disjoint
+records. The independent complete-record probe preserved all 14 original metric values within
+1e-12 and the CSV shape. Touched-file Ruff checks passed. Logs are retained in the performance scratch.
+Pytest required approved external temporary-fixture access. Broader batch/landing gates remain
+deferred; this candidate changes metric handling for incomplete or invalid WF1 inputs as well as
+terminal figures, and is covered here by independent paired-date numerical checks. Await owner
+visual approval and an explicit commit instruction; no landing or push is authorized.
+
+The owner then requested panel labels, publication captions and relocation of the line legend.
+Performance panels now carry `a)` and `b)`; the observed/simulated legend occupies the upper-left
+of panel a), below its label. Correlation and sample counts are not displayed; both remain in JSON
+metadata. Captions explain the labelled panels, paired-day volume and undefined table values in
+publication prose. The five-case review was rerendered using `render_revision.py`, with measured
+caption bounds preserved. This revision changes decorations and captions only; numerical tests are
+reused, with further focused checks deferred until the owner's commit instruction.
+
+### Performance commit checks
+
+The owner approved this family for commit. The final executable candidate passed all 48 tests in
+`pixi run pytest tests/test_func_plot_signature.py tests/test_plot_evaluation.py -q` without warnings
+(24.67 s), recorded in `performance/tests-commit.log`. Ruff lint and format checks passed on the four
+touched Python files listed above; `git diff --check` passed. The revised five-case review retains
+its original comparison image and measured caption bounds. No files were deleted. This scoped
+commit does not land the batch or push it.
+
+### Temporary figure checks — 2026-10-09
+
+The owner clarified that figure-specific unit tests are one-time checks, not additions to the
+persistent suite. Snapshots of the forcing, evaluation and signature checks are retained outside
+collection under `.tmp/scratchpad/wf1-evaluation-style/temporary-checks/` for this active review.
+`tests/test_forcing_figures.py` was deleted; plotting-only additions to `test_plot_evaluation.py`
+were removed, preserving its pre-existing tests. The revised `plot_basavg` checks and their unused
+fixtures/imports were removed from `test_func_plot_signature.py`. Exported-metric arithmetic tests
+and existing workflow output-contract tests remain. The plotting implementation is unchanged.
+
+The plotting reference now states this policy for future figure iterations. The two retained test
+modules passed all 32 tests in 27.13 s using the default Pixi environment:
+`pixi run pytest tests/test_func_plot_signature.py tests/test_plot_evaluation.py -q`.
+The log is `temporary-checks/suite-cleanup.log`. Touched-file Ruff lint/format and whitespace checks
+passed. The snapshots remain disposable review evidence, alongside the existing rendered examples.
+
+## WF1 batch landing verification — 2026-10-09
+
+The owner authorized local landing and release of session-2. Local `main` was clean at `f98c56df`;
+an origin fetch showed it ahead with no remote-only commits. Synchronization used merge commit
+`c7fddd7a56d7a5bd206bf68c609ba8e165d3e9df`, preserving the original verification pins above.
+The plotting/runtime paths are unchanged from the approved `8eb326cd` candidate after synchronization.
+
+Required software gates were repository-wide lint, formatting and `test-full`, because this batch
+changes a WF1 script parameter and declared outputs. Full covers fast on the same candidate, so no
+second fast run was required. All-five execution is not owed: the runtime contract changes are
+confined to WF1; shared WF0/WF1 artists affect terminal figures only. The inspected shared-caller
+renders and retained Liberia/synthetic examples described above remain applicable. WF2–WF4 execution
+and the stale numerical baseline were omitted; model construction and simulation physics are unchanged.
+
+The default Pixi environment and lock identity match the earlier WF1 sections. Recorded checks:
+
+```text
+pixi run lint
+pixi run format-check
+pixi run test-full
+pixi run snakemake plot_model_forcing plot_model_evaluation --snakefile build_model.smk --configfile test_case/project_config_rapid.yml --cores 1 --dry-run --forcerun plot_model_forcing plot_model_evaluation
+pixi run python .tmp/scratchpad/wf1-plot-landing/check-retained.py
+pixi run python .tmp/scratchpad/wf1-evaluation-style/basavg/probe_basin.py
+pixi run python .tmp/scratchpad/wf1-evaluation-style/performance/probe_clean_metrics.py
+```
+
+All required checks passed. Full: 4,086 passed, 17 skipped, one expected failure, 8,645 warnings.
+Skips are five Linux-only GEV controls, eleven optional WF2 P0/lab parity cases without local inputs,
+and the opt-in all-five execution check. The expected failure is the established upstream HydroMT
+catalog serialization defect. No required WF1 check was skipped. One-time basin checks passed all
+six acceptance cases; complete-record metrics preserved all 14 values and the CSV shape within 1e-12.
+The inventory check found nine forcing, four basin, 44 optional subbasin and ten synthetic-variable
+figures with captions, plus five performance cases. It reports the additional `offset-fix-review.png`
+preview separately. Temporary figure checks remain outside suite collection.
+
+An extra fresh model rebuild was attempted under `.tmp/scratchpad/wf1-plot-landing/rapid`. The first
+invocation was refused before execution because config and output root differed. A scratch rapid
+config corrected that mismatch. The second invocation reached delineation but spent several minutes
+reading the unrelated P-drive basin index; its identified delineation process was stopped. These
+attempts are recorded as failed, and no fresh complete WF1 execution is claimed. Terminal figure
+acceptance uses the previously inspected retained-input renders, unchanged code and the plotting DAG;
+the full suite covers the revised rule/output/script contracts. Production project files were untouched.
+
+Machine-readable gate evidence is `.tmp/scratchpad/wf1-plot-landing/gates-final.json`, created by
+`dev/scripts/verify_landing.py`; retain it and its logs for this landing record. Its SHA-256 is
+`351f4174490fc2557c6728abc6f2d8b3fdc0e3f52756be9ac87892397dde8309`.
+The full-suite log SHA-256 is
+`d4997d68c01ced8cbc8bd70b5838e95d4567b15a6eca3aad97567bb056ffc5fc`.
+Only this verification Markdown changes after the tested commit; its added prose records existing
+checks and is eligible for exact-path evidence reuse. Managed `task-land --verify` must require lint,
+format-check, test-full, wf1-dag and review-inventory, then prove committed-tree equivalence and ancestry
+before deleting the merged branch and parking the session. No push is authorized.
+
+### Concurrent-main integration and final candidate
+
+Another session advanced `main` to `11778cee` during verification. The initial managed landing
+therefore attempted a rebase and stopped on two conflicts. That tool-started rebase was aborted,
+restoring the verified branch, and an ancestry-preserving merge incorporated the new main. Conflict
+resolution preserves this batch's canonical forcing renderer and main's historical-source map frame.
+Merge candidate `929cfdc6d38f47201ad6a8acd2b402acf414123a` supersedes the earlier landing candidate.
+
+`source_nc` now forwards the selected historical grid's outer edges through the canonical renderer
+to `draw_map`; legacy direct calls retain the default native model-grid frame. The extent is recorded
+in map JSON metadata. No data interpolation or forcing/model calculation changed. Documentation
+retains both the approved plotting behavior and main's frame explanation.
+
+Final-candidate repository lint and formatting passed. The complete suite was rerun with two isolated
+workers, without excluding either contract tier: `pixi run test-full -n 2 --dist loadfile`.
+It passed 4,086 tests with the same 17 skips, one expected failure and 8,645 warnings as the first run.
+The final plotting DAG and inventory checks also passed. The record now uses
+`.tmp/scratchpad/wf1-plot-landing/integrated-final.json`, covering lint, format-check, test-full,
+wf1-dag and review-inventory on the same clean candidate and Pixi environment.
+
+One-time `render-integrated.py` generated nine canonical forcing figures under `integrated-forcing/`.
+Independent coordinate-edge assertions checked all three map axes against the retained historical
+grid: west −10.625°, east −8.375°, south 6.625°, north 9.125°. Metadata preserves those limits, and
+all three exported maps were visually inspected. `shared.py` regenerated six WF0 source figures and
+one annual comparison under `wf0-callers/`; the source precipitation map was also inspected. These
+scripts and assertions remain temporary, outside the test suite. Evaluation and annual/seasonal
+plotting code is unchanged from the approved review candidate; its retained acceptance evidence
+remains applicable. No production outputs were modified during landing verification.
+
+Retain the review artifacts and machine-readable gate logs in the named session scratch roots for
+this evidence and the owner's HTML links. Subsequent tracked changes are confined to this evidence
+Markdown and are classified for exact-path verification reuse. Managed landing must still prove
+equivalence and ancestry before session release; no pushing or tagging is authorized.

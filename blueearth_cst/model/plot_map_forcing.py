@@ -1,30 +1,9 @@
-"""Canonical climate figures for the wflow FORCING (rule 1.12).
+"""Canonical WF0-style figures for Wflow model-grid forcing (rule 1.12).
 
-The model-grid half of the pair:
-``models/hydrology/wflow/forcing/inmaps_historical.nc``
-is the same climate as the shared store's extraction, after the build's regrid,
-lapse/pressure corrections and PET derivation. Drawing it with the SAME figure
-set as the source grid (``climate_analysis.climate_figures``) is what makes
-"what did the downscaling change?" answerable by putting two directories side by
-side, which is why this module is now a thin caller rather than a plotter.
-
-This module owns only what is model-specific: loading the model, masking to the
-basin, and handing over the basin/river geometries as map overlays.
-
-Two things changed with the canonical set (2026-08), both deliberate:
-
-* **No more cartopy basemap tiles.** The previous ``plot_map_model`` called
-  ``cartopy.io.img_tiles.QuadtreeTiles``, i.e. a live tile request in the middle
-  of WF1. Rule 1.12 now needs no NETWORK. The basin/river context it bought is
-  drawn from the model's own geometries instead. Rule 1.11's ``elevation_basin``
-  dropped the same tiles in 2026-08 for the same reason plus two more —
-  licence/attribution on a submitted figure, and a basemap that the server can
-  re-render out from under a "reproducible" run — so NO rule in WF1 fetches
-  tiles any more. It draws its terrain context as a hillshade of the model's own
-  DEM (``shared.cartographic_map``), which is offline, reproducible, and finer
-  tiles were at the zoom level that rule had hardcoded.
-* **Filenames carry the dataset.** ``precip.png`` became
-  ``forcing_precip_map.png`` and friends — see ``climate_figures.figure_names``.
+Load the actual model forcing and basin mask independently of WF0 execution.
+The reviewed WF0 artists and summary methods are shared; filenames retain the
+``forcing_<variable>_<kind>.png`` contract. Maps use offline spatial overlays
+and captions live separately beside the nine figures.
 """
 
 import os
@@ -32,22 +11,12 @@ from os.path import join
 from pathlib import Path
 from typing import Optional, Union
 
+import pandas as pd
 import xarray as xr
 
-from blueearth_cst.climate_analysis.climate_figures import (
-    CLIMATE_VARS,
-    load_spatial_overlays,
-    plot_climate_figures,
-)
 from blueearth_cst.climate_analysis.diagnostic_maps import native_grid_extent
+from blueearth_cst.model.forcing_figures import render_forcing_figures
 from blueearth_cst.shared.snake_utils import DEFAULT_WATER_YEAR_ANCHOR
-
-#: Rendered on every forcing figure, so it survives the file being copied out.
-_CAVEAT = (
-    "Wflow forcing on the model grid: the build's regrid, lapse/pressure "
-    "corrections and PET. Compare against the source_* figures to see what "
-    "downscaling changed."
-)
 
 
 def plot_forcing(
@@ -77,9 +46,12 @@ def plot_forcing(
         families read it so the two differ only in the raster underneath, which
         is what makes "what did downscaling change?" answerable by putting the
         two directories side by side.
+    anchor : str, optional
+        Year-end reporting anchor. The figures use WF0's start-year labels,
+        full-year coverage and default tolerated gaps (3 days/month, 15/year).
     source_nc : str | Path, optional
-        Selected historical climate extraction. Its native cell edges define
-        the map frame, matching WF0. Omitted by legacy direct callers only.
+        Selected historical climate extraction, whose native cell edges define
+        the map frame. Omitted by legacy direct callers only.
     """
     from hydromt_wflow import WflowSbmModel
 
@@ -87,22 +59,32 @@ def plot_forcing(
     if plot_dir is None:
         plot_dir = os.path.join(str(wflow_root), "plots")
 
-    forcing = mod.forcing.data
     staticmaps = mod.staticmaps.data
-
-    missing = [var for var in CLIMATE_VARS if var not in forcing]
-    if missing:
-        raise ValueError(
-            f"plot_forcing: {wflow_root} forcing is missing {missing}; the "
-            f"canonical climate set needs {list(CLIMATE_VARS)}"
-        )
 
     # Mask to the modelled basin. Cells outside it carry forcing values (the
     # forcing grid is rectangular) that are not part of the model's climate, and
     # including them shifts every domain mean.
     inside = staticmaps["subcatchment"] >= 0
-    ds = forcing[list(CLIMATE_VARS)].where(inside)
-
+    overlays = (
+        {
+            name: Path(geoms_dir) / f"{name}.geojson"
+            for name in ("basins", "subbasins", "rivers", "locations")
+        }
+        if geoms_dir is not None
+        else {}
+    )
+    # HydroMT's forcing component loads the entire cube eagerly. Opening the
+    # configured file with dask keeps this figure-only reduction bounded.
+    forcing_path = Path(
+        mod.config.get_value("dir_input", fallback=""),
+        mod.config.get_value("input.path_forcing") or "inmaps.nc",
+    )
+    if not forcing_path.is_absolute():
+        forcing_path = Path(wflow_root) / forcing_path
+    offset = pd.tseries.frequencies.to_offset(anchor)
+    if not isinstance(offset, pd.offsets.YearEnd):
+        raise ValueError(f"Expected a year-end reporting anchor, got {anchor!r}")
+    m0 = offset.month % 12 + 1
     extent = None
     if source_nc is not None:
         with xr.open_dataset(source_nc) as source:
@@ -111,16 +93,10 @@ def plot_forcing(
                 latitude_resolution=abs(source.raster.res[1]),
             )
             extent = native_grid_extent(field)
-
-    return plot_climate_figures(
-        ds,
-        plot_dir,
-        "forcing",
-        anchor=anchor,
-        caveat=_CAVEAT,
-        overlays=load_spatial_overlays(geoms_dir),
-        map_extent=extent,
-    )
+    with xr.open_mfdataset(str(forcing_path), chunks={"time": 365}) as forcing:
+        return render_forcing_figures(
+            forcing, inside, plot_dir, overlays, m0, map_extent=extent
+        )
 
 
 if __name__ == "__main__":

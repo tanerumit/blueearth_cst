@@ -1,6 +1,6 @@
 # Scientific plot style and visual review
 
-This shared reference records the agreed WF0 and WF2 styles and defaults for subsequent figure
+This shared reference records the agreed WF0, WF1 and WF2 styles and defaults for subsequent figure
 revisions. Apply relevant defaults across plot types; preserve the explicit exceptions below. New visual
 decisions belong here, alongside changes to the plotting code. A style decision does not authorize changing
 the underlying calculation or statistical interpretation.
@@ -39,9 +39,9 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
 - Use `Precip.`, `Temp.` and `PET` when abbreviated variable names are needed. Display `CHIRPS` in legends
   and plot labels; retain version metadata in source records where relevant.
 - Keep grid lines subtle and partly transparent. Avoid competing with the data or annotations.
-- Use short panel titles prefixed `a)`, `b)`, etc.; explain methodological details in the caption.
-- Align panel labels and titles with the plotting pane's left border in all multi-panel figures.
-  For labels above a Matplotlib pane, use axes-relative x = 0 and left horizontal alignment.
+- Always label multiple plotting panels `a)`, `b)`, etc.; explain panel contents in the caption.
+- Do not display figure titles inside or above the plotting area. Identify the variable, spatial
+  support and plot type in the caption and review-page heading. Preserve explicitly agreed panel labels.
 
 ## Legends, labels and points
 
@@ -73,6 +73,69 @@ with canonical `precip` and `temp` stems. See `migration_plot_paths.md` for the 
   height of 80% of the plotting area. Their final figure height is 56% of the original height.
 
 ## Figure-specific decisions
+
+WF1 forcing QA uses the reviewed WF0 map, annual-series and monthly-climatology styles for precipitation,
+temperature and PET. Read the actual model-grid forcing, mask to the model basin, and use equal-weight
+cell means for temporal figures. Keep the nine `forcing_<variable>_<kind>.png` filenames for now.
+Identify the data as Wflow forcing in legends and captions; use ERA5 blue for this forcing family.
+Maps retain their model-grid footprint and basin mask, with the reviewed coordinate labels, palettes,
+spatial overlays and gauge labels. Source and forcing maps retain independent color limits; identical
+colors alone do not establish equal values.
+Suppress individual model-cell outlines on the fine forcing grid so they do not obscure the field.
+Show cells outside the model basin in white and unavailable summaries inside it in gray.
+
+Use WF0's start-year reporting labels, completeness handling, Sen trends and monthly mean with a
+10–90th percentile band. WF1 uses WF0's default tolerances of three missing days per month and fifteen
+per reporting year, independently of whether WF0 runs. Temperature uses means; precipitation and PET
+use totals. Keep model corrections and statistical caveats in separate captions, without plot footers.
+These summaries describe forcing QA; they do not modify the forcing or simulation calculations.
+
+WF1 station hydrographs retain the five-panel layout: daily discharge, annual means, seasonal cycle,
+and linear/log flow-duration curves. Apply the common typography, frames, soft horizontal grids,
+short panel titles and inside legend. Observations remain blue and dashed; simulation remains
+vermillion and solid. Use discharge units alone on vertical axes, three-letter months and percentage
+exceedance labels. Annual labels start at the preceding five-year grid mark (ten years for records
+longer than 35 years), retaining annual minor ticks so the left edge has a nearby calendar label.
+Station identity, dates, support and methods
+belong in separate station captions, bounded by the plotting area's left and right edges in previews.
+
+Annual means require full calendar-year bounds, at most three missing days in each month and fifteen
+in total. Seasonal cycles average eligible monthly means equally across years; full calendar months
+allow at most three missing days. Reindex to daily dates so absent timestamps count as missing.
+Use finite, nonnegative discharge without infilling. With observations, summary panels use paired
+valid dates; the daily panel retains the available series for context. Flow-duration ranks use only
+valid values and positions `rank / (n + 1)`. Retain zeros on the linear panel, omit them from the log
+axis without changing exceedance positions, and report their frequency. The log range includes all
+positive values from both series, without percentile clipping. These choices affect hydrograph
+summaries only; performance metrics and other evaluation sheets retain their own methods.
+
+WF1 performance sheets use the same finite, nonnegative paired daily support for the scatter, sample
+count, cumulative volumes and exported metrics. Align dates before pairing and retain gaps in the
+cumulative curves. These volumes integrate paired days only and do not estimate missing-day flow.
+Monthly metrics compare means over the same paired days within each month; hydrograph calendar
+completeness thresholds do not gate metric rows. Undefined scores remain unavailable.
+Keep squared Pearson correlation and sample counts in JSON metadata, without displaying them on the
+performance plot. Label the scatter `a)` and cumulative volume `b)`, with the stacked observed/simulated
+line legend inside the upper-left of the scatter, below its panel label. Keep table values identical to
+`performance_metrics.csv`. Use common typography, soft frames/grids and a concise publication caption
+that explains each labelled panel, without displayed titles or figure footers.
+
+WF1 hydrological output figures default to two single-axis products per variable: a basin-average
+annual series and seasonal cycle. Optional subbasin figures repeat both products individually, never
+as panels. These figures have no displayed titles. Reconstruct the basin's native grid-cell mean from
+daily zonal means using fixed cell-count
+weights; missing zones invalidate that basin day rather than changing its spatial support.
+
+Apply the same first-year warm-up exclusion and calendar completeness rules to all hydrological
+variables. Eligible months allow three missing days; eligible years have full calendar bounds, all
+months eligible and at most fifteen missing days. Flux amounts use monthly/annual totals, with eligible
+missing days filled by that month's available-day mean. Rates and stored quantities use means without
+infilling. Keep physically valid negative recharge. Seasonal cycles show equal-year monthly means and
+10–90th percentile bands, describing interannual variability rather than uncertainty in the mean.
+Annual series use Sen slopes per decade and the shared WF0 trend treatment. Snow plots represent the
+native snowpack liquid-water depth, a stored quantity in mm, rather than an accumulated flux.
+Captions use concise publication prose: quantity, support, period and visual encodings. Keep numerical
+support counts, completeness thresholds and exclusion lists in the machine-readable methods metadata.
 
 | Figure type | Agreed treatment |
 |---|---|
@@ -195,6 +258,9 @@ in this visual review.
   Keep the full selected file path in the page data so the source remains identifiable.
 - Render from retained inputs and inspect the actual exported figures. Apply reusable decisions to other
   applicable plots, and render all affected callers when a shared figure helper changes.
+- Keep figure-specific tests and plotting-only probes temporary under `.tmp/scratchpad/`, outside the
+  persistent test suite. Verify figure changes by rendering and visual inspection. Retain tests for
+  exported numerical metrics and workflow contracts separately from figure review checks.
 - During an explicitly deferred-check visual session, do not run tests or gates at each revision. Run
   appropriate checks at the end of the session. Commit once the user approves a figure style/type, rather
   than after each incremental revision. Do not land or push without separate authorization.

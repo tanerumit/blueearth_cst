@@ -41,8 +41,36 @@ PLOT_META = {
         "legend": "Actual Evapotranspiration (mm month$^{-1}$)",
     },
     "gwr": {"resample": "sum", "legend": "Groundwater Recharge (mm month$^{-1}$)"},
-    "swe": {"resample": "sum", "legend": "Snowpack (mm month$^{-1}$)"},
+    "swe": {"resample": "mean", "legend": "Snowpack Liquid Water (mm)"},
     "p": {"resample": "sum", "legend": "Precipitation (mm month$^{-1}$)"},
+}
+
+for _code, _meta in PLOT_META.items():
+    _meta["kind"] = (
+        "rate" if _code == "qof" else "stock" if _code == "swe" else "amount"
+    )
+    _meta["monthly_units"] = (
+        "m³ s⁻¹" if _code == "qof" else "mm" if _code == "swe" else "mm month⁻¹"
+    )
+    _meta["annual_units"] = (
+        "m³ s⁻¹" if _code == "qof" else "mm" if _code == "swe" else "mm yr⁻¹"
+    )
+    _meta["trend_units"] = (
+        "m³ s⁻¹ decade⁻¹"
+        if _code == "qof"
+        else "mm decade⁻¹"
+        if _code == "swe"
+        else "mm yr⁻¹ decade⁻¹"
+    )
+del _code, _meta
+
+SUBBASIN_PLOT_DIRNAME = "subbasins"
+BASAVG_FIGURE_STEMS = {
+    "p": "precip",
+    "qof": "overland_flow",
+    "swe": "snow",
+    "aet": "aet",
+    "gwr": "gwr",
 }
 
 #: hydromt names a csv-derived variable ``<header>_<mapname>``. Basin-average

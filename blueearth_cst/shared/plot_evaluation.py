@@ -467,17 +467,23 @@ def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
     import matplotlib.pyplot as plt
     import numpy as np
     from matplotlib import gridspec, rc_context
-    from matplotlib.ticker import MaxNLocator
+    from matplotlib.ticker import PercentFormatter
 
-    years = np.unique(simulated["time.year"].values)
-    annual = simulated.groupby("time.year").mean()
-    cycle = simulated.groupby("time.month").mean()
-    annual_obs = observed.groupby("time.year").mean() if observed is not None else None
-    cycle_obs = observed.groupby("time.month").mean() if observed is not None else None
+    from blueearth_cst.climate_analysis import diagnostic_figures as artists
 
-    with rc_context(_rc()):
+    prepared = _hydrograph_data(simulated, observed)
+    years = prepared["years"]
+    annual, cycle = prepared["simulated"]["annual"], prepared["simulated"]["cycle"]
+    annual_obs = prepared["observed"]["annual"] if observed is not None else None
+    cycle_obs = prepared["observed"]["cycle"] if observed is not None else None
+
+    with rc_context(artists.STYLE):
         fig = plt.figure(
             figsize=_figure_size(HEIGHT_HYDROGRAPH_MM), layout="constrained"
+        )
+        fig.get_layout_engine().set(
+            w_pad=artists.OUTER_PAD_X_MM * artists.MM,
+            h_pad=artists.OUTER_PAD_Y_MM * artists.MM,
         )
         grid = gridspec.GridSpec(3, 2, figure=fig, height_ratios=[1.15, 1.0, 1.0])
         ax_daily = fig.add_subplot(grid[0, :])
@@ -486,9 +492,8 @@ def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
         ax_fdc = fig.add_subplot(grid[2, 0])
         ax_fdc_log = fig.add_subplot(grid[2, 1])
 
-        _draw_series(ax_daily, simulated, observed)
-        _panel(ax_daily, "a", f"Daily discharge · {years[0]}–{years[-1]}")
-        ax_daily.set_ylabel("Q (m$^3$ s$^{-1}$)")
+        _draw_series(ax_daily, prepared["daily_simulated"], prepared["daily_observed"])
+        ax_daily.set_title("a) Daily discharge", loc="left", y=1.0)
 
         _draw_series(
             ax_annual,
@@ -497,9 +502,15 @@ def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
             x_sim=annual["year"],
             x_obs=None if annual_obs is None else annual_obs["year"],
         )
-        _panel(ax_annual, "b", "Annual mean discharge")
-        ax_annual.set_ylabel("Q (m$^3$ s$^{-1}$)")
-        ax_annual.xaxis.set_major_locator(MaxNLocator(integer=True, nbins=6))
+        ax_annual.set_title("b) Annual mean", loc="left", y=1.0)
+        tick_step = 10 if years.size > 35 else 5
+        first_tick = int(years[0] // tick_step * tick_step)
+        major = np.arange(first_tick, years[-1] + 1, tick_step)
+        ax_annual.set_xticks(major)
+        ax_annual.set_xticks(
+            np.setdiff1d(np.arange(first_tick, years[-1] + 1), major), minor=True
+        )
+        ax_annual.set_xlim(first_tick - 0.5, years[-1] + 0.5)
 
         _draw_series(
             ax_cycle,
@@ -508,21 +519,386 @@ def plot_hydrograph(simulated, station, plot_dir, observed=None, caveat=None):
             x_sim=cycle["month"],
             x_obs=None if cycle_obs is None else cycle_obs["month"],
         )
-        _panel(ax_cycle, "c", "Mean annual cycle")
-        ax_cycle.set_ylabel("Q (m$^3$ s$^{-1}$)")
+        ax_cycle.set_title("c) Seasonal cycle", loc="left", y=1.0)
         ax_cycle.set_xticks(np.arange(1, 13))
-        ax_cycle.set_xticklabels(_MONTH_INITIALS)
+        ax_cycle.set_xticklabels(artists.MONTH_ABBR)
 
-        _draw_fdc(ax_fdc, simulated, observed, log_scale=False)
-        _panel(ax_fdc, "d", "Flow-duration curve")
-        _draw_fdc(ax_fdc_log, simulated, observed, log_scale=True)
-        _panel(ax_fdc_log, "e", "Flow-duration curve (log)")
+        _hydrograph_fdc(ax_fdc, prepared, log_scale=False)
+        ax_fdc.set_title("d) Flow duration", loc="left", y=1.0)
+        _hydrograph_fdc(ax_fdc_log, prepared, log_scale=True)
+        ax_fdc_log.set_title("e) Flow duration (log)", loc="left", y=1.0)
+
+        for ax in fig.axes:
+            ax.set_ylabel("m³ s⁻¹")
+            ax.grid(axis="y", alpha=0.7)
+        for ax in (ax_fdc, ax_fdc_log):
+            ax.set_xlabel("Exceedance probability (%)")
+            ax.xaxis.set_major_formatter(
+                PercentFormatter(xmax=1, decimals=0, symbol="")
+            )
 
         for ax in (ax_daily, ax_annual, ax_cycle):
             ax.margins(x=0.01)
-        _identity(fig, station, "discharge", ax_daily)
-        _caveat(fig, caveat)
-        return _save(fig, plot_dir, f"hydrograph_{station.wflow_id}")
+        handles, _ = ax_daily.get_legend_handles_labels()
+        for handle, label in zip(
+            handles,
+            ("Observed", "Simulated") if observed is not None else ("Simulated",),
+        ):
+            handle.set_label(label)
+        artists.inside_legend(fig, ax_daily, handles, lines=ax_daily.lines)
+        # Finalize layout after the adaptive legend chooses its corner.
+        fig.canvas.draw()
+        filename = _save(fig, plot_dir, f"hydrograph_{station.wflow_id}")
+    _hydrograph_caption(prepared, station, plot_dir, caveat)
+    return filename
+
+
+def _hydrograph_data(simulated, observed=None):
+    """Regular daily context and complete-period summaries on matched support.
+
+    Discharge is never infilled: eligible annual and monthly means use observed
+    days. When observations exist, comparison panels use only concurrent,
+    finite, nonnegative pairs within the intersection of the input spans.
+    """
+    import numpy as np
+    import pandas as pd
+    import xarray as xr
+
+    from blueearth_cst.climate_analysis import diagnostics as dg
+    from blueearth_cst.climate_analysis.diagnostic_settings import DEFAULTS
+
+    tol = dg.Completeness(
+        DEFAULTS["max_missing_days_month"], DEFAULTS["max_missing_days_year"]
+    )
+
+    def clean(data):
+        if data.dims != ("time",) or not data.time.size:
+            raise ValueError(
+                "Hydrograph discharge must be a nonempty one-dimensional daily time series"
+            )
+        index = pd.DatetimeIndex(data.time.values)
+        if (
+            index.hasnans
+            or not index.is_unique
+            or not index.is_monotonic_increasing
+            or not index.equals(index.normalize())
+        ):
+            raise ValueError(
+                "Hydrograph dates must be increasing, unique, midnight daily timestamps"
+            )
+        values = np.asarray(data.values, dtype=float)
+        calendar = pd.date_range(index[0], index[-1], freq="D")
+        series = (
+            pd.Series(values, index=index)
+            .where(np.isfinite(values) & (values >= 0))
+            .reindex(calendar)
+        )
+        return series, {
+            "input_period": [str(index[0].date()), str(index[-1].date())],
+            "input_days": len(index),
+            "omitted_dates": len(calendar) - len(index),
+            "negative_values": int((np.isfinite(values) & (values < 0)).sum()),
+            "nonfinite_values": int((~np.isfinite(values)).sum()),
+        }
+
+    sim, sim_input = clean(simulated)
+    obs, obs_input = clean(observed) if observed is not None else (None, None)
+    context = pd.date_range(
+        min(sim.index[0], obs.index[0]) if obs is not None else sim.index[0],
+        max(sim.index[-1], obs.index[-1]) if obs is not None else sim.index[-1],
+        freq="D",
+    )
+    daily_sim = sim.reindex(context)
+    daily_obs = obs.reindex(context) if obs is not None else None
+    if obs is not None:
+        start, end = max(sim.index[0], obs.index[0]), min(sim.index[-1], obs.index[-1])
+        concurrent = (
+            pd.date_range(start, end, freq="D")
+            if start <= end
+            else pd.DatetimeIndex([])
+        )
+        sim_comparison, obs_comparison = (
+            sim.reindex(concurrent),
+            obs.reindex(concurrent),
+        )
+        paired = sim_comparison.notna() & obs_comparison.notna()
+        sim_comparison, obs_comparison = (
+            sim_comparison.where(paired),
+            obs_comparison.where(paired),
+        )
+    else:
+        concurrent, sim_comparison, obs_comparison = sim.index, sim, None
+
+    def array(series, dimension):
+        return xr.DataArray(
+            series.to_numpy(),
+            dims=dimension,
+            coords={dimension: series.index.to_numpy()},
+        )
+
+    def summaries(series, inputs):
+        if series.empty:
+            annual = pd.Series(dtype=float, index=pd.Index([], dtype=int))
+            monthly = pd.Series(dtype=float, index=pd.DatetimeIndex([]))
+            full_years = np.array([], dtype=int)
+            partial_years = []
+            invalid_years = []
+            excluded_months = 0
+        else:
+            full_years = dg.full_years(series, 1)
+            partial_years = [
+                int(year)
+                for year in np.unique(series.index.year)
+                if year not in full_years
+            ]
+            groups = series.resample("MS")
+            months = groups.mean().index
+            missing = pd.Series(months.days_in_month, index=months) - groups.count()
+            full_month = (months >= series.index[0]) & (
+                (months + pd.offsets.MonthEnd()) <= series.index[-1]
+            )
+            monthly = groups.mean().where(full_month & (missing <= tol.max_month))
+            invalid_month = missing > tol.max_month
+            valid_annual = (~invalid_month).groupby(months.year).all() & (
+                missing.groupby(months.year).sum() <= tol.max_year
+            )
+            annual = series.groupby(series.index.year).mean().reindex(full_years)
+            annual = annual.where(valid_annual.reindex(full_years, fill_value=False))
+            invalid_years = [int(year) for year in annual.index[annual.isna()]]
+            excluded_months = int(monthly.isna().sum())
+        cycle = monthly.groupby(monthly.index.month).mean().reindex(range(1, 13))
+        ranked = np.sort(series.dropna().to_numpy())[::-1]
+        positions = np.arange(1, len(ranked) + 1) / (len(ranked) + 1)
+        return {
+            "annual": array(annual, "year"),
+            "cycle": array(cycle, "month"),
+            "fdc": ranked,
+            "probability": positions,
+            "metadata": {
+                **inputs,
+                "valid_days": len(ranked),
+                "missing_days": len(series) - len(ranked),
+                "zero_days": int((ranked == 0).sum()),
+                "zero_percent": float((ranked == 0).mean() * 100)
+                if len(ranked)
+                else None,
+                "annual_valid_years": [
+                    int(year) for year in annual.index[annual.notna()]
+                ],
+                "annual_partial_years_excluded": partial_years,
+                "annual_invalid_years": invalid_years,
+                "monthly_valid_periods": int(monthly.notna().sum()),
+                "monthly_excluded_periods": excluded_months,
+            },
+        }
+
+    return {
+        "daily_simulated": array(daily_sim, "time"),
+        "daily_observed": array(daily_obs, "time") if daily_obs is not None else None,
+        "simulated": summaries(sim_comparison, sim_input),
+        "observed": summaries(obs_comparison, obs_input)
+        if obs_comparison is not None
+        else None,
+        "years": np.unique(concurrent.year)
+        if len(concurrent)
+        else np.unique(context.year),
+        "context_period": [str(context[0].date()), str(context[-1].date())],
+        "comparison_period": [str(concurrent[0].date()), str(concurrent[-1].date())]
+        if len(concurrent)
+        else None,
+        "calendar_days": len(concurrent),
+        "methods": {
+            "max_missing_days_month": tol.max_month,
+            "max_missing_days_year": tol.max_year,
+        },
+    }
+
+
+def _hydrograph_fdc(ax, prepared, log_scale):
+    """Finite-only Weibull positions, retaining zero mass on the log panel."""
+    import numpy as np
+
+    from blueearth_cst.climate_analysis.diagnostic_figures import (
+        FS_NOTE,
+        LABEL_BOX,
+        MUTED,
+    )
+
+    positive = []
+    for key, color, style in (
+        ("observed", COLOR_OBSERVED, DASH_OBSERVED),
+        ("simulated", COLOR_SIMULATED, "-"),
+    ):
+        result = prepared[key]
+        if result is None:
+            continue
+        values, probability = result["fdc"], result["probability"]
+        selected = values > 0 if log_scale else np.ones(len(values), dtype=bool)
+        if selected.any():
+            ax.plot(
+                probability[selected],
+                values[selected],
+                color=color,
+                lw=LINE_WIDTH,
+                ls=style,
+            )
+        positive.extend(values[values > 0].tolist())
+    if log_scale:
+        ax.set_yscale("log")
+        if positive:
+            ax.set_ylim(bottom=min(positive))
+            zero_labels = []
+            for key, label in (("simulated", "sim"), ("observed", "obs")):
+                if prepared[key] is not None:
+                    share = prepared[key]["metadata"]["zero_percent"]
+                    zero_labels.append(
+                        f"{label} {share:.1f}%"
+                        if share is not None
+                        else f"{label} unavailable"
+                    )
+            ax.text(
+                0.96,
+                0.96,
+                "Zero flow: " + "; ".join(zero_labels),
+                transform=ax.transAxes,
+                ha="right",
+                va="top",
+                fontsize=FS_NOTE,
+                color=MUTED,
+                bbox=LABEL_BOX,
+            )
+        else:
+            ax.set_yticks([])
+            ax.text(
+                0.5,
+                0.5,
+                "No positive discharge",
+                transform=ax.transAxes,
+                ha="center",
+                va="center",
+                fontsize=FS_NOTE,
+                color=MUTED,
+            )
+    elif not len(prepared["simulated"]["fdc"]):
+        ax.text(
+            0.5,
+            0.5,
+            "No valid discharge",
+            transform=ax.transAxes,
+            ha="center",
+            va="center",
+            fontsize=FS_NOTE,
+            color=MUTED,
+        )
+    ax.set_xlim(0, 1)
+
+
+def _hydrograph_caption(prepared, station, plot_dir, caveat):
+    """Update the station caption inventory without touching other figure types."""
+    import json
+    from pathlib import Path
+
+    root = Path(plot_dir)
+    name = f"hydrograph_{station.wflow_id}.png"
+    start, end = prepared["context_period"]
+    observed = prepared["observed"]
+    caption = (
+        f"Discharge at {station.caption}, {start}–{end}. "
+        "a) Daily discharge; b) annual mean; c) mean seasonal cycle; "
+        "d) flow-duration curve; e) flow-duration curve on a logarithmic discharge axis. "
+        "Discharge is in m³ s⁻¹. The vermillion solid line shows simulated discharge"
+        + (
+            " and the blue dashed line shows observed discharge. "
+            if observed is not None
+            else "; observations were not supplied. "
+        )
+        + "The daily panel retains each series' available context; "
+        + (
+            "panels b–e use only concurrent finite, nonnegative observed–simulated pairs. "
+            if observed is not None
+            else "panels b–e use finite, nonnegative simulation values. "
+        )
+        + "Omitted dates are restored as missing days on a regular daily calendar. "
+        + f"Annual means require full calendar-year boundaries, at most {prepared['methods']['max_missing_days_month']} missing days "
+        f"in every month and {prepared['methods']['max_missing_days_year']} in the year. Monthly means require full calendar-month "
+        "boundaries and the same monthly gap limit. Means use observed days without infilling. "
+        "The seasonal cycle gives each eligible monthly mean equal weight across years; a month can be eligible "
+        "even when its year is not. FDCs rank valid days with Weibull positions r/(n+1), including zeros. "
+        "The log panel shows positive flows at those original positions, retains all positive tails down to "
+        "the minimum across both series and reports zero-flow shares separately."
+        + (f" {caveat}" if caveat else "")
+    )
+    details = []
+    for key, label in (("simulated", "Simulation"), ("observed", "Observations")):
+        if prepared[key] is None:
+            continue
+        record = prepared[key]["metadata"]
+        zero = (
+            f"{record['zero_percent']:.2f}%"
+            if record["zero_percent"] is not None
+            else "unavailable"
+        )
+        details.append(
+            f"{label}: {record['valid_days']} valid comparison days and {record['missing_days']} missing days; "
+            f"zero flow {record['zero_days']} days ({zero}); {record['omitted_dates']} omitted input dates; "
+            f"{record['negative_values']} negative and {record['nonfinite_values']} nonfinite input values excluded. "
+            f"Partial years excluded: {', '.join(map(str, record['annual_partial_years_excluded'])) or 'none'}; "
+            f"full years failing completeness: {', '.join(map(str, record['annual_invalid_years'])) or 'none'}. "
+            f"Eligible months: {record['monthly_valid_periods']}; excluded months: {record['monthly_excluded_periods']}."
+        )
+    if prepared["comparison_period"]:
+        caption += f" Comparison span: {'–'.join(prepared['comparison_period'])}."
+    else:
+        caption += " No overlapping comparison span."
+    caption += " " + " ".join(details)
+    engine = root / "_engine"
+    engine.mkdir(exist_ok=True)
+    path = engine / "figure_captions.json"
+    inventory = (
+        json.loads(path.read_text(encoding="utf-8"))
+        if path.is_file()
+        else {"schema_version": 1, "figures": {}}
+    )
+    inventory["figures"][name] = {
+        "caption": caption,
+        "sources": ["simulated", "observed"] if observed is not None else ["simulated"],
+        "period": [start, end],
+        "support": f"wflow_id {station.wflow_id}",
+        "encoding": "hydrograph",
+        "availability": "available"
+        if prepared["simulated"]["metadata"]["valid_days"]
+        else "unavailable: no valid comparison discharge",
+        "captioned_path": None,
+        "comparison_period": prepared["comparison_period"],
+        "calendar_days": prepared["calendar_days"],
+        "methods": prepared["methods"]
+        | {
+            "discharge_infill": False,
+            "seasonal_weighting": "equal monthly means across years",
+            "fdc_positions": "r/(n+1) valid days",
+        },
+        "series": {
+            key: prepared[key]["metadata"]
+            for key in ("simulated", "observed")
+            if prepared[key] is not None
+        },
+    }
+    inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_captions.md",
+        "_engine/figure_captions.json",
+    ]
+    path.write_text(
+        json.dumps(inventory, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    (root / "figure_captions.md").write_text(
+        "# Figure captions\n\n"
+        + "\n\n".join(
+            f"## {key}\n\n{record['caption']}"
+            for key, record in inventory["figures"].items()
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def plot_extremes(simulated, observed, station, plot_dir, kind, caveat=None):
@@ -646,6 +1022,8 @@ def _draw_metrics_table(ax, metrics):
     whether Pbias wants 0 or 1, and the group band says which direction each
     block is read in.
     """
+    import numpy as np
+
     ax.axis("off")
     names = [
         name for _, group in METRIC_GROUPS for name in group if name in metrics.index
@@ -724,7 +1102,11 @@ def _draw_metrics_table(ax, metrics):
             ax.text(
                 centres[name],
                 _TABLE_ROWS[row],
-                ideal if muted else template.format(metrics.loc[name, row]),
+                ideal
+                if muted
+                else template.format(metrics.loc[name, row])
+                if np.isfinite(metrics.loc[name, row])
+                else "—",
                 transform=ax.transAxes,
                 ha="center",
                 va="center",
@@ -742,75 +1124,274 @@ def _draw_metrics_table(ax, metrics):
     )
 
 
+def _performance_pairs(simulated, observed):
+    """Regular daily calendar with one shared finite, nonnegative pair mask."""
+    import numpy as np
+    import pandas as pd
+
+    def clean(data):
+        if data.dims != ("time",) or not data.time.size:
+            raise ValueError(
+                "Performance discharge requires a nonempty one-dimensional daily series"
+            )
+        dates = pd.DatetimeIndex(data.time.values)
+        if (
+            dates.hasnans
+            or not dates.is_unique
+            or not dates.is_monotonic_increasing
+            or not dates.equals(dates.normalize())
+        ):
+            raise ValueError(
+                "Performance dates require increasing, unique midnight timestamps"
+            )
+        values = np.asarray(data.values, dtype=float)
+        calendar = pd.date_range(dates[0], dates[-1], freq="D")
+        return pd.Series(values, index=dates), {
+            "input_period": [str(dates[0].date()), str(dates[-1].date())],
+            "input_days": len(dates),
+            "omitted_dates": len(calendar) - len(dates),
+            "negative_values": int((np.isfinite(values) & (values < 0)).sum()),
+            "nonfinite_values": int((~np.isfinite(values)).sum()),
+        }
+
+    sim, sim_info = clean(simulated)
+    obs, obs_info = clean(observed)
+    start, end = max(sim.index[0], obs.index[0]), min(sim.index[-1], obs.index[-1])
+    calendar = (
+        pd.date_range(start, end, freq="D") if start <= end else pd.DatetimeIndex([])
+    )
+    pairs = pd.DataFrame(
+        {"simulated": sim.reindex(calendar), "observed": obs.reindex(calendar)}
+    )
+    valid = np.isfinite(pairs).all(axis=1) & (pairs >= 0).all(axis=1)
+    pairs = pairs.where(valid, np.nan)
+    monthly = pairs.resample("ME").mean().dropna() if len(calendar) else pairs.copy()
+    return pairs, {
+        "comparison_period": [str(start.date()), str(end.date())]
+        if len(calendar)
+        else None,
+        "calendar_days": len(calendar),
+        "paired_days": int(valid.sum()),
+        "missing_comparison_days": int((~valid).sum()),
+        "paired_months": len(monthly),
+        "simulated": sim_info,
+        "observed": obs_info,
+    }
+
+
+def _performance_r_squared(pairs):
+    """Squared Pearson correlation on pairs, undefined for constant operands."""
+    import numpy as np
+
+    valid = pairs.dropna()
+    if len(valid) < 2 or (valid.nunique() < 2).any():
+        return float("nan")
+    return float(np.corrcoef(valid["observed"], valid["simulated"])[0, 1] ** 2)
+
+
 def plot_performance(simulated, observed, station, plot_dir, metrics, caveat=None):
-    """Goodness of fit: the daily scatter, the cumulative volume, the table.
-
-    ``metrics`` is this station's block of ``performance_metrics.csv``, indexed
-    by metric with ``daily`` and ``monthly`` columns — rendered, not recomputed,
-    so the figure and the table cannot disagree.
-
-    The cumulative panel is the one that says WHEN a bias accrues. Pbias and VE
-    in the table give its size; a curve that separates in one season and tracks
-    in another is telling a different story from one that drifts throughout, and
-    no single number carries that.
-    """
+    """Paired-day scatter and cumulative volume, with the supplied CSV metrics."""
+    import matplotlib.dates as mdates
     import matplotlib.pyplot as plt
     import numpy as np
-    from matplotlib import gridspec, rc_context
+    from matplotlib import gridspec
 
-    with rc_context(_rc()):
+    from blueearth_cst.climate_analysis import diagnostic_figures as artists
+
+    pairs, support = _performance_pairs(simulated, observed)
+    finite = pairs.dropna()
+    with plt.rc_context(artists.STYLE):
         fig = plt.figure(
             figsize=_figure_size(HEIGHT_PERFORMANCE_MM), layout="constrained"
         )
-        # The two pictures first, side by side; the table full width beneath
-        # them. A reader meets the scatter and the volume curve, then reads the
-        # numbers that summarise them — rather than the other way round.
+        fig.get_layout_engine().set(
+            w_pad=artists.OUTER_PAD_X_MM * artists.MM,
+            h_pad=artists.OUTER_PAD_Y_MM * artists.MM,
+        )
         grid = gridspec.GridSpec(2, 2, figure=fig, height_ratios=[2.0, 1.0])
         ax_scatter = fig.add_subplot(grid[0, 0])
         ax_volume = fig.add_subplot(grid[0, 1])
         ax_table = fig.add_subplot(grid[1, :])
 
-        high = float(np.ceil(max(observed.max(), simulated.max())))
+        high = 1.04 * (
+            max(float(np.ceil(finite.to_numpy().max())), 1.0) if len(finite) else 1.0
+        )
         ax_scatter.plot(
-            observed,
-            simulated,
+            finite["observed"],
+            finite["simulated"],
             "o",
-            ms=1.6,
+            ms=artists.MS_POINT,
             mfc=COLOR_SIMULATED,
             mec="none",
-            alpha=0.5,
+            alpha=0.45,
             ls="none",
             zorder=2,
         )
         _reference_line(ax_scatter, high)
-        _panel(ax_scatter, "a", "Daily discharge")
-        ax_scatter.set_xlabel("observed (m$^3$ s$^{-1}$)")
-        ax_scatter.set_ylabel("simulated (m$^3$ s$^{-1}$)")
-        _score_box(
-            ax_scatter,
-            f"R$^2$ = {r_squared(observed, simulated):.2f}\nn = {simulated.time.size:,}",
-        )
+        ax_scatter.set_xlabel("Observed (m³ s⁻¹)")
+        ax_scatter.set_ylabel("Simulated (m³ s⁻¹)")
+        for ax, label in ((ax_scatter, "a)"), (ax_volume, "b)")):
+            ax.text(
+                0.025,
+                0.975,
+                label,
+                transform=ax.transAxes,
+                ha="left",
+                va="top",
+                fontsize=artists.FS_LABEL,
+                fontweight="bold",
+                bbox=artists.LABEL_BOX,
+                zorder=5,
+            )
+        ax_scatter.grid(alpha=0.7)
 
-        # A real volume: cumulative daily mean discharge times a day, in 10^6 m3.
-        # Its predecessor plotted the bare cumsum and labelled it m3 s-1.
-        scale = SECONDS_PER_DAY / 1e6
-        _draw_series(
-            ax_volume,
-            simulated.cumsum("time") * scale,
-            observed.cumsum("time") * scale,
-            x_sim=simulated["time"],
-            x_obs=observed["time"],
+        # Pandas cumsum resumes after missing dates while retaining NaN gaps.
+        # Both curves integrate the exact same valid days; no infilling occurs.
+        cumulative = pairs.cumsum() * (SECONDS_PER_DAY / 1e6)
+        lines = []
+        for key, color, style, label in (
+            ("observed", COLOR_OBSERVED, DASH_OBSERVED, "Observed"),
+            ("simulated", COLOR_SIMULATED, "-", "Simulated"),
+        ):
+            (line,) = ax_volume.plot(
+                cumulative.index,
+                cumulative[key],
+                color=color,
+                ls=style,
+                lw=artists.LW_LINE,
+                label=label,
+            )
+            lines.append(line)
+        ax_volume.set_ylabel("10⁶ m³")
+        volumes = cumulative.to_numpy()
+        volumes = volumes[np.isfinite(volumes)]
+        top = float(volumes.max()) if volumes.size else 0.0
+        ax_volume.set_ylim(0, top * 1.08 if top > 0 else 1.0)
+        ax_volume.set_xlabel("")
+        ax_volume.yaxis.get_major_formatter().set_useOffset(False)
+        ax_volume.xaxis.set_major_locator(
+            mdates.AutoDateLocator(minticks=3, maxticks=6)
         )
-        _panel(ax_volume, "b", "Cumulative volume")
-        ax_volume.set_ylabel("V (10$^6$ m$^3$)")
+        ax_volume.xaxis.set_major_formatter(
+            mdates.ConciseDateFormatter(ax_volume.xaxis.get_major_locator())
+        )
+        if len(pairs) and pairs.index[-1].year - pairs.index[0].year >= 3:
+            import pandas as pd
+
+            step = 10 if pairs.index[-1].year - pairs.index[0].year > 35 else 5
+            first = pairs.index[0].year // step * step
+            ax_volume.set_xlim(pd.Timestamp(first, 1, 1), pairs.index[-1])
+            ax_volume.xaxis.set_major_locator(mdates.YearLocator(step))
+            ax_volume.xaxis.set_major_formatter(mdates.DateFormatter("%Y"))
+            ax_volume.xaxis.set_minor_locator(mdates.YearLocator())
+        elif not len(pairs):
+            from matplotlib.ticker import NullFormatter
+
+            ax_volume.set_xticks([])
+            ax_volume.xaxis.set_major_formatter(NullFormatter())
+        ax_volume.grid(axis="y", alpha=0.7)
         ax_volume.margins(x=0.01)
-
-        _panel(ax_table, "c", "Goodness of fit")
+        ax_scatter.legend(
+            handles=lines,
+            loc="upper left",
+            bbox_to_anchor=(0.025, 0.89),
+            borderaxespad=0,
+            ncols=1,
+            frameon=True,
+            facecolor="white",
+            edgecolor="none",
+            framealpha=0.88,
+            borderpad=0.6,
+            labelspacing=0.5,
+            handletextpad=0.5,
+        )
+        if not len(finite):
+            for ax in (ax_scatter, ax_volume):
+                ax.text(
+                    0.5,
+                    0.5,
+                    "No valid concurrent discharge",
+                    transform=ax.transAxes,
+                    ha="center",
+                    va="center",
+                    fontsize=artists.FS_NOTE,
+                    color=artists.MUTED,
+                )
         _draw_metrics_table(ax_table, metrics)
-
-        _identity(fig, station, "performance", ax_volume)
-        _caveat(fig, caveat)
+        for text in ax_table.texts:
+            text.set_fontsize(
+                artists.FS_TICK
+                if text.get_text() in ("EFFICIENCY", "ERROR")
+                else artists.FS_LABEL
+            )
+        score = _performance_r_squared(pairs)
+        support["squared_pearson_r"] = float(score) if np.isfinite(score) else None
+        _performance_caption(support, station, plot_dir, caveat)
         return _save(fig, plot_dir, f"performance_{station.wflow_id}")
+
+
+def _performance_caption(support, station, plot_dir, caveat):
+    """External performance caption, preserving the other station figures."""
+    import json
+    from pathlib import Path
+
+    root = Path(plot_dir)
+    root.mkdir(parents=True, exist_ok=True)
+    period = support["comparison_period"]
+    span = "–".join(period) if period else "no overlapping record"
+    caption = (
+        f"Discharge performance at {station.caption}, {span}. "
+        "(a) Simulated versus observed daily discharge; dashed line denotes 1:1 agreement. "
+        "(b) Cumulative volume over paired valid days, retaining data gaps. "
+        "The table summarises daily and monthly performance; dashes denote undefined values. "
+        + (f"{caveat}" if caveat else "")
+    )
+    engine = root / "_engine"
+    engine.mkdir(exist_ok=True)
+    path = engine / "figure_captions.json"
+    inventory = (
+        json.loads(path.read_text(encoding="utf-8"))
+        if path.exists()
+        else {"schema_version": 1, "figures": {}}
+    )
+    inventory["figures"][f"performance_{station.wflow_id}.png"] = {
+        "caption": caption.strip(),
+        "sources": ["simulated", "observed"],
+        "period": period,
+        "support": f"wflow_id {station.wflow_id}",
+        "encoding": "performance",
+        "availability": "available"
+        if support["paired_days"]
+        else "unavailable: no valid concurrent discharge",
+        "captioned_path": None,
+        "comparison": support,
+        "methods": {
+            "paired_nonnegative_discharge": True,
+            "volume": "paired days × 86400 s",
+            "monthly": "available paired-day means",
+            "infill": False,
+            "correlation": "squared Pearson r",
+            "volume_gap_handling": "missing paired days remain gaps; cumulative paired-only totals resume without infilling",
+            "undefined_scores": "constant/fewer than two pairs yield undefined correlation; zero observed denominators yield undefined efficiencies",
+            "caveat": caveat,
+        },
+    }
+    inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_captions.md",
+        "_engine/figure_captions.json",
+    ]
+    path.write_text(
+        json.dumps(inventory, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    (root / "figure_captions.md").write_text(
+        "# Figure captions\n\n"
+        + "\n\n".join(
+            f"## {name}\n\n{record['caption']}"
+            for name, record in inventory["figures"].items()
+        )
+        + "\n",
+        encoding="utf-8",
+    )
 
 
 def r_squared(observed, simulated):

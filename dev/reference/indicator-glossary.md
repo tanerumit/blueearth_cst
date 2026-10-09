@@ -80,7 +80,7 @@ figure sees only what the csv carried.
 | `aet` | `sum` | Actual Evapotranspiration (mm month⁻¹) |
 | `gwr` | `sum` | Groundwater Recharge (mm month⁻¹) |
 | `qof` | `mean` | Overland Flow (m³s⁻¹) |
-| `swe` | `sum` | Snowpack (mm month⁻¹) |
+| `swe` | `mean` | Snowpack liquid water (mm) |
 
 ## 2. Metric vocabulary
 

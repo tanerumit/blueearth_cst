@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Union
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import xarray as xr
 from hydromt.readers import open_timeseries_from_table
@@ -183,12 +184,23 @@ def merge_outlet_and_gauge_series(qsim, qsim_gauges, log=_log):
     )["Q"]
 
 
+def subcatchment_cell_counts(staticmaps: xr.Dataset) -> dict[int, int]:
+    """Count cells in the disjoint native output zones for basin reconstruction."""
+    values = np.asarray(staticmaps["subcatchment"].values)
+    valid = values[np.isfinite(values) & (values > 0)]
+    if not valid.size or np.any(valid != np.floor(valid)):
+        raise ValueError("subcatchment must contain positive integer output-zone IDs")
+    ids, counts = np.unique(valid.astype(int), return_counts=True)
+    return dict(zip(ids.tolist(), counts.tolist()))
+
+
 def analyse_wflow_historical(
     project_dir: Path,
     model_dir: Union[Path, str] = None,
     observations_fn: Union[Path, str] = None,
     gauges_locs: Union[Path, str] = None,
     location_registry: Union[Path, str] = None,
+    subbasin_plots: bool = False,
 ):
     """
     Analyse and plot wflow model performance for historical run.
@@ -214,8 +226,8 @@ def analyse_wflow_historical(
       are available, they are added as well.
     - plot of signature plots if wflow run is longer than a year and if observations
       are available.
-    - plot of basin average outputs (e.g. soil moisture, snow, etc.). The variables to
-      include should have the postfix _basavg in the wflow output file.
+    - basin-average annual series and seasonal cycles for configured zonal outputs;
+      optionally the same two figures individually for each subbasin.
     - compute performance metrics (daily and monthly KGE, NSE, NSElog, RMSE, MSE, Pbias,
       VE) if observations are available and if wflow run is longer than a year. Metrics
       are saved to a csv file.
@@ -340,7 +352,7 @@ def analyse_wflow_historical(
         # NOT .squeeze(drop=True). Squeezing collapsed a single subcatchment's
         # index away, which is the only reason plot_basavg's 1-D assumption ever
         # held; keeping the dim makes the shape uniform at 1 subcatchment and at
-        # four, and plot_basavg now facets over it.
+        # four, allowing fixed-weight basin reconstruction.
         ds_basin = xr.merge([results[dvar] for dvar in basavg_vars])
         precip = f"{code_for('precipitation')}{SUBCATCHMENT_SUFFIX}"
         if precip in ds_basin:
@@ -352,10 +364,27 @@ def analyse_wflow_historical(
     # dev/records/decisions/0006-retire-subcatchment-climate-plots.md. The climate
     # a reader wants is now the map/series family under forcing/plots/.
 
+    # Apply one common warm-up boundary before any hydrological summary.
+    warmup_excluded = len(qsim.time) > 365
+    if warmup_excluded:
+        _log("Skipping the first year of the wflow run (warm-up period)")
+        start = pd.Timestamp(qsim.time.values[0]) + pd.DateOffset(years=1)
+        qsim = qsim.sel(time=slice(start, None))
+        if ds_basin.data_vars:
+            ds_basin = ds_basin.sel(time=slice(start, None))
+    else:
+        _log("Simulation is less than a year so model warm-up period will be plotted.")
+
     ### 5. Plot other basin average outputs ###
     if ds_basin.data_vars:
         _log("Plotting basin-average wflow outputs")
-        plot_basavg(ds_basin, Folder_plots)
+        plot_basavg(
+            ds_basin,
+            Folder_plots,
+            cell_counts=subcatchment_cell_counts(mod.staticmaps.data),
+            subbasin_plots=subbasin_plots,
+            warmup_excluded=warmup_excluded,
+        )
         plt.close()
     else:
         _log("No basin-average outputs configured; skipping plot_basavg.")
@@ -365,21 +394,7 @@ def analyse_wflow_historical(
     df_perf_all = pd.DataFrame()
     # Flag for plot signatures
     # (True if wflow run is longer than a year and observations are available)
-    do_signatures = False
-
-    # If possible, skip the first year of the wflow run (warm-up period)
-    if len(qsim.time) > 365:
-        _log("Skipping the first year of the wflow run (warm-up period)")
-        qsim = qsim.sel(
-            time=slice(
-                f"{qsim['time.year'][0].values + 1}-{qsim['time.month'][0].values}-{qsim['time.day'][0].values}",
-                None,
-            )
-        )
-        if has_observations:
-            do_signatures = True
-    else:
-        _log("Simulation is less than a year so model warm-up period will be plotted.")
+    do_signatures = warmup_excluded and has_observations
     # Sel qsim and qobs so that they have the same time period
     if has_observations:
         start = max(qsim.time.values[0], qobs.time.values[0])
@@ -467,6 +482,7 @@ if __name__ == "__main__":
                 observations_fn=getattr(sm.input, "observations_timeseries", None),
                 gauges_locs=getattr(sm.input, "output_locations", None),
                 location_registry=sm.input.location_registry,
+                subbasin_plots=sm.params.subbasin_plots,
                 # declared only on the chirps/chirps_global branch (ext2-1)
             )
     else:

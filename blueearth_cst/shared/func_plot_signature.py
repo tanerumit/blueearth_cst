@@ -18,8 +18,6 @@ config-derivable family with their own declared outputs.
 """
 
 # %%
-import os
-
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
@@ -28,7 +26,6 @@ import xarray as xr
 from hydromt.stats import skills
 
 from blueearth_cst.shared import plot_style
-from blueearth_cst.shared.cartographic_map import _publication_rc, series_figure_size
 from blueearth_cst.shared.snake_utils import save_figure
 
 # %%
@@ -54,9 +51,11 @@ def compute_metrics(
     station_name: str = "station",
 ) -> pd.DataFrame:
     """
-    Compute performance metrics.
+    Compute metrics on concurrent finite, nonnegative discharge pairs.
 
-    Calculated metrics for daily and montly timeseries are:
+    Monthly values are available-day means of the same daily pairs, without
+    infilling or a completeness threshold. Undefined denominators yield NaN.
+    Calculated metrics for daily and monthly timeseries are:
     - Nash-Sutcliffe efficiency (NSE)
     - Nash-Sutcliffe efficiency on log-transformed data (NSElog)
     - Kling-Gupta efficiency (KGE)
@@ -85,167 +84,405 @@ def compute_metrics(
     pd.DataFrame
         Dataframe with performance metrics for this station.
     """
-    ### 1. Calculate performance metrics based on daily and monthly timeseries ###
-    # Initialize performance array
+    from blueearth_cst.shared.plot_evaluation import _performance_pairs
+
+    pairs, support = _performance_pairs(qsim, qobs)
     metrics = ["KGE", "NSE", "NSElog", "RMSE", "MSE", "Pbias", "VE"]
-    time_type = ["daily", "monthly"]
     da_perf = xr.DataArray(
-        np.zeros((len(metrics), len(time_type))),
-        coords=[metrics, time_type],
+        np.full((len(metrics), 2), np.nan),
+        coords=[metrics, ["daily", "monthly"]],
         dims=["metrics", "time_type"],
     )
-
-    # Select data and resample to monthly timeseries as well
-    qsim_monthly = qsim.resample(time="ME").mean("time")
-    qobs_monthly = qobs.resample(time="ME").mean("time")
-
-    # compute perf metrics
-    # nse
-    nse = skills.nashsutcliffe(qsim, qobs)
-    da_perf.loc[dict(metrics="NSE", time_type="daily")] = nse
-    nse_m = skills.nashsutcliffe(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="NSE", time_type="monthly")] = nse_m
-
-    # nse logq
-    nselog = skills.lognashsutcliffe(qsim, qobs)
-    da_perf.loc[dict(metrics="NSElog", time_type="daily")] = nselog
-    nselog_m = skills.lognashsutcliffe(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="NSElog", time_type="monthly")] = nselog_m
-
-    # kge
-    kge = skills.kge(qsim, qobs)
-    da_perf.loc[dict(metrics="KGE", time_type="daily")] = kge["kge"]
-    kge_m = skills.kge(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="KGE", time_type="monthly")] = kge_m["kge"]
-
-    # rmse
-    rmse = skills.rmse(qsim, qobs)
-    da_perf.loc[dict(metrics="RMSE", time_type="daily")] = rmse
-    rmse_m = skills.rmse(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="RMSE", time_type="monthly")] = rmse_m
-
-    # mse
-    mse = skills.mse(qsim, qobs)
-    da_perf.loc[dict(metrics="MSE", time_type="daily")] = mse
-    mse_m = skills.mse(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="MSE", time_type="monthly")] = mse_m
-
-    # pbias
-    pbias = skills.percentual_bias(qsim, qobs)
-    da_perf.loc[dict(metrics="Pbias", time_type="daily")] = pbias
-    pbias_m = skills.percentual_bias(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="Pbias", time_type="monthly")] = pbias_m
-
-    # ve (volumetric efficiency)
-    ve = skills.volumetric_error(qsim, qobs)
-    da_perf.loc[dict(metrics="VE", time_type="daily")] = ve
-    ve_m = skills.volumetric_error(qsim_monthly, qobs_monthly)
-    da_perf.loc[dict(metrics="VE", time_type="monthly")] = ve_m
-
-    ### 2. Convert to dataframe ###
-    df_perf = da_perf.to_dataframe(name=station_name)
-
-    return df_perf
+    daily = pairs.dropna()
+    monthly = pairs.resample("ME").mean().dropna() if len(pairs) else pairs
+    for time_type, table in (("daily", daily), ("monthly", monthly)):
+        if table.empty:
+            continue
+        sim = xr.DataArray(
+            table["simulated"].to_numpy(), dims="time", coords={"time": table.index}
+        )
+        obs = xr.DataArray(
+            table["observed"].to_numpy(), dims="time", coords={"time": table.index}
+        )
+        # Errors remain defined for valid zero-flow pairs. Efficiencies whose
+        # observed denominator is zero remain NaN; HydroMT's logarithmic NSE
+        # zero-flow convention is retained without introducing a new epsilon.
+        scores = {"RMSE": skills.rmse(sim, obs), "MSE": skills.mse(sim, obs)}
+        if float(obs.sum()) > 0:
+            scores.update(
+                Pbias=skills.percentual_bias(sim, obs),
+                VE=skills.volumetric_error(sim, obs),
+            )
+        if len(table) >= 2 and float(obs.std()) > 0:
+            scores.update(
+                NSE=skills.nashsutcliffe(sim, obs),
+                NSElog=skills.lognashsutcliffe(sim, obs),
+            )
+            if float(sim.std()) > 0:
+                scores["KGE"] = skills.kge(sim, obs)["kge"]
+        for metric, score in scores.items():
+            da_perf.loc[dict(metrics=metric, time_type=time_type)] = score
+    result = da_perf.to_dataframe(name=station_name)
+    result.attrs["comparison_support"] = support
+    return result
 
 
-def plot_basavg(ds, Folder_out, fs=10):
-    """One monthly-climatology panel PER SUBCATCHMENT, per variable.
+def _basavg_daily(series, cell_counts=None):
+    """Fixed cell-count combination of disjoint equal-cell zonal means."""
+    index = pd.DatetimeIndex(series.time.values)
+    if (
+        index.empty
+        or not index.is_unique
+        or not index.is_monotonic_increasing
+        or not index.equals(index.normalize())
+    ):
+        raise ValueError(
+            "Outputs require a nonempty, unique, increasing midnight daily index"
+        )
+    if set(series.dims) - {"time", "index"}:
+        raise ValueError("Outputs require time and optionally index dimensions")
+    if "index" not in series.dims:
+        if cell_counts is not None:
+            raise ValueError("Cell-count weights require explicit subbasin ids")
+        return pd.Series(series.values, index=index, dtype=float), {}, {}
+    ids = list(series["index"].values)
+    if len(ids) != len(set(ids)) or not ids:
+        raise ValueError("Subbasin ids must be unique and nonempty")
+    ids = sorted(ids)
+    if cell_counts is None:
+        if len(ids) > 1:
+            raise ValueError("Multiple subbasins require exact cell-count weights")
+        cell_counts = {ids[0]: 1}
+    if set(cell_counts) != set(ids):
+        raise ValueError("Cell-count weights must match the exact subbasin id coverage")
+    weights = np.asarray([cell_counts[key] for key in ids], dtype=float)
+    if (
+        not np.isfinite(weights).all()
+        or (weights <= 0).any()
+        or any(isinstance(cell_counts[key], (bool, np.bool_)) for key in ids)
+    ):
+        raise ValueError("Cell-count weights must be positive finite numbers")
+    table = pd.DataFrame(
+        series.sel(index=ids).transpose("time", "index").values,
+        index=index,
+        columns=ids,
+        dtype=float,
+    )
+    table = table.where(np.isfinite(table))
+    combined = (table * (weights / weights.sum())).sum(axis=1, min_count=len(ids))
+    return (
+        combined,
+        {int(key): float(value) for key, value in zip(ids, weights)},
+        {int(key): table[key] for key in ids},
+    )
 
-    These series are per-subcatchment means (wflow's `subcatchment` map with
-    `reducer = "mean"`), so on a basin with four control points there are four
-    of them, not one. This drew them as a single object until 2026-08-10, which
-    worked only while a basin had ONE subcatchment: `plot_results` squeezes a
-    size-1 index away, so the array arrived 1-D and the line plot was correct by
-    accident. With four, `.plot()` saw a 2-D (index, time) array, dispatched to
-    `pcolormesh`, and raised on wflow's unsorted index -- and `fill_between`
-    would have broken next, since it assumes exactly 12 values.
 
-    Faceting rather than one file per subcatchment is a Snakemake constraint,
-    not a preference: the subcatchment count is not known at DAG-parse time, so
-    N separate PNGs could not be declared as outputs. One file per variable
-    keeps the declaration in `_basavg_pngs` exact.
+def _basavg_statistics(daily, kind):
+    """Calendar completeness and WF0-equivalent monthly amount adjustment."""
+    from blueearth_cst.climate_analysis.diagnostic_settings import DEFAULTS
 
-    ``fs`` remains accepted for call compatibility; shared publication
-    typography now controls the font sizes.
+    calendar = pd.date_range(daily.index[0], daily.index[-1], freq="D")
+    clean = daily.where(np.isfinite(daily)).reindex(calendar)
+    groups = clean.resample("MS")
+    monthly_mean = groups.mean()
+    counts = groups.count()
+    days = monthly_mean.index.days_in_month
+    gaps = pd.Series(days, index=monthly_mean.index) - counts
+    full = (monthly_mean.index >= calendar[0]) & (
+        (monthly_mean.index + pd.offsets.MonthEnd()) <= calendar[-1]
+    )
+    eligible = full & (gaps <= DEFAULTS["max_missing_days_month"])
+    monthly = (monthly_mean * days if kind == "amount" else monthly_mean).where(
+        eligible
+    )
+    years = np.arange(calendar[0].year, calendar[-1].year + 1)
+    annual = pd.Series(np.nan, index=years, dtype=float)
+    partial_years, invalid_years = [], []
+    for year in years:
+        start, end = pd.Timestamp(int(year), 1, 1), pd.Timestamp(int(year), 12, 31)
+        if start < calendar[0] or end > calendar[-1]:
+            partial_years.append(int(year))
+            continue
+        selected = monthly_mean.index.year == year
+        valid = (
+            eligible[selected].all()
+            and gaps[selected].sum() <= DEFAULTS["max_missing_days_year"]
+        )
+        if valid:
+            annual.loc[year] = (
+                monthly[selected].sum(min_count=12)
+                if kind == "amount"
+                else clean.loc[start:end].mean()
+            )
+        else:
+            invalid_years.append(int(year))
+    grouped = monthly.groupby(monthly.index.month)
+    climatology = pd.DataFrame(
+        {
+            "mean": grouped.mean(),
+            "p10": grouped.quantile(0.1),
+            "p90": grouped.quantile(0.9),
+        }
+    ).reindex(range(1, 13))
+    info = {
+        "period": [str(calendar[0].date()), str(calendar[-1].date())],
+        "omitted_dates": int(len(calendar.difference(daily.index))),
+        "missing_days": int(clean.isna().sum()),
+        "negative_days_preserved": int((clean < 0).sum()),
+        "partial_years": partial_years,
+        "incomplete_years": invalid_years,
+        "partial_months": monthly.index[~full].strftime("%Y-%m").tolist(),
+        "incomplete_months": monthly.index[full & ~eligible].strftime("%Y-%m").tolist(),
+        "eligible_month_counts": {
+            str(int(key)): int(value) for key, value in grouped.count().items()
+        },
+        "max_missing_days_month": DEFAULTS["max_missing_days_month"],
+        "max_missing_days_year": DEFAULTS["max_missing_days_year"],
+    }
+    return annual, climatology, info
+
+
+def plot_basavg(
+    ds,
+    Folder_out,
+    fs=10,
+    *,
+    cell_counts=None,
+    subbasin_plots=False,
+    warmup_excluded=False,
+):
+    """Draw weighted basin annual/seasonal summaries and optional individual plots.
+
+    The caller supplies disjoint zonal means, native cell counts and an already
+    warm-up-filtered record. This function never removes another warm-up year.
+    ``fs`` is retained for compatibility; canonical publication typography applies.
     """
-    month_labels = ["J", "F", "M", "A", "M", "J", "J", "A", "S", "O", "N", "D"]
+    import json
+    from pathlib import Path
 
-    for dvar in ds.data_vars:
-        meta = PLOT_META[code_from_variable(dvar)]
-        series = ds[dvar]
-        resampled = (
-            series.resample(time="ME").sum("time")
-            if meta["resample"] == "sum"
-            else series.resample(time="ME").mean("time")
-        )
+    from blueearth_cst.climate_analysis import diagnostic_figures as artists
+    from blueearth_cst.climate_analysis import diagnostics as dg
+    from blueearth_cst.shared.plot_evaluation import COLOR_SIMULATED
+    from blueearth_cst.shared.wflow_outputs import (
+        BASAVG_FIGURE_STEMS,
+        SUBBASIN_PLOT_DIRNAME,
+    )
 
-        # Sorted, so the panels read in subcatchment order rather than wflow's
-        # internal one (measured [103, 101, 104, 102] on a four-point basin).
-        units = (
-            sorted(np.atleast_1d(series["index"].values).tolist())
-            if "index" in series.dims
-            else [None]
-        )
-        with plt.rc_context(_publication_rc()):
-            fig, axes = plt.subplots(
-                len(units),
-                1,
-                sharex=True,
-                figsize=series_figure_size(0.42 * len(units)),
-                layout="constrained",
-                squeeze=False,
-            )
-
-            for panel, (ax, unit) in enumerate(zip(axes[:, 0], units)):
-                label = ""
-                number = panel + 1
-                while number:
-                    number, remainder = divmod(number - 1, 26)
-                    label = chr(97 + remainder) + label
-                one = resampled if unit is None else resampled.sel(index=unit)
-                grouped = one.groupby("time.month")
-                ax.plot(np.arange(1, 13), grouped.mean("time"), color="darkblue")
-                ax.fill_between(
-                    np.arange(1, 13),
-                    grouped.quantile(0.25, "time"),
-                    grouped.quantile(0.75, "time"),
-                    color="lightblue",
+    # Refresh this family's metadata, preserving unrelated captions and PNGs.
+    for folder in (Path(Folder_out), Path(Folder_out) / SUBBASIN_PLOT_DIRNAME):
+        path = folder / "_engine/figure_captions.json"
+        if path.exists():
+            inventory = json.loads(path.read_text(encoding="utf-8"))
+            inventory["figures"] = {
+                key: value
+                for key, value in inventory["figures"].items()
+                if not (
+                    key.startswith("wflow_")
+                    and (key.endswith("_basin_avg.png") or "_subbasin_" in key)
                 )
-                ax.set_ylabel(meta["legend"], fontsize=plot_style.FONT_SIZE_BASE)
-                ax.tick_params(axis="both", labelsize=plot_style.FONT_SIZE_TICK)
-                ax.set_xlabel("")
-                ax.grid(axis="y", alpha=0.25, lw=0.5)
-                ax.set_axisbelow(True)
-                ax.spines[["top", "right"]].set_visible(False)
-                ax.annotate(
-                    f"{label})",
-                    (0.01, 0.96),
-                    xycoords="axes fraction",
-                    va="top",
+            }
+            _basavg_write_inventory(folder, inventory)
+
+    for variable in ds.data_vars:
+        code = code_from_variable(variable)
+        meta = PLOT_META[code]
+        daily, weights, individuals = _basavg_daily(ds[variable], cell_counts)
+        supports = [("basin_avg", "Basin average", daily, Path(Folder_out))]
+        if subbasin_plots:
+            supports.extend(
+                (
+                    f"subbasin_{key}",
+                    f"Subbasin {key}",
+                    value,
+                    Path(Folder_out) / SUBBASIN_PLOT_DIRNAME,
                 )
-                if unit is not None:
-                    ax.annotate(
-                        f"subcatchment {int(unit)}",
-                        (0.99, 0.96),
-                        xycoords="axes fraction",
-                        ha="right",
-                        va="top",
-                        fontsize=plot_style.FONT_SIZE_BASE,
-                    )
-
-            axes[-1, 0].set_xticks(ticks=np.arange(1, 13), labels=month_labels)
-            fig.supxlabel(
-                "Simulated monthly mean and interquartile range across years.",
-                fontsize=plot_style.FONT_SIZE_CAVEAT,
-                color=plot_style.COLOR_CAVEAT,
-                wrap=True,
+                for key, value in individuals.items()
             )
-            plot_style.align_caveat_to_plot_area(fig, axes[-1, 0])
-            save_figure(
-                os.path.join(Folder_out, f"{dvar}.png"),
-                fig=fig,
-                dpi=plot_style.RASTER_DPI,
+        for support, label, one, folder in supports:
+            folder.mkdir(parents=True, exist_ok=True)
+            annual, climatology, info = _basavg_statistics(one, meta["kind"])
+            trend = dg.sen_trend(annual)
+            years = annual.index.to_numpy()
+            view = artists.View(
+                sources=["model"],
+                labels={"model": "Mean"},
+                styles={"model": (COLOR_SIMULATED, "o")},
+                results={
+                    "model": {
+                        "annual": pd.DataFrame({"total": annual}),
+                        "climatology": climatology,
+                        "trends": {"total": trend},
+                    }
+                },
+                years=years,
+                m0=1,
+                reference=(int(years[0]), int(years[-1])),
+                wet_mm=1.0,
+                agreement=pd.DataFrame(),
+                common_years=years,
             )
+            for kind in ("annual_ts", "monthly_clim_band"):
+                with plt.rc_context(artists.STYLE):
+                    if kind == "annual_ts":
+                        fig, axes = artists.new_fig(artists.H_SINGLE)
+                        ax = axes[0, 0]
+                        (line,) = ax.plot(
+                            years,
+                            annual,
+                            color=COLOR_SIMULATED,
+                            lw=artists.LW_LINE,
+                            marker="o",
+                            ms=artists.MS_LINE,
+                        )
+                        artists._annual_trends(
+                            ax,
+                            view,
+                            "annual",
+                            "total",
+                            "total",
+                            meta["trend_units"],
+                            digits=1,
+                        )
+                        step = 10 if years.size > 35 else 5
+                        first = int(years[0] // step * step)
+                        ax.set_xlim(first - 0.5, years[-1] + 0.5)
+                        ax.set_xticks(np.arange(first, years[-1] + 1, step))
+                        ax.set_xticks(np.arange(first, years[-1] + 1), minor=True)
+                        ax.set_ylabel(meta["annual_units"])
+                        ax.yaxis.get_major_formatter().set_useOffset(False)
+                        artists.ygrid(ax)
+                        line.set_label(
+                            "Annual total"
+                            if meta["kind"] == "amount"
+                            else "Annual mean"
+                        )
+                        artists.inside_legend(fig, ax, [line], lines=[line])
+                        available = annual.notna().any()
+                    else:
+                        fig = artists._climatology(
+                            view, "climatology", meta["monthly_units"], zero=False
+                        )
+                        ax = fig.axes[0]
+                        available = climatology["mean"].notna().any()
+                    if not available:
+                        ax.text(
+                            0.5,
+                            0.5,
+                            "No eligible full calendar periods",
+                            ha="center",
+                            va="center",
+                            transform=ax.transAxes,
+                        )
+                    name = f"wflow_{BASAVG_FIGURE_STEMS[code]}_{kind}_{support}.png"
+                    save_figure(str(folder / name), fig=fig, dpi=plot_style.RASTER_DPI)
+                    plt.close(fig)
+                _basavg_caption(
+                    folder,
+                    name,
+                    meta,
+                    kind,
+                    label,
+                    info,
+                    weights
+                    if support == "basin_avg"
+                    else {
+                        int(support.split("_")[-1]): weights[
+                            int(support.split("_")[-1])
+                        ]
+                    },
+                    warmup_excluded,
+                    trend,
+                )
 
 
-# %%
+def _basavg_caption(
+    folder, name, meta, kind, label, info, weights, warmup_excluded, trend
+):
+    """Update the owning directory's durable caption inventory."""
+    import json
+
+    engine = folder / "_engine"
+    engine.mkdir(exist_ok=True)
+    path = engine / "figure_captions.json"
+    inventory = (
+        json.loads(path.read_text(encoding="utf-8"))
+        if path.exists()
+        else {"schema_version": 1, "figures": {}}
+    )
+    quantity = meta["legend"].split(" (")[0].lower()
+    method = (
+        "Monthly totals use the available-day mean multiplied by calendar-month length; annual totals sum the twelve eligible months."
+        if meta["kind"] == "amount"
+        else "Monthly and annual values are means of the available daily values; no daily infilling is applied."
+    )
+    years = list(range(int(info["period"][0][:4]), int(info["period"][1][:4]) + 1))
+    if kind == "annual_ts":
+        omitted = set(info["partial_years"] + info["incomplete_years"])
+        years = [year for year in years if year not in omitted]
+    period = f"{years[0]}–{years[-1]}" if years else "no eligible years"
+    if kind == "annual_ts":
+        statistic = "totals" if meta["kind"] == "amount" else "means"
+        caption = (
+            f"Annual {statistic} of simulated {quantity}, {label.lower()} ({period})."
+        )
+        if np.isfinite(trend["slope"]):
+            caption += " The dashed line shows the Sen trend; its slope is expressed per decade."
+    else:
+        statistic = "totals" if meta["kind"] == "amount" else "means"
+        caption = (
+            f"Seasonal cycle of simulated {quantity}, {label.lower()} ({period}). "
+            f"The line shows mean monthly {statistic} across years; shading shows the "
+            "10th–90th percentile range of interannual variability."
+        )
+    if warmup_excluded:
+        caption += " The first simulation year is excluded."
+    inventory["figures"][name] = {
+        "caption": caption,
+        "sources": ["simulated"],
+        "period": info["period"],
+        "support": label,
+        "encoding": kind,
+        "availability": "available"
+        if (
+            trend["n"]
+            if kind == "annual_ts"
+            else any(info["eligible_month_counts"].values())
+        )
+        else "unavailable",
+        "captioned_path": None,
+        "cell_counts": {str(key): value for key, value in weights.items()},
+        "methods": info
+        | {
+            "quantity_kind": meta["kind"],
+            "monthly_spread": "p10–p90",
+            "warmup_excluded": warmup_excluded,
+            "trend": "Sen per decade",
+            "aggregation": method,
+            "spatial_weighting": "fixed native cell counts"
+            if weights
+            else "single support",
+        },
+    }
+    _basavg_write_inventory(folder, inventory)
+
+
+def _basavg_write_inventory(folder, inventory):
+    import json
+
+    path = folder / "_engine/figure_captions.json"
+    inventory["produced_paths"] = list(inventory["figures"]) + [
+        "figure_captions.md",
+        "_engine/figure_captions.json",
+    ]
+    path.write_text(
+        json.dumps(inventory, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+    )
+    (folder / "figure_captions.md").write_text(
+        "# Figure captions\n\n"
+        + "\n\n".join(
+            f"## {key}\n\n{record['caption']}"
+            for key, record in inventory["figures"].items()
+        )
+        + "\n",
+        encoding="utf-8",
+    )

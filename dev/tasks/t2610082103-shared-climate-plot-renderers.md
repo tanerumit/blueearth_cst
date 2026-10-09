@@ -8,7 +8,7 @@ queue: 1
 created: 2026-10-08
 updated: 2026-10-10
 doc: dev/tasks/t2610082103/landscape-and-plan.md
-branch: chore/minor-fixes
+branch: refactor/t2610082103-shared-plotting
 ---
 
 > [!note] Overview
@@ -84,3 +84,11 @@ Next packet: separate rendering/export mechanics from workflow logging, with an 
 contract. Preserve the verified baseline until any visual change is approved. Existing issues to address
 there or in a later layout packet: captions grow the axes area; very long records crowd year labels;
 all-missing maps retain a default scale with little interpretive value. R/WF3 and external packaging follow later.
+
+
+### Branch identity (2026-10-10)
+
+At the user's request, renamed `chore/minor-fixes` to `refactor/t2610082103-shared-plotting`.
+Session-1 remains occupied; HEAD and the recorded base are unchanged. The supported advisory
+`task-adopt --confirm` command updated the session registration, and session-check found no mismatch.
+Earlier reviewed artifacts retain the branch name used when they were produced. No merge or push.

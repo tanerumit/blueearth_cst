@@ -28,7 +28,7 @@ was already reviewed. Any material scope change returns to G1. G2 names exact re
 - Preserve scientific preparation, established plot styles and existing workflow products.
 - First increment: common rendering fundamentals and bounded adoption by active WF0–WF2 callers.
 - Prepared-input chart interfaces, map-reference production and external packaging follow separately.
-- Stay on session-1/chore/minor-fixes for source work; no landing or push is authorized.
+- Stay on session-1/refactor/t2610082103-shared-plotting; no landing or push is authorized.
 
 ## Allocation and execution record
 
@@ -197,3 +197,12 @@ Evidence: implementation-evidence.md, render-acceptance.md, render-comparison.js
 visual-review.md and completion.md. The exact reviewed design-v2 bytes remain unchanged.
 Active scratch retains full PNGs, review pages, logs, probes and fingerprints for owner review and
 the remaining task. Retention owner: t2610082103; reconsider cleanup when the broader task lands.
+
+
+## Branch rename — 2026-10-10
+
+Owner requested a name reflecting the plotting work. Current branch:
+`refactor/t2610082103-shared-plotting`, renamed from `chore/minor-fixes` at unchanged
+HEAD `dbe6cbe69739c697a9c6e585acc3c92bf30cf202`. Advisory registration now matches; session-1 remains
+occupied. Reviewed briefs and completed evidence retain their historical branch context unchanged.
+Subsequent implementation handoffs must use the current branch name.

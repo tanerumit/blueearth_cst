@@ -338,3 +338,7 @@ its external temporary fixtures, as in the forcing task. Logs remain under the r
 The changed renderer has only the WF1 station-evaluation caller; other evaluation sheet methods
 were retained and checked by the focused suite. No Snakefile or public script signature changed.
 Full-suite, baseline and all-five gates are omitted for this confined terminal-figure change.
+
+Verified implementation commit: `c7ddb673` (`feat(plots): standardize Wflow evaluation hydrographs`).
+It contains the unchanged executable candidate covered by the checks above; the following evidence
+update changes this review record only. The worktree was clean immediately after that commit.

@@ -29,12 +29,12 @@ updated: 2026-10-09
 ## Work location
 
 - Owner: session-1; branch: feat/worktree-policy-improvements;
-  implementation commit: f85a0f36; ready for landing.
+  implementation commit: 4eeff2f2; landed as 9f0124b0.
 - Implementation: session-1 :: dev/scripts/, tests/test_activation_links.py, coordination docs and policy.
 - Coordination: main :: dev/tasks/t2610091206-worktree-coordination.md.
 - Scratch: session-1 :: .tmp/scratchpad/worktree-coordination-r2/; retained through approved landing.
 - Verification: f85a0f36; Windows 11 / PowerShell 7 / Pixi; see evidence below.
-- Next action: owner approves landing and performs other-session cleanup; no landing or push executed.
+- Next action: close the verified task; other-session legacy cleanup remains owner action only.
 
 | Claim | Check | Input / output |
 |---|---|---|
@@ -160,3 +160,32 @@ Allow/deny decisions are unchanged. The fix is unreleased under manual cadence.
   `.tmp/scratchpad/guard-link-diagnostics/`; retain through approved source-task landing.
 - No release, push or CST landing occurred. Skill prose was checked on disk; fresh-session
   instruction uptake was not tested with a same-session subagent.
+
+
+## Approved landing — 2026-10-09
+
+- CST merge: `9f0124b016fd9209b5184c831a5ab8d01e7d666f`; rebased candidate
+  `4eeff2f280c4680068a977e9bf5404dc564adf06`; original tested candidate `f85a0f36`.
+- `git fetch origin` passed; local main was ahead 100, behind 0. No push was requested or performed.
+- From main: `pixi run python <git-workflow>/scripts/worktree-session.py task-land session-1
+  --verify <evidence-check>` passed. The executable check was `pixi run python
+  dev/scripts/verify_landing.py verify --evidence <session-1 scratch>/gates.json
+  --require-gate test-fast --allow-path dev/tasks/t2610091206-worktree-coordination.md
+  --allow-path dev/TODO.md`. These two Markdown paths were the entire intervening delta.
+- Recorded gate identity, environment and log hash verified; no expensive gate repeated.
+  Candidate and merge share tree `ace31f4975461aa701d428ffd0f81c566f3ba8d9`;
+  candidate ancestry was proved. Main and session-1 were clean afterward.
+- Integrated main guard: three board targets allowed; scripts, plot-style reference and pipeline
+  runner denied. Reference check returned no errors. Read-only `landing-check.py` and its log
+  remain with gate evidence under the existing session-1 scratch root.
+- The rebase ran the old hook once more. Rechecked Junction -> main/dev, removed only session-1's
+  junction with non-recursive rmdir, and verified absence after landing.
+- Session-1 is detached at the merge, allocation EMPTY, feature branch deleted; session-check
+  reported clean and aligned. Session-2 and session-3 remain occupied and untouched.
+- Ownership report: free detached session-1 and two unrelated branches are untracked; the closing
+  task's deleted branch reports missing until closure. The two pre-existing parked-task rows
+  remain expected missing entries. No unrelated board metadata was changed manually.
+- Closure retention: this existing task note's committed Git history retains the verification,
+  upstream fix and parked-branch improvement candidate. Maintained coordination docs retain the
+  other-session legacy cleanup procedure. Raw gate logs remain for landing audit; disposable
+  fixtures may be cleaned only after checking containment and reparse points.
